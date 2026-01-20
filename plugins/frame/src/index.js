@@ -6,7 +6,7 @@ export default function createPlugin (options = {}) {
     ...options,
     id: 'frame',
     load: async () => {
-      const module = (await import(/* webpackChunkName: "dm-frame-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-frame-plugin" */ './manifest.js')).manifest
       return module
     }
   }

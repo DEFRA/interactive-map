@@ -12,9 +12,9 @@ export const Form = ({
 }) => {
 
   const classNames = [
-    'dm-c-search-form',
-    pluginConfig.isExpanded && 'dm-c-search-form--default-expanded',
-    'dm-c-panel'
+    'im-c-search-form',
+    pluginConfig.isExpanded && 'im-c-search-form--default-expanded',
+    'im-c-panel'
   ].filter(Boolean).join(' ')
 
   return (
@@ -34,11 +34,11 @@ export const Form = ({
         Submit
       </button>
 
-      <div className={`dm-c-search__input-container${pluginState.hasKeyboardFocusWithin ? ' dm-c-search__input-container--keyboard-focus-within' : ''}`}>
-        <label htmlFor={`${id}-search`} className="dm-u-visually-hidden">Search</label>
+      <div className={`im-c-search__input-container${pluginState.hasKeyboardFocusWithin ? ' im-c-search__input-container--keyboard-focus-within' : ''}`}>
+        <label htmlFor={`${id}-search`} className="im-u-visually-hidden">Search</label>
         <input
           id={`${id}-search`}
-          className="dm-c-search__input"
+          className="im-c-search__input"
           type="search"
           role="combobox"
           aria-expanded={pluginState.suggestionsVisible}
@@ -59,7 +59,7 @@ export const Form = ({
           onKeyDown={(e) => events.handleInputKeyDown(e, pluginState)}
           ref={inputRef}
         />
-        <span id={`${id}-search-hint`} className="dm-c-search__hint">
+        <span id={`${id}-search-hint`} className="im-c-search__hint">
           When search results are available use up and down arrows to review and enter to select. Touch device users, explore by touch or with swipe gestures.
         </span>
         {/* Close button passed as child */}

@@ -16,7 +16,7 @@ describe('getTooltipPosition', () => {
 
   it('falls back to closest container if containerEl is not provided', () => {
     const containerEl = document.createElement('div')
-    containerEl.classList.add('dm-o-app__main')
+    containerEl.classList.add('im-o-app__main')
     document.body.appendChild(containerEl)
 
     const triggerEl = document.createElement('div')

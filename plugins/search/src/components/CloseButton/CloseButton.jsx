@@ -3,7 +3,7 @@ export const CloseButton = ({ defaultExpanded, onClick, closeIcon }) => {
   return (
     <button
       aria-label="Close search"
-      className="dm-c-map-button dm-c-search-close-button"
+      className="im-c-map-button im-c-search-close-button"
       type="button"
       onClick={onClick}
       style={defaultExpanded ? { display: 'none' } : undefined}

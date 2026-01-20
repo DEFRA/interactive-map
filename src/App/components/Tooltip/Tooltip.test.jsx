@@ -38,8 +38,8 @@ describe('Tooltip', () => {
   // --- Standard Tooltip tests ---
   it('renders with correct initial state', () => {
     const { tooltip } = renderTooltip()
-    expect(tooltip).toHaveClass('dm-c-tooltip--hidden')
-    expect(tooltip).not.toHaveClass('dm-c-tooltip--is-visible')
+    expect(tooltip).toHaveClass('im-c-tooltip--hidden')
+    expect(tooltip).not.toHaveClass('im-c-tooltip--is-visible')
     expect(tooltip).toHaveAttribute('aria-hidden', 'true')
   })
 
@@ -47,11 +47,11 @@ describe('Tooltip', () => {
     const { button, tooltip } = renderTooltip()
     act(() => fireEvent.mouseEnter(button))
     advanceTimers()
-    expect(tooltip).toHaveClass('dm-c-tooltip--is-visible')
+    expect(tooltip).toHaveClass('im-c-tooltip--is-visible')
     expect(getTooltipPosition).toHaveBeenCalled()
     act(() => fireEvent.mouseLeave(button))
     advanceTimers(0)
-    expect(tooltip).not.toHaveClass('dm-c-tooltip--is-visible')
+    expect(tooltip).not.toHaveClass('im-c-tooltip--is-visible')
   })
 
   it('cancels tooltip on mouse down or key down', () => {
@@ -63,26 +63,26 @@ describe('Tooltip', () => {
       fireEvent.keyDown(button)
     })
     advanceTimers()
-    expect(tooltip).not.toHaveClass('dm-c-tooltip--is-visible')
+    expect(tooltip).not.toHaveClass('im-c-tooltip--is-visible')
   })
 
   it('handles focus interactions for keyboard interface', () => {
     const { button, tooltip, wrapper } = renderTooltip({}, 'keyboard')
     act(() => fireEvent.focus(button))
     advanceTimers()
-    expect(wrapper).toHaveClass('dm-c-tooltip-wrapper--has-focus')
-    expect(tooltip).toHaveClass('dm-c-tooltip--is-visible')
+    expect(wrapper).toHaveClass('im-c-tooltip-wrapper--has-focus')
+    expect(tooltip).toHaveClass('im-c-tooltip--is-visible')
     act(() => fireEvent.blur(button))
     advanceTimers(0)
-    expect(wrapper).not.toHaveClass('dm-c-tooltip-wrapper--has-focus')
-    expect(tooltip).not.toHaveClass('dm-c-tooltip--is-visible')
+    expect(wrapper).not.toHaveClass('im-c-tooltip-wrapper--has-focus')
+    expect(tooltip).not.toHaveClass('im-c-tooltip--is-visible')
   })
 
   it('does not show tooltip on focus if interfaceType is mouse', () => {
     const { button, tooltip } = renderTooltip()
     act(() => fireEvent.focus(button))
     advanceTimers()
-    expect(tooltip).not.toHaveClass('dm-c-tooltip--is-visible')
+    expect(tooltip).not.toHaveClass('im-c-tooltip--is-visible')
   })
 
   it('hides tooltip on Escape key', () => {
@@ -90,7 +90,7 @@ describe('Tooltip', () => {
     act(() => fireEvent.mouseEnter(button))
     advanceTimers()
     act(() => fireEvent.keyDown(window, { key: 'Escape' }))
-    expect(tooltip).not.toHaveClass('dm-c-tooltip--is-visible')
+    expect(tooltip).not.toHaveClass('im-c-tooltip--is-visible')
   })
 
   it('removes keydown listener on unmount', () => {

@@ -59,7 +59,7 @@ export function useModalPanelBehaviour ({
     }
 
     const handleClick = (e) => {
-      const backdropEl = e.target.closest('.dm-o-app__modal-backdrop')
+      const backdropEl = e.target.closest('.im-o-app__modal-backdrop')
       if (rootEl && backdropEl && rootEl.contains(backdropEl)) {
         handleClose()
       }

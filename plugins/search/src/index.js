@@ -12,7 +12,7 @@ export default function createPlugin (options = {}) {
     ...options,
     id: 'search',
     load: async () => {
-      const module = (await import(/* webpackChunkName: "dm-search-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-search-plugin" */ './manifest.js')).manifest
       return module
     }
   }

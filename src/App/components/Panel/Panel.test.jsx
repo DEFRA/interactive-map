@@ -22,7 +22,7 @@ describe('Panel', () => {
   beforeEach(() => {
     useConfig.mockReturnValue({ id: 'app' })
     useApp.mockReturnValue({ dispatch, breakpoint: 'desktop', layoutRefs })
-    document.body.innerHTML = '<div id="app-dm-app"></div>'
+    document.body.innerHTML = '<div id="app-im-app"></div>'
     jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => cb())
     jest.clearAllMocks()
   })
@@ -43,18 +43,18 @@ describe('Panel', () => {
       renderPanel()
       const panel = screen.getByRole('region')
       expect(panel).toHaveAttribute('id', 'app-panel-settings')
-      expect(panel).toHaveClass('dm-c-panel')
-      expect(screen.getByText('Settings')).toHaveClass('dm-c-panel__heading', 'dm-e-heading-m')
+      expect(panel).toHaveClass('im-c-panel')
+      expect(screen.getByText('Settings')).toHaveClass('im-c-panel__heading', 'im-e-heading-m')
     })
 
     it('renders visually hidden label when showLabel=false', () => {
       renderPanel({ showLabel: false })
-      expect(screen.getByText('Settings')).toHaveClass('dm-u-visually-hidden')
+      expect(screen.getByText('Settings')).toHaveClass('im-u-visually-hidden')
     })
 
     it('applies offset class to body when showLabel=false and dismissable', () => {
       renderPanel({ showLabel: false, desktop: { slot: 'side', dismissable: true, initiallyOpen: false } })
-      expect(screen.getByRole('dialog').querySelector('.dm-c-panel__body')).toHaveClass('dm-c-panel__body--offset')
+      expect(screen.getByRole('dialog').querySelector('.im-c-panel__body')).toHaveClass('im-c-panel__body--offset')
     })
 
     it('applies width style if provided', () => {

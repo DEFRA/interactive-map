@@ -17,7 +17,7 @@ export const CrossHair = () => {
     <svg
       id={`${id}-cross-hair`}
       ref={crossHairRef}
-      className='dm-c-cross-hair'
+      className='im-c-cross-hair'
       width='38'
       height='38'
       viewBox='0 0 38 38'

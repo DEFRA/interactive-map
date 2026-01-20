@@ -1,17 +1,17 @@
 {% extends "layouts/main.html" %}
 
 {% block pageTitle %}
-  DefraMap page template – GOV.UK Prototype Kit
+  InteractiveMap page template – GOV.UK Prototype Kit
 {% endblock %}
 
 {% block head %}
   <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
-  <link href="/plugin-assets/%40defra%2Fdefra-map/dist/css/index.css" rel="stylesheet" type="text/css">
-  <link href="/plugin-assets/%40defra%2Fdefra-map/plugins/scale-bar/dist/css/index.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/plugins/scale-bar/dist/css/index.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
 {% block bodyStart %}
-  <script>document.body.classList.add('dm-is-loading')</script>
+  <script>document.body.classList.add('im-is-loading')</script>
 {% endblock %}
 
 {% block beforeContent %}
@@ -37,13 +37,13 @@
 
 {% block pageScripts %}
   <!-- Defra library scripts -->
-  <script src="/plugin-assets/%40defra%2Fdefra-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Fdefra-map/providers/maplibre/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Fdefra-map/plugins/scale-bar/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Fdefra-map/plugins/zoom-controls/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/scale-bar/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/zoom-controls/dist/umd/index.js"></script>
   
   <script>
-    const defraMap = new defra.DefraMap('map', {
+    const interactiveMap = new defra.InteractiveMap('map', {
       mapProvider: defra.maplibreProvider(),
       behaviour: 'hybrid',
       mapLabel: 'Ambleside',

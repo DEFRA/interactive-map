@@ -92,12 +92,12 @@ export const Tooltip = ({ children, content }) => {
   })
 
   return (
-    <div className={`dm-c-tooltip-wrapper${focused ? ' dm-c-tooltip-wrapper--has-focus' : ''}`}>
+    <div className={`im-c-tooltip-wrapper${focused ? ' im-c-tooltip-wrapper--has-focus' : ''}`}>
       {childWithProps}
       <div
         id={tooltipId}
         ref={tooltipRef}
-        className={`dm-c-tooltip dm-c-tooltip--${position || 'hidden'} ${visible ? 'dm-c-tooltip--is-visible' : ''}`}
+        className={`im-c-tooltip im-c-tooltip--${position || 'hidden'} ${visible ? 'im-c-tooltip--is-visible' : ''}`}
         role='tooltip'
         aria-hidden={!visible}
       >

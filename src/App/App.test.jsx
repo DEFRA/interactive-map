@@ -5,7 +5,7 @@ import { AppProvider } from './store/AppProvider.jsx'
 import { MapProvider } from './store/MapProvider.jsx'
 import { ServiceProvider } from './store/ServiceProvider.jsx'
 import { PluginProvider } from './store/PluginProvider.jsx'
-import { removeLoadingState } from '../DefraMap/domStateManager.js'
+import { removeLoadingState } from '../InteractiveMap/domStateManager.js'
 import { PluginInits } from './renderer/PluginInits.jsx'
 import { Layout } from './layout/Layout.jsx'
 
@@ -57,7 +57,7 @@ jest.mock('./layout/Layout.jsx', () => ({
   Layout: jest.fn(() => <div data-testid="layout" />)
 }))
 
-jest.mock('../DefraMap/domStateManager.js', () => ({
+jest.mock('../InteractiveMap/domStateManager.js', () => ({
   removeLoadingState: jest.fn()
 }))
 

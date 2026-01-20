@@ -5,11 +5,11 @@
 // ===================================================
 
 // 1. Base styles
-.dm-c-button-wrapper {
+.im-c-button-wrapper {
     position: relative;
 }
 
-.dm-c-button-wrapper .dm-c-panel {
+.im-c-button-wrapper .im-c-panel {
     position: absolute;
     right: calc(100% + var(--divider-gap));
     top: 0;
@@ -20,7 +20,7 @@
 // ===================================================
 
 // 1. Base styles
-.dm-c-map-button {
+.im-c-map-button {
     @include tools.border-focus-base(
         // $is-inset: true,
         $type: button
@@ -47,7 +47,7 @@
     }
 }
 
-.dm-c-map-button svg {
+.im-c-map-button svg {
     pointer-events: none;
     width: var(--icon-size);
     height: var(--icon-size);
@@ -55,14 +55,14 @@
     flex-shrink: 0;
 }
 
-.dm-c-map-button svg + span {
+.im-c-map-button svg + span {
     margin-left: var(--button-icon-label-offset);
 
     white-space: nowrap;
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .dm-c-map-button:hover {
+    .im-c-map-button:hover {
         @media (prefers-reduced-motion: no-preference) {
             transition: background-color var(--duration) ease;
         }
@@ -77,12 +77,12 @@
 
 // 3. Modifiers
 
-.dm-c-map-button--with-label {
+.im-c-map-button--with-label {
     padding-left: var(--label-button-padding);
     padding-right: var(--label-button-padding);
 }
 
-.dm-c-map-button--primary {
+.im-c-map-button--primary {
     color: var(--background-color);
     background-color: var(--primary-button-color);
     box-shadow: var(--primary-button-box-shadow);
@@ -96,16 +96,16 @@
 }
 
 @media (hover: hover) and (pointer: fine) {
-    .dm-c-map-button--primary:hover {
+    .im-c-map-button--primary:hover {
         background-color: var(--primary-button-hover-color);
     }
 }
 
-.dm-c-map-button--primary::before {
+.im-c-map-button--primary::before {
     box-shadow: none;
 }
 
-.dm-c-map-button--tertiary {
+.im-c-map-button--tertiary {
     border: 1px solid var(--tertiary-button-border-color);
     box-shadow: var(--tertiary-button-box-shadow);
     span {
@@ -117,51 +117,51 @@
     }
 }
 
-.dm-c-map-button--tertiary::before {
+.im-c-map-button--tertiary::before {
     box-shadow: none;
 }
 
-.dm-o-app__right {
-    .dm-c-button-wrapper--group-start,
-    .dm-c-button-wrapper--group-middle {
+.im-o-app__right {
+    .im-c-button-wrapper--group-start,
+    .im-c-button-wrapper--group-middle {
         margin-bottom: calc(-1 * var(--divider-gap));
     }
-    .dm-c-button-wrapper--group-start .dm-c-map-button {
+    .im-c-button-wrapper--group-start .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'top');
     }
-    .dm-c-button-wrapper--group-end .dm-c-map-button {
+    .im-c-button-wrapper--group-end .im-c-map-button {
         margin-top: 0;
         @include tools.border-focus-corner-override($corners: 'bottom');
     }
 }
 
-.dm-o-app__top {
-    .dm-c-button-wrapper--group-start,
-    .dm-c-button-wrapper--group-middle {
+.im-o-app__top {
+    .im-c-button-wrapper--group-start,
+    .im-c-button-wrapper--group-middle {
         margin-right: calc(-1 * var(--divider-gap));
     }
-    .dm-c-button-wrapper--group-start .dm-c-map-button {
+    .im-c-button-wrapper--group-start .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'left');
     }
-    .dm-c-button-wrapper--group-end .dm-c-map-button {
+    .im-c-button-wrapper--group-end .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'right');
     }
 }
 
 // 4. State styles
-.dm-c-map-button[aria-disabled="true"]:not(.dm-c-map-button--primary, .dm-c-map-button--tertiary) {
+.im-c-map-button[aria-disabled="true"]:not(.im-c-map-button--primary, .im-c-map-button--tertiary) {
     svg, span {
         opacity: var(--disabled-button-opacity);
     }
 }
 
-.dm-c-map-button {
+.im-c-map-button {
     &--primary[aria-disabled="true"], &--tertiary[aria-disabled="true"] {
         opacity: var(--disabled-button-opacity);
     }
 }
 
-.dm-o-app__actions .dm-c-map-button[aria-pressed="true"] {
+.im-o-app__actions .im-c-map-button[aria-pressed="true"] {
     color: var(--pressed-button-foreground-color);
     border-color: var(--pressed-button-border-color);
     background-color: var(--pressed-button-background-color);

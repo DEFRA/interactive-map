@@ -6,7 +6,7 @@
 
 // 1. Base styles
 
-.dm-c-viewport {
+.im-c-viewport {
     width: 100%;
     height: 100%;
     background-color: var(--background-colour);
@@ -30,7 +30,7 @@
 
 // 2. Elements
 
-.dm-c-viewport__keyboard-hint {
+.im-c-viewport__keyboard-hint {
     position: absolute;
     left: 50%;
     transform: translateX(-50%);
@@ -44,11 +44,11 @@
     line-height: 1;
 }
 
-.dm-c-viewport__keyboard-hint kbd {
+.im-c-viewport__keyboard-hint kbd {
     border: var(--kbd-tooltip-border);
 }
 
-.dm-c-viewport__map-container > *:first-child {
+.im-c-viewport__map-container > *:first-child {
     overflow: visible;
     transform-origin: top left;
 }
@@ -58,7 +58,7 @@
 // Focus area: The bit of the map thats always visible
 // ---------------------------------------------------
 
-.dm-c-viewport__safezone {
+.im-c-viewport__safezone {
   position: absolute;
   pointer-events: none;
   z-index: 1;
@@ -67,7 +67,7 @@
 
 // 3. Modifiers
 
-.dm-c-viewport--medium .dm-c-viewport__map-container {
+.im-c-viewport--medium .im-c-viewport__map-container {
     width: 66.66%;
     height: 66.66%;
 
@@ -76,7 +76,7 @@
     }
 }
 
-.dm-c-viewport--large .dm-c-viewport__map-container {
+.im-c-viewport--large .im-c-viewport__map-container {
     width: 50%;
     height: 50%;
 

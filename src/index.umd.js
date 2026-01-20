@@ -4,7 +4,7 @@
 import React, { useState } from 'react' // Import at least ONE hook to force react-hooks → preact/hooks
 import * as JSXRuntime from 'react/jsx-runtime'
 
-import DefraMap from './index.js'
+import InteractiveMap from './index.js'
 
 const g = typeof window !== 'undefined' ? window : globalThis
 
@@ -17,7 +17,7 @@ g.preactJsxRuntime = JSXRuntime
 g.preactHooks = { useState } // the act of importing keeps the module alive
 
 // Attach the main map
-g.defra.DefraMap = DefraMap
+g.defra.InteractiveMap = InteractiveMap
 
 // Ensure compat.default exists
 if (!g.preactCompat.default) {
@@ -46,4 +46,4 @@ if (!g.preactCompat.createRoot) {
 //   useState
 // }
 
-export default DefraMap
+export default InteractiveMap

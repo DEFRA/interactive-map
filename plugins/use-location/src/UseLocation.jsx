@@ -5,7 +5,7 @@ export const UseLocation = ({ pluginState }) => {
   const { errorMessage } = pluginState
 
   return (
-    <div className="dm-c-use-location">
+    <div className="im-c-use-location">
       <p>{errorMessage}</p>
     </div>
   )

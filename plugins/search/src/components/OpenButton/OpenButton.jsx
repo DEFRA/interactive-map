@@ -3,7 +3,7 @@ export const OpenButton = ({ id, isExpanded, onClick, buttonRef, searchIcon }) =
   return (
     <button
       aria-label="Open search"
-      className="dm-c-map-button"
+      className="im-c-map-button"
       onClick={onClick}
       aria-controls={`${id}-search-form`}
       ref={buttonRef}

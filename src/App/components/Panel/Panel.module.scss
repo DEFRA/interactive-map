@@ -5,7 +5,7 @@
 @use '../../../scss/tools/index' as tools;
 
 // 1. Base styles
-.dm-c-panel {
+.im-c-panel {
     @include tools.border-focus-base(
         $is-inset: false,
         $type: panel
@@ -22,7 +22,7 @@
 }
 
 // 2. Elements
-.dm-c-panel__heading {
+.im-c-panel__heading {
     display: flex;
     padding:
         var(--panel-heading-margin-top)
@@ -33,7 +33,7 @@
     color: var(--foreground-color);
 }
 
-.dm-c-panel__close {
+.im-c-panel__close {
     @include tools.border-focus-base(
         $is-inset: false,
         $type: button
@@ -57,7 +57,7 @@
     }
 }
 
-.dm-c-panel__body {
+.im-c-panel__body {
     padding: 0 var(--panel-margin) var(--panel-margin);
     overflow: auto;
 
@@ -68,11 +68,11 @@
     }
 }
 
-.dm-c-panel__close::before {
+.im-c-panel__close::before {
     content: none;
 }
 
-.dm-c-panel__close:hover {
+.im-c-panel__close:hover {
     @media (prefers-reduced-motion: no-preference) {
         transition: background-color var(--duration) ease;
     }
@@ -83,7 +83,7 @@
 }
 
 // 3. Modifiers
-.dm-o-app--mobile .dm-c-panel--bottom {
+.im-o-app--mobile .im-c-panel--bottom {
     @include tools.border-focus-base(
         $is-inset: true,
         $type: panel
@@ -94,18 +94,18 @@
 }
 
 // When banner heading is hidden we need to align with the close button
-.dm-o-app--desktop .dm-c-panel--banner.dm-c-panel--no-heading {
-    .dm-c-panel__close {
+.im-o-app--desktop .im-c-panel--banner.im-c-panel--no-heading {
+    .im-c-panel__close {
         top: var(--banner-close-button-gap);
         right: var(--banner-close-button-gap);
     }
-    .dm-c-panel__body--offset {
+    .im-c-panel__body--offset {
         padding-top: 10px;
         padding-bottom: 10px;
     }
 }
 
-.dm-c-panel__body--offset {
+.im-c-panel__body--offset {
     padding-right: calc(var(--button-size) + var(--divider-gap));
 }
 

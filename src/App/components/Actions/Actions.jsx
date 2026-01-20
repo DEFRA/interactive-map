@@ -13,9 +13,9 @@ export const Actions = ({ slot, children }) => {
   })
 
   const className = [
-    'dm-c-panel',
-    `dm-c-actions`,
-    isBottomSlotUsed && 'dm-c-actions--border-top'
+    'im-c-panel',
+    `im-c-actions`,
+    isBottomSlotUsed && 'im-c-actions--border-top'
   ].filter(Boolean).join(' ')
 
   return (

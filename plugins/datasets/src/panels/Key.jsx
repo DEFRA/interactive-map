@@ -41,10 +41,10 @@ export const Key = ({ mapState, pluginState }) => {
   )
 
   return (
-    <div className="dm-c-datasets-key">
+    <div className="im-c-datasets-key">
       {pluginState.datasets.filter(dataset => dataset.showInKey && dataset.visibility !== 'hidden').map(dataset => (
-        <div key={dataset.id} className="dm-c-datasets-key__item">
-          <div className="dm-c-datasets-key__item-label">
+        <div key={dataset.id} className="im-c-datasets-key__item">
+          <div className="im-c-datasets-key__item-label">
             {itemSymbol(dataset)}
             {dataset.label}
             {dataset.symbolDescription && (

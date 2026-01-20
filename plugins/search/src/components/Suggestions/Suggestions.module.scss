@@ -1,7 +1,7 @@
 @use '/src/scss/tools/index' as tools;
 
 // Suggestions
-.dm-c-search-suggestions {
+.im-c-search-suggestions {
     max-height: calc(100vh - 66px);
     overflow-y: auto;
     scroll-padding: 0;
@@ -11,7 +11,7 @@
     list-style: none;
 }
 
-.dm-c-search-suggestions__item {
+.im-c-search-suggestions__item {
     margin: 0;
     padding: calc(var(--divider-gap) + 2px) var(--primary-gap);
     position: relative;
@@ -40,7 +40,7 @@
         color: var(--fixed-foreground-color);
     }
 
-    &:hover:not([aria-selected="true"]) .dm-c-search-suggestions__label {
+    &:hover:not([aria-selected="true"]) .im-c-search-suggestions__label {
         text-decoration: underline;
         text-underline-offset: 2px;
         text-decoration-thickness: 2px;
@@ -48,12 +48,12 @@
         text-decoration-skip-ink: none;
     }
 
-    &[aria-selected="true"] .dm-c-search-suggestions__label {
+    &[aria-selected="true"] .im-c-search-suggestions__label {
         @include tools.link-focus();
     }
 }
 
-.dm-c-search-suggestions__label {
+.im-c-search-suggestions__label {
     display: block;
     overflow: hidden;
     white-space: nowrap;
@@ -61,13 +61,13 @@
 }
 
 // 3. Modifiers
-.dm-o-app--mobile .dm-c-search-form--default-expanded .dm-c-search-suggestions {
+.im-o-app--mobile .im-c-search-form--default-expanded .im-c-search-suggestions {
     box-shadow: var(--panel-box-shadow);
     clip-path: inset(0px 0px -20px 0px);
 }
 
-.dm-o-app--tablet .dm-c-search-suggestions,
-.dm-o-app--desktop .dm-c-search-suggestions {
+.im-o-app--tablet .im-c-search-suggestions,
+.im-o-app--desktop .im-c-search-suggestions {
     border-bottom-left-radius: var(--button-border-radius);
     border-bottom-right-radius: var(--button-border-radius);
 

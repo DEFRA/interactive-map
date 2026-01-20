@@ -9,7 +9,7 @@ export const MapStatus = () => {
     <div
       ref={mapStatusRef}
       role='status'
-      className='dm-c-viewport__status'
+      className='im-c-viewport__status'
       aria-live='polite'
       aria-atomic='true'
       // aria-relevant="additions"

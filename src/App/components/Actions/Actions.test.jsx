@@ -24,7 +24,7 @@ describe('Actions component', () => {
   it('renders the correct slot-based class', () => {
     render(<Actions slot='actions'>Content</Actions>)
     const container = screen.getByText('Content').closest('div')
-    expect(container).toHaveClass('dm-c-panel', 'dm-c-actions')
+    expect(container).toHaveClass('im-c-panel', 'im-c-actions')
   })
 
   it('adds the border class if a bottom slot panel is open', () => {
@@ -33,7 +33,7 @@ describe('Actions component', () => {
 
     render(<Actions slot='actions'>Content</Actions>)
     const container = screen.getByText('Content').closest('div')
-    expect(container).toHaveClass('dm-c-actions--border-top')
+    expect(container).toHaveClass('im-c-actions--border-top')
   })
 
   it('renders children correctly', () => {
@@ -53,7 +53,7 @@ describe('Actions component', () => {
         <TestChild isHidden={true} data-testid="child2">Child 2</TestChild>
       </Actions>
     )
-    const container = screen.getByTestId('child1').closest('.dm-c-actions')
+    const container = screen.getByTestId('child1').closest('.im-c-actions')
     expect(container).toHaveStyle('display: none')
   })
 
@@ -64,7 +64,7 @@ describe('Actions component', () => {
         <TestChild isHidden={true} data-testid="child2">Child 2</TestChild>
       </Actions>
     )
-    const container = screen.getByTestId('child1').closest('.dm-c-actions')
+    const container = screen.getByTestId('child1').closest('.im-c-actions')
     expect(container).not.toHaveStyle('display: none')
   })
 })

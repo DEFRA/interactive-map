@@ -11,12 +11,12 @@
 // ===================================================
 
 // 1. Base styles
-.dm-c-search {
+.im-c-search {
   // To follow...
 }
 
 // 2. Elements
-.dm-c-search__input-container {
+.im-c-search__input-container {
   display: flex;
   position: relative;
   flex: 1 1 auto;
@@ -43,7 +43,7 @@
   }
 }
 
-.dm-c-search__input {
+.im-c-search__input {
   width: 100%;
   border: 0;
   padding: var(--divider-gap) calc(var(--divider-gap) + 2px);
@@ -66,27 +66,27 @@
   }
 }
 
-.dm-c-search__hint {
+.im-c-search__hint {
   display: none;
 }
 
 // 3. Modifiers
-.dm-o-app--exclusive-control {
-  .dm-o-app__top .dm-c-button-wrapper,
-  .dm-o-app__right .dm-c-button-wrapper {
+.im-o-app--exclusive-control {
+  .im-o-app__top .im-c-button-wrapper,
+  .im-o-app__right .im-c-button-wrapper {
     opacity: 0;
     z-index: -1;
   }
-  .dm-o-app__inset .dm-c-panel {
+  .im-o-app__inset .im-c-panel {
     opacity: 0;
     z-index: -1;
   }
 }
 
-.dm-o-app--mobile .dm-c-search__input-container {
+.im-o-app--mobile .im-c-search__input-container {
   margin: var(--primary-gap);
 }
 
-.dm-c-search__input-container--keyboard-focus-within:after {
+.im-c-search__input-container--keyboard-focus-within:after {
   opacity: 1;
 }

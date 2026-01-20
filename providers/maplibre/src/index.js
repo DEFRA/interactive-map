@@ -16,13 +16,13 @@ export default function (config = {}) {
     load: async () => {
       let mapFramework
       if (isLatest) {
-        const maplibre = await import(/* webpackChunkName: "dm-maplibre-framework" */ 'maplibre-gl')
+        const maplibre = await import(/* webpackChunkName: "im-maplibre-framework" */ 'maplibre-gl')
         mapFramework = maplibre
       } else {
         const [maplibreLegacy, resizeObserver] = await Promise.all([
-          import(/* webpackChunkName: "dm-maplibre-legacy-framework" */ 'maplibre-gl-legacy'),
-          import(/* webpackChunkName: "dm-maplibre-legacy-framework" */ 'resize-observer'),
-          import(/* webpackChunkName: "dm-maplibre-legacy-framework" */ 'core-js/es/array/flat.js')
+          import(/* webpackChunkName: "im-maplibre-legacy-framework" */ 'maplibre-gl-legacy'),
+          import(/* webpackChunkName: "im-maplibre-legacy-framework" */ 'resize-observer'),
+          import(/* webpackChunkName: "im-maplibre-legacy-framework" */ 'core-js/es/array/flat.js')
         ])
         if (!window.ResizeObserver) {
           resizeObserver.install()
@@ -30,7 +30,7 @@ export default function (config = {}) {
         mapFramework = maplibreLegacy
       }
 
-      const MapProvider = (await import(/* webpackChunkName: "dm-maplibre-provider" */ './maplibreProvider.js')).default
+      const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 
       const mapProviderConfig = {
         ...config,

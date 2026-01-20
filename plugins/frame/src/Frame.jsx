@@ -108,11 +108,11 @@ export function Frame({ appState, mapState, pluginState, mapProvider }) {
   return (
     <>
       {/* Spacer */}
-      <div className="dm-c-frame-spacer" style={{ inset: parentInset }} ref={elRef} />
+      <div className="im-c-frame-spacer" style={{ inset: parentInset }} ref={elRef} />
 
       {/* Child */}
       {childStyle && (
-        <div ref={displayRef} className="dm-c-frame-display" style={{ ...childStyle }} />
+        <div ref={displayRef} className="im-c-frame-display" style={{ ...childStyle }} />
       )}
     </>
   )

@@ -1,4 +1,4 @@
-.dm-o-app {
+.im-o-app {
   visibility: visible;
   font-family: var(--font-family);
   font-size: var(--font-size);
@@ -11,7 +11,7 @@
   touch-action: pan-x pan-y;
 }
 
-.dm-is-fullscreen > .dm-o-app {
+.im-is-fullscreen > .im-o-app {
   position: fixed;
   z-index: 999;
   top: 0;
@@ -21,7 +21,7 @@
   width: 100%;
 }
 
-.dm-o-app__overlay,
-.dm-o-app__modal {
+.im-o-app__overlay,
+.im-o-app__modal {
   pointer-events: none;
 }

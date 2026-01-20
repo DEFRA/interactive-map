@@ -6,7 +6,7 @@ export default function createPlugin (options = {}) {
     ...options,
     id: 'draw',
     load: async () => {
-      const module = (await import(/* webpackChunkName: "dm-draw-ml-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-draw-ml-plugin" */ './manifest.js')).manifest
       return module
     }
   }

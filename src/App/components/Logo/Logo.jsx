@@ -9,6 +9,6 @@ export const Logo = () => {
   }
 
   return (
-    <img className='dm-c-logo' src={mapStyle.logo} alt={mapStyle.logoAltText} />
+    <img className='im-c-logo' src={mapStyle.logo} alt={mapStyle.logoAltText} />
   )
 }

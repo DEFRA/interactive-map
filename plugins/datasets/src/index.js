@@ -6,7 +6,7 @@ export default function createPlugin (options = {}) {
     ...options,
     id: 'datasets',
     load: async () => {
-      const module = (await import(/* webpackChunkName: "dm-datasets-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-datasets-plugin" */ './manifest.js')).manifest
       return module
     }
   }

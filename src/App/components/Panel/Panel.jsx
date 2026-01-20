@@ -10,7 +10,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
   const { id } = useConfig()
   const { dispatch, breakpoint, layoutRefs } = useApp()
 
-  const rootEl = document.getElementById(`${id}-dm-app`)
+  const rootEl = document.getElementById(`${id}-im-app`)
   const bpConfig = panelConfig[breakpoint]
   const elementId = `${id}-panel-${stringToKebab(panelId)}`
 
@@ -41,14 +41,14 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
 
 
   const panelClass = [
-    'dm-c-panel',
-    `dm-c-panel--${bpConfig.slot}`,
-    !panelConfig.showLabel && 'dm-c-panel--no-heading'
+    'im-c-panel',
+    `im-c-panel--${bpConfig.slot}`,
+    !panelConfig.showLabel && 'im-c-panel--no-heading'
   ].filter(Boolean).join(' ')
 
   const panelBodyClass = [
-    'dm-c-panel__body',
-    !panelConfig.showLabel && isDismissable && 'dm-c-panel__body--offset'
+    'im-c-panel__body',
+    !panelConfig.showLabel && isDismissable && 'im-c-panel__body--offset'
   ].filter(Boolean).join(' ')
 
   const innerHtmlProp = useMemo(() => html ? { __html: html } : null, [html])
@@ -66,7 +66,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
     >
       <h2
         id={`${elementId}-label`}
-        className={panelConfig.showLabel ? 'dm-c-panel__heading dm-e-heading-m' : 'dm-u-visually-hidden'}
+        className={panelConfig.showLabel ? 'im-c-panel__heading im-e-heading-m' : 'im-u-visually-hidden'}
       >
         {label}
       </h2>
@@ -74,7 +74,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
       {isDismissable && (
         <button
           aria-label={`Close ${label}`}
-          className='dm-c-panel__close'
+          className='im-c-panel__close'
           onClick={handleClose}
         >
           <Icon id='close' />

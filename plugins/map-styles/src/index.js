@@ -7,7 +7,7 @@ export default function createPlugin ({ manifest, mapStyles } = {}) {
     manifest,
     mapStyles,
     load: async () => {
-      const module = (await import(/* webpackChunkName: "dm-map-styles-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-map-styles-plugin" */ './manifest.js')).manifest
       return module
     },
     handlesMapStyle: true,

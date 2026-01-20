@@ -3,14 +3,14 @@
 // ===================================================
 
 // 1. Base styles
-.dm-c-tooltip-wrapper {
+.im-c-tooltip-wrapper {
   position: relative;
   display: inline-block;
   z-index: 1;
 }
 
-.dm-c-tooltip-wrapper:hover,
-.dm-c-tooltip-wrapper--has-focus {
+.im-c-tooltip-wrapper:hover,
+.im-c-tooltip-wrapper--has-focus {
     z-index: 2;
 }
 
@@ -19,7 +19,7 @@
 // ===================================================
 
 // 1. Base styles
-.dm-c-tooltip {
+.im-c-tooltip {
     position: absolute;
     z-index: 10;
     visibility: hidden;
@@ -42,7 +42,7 @@
     }
 }
 
-.dm-c-tooltip::after {
+.im-c-tooltip::after {
     content: "";
     position: absolute;
     box-sizing: border-box;
@@ -56,65 +56,65 @@
 // 2. Elements
 
 // 3. Modifiers
-.dm-c-tooltip--is-visible {
+.im-c-tooltip--is-visible {
     opacity: 1;
     visibility: visible;
     pointer-events: auto;
 }
 
 // Prevent tooltip from breaking page width when it doesnt have a position
-.dm-c-tooltip--hidden {
+.im-c-tooltip--hidden {
     width: 0;
     overflow: hidden;
 }
 
 // Left and right position
-.dm-c-tooltip--left {
+.im-c-tooltip--left {
     top: 50%;
     transform: translateY(-50%);
     left: auto;
     right: calc(100% + var(--tooltip-offset));
 }
 
-.dm-c-tooltip--left::after {
+.im-c-tooltip--left::after {
     top: 50%;
     transform: translateY(-50%) rotate(45deg);
     right: calc((var(--tooltip-arrow-size) / 2) * -1);
 }
 
-.dm-c-tooltip--right {
+.im-c-tooltip--right {
     top: 50%;
     transform: translateY(-50%);
     right: auto;
     left: calc(100% + var(--tooltip-offset));
 }
 
-.dm-c-tooltip--right::after {
+.im-c-tooltip--right::after {
     top: 50%;
     transform: translateY(-50%) rotate(45deg);
     left: calc((var(--tooltip-arrow-size) / 2) * -1);
 }
 
 // Top and bottom position
-.dm-c-tooltip--bottom {
+.im-c-tooltip--bottom {
     top: calc(100% + var(--tooltip-offset));
     left: 50%;
     transform: translateX(-50%);
 }
 
-.dm-c-tooltip--bottom::after {
+.im-c-tooltip--bottom::after {
     left: 50%;
     transform: translateX(-50%) rotate(45deg);
     top: calc((var(--tooltip-arrow-size) / 2) * -1);
 }
 
-.dm-c-tooltip--top {
+.im-c-tooltip--top {
     bottom: calc(100% + var(--tooltip-offset));
     left: 50%;
     transform: translateX(-50%);
 }
 
-.dm-c-tooltip--top::after {
+.im-c-tooltip--top::after {
     left: 50%;
     transform: translateX(-50%) rotate(45deg);
     bottom: calc((var(--tooltip-arrow-size) / 2) * -1);

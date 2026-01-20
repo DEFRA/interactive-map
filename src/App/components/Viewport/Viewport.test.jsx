@@ -79,10 +79,10 @@ describe('Viewport', () => {
 
   const renderViewport = () => {
     const { container, rerender, unmount } = render(<Viewport keyboardHintPortalRef={keyboardHintPortalRef} />)
-    const viewport = container.querySelector('.dm-c-viewport')
-    const mapContainer = container.querySelector('.dm-c-viewport__map-container')
-    const safeZone = container.querySelector('.dm-c-viewport__safezone')
-    const keyboardHint = keyboardHintPortalRef.current.querySelector('.dm-c-viewport__keyboard-hint')
+    const viewport = container.querySelector('.im-c-viewport')
+    const mapContainer = container.querySelector('.im-c-viewport__map-container')
+    const safeZone = container.querySelector('.im-c-viewport__safezone')
+    const keyboardHint = keyboardHintPortalRef.current.querySelector('.im-c-viewport__keyboard-hint')
     const crossHair = container.querySelector('[data-testid="cross-hair"]')
     const markers = container.querySelector('[data-testid="markers"]')
     return { viewport, mapContainer, safeZone, keyboardHint, crossHair, markers, rerender, unmount }
@@ -100,7 +100,7 @@ describe('Viewport', () => {
   it('renders viewport with correct id and class based on mapSize', () => {
     const { viewport } = renderViewport()
     expect(viewport.id).toBe('test-map-viewport')
-    expect(viewport).toHaveClass('dm-c-viewport--medium')
+    expect(viewport).toHaveClass('im-c-viewport--medium')
   })
 
   it('renders keyboard hint when showHint is true', () => {
@@ -154,8 +154,8 @@ describe('Viewport', () => {
       safeZoneInset: {}
     })
     const { unmount } = renderViewport()
-    expect(mainEl.classList.contains('dm-o-app__main--keyboard-hint-visible')).toBe(true)
+    expect(mainEl.classList.contains('im-o-app__main--keyboard-hint-visible')).toBe(true)
     unmount()
-    expect(mainEl.classList.contains('dm-o-app__main--keyboard-hint-visible')).toBe(false)
+    expect(mainEl.classList.contains('im-o-app__main--keyboard-hint-visible')).toBe(false)
   })
 })

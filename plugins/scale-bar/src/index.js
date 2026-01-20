@@ -7,7 +7,7 @@ export default function createPlugin ({ manifest, units = 'metric' } = {}) {
     manifest,
     units,
     load: async () => {
-      const module = (await import(/* webpackChunkName: "dm-scale-bar-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-scale-bar-plugin" */ './manifest.js')).manifest
       return module
     }
   }

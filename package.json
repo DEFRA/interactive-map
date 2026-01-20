@@ -1,5 +1,5 @@
 {
-  "name": "@defra/defra-map",
+  "name": "@defra/interactive-map",
   "version": "1.0.0-alpha.1",
   "description": "An accessible map component",
   "main": "dist/umd/index.js",

@@ -18,13 +18,13 @@ export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => 
   }
 
   return (
-    <div className='dm-c-map-styles'>
-      <div className='dm-c-map-styles__group'>
-        <div className='dm-c-map-styles__inner'>
+    <div className='im-c-map-styles'>
+      <div className='im-c-map-styles__group'>
+        <div className='im-c-map-styles__inner'>
           {mapStyles.filter(mapStyle => mapStyle.url).map(mapStyle => (
-            <div className='dm-c-map-styles__item' key={mapStyle.id}>
-              <button className='dm-c-map-styles__button' aria-pressed={mapStyle.id === currentMapStyle.id} onClick={() => handleMapStyleClick(mapStyle)}>
-                <div className='dm-c-map-styles__image'>
+            <div className='im-c-map-styles__item' key={mapStyle.id}>
+              <button className='im-c-map-styles__button' aria-pressed={mapStyle.id === currentMapStyle.id} onClick={() => handleMapStyleClick(mapStyle)}>
+                <div className='im-c-map-styles__image'>
                   <img src={mapStyle.thumbnail || undefined} height='60' width='60' />
                 </div>
                 {mapStyle.label}
@@ -34,15 +34,15 @@ export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => 
         </div>
       </div>
       {supportsMapSizes && (
-        <div className='dm-c-map-styles__group'>
-          <h3 className='dm-c-map-styles__heading' id='map-text-sizes'>Text size</h3>
-          <div className='dm-c-map-styles__inner'>
+        <div className='im-c-map-styles__group'>
+          <h3 className='im-c-map-styles__heading' id='map-text-sizes'>Text size</h3>
+          <div className='im-c-map-styles__inner'>
             {['small', 'medium', 'large'].map(size => (
-              <div className='dm-c-map-styles__item' key={size}>
-                <button className='dm-c-map-styles__button' onClick={() => handleMapSizeClick(size)} aria-pressed={size === currentMapSize}>
-                  <div className='dm-c-map-styles__image'>
+              <div className='im-c-map-styles__item' key={size}>
+                <button className='im-c-map-styles__button' onClick={() => handleMapSizeClick(size)} aria-pressed={size === currentMapSize}>
+                  <div className='im-c-map-styles__image'>
                     <svg width='60' height='60' viewBox='0 0 60 60' fillRule='evenodd'>
-                      <rect className='dm-c-map-styles__image-bg' width='100%' height='100%' />
+                      <rect className='im-c-map-styles__image-bg' width='100%' height='100%' />
                       <g style={{ transform: `scale(${scaleFactor[size]})`, transformOrigin: '8px 52px' }}>
                         <path d={textSizeSvgPath} />
                       </g>

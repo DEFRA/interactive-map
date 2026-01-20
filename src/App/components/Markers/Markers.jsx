@@ -23,19 +23,19 @@ export const Markers = () => {
           key={marker.id}
           ref={markerRef(marker.id)} // Single callback ref, just like useCrossHair
           id={`${id}-marker-${marker.id}`}
-          className={`dm-c-marker dm-c-marker--${marker.markerShape || stringToKebab(markerShape)}`}
+          className={`im-c-marker im-c-marker--${marker.markerShape || stringToKebab(markerShape)}`}
           width='38'
           height='38'
           viewBox='0 0 38 38'
           style={{ display: marker.isVisible ? 'block' : 'none' }}
         >
           <path
-            className='dm-c-marker__background'
+            className='im-c-marker__background'
             d={defaultSvgPaths.backgroundPath}
             fill={getValueForStyle(marker.color || markerColor, mapStyle.id)}
           />
           <path
-            className='dm-c-marker__graphic'
+            className='im-c-marker__graphic'
             d={defaultSvgPaths.graphicPath}
           />
         </svg>

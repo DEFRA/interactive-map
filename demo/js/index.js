@@ -1,4 +1,4 @@
-import DefraMap from '../../src/index.js'
+import InteractiveMap from '../../src/index.js'
 import { openMapStyles, vtsMapStyles3857 } from './mapStyles.js'
 import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, transformDataRequest } from './auth.js'
@@ -39,7 +39,7 @@ let framePlugin = createFramePlugin({
 	aspectRatio: 1.5
 })
 
-var defraMap = new DefraMap('map', {
+var interactiveMap = new InteractiveMap('map', {
 	behaviour: 'hybrid',
 	mapProvider: maplibreProvider(),
 	reverseGeocodeProvider: openNamesProvider({
@@ -149,37 +149,37 @@ var defraMap = new DefraMap('map', {
 	// search
 })
 
-defraMap.on('map:ready', function (e) {
-	// defraMap.setMode('draw')
+interactiveMap.on('map:ready', function (e) {
+	// interactiveMap.setMode('draw')
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
 })
 
-defraMap.on('draw:ready', function () {
+interactiveMap.on('draw:ready', function () {
 	drawPlugin.newPolygon('test')
 	// drawPlugin.addFeature({ id: 'test1234', type: 'Feature', geometry: { coordinates: [[[-2.9406643378873127,54.918060570259456],[-2.9092219779267054,54.91564249172612],[-2.904350626383433,54.90329530000005],[-2.909664828067463,54.89540129642464],[-2.9225074821353587,54.88979816151294],[-2.937121536764323,54.88826989853317],[-2.95682836800691,54.88916139231736],[-2.965463945742613,54.898966521920045],[-2.966349646023133,54.910805898763385],[-2.9406643378873127,54.918060570259456]]], type: 'Polygon' }})
 	// drawPlugin.editFeature('test1234')
 })
 
-defraMap.on('interact:done', function (e) {
+interactiveMap.on('interact:done', function (e) {
 	console.log('interact:done', e)
 })
 
-defraMap.on('interact:cancel', function (e) {
+interactiveMap.on('interact:cancel', function (e) {
 	console.log('interact:cancel', e)
 })
 
-defraMap.on('interact:selectionchange', function (e) {
+interactiveMap.on('interact:selectionchange', function (e) {
 	console.log('interact:selectionchange', e)
 })
 
-defraMap.on('interact:markerchange', function (e) {
+interactiveMap.on('interact:markerchange', function (e) {
 	console.log('interact:markerchange', e)
 })
 
 // Update selected feature
-defraMap.on('search:match', function (e) {
+interactiveMap.on('search:match', function (e) {
 	if (e.type !== 'parcel') {
 		return
 	}
@@ -191,12 +191,12 @@ defraMap.on('search:match', function (e) {
 })
 
 // Hide selected feature
-defraMap.on('search:clear', function (e) {
+interactiveMap.on('search:clear', function (e) {
 	// console.log('Search clear')
 })
 
 // Frame events
-defraMap.on('frame:done', function (e) {
+interactiveMap.on('frame:done', function (e) {
 	console.log('frame:done')
 	drawPlugin.addFeature(e)
 	setTimeout(() => {
@@ -204,7 +204,7 @@ defraMap.on('frame:done', function (e) {
 	}, 3000)
 })
 
-defraMap.on('frame:cancel', function (e) {
+interactiveMap.on('frame:cancel', function (e) {
 	console.log('frame:cancel')
 	console.log(e)
 })

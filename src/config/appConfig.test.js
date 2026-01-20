@@ -10,7 +10,7 @@ describe('appConfig', () => {
   it('renders KeyboardHelp panel', () => {
     const panel = appConfig.panels.find(p => p.id === 'keyboardHelp')
     const { container } = render(panel.render())
-    expect(container.querySelector('.dm-c-keyboard-help')).toBeInTheDocument()
+    expect(container.querySelector('.im-c-keyboard-help')).toBeInTheDocument()
   })
 
   it('evaluates dynamic button properties', () => {

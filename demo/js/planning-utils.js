@@ -1,7 +1,7 @@
-const hideMenu = function (defraMap) {
+const hideMenu = function (interactiveMap) {
   var menu = document.querySelector('#map-panel-menu')
   if (menu?.getAttribute('aria-modal') === 'true') {
-    defraMap.hidePanel('menu')
+    interactiveMap.hidePanel('menu')
   }
 }
 

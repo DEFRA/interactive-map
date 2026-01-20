@@ -1,3 +1,3 @@
-import DefraMap from './DefraMap/DefraMap.js'
+import InteractiveMap from './InteractiveMap/InteractiveMap.js'
 
-export default DefraMap
+export default InteractiveMap

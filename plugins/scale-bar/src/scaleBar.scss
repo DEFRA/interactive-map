@@ -4,7 +4,7 @@
 
 // 1. Base styles
 
-.dm-c-scale-bar {
+.im-c-scale-bar {
     position: relative;
     margin-left: auto;
     padding-bottom: 5px;
@@ -14,7 +14,7 @@
     width: 100px;
 }
 
-.dm-c-scale-bar__label {
+.im-c-scale-bar__label {
     text-shadow:
         -1px -1px 0 var(--map-overlay-halo-color),
         1px -1px 0 var(--map-overlay-halo-color),
@@ -22,7 +22,7 @@
         1px  1px 0 var(--map-overlay-halo-color);
 }
 
-.dm-c-scale-bar::after {
+.im-c-scale-bar::after {
     content: '';
     position: absolute;
     bottom: 0;

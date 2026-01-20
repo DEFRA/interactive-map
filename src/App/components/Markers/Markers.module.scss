@@ -3,7 +3,7 @@
 // ===================================================
 
 // 1. Base styles
-.dm-c-marker {
+.im-c-marker {
   position: absolute;
   left: 0;
   top: 0;
@@ -12,16 +12,16 @@
 }
 
 // 2. Elements
-.dm-c-marker__background {
+.im-c-marker__background {
   // stroke: var(--map-overlay-halo-color);
   // stroke-width: 1;
 }
 
-.dm-c-marker__graphic {
+.im-c-marker__graphic {
   fill: var(--map-overlay-halo-color);
 }
 
 // 3. Modifiers
-.dm-c-marker--pin .dm-c-marker__graphic {
+.im-c-marker--pin .im-c-marker__graphic {
   filter: opacity(50%) brightness(0.25);
 }

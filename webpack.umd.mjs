@@ -119,7 +119,7 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 // === All builds ===
 const ALL_BUILDS = [
   // Core UMD
-  { entryPath: './src/index.umd.js', libraryPath: 'DefraMap', outDir: 'dist/umd', isCore: true, externalPreact: false },
+  { entryPath: './src/index.umd.js', libraryPath: 'InteractiveMap', outDir: 'dist/umd', isCore: true, externalPreact: false },
 
   // Providers
   { entryPath: './providers/maplibre/src/index.js', libraryPath: 'maplibreProvider', outDir: 'providers/maplibre/dist/umd' },

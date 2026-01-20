@@ -30,10 +30,10 @@ export const MapButton = ({
   const { buttonRefs } = useApp()
 
   const buttonClassNames = [
-    'dm-c-map-button',
-    buttonId && `dm-c-map-button--${stringToKebab(buttonId)}`,
-    variant && `dm-c-map-button--${variant}`,
-    showLabel && 'dm-c-map-button--with-label'
+    'im-c-map-button',
+    buttonId && `im-c-map-button--${stringToKebab(buttonId)}`,
+    variant && `im-c-map-button--${variant}`,
+    showLabel && 'im-c-map-button--with-label'
   ].filter(Boolean).join(' ')
 
   const Element = href ? 'a' : 'button'
@@ -72,11 +72,11 @@ export const MapButton = ({
   )
 
   const wrapperClassNames = [
-    'dm-c-button-wrapper',
-    showLabel && ' dm-c-button-wrapper--wide',
-    groupStart && 'dm-c-button-wrapper--group-start',
-    groupMiddle && 'dm-c-button-wrapper--group-middle',
-    groupEnd && 'dm-c-button-wrapper--group-end'
+    'im-c-button-wrapper',
+    showLabel && ' im-c-button-wrapper--wide',
+    groupStart && 'im-c-button-wrapper--group-start',
+    groupMiddle && 'im-c-button-wrapper--group-middle',
+    groupEnd && 'im-c-button-wrapper--group-end'
   ].filter(Boolean).join(' ')
 
   return (

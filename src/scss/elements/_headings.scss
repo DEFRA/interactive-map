@@ -1,22 +1,22 @@
-%dm-e-heading {
+%im-e-heading {
     margin: 0;
     font-weight: 600;
 }
 
-.dm-e-heading-l {
-  @extend %dm-e-heading;
+.im-e-heading-l {
+  @extend %im-e-heading;
   font-size: 1.5rem;
   line-height: 1.25;
 }
 
-.dm-e-heading-m {
-  @extend %dm-e-heading;
+.im-e-heading-m {
+  @extend %im-e-heading;
   font-size: 1.25rem;
   line-height: 1.25;
 }
 
-.dm-e-heading-s {
-  @extend %dm-e-heading;
+.im-e-heading-s {
+  @extend %im-e-heading;
   font-size: 1rem;
   line-height: 1.25;
 }

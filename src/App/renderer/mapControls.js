@@ -43,7 +43,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
       if (control.html) {
         element = (
           <div
-            className='dm-c-control'
+            className='im-c-control'
             key={control.id}
             dangerouslySetInnerHTML={{ __html: evaluateProp(control.html, pluginId) }}
           />

@@ -1,4 +1,4 @@
-import DefraMap from '../../src/index.js'
+import InteractiveMap from '../../src/index.js'
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
@@ -72,7 +72,7 @@ const framePlugin = createFramePlugin({
 	aspectRatio: 1.5
 })
 
-const defraMap = new DefraMap('map', {
+const interactiveMap = new InteractiveMap('map', {
 	behaviour: 'inline',
 	mapProvider: esriProvider({
 		setupConfig: setupEsriConfig
@@ -131,8 +131,8 @@ const defraMap = new DefraMap('map', {
 	// search
 })
 
-defraMap.on('map:ready', function (e) {
-	defraMap.addButton('menu', {
+interactiveMap.on('map:ready', function (e) {
+	interactiveMap.addButton('menu', {
 		label: 'Menu',
 		panelId: 'menu',
 		iconSvgContent: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
@@ -140,7 +140,7 @@ defraMap.on('map:ready', function (e) {
 		tablet: { slot: 'top-left', showLabel: true },
 		desktop: { slot: 'top-left', showLabel: true }
 	})
-	defraMap.addButton('key', {
+	interactiveMap.addButton('key', {
 		label: 'Key',
 		panelId: 'key',
 		iconSvgContent: '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
@@ -148,14 +148,14 @@ defraMap.on('map:ready', function (e) {
 		tablet: { slot: 'top-left', showLabel: true },
 		desktop: { slot: 'top-left', showLabel: true }
 	})
-	defraMap.addPanel('menu', {
+	interactiveMap.addPanel('menu', {
 		label: 'Menu',
 		html: menuHTML,
 		mobile: { slot: 'side', modal: true, initiallyOpen: true },
 		tablet: { slot: 'side', width: '260px', initiallyOpen: true },
 		desktop: { slot: 'side', width: '280px', initiallyOpen: true }
 	})
-	defraMap.addPanel('key', {
+	interactiveMap.addPanel('key', {
 		label: 'Key',
 		html: '<p>Key</p>',
 		mobile: { slot: 'bottom', initiallyOpen: false, exclusive: true },
@@ -164,11 +164,11 @@ defraMap.on('map:ready', function (e) {
 	})
 })
 
-defraMap.on('map:exit', function (e) {
+interactiveMap.on('map:exit', function (e) {
 	drawOptions = ['shape', 'square']
 })
 
-defraMap.on('draw:ready', function () {
+interactiveMap.on('draw:ready', function () {
 	// Add a feature if provided
 	if (feature) {
 		drawPlugin.addFeature(feature)
@@ -181,7 +181,7 @@ defraMap.on('draw:ready', function () {
 		if (shapeBtn && shapeBtn.getAttribute('aria-disabled') !== 'true') {
 			toggleButtonState([])
 			drawPlugin.newPolygon('boundary')
-			hideMenu(defraMap)
+			hideMenu(interactiveMap)
 		}
 		// Draw frame
 		const squareBtn = e.target.closest('#squareBtn')
@@ -190,7 +190,7 @@ defraMap.on('draw:ready', function () {
 			framePlugin.addFrame('boundary', {
 				aspectRatio: 1
 			})
-			hideMenu(defraMap)
+			hideMenu(interactiveMap)
 		}
 		// Edit area
 		const editBtn = e.target.closest('#editBtn')
@@ -202,7 +202,7 @@ defraMap.on('draw:ready', function () {
 			} else {
 				drawPlugin.editFeature('boundary')
 			}
-			hideMenu(defraMap)
+			hideMenu(interactiveMap)
 		}
 		// Delete area
 		const deleteBtn = e.target.closest('#deleteBtn')
@@ -210,41 +210,41 @@ defraMap.on('draw:ready', function () {
 			drawPlugin.deleteFeature('boundary')
 			feature = null
 			toggleButtonState(['shape', 'square'])
-			hideMenu(defraMap)
+			hideMenu(interactiveMap)
 		}
 	})
 })
 
-defraMap.on('draw:done', function (e) {
+interactiveMap.on('draw:done', function (e) {
 	console.log('draw:done', e)
 	feature = e.newFeature
 	toggleButtonState(['edit', 'delete'])
 })
 
-defraMap.on('draw:update', function (e) {
+interactiveMap.on('draw:update', function (e) {
 	// console.log('draw:update', e)
 })
 
-defraMap.on('draw:create', function (e) {
+interactiveMap.on('draw:create', function (e) {
 	console.log('draw:create', e)
 })
 
-defraMap.on('draw:cancel', function (e) {
+interactiveMap.on('draw:cancel', function (e) {
 	console.log('draw:cancel', e)
 	toggleButtonState(feature ? ['edit', 'delete'] : ['shape', 'square'])
 })
 
-defraMap.on('draw:delete', function (e) {
+interactiveMap.on('draw:delete', function (e) {
 	// console.log('draw:delete', e)
 })
 
-defraMap.on('frame:done', function (e) {
+interactiveMap.on('frame:done', function (e) {
 	drawPlugin.addFeature(e)
 	feature = e
 	toggleButtonState(['edit', 'delete'])
 })
 
-defraMap.on('frame:cancel', function () {
+interactiveMap.on('frame:cancel', function () {
 	if (feature) {
 		drawPlugin.addFeature(feature)
 	}

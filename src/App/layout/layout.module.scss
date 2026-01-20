@@ -1,11 +1,11 @@
 // ===================================================
-// Object: dm-o-app
+// Object: im-o-app
 // ===================================================
 
 @use '../../scss/tools/index' as tools;
 
 // 1. Base styles
-.dm-o-app {
+.im-o-app {
   position: relative;
   width: 100%;
   height: 100%;
@@ -16,7 +16,7 @@
 }
 
 // 2. Elements
-.dm-o-app__overlay {
+.im-o-app__overlay {
   position: absolute;
   z-index: 1;
   box-sizing: border-box;
@@ -37,7 +37,7 @@
   }
 }
 
-.dm-o-app__side {
+.im-o-app__side {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -46,7 +46,7 @@
   height: 100%;
 }
 
-.dm-o-app__main {
+.im-o-app__main {
   position: relative;
   display: flex;
   flex-direction: column;
@@ -62,7 +62,7 @@
 // Side: Panels only
 // ---------------------------------------------------
 
-.dm-o-app__side .dm-c-panel {
+.im-o-app__side .im-c-panel {
   height: 100%;
 
   @include tools.border-focus-base(
@@ -79,13 +79,13 @@
 // Banner: Panels only
 // ---------------------------------------------------
 
-.dm-o-app__banner {
+.im-o-app__banner {
   display: flex;
   flex-direction: column;
   gap: var(--divider-gap);
 }
 
-.dm-o-app__banner .dm-c-panel:last-child {
+.im-o-app__banner .im-c-panel:last-child {
   margin-bottom: var(--divider-gap);
 }
 
@@ -93,7 +93,7 @@
 // Top: Includes a panel and buttons in colums
 // ---------------------------------------------------
 
-.dm-o-app__top {
+.im-o-app__top {
   display: flex;
   margin-bottom: auto;
   justify-content: space-between;
@@ -102,31 +102,31 @@
   gap: var(--divider-gap);
 }
 
-.dm-o-app__top-col {
+.im-o-app__top-col {
   display: flex;
   flex: 1 1 auto;
   gap: var(--divider-gap);
 }
 
-.dm-o-app__top-col:not(:empty) {
+.im-o-app__top-col:not(:empty) {
   padding-bottom: var(--divider-gap);
 }
 
-.dm-o-app__top-col:first-child,
-.dm-o-app__top-col:last-child {
+.im-o-app__top-col:first-child,
+.im-o-app__top-col:last-child {
   flex: 1 1 calc(var(--button-size) + (var(--primary-gap) * 2));
   max-width: var(--top-col-width, 100%);
 }
 
-.dm-o-app__top-col:first-child {
+.im-o-app__top-col:first-child {
   justify-content: flex-start;
 }
 
-.dm-o-app__top-col:last-child {
+.im-o-app__top-col:last-child {
   justify-content: flex-end;
 }
 
-.dm-o-app__top-col:nth-child(2) {
+.im-o-app__top-col:nth-child(2) {
   justify-content: center;
 }
 
@@ -134,7 +134,7 @@
 // Inset:
 // ---------------------------------------------------
 
-.dm-o-app__inset {
+.im-o-app__inset {
   display: flex;
   flex-direction: column;
   position: absolute;
@@ -142,7 +142,7 @@
   top: var(--inset-offset-top);
 }
 
-.dm-o-app__inset .dm-c-panel {
+.im-o-app__inset .im-c-panel {
   height: 100%;
   max-height: var(--inset-max-height);
 }
@@ -151,7 +151,7 @@
 // Middle:
 // ---------------------------------------------------
 
-.dm-o-app__middle {
+.im-o-app__middle {
   position: absolute;
   top: 0;
   left: 0;
@@ -167,7 +167,7 @@
 // Right: Buttons and inset panel
 // ---------------------------------------------------
 
-.dm-o-app__right {
+.im-o-app__right {
   position: absolute;
   display: flex;
   flex-direction: column;
@@ -176,7 +176,7 @@
   bottom: var(--right-offset-bottom);
 }
 
-.dm-o-app__right-top {
+.im-o-app__right-top {
   display: flex;
   flex-direction: column;
   flex-shrink: 0;
@@ -184,7 +184,7 @@
   gap: var(--divider-gap);
 }
 
-.dm-o-app__right-bottom {
+.im-o-app__right-bottom {
   margin-top: auto;
 }
 
@@ -192,25 +192,25 @@
 // Footer: Logo, scalebar, copyright etc
 // ---------------------------------------------------
 
-.dm-o-app__footer {
+.im-o-app__footer {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   z-index: -2; // Support masking the viewport
 }
 
-.dm-o-app__footer-col {
+.im-o-app__footer-col {
   display: flex;
   flex-direction: column;
   min-width: auto;
 }
 
-.dm-o-app__footer-col:first-child {
+.im-o-app__footer-col:first-child {
   justify-content: flex-start;
   flex-shrink: 0;
 }
 
-.dm-o-app__footer-col:last-child {
+.im-o-app__footer-col:last-child {
   flex: 1 1 auto;
   justify-content: flex-end;
   text-align: right;
@@ -221,7 +221,7 @@
 // Attributions:
 // ---------------------------------------------------
 
-.dm-o-app__attributions:not(:empty) {
+.im-o-app__attributions:not(:empty) {
   display: flex;
   justify-content: flex-end;
   position: relative;
@@ -234,7 +234,7 @@
 // Bottom:
 // ---------------------------------------------------
 
-.dm-o-app__bottom {
+.im-o-app__bottom {
   z-index: 1;
 }
 
@@ -242,13 +242,13 @@
 // Actions:
 // ---------------------------------------------------
 
-.dm-o-app__actions {
+.im-o-app__actions {
   display: flex;
   flex-shrink: 0;
   justify-content: center;
   text-align: center;
 
-  .dm-c-panel__body {
+  .im-c-panel__body {
     overflow: visible;
   }
 }
@@ -257,7 +257,7 @@
 // Modal:
 // ---------------------------------------------------
 
-.dm-o-app .dm-o-app__modal { // Extra specificity required to force absolute position
+.im-o-app .im-o-app__modal { // Extra specificity required to force absolute position
   display: flex;
   position: absolute;
   top: 0;
@@ -266,13 +266,13 @@
   z-index: 99;
 
   // Panel overrides
-  .dm-c-panel {
+  .im-c-panel {
     position: absolute;
     inset: 0 0 auto;
     z-index: 1000;
   }
 
-  .dm-c-panel + .dm-o-app__modal-backdrop {
+  .im-c-panel + .im-o-app__modal-backdrop {
     position: absolute;
     top: 0;
     left: 0;
@@ -283,7 +283,7 @@
     pointer-events: auto;
   }
 
-  .dm-c-panel--side {
+  .im-c-panel--side {
     width: 100%;
     max-width: 80%;
 
@@ -296,14 +296,14 @@
     );
   }
 
-  .dm-c-panel--inset {
+  .im-c-panel--inset {
     top: var(--inset-offset-top);
     left: var(--primary-gap);
     max-width: calc(100% - (var(--primary-gap) * 2));
     max-height: calc(100% - var(--inset-offset-top) - var(--primary-gap));
   }
 
-  .dm-c-panel--middle {
+  .im-c-panel--middle {
     position: relative;
     margin: auto;
     width: 100%;
@@ -311,86 +311,86 @@
     max-height: calc(100% - (var(--primary-gap) * 2));
   }
 
-  .dm-c-panel--bottom {
+  .im-c-panel--bottom {
     top: auto;
     bottom: 0;
     max-height: 85%;
   }
 
-  [class*="dm-c-panel--"][class*="-button"] { // Adjacent to button
+  [class*="im-c-panel--"][class*="-button"] { // Adjacent to button
     inset: var(--modal-inset);
   }
 }
 
 // Mobile and tablet modal banner margin
-.dm-o-app--mobile, .dm-o-app--tablet {
-  .dm-o-app__modal .dm-c-panel--banner {
+.im-o-app--mobile, .im-o-app--tablet {
+  .im-o-app__modal .im-c-panel--banner {
     margin: var(--primary-gap);
   }
 }
 
 // Desktop modal banner margin
-.dm-o-app--desktop .dm-o-app__modal .dm-c-panel--banner {
+.im-o-app--desktop .im-o-app__modal .im-c-panel--banner {
   margin-top: var(--primary-gap);
 }
 
 // 3. Modifiers
 
 // Inline border
-.dm-o-app--inline {
+.im-o-app--inline {
   border: var(--app-border-width) solid var(--app-border-color);
 }
 
 // Hide containers when keyboard hint is visible
-.dm-o-app__main--keyboard-hint-visible {
-  .dm-o-app__top-col,
-  .dm-o-app__right,
-  .dm-o-app__right-bottom {
+.im-o-app__main--keyboard-hint-visible {
+  .im-o-app__top-col,
+  .im-o-app__right,
+  .im-o-app__right-bottom {
     visibility: hidden;
   }
 }
 
 // Avoid refresh jump if layout clacs are not ready
-.dm-o-app__overlay--not-ready {
+.im-o-app__overlay--not-ready {
   visibility: hidden;
   opacity: 0;
 }
 
 // Banner on mobile and tablet
-.dm-o-app--mobile, .dm-o-app--tablet {
-  .dm-o-app__banner {
+.im-o-app--mobile, .im-o-app--tablet {
+  .im-o-app__banner {
     z-index: 9;
   }
 }
 
 // Banner on desktop
-.dm-o-app--desktop .dm-c-panel--banner {
+.im-o-app--desktop .im-c-panel--banner {
   margin-left: auto;
   margin-right: auto;
   max-width: var(--banner-max-desktop-width);
 }
 
 // Actions inset when width is greater
-.dm-o-app--tablet, .dm-o-app--desktop {
-  .dm-o-app__actions {
+.im-o-app--tablet, .im-o-app--desktop {
+  .im-o-app__actions {
     position: absolute;
     width: 100%;
     left: 0;
     bottom: calc(var(--primary-gap) * 2);
     padding-left: var(--offset-left);
     
-    .dm-c-panel {
+    .im-c-panel {
       max-width: var(--action-bar-max-width);
     }
   }
 }
 
 // Bottom panels corners removed on mobile
-.dm-o-app--mobile .dm-o-app__bottom,
-.dm-o-app--mobile .dm-o-app__actions {
+.im-o-app--mobile .im-o-app__bottom,
+.im-o-app--mobile .im-o-app__actions {
   margin: var(--primary-gap) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1);
 
-  .dm-c-panel {
+  .im-c-panel {
     width: 100%;
 
     @include tools.border-focus-corner-override(
@@ -398,13 +398,13 @@
     );
   }
 }
-.dm-o-app--mobile .dm-o-app__bottom .dm-c-panel {
+.im-o-app--mobile .im-o-app__bottom .im-c-panel {
     clip-path: inset(-20px 0px 0px 0px);
 }
 
 // Bottom inset on large devices
-// .dm-o-app--tablet .dm-o-app__bottom,
-// .dm-o-app--desktop .dm-o-app__bottom {
+// .im-o-app--tablet .im-o-app__bottom,
+// .im-o-app--desktop .im-o-app__bottom {
 //   margin-top: var(--primary-gap);
 // }
 
@@ -412,7 +412,7 @@
 
 // 5. Responsive tweaks
 
-.dm-o-app--mobile .dm-o-app__side {
+.im-o-app--mobile .im-o-app__side {
   position: absolute;
   left: 0;
   top: 0;

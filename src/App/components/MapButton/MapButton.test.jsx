@@ -38,7 +38,7 @@ describe('MapButton', () => {
   it('renders button with classes, icon, and label', () => {
     renderButton({ buttonId: 'My Button', variant: 'primary', showLabel: true })
     const button = screen.getByRole('button', { name: 'Label' })
-    expect(button).toHaveClass('dm-c-map-button', 'dm-c-map-button--my-button', 'dm-c-map-button--primary', 'dm-c-map-button--with-label')
+    expect(button).toHaveClass('im-c-map-button', 'im-c-map-button--my-button', 'im-c-map-button--primary', 'im-c-map-button--with-label')
     expect(screen.getByTestId('icon')).toBeInTheDocument()
     expect(screen.getByText('Label')).toBeInTheDocument()
   })
@@ -65,9 +65,9 @@ describe('MapButton', () => {
   })
 
   it.each([
-    ['groupStart', 'dm-c-button-wrapper--group-start'],
-    ['groupMiddle', 'dm-c-button-wrapper--group-middle'],
-    ['groupEnd', 'dm-c-button-wrapper--group-end']
+    ['groupStart', 'im-c-button-wrapper--group-start'],
+    ['groupMiddle', 'im-c-button-wrapper--group-middle'],
+    ['groupEnd', 'im-c-button-wrapper--group-end']
   ])('applies %s class', (prop, className) => {
     const { container } = renderButton({ [prop]: true })
     expect(container.firstChild).toHaveClass(className)

@@ -28,7 +28,7 @@ export default function (config = {}) {
       }
 
       try {
-        const MapProvider = (await import(/* webpackChunkName: "dm-esri-provider" */ './esriProvider.js')).default
+        const MapProvider = (await import(/* webpackChunkName: "im-esri-provider" */ './esriProvider.js')).default
 
         return {
           MapProvider,

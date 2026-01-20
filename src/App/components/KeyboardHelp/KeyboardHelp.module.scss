@@ -5,38 +5,38 @@
 // 1. Base styles
 
 // 2. Elements
-.dm-c-keyboard-help__list {
+.im-c-keyboard-help__list {
     margin: 0;
     color: var(--foreground-color);
 }
 
-.dm-c-keyboard-help__item {
+.im-c-keyboard-help__item {
     display: table;
     padding: 10px 0;
     width: 100%;
     border-top: 1px solid var(--content-border-color);
 }
 
-.dm-c-keyboard-help__group:last-child .dm-c-keyboard-help__item:last-child {
+.im-c-keyboard-help__group:last-child .im-c-keyboard-help__item:last-child {
     padding-bottom: 0;
 }
 
-.dm-c-keyboard-help__title {
+.im-c-keyboard-help__title {
     display: table-cell;
     width: 45%;
 }
 
-.dm-c-keyboard-help__description {
+.im-c-keyboard-help__description {
     display: table-cell;
 }
 
 // 3. Modifiers
-.dm-o-app--mobile .dm-c-keyboard-help__title {
+.im-o-app--mobile .im-c-keyboard-help__title {
     width: 100%;
     display: block;
 }
 
-.dm-o-app--mobile .dm-c-keyboard-help__description {
+.im-o-app--mobile .im-c-keyboard-help__description {
     display: block;
     margin-top: 5px;
 }

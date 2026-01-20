@@ -9,7 +9,7 @@ export default function createPlugin (options = {}) {
     // Fixed props
     id: 'interact',
     load: async () => {
-      const module = (await import(/* webpackChunkName: "dm-interact-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-interact-plugin" */ './manifest.js')).manifest
       return module
     }
   }

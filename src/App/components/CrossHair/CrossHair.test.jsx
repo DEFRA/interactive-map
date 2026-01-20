@@ -26,7 +26,7 @@ describe('CrossHair', () => {
     const svg = renderWith()
     const path = svg.querySelector('path')
 
-    expect(svg).toHaveClass('dm-c-cross-hair')
+    expect(svg).toHaveClass('im-c-cross-hair')
     expect(svg).toHaveStyle({
       position: 'absolute',
       left: 0,

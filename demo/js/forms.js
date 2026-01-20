@@ -1,4 +1,4 @@
-import DefraMap from '../../src/index.js'
+import InteractiveMap from '../../src/index.js'
 import { vtsMapStyles3857 } from './mapStyles.js'
 import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest } from './auth.js'
@@ -21,7 +21,7 @@ var interactPlugin = createInteractPlugin({
 	multiSelect: false
 })
 
-var defraMap = new DefraMap('map', {
+var interactiveMap = new InteractiveMap('map', {
 	behaviour: 'hybrid',
 	mapProvider: maplibreProvider(),
 	reverseGeocodeProvider: openNamesProvider({
@@ -77,7 +77,7 @@ var defraMap = new DefraMap('map', {
 	// search
 })
 
-var defraMap2 = new DefraMap('map2', {
+var defraMap2 = new InteractiveMap('map2', {
 	behaviour: 'inline',
 	mapProvider: maplibreProvider(),
 	reverseGeocodeProvider: openNamesProvider({
@@ -132,8 +132,8 @@ var defraMap2 = new DefraMap('map2', {
 	// search
 })
 
-defraMap.on('map:ready', function (e) {
-	defraMap.addPanel('tooltip', {
+interactiveMap.on('map:ready', function (e) {
+	interactiveMap.addPanel('tooltip', {
 		label: 'How to use the map',
 		html: `
 			<p>Help text...</p>
@@ -150,31 +150,31 @@ defraMap.on('map:ready', function (e) {
 	})
 })
 
-defraMap.on('draw:ready', function () {
+interactiveMap.on('draw:ready', function () {
 	// drawPlugin.newPolygon('test')
 	// drawPlugin.editFeature(featureGeoJSON)
 })
 
-defraMap.on('interact:done', function (e) {
+interactiveMap.on('interact:done', function (e) {
 	console.log('interact:done', e)
 })
 
-defraMap.on('interact:cancel', function (e) {
+interactiveMap.on('interact:cancel', function (e) {
 	console.log('interact:cancel', e)
 })
 
-defraMap.on('interact:selectionchange', function (e) {
+interactiveMap.on('interact:selectionchange', function (e) {
 	console.log('interact:selectionchange', e)
 })
 
-defraMap.on('interact:markerchange', function (e) {
+interactiveMap.on('interact:markerchange', function (e) {
 	console.log('interact:markerchange', e)
 })
 
-defraMap.on('app:panelopened', function (e) {
+interactiveMap.on('app:panelopened', function (e) {
 	console.log('app:panelopened', e)
 })
 
-defraMap.on('app:panelclosed', function (e) {
+interactiveMap.on('app:panelclosed', function (e) {
 	console.log('app:panelclosed', e)
 })
