@@ -91,7 +91,7 @@
     "stylelint": "^16.21.1",
     "stylelint-config-gds": "^2.0.0",
     "stylelint-scss": "^6.12.1",
-    "ts-loader": "^9.5.2",
+    "ts-loader": "^9.5.4",
     "typescript": "^5.8.3",
     "webpack": "^5.100.1",
     "webpack-bundle-analyzer": "^4.10.2",
