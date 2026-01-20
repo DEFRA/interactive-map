@@ -112,7 +112,7 @@
     "@turf/area": "^7.2.0",
     "@turf/boolean-valid": "^7.2.0",
     "@turf/helpers": "^7.2.0",
-    "core-js": "^3.44.0",
+    "core-js": "^3.47.0",
     "govuk-frontend": "^5.13.0",
     "maplibre-gl": "^5.15.0",
     "maplibre-gl-legacy": "npm:maplibre-gl@1.15.3",
