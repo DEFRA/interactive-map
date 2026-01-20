@@ -34,7 +34,7 @@
   "devDependencies": {
     "@babel/core": "^7.26.0",
     "@babel/preset-env": "^7.26.0",
-    "@babel/preset-react": "^7.26.3",
+    "@babel/preset-react": "^7.28.5",
     "@esri/arcgis-rest-request": "^4.2.3",
     "@mapbox/mapbox-gl-draw": "^1.5.0",
     "@testing-library/jest-dom": "^6.6.3",
