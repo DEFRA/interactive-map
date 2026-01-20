@@ -84,7 +84,7 @@
     "@turf/area": "^7.2.0",
     "@turf/bbox-clip": "^7.2.0",
     "@turf/distance": "^7.2.0",
-    "@turf/helpers": "^7.2.0",
+    "@turf/helpers": "^7.3.2",
     "maplibre-gl": "^4.7.1",
     "maplibre-gl-legacy": "npm:maplibre-gl@^1.15.3",
     "preact": "^10.25.2"
