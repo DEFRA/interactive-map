@@ -77,7 +77,7 @@
     "webpack-dev-server": "^5.2.0",
     "webpack-merge": "^6.0.1",
     "webpack-node-externals": "^3.0.0",
-    "webpack-remove-empty-scripts": "^1.0.4"
+    "webpack-remove-empty-scripts": "^1.1.1"
   },
   "dependencies": {
     "@arcgis/core": "^4.31.6",
