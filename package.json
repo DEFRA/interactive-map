@@ -58,7 +58,7 @@
     "jest-canvas-mock": "^2.5.2",
     "jest-environment-jsdom": "^29.7.0",
     "jsdom": "^26.0.0",
-    "magic-comments-loader": "^2.1.4",
+    "magic-comments-loader": "^2.1.6",
     "mini-css-extract-plugin": "^2.9.2",
     "node-cache": "^5.1.2",
     "polylabel": "^2.0.1",
