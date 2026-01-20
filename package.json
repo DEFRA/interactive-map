@@ -38,7 +38,7 @@
     "@esri/arcgis-rest-request": "^4.2.3",
     "@mapbox/mapbox-gl-draw": "^1.5.0",
     "@testing-library/jest-dom": "^6.6.3",
-    "@testing-library/react": "^16.1.0",
+    "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.5.2",
     "@types/jest": "^29.5.14",
     "array-flat-polyfill": "^1.0.1",
