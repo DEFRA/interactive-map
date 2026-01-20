@@ -80,7 +80,7 @@
     "webpack-remove-empty-scripts": "^1.0.4"
   },
   "dependencies": {
-    "@arcgis/core": "^4.31.6",
+    "@arcgis/core": "^4.34.8",
     "@turf/area": "^7.2.0",
     "@turf/bbox-clip": "^7.2.0",
     "@turf/distance": "^7.2.0",
