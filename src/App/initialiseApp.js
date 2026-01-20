@@ -22,7 +22,6 @@ export async function initialiseApp (rootElement, {
 }) {
   const { eventBus } = restProps
 
-
   // Reuse or create mapProvider
   let mapProvider = mapProviderMap.get(rootElement)
   if (!mapProvider) {
@@ -109,14 +108,14 @@ export async function initialiseApp (rootElement, {
     }
   }
 
-  root.render(<App 
-    {...restProps} 
+  root.render(<App
+    {...restProps}
     buttonRegistry={buttonRegistry}
-    panelRegistry={panelRegistry} 
-    controlRegistry={controlRegistry} 
-    pluginRegistry={pluginRegistry} 
-    mapProvider={mapProvider} 
-  />)
+    panelRegistry={panelRegistry}
+    controlRegistry={controlRegistry}
+    pluginRegistry={pluginRegistry}
+    mapProvider={mapProvider}
+              />)
 
   return appInstance
 }

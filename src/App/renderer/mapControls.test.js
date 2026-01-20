@@ -1,6 +1,5 @@
 import React from 'react'
 import { mapControls } from './mapControls.js'
-import { getControlConfig } from '../registry/controlRegistry.js'
 
 jest.mock('../registry/controlRegistry.js')
 jest.mock('../registry/pluginRegistry.js', () => ({
@@ -14,8 +13,6 @@ jest.mock('./pluginWrapper.js', () => ({
 jest.mock('./slots.js', () => ({
   allowedSlots: { control: ['header', 'sidebar'] }
 }))
-
-const mockGetControlConfig = getControlConfig
 
 describe('mapControls', () => {
   let defaultAppState
@@ -36,13 +33,13 @@ describe('mapControls', () => {
   })
 
   it('returns empty array when no controls are defined', () => {
-    defaultAppState.controlConfig =({})
+    defaultAppState.controlConfig = ({})
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result).toEqual([])
   })
 
   it('filters controls by slot and allowedSlots', () => {
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['view'] },
       ctrl2: { id: 'ctrl2', desktop: { slot: 'footer', order: 2 }, includeModes: ['view'] } // filtered out
     })
@@ -51,7 +48,7 @@ describe('mapControls', () => {
   })
 
   it('filters out controls missing breakpoint config', () => {
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', mobile: { slot: 'header', order: 1 }, includeModes: ['view'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
@@ -59,7 +56,7 @@ describe('mapControls', () => {
   })
 
   it('filters by includeModes whitelist', () => {
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['edit'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
@@ -67,7 +64,7 @@ describe('mapControls', () => {
   })
 
   it('filters by excludeModes', () => {
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, excludeModes: ['view'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
@@ -76,7 +73,7 @@ describe('mapControls', () => {
 
   it('maps plugin controls to wrapped component with correct order', () => {
     const renderFn = () => <div>Control</div>
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 5 }, render: renderFn, includeModes: ['view'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
@@ -86,7 +83,7 @@ describe('mapControls', () => {
   })
 
   it('falls back to order 0 if order is missing', () => {
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => <div />, includeModes: ['view'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
@@ -94,7 +91,7 @@ describe('mapControls', () => {
   })
 
   it('renders HTML controls with dangerouslySetInnerHTML', () => {
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrlHtml: { id: 'ctrlHtml', desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
@@ -102,7 +99,7 @@ describe('mapControls', () => {
   })
 
   it('handles plugin-less controls gracefully', () => {
-    defaultAppState.controlConfig =({
+    defaultAppState.controlConfig = ({
       ctrl2: { id: 'ctrl2', desktop: { slot: 'header' }, render: () => <div />, includeModes: ['view'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })

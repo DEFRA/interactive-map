@@ -36,7 +36,7 @@ describe('mapStateSync utilities', () => {
     it('preserves history state and filters params (Line 28)', () => {
       const mockHref = 'http://test.com/path?existing=true'
       setMapStateInURL('map1', { center: [10, 20], zoom: 5 }, mockHref)
-      
+
       // Verification of Line 28: First arg must be global history state
       expect(globalThis.history.replaceState).toHaveBeenCalledWith(
         globalThis.history.state,

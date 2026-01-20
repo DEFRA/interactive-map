@@ -4,7 +4,7 @@ import { EVENTS as events } from '../../config/events.js'
 /**
  * Determines which panels were implicitly closed when opening a new panel
  */
-function getClosedPanelIds(panelId, previousOpenPanels, breakpoint, panelConfig) {
+function getClosedPanelIds (panelId, previousOpenPanels, breakpoint, panelConfig) {
   const bpConfig = panelConfig[panelId]?.[breakpoint]
   const isExclusiveNonModal = !!bpConfig?.exclusive && !bpConfig?.modal
   const isModal = !!bpConfig?.modal
@@ -41,7 +41,7 @@ function getClosedPanelIds(panelId, previousOpenPanels, breakpoint, panelConfig)
 /**
  * Handles side effects for actions
  */
-export function handleActionSideEffects(action, previousState, panelConfig, eventBus) {
+export function handleActionSideEffects (action, previousState, panelConfig, eventBus) {
   const { type, payload } = action
 
   if (type === 'CLOSE_PANEL') {

@@ -22,7 +22,7 @@ export const useInterfaceAPI = () => {
     }
 
     const handleShowPanel = (id) => {
-      dispatch({ type: 'OPEN_PANEL', payload: { panelId: id }})
+      dispatch({ type: 'OPEN_PANEL', payload: { panelId: id } })
     }
 
     const handleHidePanel = (id) => {

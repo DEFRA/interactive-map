@@ -1,16 +1,51 @@
 import { getValueForStyle } from '../../../src/utils/getValueForStyle.js'
 
+// Generate a hash for consistent source ID generation
+const hashString = (str) => {
+  let hash = 0
+  for (let i = 0; i < str.length; i++) {
+    hash = ((hash << 5) - hash) + str.charCodeAt(i)
+    hash = hash & hash
+  }
+  return Math.abs(hash).toString(36)
+}
+
+// Generate a consistent source ID for source sharing
+export const getSourceId = (dataset) => {
+  if (dataset.tiles) {
+    const tilesKey = Array.isArray(dataset.tiles) ? dataset.tiles.join(',') : dataset.tiles
+    return `tiles-${hashString(tilesKey)}`
+  }
+  if (dataset.data) {
+    // URL strings can be shared, inline GeoJSON objects get unique IDs per dataset
+    if (typeof dataset.data === 'string') {
+      return `geojson-${hashString(dataset.data)}`
+    }
+    // Inline GeoJSON - use dataset ID since object identity can't be shared
+    return `geojson-${dataset.id}`
+  }
+  // Fallback to dataset ID
+  return `source-${dataset.id}`
+}
+
 export const addMapLayers = (map, mapStyleId, dataset) => {
-  const sourceId = `${dataset.id}-source`
-  
-  // --- Add vector tile source ---
+  const sourceId = getSourceId(dataset)
+
+  // --- Add source (shared across datasets with same tiles/data URL) ---
   if (!map.getSource(sourceId)) {
-    map.addSource(sourceId, {
-      type: 'vector',
-      tiles: dataset.tiles,
-      minzoom: dataset.minZoom || 0,
-      maxzoom: dataset.maxZoom || 22
-    })
+    if (dataset.tiles) {
+      map.addSource(sourceId, {
+        type: 'vector',
+        tiles: dataset.tiles,
+        minzoom: dataset.minZoom || 0,
+        maxzoom: dataset.maxZoom || 22
+      })
+    } else if (dataset.data) {
+      map.addSource(sourceId, {
+        type: 'geojson',
+        data: dataset.data
+      })
+    }
   }
 
   // --- Determine layer IDs ---

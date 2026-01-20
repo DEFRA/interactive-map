@@ -7,7 +7,7 @@ import { registerPanel as registerPanelFn, addPanel as addPanelFn, removePanel a
 import { registerControl as registerControlFn, addControl as addControlFn } from '../registry/controlRegistry.js'
 
 // Interal helper
-function buildOpenPanels(state, panelId, breakpoint, props) {
+function buildOpenPanels (state, panelId, breakpoint, props) {
   const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
   const bpConfig = panelConfig[panelId]?.[breakpoint]
   const isExclusiveNonModal = !!bpConfig.exclusive && !bpConfig.modal
@@ -81,11 +81,11 @@ const setBreakpoint = (state, payload) => {
     previousOpenPanels: state.openPanels,
     openPanels: lastPanelId
       ? buildOpenPanels(
-          state,
-          lastPanelId,
-          payload.breakpoint,
-          state.openPanels[lastPanelId]?.props || {}
-        )
+        state,
+        lastPanelId,
+        payload.breakpoint,
+        state.openPanels[lastPanelId]?.props || {}
+      )
       : {}
   }
 }
@@ -106,7 +106,6 @@ const openPanel = (state, payload) => {
     openPanels: buildOpenPanels(state, panelId, state.breakpoint, props)
   }
 }
-
 
 const closePanel = (state, payload) => {
   // eslint-disable-next-line no-unused-vars
@@ -250,11 +249,11 @@ const addPanel = (state, payload) => {
     panelConfig: newPanelConfig,
     openPanels: shouldOpen
       ? buildOpenPanels(
-          { ...state, panelConfig: newPanelConfig },
-          id,
-          state.breakpoint,
-          {}
-        )
+        { ...state, panelConfig: newPanelConfig },
+        id,
+        state.breakpoint,
+        {}
+      )
       : state.openPanels
   }
 }

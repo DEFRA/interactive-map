@@ -1,6 +1,5 @@
 import { useEffect } from 'react'
 import { getMediaState } from '../../utils/getMediaState.js'
-import { isHybridFullscreen } from '../../utils/getIsFullscreen.js'
 
 export function useMediaQueryDispatch (dispatch, options) {
   const { appColorScheme, autoColorScheme, behaviour, hybridWidth, maxMobileWidth } = options

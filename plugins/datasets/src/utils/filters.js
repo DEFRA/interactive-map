@@ -1,22 +1,31 @@
 /**
- * Adds an exclusion clause for specified feature IDs to an existing filter.
- * Returns a new MapLibre expression.
+ * Build a filter that excludes specific features by ID property
+ * Coerces values to strings for comparison to handle mixed number/string types
  */
-export const excludeFeatureFromFilter = (filter, featureIds) => {
-  const excludeClause = ['!', ['in', ['get', 'id'], ['literal', featureIds]]]
-
-  if (!filter) {
-    return ['all', excludeClause]
+export const buildExclusionFilter = (originalFilter, idProperty, excludeIds) => {
+  if (!excludeIds || excludeIds.length === 0) {
+    return originalFilter
   }
 
-  if (filter[0] !== 'all') {
-    return ['all', filter, excludeClause]
+  // Coerce both sides to strings to handle number/string type mismatches
+  const stringIds = excludeIds.map(id => String(id))
+  const exclusionFilter = ['!', ['in', ['to-string', ['get', idProperty]], ['literal', stringIds]]]
+
+  if (!originalFilter) {
+    return exclusionFilter
   }
 
-  return [...filter, excludeClause]
+  return ['all', originalFilter, exclusionFilter]
 }
 
 /**
- * Restores the original filter expression.
+ * Apply exclusion filter to a map layer
  */
-export const restoreOriginalFilter = (originalFilter) => originalFilter
+export const applyExclusionFilter = (map, layerId, originalFilter, idProperty, excludeIds) => {
+  if (!map.getLayer(layerId)) {
+    return
+  }
+
+  const filter = buildExclusionFilter(originalFilter, idProperty, excludeIds)
+  map.setFilter(layerId, filter)
+}

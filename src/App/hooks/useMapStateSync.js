@@ -8,7 +8,7 @@ export function useMapStateSync () {
   const { mapProvider } = useConfig()
   const { dispatch } = useMap()
   const { eventBus } = useService()
-  
+
   const previousState = useRef(null)
   const hasInitialized = useRef(false)
 

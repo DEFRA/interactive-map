@@ -8,8 +8,8 @@ describe('getSafeZoneInset', () => {
   afterAll(() => { window.getComputedStyle = originalGetComputedStyle })
 
   beforeEach(() => {
-    mainRef = { current: { offsetWidth: 800, offsetHeight: 600, offsetLeft: 0, offsetLeft: 0 } }
-    insetRef = { current: { offsetWidth: 100, offsetHeight: 50, offsetTop: 50, offsetLeft: 20, offsetLeft: 20 } }
+    mainRef = { current: { offsetWidth: 800, offsetHeight: 600, offsetLeft: 0 } }
+    insetRef = { current: { offsetWidth: 100, offsetHeight: 50, offsetTop: 50, offsetLeft: 20 } }
     rightRef = { current: { offsetWidth: 50, offsetLeft: 0 } }
     footerRef = { current: { offsetTop: 550 } }
     actionsRef = { current: { offsetTop: 520 } }

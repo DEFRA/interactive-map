@@ -1,6 +1,5 @@
 import React from 'react'
 import { mapPanels } from './mapPanels.js'
-import { getPanelConfig } from '../registry/panelRegistry.js'
 import { registeredPlugins } from '../registry/pluginRegistry.js'
 import { withPluginContexts } from './pluginWrapper.js'
 
@@ -33,7 +32,7 @@ describe('mapPanels', () => {
       panelConfig: { p1: baseConfig },
       pluginRegistry: { registeredPlugins: [] }
     }
-    defaultAppState.panelConfig =({ p1: baseConfig })
+    defaultAppState.panelConfig = ({ p1: baseConfig })
   })
 
   it('returns empty array when no panels are open', () => {
@@ -41,23 +40,23 @@ describe('mapPanels', () => {
   })
 
   it('skips panel if config is missing', () => {
-    defaultAppState.panelConfig =({})
+    defaultAppState.panelConfig = ({})
     expect(map()).toEqual([])
   })
 
   it('skips panel if breakpoint config is missing', () => {
-    defaultAppState.panelConfig =({ p1: {} })
+    defaultAppState.panelConfig = ({ p1: {} })
     expect(map()).toEqual([])
   })
 
   it('skips panel if slot does not match requested slot', () => {
-    defaultAppState.panelConfig =({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
     const state = { ...defaultAppState, openPanels: { p1: { props: {} } } }
     expect(map(state, 'sidebar')).toEqual([])
   })
 
   it('skips panel if mode does not match includeModes/excludeModes or slot invalid', () => {
-    defaultAppState.panelConfig =({
+    defaultAppState.panelConfig = ({
       p1: { desktop: { slot: 'invalid' }, includeModes: ['view'] },
       p2: { desktop: { slot: 'header' }, includeModes: ['edit'] },
       p3: { desktop: { slot: 'header' }, excludeModes: ['view'] },
@@ -67,7 +66,7 @@ describe('mapPanels', () => {
   })
 
   it('only allows last opened modal panel', () => {
-    defaultAppState.panelConfig =({
+    defaultAppState.panelConfig = ({
       p1: { desktop: { modal: true }, includeModes: ['view'] },
       p2: { desktop: { modal: true }, includeModes: ['view'] }
     })
@@ -83,7 +82,7 @@ describe('mapPanels', () => {
     const plugin = { id: 'plug1', config: { a: 1 } }
     registeredPlugins.push(plugin)
     defaultAppState.pluginRegistry = { registeredPlugins: [plugin] }
-    defaultAppState.panelConfig =({ p1: { ...baseConfig, render: renderFn } })
+    defaultAppState.panelConfig = ({ p1: { ...baseConfig, render: renderFn } })
     map()
     expect(withPluginContexts).toHaveBeenCalledWith(
       renderFn,
@@ -101,7 +100,7 @@ describe('mapPanels', () => {
   })
 
   it('returns correct structure and defaults', () => {
-    defaultAppState.panelConfig =({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
     const result = map()
     expect(result[0]).toMatchObject({ id: 'p1', type: 'panel', order: 0 })
     expect(result[0].element.props).toMatchObject({ panelId: 'p1', props: { foo: 'bar' } })
@@ -109,7 +108,7 @@ describe('mapPanels', () => {
 
   it('allows panel next to a button slot', () => {
     const panelId = 'p-1'
-    defaultAppState.panelConfig =({
+    defaultAppState.panelConfig = ({
       [panelId]: { desktop: { slot: 'p-1-button' }, includeModes: ['view'] }
     })
     const state = { ...defaultAppState, openPanels: { [panelId]: { props: {} } } }
@@ -118,14 +117,14 @@ describe('mapPanels', () => {
 
   it('handles missing plugin config and default modes properly', () => {
     registeredPlugins.push({ id: 'plug1' })
-    defaultAppState.panelConfig =({
+    defaultAppState.panelConfig = ({
       p1: { desktop: { slot: 'header' }, pluginId: 'plug1' }
     })
     expect(map()).toHaveLength(1)
   })
 
   it('replaces bottom slot with inset on non-mobile breakpoints', () => {
-    defaultAppState.panelConfig =({
+    defaultAppState.panelConfig = ({
       p1: {
         desktop: { slot: 'bottom' },
         includeModes: ['view']

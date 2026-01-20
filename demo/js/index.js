@@ -8,7 +8,7 @@ import openNamesProvider from '/providers/open-names/src/index.js'
 // Plugins
 import useLocationPlugin from '/plugins/use-location/src/index.js'
 import mapStylesPlugin from '/plugins/map-styles/src/index.js'
-import datasetsPlugin from '/plugins/datasets/src/index.js'
+import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import createDrawPlugin from '/plugins/draw-ml/src/index.js'
 import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
@@ -37,6 +37,45 @@ var drawPlugin = createDrawPlugin()
 
 let framePlugin = createFramePlugin({
 	aspectRatio: 1.5
+})
+
+var datasetsPlugin = createDatasetsPlugin({
+	datasets: [{
+		id: 'field-parcels',
+		label: 'Field parcels',
+		filter: [
+			'all',
+			['!=', ['get', 'sbi'], '106223377'],
+			['==', ['get', 'is_dominant_land_cover'], true]
+		],
+		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		sourceLayer: 'field_parcels_filtered',
+		stroke: { outdoor: '#b1b4b6', dark: '#28a197', aerial: 'rgba(40,161,151,0.8)', 'black-and-white': '#28a197' },
+		strokeWidth: 2,
+		// strokeDashArray: [1, 2],
+		fill: 'transparent',
+		symbolDescription: { outdoor: 'turquiose outline' },
+		minZoom: 10,
+		maxZoom: 24,
+		showInKey: true,
+		showInLayers: true
+	},{
+		id: 'linked-parcels',
+		label: 'Existing fields',
+		filter: [
+			'all',
+			['==', ['get', 'sbi'], '106223377'],
+			['==', ['get', 'is_dominant_land_cover'], true]
+		],
+		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		sourceLayer: 'field_parcels_filtered',
+		stroke: '#0000ff',
+		strokeWidth: 2,
+		fill: 'rgba(0,0,255,0.1)',
+		symbolDescription: { outdoor: 'blue outline' },
+		minZoom: 10,
+		maxZoom: 24
+	}]
 })
 
 var interactiveMap = new InteractiveMap('map', {
@@ -90,61 +129,10 @@ var interactiveMap = new InteractiveMap('map', {
 			// isExpanded: true
 		}),
 		useLocationPlugin(),
-		datasetsPlugin({
-			datasets: [{
-				id: 'field-parcels',
-				label: 'Field parcels',
-				filter: [
-					'all',
-					['!=', ['get', 'sbi'], '106223377'],
-					['==', ['get', 'is_dominant_land_cover'], true]
-				],
-				tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-				sourceLayer: 'field_parcels_filtered',
-				stroke: { outdoor: '#b1b4b6', dark: '#28a197', aerial: 'rgba(40,161,151,0.8)', 'black-and-white': '#28a197' },
-				strokeWidth: 2,
-				// strokeDashArray: [1, 2],
-				fill: 'transparent',
-				symbolDescription: { outdoor: 'turquiose outline' },
-				minZoom: 10,
-				maxZoom: 24,
-				showInKey: true,
-				showInLayers: true
-			},{
-				id: 'linked-parcels',
-				label: 'Existing fields',
-				filter: [
-					'all',
-					['==', ['get', 'sbi'], '106223377'],
-					['==', ['get', 'is_dominant_land_cover'], true]
-				],
-				tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-				sourceLayer: 'field_parcels_filtered',
-				stroke: '#0000ff',
-				strokeWidth: 2,
-				fill: 'rgba(0,0,255,0.1)',
-				symbolDescription: { outdoor: 'blue outline' },
-				minZoom: 10,
-				maxZoom: 24
-			},{
-				id: 'hedge-control',
-				label: 'Hedge control',
-				tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-				sourceLayer: 'hedge_control',
-				stroke: '#b58840',
-				strokeWidth: 4,
-				symbolDescription: { outdoor: 'blue outline' },
-				minZoom: 10,
-				maxZoom: 24,
-				visibility: 'hidden',
-				showInLayers: true,
-				showInKey: true,
-				keySymbolShape: 'line'
-			}]
-		}),
-		// interactPlugin,
+		datasetsPlugin,
+		interactPlugin,
 		// framePlugin,
-		drawPlugin
+		// drawPlugin
 	]
 	// search
 })
@@ -153,6 +141,14 @@ interactiveMap.on('map:ready', function (e) {
 	// interactiveMap.setMode('draw')
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
+	// })
+})
+
+interactiveMap.on('datasets:ready', () => {
+	// datasetsPlugin.hideFeatures({
+	// 	featureIds: [1148, 1134],
+	// 	idProperty: 'gid',
+	// 	datasetId: 'field-parcels'
 	// })
 })
 

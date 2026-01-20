@@ -27,7 +27,7 @@ export const getButtonConfig = (buttonConfig, pluginId) => {
 }
 
 // Factory function for backward compatibility during migration
-export function createButtonRegistry() {
+export function createButtonRegistry () {
   let buttonConfig = {}
 
   return {

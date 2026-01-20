@@ -5,6 +5,10 @@ import { Layers } from './panels/Layers.jsx'
 import { Key } from './panels/Key.jsx'
 import { showDataset } from './api/showDataset.js'
 import { hideDataset } from './api/hideDataset.js'
+import { addDataset } from './api/addDataset.js'
+import { removeDataset } from './api/removeDataset.js'
+import { showFeatures } from './api/showFeatures.js'
+import { hideFeatures } from './api/hideFeatures.js'
 
 export const manifest = {
   InitComponent: DatasetsInit,
@@ -102,6 +106,10 @@ export const manifest = {
 
   api: {
     showDataset,
-    hideDataset
+    hideDataset,
+    addDataset,
+    removeDataset,
+    showFeatures,
+    hideFeatures
   }
 }
