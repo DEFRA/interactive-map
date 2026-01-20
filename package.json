@@ -42,7 +42,7 @@
     "@testing-library/user-event": "^14.5.2",
     "@types/jest": "^29.5.14",
     "array-flat-polyfill": "^1.0.1",
-    "babel-jest": "^29.7.0",
+    "babel-jest": "^30.2.0",
     "babel-loader": "^9.2.1",
     "compression-webpack-plugin": "^11.1.0",
     "computed-style-to-inline-style": "^4.0.0",
