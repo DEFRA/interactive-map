@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import { Viewport } from '../components/Viewport/Viewport'
 import { useConfig } from '../store/configContext'
 import { useApp } from '../store/appContext'
@@ -12,7 +12,7 @@ import { SlotRenderer } from '../renderer/SlotRenderer'
 
 export const Layout = () => {
   const { id } = useConfig()
-  const { breakpoint, pluginRegistry, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen } = useApp()
+  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen } = useApp()
   const { mapStyle } = useMap()
 
   useLayoutMeasurements()

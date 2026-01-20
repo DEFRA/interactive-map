@@ -9,7 +9,7 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
   const { breakpoint, pluginRegistry, panelConfig, mode, openPanels } = appState
 
   const openPanelEntries = Object.entries(openPanels)
-  
+
   const modalPanels = openPanelEntries.filter(([panelId]) => {
     const cfg = panelConfig[panelId]?.[breakpoint]
     return cfg?.modal
@@ -86,5 +86,5 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
       )
     }
   })
-  .filter(Boolean)
+    .filter(Boolean)
 }

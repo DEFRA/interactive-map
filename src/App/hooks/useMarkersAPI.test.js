@@ -60,9 +60,9 @@ describe('useMarkers', () => {
   it('returns early when mapProvider is null (line 24)', () => {
     useConfig.mockReturnValue({ mapProvider: null })
     mockMarkers.items = [{ id: 'm1', label: 'Test' }]
-    
+
     const { result } = renderHook(() => useMarkers())
-    
+
     // The markers object should not have the API methods attached
     expect(result.current.markers.add).toBeUndefined()
     expect(result.current.markers.remove).toBeUndefined()

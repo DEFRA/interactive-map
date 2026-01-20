@@ -31,7 +31,7 @@ export const MapProvider = ({ options, children }) => {
 
   // Listen to eventBus and update state
   const { eventBus } = options
-  
+
   useEffect(() => {
     eventBus.on(events.MAP_READY, handleMapReady)
     eventBus.on(events.MAP_INIT_MAP_STYLES, handleInitMapStyles)

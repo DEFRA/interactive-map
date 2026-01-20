@@ -37,7 +37,7 @@ export const removePanel = (currentConfig, id) => {
 export const getPanelConfig = (panelConfig) => panelConfig
 
 // Factory function for backward compatibility during migration
-export function createPanelRegistry() {
+export function createPanelRegistry () {
   let panelConfig = {}
 
   return {

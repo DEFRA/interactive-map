@@ -23,7 +23,7 @@ const mockEventBus = {
 // --------------------------------------------------
 jest.mock('./store/AppProvider.jsx', () => ({
   AppProvider: jest.fn(({ children, options }) => (
-    <div data-testid="app-provider" data-options={JSON.stringify(options)}>
+    <div data-testid='app-provider' data-options={JSON.stringify(options)}>
       {children}
     </div>
   ))
@@ -31,7 +31,7 @@ jest.mock('./store/AppProvider.jsx', () => ({
 
 jest.mock('./store/MapProvider.jsx', () => ({
   MapProvider: jest.fn(({ children, options }) => (
-    <div data-testid="map-provider" data-options={JSON.stringify(options)}>
+    <div data-testid='map-provider' data-options={JSON.stringify(options)}>
       {children}
     </div>
   ))
@@ -39,22 +39,22 @@ jest.mock('./store/MapProvider.jsx', () => ({
 
 jest.mock('./store/ServiceProvider.jsx', () => ({
   ServiceProvider: jest.fn(({ children }) => (
-    <div data-testid="service-provider">{children}</div>
+    <div data-testid='service-provider'>{children}</div>
   ))
 }))
 
 jest.mock('./store/PluginProvider.jsx', () => ({
   PluginProvider: jest.fn(({ children }) => (
-    <div data-testid="plugin-provider">{children}</div>
+    <div data-testid='plugin-provider'>{children}</div>
   ))
 }))
 
 jest.mock('./renderer/PluginInits.jsx', () => ({
-  PluginInits: jest.fn(() => <div data-testid="plugin-inits" />)
+  PluginInits: jest.fn(() => <div data-testid='plugin-inits' />)
 }))
 
 jest.mock('./layout/Layout.jsx', () => ({
-  Layout: jest.fn(() => <div data-testid="layout" />)
+  Layout: jest.fn(() => <div data-testid='layout' />)
 }))
 
 jest.mock('../InteractiveMap/domStateManager.js', () => ({
@@ -112,7 +112,7 @@ describe('App', () => {
     const { rerender } = render(<App eventBus={mockEventBus} />)
 
     // Rerender with different props
-    rerender(<App eventBus={mockEventBus} newProp="test" />)
+    rerender(<App eventBus={mockEventBus} newProp='test' />)
 
     // Should still only be called once due to empty dependency array
     expect(removeLoadingState).toHaveBeenCalledTimes(1)

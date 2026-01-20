@@ -2,6 +2,10 @@ import React from 'react'
 import { renderHook } from '@testing-library/react'
 import { ServiceProvider, ServiceContext } from './ServiceProvider.jsx'
 
+import { createAnnouncer } from '../../services/announcer.js'
+import { reverseGeocode } from '../../services/reverseGeocode.js'
+import { closeApp } from '../../services/closeApp.js'
+
 // Mock external dependencies
 jest.mock('../../services/announcer.js', () => ({
   createAnnouncer: jest.fn(() => jest.fn())
@@ -22,10 +26,6 @@ jest.mock('../store/configContext.js', () => ({
     handleExitClick: jest.fn()
   }))
 }))
-
-import { createAnnouncer } from '../../services/announcer.js'
-import { reverseGeocode } from '../../services/reverseGeocode.js'
-import { closeApp } from '../../services/closeApp.js'
 
 describe('ServiceProvider', () => {
   const mockEventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }

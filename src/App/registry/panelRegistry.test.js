@@ -81,7 +81,7 @@ describe('panelRegistry', () => {
   })
 
   test('removePanel returns immutable config', () => {
-    let config = { panel1: { title: 'A' }, panel2: { title: 'B' } }
+    const config = { panel1: { title: 'A' }, panel2: { title: 'B' } }
     const updatedConfig = removePanel(config, 'panel1')
 
     expect(updatedConfig.panel2).toBeDefined()

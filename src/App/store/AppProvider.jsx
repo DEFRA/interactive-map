@@ -42,12 +42,15 @@ export const AppProvider = ({ options, children }) => {
   useMediaQueryDispatch(rawDispatch, options)
 
   const handleBreakpointChange = breakpointDetector.subscribe((breakpoint) => {
-    dispatch({ type: 'SET_BREAKPOINT', payload: {
-      behaviour: options.behaviour,
-      breakpoint,
-      hybridWidth: options.hybridWidth,
-      maxMobileWidth: options.maxMobileWidth
-    }})
+    dispatch({
+      type: 'SET_BREAKPOINT',
+      payload: {
+        behaviour: options.behaviour,
+        breakpoint,
+        hybridWidth: options.hybridWidth,
+        maxMobileWidth: options.maxMobileWidth
+      }
+    })
   })
 
   const handleInterfaceTypeChange = subscribeToInterfaceChanges((newType) => {

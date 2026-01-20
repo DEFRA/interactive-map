@@ -39,7 +39,6 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
     }
   }, [])
 
-
   const panelClass = [
     'im-c-panel',
     `im-c-panel--${bpConfig.slot}`,

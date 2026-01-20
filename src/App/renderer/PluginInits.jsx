@@ -59,7 +59,7 @@ export const PluginInits = () => {
   return (
     <>
       {pluginRegistry.registeredPlugins.map((plugin, idx) => (
-        <PluginInit 
+        <PluginInit
           key={`init-${plugin.id}-${idx}`}
           plugin={plugin}
           mode={mode}

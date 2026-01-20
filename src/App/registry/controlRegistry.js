@@ -18,7 +18,7 @@ export const addControl = (currentConfig, id, config) => {
 export const getControlConfig = (controlConfig) => controlConfig
 
 // Factory function for backward compatibility during migration
-export function createControlRegistry() {
+export function createControlRegistry () {
   let controlConfig = {}
 
   return {

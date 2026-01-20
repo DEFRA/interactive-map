@@ -12,7 +12,6 @@ import { renderError } from './renderError.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
 import { createInterfaceDetector } from '../utils/detectInterfaceType.js'
 import { createReverseGeocode } from '../services/reverseGeocode.js'
-import eventBus from '../services/eventBus.js'
 
 // --- Mocking Setup ---
 jest.mock('../scss/main.scss', () => ({}))
@@ -83,7 +82,8 @@ describe('InteractiveMap Core Functionality', () => {
 
   it('returns early from constructor if device not supported', () => {
     checkDeviceSupport.mockReturnValue(false)
-    new InteractiveMap('map', { mapProvider: mapProviderMock })
+    const createMap = () => new InteractiveMap('map', { mapProvider: mapProviderMock })
+    expect(createMap).not.toThrow()
     expect(historyManager.register).not.toHaveBeenCalled()
     expect(createBreakpointDetector).not.toHaveBeenCalled()
     expect(createInterfaceDetector).not.toHaveBeenCalled()
@@ -91,12 +91,14 @@ describe('InteractiveMap Core Functionality', () => {
 
   it('registers with historyManager for buttonFirst behaviour', () => {
     checkDeviceSupport.mockReturnValue(true)
-    new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    const createMap = () => new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    expect(createMap).not.toThrow()
     expect(historyManager.register).toHaveBeenCalled()
   })
 
   it('calls breakpoint & interface detectors', () => {
-    new InteractiveMap('map', { mapProvider: mapProviderMock })
+    const createMap = () => new InteractiveMap('map', { mapProvider: mapProviderMock })
+    expect(createMap).not.toThrow()
     expect(createBreakpointDetector).toHaveBeenCalled()
     expect(createInterfaceDetector).toHaveBeenCalled()
   })
@@ -119,9 +121,9 @@ describe('InteractiveMap Core Functionality', () => {
     const loadSpy = jest.spyOn(map, 'loadApp').mockResolvedValue()
     const pushStateSpy = jest.spyOn(history, 'pushState').mockImplementation(() => {})
     const fakeEvent = { currentTarget: { getAttribute: jest.fn().mockReturnValue('/?mv=map') } }
-    
+
     await openButtonCallback(fakeEvent)
-    
+
     expect(loadSpy).toHaveBeenCalled()
     expect(pushStateSpy).toHaveBeenCalledWith({ isBack: true }, '', '/?mv=map')
     loadSpy.mockRestore()
@@ -155,7 +157,8 @@ describe('InteractiveMap Core Functionality', () => {
 
   it('does not call loadApp if shouldLoadComponent returns false', () => {
     shouldLoadComponent.mockReturnValue(false)
-    new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    const createMap = () => new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    expect(createMap).not.toThrow()
     expect(removeLoadingState).toHaveBeenCalled()
   })
 
@@ -163,7 +166,7 @@ describe('InteractiveMap Core Functionality', () => {
     const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
     const failingProvider = { load: jest.fn().mockRejectedValue(new Error('fail')) }
     const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: failingProvider, genericErrorText: 'error' })
-    
+
     await expect(map.loadApp()).rejects.toThrow('fail')
     expect(renderError).toHaveBeenCalledWith(rootEl, 'error')
     consoleErrorSpy.mockRestore()
@@ -172,7 +175,7 @@ describe('InteractiveMap Core Functionality', () => {
   it('does not overwrite eventBus methods when merging appInstance', async () => {
     const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
     const originalOn = map.on
-    
+
     initialiseApp.mockResolvedValue({ _root: {}, on: jest.fn(), off: jest.fn(), emit: jest.fn(), someMethod: jest.fn() })
     await map.loadApp()
 
@@ -200,9 +203,9 @@ describe('InteractiveMap Core Functionality', () => {
     map._root = null
     map.unmount = jest.fn()
     map._openButton = mockButtonInstance
-    
+
     map.removeApp()
-    
+
     expect(map.unmount).not.toHaveBeenCalled()
     expect(updateDOMState).toHaveBeenCalled()
   })
@@ -267,24 +270,24 @@ describe('InteractiveMap Core Functionality', () => {
 
   it('_handleExitClick removes app and calls replaceState', () => {
     const replaceStateSpy = jest.spyOn(history, 'replaceState').mockImplementation(() => {})
-    
-    const map = new InteractiveMap('map', { 
-      behaviour: 'buttonFirst', 
+
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
       mapProvider: mapProviderMock,
       mapViewParamKey: 'mv'
     })
-    
+
     const removeAppSpy = jest.spyOn(map, 'removeApp').mockImplementation(() => {})
-    
+
     map._handleExitClick()
-    
+
     expect(removeAppSpy).toHaveBeenCalled()
     expect(replaceStateSpy).toHaveBeenCalledWith(
-      history.state, 
-      '', 
+      history.state,
+      '',
       expect.any(String)
     )
-    
+
     removeAppSpy.mockRestore()
     replaceStateSpy.mockRestore()
   })

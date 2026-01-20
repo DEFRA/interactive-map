@@ -48,9 +48,9 @@ describe('Actions component', () => {
 
   it('hides the container when all children are hidden', () => {
     render(
-      <Actions slot="actions">
-        <TestChild isHidden={true} data-testid="child1">Child 1</TestChild>
-        <TestChild isHidden={true} data-testid="child2">Child 2</TestChild>
+      <Actions slot='actions'>
+        <TestChild isHidden data-testid='child1'>Child 1</TestChild>
+        <TestChild isHidden data-testid='child2'>Child 2</TestChild>
       </Actions>
     )
     const container = screen.getByTestId('child1').closest('.im-c-actions')
@@ -59,9 +59,9 @@ describe('Actions component', () => {
 
   it('shows the container when at least one child is visible', () => {
     render(
-      <Actions slot="actions">
-        <TestChild isHidden={false} data-testid="child1">Child 1</TestChild>
-        <TestChild isHidden={true} data-testid="child2">Child 2</TestChild>
+      <Actions slot='actions'>
+        <TestChild isHidden={false} data-testid='child1'>Child 1</TestChild>
+        <TestChild isHidden data-testid='child2'>Child 2</TestChild>
       </Actions>
     )
     const container = screen.getByTestId('child1').closest('.im-c-actions')

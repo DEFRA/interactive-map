@@ -1,6 +1,9 @@
 // --- MOCKS ---
 let rafQueue = []
-global.requestAnimationFrame = jest.fn(cb => (rafQueue.push(cb), rafQueue.length))
+global.requestAnimationFrame = jest.fn(cb => {
+  rafQueue.push(cb)
+  return rafQueue.length
+})
 global.cancelAnimationFrame = jest.fn()
 const flushRAF = () => { rafQueue.forEach(cb => cb()); rafQueue = [] }
 
@@ -8,10 +11,10 @@ const mediaListeners = {}
 let mockedQueries = {}
 
 class MockResizeObserver {
-  constructor(callback) { this.callback = callback }
-  observe(el) { MockResizeObserver.instance = this }
-  disconnect() { MockResizeObserver.instance = null }
-  trigger(width, fallback) { 
+  constructor (callback) { this.callback = callback }
+  observe (el) { MockResizeObserver.instance = this }
+  disconnect () { MockResizeObserver.instance = null }
+  trigger (width, fallback) {
     this.callback([fallback ? { contentRect: { width } } : { borderBoxSize: [{ inlineSize: width }], contentRect: { width } }])
   }
 }
@@ -54,7 +57,9 @@ describe('detectBreakpoint', () => {
   it('returns desktop when matchMedia matches desktop', () => {
     window.matchMedia.mockImplementation(q => {
       const mq = mockMatchMedia(q)
-      if (q === '(min-width: 1024px)') mq.matches = true
+      if (q === '(min-width: 1024px)') {
+        mq.matches = true
+      }
       return mq
     })
     const detector = createBreakpointDetector(cfg)

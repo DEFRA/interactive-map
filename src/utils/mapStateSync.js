@@ -16,18 +16,18 @@ const setMapStateInURL = (id, state, currentHref = globalThis.location.href) => 
   const url = new URL(currentHref || 'http://localhost')
   const params = [...new URLSearchParams(url.search)].map(([key, value]) => `${key}=${value}`)
   const newParams = []
-  
+
   if (state.center) {
     newParams.push(`${id}:center=${state.center[0]},${state.center[1]}`)
   }
   if (state.zoom != null) {
     newParams.push(`${id}:zoom=${state.zoom}`)
   }
-  
+
   const filteredParams = params.filter(p => {
     return !newParams.some(np => np.split('=')[0] === p.split('=')[0])
   })
-  
+
   const hash = url.hash || ''
   const newUrl = `${url.origin}${url.pathname}?${[...filteredParams, ...newParams].join('&')}${hash}`
   globalThis.history.replaceState(globalThis.history.state, '', newUrl)

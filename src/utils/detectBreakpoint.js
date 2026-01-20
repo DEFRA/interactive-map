@@ -52,16 +52,24 @@ function createBreakpointDetector ({ maxMobileWidth, minDesktopWidth, containerE
       containerEl.style.containerType = ''
       containerEl.removeAttribute('data-breakpoint')
     }
-  }
-  // Viewport-based fallback
-  else {
+  } else {
+    // Viewport-based fallback
     const mq = {
       mobile: window.matchMedia(`(max-width: ${maxMobileWidth}px)`),
       desktop: window.matchMedia(`(min-width: ${minDesktopWidth}px)`)
     }
 
     const detect = () => {
-      const type = mq.mobile.matches ? 'mobile' : mq.desktop.matches ? 'desktop' : 'tablet'
+      let type
+
+      if (mq.mobile.matches) {
+        type = 'mobile'
+      } else if (mq.desktop.matches) {
+        type = 'desktop'
+      } else {
+        type = 'tablet'
+      }
+
       notifyListeners(type)
     }
 

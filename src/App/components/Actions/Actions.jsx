@@ -9,12 +9,12 @@ export const Actions = ({ slot, children }) => {
 
   // If a panel exists above we need so css adjustment
   const isBottomSlotUsed = Object.keys(openPanels).some(panelId => {
-      return breakpoint === 'mobile' && panelConfig[panelId]?.[breakpoint]?.slot === 'bottom'
+    return breakpoint === 'mobile' && panelConfig[panelId]?.[breakpoint]?.slot === 'bottom'
   })
 
   const className = [
     'im-c-panel',
-    `im-c-actions`,
+    'im-c-actions',
     isBottomSlotUsed && 'im-c-actions--border-top'
   ].filter(Boolean).join(' ')
 

@@ -53,7 +53,7 @@ describe('getIsFullscreen', () => {
     // --- True Cases ---
     // mapOnly and buttonFirst are always fullscreen
     ['mapOnly', false],
-    ['buttonFirst', false],
+    ['buttonFirst', false]
   ])('should return true for behaviour: %s (always fullscreen)', (behaviour, mediaMatches) => {
     window.matchMedia = jest.fn().mockImplementation(() => ({ matches: mediaMatches }))
     const config = { behaviour, hybridWidth: null, maxMobileWidth: 640 }
