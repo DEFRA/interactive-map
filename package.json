@@ -68,7 +68,7 @@
     "compression-webpack-plugin": "^11.1.0",
     "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
-    "dotenv": "^17.2.0",
+    "dotenv": "^17.2.3",
     "event-target-polyfill": "^0.0.4",
     "express-static-gzip": "^3.0.0",
     "geodesy": "^2.4.0",
