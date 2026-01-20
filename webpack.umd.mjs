@@ -127,7 +127,6 @@ const ALL_BUILDS = [
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/scale-bar/dist/umd' },
-  { entryPath: './plugins/zoom-controls/src/index.js', libraryPath: 'zoomControlsPlugin', outDir: 'plugins/zoom-controls/dist/umd' },
   { entryPath: './plugins/use-location/src/index.js', libraryPath: 'drawPolygonMLPlugin', outDir: 'plugins/use-location/dist/umd' },
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },

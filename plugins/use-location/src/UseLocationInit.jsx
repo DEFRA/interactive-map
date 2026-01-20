@@ -1,4 +1,4 @@
-// src/plugins/zoomControls/zoomControlsInit.jsx
+// src/plugins/useLocation/UseLocationInit.jsx
 import { useEffect } from 'react'
 import { attachEvents } from './events.js'
 

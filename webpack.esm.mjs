@@ -112,7 +112,6 @@ const ALL_BUILDS = [
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', outDir: 'plugins/scale-bar/dist/esm' },
-  { entryPath: './plugins/zoom-controls/src/index.js', outDir: 'plugins/zoom-controls/dist/esm' },
   { entryPath: './plugins/use-location/src/index.js', outDir: 'plugins/use-location/dist/esm' },
   { entryPath: './plugins/search/src/index.js', outDir: 'plugins/search/dist/esm' },
   { entryPath: './plugins/interact/src/index.js', outDir: 'plugins/interact/dist/esm' },

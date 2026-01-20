@@ -12,14 +12,13 @@
     "/dist/umd/",
     "/providers/maplibre/dist",
     "/providers/open-names/dist",
-    "/plugins/data-layers-ml/dist",
-    "/plugins/data-ml/dist",
+    "/plugins/datasets/dist",
     "/plugins/interact/dist",
     "/plugins/map-styles/dist",
-    "/plugins/menu-data-layers/dist",
     "/plugins/scale-bar/dist",
     "/plugins/search/dist",
     "/plugins/use-location/dist",
-    "/plugins/zoom-controls/dist"
+    "/plugins/draw-ml/dist",
+    "/plugins/frame/dist"
   ]
 }
