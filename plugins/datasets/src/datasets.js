@@ -1,5 +1,5 @@
 import { handleSetMapStyle } from './handleSetMapStyle.js'
-import { addMapLayers } from './mapLayers.js'
+import { addMapLayers, getSourceId } from './mapLayers.js'
 
 export const createDatasets = ({
   pluginConfig,
@@ -13,10 +13,16 @@ export const createDatasets = ({
   const { datasets } = pluginConfig
 
   const getDatasets = () => pluginStateRef.current.datasets || datasets
+  const getHiddenFeatures = () => pluginStateRef.current.hiddenFeatures || {}
 
   // Initialize all datasets once
   datasets.forEach(dataset => {
     addMapLayers(map, mapStyleId, dataset)
+  })
+
+  // Emit ready event once map has processed the layers
+  map.once('idle', () => {
+    eventBus.emit('datasets:ready')
   })
 
   // Handle style changes
@@ -24,16 +30,20 @@ export const createDatasets = ({
     map,
     events,
     eventBus,
-    getDatasets
+    getDatasets,
+    getHiddenFeatures
   })
 
   return {
     remove() {
       eventBus.off(events.MAP_SET_STYLE, styleHandler)
 
-      // Clean up sources and layers
-      getDatasets().forEach(dataset => {
-        const sourceId = `${dataset.id}-source`
+      const allDatasets = getDatasets()
+      const removedSourceIds = new Set()
+
+      // Clean up layers and sources
+      allDatasets.forEach(dataset => {
+        const sourceId = getSourceId(dataset)
         const fillLayerId = dataset.fill ? dataset.id : null
         const strokeLayerId = dataset.stroke ? (dataset.fill ? `${dataset.id}-stroke` : dataset.id) : null
 
@@ -45,8 +55,10 @@ export const createDatasets = ({
           map.removeLayer(fillLayerId)
         }
 
-        if (map.getSource(sourceId)) {
+        // Only remove each shared source once
+        if (!removedSourceIds.has(sourceId) && map.getSource(sourceId)) {
           map.removeSource(sourceId)
+          removedSourceIds.add(sourceId)
         }
       })
     }

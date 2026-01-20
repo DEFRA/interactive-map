@@ -1,5 +1,6 @@
 const initialState = {
-  datasets: null
+  datasets: null,
+  hiddenFeatures: {} // { [layerId]: { idProperty: string, ids: string[] } }
 }
 
 const setDatasets = (state, payload) => {
@@ -42,11 +43,49 @@ const setDatasetVisibility = (state, payload) => {
   }
 }
 
+const hideFeatures = (state, payload) => {
+  const { layerId, idProperty, featureIds } = payload
+  const existing = state.hiddenFeatures[layerId]
+  const existingIds = existing?.ids || []
+  const newIds = [...new Set([...existingIds, ...featureIds])]
+
+  return {
+    ...state,
+    hiddenFeatures: {
+      ...state.hiddenFeatures,
+      [layerId]: { idProperty, ids: newIds }
+    }
+  }
+}
+
+const showFeatures = (state, payload) => {
+  const { layerId, featureIds } = payload
+  const existing = state.hiddenFeatures[layerId]
+  if (!existing) return state
+
+  const newIds = existing.ids.filter(id => !featureIds.includes(id))
+
+  if (newIds.length === 0) {
+    const { [layerId]: _, ...rest } = state.hiddenFeatures
+    return { ...state, hiddenFeatures: rest }
+  }
+
+  return {
+    ...state,
+    hiddenFeatures: {
+      ...state.hiddenFeatures,
+      [layerId]: { ...existing, ids: newIds }
+    }
+  }
+}
+
 const actions = {
   SET_DATASETS: setDatasets,
   ADD_DATASET: addDataset,
   REMOVE_DATASET: removeDataset,
-  SET_DATASET_VISIBILITY: setDatasetVisibility
+  SET_DATASET_VISIBILITY: setDatasetVisibility,
+  HIDE_FEATURES: hideFeatures,
+  SHOW_FEATURES: showFeatures
 }
 
 export {

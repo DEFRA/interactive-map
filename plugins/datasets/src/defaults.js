@@ -1,7 +1,7 @@
 const datasetDefaults = {
   stroke: '#d4351c',
   strokeWidth: 2,
-  fill: 'rgba(212 53 28, 0.5)',
+  fill: 'transparent',
   symbolDescription: 'red outline',
   minZoom: 6,
   maxZoom: 24,
