@@ -21,10 +21,10 @@
     "type-check": "tsc --noEmit",
     "lint": "npm run lint:js && npm run lint:scss",
     "lint:js": "standard \"src/**/*.{js,jsx,ts,tsx}\"",
-    "lint:scss": "stylelint src/**/*.{css,scss}",
+    "lint:scss": "stylelint \"src/**/*.{css,scss}\"",
     "lint:fix": "npm run lint:js:fix && npm run lint:scss:fix",
     "lint:js:fix": "standard \"src/**/*.{js,jsx,ts,tsx}\" --fix",
-    "lint:scss:fix": "stylelint src/**/*.{css,scss} --fix",
+    "lint:scss:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
     "test": "jest --color --coverage --verbose",
     "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public"
   },
