@@ -86,10 +86,12 @@
     color: var(--background-color);
     background-color: var(--primary-button-color);
     box-shadow: var(--primary-button-box-shadow);
+
     span {
         white-space: nowrap;
-        padding: 0px var(--button-icon-label-offset);
+        padding: 0 var(--button-icon-label-offset);
     }
+
     svg + span {
         padding-left: 0;
     }
@@ -108,10 +110,12 @@
 .im-c-map-button--tertiary {
     border: 1px solid var(--tertiary-button-border-color);
     box-shadow: var(--tertiary-button-box-shadow);
+
     span {
         white-space: nowrap;
-        padding: 0px 5px;
+        padding: 0 5px;
     }
+
     svg + span {
         padding-left: 0;
     }
@@ -126,9 +130,11 @@
     .im-c-button-wrapper--group-middle {
         margin-bottom: calc(-1 * var(--divider-gap));
     }
+
     .im-c-button-wrapper--group-start .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'top');
     }
+
     .im-c-button-wrapper--group-end .im-c-map-button {
         margin-top: 0;
         @include tools.border-focus-corner-override($corners: 'bottom');
@@ -140,16 +146,18 @@
     .im-c-button-wrapper--group-middle {
         margin-right: calc(-1 * var(--divider-gap));
     }
+
     .im-c-button-wrapper--group-start .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'left');
     }
+
     .im-c-button-wrapper--group-end .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'right');
     }
 }
 
 // 4. State styles
-.im-c-map-button[aria-disabled="true"]:not(.im-c-map-button--primary, .im-c-map-button--tertiary) {
+.im-c-map-button[aria-disabled="true"]:not(.im-c-map-button--primary):not(.im-c-map-button--tertiary) {
     svg, span {
         opacity: var(--disabled-button-opacity);
     }

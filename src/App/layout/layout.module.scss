@@ -398,8 +398,9 @@
     );
   }
 }
+
 .im-o-app--mobile .im-o-app__bottom .im-c-panel {
-    clip-path: inset(-20px 0px 0px 0px);
+    clip-path: inset(-20px 0 0 0);
 }
 
 // Bottom inset on large devices
