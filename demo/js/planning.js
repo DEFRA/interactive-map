@@ -222,7 +222,7 @@ interactiveMap.on('draw:done', function (e) {
 })
 
 interactiveMap.on('draw:update', function (e) {
-	// console.log('draw:update', e)
+	console.log('draw:update', e)
 })
 
 interactiveMap.on('draw:create', function (e) {

@@ -1,8 +1,10 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
+import MapboxSnap from 'mapbox-gl-snap/dist/esm/MapboxSnap.js'
 import { DisabledMode } from './modes/disabledMode.js'
 import { EditVertexMode } from './modes/editVertexMode.js'
 import { DrawVertexMode } from './modes/drawVertexMode.js'
 import { createDrawStyles, updateDrawStyles } from './styles.js'
+import { initMapLibreSnap } from './mapboxSnap.js'
 
 /**
  * Creates and manages a MapLibre/Mapbox Draw control instance configured for polygon editing.
@@ -47,6 +49,14 @@ export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus })
 
   // We need a reference to this
   mapProvider.draw = draw
+
+  // --- Initialize MapboxSnap using external module ---
+  initMapLibreSnap(map, draw, {
+    layers: ['OS/TopographicLine/Building Outline'],
+    radius: 15,
+    rules: ['vertex', 'midpoint', 'edge'],
+    // onSnapped: (fc) => console.log('Snapped feature:', fc)
+  })
 
   // --- Update colour scheme ---
   const handleSetMapStyle = (e) => {

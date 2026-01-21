@@ -164,7 +164,6 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	datasetsPlugin.hideDataset('testId')
 	// interactPlugin.selectFeature({
 	// 	idProperty: 'ngc',
 	// 	featureId: 'NY70197424',

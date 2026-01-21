@@ -129,10 +129,10 @@ var interactiveMap = new InteractiveMap('map', {
 			// isExpanded: true
 		}),
 		useLocationPlugin(),
-		datasetsPlugin,
-		interactPlugin,
+		// datasetsPlugin,
+		// interactPlugin,
 		// framePlugin,
-		// drawPlugin
+		drawPlugin
 	]
 	// search
 })

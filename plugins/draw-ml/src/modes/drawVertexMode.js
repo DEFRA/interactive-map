@@ -1,6 +1,14 @@
 import DrawPolygon from '/node_modules/@mapbox/mapbox-gl-draw/src/modes/draw_polygon.js'
 import createVertex from '/node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
 import { isValidClick } from '../utils.js'
+import {
+  getSnapInstance,
+  isSnapActive,
+  isSnapEnabled,
+  triggerSnapAtCenter,
+  createSnappedEvent,
+  createSnappedClickEvent
+} from '../snapHelpers.js'
 
 export const DrawVertexMode = {
   ...DrawPolygon,
@@ -56,6 +64,11 @@ export const DrawVertexMode = {
     if (e.originalEvent.button > 0) {
       return
     }
+    // Check for snap and override lngLat if snapping is enabled
+    const snap = getSnapInstance(this.map)
+    if (isSnapEnabled(state) && isSnapActive(snap)) {
+      e = createSnappedEvent(e, snap)
+    }
     DrawPolygon.onClick.call(this, state, e)
   },
 
@@ -69,7 +82,16 @@ export const DrawVertexMode = {
     if (!isValidClick(coords)) {
       return
     }
-    this._simulateMouse('click', DrawPolygon.onClick, state)
+    // Use snap coordinates if snapping is enabled and active
+    const snap = getSnapInstance(this.map)
+    const snappedEvent = isSnapEnabled(state) && createSnappedClickEvent(this.map, snap)
+
+    if (snappedEvent) {
+      DrawPolygon.onClick.call(this, state, snappedEvent)
+      this._ctx.store.render()
+    } else {
+      this._simulateMouse('click', DrawPolygon.onClick, state)
+    }
   },
 
   dispatchVertexChange(coords) {
@@ -165,6 +187,11 @@ export const DrawVertexMode = {
   onMove(state) {
     if (['touch', 'keyboard'].includes(state.interfaceType)) {
       this._simulateMouse('mousemove', DrawPolygon.onMouseMove, state)
+
+      // Trigger snap detection at center point for touch/keyboard mode
+      if (isSnapEnabled(state)) {
+        triggerSnapAtCenter(getSnapInstance(this.map), this.map)
+      }
     }
   },
 
