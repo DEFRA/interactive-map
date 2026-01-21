@@ -4,6 +4,10 @@ A lightweight, accessible map component for government applications. Built with 
 
 **⚠️ This project is currently in beta and is not yet stable. Documentation and support are not yet available.**
 
+<p align="center">
+  <img src="docs/assets/screens-white.jpg" alt="Screenshots of map component" width="800">
+</p>
+
 ## What is this?
 
 Interactive Map is an open-source mapping solution designed for government services, but available for anyone to use. It provides a core map component that can be extended with plugins to suit your specific needs.
