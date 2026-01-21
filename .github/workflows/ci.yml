@@ -6,8 +6,6 @@ on:
   push:
     branches:
       - main
-      - development
-      - test
     workflow_dispatch:
 jobs:
   build:
@@ -15,32 +13,23 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-      - uses: actions/setup-node@v4
-        with:
-          node-version: '18.x'
-          registry-url: 'https://registry.npmjs.org'
 
-      - run: npm ci
-      - run: npm run lint
-      - name: npm run unit-test
-        run: |
-          npm run unit-test
-          sed -i 's/\/home\/runner\/work\/interactive-map\/interactive-map\//\/github\/workspace\//g' coverage/lcov.info
+      - name: Setup Node.js
+        uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
 
-      - name: sonarcloud
-        uses: sonarsource/sonarqube-scan-action@master
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Linter
+        run: npm run lint
+      
+      - name: Unit tests
+        run: npm run test
+
+      - name: SonarQube Scan
+        uses: SonarSource/sonarqube-scan-action@v6
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        with:
-          args: >
-            -Dsonar.organization=defra
-            -Dsonar.projectKey=DEFRA_interactive-map
-            -Dsonar.sources=src
-            -Dsonar.tests=tests
-            -Dsonar.exclusions=node_modules/**,tests/**,demo/**/*
-            -Dsonar.coverage.exclusion=demo/**/*,tests/**/*
-            -Dsonar.javascript.lcov.reportPaths=coverage/lcov.info
-            -Dsonar.javascript.exclusions=**/node_modules/**,**/_tests_/**
