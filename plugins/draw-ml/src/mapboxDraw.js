@@ -1,5 +1,4 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
-import MapboxSnap from 'mapbox-gl-snap/dist/esm/MapboxSnap.js'
 import { DisabledMode } from './modes/disabledMode.js'
 import { EditVertexMode } from './modes/editVertexMode.js'
 import { DrawVertexMode } from './modes/drawVertexMode.js'
@@ -53,9 +52,8 @@ export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus })
   // --- Initialize MapboxSnap using external module ---
   initMapLibreSnap(map, draw, {
     layers: ['OS/TopographicLine/Building Outline'],
-    radius: 15,
-    rules: ['vertex', 'midpoint', 'edge'],
-    // onSnapped: (fc) => console.log('Snapped feature:', fc)
+    radius: 10,
+    rules: ['vertex', 'edge']
   })
 
   // --- Update colour scheme ---

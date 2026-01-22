@@ -33,13 +33,14 @@ export const EditVertexMode = {
 
   onSetup(options) {
     const state = DirectSelect.onSetup.call(this, options)
-    const { container, featureId, selectedVertexIndex, selectedVertexType, isPanEnabled, deleteVertexButtonId, interfaceType, scale } = options
+    const { container, featureId, selectedVertexIndex, selectedVertexType, isPanEnabled, getSnapEnabled, deleteVertexButtonId, interfaceType, scale } = options
 
     Object.assign(state, {
       container,
       interfaceType,
       deleteVertexButtonId,
       isPanEnabled,
+      getSnapEnabled,
       featureId: state.featureId || featureId,
       selectedVertexIndex: selectedVertexIndex ?? -1,
       selectedVertexType,
@@ -95,7 +96,7 @@ export const EditVertexMode = {
   },
 
   onSelectionChange(state, e) {
-    const { featureId, vertecies, interfaceType } = state
+    const { interfaceType } = state
 
     const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
     const coords = e.features[0].geometry.coordinates.flat(1)
@@ -125,11 +126,8 @@ export const EditVertexMode = {
       return
     }
 
-    const coord = state.vertecies.find(coord => !previousVertecies.has(JSON.stringify(coord)))
     state.selectedVertexIndex = state.vertecies.findIndex(coord => !previousVertecies.has(JSON.stringify(coord)))
     state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
-
-    // this.updateTouchVertexTarget(state, coord ? this.map.project(coord) : null)
   },
 
   onKeydown(state, e) {
@@ -356,11 +354,19 @@ export const EditVertexMode = {
       const snap = getSnapInstance(this.map)
       triggerSnapAtPoint(snap, this.map, e.point)
 
-      // Use snapped coordinates if snap is active
       const snappedLngLat = getSnapLngLat(snap)
       if (snappedLngLat) {
-        // Override the event lngLat with snapped coordinates
-        e = { ...e, lngLat: snappedLngLat }
+        // When snapped, set vertex to absolute snapped position
+        // and update dragMoveLocation to prevent jump on next frame
+        state.dragMoving = true
+        e.originalEvent.stopPropagation()
+        state.feature.updateCoordinate(
+          state.selectedCoordPaths[0],
+          snappedLngLat.lng,
+          snappedLngLat.lat
+        )
+        state.dragMoveLocation = snappedLngLat
+        return
       }
     }
 

@@ -69,7 +69,8 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
         isPanEnabled: appState.interfaceType !== 'keyboard',
         interfaceType: appState.interfaceType,
         scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
-        featureId: newFeature.id
+        featureId: newFeature.id,
+        getSnapEnabled: () => pluginState.snap !== false
       })
     }, 0)
   }

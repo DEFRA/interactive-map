@@ -5,6 +5,8 @@ import {
   getSnapInstance,
   isSnapActive,
   isSnapEnabled,
+  getSnapLngLat,
+  triggerSnapAtPoint,
   triggerSnapAtCenter,
   createSnappedEvent,
   createSnappedClickEvent
@@ -184,13 +186,48 @@ export const DrawVertexMode = {
     }
   },
 
+  onMouseMove(state, e) {
+    // Trigger snap detection at mouse position
+    if (isSnapEnabled(state)) {
+      const snap = getSnapInstance(this.map)
+      triggerSnapAtPoint(snap, this.map, e.point)
+
+      // Use snapped coordinates for rubber band if snap is active
+      const snappedLngLat = getSnapLngLat(snap)
+      if (snappedLngLat) {
+        e = { ...e, lngLat: snappedLngLat }
+      }
+    }
+
+    DrawPolygon.onMouseMove.call(this, state, e)
+  },
+
   onMove(state) {
     if (['touch', 'keyboard'].includes(state.interfaceType)) {
-      this._simulateMouse('mousemove', DrawPolygon.onMouseMove, state)
-
       // Trigger snap detection at center point for touch/keyboard mode
       if (isSnapEnabled(state)) {
         triggerSnapAtCenter(getSnapInstance(this.map), this.map)
+      }
+
+      // Use snapped coordinates if available, otherwise use center
+      const snap = getSnapInstance(this.map)
+      const snappedLngLat = isSnapEnabled(state) && getSnapLngLat(snap)
+
+      if (snappedLngLat) {
+        const point = this.map.project([snappedLngLat.lng, snappedLngLat.lat])
+        DrawPolygon.onMouseMove.call(this, state, {
+          lngLat: snappedLngLat,
+          point,
+          originalEvent: new MouseEvent('mousemove', {
+            clientX: point.x,
+            clientY: point.y,
+            bubbles: true,
+            cancelable: true
+          })
+        })
+        this._ctx.store.render()
+      } else {
+        this._simulateMouse('mousemove', DrawPolygon.onMouseMove, state)
       }
     }
   },

@@ -18,7 +18,8 @@ export const editFeature = ({ appState, appConfig, mapState, pluginState, mapPro
     isPanEnabled: appState.interfaceType !== 'keyboard',
     interfaceType: appState.interfaceType,
     scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
-    featureId
+    featureId,
+    getSnapEnabled: () => pluginState.snap !== false
   })
 
   // Put feature in state

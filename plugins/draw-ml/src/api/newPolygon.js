@@ -17,7 +17,8 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
     vertexMarkerId: `${appConfig.id}-cross-hair`,
     addVertexButtonId: `${appConfig.id}-draw-add-point`,
     interfaceType: appState.interfaceType,
-    featureId
+    featureId,
+    getSnapEnabled: () => pluginState.snap !== false
   })
 
   // Set mode to draw_vertex
