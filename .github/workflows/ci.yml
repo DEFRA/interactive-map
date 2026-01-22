@@ -31,7 +31,6 @@ jobs:
         with:
           path: |
             node_modules/.cache/webpack
-            node_modules/.cache/babel-loader
             node_modules/.cache/terser-webpack-plugin
           key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('webpack.*.mjs', 'babel.config.json') }}
           restore-keys: |

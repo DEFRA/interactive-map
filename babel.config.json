@@ -17,6 +17,5 @@
     "production": {
       "compact": true
     }
-  },
-  "cacheDirectory": true
+  }
 }
