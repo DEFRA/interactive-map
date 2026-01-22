@@ -109,6 +109,7 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', outDir: 'providers/maplibre/dist/esm' },
   { entryPath: './providers/open-names/src/index.js', outDir: 'providers/open-names/dist/esm' },
+  { entryPath: './providers/esri/src/index.js', outDir: 'providers/esri/dist/esm' },
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', outDir: 'plugins/scale-bar/dist/esm' },
