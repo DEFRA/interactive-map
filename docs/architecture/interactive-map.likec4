@@ -182,6 +182,7 @@ views {
     include hostApplication
     include mapLibre
     include esri
+    autoLayout TopBottom 
   }
 
   view containers {
