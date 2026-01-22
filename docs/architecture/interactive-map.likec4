@@ -1,0 +1,217 @@
+// Interactive Map Component - C4 Architecture Diagrams
+
+specification {
+  element actor {
+    style {
+      shape person
+      color amber
+    }
+  }
+  element system {
+    style {
+      color primary
+    }
+  }
+  element container {
+    style {
+      color secondary
+    }
+  }
+  element external {
+    style {
+      color gray
+    }
+  }
+  element plugin {
+    style {
+      color green
+    }
+  }
+}
+
+model {
+  developer = actor 'Developer' {
+    description 'Integrates the Interactive Map into their application'
+  }
+
+  endUser = actor 'End User' {
+    description 'Uses applications built with the Interactive Map'
+  }
+
+  hostApplication = external 'Host Application' {
+    description 'Application integrating the Interactive Map'
+  }
+
+  // Map Providers (external dependencies)
+  mapLibre = external 'MapLibre GL' {
+    description 'Vector tile map engine (recommended)'
+    technology 'JavaScript'
+  }
+
+  esri = external 'Esri ArcGIS' {
+    description 'British National Grid support (experimental)'
+    technology 'JavaScript'
+  }
+
+  // External services used by plugins
+  osNamesApi = external 'OS Names API' {
+    description 'Ordnance Survey place name search'
+    technology 'REST API'
+  }
+
+  interactiveMap = system 'Interactive Map' {
+    description 'A configurable mapping component for DEFRA applications'
+
+    entryPoint = container 'InteractiveMap Class' {
+      description 'Entry point: behaviour modes, history, lazy loading, public API'
+      technology 'JavaScript'
+    }
+
+    reactApp = container 'React Application' {
+      description 'Core app with nested context providers and UI rendering'
+      technology 'React'
+    }
+
+    registries = container 'Registries' {
+      description 'Dynamic UI: buttons, panels, controls, icons, keyboard shortcuts'
+      technology 'JavaScript'
+    }
+
+    services = container 'Services' {
+      description 'Event bus, screen reader announcer, reverse geocode'
+      technology 'JavaScript'
+    }
+
+    stateManagement = container 'State Management' {
+      description 'App and Map reducers with dispatch middleware'
+      technology 'React Context + useReducer'
+    }
+
+    pluginSystem = container 'Plugin System' {
+      description 'Loads optional plugins via config, exposes plugin APIs'
+      technology 'JavaScript'
+    }
+
+    // Internal relationships
+    entryPoint -> reactApp 'initialises with loaded map provider'
+    reactApp -> registries 'renders UI from'
+    reactApp -> services 'uses'
+    reactApp -> stateManagement 'manages state via'
+    reactApp -> pluginSystem 'loads'
+    pluginSystem -> registries 'registers buttons, panels, controls'
+  }
+
+  // Available Plugins (optional, consumer chooses which to include)
+  drawMl = plugin 'Draw Plugin (MapLibre)' {
+    description 'Polygon, line, point drawing tools'
+    technology '@defra/im-draw-ml-plugin'
+  }
+
+  drawEs = plugin 'Draw Plugin (Esri)' {
+    description 'Polygon, line, point drawing tools'
+    technology '@defra/im-draw-es-plugin'
+  }
+
+  datasets = plugin 'Datasets Plugin' {
+    description 'Add and style GeoJSON datasets'
+    technology '@defra/im-datasets-plugin'
+  }
+
+  search = plugin 'Search Plugin' {
+    description 'Place name and postcode search'
+    technology '@defra/im-search-plugin'
+  }
+
+  interact = plugin 'Interact Plugin' {
+    description 'Feature selection and highlighting'
+    technology '@defra/im-interact-plugin'
+  }
+
+  mapStyles = plugin 'Map Styles Plugin' {
+    description 'Switch between map styles (aerial, road, etc.)'
+    technology '@defra/im-map-styles-plugin'
+  }
+
+  scaleBar = plugin 'Scale Bar Plugin' {
+    description 'Display map scale'
+    technology '@defra/im-scale-bar-plugin'
+  }
+
+  useLocation = plugin 'Use Location Plugin' {
+    description 'Geolocation (find my location)'
+    technology '@defra/im-use-location-plugin'
+  }
+
+  frame = plugin 'Frame Plugin' {
+    description 'Bounding box selection'
+    technology '@defra/im-frame-plugin'
+  }
+
+  // External relationships
+  developer -> interactiveMap 'integrates'
+  endUser -> hostApplication 'uses'
+  hostApplication -> interactiveMap 'embeds'
+
+  // Map providers loaded by entry point
+  interactiveMap.entryPoint -> mapLibre 'dynamically loads'
+  interactiveMap.entryPoint -> esri 'dynamically loads'
+
+  // Plugins loaded by plugin system
+  interactiveMap.pluginSystem -> drawMl 'loads'
+  interactiveMap.pluginSystem -> drawEs 'loads'
+  interactiveMap.pluginSystem -> datasets 'loads'
+  interactiveMap.pluginSystem -> search 'loads'
+  interactiveMap.pluginSystem -> interact 'loads'
+  interactiveMap.pluginSystem -> mapStyles 'loads'
+  interactiveMap.pluginSystem -> scaleBar 'loads'
+  interactiveMap.pluginSystem -> useLocation 'loads'
+  interactiveMap.pluginSystem -> frame 'loads'
+
+  // Plugin external dependencies
+  search -> osNamesApi 'queries'
+}
+
+views {
+  view index {
+    title 'System Context'
+    description 'How the Interactive Map fits into the ecosystem'
+
+    include developer
+    include endUser
+    include interactiveMap
+    include hostApplication
+    include mapLibre
+    include esri
+  }
+
+  view containers {
+    title 'Container Diagram'
+    description 'Internal building blocks and data flow'
+
+    include interactiveMap
+    include interactiveMap.*
+    include mapLibre
+    include esri
+
+    autoLayout TopBottom
+  }
+
+  view plugins {
+    title 'Available Plugins'
+    description 'Optional plugins that can be included by consumers'
+
+    include interactiveMap.pluginSystem
+    include drawMl
+    include drawEs
+    include datasets
+    include search
+    include interact
+    include mapStyles
+    include scaleBar
+    include useLocation
+    include frame
+    include osNamesApi
+
+    autoLayout LeftRight
+  }
+}
