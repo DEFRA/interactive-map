@@ -27,7 +27,9 @@ export function isSnapActive(snap) {
  * @returns {{ lng: number, lat: number }|null} Snapped coordinates or null
  */
 export function getSnapLngLat(snap) {
-  if (!isSnapActive(snap)) return null
+  if (!isSnapActive(snap)) {
+    return null
+  }
   return {
     lng: snap.snapCoords[0],
     lat: snap.snapCoords[1]
@@ -40,7 +42,9 @@ export function getSnapLngLat(snap) {
  * @returns {[number, number]|null} Snapped coordinates or null
  */
 export function getSnapCoords(snap) {
-  if (!isSnapActive(snap)) return null
+  if (!isSnapActive(snap)) {
+    return null
+  }
   return [snap.snapCoords[0], snap.snapCoords[1]]
 }
 
@@ -52,7 +56,9 @@ export function getSnapCoords(snap) {
  * @returns {boolean} True if snap was triggered
  */
 export function triggerSnapAtPoint(snap, map, point) {
-  if (!snap || !map) return false
+  if (!snap || !map) {
+    return false
+  }
 
   const lngLat = map.unproject(point)
   snap.snapToClosestPoint({ point, lngLat })
@@ -66,7 +72,9 @@ export function triggerSnapAtPoint(snap, map, point) {
  * @returns {boolean} True if snap was triggered
  */
 export function triggerSnapAtCenter(snap, map) {
-  if (!snap || !map) return false
+  if (!snap || !map) {
+    return false
+  }
 
   const center = map.getCenter()
   const point = map.project(center)
@@ -79,7 +87,9 @@ export function triggerSnapAtCenter(snap, map) {
  * @param {MapboxSnap} snap - Snap instance
  */
 export function clearSnapIndicator(snap) {
-  if (!snap) return
+  if (!snap) {
+    return
+  }
 
   snap.snapStatus = false
   snap.setMapData({ type: 'FeatureCollection', features: [] })
@@ -96,11 +106,11 @@ export function getSnapRadius(snap) {
 
 /**
  * Check if snapping is enabled for a given state
- * @param {object} state - Mode state
+ * @param {object} state - Mode state with optional getSnapEnabled function
  * @returns {boolean} True if snapping is enabled
  */
 export function isSnapEnabled(state) {
-  return state?.enableSnap !== false
+  return state?.getSnapEnabled?.() !== false
 }
 
 /**
@@ -111,7 +121,9 @@ export function isSnapEnabled(state) {
  */
 export function createSnappedEvent(e, snap) {
   const lngLat = getSnapLngLat(snap)
-  if (!lngLat) return e
+  if (!lngLat) {
+    return e
+  }
 
   return {
     ...e,
@@ -127,7 +139,9 @@ export function createSnappedEvent(e, snap) {
  */
 export function createSnappedClickEvent(map, snap) {
   const lngLat = getSnapLngLat(snap)
-  if (!lngLat) return null
+  if (!lngLat) {
+    return null
+  }
 
   const point = map.project([lngLat.lng, lngLat.lat])
   return {
