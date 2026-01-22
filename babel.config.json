@@ -12,5 +12,11 @@
     ["@babel/preset-react", {
       "runtime": "automatic"
     }]
-  ]
+  ],
+  "env": {
+    "production": {
+      "compact": true
+    }
+  },
+  "cacheDirectory": true
 }

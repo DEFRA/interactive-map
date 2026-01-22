@@ -24,6 +24,28 @@ jobs:
         uses: actions/setup-node@v5
         with:
           node-version-file: .nvmrc
+          cache: 'npm'
+
+      - name: Cache webpack and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/webpack
+            node_modules/.cache/babel-loader
+            node_modules/.cache/terser-webpack-plugin
+          key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('webpack.*.mjs', 'babel.config.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-build-
+
+      - name: Cache Jest
+        uses: actions/cache@v4
+        with:
+          path: .jest-cache
+          key: ${{ runner.os }}-jest-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('jest.config.mjs') }}
+          restore-keys: |
+            ${{ runner.os }}-jest-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-jest-
 
       - name: Install dependencies
         run: npm ci

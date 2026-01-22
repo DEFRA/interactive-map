@@ -59,6 +59,15 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
     mode: 'production',
     entry: { [entryName]: entryPath }, // Keep entryName as "index"
     experiments: { outputModule: true },
+
+    parallelism: 100,
+
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [fileURLToPath(import.meta.url)]
+      }
+    },
     output: {
       path: path.resolve(__dirname, outDir, '../css'),
       filename: '../esm/[name].js',

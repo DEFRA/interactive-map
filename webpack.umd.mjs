@@ -52,6 +52,15 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 
     entry: { [entryName]: entryPath },
 
+    parallelism: 100,
+
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [fileURLToPath(import.meta.url)]
+      }
+    },
+
     output: {
       path: path.resolve(__dirname, outDir),
       filename: '[name].js',
