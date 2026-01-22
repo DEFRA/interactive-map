@@ -1,6 +1,6 @@
 {
   "name": "@defra/interactive-map",
-  "version": "0.0.0",
+  "version": "0.0.0-development",
   "description": "An accessible map component",
   "main": "dist/umd/index.js",
   "module": "dist/esm/index.js",
