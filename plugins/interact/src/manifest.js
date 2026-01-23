@@ -1,6 +1,8 @@
 // /plugins/interact/manifest.js
 import { InteractInit } from './InteractInit.jsx'
 import { initialState, actions } from './reducer.js'
+import { enable } from './api/enable.js'
+import { disable } from './api/disable.js'
 import { selectFeature } from './api/selectFeature.js'
 import { unselectFeature } from './api/unselectFeature.js'
 
@@ -74,6 +76,8 @@ export const manifest = {
   }],
 
   api: {
+    enable,
+    disable,
     selectFeature,
     unselectFeature
   }
