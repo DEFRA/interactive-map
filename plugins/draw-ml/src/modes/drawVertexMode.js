@@ -66,10 +66,17 @@ export const DrawVertexMode = {
     if (e.originalEvent.button > 0) {
       return
     }
-    // Check for snap and override lngLat if snapping is enabled
     const snap = getSnapInstance(this.map)
     if (isSnapEnabled(state) && isSnapActive(snap)) {
+      // Use snapped coordinates when snap is enabled and active
       e = createSnappedEvent(e, snap)
+    } else {
+      // When snap is disabled, ensure polygon uses actual click coordinates
+      // (not stale snapped coordinates from previous mouse moves)
+      const coords = state.polygon.coordinates[0]
+      if (coords.length > 0) {
+        coords[coords.length - 1] = [e.lngLat.lng, e.lngLat.lat]
+      }
     }
     DrawPolygon.onClick.call(this, state, e)
   },

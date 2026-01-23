@@ -1,3 +1,5 @@
+import { clearSnapState, getSnapInstance } from './snapHelpers.js'
+
 export function attachEvents ({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus }) {
   const {
     drawDone,
@@ -37,9 +39,36 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   drawCancel.onClick = handleCancel
 
-  // --- Snap
+  // --- Snap toggle with throttle to prevent Safari slowdown
+  let lastToggleTime = 0
+  const THROTTLE_MS = 300
+
   const handleSnap = () => {
+    // Strict throttle - ignore clicks within throttle window
+    const now = Date.now()
+    if (now - lastToggleTime < THROTTLE_MS) {
+      return
+    }
+    lastToggleTime = now
+
+    const newSnapState = !pluginState.snap
     dispatch({ type: 'TOGGLE_SNAP' })
+    mapProvider.snapEnabled = newSnapState
+
+    const snap = getSnapInstance(map)
+    if (snap?.setSnapStatus) {
+      snap.setSnapStatus(newSnapState)
+    }
+
+    // Clear all snap state when disabling - prevents accumulation
+    if (!newSnapState && snap) {
+      clearSnapState(snap)
+      // Hide indicator immediately when disabling (single call, not in RAF)
+      if (map.getLayer('snap-helper-circle')) {
+        map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
+      }
+    }
+    // When enabling, the indicator will show automatically via setMapData patch
   }
   drawSnap.onClick = handleSnap
 
@@ -70,7 +99,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
         interfaceType: appState.interfaceType,
         scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
         featureId: newFeature.id,
-        getSnapEnabled: () => pluginState.snap !== false
+        getSnapEnabled: () => mapProvider.snapEnabled === true
       })
     }, 0)
   }

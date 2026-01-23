@@ -19,7 +19,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginState, mapPro
     interfaceType: appState.interfaceType,
     scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
     featureId,
-    getSnapEnabled: () => pluginState.snap !== false
+    getSnapEnabled: () => mapProvider.snapEnabled === true
   })
 
   // Put feature in state

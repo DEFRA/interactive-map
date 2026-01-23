@@ -18,7 +18,7 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
     addVertexButtonId: `${appConfig.id}-draw-add-point`,
     interfaceType: appState.interfaceType,
     featureId,
-    getSnapEnabled: () => pluginState.snap !== false
+    getSnapEnabled: () => mapProvider.snapEnabled === true
   })
 
   // Set mode to draw_vertex

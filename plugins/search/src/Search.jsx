@@ -81,7 +81,7 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
   }, [isExpanded, interfaceType, areSuggestionsVisible, suggestions])
 
   return (
-    <div className="im-c-search" ref={searchContainerRef} tabIndex="-1" onBlur={events.handleOutside}>
+    <div className="im-c-search" ref={searchContainerRef}>
       {!defaultExpanded && (
         <OpenButton
           id={id}

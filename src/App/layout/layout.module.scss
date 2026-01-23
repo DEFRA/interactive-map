@@ -346,7 +346,8 @@
   .im-o-app__top-col,
   .im-o-app__right,
   .im-o-app__right-bottom {
-    visibility: hidden;
+    opacity: 0;
+    // visibility: hidden; Breaks focus order in Preact
   }
 }
 

@@ -48,10 +48,13 @@ export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus })
 
   // We need a reference to this
   mapProvider.draw = draw
+  // Initialize snap as disabled (matches initialState.snap = false)
+  mapProvider.snapEnabled = false
 
   // --- Initialize MapboxSnap using external module ---
+  // Start with status: false to match initial snap disabled state
   initMapLibreSnap(map, draw, {
-    layers: ['OS/TopographicLine/Building Outline'],
+    layers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
     radius: 10,
     rules: ['vertex', 'edge']
   })

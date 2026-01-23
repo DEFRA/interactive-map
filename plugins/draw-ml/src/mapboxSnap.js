@@ -1,11 +1,31 @@
 import MapboxSnap from 'mapbox-gl-snap/dist/esm/MapboxSnap.js'
-import { lineString } from '@turf/helpers'
+import { polygon, lineString } from '@turf/helpers'
 
 // Default snap indicator colors
 const DEFAULT_COLORS = { vertex: '#f47738', midpoint: '#00703c', edge: '#1d70b8' }
 
-// Store original methods for patching
-let originalMethods = null
+// Store original methods for patching - use a symbol to survive hot reloads
+const ORIGINAL_METHODS_KEY = Symbol.for('mapboxSnapOriginalMethods')
+
+// Get or create original methods storage that survives hot reload
+function getOriginalMethods() {
+  if (!globalThis[ORIGINAL_METHODS_KEY]) {
+    // Only store originals if the prototype hasn't been patched yet
+    // This prevents storing already-patched methods on hot reload
+    if (!MapboxSnap.prototype.__patchedSnapToClosestPoint) {
+      globalThis[ORIGINAL_METHODS_KEY] = {
+        getLines: MapboxSnap.prototype.getLines,
+        getCloseFeatures: MapboxSnap.prototype.getCloseFeatures,
+        searchInVertex: MapboxSnap.prototype.searchInVertex,
+        searchInMidPoint: MapboxSnap.prototype.searchInMidPoint,
+        searchInEdge: MapboxSnap.prototype.searchInEdge,
+        snapToClosestPoint: MapboxSnap.prototype.snapToClosestPoint,
+        changeSnappedPoints: MapboxSnap.prototype.changeSnappedPoints
+      }
+    }
+  }
+  return globalThis[ORIGINAL_METHODS_KEY]
+}
 
 // Current colors
 let colors = { ...DEFAULT_COLORS }
@@ -17,18 +37,58 @@ let colors = { ...DEFAULT_COLORS }
 function applyMapboxSnapPatches(customColors = {}) {
   colors = { ...DEFAULT_COLORS, ...customColors }
 
-  // Store original methods on first call
-  if (!originalMethods) {
-    originalMethods = {
-      getLines: MapboxSnap.prototype.getLines,
-      getCloseFeatures: MapboxSnap.prototype.getCloseFeatures,
-      searchInVertex: MapboxSnap.prototype.searchInVertex,
-      searchInMidPoint: MapboxSnap.prototype.searchInMidPoint,
-      searchInEdge: MapboxSnap.prototype.searchInEdge
+  // Apply patches that don't need originalMethods first (these can run on every call)
+  // These add early-exit checks to reduce Safari overhead
+
+  // Patch setMapData to ensure layer visibility when we have snap data
+  // Only update visibility if snap is actually enabled to prevent accumulating calls
+  if (!MapboxSnap.prototype.__patchedSetMapData) {
+    const originalSetMapData = MapboxSnap.prototype.setMapData
+    if (originalSetMapData) {
+      MapboxSnap.prototype.setMapData = function(data) {
+        // Skip entirely if snap is disabled - prevents unnecessary layer operations
+        if (!this.status) {
+          return
+        }
+        const result = originalSetMapData.call(this, data)
+        // Ensure layer is visible when we have data to show and snap is enabled
+        if (data?.features?.length > 0 && this.map?.getLayer('snap-helper-circle')) {
+          this.map.setLayoutProperty('snap-helper-circle', 'visibility', 'visible')
+        }
+        return result
+      }
+      MapboxSnap.prototype.__patchedSetMapData = true
     }
   }
 
-  // Patch getLines for MultiLineString typo (coodinates -> coordinates)
+  // Patch drawingSnapCheck to skip when snap is disabled
+  if (!MapboxSnap.prototype.__patchedDrawingSnapCheck) {
+    const originalDrawingSnapCheck = MapboxSnap.prototype.drawingSnapCheck
+    if (originalDrawingSnapCheck) {
+      MapboxSnap.prototype.drawingSnapCheck = function() {
+        if (!this.status) return
+        return originalDrawingSnapCheck.call(this)
+      }
+      MapboxSnap.prototype.__patchedDrawingSnapCheck = true
+    }
+  }
+
+  // Completely disable changeSnappedPoints - we handle snap ourselves in drag handlers
+  if (!MapboxSnap.prototype.__patchedChangeSnappedPoints) {
+    MapboxSnap.prototype.changeSnappedPoints = function() {
+      return
+    }
+    MapboxSnap.prototype.__patchedChangeSnappedPoints = true
+  }
+
+  const originalMethods = getOriginalMethods()
+
+  // If we couldn't get original methods (hot reload after patching), remaining patches already applied
+  if (!originalMethods) {
+    return
+  }
+
+  // Patch getLines for MultiPolygon and MultiLineString typo (coodinates -> coordinates)
   if (!MapboxSnap.prototype.__patchedGetLines) {
     MapboxSnap.prototype.getLines = function(feature, mouse, radiusArg) {
       if (!feature.geometry) {
@@ -36,6 +96,11 @@ function applyMapboxSnapPatches(customColors = {}) {
       }
 
       // Fix typo: original uses 'coodinates' instead of 'coordinates'
+      if (feature.geometry.type === 'MultiPolygon') {
+        const coords = feature.geometry.coordinates || []
+        return coords.map(c => polygon(c))
+      }
+
       if (feature.geometry.type === 'MultiLineString') {
         const coords = feature.geometry.coordinates || []
         return coords.map(c => lineString(c))
@@ -49,6 +114,10 @@ function applyMapboxSnapPatches(customColors = {}) {
   // Patch getCloseFeatures to query within radius bbox instead of just point
   if (!MapboxSnap.prototype.__patchedGetCloseFeatures) {
     MapboxSnap.prototype.getCloseFeatures = function(e, radiusInMeters) {
+      // Skip when snap is disabled
+      if (!this.status) {
+        return []
+      }
       const r = this.options.radius || 15
       const bbox = [
         [e.point.x - r, e.point.y - r],
@@ -85,6 +154,29 @@ function applyMapboxSnapPatches(customColors = {}) {
 
     MapboxSnap.prototype.__patchedColors = true
   }
+
+  // Patch snapToClosestPoint to skip when disabled and clean up internal arrays (prevents memory accumulation)
+  if (!MapboxSnap.prototype.__patchedSnapToClosestPoint) {
+    MapboxSnap.prototype.snapToClosestPoint = function(e) {
+      // Skip entirely when snap is disabled
+      if (!this.status) {
+        return
+      }
+
+      const result = originalMethods.snapToClosestPoint.call(this, e)
+
+      // Clean up internal arrays in place to prevent memory accumulation
+      if (this.closeFeatures?.length > 100) {
+        this.closeFeatures.length = 0
+      }
+      if (this.lines?.length > 100) {
+        this.lines.length = 0
+      }
+
+      return result
+    }
+    MapboxSnap.prototype.__patchedSnapToClosestPoint = true
+  }
 }
 
 /**
@@ -110,7 +202,9 @@ function pollUntil(checkFn, onSuccess) {
  * @param {object} source - MapLibre GeoJSON source
  */
 export function patchSourceData(source) {
-  if (!source) return
+  if (!source) {
+    return
+  }
 
   // Only patch if _data doesn't exist or doesn't have valid features array
   if (source._data && Array.isArray(source._data?.features)) {
@@ -146,6 +240,12 @@ export function patchSourceData(source) {
  * @param {object} [snapOptions.colors] - Custom colors { vertex, midpoint, edge }
  */
 export function initMapLibreSnap(map, draw, snapOptions = {}) {
+  // Prevent multiple initializations (causes event listener duplication)
+  if (map._snapInitialized) {
+    return map._snapInstance
+  }
+  map._snapInitialized = true
+
   const {
     layers = [],
     radius = 15,
@@ -170,6 +270,15 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
 
   // Create snap instance once source is available
   function createSnap(source) {
+    // Prevent duplicate creation (race condition between initial poll and style.load)
+    if (map._snapInstance || map._snapCreating) {
+      return map._snapInstance
+    }
+    map._snapCreating = true
+
+    // Clean up any existing layer/source before creating new instance
+    cleanupOldSnap()
+
     patchSourceData(source)
 
     const snap = new MapboxSnap({
@@ -180,17 +289,42 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
       onSnapped
     })
 
+    // Override the status property to prevent library from auto-setting it
+    // The library sets status=true on draw.modechange and draw.selectionchange
+    // We want external control only via setSnapStatus()
+    let controlledStatus = status
+    Object.defineProperty(snap, 'status', {
+      get() {
+        return controlledStatus
+      },
+      set() {
+        // Ignore the library's auto-set attempts - only allow via setSnapStatus()
+      },
+      configurable: true
+    })
+
+    // Provide a method for external control of status
+    snap.setSnapStatus = (value) => {
+      controlledStatus = value
+    }
+
     map._snapInstance = snap
+
     return snap
   }
 
-  // Reinitialize snap after style changes (sources and layers get recreated)
+  // Handle style changes - re-patch source and ensure snap layer exists
   map.on('style.load', () => {
     pollUntil(
       () => map.getSource('mapbox-gl-draw-hot'),
       (source) => {
-        cleanupOldSnap()
-        createSnap(source)
+        patchSourceData(source)
+
+        if (!map._snapInstance) {
+          cleanupOldSnap()
+          createSnap(source)
+        }
+        // Note: If snap instance exists, the library will recreate its layer on next setMapData call
       }
     )
   })
@@ -203,7 +337,9 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   })
 
   map.on('zoomend', () => {
-    if (map.getLayer('snap-helper-circle')) {
+    // Only show indicator if snap is enabled
+    const snap = map._snapInstance
+    if (map.getLayer('snap-helper-circle') && snap?.status) {
       map.setLayoutProperty('snap-helper-circle', 'visibility', 'visible')
     }
   })

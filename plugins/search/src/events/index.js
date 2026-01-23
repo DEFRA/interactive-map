@@ -27,7 +27,9 @@ export function attachEvents(args) {
     ...suggestionHandlers,
 
     handleOutside(e) {
-      if (searchContainerRef.current.contains(e.relatedTarget)) {
+      console.log(searchContainerRef.current)
+      console.log(e)
+      if (searchContainerRef.current.contains(e.relatedTarget || e.target)) {
         return
       }
       dispatch({ type: 'TOGGLE_EXPANDED', payload: false })

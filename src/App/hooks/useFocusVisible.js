@@ -1,8 +1,12 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useApp } from '../store/appContext.js'
 
 export function useFocusVisible () {
   const { interfaceType, layoutRefs } = useApp()
+  const interfaceTypeRef = useRef(interfaceType)
+
+  // Keep ref in sync - synchronous update ensures it's always current
+  interfaceTypeRef.current = interfaceType
 
   useEffect(() => {
     const scope = layoutRefs.appContainerRef.current
@@ -10,9 +14,8 @@ export function useFocusVisible () {
       return
     }
 
-    // Use data attribute to avoid React diff wiping
     function handleFocusIn (e) {
-      e.target.dataset.focusVisible = interfaceType === 'keyboard'
+      e.target.dataset.focusVisible = interfaceTypeRef.current === 'keyboard'
     }
 
     function handleFocusOut (e) {
@@ -32,5 +35,5 @@ export function useFocusVisible () {
       document.removeEventListener('focusout', handleFocusOut)
       document.removeEventListener('pointerdown', handlePointerdown)
     }
-  }, [interfaceType, layoutRefs.appContainerRef])
+  }, [layoutRefs.appContainerRef])
 }
