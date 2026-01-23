@@ -3,7 +3,7 @@
  * @param {object} context - plugin context
  * @param {object} feature - A single geoJSON feature
  */
-export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, featureId) => {
+export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, featureId, options) => {
   const { dispatch } = pluginState
   const { draw } = mapProvider
 

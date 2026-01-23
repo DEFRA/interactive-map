@@ -35,7 +35,7 @@ export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => 
       </div>
       {supportsMapSizes && (
         <div className='im-c-map-styles__group'>
-          <h3 className='im-c-map-styles__heading' id='map-text-sizes'>Text size</h3>
+          <h3 className='im-c-map-styles__heading' id='map-text-sizes'>Map size</h3>
           <div className='im-c-map-styles__inner'>
             {['small', 'medium', 'large'].map(size => (
               <div className='im-c-map-styles__item' key={size}>

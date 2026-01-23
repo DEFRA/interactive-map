@@ -38,21 +38,21 @@ const vertex = (fgColor) => ({
   id: 'vertex',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex']],
-  paint: { 'circle-radius': 7, 'circle-color': fgColor }
+  paint: { 'circle-radius': 6, 'circle-color': fgColor }
 })
 
 const vertexHalo = (bgColor, hColor) => ({
   id: 'vertex-halo',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 9, 'circle-stroke-width': 3, 'circle-color': bgColor, 'circle-stroke-color': hColor }
+  paint: { 'circle-radius': 8, 'circle-stroke-width': 3, 'circle-color': bgColor, 'circle-stroke-color': hColor }
 })
 
 const vertexActive = (fgColor) => ({
   id: 'vertex-active',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 7, 'circle-color': fgColor }
+  paint: { 'circle-radius': 6, 'circle-color': fgColor }
 })
 
 // Midpoints
@@ -60,21 +60,21 @@ const midpoint = (fgColor) => ({
   id: 'midpoint',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint']],
-  paint: { 'circle-radius': 5, 'circle-color': fgColor }
+  paint: { 'circle-radius': 4, 'circle-color': fgColor }
 })
 
 const midpointHalo = (bgColor, hColor) => ({
   id: 'midpoint-halo',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 7, 'circle-stroke-width': 3, 'circle-color': bgColor, 'circle-stroke-color': hColor }
+  paint: { 'circle-radius': 6, 'circle-stroke-width': 3, 'circle-color': bgColor, 'circle-stroke-color': hColor }
 })
 
 const midpointActive = (fgColor) => ({
   id: 'midpoint-active',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 5, 'circle-color': fgColor }
+  paint: { 'circle-radius': 4, 'circle-color': fgColor }
 })
 
 const circle = (fgColor) => ({

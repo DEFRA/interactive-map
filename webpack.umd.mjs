@@ -134,7 +134,7 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', libraryPath: 'maplibreProvider', outDir: 'providers/maplibre/dist/umd' },
   { entryPath: './providers/open-names/src/index.js', libraryPath: 'openNamesProvider', outDir: 'providers/open-names/dist/umd' },
-  { entryPath: './providers/esri/src/index.js', libraryPath: 'esriProvider', outDir: 'providers/esri/dist/umd' },
+  // { entryPath: './providers/esri/src/index.js', libraryPath: 'esriProvider', outDir: 'providers/esri/dist/umd' },
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/scale-bar/dist/umd' },

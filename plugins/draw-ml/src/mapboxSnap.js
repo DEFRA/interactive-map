@@ -34,7 +34,7 @@ let colors = { ...DEFAULT_COLORS }
  * Apply patches to MapboxSnap prototype to fix bugs and add MapLibre compatibility
  * @param {object} [customColors] - Custom colors { vertex, midpoint, edge }
  */
-function applyMapboxSnapPatches(customColors = {}) {
+function applyMapboxSnapPatches(customColors = {}, layers) {
   colors = { ...DEFAULT_COLORS, ...customColors }
 
   // Apply patches that don't need originalMethods first (these can run on every call)
@@ -118,6 +118,11 @@ function applyMapboxSnapPatches(customColors = {}) {
       if (!this.status) {
         return []
       }
+      
+      // Filter options.layers to only those that exist in the maps style
+      this.options.layers = layers.filter(layer => this.map.getLayer(layer))
+      
+      // bbox logic
       const r = this.options.radius || 15
       const bbox = [
         [e.point.x - r, e.point.y - r],
@@ -256,7 +261,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   } = snapOptions
 
   // Apply global patches to MapboxSnap prototype
-  applyMapboxSnapPatches(colors)
+  applyMapboxSnapPatches(colors, layers)
 
   // Clean up old snap instance's source and layer
   function cleanupOldSnap() {
@@ -274,6 +279,8 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
     if (map._snapInstance || map._snapCreating) {
       return map._snapInstance
     }
+
+    console.log('New snap instance')
     map._snapCreating = true
 
     // Clean up any existing layer/source before creating new instance
@@ -315,11 +322,37 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
 
   // Handle style changes - re-patch source and ensure snap layer exists
   map.on('style.load', () => {
+    console.log('style.load')
     pollUntil(
       () => map.getSource('mapbox-gl-draw-hot'),
       (source) => {
+        // 1. Repair the Draw source reference
         patchSourceData(source)
 
+        // Manually restore the Snap Source if it's gone
+        if (!map.getSource('snap-helper-circle')) {
+          map.addSource('snap-helper-circle', {
+            type: 'geojson',
+            data: { type: 'FeatureCollection', features: [] }
+          })
+        }
+
+        // 3. Manually restore the Snap Layer if it's gone
+        if (!map.getLayer('snap-helper-circle')) {
+          map.addLayer({
+            id: 'snap-helper-circle',
+            type: 'fill',
+            source: 'snap-helper-circle',
+            paint: {
+                'fill-color': ['get', 'color'],
+                'fill-opacity': 0.6,
+            },
+            layout: {
+              'visibility': map._snapInstance.status ? 'visible' : 'none'
+            }
+          })
+        }
+        
         if (!map._snapInstance) {
           cleanupOldSnap()
           createSnap(source)

@@ -33,7 +33,12 @@ var interactPlugin = createInteractPlugin({
 	// excludeModes: ['draw']
 })
 
-var drawPlugin = createDrawPlugin()
+var drawPlugin = createDrawPlugin({
+	snapLayers: [
+		'OS/TopographicArea_1/Agricultural Land',
+		'OS/TopographicLine/Building Outline'
+	]
+})
 
 let framePlugin = createFramePlugin({
 	aspectRatio: 1.5
@@ -153,7 +158,12 @@ interactiveMap.on('datasets:ready', () => {
 })
 
 interactiveMap.on('draw:ready', function () {
-	drawPlugin.newPolygon('test')
+	drawPlugin.newPolygon('test', {
+		snapLayers: ['OS/TopographicLine/Building Outline'],
+		stroke: { outdoor: '#ff0000', dark: '#00ff00' },
+		strokeWidth: 2,
+		fill: 'rgba(255, 0, 0, 0.1)'
+	})
 	// drawPlugin.addFeature({ id: 'test1234', type: 'Feature', geometry: { coordinates: [[[-2.9406643378873127,54.918060570259456],[-2.9092219779267054,54.91564249172612],[-2.904350626383433,54.90329530000005],[-2.909664828067463,54.89540129642464],[-2.9225074821353587,54.88979816151294],[-2.937121536764323,54.88826989853317],[-2.95682836800691,54.88916139231736],[-2.965463945742613,54.898966521920045],[-2.966349646023133,54.910805898763385],[-2.9406643378873127,54.918060570259456]]], type: 'Polygon' }})
 	// drawPlugin.editFeature('test1234')
 })

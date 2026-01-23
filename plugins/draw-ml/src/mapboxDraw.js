@@ -20,7 +20,7 @@ import { initMapLibreSnap } from './mapboxSnap.js'
  * @param {Object} options.eventBus - Event bus for app-level events
  * @returns {{ draw: MapboxDraw, remove: Function }} draw instance and cleanup function
  */
-export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus }) => {
+export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus, snapLayers }) => {
   const { map } = mapProvider
 
   // --- Configure MapLibre GL Draw CSS classes ---
@@ -54,7 +54,7 @@ export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus })
   // --- Initialize MapboxSnap using external module ---
   // Start with status: false to match initial snap disabled state
   initMapLibreSnap(map, draw, {
-    layers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
+    layers: snapLayers,
     radius: 10,
     rules: ['vertex', 'edge']
   })
