@@ -1,9 +1,8 @@
 # Interactive map
 
 [![CI](https://github.com/defra/interactive-map/workflows/CI/badge.svg)](https://github.com/defra/interactive-map/actions)
-[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=DEFRA_interactive-map&metric=coverage)](https://sonarcloud.io/summary/new_code?id=defra_interactive-map)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=DEFRA_interactive-map&metric=coverage)](https://sonarcloud.io/summary/new_code?id=DEFRA_interactive-map)
 [![npm version](https://img.shields.io/npm/v/@defra/interactive-map.svg)](https://www.npmjs.com/package/@defra/interactive-map)
-[![Bundle Size](https://img.shields.io/bundlephobia/minzip/@defra/interactive-map)](https://bundlephobia.com/package/@defra/interactive-map)
 [![Dependencies](https://img.shields.io/librariesio/release/npm/@defra/interactive-map)](https://libraries.io/npm/@defra%2Finteractive-map)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
