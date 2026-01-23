@@ -52,6 +52,15 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 
     entry: { [entryName]: entryPath },
 
+    parallelism: 100,
+
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [fileURLToPath(import.meta.url)]
+      }
+    },
+
     output: {
       path: path.resolve(__dirname, outDir),
       filename: '[name].js',
@@ -103,6 +112,7 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
       rules: [
         { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
         { test: /\.tsx?$/, loader: 'ts-loader', exclude: /node_modules/ },
+        { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/i, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]
     },
@@ -124,6 +134,7 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', libraryPath: 'maplibreProvider', outDir: 'providers/maplibre/dist/umd' },
   { entryPath: './providers/open-names/src/index.js', libraryPath: 'openNamesProvider', outDir: 'providers/open-names/dist/umd' },
+  { entryPath: './providers/esri/src/index.js', libraryPath: 'esriProvider', outDir: 'providers/esri/dist/umd' },
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/scale-bar/dist/umd' },

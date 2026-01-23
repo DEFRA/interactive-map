@@ -4,39 +4,45 @@ on:
     types:
       - published
 jobs:
-  version-and-publish:
+  ci:
+    uses: ./.github/workflows/ci.yml
+    secrets: inherit
+    with:
+      skip-sonar: true
+
+  publish:
+    needs: ci
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-          ref: main
-      - uses: actions/setup-node@v4
+          ref: ${{ github.event.release.tag_name }}
+
+      - uses: actions/setup-node@v5
         with:
-          node-version: '18.x'
+          node-version-file: .nvmrc
           registry-url: 'https://registry.npmjs.org'
-      - name: install dependencies
+          cache: 'npm'
+
+      - name: Cache webpack and build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            node_modules/.cache/webpack
+            node_modules/.cache/terser-webpack-plugin
+          key: ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('webpack.*.mjs', 'babel.config.json') }}
+          restore-keys: |
+            ${{ runner.os }}-build-${{ hashFiles('**/package-lock.json') }}-
+            ${{ runner.os }}-build-
+          
+      - name: Install dependencies
         run: npm ci
-      - name: build
+
+      - name: Build
         run: npm run build
-      - name: version & publish
-        run: |
-          TAG_NAME="${{ github.event.release.tag_name }}"
-          IS_PRE_RELEASE="${{ github.event.release.pre_release }}"
-          VERSION_PATTERN="^v([0-9]{1,}.[0-9]{1,}.[0-9]{1,})(-[0-9A-Za-z-].*)?$"
-          PRE_RELEASE_PATTERN="(-[0-9A-Za-z-].*)$"
-          
-          if ! [[ "$TAG_NAME" =~ $VERSION_PATTERN ]]; then
-            echo FAILED TO MATCH VERSION_PATTERN
-            exit 1
-          fi
-          
-          if [[ "$IS_PRE_RELEASE" == "true" ]] || [[ "$TAG_NAME" =~ $PRE_RELEASE_PATTERN ]]; then
-            RELEASE_TAG="pre-release"
-          else
-            RELEASE_TAG="latest"
-          fi
-          npm version --no-git-tag-version "${TAG_NAME}"
-          npm publish --access public --tag="${RELEASE_TAG}"
+
+      - name: Publish
+        run: ./scripts/publish-package.sh "${{ github.event.release.tag_name }}" "${{ github.event.release.prerelease }}"
         env:
           NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

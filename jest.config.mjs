@@ -1,6 +1,7 @@
 export default {
   collectCoverage: true,
   coverageDirectory: 'coverage',
+  cacheDirectory: '.jest-cache',
   transform: {
     '\\.jsx?$': 'babel-jest',
     '\\.mjs$': 'babel-jest'

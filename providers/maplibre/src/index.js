@@ -1,4 +1,4 @@
-import { getWebGL } from './utils/detectWebGL.js'
+import { getWebGL } from './utils/detectWebgl.js'
 
 const isLatest = !!window.globalThis
 

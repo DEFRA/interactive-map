@@ -59,6 +59,15 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
     mode: 'production',
     entry: { [entryName]: entryPath }, // Keep entryName as "index"
     experiments: { outputModule: true },
+
+    parallelism: 100,
+
+    cache: {
+      type: 'filesystem',
+      buildDependencies: {
+        config: [fileURLToPath(import.meta.url)]
+      }
+    },
     output: {
       path: path.resolve(__dirname, outDir, '../css'),
       filename: '../esm/[name].js',
@@ -89,6 +98,7 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
     module: {
       rules: [
         { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
+        { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]
     },
@@ -109,6 +119,7 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', outDir: 'providers/maplibre/dist/esm' },
   { entryPath: './providers/open-names/src/index.js', outDir: 'providers/open-names/dist/esm' },
+  { entryPath: './providers/esri/src/index.js', outDir: 'providers/esri/dist/esm' },
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', outDir: 'plugins/scale-bar/dist/esm' },
