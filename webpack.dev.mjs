@@ -76,7 +76,12 @@ export default {
     rules: [
       {
         test: /\.jsx?$/,
-        loader: 'babel-loader',
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'jsx',
+          target: 'es2015',
+          jsx: 'automatic'
+        },
         exclude: /node_modules\/(?!(lucide-react))/
       },{
         test: /\.s[ac]ss$/i,
