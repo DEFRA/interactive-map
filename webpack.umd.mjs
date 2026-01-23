@@ -5,6 +5,7 @@ import fs from 'fs'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import RemoveEmptyScriptsPlugin from 'webpack-remove-empty-scripts'
 import RemoveFilesPlugin from 'remove-files-webpack-plugin'
+import { EsbuildPlugin } from 'esbuild-loader'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -52,10 +53,11 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 
     entry: { [entryName]: entryPath },
 
-    parallelism: 100,
+    parallelism: 50,
 
     cache: {
       type: 'filesystem',
+      cacheDirectory: path.resolve(__dirname, 'node_modules/.cache/webpack-umd'),
       buildDependencies: {
         config: [fileURLToPath(import.meta.url)]
       }
@@ -110,8 +112,26 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 
     module: {
       rules: [
-        { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
-        { test: /\.tsx?$/, loader: 'ts-loader', exclude: /node_modules/ },
+        {
+          test: /\.jsx?$/,
+          exclude: /node_modules/,
+          loader: 'esbuild-loader',
+          options: {
+            loader: 'jsx',
+            target: 'es2015',
+            jsx: 'automatic'
+          }
+        },
+        {
+          test: /\.tsx?$/,
+          exclude: /node_modules/,
+          loader: 'esbuild-loader',
+          options: {
+            loader: 'tsx',
+            target: 'es2015',
+            jsx: 'automatic'
+          }
+        },
         { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/i, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]
@@ -121,7 +141,13 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 
     optimization: {
       splitChunks: { chunks: () => false },
-      removeEmptyChunks: true
+      removeEmptyChunks: true,
+      minimizer: [
+        new EsbuildPlugin({
+          target: 'es2015',
+          css: true
+        })
+      ]
     }
   }
 }
@@ -134,7 +160,9 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', libraryPath: 'maplibreProvider', outDir: 'providers/maplibre/dist/umd' },
   { entryPath: './providers/open-names/src/index.js', libraryPath: 'openNamesProvider', outDir: 'providers/open-names/dist/umd' },
-  { entryPath: './providers/esri/src/index.js', libraryPath: 'esriProvider', outDir: 'providers/esri/dist/umd' },
+
+  // TODO re-enable Esri provider once large build size is addressed
+  // { entryPath: './providers/esri/src/index.js', libraryPath: 'esriProvider', outDir: 'providers/esri/dist/umd' },
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/scale-bar/dist/umd' },

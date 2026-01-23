@@ -5,6 +5,7 @@ import fs from 'fs'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import RemoveEmptyScriptsPlugin from 'webpack-remove-empty-scripts'
 import RemoveFilesPlugin from 'remove-files-webpack-plugin'
+import { EsbuildPlugin } from 'esbuild-loader'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -60,10 +61,11 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
     entry: { [entryName]: entryPath }, // Keep entryName as "index"
     experiments: { outputModule: true },
 
-    parallelism: 100,
+    parallelism: 50,
 
     cache: {
       type: 'filesystem',
+      cacheDirectory: path.resolve(__dirname, 'node_modules/.cache/webpack-esm'),
       buildDependencies: {
         config: [fileURLToPath(import.meta.url)]
       }
@@ -97,7 +99,16 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
         },
     module: {
       rules: [
-        { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
+        {
+          test: /\.jsx?$/,
+          exclude: /node_modules/,
+          loader: 'esbuild-loader',
+          options: {
+            loader: 'jsx',
+            target: 'es2020',
+            jsx: 'automatic'
+          }
+        },
         { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]
@@ -106,7 +117,13 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
     optimization: {
       chunkIds: 'named',
       moduleIds: 'named',
-      splitChunks: false
+      splitChunks: false,
+      minimizer: [
+        new EsbuildPlugin({
+          target: 'es2020',
+          css: true
+        })
+      ]
     }
   }
 }
@@ -119,7 +136,8 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', outDir: 'providers/maplibre/dist/esm' },
   { entryPath: './providers/open-names/src/index.js', outDir: 'providers/open-names/dist/esm' },
-  { entryPath: './providers/esri/src/index.js', outDir: 'providers/esri/dist/esm' },
+  // TODO re-enable Esri provider once large build size is addressed
+  // { entryPath: './providers/esri/src/index.js', outDir: 'providers/esri/dist/esm' },
 
   // Plugins
   { entryPath: './plugins/scale-bar/src/index.js', outDir: 'plugins/scale-bar/dist/esm' },
