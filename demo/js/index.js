@@ -34,10 +34,7 @@ var interactPlugin = createInteractPlugin({
 })
 
 var drawPlugin = createDrawPlugin({
-	snapLayers: [
-		'OS/TopographicArea_1/Agricultural Land',
-		'OS/TopographicLine/Building Outline'
-	]
+	//snapLayers: ['OS/TopographicLine/Building Outline']
 })
 
 let framePlugin = createFramePlugin({
@@ -159,7 +156,7 @@ interactiveMap.on('datasets:ready', () => {
 
 interactiveMap.on('draw:ready', function () {
 	drawPlugin.newPolygon('test', {
-		snapLayers: ['OS/TopographicLine/Building Outline'],
+		snapLayers: ['OS/TopographicArea_1/Agricultural Land'],
 		stroke: { outdoor: '#ff0000', dark: '#00ff00' },
 		strokeWidth: 2,
 		fill: 'rgba(255, 0, 0, 0.1)'

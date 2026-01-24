@@ -4,7 +4,7 @@ import { polygon, lineString } from '@turf/helpers'
 const DEFAULT_COLORS = { vertex: '#f47738', midpoint: '#00703c', edge: '#1d70b8' }
 
 /** Apply patches to MapboxSnap prototype (once only) */
-function applyMapboxSnapPatches(colors, layers) {
+function applyMapboxSnapPatches(colors) {
   if (MapboxSnap.prototype.__snapPatched) {
     return
   }
@@ -46,19 +46,29 @@ function applyMapboxSnapPatches(colors, layers) {
   }
 
   // Fix typo: original uses 'coodinates' instead of 'coordinates' for Multi* types
+  // Also validate coordinates to prevent "coordinates must contain numbers" errors
   proto.getLines = function(feature, mouse, radiusArg) {
     const geom = feature.geometry
-    if (!geom) {
+    if (!geom || !geom.coordinates) {
       return []
     }
-    const coords = geom.coordinates || []
-    if (geom.type === 'MultiPolygon') {
-      return coords.map(c => polygon(c))
+    const coords = geom.coordinates
+    // Validate that we have actual coordinate arrays
+    if (!Array.isArray(coords) || coords.length === 0) {
+      return []
     }
-    if (geom.type === 'MultiLineString') {
-      return coords.map(c => lineString(c))
+    try {
+      if (geom.type === 'MultiPolygon') {
+        return coords.filter(c => Array.isArray(c) && c.length > 0).map(c => polygon(c))
+      }
+      if (geom.type === 'MultiLineString') {
+        return coords.filter(c => Array.isArray(c) && c.length > 0).map(c => lineString(c))
+      }
+      return orig.getLines.call(this, feature, mouse, radiusArg)
+    } catch (e) {
+      // Invalid geometry - skip this feature
+      return []
     }
-    return orig.getLines.call(this, feature, mouse, radiusArg)
   }
 
   // Query within radius bbox instead of just point, filter to existing layers
@@ -66,7 +76,9 @@ function applyMapboxSnapPatches(colors, layers) {
     if (!this.status) {
       return []
     }
-    this.options.layers = layers.filter(l => this.map.getLayer(l))
+    // Use active layers (per-call override) or fall back to default layers
+    const activeLayers = this._activeLayers || this._defaultLayers || []
+    this.options.layers = activeLayers.filter(l => this.map.getLayer(l))
     const r = this.options.radius || 15
     const origPt = e.point
     e.point = [[origPt.x - r, origPt.y - r], [origPt.x + r, origPt.y + r]]
@@ -103,14 +115,21 @@ function applyMapboxSnapPatches(colors, layers) {
     if (!this.status) {
       return
     }
-    const result = orig.snapToClosestPoint.call(this, e)
-    if (this.closeFeatures?.length > 100) {
-      this.closeFeatures.length = 0
+    try {
+      const result = orig.snapToClosestPoint.call(this, e)
+      if (this.closeFeatures?.length > 100) {
+        this.closeFeatures.length = 0
+      }
+      if (this.lines?.length > 100) {
+        this.lines.length = 0
+      }
+      return result
+    } catch (err) {
+      // Invalid geometry encountered - clear state and continue
+      this.snapStatus = false
+      this.snapCoords = null
+      return
     }
-    if (this.lines?.length > 100) {
-      this.lines.length = 0
-    }
-    return result
   }
 }
 
@@ -161,7 +180,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   } = snapOptions
 
   // Apply global patches to MapboxSnap prototype
-  applyMapboxSnapPatches({ ...DEFAULT_COLORS, ...colors }, layers)
+  applyMapboxSnapPatches({ ...DEFAULT_COLORS, ...colors })
 
   // Clean up old snap instance's source and layer
   function cleanupOldSnap() {
@@ -212,6 +231,25 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
     // Provide a method for external control of status
     snap.setSnapStatus = (value) => {
       controlledStatus = value
+    }
+
+    // Store default layers and provide method to override per-call
+    snap._defaultLayers = layers
+    snap._activeLayers = null
+
+    // Set snap layers (overrides defaults, pass null to reset to defaults)
+    snap.setSnapLayers = (overrideLayers) => {
+      if (overrideLayers === null || overrideLayers === undefined) {
+        snap._activeLayers = null  // Use defaults
+      } else if (Array.isArray(overrideLayers)) {
+        snap._activeLayers = overrideLayers  // Override defaults
+      }
+    }
+
+    // Apply any pending snap layers that were set before instance was ready
+    if (map._pendingSnapLayers !== undefined) {
+      snap.setSnapLayers(map._pendingSnapLayers)
+      delete map._pendingSnapLayers
     }
 
     map._snapInstance = snap
