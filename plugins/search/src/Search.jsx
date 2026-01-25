@@ -64,19 +64,14 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
     // Disable clicks on the viewport while search is open
     viewportRef.current.style.pointerEvents = 'none'
 
-    // Add focusin only for keyboard interaction and on mobile devices
-    if (interfaceType === 'keyboard' && breakpoint === 'mobile' ) {
-      document.addEventListener('focusin', events.handleOutside)
-    }
+    document.addEventListener('focusin', events.handleOutside)
+    document.addEventListener('pointerdown', events.handleOutside)
 
     return () => {
       // Re-enable viewport pointer events when component unmounts
       viewportRef.current.style.pointerEvents = 'auto'
-
-      // Remove focusin listener on unmount
-      if (interfaceType === 'keyboard') {
-        document.removeEventListener('focusin', events.handleOutside)
-      }
+      document.removeEventListener('focusin', events.handleOutside)
+      document.removeEventListener('pointerdown', events.handleOutside)
     }
   }, [isExpanded, interfaceType, areSuggestionsVisible, suggestions])
 
