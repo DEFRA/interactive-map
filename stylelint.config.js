@@ -16,6 +16,7 @@ export default {
       'no-duplicate-selectors': null
     }
   },{
+    files: ['**/*.js', '**/*.jsx'],
     rules: {
       'react/prop-types': 'off'
     }

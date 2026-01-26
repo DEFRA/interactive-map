@@ -23,8 +23,8 @@ describe('parseDataProperties', () => {
 
     const result = parseDataProperties(el)
 
-    expect(result.title).toBeNull()  // <-- changed from "Hello World"
-    expect(result.id).toBeNull()     // <-- changed from "test-123"
+    expect(result.title).toBeNull() // <-- changed from "Hello World"
+    expect(result.id).toBeNull() // <-- changed from "test-123"
   })
 
   it('handles mixed JSON and plain string attributes', () => {
@@ -34,7 +34,7 @@ describe('parseDataProperties', () => {
     const result = parseDataProperties(el)
 
     expect(result.config).toEqual({ enabled: true })
-    expect(result.name).toBeNull()   // <-- changed from "Component"
+    expect(result.name).toBeNull() // <-- changed from "Component"
   })
 
   it('returns empty object for element with no data attributes', () => {
