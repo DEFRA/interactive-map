@@ -1,5 +1,5 @@
 import { handleSetMapStyle } from './handleSetMapStyle.js'
-import { addMapLayers, getSourceId } from './mapLayers.js'
+import { addMapLayers, getSourceId, getLayersUsingSource } from './mapLayers.js'
 
 export const createDatasets = ({
   pluginConfig,
@@ -41,21 +41,15 @@ export const createDatasets = ({
       const allDatasets = getDatasets()
       const removedSourceIds = new Set()
 
-      // Clean up layers and sources
+      // Remove layers and sources
       allDatasets.forEach(dataset => {
         const sourceId = getSourceId(dataset)
-        const fillLayerId = dataset.fill ? dataset.id : null
-        const strokeLayerId = dataset.stroke ? (dataset.fill ? `${dataset.id}-stroke` : dataset.id) : null
+        const layers = getLayersUsingSource(map, sourceId)
 
-        if (strokeLayerId && map.getLayer(strokeLayerId)) {
-          map.removeLayer(strokeLayerId)
-        }
+        // Remove all layers using this source
+        layers.forEach(id => map.removeLayer(id))
 
-        if (fillLayerId && map.getLayer(fillLayerId)) {
-          map.removeLayer(fillLayerId)
-        }
-
-        // Only remove each shared source once
+        // Remove the source once
         if (!removedSourceIds.has(sourceId) && map.getSource(sourceId)) {
           map.removeSource(sourceId)
           removedSourceIds.add(sourceId)

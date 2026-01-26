@@ -5,7 +5,8 @@ const initialState = {
   interactionMode: null,
   multiSelect: false,
   selectedFeatures: [],
-  selectionBounds: null
+  selectionBounds: null,
+  closeOnAction: true // Done or Cancel
 }
 
 const enable = (state, payload) => {

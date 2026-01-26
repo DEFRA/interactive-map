@@ -42,18 +42,22 @@ export function attachEvents ({
   }
   selectAtTarget.onClick = handleSelectAtTarget
   
-  const handleSelectDone = () => {
+  const handleSelectDone = (e) => {
     const marker = mapState.markers.getMarker('location')
     const { coords } = marker || {}
     const { selectionBounds, selectedFeatures } = pluginState
     
+    if (appState.disabledButtons.has('selectDone')) {
+      return
+    }
+
     eventBus.emit('interact:done', {
       ...(coords && { coords }),
       ...(!coords && selectedFeatures && { selectedFeatures }),
       ...(!coords && selectionBounds && { selectionBounds })
     })
 
-    if (!(pluginState.closeOnDone ?? true)) {
+    if (!(pluginState.closeOnAction ?? true)) {
       return
     }
 
@@ -64,7 +68,7 @@ export function attachEvents ({
   const handleSelectCancel = () => {
     eventBus.emit('interact:cancel')
 
-    if (!(pluginState.closeOnCancel ?? true)) {
+    if (!(pluginState.closeOnAction ?? true)) {
       return
     }
 

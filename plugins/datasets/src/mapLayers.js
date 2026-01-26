@@ -11,7 +11,7 @@ const hashString = (str) => {
 }
 
 // Generate a consistent source ID for source sharing
-export const getSourceId = (dataset) => {
+const getSourceId = (dataset) => {
   if (dataset.tiles) {
     const tilesKey = Array.isArray(dataset.tiles) ? dataset.tiles.join(',') : dataset.tiles
     return `tiles-${hashString(tilesKey)}`
@@ -28,7 +28,23 @@ export const getSourceId = (dataset) => {
   return `source-${dataset.id}`
 }
 
-export const addMapLayers = (map, mapStyleId, dataset) => {
+/**
+ * Get all layer IDs that use a given source
+ * @param {string} sourceId
+ * @returns {string[]} Array of layer IDs using the source
+ */
+const getLayersUsingSource = (map, sourceId) => {
+  const style = map.getStyle()
+  if (!style?.layers) {
+    return []
+  }
+
+  return style.layers
+    .filter(layer => layer.source === sourceId)
+    .map(layer => layer.id)
+}
+
+const addMapLayers = (map, mapStyleId, dataset) => {
   const sourceId = getSourceId(dataset)
 
   // --- Add source (shared across datasets with same tiles/data URL) ---
@@ -96,4 +112,10 @@ export const addMapLayers = (map, mapStyleId, dataset) => {
       ...(dataset.filter ? { filter: dataset.filter } : {})
     })
   }
+}
+
+export {
+  getSourceId,
+  getLayersUsingSource,
+  addMapLayers
 }
