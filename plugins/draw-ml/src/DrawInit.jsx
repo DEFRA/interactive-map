@@ -16,7 +16,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     }
 
     const { remove } = createMapboxDraw({
-			colorScheme: mapState.mapStyle.mapColorScheme,
+			mapStyle: mapState.mapStyle,
 			snapLayers: pluginConfig.snapLayers,
 			mapProvider,
 			events,

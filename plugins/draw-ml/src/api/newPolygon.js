@@ -4,7 +4,7 @@ import { getSnapInstance } from '../snapHelpers.js'
  * Programmatically create a new polygon
  * @param {object} context - plugin context
  * @param {string} featureId - ID for the new feature
- * @param {object} options - Options including snapLayers, stroke, fill, etc.
+ * @param {object} options - Options including snapLayers.
  */
 export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, featureId, options = {}) => {
   const { dispatch } = pluginState
@@ -21,6 +21,8 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
   } else if (options.snapLayers) {
     // Snap instance not ready yet - store for later
     map._pendingSnapLayers = options.snapLayers
+  } else {
+    // No action
   }
 
   // Update state so UI can react to snap layer availability
@@ -32,8 +34,8 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
     vertexMarkerId: `${appConfig.id}-cross-hair`,
     addVertexButtonId: `${appConfig.id}-draw-add-point`,
     interfaceType: appState.interfaceType,
-    featureId,
-    getSnapEnabled: () => mapProvider.snapEnabled === true
+    getSnapEnabled: () => mapProvider.snapEnabled === true,
+    featureId
   })
 
   // Set mode to draw_vertex

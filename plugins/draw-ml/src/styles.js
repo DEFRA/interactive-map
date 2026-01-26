@@ -1,7 +1,35 @@
 // styles.js
-const BLACK = '#0b0c0c'
-const WHITE = '#ffffff'
+import { DEFAULTS } from './defaults.js'
 
+const getColorScheme = (mapStyle) => mapStyle.mapColorScheme ?? 'light'
+
+const getUserProp = (mapStyle, prop) => [
+  'coalesce',
+  ['get', `user_${prop}${mapStyle.id.charAt(0).toUpperCase() + mapStyle.id.slice(1)}`],
+  ['get', `user_${prop}`],
+  DEFAULTS[prop]
+]
+
+// Inactive lines and fills
+const fillInactive = (mapStyle) => ({
+  id: 'fill-inactive',
+  type: 'fill',
+  filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
+  paint: { 'fill-color': getUserProp(mapStyle, 'fill') }
+})
+
+const strokeInactive = (mapStyle) => ({
+  id: 'stroke-inactive',
+  type: 'line',
+  filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
+  layout: { 'line-cap': 'round', 'line-join': 'round' },
+  paint: {
+    'line-color': getUserProp(mapStyle, 'stroke'),
+    'line-width': getUserProp(mapStyle, 'strokeWidth')
+  }
+})
+
+// Active lines and fills
 const fillActive = (fgColor) => ({
   id: 'fill-active',
   type: 'fill',
@@ -17,14 +45,7 @@ const strokeActive = (fgColor) => ({
   paint: { 'line-color': fgColor, 'line-width': 2, 'line-opacity': 1 }
 })
 
-const strokeInactive = (fgColor) => ({
-  id: 'stroke-inactive',
-  type: 'line',
-  filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
-  layout: { 'line-cap': 'round', 'line-join': 'round' },
-  paint: { 'line-color': fgColor, 'line-width': 2, 'line-opacity': 0.8 }
-})
-
+// Dashed preview line
 const drawPreviewLine = (fgColor) => ({
   id: 'stroke-preview-line',
   type: 'line',
@@ -91,15 +112,16 @@ const touchVertexIndicator = () => ({
   paint: { 'circle-radius': 30, 'circle-color': '#3bb2d0', 'circle-stroke-width': 3, 'circle-stroke-color': '#ffffff', 'circle-opacity': 0.9 }
 })
 
-const createDrawStyles = (colorScheme) => {
-  const fgColor = colorScheme === 'dark' ? WHITE : BLACK
-  const bgColor = colorScheme === 'dark' ? BLACK : WHITE
-  const hColor = colorScheme === 'dark' ? WHITE : BLACK
+const createDrawStyles = (mapStyle) => {
+  const fgColor = DEFAULTS.editColorsForeground[getColorScheme(mapStyle)]
+  const bgColor = DEFAULTS.editColorsBackground[getColorScheme(mapStyle)]
+  const hColor = DEFAULTS.editColorsHalo[getColorScheme(mapStyle)]
 
   return [
+    fillInactive(mapStyle),
     fillActive(fgColor),
     strokeActive(fgColor),
-    strokeInactive(fgColor),
+    strokeInactive(mapStyle),
     drawPreviewLine(fgColor),
     midpoint(fgColor),
     midpointHalo(bgColor, hColor),
@@ -115,9 +137,9 @@ const createDrawStyles = (colorScheme) => {
 /**
  * Helper to iterate over a MapLibre map and apply new paint properties
  */
-const updateDrawStyles = (map, colorScheme) => {
-  const layers = createDrawStyles(colorScheme)
-  layers.forEach((layer) => {
+const updateDrawStyles = (map, mapStyle) => {
+  const layers = createDrawStyles(mapStyle)
+  layers.forEach(layer => {
     Object.entries(layer.paint).forEach(([prop, value]) => {
       if (map.getLayer(`${layer.id}.cold`)) {
         map.setPaintProperty(`${layer.id}.cold`, prop, value)

@@ -15,12 +15,12 @@ import { initMapLibreSnap } from './mapboxSnap.js'
  * - Dynamic runtime style updates on `events.MAP_SET_STYLE` event
  * - Safe reapplication of styles if map.setStyle is called
  *
- * @param {string} options.colorScheme - Color scheme name used for styles
+ * @param {string} options.mapStyle - Map style object
  * @param {Object} options.mapProvider - Object containing the map instance
  * @param {Object} options.eventBus - Event bus for app-level events
  * @returns {{ draw: MapboxDraw, remove: Function }} draw instance and cleanup function
  */
-export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus, snapLayers }) => {
+export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snapLayers }) => {
   const { map } = mapProvider
 
   // --- Configure MapLibre GL Draw CSS classes ---
@@ -39,7 +39,7 @@ export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus, s
   // --- Create MapLibre Draw instance ---
   const draw = new MapboxDraw({
     modes,
-    styles: createDrawStyles(colorScheme),
+    styles: createDrawStyles(mapStyle),
     displayControlsDefault: false,
     userProperties: true,
     defaultMode: 'disabled'
@@ -62,7 +62,7 @@ export const createMapboxDraw = ({ colorScheme, mapProvider, events, eventBus, s
   // --- Update colour scheme ---
   const handleSetMapStyle = (e) => {
     map.once('idle', () => {
-      updateDrawStyles(map, e.mapColorScheme)
+      updateDrawStyles(map, e)
     })
   }
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)

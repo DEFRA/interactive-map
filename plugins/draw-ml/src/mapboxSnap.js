@@ -1,7 +1,6 @@
 import MapboxSnap from 'mapbox-gl-snap/dist/esm/MapboxSnap.js'
 import { polygon, lineString } from '@turf/helpers'
-
-const DEFAULT_COLORS = { vertex: '#f47738', midpoint: '#00703c', edge: '#1d70b8' }
+import { DEFAULTS } from './defaults.js'
 
 /** Apply patches to MapboxSnap prototype (once only) */
 function applyMapboxSnapPatches(colors) {
@@ -180,7 +179,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   } = snapOptions
 
   // Apply global patches to MapboxSnap prototype
-  applyMapboxSnapPatches({ ...DEFAULT_COLORS, ...colors })
+  applyMapboxSnapPatches({ ...DEFAULTS.snapColors, ...colors })
 
   // Clean up old snap instance's source and layer
   function cleanupOldSnap() {

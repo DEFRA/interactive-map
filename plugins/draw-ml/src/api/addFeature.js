@@ -7,10 +7,9 @@ export const addFeature = ({ mapProvider, services }, feature) => {
   }
 
   // --- Add feature to draw instance
-  draw.add(feature)
-
-  // Display only, not for editing
-  draw.changeMode('disabled')
+  draw.add(feature, {
+    userProperties: true
+  })
 
   eventBus.emit('draw:add', feature)
 }

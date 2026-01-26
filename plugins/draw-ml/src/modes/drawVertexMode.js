@@ -259,7 +259,7 @@ export const DrawVertexMode = {
     DrawPolygon.toDisplayFeatures.call(this, state, geojson, display)
 
     // Create vertex
-    if (geojson.geometry.type === 'Polygon') {
+    if (geojson.geometry.type === 'Polygon' && geojson.id === state.polygon.id) {
       const ring = geojson.geometry.coordinates[0]
       for (let i = 1; i < ring.length - 2; i++) {
         display(createVertex(geojson.id, ring[i], `0.${i}`))

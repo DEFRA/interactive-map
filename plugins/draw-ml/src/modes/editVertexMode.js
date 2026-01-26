@@ -380,7 +380,11 @@ export const EditVertexMode = {
     this.changeMode(state, { selectedVertexIndex: nextIdx, selectedVertexType: 'vertex', coordPath: `0.${nextIdx}` })
   },
 
+  // Prevent selecting other features
   changeMode(state, updates) {
+    if (!state.featureId) {
+      return
+    }
     this._ctx.api.changeMode('edit_vertex', { ...state, ...updates })
   },
 
