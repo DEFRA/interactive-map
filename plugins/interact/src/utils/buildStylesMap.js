@@ -1,4 +1,4 @@
-import { defaults } from '../defaults.js'
+import { DEFAULTS } from '../defaults.js'
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 
 export const buildStylesMap = (dataLayers, mapStyle) => {
@@ -9,12 +9,12 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
   }
 
   dataLayers.forEach(layer => {
-    const base = layer.selectedFeatureStyle || defaults.selectedFeatureStyle
+    const base = layer.selectedFeatureStyle || DEFAULTS.selectedFeatureStyle
 
     stylesMap[layer.layerId] = {
       ...base,
       stroke: getValueForStyle(base.stroke, mapStyle.id),
-      fill: getValueForStyle(base.fill, mapStyle.id),
+      fill: getValueForStyle(base.fill, mapStyle.id)
     }
   })
 

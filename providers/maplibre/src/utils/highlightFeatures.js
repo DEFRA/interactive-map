@@ -59,6 +59,7 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
     const { stroke, strokeWidth, fill } = stylesMap[layerId]
     const filter = ['in', ['get', idProperty], ['literal', [...ids]]]
 
+    console.log(stroke)
     // Ensure layers
     if (geom === 'fill') {
       if (!map.getLayer(`${base}-fill`)) {

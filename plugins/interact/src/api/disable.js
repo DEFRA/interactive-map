@@ -1,3 +1,3 @@
-export const disable = ({ services }, options) => {
-  console.log('disable')
+export const disable = ({ pluginState }) => {
+  pluginState.dispatch({ type: 'DISABLE' })
 }

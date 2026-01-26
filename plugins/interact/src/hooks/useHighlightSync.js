@@ -4,12 +4,14 @@ import { buildStylesMap } from '../utils/buildStylesMap.js'
 export const useHighlightSync = ({
   mapProvider,
   mapStyle,
-  dataLayers,
+  pluginState,
   selectedFeatures,
   dispatch,
   events,
   eventBus
 }) => {
+  const { dataLayers } = pluginState
+
   // Memoize stylesMap so it only recalculates when style or layers change
   const stylesMap = useMemo(() => {
     if (!mapStyle) {
@@ -20,6 +22,7 @@ export const useHighlightSync = ({
 
   // Force re-application of all selected features
   const updateHighlightedFeatures = () => {
+    console.log(stylesMap)
     const bounds = mapProvider.updateHighlightedFeatures?.(selectedFeatures, stylesMap)
 
     dispatch({

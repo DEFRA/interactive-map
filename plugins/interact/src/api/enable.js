@@ -1,3 +1,3 @@
-export const enable = ({ services }, options) => {
-  console.log('enable')
+export const enable = ({ pluginState }, options) => {
+  pluginState.dispatch({ type: 'ENABLE', payload: options })
 }

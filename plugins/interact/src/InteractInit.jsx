@@ -9,12 +9,10 @@ export const InteractInit = ({
   services,
   buttonConfig,
   mapProvider,
-  pluginConfig,
   pluginState
 }) => {
   const { interfaceType } = appState
-  const { dataLayers } = pluginConfig
-  const { dispatch, selectedFeatures, selectionBounds } = pluginState
+  const { dispatch, dataLayers, selectedFeatures, selectionBounds } = pluginState
   const { events, eventBus, closeApp } = services
   const { crossHair, mapStyle } = mapState
 
@@ -24,7 +22,6 @@ export const InteractInit = ({
   const { handleInteraction } = useInteractionHandlers({
     appState,
     mapState,
-    pluginConfig,
     pluginState,
     services,
     mapProvider,
@@ -34,7 +31,7 @@ export const InteractInit = ({
   useHighlightSync({
     mapProvider,
     mapStyle,
-    dataLayers,
+    pluginState,
     selectedFeatures,
     selectionBounds,
     dispatch,
@@ -52,10 +49,13 @@ export const InteractInit = ({
   }, [interfaceType])
 
   useEffect(() => {
+    if (!pluginState.enabled) {
+      return
+    }
+
     const cleanupEvents = attachEvents({
       appState,
       pluginState,
-      pluginConfig,
       mapState,
       buttonConfig,
       events,
