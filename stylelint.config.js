@@ -16,9 +16,8 @@ export default {
       'no-duplicate-selectors': null
     }
   },{
-      files: ['src/components/**/*.js', 'src/components/**/*.jsx'],
-      rules: {
-        'react/prop-types': 'off'
-      }
+    rules: {
+      'react/prop-types': 'off'
+    }
   }]
 }
