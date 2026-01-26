@@ -5,6 +5,10 @@ export const DEFAULTS = {
   stroke: 'rgba(212,53,28,1)',
   strokeWidth: 2,
   fill: 'rgba(212,53,28,0.1)',
-  snapColors: { vertex: 'rgba(29,112,184,1)', midpoint: 'rgba(40,161,151,1)', edge: 'rgba(244,119,56,1)' },
+  snapColors: {
+    vertex: 'rgba(212,53,28,1)',
+    midpoint: 'rgba(40,161,151,1)',
+    edge: 'rgba(29,112,184,1)'
+  },
   snapRadius: 10
 }

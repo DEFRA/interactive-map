@@ -6,6 +6,8 @@ import { SlotRenderer } from '../../renderer/SlotRenderer'
 import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const MapButton = ({
   buttonId,
   iconId,

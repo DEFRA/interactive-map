@@ -2,6 +2,8 @@ import MapboxSnap from 'mapbox-gl-snap/dist/esm/MapboxSnap.js'
 import { polygon, lineString } from '@turf/helpers'
 import { DEFAULTS } from './defaults.js'
 
+const SNAP_HELPER_LAYER = 'snap-helper-circle'
+
 /** Apply patches to MapboxSnap prototype (once only) */
 function applyMapboxSnapPatches(colors) {
   if (MapboxSnap.prototype.__snapPatched) {
@@ -30,8 +32,8 @@ function applyMapboxSnapPatches(colors) {
       return
     }
     const result = orig.setMapData.call(this, data)
-    if (data?.features?.length > 0 && this.map?.getLayer('snap-helper-circle')) {
-      this.map.setLayoutProperty('snap-helper-circle', 'visibility', 'visible')
+    if (data?.features?.length > 0 && this.map?.getLayer(SNAP_HELPER_LAYER)) {
+      this.map.setLayoutProperty(SNAP_HELPER_LAYER, 'visibility', 'visible')
     }
     return result
   }
@@ -183,11 +185,11 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
 
   // Clean up old snap instance's source and layer
   function cleanupOldSnap() {
-    if (map.getLayer('snap-helper-circle')) {
-      map.removeLayer('snap-helper-circle')
+    if (map.getLayer(SNAP_HELPER_LAYER)) {
+      map.removeLayer(SNAP_HELPER_LAYER)
     }
-    if (map.getSource('snap-helper-circle')) {
-      map.removeSource('snap-helper-circle')
+    if (map.getSource(SNAP_HELPER_LAYER)) {
+      map.removeSource(SNAP_HELPER_LAYER)
     }
   }
 
@@ -216,10 +218,10 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
     // Override the status property to prevent library from auto-setting it
     // The library sets status=true on draw.modechange and draw.selectionchange
     // We want external control only via setSnapStatus()
-    let controlledStatus = status
+    let _status = status
     Object.defineProperty(snap, 'status', {
       get() {
-        return controlledStatus
+        return _status
       },
       set() {
         // Ignore the library's auto-set attempts - only allow via setSnapStatus()
@@ -229,7 +231,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
 
     // Provide a method for external control of status
     snap.setSnapStatus = (value) => {
-      controlledStatus = value
+      _status = value
     }
 
     // Store default layers and provide method to override per-call
@@ -242,6 +244,8 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
         snap._activeLayers = null  // Use defaults
       } else if (Array.isArray(overrideLayers)) {
         snap._activeLayers = overrideLayers  // Override defaults
+      } else {
+        // No action
       }
     }
 
@@ -264,17 +268,17 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
         patchSourceData(source)
 
         // Restore snap source/layer if gone after style change
-        if (!map.getSource('snap-helper-circle')) {
-          map.addSource('snap-helper-circle', {
+        if (!map.getSource(SNAP_HELPER_LAYER)) {
+          map.addSource(SNAP_HELPER_LAYER, {
             type: 'geojson',
             data: { type: 'FeatureCollection', features: [] }
           })
         }
-        if (!map.getLayer('snap-helper-circle')) {
+        if (!map.getLayer(SNAP_HELPER_LAYER)) {
           map.addLayer({
-            id: 'snap-helper-circle',
+            id: SNAP_HELPER_LAYER,
             type: 'fill',
-            source: 'snap-helper-circle',
+            source: SNAP_HELPER_LAYER,
             paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.6 },
             layout: { visibility: map._snapInstance?.status ? 'visible' : 'none' }
           })
@@ -289,16 +293,16 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
 
   // Hide snap indicator during zoom
   map.on('zoomstart', () => {
-    if (map.getLayer('snap-helper-circle')) {
-      map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
+    if (map.getLayer(SNAP_HELPER_LAYER)) {
+      map.setLayoutProperty(SNAP_HELPER_LAYER, 'visibility', 'none')
     }
   })
 
   map.on('zoomend', () => {
     // Only show indicator if snap is enabled
     const snap = map._snapInstance
-    if (map.getLayer('snap-helper-circle') && snap?.status) {
-      map.setLayoutProperty('snap-helper-circle', 'visibility', 'visible')
+    if (map.getLayer(SNAP_HELPER_LAYER) && snap?.status) {
+      map.setLayoutProperty(SNAP_HELPER_LAYER, 'visibility', 'visible')
     }
   })
 

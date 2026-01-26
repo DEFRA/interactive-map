@@ -93,7 +93,9 @@ export const EditVertexMode = {
 
   onUpdate(state) {
     const prev = new Set(state.vertecies.map(c => JSON.stringify(c)))
-    if (prev.size === state.vertecies.length) return
+    if (prev.size === state.vertecies.length) {
+      return
+    }
     state.selectedVertexIndex = state.vertecies.findIndex(c => !prev.has(JSON.stringify(c)))
     state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
   },
@@ -110,7 +112,9 @@ export const EditVertexMode = {
     if (!e.altKey && ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
       e.preventDefault()
       e.stopPropagation()
-      if (state.selectedVertexType === 'midpoint') return this.insertVertex(state, e)
+      if (state.selectedVertexType === 'midpoint') {
+        return this.insertVertex(state, e)
+      }
 
       const snap = getSnapInstance(this.map)
       const currentCoord = this.getFeature(state.featureId).coordinates.flat(1)[state.selectedVertexIndex]
@@ -211,7 +215,9 @@ export const EditVertexMode = {
 
   onTouchstart(state, e) {
     clearSnapState(getSnapInstance(this.map))
-    if (state.selectedVertexIndex < 0 || !isOnSVG(e.target.parentNode)) return
+    if (state.selectedVertexIndex < 0 || !isOnSVG(e.target.parentNode)) {
+      return
+    }
 
     const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     const style = window.getComputedStyle(state.touchVertexTarget)
@@ -221,7 +227,9 @@ export const EditVertexMode = {
   },
 
   onTouchmove(state, e) {
-    if (state.selectedVertexIndex < 0 || !isOnSVG(e.target.parentNode)) return
+    if (state.selectedVertexIndex < 0 || !isOnSVG(e.target.parentNode)) {
+      return
+    }
 
     const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     const screenPt = { x: (touch.x / state.scale) - state.deltaVertex.x, y: (touch.y / state.scale) - state.deltaVertex.y }
@@ -238,17 +246,23 @@ export const EditVertexMode = {
   },
 
   onDrag(state, e) {
-    if (state.interfaceType === 'touch') return
+    if (state.interfaceType === 'touch') {
+      return
+    }
 
     const snap = getSnapInstance(this.map)
-    if (snap) { snap.snapStatus = false; snap.snapCoords = null }
+    if (snap) {
+      snap.snapStatus = false; snap.snapCoords = null
+    }
 
     if (!isSnapEnabled(state) || !snap?.status) {
       DirectSelect.onDrag.call(this, state, e)
       return
     }
 
-    if (!state.selectedCoordPaths?.length || !state.canDragMove) return
+    if (!state.selectedCoordPaths?.length || !state.canDragMove) {
+      return
+    }
 
     state.dragMoving = true
     e.originalEvent.stopPropagation()
@@ -374,7 +388,10 @@ export const EditVertexMode = {
 
   deleteVertex(state) {
     const feature = this.getFeature(state.featureId)
-    if (state.vertecies.length <= (feature.type === 'Polygon' ? 3 : 2)) return
+    // eslint-disable-next-line no-magic-numbers
+    if (state.vertecies.length <= (feature.type === 'Polygon' ? 3 : 2)) {
+      return
+    }
     const nextIdx = state.selectedVertexIndex >= state.vertecies.length - 1 ? 0 : state.selectedVertexIndex
     this._ctx.api.trash()
     this.changeMode(state, { selectedVertexIndex: nextIdx, selectedVertexType: 'vertex', coordPath: `0.${nextIdx}` })

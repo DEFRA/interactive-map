@@ -8,6 +8,8 @@ import { PluginInits } from './renderer/PluginInits.jsx'
 import { Layout } from './layout/Layout.jsx'
 import { EVENTS as events } from '../config/events.js'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const App = (props) => {
   useEffect(() => {
     removeLoadingState()

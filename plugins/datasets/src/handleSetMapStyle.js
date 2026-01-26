@@ -22,7 +22,9 @@ export const handleSetMapStyle = ({
       // Reapply hidden features filters
       Object.entries(hiddenFeatures).forEach(([datasetId, { idProperty, ids }]) => {
         const dataset = datasets.find(d => d.id === datasetId)
-        if (!dataset) return
+        if (!dataset) {
+          return
+        }
 
         const originalFilter = dataset.filter || null
         const hasFill = !!dataset.fill

@@ -6,6 +6,8 @@ let tooltipIdCounter = 0
 const showDelay = 500
 const hideDelay = 0
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const Tooltip = ({ children, content }) => {
   const { interfaceType } = useApp()
   const triggerRef = useRef(null)

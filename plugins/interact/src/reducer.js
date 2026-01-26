@@ -1,13 +1,26 @@
 const initialState = {
   enabled: false,
+  dataLayers: [],
+  markerColor: null,
+  interactionMode: null,
+  multiSelect: false,
   selectedFeatures: [],
-  selectionBounds: null
+  selectionBounds: null,
+  closeOnAction: true // Done or Cancel
 }
 
-const setEnabled = (state, payload) => {
+const enable = (state, payload) => {
   return {
     ...state,
-    enabled: payload
+    ...payload,
+    enabled: true
+  }
+}
+
+const disable = (state) => {
+  return {
+    ...state,
+    enabled: false
   }
 }
 
@@ -69,7 +82,8 @@ const clearSelectedFeatures = (state) => {
 }
 
 const actions = {
-  SET_ENABLED: setEnabled,
+  ENABLE: enable,
+  DISABLE: disable,
   TOGGLE_SELECTED_FEATURES: toggleSelectedFeatures,
   UPDATE_SELECTED_BOUNDS: updateSelectedBounds,
   CLEAR_SELECTED_FEATURES: clearSelectedFeatures

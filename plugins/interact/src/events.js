@@ -2,7 +2,6 @@ export function attachEvents ({
   appState,
   mapState,
   pluginState,
-  pluginConfig,
   buttonConfig,
   events,
   eventBus,
@@ -43,18 +42,22 @@ export function attachEvents ({
   }
   selectAtTarget.onClick = handleSelectAtTarget
   
-  const handleSelectDone = () => {
+  const handleSelectDone = (e) => {
     const marker = mapState.markers.getMarker('location')
     const { coords } = marker || {}
     const { selectionBounds, selectedFeatures } = pluginState
     
+    if (appState.disabledButtons.has('selectDone')) {
+      return
+    }
+
     eventBus.emit('interact:done', {
       ...(coords && { coords }),
       ...(!coords && selectedFeatures && { selectedFeatures }),
       ...(!coords && selectionBounds && { selectionBounds })
     })
 
-    if (!(pluginConfig.closeOnDone ?? true)) {
+    if (!(pluginState.closeOnAction ?? true)) {
       return
     }
 
@@ -65,7 +68,7 @@ export function attachEvents ({
   const handleSelectCancel = () => {
     eventBus.emit('interact:cancel')
 
-    if (!(pluginConfig.closeOnCancel ?? true)) {
+    if (!(pluginState.closeOnAction ?? true)) {
       return
     }
 
@@ -79,7 +82,7 @@ export function attachEvents ({
     pluginState.dispatch({
       type: 'TOGGLE_SELECTED_FEATURES',
       payload: {
-        multiSelect: pluginConfig.multiSelect,
+        multiSelect: pluginState.multiSelect,
         addToExisting,
         ...args
       }

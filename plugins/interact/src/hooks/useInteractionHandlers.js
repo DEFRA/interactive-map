@@ -3,17 +3,14 @@ import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '..
 
 export const useInteractionHandlers = ({
   mapState,
-  pluginConfig,
   pluginState,
   services,
   mapProvider,
 }) => {
   const { markers } = mapState
-  const { dataLayers, interactionMode = 'marker', multiSelect, markerColor } = pluginConfig
-  const { dispatch, selectedFeatures, selectionBounds } = pluginState
+  const { dispatch, dataLayers, interactionMode, multiSelect, markerColor, selectedFeatures, selectionBounds } = pluginState
   const { eventBus } = services
   const lastEmittedSelectionChange = useRef(null)
-
   const layerConfigMap = buildLayerConfigMap(dataLayers)
 
   const handleInteraction = useCallback(({ point, coords }) => {
@@ -56,7 +53,6 @@ export const useInteractionHandlers = ({
       eventBus.emit('interact:markerchange', { coords })
     }
   }, [mapProvider, dataLayers, interactionMode, multiSelect, eventBus, dispatch, markers])
-
 
   // Emit event when selectedFeatures change
   useEffect(() => {

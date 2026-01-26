@@ -10,6 +10,8 @@ import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
 import { SlotRenderer } from '../renderer/SlotRenderer'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const Layout = () => {
   const { id } = useConfig()
   const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen } = useApp()

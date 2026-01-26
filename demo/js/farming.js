@@ -20,16 +20,11 @@ var feature = { id: 'test1234', type: 'Feature', geometry: { coordinates: [[[-2.
 var interactPlugin = createInteractPlugin({
 	dataLayers: [{
 		layerId: 'field-parcels',
-		idProperty: 'gid',
-		selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
+		idProperty: 'gid'
 	},{
 		layerId: 'linked-parcels',
-		idProperty: 'gid',
-		selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
+		idProperty: 'gid'
 	}],
-	markerColor: { outdoor: '#ff0000' },
-	// closeOnDone: false,
-	// closeOnCancel: false,
 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
 	// excludeModes: ['draw']
@@ -164,6 +159,7 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
+	interactPlugin.enable()
 	// interactPlugin.selectFeature({
 	// 	idProperty: 'ngc',
 	// 	featureId: 'NY70197424',

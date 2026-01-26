@@ -70,6 +70,8 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
           paint: { 'fill-color': fill }
         })
       }
+      map.setPaintProperty(`${base}-fill`, 'fill-color', fill)
+      map.setFilter(`${base}-fill`, filter)
       if (!map.getLayer(`${base}-line`)) {
         map.addLayer({
           id: `${base}-line`,
@@ -79,7 +81,8 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
           paint: { 'line-color': stroke, 'line-width': strokeWidth }
         })
       }
-      map.setFilter(`${base}-fill`, filter)
+      map.setPaintProperty(`${base}-line`, 'line-color', stroke)
+      map.setPaintProperty(`${base}-line`, 'line-width', strokeWidth)
       map.setFilter(`${base}-line`, filter)
     }
 

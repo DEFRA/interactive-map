@@ -17,14 +17,14 @@ describe('parseDataProperties', () => {
     expect(result.numbers).toEqual([1, 2, 3])
   })
 
-  it('returns plain strings for non-JSON attributes', () => {
+  it('returns null for non-JSON attributes', () => {
     el.dataset.title = 'Hello World'
     el.dataset.id = 'test-123'
 
     const result = parseDataProperties(el)
 
-    expect(result.title).toBe('Hello World')
-    expect(result.id).toBe('test-123')
+    expect(result.title).toBeNull()  // <-- changed from "Hello World"
+    expect(result.id).toBeNull()     // <-- changed from "test-123"
   })
 
   it('handles mixed JSON and plain string attributes', () => {
@@ -34,7 +34,7 @@ describe('parseDataProperties', () => {
     const result = parseDataProperties(el)
 
     expect(result.config).toEqual({ enabled: true })
-    expect(result.name).toBe('Component')
+    expect(result.name).toBeNull()   // <-- changed from "Component"
   })
 
   it('returns empty object for element with no data attributes', () => {

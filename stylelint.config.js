@@ -15,9 +15,9 @@ export default {
       // Disable duplicate selectors check in SCSS files only
       'no-duplicate-selectors': null
     }
-  }],
-  ignoreFiles: [
-    'node_modules/**/*',
-    'dist/**/*',
-  ]
+  },{
+    rules: {
+      'react/prop-types': 'off'
+    }
+  }]
 }

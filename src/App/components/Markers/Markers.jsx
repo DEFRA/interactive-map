@@ -5,6 +5,8 @@ import { useMap } from '../../store/mapContext.js'
 import { getValueForStyle } from '../../../utils/getValueForStyle.js'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const Markers = () => {
   const { id, markerShape, markerColor } = useConfig()
   const { mapStyle } = useMap()

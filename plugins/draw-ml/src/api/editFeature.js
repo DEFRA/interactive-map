@@ -21,6 +21,8 @@ export const editFeature = ({ appState, appConfig, mapState, pluginState, mapPro
   } else if (options.snapLayers) {
     // Snap instance not ready yet - store for later
     map._pendingSnapLayers = options.snapLayers
+  } else {
+    // No action
   }
 
   // Update state so UI can react to snap layer availability

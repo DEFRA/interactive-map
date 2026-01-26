@@ -1,41 +1,49 @@
 import { getSourceId } from '../mapLayers.js'
 
+const getLayerIds = (dataset) => {
+  const hasFill = !!dataset.fill
+  const hasStroke = !!dataset.stroke
+
+  const fillLayerId = hasFill ? dataset.id : null
+  let strokeLayerId = null
+  if (hasStroke) {
+    if (hasFill) {
+      strokeLayerId = `${dataset.id}-stroke`
+    } else {
+      strokeLayerId = dataset.id
+    }
+  }
+
+  return { fillLayerId, strokeLayerId }
+}
+
 export const removeDataset = ({ mapProvider, pluginState }, datasetId) => {
   const map = mapProvider.map
 
-  // Find the dataset to get its configuration
+  // Find the dataset
   const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-  if (!dataset) {
-    return
-  }
+  if (!dataset) return
 
-  // Determine layer IDs based on configuration
+  // Compute layer IDs
+  const { fillLayerId, strokeLayerId } = getLayerIds(dataset)
   const sourceId = getSourceId(dataset)
-  const hasFill = !!dataset.fill
-  const hasStroke = !!dataset.stroke
-  const fillLayerId = hasFill ? datasetId : null
 
-  let strokeLayerId = null
-  if (hasStroke) {
-    strokeLayerId = hasFill ? `${datasetId}-stroke` : datasetId
-  }
+  // Remove layers first
+  const layerIdsToRemove = [strokeLayerId, fillLayerId]
+  layerIdsToRemove.forEach(layerId => {
+    if (layerId && map.getLayer(layerId)) {
+      map.removeLayer(layerId)
+    }
+  })
 
-  // Remove layers first (must be removed before source)
-  if (strokeLayerId && map.getLayer(strokeLayerId)) {
-    map.removeLayer(strokeLayerId)
-  }
-  if (fillLayerId && map.getLayer(fillLayerId)) {
-    map.removeLayer(fillLayerId)
-  }
-
-  // Only remove source if no other datasets are using it
-  const otherDatasetsUsingSameSource = pluginState.datasets?.some(
+  // Remove source if no other datasets use it
+  const otherDatasetsUseSource = pluginState.datasets?.some(
     d => d.id !== datasetId && getSourceId(d) === sourceId
   )
-  if (!otherDatasetsUsingSameSource && map.getSource(sourceId)) {
+  if (!otherDatasetsUseSource && map.getSource(sourceId)) {
     map.removeSource(sourceId)
   }
 
-  // Update state
+  // Update plugin state
   pluginState.dispatch({ type: 'REMOVE_DATASET', payload: { id: datasetId } })
 }

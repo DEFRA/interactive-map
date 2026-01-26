@@ -1,6 +1,8 @@
 import React from 'react'
 import { useApp } from '../../store/appContext'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const Actions = ({ slot, children }) => {
   const { openPanels, panelConfig, breakpoint } = useApp()
 

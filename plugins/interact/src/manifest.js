@@ -3,6 +3,7 @@ import { InteractInit } from './InteractInit.jsx'
 import { initialState, actions } from './reducer.js'
 import { enable } from './api/enable.js'
 import { disable } from './api/disable.js'
+import { clear } from './api/clear.js'
 import { selectFeature } from './api/selectFeature.js'
 import { unselectFeature } from './api/unselectFeature.js'
 
@@ -18,7 +19,7 @@ export const manifest = {
     id: 'selectDone',
     label: 'Done',
     variant: 'primary',
-    excludeWhen: ({ appState, pluginConfig }) => !appState.isFullscreen && !pluginConfig.hasSubsequentAction,
+    excludeWhen: ({ appState, pluginState }) => !pluginState.enabled || !appState.isFullscreen,
     enableWhen: ({ mapState, pluginState }) => !!mapState.markers.items.find(m => m.id === 'location') || !!pluginState.selectionBounds,
     mobile: {
       slot: 'actions',
@@ -36,7 +37,7 @@ export const manifest = {
     id: 'selectAtTarget',
     label: 'Select',
     variant: 'primary',
-    hiddenWhen: ({ appState }) => !['touch', 'keyboard'].includes(appState.interfaceType),
+    hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || !['touch', 'keyboard'].includes(appState.interfaceType),
     mobile: {
       slot: 'actions',
       showLabel: true
@@ -53,7 +54,7 @@ export const manifest = {
     id: 'selectCancel',
     label: 'Cancel',
     variant: 'tertiary',
-    hiddenWhen: ({ appConfig, appState }) => !(['hybrid', 'buttonFirst'].includes(appConfig.behaviour) && appState.isFullscreen),
+    hiddenWhen: ({ appConfig, appState, pluginState }) => !pluginState.enabled || !(['hybrid', 'buttonFirst'].includes(appConfig.behaviour) && appState.isFullscreen),
     mobile: {
       slot: 'actions',
       showLabel: true
@@ -78,6 +79,7 @@ export const manifest = {
   api: {
     enable,
     disable,
+    clear,
     selectFeature,
     unselectFeature
   }
