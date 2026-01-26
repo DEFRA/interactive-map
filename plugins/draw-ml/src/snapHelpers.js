@@ -18,7 +18,8 @@ export function getSnapInstance(map) {
  * @returns {boolean} True if snap is active with valid coordinates
  */
 export function isSnapActive(snap) {
-  return !!(snap?.snapStatus && snap.snapCoords?.length >= 2)
+  // Also check snap.status to ensure snap feature is enabled
+  return !!(snap?.status && snap?.snapStatus && snap.snapCoords?.length >= 2)
 }
 
 /**
@@ -56,7 +57,7 @@ export function getSnapCoords(snap) {
  * @returns {boolean} True if snap was triggered
  */
 export function triggerSnapAtPoint(snap, map, point) {
-  if (!snap || !map) {
+  if (!snap || !map || !snap.status) {
     return false
   }
 
@@ -72,7 +73,8 @@ export function triggerSnapAtPoint(snap, map, point) {
  * @returns {boolean} True if snap was triggered
  */
 export function triggerSnapAtCenter(snap, map) {
-  if (!snap || !map) {
+  // Don't trigger snap if library is disabled
+  if (!snap || !map || !snap.status) {
     return false
   }
 
@@ -83,16 +85,39 @@ export function triggerSnapAtCenter(snap, map) {
 }
 
 /**
- * Clear the snap indicator circle
+ * Clear the snap indicator circle and all internal snap state
  * @param {MapboxSnap} snap - Snap instance
+ * @param {maplibregl.Map} [map] - Optional map instance for direct layer control
  */
-export function clearSnapIndicator(snap) {
-  if (!snap) {
-    return
+export function clearSnapIndicator(snap, map) {
+  if (snap) {
+    snap.snapStatus = false
+    snap.snapCoords = null
+    // Clear arrays in place (avoids creating new objects, reduces GC pressure)
+    if (snap.snappedFeatures?.length) snap.snappedFeatures.length = 0
+    if (snap.closeFeatures?.length) snap.closeFeatures.length = 0
+    if (snap.lines?.length) snap.lines.length = 0
+    // Note: Avoid calling setMapData here - it's expensive in Safari
   }
 
+  // Just hide the layer - much cheaper than setData() in Safari
+  if (map && map.getLayer('snap-helper-circle')) {
+    map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
+  }
+}
+
+/**
+ * Clear all snap state (for use between drag operations)
+ * @param {MapboxSnap} snap - Snap instance
+ */
+export function clearSnapState(snap) {
+  if (!snap) return
   snap.snapStatus = false
-  snap.setMapData({ type: 'FeatureCollection', features: [] })
+  snap.snapCoords = null
+  // Clear arrays in place (avoids creating new objects, reduces GC pressure)
+  if (snap.snappedFeatures?.length) snap.snappedFeatures.length = 0
+  if (snap.closeFeatures?.length) snap.closeFeatures.length = 0
+  if (snap.lines?.length) snap.lines.length = 0
 }
 
 /**
@@ -110,7 +135,11 @@ export function getSnapRadius(snap) {
  * @returns {boolean} True if snapping is enabled
  */
 export function isSnapEnabled(state) {
-  return state?.getSnapEnabled?.() !== false
+  // Only return true if getSnapEnabled exists and explicitly returns true
+  if (typeof state?.getSnapEnabled !== 'function') {
+    return false
+  }
+  return state.getSnapEnabled() === true
 }
 
 /**

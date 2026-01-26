@@ -16,11 +16,15 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     }
 
     const { remove } = createMapboxDraw({
-			colorScheme: mapState.mapStyle.mapColorScheme,
+			mapStyle: mapState.mapStyle,
+			snapLayers: pluginConfig.snapLayers,
 			mapProvider,
 			events,
 			eventBus
 		})
+
+		// Initialize snap layers flag from config
+		pluginState.dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: pluginConfig.snapLayers?.length > 0 })
 
 		// Draw ready
 		eventBus.emit('draw:ready')

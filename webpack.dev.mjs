@@ -16,7 +16,7 @@ export default {
     index: path.join(__dirname, 'demo/js/index.js'),
     forms: path.join(__dirname, 'demo/js/forms.js'),
     farming: path.join(__dirname, 'demo/js/farming.js'),
-    planning: path.join(__dirname, 'demo/js/planning.js')
+    // planning: path.join(__dirname, 'demo/js/planning.js')
   },
   output: {
     path: path.resolve(__dirname, 'public'),

@@ -1,6 +1,14 @@
 const initialState = {
+  enabled: false,
   selectedFeatures: [],
   selectionBounds: null
+}
+
+const setEnabled = (state, payload) => {
+  return {
+    ...state,
+    enabled: payload
+  }
 }
 
 /**
@@ -61,6 +69,7 @@ const clearSelectedFeatures = (state) => {
 }
 
 const actions = {
+  SET_ENABLED: setEnabled,
   TOGGLE_SELECTED_FEATURES: toggleSelectedFeatures,
   UPDATE_SELECTED_BOUNDS: updateSelectedBounds,
   CLEAR_SELECTED_FEATURES: clearSelectedFeatures

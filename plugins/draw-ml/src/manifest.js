@@ -43,7 +43,7 @@ export const manifest = {
     ...createButtonSlots(false)
   },{
     id: 'drawFinish',
-    label: 'Close shape',
+    label: 'Finish shape',
     iconId: 'check',
     variant: 'tertiary',
     hiddenWhen: ({ pluginState }) => pluginState.mode !== 'draw_vertex',
@@ -59,10 +59,10 @@ export const manifest = {
     ...createButtonSlots(false)
   },{
     id: 'drawSnap',
-    label: 'Snap to point',
+    label: 'Snap to line',
     iconId: 'magnet',
     variant: 'tertiary',
-    hiddenWhen: ({ pluginState }) => !pluginState.mode,
+    hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
     pressedWhen: ({ pluginState }) => !!pluginState.snap,
     ...createButtonSlots(false)
   },{

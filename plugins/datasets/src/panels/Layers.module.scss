@@ -1,5 +1,14 @@
+.im-c-datasets-layers__item {
+  border: 1px solid var(--button-hover-color);
+  padding-left: 10px;
+  &:not(last-child) {
+    margin-bottom: 5px;
+  }
+}
+
 .im-c-datasets-layers__item-label {
-  display: flex;
+  width: 100%;
+  max-width: none;
   align-items: start;
   padding-top: 12px;
   padding-bottom: 10px;
@@ -8,4 +17,13 @@
   line-height: 1.2;
 
   color: var(--foreground-color);
+}
+
+.im-c-datasets-layers__item--checked {
+  border-color: var(--app-border-color);
+}
+
+// GovUK style overide
+.im-c-datasets-layers__item .govuk-checkboxes__item {
+  flex-wrap: nowrap;
 }
