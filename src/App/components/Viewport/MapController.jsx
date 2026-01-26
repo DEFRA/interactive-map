@@ -10,6 +10,8 @@ import { getInitialMapState } from '../../../utils/mapStateSync'
 import { scaleFactor } from '../../../config/appConfig'
 import { scalePoints } from '../../../utils/scalePoints.js'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const MapController = ({ mapContainerRef }) => {
   const config = useConfig()
   const { id, mapProvider } = config

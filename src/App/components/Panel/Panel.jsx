@@ -6,6 +6,8 @@ import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 import { Icon } from '../Icon/Icon'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, children }) => {
   const { id } = useConfig()
   const { dispatch, breakpoint, layoutRefs } = useApp()

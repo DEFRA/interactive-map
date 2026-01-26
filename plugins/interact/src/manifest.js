@@ -19,7 +19,7 @@ export const manifest = {
     id: 'selectDone',
     label: 'Done',
     variant: 'primary',
-    excludeWhen: ({ appState, pluginConfig }) => !appState.isFullscreen && !pluginConfig.hasSubsequentAction,
+    excludeWhen: ({ appState, pluginState }) => !pluginState.enabled || !appState.isFullscreen,
     enableWhen: ({ mapState, pluginState }) => !!mapState.markers.items.find(m => m.id === 'location') || !!pluginState.selectionBounds,
     mobile: {
       slot: 'actions',

@@ -6,7 +6,8 @@ function parseAttribute (attr) {
   try {
     return JSON.parse(attr)
   } catch (err) {
-    return attr
+    console.log(err)
+    return null
   }
 }
 

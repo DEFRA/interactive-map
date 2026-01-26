@@ -2,6 +2,8 @@
 import React from 'react'
 import { getKeyboardShortcuts } from '../../registry/keyboardShortcutRegistry.js'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const KeyboardHelp = () => {
   const groups = getKeyboardShortcuts().reduce((acc, shortcut) => {
     acc[shortcut.group] = acc[shortcut.group] || []

@@ -94,14 +94,20 @@ export function clearSnapIndicator(snap, map) {
     snap.snapStatus = false
     snap.snapCoords = null
     // Clear arrays in place (avoids creating new objects, reduces GC pressure)
-    if (snap.snappedFeatures?.length) snap.snappedFeatures.length = 0
-    if (snap.closeFeatures?.length) snap.closeFeatures.length = 0
-    if (snap.lines?.length) snap.lines.length = 0
+    if (snap.snappedFeatures?.length) {
+      snap.snappedFeatures.length = 0
+    }
+    if (snap.closeFeatures?.length) {
+      snap.closeFeatures.length = 0
+    }
+    if (snap.lines?.length) {
+      snap.lines.length = 0
+    }
     // Note: Avoid calling setMapData here - it's expensive in Safari
   }
 
   // Just hide the layer - much cheaper than setData() in Safari
-  if (map && map.getLayer('snap-helper-circle')) {
+  if (map?.getLayer('snap-helper-circle')) {
     map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
   }
 }
@@ -111,13 +117,21 @@ export function clearSnapIndicator(snap, map) {
  * @param {MapboxSnap} snap - Snap instance
  */
 export function clearSnapState(snap) {
-  if (!snap) return
+  if (!snap) {
+    return
+  }
   snap.snapStatus = false
   snap.snapCoords = null
   // Clear arrays in place (avoids creating new objects, reduces GC pressure)
-  if (snap.snappedFeatures?.length) snap.snappedFeatures.length = 0
-  if (snap.closeFeatures?.length) snap.closeFeatures.length = 0
-  if (snap.lines?.length) snap.lines.length = 0
+  if (snap.snappedFeatures?.length) {
+    snap.snappedFeatures.length = 0
+  }
+  if (snap.closeFeatures?.length) {
+    snap.closeFeatures.length = 0
+  }
+  if (snap.lines?.length) {
+    snap.lines.length = 0
+  }
 }
 
 /**

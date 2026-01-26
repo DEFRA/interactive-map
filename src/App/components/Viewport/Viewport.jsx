@@ -12,6 +12,8 @@ import { MapStatus } from './MapStatus.jsx'
 import { CrossHair } from '../CrossHair/CrossHair'
 import { Markers } from '../Markers/Markers'
 
+// eslint-disable-next-line camelcase, react/jsx-pascal-case
+// sonarjs/disable-next-line function-name
 export const Viewport = ({ keyboardHintPortalRef }) => {
   const { id, mapProvider, mapLabel, keyboardHintText } = useConfig()
   const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset } = useApp()

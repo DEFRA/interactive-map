@@ -128,14 +128,13 @@ var interactiveMap = new InteractiveMap('map', {
 		useLocationPlugin(),
 		datasetsPlugin,
 		interactPlugin,
-		// framePlugin,
-		// drawPlugin
+		framePlugin,
+		drawPlugin
 	]
 	// search
 })
 
 interactiveMap.on('map:ready', function (e) {
-	// interactiveMap.setMode('draw')
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
