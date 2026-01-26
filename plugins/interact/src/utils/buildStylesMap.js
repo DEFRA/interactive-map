@@ -9,12 +9,14 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
   }
 
   dataLayers.forEach(layer => {
-    const base = layer.selectedFeatureStyle || DEFAULTS.selectedFeatureStyle
+    const stroke = layer.selectedStroke || DEFAULTS.selectedStroke
+    const fill = layer.selectedFill || DEFAULTS.selectedFill
+    const strokeWidth = layer.selectedStrokeWidth || DEFAULTS.selectedStrokeWidth
 
     stylesMap[layer.layerId] = {
-      ...base,
-      stroke: getValueForStyle(base.stroke, mapStyle.id),
-      fill: getValueForStyle(base.fill, mapStyle.id)
+      stroke: getValueForStyle(stroke, mapStyle.id),
+      fill: getValueForStyle(fill, mapStyle.id),
+      strokeWidth
     }
   })
 

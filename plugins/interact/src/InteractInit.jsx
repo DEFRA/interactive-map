@@ -12,7 +12,7 @@ export const InteractInit = ({
   pluginState
 }) => {
   const { interfaceType } = appState
-  const { dispatch, dataLayers, selectedFeatures, selectionBounds } = pluginState
+  const { dispatch, enabled, selectedFeatures, selectionBounds } = pluginState
   const { events, eventBus, closeApp } = services
   const { crossHair, mapStyle } = mapState
 
@@ -41,12 +41,12 @@ export const InteractInit = ({
 
   // Toggle target marker visibility
   useEffect(() => {
-    if (isTouchOrKeyboard) {
+    if (enabled && isTouchOrKeyboard) {
       crossHair.fixAtCenter()
     } else {
       crossHair.hide()
     }
-  }, [interfaceType])
+  }, [enabled, interfaceType])
 
   useEffect(() => {
     if (!pluginState.enabled) {

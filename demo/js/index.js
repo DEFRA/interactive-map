@@ -15,24 +15,18 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/frame/src/index.js'
 
-var interactPlugin = createInteractPlugin()
-// var interactPlugin = createInteractPlugin({
-// 	dataLayers: [{
-// 		layerId: 'field-parcels',
-// 		idProperty: 'gid',
-// 		selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
-// 	},{
-// 		layerId: 'linked-parcels',
-// 		idProperty: 'gid',
-// 		selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
-// 	}],
-// 	markerColor: { outdoor: '#ff0000' },
-// 	// closeOnDone: false,
-// 	// closeOnCancel: false,
-// 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
-// 	multiSelect: true,
-// 	// excludeModes: ['draw']
-// })
+var interactPlugin = createInteractPlugin({
+	dataLayers: [{
+		layerId: 'field-parcels',
+		idProperty: 'gid'
+	},{
+		layerId: 'linked-parcels',
+		idProperty: 'gid'
+	}],
+	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
+	multiSelect: true,
+	// excludeModes: ['draw']
+})
 
 var drawPlugin = createDrawPlugin({
 	//snapLayers: ['OS/TopographicLine/Building Outline']
@@ -145,36 +139,7 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	interactPlugin.enable({
-		dataLayers: [{
-			layerId: 'field-parcels',
-			idProperty: 'gid',
-			// selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
-		},{
-			layerId: 'linked-parcels',
-			idProperty: 'gid',
-			// selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
-		}],
-		// markerColor: { outdoor: '#ff0000' },
-		// closeOnDone: false,
-		// closeOnCancel: false,
-		interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
-		multiSelect: true,
-		// excludeModes: ['draw']
-	})
-	setTimeout(() => interactPlugin.enable({
-		dataLayers: [{
-			layerId: 'field-parcels',
-			idProperty: 'gid',
-			selectedFeatureStyle: { stroke: { outdoor: '#00ff00', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(0, 255, 0, 0.1)' }
-		}],
-		// markerColor: { outdoor: '#ff0000' },
-		// closeOnDone: false,
-		// closeOnCancel: false,
-		interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
-		multiSelect: false,
-		// excludeModes: ['draw']
-	}), 4000)
+	interactPlugin.enable()
 })
 
 interactiveMap.on('datasets:ready', () => {

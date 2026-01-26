@@ -22,7 +22,6 @@ export const useHighlightSync = ({
 
   // Force re-application of all selected features
   const updateHighlightedFeatures = () => {
-    console.log(stylesMap)
     const bounds = mapProvider.updateHighlightedFeatures?.(selectedFeatures, stylesMap)
 
     dispatch({

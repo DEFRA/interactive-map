@@ -3,8 +3,6 @@ import './interact.scss'
 
 export default function createPlugin (options = {}) {
   return {
-    // Defaults
-    dataLayers: [],
     ...options,
     // Fixed props
     id: 'interact',
