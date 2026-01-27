@@ -6,7 +6,7 @@
 [![Dependencies](https://img.shields.io/librariesio/release/npm/@defra/interactive-map)](https://libraries.io/npm/@defra%2Finteractive-map)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A lightweight, accessible map component for frontend applications. Built with accessibility at its core, this component delivers best-in-class mapping experiences that work for everyone.
+A lightweight, accessible map component for frontend applications. Modular, engine-agnostic, and built with inclusivity at its core.
 
 **⚠️ This project is currently in beta and is not yet stable. Documentation and support are not yet available.**
 
@@ -16,25 +16,33 @@ A lightweight, accessible map component for frontend applications. Built with ac
 
 ## What is this?
 
-Interactive Map is an open-source mapping solution designed for government services, but available for anyone to use. It provides a core map component that can be extended with plugins to suit your specific needs.
+Interactive Map is an open-source mapping solution designed for government services, but available for anyone to use. It provides a core map component that can be configured or extended with plugins to suit specific service needs.
 
-The component takes an accessibility-first approach, ensuring mapping tools in government services are usable by all citizens, regardless of their abilities or assistive technologies.
+The component is built on accessibility-first principles. While no map can be 100% accessible, this framework is designed to work for the widest possible range of citizens—regardless of their ability, device, or input method.
 
 ## Features
 
 ### Flexible architecture
-- **Core component** - Lightweight base map with essential functionality
-- **Plugin system** - Add only the capabilities you need:
-  - Drawing tools (ES and MapLibre variants)
-  - Search functionality
-  - Custom datasets
-  - Map styling controls
-  - Scale bars
-  - Location services
-  - Interaction handlers
-  - Framing and layout tools
+
+The framework is built on a modular, event-driven foundation designed to keep the core bundle lean while providing the **flexibility to extend** functionality as needed.
+
+* **Core Component:** Manages map state and lifecycle. It exposes its own configuration, methods, and events for direct extension.
+* **Plugin System:** Self-contained modules with scoped APIs. Plugins are inter-compatible, allowing them to interact and communicate via shared events and methods.
+
+> Read more about the [architecture](./docs/ARCHITECTURE.md).
+
+Plugins include
+* **Search:** Location and custom dataset search.
+* **Interact:** Select features and place markers.
+* **Scale Bar:** Visual scale indicator.
+* **Map Styles:** Change mapstyle and increase map size.
+* **Datasets:** Add datasets, toggle layers and display a key.
+* **Draw:** Draw polygons, lines and snap to features
+* **Frame:** Define a regular shape report area.
+* **Use Location:** Geolocation services.
 
 ### Government-ready
+
 - Built to GOV.UK standards
 - Designed for integration with government services
 - Follows established design patterns and principles
@@ -59,7 +67,7 @@ Our reference provider, offering the most complete and tested experience:
 - **Out of the box** - Works immediately with no additional configuration
 - **Modern and lightweight** - Better performance with smaller bundle sizes
 - **Vector tile support** - Most comprehensive support for vector tiles
-- **Enhanced accessibility** - Improved support for assistive technologies
+- **Enhanced accessibility** - The most inclusive capabilities
 
 ### Esri (Experimental)
 
