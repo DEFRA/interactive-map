@@ -25,7 +25,7 @@ var interactPlugin = createInteractPlugin({
 		layerId: 'linked-parcels',
 		idProperty: 'gid'
 	}],
-	interactionMode: 'marker', // 'auto', 'select', 'marker' // defaults to 'marker'
+	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
 	// excludeModes: ['draw']
 })
