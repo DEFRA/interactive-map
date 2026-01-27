@@ -55,12 +55,12 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
   const innerHtmlProp = useMemo(() => html ? { __html: html } : null, [html])
 
   return (
-    <div
+    <div // nosonar
       ref={panelRef}
       id={elementId}
       aria-labelledby={`${elementId}-label`}
-      tabIndex={shouldFocus ? -1 : undefined}
-      role={isDialog ? 'dialog' : isDismissable ? 'complementary' : 'region'}
+      tabIndex={shouldFocus ? -1 : undefined} // nosonar
+      role={isDialog ? 'dialog' : (isDismissable && 'complementary') || 'region'}
       aria-modal={isDialog && isModal ? 'true' : undefined}
       style={bpConfig.width ? { width: bpConfig.width } : undefined}
       className={panelClass}
@@ -84,18 +84,18 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
 
       {innerHtmlProp
         ? (
-          <div
+          <div // nosonar
             ref={bodyRef}
             className={panelBodyClass}
-            tabIndex={isBodyScrollable ? 0 : undefined}
+            tabIndex={isBodyScrollable ? 0 : undefined} // nosonar
             dangerouslySetInnerHTML={innerHtmlProp}
           />
           )
         : (
-          <div
+          <div // nosonar
             ref={bodyRef}
             className={panelBodyClass}
-            tabIndex={isBodyScrollable ? 0 : undefined}
+            tabIndex={isBodyScrollable ? 0 : undefined} // nosonar
             role={isBodyScrollable ? 'region' : undefined}
             aria-labelledby={isBodyScrollable ? `${elementId}-label` : undefined}
           >

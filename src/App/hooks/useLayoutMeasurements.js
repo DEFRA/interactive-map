@@ -38,7 +38,7 @@ export function useLayoutMeasurements () {
     }
 
     const root = document.documentElement
-    const dividerGap = parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
+    const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
 
     // === Inset offsets ===
     const insetOffsetTop = topLeftCol.offsetHeight + top.offsetTop

@@ -1,7 +1,7 @@
 // src/plugins/mapStyles/EsriProvider.jsx
 import './esriProvider.scss'
 import esriConfig from '@arcgis/core/config.js'
-import Map from '@arcgis/core/Map.js'
+import EsriMap from '@arcgis/core/Map.js'
 import MapView from '@arcgis/core/views/MapView.js'
 import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
 import { defaults, supportedShortcuts } from './defaults.js'
@@ -36,7 +36,7 @@ export default class EsriProvider {
     }
 
     const baseTileLayer = new VectorTileLayer({ id: 'baselayer', url: mapStyle.url, visible: true })
-    const map = new Map({ layers: [baseTileLayer] })
+    const map = new EsriMap({ layers: [baseTileLayer] })
     const geometry = maxExtent ? getExtentFromFlatCoords(maxExtent) : null
 
     const view = new MapView({

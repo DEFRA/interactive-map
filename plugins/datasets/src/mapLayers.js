@@ -2,12 +2,13 @@ import { getValueForStyle } from '../../../src/utils/getValueForStyle.js'
 
 // Generate a hash for consistent source ID generation
 const hashString = (str) => {
+  const HASH_BASE = 36
   let hash = 0
-  for (let i = 0; i < str.length; i++) {
-    hash = ((hash << 5) - hash) + str.charCodeAt(i)
+  for (const ch of str) {
+    hash = ((hash << 5) - hash) + ch.codePointAt(0)
     hash = hash & hash
   }
-  return Math.abs(hash).toString(36)
+  return Math.abs(hash).toString(HASH_BASE)
 }
 
 // Generate a consistent source ID for source sharing

@@ -34,7 +34,7 @@ export const useCrossHair = () => {
       const { x, y } = mapProvider.mapToScreen(coords)
       crossHair.coords = coords
       dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: true, isVisible: true, coords, state } })
-      updatePosition(el, x, y, state)
+      updatePosition(el, x, y)
     }
 
     crossHair.fixAtCenter = () => {
@@ -78,7 +78,7 @@ export const useCrossHair = () => {
     const handleRender = () => {
       if (crossHair.coords && crossHair.isPinnedToMap) {
         const { x, y } = mapProvider.mapToScreen(crossHair.coords)
-        updatePosition(el, x, y, crossHair.state)
+        updatePosition(el, x, y)
       }
     }
 

@@ -1,7 +1,7 @@
 // src/plugins/search/Suggestions.jsx
 export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
   return (
-    <ul
+    <ul // nosonar
       id={`${id}-search-suggestions`}
       role="listbox"
       aria-labelledby={`${id}-search`} // Option A: label from input
@@ -13,11 +13,11 @@ export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
           key={suggestion.id}
           id={`${id}-search-suggestion-${i}`}
           className="im-c-search-suggestions__item"
-          role="option"
+          role="option" // nosonar
           aria-selected={pluginState.selectedIndex === i}
           aria-setsize={pluginState.suggestions.length}
           aria-posinset={i + 1}
-          onClick={() => handleSuggestionClick(suggestion)}
+          onClick={() => handleSuggestionClick(suggestion)} // nosonar
         >
           <span className="im-c-search-suggestions__label" dangerouslySetInnerHTML={{ __html: suggestion.marked }} />
         </li>

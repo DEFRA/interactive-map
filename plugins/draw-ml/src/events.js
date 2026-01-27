@@ -80,7 +80,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     }
     layers.filter(l => l.source?.startsWith('mapbox-gl-draw')).forEach(l => map.moveLayer(l.id))
   }
-  map.on('styledata', () => handleStyleData(map))
+  map.on('styledata', () => handleStyleData())
 
   // --- A new shape is created
   const onCreate = (e) => {

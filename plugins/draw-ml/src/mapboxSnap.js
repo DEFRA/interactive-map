@@ -207,6 +207,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
 
     patchSourceData(source)
 
+    /** @type {any} */
     const snap = new MapboxSnap({
       map,
       drawing: draw,
@@ -218,20 +219,23 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
     // Override the status property to prevent library from auto-setting it
     // The library sets status=true on draw.modechange and draw.selectionchange
     // We want external control only via setSnapStatus()
-    let _status = status
+    let controlledStatus = status
+
+    /* sonar-disable sonarjs:S4275 */
     Object.defineProperty(snap, 'status', {
-      get() {
-        return _status
+      get () {
+        return controlledStatus
       },
-      set() {
-        // Ignore the library's auto-set attempts - only allow via setSnapStatus()
+      set () {
+        // intentionally empty: library writes are ignored
       },
       configurable: true
     })
+    /* sonar-enable sonarjs:S4275 */
 
-    // Provide a method for external control of status
+    // Provide a controlled method for updating status
     snap.setSnapStatus = (value) => {
-      _status = value
+      controlledStatus = value
     }
 
     // Store default layers and provide method to override per-call

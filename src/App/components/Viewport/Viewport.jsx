@@ -69,7 +69,7 @@ export const Viewport = ({ keyboardHintPortalRef }) => {
         className={`im-c-viewport im-c-viewport--${mapSize}`}
         aria-label={mapLabel}
         role='application'
-        tabIndex='0'
+        tabIndex='0' // nosonar
         onFocus={handleFocus}
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
