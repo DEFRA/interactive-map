@@ -221,17 +221,15 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
     // We want external control only via setSnapStatus()
     let controlledStatus = status
 
-    /* sonar-disable sonarjs:S4275 */
     Object.defineProperty(snap, 'status', {
-      get () {
+      get () { // nosonar
         return controlledStatus
       },
-      set () {
+      set () { // nosonar
         // intentionally empty: library writes are ignored
       },
       configurable: true
     })
-    /* sonar-enable sonarjs:S4275 */
 
     // Provide a controlled method for updating status
     snap.setSnapStatus = (value) => {

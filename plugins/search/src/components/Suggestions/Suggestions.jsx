@@ -3,13 +3,13 @@ export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
   return (
     <ul // nosonar
       id={`${id}-search-suggestions`}
-      role="listbox"
+      role="listbox" // nosonar
       aria-labelledby={`${id}-search`} // Option A: label from input
       className="im-c-search-suggestions"
       style={!pluginState.areSuggestionsVisible || !pluginState.suggestions.length ? { display: 'none' } : undefined }
     >
       {pluginState.suggestions.map((suggestion, i) => (
-        <li
+        <li // nosonar
           key={suggestion.id}
           id={`${id}-search-suggestion-${i}`}
           className="im-c-search-suggestions__item"
