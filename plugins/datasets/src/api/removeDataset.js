@@ -22,7 +22,9 @@ export const removeDataset = ({ mapProvider, pluginState }, datasetId) => {
 
   // Find the dataset
   const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-  if (!dataset) return
+  if (!dataset) {
+    return
+  }
 
   // Compute layer IDs
   const { fillLayerId, strokeLayerId } = getLayerIds(dataset)
