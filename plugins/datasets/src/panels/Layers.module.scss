@@ -26,4 +26,8 @@
 // GovUK style overide
 .im-c-datasets-layers__item .govuk-checkboxes__item {
   flex-wrap: nowrap;
+
+  .govuk-checkboxes__input {
+    margin-left: -3px;
+  }
 }
