@@ -6,7 +6,7 @@
 [![Dependencies](https://img.shields.io/librariesio/release/npm/@defra/interactive-map)](https://libraries.io/npm/@defra%2Finteractive-map)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A lightweight, accessible map component for frontend applications. Modular, engine-agnostic, and built with inclusivity at its core.
+A lightweight, map component for frontend applications. Modular, engine-agnostic, and built with accessibility at its core.
 
 **⚠️ This project is currently in beta and is not yet stable. Documentation and support are not yet available.**
 
@@ -26,7 +26,7 @@ The component is built on accessibility-first principles. While no map can be 10
 
 The framework uses a modular approach to keep things lightweight and fast. The **Core Component** handles the map basics, while the **Plugin System** allows you to add complex features that can work together seamlessly.
 
-> Read more about the [architecture](./docs/ARCHITECTURE.md).
+> Read more about the [architecture](./docs/architecture.md).
 
 Plugins include
 * **Search:** Location and custom dataset search.
