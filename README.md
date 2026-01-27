@@ -24,10 +24,7 @@ The component is built on accessibility-first principles. While no map can be 10
 
 ### Flexible architecture
 
-The framework is built on a modular, event-driven foundation designed to keep the core bundle lean while providing the **flexibility to extend** functionality as needed.
-
-* **Core Component:** Manages map state and lifecycle. It exposes its own configuration, methods, and events for direct extension.
-* **Plugin System:** Self-contained modules with scoped APIs. Plugins are inter-compatible, allowing them to interact and communicate via shared events and methods.
+The framework uses a modular approach to keep things lightweight and fast. The **Core Component** handles the map basics, while the **Plugin System** allows you to add complex features that can work together seamlessly.
 
 > Read more about the [architecture](./docs/ARCHITECTURE.md).
 
