@@ -23,7 +23,7 @@ tags
 nbproject/*
 .vscode
 .env
-
+.claude
 # Windows
 Thumbs.db
 
