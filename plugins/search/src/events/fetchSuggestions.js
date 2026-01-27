@@ -5,7 +5,7 @@ import { fetchDataset } from '../utils/fetchDataset.js'
  * Sanitise input query
  * Allows letters, numbers, spaces, dashes, commas, full stops
  */
-const sanitiseQuery = (value) => value.replace(/[^a-zA-Z0-9\s\-.,]/g, '').trim()
+const sanitiseQuery = (value) => value.replaceAll(/[^a-zA-Z0-9\s\-.,]/g, '').trim()
 
 /**
  * Fetch suggestions from multiple datasets

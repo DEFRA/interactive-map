@@ -39,7 +39,7 @@ export function useModalPanelBehaviour ({
 
   // === Set absolute offset positions and recalculate on mainRef resize === //
   const root = document.documentElement
-  const dividerGap = parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
+  const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
 
   useResizeObserver([mainRef], () => {
     if (!isModal || !buttonContainerEl || !mainRef.current) {

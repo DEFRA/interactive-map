@@ -5,7 +5,7 @@ const POINT_BUFFER = 500
 const MAX_RESULTS = 8
 
 const isPostcode = (value) => {
-  value = value.replace(/\s/g, '')
+  value = value.replaceAll(/\s/g, '')
   const regex = /^(([A-Z]{1,2}\d[A-Z\d]?|ASCN|STHL|TDCU|BBND|[BFS]IQQ|PCRN|TKCA) ?\d[A-Z]{2}|BFPO ?\d{1,4}|(KY\d|MSR|VG|AI)[ -]?\d{4}|[A-Z]{2} ?\d{2}|GE ?CX|GIR ?0A{2}|SAN ?TA1)$/i
   return regex.test(value)
 }
@@ -17,12 +17,12 @@ const removeDuplicates = (results) =>
   Array.from(new Map(results.map(r => [r.GAZETTEER_ENTRY.ID, r])).values())
 
 const removeTenuousResults = (results, query) => {
-  const words = query.toLowerCase().replace(/,/g, '').split(' ')
+  const words = query.toLowerCase().replaceAll(',', '').split(' ')
   return results.filter(l => words.some(w => l.GAZETTEER_ENTRY.NAME1.toLowerCase().includes(w) || isPostcode(query)))
 }
 
 const markString = (string, find) => {
-  const clean = find.replace(/\s+/g, '')
+  const clean = find.replaceAll(/\s+/g, '')
   // Create a pattern where whitespace is optional between every character
   // e.g. "ab12cd" -> "a\s* b\s* 1\s* 2\s* c\s* d"
   const spacedPattern = clean.split('').join('\\s*')

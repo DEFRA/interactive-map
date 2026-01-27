@@ -33,9 +33,9 @@ const formatDimension = (meters) => {
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {
-    const value = parseFloat(miles.toFixed(1))
-    const unit = value === 1 ? 'mile' : 'miles'
-    return `${value} ${unit}`
+    const value = Number.parseFloat(miles.toFixed(1))
+    const units = value === 1 ? 'mile' : 'miles'
+    return `${value} ${units}`
   }
 
   const rounded = Math.round(miles)

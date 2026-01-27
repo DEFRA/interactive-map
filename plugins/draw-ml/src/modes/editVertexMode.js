@@ -1,4 +1,4 @@
-import DirectSelect from '/node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
+import DirectSelect from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
 import { spatialNavigate } from '../utils.js'
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
@@ -203,7 +203,7 @@ export const EditVertexMode = {
 
     if (meta === 'vertex') {
       this.changeMode(state, {
-        selectedVertexIndex: parseInt(coordPath.split('.')[1], 10),
+        selectedVertexIndex: Number.parseInt(coordPath.split('.')[1], 10),
         selectedVertexType: 'vertex', coordPath
       })
     } else if (meta === 'midpoint') {
@@ -221,7 +221,7 @@ export const EditVertexMode = {
 
     const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     const style = window.getComputedStyle(state.touchVertexTarget)
-    state.deltaTarget = { x: touch.x - parseFloat(style.left), y: touch.y - parseFloat(style.top) }
+    state.deltaTarget = { x: touch.x - Number.parseFloat(style.left), y: touch.y - Number.parseFloat(style.top) }
     const vertexPt = this.map.project(state.vertecies[state.selectedVertexIndex])
     state.deltaVertex = { x: (touch.x / state.scale) - vertexPt.x, y: (touch.y / state.scale) - vertexPt.y }
   },
@@ -311,7 +311,7 @@ export const EditVertexMode = {
   },
 
   getVertexIndexFromMidpoint(vertecies, coordPath) {
-    const afterIdx = parseInt(coordPath.split('.')[1], 10)
+    const afterIdx = Number.parseInt(coordPath.split('.')[1], 10)
     return vertecies.length + ((afterIdx - 1 + vertecies.length) % vertecies.length)
   },
 

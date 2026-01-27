@@ -1,3 +1,3 @@
 export function stringToKebab (str) {
-  return str?.replace(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
+  return str?.replaceAll(/([a-z0-9])([A-Z])/g, '$1-$2').toLowerCase()
 }

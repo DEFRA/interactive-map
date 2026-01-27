@@ -19,9 +19,9 @@ const formatDimension = (meters) => {
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {
-    const value = parseFloat(miles.toFixed(1))
-    const unit = value === 1 ? 'mile' : 'miles'
-    return `${value} ${unit}`
+    const value = Number.parseFloat(miles.toFixed(1))
+    const units = value === 1 ? 'mile' : 'miles'
+    return `${value} ${units}`
   }
 
   const rounded = Math.round(miles)
@@ -96,7 +96,9 @@ function getCardinalMove(from, to) {
  * @param {Object} padding - Optional: { top, right, bottom, left } in pixels
  * @returns {Extent} - Padded extent
  */
-const getPaddedExtent = (view, padding = { top: 0, right: 0, bottom: 0, left: 0 }) => {
+const DEFAULT_PADDING = { top: 0, right: 0, bottom: 0, left: 0 }
+
+const getPaddedExtent = (view, padding = DEFAULT_PADDING) => {
   if (!view.container) {
     return null
   }
