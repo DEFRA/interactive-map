@@ -17,10 +17,10 @@ const getSourceId = (dataset) => {
     const tilesKey = Array.isArray(dataset.tiles) ? dataset.tiles.join(',') : dataset.tiles
     return `tiles-${hashString(tilesKey)}`
   }
-  if (dataset.data) {
+  if (dataset.geojson) {
     // URL strings can be shared, inline GeoJSON objects get unique IDs per dataset
-    if (typeof dataset.data === 'string') {
-      return `geojson-${hashString(dataset.data)}`
+    if (typeof dataset.geojson === 'string') {
+      return `geojson-${hashString(dataset.geojson)}`
     }
     // Inline GeoJSON - use dataset ID since object identity can't be shared
     return `geojson-${dataset.id}`
@@ -50,18 +50,23 @@ const addMapLayers = (map, mapStyleId, dataset) => {
 
   // --- Add source (shared across datasets with same tiles/data URL) ---
   if (!map.getSource(sourceId)) {
+
     if (dataset.tiles) {
+      // Tiles
       map.addSource(sourceId, {
         type: 'vector',
         tiles: dataset.tiles,
         minzoom: dataset.minZoom || 0,
         maxzoom: dataset.maxZoom || 22
       })
-    } else if (dataset.data) {
+    } else if (dataset.geojson) {
+      // GeoJSON URL
       map.addSource(sourceId, {
         type: 'geojson',
-        data: dataset.data
+        data: dataset.geojson
       })
+    } else {
+      // No action
     }
   }
 
@@ -81,7 +86,7 @@ const addMapLayers = (map, mapStyleId, dataset) => {
       id: fillLayerId,
       type: 'fill',
       source: sourceId,
-      'source-layer': dataset.sourceLayer,
+      'source-layer': dataset?.tiles?.length ? dataset.sourceLayer : undefined,
       layout: {
         visibility
       },
@@ -100,7 +105,7 @@ const addMapLayers = (map, mapStyleId, dataset) => {
       id: strokeLayerId,
       type: 'line',
       source: sourceId,
-      'source-layer': dataset.sourceLayer,
+      'source-layer': dataset?.tiles?.length ? dataset.sourceLayer : undefined,
       layout: {
         visibility
       },
