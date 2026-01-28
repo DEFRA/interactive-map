@@ -10,7 +10,8 @@
 Built to GOV.UK standards, with accessibility at its core, Interactive Map supports a wide range of users across abilities, devices and input methods.
 It is open source and works with multiple mapping engines. The component can be extended through plugins to meet the specific needs of a service.
 
-See [examples](https://google.co.uk).
+See [examples of Interactive Map](https://google.co.uk).
+
 See [getting started](./docs/getting-started.md) developer guide.
 
 **⚠️ This project is currently in beta and is not yet stable. Documentation and support are not yet available.**
