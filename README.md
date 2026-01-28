@@ -1,4 +1,4 @@
-# Interactive map
+# InteractiveMap
 
 [![CI](https://github.com/defra/interactive-map/workflows/CI/badge.svg)](https://github.com/defra/interactive-map/actions)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=DEFRA_interactive-map&metric=coverage)](https://sonarcloud.io/summary/new_code?id=DEFRA_interactive-map)
@@ -6,7 +6,7 @@
 [![Dependencies](https://img.shields.io/librariesio/release/npm/@defra/interactive-map)](https://libraries.io/npm/@defra%2Finteractive-map)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-**Interactive Map** is a lightweight map component designed for public-facing government services, and available for anyone to use.
+**InteractiveMap** is a lightweight map component designed for public-facing government services, and available for anyone to use.
 Built to GOV.UK standards, with accessibility at its core, Interactive Map supports a wide range of users across abilities, devices and input methods.
 It is open source and works with multiple mapping engines. The component can be extended through plugins to meet the specific needs of a service.
 
