@@ -207,9 +207,6 @@ interactiveMap.on('search:clear', function (e) {
 interactiveMap.on('frame:done', function (e) {
 	console.log('frame:done')
 	drawPlugin.addFeature(e)
-	setTimeout(() => {
-		framePlugin.editFeature(e)
-	}, 3000)
 })
 
 interactiveMap.on('frame:cancel', function (e) {
