@@ -83,7 +83,7 @@ An alternative provider with specific advantages:
 
 <table>
   <tr>
-    <td><strong>British National Gri</strong></td>
+    <td><strong>British National Grid</strong></td>
     <td>Native support for BNG coordinate systems</td>
   </tr>
 </table>
