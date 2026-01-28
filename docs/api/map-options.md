@@ -25,6 +25,6 @@ Map style configuration. See [MapStyle](./api/map-style.md) for full details.
 ## Map framework options
 
 Options supported by the underlying map framework should be provided here
-(e.g. `zoom`, `center`). These options are passed directly to the map provider.
+(e.g. **`zoom`**, **`center`**). These options are passed directly to the map provider.
 
 For a full list of supported options, see [MapLibre MapOptions](https://maplibre.org/maplibre-gl-js/docs/API/type-aliases/MapOptions/).
