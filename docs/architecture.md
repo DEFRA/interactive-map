@@ -26,9 +26,9 @@ The framework is consumed via a **vanilla JavaScript API**, making it easy to in
 
 This wrapper:
 
-* **Instantiates** the core component 
-* **Passes** configuration, plugins, and providers 
-* **Exposes** events and methods to the host application 
+* **Instantiates** the core component  
+* **Passes** configuration, plugins, and providers  
+* **Exposes** events and methods to the host application  
 
 > **Note:** Internally, the UI is implemented in React, but this is an implementation detail and not required knowledge for consumers. 
 
@@ -53,7 +53,25 @@ The framework is **not tied to a specific mapping library.** It uses a `mapProvi
 * Setting the view zoom and centre 
 * Querying features 
 
-This allows providers (MapLibre, OpenLayers, Esri) to be swapped without rewriting plugins or UI code.
+This allows providers to be swapped without rewriting plugins or UI code.
+
+### MapLibre (Recommended)
+
+Our reference provider, offering the most complete and tested experience:
+
+|||
+| :--- | :--- |
+| **Out of the box** | Works immediately with no additional configuration |
+| **Modern and lightweight** | Better performance with smaller bundle  sizes |
+| **Vector tile support** | Most comprehensive support for vector tiles |
+| **Enhanced accessibility** | Improved support for assistive technologies |
+
+### Esri (Experimental)
+An alternative provider with specific advantages:
+
+|||
+| :--- | :--- |
+| **British National Grid** | Native support for BNG coordinate systems |
 
 ---
 
@@ -63,7 +81,7 @@ This allows providers (MapLibre, OpenLayers, Esri) to be swapped without rewriti
 Plugins describe what they add using a **manifest** (buttons, panels, shortcuts). They are contributors, not "render owners."
 
 ### Registration vs Rendering 
-* **Registration:** Reads manifests and populates central registries at load time. 
+* **Registration:** Reads manifests and populates central registries at load time.
 * **Rendering:** Controlled entirely by the core, which decides where and how items appear based on current state. 
 
 ### Isolation 
@@ -88,10 +106,21 @@ Provides two-way, decoupled communication between the core, plugins, and the van
 
 ## Mental Model for Developers 
 
-| Component | Role |
+|||
 | :--- | :--- |
 | **Core** | The Platform |
 | **Plugins** | Declarative Feature Descriptions |
 | **Providers** | Adapters for Map Engines |
 | **Slots** | Layout Positions |
 | **State** | Shared Context |
+
+## Tech stack
+
+|||
+| :--- | :--- |
+| **React** | UI component framework |
+| **MapLibre** | Primary mapping engine |
+| **Webpack** | Module bundling (UMD, ESM builds) |
+| **Jest** | Testing framework |
+| **SCSS** | Styling |
+| **Babel** | JavaScript compilation |
