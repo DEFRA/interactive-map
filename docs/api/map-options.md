@@ -4,8 +4,6 @@ Configuration object specifying map provider, map style, behaviour, and other se
 
 > Used as the `options` parameter in `new InteractiveMap(container, options)`.
 
----
-
 ## Properties
 
 **`mapProvider`**
