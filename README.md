@@ -22,8 +22,6 @@ See [examples](https://google.co.uk).
 
 ### Installation
 
-### Installation
-
 Run:
 
 ```shell
@@ -50,8 +48,6 @@ const interactiveMap = new InteractiveMap('map', {
   mapLabel: 'Ambleside',
   zoom: 14,
   center: [-2.968, 54.425],
-  minZoom: 6,
-  maxZoom: 18,
   containerHeight: '650px',
   mapStyle: {
     url: 'https://tiles.openfreemap.org/styles/liberty',
@@ -63,9 +59,11 @@ const interactiveMap = new InteractiveMap('map', {
 
 ### GOV.UK Prototype kit plugin
 
-Following installation the Interactive Map plugin will be added to your prototype. You can now create pages, add and configure the map for specific use cases.
+Following installation the InteractiveMap plugin will be added to your prototype. You can now create pages with a map, and configure for specific use cases.
 
 See [Install and use plugins](https://prototype-kit.service.gov.uk/docs/install-and-use-plugins).
+
+See [Configuring InteractiveMap in a GOVUK Prototype](./docs/govuk-prototype).
 
 ## Documentation
 
