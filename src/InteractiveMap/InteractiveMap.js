@@ -1,5 +1,6 @@
 // src/InteractiveMap/InteractiveMap.js
 import '../scss/main.scss'
+import '../types.js' // Import type definitions
 import historyManager from './historyManager.js'
 import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
@@ -14,6 +15,24 @@ import { createReverseGeocode } from '../services/reverseGeocode.js'
 import { EVENTS as events } from '../config/events.js'
 import { createEventBus } from '../services/eventBus.js'
 
+/**
+ * Main InteractiveMap class for creating accessible map components.
+ * 
+ * @example
+ * ```js
+ * import InteractiveMap from '@defra/interactive-map'
+ * import { createMapLibreProvider } from '@defra/interactive-map/providers/maplibre'
+ * 
+ * const map = new InteractiveMap('map-container', {
+ *   behaviour: 'inline',
+ *   center: [-1.5, 52.0],
+ *   zoom: 10,
+ *   mapProvider: createMapLibreProvider()
+ * })
+ * 
+ * map.loadApp()
+ * ```
+ */
 export default class InteractiveMap {
   _openButton = null
   _root = null // keep react root internally
@@ -21,6 +40,11 @@ export default class InteractiveMap {
   _interfaceDetectorCleanup = null
   _hybridBehaviourCleanup = null
 
+  /**
+   * Create a new InteractiveMap instance.
+   * @param {string} id - DOM element ID to mount the map
+   * @param {import('../config/defaults.js').InteractiveMapConfig} [props] - Configuration options
+   */
   constructor (id, props = {}) {
     this.id = id
     this.rootEl = document.getElementById(id)
@@ -94,6 +118,10 @@ export default class InteractiveMap {
   }
 
   // Public methods
+  /**
+   * Load and render the map application.
+   * @returns {Promise<void>}
+   */
   async loadApp () {
     if (this._openButton) {
       this._openButton.style.display = 'none'
@@ -146,6 +174,10 @@ export default class InteractiveMap {
     }
   }
 
+  /**
+   * Remove the app from DOM but keep instance.
+   * @returns {void}
+   */
   removeApp () {
     if (this._root && typeof this.unmount === 'function') {
       this.unmount()
@@ -162,6 +194,10 @@ export default class InteractiveMap {
     this.eventBus.emit(events.MAP_DESTROY, { mapId: this.id })
   }
 
+  /**
+   * Fully destroy the map instance and clean up resources.
+   * @returns {void}
+   */
   destroy () {
     this.removeApp()
     this._breakpointDetector?.destroy()
@@ -172,53 +208,130 @@ export default class InteractiveMap {
   }
 
   // API - EventBus methods
+  /**
+   * Subscribe to a map event.
+   * @param {string} eventName - Event name (e.g., 'map:ready', 'map:click')
+   * @param {(...args: any[]) => void} handler - Event handler function
+   * @returns {void}
+   * @example
+   * ```js
+   * map.on('map:ready', () => console.log('Map is ready'))
+   * map.on('map:click', (event) => console.log('Clicked at', event.coordinates))
+   * ```
+   */
   on (...args) {
     this.eventBus.on(...args)
   }
 
+  /**
+   * Unsubscribe from a map event.
+   * @param {string} eventName - Event name
+   * @param {(...args: any[]) => void} [handler] - Specific handler to remove (omit to remove all)
+   * @returns {void}
+   */
   off (...args) {
     this.eventBus.off(...args)
   }
 
+  /**
+   * Emit a map event.
+   * @param {string} eventName - Event name
+   * @param {...any} args - Event arguments
+   * @returns {void}
+   */
   emit (...args) {
     this.eventBus.emit(...args)
   }
 
   // API - location markers
+  /**
+   * Add a marker to the map.
+   * @param {string} id - Unique marker identifier
+   * @param {[number, number]} coords - Marker coordinates [lng, lat]
+   * @param {import('../types.js').MarkerOptions} [options] - Marker options
+   * @returns {void}
+   * @example
+   * ```js
+   * map.addMarker('location-1', [-1.5, 52.0], { color: '#0000ff' })
+   * ```
+   */
   addMarker (id, coords, options) {
     this.eventBus.emit(events.APP_ADD_MARKER, { id, coords, options })
   }
 
+  /**
+   * Remove a marker from the map.
+   * @param {string} id - Marker identifier to remove
+   * @returns {void}
+   */
   removeMarker (id) {
     this.eventBus.emit(events.APP_REMOVE_MARKER, id)
   }
 
   // API - change app mode
+  /**
+   * Set the current interaction mode.
+   * @param {string} mode - Mode identifier
+   * @returns {void}
+   */
   setMode (mode) {
     this.eventBus.emit(events.APP_SET_MODE, mode)
   }
 
   // Interface API add button/panel/control, remove panel
+  /**
+   * Add a button to the map UI.
+   * @param {string} id - Button identifier
+   * @param {import('../types.js').ButtonDefinition} config - Button configuration
+   * @returns {void}
+   */
   addButton (id, config) {
     this.eventBus.emit(events.APP_ADD_BUTTON, { id, config })
   }
 
+  /**
+   * Add a panel to the map UI.
+   * @param {string} id - Panel identifier
+   * @param {import('../types.js').PanelDefinition} config - Panel configuration
+   * @returns {void}
+   */
   addPanel (id, config) {
     this.eventBus.emit(events.APP_ADD_PANEL, { id, config })
   }
 
+  /**
+   * Remove a panel from the map UI.
+   * @param {string} id - Panel identifier
+   * @returns {void}
+   */
   removePanel (id) {
     this.eventBus.emit(events.APP_REMOVE_PANEL, id)
   }
 
+  /**
+   * Show a panel.
+   * @param {string} id - Panel identifier
+   * @returns {void}
+   */
   showPanel (id) {
     this.eventBus.emit(events.APP_SHOW_PANEL, id)
   }
 
+  /**
+   * Hide a panel.
+   * @param {string} id - Panel identifier
+   * @returns {void}
+   */
   hidePanel (id) {
     this.eventBus.emit(events.APP_HIDE_PANEL, id)
   }
 
+  /**
+   * Add a control to the map UI.
+   * @param {string} id - Control identifier
+   * @param {import('../types.js').ControlDefinition} config - Control configuration
+   * @returns {void}
+   */
   addControl (id, config) {
     this.eventBus.emit(events.APP_ADD_CONTROL, { id, config })
   }
