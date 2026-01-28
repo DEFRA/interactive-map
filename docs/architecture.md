@@ -59,21 +59,34 @@ This allows providers to be swapped without rewriting plugins or UI code.
 
 Our reference provider, offering the most complete and tested experience:
 
-|||
-| :--- | :--- |
-| **Out of the box** | Works immediately with no additional configuration |
-| **Modern and lightweight** | Better performance with smaller bundle  sizes |
-| **Vector tile support** | Most comprehensive support for vector tiles |
-| **Enhanced accessibility** | Improved support for assistive technologies |
+<table>
+  <tr>
+    <td><strong>Out of the box</strong></td>
+    <td>Works immediately with no additional</td>
+  </tr>
+  <tr>
+    <td><strong>Modern and lightweight</strong></td>
+    <td>Better performance with smaller bundle  sizes</td>
+  </tr>
+  <tr>
+    <td><strong>Vector tile support</strong></td>
+    <td>Most comprehensive support for vector tiles</td>
+  </tr>
+  <tr>
+    <td><strong>Enhanced accessibility</strong></td>
+    <td>The most accessbile offering</td>
+  </tr>
+</table>
 
 ### Esri (Experimental)
 An alternative provider with specific advantages:
 
-|||
-| :--- | :--- |
-| **British National Grid** | Native support for BNG coordinate systems |
-
----
+<table>
+  <tr>
+    <td><strong>British National Gri</strong></td>
+    <td>Native support for BNG coordinate systems</td>
+  </tr>
+</table>
 
 ## 4. Plugin System 
 
