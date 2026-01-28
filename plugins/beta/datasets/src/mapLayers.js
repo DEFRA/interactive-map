@@ -1,4 +1,4 @@
-import { getValueForStyle } from '../../../src/utils/getValueForStyle.js'
+import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 
 // Generate a hash for consistent source ID generation
 const hashString = (str) => {

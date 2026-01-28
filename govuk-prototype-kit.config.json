@@ -11,14 +11,14 @@
     "/dist/css/",
     "/dist/umd/",
     "/providers/maplibre/dist",
-    "/providers/open-names/dist",
-    "/plugins/datasets/dist",
+    "/providers/beta/open-names/dist",
+    "/plugins/beta/datasets/dist",
     "/plugins/interact/dist",
-    "/plugins/map-styles/dist",
-    "/plugins/scale-bar/dist",
+    "/plugins/beta/map-styles/dist",
+    "/plugins/beta/scale-bar/dist",
     "/plugins/search/dist",
-    "/plugins/use-location/dist",
-    "/plugins/draw-ml/dist",
-    "/plugins/frame/dist"
+    "/plugins/beta/use-location/dist",
+    "/plugins/beta/draw-ml/dist",
+    "/plugins/beta/frame/dist"
   ]
 }
