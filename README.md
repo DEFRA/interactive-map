@@ -73,6 +73,12 @@ An alternative provider with specific advantages:
 
 Documentation and installation instructions will be published when the project reaches stable release.
 
+## Beta vs Stable Features
+
+Plugins and providers are organized into two categories:
+- **Non-beta**: Stable, well-tested features ready for production use
+- **Beta** (`beta/` directories): Preview features available for testing; not recommended for production
+
 ## Status
 
 This project is in active development and not yet ready for production use. APIs may change without notice.

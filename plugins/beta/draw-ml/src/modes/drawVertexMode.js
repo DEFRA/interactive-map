@@ -1,5 +1,5 @@
-import DrawPolygon from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/draw_polygon.js'
-import createVertex from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
+import DrawPolygon from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/draw_polygon.js'
+import createVertex from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
 import { isValidClick } from '../utils.js'
 import {
   getSnapInstance,
