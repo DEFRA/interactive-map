@@ -84,8 +84,42 @@
  */
 
 /**
+ * @typedef {Object} PluginComponentProps
+ * @property {Object} appConfig - Application configuration with all settings
+ * @property {Object} appState - Application state from AppProvider
+ * @property {string} appState.mode - Current mode
+ * @property {string} appState.breakpoint - Current breakpoint ('mobile' | 'tablet' | 'desktop')
+ * @property {string} appState.interfaceType - Interface type ('mouse' | 'touch' | 'keyboard')
+ * @property {boolean} appState.isFullscreen - Whether app is in fullscreen
+ * @property {boolean} appState.isLayoutReady - Whether layout is initialized
+ * @property {Object} appState.layoutRefs - React refs for layout containers
+ * @property {Object} mapState - Map state from MapProvider
+ * @property {boolean} mapState.isMapReady - Whether map is initialized
+ * @property {MapStyleConfig} [mapState.mapStyle] - Current map style configuration
+ * @property {string} [mapState.mapSize] - Current map size preset
+ * @property {[number, number]} [mapState.center] - Map center coordinates
+ * @property {number} [mapState.zoom] - Map zoom level
+ * @property {boolean} [mapState.isAtMaxZoom] - Whether at maximum zoom
+ * @property {boolean} [mapState.isAtMinZoom] - Whether at minimum zoom
+ * @property {Object} mapState.crossHair - Target marker state
+ * @property {Object} mapState.markers - Map markers state
+ * @property {Object} services - Core services
+ * @property {(message: string) => void} services.announce - Screen reader announcer
+ * @property {(zoom: number, center: [number, number]) => Promise<string | null>} services.reverseGeocode - Reverse geocoding service
+ * @property {Object} services.events - Event constant definitions
+ * @property {Object} services.eventBus - Event bus with on/off/emit methods
+ * @property {() => void} services.closeApp - Function to close the app
+ * @property {import('react').MutableRefObject<HTMLElement | null>} services.mapStatusRef - Ref to map status element
+ * @property {Record<string, Object>} buttonConfig - Button configurations filtered for this plugin
+ * @property {MapProvider} mapProvider - Map provider instance with capabilities and map control methods
+ * @property {Object} pluginState - Plugin-specific state from PluginProvider
+ * @property {Function} pluginState.dispatch - Dispatch function for plugin state updates
+ * @property {Object} [pluginConfig] - Static plugin configuration from manifest
+ */
+
+/**
  * @typedef {Object} PluginManifest
- * @property {import('preact').ComponentType} [InitComponent]
+ * @property {(props: PluginComponentProps) => any} [InitComponent]
  * @property {{ initialState: Record<string, any>, actions: Record<string, Function> }} [reducer]
  * @property {ButtonDefinition[]} [buttons]
  * @property {PanelDefinition[]} [panels]
