@@ -19,7 +19,7 @@ new InteractiveMap(container, options)
 > [!NOTE]
 > UMD Usage: Replace InteractiveMap with defra.InteractiveMap if using pre-built scripts in the <head>. The rest of the code is identical.
 
-### Parameters
+Parameters:
 
 ### `container`
 **Type:** `string`  
