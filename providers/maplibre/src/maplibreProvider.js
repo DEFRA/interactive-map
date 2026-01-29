@@ -94,6 +94,11 @@ export default class MapLibreProvider {
   // Side-effects
   // ==========================
 
+  /**
+   * @param {Object} options
+   * @param {[number, number]=} options.center
+   * @param {number=} options.zoom
+   */
   setView ({ center, zoom }) {
     this.map.flyTo({
       center: center || this.getCenter(),
@@ -157,6 +162,9 @@ export default class MapLibreProvider {
   // Read-only getters
   // ==========================
 
+  /**
+   * @returns {[number, number]}
+   */
   getCenter () {
     const coord = this.map.getCenter()
     return [Number(coord.lng.toFixed(7)), Number(coord.lat.toFixed(7))]
@@ -166,6 +174,9 @@ export default class MapLibreProvider {
     return Number(this.map.getZoom().toFixed(7))
   }
 
+  /**
+   * @returns {[number, number, number, number]}
+   */
   getBounds () {
     return this.map.getBounds().toArray().flat(1)
   }

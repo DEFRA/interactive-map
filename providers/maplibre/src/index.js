@@ -32,9 +32,12 @@ export default function (config = {}) {
 
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 
+      /** @type {"EPSG:4326" | "EPSG:27700"} */
+      const crs = 'EPSG:4326'
+      
       const mapProviderConfig = {
         ...config,
-        crs: 'EPSG:4326'
+        crs
       }
 
       return {
