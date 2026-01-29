@@ -110,7 +110,7 @@ The button is only displayed when the map is `inline`.
 **Type:** `boolean`  
 **Default:** `false`
 
-Whether zoom control buttons are displayed on the map UI.
+Whether zoom control buttons are displayed.
 Zoom controls are not diplayed when the interface type is `touch`.
 
 ---
@@ -169,7 +169,7 @@ A factory function that returns a map provider instance, e.g., `maplibreProvider
 **Type:** `string`  
 **Default:** `'small'`
 
-Visual size variant of the map UI.
+Visual size of text and features in the map itself.
 
 **Possible values**
 
@@ -178,9 +178,9 @@ Visual size variant of the map UI.
 | **'small'** *(default)*  
 The default map size. |
 | **'medium'**  
-All text and features are scaled **`150%`** |
+Scaled **`150%`** |
 | **'large'**  
-All text and features are scaled **`200%`**. |
+Scaled **`200%`**. |
 
 ---
 

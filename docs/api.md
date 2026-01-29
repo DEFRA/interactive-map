@@ -21,8 +21,24 @@ new InteractiveMap(container, options)
 
 ### Parameters
 
-**`container`** (`string`, required)  
+### `container`
+**Type:** `string`  
+**Required**
+
 The `id` of a container element where the map will be rendered.
 
-**`options`** (`MapOptions`)  
-Configuration object specifying map provider, map style, behaviour, and other settings. See [MapOptions](./api/map-options.md) for full details.
+---
+
+### `options`
+**Type:** `MapOptions`
+
+Configuration object specifying map provider, map style, behaviour, and other settings.  
+See [MapOptions](./api/map-options.md) for full details.
+
+## Methods
+
+To follow...
+
+## Events
+
+To follow...
