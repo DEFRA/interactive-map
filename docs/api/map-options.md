@@ -10,7 +10,7 @@ Configuration object specifying map provider, map style, behaviour, and other se
 **Type:** `string`  
 **Default:** `'light'`
 
-Application colour scheme used by the map UI.
+Colour scheme used by the application. Determines the colours of panels, buttons and controls.
 
 **Possible values**
 
@@ -35,7 +35,7 @@ Whether to automatically determine the colour scheme based on the user’s syste
 **Type:** `string | Object<string, string>`  
 **Default:** `var(--background-color)`
 
-Background colour applied to the map container.
+Background colour applied to the map container. Allows application background colour to compliment the map style.
 
 May be provided as:  
 - A single CSS colour value applied to all map styles  
@@ -47,7 +47,7 @@ May be provided as:
 **Type:** `string`  
 **Default:** `'buttonFirst'`
 
-Controls how users interact with the map and how map focus is managed for accessibility.
+Determines how and when the map is displayed.
 
 **Possible values**
 
@@ -68,7 +68,8 @@ Renders the map fullscreen on all devices, using the existing page title. |
 **Type:** `string`  
 **Default:** `'im-c-open-map-button'`
 
-CSS class applied to the button used to open or toggle the map view.
+CSS class applied to the button used to open the map.
+The button is only displayed when the `'behaviour'` is `hybrid` or `buttonFirst`.
 
 ---
 
@@ -76,7 +77,8 @@ CSS class applied to the button used to open or toggle the map view.
 **Type:** `string`  
 **Default:** `'Map view'`
 
-Text content displayed inside the button used to open or toggle the map view.
+Text content displayed inside the button used to open the map.
+The button is only displayed when the `behaviour` is `hybrid` or `buttonFirst`.
 
 ---
 
@@ -84,14 +86,14 @@ Text content displayed inside the button used to open or toggle the map view.
 **Type:** `string`  
 **Default:** `'600px'`
 
-CSS height applied to the map container when rendered inline.
+CSS height applied to the map container when the map is `inline`.
 
 ---
 
 ### `deviceNotSupportedText`
 **Type:** `string`
 
-Message displayed when the user’s device or browser does not support the component.
+Message displayed when the user’s device or browser is not supported.
 
 ---
 
@@ -100,6 +102,7 @@ Message displayed when the user’s device or browser does not support the compo
 **Default:** `false`
 
 Whether a toggle button is displayed to allow the map to enter fullscreen mode.
+The button is only displayed when the map is `inline`.
 
 ---
 
@@ -108,6 +111,7 @@ Whether a toggle button is displayed to allow the map to enter fullscreen mode.
 **Default:** `false`
 
 Whether zoom control buttons are displayed on the map UI.
+Zoom controls are not diplayed when the interface type is `touch`.
 
 ---
 
@@ -122,7 +126,8 @@ Fallback error message shown when the map fails to load.
 **Type:** `boolean`  
 **Default:** `false`
 
-Whether an exit button is displayed when the map is shown in fullscreen mode.
+Whether an exit button is displayed.
+The exit button is only displayed when the behavour is `buttonFirst` or `hybrid` and the map is `fullscreen`.
 
 ---
 
@@ -139,6 +144,7 @@ When not set, defaults to `maxMobileWidth`.
 **Type:** `string`
 
 HTML string providing keyboard shortcut instructions for assistive technology users.
+The hint text is displayed as a popup label when the `viewport` has focus.
 
 ---
 
@@ -146,7 +152,7 @@ HTML string providing keyboard shortcut instructions for assistive technology us
 **Type:** `string`  
 **Required**
 
-Accessible label describing the purpose of the map.  
+Accessible label describing the purpose of the map.
 This value is announced to screen readers.
 
 ---
@@ -170,11 +176,11 @@ Visual size variant of the map UI.
 | Possible values |
 |:--|
 | **'small'** *(default)*  
-Compact map UI with reduced padding and controls. |
+The default map size. |
 | **'medium'**  
-Standard map UI size. |
+All text and features are scaled **`150%`** |
 | **'large'**  
-Expanded map UI with increased spacing and control sizes. |
+All text and features are scaled **`200%`**. |
 
 ---
 
@@ -192,7 +198,7 @@ See [MapStyle](./api/map-style.md) for full details.
 **Type:** `string`  
 **Default:** `'mv'`
 
-URL query parameter key used to control and persist map view state.
+URL query parameter key used to persist map visibility state.
 
 ---
 
@@ -259,7 +265,8 @@ Distance (in pixels) the map pans during standard pan interactions.
 ### `pageTitle`
 **Type:** `string`
 
-Page title text used when the map is displayed in fullscreen mode.
+Page title text appended to the existing page title.
+Only used when the beahviour is `buttonFirst` or `hybrid` and the map is displayed in `fullscreen` mode.
 
 ---
 
@@ -268,6 +275,8 @@ Page title text used when the map is displayed in fullscreen mode.
 **Default:** `false`
 
 Whether map text labels can be selected and read aloud by assistive technologies.
+
+> ⚠️ **Experimental:** This is a development flag. It currently only works with MapLibre and specific styles. Do **not** enable in production unless fully tested.
 
 ---
 
