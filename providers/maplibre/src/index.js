@@ -1,8 +1,19 @@
+/**
+ * @typedef {import('../../../src/types.js').MapProviderDescriptor} MapProviderDescriptor
+ * @typedef {import('../../../src/types.js').MapProviderLoadResult} MapProviderLoadResult
+ * @typedef {import('../../../src/types.js').MapProviderConfig} MapProviderConfig
+ */
+
 import { getWebGL } from './utils/detectWebgl.js'
 
 const isLatest = !!window.globalThis
 
-// MapLibre provider descriptor
+/**
+ * Creates a MapLibre provider descriptor for lazy-loading the map provider.
+ *
+ * @param {Partial<MapProviderConfig>} [config={}] - Optional provider configuration overrides.
+ * @returns {MapProviderDescriptor} The map provider descriptor.
+ */
 export default function (config = {}) {
   return {
     checkDeviceCapabilities: () => {
@@ -13,6 +24,7 @@ export default function (config = {}) {
         error: (isIE && 'Internet Explorer is not supported') || webGL.error
       }
     },
+    /** @returns {Promise<MapProviderLoadResult>} */
     load: async () => {
       let mapFramework
       if (isLatest) {
@@ -32,6 +44,7 @@ export default function (config = {}) {
 
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 
+      /** @type {MapProviderConfig} */
       const mapProviderConfig = {
         ...config,
         crs: 'EPSG:4326'

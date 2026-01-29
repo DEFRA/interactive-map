@@ -38,6 +38,13 @@ const toggleSnap = (state) => {
   }
 }
 
+const setSnap = (state, payload) => {
+  return {
+    ...state,
+    snap: !!payload
+  }
+}
+
 const setHasSnapLayers = (state, payload) => {
   return {
     ...state,
@@ -50,6 +57,7 @@ const actions = {
   SET_FEATURE: setFeature,
   SET_SELECTED_VERTEX_INDEX: setSelectedVertexIndex,
   TOGGLE_SNAP: toggleSnap,
+  SET_SNAP: setSnap,
   SET_HAS_SNAP_LAYERS: setHasSnapLayers
 }
 

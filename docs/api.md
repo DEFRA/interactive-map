@@ -27,8 +27,6 @@ Parameters:
 
 The `id` of a container element where the map will be rendered.
 
----
-
 ### `options`
 **Type:** `MapOptions`
 

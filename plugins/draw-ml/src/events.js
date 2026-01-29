@@ -14,8 +14,23 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   const { map, draw } = mapProvider
   const { dispatch, feature, tempFeature } = pluginState
 
+  // Helper to disable snap and hide indicators
+  const disableSnap = () => {
+    mapProvider.snapEnabled = false
+    dispatch({ type: 'SET_SNAP', payload: false })
+    const snap = getSnapInstance(map)
+    if (snap) {
+      snap.setSnapStatus?.(false)
+      clearSnapState(snap)
+    }
+    if (map.getLayer('snap-helper-circle')) {
+      map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
+    }
+  }
+
   // --- Done
   const handleDone = () => {
+    disableSnap()
     draw.changeMode('disabled')
     dispatch({ type: 'SET_MODE', payload: null })
     dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null }})
@@ -25,12 +40,15 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
 
   // --- Cancel
   const handleCancel = () => {
-    draw.delete(tempFeature.id)
+    if (tempFeature?.id) {
+      draw.delete(tempFeature.id)
+    }
 
     // Reinstate initial feature
     if (feature) {
       draw.add(feature)
     }
+    disableSnap()
     draw.changeMode('disabled')
 
     dispatch({ type: 'SET_MODE', payload: null })

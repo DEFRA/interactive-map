@@ -1,4 +1,13 @@
 // src/InteractiveMap/InteractiveMap.js
+
+/**
+ * @typedef {import('../types.js').ButtonDefinition} ButtonDefinition
+ * @typedef {import('../types.js').ControlDefinition} ControlDefinition
+ * @typedef {import('../types.js').InteractiveMapConfig} InteractiveMapConfig
+ * @typedef {import('../types.js').MarkerOptions} MarkerOptions
+ * @typedef {import('../types.js').PanelDefinition} PanelDefinition
+ */
+
 import '../scss/main.scss'
 import historyManager from './historyManager.js'
 import { parseDataProperties } from './parseDataProperties.js'
@@ -14,6 +23,10 @@ import { createReverseGeocode } from '../services/reverseGeocode.js'
 import { EVENTS as events } from '../config/events.js'
 import { createEventBus } from '../services/eventBus.js'
 
+/**
+ * Main entry point for the Interactive Map component.
+ * Handles initialization, lifecycle, and public API methods.
+ */
 export default class InteractiveMap {
   _openButton = null
   _root = null // keep react root internally
@@ -21,6 +34,12 @@ export default class InteractiveMap {
   _interfaceDetectorCleanup = null
   _hybridBehaviourCleanup = null
 
+  /**
+   * Create a new InteractiveMap instance.
+   *
+   * @param {string} id - The DOM element ID to mount the map into.
+   * @param {Partial<InteractiveMapConfig>} [props={}] - Configuration options.
+   */
   constructor (id, props = {}) {
     this.id = id
     this.rootEl = document.getElementById(id)
@@ -62,7 +81,6 @@ export default class InteractiveMap {
     })
   }
 
-  // Private methods
   _initialize () {
     if (['buttonFirst', 'hybrid'].includes(this.config.behaviour)) {
       this._openButton = createButton(this.config, this.rootEl, (e) => {
@@ -93,7 +111,12 @@ export default class InteractiveMap {
     history.replaceState(history.state, '', newUrl)
   }
 
-  // Public methods
+  /**
+   * Load and initialize the map application.
+   *
+   * @internal Not intended for end-user use.
+   * @returns {Promise<void>}
+   */
   async loadApp () {
     if (this._openButton) {
       this._openButton.style.display = 'none'
@@ -146,6 +169,11 @@ export default class InteractiveMap {
     }
   }
 
+  /**
+   * Remove the map application and restore the initial state.
+   *
+   * @internal Not intended for end-user use.
+   */
   removeApp () {
     if (this._root && typeof this.unmount === 'function') {
       this.unmount()
@@ -162,6 +190,11 @@ export default class InteractiveMap {
     this.eventBus.emit(events.MAP_DESTROY, { mapId: this.id })
   }
 
+  /**
+   * Destroy the map instance and clean up all resources.
+   *
+   * @internal Not intended for end-user use.
+   */
   destroy () {
     this.removeApp()
     this._breakpointDetector?.destroy()
@@ -171,54 +204,118 @@ export default class InteractiveMap {
     this.eventBus.destroy()
   }
 
-  // API - EventBus methods
+  /**
+   * Subscribe to an event.
+   *
+   * @param {string} event - Event name.
+   * @param {Function} callback - Event handler.
+   */
   on (...args) {
     this.eventBus.on(...args)
   }
 
+  /**
+   * Unsubscribe from an event.
+   *
+   * @param {string} event - Event name.
+   * @param {Function} callback - Event handler to remove.
+   */
   off (...args) {
     this.eventBus.off(...args)
   }
 
+  /**
+   * Emit an event.
+   *
+   * @param {string} event - Event name.
+   * @param {any} [data] - Event data.
+   */
   emit (...args) {
     this.eventBus.emit(...args)
   }
 
-  // API - location markers
+  /**
+   * Add a marker to the map.
+   *
+   * @param {string} id - Unique marker identifier.
+   * @param {[number, number]} coords - Coordinates [lng, lat] or [easting, northing] depending on crs.
+   * @param {MarkerOptions} [options] - Optional marker appearance options.
+   */
   addMarker (id, coords, options) {
     this.eventBus.emit(events.APP_ADD_MARKER, { id, coords, options })
   }
 
+  /**
+   * Remove a marker from the map.
+   *
+   * @param {string} id - Marker identifier to remove.
+   */
   removeMarker (id) {
     this.eventBus.emit(events.APP_REMOVE_MARKER, id)
   }
 
-  // API - change app mode
+  /**
+   * Set the application mode.
+   *
+   * @param {string} mode - Mode identifier.
+   */
   setMode (mode) {
     this.eventBus.emit(events.APP_SET_MODE, mode)
   }
 
-  // Interface API add button/panel/control, remove panel
+  /**
+   * Add a button to the UI.
+   *
+   * @param {string} id - Unique button identifier.
+   * @param {ButtonDefinition} config - Button configuration.
+   */
   addButton (id, config) {
     this.eventBus.emit(events.APP_ADD_BUTTON, { id, config })
   }
 
+  /**
+   * Add a panel to the UI.
+   *
+   * @param {string} id - Unique panel identifier.
+   * @param {PanelDefinition} config - Panel configuration.
+   */
   addPanel (id, config) {
     this.eventBus.emit(events.APP_ADD_PANEL, { id, config })
   }
 
+  /**
+   * Remove a panel from the UI.
+   *
+   * @param {string} id - Panel identifier to remove.
+   */
   removePanel (id) {
     this.eventBus.emit(events.APP_REMOVE_PANEL, id)
   }
 
+  /**
+   * Show a panel.
+   *
+   * @param {string} id - Panel identifier to show.
+   */
   showPanel (id) {
     this.eventBus.emit(events.APP_SHOW_PANEL, id)
   }
 
+  /**
+   * Hide a panel.
+   *
+   * @param {string} id - Panel identifier to hide.
+   */
   hidePanel (id) {
     this.eventBus.emit(events.APP_HIDE_PANEL, id)
   }
 
+  /**
+   * Add a custom control to the UI.
+   *
+   * @param {string} id - Unique control identifier.
+   * @param {ControlDefinition} config - Control configuration.
+   */
   addControl (id, config) {
     this.eventBus.emit(events.APP_ADD_CONTROL, { id, config })
   }

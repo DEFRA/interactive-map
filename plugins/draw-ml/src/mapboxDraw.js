@@ -46,6 +46,45 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   })
   map.addControl(draw)
 
+  // Workaround: mapbox-gl-draw calls preventDefault() on touchend even in disabled mode,
+  // which prevents the browser from synthesizing a click event. We detect taps and
+  // manually dispatch a click event when in disabled mode.
+  const canvas = map.getCanvas()
+  let touchStart = null
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, time: Date.now() }
+    }
+  }
+
+  const handleTouchEnd = (e) => {
+    if (draw.getMode() !== 'disabled' || !touchStart) {
+      touchStart = null
+      return
+    }
+
+    const touch = e.changedTouches[0]
+    const dx = touch.clientX - touchStart.x
+    const dy = touch.clientY - touchStart.y
+    const duration = Date.now() - touchStart.time
+
+    // Only synthesize click for quick taps with minimal movement
+    if (duration < 300 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      canvas.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      }))
+    }
+
+    touchStart = null
+  }
+
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: true })
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: true })
+
   // We need a reference to this
   mapProvider.draw = draw
   // Initialize snap as disabled (matches initialState.snap = false)
@@ -77,6 +116,9 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   return {
     draw,
     remove() {
+      // Remove touch workaround listeners
+      canvas.removeEventListener('touchstart', handleTouchStart)
+      canvas.removeEventListener('touchend', handleTouchEnd)
       // Remove event listeners
       eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)
       // Delete all features and disable draw
