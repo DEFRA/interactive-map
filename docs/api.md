@@ -13,7 +13,7 @@ For installation and setup instructions, see the [Getting started](./getting-sta
 ## Constructor
 
 ```js
-new InteractiveMap(container, options)
+const interactiveMap = new InteractiveMap(container, options)
 ```
 
 > [!NOTE]
