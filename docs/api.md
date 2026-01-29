@@ -8,7 +8,7 @@ You create an instance of a InteractiveMap by specifying a `container` and `opti
 
 ## Getting started
 
-For installation and full basic setup instructions, see the [Getting started](./getting-started.md) guide.
+For installation and setup instructions, see the [Getting started](./getting-started.md) guide.
 
 ## Constructor
 
