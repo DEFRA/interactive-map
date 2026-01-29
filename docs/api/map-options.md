@@ -14,13 +14,12 @@ Application colour scheme used by the map UI.
 
 **Possible values**
 
-<strong>'light'</strong> *(default)*  
-Uses a light colour scheme.
-
-<hr>
-
-<strong>'dark'</strong>  
-Uses a dark colour scheme.
+| Possible values |
+|:--|
+| **'light'** *(default)*  
+Uses a light colour scheme. |
+| **'dark'**  
+Uses a dark colour scheme. |
 
 ---
 
@@ -38,8 +37,8 @@ Whether to automatically determine the colour scheme based on the user’s syste
 
 Background colour applied to the map container.
 
-May be provided as:
-- A single CSS colour value applied to all map styles
+May be provided as:  
+- A single CSS colour value applied to all map styles  
 - An object keyed by map style ID, where each value is a valid CSS colour
 
 ---
@@ -50,35 +49,18 @@ May be provided as:
 
 Controls how users interact with the map and how map focus is managed for accessibility.
 
-<table style="width:100%; border-collapse: collapse;">
-  <thead>
-    <tr>
-      <th style="text-align:left; vertical-align:top;">Possible values</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'buttonFirst'</strong> *(default)*<br>Map is initially hidden and a button is displayed in its place. Selecting the button opens the map in fullscreen mode. The optional <code>pageTitle</code> property is appended to the page title. This behaviour minimises resources downloaded when not all users need a map.
-      </td>
-    </tr>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'inline'</strong><br>The map is rendered inline with the body content and initially visible.
-      </td>
-    </tr>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'hybrid'</strong><br>A combination of button and inline behaviour, controlled by the optional <code>hybridWidth</code>. At smaller sizes a button is displayed; at larger sizes the map is rendered inline. When fullscreen, the optional <code>pageTitle</code> property is appended to the page title.
-      </td>
-    </tr>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'mapOnly'</strong><br>Renders the map fullscreen on all devices, using the existing page title.
-      </td>
-    </tr>
-  </tbody>
-</table>
+**Possible values**
+
+| Possible values |
+|:--|
+| **'buttonFirst'** *(default)*  
+Map is initially hidden and a button is displayed in its place. Selecting the button opens the map in fullscreen mode. The optional `pageTitle` property is appended to the page title. This behaviour minimises resources downloaded when not all users need a map. |
+| **'inline'**  
+The map is rendered inline with the body content and initially visible. |
+| **'hybrid'**  
+A combination of button and inline behaviour, controlled by the optional `hybridWidth`. At smaller sizes a button is displayed; at larger sizes the map is rendered inline. When fullscreen, the optional `pageTitle` property is appended to the page title. |
+| **'mapOnly'**  
+Renders the map fullscreen on all devices, using the existing page title. |
 
 ---
 
@@ -162,7 +144,7 @@ HTML string providing keyboard shortcut instructions for assistive technology us
 
 ### `mapLabel`
 **Type:** `string`  
-**Required`
+**Required**
 
 Accessible label describing the purpose of the map.  
 This value is announced to screen readers.
@@ -171,10 +153,9 @@ This value is announced to screen readers.
 
 ### `mapProvider`
 **Type:** `function`  
-**Required`
+**Required**
 
-A factory function that returns a map provider instance  
-(e.g. `maplibreProvider()`).
+A factory function that returns a map provider instance, e.g., `maplibreProvider()`.
 
 ---
 
@@ -184,30 +165,16 @@ A factory function that returns a map provider instance
 
 Visual size variant of the map UI.
 
-<table style="width:100%; border-collapse: collapse;">
-  <thead>
-    <tr>
-      <th style="text-align:left; vertical-align:top;">Possible values</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'small'</strong> *(default)*<br>Compact map UI with reduced padding and controls.
-      </td>
-    </tr>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'medium'</strong><br>Standard map UI size.
-      </td>
-    </tr>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'large'</strong><br>Expanded map UI with increased spacing and control sizes.
-      </td>
-    </tr>
-  </tbody>
-</table>
+**Possible values**
+
+| Possible values |
+|:--|
+| **'small'** *(default)*  
+Compact map UI with reduced padding and controls. |
+| **'medium'**  
+Standard map UI size. |
+| **'large'**  
+Expanded map UI with increased spacing and control sizes. |
 
 ---
 
@@ -235,8 +202,8 @@ URL query parameter key used to control and persist map view state.
 
 Colour used for map markers.
 
-May be provided as:
-- A single colour value applied to all map styles
+May be provided as:  
+- A single colour value applied to all map styles  
 - An object keyed by map style ID, allowing different colours per style
 
 ---
@@ -307,8 +274,7 @@ Whether map text labels can be selected and read aloud by assistive technologies
 ### `reverseGeocodeProvider`
 **Type:** `function | null`
 
-A factory function that returns a reverse geocode provider instance  
-(e.g. `openNamesProvider()`).
+A factory function that returns a reverse geocode provider instance, e.g., `openNamesProvider()`.
 
 ---
 
@@ -322,8 +288,7 @@ Amount to change the zoom level for standard zoom interactions.
 
 ## Map framework options
 
-Options supported by the underlying map framework should be provided here  
-(e.g. **`zoom`**, **`center`**).
+Options supported by the underlying map framework should be provided here, e.g., **`zoom`**, **`center`**.
 
 These options are passed directly to the map provider.
 
