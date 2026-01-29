@@ -12,25 +12,15 @@ Configuration object specifying map provider, map style, behaviour, and other se
 
 Application colour scheme used by the map UI.
 
-<table style="width:100%; border-collapse: collapse;">
-  <thead>
-    <tr>
-      <th style="text-align:left; vertical-align:top;">Possible values</th>
-    </tr>
-  </thead>
-  <tbody>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'light'</strong> *(default)*<br>Uses a light colour scheme.
-      </td>
-    </tr>
-    <tr>
-      <td style="text-align:left; vertical-align:top;">
-        <strong>'dark'</strong><br>Uses a dark colour scheme.
-      </td>
-    </tr>
-  </tbody>
-</table>
+**Possible values**
+
+<strong>'light'</strong> *(default)*  
+Uses a light colour scheme.
+
+<hr>
+
+<strong>'dark'</strong>  
+Uses a dark colour scheme.
 
 ---
 
