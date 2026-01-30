@@ -6,43 +6,55 @@ For guidance on building your own plugins, see [Building a Plugin](./building-a-
 
 ## Available Plugins
 
-The following plugins are available for use with InteractiveMap:
+The following plugins are available for use with InteractiveMap.
 
-### datasets
+### [Interact](./plugins/interact.md)
 
-Dataset loading and management plugin.
+Select features or place markers on the map.
 
-### draw-es
+### [Map Styles](./plugins/map-styles.md)
 
-Drawing and sketching tools for Esri map providers.
+Map style switching plugin that adds a UI control for changing the basemap appearance and the map size (provider depending).
 
-### draw-ml
-
-Drawing and sketching tools for MapLibre map providers.
-
-### frame
-
-Frame selection plugin for defining areas of interest.
-
-### interact
-
-Feature interaction plugin for handling map element selection and hover states.
-
-### map-styles
-
-Map style switching plugin that adds a UI control for changing the basemap appearance.
-
-### scale-bar
+### [Scale Bar](./plugins/scale-bar.md)
 
 Scale bar display plugin that shows the current map scale.
 
-### search
+### [Search](./plugins/search.md)
 
-Location search plugin with autocomplete functionality.
+Location search plugin with autocomplete functionality. Include custom datasets to search.
 
-### use-location
+## Alpha Plugins
+
+The following plugins are in early development. APIs and features may change.
+
+### Datasets
+
+Add datasets to your map, configure the display, layer toggling and render a key of symbology.
+
+### Draw for MapLibre
+
+Draw lines and polygons using the MapLibre map provider.
+
+### Draw for ESRI SDK
+
+Draw polygons using the Esri map provider.
+
+### Frame
+
+Add a regular shaped frame to the map and control its position. Use to generate reports or draw features.
+
+### Use Location
 
 Geolocation plugin that allows users to centre the map on their current location.
+
+## Coming Soon
+
+The following plugins are planned for future releases.
+
+### Geometry Actions
+
+Split and merge polygons.
 
 ## Using Plugins
 
