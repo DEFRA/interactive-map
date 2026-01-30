@@ -16,7 +16,11 @@ export default {
       '<rootDir>/providers/**/*.test.[jt]s?(x)'
     ],
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
-    coveragePathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
+    coveragePathIgnorePatterns: [
+      '<rootDir>/src/test-utils.js',
+      '<rootDir>/plugins/beta/',
+      '<rootDir>/providers/beta/'
+    ],
     transformIgnorePatterns: []
   }]
 }

@@ -1,4 +1,4 @@
-import DirectSelect from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
+import DirectSelect from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
 import { spatialNavigate } from '../utils.js'
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,

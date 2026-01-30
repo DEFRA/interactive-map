@@ -4,16 +4,16 @@ import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, transformDataRequest } from './auth.js'
 // Providers
 import maplibreProvider from '/providers/maplibre/src/index.js'
-import openNamesProvider from '/providers/open-names/src/index.js'
+import openNamesProvider from '/providers/beta/open-names/src/index.js'
 // Plugins
-import useLocationPlugin from '/plugins/use-location/src/index.js'
-import mapStylesPlugin from '/plugins/map-styles/src/index.js'
-import createDatasetsPlugin from '/plugins/datasets/src/index.js'
-import createDrawPlugin from '/plugins/draw-ml/src/index.js'
-import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
+import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
+import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
+import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
+import createDrawPlugin from '/plugins/beta/draw-ml/src/index.js'
+import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
-import createFramePlugin from '/plugins/frame/src/index.js'
+import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
 var interactPlugin = createInteractPlugin({
 	dataLayers: [{

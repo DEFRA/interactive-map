@@ -118,18 +118,18 @@ const ALL_BUILDS = [
 
   // Providers
   { entryPath: './providers/maplibre/src/index.js', outDir: 'providers/maplibre/dist/esm' },
-  { entryPath: './providers/open-names/src/index.js', outDir: 'providers/open-names/dist/esm' },
-  // { entryPath: './providers/esri/src/index.js', outDir: 'providers/esri/dist/esm' },
+  { entryPath: './providers/beta/open-names/src/index.js', outDir: 'providers/beta/open-names/dist/esm' },
+  // { entryPath: './providers/beta/esri/src/index.js', outDir: 'providers/beta/esri/dist/esm' },
 
   // Plugins
-  { entryPath: './plugins/scale-bar/src/index.js', outDir: 'plugins/scale-bar/dist/esm' },
-  { entryPath: './plugins/use-location/src/index.js', outDir: 'plugins/use-location/dist/esm' },
+  { entryPath: './plugins/beta/scale-bar/src/index.js', outDir: 'plugins/beta/scale-bar/dist/esm' },
+  { entryPath: './plugins/beta/use-location/src/index.js', outDir: 'plugins/beta/use-location/dist/esm' },
   { entryPath: './plugins/search/src/index.js', outDir: 'plugins/search/dist/esm' },
   { entryPath: './plugins/interact/src/index.js', outDir: 'plugins/interact/dist/esm' },
-  { entryPath: './plugins/datasets/src/index.js', outDir: 'plugins/datasets/dist/esm' },
-  { entryPath: './plugins/map-styles/src/index.js', outDir: 'plugins/map-styles/dist/esm' },
-  { entryPath: './plugins/draw-ml/src/index.js', outDir: 'plugins/draw-ml/dist/esm' },
-  { entryPath: './plugins/frame/src/index.js', outDir: 'plugins/frame/dist/esm' }
+  { entryPath: './plugins/beta/datasets/src/index.js', outDir: 'plugins/beta/datasets/dist/esm' },
+  { entryPath: './plugins/beta/map-styles/src/index.js', outDir: 'plugins/beta/map-styles/dist/esm' },
+  { entryPath: './plugins/beta/draw-ml/src/index.js', outDir: 'plugins/beta/draw-ml/dist/esm' },
+  { entryPath: './plugins/beta/frame/src/index.js', outDir: 'plugins/beta/frame/dist/esm' }
 ]
 
 // === Filter via environment variable ===

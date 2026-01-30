@@ -1,5 +1,5 @@
 import React from "react"
-import { getValueForStyle } from '../../../../src/utils/getValueForStyle'
+import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 
 export const Key = ({ mapState, pluginState }) => {
   const { mapStyle } = mapState
