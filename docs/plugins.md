@@ -49,15 +49,16 @@ Geolocation plugin that allows users to centre the map on their current location
 Plugins are registered via the `plugins` option when creating an InteractiveMap. Plugins typically export a factory function that accepts configuration options:
 
 ```js
-import createScaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
+import createHighlightPlugin from '@example/highlight-plugin'
+
+const highlightPlugin = createHighlightPlugin({
+  color: '#ff0000',
+  opacity: 0.5
+})
 
 const interactiveMap = new InteractiveMap({
   // ... other options
-  plugins: [
-    createScaleBarPlugin({
-      units: 'imperial'
-    })
-  ]
+  plugins: [highlightPlugin]
 })
 ```
 
@@ -66,6 +67,34 @@ The factory function returns a [PluginDescriptor](./plugins/plugin-descriptor.md
 - **id** - Unique identifier for the plugin instance
 - **load** - Function that returns a [PluginManifest](./plugins/plugin-manifest.md)
 - **...options** - Configuration passed to the factory, available as [pluginConfig](./plugins/plugin-context.md#pluginconfig)
+
+## Plugin Events
+
+Plugins can emit events that you can listen to using `interactiveMap.on()`:
+
+```js
+interactiveMap.on('highlight:added', ({ id, coords }) => {
+  console.log('Highlight added:', id)
+})
+
+interactiveMap.on('highlight:removed', ({ id }) => {
+  console.log('Highlight removed:', id)
+})
+```
+
+## Plugin Methods
+
+Plugins can expose methods that you call on the plugin instance:
+
+```js
+// After map:ready, call methods on the plugin instance
+interactiveMap.on('map:ready', () => {
+  highlightPlugin.add('area-1', [[0, 0], [1, 0], [1, 1], [0, 1]])
+  highlightPlugin.remove('area-1')
+})
+```
+
+See individual plugin documentation for available events and methods.
 
 ## Further Reading
 
