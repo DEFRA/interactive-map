@@ -76,7 +76,7 @@ Associated panel identifier. When set, clicking the button toggles the panel ope
 ### `onClick`
 **Type:** `function`
 
-Click handler for the button. Receives the event and [PluginContext](./plugin-context.md).
+Click handler for the button. Receives the event and [Context](./context.md).
 
 ```js
 onClick: (event, context) => {

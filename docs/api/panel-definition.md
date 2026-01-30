@@ -49,7 +49,7 @@ Desktop breakpoint configuration. See [Breakpoint Configuration](#breakpoint-con
 ### `render`
 **Type:** `ComponentType`
 
-A React/Preact component to render as the panel content. Receives [PluginContext](./plugin-context.md) as a `context` prop.
+A React/Preact component to render as the panel content. Receives [Context](./context.md) as props (or [PluginContext](../plugins/plugin-context.md) when used in a plugin manifest).
 
 ```jsx
 const MyPanelContent = ({ context }) => {
@@ -58,12 +58,18 @@ const MyPanelContent = ({ context }) => {
 }
 ```
 
+> [!NOTE]
+> Use `render` when defining panels in a plugin manifest. For API methods like `addPanel()`, use `html` instead.
+
 ---
 
 ### `html`
 **Type:** `string`
 
-HTML content to render in the panel. Use this for simple static content. For dynamic content, use `render` instead.
+HTML content to render in the panel.
+
+> [!NOTE]
+> Use `html` when adding panels via API methods like `addPanel()`. For plugin manifests with dynamic content, use `render` instead.
 
 ---
 

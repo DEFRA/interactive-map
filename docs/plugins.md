@@ -75,11 +75,11 @@ For detailed specifications, see:
 - [PluginDescriptor](./plugins/plugin-descriptor.md) - How to register a plugin
 - [PluginManifest](./plugins/plugin-manifest.md) - What a plugin can contain
 - [PluginContext](./plugins/plugin-context.md) - Context available to plugin code
-- [ButtonDefinition](./plugins/button-definition.md) - Button configuration
-- [PanelDefinition](./plugins/panel-definition.md) - Panel configuration
-- [ControlDefinition](./plugins/control-definition.md) - Custom control configuration
-- [IconDefinition](./plugins/icon-definition.md) - Icon registration
-- [Slots](./plugins/slots.md) - UI slot system for positioning elements
+- [ButtonDefinition](./api/button-definition.md) - Button configuration
+- [PanelDefinition](./api/panel-definition.md) - Panel configuration
+- [ControlDefinition](./api/control-definition.md) - Custom control configuration
+- [IconDefinition](./api/icon-definition.md) - Icon registration
+- [Slots](./api/slots.md) - UI slot system for positioning elements
 
 ## Events
 

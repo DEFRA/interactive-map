@@ -26,7 +26,7 @@ Accessible label for the control.
 **Type:** `ComponentType`
 **Required**
 
-A React/Preact component to render. Receives [PluginContext](./plugin-context.md) as a `context` prop.
+A React/Preact component to render. Receives [Context](./context.md) as props (or [PluginContext](../plugins/plugin-context.md) when used in a plugin manifest).
 
 ```jsx
 const MyControl = ({ context }) => {

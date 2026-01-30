@@ -37,7 +37,7 @@ Button definitions to register in the UI.
 
 Buttons come with pre-built behaviour and styling, including icon support, labels, tooltips, and pressed states. Supports responsive breakpoint configuration.
 
-See [ButtonDefinition](./button-definition.md) for full details.
+See [ButtonDefinition](../api/button-definition.md) for full details.
 
 ---
 
@@ -48,7 +48,7 @@ Custom control definitions to register in the UI.
 
 Use controls for bespoke UI elements that don't fit the button or panel pattern. Controls have no pre-built behaviour or styling—you have full control over rendering and interaction. Supports responsive breakpoint configuration.
 
-See [ControlDefinition](./control-definition.md) for full details.
+See [ControlDefinition](../api/control-definition.md) for full details.
 
 ---
 
@@ -59,7 +59,7 @@ Icon definitions to register in the icon registry.
 
 The icon registry is a singleton shared across all map instances and plugins. Registering an icon with an existing ID will override it. This enforces visual consistency across the application, including when multiple map instances exist on the same page.
 
-See [IconDefinition](./icon-definition.md) for full details.
+See [IconDefinition](../api/icon-definition.md) for full details.
 
 ---
 
@@ -94,7 +94,7 @@ Panel definitions to register in the UI.
 
 Panels come with pre-built behaviour and styling, including headings, dismissable states, and modal overlays. Supports responsive breakpoint configuration.
 
-See [PanelDefinition](./panel-definition.md) for full details.
+See [PanelDefinition](../api/panel-definition.md) for full details.
 
 ---
 

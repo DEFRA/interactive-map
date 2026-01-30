@@ -337,6 +337,16 @@ Passed directly to the underlying map engine.
 
 ---
 
+### `mode`
+**Type:** `string | null`
+**Default:** `null`
+
+Initial application mode. Modes facilitate attaching behaviour to certain states, enabling short user journey steps within the map interface. Plugins can be configured to respect modes, only rendering content when the app is in a specific mode.
+
+See also: [`setMode()`](#setmodemode) method.
+
+---
+
 ### `nudgePanDelta`
 **Type:** `number`
 **Default:** `5`
@@ -431,7 +441,177 @@ Amount to change the zoom level for standard zoom interactions.
 
 ## Methods
 
-To follow...
+---
+
+### `on(eventName, handler)`
+
+Subscribe to an event.
+
+```js
+interactiveMap.on('app:ready', () => {
+  console.log('Map is ready')
+})
+```
+
+See [Events](#events) for available event names.
+
+---
+
+### `off(eventName, handler)`
+
+Unsubscribe from an event.
+
+```js
+const handler = () => console.log('Ready')
+interactiveMap.on('app:ready', handler)
+interactiveMap.off('app:ready', handler)
+```
+
+---
+
+### `addMarker(id, coords, options)`
+
+Add a marker to the map.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Unique marker identifier |
+| `coords` | `[number, number]` | Coordinates [lng, lat] or [easting, northing] depending on CRS |
+| `options` | [`MarkerOptions`](./api/marker-config.md#markeroptions) | Optional marker appearance options |
+
+```js
+interactiveMap.addMarker('home', [-0.1276, 51.5074], { color: '#0000ff' })
+```
+
+---
+
+### `removeMarker(id)`
+
+Remove a marker from the map.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Marker identifier to remove |
+
+```js
+interactiveMap.removeMarker('home')
+```
+
+---
+
+### `addButton(id, config)`
+
+Add a button to the UI at runtime.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Unique button identifier |
+| `config` | `ButtonDefinition` | Button configuration |
+
+See [ButtonDefinition](./api/button-definition.md) for configuration options.
+
+```js
+interactiveMap.addButton('my-button', {
+  label: 'Click me',
+  iconId: 'info',
+  onClick: (event, context) => console.log('Clicked'),
+  mobile: { slot: 'top-right' },
+  tablet: { slot: 'top-right' },
+  desktop: { slot: 'top-right' }
+})
+```
+
+---
+
+### `addPanel(id, config)`
+
+Add a panel to the UI at runtime.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Unique panel identifier |
+| `config` | `PanelDefinition` | Panel configuration |
+
+See [PanelDefinition](./api/panel-definition.md) for configuration options. When using this method, provide content via the `html` property.
+
+```js
+interactiveMap.addPanel('info-panel', {
+  label: 'Information',
+  html: '<p>Panel content here</p>',
+  mobile: { slot: 'bottom' },
+  tablet: { slot: 'left' },
+  desktop: { slot: 'left' }
+})
+```
+
+---
+
+### `removePanel(id)`
+
+Remove a panel from the UI.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Panel identifier to remove |
+
+```js
+interactiveMap.removePanel('info-panel')
+```
+
+---
+
+### `showPanel(id)`
+
+Show a panel.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Panel identifier to show |
+
+```js
+interactiveMap.showPanel('info-panel')
+```
+
+---
+
+### `hidePanel(id)`
+
+Hide a panel.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Panel identifier to hide |
+
+```js
+interactiveMap.hidePanel('info-panel')
+```
+
+---
+
+### `addControl(id, config)`
+
+Add a custom control to the UI at runtime.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Unique control identifier |
+| `config` | `ControlDefinition` | Control configuration |
+
+See [ControlDefinition](./api/control-definition.md) for configuration options.
+
+---
+
+### `setMode(mode)`
+
+Set the application mode.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `mode` | `string` | Mode identifier |
+
+```js
+interactiveMap.setMode('fullscreen')
+```
 
 ## Events
 
