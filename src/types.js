@@ -176,7 +176,7 @@
  * Destroy the map.
  *
  * @property {(options: { center?: [number, number], zoom?: number }) => void} setView
- * Set map view with optional center ([lng, lat] or [easting, northing] depending on crs) and zoom.
+ * Set map view with optional center ([lng, lat] or [easting, northing] depending on the crs of the map provider) and zoom.
  *
  * @property {(delta: number) => void} zoomIn
  * Zoom in by delta.
@@ -188,19 +188,19 @@
  * Pan map by pixel offset [x, y]. Positive x pans right, positive y pans down.
  *
  * @property {(bounds: [number, number, number, number]) => void} fitToBounds
- * Fit map view to the specified bounds [west, south, east, north] or [minX, minY, maxX, maxY] depending on crs.
+ * Fit map view to the specified bounds [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs of the map provider.
  *
  * @property {(padding: { top?: number, bottom?: number, left?: number, right?: number }) => void} setPadding
  * Set map padding as pixel insets from the top, bottom, left and right edges of the map.
  *
  * @property {() => [number, number]} getCenter
- * Get current center coordinates [lng, lat] or [easting, northing] depending on crs.
+ * Get current center coordinates [lng, lat] or [easting, northing] depending on the crs of the map provider.
  *
  * @property {() => number} getZoom
  * Get current zoom level.
  *
  * @property {() => [number, number, number, number]} getBounds
- * Get current bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on crs.
+ * Get current bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs of the map provider.
  *
  * @property {(point: { x: number, y: number }) => any[]} getFeaturesAtPoint
  * Query rendered features at a screen pixel position (x from left edge, y from top edge of viewport).
@@ -209,16 +209,16 @@
  * Get the dimensions of the visible map area as a formatted string (e.g., '400m by 750m').
  *
  * @property {(from: [number, number], to: [number, number]) => string} getCardinalMove
- * Get cardinal direction and distance between two coordinates ([lng, lat] or [easting, northing] depending on crs). Returns a formatted string (e.g., 'north 400m' or 'south 400m, west 750m').
+ * Get cardinal direction and distance between two coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider). Returns a formatted string (e.g., 'north 400m' or 'south 400m, west 750m').
  *
  * @property {() => number} getResolution
  * Get map resolution in meters per pixel.
  *
  * @property {(coords: [number, number]) => { x: number, y: number }} mapToScreen
- * Convert map coordinates ([lng, lat] or [easting, northing] depending on crs) to screen pixel position (x from left edge, y from top edge of viewport).
+ * Convert map coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider) to screen pixel position (x from left edge, y from top edge of viewport).
  *
  * @property {(point: { x: number, y: number }) => [number, number]} screenToMap
- * Convert screen pixel position (x from left edge, y from top edge of viewport) to map coordinates ([lng, lat] or [easting, northing] depending on crs).
+ * Convert screen pixel position (x from left edge, y from top edge of viewport) to map coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider).
  *
  * @property {(selectedFeatures: any[], stylesMap: any) => any} [updateHighlightedFeatures]
  * @experimental Update highlighted features on the map.
@@ -474,7 +474,7 @@
  * Text content for the button used to open or toggle the map view.
  *
  * @property {[number, number]} [center]
- * Initial center [lng, lat] or [easting, northing] depending on crs.
+ * Initial center [lng, lat] or [easting, northing] depending on the crs of the map provider.
  *
  * @property {string} [containerHeight='600px']
  * Height of the map container. Accepts any valid CSS height value (e.g. '640px', '40rem' or '100%').

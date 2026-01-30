@@ -139,6 +139,7 @@ var interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('map:ready', function (e) {
+	console.log('map:ready')
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
