@@ -446,6 +446,10 @@
 /**
  * Configuration options for the InteractiveMap constructor.
  *
+ * Some properties (zoom, center, minZoom, maxZoom, bounds, extent) are passed
+ * directly to the underlying map engine. See your map provider's documentation
+ * for detailed behaviour.
+ *
  * @typedef {Object} InteractiveMapConfig
  *
  * @property {'light' | 'dark'} [appColorScheme='light']
@@ -461,7 +465,7 @@
  * Map interaction behaviour mode.
  *
  * @property {[number, number, number, number]} [bounds]
- * Initial bounds [west, south, east, north].
+ * Initial bounds [west, south, east, north]. Equivalent to extent; use whichever matches your map provider's terminology.
  *
  * @property {string} [buttonClass='im-c-open-map-button']
  * CSS class applied to the 'Open map' button.
@@ -485,7 +489,7 @@
  * Whether zoom control buttons are displayed.
  *
  * @property {[number, number, number, number]} [extent]
- * Alias for bounds.
+ * Initial extent [minX, minY, maxX, maxY]. Equivalent to bounds; use whichever matches your map provider's terminology.
  *
  * @property {string} [genericErrorText]
  * Fallback error message shown when the map fails to load.
