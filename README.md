@@ -28,6 +28,8 @@ See [getting started](./docs/getting-started.md) developer guide.
 
 [Plugins](./docs/plugins.md)
 
+[Building a Plugin](./docs/building-a-plugin.md)
+
 [Architecture](./docs/architecture.md)
 
 ## Contributing

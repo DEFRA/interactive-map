@@ -27,7 +27,19 @@ See [Context](../api/context.md) for the following properties available to all c
 ### `pluginConfig`
 **Type:** `Object`
 
-Plugin-specific configuration passed when registering the plugin.
+Plugin-specific configuration. Contains all properties from the [PluginDescriptor](./plugin-descriptor.md) except `id` and `load`.
+
+When using the factory function pattern, any options passed to the factory become available here:
+
+```js
+// When registering:
+createScaleBarPlugin({ units: 'imperial' })
+
+// Within the plugin:
+const { units } = context.pluginConfig
+```
+
+See [Creating a Plugin Descriptor](./plugin-descriptor.md#creating-a-plugin-descriptor) for the full pattern.
 
 ---
 

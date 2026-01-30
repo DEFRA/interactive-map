@@ -1,94 +1,75 @@
-# Building Plugins
+# Plugins
 
-Plugins extend the InteractiveMap with custom buttons, panels, controls, and behaviours. This guide introduces the plugin system and links to the detailed reference documentation.
+Plugins extend the InteractiveMap with additional functionality. This page lists the available plugins and links to their documentation.
 
-## Overview
+For guidance on building your own plugins, see [Building a Plugin](./building-a-plugin.md).
 
-A plugin is a module that registers UI elements and logic with the map. Plugins can:
+## Available Plugins
 
-- Add **buttons** to the toolbar with built-in styling and behaviour
-- Add **panels** for content like search results or layer controls
-- Add **controls** for fully custom UI elements
-- Register **icons** for use across the application
-- Expose **API methods** callable from outside the plugin
-- Manage **state** with a reducer pattern
+The following plugins are available for use with InteractiveMap:
 
-## How Plugins Work
+### datasets
 
-Plugins are registered via the `plugins` option when creating an InteractiveMap:
+Dataset loading and management plugin.
+
+### draw-es
+
+Drawing and sketching tools for Esri map providers.
+
+### draw-ml
+
+Drawing and sketching tools for MapLibre map providers.
+
+### frame
+
+Frame selection plugin for defining areas of interest.
+
+### interact
+
+Feature interaction plugin for handling map element selection and hover states.
+
+### map-styles
+
+Map style switching plugin that adds a UI control for changing the basemap appearance.
+
+### scale-bar
+
+Scale bar display plugin that shows the current map scale.
+
+### search
+
+Location search plugin with autocomplete functionality.
+
+### use-location
+
+Geolocation plugin that allows users to centre the map on their current location.
+
+## Using Plugins
+
+Plugins are registered via the `plugins` option when creating an InteractiveMap. Plugins typically export a factory function that accepts configuration options:
 
 ```js
+import createScaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
+
 const interactiveMap = new InteractiveMap({
   // ... other options
   plugins: [
-    {
-      id: 'my-plugin',
-      load: () => import('./plugins/my-plugin.js')
-    }
+    createScaleBarPlugin({
+      units: 'imperial'
+    })
   ]
 })
 ```
 
-Each plugin provides a [PluginDescriptor](./plugins/plugin-descriptor.md) with an `id` and a `load` function that returns a [PluginManifest](./plugins/plugin-manifest.md).
+The factory function returns a [PluginDescriptor](./plugins/plugin-descriptor.md) with:
 
-When the map initialises, it calls each plugin's `load` function and registers the manifest's buttons, panels, controls, and other elements.
+- **id** - Unique identifier for the plugin instance
+- **load** - Function that returns a [PluginManifest](./plugins/plugin-manifest.md)
+- **...options** - Configuration passed to the factory, available as [pluginConfig](./plugins/plugin-context.md#pluginconfig)
 
-## Plugin Context
+## Further Reading
 
-Plugin components and callbacks receive a [PluginContext](./plugins/plugin-context.md) object providing access to:
-
-- **appConfig** - Application configuration
-- **appState** - Current app state (breakpoint, interface type, etc.)
-- **mapState** - Current map state (zoom, center, bounds)
-- **mapProvider** - Methods to interact with the map
-- **pluginConfig** - Plugin-specific configuration
-- **pluginState** - Plugin-specific state from your reducer
-- **services** - Core services (announcements, reverse geocoding, event bus)
-
-## Quick Example
-
-A simple plugin that adds a button to show an alert:
-
-```js
-// my-plugin.js
-export default {
-  buttons: [
-    {
-      id: 'my-button',
-      label: 'Say Hello',
-      iconId: 'info',
-      onClick: (event, context) => {
-        alert('Hello from my plugin!')
-      },
-      mobile: { slot: 'top-right' },
-      tablet: { slot: 'top-right' },
-      desktop: { slot: 'top-right' }
-    }
-  ]
-}
-```
-
-## Reference Documentation
-
-For detailed specifications, see:
-
-- [PluginDescriptor](./plugins/plugin-descriptor.md) - How to register a plugin
-- [PluginManifest](./plugins/plugin-manifest.md) - What a plugin can contain
+- [Building a Plugin](./building-a-plugin.md) - Guide to creating custom plugins
+- [PluginDescriptor](./plugins/plugin-descriptor.md) - Plugin registration reference
+- [PluginManifest](./plugins/plugin-manifest.md) - Plugin manifest reference
 - [PluginContext](./plugins/plugin-context.md) - Context available to plugin code
-- [ButtonDefinition](./api/button-definition.md) - Button configuration
-- [PanelDefinition](./api/panel-definition.md) - Panel configuration
-- [ControlDefinition](./api/control-definition.md) - Custom control configuration
-- [IconDefinition](./api/icon-definition.md) - Icon registration
-- [Slots](./api/slots.md) - UI slot system for positioning elements
-
-## Events
-
-Plugins can subscribe to application and map events via the `eventBus` service. See the [Events](./api.md#events) section in the API reference for available events.
-
-```js
-const { eventBus, events } = context.services
-
-eventBus.on(events.APP_PANEL_OPENED, ({ panelId }) => {
-  console.log('Panel opened:', panelId)
-})
-```
