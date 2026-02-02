@@ -25,6 +25,7 @@ var interactPlugin = createInteractPlugin({
 	}],
 	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
+	contiguous: true,
 	// excludeModes: ['draw']
 })
 
@@ -140,17 +141,10 @@ var interactiveMap = new InteractiveMap('map', {
 
 interactiveMap.on('map:ready', function (e) {
 	console.log('map:ready')
-	interactiveMap.addButton('my-button', {
-		label: 'Click me',
-		iconSvgContent: '<circle cx="12" cy="12" r="10"/><path d="M12 16v-4"/><path d="M12 8h.01"/>',
-		onClick: (e, context) => console.log('Clicked'),
-		isToggle: true
-	})
-
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	// interactPlugin.enable()
+	interactPlugin.enable()
 })
 
 interactiveMap.on('datasets:ready', () => {
@@ -172,9 +166,9 @@ interactiveMap.on('draw:ready', function () {
 	// 		strokeWidth: 2,
 	// 	}
 	// })
-	drawPlugin.newLine('test', {
-		snapLayers: ['OS/TopographicArea_1/Agricultural Land']
-	})
+	// drawPlugin.newPolygon('test', {
+	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
+	// })
 	// drawPlugin.editFeature('test1234')
 })
 

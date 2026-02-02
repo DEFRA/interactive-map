@@ -1,4 +1,6 @@
 import { useCallback, useEffect, useRef } from 'react'
+import booleanDisjoint from '@turf/boolean-disjoint'
+import { toTurfGeometry } from '../utils/turfHelpers.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
 
 export const useInteractionHandlers = ({
@@ -8,7 +10,7 @@ export const useInteractionHandlers = ({
   mapProvider,
 }) => {
   const { markers } = mapState
-  const { dispatch, dataLayers, interactionMode, multiSelect, markerColor, selectedFeatures, selectionBounds } = pluginState
+  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, selectedFeatures, selectionBounds } = pluginState
   const { eventBus } = services
   const lastEmittedSelectionChange = useRef(null)
   const layerConfigMap = buildLayerConfigMap(dataLayers)
@@ -17,15 +19,19 @@ export const useInteractionHandlers = ({
     const allFeatures = getFeaturesAtPoint(mapProvider, point)
     const hasDataLayers = dataLayers.length > 0
 
-    const match = hasDataLayers &&
-      (interactionMode === 'select' || interactionMode === 'auto')
-        ? findMatchingFeature(allFeatures, layerConfigMap)
-        : null
+    const canMatchFeature = hasDataLayers && (interactionMode === 'select' || interactionMode === 'auto')
+    const match = canMatchFeature ? findMatchingFeature(allFeatures, layerConfigMap) : null
 
     if (match) {
       markers.remove('location')
-
       const { feature, config } = match
+
+      // Using Turf not booleanDisjoint to test if the new feature is contiguous
+      let isNewFeatureContiguous = false
+      if (contiguous) {
+        isNewFeatureContiguous = selectedFeatures.some(sf => !booleanDisjoint(toTurfGeometry(sf), toTurfGeometry(feature)))
+      }
+
       const featureId = feature.properties?.[config.idProperty]
 
       if (featureId) {
@@ -37,7 +43,8 @@ export const useInteractionHandlers = ({
             layerId: config.layerId,
             idProperty: config.idProperty,
             properties: feature.properties,
-            geometry: feature.geometry
+            geometry: feature.geometry,
+            replaceAll: contiguous && !isNewFeatureContiguous
           },
         })
       }

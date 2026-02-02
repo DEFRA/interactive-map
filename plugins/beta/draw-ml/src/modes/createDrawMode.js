@@ -70,7 +70,8 @@ export const createDrawMode = (ParentMode, config) => {
         pointerdownHandler: this.onPointerdown,
         pointermoveHandler: this.onPointermove,
         pointerupHandler: this.onPointerup,
-        vertexButtonClickHandler: this.onVertexButtonClick
+        vertexButtonClickHandler: this.onVertexButtonClick,
+        undoHandler: this.onUndo
       }
       Object.entries(handlers).forEach(([k, fn]) => bind(k, fn))
 
@@ -85,7 +86,8 @@ export const createDrawMode = (ParentMode, config) => {
         [container, 'pointerup', this.pointerupHandler],
         [map, 'pointerdown', this.pointerdownHandler],
         [map, 'draw.create', this.createHandler],
-        [map, 'move', this.moveHandler]
+        [map, 'move', this.moveHandler],
+        [map, 'draw.undo', this.undoHandler]
       ]
       this._listeners.forEach(([t, e, h]) => t.addEventListener ? t.addEventListener(e, h) : t.on(e, h))
 
@@ -94,6 +96,15 @@ export const createDrawMode = (ParentMode, config) => {
 
     onClick(state, e) {
       if (e.originalEvent.button > 0) {
+        return
+      }
+      // Skip clicks during undo (button click can also trigger map click)
+      if (this.map._undoInProgress) {
+        return
+      }
+      // Skip clicks that didn't originate from the map canvas
+      const canvas = this.map.getCanvas()
+      if (e.originalEvent.target !== canvas) {
         return
       }
       const snap = getSnapInstance(this.map)
@@ -118,6 +129,11 @@ export const createDrawMode = (ParentMode, config) => {
     },
 
     doClick(state) {
+      // Skip during undo operation
+      if (this.map._undoInProgress) {
+        return
+      }
+
       const feature = getFeature(state)
       const coords = getCoords(feature)
       this.dispatchVertexChange(coords)
@@ -162,7 +178,8 @@ export const createDrawMode = (ParentMode, config) => {
      */
     pushDrawUndo(state) {
       const undoStack = this.map._undoStack
-      if (!undoStack) {
+      // Don't push during undo operations
+      if (!undoStack || this.map._undoInProgress) {
         return
       }
       undoStack.push({
@@ -176,33 +193,18 @@ export const createDrawMode = (ParentMode, config) => {
      * Undo the last added vertex during drawing
      */
     undoVertex(state) {
-      const feature = getFeature(state)
-      const coords = getCoords(feature)
-
-      // Need at least 2 coords (1 vertex + rubber band) to undo
-      if (coords.length < 2) {
-        return false
-      }
-
-      // Remove the second-to-last coordinate (the last real vertex, before rubber band)
-      if (geometryType === 'Polygon') {
-        // Polygon: [v0, v1, ..., vN, rubberBand, v0(closing)]
-        // Remove vN (index length - 3, since last two are rubber band and closing)
-        const ring = feature.coordinates[0]
-        if (ring.length > 3) {
-          ring.splice(ring.length - 3, 1)
-        }
-      } else {
-        // Line: [v0, v1, ..., vN, rubberBand]
-        // Remove vN (index length - 2)
-        if (coords.length > 2) {
-          coords.splice(coords.length - 2, 1)
-        }
-      }
-
-      this._ctx.store.render()
-      this.dispatchVertexChange(coords)
+      console.log(state)
+      // DEBUG: Do nothing to see if vertex is still added
       return true
+    },
+
+    /**
+     * Handle draw.undo event
+     */
+    onUndo(state, e) {
+      if (e.operation?.type === 'draw_vertex') {
+        this.undoVertex(state)
+      }
     },
 
     _simulateMouse(type, fn, state) {
@@ -238,7 +240,8 @@ export const createDrawMode = (ParentMode, config) => {
     },
 
     onVertexButtonClick(state, e) {
-      if (e.target.closest(`#${state.addVertexButtonId}`)) {
+      // Only trigger for the specific add vertex button, and skip during undo
+      if (state.addVertexButtonId && !this.map._undoInProgress && e.target.closest(`#${state.addVertexButtonId}`)) {
         this.doClick(state)
       }
     },
@@ -269,6 +272,10 @@ export const createDrawMode = (ParentMode, config) => {
 
     onKeyup(state, e) {
       if (e.key === 'Escape') {
+        return
+      }
+      // Only handle keyboard events when container is focused
+      if (document.activeElement !== state.container) {
         return
       }
       this._setInterface(state, 'keyboard')

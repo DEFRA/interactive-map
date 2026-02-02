@@ -103,6 +103,10 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
 
     const operation = undoStack.pop()
 
+    // Set flag to prevent button click from also adding a vertex
+    map._undoInProgress = true
+    setTimeout(() => { map._undoInProgress = false }, 100)
+
     // Fire event for the current mode to handle
     map.fire('draw.undo', { operation })
   }
@@ -186,6 +190,12 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   map.on('draw.vertexchange', onVertexChange)
 
+  // --- Undo stack changes
+  const onUndoChange = (e) => {
+    dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: e.length })
+  }
+  map.on('draw.undochange', onUndoChange)
+
   return () => {
     drawDone.onClick = null
     drawAddPoint.onClick = null
@@ -198,5 +208,6 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     map.off('draw.create', onCreate)
     map.off('draw.vertexselection', onVertexSelection)
     map.off('draw.vertexchange', onVertexChange)
+    map.off('draw.undochange', onUndoChange)
   }
 }

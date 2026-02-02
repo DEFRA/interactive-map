@@ -4,6 +4,7 @@ const initialState = {
   markerColor: null,
   interactionMode: null,
   multiSelect: false,
+  contiguous: false,
   selectedFeatures: [],
   selectionBounds: null,
   closeOnAction: true // Done or Cancel
@@ -29,7 +30,7 @@ const disable = (state) => {
  * Structure of items in Set: { featureId: string, layerId: string, idProperty: string }
  */
 const toggleSelectedFeatures = (state, payload) => {
-  const { featureId, multiSelect, layerId, idProperty, addToExisting = true, properties, geometry } = payload
+  const { featureId, multiSelect, layerId, idProperty, addToExisting = true, replaceAll = false, properties, geometry } = payload
   const selected = Array.isArray(state.selectedFeatures) ? [...state.selectedFeatures] : []
 
   const existingIndex = selected.findIndex(
@@ -42,6 +43,14 @@ const toggleSelectedFeatures = (state, payload) => {
       selected.splice(existingIndex, 1) // remove the feature
     }
     return { ...state, selectedFeatures: selected }
+  }
+
+  // Replace all selected features if flag is true
+  if (replaceAll) {
+    return {
+      ...state,
+      selectedFeatures: [{ featureId, layerId, idProperty, properties, geometry }]
+    }
   }
 
   // Multi-select mode (add to selection)

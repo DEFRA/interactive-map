@@ -39,8 +39,8 @@ export const manifest = {
     label: 'Undo',
     iconId: 'undo',
     variant: 'tertiary',
-    hiddenWhen: ({ pluginState }) => !pluginState.mode,
-    enableWhen: ({ pluginState }) => false,
+    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
+    enableWhen: ({ pluginState }) => pluginState.undoStackLength > 0,
     ...createButtonSlots(false)
   },{
     id: 'drawFinish',
