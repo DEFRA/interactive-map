@@ -52,7 +52,9 @@ export const EditVertexMode = {
 
     // Clear any snap indicator when entering edit mode
     const snap = getSnapInstance(this.map)
-    if (snap) clearSnapIndicator(snap, this.map)
+    if (snap) {
+      clearSnapIndicator(snap, this.map)
+    }
 
     // Show touch target if entering with a selected vertex on touch interface
     if (state.interfaceType === 'touch' && state.selectedVertexIndex >= 0 && state.selectedVertexType === 'vertex') {
@@ -138,7 +140,9 @@ export const EditVertexMode = {
     if (e.key === ' ' && state.selectedVertexIndex < 0) {
       // Clear snap indicator when starting keyboard selection
       const snap = getSnapInstance(this.map)
-      if (snap) clearSnapIndicator(snap, this.map)
+      if (snap) {
+        clearSnapIndicator(snap, this.map)
+      }
 
       // Ensure we have vertices to select
       if (!state.vertecies?.length) {
@@ -200,8 +204,12 @@ export const EditVertexMode = {
 
   onKeyup(state, e) {
     state.interfaceType = 'keyboard'
-    if (ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) e.stopPropagation()
-    if (e.key === 'Delete') this.deleteVertex(state)
+    if (ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+      e.stopPropagation()
+    }
+    if (e.key === 'Delete') {
+      this.deleteVertex(state)
+    }
   },
 
   onMouseDown(state, e) {
@@ -221,7 +229,9 @@ export const EditVertexMode = {
 
   onMouseUp(state, e) {
     clearSnapState(getSnapInstance(this.map))
-    if (state.dragMoving) this.syncVertices(state)
+    if (state.dragMoving) {
+      this.syncVertices(state)
+    }
     DirectSelect.onMouseUp.call(this, state, e)
   },
 
@@ -238,7 +248,9 @@ export const EditVertexMode = {
 
   onTouchend(state) {
     clearSnapState(getSnapInstance(this.map))
-    if (state?.featureId) this.syncVertices(state)
+    if (state?.featureId) {
+      this.syncVertices(state)
+    }
   },
 
   clickNoTarget(state) {
@@ -248,7 +260,9 @@ export const EditVertexMode = {
   onTap(state, e) {
     // Hide snap indicator on any tap
     const snap = getSnapInstance(this.map)
-    if (snap) clearSnapIndicator(snap, this.map)
+    if (snap) {
+      clearSnapIndicator(snap, this.map)
+    }
 
     const meta = e.featureTarget?.properties.meta
     const coordPath = e.featureTarget?.properties.coord_path
@@ -330,7 +344,9 @@ export const EditVertexMode = {
 
   onMove(state) {
     const vertex = state.vertecies[state.selectedVertexIndex]
-    if (vertex) this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
+    if (vertex) {
+      this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
+    }
   },
 
   onVertexButtonClick(state, e) {
@@ -353,7 +369,9 @@ export const EditVertexMode = {
 
   getVerticies(featureId) {
     const feature = this.getFeature(featureId)
-    if (!feature?.coordinates) return []
+    if (!feature?.coordinates) {
+      return []
+    }
     // Polygon coordinates are [[[lng,lat],...]], LineString are [[lng,lat],...]
     return feature.type === 'LineString' ? feature.coordinates : feature.coordinates.flat(1)
   },
@@ -485,6 +503,8 @@ export const EditVertexMode = {
       geojson.geometry.coordinates[0][state.selectedVertexIndex] = [coord.lng, coord.lat]
     } else if (geojson.geometry.type === 'LineString') {
       geojson.geometry.coordinates[state.selectedVertexIndex] = [coord.lng, coord.lat]
+    } else {
+      // No action
     }
     this._ctx.api.add(geojson)
     state.vertecies = this.getVerticies(state.featureId)

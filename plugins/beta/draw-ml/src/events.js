@@ -31,6 +31,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   // --- Done
   const handleDone = () => {
     disableSnap()
+    mapProvider.undoStack?.clear()
     draw.changeMode('disabled')
     dispatch({ type: 'SET_MODE', payload: null })
     dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null }})
@@ -49,6 +50,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
       draw.add(feature)
     }
     disableSnap()
+    mapProvider.undoStack?.clear()
     draw.changeMode('disabled')
 
     dispatch({ type: 'SET_MODE', payload: null })
@@ -91,6 +93,20 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     draw.changeMode('simple_select', { featureIds: [feature.id] })
   }
   drawFinish.onClick = handleFinish
+
+  // --- Undo last action
+  const handleUndo = () => {
+    const undoStack = mapProvider.undoStack
+    if (!undoStack || undoStack.length === 0) {
+      return
+    }
+
+    const operation = undoStack.pop()
+
+    // Fire event for the current mode to handle
+    map.fire('draw.undo', { operation })
+  }
+  drawUndo.onClick = handleUndo
 
   // --- Snap toggle with throttle to prevent Safari slowdown
   let lastToggleTime = 0

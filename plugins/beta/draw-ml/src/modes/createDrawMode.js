@@ -105,7 +105,12 @@ export const createDrawMode = (ParentMode, config) => {
           coords[coords.length - 1] = [e.lngLat.lng, e.lngLat.lat]
         }
       }
+      const coordsBefore = getCoords(getFeature(state)).length
       ParentMode.onClick.call(this, state, e)
+      // Push undo if a vertex was added
+      if (getCoords(getFeature(state)).length > coordsBefore) {
+        this.pushDrawUndo(state)
+      }
     },
 
     onTap() {
@@ -131,6 +136,7 @@ export const createDrawMode = (ParentMode, config) => {
 
       const snap = getSnapInstance(this.map)
       const snappedEvent = isSnapEnabled(state) && createSnappedClickEvent(this.map, snap)
+      const coordsBefore = coords.length
 
       if (snappedEvent) {
         ParentMode.onClick.call(this, state, snappedEvent)
@@ -138,12 +144,65 @@ export const createDrawMode = (ParentMode, config) => {
       } else {
         this._simulateMouse('click', ParentMode.onClick, state)
       }
+
+      // Push undo if a vertex was added
+      if (getCoords(getFeature(state)).length > coordsBefore) {
+        this.pushDrawUndo(state)
+      }
     },
 
     dispatchVertexChange(coords) {
       this.map.fire('draw.vertexchange', {
         numVertecies: coords.length
       })
+    },
+
+    /**
+     * Push an undo operation for the last added vertex
+     */
+    pushDrawUndo(state) {
+      const undoStack = this.map._undoStack
+      if (!undoStack) {
+        return
+      }
+      undoStack.push({
+        type: 'draw_vertex',
+        geometryType,
+        featureId: getFeature(state).id
+      })
+    },
+
+    /**
+     * Undo the last added vertex during drawing
+     */
+    undoVertex(state) {
+      const feature = getFeature(state)
+      const coords = getCoords(feature)
+
+      // Need at least 2 coords (1 vertex + rubber band) to undo
+      if (coords.length < 2) {
+        return false
+      }
+
+      // Remove the second-to-last coordinate (the last real vertex, before rubber band)
+      if (geometryType === 'Polygon') {
+        // Polygon: [v0, v1, ..., vN, rubberBand, v0(closing)]
+        // Remove vN (index length - 3, since last two are rubber band and closing)
+        const ring = feature.coordinates[0]
+        if (ring.length > 3) {
+          ring.splice(ring.length - 3, 1)
+        }
+      } else {
+        // Line: [v0, v1, ..., vN, rubberBand]
+        // Remove vN (index length - 2)
+        if (coords.length > 2) {
+          coords.splice(coords.length - 2, 1)
+        }
+      }
+
+      this._ctx.store.render()
+      this.dispatchVertexChange(coords)
+      return true
     },
 
     _simulateMouse(type, fn, state) {

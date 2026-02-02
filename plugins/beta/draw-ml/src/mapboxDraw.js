@@ -5,6 +5,7 @@ import { DrawPolygonMode } from './modes/drawPolygonMode.js'
 import { DrawLineMode } from './modes/drawLineMode.js'
 import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
+import { createUndoStack } from './undoStack.js'
 
 /**
  * Creates and manages a MapLibre/Mapbox Draw control instance configured for polygon editing.
@@ -91,6 +92,10 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   mapProvider.draw = draw
   // Initialize snap as disabled (matches initialState.snap = false)
   mapProvider.snapEnabled = false
+  // Initialize undo stack (also stored on map for mode access)
+  const undoStack = createUndoStack(map)
+  mapProvider.undoStack = undoStack
+  map._undoStack = undoStack
 
   // --- Initialize MapboxSnap using external module ---
   // Start with status: false to match initial snap disabled state
