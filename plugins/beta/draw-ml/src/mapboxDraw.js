@@ -1,7 +1,8 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import { DisabledMode } from './modes/disabledMode.js'
 import { EditVertexMode } from './modes/editVertexMode.js'
-import { DrawVertexMode } from './modes/drawVertexMode.js'
+import { DrawPolygonMode } from './modes/drawPolygonMode.js'
+import { DrawLineMode } from './modes/drawLineMode.js'
 import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
 
@@ -33,7 +34,8 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     ...MapboxDraw.modes,
     disabled: DisabledMode,
     edit_vertex: EditVertexMode,
-    draw_vertex: DrawVertexMode
+    draw_polygon: DrawPolygonMode,
+    draw_line: DrawLineMode
   }
 
   // --- Create MapLibre Draw instance ---

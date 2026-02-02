@@ -34,8 +34,12 @@ export const EditVertexMode = {
       featureId: state.featureId || options.featureId,
       selectedVertexIndex: options.selectedVertexIndex ?? -1,
       selectedVertexType: options.selectedVertexType,
-      scale: options.scale
+      scale: options.scale ?? 1
     })
+
+    // Get feature type for later reference
+    const feature = this.getFeature(state.featureId)
+    state.featureType = feature?.type
 
     state.vertecies = this.getVerticies(state.featureId)
     state.midpoints = this.getMidpoints(state.featureId)
@@ -45,6 +49,25 @@ export const EditVertexMode = {
       this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
     }
     this.addTouchVertexTarget(state)
+
+    // Clear any snap indicator when entering edit mode
+    const snap = getSnapInstance(this.map)
+    if (snap) clearSnapIndicator(snap, this.map)
+
+    // Show touch target if entering with a selected vertex on touch interface
+    if (state.interfaceType === 'touch' && state.selectedVertexIndex >= 0 && state.selectedVertexType === 'vertex') {
+      const vertex = state.vertecies[state.selectedVertexIndex]
+      if (vertex) {
+        setTimeout(() => {
+          this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
+        }, 0)
+      }
+    }
+
+    // Ignore pointermove deselection briefly after setup to let Safari settle
+    state._ignorePointermoveDeselect = true
+    setTimeout(() => { state._ignorePointermoveDeselect = false }, 100)
+
     return state
   },
 
@@ -76,17 +99,25 @@ export const EditVertexMode = {
 
   onSelectionChange(state, e) {
     const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
-    const coords = e.features[0].geometry.coordinates.flat(1)
+    const geom = e.features[0].geometry
+    // Polygon coordinates are [[[lng,lat],...]], LineString are [[lng,lat],...]
+    const coords = geom.type === 'LineString' ? geom.coordinates : geom.coordinates.flat(1)
     const idx = coords.findIndex(c => vertexCoord && c[0] === vertexCoord[0] && c[1] === vertexCoord[1])
 
-    state.selectedVertexIndex = state.interfaceType === 'keyboard' ? state.selectedVertexIndex : idx
-    state.selectedVertexType ??= idx >= 0 ? 'vertex' : null
+    // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
+    if (state.interfaceType !== 'keyboard' && idx >= 0) {
+      state.selectedVertexIndex = idx
+    }
+    state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
 
     this.map.fire('draw.vertexselection', {
       index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
       numVertecies: state.vertecies.length
     })
-    this.updateTouchVertexTarget(state, vertexCoord ? scalePoint(this.map.project(vertexCoord), state.scale) : null)
+
+    // Use vertex from event if available, otherwise fall back to state
+    const vertex = vertexCoord || (state.selectedVertexIndex >= 0 ? state.vertecies[state.selectedVertexIndex] : null)
+    this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
   onScaleChange(state, e) { state.scale = e.scale },
@@ -105,6 +136,18 @@ export const EditVertexMode = {
     this.hideTouchVertexIndicator(state)
 
     if (e.key === ' ' && state.selectedVertexIndex < 0) {
+      // Clear snap indicator when starting keyboard selection
+      const snap = getSnapInstance(this.map)
+      if (snap) clearSnapIndicator(snap, this.map)
+
+      // Ensure we have vertices to select
+      if (!state.vertecies?.length) {
+        state.vertecies = this.getVerticies(state.featureId)
+        state.midpoints = this.getMidpoints(state.featureId)
+      }
+      if (!state.vertecies?.length) {
+        return
+      }
       state.isPanEnabled = false
       return this.updateVertex(state)
     }
@@ -117,7 +160,10 @@ export const EditVertexMode = {
       }
 
       const snap = getSnapInstance(this.map)
-      const currentCoord = this.getFeature(state.featureId).coordinates.flat(1)[state.selectedVertexIndex]
+      const feature = this.getFeature(state.featureId)
+      // Polygon coordinates are [[[lng,lat],...]], LineString are [[lng,lat],...]
+      const coords = feature.type === 'LineString' ? feature.coordinates : feature.coordinates.flat(1)
+      const currentCoord = coords[state.selectedVertexIndex]
 
       // Break out of snap by moving outside snap radius
       if (isSnapEnabled(state) && state._isSnapped && snap) {
@@ -142,6 +188,8 @@ export const EditVertexMode = {
     }
 
     if (e.altKey && ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+      e.preventDefault()
+      e.stopPropagation()
       return this.updateVertex(state, e.key)
     }
 
@@ -165,7 +213,7 @@ export const EditVertexMode = {
       DirectSelect.onMouseDown.call(this, state, e)
     }
     if (meta === 'midpoint') {
-      state.selectedVertexIndex = this.getVertexIndexFromMidpoint(state.vertecies, e.featureTarget.properties.coord_path)
+      state.selectedVertexIndex = this.getVertexIndexFromMidpoint(state, e.featureTarget.properties.coord_path)
       state.selectedVertexType = 'vertex'
       this.map.fire('draw.vertexselection', { index: state.selectedVertexIndex, numVertecies: state.vertecies.length })
     }
@@ -180,7 +228,7 @@ export const EditVertexMode = {
   onPointerevent(state, e) {
     state.interfaceType = e.pointerType === 'touch' ? 'touch' : 'pointer'
     state.isPanEnabled = true
-    if (e.pointerType === 'touch' && e.type === 'pointermove' && !isOnSVG(e.target.parentNode)) {
+    if (e.pointerType === 'touch' && e.type === 'pointermove' && !isOnSVG(e.target.parentNode) && !state._ignorePointermoveDeselect) {
       this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null, coordPath: null })
     }
   },
@@ -198,16 +246,23 @@ export const EditVertexMode = {
   },
 
   onTap(state, e) {
+    // Hide snap indicator on any tap
+    const snap = getSnapInstance(this.map)
+    if (snap) clearSnapIndicator(snap, this.map)
+
     const meta = e.featureTarget?.properties.meta
     const coordPath = e.featureTarget?.properties.coord_path
 
     if (meta === 'vertex') {
+      // Extract vertex index - handle both "0.1" (Polygon) and "1" (LineString) formats
+      const parts = coordPath.split('.')
+      const idx = Number.parseInt(parts[parts.length - 1], 10)
       this.changeMode(state, {
-        selectedVertexIndex: Number.parseInt(coordPath.split('.')[1], 10),
+        selectedVertexIndex: idx,
         selectedVertexType: 'vertex', coordPath
       })
     } else if (meta === 'midpoint') {
-      this.insertVertex({ ...state, selectedVertexIndex: this.getVertexIndexFromMidpoint(state.vertecies, coordPath), selectedVertexType: 'midpoint' })
+      this.insertVertex({ ...state, selectedVertexIndex: this.getVertexIndexFromMidpoint(state, coordPath), selectedVertexType: 'midpoint' })
     } else {
       this.clickNoTarget(state)
     }
@@ -285,34 +340,74 @@ export const EditVertexMode = {
   },
 
   // Utility methods
+  getCoordPath(state, idx) {
+    // Use cached featureType or look it up
+    const type = state.featureType || this.getFeature(state.featureId)?.type
+    return type === 'LineString' ? `${idx}` : `0.${idx}`
+  },
+
   syncVertices(state) {
     state.vertecies = this.getVerticies(state.featureId)
     state.midpoints = this.getMidpoints(state.featureId)
   },
 
   getVerticies(featureId) {
-    return this.getFeature(featureId)?.coordinates?.flat(1) || []
+    const feature = this.getFeature(featureId)
+    if (!feature?.coordinates) return []
+    // Polygon coordinates are [[[lng,lat],...]], LineString are [[lng,lat],...]
+    return feature.type === 'LineString' ? feature.coordinates : feature.coordinates.flat(1)
   },
 
   getMidpoints(featureId) {
-    const coords = this.getFeature(featureId)?.coordinates?.flat(1) || []
-    return coords.map((c, i) => {
+    const feature = this.getFeature(featureId)
+    if (!feature?.coordinates) return []
+    // Polygon coordinates are [[[lng,lat],...]], LineString are [[lng,lat],...]
+    const coords = feature.type === 'LineString' ? feature.coordinates : feature.coordinates.flat(1)
+    const isLine = feature.type === 'LineString'
+
+    // For lines, don't create midpoint between last and first vertex
+    const count = isLine ? coords.length - 1 : coords.length
+    const midpoints = []
+    for (let i = 0; i < count; i++) {
       const next = coords[(i + 1) % coords.length]
-      return [(c[0] + next[0]) / 2, (c[1] + next[1]) / 2]
-    })
+      midpoints.push([(coords[i][0] + next[0]) / 2, (coords[i][1] + next[1]) / 2])
+    }
+    return midpoints
   },
 
   getVertexOrMidpoint(state, direction) {
-    const project = (p) => Object.values(this.map.project(p))
-    const pixels = [...state.vertecies.map(project), ...state.midpoints.map(project)]
+    // Ensure vertices and midpoints are populated
+    if (!state.vertecies?.length) {
+      state.vertecies = this.getVerticies(state.featureId)
+      state.midpoints = this.getMidpoints(state.featureId)
+    }
+    if (!state.vertecies?.length) {
+      return [-1, null]
+    }
+    const project = (p) => p ? Object.values(this.map.project(p)) : null
+    const pixels = [...state.vertecies.map(project), ...state.midpoints.map(project)].filter(Boolean)
+    if (!pixels.length) {
+      return [-1, null]
+    }
     const start = pixels[state.selectedVertexIndex] || Object.values(this.map.project(this.map.getCenter()))
     const idx = spatialNavigate(start, pixels, direction)
     return [idx, idx < state.vertecies.length ? 'vertex' : 'midpoint']
   },
 
-  getVertexIndexFromMidpoint(vertecies, coordPath) {
-    const afterIdx = Number.parseInt(coordPath.split('.')[1], 10)
-    return vertecies.length + ((afterIdx - 1 + vertecies.length) % vertecies.length)
+  getVertexIndexFromMidpoint(state, coordPath) {
+    // Handle both "0.1" (Polygon) and "1" (LineString) formats
+    const parts = coordPath.split('.')
+    const afterIdx = Number.parseInt(parts[parts.length - 1], 10)
+
+    // Get feature type from cache or look it up
+    const featureType = state.featureType || this.getFeature(state.featureId)?.type
+
+    // For LineString, coord_path is insertion position (1-indexed), so subtract 1 for midpoint array index
+    // For Polygon, adjust for ring wrapping
+    if (featureType === 'LineString') {
+      return state.vertecies.length + (afterIdx - 1)
+    }
+    return state.vertecies.length + ((afterIdx - 1 + state.vertecies.length) % state.vertecies.length)
   },
 
   addTouchVertexTarget(state) {
@@ -346,7 +441,10 @@ export const EditVertexMode = {
 
   updateVertex(state, direction) {
     const [idx, type] = this.getVertexOrMidpoint(state, direction)
-    this.changeMode(state, { selectedVertexIndex: idx, selectedVertexType: type, ...(type === 'vertex' && { coordPath: `0.${idx}` }) })
+    if (idx < 0 || !type) {
+      return
+    }
+    this.changeMode(state, { selectedVertexIndex: idx, selectedVertexType: type, ...(type === 'vertex' && { coordPath: this.getCoordPath(state, idx) }) })
   },
 
   getOffset(coord, e) {
@@ -357,7 +455,10 @@ export const EditVertexMode = {
   },
 
   getNewCoord(state, e) {
-    return this.getOffset(this.getFeature(state.featureId).coordinates.flat(1)[state.selectedVertexIndex], e)
+    const feature = this.getFeature(state.featureId)
+    // Polygon coordinates are [[[lng,lat],...]], LineString are [[lng,lat],...]
+    const coords = feature.type === 'LineString' ? feature.coordinates : feature.coordinates.flat(1)
+    return this.getOffset(coords[state.selectedVertexIndex], e)
   },
 
   insertVertex(state, e) {
@@ -368,7 +469,8 @@ export const EditVertexMode = {
     const coords = geojson.geometry.type === 'Polygon' ? geojson.geometry.coordinates[0] : geojson.geometry.coordinates
     coords.splice(midIdx + 1, 0, [newCoord.lng, newCoord.lat])
     this._ctx.api.add(geojson)
-    this.changeMode(state, { selectedVertexIndex: midIdx + 1, selectedVertexType: 'vertex', coordPath: `0.${midIdx + 1}` })
+    const newIdx = midIdx + 1
+    this.changeMode(state, { selectedVertexIndex: newIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, newIdx) })
   },
 
   moveVertex(state, coord, options = {}) {
@@ -381,20 +483,23 @@ export const EditVertexMode = {
     const geojson = this.getFeature(state.featureId).toGeoJSON()
     if (geojson.geometry.type === 'Polygon') {
       geojson.geometry.coordinates[0][state.selectedVertexIndex] = [coord.lng, coord.lat]
+    } else if (geojson.geometry.type === 'LineString') {
+      geojson.geometry.coordinates[state.selectedVertexIndex] = [coord.lng, coord.lat]
     }
     this._ctx.api.add(geojson)
     state.vertecies = this.getVerticies(state.featureId)
   },
 
   deleteVertex(state) {
-    const feature = this.getFeature(state.featureId)
-    // eslint-disable-next-line no-magic-numbers
-    if (state.vertecies.length <= (feature.type === 'Polygon' ? 3 : 2)) {
+    const featureType = state.featureType || this.getFeature(state.featureId)?.type
+    // Minimum vertices: 3 for Polygon, 2 for LineString
+    const minVertices = featureType === 'Polygon' ? 3 : 2
+    if (state.vertecies.length <= minVertices) {
       return
     }
-    const nextIdx = state.selectedVertexIndex >= state.vertecies.length - 1 ? 0 : state.selectedVertexIndex
+    const nextIdx = state.selectedVertexIndex >= state.vertecies.length - 1 ? state.selectedVertexIndex - 1 : state.selectedVertexIndex
     this._ctx.api.trash()
-    this.changeMode(state, { selectedVertexIndex: nextIdx, selectedVertexType: 'vertex', coordPath: `0.${nextIdx}` })
+    this.changeMode(state, { selectedVertexIndex: nextIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, nextIdx) })
   },
 
   // Prevent selecting other features

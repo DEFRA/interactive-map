@@ -2,6 +2,7 @@
 import { initialState, actions } from './reducer.js'
 import { DrawInit } from './DrawInit.jsx'
 import { newPolygon } from './api/newPolygon.js'
+import { newLine } from './api/newLine.js'
 import { editFeature } from './api/editFeature.js'
 import { addFeature } from './api/addFeature.js'
 import { deleteFeature } from './api/deleteFeature.js'
@@ -31,7 +32,7 @@ export const manifest = {
     id: 'drawAddPoint',
     label: 'Add point',
     variant: 'primary',
-    hiddenWhen: ({ appState, pluginState }) => pluginState.mode !== 'draw_vertex' || appState.interfaceType === 'mouse',
+    hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType === 'mouse',
     ...createButtonSlots(true)
   },{
     id: 'drawUndo',
@@ -46,15 +47,15 @@ export const manifest = {
     label: 'Finish shape',
     iconId: 'check',
     variant: 'tertiary',
-    hiddenWhen: ({ pluginState }) => pluginState.mode !== 'draw_vertex',
-    enableWhen: ({ pluginState }) => pluginState.numVertecies > 3,
+    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode),
+    enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
     ...createButtonSlots(false)
   },{
     id: 'drawDeletePoint',
     label: 'Delete point',
     iconId: 'close',
     variant: 'tertiary',
-    enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > 3,
+    enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > (pluginState.tempFeature?.geometry?.type === 'Polygon' ? 3 : 2),
     hiddenWhen: ({ pluginState }) => !(['simple_select', 'edit_vertex'].includes(pluginState.mode)),
     ...createButtonSlots(false)
   },{
@@ -93,6 +94,7 @@ export const manifest = {
 
   api: {
     newPolygon,
+    newLine,
     editFeature,
     addFeature,
     deleteFeature

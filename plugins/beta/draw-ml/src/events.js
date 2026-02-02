@@ -57,10 +57,44 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   drawCancel.onClick = handleCancel
 
+  // --- Finish shape (programmatically complete the drawing)
+  const handleFinish = () => {
+    const mode = draw.getMode()
+    if (!['draw_polygon', 'draw_line'].includes(mode)) {
+      return
+    }
+
+    const features = draw.getAll().features
+    if (features.length === 0) {
+      return
+    }
+
+    const feature = features[0]
+    const geom = feature.geometry
+
+    // Remove the rubber band point (last coordinate that follows cursor)
+    if (geom.type === 'Polygon') {
+      // Polygon coords: [v1, v2, v3, ..., rubberBand, v1(closing)]
+      // Remove rubber band (second to last) and keep the ring closed
+      const ring = geom.coordinates[0]
+      geom.coordinates[0] = [...ring.slice(0, -2), ring[0]]
+    } else {
+      // Line coords: [v1, v2, v3, ..., rubberBand]
+      // Remove the rubber band (last point)
+      geom.coordinates = geom.coordinates.slice(0, -1)
+    }
+
+    // Fire draw.create to trigger the standard completion flow
+    map.fire('draw.create', { features: [feature] })
+
+    // Change mode to trigger cleanup (this calls onStop on the draw mode)
+    draw.changeMode('simple_select', { featureIds: [feature.id] })
+  }
+  drawFinish.onClick = handleFinish
+
   // --- Snap toggle with throttle to prevent Safari slowdown
   let lastToggleTime = 0
   const THROTTLE_MS = 300
-
   const handleSnap = () => {
     // Strict throttle - ignore clicks within throttle window
     const now = Date.now()
@@ -130,6 +164,12 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   map.on('draw.vertexselection', onVertexSelection)
 
+  // --- Vertex count changes during drawing
+  const onVertexChange = (e) => {
+    dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertecies: e.numVertecies } })
+  }
+  map.on('draw.vertexchange', onVertexChange)
+
   return () => {
     drawDone.onClick = null
     drawAddPoint.onClick = null
@@ -141,5 +181,6 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     map.off('styledata', handleStyleData)
     map.off('draw.create', onCreate)
     map.off('draw.vertexselection', onVertexSelection)
+    map.off('draw.vertexchange', onVertexChange)
   }
 }

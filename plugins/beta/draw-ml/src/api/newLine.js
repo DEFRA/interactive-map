@@ -1,12 +1,12 @@
 import { getSnapInstance } from '../snapHelpers.js'
 
 /**
- * Programmatically create a new polygon
+ * Programmatically create a new line
  * @param {object} context - plugin context
  * @param {string} featureId - ID for the new feature
  * @param {object} options - Options including snapLayers.
  */
-export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, featureId, options = {}) => {
+export const newLine = ({ appState, appConfig, pluginState, mapProvider }, featureId, options = {}) => {
   const { dispatch } = pluginState
   const { draw, map } = mapProvider
 
@@ -28,8 +28,8 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
   // Update state so UI can react to snap layer availability
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: options.snapLayers?.length > 0 })
 
-  // Change mode to draw_polygon
-  draw.changeMode('draw_polygon', {
+  // Change mode to draw_line
+  draw.changeMode('draw_line', {
     container: appState.layoutRefs.viewportRef.current,
     vertexMarkerId: `${appConfig.id}-cross-hair`,
     addVertexButtonId: `${appConfig.id}-draw-add-point`,
@@ -38,6 +38,6 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
     featureId
   })
 
-  // Set mode to draw_polygon
-  dispatch({ type: 'SET_MODE', payload: 'draw_polygon' })
+  // Set mode to draw_line
+  dispatch({ type: 'SET_MODE', payload: 'draw_line' })
 }
