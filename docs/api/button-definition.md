@@ -77,6 +77,23 @@ Associated panel identifier. When set, clicking the button toggles the panel ope
 
 ---
 
+### `inline`
+**Type:** `boolean`
+**Default:** `true`
+
+Whether the button is rendered when the app is in 'inline' mode. Set to `false` to only show the button when fullscreen.
+
+---
+
+### `isToggle`
+**Type:** `boolean`
+
+Enables pressed state tracking for the button. When `true`, `aria-pressed` is set based on the button's pressed state. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to control the pressed state.
+
+This is intended for host buttons added via `addButton()` as an alternative to the `pressedWhen` callback.
+
+---
+
 ### `onClick`
 **Type:** `function`
 
@@ -87,6 +104,10 @@ onClick: (event, context) => {
   console.log('Button clicked')
 }
 ```
+
+## Reactive Callbacks
+
+The following callbacks are evaluated automatically for plugin-defined buttons only. When adding buttons via the host API (`addButton`), use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to control these states imperatively.
 
 ---
 

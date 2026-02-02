@@ -613,6 +613,31 @@ Set the application mode.
 interactiveMap.setMode('fullscreen')
 ```
 
+---
+
+### `toggleButtonState(id, prop, value)`
+
+Set or toggle a button state.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Button identifier |
+| `prop` | `string` | The button state to change: `'hidden'`, `'pressed'`, or `'disabled'` |
+| `value` | `boolean` | Optional. If provided, sets state explicitly; otherwise toggles |
+
+```js
+// Toggle the pressed state
+interactiveMap.toggleButtonState('my-button', 'pressed')
+
+// Explicitly disable a button
+interactiveMap.toggleButtonState('my-button', 'disabled', true)
+
+// Hide a button
+interactiveMap.toggleButtonState('my-button', 'hidden', true)
+```
+
+---
+
 ## Events
 
 Subscribe to events using `interactiveMap.on()` and unsubscribe with `interactiveMap.off()`.
