@@ -18,7 +18,11 @@ Unique button identifier.
 **Type:** `string | function`
 **Required**
 
-Accessible label. Text or a function returning text. Used for the button label or tooltip if `showLabel` is false.
+Accessible label. Used for the button label or tooltip if `showLabel` is false. Can be a string or a function that returns a string. If a function is used, it receives the [Context](./context.md) as an argument.
+
+```js
+label: (context) => context.appState.isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'
+```
 
 ---
 
@@ -73,6 +77,23 @@ Associated panel identifier. When set, clicking the button toggles the panel ope
 
 ---
 
+### `inline`
+**Type:** `boolean`
+**Default:** `true`
+
+Whether the button is rendered when the app is in 'inline' mode. Set to `false` to only show the button when fullscreen.
+
+---
+
+### `isToggle`
+**Type:** `boolean`
+
+Enables pressed state tracking for the button. When `true`, `aria-pressed` is set based on the button's pressed state. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to control the pressed state.
+
+This is intended for host buttons added via `addButton()` as an alternative to the `pressedWhen` callback.
+
+---
+
 ### `onClick`
 **Type:** `function`
 
@@ -83,6 +104,10 @@ onClick: (event, context) => {
   console.log('Button clicked')
 }
 ```
+
+## Reactive Callbacks
+
+The following callbacks are evaluated automatically for plugin-defined buttons only. When adding buttons via the host API (`addButton`), use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to control these states imperatively.
 
 ---
 

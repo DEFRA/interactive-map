@@ -95,7 +95,8 @@
  * Desktop breakpoint configuration.
  *
  * @property {(context: PluginContext) => boolean} [enableWhen]
- * Callback to determine if the button should be enabled. Add aria-enabled="true|false"
+ * Callback to determine if the button should be enabled. Sets aria-disabled accordingly.
+ * Only evaluated for plugin-defined buttons; use toggleButtonState() for host buttons.
  *
  * @property {(context: PluginContext) => boolean} [excludeWhen]
  * Callback to determine if the button should be excluded from rendering.
@@ -104,7 +105,8 @@
  * Button group label for grouping related buttons.
  *
  * @property {(context: PluginContext) => boolean} [hiddenWhen]
- * Callback to determine if the button should be hidden. Add display="none" if true.
+ * Callback to determine if the button should be hidden. Sets display: none if true.
+ * Only evaluated for plugin-defined buttons; use toggleButtonState() for host buttons.
  *
  * @property {string} [iconId]
  * Icon identifier from the icon registry.
@@ -114,6 +116,14 @@
  *
  * @property {string} id
  * Unique button identifier.
+ *
+ * @property {boolean} [inline=true]
+ * Whether the button is rendered when the app is not in fullscreen mode.
+ * Set to false to only show the button when fullscreen.
+ *
+ * @property {boolean} [isToggle]
+ * Enables pressed state tracking for the button. When true, aria-pressed is set based on state.
+ * For host buttons added via addButton() as an alternative to pressedWhen.
  *
  * @property {string | (() => string)} label
  * Accesible label. Text or a function returning the text. Used for the label or tooltip if 'showLabel' is false.
@@ -128,7 +138,8 @@
  * Associated panel identifier to toggle open when clicked.
  *
  * @property {(context: PluginContext) => boolean} [pressedWhen]
- * Callback to determine if the button should appear pressed. Adds aria-pressed="true|false".
+ * Callback to determine if the button should appear pressed. Sets aria-pressed accordingly.
+ * Only evaluated for plugin-defined buttons; use toggleButtonState() for host buttons.
  *
  * @property {ButtonBreakpointConfig} tablet
  * Tablet breakpoint configuration.
