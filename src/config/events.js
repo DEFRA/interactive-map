@@ -33,6 +33,8 @@ export const EVENTS = {
   APP_REVERT_MODE: 'app:revertmode',
   /** @internal Add a button. Payload: { id, config } */
   APP_ADD_BUTTON: 'app:addbutton',
+  /** @internal Set a buttons state. Payload: { id, prop, value? } */
+  APP_TOGGLE_BUTTON_STATE: 'app:togglebuttonstate',
   /** @internal Add a panel. Payload: { id, config } */
   APP_ADD_PANEL: 'app:addpanel',
   /** @internal Remove a panel. Payload: id */

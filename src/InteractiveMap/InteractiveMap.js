@@ -274,6 +274,17 @@ export default class InteractiveMap {
   }
 
   /**
+   * Set or toggle a button state.
+   *
+   * @param {string} id - Button identifier.
+   * @param {'hidden'|'pressed'|'disabled'} prop - The button state to change.
+   * @param {boolean} [value] - Optional boolean. If provided, sets state explicitly; otherwise toggles.
+   */
+  toggleButtonState(id, prop, value) {
+    this.eventBus.emit(events.APP_TOGGLE_BUTTON_STATE, { id, prop, value })
+  }
+
+  /**
    * Add a panel to the UI.
    *
    * @param {string} id - Unique panel identifier.

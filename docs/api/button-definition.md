@@ -18,7 +18,11 @@ Unique button identifier.
 **Type:** `string | function`
 **Required**
 
-Accessible label. Text or a function returning text. Used for the button label or tooltip if `showLabel` is false.
+Accessible label. Used for the button label or tooltip if `showLabel` is false. Can be a string or a function that returns a string. If a function is used, it receives the [Context](./context.md) as an argument.
+
+```js
+label: (context) => context.appState.isFullscreen ? 'Exit fullscreen' : 'Enter fullscreen'
+```
 
 ---
 
