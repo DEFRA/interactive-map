@@ -84,7 +84,7 @@ export const manifest = {
     excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.find(l => l.showInKey),
     mobile: {
       slot: 'top-left',
-      showLabel: true
+      showLabel: false
     },
     tablet: {
       slot: 'top-left',

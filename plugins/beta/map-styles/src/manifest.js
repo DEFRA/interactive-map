@@ -14,13 +14,13 @@ export const manifest = {
       dismissable: true
     },
     tablet: {
-      slot: 'map-styles-button',
+      slot: 'inset',
       modal: true,
       width: '400px',
       dismissable: true
     },
     desktop: {
-      slot: 'map-styles-button',
+      slot: 'inset',
       modal: true,
       width: '400px',
       dismissable: true
@@ -30,22 +30,20 @@ export const manifest = {
 
   buttons: [{
     id: 'mapStyles',
-    label: 'Map styles',
+    label: 'Styles',
     panelId: 'mapStyles',
     iconId: 'map',
     mobile: {
-      slot: 'right-top',
+      slot: 'top-left',
       showLabel: false
     },
     tablet: {
-      slot: 'right-top',
-      showLabel: false,
-      order: 1
+      slot: 'top-left',
+      showLabel: true
     },
     desktop: {
-      slot: 'right-top',
-      showLabel: false,
-      order: 1
+      slot: 'top-left',
+      showLabel: true
     }
   }],
 

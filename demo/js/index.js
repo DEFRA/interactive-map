@@ -116,6 +116,7 @@ var interactiveMap = new InteractiveMap('map', {
 		backgroundColor: '#f5f5f0'
 	},
 	plugins: [
+		datasetsPlugin,
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles3857
 		}),
@@ -131,7 +132,6 @@ var interactiveMap = new InteractiveMap('map', {
 			// isExpanded: true
 		}),
 		useLocationPlugin(),
-		datasetsPlugin,
 		interactPlugin,
 		framePlugin,
 		drawPlugin
