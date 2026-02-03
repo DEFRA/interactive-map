@@ -116,6 +116,7 @@ var interactiveMap = new InteractiveMap('map', {
 		backgroundColor: '#f5f5f0'
 	},
 	plugins: [
+		datasetsPlugin,
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles3857
 		}),
@@ -131,12 +132,15 @@ var interactiveMap = new InteractiveMap('map', {
 			// isExpanded: true
 		}),
 		useLocationPlugin(),
-		datasetsPlugin,
 		interactPlugin,
 		framePlugin,
 		drawPlugin
 	]
 	// search
+})
+
+interactiveMap.on('app:ready', function (e) {
+	console.log('app:ready')
 })
 
 interactiveMap.on('map:ready', function (e) {
@@ -166,7 +170,7 @@ interactiveMap.on('draw:ready', function () {
 	// 		strokeWidth: 2,
 	// 	}
 	// })
-	drawPlugin.newLine('test', {
+	drawPlugin.newPolygon('test', {
 		snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	})
 	// drawPlugin.editFeature('test1234')

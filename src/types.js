@@ -121,8 +121,8 @@
  * Whether the button is rendered when the app is not in fullscreen mode.
  * Set to false to only show the button when fullscreen.
  *
- * @property {boolean} [isToggle]
- * Enables pressed state tracking for the button. When true, aria-pressed is set based on state.
+ * @property {boolean} [isPressed]
+ * Sets the button’s pressed state. When true or false, aria-pressed is added accordingly.
  * For host buttons added via addButton() as an alternative to pressedWhen.
  *
  * @property {string | (() => string)} label
