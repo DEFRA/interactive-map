@@ -5,7 +5,8 @@ const initialState = {
   selectedVertexIndex: -1,
   numVertecies: null,
   snap: false,
-  hasSnapLayers: false
+  hasSnapLayers: false,
+  undoStackLength: 0
 }
 
 const setMode = (state, payload) => {
@@ -38,10 +39,24 @@ const toggleSnap = (state) => {
   }
 }
 
+const setSnap = (state, payload) => {
+  return {
+    ...state,
+    snap: !!payload
+  }
+}
+
 const setHasSnapLayers = (state, payload) => {
   return {
     ...state,
     hasSnapLayers: !!payload
+  }
+}
+
+const setUndoStackLength = (state, payload) => {
+  return {
+    ...state,
+    undoStackLength: payload
   }
 }
 
@@ -50,7 +65,9 @@ const actions = {
   SET_FEATURE: setFeature,
   SET_SELECTED_VERTEX_INDEX: setSelectedVertexIndex,
   TOGGLE_SNAP: toggleSnap,
-  SET_HAS_SNAP_LAYERS: setHasSnapLayers
+  SET_SNAP: setSnap,
+  SET_HAS_SNAP_LAYERS: setHasSnapLayers,
+  SET_UNDO_STACK_LENGTH: setUndoStackLength
 }
 
 export {

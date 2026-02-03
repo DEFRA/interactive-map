@@ -25,6 +25,7 @@ var interactPlugin = createInteractPlugin({
 	}],
 	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
+	contiguous: true,
 	// excludeModes: ['draw']
 })
 
@@ -53,7 +54,9 @@ var datasetsPlugin = createDatasetsPlugin({
 		fill: 'rgba(0,0,255,0.1)',
 		symbolDescription: { outdoor: 'blue outline' },
 		minZoom: 10,
-		maxZoom: 24
+		maxZoom: 24,
+		showInKey: true,
+		showInLayers: true
 	},{
 		id: 'permanent-grassland',
 		label: 'Permanent grassland',
@@ -65,14 +68,15 @@ var datasetsPlugin = createDatasetsPlugin({
 		// tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
 		// sourceLayer: 'field_parcels_filtered',
 		geojson: 'https://farming-data-7db3d1889632.herokuapp.com/geojson/land-covers?code=130&sbi=106170272',
-		stroke: '#00ff00',
+		stroke: '#00703c',
 		strokeWidth: 2,
-		fill: 'rgba(0,255,0,0.1)',
-		symbolDescription: { outdoor: 'light green outline' },
+		fill: 'rgba(0,112,60,0.1)',
+		symbolDescription: { outdoor: 'Green outline' },
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true
+		showInLayers: true,
+		visibility: 'hidden'
 	}]
 })
 
@@ -136,10 +140,11 @@ var interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('map:ready', function (e) {
+	console.log('map:ready')
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	interactPlugin.enable()
+	// interactPlugin.enable()
 })
 
 interactiveMap.on('datasets:ready', () => {
@@ -161,9 +166,9 @@ interactiveMap.on('draw:ready', function () {
 	// 		strokeWidth: 2,
 	// 	}
 	// })
-	// drawPlugin.newPolygon('test', {
-	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
-	// })
+	drawPlugin.newLine('test', {
+		snapLayers: ['OS/TopographicArea_1/Agricultural Land']
+	})
 	// drawPlugin.editFeature('test1234')
 })
 
@@ -204,9 +209,6 @@ interactiveMap.on('search:clear', function (e) {
 interactiveMap.on('frame:done', function (e) {
 	console.log('frame:done')
 	drawPlugin.addFeature(e)
-	setTimeout(() => {
-		framePlugin.editFeature(e)
-	}, 3000)
 })
 
 interactiveMap.on('frame:cancel', function (e) {

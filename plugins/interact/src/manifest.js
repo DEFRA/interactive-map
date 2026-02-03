@@ -20,7 +20,7 @@ export const manifest = {
     label: 'Done',
     variant: 'primary',
     excludeWhen: ({ appState, pluginState }) => !pluginState.enabled || !appState.isFullscreen,
-    enableWhen: ({ mapState, pluginState }) => !!mapState.markers.items.find(m => m.id === 'location') || !!pluginState.selectionBounds,
+    enableWhen: ({ mapState, pluginState }) => !!mapState.markers.items.some(m => m.id === 'location') || !!pluginState.selectionBounds,
     mobile: {
       slot: 'actions',
       showLabel: true

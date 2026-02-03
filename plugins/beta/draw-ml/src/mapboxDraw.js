@@ -1,9 +1,11 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import { DisabledMode } from './modes/disabledMode.js'
 import { EditVertexMode } from './modes/editVertexMode.js'
-import { DrawVertexMode } from './modes/drawVertexMode.js'
+import { DrawPolygonMode } from './modes/drawPolygonMode.js'
+import { DrawLineMode } from './modes/drawLineMode.js'
 import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
+import { createUndoStack } from './undoStack.js'
 
 /**
  * Creates and manages a MapLibre/Mapbox Draw control instance configured for polygon editing.
@@ -33,7 +35,8 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     ...MapboxDraw.modes,
     disabled: DisabledMode,
     edit_vertex: EditVertexMode,
-    draw_vertex: DrawVertexMode
+    draw_polygon: DrawPolygonMode,
+    draw_line: DrawLineMode
   }
 
   // --- Create MapLibre Draw instance ---
@@ -46,10 +49,53 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   })
   map.addControl(draw)
 
+  // Workaround: mapbox-gl-draw calls preventDefault() on touchend even in disabled mode,
+  // which prevents the browser from synthesizing a click event. We detect taps and
+  // manually dispatch a click event when in disabled mode.
+  const canvas = map.getCanvas()
+  let touchStart = null
+
+  const handleTouchStart = (e) => {
+    if (e.touches.length === 1) {
+      touchStart = { x: e.touches[0].clientX, y: e.touches[0].clientY, time: Date.now() }
+    }
+  }
+
+  const handleTouchEnd = (e) => {
+    if (draw.getMode() !== 'disabled' || !touchStart) {
+      touchStart = null
+      return
+    }
+
+    const touch = e.changedTouches[0]
+    const dx = touch.clientX - touchStart.x
+    const dy = touch.clientY - touchStart.y
+    const duration = Date.now() - touchStart.time
+
+    // Only synthesize click for quick taps with minimal movement
+    if (duration < 300 && Math.abs(dx) < 10 && Math.abs(dy) < 10) {
+      canvas.dispatchEvent(new MouseEvent('click', {
+        bubbles: true,
+        cancelable: true,
+        clientX: touch.clientX,
+        clientY: touch.clientY
+      }))
+    }
+
+    touchStart = null
+  }
+
+  canvas.addEventListener('touchstart', handleTouchStart, { passive: true })
+  canvas.addEventListener('touchend', handleTouchEnd, { passive: true })
+
   // We need a reference to this
   mapProvider.draw = draw
   // Initialize snap as disabled (matches initialState.snap = false)
   mapProvider.snapEnabled = false
+  // Initialize undo stack (also stored on map for mode access)
+  const undoStack = createUndoStack(map)
+  mapProvider.undoStack = undoStack
+  map._undoStack = undoStack
 
   // --- Initialize MapboxSnap using external module ---
   // Start with status: false to match initial snap disabled state
@@ -77,6 +123,9 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   return {
     draw,
     remove() {
+      // Remove touch workaround listeners
+      canvas.removeEventListener('touchstart', handleTouchStart)
+      canvas.removeEventListener('touchend', handleTouchEnd)
       // Remove event listeners
       eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)
       // Delete all features and disable draw

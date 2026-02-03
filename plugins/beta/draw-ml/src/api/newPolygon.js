@@ -28,8 +28,8 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
   // Update state so UI can react to snap layer availability
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: options.snapLayers?.length > 0 })
 
-  // Change mode to draw_vertex
-  draw.changeMode('draw_vertex', {
+  // Change mode to draw_polygon
+  draw.changeMode('draw_polygon', {
     container: appState.layoutRefs.viewportRef.current,
     vertexMarkerId: `${appConfig.id}-cross-hair`,
     addVertexButtonId: `${appConfig.id}-draw-add-point`,
@@ -38,6 +38,6 @@ export const newPolygon = ({ appState, appConfig, pluginState, mapProvider }, fe
     featureId
   })
 
-  // Set mode to draw_vertex
-  dispatch({ type: 'SET_MODE', payload: 'draw_vertex' })
+  // Set mode to draw_polygon
+  dispatch({ type: 'SET_MODE', payload: 'draw_polygon' })
 }

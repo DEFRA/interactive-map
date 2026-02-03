@@ -1,4 +1,4 @@
-# Interactive map
+# InteractiveMap
 
 [![CI](https://github.com/defra/interactive-map/workflows/CI/badge.svg)](https://github.com/defra/interactive-map/actions)
 [![Coverage](https://sonarcloud.io/api/project_badges/measure?project=DEFRA_interactive-map&metric=coverage)](https://sonarcloud.io/summary/new_code?id=DEFRA_interactive-map)
@@ -6,7 +6,13 @@
 [![Dependencies](https://img.shields.io/librariesio/release/npm/@defra/interactive-map)](https://libraries.io/npm/@defra%2Finteractive-map)
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
-A lightweight, accessible map component for frontend applications. Built with accessibility at its core, this component delivers best-in-class mapping experiences that work for everyone.
+**InteractiveMap** is a lightweight map component designed for public-facing government services, and available for anyone to use.
+Built to GOV.UK standards, with accessibility at its core, Interactive Map supports a wide range of users across abilities, devices and input methods.
+It is open source and works with multiple mapping engines. The component can be extended through plugins to meet the specific needs of a service.
+
+See [examples of InteractiveMap](https://google.co.uk).
+
+See [getting started](./docs/getting-started.md) developer guide.
 
 **⚠️ This project is currently in beta and is not yet stable. Documentation and support are not yet available.**
 
@@ -14,71 +20,18 @@ A lightweight, accessible map component for frontend applications. Built with ac
   <img src="docs/assets/screens-white.jpg" alt="Screenshots of map component" width="800">
 </p>
 
-## What is this?
+## Documentation
 
-Interactive Map is an open-source mapping solution designed for government services, but available for anyone to use. It provides a core map component that can be extended with plugins to suit your specific needs.
+[Getting started](./docs/getting-started.md)
 
-The component takes an accessibility-first approach, ensuring mapping tools in government services are usable by all citizens, regardless of their abilities or assistive technologies.
+[API Reference](./docs/api.md)
 
-## Features
+[Plugins](./docs/plugins.md)
 
-### Flexible architecture
-- **Core component** - Lightweight base map with essential functionality
-- **Plugin system** - Add only the capabilities you need:
-  - Drawing tools (ES and MapLibre variants)
-  - Search functionality
-  - Custom datasets
-  - Map styling controls
-  - Scale bars
-  - Location services
-  - Interaction handlers
-  - Framing and layout tools
+[Building a Plugin](./docs/building-a-plugin.md)
 
-### Government-ready
-- Built to GOV.UK standards
-- Designed for integration with government services
-- Follows established design patterns and principles
+[Architecture](./docs/architecture.md)
 
-## Tech Stack
+## Contributing
 
-- **React** - UI component framework
-- **MapLibre** - Primary mapping engine
-- **Webpack** - Module bundling (UMD, ESM builds)
-- **Jest** - Testing framework
-- **SCSS** - Styling
-- **Babel** - JavaScript compilation
-
-## Map Providers
-
-The component uses an injectable provider architecture, allowing you to choose the mapping engine that best suits your needs. Application teams can select the provider based on their specific requirements.
-
-### MapLibre (Recommended)
-
-Our reference provider, offering the most complete and tested experience:
-
-- **Out of the box** - Works immediately with no additional configuration
-- **Modern and lightweight** - Better performance with smaller bundle sizes
-- **Vector tile support** - Most comprehensive support for vector tiles
-- **Enhanced accessibility** - Improved support for assistive technologies
-
-### Esri (Experimental)
-
-An alternative provider with specific advantages:
-
-- **British National Grid** - Native support for BNG coordinate systems
-
-**Note:** Esri provider support is experimental and still under development. Some features may be incomplete or subject to change.
-
-## Getting Started
-
-Documentation and installation instructions will be published when the project reaches stable release.
-
-## Beta vs Stable Features
-
-Plugins and providers are organized into two categories:
-- **Non-beta**: Stable, well-tested features ready for production use
-- **Beta** (`beta/` directories): Preview features available for testing; not recommended for production
-
-## Status
-
-This project is in active development and not yet ready for production use. APIs may change without notice.
+To follow...

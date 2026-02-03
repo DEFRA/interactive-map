@@ -14,8 +14,24 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   const { map, draw } = mapProvider
   const { dispatch, feature, tempFeature } = pluginState
 
+  // Helper to disable snap and hide indicators
+  const disableSnap = () => {
+    mapProvider.snapEnabled = false
+    dispatch({ type: 'SET_SNAP', payload: false })
+    const snap = getSnapInstance(map)
+    if (snap) {
+      snap.setSnapStatus?.(false)
+      clearSnapState(snap)
+    }
+    if (map.getLayer('snap-helper-circle')) {
+      map.setLayoutProperty('snap-helper-circle', 'visibility', 'none')
+    }
+  }
+
   // --- Done
   const handleDone = () => {
+    disableSnap()
+    mapProvider.undoStack?.clear()
     draw.changeMode('disabled')
     dispatch({ type: 'SET_MODE', payload: null })
     dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null }})
@@ -25,12 +41,16 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
 
   // --- Cancel
   const handleCancel = () => {
-    draw.delete(tempFeature.id)
+    if (tempFeature?.id) {
+      draw.delete(tempFeature.id)
+    }
 
     // Reinstate initial feature
     if (feature) {
       draw.add(feature)
     }
+    disableSnap()
+    mapProvider.undoStack?.clear()
     draw.changeMode('disabled')
 
     dispatch({ type: 'SET_MODE', payload: null })
@@ -39,10 +59,63 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   drawCancel.onClick = handleCancel
 
+  // --- Finish shape (programmatically complete the drawing)
+  const handleFinish = () => {
+    const mode = draw.getMode()
+    if (!['draw_polygon', 'draw_line'].includes(mode)) {
+      return
+    }
+
+    const features = draw.getAll().features
+    if (features.length === 0) {
+      return
+    }
+
+    const feature = features[0]
+    const geom = feature.geometry
+
+    // Remove the rubber band point (last coordinate that follows cursor)
+    if (geom.type === 'Polygon') {
+      // Polygon coords: [v1, v2, v3, ..., rubberBand, v1(closing)]
+      // Remove rubber band (second to last) and keep the ring closed
+      const ring = geom.coordinates[0]
+      geom.coordinates[0] = [...ring.slice(0, -2), ring[0]]
+    } else {
+      // Line coords: [v1, v2, v3, ..., rubberBand]
+      // Remove the rubber band (last point)
+      geom.coordinates = geom.coordinates.slice(0, -1)
+    }
+
+    // Fire draw.create to trigger the standard completion flow
+    map.fire('draw.create', { features: [feature] })
+
+    // Change mode to trigger cleanup (this calls onStop on the draw mode)
+    draw.changeMode('simple_select', { featureIds: [feature.id] })
+  }
+  drawFinish.onClick = handleFinish
+
+  // --- Undo last action (only for draw modes - edit_vertex handles its own undo)
+  const handleUndo = () => {
+    // edit_vertex mode handles its own undo via button click listener
+    if (draw.getMode() === 'edit_vertex') return
+
+    const undoStack = mapProvider.undoStack
+    if (!undoStack || undoStack.length === 0) return
+
+    const operation = undoStack.pop()
+
+    // Set flag to prevent button click from also adding a vertex
+    map._undoInProgress = true
+    setTimeout(() => { map._undoInProgress = false }, 100)
+
+    // Fire event for the current mode to handle
+    map.fire('draw.undo', { operation })
+  }
+  drawUndo.onClick = handleUndo
+
   // --- Snap toggle with throttle to prevent Safari slowdown
   let lastToggleTime = 0
   const THROTTLE_MS = 300
-
   const handleSnap = () => {
     // Strict throttle - ignore clicks within throttle window
     const now = Date.now()
@@ -88,6 +161,9 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     dispatch({ type: 'SET_FEATURE', payload: { tempFeature: newFeature }})
     eventBus.emit('draw:create', e)
 
+    // Clear draw mode undo stack - editing starts fresh
+    mapProvider.undoStack?.clear()
+
     // Switch straight to edit vertex mode
     dispatch({ type: 'SET_MODE', payload: 'edit_vertex'})
 
@@ -95,6 +171,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
       draw.changeMode('edit_vertex', {
         container: appState.layoutRefs.viewportRef.current,
         deleteVertexButtonId: `${appConfig.id}-draw-delete-point`,
+        undoButtonId: `${appConfig.id}-draw-undo`,
         isPanEnabled: appState.interfaceType !== 'keyboard',
         interfaceType: appState.interfaceType,
         scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
@@ -112,6 +189,18 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   map.on('draw.vertexselection', onVertexSelection)
 
+  // --- Vertex count changes during drawing
+  const onVertexChange = (e) => {
+    dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertecies: e.numVertecies } })
+  }
+  map.on('draw.vertexchange', onVertexChange)
+
+  // --- Undo stack changes
+  const onUndoChange = (e) => {
+    dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: e.length })
+  }
+  map.on('draw.undochange', onUndoChange)
+
   return () => {
     drawDone.onClick = null
     drawAddPoint.onClick = null
@@ -123,5 +212,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     map.off('styledata', handleStyleData)
     map.off('draw.create', onCreate)
     map.off('draw.vertexselection', onVertexSelection)
+    map.off('draw.vertexchange', onVertexChange)
+    map.off('draw.undochange', onUndoChange)
   }
 }

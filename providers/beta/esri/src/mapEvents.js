@@ -1,6 +1,6 @@
 import { watch, when, once } from '@arcgis/core/core/reactiveUtils.js'
-import { debounce } from '../../../src/utils/debounce.js'
-import { throttle } from '../../../src/utils/throttle.js'
+import { debounce } from '../../../../src/utils/debounce.js'
+import { throttle } from '../../../../src/utils/throttle.js'
 
 const DEBOUNCE_IDLE_TIME = 500
 const MOVE_THROTTLE_TIME = 10

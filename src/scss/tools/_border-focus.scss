@@ -136,10 +136,26 @@
 
   // Apply clip-path only to ::before for the shadow
   &::before {
-    $clip-top: if($has-bottom, 0, -20px);
-    $clip-right: if($has-left, 0, -20px);
-    $clip-bottom: if($has-top, 0, -20px);
-    $clip-left: if($has-right, 0, -20px);
+    $clip-top: -20px;
+    $clip-right: -20px;
+    $clip-bottom: -20px;
+    $clip-left: -20px;
+
+    @if $has-bottom {
+      $clip-top: 0;
+    }
+
+    @if $has-left {
+      $clip-right: 0;
+    }
+
+    @if $has-top {
+      $clip-bottom: 0;
+    }
+
+    @if $has-right {
+      $clip-left: 0;
+    }
 
     clip-path: inset(#{$clip-top} #{$clip-right} #{$clip-bottom} #{$clip-left});
   }

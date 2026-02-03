@@ -29,6 +29,31 @@ const isNewCoordinate = (coords, tolerance = 0.01) => {
   return true
 }
 
+const isNewLineCoordinate = (coords, tolerance = 0.01) => {
+  // First coord is always valid
+  if (coords.length <= 1) {
+    return true
+  }
+  // Check last two coords are different
+  if (coords.length >= 2) {
+    const last = coords[coords.length - 1]
+    const secondLast = coords[coords.length - 2]
+    if (haversine(last, secondLast) < tolerance) {
+      return false
+    }
+  }
+  return true
+}
+
+const isValidLineClick = (coords) => {
+  // First coord is always valid
+  if (coords.length <= 1) {
+    return true
+  }
+  // Check that the new coordinate is different from the previous one
+  return isNewLineCoordinate(coords)
+}
+
 const isValidClick = (coords) => {
   // Less than 4 and new coordinates
   if (coords[0].length <= 1 || isNewCoordinate(coords)) {
@@ -98,5 +123,6 @@ const spatialNavigate = (start, pixels, direction) => {
 export {
 	isNewCoordinate,
 	isValidClick,
+	isValidLineClick,
   spatialNavigate
 }

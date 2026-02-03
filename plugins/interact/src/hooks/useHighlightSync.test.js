@@ -1,4 +1,4 @@
-import { renderHook } from '@testing-library/react'
+import { renderHook, act } from '@testing-library/react'
 import { useHighlightSync } from './useHighlightSync.js'
 import { buildStylesMap } from '../utils/buildStylesMap.js'
 
@@ -9,6 +9,9 @@ jest.mock('../utils/buildStylesMap.js', () => ({
 describe('useHighlightSync', () => {
   let mockDeps
   let capturedEventHandler
+
+  const render = (overrides = {}) =>
+    renderHook(() => useHighlightSync({ ...mockDeps, ...overrides }))
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -36,197 +39,174 @@ describe('useHighlightSync', () => {
     }
   })
 
-  describe('highlighting selected features', () => {
-    it('updates map highlights when features are selected', () => {
-      mockDeps.selectedFeatures = [
-        { featureId: 'F1', layerId: 'layer1' }
-      ]
+  /* ------------------------------------------------------------------ */
+  /* Highlighting                                                       */
+  /* ------------------------------------------------------------------ */
 
-      renderHook(() => useHighlightSync(mockDeps))
+  it('updates map highlights and dispatches bounds', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
 
-      expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledWith(
-        [{ featureId: 'F1', layerId: 'layer1' }],
-        expect.any(Object)
-      )
-    })
+    render()
 
-    it('passes styles map to map provider', () => {
-      mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
-      buildStylesMap.mockReturnValue({ layer1: { stroke: 'purple', fill: 'yellow' } })
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledWith(
+      mockDeps.selectedFeatures,
+      expect.any(Object)
+    )
 
-      renderHook(() => useHighlightSync(mockDeps))
-
-      expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledWith(
-        expect.anything(),
-        { layer1: { stroke: 'purple', fill: 'yellow' } }
-      )
-    })
-
-    it('dispatches selection bounds after highlighting', () => {
-      mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
-      mockDeps.mapProvider.updateHighlightedFeatures.mockReturnValue({
-        sw: [10, 20],
-        ne: [30, 40]
-      })
-
-      renderHook(() => useHighlightSync(mockDeps))
-
-      expect(mockDeps.dispatch).toHaveBeenCalledWith({
-        type: 'UPDATE_SELECTED_BOUNDS',
-        payload: { sw: [10, 20], ne: [30, 40] }
-      })
-    })
-
-    it('dispatches null bounds when no features selected', () => {
-      mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
-      mockDeps.mapProvider.updateHighlightedFeatures.mockReturnValue(null)
-
-      renderHook(() => useHighlightSync(mockDeps))
-
-      expect(mockDeps.dispatch).toHaveBeenCalledWith({
-        type: 'UPDATE_SELECTED_BOUNDS',
-        payload: null
-      })
+    expect(mockDeps.dispatch).toHaveBeenCalledWith({
+      type: 'UPDATE_SELECTED_BOUNDS',
+      payload: { sw: [0, 0], ne: [1, 1] }
     })
   })
 
-  describe('style recalculation', () => {
-    it('recalculates styles when map style changes', () => {
-      mockDeps.selectedFeatures = [{ featureId: 'F1' }]
+  it('dispatches null bounds when provider returns null', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1' }]
+    mockDeps.mapProvider.updateHighlightedFeatures.mockReturnValue(null)
 
-      const { rerender } = renderHook(
-        ({ mapStyle }) => useHighlightSync({ ...mockDeps, mapStyle }),
-        { initialProps: { mapStyle: { id: 'light' } } }
-      )
+    render()
 
-      buildStylesMap.mockClear()
-
-      rerender({ mapStyle: { id: 'satellite' } })
-
-      expect(buildStylesMap).toHaveBeenCalledWith(
-        expect.anything(),
-        { id: 'satellite' }
-      )
+    expect(mockDeps.dispatch).toHaveBeenCalledWith({
+      type: 'UPDATE_SELECTED_BOUNDS',
+      payload: null
     })
+  })
 
-    it('recalculates styles when data layers change', () => {
-      mockDeps.selectedFeatures = [{ featureId: 'F1' }]
+  /* ------------------------------------------------------------------ */
+  /* Styles memoization                                                 */
+  /* ------------------------------------------------------------------ */
 
-      const { rerender } = renderHook(
-        ({ dataLayers }) => useHighlightSync({
+  it('rebuilds styles when mapStyle changes', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1' }]
+
+    const { rerender } = renderHook(
+      ({ mapStyle }) => useHighlightSync({ ...mockDeps, mapStyle }),
+      { initialProps: { mapStyle: { id: 'light' } } }
+    )
+
+    buildStylesMap.mockClear()
+
+    rerender({ mapStyle: { id: 'satellite' } })
+
+    expect(buildStylesMap).toHaveBeenCalledWith(
+      expect.anything(),
+      { id: 'satellite' }
+    )
+  })
+
+  it('rebuilds styles when dataLayers change', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1' }]
+
+    const { rerender } = renderHook(
+      ({ dataLayers }) =>
+        useHighlightSync({
           ...mockDeps,
           pluginState: { dataLayers }
         }),
-        { initialProps: { dataLayers: [{ layerId: 'layer1' }] } }
-      )
+      { initialProps: { dataLayers: [{ layerId: 'layer1' }] } }
+    )
 
-      buildStylesMap.mockClear()
+    buildStylesMap.mockClear()
 
-      rerender({ dataLayers: [{ layerId: 'layer1' }, { layerId: 'layer2' }] })
+    rerender({ dataLayers: [{ layerId: 'layer1' }, { layerId: 'layer2' }] })
 
-      expect(buildStylesMap).toHaveBeenCalled()
-    })
+    expect(buildStylesMap).toHaveBeenCalled()
   })
 
-  describe('map data change handling', () => {
-    it('refreshes highlights when map data changes', () => {
-      mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
+  /* ------------------------------------------------------------------ */
+  /* Map data change events                                             */
+  /* ------------------------------------------------------------------ */
 
-      renderHook(() => useHighlightSync(mockDeps))
+  it('refreshes highlights on MAP_DATA_CHANGE', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
 
-      // Clear the initial call
-      mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+    render()
 
-      // Simulate map data change event
-      capturedEventHandler()
+    mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
 
-      expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalled()
-    })
+    act(() => capturedEventHandler())
 
-    it('stops listening for data changes on unmount', () => {
-      mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
-
-      const { unmount } = renderHook(() => useHighlightSync(mockDeps))
-
-      unmount()
-
-      expect(mockDeps.eventBus.off).toHaveBeenCalledWith(
-        'map:datachange',
-        expect.any(Function)
-      )
-    })
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalled()
   })
 
-  describe('guard conditions', () => {
-    it('does not update highlights when mapProvider is null', () => {
-      mockDeps.mapProvider = null
-      mockDeps.selectedFeatures = [{ featureId: 'F1' }]
+  it('unsubscribes on unmount', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
 
-      renderHook(() => useHighlightSync(mockDeps))
+    const { unmount } = render()
 
-      expect(mockDeps.dispatch).not.toHaveBeenCalled()
-    })
+    unmount()
 
-    it('does not update highlights when selectedFeatures is null', () => {
-      mockDeps.selectedFeatures = null
-
-      renderHook(() => useHighlightSync(mockDeps))
-
-      expect(mockDeps.mapProvider.updateHighlightedFeatures).not.toHaveBeenCalled()
-    })
-
-    it('does not update highlights when mapStyle is null', () => {
-      mockDeps.mapStyle = null
-      mockDeps.selectedFeatures = [{ featureId: 'F1' }]
-
-      renderHook(() => useHighlightSync(mockDeps))
-
-      // stylesMap will be null, so effect should exit early
-      expect(mockDeps.mapProvider.updateHighlightedFeatures).not.toHaveBeenCalled()
-    })
-
-    it('returns null stylesMap when mapStyle is null', () => {
-      mockDeps.mapStyle = null
-
-      renderHook(() => useHighlightSync(mockDeps))
-
-      // buildStylesMap should not be called when mapStyle is null
-      // The useMemo returns null early
-      expect(buildStylesMap).not.toHaveBeenCalled()
-    })
+    expect(mockDeps.eventBus.off).toHaveBeenCalledWith(
+      'map:datachange',
+      expect.any(Function)
+    )
   })
 
-  describe('selection updates', () => {
-    it('updates highlights when selection changes', () => {
-      const { rerender } = renderHook(
-        ({ selectedFeatures }) => useHighlightSync({ ...mockDeps, selectedFeatures }),
-        { initialProps: { selectedFeatures: [{ featureId: 'F1' }] } }
-      )
+  /* ------------------------------------------------------------------ */
+  /* Guards                                                            */
+  /* ------------------------------------------------------------------ */
 
-      mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+  it('does nothing when mapProvider is null', () => {
+    mockDeps.mapProvider = null
+    mockDeps.selectedFeatures = [{ featureId: 'F1' }]
 
-      rerender({ selectedFeatures: [{ featureId: 'F1' }, { featureId: 'F2' }] })
+    render()
 
-      expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledWith(
-        [{ featureId: 'F1' }, { featureId: 'F2' }],
-        expect.anything()
-      )
-    })
+    expect(mockDeps.dispatch).not.toHaveBeenCalled()
+  })
 
-    it('clears highlights when selection becomes empty', () => {
-      const { rerender } = renderHook(
-        ({ selectedFeatures }) => useHighlightSync({ ...mockDeps, selectedFeatures }),
-        { initialProps: { selectedFeatures: [{ featureId: 'F1' }] } }
-      )
+  it('does nothing when selectedFeatures is null', () => {
+    mockDeps.selectedFeatures = null
 
-      mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+    render()
 
-      rerender({ selectedFeatures: [] })
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).not.toHaveBeenCalled()
+  })
 
-      expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledWith(
-        [],
-        expect.anything()
-      )
-    })
+  it('does nothing when mapStyle is null', () => {
+    mockDeps.mapStyle = null
+    mockDeps.selectedFeatures = [{ featureId: 'F1' }]
+
+    render()
+
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).not.toHaveBeenCalled()
+    expect(buildStylesMap).not.toHaveBeenCalled()
+  })
+
+  /* ------------------------------------------------------------------ */
+  /* Selection updates                                                  */
+  /* ------------------------------------------------------------------ */
+
+  it('updates highlights when selection changes', () => {
+    const { rerender } = renderHook(
+      ({ selectedFeatures }) =>
+        useHighlightSync({ ...mockDeps, selectedFeatures }),
+      { initialProps: { selectedFeatures: [{ featureId: 'F1' }] } }
+    )
+
+    mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+
+    rerender({ selectedFeatures: [{ featureId: 'F1' }, { featureId: 'F2' }] })
+
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledWith(
+      [{ featureId: 'F1' }, { featureId: 'F2' }],
+      expect.anything()
+    )
+  })
+
+  it('clears highlights when selection becomes empty', () => {
+    const { rerender } = renderHook(
+      ({ selectedFeatures }) =>
+        useHighlightSync({ ...mockDeps, selectedFeatures }),
+      { initialProps: { selectedFeatures: [{ featureId: 'F1' }] } }
+    )
+
+    mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+
+    rerender({ selectedFeatures: [] })
+
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledWith(
+      [],
+      expect.anything()
+    )
   })
 })

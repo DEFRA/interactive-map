@@ -1,74 +1,33 @@
 import { unselectFeature } from './unselectFeature.js'
 
 describe('unselectFeature', () => {
-  let mockEmit
-  let params
+  it('emits interact:unselectFeature with correct payload', () => {
+    const emit = jest.fn()
+    const services = { eventBus: { emit } }
 
-  beforeEach(() => {
-    mockEmit = jest.fn()
-    params = {
-      services: { eventBus: { emit: mockEmit } }
-    }
-  })
-
-  it('emits interact:unselectFeature event', () => {
-    unselectFeature(params, { featureId: 'f1' })
-
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:unselectFeature',
-      expect.any(Object)
+    // Test with all params
+    unselectFeature(
+      { services },
+      { featureId: 'f1', layerId: 'layer-abc', idProperty: 'objectId' }
     )
-  })
 
-  it('passes featureId to event', () => {
-    unselectFeature(params, { featureId: 'feature-123' })
-
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:unselectFeature',
-      expect.objectContaining({ featureId: 'feature-123' })
-    )
-  })
-
-  it('passes layerId to event', () => {
-    unselectFeature(params, {
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenCalledWith('interact:unselectFeature', {
       featureId: 'f1',
-      layerId: 'layer-abc'
-    })
-
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:unselectFeature',
-      expect.objectContaining({ layerId: 'layer-abc' })
-    )
-  })
-
-  it('passes idProperty to event', () => {
-    unselectFeature(params, {
-      featureId: 'f1',
+      layerId: 'layer-abc',
       idProperty: 'objectId'
     })
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:unselectFeature',
-      expect.objectContaining({ idProperty: 'objectId' })
-    )
-  })
+    emit.mockClear()
 
-  it('handles missing optional params', () => {
-    unselectFeature(params, { featureId: 'f1' })
+    // Test missing optional params
+    unselectFeature({ services }, { featureId: 'f2' })
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:unselectFeature',
-      {
-        featureId: 'f1',
-        layerId: undefined,
-        idProperty: undefined
-      }
-    )
-  })
-
-  it('calls emit exactly once', () => {
-    unselectFeature(params, { featureId: 'f1' })
-
-    expect(mockEmit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenCalledWith('interact:unselectFeature', {
+      featureId: 'f2',
+      layerId: undefined,
+      idProperty: undefined
+    })
   })
 })

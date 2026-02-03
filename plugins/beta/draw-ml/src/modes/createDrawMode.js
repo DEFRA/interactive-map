@@ -1,0 +1,431 @@
+import createVertex from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
+
+import {
+  getSnapInstance,
+  isSnapActive,
+  isSnapEnabled,
+  getSnapLngLat,
+  triggerSnapAtPoint,
+  triggerSnapAtCenter,
+  createSnappedEvent,
+  createSnappedClickEvent
+} from '../snapHelpers.js'
+
+/**
+ * Factory function to create a draw mode for either polygons or lines.
+ * Reduces duplication by sharing common event handling, snap detection, etc.
+ *
+ * @param {Object} ParentMode - DrawPolygon or DrawLineString from mapbox-gl-draw
+ * @param {Object} config - Configuration for the mode
+ * @param {string} config.featureProp - Property name on state ('polygon' or 'line')
+ * @param {string} config.geometryType - 'Polygon' or 'LineString'
+ * @param {Function} config.getCoords - Function to get coordinates from feature
+ * @param {Function} config.validateClick - Validation function for clicks
+ * @param {Function} config.createVertices - Function to create vertex display features
+ */
+export const createDrawMode = (ParentMode, config) => {
+  const {
+    featureProp,
+    geometryType,
+    getCoords,
+    validateClick,
+    createVertices,
+    excludeFeatureIdFromSetup = false,
+    finishOnInvalidClick = false // For lines: finish when clicking same spot (like double-click)
+  } = config
+
+  const getFeature = (state) => state[featureProp]
+
+  return {
+    ...ParentMode,
+
+    onSetup(options) {
+      const { map } = this
+
+      // Some parent modes (DrawLineString) interpret featureId as "continue existing"
+      // rather than "use this ID for new feature"
+      const parentOptions = excludeFeatureIdFromSetup
+        ? { ...options, featureId: undefined }
+        : options
+
+      const state = {
+        ...ParentMode.onSetup.call(this, parentOptions),
+        ...options
+      }
+
+      const { container, interfaceType, vertexMarkerId } = state
+      const vertexMarker = container.querySelector(`#${vertexMarkerId}`)
+      vertexMarker.style.display = ['touch', 'keyboard'].includes(interfaceType) ? 'block' : 'none'
+      state.vertexMarker = vertexMarker
+
+      // Bind all handlers once
+      const bind = (name, fn) => (this[name] = fn.bind(this, state))
+      const handlers = {
+        keydownHandler: this.onKeydown,
+        keyupHandler: this.onKeyup,
+        focusHandler: this.onFocus,
+        blurHandler: this.onBlur,
+        createHandler: this.onCreate,
+        moveHandler: this.onMove,
+        pointerdownHandler: this.onPointerdown,
+        pointermoveHandler: this.onPointermove,
+        pointerupHandler: this.onPointerup,
+        vertexButtonClickHandler: this.onVertexButtonClick,
+        undoHandler: this.onUndo
+      }
+      Object.entries(handlers).forEach(([k, fn]) => bind(k, fn))
+
+      // Register events
+      this._listeners = [
+        [window, 'keydown', this.keydownHandler],
+        [window, 'keyup', this.keyupHandler],
+        [window, 'click', this.vertexButtonClickHandler],
+        [container, 'focus', this.focusHandler],
+        [container, 'blur', this.blurHandler],
+        [container, 'pointermove', this.pointermoveHandler],
+        [container, 'pointerup', this.pointerupHandler],
+        [map, 'pointerdown', this.pointerdownHandler],
+        [map, 'draw.create', this.createHandler],
+        [map, 'move', this.moveHandler],
+        [map, 'draw.undo', this.undoHandler]
+      ]
+      this._listeners.forEach(([t, e, h]) => t.addEventListener ? t.addEventListener(e, h) : t.on(e, h))
+
+      return state
+    },
+
+    onClick(state, e) {
+      if (e.originalEvent.button > 0) {
+        return
+      }
+      // Skip clicks during undo (button click can also trigger map click)
+      if (this.map._undoInProgress) {
+        return
+      }
+      // Skip clicks that didn't originate from the map canvas
+      const canvas = this.map.getCanvas()
+      if (e.originalEvent.target !== canvas) {
+        return
+      }
+      const snap = getSnapInstance(this.map)
+      if (isSnapEnabled(state) && isSnapActive(snap)) {
+        e = createSnappedEvent(e, snap)
+      } else {
+        const coords = getCoords(getFeature(state))
+        if (coords.length > 0) {
+          coords[coords.length - 1] = [e.lngLat.lng, e.lngLat.lat]
+        }
+      }
+      const coordsBefore = getCoords(getFeature(state)).length
+      ParentMode.onClick.call(this, state, e)
+      // Push undo if a vertex was added
+      if (getCoords(getFeature(state)).length > coordsBefore) {
+        this.pushDrawUndo(state)
+      }
+    },
+
+    onTap() {
+      return
+    },
+
+    doClick(state) {
+      // Skip during undo operation
+      if (this.map._undoInProgress) {
+        return
+      }
+
+      const feature = getFeature(state)
+      const coords = getCoords(feature)
+      this.dispatchVertexChange(coords)
+
+      if (!validateClick(feature)) {
+        // For lines: clicking same spot (like double-click) should finish the line
+        if (finishOnInvalidClick && coords.length > 1) {
+          coords.pop()
+          this.map.fire('draw.create', {
+            features: [feature.toGeoJSON()]
+          })
+          this.changeMode('simple_select', { featureIds: [feature.id] })
+        }
+        return
+      }
+
+      const snap = getSnapInstance(this.map)
+      const snappedEvent = isSnapEnabled(state) && createSnappedClickEvent(this.map, snap)
+      const coordsBefore = coords.length
+
+      if (snappedEvent) {
+        ParentMode.onClick.call(this, state, snappedEvent)
+        this._ctx.store.render()
+      } else {
+        this._simulateMouse('click', ParentMode.onClick, state)
+      }
+
+      // Push undo if a vertex was added
+      if (getCoords(getFeature(state)).length > coordsBefore) {
+        this.pushDrawUndo(state)
+      }
+    },
+
+    dispatchVertexChange(coords) {
+      this.map.fire('draw.vertexchange', {
+        numVertecies: coords.length
+      })
+    },
+
+    /**
+     * Push an undo operation for the last added vertex
+     */
+    pushDrawUndo(state) {
+      const undoStack = this.map._undoStack
+      // Don't push during undo operations
+      if (!undoStack || this.map._undoInProgress) {
+        return
+      }
+      undoStack.push({
+        type: 'draw_vertex',
+        geometryType,
+        featureId: getFeature(state).id
+      })
+    },
+
+    /**
+     * Undo the last added vertex during drawing
+     */
+    undoVertex(state) {
+      const feature = getFeature(state)
+      const coords = getCoords(feature)
+
+      // Need at least 3 coords to undo (2 vertices + rubber band for line, 3 for polygon ring)
+      const minCoords = geometryType === 'Polygon' ? 4 : 3
+      if (coords.length < minCoords) {
+        return false
+      }
+
+      // Remove the second-to-last coordinate (last committed vertex, before rubber band)
+      if (geometryType === 'Polygon') {
+        const ring = feature.coordinates[0]
+        ring.splice(ring.length - 3, 1)
+        // Snap rubber band back to the new last vertex
+        const newLastVertex = ring[ring.length - 3]
+        if (newLastVertex) {
+          ring[ring.length - 2] = [...newLastVertex]
+        }
+      } else {
+        coords.splice(coords.length - 2, 1)
+        // Snap rubber band back to the new last vertex
+        const newLastVertex = coords[coords.length - 2]
+        if (newLastVertex) {
+          coords[coords.length - 1] = [...newLastVertex]
+        }
+      }
+
+      // CRITICAL: Decrement the parent mode's vertex position counter
+      // This keeps the mode's internal state in sync with the actual coordinates
+      // Ensure it doesn't go below 1 (need at least 1 for rubber band to work)
+      state.currentVertexPosition = Math.max(1, state.currentVertexPosition - 1)
+
+      // For touch/keyboard modes, update rubber band to map center so add point works
+      // For mouse mode, update to the rubber band position for visual continuity
+      const newCoords = getCoords(feature)
+      if (['touch', 'keyboard'].includes(state.interfaceType)) {
+        // Move rubber band to map center - this allows add point to work correctly
+        this.onMove(state)
+      } else {
+        // Mouse mode: simulate mouse move at rubber band position
+        // For Polygon, rubber band is at ring.length - 2 (before closing vertex)
+        // For LineString, rubber band is at coords.length - 1
+        const rubberBandIndex = geometryType === 'Polygon' ? newCoords.length - 2 : newCoords.length - 1
+        const rubberBandPos = newCoords[rubberBandIndex]
+        if (rubberBandPos) {
+          const lngLat = { lng: rubberBandPos[0], lat: rubberBandPos[1] }
+          const point = this.map.project(lngLat)
+          ParentMode.onMouseMove.call(this, state, {
+            lngLat,
+            point,
+            originalEvent: new MouseEvent('mousemove', {
+              clientX: point.x,
+              clientY: point.y
+            })
+          })
+          this._ctx.store.render()
+        }
+      }
+
+      // Dispatch vertex change to update UI
+      this.dispatchVertexChange(newCoords)
+      return true
+    },
+
+    /**
+     * Handle draw.undo event
+     */
+    onUndo(state, e) {
+      if (e.operation?.type === 'draw_vertex') {
+        this.undoVertex(state)
+      }
+    },
+
+    _simulateMouse(type, fn, state) {
+      const { map } = this
+      const center = map.getCenter()
+      const point = map.project(center)
+      fn.call(this, state, {
+        lngLat: center,
+        point,
+        originalEvent: new MouseEvent(type, {
+          clientX: point.x,
+          clientY: point.y,
+          bubbles: true,
+          cancelable: true
+        })
+      })
+      this._ctx.store.render()
+    },
+
+    _setInterface(state, type, show = true) {
+      state.interfaceType = type
+      if (show) {
+        state.vertexMarker.style.display = 'block'
+      }
+    },
+
+    onCreate(state, e) {
+      const draw = this._ctx.api
+      const feature = e.features[0]
+      draw.delete(feature.id)
+      feature.id = state.featureId
+      draw.add(feature)
+    },
+
+    onVertexButtonClick(state, e) {
+      // Only trigger for the specific add vertex button, and skip during undo
+      if (state.addVertexButtonId && !this.map._undoInProgress && e.target.closest(`#${state.addVertexButtonId}`)) {
+        this.doClick(state)
+      }
+    },
+
+    onTouchStart(state, e) {
+      this._setInterface(state, 'touch')
+      this.onMove(state, e)
+    },
+
+    onTouchEnd(state, e) {
+      this._setInterface(state, 'touch')
+      this.onMove(state, e)
+    },
+
+    onKeydown(state, e) {
+      if (document.activeElement !== state.container) {
+        return
+      }
+      if (e.key === 'Escape') {
+        return e.preventDefault()
+      }
+      if (e.key === 'Enter') {
+        state.isActive = true
+      }
+      this._setInterface(state, 'keyboard')
+      this.onMove(state, e)
+    },
+
+    onKeyup(state, e) {
+      if (e.key === 'Escape') {
+        return
+      }
+      // Only handle keyboard events when container is focused
+      if (document.activeElement !== state.container) {
+        return
+      }
+      this._setInterface(state, 'keyboard')
+      this.onMove(state, e)
+      if (e.key === 'Enter' && state.isActive) {
+        this.doClick(state)
+      }
+    },
+
+    onFocus(state) {
+      const { vertexMarker, interfaceType } = state
+      vertexMarker.style.display = ['touch', 'keyboard'].includes(interfaceType) ? 'block' : 'none'
+    },
+
+    onBlur(state, e) {
+      if (e.target !== state.container) {
+        state.vertexMarker.style.display = 'none'
+      }
+    },
+
+    onMouseMove(state, e) {
+      if (isSnapEnabled(state)) {
+        const snap = getSnapInstance(this.map)
+        triggerSnapAtPoint(snap, this.map, e.point)
+
+        const snappedLngLat = getSnapLngLat(snap)
+        if (snappedLngLat) {
+          e = { ...e, lngLat: snappedLngLat }
+        }
+      }
+
+      ParentMode.onMouseMove.call(this, state, e)
+    },
+
+    onMove(state) {
+      if (['touch', 'keyboard'].includes(state.interfaceType)) {
+        if (isSnapEnabled(state)) {
+          triggerSnapAtCenter(getSnapInstance(this.map), this.map)
+        }
+
+        const snap = getSnapInstance(this.map)
+        const snappedLngLat = isSnapEnabled(state) && getSnapLngLat(snap)
+
+        if (snappedLngLat) {
+          const point = this.map.project([snappedLngLat.lng, snappedLngLat.lat])
+          ParentMode.onMouseMove.call(this, state, {
+            lngLat: snappedLngLat,
+            point,
+            originalEvent: new MouseEvent('mousemove', {
+              clientX: point.x,
+              clientY: point.y,
+              bubbles: true,
+              cancelable: true
+            })
+          })
+          this._ctx.store.render()
+        } else {
+          this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
+        }
+      }
+    },
+
+    onPointerdown(state, e) {
+      if (e.pointerType !== 'touch') {
+        this._setInterface(state, 'pointer', false)
+      }
+    },
+
+    onPointermove(state, e) {
+      if (e.pointerType !== 'touch') {
+        state.vertexMarker.style.display = 'none'
+      }
+    },
+
+    onPointerup(state) {
+      this.dispatchVertexChange(getCoords(getFeature(state)))
+    },
+
+    toDisplayFeatures(state, geojson, display) {
+      ParentMode.toDisplayFeatures.call(this, state, geojson, display)
+
+      const feature = getFeature(state)
+      if (geojson.geometry.type === geometryType && geojson.id === feature.id) {
+        createVertices(geojson, display, createVertex)
+      }
+    },
+
+    onStop(state) {
+      ParentMode.onStop.call(this, state)
+      this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
+      state.vertexMarker.style.display = 'none'
+    }
+  }
+}

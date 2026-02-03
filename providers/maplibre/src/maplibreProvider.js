@@ -1,3 +1,8 @@
+/**
+ * @typedef {import('../../../src/types.js').MapProvider} MapProvider
+ * @typedef {import('../../../src/types.js').MapProviderConfig} MapProviderConfig
+ */
+
 import { defaults, supportedShortcuts } from './defaults.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
@@ -6,7 +11,19 @@ import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds } fr
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 
+/**
+ * MapLibre GL JS implementation of the MapProvider interface.
+ *
+ * @implements {MapProvider}
+ */
 export default class MapLibreProvider {
+  /**
+   * @param {Object} options - Constructor options.
+   * @param {any} options.mapFramework - The MapLibre GL JS module.
+   * @param {MapProviderConfig} [options.mapProviderConfig={}] - Provider configuration.
+   * @param {Object} options.events - Event name constants.
+   * @param {Object} options.eventBus - Event emitter for publishing map events.
+   */
   constructor ({ mapFramework, mapProviderConfig = {}, events, eventBus }) {
     this.maplibreModule = mapFramework
     this.events = events
@@ -19,6 +36,12 @@ export default class MapLibreProvider {
     Object.assign(this, mapProviderConfig)
   }
 
+  /**
+   * Initialize the map.
+   *
+   * @param {Object} config - Map initialization configuration.
+   * @returns {Promise<void>}
+   */
   async initMap (config) {
     const { container, padding, mapStyle, center, zoom, bounds, pixelRatio, ...initConfig } = config
     const { Map: MaplibreMap } = this.maplibreModule
@@ -80,6 +103,7 @@ export default class MapLibreProvider {
     this.eventBus.emit(events.MAP_READY, { map })
   }
 
+  /** Destroy the map and clean up resources. */
   destroyMap () {
     this.mapEvents?.remove()
     this.appEvents?.remove()
@@ -94,6 +118,13 @@ export default class MapLibreProvider {
   // Side-effects
   // ==========================
 
+  /**
+   * Set map view with optional center and zoom.
+   *
+   * @param {Object} options - View options.
+   * @param {[number, number]} [options.center] - Center coordinates [lng, lat].
+   * @param {number} [options.zoom] - Zoom level.
+   */
   setView ({ center, zoom }) {
     this.map.flyTo({
       center: center || this.getCenter(),
@@ -102,6 +133,11 @@ export default class MapLibreProvider {
     })
   }
 
+  /**
+   * Zoom in by delta.
+   *
+   * @param {number} zoomDelta - Amount to zoom in.
+   */
   zoomIn (zoomDelta) {
     this.map.easeTo({
       zoom: this.getZoom() + zoomDelta,
@@ -109,6 +145,11 @@ export default class MapLibreProvider {
     })
   }
 
+  /**
+   * Zoom out by delta.
+   *
+   * @param {number} zoomDelta - Amount to zoom out.
+   */
   zoomOut (zoomDelta) {
     this.map.easeTo({
       zoom: this.getZoom() - zoomDelta,
@@ -116,14 +157,29 @@ export default class MapLibreProvider {
     })
   }
 
+  /**
+   * Pan map by pixel offset [x, y]. Positive x pans right, positive y pans down.
+   *
+   * @param {[number, number]} offset - Pixel offset [x, y].
+   */
   panBy (offset) {
     this.map.panBy(offset, { duration: defaults.animationDuration })
   }
 
+  /**
+   * Fit map view to the specified bounds [west, south, east, north].
+   *
+   * @param {[number, number, number, number]} bounds - Bounds as [west, south, east, north].
+   */
   fitToBounds (bounds) {
     this.map.fitBounds(bounds, { duration: defaults.animationDuration })
   }
 
+  /**
+   * Set map padding as pixel insets from the top, bottom, left and right edges of the map.
+   *
+   * @param {{ top?: number, bottom?: number, left?: number, right?: number }} padding - Padding in pixels.
+   */
   setPadding (padding) {
     this.map.setPadding(padding)
   }
@@ -132,6 +188,13 @@ export default class MapLibreProvider {
   // Feature highlighting
   // ==========================
 
+  /**
+   * @experimental Update highlighted features on the map.
+   *
+   * @param {any[]} selectedFeatures - Features to highlight.
+   * @param {any} stylesMap - Style configuration for highlighting.
+   * @returns {any}
+   */
   updateHighlightedFeatures (selectedFeatures, stylesMap) {
     const { LngLatBounds } = this.maplibreModule
     return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, stylesMap })
@@ -141,14 +204,28 @@ export default class MapLibreProvider {
   // Map label (keyboard-friendly)
   // ==========================
 
+  /**
+   * @experimental Highlight the next label in the specified direction for keyboard navigation.
+   *
+   * @param {string} direction - Direction to navigate (e.g., 'up', 'down', 'left', 'right').
+   * @returns {any}
+   */
   highlightNextLabel (direction) {
     return this.labelNavigator?.highlightNextLabel(direction) || null
   }
 
+  /**
+   * @experimental Highlight the label nearest to the map center.
+   *
+   * @returns {any}
+   */
   highlightLabelAtCenter () {
     return this.labelNavigator?.highlightLabelAtCenter() || null
   }
 
+  /**
+   * @experimental Clear any highlighted label.
+   */
   clearHighlightedLabel () {
     return this.labelNavigator?.clearHighlightedLabel() || null
   }
@@ -157,19 +234,40 @@ export default class MapLibreProvider {
   // Read-only getters
   // ==========================
 
+  /**
+   * Get current center coordinates [lng, lat].
+   *
+   * @returns {[number, number]}
+   */
   getCenter () {
     const coord = this.map.getCenter()
     return [Number(coord.lng.toFixed(7)), Number(coord.lat.toFixed(7))]
   }
 
+  /**
+   * Get current zoom level.
+   *
+   * @returns {number}
+   */
   getZoom () {
     return Number(this.map.getZoom().toFixed(7))
   }
 
+  /**
+   * Get current bounds as [west, south, east, north].
+   *
+   * @returns {[number, number, number, number]}
+   */
   getBounds () {
     return this.map.getBounds().toArray().flat(1)
   }
 
+  /**
+   * Query rendered features at a screen pixel position (x from left edge, y from top edge of viewport).
+   *
+   * @param {{ x: number, y: number }} point - Screen pixel position.
+   * @returns {any[]}
+   */
   getFeaturesAtPoint (point) {
     return this.map.queryRenderedFeatures(point)
   }
@@ -178,23 +276,52 @@ export default class MapLibreProvider {
   // Spatial helpers
   // ==========================
 
+  /**
+   * Get the dimensions of the visible map area as a formatted string (e.g., '400m by 750m').
+   *
+   * @returns {string}
+   */
   getAreaDimensions () {
     const { LngLatBounds } = this.maplibreModule
     return getAreaDimensions(getPaddedBounds(LngLatBounds, this.map)) // Use padded bounds
   }
 
+  /**
+   * Get cardinal direction and distance between two coordinates [lng, lat]. Returns a formatted string (e.g., 'north 400m' or 'south 400m, west 750m').
+   *
+   * @param {[number, number]} from - Start coordinates [lng, lat].
+   * @param {[number, number]} to - End coordinates [lng, lat].
+   * @returns {string}
+   */
   getCardinalMove (from, to) {
     return getCardinalMove(from, to)
   }
 
+  /**
+   * Get map resolution in meters per pixel.
+   *
+   * @returns {number}
+   */
   getResolution () {
     return getResolution(this.map.getCenter(), this.map.getZoom())
   }
 
+  /**
+   * Convert map coordinates [lng, lat] to screen pixel position (x from left edge, y from top edge of viewport).
+   *
+   * @param {[number, number]} coords - Map coordinates [lng, lat].
+   * @returns {{ x: number, y: number }} Screen pixel position.
+   */
   mapToScreen (coords) {
     return this.map.project(coords)
   }
 
+  /**
+   * Convert screen pixel position (x from left edge, y from top edge of viewport) to map coordinates [lng, lat].
+   *
+   * @param {{ x: number, y: number }} point - Screen pixel position.
+   * @returns {[number, number]} Map coordinates [lng, lat].
+   */
   screenToMap (point) {
     const { lng, lat } = this.map.unproject([point.x, point.y])
     return [lng, lat]

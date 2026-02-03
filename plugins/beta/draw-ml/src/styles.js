@@ -21,7 +21,7 @@ const fillInactive = (mapStyle) => ({
 const strokeInactive = (mapStyle) => ({
   id: 'stroke-inactive',
   type: 'line',
-  filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
+  filter: ['all', ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']], ['==', 'active', 'false']],
   layout: { 'line-cap': 'round', 'line-join': 'round' },
   paint: {
     'line-color': getUserProp(mapStyle, 'stroke'),
@@ -40,7 +40,7 @@ const fillActive = (fgColor) => ({
 const strokeActive = (fgColor) => ({
   id: 'stroke-active',
   type: 'line',
-  filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
+  filter: ['all', ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']], ['==', 'active', 'true']],
   layout: { 'line-cap': 'round', 'line-join': 'round' },
   paint: { 'line-color': fgColor, 'line-width': 2, 'line-opacity': 1 }
 })
