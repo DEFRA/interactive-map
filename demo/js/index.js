@@ -170,7 +170,7 @@ interactiveMap.on('draw:ready', function () {
 	// 		strokeWidth: 2,
 	// 	}
 	// })
-	drawPlugin.newLine('test', {
+	drawPlugin.newPolygon('test', {
 		snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	})
 	// drawPlugin.editFeature('test1234')

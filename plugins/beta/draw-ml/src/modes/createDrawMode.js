@@ -95,16 +95,8 @@ export const createDrawMode = (ParentMode, config) => {
     },
 
     onClick(state, e) {
-      if (e.originalEvent.button > 0) {
-        return
-      }
-      // Skip clicks during undo (button click can also trigger map click)
-      if (this.map._undoInProgress) {
-        return
-      }
-      // Skip clicks that didn't originate from the map canvas
-      const canvas = this.map.getCanvas()
-      if (e.originalEvent.target !== canvas) {
+      // Skip non-primary clicks, undo operations, or clicks outside canvas
+      if (e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()) {
         return
       }
       const snap = getSnapInstance(this.map)
@@ -196,65 +188,95 @@ export const createDrawMode = (ParentMode, config) => {
       const feature = getFeature(state)
       const coords = getCoords(feature)
 
-      // Need at least 3 coords to undo (2 vertices + rubber band for line, 3 for polygon ring)
-      const minCoords = geometryType === 'Polygon' ? 4 : 3
-      if (coords.length < minCoords) {
+      if (coords.length < 2) {
         return false
       }
 
-      // Remove the second-to-last coordinate (last committed vertex, before rubber band)
-      if (geometryType === 'Polygon') {
-        const ring = feature.coordinates[0]
-        ring.splice(ring.length - 3, 1)
-        // Snap rubber band back to the new last vertex
-        const newLastVertex = ring[ring.length - 3]
-        if (newLastVertex) {
-          ring[ring.length - 2] = [...newLastVertex]
-        }
-      } else {
-        coords.splice(coords.length - 2, 1)
-        // Snap rubber band back to the new last vertex
-        const newLastVertex = coords[coords.length - 2]
-        if (newLastVertex) {
-          coords[coords.length - 1] = [...newLastVertex]
-        }
+      // Undoing last vertex requires reinitializing the feature
+      if (coords.length === 2) {
+        return this._reinitializeFeature(state, feature)
       }
 
-      // CRITICAL: Decrement the parent mode's vertex position counter
-      // This keeps the mode's internal state in sync with the actual coordinates
-      // Ensure it doesn't go below 1 (need at least 1 for rubber band to work)
+      this._removeLastVertex(state, feature, coords)
+      return true
+    },
+
+    /**
+     * Reinitialize feature when undoing to 0 vertices
+     */
+    _reinitializeFeature(state, feature) {
+      const featureId = feature.id
+      this._ctx.store.delete([featureId])
+
+      const center = this.map.getCenter()
+      const initialCoords = [[center.lng, center.lat], [center.lng, center.lat]]
+      const newFeature = this.newFeature({
+        type: 'Feature',
+        properties: {},
+        geometry: {
+          type: geometryType,
+          coordinates: geometryType === 'Polygon' ? [initialCoords] : initialCoords
+        }
+      })
+      newFeature.id = featureId
+      this._ctx.store.add(newFeature)
+
+      state[featureProp] = newFeature
+      state.currentVertexPosition = 0
+
+      this._ctx.store.render()
+      this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
+      this._ctx.store.render()
+
+      this.dispatchVertexChange(initialCoords)
+      return true
+    },
+
+    /**
+     * Remove the last committed vertex and update rubber band
+     */
+    _removeLastVertex(state, feature, coords) {
+      // Structure during drawing: [v1, v2, ..., vN, rubber_band]
+      const ring = geometryType === 'Polygon' ? feature.coordinates[0] : coords
+      ring.splice(ring.length - 2, 1)
+
+      // Snap rubber band to new last vertex position
+      const newLastVertex = ring[ring.length - 2]
+      if (newLastVertex) {
+        ring[ring.length - 1] = [...newLastVertex]
+      }
+
+      // Keep parent mode's vertex counter in sync (min 1 for rubber band)
       state.currentVertexPosition = Math.max(1, state.currentVertexPosition - 1)
 
-      // For touch/keyboard modes, update rubber band to map center so add point works
-      // For mouse mode, update to the rubber band position for visual continuity
-      const newCoords = getCoords(feature)
+      this._ctx.store.render()
+      this._updateRubberBand(state, getCoords(feature))
+    },
+
+    /**
+     * Update rubber band position based on interface type
+     */
+    _updateRubberBand(state, coords) {
       if (['touch', 'keyboard'].includes(state.interfaceType)) {
-        // Move rubber band to map center - this allows add point to work correctly
-        this.onMove(state)
+        // Touch/keyboard: move to map center for add point to work
+        this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
+        this._ctx.store.render()
       } else {
-        // Mouse mode: simulate mouse move at rubber band position
-        // For Polygon, rubber band is at ring.length - 2 (before closing vertex)
-        // For LineString, rubber band is at coords.length - 1
-        const rubberBandIndex = geometryType === 'Polygon' ? newCoords.length - 2 : newCoords.length - 1
-        const rubberBandPos = newCoords[rubberBandIndex]
+        // Mouse: keep rubber band at current position
+        const rubberBandIndex = geometryType === 'Polygon' ? coords.length - 2 : coords.length - 1
+        const rubberBandPos = coords[rubberBandIndex]
         if (rubberBandPos) {
           const lngLat = { lng: rubberBandPos[0], lat: rubberBandPos[1] }
           const point = this.map.project(lngLat)
           ParentMode.onMouseMove.call(this, state, {
             lngLat,
             point,
-            originalEvent: new MouseEvent('mousemove', {
-              clientX: point.x,
-              clientY: point.y
-            })
+            originalEvent: new MouseEvent('mousemove', { clientX: point.x, clientY: point.y })
           })
           this._ctx.store.render()
         }
       }
-
-      // Dispatch vertex change to update UI
-      this.dispatchVertexChange(newCoords)
-      return true
+      this.dispatchVertexChange(coords)
     },
 
     /**
@@ -330,11 +352,7 @@ export const createDrawMode = (ParentMode, config) => {
     },
 
     onKeyup(state, e) {
-      if (e.key === 'Escape') {
-        return
-      }
-      // Only handle keyboard events when container is focused
-      if (document.activeElement !== state.container) {
+      if (e.key === 'Escape' || document.activeElement !== state.container) {
         return
       }
       this._setInterface(state, 'keyboard')
@@ -345,8 +363,7 @@ export const createDrawMode = (ParentMode, config) => {
     },
 
     onFocus(state) {
-      const { vertexMarker, interfaceType } = state
-      vertexMarker.style.display = ['touch', 'keyboard'].includes(interfaceType) ? 'block' : 'none'
+      state.vertexMarker.style.display = ['touch', 'keyboard'].includes(state.interfaceType) ? 'block' : 'none'
     },
 
     onBlur(state, e) {
