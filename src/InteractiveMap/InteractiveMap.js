@@ -280,7 +280,7 @@ export default class InteractiveMap {
    * @param {'hidden'|'pressed'|'disabled'} prop - The button state to change.
    * @param {boolean} [value] - Optional boolean. If provided, sets state explicitly; otherwise toggles.
    */
-  toggleButtonState(id, prop, value) {
+  toggleButtonState (id, prop, value) {
     this.eventBus.emit(events.APP_TOGGLE_BUTTON_STATE, { id, prop, value })
   }
 

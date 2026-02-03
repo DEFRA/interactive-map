@@ -16,17 +16,17 @@ export const useInterfaceAPI = () => {
     const handleToggleButtonState = ({ id, prop, value }) => {
       switch (prop) {
         case 'hidden': {
-          const isHidden = typeof value == 'boolean' ? value : !hiddenButtons.has(id)
+          const isHidden = typeof value === 'boolean' ? value : !hiddenButtons.has(id)
           dispatch({ type: 'TOGGLE_BUTTON_HIDDEN', payload: { id, isHidden } })
           break
         }
         case 'pressed': {
-          const isPressed = typeof value == 'boolean' ? value : !pressedButtons.has(id)
+          const isPressed = typeof value === 'boolean' ? value : !pressedButtons.has(id)
           dispatch({ type: 'TOGGLE_BUTTON_PRESSED', payload: { id, isPressed } })
           break
         }
         case 'disabled': {
-          const isDisabled = typeof value == 'boolean' ? value : !disabledButtons.has(id)
+          const isDisabled = typeof value === 'boolean' ? value : !disabledButtons.has(id)
           dispatch({ type: 'TOGGLE_BUTTON_DISABLED', payload: { id, isDisabled } })
           break
         }
