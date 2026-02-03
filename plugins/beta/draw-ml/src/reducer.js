@@ -1,5 +1,7 @@
 const initialState = {
   mode: null,
+  action: null, // 'split | merge'
+  actionValid: false, // eg. a valid split line for a target feature
   feature: null,
   tempFeature: null,
   selectedVertexIndex: -1,
@@ -13,6 +15,14 @@ const setMode = (state, payload) => {
   return {
     ...state,
     mode: payload
+  }
+}
+
+const setAction = (state, payload) => {
+  return {
+    ...state,
+    action: payload.name,
+    actionValid: payload.isValid
   }
 }
 
@@ -62,6 +72,7 @@ const setUndoStackLength = (state, payload) => {
 
 const actions = {
   SET_MODE: setMode,
+  SET_ACTION: setAction,
   SET_FEATURE: setFeature,
   SET_SELECTED_VERTEX_INDEX: setSelectedVertexIndex,
   TOGGLE_SNAP: toggleSnap,
