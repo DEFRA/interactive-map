@@ -1,74 +1,33 @@
 import { selectFeature } from './selectFeature.js'
 
 describe('selectFeature', () => {
-  let mockEmit
-  let params
+  it('emits interact:selectFeature with correct payload', () => {
+    const emit = jest.fn()
+    const services = { eventBus: { emit } }
 
-  beforeEach(() => {
-    mockEmit = jest.fn()
-    params = {
-      services: { eventBus: { emit: mockEmit } }
-    }
-  })
-
-  it('emits interact:selectFeature event', () => {
-    selectFeature(params, { featureId: 'f1' })
-
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:selectFeature',
-      expect.any(Object)
+    // Test with all params
+    selectFeature(
+      { services },
+      { featureId: 'f1', layerId: 'layer-abc', idProperty: 'objectId' }
     )
-  })
 
-  it('passes featureId to event', () => {
-    selectFeature(params, { featureId: 'feature-123' })
-
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:selectFeature',
-      expect.objectContaining({ featureId: 'feature-123' })
-    )
-  })
-
-  it('passes layerId to event', () => {
-    selectFeature(params, {
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenCalledWith('interact:selectFeature', {
       featureId: 'f1',
-      layerId: 'layer-abc'
-    })
-
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:selectFeature',
-      expect.objectContaining({ layerId: 'layer-abc' })
-    )
-  })
-
-  it('passes idProperty to event', () => {
-    selectFeature(params, {
-      featureId: 'f1',
+      layerId: 'layer-abc',
       idProperty: 'objectId'
     })
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:selectFeature',
-      expect.objectContaining({ idProperty: 'objectId' })
-    )
-  })
+    emit.mockClear()
 
-  it('handles missing optional params', () => {
-    selectFeature(params, { featureId: 'f1' })
+    // Test missing optional params
+    selectFeature({ services }, { featureId: 'f2' })
 
-    expect(mockEmit).toHaveBeenCalledWith(
-      'interact:selectFeature',
-      {
-        featureId: 'f1',
-        layerId: undefined,
-        idProperty: undefined
-      }
-    )
-  })
-
-  it('calls emit exactly once', () => {
-    selectFeature(params, { featureId: 'f1' })
-
-    expect(mockEmit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenCalledTimes(1)
+    expect(emit).toHaveBeenCalledWith('interact:selectFeature', {
+      featureId: 'f2',
+      layerId: undefined,
+      idProperty: undefined
+    })
   })
 })

@@ -94,12 +94,13 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   drawFinish.onClick = handleFinish
 
-  // --- Undo last action
+  // --- Undo last action (only for draw modes - edit_vertex handles its own undo)
   const handleUndo = () => {
+    // edit_vertex mode handles its own undo via button click listener
+    if (draw.getMode() === 'edit_vertex') return
+
     const undoStack = mapProvider.undoStack
-    if (!undoStack || undoStack.length === 0) {
-      return
-    }
+    if (!undoStack || undoStack.length === 0) return
 
     const operation = undoStack.pop()
 
@@ -160,6 +161,9 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     dispatch({ type: 'SET_FEATURE', payload: { tempFeature: newFeature }})
     eventBus.emit('draw:create', e)
 
+    // Clear draw mode undo stack - editing starts fresh
+    mapProvider.undoStack?.clear()
+
     // Switch straight to edit vertex mode
     dispatch({ type: 'SET_MODE', payload: 'edit_vertex'})
 
@@ -167,6 +171,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
       draw.changeMode('edit_vertex', {
         container: appState.layoutRefs.viewportRef.current,
         deleteVertexButtonId: `${appConfig.id}-draw-delete-point`,
+        undoButtonId: `${appConfig.id}-draw-undo`,
         isPanEnabled: appState.interfaceType !== 'keyboard',
         interfaceType: appState.interfaceType,
         scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],

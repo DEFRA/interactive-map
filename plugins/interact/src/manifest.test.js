@@ -31,25 +31,54 @@ describe('manifest', () => {
     })
   })
 
-  it('button logic functions work', () => {
+  it('button logic functions cover all branches', () => {
     const done = manifest.buttons.find(b => b.id === 'selectDone')
+    const atTarget = manifest.buttons.find(b => b.id === 'selectAtTarget')
+    const cancel = manifest.buttons.find(b => b.id === 'selectCancel')
+
+    // selectDone.excludeWhen
     expect(done.excludeWhen({ appState: { isFullscreen: false }, pluginState: { enabled: true } })).toBe(true)
+    expect(done.excludeWhen({ appState: { isFullscreen: true }, pluginState: { enabled: true } })).toBe(false)
+
+    // selectDone.enableWhen
     expect(done.enableWhen({
       mapState: { markers: { items: [{ id: 'location' }] } },
       pluginState: { selectionBounds: null }
     })).toBe(true)
-
-    const atTarget = manifest.buttons.find(b => b.id === 'selectAtTarget')
-    expect(atTarget.hiddenWhen({
-      appState: { interfaceType: 'pointer' },
-      pluginState: { enabled: true }
+    expect(done.enableWhen({
+      mapState: { markers: { items: [] } },
+      pluginState: { selectionBounds: null }
+    })).toBe(false)
+    expect(done.enableWhen({
+      mapState: { markers: { items: [] } },
+      pluginState: { selectionBounds: { sw:[0,0], ne:[1,1] } }
     })).toBe(true)
 
-    const cancel = manifest.buttons.find(b => b.id === 'selectCancel')
+    // selectAtTarget.hiddenWhen
+    expect(atTarget.hiddenWhen({ appState: { interfaceType: 'pointer' }, pluginState: { enabled: true } })).toBe(true)
+    expect(atTarget.hiddenWhen({ appState: { interfaceType: 'touch' }, pluginState: { enabled: true } })).toBe(false)
+    expect(atTarget.hiddenWhen({ appState: { interfaceType: 'touch' }, pluginState: { enabled: false } })).toBe(true)
+
+    // selectCancel.hiddenWhen
     expect(cancel.hiddenWhen({
       appConfig: { behaviour: 'always' },
       appState: { isFullscreen: true },
       pluginState: { enabled: true }
+    })).toBe(true)
+    expect(cancel.hiddenWhen({
+      appConfig: { behaviour: 'hybrid' },
+      appState: { isFullscreen: true },
+      pluginState: { enabled: true }
+    })).toBe(false)
+    expect(cancel.hiddenWhen({
+      appConfig: { behaviour: 'hybrid' },
+      appState: { isFullscreen: false },
+      pluginState: { enabled: true }
+    })).toBe(true)
+    expect(cancel.hiddenWhen({
+      appConfig: { behaviour: 'hybrid' },
+      appState: { isFullscreen: true },
+      pluginState: { enabled: false }
     })).toBe(true)
   })
 

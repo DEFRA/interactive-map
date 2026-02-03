@@ -1,5 +1,5 @@
 import createVertex from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
-import { isValidClick, isValidLineClick } from '../utils.js'
+
 import {
   getSnapInstance,
   isSnapActive,
@@ -193,8 +193,67 @@ export const createDrawMode = (ParentMode, config) => {
      * Undo the last added vertex during drawing
      */
     undoVertex(state) {
-      console.log(state)
-      // DEBUG: Do nothing to see if vertex is still added
+      const feature = getFeature(state)
+      const coords = getCoords(feature)
+
+      // Need at least 3 coords to undo (2 vertices + rubber band for line, 3 for polygon ring)
+      const minCoords = geometryType === 'Polygon' ? 4 : 3
+      if (coords.length < minCoords) {
+        return false
+      }
+
+      // Remove the second-to-last coordinate (last committed vertex, before rubber band)
+      if (geometryType === 'Polygon') {
+        const ring = feature.coordinates[0]
+        ring.splice(ring.length - 3, 1)
+        // Snap rubber band back to the new last vertex
+        const newLastVertex = ring[ring.length - 3]
+        if (newLastVertex) {
+          ring[ring.length - 2] = [...newLastVertex]
+        }
+      } else {
+        coords.splice(coords.length - 2, 1)
+        // Snap rubber band back to the new last vertex
+        const newLastVertex = coords[coords.length - 2]
+        if (newLastVertex) {
+          coords[coords.length - 1] = [...newLastVertex]
+        }
+      }
+
+      // CRITICAL: Decrement the parent mode's vertex position counter
+      // This keeps the mode's internal state in sync with the actual coordinates
+      // Ensure it doesn't go below 1 (need at least 1 for rubber band to work)
+      state.currentVertexPosition = Math.max(1, state.currentVertexPosition - 1)
+
+      // For touch/keyboard modes, update rubber band to map center so add point works
+      // For mouse mode, update to the rubber band position for visual continuity
+      const newCoords = getCoords(feature)
+      if (['touch', 'keyboard'].includes(state.interfaceType)) {
+        // Move rubber band to map center - this allows add point to work correctly
+        this.onMove(state)
+      } else {
+        // Mouse mode: simulate mouse move at rubber band position
+        // For Polygon, rubber band is at ring.length - 2 (before closing vertex)
+        // For LineString, rubber band is at coords.length - 1
+        const rubberBandIndex = geometryType === 'Polygon' ? newCoords.length - 2 : newCoords.length - 1
+        const rubberBandPos = newCoords[rubberBandIndex]
+        if (rubberBandPos) {
+          const lngLat = { lng: rubberBandPos[0], lat: rubberBandPos[1] }
+          const point = this.map.project(lngLat)
+          ParentMode.onMouseMove.call(this, state, {
+            lngLat,
+            point,
+            originalEvent: new MouseEvent('mousemove', {
+              clientX: point.x,
+              clientY: point.y
+            })
+          })
+          this._ctx.store.render()
+        }
+      }
+
+      // Dispatch vertex change to update UI
+      this.dispatchVertexChange(newCoords)
       return true
     },
 

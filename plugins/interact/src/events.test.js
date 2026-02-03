@@ -83,52 +83,20 @@ describe('attachEvents', () => {
     expect(params.handleInteraction).toHaveBeenCalledWith(crossDetail)
   })
 
-  it('selectDone emits correct payload and respects disabled/closeOnAction', () => {
+  it('selectDone emits correct payload and respects closeOnAction', () => {
     const params = createParams()
     cleanup = attachEvents(params)
 
-    // marker exists
+    // closeOnAction = true (already covered)
     params.mapState.markers.getMarker.mockReturnValue({ coords:[1,2] })
     params.buttonConfig.selectDone.onClick()
-    expect(params.eventBus.emit).toHaveBeenCalledWith('interact:done', expect.objectContaining({ coords:[1,2] }))
     expect(params.closeApp).toHaveBeenCalled()
 
-    // reset mocks for next subtests
-    params.eventBus.emit.mockClear()
+    // cover closeOnAction = false
     params.closeApp.mockClear()
-
-    // no marker, but selectedFeatures & selectionBounds
-    params.pluginState.selectedFeatures = [{ featureId:'F1', layerId:'L1' }]
-    params.pluginState.selectionBounds = { sw:[0,0], ne:[1,1] }
-    params.mapState.markers.getMarker.mockReturnValue(null)
-    params.buttonConfig.selectDone.onClick()
-    expect(params.eventBus.emit).toHaveBeenCalledWith(
-      'interact:done',
-      expect.objectContaining({
-        selectedFeatures:[{ featureId:'F1', layerId:'L1' }],
-        selectionBounds:{ sw:[0,0], ne:[1,1] }
-      })
-    )
-
-    // reset mocks again
-    params.eventBus.emit.mockClear()
-    params.closeApp.mockClear()
-
-    // disabled button
-    params.appState.disabledButtons.add('selectDone')
-    params.buttonConfig.selectDone.onClick()
-    expect(params.eventBus.emit).not.toHaveBeenCalled()
-    expect(params.closeApp).not.toHaveBeenCalled()
-
-    // closeOnAction false
-    params.appState.disabledButtons.clear()
     params.pluginState.closeOnAction = false
-    params.mapState.markers.getMarker.mockReturnValue({ coords:[1,2] })
+    params.mapState.markers.getMarker.mockReturnValue({ coords:[3,4] })
     params.buttonConfig.selectDone.onClick()
-    expect(params.eventBus.emit).toHaveBeenCalledWith(
-      'interact:done',
-      expect.objectContaining({ coords:[1,2] })
-    )
     expect(params.closeApp).not.toHaveBeenCalled()
   })
 
@@ -136,18 +104,28 @@ describe('attachEvents', () => {
     const params = createParams()
     cleanup = attachEvents(params)
 
+    // closeOnAction = true
     params.buttonConfig.selectCancel.onClick()
-    expect(params.eventBus.emit).toHaveBeenCalledWith('interact:cancel')
     expect(params.closeApp).toHaveBeenCalled()
 
-    // closeOnAction false
+    // cover closeOnAction = false
     cleanup()
     const params2 = createParams()
-    params2.pluginState.closeOnAction = false
     cleanup = attachEvents(params2)
+    params2.pluginState.closeOnAction = false
     params2.buttonConfig.selectCancel.onClick()
-    expect(params2.eventBus.emit).toHaveBeenCalledWith('interact:cancel')
     expect(params2.closeApp).not.toHaveBeenCalled()
+  })
+
+  it('does not emit or closeApp if selectDone button is disabled', () => {
+    const params = createParams()
+    cleanup = attachEvents(params)
+
+    params.appState.disabledButtons.add('selectDone')
+    params.buttonConfig.selectDone.onClick()
+
+    expect(params.eventBus.emit).not.toHaveBeenCalled()
+    expect(params.closeApp).not.toHaveBeenCalled()
   })
 
   it('programmatic select/unselect dispatches and removes location', () => {

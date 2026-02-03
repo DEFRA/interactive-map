@@ -1,35 +1,18 @@
 import { clear } from './clear.js'
 
 describe('clear', () => {
-  let mockDispatch
-  let mockMarkersRemove
-  let params
+  it('clears selected features and removes location marker', () => {
+    const dispatch = jest.fn()
+    const remove = jest.fn()
 
-  beforeEach(() => {
-    mockDispatch = jest.fn()
-    mockMarkersRemove = jest.fn()
-    params = {
-      pluginState: { dispatch: mockDispatch },
-      mapState: { markers: { remove: mockMarkersRemove } }
-    }
-  })
+    clear({
+      pluginState: { dispatch },
+      mapState: { markers: { remove } }
+    })
 
-  it('dispatches CLEAR_SELECTED_FEATURES action', () => {
-    clear(params)
-
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_SELECTED_FEATURES' })
-  })
-
-  it('calls mapState.markers.remove with "location"', () => {
-    clear(params)
-
-    expect(mockMarkersRemove).toHaveBeenCalledWith('location')
-  })
-
-  it('calls both dispatch and markers.remove', () => {
-    clear(params)
-
-    expect(mockDispatch).toHaveBeenCalledTimes(1)
-    expect(mockMarkersRemove).toHaveBeenCalledTimes(1)
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'CLEAR_SELECTED_FEATURES'
+    })
+    expect(remove).toHaveBeenCalledWith('location')
   })
 })
