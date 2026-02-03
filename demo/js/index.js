@@ -139,6 +139,10 @@ var interactiveMap = new InteractiveMap('map', {
 	// search
 })
 
+interactiveMap.on('app:ready', function (e) {
+	console.log('app:ready')
+})
+
 interactiveMap.on('map:ready', function (e) {
 	console.log('map:ready')
 	// framePlugin.addFrame('test', {

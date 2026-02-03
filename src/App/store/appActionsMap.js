@@ -212,6 +212,24 @@ const addButton = (state, payload) => {
   const { id, config } = payload
   const newButtonConfig = addButtonFn(state.buttonConfig, id, config)
 
+  // Set hidden state
+  const hiddenButtons = new Set(state.hiddenButtons)
+  if (config.isHidden) {
+    hiddenButtons.add(id)
+  }
+
+  // Set disabled state
+  const disabledButtons = new Set(state.disabledButtons)
+  if (config.isDisabled) {
+    disabledButtons.add(id)
+  }
+
+  // Set pressed state
+  const pressedButtons = new Set(state.pressedButtons)
+  if (config.isPressed) {
+    pressedButtons.add(id)
+  }
+
   // Also update the registry instance for persistence across app lifecycle
   if (state.buttonRegistry?.addButton) {
     state.buttonRegistry.addButton(id, config)
@@ -219,7 +237,10 @@ const addButton = (state, payload) => {
 
   return {
     ...state,
-    buttonConfig: newButtonConfig
+    buttonConfig: newButtonConfig,
+    hiddenButtons,
+    disabledButtons,
+    pressedButtons
   }
 }
 

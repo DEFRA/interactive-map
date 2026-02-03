@@ -73,7 +73,7 @@ function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, gro
       showLabel={bpConfig.showLabel}
       isDisabled={appState.disabledButtons.has(buttonId)}
       isHidden={appState.hiddenButtons.has(buttonId)}
-      isPressed={config.isToggle || config.pressedWhen ? appState.pressedButtons.has(buttonId) : undefined}
+      isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
       isOpen={isOpen}
       onClick={handleClick}
       panelId={config.panelId}
