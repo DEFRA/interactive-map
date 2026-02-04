@@ -1,4 +1,6 @@
-import { getSnapInstance } from '../snapHelpers.js'
+import { getSnapInstance } from '../utils/snapHelpers.js'
+import { splitPolygon } from '../utils/spatial.js'
+import { debounce } from '../utils/debounce.js'
 
 /**
  * Programmatically split a polygon or line
@@ -6,13 +8,16 @@ import { getSnapInstance } from '../snapHelpers.js'
  * @param {string} feature - the new feature to be split
  * @param {object} options - Options including snapLayers.
  */
-export const split = ({ appState, appConfig, pluginState, mapProvider }, feature, options = {}) => {
+export const split = ({ appState, appConfig, pluginState, mapProvider }, featureId, options = {}) => {
   const { dispatch } = pluginState
   const { draw, map } = mapProvider
 
   if (!draw) {
     return
   }
+
+  // Get target polygon feature
+  const polygonFeature = draw.get(featureId)
 
   // Always include 'stroke-inactive' in snap layers
   const snapLayers = ['stroke-inactive.cold', ...(options.snapLayers || [])]
@@ -39,14 +44,30 @@ export const split = ({ appState, appConfig, pluginState, mapProvider }, feature
     addVertexButtonId: `${appConfig.id}-draw-add-point`,
     interfaceType: appState.interfaceType,
     getSnapEnabled: () => mapProvider.snapEnabled === true,
-    featureId: '_split'
+    featureId: '_splitter',
+    properties: { splitter: 'invalid' }
   })
 
   // Perform split
-  map.on('draw.create', () => {
-    console.log('Check that split line is valid')
-    dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: false }})
+  map.on('draw.create', (e) => {
+    const lineFeature = e.features[0]
+    const featureCollection = splitPolygon(polygonFeature, lineFeature)
+    draw.setFeatureProperty('_splitter', 'splitter', featureCollection ? 'valid' : 'invalid')
+    dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: !!featureCollection }})
   })
+
+  // Real time check for valid line
+  const DEBOUNCE_SPLIT_POLYGON = 50
+  const onGeometryChange = debounce((e) => {
+    if (e.state.line.coordinates.length < 2) {
+      return
+    }
+    const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates: e.state.line.coordinates }}
+    const featureCollection = splitPolygon(polygonFeature, lineFeature)
+    e.state.line.properties.splitter = featureCollection ? 'valid' : 'invalid'
+    e.state.line.ctx.store.render()
+  }, DEBOUNCE_SPLIT_POLYGON)
+  map.on('draw.geometrychange', onGeometryChange)
 
   // Set mode to 'draw_line'
   dispatch({ type: 'SET_MODE', payload: 'draw_line' })

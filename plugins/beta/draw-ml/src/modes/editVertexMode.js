@@ -1,9 +1,9 @@
 import DirectSelect from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
-import { spatialNavigate } from '../utils.js'
+import { spatialNavigate } from '../utils/spatial.js'
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState
-} from '../snapHelpers.js'
+} from '../utils/snapHelpers.js'
 
 const ARROW_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
@@ -218,6 +218,15 @@ export const EditVertexMode = {
 
     if (e.key === 'Escape') {
       this.changeMode(state, { isPanEnabled: true, selectedVertexIndex: -1, selectedVertexType: null })
+    }
+
+    // Undo with Cmd/Ctrl+Z (works without viewport focus, but not in input fields)
+    if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      e.preventDefault()
+      e.stopPropagation()
+      return this.handleUndo(state)
     }
   },
 
@@ -674,6 +683,17 @@ export const EditVertexMode = {
     this._ctx.api.changeMode('edit_vertex', { ...state, ...updates })
   },
 
+  // Fire geometry change event (for external listeners)
+  fireGeometryChange(state) {
+    const feature = this.getFeature(state.featureId)
+    if (feature) {
+      this.map.fire('draw.update', {
+        features: [feature.toGeoJSON()],
+        action: 'change_coordinates'
+      })
+    }
+  },
+
   // Undo support
   pushUndo(operation) {
     const undoStack = this.map._undoStack
@@ -740,6 +760,7 @@ export const EditVertexMode = {
     state.vertecies = this.getVerticies(featureId)
     state.midpoints = this.getMidpoints(featureId)
     this._ctx.store.render()
+    this.fireGeometryChange(state)
   },
 
   onStop(state) {

@@ -1,0 +1,16 @@
+// --- Debounce Helper ---
+export const debounce = (fn, delay) => {
+  let timeout
+
+  const debounced = (...args) => {
+    clearTimeout(timeout)
+    timeout = setTimeout(() => fn(...args), delay)
+  }
+
+  debounced.cancel = () => {
+    clearTimeout(timeout)
+    timeout = null
+  }
+
+  return debounced
+}

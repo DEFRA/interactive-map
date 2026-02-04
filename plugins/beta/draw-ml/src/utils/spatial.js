@@ -1,6 +1,104 @@
-import { polygon, multiPolygon, lineString, multiLineString, point, multiPoint } from '@turf/helpers'
-import booleanValid from '@turf/boolean-valid'
-import area from '@turf/area'
+import polygonSplitter from 'polygon-splitter'
+import turfBearing from '@turf/bearing'
+import turfDestination from '@turf/destination'
+import turfBooleanValid from '@turf/boolean-valid'
+import turfArea from '@turf/area'
+import {
+  featureCollection as turfFeatureCollection,
+  polygon as turfPolygon,
+  multiPolygon as turfMultiPolygon,
+  lineString as turfLineString,
+  multiLineString as turfMultiLineString,
+  point as turfPoint,
+  multiPoint as turfMultiPoint
+} from '@turf/helpers'
+
+/**
+ * @typedef {import('geojson').Feature<import('geojson').Polygon>} Polygon
+ * @typedef {import('geojson').Feature<import('geojson').LineString>} Line
+ * @typedef {import('geojson').Feature<import('geojson').Feature>} Feature
+ * @typedef {import('geojson').FeatureCollection<import('geojson').FeatureCollection>} FeatureCollection
+ */
+
+/**
+ * Extend a LineString at endpoints AND intermediate vertices.
+ * For intermediate vertices on the polygon boundary, this creates small
+ * extensions that ensure polygon-splitter recognizes them as crossing points.
+ *
+ * @param {Feature<LineString>} line
+ * @param {number} extendDist (distance to extend in Turf units)
+ */
+function extendLine(line, extendDist = 1, units = 'meters') {
+  const coords = line.geometry.coordinates
+  const result = []
+
+  // Extend start point backward
+  const startBearing = turfBearing(coords[1], coords[0])
+  const newStart = turfDestination(coords[0], extendDist, startBearing, { units })
+  result.push(newStart.geometry.coordinates)
+
+  // Process each vertex
+  for (let i = 0; i < coords.length; i++) {
+    if (i > 0 && i < coords.length - 1) {
+      // Intermediate vertex: add extension past it (creates spike for boundary crossing)
+      const incomingBearing = turfBearing(coords[i - 1], coords[i])
+      const pastPt = turfDestination(coords[i], extendDist, incomingBearing, { units })
+      result.push(pastPt.geometry.coordinates)
+    }
+
+    result.push(coords[i])
+  }
+
+  // Extend end point forward
+  const endBearing = turfBearing(coords[coords.length - 2], coords[coords.length - 1])
+  const newEnd = turfDestination(coords[coords.length - 1], extendDist, endBearing, { units })
+  result.push(newEnd.geometry.coordinates)
+
+  return turfLineString(result)
+}
+
+/**
+ * Split a polygon using a line.
+ * Only accepts splits that result in exactly two polygons.
+ *
+ * @param {Feature<Polygon>} polygon
+ * @param {Feature<LineString>} line
+ * @returns {FeatureCollection<Polygon>|null}
+ */
+const splitPolygon = (polygon, line) => {
+  // Extend only start and end vertices
+  const extended = extendLine(line) // assume extendLine only touches start/end now
+
+  let result
+  try {
+    result = polygonSplitter(polygon, extended)
+  } catch {
+    return null
+  }
+
+  // Must result in exactly 2 polygons
+  let polygons = []
+  if (result.geometry.type === 'MultiPolygon') {
+    if (result.geometry.coordinates.length !== 2) {
+      return null
+    }
+    polygons = result.geometry.coordinates.map(coords => turfPolygon(coords, polygon.properties))
+  } else {
+    return null
+  }
+
+  // Assign IDs & properties
+  const baseId = polygon.id ?? polygon.properties?.id ?? 'poly'
+  const features = polygons.map((poly, i) =>
+    turfPolygon(
+      poly.geometry.coordinates,
+      { ...polygon.properties, id: baseId },
+      { id: `${baseId}-${i + 1}` }
+    )
+  )
+
+  return turfFeatureCollection(features)
+}
 
 /**
  * Convert a GeoJSON Feature or geometry-like object into a Turf geometry.
@@ -10,29 +108,25 @@ import area from '@turf/area'
  *
  * @throws Will throw if the geometry type is not supported.
  */
-export function toTurfGeometry(featureOrGeom) {
+const toTurfGeometry = (featureOrGeom) => {
   const geom = featureOrGeom.geometry || featureOrGeom
 
   switch (geom.type) {
     case 'Polygon':
-      return polygon(geom.coordinates);
+      return turfPolygon(geom.coordinates);
     case 'MultiPolygon':
-      return multiPolygon(geom.coordinates);
+      return turfMultiPolygon(geom.coordinates);
     case 'LineString':
-      return lineString(geom.coordinates);
+      return turfLineString(geom.coordinates);
     case 'MultiLineString':
-      return multiLineString(geom.coordinates);
+      return turfMultiLineString(geom.coordinates);
     case 'Point':
-      return point(geom.coordinates);
+      return turfPoint(geom.coordinates);
     case 'MultiPoint':
-      return multiPoint(geom.coordinates);
+      return turfMultiPoint(geom.coordinates);
     default:
       throw new Error(`Unsupported geometry type: ${geom.type}`)
   }
-}
-
-const splitFeature = () => {
-  console.log('Split any feature using any other feature. Return FeatureCollection')
 }
 
 const haversine = ([lon1, lat1], [lon2, lat2]) => {
@@ -107,16 +201,16 @@ const isValidClick = (coords) => {
   }
 
   // Create a turf polygon
-  const turfPoly = polygon([coords])
+  const turfPoly = turfPolygon([coords])
 
   // Check if geometry is valid (non-self-intersecting)
-  const valid = booleanValid(turfPoly)
+  const valid = turfBooleanValid(turfPoly)
   if (!valid) {
     return false
   }
 
   // Check if area is positive
-  const polyArea = area(turfPoly)
+  const polyArea = turfArea(turfPoly)
   if (polyArea <= 0) {
     return false
   }
@@ -154,6 +248,9 @@ const spatialNavigate = (start, pixels, direction) => {
 }
 
 export {
+  toTurfGeometry,
+  splitPolygon,
+  extendLine,
 	isNewCoordinate,
 	isValidClick,
 	isValidLineClick,

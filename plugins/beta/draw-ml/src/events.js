@@ -1,4 +1,4 @@
-import { clearSnapState, getSnapInstance } from './snapHelpers.js'
+import { clearSnapState, getSnapInstance } from './utils/snapHelpers.js'
 
 export function attachEvents ({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus }) {
   const {
@@ -97,10 +97,14 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   // --- Undo last action (only for draw modes - edit_vertex handles its own undo)
   const handleUndo = () => {
     // edit_vertex mode handles its own undo via button click listener
-    if (draw.getMode() === 'edit_vertex') return
+    if (draw.getMode() === 'edit_vertex') {
+      return
+    }
 
     const undoStack = mapProvider.undoStack
-    if (!undoStack || undoStack.length === 0) return
+    if (!undoStack || undoStack.length === 0) {
+      return
+    }
 
     const operation = undoStack.pop()
 
@@ -182,6 +186,12 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   }
   map.on('draw.create', onCreate)
 
+  // --- A shape is updated
+  const onUpdate = (e) => {
+    eventBus.emit('draw:update', e)
+  }
+  map.on('draw.update', onUpdate)
+
   // --- A vertex is selected
   const onVertexSelection = (e) => {
     dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e })
@@ -211,6 +221,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     drawCancel.onClick = null
     map.off('styledata', handleStyleData)
     map.off('draw.create', onCreate)
+    map.off('draw.update', onUpdate)
     map.off('draw.vertexselection', onVertexSelection)
     map.off('draw.vertexchange', onVertexChange)
     map.off('draw.undochange', onUndoChange)
