@@ -10,9 +10,6 @@ const isPostcode = (value) => {
   return regex.test(value)
 }
 
-const removeNonEngland = (results) =>
-  results.filter(r => r.GAZETTEER_ENTRY.COUNTRY.toLowerCase() === 'england')
-
 const removeDuplicates = (results) =>
   Array.from(new Map(results.map(r => [r.GAZETTEER_ENTRY.ID, r])).values())
 
@@ -95,8 +92,7 @@ const parseOsNamesResults = (json, query, crs) => {
   }
   let results = json.results
   results = removeTenuousResults(results, query)
-  results = removeDuplicates(results)
-  results = removeNonEngland(results)
+  results = removeDuplicates(results);
   results = results.slice(0, MAX_RESULTS)
 
   return results.map(l => ({
