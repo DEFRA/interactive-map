@@ -1,3 +1,7 @@
+---
+sidebar_position: 3
+---
+
 # Architecture Overview 
 
 This framework is a **web mapping platform** designed to let teams add interactive maps to public-facing services in a consistent, extensible, and framework-agnostic way. 

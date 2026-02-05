@@ -45,3 +45,7 @@ coverage/
 
 # Webpack bundle analyser
 stats.json
+
+# Docusaurus
+.docusaurus
+build

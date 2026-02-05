@@ -1,0 +1,84 @@
+/**
+ * Any CSS included here will be global. The classic template
+ * bundles Infima by default. Infima is a CSS framework designed to
+ * work well for content-centric websites.
+ */
+
+/* You can override the default Infima variables here. */
+:root {
+  /* DEFRA Green palette */
+  --ifm-color-primary: #00703c;
+  --ifm-color-primary-dark: #006335;
+  --ifm-color-primary-darker: #005e32;
+  --ifm-color-primary-darkest: #004d29;
+  --ifm-color-primary-light: #007d43;
+  --ifm-color-primary-lighter: #008246;
+  --ifm-color-primary-lightest: #00934d;
+  
+  /* Enhanced typography */
+  --ifm-font-family-base: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --ifm-font-family-monospace: 'SF Mono', Monaco, 'Cascadia Code', 'Roboto Mono', Consolas, 'Courier New', monospace;
+  --ifm-code-font-size: 95%;
+  --ifm-heading-font-weight: 600;
+  --ifm-line-height-base: 1.7;
+  
+  /* Better spacing */
+  --ifm-spacing-horizontal: 1.5rem;
+  --ifm-navbar-height: 4rem;
+  
+  /* Code blocks */
+  --docusaurus-highlighted-code-line-bg: rgba(0, 112, 60, 0.1);
+  
+  /* Radius for smoother look */
+  --ifm-global-radius: 0.5rem;
+  --ifm-button-border-radius: 0.375rem;
+}
+
+/* For readability concerns, you should choose a lighter palette in dark mode. */
+[data-theme='dark'] {
+  --ifm-color-primary: #1d8348;
+  --ifm-color-primary-dark: #1a7540;
+  --ifm-color-primary-darker: #186f3d;
+  --ifm-color-primary-darkest: #145c32;
+  --ifm-color-primary-light: #209150;
+  --ifm-color-primary-lighter: #229753;
+  --ifm-color-primary-lightest: #27ae60;
+  --docusaurus-highlighted-code-line-bg: rgba(29, 131, 72, 0.2);
+  --ifm-background-color: #1a1a1a;
+  --ifm-background-surface-color: #242424;
+}
+
+/* Better code block styling */
+div[class^='codeBlockContainer'] {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1), 0 1px 2px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Smooth transitions */
+a {
+  transition: color 0.15s ease-in-out;
+}
+
+/* Better admonitions */
+.admonition {
+  box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+}
+
+/* Improved table of contents */
+.table-of-contents {
+  font-size: 0.875rem;
+}
+
+.table-of-contents__link--active {
+  font-weight: 600;
+  color: var(--ifm-color-primary);
+}
+
+/* Better navbar */
+.navbar {
+  box-shadow: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+}
+
+/* Smooth scrolling */
+html {
+  scroll-behavior: smooth;
+}

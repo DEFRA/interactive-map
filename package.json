@@ -8,7 +8,6 @@
     "import": "./dist/esm/index.js",
     "require": "./dist/umd/index.js"
   },
-  "type": "module",
   "scripts": {
     "clean": "rimraf dist",
     "sass:watch": "sass --watch demo/scss/farming.scss:public/farming-demo.css demo/scss/planning.scss:public/planning-demo.css",
@@ -26,7 +25,11 @@
     "lint:js:fix": "standard \"src/**/*.{js,jsx,ts,tsx}\" --fix",
     "lint:scss:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
     "test": "jest --color --coverage --verbose",
-    "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public"
+    "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public",
+    "docs:dev": "docusaurus start --host 0.0.0.0",
+    "docs:build": "docusaurus build",
+    "docs:serve": "docusaurus serve --host 0.0.0.0",
+    "docs:clear": "docusaurus clear"
   },
   "standard": {
     "envs": [
@@ -101,7 +104,13 @@
     "webpack-cli": "^6.0.1",
     "webpack-dev-server": "^5.2.2",
     "webpack-merge": "^6.0.1",
-    "webpack-remove-empty-scripts": "^1.1.1"
+    "webpack-remove-empty-scripts": "^1.1.1",
+    "@docusaurus/core": "3.4.0",
+    "@docusaurus/preset-classic": "3.4.0",
+    "@docusaurus/module-type-aliases": "3.4.0",
+    "@docusaurus/tsconfig": "3.4.0",
+    "clsx": "^2.1.1",
+    "prism-react-renderer": "^2.3.1"
   },
   "keywords": [
     "react",
