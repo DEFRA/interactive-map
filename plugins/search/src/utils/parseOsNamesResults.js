@@ -10,9 +10,6 @@ const isPostcode = (value) => {
   return regex.test(value)
 }
 
-const removeNonEngland = (results) =>
-  results.filter(r => r.GAZETTEER_ENTRY.COUNTRY.toLowerCase() === 'england')
-
 const removeDuplicates = (results) =>
   Array.from(new Map(results.map(r => [r.GAZETTEER_ENTRY.ID, r])).values())
 
@@ -55,8 +52,8 @@ const bounds = (crs, { MBR_XMIN, MBR_YMIN, MBR_XMAX, MBR_YMAX, GEOMETRY_X, GEOME
 
   // If CRS is EPSG:4326, convert OSGB → WGS84 lat/lon
   if (crs === 'EPSG:4326') {
-    const minLL = (new OsGridRef(minX, minY)).toLatLon();
-    const maxLL = (new OsGridRef(maxX, maxY)).toLatLon();
+    const minLL = (new OsGridRef(minX, minY)).toLatLon()
+    const maxLL = (new OsGridRef(maxX, maxY)).toLatLon()
 
     return [minLL.lon, minLL.lat, maxLL.lon, maxLL.lat].map(n => Math.round(n * 1e6) / 1e6)
   }
@@ -96,7 +93,6 @@ const parseOsNamesResults = (json, query, crs) => {
   let results = json.results
   results = removeTenuousResults(results, query)
   results = removeDuplicates(results)
-  results = removeNonEngland(results)
   results = results.slice(0, MAX_RESULTS)
 
   return results.map(l => ({

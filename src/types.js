@@ -583,5 +583,3 @@
  * @property {number} [zoomDelta=1]
  * Amount to change zoom level for standard zoom interactions.
  */
-
-export {}
