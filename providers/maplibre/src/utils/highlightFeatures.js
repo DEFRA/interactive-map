@@ -57,7 +57,9 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
     const base = `highlight-${sourceId}`
 
     const { stroke, strokeWidth, fill } = stylesMap[layerId]
-    const filter = ['in', ['get', idProperty], ['literal', [...ids]]]
+    // Use ['id'] for feature.id, ['get', idProperty] for properties
+    const idExpression = idProperty ? ['get', idProperty] : ['id']
+    const filter = ['in', idExpression, ['literal', [...ids]]]
 
     // Ensure layers
     if (geom === 'fill') {
@@ -103,7 +105,7 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
     renderedFeatures.push(
       ...map
         .queryRenderedFeatures({ layers: [layerId] })
-        .filter(f => ids.has(f.properties?.[idProperty]))
+        .filter(f => ids.has(idProperty ? f.properties?.[idProperty] : f.id))
     )
   })
 

@@ -18,10 +18,10 @@ import createFramePlugin from '/plugins/beta/frame/src/index.js'
 var interactPlugin = createInteractPlugin({
 	dataLayers: [{
 		layerId: 'field-parcels',
-		idProperty: 'id'
+		// idProperty: 'id'
 	},{
 		layerId: 'linked-parcels',
-		idProperty: 'id'
+		// idProperty: 'id'
 	}],
 	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
@@ -38,17 +38,42 @@ let framePlugin = createFramePlugin({
 })
 
 var datasetsPlugin = createDatasetsPlugin({
+	// datasets: [{
+	// 	id: 'linked-parcels',
+	// 	label: 'Existing fields',
+	// 	// Static GeoJSON - fetched once (current behaviour)
+	// 	geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106170272`,
+	// 	stroke: '#0000ff',
+	// 	strokeWidth: 2,
+	// 	fill: 'rgba(0,0,255,0.1)',
+	// 	symbolDescription: { outdoor: 'blue outline' },
+	// 	minZoom: 10,
+	// 	maxZoom: 24,
+	// 	showInKey: true,
+	// 	showInLayers: true
+	// },{
+	// 	id: 'permanent-grassland',
+	// 	label: 'Permanent grassland',
+	// 	geojson: `${process.env.FARMING_API_URL}/api/collections/land-covers/items?code=130&sbi=106170272`,
+	// 	stroke: '#00703c',
+	// 	strokeWidth: 2,
+	// 	fill: 'rgba(0,112,60,0.1)',
+	// 	symbolDescription: { outdoor: 'Green outline' },
+	// 	minZoom: 10,
+	// 	maxZoom: 24,
+	// 	showInKey: true,
+	// 	showInLayers: true,
+	// 	visibility: 'hidden'
+	// }]
+
+	// Example: Dynamic bbox-based fetching (uncomment to test)
 	datasets: [{
-		id: 'linked-parcels',
-		label: 'Existing fields',
-		// filter: [
-		// 	'all',
-		// 	['==', ['get', 'sbi'], '106223377'],
-		// 	['==', ['get', 'is_dominant_land_cover'], true]
-		// ],
-		// tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-		// sourceLayer: 'field_parcels_filtered',
-		geojson: 'https://farming-data-7db3d1889632.herokuapp.com/geojson/parcels?sbi=106170272',
+		id: 'field-parcels',
+		label: 'Field parcels',
+		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+		idProperty: 'id',  // Enables dynamic fetching + deduplication
+		transformRequest: transformDataRequest,  // Builds URL with bbox
+		maxFeatures: 50000,  // Optional: evict distant features when exceeded
 		stroke: '#0000ff',
 		strokeWidth: 2,
 		fill: 'rgba(0,0,255,0.1)',
@@ -57,26 +82,6 @@ var datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		showInLayers: true
-	},{
-		id: 'permanent-grassland',
-		label: 'Permanent grassland',
-		// filter: [
-		// 	'all',
-		// 	['==', ['get', 'sbi'], '106223377'],
-		// 	['==', ['get', 'is_dominant_land_cover'], true]
-		// ],
-		// tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-		// sourceLayer: 'field_parcels_filtered',
-		geojson: 'https://farming-data-7db3d1889632.herokuapp.com/geojson/land-covers?code=130&sbi=106170272',
-		stroke: '#00703c',
-		strokeWidth: 2,
-		fill: 'rgba(0,112,60,0.1)',
-		symbolDescription: { outdoor: 'Green outline' },
-		minZoom: 10,
-		maxZoom: 24,
-		showInKey: true,
-		showInLayers: true,
-		visibility: 'hidden'
 	}]
 })
 
@@ -140,15 +145,15 @@ var interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
-	console.log('app:ready')
+	// console.log('app:ready')
 })
 
 interactiveMap.on('map:ready', function (e) {
-	console.log('map:ready')
+	// console.log('map:ready')
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	// interactPlugin.enable()
+	interactPlugin.enable()
 })
 
 interactiveMap.on('datasets:ready', () => {
@@ -160,19 +165,19 @@ interactiveMap.on('datasets:ready', () => {
 })
 
 interactiveMap.on('draw:ready', function () {
-	drawPlugin.addFeature({
-		id: 'test1234',
-		type: 'Feature',
-		geometry: { type: 'Polygon', coordinates: [[[-2.9406643378873127,54.918060570259456],[-2.9092219779267054,54.91564249172612],[-2.904350626383433,54.90329530000005],[-2.909664828067463,54.89540129642464],[-2.9225074821353587,54.88979816151294],[-2.937121536764323,54.88826989853317],[-2.95682836800691,54.88916139231736],[-2.965463945742613,54.898966521920045],[-2.966349646023133,54.910805898763385],[-2.9406643378873127,54.918060570259456]]] },
-		properties: {
-			stroke: 'rgba(0,112,60,1)',
-			fill: 'rgba(0,112,60,0.2)',
-			strokeWidth: 2,
-		}
-	})
-	drawPlugin.split('test1234', {
-		snapLayers: ['OS/TopographicArea_1/Agricultural Land']
-	})
+	// drawPlugin.addFeature({
+	// 	id: 'test1234',
+	// 	type: 'Feature',
+	// 	geometry: { type: 'Polygon', coordinates: [[[-2.9406643378873127,54.918060570259456],[-2.9092219779267054,54.91564249172612],[-2.904350626383433,54.90329530000005],[-2.909664828067463,54.89540129642464],[-2.9225074821353587,54.88979816151294],[-2.937121536764323,54.88826989853317],[-2.95682836800691,54.88916139231736],[-2.965463945742613,54.898966521920045],[-2.966349646023133,54.910805898763385],[-2.9406643378873127,54.918060570259456]]] },
+	// 	properties: {
+	// 		stroke: 'rgba(0,112,60,1)',
+	// 		fill: 'rgba(0,112,60,0.2)',
+	// 		strokeWidth: 2,
+	// 	}
+	// })
+	// drawPlugin.split('test1234', {
+	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
+	// })
 	// drawPlugin.newLine('test', {
 	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	// })

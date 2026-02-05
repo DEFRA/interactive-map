@@ -32,7 +32,9 @@ export const useInteractionHandlers = ({
         isNewFeatureContiguous = selectedFeatures.some(sf => !booleanDisjoint(toTurfGeometry(sf), toTurfGeometry(feature)))
       }
 
-      const featureId = feature.properties?.[config.idProperty]
+      const featureId = config.idProperty
+        ? feature.properties?.[config.idProperty]
+        : feature.id
 
       if (featureId) {
         dispatch({
