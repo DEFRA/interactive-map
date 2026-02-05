@@ -60,7 +60,9 @@ export const useInteractionHandlers = ({
 
   // Emit event when selectedFeatures change
   useEffect(() => {
-    if (!selectionBounds || selectedFeatures === lastEmittedSelectionChange.current) {
+    // Skip if features exist but bounds not yet calculated
+    const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
+    if (awaitingBounds || selectedFeatures === lastEmittedSelectionChange.current) {
       return
     }
 
