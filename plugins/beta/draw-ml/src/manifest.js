@@ -6,6 +6,8 @@ import { newLine } from './api/newLine.js'
 import { editFeature } from './api/editFeature.js'
 import { addFeature } from './api/addFeature.js'
 import { deleteFeature } from './api/deleteFeature.js'
+import { split } from './api/split.js'
+import { merge } from './api/merge.js'
 
 const createButtonSlots = (showLabel) => ({
   mobile:  { slot: 'actions', showLabel },
@@ -23,11 +25,11 @@ export const manifest = {
 
   buttons: [{
     id: 'drawDone',
-    label: 'Done',
-    variant: 'primary',
+    label: ({ pluginState }) => pluginState.action ? pluginState.action.charAt(0).toUpperCase() + pluginState.action.slice(1) : 'Done',
     hiddenWhen: ({ appState, pluginState }) => !pluginState.mode || appState.interfaceType !== 'mouse' && pluginState.mode !== 'edit_vertex',
-    enableWhen: ({ pluginState }) => !!pluginState.tempFeature,
-    ...createButtonSlots(true)
+    enableWhen: ({ pluginState }) => pluginState.action ? pluginState.actionValid : !!pluginState.tempFeature,
+    ...createButtonSlots(true),
+    variant: 'primary',
   },{
     id: 'drawAddPoint',
     label: 'Add point',
@@ -97,6 +99,8 @@ export const manifest = {
     newLine,
     editFeature,
     addFeature,
-    deleteFeature
+    deleteFeature,
+    split,
+    merge
   }
 }

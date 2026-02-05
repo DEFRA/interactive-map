@@ -9,7 +9,7 @@ import {
   triggerSnapAtCenter,
   createSnappedEvent,
   createSnappedClickEvent
-} from '../snapHelpers.js'
+} from '../utils/snapHelpers.js'
 
 /**
  * Factory function to create a draw mode for either polygons or lines.
@@ -52,6 +52,9 @@ export const createDrawMode = (ParentMode, config) => {
         ...ParentMode.onSetup.call(this, parentOptions),
         ...options
       }
+
+      // Add initial props
+      state[featureProp].properties = options.properties
 
       const { container, interfaceType, vertexMarkerId } = state
       const vertexMarker = container.querySelector(`#${vertexMarkerId}`)
@@ -203,11 +206,32 @@ export const createDrawMode = (ParentMode, config) => {
 
     /**
      * Reinitialize feature when undoing to 0 vertices
+     * For Polygon: reinitialize in place
+     * For LineString: restart the draw mode with fresh state
      */
     _reinitializeFeature(state, feature) {
       const featureId = feature.id
       this._ctx.store.delete([featureId])
 
+      // LineString: restart the draw mode with fresh state but same feature ID
+      if (geometryType === 'LineString') {
+        const undoStack = this.map._undoStack
+        if (undoStack) {
+          undoStack.clear()
+        }
+        // Restart draw with same options (excludeFeatureIdFromSetup prevents "continue" mode)
+        this._ctx.api.changeMode('draw_line', {
+          featureId,
+          container: state.container,
+          interfaceType: state.interfaceType,
+          vertexMarkerId: state.vertexMarkerId,
+          addVertexButtonId: state.addVertexButtonId,
+          getSnapEnabled: state.getSnapEnabled
+        })
+        return true
+      }
+
+      // Polygon: reinitialize in place
       const center = this.map.getCenter()
       const initialCoords = [[center.lng, center.lat], [center.lng, center.lat]]
       const newFeature = this.newFeature({
@@ -215,7 +239,7 @@ export const createDrawMode = (ParentMode, config) => {
         properties: {},
         geometry: {
           type: geometryType,
-          coordinates: geometryType === 'Polygon' ? [initialCoords] : initialCoords
+          coordinates: [initialCoords]
         }
       })
       newFeature.id = featureId
@@ -303,6 +327,8 @@ export const createDrawMode = (ParentMode, config) => {
         })
       })
       this._ctx.store.render()
+
+      this.map.fire('draw.geometrychange', state.polygon || state.line)
     },
 
     _setInterface(state, type, show = true) {
@@ -338,6 +364,26 @@ export const createDrawMode = (ParentMode, config) => {
     },
 
     onKeydown(state, e) {
+      // Undo with Cmd/Ctrl+Z (works without viewport focus, but not in input fields)
+      if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
+        const tag = document.activeElement?.tagName
+        if (tag === 'INPUT' || tag === 'TEXTAREA') {
+          return
+        }
+        e.preventDefault()
+        e.stopPropagation()
+        const undoStack = this.map._undoStack
+        if (undoStack && undoStack.length > 0) {
+          const operation = undoStack.pop()
+          if (operation?.type === 'draw_vertex') {
+            // Set flag to prevent click interference during undo
+            this.map._undoInProgress = true
+            setTimeout(() => { this.map._undoInProgress = false }, 100)
+            this.undoVertex(state)
+          }
+        }
+        return
+      }
       if (document.activeElement !== state.container) {
         return
       }
@@ -383,6 +429,8 @@ export const createDrawMode = (ParentMode, config) => {
         }
       }
 
+      this.map.fire('draw.geometrychange', state.polygon || state.line)
+      
       ParentMode.onMouseMove.call(this, state, e)
     },
 
