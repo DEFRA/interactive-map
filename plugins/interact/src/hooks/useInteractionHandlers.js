@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import booleanDisjoint from '@turf/boolean-disjoint'
-import { toTurfGeometry } from '../utils/turfHelpers.js'
+import { isContiguousWithAny, canSplitFeatures, areAllContiguous } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
 
 export const useInteractionHandlers = ({
@@ -26,13 +25,11 @@ export const useInteractionHandlers = ({
       markers.remove('location')
       const { feature, config } = match
 
-      // Using Turf not booleanDisjoint to test if the new feature is contiguous
-      let isNewFeatureContiguous = false
-      if (contiguous) {
-        isNewFeatureContiguous = selectedFeatures.some(sf => !booleanDisjoint(toTurfGeometry(sf), toTurfGeometry(feature)))
-      }
+      const isNewFeatureContiguous = contiguous && isContiguousWithAny(feature, selectedFeatures)
 
-      const featureId = feature.properties?.[config.idProperty]
+      const featureId = config.idProperty
+        ? feature.properties?.[config.idProperty]
+        : feature.id
 
       if (featureId) {
         dispatch({
@@ -63,13 +60,17 @@ export const useInteractionHandlers = ({
 
   // Emit event when selectedFeatures change
   useEffect(() => {
-    if (!selectionBounds || selectedFeatures === lastEmittedSelectionChange.current) {
+    // Skip if features exist but bounds not yet calculated
+    const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
+    if (awaitingBounds || selectedFeatures === lastEmittedSelectionChange.current) {
       return
     }
 
     eventBus.emit('interact:selectionchange', {
       selectedFeatures,
-      selectionBounds
+      selectionBounds,
+      canMerge: areAllContiguous(selectedFeatures),
+      canSplit: canSplitFeatures(selectedFeatures)
     })
 
     lastEmittedSelectionChange.current = selectedFeatures

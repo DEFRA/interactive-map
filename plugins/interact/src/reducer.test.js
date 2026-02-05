@@ -50,7 +50,7 @@ describe('TOGGLE_SELECTED_FEATURES action', () => {
   })
 
   it('handles single-select, multi-select, add/remove, and replaceAll', () => {
-    let state = { ...initialState }
+    let state = { ...initialState, selectionBounds: { sw: [0, 0], ne: [1, 1] } }
 
     // Single-select: add
     state = actions.TOGGLE_SELECTED_FEATURES(state, createFeature('f1'))
@@ -60,22 +60,33 @@ describe('TOGGLE_SELECTED_FEATURES action', () => {
     state = actions.TOGGLE_SELECTED_FEATURES(state, createFeature('f2'))
     expect(state.selectedFeatures[0].featureId).toBe('f2')
 
-    // Toggle off same
+    // Toggle off same - clears bounds
     state = actions.TOGGLE_SELECTED_FEATURES(state, createFeature('f2'))
     expect(state.selectedFeatures).toHaveLength(0)
+    expect(state.selectionBounds).toBeNull()
 
     // Multi-select: add multiple
+    state = { ...state, selectionBounds: { sw: [0, 0], ne: [1, 1] } }
     state = actions.TOGGLE_SELECTED_FEATURES(state, { ...createFeature('f1'), multiSelect: true })
     state = actions.TOGGLE_SELECTED_FEATURES(state, { ...createFeature('f2'), multiSelect: true })
     expect(state.selectedFeatures.map(f => f.featureId)).toEqual(['f1', 'f2'])
 
-    // Multi-select: remove
+    // Multi-select: remove (not last) - clears bounds for recalculation
     state = actions.TOGGLE_SELECTED_FEATURES(state, { ...createFeature('f1'), multiSelect: true })
     expect(state.selectedFeatures.map(f => f.featureId)).toEqual(['f2'])
+    expect(state.selectionBounds).toBeNull()
 
-    // addToExisting false removes only the feature
+    // Multi-select: remove last - clears bounds
+    state = actions.TOGGLE_SELECTED_FEATURES(state, { ...createFeature('f2'), multiSelect: true })
+    expect(state.selectedFeatures).toHaveLength(0)
+    expect(state.selectionBounds).toBeNull()
+
+    // addToExisting false removes feature - clears bounds when empty
+    state = { ...state, selectionBounds: { sw: [0, 0], ne: [1, 1] } }
+    state = actions.TOGGLE_SELECTED_FEATURES(state, { ...createFeature('f2'), multiSelect: true })
     state = actions.TOGGLE_SELECTED_FEATURES(state, { ...createFeature('f2'), addToExisting: false })
     expect(state.selectedFeatures).toHaveLength(0)
+    expect(state.selectionBounds).toBeNull()
 
     // replaceAll replaces everything
     state = actions.TOGGLE_SELECTED_FEATURES(state, { ...createFeature('f3'), replaceAll: true })

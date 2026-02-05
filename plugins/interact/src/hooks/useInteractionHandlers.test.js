@@ -1,15 +1,16 @@
 import { renderHook, act } from '@testing-library/react'
 import { useInteractionHandlers } from './useInteractionHandlers.js'
 import * as featureQueries from '../utils/featureQueries.js'
-import booleanDisjoint from '@turf/boolean-disjoint'
+import { isContiguousWithAny } from '../utils/spatial.js'
 
 /* ------------------------------------------------------------------ */
 /* Mocks                                                              */
 /* ------------------------------------------------------------------ */
 
-jest.mock('@turf/boolean-disjoint', () => jest.fn())
-jest.mock('../utils/turfHelpers.js', () => ({
-  toTurfGeometry: jest.fn(g => g)
+jest.mock('../utils/spatial.js', () => ({
+  isContiguousWithAny: jest.fn(),
+  canSplitFeatures: jest.fn(() => false),
+  areAllContiguous: jest.fn(() => false)
 }))
 jest.mock('../utils/featureQueries.js', () => ({
   getFeaturesAtPoint: jest.fn(),
@@ -172,7 +173,7 @@ it('passes multiSelect flag through to dispatch', () => {
 
 describe('contiguous selection', () => {
   it('does NOT replace selection when feature is contiguous', () => {
-    booleanDisjoint.mockReturnValue(false) // overlapping
+    isContiguousWithAny.mockReturnValue(true) // contiguous
 
     const { result, deps } = setup({
       contiguous: true,
@@ -191,7 +192,7 @@ describe('contiguous selection', () => {
   })
 
   it('replaces selection when feature is NOT contiguous', () => {
-    booleanDisjoint.mockReturnValue(true) // disjoint
+    isContiguousWithAny.mockReturnValue(false) // disjoint
 
     const { result, deps } = setup({
       contiguous: true,
@@ -214,7 +215,7 @@ describe('contiguous selection', () => {
 
     click(result)
 
-    expect(booleanDisjoint).not.toHaveBeenCalled()
+    expect(isContiguousWithAny).not.toHaveBeenCalled()
   })
 })
 
@@ -255,6 +256,11 @@ it('emits selectionchange once when bounds exist', () => {
 
   expect(deps.services.eventBus.emit).toHaveBeenCalledWith(
     'interact:selectionchange',
-    deps.pluginState
+    expect.objectContaining({
+      selectedFeatures: deps.pluginState.selectedFeatures,
+      selectionBounds: deps.pluginState.selectionBounds,
+      canMerge: false,
+      canSplit: false
+    })
   )
 })

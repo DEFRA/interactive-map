@@ -66,9 +66,8 @@ export default {
         OS_NAMES_URL: JSON.stringify(process.env.OS_NAMES_URL),
         OS_NEAREST_URL: JSON.stringify(process.env.OS_NEAREST_URL),
         // Data services
-        PARCEL_TILE_SERVICE_URL: JSON.stringify(process.env.PARCEL_TILE_SERVICE_URL),
-        GRIDREF_SERVICE_URL: JSON.stringify(process.env.GRIDREF_SERVICE_URL),
-        PARCEL_SERVICE_URL: JSON.stringify(process.env.PARCEL_SERVICE_URL)
+        FARMING_TILE_SERVICE_URL: JSON.stringify(process.env.FARMING_TILE_SERVICE_URL),
+        FARMING_API_URL: JSON.stringify(process.env.FARMING_API_URL)
       }
     })
   ],

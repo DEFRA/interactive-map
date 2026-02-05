@@ -18,6 +18,10 @@ const getSourceId = (dataset) => {
     return `tiles-${hashString(tilesKey)}`
   }
   if (dataset.geojson) {
+    // Dynamic sources get unique IDs per dataset (no sharing)
+    if (isDynamicSource(dataset)) {
+      return `geojson-dynamic-${dataset.id}`
+    }
     // URL strings can be shared, inline GeoJSON objects get unique IDs per dataset
     if (typeof dataset.geojson === 'string') {
       return `geojson-${hashString(dataset.geojson)}`
@@ -27,6 +31,33 @@ const getSourceId = (dataset) => {
   }
   // Fallback to dataset ID
   return `source-${dataset.id}`
+}
+
+/**
+ * Check if a dataset uses dynamic fetching (bbox-based)
+ * Dynamic sources require: URL geojson, idProperty for deduplication, and transformRequest for URL building
+ * @param {Object} dataset
+ * @returns {boolean}
+ */
+const isDynamicSource = (dataset) => {
+  return (
+    typeof dataset.geojson === 'string' &&
+    !!dataset.idProperty &&
+    typeof dataset.transformRequest === 'function'
+  )
+}
+
+/**
+ * Update the data for a GeoJSON source
+ * @param {Object} map - Map instance
+ * @param {string} sourceId - Source ID
+ * @param {Object} geojson - GeoJSON FeatureCollection
+ */
+const updateSourceData = (map, sourceId, geojson) => {
+  const source = map.getSource(sourceId)
+  if (source && typeof source.setData === 'function') {
+    source.setData(geojson)
+  }
 }
 
 /**
@@ -60,10 +91,15 @@ const addMapLayers = (map, mapStyleId, dataset) => {
         maxzoom: dataset.maxZoom || 22
       })
     } else if (dataset.geojson) {
-      // GeoJSON URL
+      // Dynamic source - start with empty FeatureCollection, will be populated by createDynamicSource
+      // Static source - use URL or inline GeoJSON directly
+      const initialData = isDynamicSource(dataset)
+        ? { type: 'FeatureCollection', features: [] }
+        : dataset.geojson
+
       map.addSource(sourceId, {
         type: 'geojson',
-        data: dataset.geojson
+        data: initialData
       })
     } else {
       // No action
@@ -123,5 +159,7 @@ const addMapLayers = (map, mapStyleId, dataset) => {
 export {
   getSourceId,
   getLayersUsingSource,
-  addMapLayers
+  addMapLayers,
+  isDynamicSource,
+  updateSourceData
 }

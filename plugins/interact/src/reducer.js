@@ -42,14 +42,15 @@ const toggleSelectedFeatures = (state, payload) => {
     if (existingIndex !== -1) {
       selected.splice(existingIndex, 1) // remove the feature
     }
-    return { ...state, selectedFeatures: selected }
+    return { ...state, selectedFeatures: selected, selectionBounds: null }
   }
 
   // Replace all selected features if flag is true
   if (replaceAll) {
     return {
       ...state,
-      selectedFeatures: [{ featureId, layerId, idProperty, properties, geometry }]
+      selectedFeatures: [{ featureId, layerId, idProperty, properties, geometry }],
+      selectionBounds: null
     }
   }
 
@@ -58,17 +59,16 @@ const toggleSelectedFeatures = (state, payload) => {
     if (existingIndex === -1) {
       selected.push({ featureId, layerId, idProperty, properties, geometry })
     } else {
-      // optional: could also remove existing on toggle
       selected.splice(existingIndex, 1)
     }
-    return { ...state, selectedFeatures: selected }
+    return { ...state, selectedFeatures: selected, selectionBounds: null }
   }
 
   // Single-select mode
   const isSameSingle = existingIndex !== -1 && selected.length === 1
   const newSelected = isSameSingle ? [] : [{ featureId, layerId, idProperty, properties, geometry }]
 
-  return { ...state, selectedFeatures: newSelected }
+  return { ...state, selectedFeatures: newSelected, selectionBounds: null }
 }
 
 // Update bounds (called from useEffect after map provider calculates them)
