@@ -59,13 +59,17 @@ export const split = ({ appState, appConfig, pluginState, mapProvider }, feature
   // Real time check for valid line
   const DEBOUNCE_SPLIT_POLYGON = 50
   const onGeometryChange = debounce((e) => {
-    if (e.state.line.coordinates.length < 2) {
+    if (e.coordinates.length < 2) {
       return
     }
-    const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates: e.state.line.coordinates }}
+    const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates: e.coordinates }}
     const featureCollection = splitPolygon(polygonFeature, lineFeature)
-    e.state.line.properties.splitter = featureCollection ? 'valid' : 'invalid'
-    e.state.line.ctx.store.render()
+    const isValid = !!featureCollection
+    e.properties.splitter = isValid ? 'valid' : 'invalid'
+    e.ctx.store.render()
+    if (draw.getMode() === 'edit_vertex') {
+      dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid }})
+    }
   }, DEBOUNCE_SPLIT_POLYGON)
   map.on('draw.geometrychange', onGeometryChange)
 

@@ -223,7 +223,9 @@ export const EditVertexMode = {
     // Undo with Cmd/Ctrl+Z (works without viewport focus, but not in input fields)
     if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
       const tag = document.activeElement?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') return
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        return
+      }
       e.preventDefault()
       e.stopPropagation()
       return this.handleUndo(state)
@@ -337,7 +339,7 @@ export const EditVertexMode = {
 
     // Clean up move state
     state._moveStartPosition = null
-    state._moveStartIndex = undefined
+    state._moveStartIndex = null
 
     DirectSelect.onMouseUp.call(this, state, e)
   },
@@ -449,6 +451,8 @@ export const EditVertexMode = {
       return
     }
 
+    this.map.fire('draw.geometrychange', state.feature)
+
     const snap = getSnapInstance(this.map)
     if (snap) {
       snap.snapStatus = false
@@ -503,6 +507,8 @@ export const EditVertexMode = {
       this.undoInsertVertex(state, op)
     } else if (op.type === 'delete_vertex') {
       this.undoDeleteVertex(state, op)
+    } else {
+      // No action
     }
   },
 
@@ -647,6 +653,8 @@ export const EditVertexMode = {
     getModifiableCoords(geojson)[state.selectedVertexIndex] = [coord.lng, coord.lat]
     this._ctx.api.add(geojson)
     state.vertecies = this.getVerticies(state.featureId)
+
+    this.map.fire('draw.geometrychange', state.feature)
   },
 
   deleteVertex(state) {

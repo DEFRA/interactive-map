@@ -328,9 +328,7 @@ export const createDrawMode = (ParentMode, config) => {
       })
       this._ctx.store.render()
 
-      this.map.fire('draw.geometrychange', {
-        state
-      })
+      this.map.fire('draw.geometrychange', state.polygon || state.line)
     },
 
     _setInterface(state, type, show = true) {
@@ -431,9 +429,7 @@ export const createDrawMode = (ParentMode, config) => {
         }
       }
 
-      this.map.fire('draw.geometrychange', {
-        state
-      })
+      this.map.fire('draw.geometrychange', state.polygon || state.line)
       
       ParentMode.onMouseMove.call(this, state, e)
     },
