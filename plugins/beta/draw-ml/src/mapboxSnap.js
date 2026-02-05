@@ -68,6 +68,7 @@ function applyMapboxSnapPatches(colors) {
       return orig.getLines.call(this, feature, mouse, radiusArg)
     } catch (e) {
       // Invalid geometry - skip this feature
+      console.log(e)
       return []
     }
   }
@@ -127,6 +128,7 @@ function applyMapboxSnapPatches(colors) {
       return result
     } catch (err) {
       // Invalid geometry encountered - clear state and continue
+      console.log(err)
       this.snapStatus = false
       this.snapCoords = null
       return

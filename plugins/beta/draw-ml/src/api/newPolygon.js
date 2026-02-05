@@ -1,4 +1,4 @@
-import { getSnapInstance } from '../snapHelpers.js'
+import { getSnapInstance } from '../utils/snapHelpers.js'
 
 /**
  * Programmatically create a new polygon
