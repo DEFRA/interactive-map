@@ -70,4 +70,32 @@ describe('keyboardShortcutRegistry', () => {
     const shortcuts = getKeyboardShortcuts()
     expect(shortcuts).toEqual([])
   })
+
+  test('getKeyboardShortcuts filters by requiredConfig when appConfig provided', () => {
+    jest.resetModules()
+    jest.doMock('../controls/keyboardShortcuts.js', () => ({
+      coreShortcuts: [
+        { id: 'always', description: 'Always shown' },
+        { id: 'conditional', description: 'Conditional', requiredConfig: ['featureEnabled'] }
+      ]
+    }))
+    const module = require('./keyboardShortcutRegistry.js')
+    module.setProviderSupportedShortcuts(['always', 'conditional'])
+
+    // Without config, conditional shortcut is excluded
+    expect(module.getKeyboardShortcuts()).toEqual([
+      { id: 'always', description: 'Always shown' }
+    ])
+
+    // With config false, conditional shortcut is excluded
+    expect(module.getKeyboardShortcuts({ featureEnabled: false })).toEqual([
+      { id: 'always', description: 'Always shown' }
+    ])
+
+    // With config true, conditional shortcut is included
+    expect(module.getKeyboardShortcuts({ featureEnabled: true })).toEqual([
+      { id: 'always', description: 'Always shown' },
+      { id: 'conditional', description: 'Conditional', requiredConfig: ['featureEnabled'] }
+    ])
+  })
 })

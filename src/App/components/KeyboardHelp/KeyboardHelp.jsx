@@ -1,11 +1,13 @@
 // src/components/KeyboardHelp.jsx
 import React from 'react'
+import { useConfig } from '../../store/configContext'
 import { getKeyboardShortcuts } from '../../registry/keyboardShortcutRegistry.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const KeyboardHelp = () => {
-  const groups = getKeyboardShortcuts().reduce((acc, shortcut) => {
+  const appConfig = useConfig()
+  const groups = getKeyboardShortcuts(appConfig).reduce((acc, shortcut) => {
     acc[shortcut.group] = acc[shortcut.group] || []
     acc[shortcut.group].push(shortcut)
     return acc

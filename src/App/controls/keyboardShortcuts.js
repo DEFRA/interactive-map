@@ -48,13 +48,15 @@ export const coreShortcuts = [
     group: 'Labels',
     title: 'Highlight label at centre',
     command: '<kbd>Alt</kbd> + <kbd>Enter</kbd>',
-    enabled: false
+    enabled: false,
+    requiredConfig: ['readMapText']
   },
   {
     id: 'highlightNextLabel',
     group: 'Labels',
     title: 'Highlight nearby label',
     command: '<kbd>Alt</kbd> + <kbd>→</kbd>, <kbd>←</kbd>, <kbd>↑</kbd> or <kbd>↓</kbd>',
-    enabled: false
+    enabled: false,
+    requiredConfig: ['readMapText']
   }
 ]

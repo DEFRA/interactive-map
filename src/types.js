@@ -568,6 +568,11 @@
  * @property {PluginDescriptor[]} [plugins]
  * Plugins to load.
  *
+ * @property {boolean} [preserveStateOnClose=false]
+ * Whether to preserve the map state when closed via back button or exit button.
+ * When true, the map is hidden but not destroyed, preserving markers, zoom, etc.
+ * Useful for list/map toggle scenarios. Only applies to 'hybrid' and 'buttonFirst' behaviours.
+ *
  * @property {boolean} [readMapText=false]
  * Whether map text labels can be selected and read aloud by assistive technologies.
  *

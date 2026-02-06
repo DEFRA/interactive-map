@@ -4,8 +4,10 @@
 
 import { setupBehavior, shouldLoadComponent } from './behaviourController.js'
 import * as queryString from '../utils/queryString.js'
+import { updateDOMState } from './domStateManager.js'
 
 jest.mock('../utils/queryString.js')
+jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn() }))
 
 describe('shouldLoadComponent', () => {
   beforeEach(() => {
@@ -60,8 +62,12 @@ describe('setupBehavior', () => {
     mockMapInstance = {
       config: { hybridWidth: null, maxMobileWidth: 640 },
       _breakpointDetector: mockBreakpointDetector,
+      _root: null,
+      _isHidden: false,
       loadApp: jest.fn(),
-      removeApp: jest.fn()
+      removeApp: jest.fn(),
+      hideApp: jest.fn(),
+      showApp: jest.fn()
     }
     // Default: viewport is wide
     window.matchMedia = jest.fn().mockImplementation(() => ({
@@ -144,5 +150,64 @@ describe('setupBehavior', () => {
     mockMapInstance.config = { behaviour: 'inline', hybridWidth: null, maxMobileWidth: 640 }
     const cleanup = setupBehavior(mockMapInstance)
     expect(cleanup).toBeNull()
+  })
+
+  describe('hybrid behaviour handleChange', () => {
+    let handleChange
+
+    beforeEach(() => {
+      const mockAddEventListener = jest.fn((event, cb) => { handleChange = cb })
+      window.matchMedia = jest.fn().mockImplementation(() => ({
+        matches: false,
+        addEventListener: mockAddEventListener,
+        removeEventListener: jest.fn()
+      }))
+      mockMapInstance.config = { id: 'test', behaviour: 'hybrid', hybridWidth: null, maxMobileWidth: 640 }
+      setupBehavior(mockMapInstance)
+    })
+
+    it('calls showApp when map is hidden and should load', () => {
+      mockMapInstance._isHidden = true
+      queryString.getQueryParam.mockReturnValue(null) // wide viewport, should load
+
+      handleChange()
+
+      expect(mockMapInstance.showApp).toHaveBeenCalled()
+      expect(mockMapInstance.loadApp).not.toHaveBeenCalled()
+    })
+
+    it('calls loadApp when map has no root and should load', () => {
+      mockMapInstance._isHidden = false
+      mockMapInstance._root = null
+      queryString.getQueryParam.mockReturnValue(null)
+
+      handleChange()
+
+      expect(mockMapInstance.loadApp).toHaveBeenCalled()
+      expect(mockMapInstance.showApp).not.toHaveBeenCalled()
+    })
+
+    it('calls updateDOMState when map is showing and should load', () => {
+      mockMapInstance._isHidden = false
+      mockMapInstance._root = {} // has root
+      queryString.getQueryParam.mockReturnValue(null)
+
+      handleChange()
+
+      expect(updateDOMState).toHaveBeenCalledWith(mockMapInstance)
+      expect(mockMapInstance.loadApp).not.toHaveBeenCalled()
+      expect(mockMapInstance.showApp).not.toHaveBeenCalled()
+    })
+
+    it('calls hideApp when should not load and has root', () => {
+      mockMapInstance._root = {}
+      // Simulate narrow viewport where shouldLoadComponent returns false
+      window.matchMedia = jest.fn().mockImplementation(() => ({ matches: true }))
+      queryString.getQueryParam.mockReturnValue(null)
+
+      handleChange()
+
+      expect(mockMapInstance.hideApp).toHaveBeenCalled()
+    })
   })
 })

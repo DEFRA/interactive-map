@@ -28,11 +28,20 @@ function handlePopstate () {
     const isHybridVisible = mapInstance.config.behaviour === 'hybrid' && !isHybridFullscreen(mapInstance.config)
     const isOpen = mapInstance.rootEl?.children.length
 
-    if (shouldBeOpen && !isOpen) {
-      mapInstance.loadApp?.()
+    if (shouldBeOpen && (!isOpen || mapInstance._isHidden)) {
+      if (mapInstance._isHidden) {
+        mapInstance.showApp?.()
+      } else {
+        mapInstance.loadApp?.()
+      }
     } else if (!shouldBeOpen && isOpen && !isHybridVisible) {
-      mapInstance.removeApp?.()
-      mapInstance.openButton?.focus?.()
+      if (mapInstance.config.preserveStateOnClose) {
+        mapInstance.hideApp?.()
+      } else {
+        mapInstance.removeApp?.()
+      }
+    } else {
+      // No action
     }
   }
 }

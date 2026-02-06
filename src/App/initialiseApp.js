@@ -1,6 +1,6 @@
 import { createRoot } from 'react-dom/client'
 import { EVENTS as events } from '../config/events.js'
-import { appConfig } from '../config/appConfig.js'
+import { defaultAppConfig } from '../config/appConfig.js'
 import { createButtonRegistry } from './registry/buttonRegistry.js'
 import { createPanelRegistry } from './registry/panelRegistry.js'
 import { createControlRegistry } from './registry/controlRegistry.js'
@@ -59,7 +59,7 @@ export async function initialiseApp (rootElement, {
   // Register default appConfig as a plugin
   registerPlugin({
     id: 'appConfig',
-    manifest: appConfig
+    manifest: defaultAppConfig
   })
 
   // Create root if not already present

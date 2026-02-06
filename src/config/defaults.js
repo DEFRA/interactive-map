@@ -33,6 +33,7 @@ const defaults = {
   nudgeZoomDelta: 0.1,
   panDelta: 100,
   pageTitle: 'Map view',
+  preserveStateOnClose: false,
   readMapText: false,
   reverseGeocodeProvider: null,
   zoomDelta: 1
