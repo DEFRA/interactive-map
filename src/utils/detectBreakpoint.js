@@ -1,4 +1,4 @@
-function getBreakpointType(width, maxMobileWidth, minDesktopWidth) {
+function getBreakpointType (width, maxMobileWidth, minDesktopWidth) {
   if (width <= maxMobileWidth) {
     return 'mobile'
   }
@@ -8,7 +8,7 @@ function getBreakpointType(width, maxMobileWidth, minDesktopWidth) {
   return 'tablet'
 }
 
-function createContainerDetector(containerEl, getType, notifyListeners) {
+function createContainerDetector (containerEl, getType, notifyListeners) {
   containerEl.style.containerType = 'inline-size'
 
   const initialWidth = containerEl.getBoundingClientRect().width
@@ -34,7 +34,7 @@ function createContainerDetector(containerEl, getType, notifyListeners) {
   }
 }
 
-function createViewportDetector(maxMobileWidth, minDesktopWidth, notifyListeners) {
+function createViewportDetector (maxMobileWidth, minDesktopWidth, notifyListeners) {
   const mq = {
     mobile: window.matchMedia(`(max-width: ${maxMobileWidth}px)`),
     desktop: window.matchMedia(`(min-width: ${minDesktopWidth}px)`)
@@ -62,7 +62,7 @@ function createViewportDetector(maxMobileWidth, minDesktopWidth, notifyListeners
   }
 }
 
-function createBreakpointDetector({ maxMobileWidth, minDesktopWidth, containerEl }) {
+function createBreakpointDetector ({ maxMobileWidth, minDesktopWidth, containerEl }) {
   let lastBreakpoint = 'unknown'
   const listeners = new Set()
 
