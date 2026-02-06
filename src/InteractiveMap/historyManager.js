@@ -15,7 +15,7 @@ import defaults from '../config/defaults.js'
  * @param {MapInstance} mapInstance
  *   The map instance whose application should be opened.
  */
-function openMap(mapInstance) {
+function openMap (mapInstance) {
   if (mapInstance._isHidden) {
     mapInstance.showApp?.()
   } else {
@@ -32,7 +32,7 @@ function openMap(mapInstance) {
  * @param {MapInstance} mapInstance
  *   The map instance whose application should be closed.
  */
-function closeMap(mapInstance) {
+function closeMap (mapInstance) {
   if (mapInstance.config.preserveStateOnClose) {
     mapInstance.hideApp?.()
   } else {
