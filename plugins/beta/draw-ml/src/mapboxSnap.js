@@ -140,6 +140,8 @@ function applyMapboxSnapPatches(colors) {
 function pollUntil(checkFn, onSuccess) {
   (function poll() {
     const result = checkFn()
+    // null signals to stop polling, falsy continues polling
+    if (result === null) return
     result ? onSuccess(result) : requestAnimationFrame(poll)
   })()
 }
@@ -267,7 +269,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   // Handle style changes - re-patch source and ensure snap layer exists
   map.on('style.load', () => {
     pollUntil(
-      () => map.getSource('mapbox-gl-draw-hot'),
+      () => map._removed ? null : map.getSource('mapbox-gl-draw-hot'),
       (source) => {
         patchSourceData(source)
 
@@ -312,7 +314,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
 
   // Initial setup - poll until draw source exists
   pollUntil(
-    () => map.getSource('mapbox-gl-draw-hot'),
+    () => map._removed ? null : map.getSource('mapbox-gl-draw-hot'),
     createSnap
   )
 }
