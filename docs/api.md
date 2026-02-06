@@ -388,6 +388,14 @@ See [PluginDescriptor](./plugins/plugin-descriptor.md) for full details.
 
 ---
 
+### `preserveStateOnClose`
+**Type:** `boolean`  
+**Default:** `false`  
+
+Controls whether closing the map (via the browser back button or the exit map button when `hasExitButton` is `true` and the map is fullscreen) destroys the map instance or hides it while preserving its current state. Set to `true` to keep the map state intact, which is useful for implementations like a toggle map view list view pattern.
+
+---
+
 ### `readMapText`
 **Type:** `boolean`
 **Default:** `false`

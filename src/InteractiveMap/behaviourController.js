@@ -1,5 +1,6 @@
 import { getQueryParam } from '../utils/queryString.js'
 import { isHybridFullscreen } from '../utils/getIsFullscreen.js'
+import { updateDOMState } from './domStateManager.js'
 import defaults from '../config/defaults.js'
 
 // -----------------------------------------------------------------------------
@@ -56,9 +57,18 @@ function setupBehavior (mapInstance) {
 
     const handleChange = () => {
       if (shouldLoadComponent(mapInstance.config)) {
-        mapInstance.loadApp()
+        if (mapInstance._isHidden) {
+          mapInstance.showApp()
+        } else if (mapInstance._root == null) {
+          mapInstance.loadApp()
+        } else {
+          // Map is showing - update DOM state for fullscreen/inline transition
+          updateDOMState(mapInstance)
+        }
+      } else if (mapInstance._root) {
+        mapInstance.hideApp()
       } else {
-        mapInstance.removeApp()
+        // No action
       }
     }
 

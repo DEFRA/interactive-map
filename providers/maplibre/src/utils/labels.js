@@ -2,8 +2,9 @@ import { spatialNavigate } from './spatial.js'
 import { calculateLinearTextSize } from './calculateLinearTextSize.js'
 
 const HIGHLIGHT_SCALE_FACTOR = 1.5
+const HIGHLIGHT_LABEL_SOURCE = 'highlighted-label'
 
-function getGeometryCenter(geometry) {
+export function getGeometryCenter(geometry) {
   const { type, coordinates } = geometry
   if (type === 'Point') {
     return coordinates
@@ -23,13 +24,12 @@ function getGeometryCenter(geometry) {
   return null
 }
 
-function evalInterpolate(expr, zoom) {
+export function evalInterpolate(expr, zoom) {
   if (typeof expr === 'number') {
     return expr
   }
   if (!Array.isArray(expr) || expr[0] !== 'interpolate') {
     return calculateLinearTextSize(expr, zoom)
-    // throw new Error('Only interpolate expressions supported')
   }
   const [, , input, ...stops] = expr
   if (input[0] !== 'zoom') {
@@ -39,7 +39,7 @@ function evalInterpolate(expr, zoom) {
     const z0 = stops[i]
     const v0 = stops[i + 1]
     const z1 = stops[i + 2]
-    const v1 = stops[i + 3]
+    const v1 = stops[i + 3] // NOSONAR: array index offset for interpolation pairs
     if (zoom <= z0) {
       return v0
     }
@@ -50,166 +50,220 @@ function evalInterpolate(expr, zoom) {
   return stops[stops.length - 1]
 }
 
-export function createMapLabelNavigator(map, mapColorScheme, events, eventBus) {
-  let isDarkStyle = mapColorScheme === 'dark'
-  let labels = []
-  let currentPixel = null
-  let highlightLayerId = null
-  let highlightedExpr = null
-  let highlightedFeature = null
-
-  const colors = {
-    get current() {
-      if (isDarkStyle) {
-        return { text: '#ffffff', halo: '#000000' }
-      }
-      return { text: '#000000', halo: '#ffffff' }
-    }
+export function getHighlightColors(isDarkStyle) {
+  if (isDarkStyle) {
+    return { text: '#ffffff', halo: '#000000' }
   }
+  return { text: '#000000', halo: '#ffffff' }
+}
 
-  const initLabelSource = () => {
-    if (!map.getSource('highlighted-label')) {
-      map.addSource('highlighted-label', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
-    }
+export function extractTextPropertyName(textField) {
+  if (typeof textField === 'string') {
+    return /^{(.+)}$/.exec(textField)?.[1]
   }
+  if (Array.isArray(textField)) {
+    return textField.find(e => Array.isArray(e) && e[0] === 'get')?.[1]
+  }
+  return null
+}
 
-  map.getStyle().layers.filter(l => l.layout?.['symbol-placement'] === 'line').forEach(l => {
-    map.setLayoutProperty(l.id, 'symbol-placement', 'line-center')
+export function buildLabelFromFeature(feature, layer, propName, map) {
+  const center = getGeometryCenter(feature.geometry)
+  if (!center) {
+    return null
+  }
+  const projected = map.project({ lng: center[0], lat: center[1] })
+  return { text: feature.properties[propName], x: projected.x, y: projected.y, feature, layer }
+}
+
+export function buildLabelsFromLayers(map, symbolLayers, features) {
+  return symbolLayers.flatMap(layer => {
+    const textField = layer.layout?.['text-field']
+    const propName = extractTextPropertyName(textField)
+    if (!propName) {
+      return []
+    }
+    return features
+      .filter(f => f.layer.id === layer.id && f.properties?.[propName])
+      .map(f => buildLabelFromFeature(f, layer, propName, map))
+      .filter(Boolean)
   })
-  initLabelSource()
+}
+
+export function findClosestLabel(labels, centerPoint) {
+  return labels.reduce((best, label) => {
+    const dist = (label.x - centerPoint.x) ** 2 + (label.y - centerPoint.y) ** 2
+    if (!best || dist < best.dist) {
+      return { label, dist }
+    }
+    return best
+  }, null)?.label
+}
+
+export function createHighlightLayerConfig(sourceLayer, highlightSize, colors) {
+  return {
+    id: `highlight-${sourceLayer.id}`,
+    type: sourceLayer.type,
+    source: HIGHLIGHT_LABEL_SOURCE,
+    layout: {
+      ...sourceLayer.layout,
+      'text-size': highlightSize,
+      'text-allow-overlap': true,
+      'text-ignore-placement': true,
+      'text-max-angle': 90
+    },
+    paint: {
+      ...sourceLayer.paint,
+      'text-color': colors.text,
+      'text-halo-color': colors.halo,
+      'text-halo-width': 3,
+      'text-halo-blur': 1,
+      'text-opacity': 1
+    }
+  }
+}
+
+export function removeHighlightLayer(map, state) {
+  if (state.highlightLayerId && map.getLayer(state.highlightLayerId)) {
+    try {
+      map.removeLayer(state.highlightLayerId)
+    }
+    catch {}
+    state.highlightLayerId = null
+    state.highlightedExpr = null
+  }
+}
+
+export function applyHighlight(map, labelData, state) {
+  if (!labelData?.feature?.layer) {
+    return
+  }
+  removeHighlightLayer(map, state)
+  const { feature, layer } = labelData
+  state.highlightLayerId = `highlight-${layer.id}`
+
+  const { id, type, properties, geometry } = feature
+  map.getSource(HIGHLIGHT_LABEL_SOURCE).setData({ id, type, properties, geometry })
+  state.highlightedExpr = layer.layout['text-size']
+
+  const zoom = map.getZoom()
+  const baseSize = evalInterpolate(state.highlightedExpr, zoom)
+  const highlightSize = baseSize * HIGHLIGHT_SCALE_FACTOR
+  const colors = getHighlightColors(state.isDarkStyle)
+  const layerConfig = createHighlightLayerConfig(layer, highlightSize, colors)
+
+  map.addLayer(layerConfig)
+  map.moveLayer(state.highlightLayerId)
+}
+
+export function navigateToNextLabel(direction, state) {
+  if (!state.currentPixel) {
+    return null
+  }
+  const filtered = state.labels
+    .map((l, i) => ({ pixel: [l.x, l.y], index: i }))
+    .filter(l => l.pixel[0] !== state.currentPixel.x || l.pixel[1] !== state.currentPixel.y)
+  if (!filtered.length) {
+    return null
+  }
+  const pixelArray = filtered.map(l => l.pixel)
+  let nextFilteredIndex = spatialNavigate(direction, [state.currentPixel.x, state.currentPixel.y], pixelArray)
+  if (nextFilteredIndex == null || nextFilteredIndex < 0 || nextFilteredIndex >= filtered.length) {
+    nextFilteredIndex = 0
+  }
+  return state.labels[filtered[nextFilteredIndex].index]
+}
+
+function initLabelSource(map) {
+  if (!map.getSource(HIGHLIGHT_LABEL_SOURCE)) {
+    map.addSource(HIGHLIGHT_LABEL_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
+  }
+}
+
+function setLineCenterPlacement(map) {
+  map.getStyle().layers
+    .filter(l => l.layout?.['symbol-placement'] === 'line')
+    .forEach(l => map.setLayoutProperty(l.id, 'symbol-placement', 'line-center'))
+}
+
+function setSymbolTextOpacity(map) {
+  map.getStyle().layers
+    .filter(l => l.type === 'symbol')
+    .forEach(layer => {
+      map.setPaintProperty(layer.id, 'text-opacity', ['case', ['boolean', ['feature-state', 'highlighted'], false], 0, 1])
+    })
+}
+
+export function createMapLabelNavigator(map, mapColorScheme, events, eventBus) {
+  const state = {
+    isDarkStyle: mapColorScheme === 'dark',
+    labels: [],
+    currentPixel: null,
+    highlightLayerId: null,
+    highlightedExpr: null
+  }
+
+  setLineCenterPlacement(map)
+  initLabelSource(map)
 
   eventBus?.on(events.MAP_SET_STYLE, style => {
     map.once('styledata', () => map.once('idle', () => {
-      map.getStyle().layers.filter(l => l.layout?.['symbol-placement'] === 'line').forEach(l => {
-        map.setLayoutProperty(l.id, 'symbol-placement', 'line-center')
-      })
-      initLabelSource()
-      isDarkStyle = style?.mapColorScheme === 'dark'
+      setLineCenterPlacement(map)
+      initLabelSource(map)
+      state.isDarkStyle = style?.mapColorScheme === 'dark'
     }))
+  })
+
+  map.on('zoom', () => {
+    if (state.highlightLayerId && state.highlightedExpr) {
+      const baseSize = evalInterpolate(state.highlightedExpr, map.getZoom())
+      map.setLayoutProperty(state.highlightLayerId, 'text-size', baseSize * HIGHLIGHT_SCALE_FACTOR)
+    }
   })
 
   function refreshLabels() {
     const symbolLayers = map.getStyle().layers.filter(l => l.type === 'symbol')
     const features = map.queryRenderedFeatures({ layers: symbolLayers.map(l => l.id) })
-    labels = symbolLayers.flatMap(layer => {
-      const textField = layer.layout?.['text-field']
-      const propName = typeof textField === 'string'
-        ? textField.match(/^{(.+)}$/)?.[1]
-        : Array.isArray(textField)
-        ? textField.find(e => Array.isArray(e) && e[0] === 'get')?.[1]
-        : null
-      if (!propName) {
-        return []
-      }
-      return features.filter(f => f.layer.id === layer.id && f.properties?.[propName]).map(f => {
-        const center = getGeometryCenter(f.geometry)
-        if (!center) {
-          return null
-        }
-        const projected = map.project({ lng: center[0], lat: center[1] })
-        return { text: f.properties[propName], x: projected.x, y: projected.y, feature: f, layer }
-      }).filter(Boolean)
-    })
+    state.labels = buildLabelsFromLayers(map, symbolLayers, features)
   }
-
-  function removeHighlight() {
-    if (highlightLayerId && map.getLayer(highlightLayerId)) {
-      try {
-        map.removeLayer(highlightLayerId)
-      }
-      catch {}
-      highlightLayerId = null
-      highlightedExpr = null
-      highlightedFeature = null
-    }
-  }
-
-  function highlight(labelData) {
-    if (!labelData?.feature?.layer) {
-      return
-    }
-    removeHighlight()
-    const { feature, layer } = labelData
-    highlightLayerId = `highlight-${layer.id}`
-
-    const { id, type, properties, geometry } = feature
-    highlightedFeature = { id, type, properties, geometry }
-    map.getSource('highlighted-label').setData(highlightedFeature)
-    highlightedExpr = layer.layout['text-size']
-    const zoom = map.getZoom()
-    const baseSize = evalInterpolate(highlightedExpr, zoom)
-    const highlightSize = baseSize * HIGHLIGHT_SCALE_FACTOR
-    map.addLayer({
-      id: highlightLayerId,
-      type: layer.type,
-      source: 'highlighted-label',
-      layout: { ...layer.layout, 'text-size': highlightSize, 'text-allow-overlap': true, 'text-ignore-placement': true, 'text-max-angle': 90 },
-      paint: { ...layer.paint, 'text-color': colors.current.text, 'text-halo-color': colors.current.halo, 'text-halo-width': 3, 'text-halo-blur': 1, 'text-opacity': 1 }
-    })
-    map.moveLayer(highlightLayerId)
-  }
-
-  map.on('zoom', () => {
-    if (highlightLayerId && highlightedExpr) {
-      const zoom = map.getZoom()
-      const baseSize = evalInterpolate(highlightedExpr, zoom)
-      map.setLayoutProperty(highlightLayerId, 'text-size', baseSize * HIGHLIGHT_SCALE_FACTOR)
-    }
-  })
 
   function highlightCenter() {
     refreshLabels()
-    if (!labels.length) {
+    if (!state.labels.length) {
       return null
     }
     const centerPoint = map.project(map.getCenter())
-    const closest = labels.reduce((best, label) => {
-      const dist = (label.x - centerPoint.x) ** 2 + (label.y - centerPoint.y) ** 2
-      if (!best || dist < best.dist) {
-        return { label, dist }
-      }
-      return best
-    }, null)?.label
+    const closest = findClosestLabel(state.labels, centerPoint)
     if (closest) {
-      currentPixel = { x: closest.x, y: closest.y }
+      state.currentPixel = { x: closest.x, y: closest.y }
     }
-    highlight(closest)
+    applyHighlight(map, closest, state)
     return `${closest.text} (${closest.layer.id})`
   }
 
   function highlightNext(direction) {
     refreshLabels()
-    if (!labels.length) {
+    if (!state.labels.length) {
       return null
     }
-    if (!currentPixel) {
+    if (!state.currentPixel) {
       return highlightCenter()
     }
-    const filtered = labels
-      .map((l, i) => ({ pixel: [l.x, l.y], index: i }))
-      .filter(l => l.pixel[0] !== currentPixel.x || l.pixel[1] !== currentPixel.y)
-    if (!filtered.length) {
+    const labelData = navigateToNextLabel(direction, state)
+    if (!labelData) {
       return null
     }
-    const pixelArray = filtered.map(l => l.pixel)
-    let nextFilteredIndex = spatialNavigate(direction, [currentPixel.x, currentPixel.y], pixelArray)
-    if (nextFilteredIndex == null || nextFilteredIndex < 0 || nextFilteredIndex >= filtered.length) {
-      nextFilteredIndex = 0
-    }
-    const labelData = labels[filtered[nextFilteredIndex].index]
-    currentPixel = { x: labelData.x, y: labelData.y }
-    highlight(labelData)
+    state.currentPixel = { x: labelData.x, y: labelData.y }
+    applyHighlight(map, labelData, state)
     return `${labelData.text} (${labelData.layer.id})`
   }
 
-  map.getStyle().layers.filter(l => l.type === 'symbol').forEach(layer => {
-    map.setPaintProperty(layer.id, 'text-opacity', ['case', ['boolean', ['feature-state', 'highlighted'], false], 0, 1])
-  })
+  setSymbolTextOpacity(map)
 
   return {
     refreshLabels,
     highlightNextLabel: highlightNext,
     highlightLabelAtCenter: highlightCenter,
-    clearHighlightedLabel: removeHighlight
+    clearHighlightedLabel: () => removeHighlightLayer(map, state)
   }
 }

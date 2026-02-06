@@ -131,7 +131,7 @@ const interactiveMap = new InteractiveMap('map', {
 	// search
 })
 
-interactiveMap.on('map:ready', function (e) {
+interactiveMap.on('app:ready', function (e) {
 	interactiveMap.addButton('menu', {
 		label: 'Menu',
 		panelId: 'menu',

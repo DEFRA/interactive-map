@@ -1,14 +1,14 @@
 import { render } from '@testing-library/react'
-import { appConfig } from './appConfig'
+import { defaultAppConfig } from './appConfig'
 
-describe('appConfig', () => {
+describe('defaultAppConfig', () => {
   const appState = { layoutRefs: { appContainerRef: { current: document.createElement('div') } }, isFullscreen: false }
-  const buttons = appConfig.buttons
+  const buttons = defaultAppConfig.buttons
   const fullscreenBtn = buttons.find(b => b.id === 'fullscreen')
   const exitBtn = buttons.find(b => b.id === 'exit')
 
   it('renders KeyboardHelp panel', () => {
-    const panel = appConfig.panels.find(p => p.id === 'keyboardHelp')
+    const panel = defaultAppConfig.panels.find(p => p.id === 'keyboardHelp')
     const { container } = render(panel.render())
     expect(container.querySelector('.im-c-keyboard-help')).toBeInTheDocument()
   })
@@ -16,11 +16,11 @@ describe('appConfig', () => {
   it('evaluates dynamic button properties', () => {
     // label
     expect(typeof fullscreenBtn.label).toBe('function')
-    expect(fullscreenBtn.label({ appState, appConfig })).toMatch(/fullscreen/)
+    expect(fullscreenBtn.label({ appState, appConfig: defaultAppConfig })).toMatch(/fullscreen/)
 
     // iconId
     expect(typeof fullscreenBtn.iconId).toBe('function')
-    expect(fullscreenBtn.iconId({ appState, appConfig })).toBe('maximise')
+    expect(fullscreenBtn.iconId({ appState, appConfig: defaultAppConfig })).toBe('maximise')
 
     // excludeWhen
     expect(exitBtn.excludeWhen({ appConfig: { hasExitButton: false } })).toBe(true)
@@ -50,13 +50,13 @@ describe('appConfig', () => {
 
     // Not in fullscreen
     Object.defineProperty(document, 'fullscreenElement', { value: null, writable: true })
-    expect(fullscreenBtn.label({ appState, appConfig })).toBe('Enter fullscreen')
-    expect(fullscreenBtn.iconId({ appState, appConfig })).toBe('maximise')
+    expect(fullscreenBtn.label({ appState, appConfig: defaultAppConfig })).toBe('Enter fullscreen')
+    expect(fullscreenBtn.iconId({ appState, appConfig: defaultAppConfig })).toBe('maximise')
 
     // In fullscreen
     Object.defineProperty(document, 'fullscreenElement', { value: containerMock, writable: true })
-    expect(fullscreenBtn.label({ appState, appConfig })).toBe('Exit fullscreen')
-    expect(fullscreenBtn.iconId({ appState, appConfig })).toBe('minimise')
+    expect(fullscreenBtn.label({ appState, appConfig: defaultAppConfig })).toBe('Exit fullscreen')
+    expect(fullscreenBtn.iconId({ appState, appConfig: defaultAppConfig })).toBe('minimise')
   })
 
   it('calls exit button onClick correctly', () => {
