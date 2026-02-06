@@ -22,8 +22,10 @@ var interactPlugin = createInteractPlugin({
 	},{
 		layerId: 'linked-parcels',
 		// idProperty: 'id'
+	},{
+		layerId: 'OS/TopographicArea_1/Agricultural Land'
 	}],
-	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
+	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
 	contiguous: true,
 	// excludeModes: ['draw']
@@ -150,7 +152,6 @@ interactiveMap.on('app:ready', function (e) {
 })
 
 interactiveMap.on('map:ready', function (e) {
-	// console.log('map:ready')
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
@@ -179,7 +180,7 @@ interactiveMap.on('draw:ready', function () {
 	// drawPlugin.split('test1234', {
 	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	// })
-	// drawPlugin.newLine('test', {
+	// drawPlugin.newPolygon('test', {
 	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	// })
 	// drawPlugin.editFeature('test1234')

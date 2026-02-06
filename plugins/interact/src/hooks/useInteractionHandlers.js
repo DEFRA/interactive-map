@@ -62,12 +62,16 @@ export const useInteractionHandlers = ({
   useEffect(() => {
     // Skip if features exist but bounds not yet calculated
     const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
-    if (awaitingBounds) return
+    if (awaitingBounds) {
+      return
+    }
 
     // Skip if selection was already empty and remains empty
     const prev = lastEmittedSelectionChange.current
     const wasEmpty = prev === null || prev.length === 0
-    if (wasEmpty && selectedFeatures.length === 0) return
+    if (wasEmpty && selectedFeatures.length === 0) {
+      return
+    }
 
     eventBus.emit('interact:selectionchange', {
       selectedFeatures,

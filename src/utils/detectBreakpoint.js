@@ -46,6 +46,8 @@ function createViewportDetector (maxMobileWidth, minDesktopWidth, notifyListener
       type = 'mobile'
     } else if (mq.desktop.matches) {
       type = 'desktop'
+    } else {
+      // No action
     }
     notifyListeners(type)
   }

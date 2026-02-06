@@ -59,16 +59,16 @@ function setupBehavior (mapInstance) {
       if (shouldLoadComponent(mapInstance.config)) {
         if (mapInstance._isHidden) {
           mapInstance.showApp()
-        } else if (!mapInstance._root) {
+        } else if (mapInstance._root == null) {
           mapInstance.loadApp()
         } else {
           // Map is showing - update DOM state for fullscreen/inline transition
           updateDOMState(mapInstance)
         }
+      } else if (mapInstance._root) {
+        mapInstance.hideApp()
       } else {
-        if (mapInstance._root) {
-          mapInstance.hideApp()
-        }
+        // No action
       }
     }
 
