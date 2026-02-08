@@ -5,7 +5,7 @@ import {
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState
 } from '../utils/snapHelpers.js'
 
-const ARROW_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
+const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
 const NUDGE = 1, STEP = 5
 
@@ -164,7 +164,7 @@ export const EditVertexMode = {
       return this.updateVertex(state)
     }
 
-    if (!e.altKey && ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+    if (!e.altKey && ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.preventDefault()
       e.stopPropagation()
       if (state.selectedVertexType === 'midpoint') {
@@ -210,7 +210,7 @@ export const EditVertexMode = {
       return this.moveVertex(state, newCoord)
     }
 
-    if (e.altKey && ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+    if (e.altKey && ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.preventDefault()
       e.stopPropagation()
       return this.updateVertex(state, e.key)
@@ -234,7 +234,7 @@ export const EditVertexMode = {
 
   onKeyup(state, e) {
     state.interfaceType = 'keyboard'
-    if (ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+    if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.stopPropagation()
 
       // Push undo for keyboard move sequence
