@@ -32,6 +32,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginState, mapPro
   draw.changeMode('edit_vertex', {
     container: appState.layoutRefs.viewportRef.current,
     deleteVertexButtonId: `${appConfig.id}-draw-delete-point`,
+    undoButtonId: `${appConfig.id}-draw-undo`,
     isPanEnabled: appState.interfaceType !== 'keyboard',
     interfaceType: appState.interfaceType,
     scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
