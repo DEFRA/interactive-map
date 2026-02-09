@@ -19,12 +19,98 @@ const touchVertexTarget = `
 const scalePoint = (point, scale) => ({ x: point.x * scale, y: point.y * scale })
 const isOnSVG = (el) => el instanceof window.SVGElement || el.ownerSVGElement
 
-// Helper to get flat coordinates array from feature (handles both Polygon and LineString)
-const getCoords = (feature) => feature?.type === 'LineString' ? feature.coordinates : feature?.coordinates?.flat(1)
+// Helper to get flat coordinates array from feature for all geometry types
+const getCoords = (feature) => {
+  if (!feature?.coordinates) return []
+  switch (feature.type) {
+    case 'LineString':
+      return feature.coordinates
+    case 'Polygon':
+      return feature.coordinates.flat(1)
+    case 'MultiLineString':
+      return feature.coordinates.flat(1)
+    case 'MultiPolygon':
+      return feature.coordinates.flat(2)
+    default:
+      return []
+  }
+}
 
-// Helper to get the modifiable coordinates array from geojson (for undo operations)
-const getModifiableCoords = (geojson) =>
-  geojson.geometry.type === 'Polygon' ? geojson.geometry.coordinates[0] : geojson.geometry.coordinates
+// Helper to get ring/part segments with metadata for multi-ring/multi-part support
+// Returns array of {start, length, path, closed} for each segment
+const getRingSegments = (feature) => {
+  if (!feature?.coordinates) return []
+  const segments = []
+  let start = 0
+
+  switch (feature.type) {
+    case 'LineString':
+      segments.push({ start: 0, length: feature.coordinates.length, path: [], closed: false })
+      break
+    case 'Polygon':
+      feature.coordinates.forEach((ring, ringIdx) => {
+        segments.push({ start, length: ring.length, path: [ringIdx], closed: true })
+        start += ring.length
+      })
+      break
+    case 'MultiLineString':
+      feature.coordinates.forEach((line, lineIdx) => {
+        segments.push({ start, length: line.length, path: [lineIdx], closed: false })
+        start += line.length
+      })
+      break
+    case 'MultiPolygon':
+      feature.coordinates.forEach((polygon, polyIdx) => {
+        polygon.forEach((ring, ringIdx) => {
+          segments.push({ start, length: ring.length, path: [polyIdx, ringIdx], closed: true })
+          start += ring.length
+        })
+      })
+      break
+    default:
+      break
+  }
+
+  return segments
+}
+
+// Helper to find which segment a flat vertex index belongs to
+const getSegmentForIndex = (segments, flatIdx) => {
+  for (const seg of segments) {
+    if (flatIdx >= seg.start && flatIdx < seg.start + seg.length) {
+      return { segment: seg, localIdx: flatIdx - seg.start }
+    }
+  }
+  return null
+}
+
+// Helper to get modifiable coordinate array at a specific path
+const getModifiableCoords = (geojson, path) => {
+  let coords = geojson.geometry.coordinates
+  for (const idx of path) {
+    coords = coords[idx]
+  }
+  return coords
+}
+
+// Helper to convert coord_path from mapbox-gl-draw to flat vertex index
+const coordPathToFlatIndex = (feature, coordPath) => {
+  const parts = coordPath.split('.').map(Number)
+  const segments = getRingSegments(feature)
+
+  // Match coord_path to segment
+  for (const seg of segments) {
+    // Check if path matches (compare all but last element which is the local vertex index)
+    const pathMatches = seg.path.every((val, idx) => val === parts[idx])
+    if (pathMatches && parts.length === seg.path.length + 1) {
+      const localIdx = parts[parts.length - 1]
+      return seg.start + localIdx
+    }
+  }
+
+  // Fallback: just use the last number (works for simple geometries)
+  return parts[parts.length - 1]
+}
 
 export const EditVertexMode = {
   ...DirectSelect,
@@ -41,6 +127,7 @@ export const EditVertexMode = {
       featureId: state.featureId || options.featureId,
       selectedVertexIndex: options.selectedVertexIndex ?? -1,
       selectedVertexType: options.selectedVertexType,
+      coordPath: options.coordPath,
       scale: options.scale ?? 1
     })
 
@@ -53,7 +140,23 @@ export const EditVertexMode = {
     this.setupEventListeners(state)
 
     if (options.selectedVertexType === 'midpoint') {
+      // Clear any vertex selection when switching to midpoint
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      // Force feature re-render to clear vertex highlights
+      if (state.feature) {
+        state.feature.changed()
+      }
+      this._ctx.store.render()
       this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
+    } else if (options.selectedVertexIndex === -1) {
+      // Explicitly clear selection when re-entering with no vertex selected
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      if (state.feature) {
+        state.feature.changed()
+      }
+      this._ctx.store.render()
     }
     this.addTouchVertexTarget(state)
 
@@ -108,14 +211,17 @@ export const EditVertexMode = {
 
   onSelectionChange(state, e) {
     const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
-    const geom = e.features[0].geometry
-    const coords = getCoords(geom)
-    const idx = coords.findIndex(c => vertexCoord && c[0] === vertexCoord[0] && c[1] === vertexCoord[1])
 
     // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
-    if (state.interfaceType !== 'keyboard' && idx >= 0) {
-      state.selectedVertexIndex = idx
+    // For keyboard mode or when we have coordPath, trust the existing selectedVertexIndex
+    if (state.interfaceType !== 'keyboard' && vertexCoord && !state.coordPath) {
+      // No coordPath available - need to search for vertex by coordinates
+      const geom = e.features[0]?.geometry
+      const coords = getCoords(geom)
+      state.selectedVertexIndex = this.findVertexIndex(coords, vertexCoord, state.selectedVertexIndex)
     }
+    // If we have coordPath, selectedVertexIndex is already correct from onTap/changeMode
+
     state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
 
     this.map.fire('draw.vertexselection', {
@@ -264,11 +370,13 @@ export const EditVertexMode = {
       state.dragMoving = false
       DirectSelect.onMouseDown.call(this, state, e)
 
-      // Save starting position for undo (only for vertices, not midpoints)
+      // Update selection state for vertex clicks (so onSelectionChange has correct context)
       if (meta === 'vertex' && coordPath) {
-        // Extract vertex index from coord_path (e.g., "0.2" -> 2 for Polygon, "2" -> 2 for LineString)
-        const parts = coordPath.split('.')
-        const vertexIndex = Number.parseInt(parts[parts.length - 1], 10)
+        const feature = this.getFeature(state.featureId)
+        const vertexIndex = coordPathToFlatIndex(feature, coordPath)
+        state.selectedVertexIndex = vertexIndex
+        state.selectedVertexType = 'vertex'
+        state.coordPath = coordPath
         const vertex = state.vertecies?.[vertexIndex]
         if (vertex) {
           state._moveStartPosition = [...vertex]
@@ -278,9 +386,8 @@ export const EditVertexMode = {
     }
     if (meta === 'midpoint') {
       // DirectSelect converts midpoint to vertex - track this as an insert
-      // Get the new vertex index (midpoint at position N becomes vertex at N+1)
-      const parts = coordPath.split('.')
-      const insertedIndex = Number.parseInt(parts[parts.length - 1], 10)
+      const feature = this.getFeature(state.featureId)
+      const insertedIndex = coordPathToFlatIndex(feature, coordPath)
 
       // Track this insertion for undo (will be pushed on mouseUp if drag occurred)
       state._insertedVertexIndex = insertedIndex
@@ -288,6 +395,7 @@ export const EditVertexMode = {
 
       state.selectedVertexIndex = this.getVertexIndexFromMidpoint(state, coordPath)
       state.selectedVertexType = 'vertex'
+      state.coordPath = null // Clear coordPath for midpoints
       this.map.fire('draw.vertexselection', { index: state.selectedVertexIndex, numVertecies: state.vertecies.length })
     }
   },
@@ -392,12 +500,12 @@ export const EditVertexMode = {
     const coordPath = e.featureTarget?.properties.coord_path
 
     if (meta === 'vertex') {
-      // Extract vertex index - handle both "0.1" (Polygon) and "1" (LineString) formats
-      const parts = coordPath.split('.')
-      const idx = Number.parseInt(parts[parts.length - 1], 10)
+      const feature = this.getFeature(state.featureId)
+      const idx = coordPathToFlatIndex(feature, coordPath)
       this.changeMode(state, {
         selectedVertexIndex: idx,
-        selectedVertexType: 'vertex', coordPath
+        selectedVertexType: 'vertex',
+        coordPath
       })
     } else if (meta === 'midpoint') {
       this.insertVertex({ ...state, selectedVertexIndex: this.getVertexIndexFromMidpoint(state, coordPath), selectedVertexType: 'midpoint' })
@@ -513,10 +621,37 @@ export const EditVertexMode = {
   },
 
   // Utility methods
+  findVertexIndex(coords, targetCoord, currentIdx) {
+    // Search for vertex, preferring matches near currentIdx to handle duplicate coords (e.g., closing vertices)
+    const matches = []
+    coords.forEach((c, i) => {
+      if (c[0] === targetCoord[0] && c[1] === targetCoord[1]) {
+        matches.push(i)
+      }
+    })
+
+    if (matches.length === 0) return -1
+    if (matches.length === 1) return matches[0]
+
+    // Multiple matches - pick closest to current selection
+    if (currentIdx >= 0) {
+      return matches.reduce((best, idx) =>
+        Math.abs(idx - currentIdx) < Math.abs(best - currentIdx) ? idx : best
+      )
+    }
+    return matches[0]
+  },
+
   getCoordPath(state, idx) {
-    // Use cached featureType or look it up
-    const type = state.featureType || this.getFeature(state.featureId)?.type
-    return type === 'LineString' ? `${idx}` : `0.${idx}`
+    const feature = this.getFeature(state.featureId)
+    if (!feature) return '0'
+
+    const segments = getRingSegments(feature)
+    const result = getSegmentForIndex(segments, idx)
+    if (!result) return '0'
+
+    const { segment, localIdx } = result
+    return [...segment.path, localIdx].join('.')
   },
 
   syncVertices(state) {
@@ -531,16 +666,26 @@ export const EditVertexMode = {
   getMidpoints(featureId) {
     const feature = this.getFeature(featureId)
     const coords = getCoords(feature)
-    if (!coords) {
+    const segments = getRingSegments(feature)
+    if (!coords?.length || !segments.length) {
       return []
     }
 
-    // For lines, don't create midpoint between last and first vertex
-    const count = feature.type === 'LineString' ? coords.length - 1 : coords.length
     const midpoints = []
-    for (let i = 0; i < count; i++) {
-      const next = coords[(i + 1) % coords.length]
-      midpoints.push([(coords[i][0] + next[0]) / 2, (coords[i][1] + next[1]) / 2])
+    // Create midpoints within each segment, respecting boundaries
+    for (const seg of segments) {
+      const segEnd = seg.start + seg.length
+      // Always use length - 1 to skip the closing coordinate in closed rings
+      const count = seg.length - 1
+      for (let i = 0; i < count; i++) {
+        const idx = seg.start + i
+        const nextIdx = seg.start + ((i + 1) % seg.length)
+        if (nextIdx < segEnd) {
+          const [x1, y1] = coords[idx]
+          const [x2, y2] = coords[nextIdx]
+          midpoints.push([(x1 + x2) / 2, (y1 + y2) / 2])
+        }
+      }
     }
     return midpoints
   },
@@ -565,19 +710,30 @@ export const EditVertexMode = {
   },
 
   getVertexIndexFromMidpoint(state, coordPath) {
-    // Handle both "0.1" (Polygon) and "1" (LineString) formats
-    const parts = coordPath.split('.')
-    const afterIdx = Number.parseInt(parts[parts.length - 1], 10)
+    const feature = this.getFeature(state.featureId)
+    const segments = getRingSegments(feature)
+    const parts = coordPath.split('.').map(Number)
 
-    // Get feature type from cache or look it up
-    const featureType = state.featureType || this.getFeature(state.featureId)?.type
-
-    // For LineString, coord_path is insertion position (1-indexed), so subtract 1 for midpoint array index
-    // For Polygon, adjust for ring wrapping
-    if (featureType === 'LineString') {
-      return state.vertecies.length + (afterIdx - 1)
+    // Find which segment this coord_path belongs to
+    let midpointOffset = 0
+    for (const seg of segments) {
+      const pathMatches = seg.path.every((val, idx) => val === parts[idx])
+      if (pathMatches && parts.length === seg.path.length + 1) {
+        // In DirectSelect, midpoint coord_path represents the insertion index
+        // The midpoint between vertex N and N+1 has coord_path ending in N+1
+        // So our flat midpoint index is one less than the coord_path index
+        const insertionIdx = parts[parts.length - 1]
+        const localMidpointIdx = insertionIdx > 0 ? insertionIdx - 1 : seg.length - 2
+        // Midpoints are indexed after all vertices
+        return state.vertecies.length + midpointOffset + localMidpointIdx
+      }
+      // Count midpoints in this segment (must match getMidpoints calculation)
+      const segMidpoints = seg.length - 1
+      midpointOffset += segMidpoints
     }
-    return state.vertecies.length + ((afterIdx - 1 + state.vertecies.length) % state.vertecies.length)
+
+    // Fallback
+    return state.vertecies.length
   },
 
   addTouchVertexTarget(state) {
@@ -633,13 +789,37 @@ export const EditVertexMode = {
   insertVertex(state, e) {
     const midIdx = state.selectedVertexIndex - state.vertecies.length
     const newCoord = this.getOffset(state.midpoints[midIdx], e)
-    const geojson = this.getFeature(state.featureId).toGeoJSON()
-    const newIdx = midIdx + 1
-    getModifiableCoords(geojson).splice(newIdx, 0, [newCoord.lng, newCoord.lat])
+    const feature = this.getFeature(state.featureId)
+    const geojson = feature.toGeoJSON()
+
+    // Find which segment this midpoint belongs to and calculate insertion position
+    const segments = getRingSegments(feature)
+    let globalInsertIdx = midIdx + 1
+    let insertSegment = null
+    let localInsertIdx = 0
+
+    // Map midpoint index to segment and local position
+    let midpointCounter = 0
+    for (const seg of segments) {
+      // Must match getMidpoints calculation
+      const segMidpoints = seg.length - 1
+      if (midIdx < midpointCounter + segMidpoints) {
+        insertSegment = seg
+        localInsertIdx = (midIdx - midpointCounter) + 1
+        globalInsertIdx = seg.start + localInsertIdx
+        break
+      }
+      midpointCounter += segMidpoints
+    }
+
+    if (!insertSegment) return
+
+    const coords = getModifiableCoords(geojson, insertSegment.path)
+    coords.splice(localInsertIdx, 0, [newCoord.lng, newCoord.lat])
     this._ctx.api.add(geojson)
 
-    this.pushUndo({ type: 'insert_vertex', featureId: state.featureId, vertexIndex: newIdx })
-    this.changeMode(state, { selectedVertexIndex: newIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, newIdx) })
+    this.pushUndo({ type: 'insert_vertex', featureId: state.featureId, vertexIndex: globalInsertIdx })
+    this.changeMode(state, { selectedVertexIndex: globalInsertIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, globalInsertIdx) })
   },
 
   moveVertex(state, coord, options = {}) {
@@ -649,8 +829,15 @@ export const EditVertexMode = {
         coord = { lng: snap.snapCoords[0], lat: snap.snapCoords[1] }
       }
     }
-    const geojson = this.getFeature(state.featureId).toGeoJSON()
-    getModifiableCoords(geojson)[state.selectedVertexIndex] = [coord.lng, coord.lat]
+
+    const feature = this.getFeature(state.featureId)
+    const geojson = feature.toGeoJSON()
+    const segments = getRingSegments(feature)
+    const result = getSegmentForIndex(segments, state.selectedVertexIndex)
+    if (!result) return
+
+    const coords = getModifiableCoords(geojson, result.segment.path)
+    coords[result.localIdx] = [coord.lng, coord.lat]
     this._ctx.api.add(geojson)
     state.vertecies = this.getVerticies(state.featureId)
 
@@ -658,10 +845,17 @@ export const EditVertexMode = {
   },
 
   deleteVertex(state) {
-    const featureType = state.featureType || this.getFeature(state.featureId)?.type
-    // Minimum vertices: 3 for Polygon, 2 for LineString
-    const minVertices = featureType === 'Polygon' ? 3 : 2
-    if (state.vertecies.length <= minVertices) {
+    const feature = this.getFeature(state.featureId)
+    if (!feature) return
+
+    const segments = getRingSegments(feature)
+    const result = getSegmentForIndex(segments, state.selectedVertexIndex)
+    if (!result) return
+
+    const { segment } = result
+    // Minimum vertices per segment: 4 for closed rings (3 + closing coord), 2 for lines
+    const minVertices = segment.closed ? 4 : 2
+    if (segment.length <= minVertices) {
       return
     }
 
@@ -669,8 +863,13 @@ export const EditVertexMode = {
     const deletedPosition = [...state.vertecies[state.selectedVertexIndex]]
     const deletedIndex = state.selectedVertexIndex
 
-    const nextIdx = state.selectedVertexIndex >= state.vertecies.length - 1 ? state.selectedVertexIndex - 1 : state.selectedVertexIndex
     this._ctx.api.trash()
+
+    // Clear DirectSelect's coordinate selection to prevent visual artifacts
+    this.clearSelectedCoordinates()
+    // Force feature re-render to clear vertex highlights
+    feature.changed()
+    this._ctx.store.render()
 
     // Push undo operation
     this.pushUndo({
@@ -680,7 +879,8 @@ export const EditVertexMode = {
       position: deletedPosition
     })
 
-    this.changeMode(state, { selectedVertexIndex: nextIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, nextIdx) })
+    // Clear selection after delete (simpler than tracking ring boundaries)
+    this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null })
   },
 
   // Prevent selecting other features
@@ -714,12 +914,15 @@ export const EditVertexMode = {
   undoMoveVertex(state, op) {
     const { vertexIndex, previousPosition, featureId } = op
     const feature = this.getFeature(featureId)
-    if (!feature) {
-      return
-    }
+    if (!feature) return
 
     const geojson = feature.toGeoJSON()
-    getModifiableCoords(geojson)[vertexIndex] = previousPosition
+    const segments = getRingSegments(feature)
+    const result = getSegmentForIndex(segments, vertexIndex)
+    if (!result) return
+
+    const coords = getModifiableCoords(geojson, result.segment.path)
+    coords[result.localIdx] = previousPosition
     this._applyUndoAndSync(state, geojson, featureId)
 
     // Update touch vertex target position
@@ -732,14 +935,19 @@ export const EditVertexMode = {
   undoInsertVertex(state, op) {
     const { vertexIndex, featureId } = op
     const feature = this.getFeature(featureId)
-    if (!feature) {
-      return
-    }
+    if (!feature) return
 
     const geojson = feature.toGeoJSON()
-    getModifiableCoords(geojson).splice(vertexIndex, 1)
+    const segments = getRingSegments(feature)
+    const result = getSegmentForIndex(segments, vertexIndex)
+    if (!result) return
+
+    const coords = getModifiableCoords(geojson, result.segment.path)
+    coords.splice(result.localIdx, 1)
     this._applyUndoAndSync(state, geojson, featureId)
 
+    // Clear DirectSelect's coordinate selection
+    this.clearSelectedCoordinates()
     this.hideTouchVertexIndicator(state)
     this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null })
   },
@@ -747,12 +955,15 @@ export const EditVertexMode = {
   undoDeleteVertex(state, op) {
     const { vertexIndex, position, featureId } = op
     const feature = this.getFeature(featureId)
-    if (!feature) {
-      return
-    }
+    if (!feature) return
 
     const geojson = feature.toGeoJSON()
-    getModifiableCoords(geojson).splice(vertexIndex, 0, position)
+    const segments = getRingSegments(feature)
+    const result = getSegmentForIndex(segments, vertexIndex)
+    if (!result) return
+
+    const coords = getModifiableCoords(geojson, result.segment.path)
+    coords.splice(result.localIdx, 0, position)
     this._applyUndoAndSync(state, geojson, featureId)
 
     // Update touch vertex target to restored vertex position
