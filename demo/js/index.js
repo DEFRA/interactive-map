@@ -155,7 +155,7 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	// interactPlugin.enable()
+	interactPlugin.enable()
 })
 
 interactiveMap.on('datasets:ready', () => {
@@ -178,10 +178,10 @@ interactiveMap.on('draw:ready', function () {
 			strokeWidth: 2,
 		}
 	})
-	drawPlugin.split('test1234', {
-		snapLayers: ['OS/TopographicArea_1/Agricultural Land']
-	})
-	// drawPlugin.newPolygon('test', {
+	// drawPlugin.split('test1234', {
+	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
+	// })
+	// drawPlugin.newLine('test', {
 	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	// })
 	// drawPlugin.editFeature('test1234', {
@@ -190,11 +190,11 @@ interactiveMap.on('draw:ready', function () {
 })
 
 interactiveMap.on('draw:create', function (e) {
-	// console.log('draw:create', e)
+	console.log('draw:create')
 })
 
 interactiveMap.on('draw:update', function (e) {
-	// console.log('draw:update', e)
+	console.log('draw:update')
 })
 
 interactiveMap.on('interact:done', function (e) {

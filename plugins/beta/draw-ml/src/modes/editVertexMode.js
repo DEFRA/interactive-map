@@ -4,6 +4,13 @@ import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState
 } from '../utils/snapHelpers.js'
+import {
+  getCoords,
+  getRingSegments,
+  getSegmentForIndex,
+  getModifiableCoords,
+  coordPathToFlatIndex
+} from './editVertex/geometryHelpers.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
@@ -18,99 +25,6 @@ const touchVertexTarget = `
 
 const scalePoint = (point, scale) => ({ x: point.x * scale, y: point.y * scale })
 const isOnSVG = (el) => el instanceof window.SVGElement || el.ownerSVGElement
-
-// Helper to get flat coordinates array from feature for all geometry types
-const getCoords = (feature) => {
-  if (!feature?.coordinates) return []
-  switch (feature.type) {
-    case 'LineString':
-      return feature.coordinates
-    case 'Polygon':
-      return feature.coordinates.flat(1)
-    case 'MultiLineString':
-      return feature.coordinates.flat(1)
-    case 'MultiPolygon':
-      return feature.coordinates.flat(2)
-    default:
-      return []
-  }
-}
-
-// Helper to get ring/part segments with metadata for multi-ring/multi-part support
-// Returns array of {start, length, path, closed} for each segment
-const getRingSegments = (feature) => {
-  if (!feature?.coordinates) return []
-  const segments = []
-  let start = 0
-
-  switch (feature.type) {
-    case 'LineString':
-      segments.push({ start: 0, length: feature.coordinates.length, path: [], closed: false })
-      break
-    case 'Polygon':
-      feature.coordinates.forEach((ring, ringIdx) => {
-        segments.push({ start, length: ring.length, path: [ringIdx], closed: true })
-        start += ring.length
-      })
-      break
-    case 'MultiLineString':
-      feature.coordinates.forEach((line, lineIdx) => {
-        segments.push({ start, length: line.length, path: [lineIdx], closed: false })
-        start += line.length
-      })
-      break
-    case 'MultiPolygon':
-      feature.coordinates.forEach((polygon, polyIdx) => {
-        polygon.forEach((ring, ringIdx) => {
-          segments.push({ start, length: ring.length, path: [polyIdx, ringIdx], closed: true })
-          start += ring.length
-        })
-      })
-      break
-    default:
-      break
-  }
-
-  return segments
-}
-
-// Helper to find which segment a flat vertex index belongs to
-const getSegmentForIndex = (segments, flatIdx) => {
-  for (const seg of segments) {
-    if (flatIdx >= seg.start && flatIdx < seg.start + seg.length) {
-      return { segment: seg, localIdx: flatIdx - seg.start }
-    }
-  }
-  return null
-}
-
-// Helper to get modifiable coordinate array at a specific path
-const getModifiableCoords = (geojson, path) => {
-  let coords = geojson.geometry.coordinates
-  for (const idx of path) {
-    coords = coords[idx]
-  }
-  return coords
-}
-
-// Helper to convert coord_path from mapbox-gl-draw to flat vertex index
-const coordPathToFlatIndex = (feature, coordPath) => {
-  const parts = coordPath.split('.').map(Number)
-  const segments = getRingSegments(feature)
-
-  // Match coord_path to segment
-  for (const seg of segments) {
-    // Check if path matches (compare all but last element which is the local vertex index)
-    const pathMatches = seg.path.every((val, idx) => val === parts[idx])
-    if (pathMatches && parts.length === seg.path.length + 1) {
-      const localIdx = parts[parts.length - 1]
-      return seg.start + localIdx
-    }
-  }
-
-  // Fallback: just use the last number (works for simple geometries)
-  return parts[parts.length - 1]
-}
 
 export const EditVertexMode = {
   ...DirectSelect,
@@ -615,8 +529,6 @@ export const EditVertexMode = {
       this.undoInsertVertex(state, op)
     } else if (op.type === 'delete_vertex') {
       this.undoDeleteVertex(state, op)
-    } else {
-      // No action
     }
   },
 
@@ -674,17 +586,15 @@ export const EditVertexMode = {
     const midpoints = []
     // Create midpoints within each segment, respecting boundaries
     for (const seg of segments) {
-      const segEnd = seg.start + seg.length
-      // Always use length - 1 to skip the closing coordinate in closed rings
-      const count = seg.length - 1
+      // For closed rings, create midpoint between every vertex including last→first
+      // For open lines, create midpoints only between consecutive vertices (no wrap-around)
+      const count = seg.closed ? seg.length : seg.length - 1
       for (let i = 0; i < count; i++) {
         const idx = seg.start + i
         const nextIdx = seg.start + ((i + 1) % seg.length)
-        if (nextIdx < segEnd) {
-          const [x1, y1] = coords[idx]
-          const [x2, y2] = coords[nextIdx]
-          midpoints.push([(x1 + x2) / 2, (y1 + y2) / 2])
-        }
+        const [x1, y1] = coords[idx]
+        const [x2, y2] = coords[nextIdx]
+        midpoints.push([(x1 + x2) / 2, (y1 + y2) / 2])
       }
     }
     return midpoints
@@ -728,7 +638,7 @@ export const EditVertexMode = {
         return state.vertecies.length + midpointOffset + localMidpointIdx
       }
       // Count midpoints in this segment (must match getMidpoints calculation)
-      const segMidpoints = seg.length - 1
+      const segMidpoints = seg.closed ? seg.length : seg.length - 1
       midpointOffset += segMidpoints
     }
 
@@ -802,7 +712,7 @@ export const EditVertexMode = {
     let midpointCounter = 0
     for (const seg of segments) {
       // Must match getMidpoints calculation
-      const segMidpoints = seg.length - 1
+      const segMidpoints = seg.closed ? seg.length : seg.length - 1
       if (midIdx < midpointCounter + segMidpoints) {
         insertSegment = seg
         localInsertIdx = (midIdx - midpointCounter) + 1
@@ -846,15 +756,19 @@ export const EditVertexMode = {
 
   deleteVertex(state) {
     const feature = this.getFeature(state.featureId)
-    if (!feature) return
+    if (!feature) {
+      return
+    }
 
     const segments = getRingSegments(feature)
     const result = getSegmentForIndex(segments, state.selectedVertexIndex)
-    if (!result) return
+    if (!result) {
+      return
+    }
 
     const { segment } = result
-    // Minimum vertices per segment: 4 for closed rings (3 + closing coord), 2 for lines
-    const minVertices = segment.closed ? 4 : 2
+    // Minimum vertices per segment: 3 for closed rings (mapbox-gl-draw's internal representation), 2 for lines
+    const minVertices = segment.closed ? 3 : 2
     if (segment.length <= minVertices) {
       return
     }
@@ -879,7 +793,7 @@ export const EditVertexMode = {
       position: deletedPosition
     })
 
-    // Clear selection after delete (simpler than tracking ring boundaries)
+    // Clear selection after delete
     this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null })
   },
 
@@ -955,12 +869,29 @@ export const EditVertexMode = {
   undoDeleteVertex(state, op) {
     const { vertexIndex, position, featureId } = op
     const feature = this.getFeature(featureId)
-    if (!feature) return
+    if (!feature) {
+      return
+    }
 
     const geojson = feature.toGeoJSON()
     const segments = getRingSegments(feature)
-    const result = getSegmentForIndex(segments, vertexIndex)
-    if (!result) return
+
+    // Try to find segment containing vertexIndex
+    let result = getSegmentForIndex(segments, vertexIndex)
+
+    // If not found, vertex might be at segment boundary
+    if (!result) {
+      for (const seg of segments) {
+        if (vertexIndex === seg.start + seg.length) {
+          result = { segment: seg, localIdx: seg.length }
+          break
+        }
+      }
+    }
+
+    if (!result) {
+      return
+    }
 
     const coords = getModifiableCoords(geojson, result.segment.path)
     coords.splice(result.localIdx, 0, position)
