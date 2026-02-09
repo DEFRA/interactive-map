@@ -23,7 +23,8 @@ var interactPlugin = createInteractPlugin({
 		layerId: 'linked-parcels',
 		// idProperty: 'id'
 	},{
-		layerId: 'OS/TopographicArea_1/Agricultural Land'
+		layerId: 'OS/TopographicArea_1/Agricultural Land',
+		idProperty: 'TOID'
 	}],
 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
@@ -155,7 +156,7 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	interactPlugin.enable()
+	// interactPlugin.enable()
 })
 
 interactiveMap.on('datasets:ready', () => {
@@ -184,9 +185,9 @@ interactiveMap.on('draw:ready', function () {
 	// drawPlugin.newLine('test', {
 	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	// })
-	// drawPlugin.editFeature('test1234', {
-	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
-	// })
+	drawPlugin.editFeature('test1234', {
+		snapLayers: ['OS/TopographicArea_1/Agricultural Land']
+	})
 })
 
 interactiveMap.on('draw:create', function (e) {
@@ -210,7 +211,7 @@ interactiveMap.on('interact:selectionchange', function (e) {
 })
 
 interactiveMap.on('interact:markerchange', function (e) {
-	console.log('interact:markerchange', e)
+	// console.log('interact:markerchange', e)
 })
 
 // Update selected feature
