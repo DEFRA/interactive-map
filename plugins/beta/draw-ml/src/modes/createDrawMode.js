@@ -226,7 +226,8 @@ export const createDrawMode = (ParentMode, config) => {
           interfaceType: state.interfaceType,
           vertexMarkerId: state.vertexMarkerId,
           addVertexButtonId: state.addVertexButtonId,
-          getSnapEnabled: state.getSnapEnabled
+          getSnapEnabled: state.getSnapEnabled,
+          properties: state.properties
         })
         return true
       }
@@ -236,7 +237,7 @@ export const createDrawMode = (ParentMode, config) => {
       const initialCoords = [[center.lng, center.lat], [center.lng, center.lat]]
       const newFeature = this.newFeature({
         type: 'Feature',
-        properties: {},
+        properties: state.properties || {},
         geometry: {
           type: geometryType,
           coordinates: [initialCoords]
@@ -343,7 +344,7 @@ export const createDrawMode = (ParentMode, config) => {
       const feature = e.features[0]
       draw.delete(feature.id)
       feature.id = state.featureId
-      draw.add(feature)
+      draw.add(feature, { userProperties: true })
     },
 
     onVertexButtonClick(state, e) {

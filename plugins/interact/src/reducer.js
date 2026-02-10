@@ -21,7 +21,9 @@ const enable = (state, payload) => {
 const disable = (state) => {
   return {
     ...state,
-    enabled: false
+    enabled: false,
+    selectedFeatures: [],
+    selectionBounds: null
   }
 }
 
@@ -47,6 +49,10 @@ const toggleSelectedFeatures = (state, payload) => {
 
   // Replace all selected features if flag is true
   if (replaceAll) {
+    // Toggle off if clicking the same already-selected feature
+    if (existingIndex !== -1 && selected.length === 1) {
+      return { ...state, selectedFeatures: [], selectionBounds: null }
+    }
     return {
       ...state,
       selectedFeatures: [{ featureId, layerId, idProperty, properties, geometry }],
