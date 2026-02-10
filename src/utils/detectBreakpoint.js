@@ -15,7 +15,7 @@ function createContainerDetector (containerEl, getType, notifyListeners) {
   const initialType = getType(initialWidth)
   containerEl.dataset.breakpoint = initialType
 
-  const observer = new ResizeObserver((entries) => {
+  const observer = new window.ResizeObserver((entries) => {
     const width = entries[0]?.borderBoxSize?.[0]?.inlineSize || entries[0]?.contentRect.width
     const type = getType(width)
     containerEl.dataset.breakpoint = type

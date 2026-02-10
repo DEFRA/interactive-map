@@ -31,14 +31,10 @@ export default function (config = {}) {
         const maplibre = await import(/* webpackChunkName: "im-maplibre-framework" */ 'maplibre-gl')
         mapFramework = maplibre
       } else {
-        const [maplibreLegacy, resizeObserver] = await Promise.all([
+        const [maplibreLegacy] = await Promise.all([
           import(/* webpackChunkName: "im-maplibre-legacy-framework" */ 'maplibre-gl-legacy'),
-          import(/* webpackChunkName: "im-maplibre-legacy-framework" */ 'resize-observer'),
           import(/* webpackChunkName: "im-maplibre-legacy-framework" */ 'core-js/es/array/flat.js')
         ])
-        if (!window.ResizeObserver) {
-          resizeObserver.install()
-        }
         mapFramework = maplibreLegacy
       }
 

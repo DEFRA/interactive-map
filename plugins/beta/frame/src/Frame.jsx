@@ -65,7 +65,7 @@ export function Frame({ appState, mapState, pluginState, mapProvider }) {
       })
     }
 
-    const observer = new ResizeObserver(updateLayout)
+    const observer = new window.ResizeObserver(updateLayout)
     observer.observe(parent)
 
     updateLayout()

@@ -85,7 +85,7 @@
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "remove-files-webpack-plugin": "^1.5.0",
-    "resize-observer": "^1.0.4",
+    "resize-observer-polyfill": "^1.5.1",
     "rimraf": "^6.1.0",
     "sass": "^1.89.2",
     "sass-loader": "^16.0.5",

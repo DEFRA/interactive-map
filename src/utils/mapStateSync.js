@@ -11,7 +11,7 @@ const getMapStateFromURL = (id, search) => {
   return { center: [lng, lat], zoom }
 }
 
-const setMapStateInURL = (id, state, currentHref = globalThis.location.href) => {
+const setMapStateInURL = (id, state, currentHref = window.location.href) => {
   // Use the passed href or the global one
   const url = new URL(currentHref || 'http://localhost')
   const params = [...new URLSearchParams(url.search)].map(([key, value]) => `${key}=${value}`)
@@ -30,10 +30,10 @@ const setMapStateInURL = (id, state, currentHref = globalThis.location.href) => 
 
   const hash = url.hash || ''
   const newUrl = `${url.origin}${url.pathname}?${[...filteredParams, ...newParams].join('&')}${hash}`
-  globalThis.history.replaceState(globalThis.history.state, '', newUrl)
+  window.history.replaceState(window.history.state, '', newUrl)
 }
 
-const getInitialMapState = ({ id, center, zoom, bounds }, search = globalThis.location.search) => {
+const getInitialMapState = ({ id, center, zoom, bounds }, search = window.location.search) => {
   // Pass search string down to the internal function
   const savedState = getMapStateFromURL(id, search)
   if (savedState) {

@@ -53,14 +53,14 @@ function createInterfaceDetector () {
     }
   }
 
-  globalThis.addEventListener('pointerdown', handlePointer, { passive: true })
-  globalThis.addEventListener('keydown', handleKeyDown, { passive: true })
+  window.addEventListener('pointerdown', handlePointer, { passive: true })
+  window.addEventListener('keydown', handleKeyDown, { passive: true })
 
   // cleanup
   return () => {
     mql.removeEventListener('change', handleMediaChange)
-    globalThis.removeEventListener('pointerdown', handlePointer)
-    globalThis.removeEventListener('keydown', handleKeyDown)
+    window.removeEventListener('pointerdown', handlePointer)
+    window.removeEventListener('keydown', handleKeyDown)
   }
 }
 
