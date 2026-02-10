@@ -159,11 +159,12 @@ interactiveMap.on('app:ready', function (e) {
 })
 
 interactiveMap.on('map:ready', function (e) {
-	console.log(e.map)
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	interactPlugin.enable()
+	interactPlugin.enable({
+		debug: true
+	})
 })
 
 interactiveMap.on('datasets:ready', () => {
@@ -205,7 +206,7 @@ interactiveMap.on('draw:ready', function () {
 		onClick: (e) => {
 			e.target.setAttribute('aria-pressed', true)
 			drawPlugin.newLine(crypto.randomUUID(), {
-				stroke: '#99704a'
+				stroke: { outdoor: '#99704a', dark: '#ffffff' }
 			})
 		}
 	})
@@ -238,6 +239,10 @@ interactiveMap.on('draw:ready', function () {
 				return
 			}
 			drawPlugin.deleteFeature(selectedFeatureId)
+			interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
+			interactiveMap.toggleButtonState('drawLine', 'disabled', false)
+			interactiveMap.toggleButtonState('editFeature', 'disabled', true)
+			interactiveMap.toggleButtonState('deleteFeature', 'disabled', true)
 		}
 	})
 	drawPlugin.addFeature({
