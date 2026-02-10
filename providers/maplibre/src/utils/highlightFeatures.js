@@ -11,7 +11,7 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
   const renderedFeatures = []
 
   // Group features by source
-  selectedFeatures?.forEach(({ featureId, layerId, idProperty }) => {
+  selectedFeatures?.forEach(({ featureId, layerId, idProperty, geometry }) => {
     const layer = map.getLayer(layerId)
 
     if (!layer) {
@@ -24,9 +24,16 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
       featuresBySource[sourceId] = {
         ids: new Set(),
         idProperty,
-        layerId
+        layerId,
+        hasFillGeometry: false
       }
     }
+
+    // Track whether any selected feature on this source is a polygon
+    if (geometry && (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')) {
+      featuresBySource[sourceId].hasFillGeometry = true
+    }
+
     featuresBySource[sourceId].ids.add(featureId)
   })
 
@@ -50,10 +57,12 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
 
   // Apply highlights for current sources
   currentSources.forEach(sourceId => {
-    const { ids, idProperty, layerId } = featuresBySource[sourceId]
+    const { ids, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
     const baseLayer = map.getLayer(layerId)
     const srcLayer = baseLayer.sourceLayer
-    const geom = baseLayer.type
+
+    // Use the actual feature geometry to determine highlight type
+    const geom = hasFillGeometry ? 'fill' : baseLayer.type
     const base = `highlight-${sourceId}`
 
     const { stroke, strokeWidth, fill } = stylesMap[layerId]
