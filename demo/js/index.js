@@ -167,7 +167,7 @@ interactiveMap.on('map:ready', function (e) {
 	})
 })
 
-interactiveMap.on('datasets:ready', () => {
+interactiveMap.on('datasets:ready', function () {
 	// datasetsPlugin.hideFeatures({
 	// 	featureIds: [1148, 1134],
 	// 	idProperty: 'gid',
@@ -187,7 +187,7 @@ interactiveMap.on('draw:ready', function () {
 		mobile: { slot: 'right-top' },
 		tablet: { slot: 'right-top' },
 		desktop: { slot: 'right-top' },
-		onClick: (e) => {
+		onClick: function (e) {
 			e.target.setAttribute('aria-pressed', true) 
 			drawPlugin.newPolygon(crypto.randomUUID(), {
 				stroke: '#e6c700',
@@ -203,7 +203,7 @@ interactiveMap.on('draw:ready', function () {
 		mobile: { slot: 'right-top' },
 		tablet: { slot: 'right-top' },
 		desktop: { slot: 'right-top' },
-		onClick: (e) => {
+		onClick: function (e) {
 			e.target.setAttribute('aria-pressed', true)
 			drawPlugin.newLine(crypto.randomUUID(), {
 				stroke: { outdoor: '#99704a', dark: '#ffffff' }
@@ -218,7 +218,7 @@ interactiveMap.on('draw:ready', function () {
 		mobile: { slot: 'right-top' },
 		tablet: { slot: 'right-top' },
 		desktop: { slot: 'right-top' },
-		onClick: (e) => {
+		onClick: function (e) {
 			if (e.target.getAttribute('aria-disabled') === 'true') {
 				return
 			}
@@ -234,7 +234,7 @@ interactiveMap.on('draw:ready', function () {
 		mobile: { slot: 'right-top' },
 		tablet: { slot: 'right-top' },
 		desktop: { slot: 'right-top' },
-		onClick: (e) => {
+		onClick: function (e) {
 			if (e.target.getAttribute('aria-disabled') === 'true') {
 				return
 			}
@@ -298,7 +298,7 @@ interactiveMap.on('interact:cancel', function (e) {
 })
 
 interactiveMap.on('interact:selectionchange', function (e) {
-	const singleFeature = e.selectedFeatures.length === 1
+	var singleFeature = e.selectedFeatures.length === 1
 	selectedFeatureId = singleFeature ? e.selectedFeatures?.[0]?.featureId : null
 	interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
 	interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
