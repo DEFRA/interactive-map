@@ -40,7 +40,8 @@ function createButtonClickHandler (btn, appState, evaluateProp) {
 
   return (e) => {
     if (typeof config.onClick === 'function') {
-      return config.onClick(e, evaluateProp(ctx => ctx, config.pluginId))
+      config.onClick(e, evaluateProp(ctx => ctx, config.pluginId))
+      return
     }
 
     if (config.panelId) {
@@ -115,10 +116,10 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
   return matching.map((btn, idx) => {
     const [buttonId, config] = btn
     const key = config.group
-    const indices = key != null ? groupMap.get(key) : null
+    const indices = key == null ? null : groupMap.get(key)
     const groupStart = indices ? idx === indices[0] : false
     const groupEnd = indices ? idx === indices[indices.length - 1] : false
-    const groupMiddle = indices && indices.length >= 3 && !groupStart && !groupEnd
+    const groupMiddle = indices && indices.length >= 3 && !groupStart && !groupEnd // NOSONAR: 3 = minimum for a start/middle/end group
     const order = config[breakpoint]?.order ?? 0
 
     return {
