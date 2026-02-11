@@ -13,6 +13,47 @@ const rootMap = new WeakMap()
 const mapProviderMap = new WeakMap()
 const registryMap = new WeakMap()
 
+const getOrCreateRegistries = (rootElement) => {
+  let registries = registryMap.get(rootElement)
+  if (!registries) {
+    const buttonRegistry = createButtonRegistry()
+    const panelRegistry = createPanelRegistry()
+    const controlRegistry = createControlRegistry()
+    const pluginRegistry = createPluginRegistry({
+      registerButton: buttonRegistry.registerButton,
+      registerPanel: panelRegistry.registerPanel,
+      registerControl: controlRegistry.registerControl
+    })
+
+    registries = { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry }
+    registryMap.set(rootElement, registries)
+  }
+  return registries
+}
+
+const loadPlugins = async (plugins, registerPlugin) => {
+  for (const plugin of plugins) {
+    if (typeof plugin.load === 'function') {
+      const module = await plugin.load()
+      const { id: pluginId, load, manifest: overrideManifest, ...config } = plugin
+      const { InitComponent, api, reducer, ...baseManifest } = module
+
+      // Merge runtime overrides with module manifest
+      const manifest = mergeManifests(baseManifest, overrideManifest)
+
+      registerPlugin({
+        id: pluginId,
+        InitComponent,
+        api,
+        reducer,
+        config,
+        manifest,
+        _originalPlugin: plugin
+      })
+    }
+  }
+}
+
 export async function initialiseApp (rootElement, {
   MapProvider: MapProviderClass,
   mapProviderConfig,
@@ -35,22 +76,7 @@ export async function initialiseApp (rootElement, {
   }
 
   // Reuse or create registries (persist across app open/close cycles)
-  let registries = registryMap.get(rootElement)
-  if (!registries) {
-    const buttonRegistry = createButtonRegistry()
-    const panelRegistry = createPanelRegistry()
-    const controlRegistry = createControlRegistry()
-    const pluginRegistry = createPluginRegistry({
-      registerButton: buttonRegistry.registerButton,
-      registerPanel: panelRegistry.registerPanel,
-      registerControl: controlRegistry.registerControl
-    })
-
-    registries = { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry }
-    registryMap.set(rootElement, registries)
-  }
-
-  const { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry } = registries
+  const { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry } = getOrCreateRegistries(rootElement)
   const { registerPlugin } = pluginRegistry
 
   // Clear previous plugins (but keep runtime additions)
@@ -87,26 +113,7 @@ export async function initialiseApp (rootElement, {
   }
 
   // Load plugins
-  for (const plugin of plugins) {
-    if (typeof plugin.load === 'function') {
-      const module = await plugin.load()
-      const { id: pluginId, load, manifest: overrideManifest, ...config } = plugin
-      const { InitComponent, api, reducer, ...baseManifest } = module
-
-      // Merge runtime overrides with module manifest
-      const manifest = mergeManifests(baseManifest, overrideManifest)
-
-      registerPlugin({
-        id: pluginId,
-        InitComponent,
-        api,
-        reducer,
-        config,
-        manifest,
-        _originalPlugin: plugin
-      })
-    }
-  }
+  await loadPlugins(plugins, registerPlugin)
 
   root.render(<App
     {...restProps}

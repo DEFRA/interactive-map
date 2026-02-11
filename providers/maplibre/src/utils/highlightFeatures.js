@@ -1,16 +1,6 @@
-/**
- * Update highlighted features using pure filters.
- * Supports fill + line geometry, multi-source, cleanup, and bounds.
- */
-function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, stylesMap }) {
-  if (!map) {
-    return null
-  }
-
+const groupFeaturesBySource = (map, selectedFeatures) => {
   const featuresBySource = {}
-  const renderedFeatures = []
 
-  // Group features by source
   selectedFeatures?.forEach(({ featureId, layerId, idProperty, geometry }) => {
     const layer = map.getLayer(layerId)
 
@@ -37,10 +27,10 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
     featuresBySource[sourceId].ids.add(featureId)
   })
 
-  const currentSources = new Set(Object.keys(featuresBySource))
-  const previousSources = map._highlightedSources || new Set()
+  return featuresBySource
+}
 
-  // Cleanup for sources no longer selected
+const cleanupStaleSources = (map, previousSources, currentSources) => {
   previousSources.forEach(src => {
     if (!currentSources.has(src)) {
       const base = `highlight-${src}`
@@ -52,7 +42,55 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
       })
     }
   })
+}
 
+const applyHighlightLayer = (map, id, type, sourceId, srcLayer, paint, filter) => {
+  if (!map.getLayer(id)) {
+    map.addLayer({
+      id,
+      type,
+      source: sourceId,
+      ...(srcLayer && { 'source-layer': srcLayer }),
+      paint
+    })
+  }
+  Object.entries(paint).forEach(([prop, value]) => {
+    map.setPaintProperty(id, prop, value)
+  })
+  map.setFilter(id, filter)
+}
+
+const calculateBounds = (LngLatBounds, renderedFeatures) => {
+  if (!renderedFeatures.length) {
+    return null
+  }
+
+  const bounds = new LngLatBounds()
+  
+  renderedFeatures.forEach(f => {
+    const add = (c) => typeof c[0] === 'number' ? bounds.extend(c) : c.forEach(add)
+    add(f.geometry.coordinates)
+  })
+
+  return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
+}
+
+/**
+ * Update highlighted features using pure filters.
+ * Supports fill + line geometry, multi-source, cleanup, and bounds.
+ */
+export function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, stylesMap }) {
+  if (!map) {
+    return null
+  }
+
+  const featuresBySource = groupFeaturesBySource(map, selectedFeatures)
+  const renderedFeatures = []
+
+  const currentSources = new Set(Object.keys(featuresBySource))
+  const previousSources = map._highlightedSources || new Set()
+
+  cleanupStaleSources(map, previousSources, currentSources)
   map._highlightedSources = currentSources
 
   // Apply highlights for current sources
@@ -70,31 +108,11 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
     const idExpression = idProperty ? ['get', idProperty] : ['id']
     const filter = ['in', idExpression, ['literal', [...ids]]]
 
-    // Ensure layers
+    const linePaint = { 'line-color': stroke, 'line-width': strokeWidth }
+
     if (geom === 'fill') {
-      if (!map.getLayer(`${base}-fill`)) {
-        map.addLayer({
-          id: `${base}-fill`,
-          type: 'fill',
-          source: sourceId,
-          ...(srcLayer && { 'source-layer': srcLayer }),
-          paint: { 'fill-color': fill }
-        })
-      }
-      map.setPaintProperty(`${base}-fill`, 'fill-color', fill)
-      map.setFilter(`${base}-fill`, filter)
-      if (!map.getLayer(`${base}-line`)) {
-        map.addLayer({
-          id: `${base}-line`,
-          type: 'line',
-          source: sourceId,
-          ...(srcLayer && { 'source-layer': srcLayer }),
-          paint: { 'line-color': stroke, 'line-width': strokeWidth }
-        })
-      }
-      map.setPaintProperty(`${base}-line`, 'line-color', stroke)
-      map.setPaintProperty(`${base}-line`, 'line-width', strokeWidth)
-      map.setFilter(`${base}-line`, filter)
+      applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, filter)
+      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, linePaint, filter)
     }
 
     if (geom === 'line') {
@@ -102,18 +120,7 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
       if (map.getLayer(`${base}-fill`)) {
         map.setFilter(`${base}-fill`, ['==', 'id', ''])
       }
-      if (!map.getLayer(`${base}-line`)) {
-        map.addLayer({
-          id: `${base}-line`,
-          type: 'line',
-          source: sourceId,
-          ...(srcLayer && { 'source-layer': srcLayer }),
-          paint: { 'line-color': stroke, 'line-width': strokeWidth }
-        })
-      }
-      map.setPaintProperty(`${base}-line`, 'line-color', stroke)
-      map.setPaintProperty(`${base}-line`, 'line-width', strokeWidth)
-      map.setFilter(`${base}-line`, filter)
+      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, linePaint, filter)
     }
 
     // Bounds only from rendered tiles
@@ -124,18 +131,5 @@ function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, styles
     )
   })
 
-  // Calculate bounds
-  if (!renderedFeatures.length) {
-    return null
-  }
-
-  let bounds = new LngLatBounds()
-  renderedFeatures.forEach(f => {
-    const add = (c) => typeof c[0] === 'number' ? bounds.extend(c) : c.forEach(add)
-    add(f.geometry.coordinates)
-  })
-
-  return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
+  return calculateBounds(LngLatBounds, renderedFeatures)
 }
-
-export { updateHighlightedFeatures }

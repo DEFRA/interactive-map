@@ -13,7 +13,7 @@ export function useKeyboardShortcuts (containerRef) {
   useEffect(() => {
     const el = containerRef.current
     if (!el || interfaceType !== 'keyboard') {
-      return
+      return undefined
     }
 
     const actions = createKeyboardActions(mapProvider, announce, {
@@ -31,7 +31,7 @@ export function useKeyboardShortcuts (containerRef) {
 
       // Use e.code for letters to avoid 'dead' keys with Alt/AltGr
       if (/^Key[A-Z]$/.test(e.code)) {
-        key = e.code.slice(3) // "KeyI" -> "I"
+        key = e.code.slice(3) // NOSONAR: strip "Key" prefix, e.g. "KeyI" -> "I"
       } else {
         key = e.key // works for arrows, numpad, punctuation
       }
@@ -41,6 +41,8 @@ export function useKeyboardShortcuts (containerRef) {
         key = '+'
       } else if (key === 'Subtract' || key === 'NumpadSubtract') {
         key = '-'
+      } else {
+        // No action
       }
 
       return e.altKey ? `Alt+${key}` : key
