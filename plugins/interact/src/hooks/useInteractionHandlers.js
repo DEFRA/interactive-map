@@ -2,6 +2,34 @@ import { useCallback, useEffect, useRef } from 'react'
 import { isContiguousWithAny, canSplitFeatures, areAllContiguous } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
 
+const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectionBounds) => {
+  const lastEmittedSelectionChange = useRef(null)
+
+  useEffect(() => {
+    // Skip if features exist but bounds not yet calculated
+    const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
+    if (awaitingBounds) {
+      return
+    }
+
+    // Skip if selection was already empty and remains empty
+    const prev = lastEmittedSelectionChange.current
+    const wasEmpty = prev === null || prev.length === 0
+    if (wasEmpty && selectedFeatures.length === 0) {
+      return
+    }
+
+    eventBus.emit('interact:selectionchange', {
+      selectedFeatures,
+      selectionBounds,
+      canMerge: areAllContiguous(selectedFeatures),
+      canSplit: canSplitFeatures(selectedFeatures)
+    })
+
+    lastEmittedSelectionChange.current = selectedFeatures
+  }, [selectedFeatures, selectionBounds])
+}
+
 export const useInteractionHandlers = ({
   mapState,
   pluginState,
@@ -11,7 +39,6 @@ export const useInteractionHandlers = ({
   const { markers } = mapState
   const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, tolerance, selectedFeatures, selectionBounds } = pluginState
   const { eventBus } = services
-  const lastEmittedSelectionChange = useRef(null)
   const layerConfigMap = buildLayerConfigMap(dataLayers)
 
   const handleInteraction = useCallback(({ point, coords }) => {
@@ -78,30 +105,7 @@ export const useInteractionHandlers = ({
     markerColor
   ])
 
-  // Emit event when selectedFeatures change
-  useEffect(() => {
-    // Skip if features exist but bounds not yet calculated
-    const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
-    if (awaitingBounds) {
-      return
-    }
-
-    // Skip if selection was already empty and remains empty
-    const prev = lastEmittedSelectionChange.current
-    const wasEmpty = prev === null || prev.length === 0
-    if (wasEmpty && selectedFeatures.length === 0) {
-      return
-    }
-
-    eventBus.emit('interact:selectionchange', {
-      selectedFeatures,
-      selectionBounds,
-      canMerge: areAllContiguous(selectedFeatures),
-      canSplit: canSplitFeatures(selectedFeatures)
-    })
-
-    lastEmittedSelectionChange.current = selectedFeatures
-  }, [selectedFeatures, selectionBounds])
+  useSelectionChangeEmitter(eventBus, selectedFeatures, selectionBounds)
 
   return {
     handleInteraction
