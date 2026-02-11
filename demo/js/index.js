@@ -257,7 +257,7 @@ interactiveMap.on('draw:ready', function () {
 	// drawPlugin.split('test1234', {
 	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	// })
-	// drawPlugin.newLine('test', {
+	// drawPlugin.newPolygon('test', {
 	// 	snapLayers: ['OS/TopographicArea_1/Agricultural Land']
 	// })
 	// drawPlugin.editFeature('test1234', {
