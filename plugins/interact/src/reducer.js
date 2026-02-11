@@ -45,9 +45,24 @@ const toggleSelectedFeatures = (state, payload) => {
     return { ...state, selectedFeatures: filtered, selectionBounds: null }
   }
 
+<<<<<<< HEAD
   // Define the feature object once to avoid repetition
   const featureObj = { featureId, layerId, idProperty, properties, geometry }
   let nextSelected
+=======
+  // Replace all selected features if flag is true
+  if (replaceAll) {
+    // Toggle off if clicking the same already-selected feature
+    if (existingIndex !== -1 && selected.length === 1) {
+      return { ...state, selectedFeatures: [], selectionBounds: null }
+    }
+    return {
+      ...state,
+      selectedFeatures: [{ featureId, layerId, idProperty, properties, geometry }],
+      selectionBounds: null
+    }
+  }
+>>>>>>> main
 
   // 2. Determine New State 
   // We combine 'replaceAll' and 'single-select' because they share the same logic
