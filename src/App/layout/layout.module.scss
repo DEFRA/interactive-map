@@ -328,10 +328,14 @@
   }
 }
 
-// Mobile and tablet modal banner margin
+// Mobile and tablet
 .im-o-app--mobile, .im-o-app--tablet {
   .im-o-app__modal .im-c-panel--banner {
     margin: var(--primary-gap);
+  }
+
+  .im-o-app__banner {
+    z-index: 9;
   }
 }
 
@@ -353,7 +357,6 @@
   .im-o-app__right,
   .im-o-app__right-bottom {
     opacity: 0;
-    // visibility: hidden; Breaks focus order in Preact
   }
 }
 
@@ -361,13 +364,6 @@
 .im-o-app__overlay--not-ready {
   visibility: hidden;
   opacity: 0;
-}
-
-// Banner on mobile and tablet
-.im-o-app--mobile, .im-o-app--tablet {
-  .im-o-app__banner {
-    z-index: 9;
-  }
 }
 
 // Banner on desktop
@@ -409,12 +405,6 @@
 .im-o-app--mobile .im-o-app__bottom .im-c-panel {
     clip-path: inset(-20px 0 0 0);
 }
-
-// Bottom inset on large devices
-// .im-o-app--tablet .im-o-app__bottom,
-// .im-o-app--desktop .im-o-app__bottom {
-//   margin-top: var(--primary-gap);
-// }
 
 // 4. State styles
 

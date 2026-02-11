@@ -6,6 +6,53 @@ import { useService } from '../store/serviceContext.js'
 import { scaleFactor } from '../../config/appConfig.js'
 import { EVENTS as events } from '../../config/events.js'
 
+const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition) => {
+  crossHair.pinToMap = (coords, state) => {
+    const { x, y } = mapProvider.mapToScreen(coords)
+    crossHair.coords = coords
+    dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: true, isVisible: true, coords, state } })
+    updatePosition(el, x, y)
+  }
+
+  crossHair.fixAtCenter = () => {
+    el.style.left = '50%'
+    el.style.top = '50%'
+    el.style.transform = 'translate(0,0)'
+    el.style.display = 'block'
+    dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: false, isVisible: true } })
+  }
+
+  crossHair.remove = () => {
+    el.style.display = 'none'
+    dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: false, isVisible: false } })
+  }
+
+  crossHair.show = () => {
+    el.style.display = 'block'
+    dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: true } })
+  }
+
+  crossHair.hide = () => {
+    el.style.display = 'none'
+    dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
+  }
+
+  crossHair.setStyle = (state) => {
+    dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { state } })
+  }
+
+  crossHair.getDetail = () => {
+    const coords = crossHair.isPinnedToMap ? crossHair.coords : mapProvider.getCenter()
+
+    return {
+      state: crossHair.state,
+      point: mapProvider.mapToScreen(coords),
+      zoom: mapProvider.getZoom(),
+      coords
+    }
+  }
+}
+
 export const useCrossHair = () => {
   const { mapProvider } = useConfig()
   const { safeZoneInset } = useApp()
@@ -25,55 +72,10 @@ export const useCrossHair = () => {
 
   const crossHairRef = useCallback(el => {
     if (!el) {
-      return
+      return undefined
     }
 
-    // --- API ---
-
-    crossHair.pinToMap = (coords, state) => {
-      const { x, y } = mapProvider.mapToScreen(coords)
-      crossHair.coords = coords
-      dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: true, isVisible: true, coords, state } })
-      updatePosition(el, x, y)
-    }
-
-    crossHair.fixAtCenter = () => {
-      el.style.left = '50%'
-      el.style.top = '50%'
-      el.style.transform = 'translate(0,0)'
-      el.style.display = 'block'
-      dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: false, isVisible: true } })
-    }
-
-    crossHair.remove = () => {
-      el.style.display = 'none'
-      dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: false, isVisible: false } })
-    }
-
-    crossHair.show = () => {
-      el.style.display = 'block'
-      dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: true } })
-    }
-
-    crossHair.hide = () => {
-      el.style.display = 'none'
-      dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
-    }
-
-    crossHair.setStyle = (state) => {
-      dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { state } })
-    }
-
-    crossHair.getDetail = () => {
-      const coords = crossHair.isPinnedToMap ? crossHair.coords : mapProvider.getCenter()
-
-      return {
-        state: crossHair.state,
-        point: mapProvider.mapToScreen(coords),
-        zoom: mapProvider.getZoom(),
-        coords
-      }
-    }
+    assignCrossHairAPI(crossHair, el, mapProvider, dispatch, updatePosition)
 
     const handleRender = () => {
       if (crossHair.coords && crossHair.isPinnedToMap) {

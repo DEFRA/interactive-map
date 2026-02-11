@@ -27,19 +27,21 @@ export const PluginProvider = ({ children }) => {
     }
 
     // Initialize ref registry for each plugin
-    if (!refs.current[plugin.id]) refs.current[plugin.id] = {}
+    if (!refs.current[plugin.id]) {
+      refs.current[plugin.id] = {}
+    }
   })
 
   // Combined reducer
-  const combinedReducer = (state, action) => {
+  const combinedReducer = (pluginState, action) => {
     const { pluginId } = action
     if (pluginId && pluginReducers[pluginId]) {
       return {
-        ...state,
-        [pluginId]: pluginReducers[pluginId](state[pluginId], action)
+        ...pluginState,
+        [pluginId]: pluginReducers[pluginId](pluginState[pluginId], action)
       }
     }
-    return state
+    return pluginState
   }
 
   const [state, dispatch] = useReducer(combinedReducer, initialState)

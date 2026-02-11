@@ -41,7 +41,7 @@ const useFocusRedirect = (isModal, panelRef, rootEl) => {
       const panelEl = panelRef.current
 
       if (!focusedEl || !panelEl || !rootEl) {
-        return undefined
+        return
       }
 
       const isInsideApp = rootEl.contains(focusedEl)

@@ -11,7 +11,7 @@ export function useKeyboardHint ({
 
   useEffect(() => {
     if (!showHint || !containerRef.current) {
-      return
+      return undefined
     }
 
     const containerEl = containerRef.current

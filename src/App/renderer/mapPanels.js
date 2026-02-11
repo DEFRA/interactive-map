@@ -5,6 +5,65 @@ import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { allowedSlots } from './slots.js'
 
+/**
+ * Resolves the target slot for a panel based on its breakpoint config.
+ * Modal panels always render in the 'modal' slot, and the bottom slot
+ * is only available on mobile — tablet and desktop fall back to 'inset'.
+ */
+const resolveTargetSlot = (bpConfig, breakpoint) => {
+  if (bpConfig.modal) {
+    return 'modal'
+  }
+  if (bpConfig.slot === 'bottom' && ['tablet', 'desktop'].includes(breakpoint)) {
+    return 'inset'
+  }
+  return bpConfig.slot
+}
+
+/**
+ * Checks whether the current application mode permits the panel to be shown,
+ * based on its includeModes and excludModes configuration.
+ */
+const isModeAllowed = (config, mode) => {
+  if (config.includeModes && !config.includeModes.includes(mode)) {
+    return false
+  }
+  if (config.excludeModes?.includes(mode)) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Determines whether a panel should be rendered in the given slot.
+ * Checks slot eligibility, mode restrictions, inline/fullscreen constraints,
+ * and ensures only the topmost modal panel is shown.
+ */
+const isPanelVisible = (panelId, config, bpConfig, { targetSlot, slot, mode, isFullscreen, allowedModalPanelId }) => {
+  const isNextToButton = `${stringToKebab(panelId)}-button` === targetSlot
+  if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
+    return false
+  }
+  if (!isModeAllowed(config, mode)) {
+    return false
+  }
+  if (config.inline === false && !isFullscreen) {
+    return false
+  }
+  if (targetSlot !== slot) {
+    return false
+  }
+  if (bpConfig.modal && panelId !== allowedModalPanelId) {
+    return false
+  }
+  return true
+}
+
+/**
+ * Maps open panels to renderable entries for a given layout slot.
+ * Filters panels by slot, breakpoint, mode, and modal state, then wraps
+ * each panel's render function with the appropriate plugin contexts.
+ */
 export function mapPanels ({ slot, appState, evaluateProp }) {
   const { breakpoint, pluginRegistry, panelConfig, mode, openPanels } = appState
 
@@ -18,7 +77,6 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
 
   return openPanelEntries.map(([panelId, { props }]) => {
     const config = panelConfig[panelId]
-
     if (!config) {
       return null
     }
@@ -28,33 +86,11 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
       return null
     }
 
-    // Slot constriant: modal panels have a dedicated slot
-    let targetSlot = bpConfig.modal ? 'modal' : bpConfig.slot
+    const targetSlot = resolveTargetSlot(bpConfig, breakpoint)
 
-    // Slot constraint: bottom slot only permitted for mobile, revert to inset
-    if (targetSlot === 'bottom' && ['tablet', 'desktop'].includes(breakpoint)) {
-      targetSlot = 'inset'
-    }
-
-    const isNextToButton = `${stringToKebab(panelId)}-button` === targetSlot
-    const slotAllowed = allowedSlots.panel.includes(targetSlot) || isNextToButton
-    const inModeWhitelist = config.includeModes?.includes(mode) ?? true
-    const inExcludeModes = config.excludeModes?.includes(mode) ?? false
-
-    if (!slotAllowed || !inModeWhitelist || inExcludeModes) {
-      return null
-    }
-
-    // Skip panels marked as inline:false when not in fullscreen mode
-    if (config.inline === false && !appState.isFullscreen) {
-      return null
-    }
-
-    if (targetSlot !== slot) {
-      return null
-    }
-
-    if (bpConfig.modal && panelId !== allowedModalPanelId) {
+    if (!isPanelVisible(panelId, config, bpConfig, {
+      targetSlot, slot, mode, isFullscreen: appState.isFullscreen, allowedModalPanelId
+    })) {
       return null
     }
 

@@ -19,7 +19,7 @@ export function checkDeviceSupport (rootEl, config) {
 
   if (!mapProvider) {
     console.log('No map provider')
-    return
+    return false
   }
 
   if (!device?.isSupported) {

@@ -10,7 +10,9 @@
  */
 export const isHybridFullscreen = (config) => {
   const { behaviour, hybridWidth, maxMobileWidth } = config
-  if (behaviour !== 'hybrid') return false
+  if (behaviour !== 'hybrid') {
+    return false
+  }
   const threshold = hybridWidth ?? maxMobileWidth
   return window.matchMedia(`(max-width: ${threshold}px)`).matches
 }
