@@ -137,12 +137,9 @@ const spatialNavigate = (direction, start, pixels) => {
   const [sx, sy] = start
 
   // Direction filters
-  const candidates = pixels.filter(([x, y]) => {
-    if (x === sx && y === sy) {
-      return false
-    }
-    return isInDirection(direction, x - sx, y - sy)
-  })
+  const candidates = pixels.filter(([x, y]) =>
+    (x !== sx || y !== sy) && isInDirection(direction, x - sx, y - sy)
+  )
 
   if (!candidates.length) {
     return pixels.findIndex(p => p[0] === sx && p[1] === sy)
