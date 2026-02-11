@@ -50,7 +50,7 @@ export const InteractInit = ({
 
   useEffect(() => {
     if (!pluginState.enabled) {
-      return
+      return undefined // Explicit return
     }
 
     const cleanupEvents = attachEvents({

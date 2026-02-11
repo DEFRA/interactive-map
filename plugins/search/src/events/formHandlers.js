@@ -1,5 +1,6 @@
 import { fetchSuggestions } from './fetchSuggestions.js'
 import { updateMap } from '../utils/updateMap.js'
+import { DEFAULTS } from '../defaults.js'
 
 export const createFormHandlers = ({
   dispatch,
@@ -20,7 +21,7 @@ export const createFormHandlers = ({
       services.eventBus.emit('search:open')
     },
 
-    handleCloseClick(e, buttonRef) {
+    handleCloseClick(_e, buttonRef) {
       dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
       dispatch({ type: 'UPDATE_SUGGESTIONS', payload: [] })
       dispatch({ type: 'SET_VALUE', payload: '' })
@@ -47,7 +48,7 @@ export const createFormHandlers = ({
         return
       }
 
-      if (trimmedValue?.length < 3) {
+      if (trimmedValue?.length < DEFAULTS.minSearchLength) {
         return
       }
 

@@ -26,7 +26,9 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
 
       switch (e.key) {
         case 'ArrowDown': {
-          if (!suggestions?.length) return
+          if (!suggestions?.length) {
+            return
+          }
           e.preventDefault()
           if (selectedIndex < suggestions.length - 1) {
             const newIndex = selectedIndex + 1
@@ -38,7 +40,9 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
         }
 
         case 'ArrowUp': {
-          if (!suggestions?.length) return
+          if (!suggestions?.length) {
+            return
+          }
           e.preventDefault()
           const newIndex = selectedIndex > 0 ? selectedIndex - 1 : -1
           services.announce(selectionMessage(suggestions, newIndex))
@@ -51,6 +55,11 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
           e.preventDefault()
           dispatch({ type: 'HIDE_SUGGESTIONS' })
           dispatch({ type: 'SET_SELECTED', payload: -1 })
+          break
+        }
+
+        default: {
+          // This code runs for any other key press
           break
         }
       }

@@ -34,8 +34,7 @@ var interactPlugin = createInteractPlugin({
 	}],
 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
-	contiguous: true,
-	// excludeModes: ['draw']
+	contiguous: true
 })
 
 var drawPlugin = createDrawPlugin({

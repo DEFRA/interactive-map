@@ -33,48 +33,40 @@ const disable = (state) => {
  */
 const toggleSelectedFeatures = (state, payload) => {
   const { featureId, multiSelect, layerId, idProperty, addToExisting = true, replaceAll = false, properties, geometry } = payload
-  const selected = Array.isArray(state.selectedFeatures) ? [...state.selectedFeatures] : []
-
-  const existingIndex = selected.findIndex(
+  const currentSelected = Array.isArray(state.selectedFeatures) ? state.selectedFeatures : []
+  
+  const existingIndex = currentSelected.findIndex(
     f => f.featureId === featureId && f.layerId === layerId
   )
 
-  // Handle explicit unselect
+  // 1. Handle explicit unselect
   if (addToExisting === false) {
-    if (existingIndex !== -1) {
-      selected.splice(existingIndex, 1) // remove the feature
-    }
-    return { ...state, selectedFeatures: selected, selectionBounds: null }
+    const filtered = currentSelected.filter((_, i) => i !== existingIndex)
+    return { ...state, selectedFeatures: filtered, selectionBounds: null }
   }
 
-  // Replace all selected features if flag is true
-  if (replaceAll) {
-    // Toggle off if clicking the same already-selected feature
-    if (existingIndex !== -1 && selected.length === 1) {
-      return { ...state, selectedFeatures: [], selectionBounds: null }
-    }
-    return {
-      ...state,
-      selectedFeatures: [{ featureId, layerId, idProperty, properties, geometry }],
-      selectionBounds: null
-    }
-  }
+  // Define the feature object once to avoid repetition
+  const featureObj = { featureId, layerId, idProperty, properties, geometry }
+  let nextSelected
 
-  // Multi-select mode (add to selection)
-  if (multiSelect) {
+  // 2. Determine New State 
+  // We combine 'replaceAll' and 'single-select' because they share the same logic
+  if (multiSelect && !replaceAll) {
+    const selectedCopy = [...currentSelected]
     if (existingIndex === -1) {
-      selected.push({ featureId, layerId, idProperty, properties, geometry })
+      selectedCopy.push(featureObj)
     } else {
-      selected.splice(existingIndex, 1)
+      selectedCopy.splice(existingIndex, 1)
     }
-    return { ...state, selectedFeatures: selected, selectionBounds: null }
+    nextSelected = selectedCopy
+  } else {
+    // Both 'replaceAll' and single-select mode logic:
+    // If same feature is already the only one, toggle off; otherwise return just this feature.
+    const isSameSingle = existingIndex !== -1 && currentSelected.length === 1
+    nextSelected = isSameSingle ? [] : [featureObj]
   }
 
-  // Single-select mode
-  const isSameSingle = existingIndex !== -1 && selected.length === 1
-  const newSelected = isSameSingle ? [] : [{ featureId, layerId, idProperty, properties, geometry }]
-
-  return { ...state, selectedFeatures: newSelected, selectionBounds: null }
+  return { ...state, selectedFeatures: nextSelected, selectionBounds: null }
 }
 
 // Update bounds (called from useEffect after map provider calculates them)
