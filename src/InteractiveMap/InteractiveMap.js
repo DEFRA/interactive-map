@@ -9,6 +9,8 @@
  */
 
 import '../scss/main.scss'
+// Polyfills to ensure entry point works on all devices
+import './polyfills.js'
 import historyManager from './historyManager.js'
 import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'

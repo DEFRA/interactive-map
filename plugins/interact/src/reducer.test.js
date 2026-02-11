@@ -28,13 +28,15 @@ describe('ENABLE/DISABLE actions', () => {
     expect(result).not.toBe(state)
   })
 
-  it('DISABLE sets enabled to false but preserves other state', () => {
-    const state = { ...initialState, enabled: true, dataLayers: [1], markerColor: 'red' }
+  it('DISABLE sets enabled to false, clears selection, and preserves other state', () => {
+    const state = { ...initialState, enabled: true, dataLayers: [1], markerColor: 'red', selectedFeatures: [{ featureId: 'f1' }], selectionBounds: [0, 0, 1, 1] }
     const result = actions.DISABLE(state)
 
     expect(result.enabled).toBe(false)
     expect(result.dataLayers).toEqual([1])
     expect(result.markerColor).toBe('red')
+    expect(result.selectedFeatures).toEqual([])
+    expect(result.selectionBounds).toBeNull()
     expect(result).not.toBe(state)
   })
 })

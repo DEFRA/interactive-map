@@ -134,6 +134,14 @@
         @include tools.border-focus-corner-override($corners: 'top');
     }
 
+    .im-c-button-wrapper--group-middle .im-c-map-button {
+        @include tools.border-focus-corner-override($corners: 'none');
+
+        &::before {
+            clip-path: inset(0 -20px 0 -20px);
+        }
+    }
+
     .im-c-button-wrapper--group-end .im-c-map-button {
         margin-top: 0;
         @include tools.border-focus-corner-override($corners: 'bottom');
@@ -148,6 +156,14 @@
 
     .im-c-button-wrapper--group-start .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'left');
+    }
+
+    .im-c-button-wrapper--group-middle .im-c-map-button {
+        @include tools.border-focus-corner-override($corners: 'none');
+
+        &::before {
+            clip-path: inset(-20px 0 -20px 0);
+        }
     }
 
     .im-c-button-wrapper--group-end .im-c-map-button {

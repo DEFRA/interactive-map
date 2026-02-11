@@ -6,9 +6,9 @@ export const buildLayerConfigMap = dataLayers => {
   return map
 }
 
-export const getFeaturesAtPoint = (mapProvider, point) => {
+export const getFeaturesAtPoint = (mapProvider, point, options) => {
   try {
-    return mapProvider?.getFeaturesAtPoint(point) || []
+    return mapProvider?.getFeaturesAtPoint(point, options) || []
   } catch (err) {
     console.warn('Feature query failed:', err)
     return []

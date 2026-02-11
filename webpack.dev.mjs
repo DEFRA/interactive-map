@@ -76,7 +76,7 @@ export default {
       {
         test: /\.jsx?$/,
         loader: 'babel-loader',
-        exclude: /node_modules\/(?!(lucide-react))/
+        exclude: /node_modules/
       },{
         test: /\.s[ac]ss$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],

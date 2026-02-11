@@ -12,7 +12,7 @@ export function useResizeObserver (targetRefs, callback) {
       return
     }
 
-    const observer = new ResizeObserver(entries => {
+    const observer = new window.ResizeObserver(entries => {
       for (const entry of entries) {
         const { width, height } = entry.contentRect
         const prev = prevSizes.current.get(entry.target) || {}

@@ -169,7 +169,7 @@ export default class EsriProvider {
     return [xmin, ymin, xmax, ymax].map(n => Math.round(n * 100) / 100)
   }
 
-  getFeaturesAtPoint (point) {
+  getFeaturesAtPoint (point, options) {
     return queryVectorTileFeatures(this.view, point)
   }
 

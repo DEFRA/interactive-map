@@ -1,4 +1,5 @@
 export const DEFAULTS = {
+  tolerance: 10, // Used for cross hair and click events
   interactionMode: 'marker',
   multiSelect: false,
   contiguous: false,

@@ -10,6 +10,7 @@ import { attachAppEvents } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds } from './utils/spatial.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
+import { queryFeatures } from './utils/queryFeatures.js'
 
 /**
  * MapLibre GL JS implementation of the MapProvider interface.
@@ -74,7 +75,6 @@ export default class MapLibreProvider {
     if (bounds) {
       map.fitBounds(bounds, { duration: 0 })
     }
-
 
     applyPreventDefaultFix(map)
     cleanCanvas(map)
@@ -266,10 +266,12 @@ export default class MapLibreProvider {
    * Query rendered features at a screen pixel position (x from left edge, y from top edge of viewport).
    *
    * @param {{ x: number, y: number }} point - Screen pixel position.
+   * @param {Object} [options]
+   * @param {number} [options.radius] - Pixel radius to expand the query area. Results sorted closest-first.
    * @returns {any[]}
    */
-  getFeaturesAtPoint (point) {
-    return this.map.queryRenderedFeatures(point)
+  getFeaturesAtPoint (point, options) {
+    return queryFeatures(this.map, point, options)
   }
 
   // ==========================

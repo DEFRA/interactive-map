@@ -1,33 +1,24 @@
 import DirectSelect from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
-import { spatialNavigate } from '../utils/spatial.js'
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState
 } from '../utils/snapHelpers.js'
+import { getCoords, coordPathToFlatIndex } from './editVertex/geometryHelpers.js'
+import { scalePoint } from './editVertex/helpers.js'
+import { undoHandlers } from './editVertex/undoHandlers.js'
+import { touchHandlers } from './editVertex/touchHandlers.js'
+import { vertexOperations } from './editVertex/vertexOperations.js'
+import { vertexQueries } from './editVertex/vertexQueries.js'
 
-const ARROW_KEYS = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown']
+const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
-const NUDGE = 1, STEP = 5
-
-const touchVertexTarget = `
-  <svg width='48' height='48' viewBox='0 0 48 48' fill-rule='evenodd' style='display:none;position:absolute;top:50%;left:50%;margin:24px 0 0 -24px' class='touch-vertex-target' data-touch-vertex-target>
-    <circle cx='24' cy='24' r='24' fill='currentColor'/>
-    <path d="M37.543 25H34a1 1 0 1 1 0-2h3.629l-.836-.837a1 1 0 0 1 1.414-1.414l2.5 2.501A1 1 0 0 1 41 24a1 1 0 0 1-.487.858l-2.306 2.306a1 1 0 0 1-1.414-1.414l.75-.75zM23 10.414l-.793.793a1 1 0 0 1-1.414-1.414l2.5-2.5C23.481 7.105 23.734 7 24 7s.519.105.707.293l2.5 2.5a1 1 0 0 1-1.414 1.414L25 10.414V14a1 1 0 1 1-2 0v-3.586zM7 24a1 1 0 0 1 .293-.75l2.5-2.501a1 1 0 0 1 1.414 1.414l-.836.837H14a1 1 0 1 1 0 2h-3.543l.75.75a1 1 0 0 1-1.414 1.414l-2.306-2.306A1 1 0 0 1 7 24zm16.293 16.707l-2.5-2.5a1 1 0 0 1 1.414-1.414l.793.793V34a1 1 0 1 1 2 0v3.586l.793-.793a1 1 0 0 1 1.414 1.414l-2.5 2.5c-.188.188-.441.293-.707.293s-.519-.105-.707-.293zM24 20c2.208 0 4 1.792 4 4s-1.792 4-4 4-4-1.792-4-4 1.792-4 4-4z" fill="#fff"/>
-  </svg>
-`
-
-const scalePoint = (point, scale) => ({ x: point.x * scale, y: point.y * scale })
-const isOnSVG = (el) => el instanceof window.SVGElement || el.ownerSVGElement
-
-// Helper to get flat coordinates array from feature (handles both Polygon and LineString)
-const getCoords = (feature) => feature?.type === 'LineString' ? feature.coordinates : feature?.coordinates?.flat(1)
-
-// Helper to get the modifiable coordinates array from geojson (for undo operations)
-const getModifiableCoords = (geojson) =>
-  geojson.geometry.type === 'Polygon' ? geojson.geometry.coordinates[0] : geojson.geometry.coordinates
 
 export const EditVertexMode = {
   ...DirectSelect,
+  ...undoHandlers,
+  ...touchHandlers,
+  ...vertexOperations,
+  ...vertexQueries,
 
   onSetup(options) {
     const state = DirectSelect.onSetup.call(this, options)
@@ -41,6 +32,7 @@ export const EditVertexMode = {
       featureId: state.featureId || options.featureId,
       selectedVertexIndex: options.selectedVertexIndex ?? -1,
       selectedVertexType: options.selectedVertexType,
+      coordPath: options.coordPath,
       scale: options.scale ?? 1
     })
 
@@ -53,7 +45,23 @@ export const EditVertexMode = {
     this.setupEventListeners(state)
 
     if (options.selectedVertexType === 'midpoint') {
+      // Clear any vertex selection when switching to midpoint
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      // Force feature re-render to clear vertex highlights
+      if (state.feature) {
+        state.feature.changed()
+      }
+      this._ctx.store.render()
       this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
+    } else if (options.selectedVertexIndex === -1) {
+      // Explicitly clear selection when re-entering with no vertex selected
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      if (state.feature) {
+        state.feature.changed()
+      }
+      this._ctx.store.render()
     }
     this.addTouchVertexTarget(state)
 
@@ -108,14 +116,17 @@ export const EditVertexMode = {
 
   onSelectionChange(state, e) {
     const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
-    const geom = e.features[0].geometry
-    const coords = getCoords(geom)
-    const idx = coords.findIndex(c => vertexCoord && c[0] === vertexCoord[0] && c[1] === vertexCoord[1])
 
     // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
-    if (state.interfaceType !== 'keyboard' && idx >= 0) {
-      state.selectedVertexIndex = idx
+    // For keyboard mode or when we have coordPath, trust the existing selectedVertexIndex
+    if (state.interfaceType !== 'keyboard' && vertexCoord && !state.coordPath) {
+      // No coordPath available - need to search for vertex by coordinates
+      const geom = e.features[0]?.geometry
+      const coords = getCoords(geom)
+      state.selectedVertexIndex = this.findVertexIndex(coords, vertexCoord, state.selectedVertexIndex)
     }
+    // If we have coordPath, selectedVertexIndex is already correct from onTap/changeMode
+
     state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
 
     this.map.fire('draw.vertexselection', {
@@ -164,7 +175,7 @@ export const EditVertexMode = {
       return this.updateVertex(state)
     }
 
-    if (!e.altKey && ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+    if (!e.altKey && ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.preventDefault()
       e.stopPropagation()
       if (state.selectedVertexType === 'midpoint') {
@@ -210,7 +221,7 @@ export const EditVertexMode = {
       return this.moveVertex(state, newCoord)
     }
 
-    if (e.altKey && ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+    if (e.altKey && ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.preventDefault()
       e.stopPropagation()
       return this.updateVertex(state, e.key)
@@ -234,7 +245,7 @@ export const EditVertexMode = {
 
   onKeyup(state, e) {
     state.interfaceType = 'keyboard'
-    if (ARROW_KEYS.includes(e.key) && state.selectedVertexIndex >= 0) {
+    if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.stopPropagation()
 
       // Push undo for keyboard move sequence
@@ -264,11 +275,13 @@ export const EditVertexMode = {
       state.dragMoving = false
       DirectSelect.onMouseDown.call(this, state, e)
 
-      // Save starting position for undo (only for vertices, not midpoints)
+      // Update selection state for vertex clicks (so onSelectionChange has correct context)
       if (meta === 'vertex' && coordPath) {
-        // Extract vertex index from coord_path (e.g., "0.2" -> 2 for Polygon, "2" -> 2 for LineString)
-        const parts = coordPath.split('.')
-        const vertexIndex = Number.parseInt(parts[parts.length - 1], 10)
+        const feature = this.getFeature(state.featureId)
+        const vertexIndex = coordPathToFlatIndex(feature, coordPath)
+        state.selectedVertexIndex = vertexIndex
+        state.selectedVertexType = 'vertex'
+        state.coordPath = coordPath
         const vertex = state.vertecies?.[vertexIndex]
         if (vertex) {
           state._moveStartPosition = [...vertex]
@@ -278,9 +291,8 @@ export const EditVertexMode = {
     }
     if (meta === 'midpoint') {
       // DirectSelect converts midpoint to vertex - track this as an insert
-      // Get the new vertex index (midpoint at position N becomes vertex at N+1)
-      const parts = coordPath.split('.')
-      const insertedIndex = Number.parseInt(parts[parts.length - 1], 10)
+      const feature = this.getFeature(state.featureId)
+      const insertedIndex = coordPathToFlatIndex(feature, coordPath)
 
       // Track this insertion for undo (will be pushed on mouseUp if drag occurred)
       state._insertedVertexIndex = insertedIndex
@@ -288,6 +300,7 @@ export const EditVertexMode = {
 
       state.selectedVertexIndex = this.getVertexIndexFromMidpoint(state, coordPath)
       state.selectedVertexType = 'vertex'
+      state.coordPath = null // Clear coordPath for midpoints
       this.map.fire('draw.vertexselection', { index: state.selectedVertexIndex, numVertecies: state.vertecies.length })
     }
   },
@@ -344,108 +357,6 @@ export const EditVertexMode = {
     DirectSelect.onMouseUp.call(this, state, e)
   },
 
-  onPointerevent(state, e) {
-    state.interfaceType = e.pointerType === 'touch' ? 'touch' : 'pointer'
-    state.isPanEnabled = true
-    if (e.pointerType === 'touch' && e.type === 'pointermove' && !isOnSVG(e.target.parentNode) && !state._ignorePointermoveDeselect) {
-      this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null, coordPath: null })
-    }
-  },
-
-  // Empty stubs required by DirectSelect
-  onTouchStart() {},
-  onTouchMove() {},
-  onTouchEnd() {},
-
-  onTouchend(state) {
-    clearSnapState(getSnapInstance(this.map))
-    if (state?.featureId) {
-      this.syncVertices(state)
-
-      // Push undo for the move if touch actually moved
-      if (state._touchMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {
-        this.pushUndo({
-          type: 'move_vertex',
-          featureId: state.featureId,
-          vertexIndex: state._moveStartIndex,
-          previousPosition: state._moveStartPosition
-        })
-      }
-      state._moveStartPosition = null
-      state._moveStartIndex = undefined
-      state._touchMoved = false
-    }
-  },
-
-  clickNoTarget(state) {
-    this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null, isPanEnabled: true })
-  },
-
-  onTap(state, e) {
-    // Hide snap indicator on any tap
-    const snap = getSnapInstance(this.map)
-    if (snap) {
-      clearSnapIndicator(snap, this.map)
-    }
-
-    const meta = e.featureTarget?.properties.meta
-    const coordPath = e.featureTarget?.properties.coord_path
-
-    if (meta === 'vertex') {
-      // Extract vertex index - handle both "0.1" (Polygon) and "1" (LineString) formats
-      const parts = coordPath.split('.')
-      const idx = Number.parseInt(parts[parts.length - 1], 10)
-      this.changeMode(state, {
-        selectedVertexIndex: idx,
-        selectedVertexType: 'vertex', coordPath
-      })
-    } else if (meta === 'midpoint') {
-      this.insertVertex({ ...state, selectedVertexIndex: this.getVertexIndexFromMidpoint(state, coordPath), selectedVertexType: 'midpoint' })
-    } else {
-      this.clickNoTarget(state)
-    }
-  },
-
-  onTouchstart(state, e) {
-    clearSnapState(getSnapInstance(this.map))
-    const vertex = state.vertecies?.[state.selectedVertexIndex]
-    if (!vertex || !isOnSVG(e.target.parentNode)) {
-      return
-    }
-
-    // Save starting position for undo
-    state._moveStartPosition = [...vertex]
-    state._moveStartIndex = state.selectedVertexIndex
-    state._touchMoved = false
-
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const style = window.getComputedStyle(state.touchVertexTarget)
-    state.deltaTarget = { x: touch.x - Number.parseFloat(style.left), y: touch.y - Number.parseFloat(style.top) }
-    const vertexPt = this.map.project(vertex)
-    state.deltaVertex = { x: (touch.x / state.scale) - vertexPt.x, y: (touch.y / state.scale) - vertexPt.y }
-  },
-
-  onTouchmove(state, e) {
-    if (state.selectedVertexIndex < 0 || !isOnSVG(e.target.parentNode)) {
-      return
-    }
-
-    state._touchMoved = true
-
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const screenPt = { x: (touch.x / state.scale) - state.deltaVertex.x, y: (touch.y / state.scale) - state.deltaVertex.y }
-
-    let finalCoord = this.map.unproject(screenPt)
-    if (isSnapEnabled(state)) {
-      const snap = getSnapInstance(this.map)
-      triggerSnapAtPoint(snap, this.map, screenPt)
-      finalCoord = getSnapLngLat(snap) || finalCoord
-    }
-
-    this.moveVertex(state, finalCoord)
-    this.updateTouchVertexTarget(state, { x: touch.x - state.deltaTarget.x, y: touch.y - state.deltaTarget.y })
-  },
-
   onDrag(state, e) {
     if (state.interfaceType === 'touch') {
       return
@@ -493,194 +404,8 @@ export const EditVertexMode = {
     }
   },
 
-  handleUndo(state) {
-    const undoStack = this.map._undoStack
-    if (!undoStack || undoStack.length === 0) {
-      return
-    }
-
-    const op = undoStack.pop()
-
-    if (op.type === 'move_vertex') {
-      this.undoMoveVertex(state, op)
-    } else if (op.type === 'insert_vertex') {
-      this.undoInsertVertex(state, op)
-    } else if (op.type === 'delete_vertex') {
-      this.undoDeleteVertex(state, op)
-    } else {
-      // No action
-    }
-  },
-
-  // Utility methods
-  getCoordPath(state, idx) {
-    // Use cached featureType or look it up
-    const type = state.featureType || this.getFeature(state.featureId)?.type
-    return type === 'LineString' ? `${idx}` : `0.${idx}`
-  },
-
-  syncVertices(state) {
-    state.vertecies = this.getVerticies(state.featureId)
-    state.midpoints = this.getMidpoints(state.featureId)
-  },
-
-  getVerticies(featureId) {
-    return getCoords(this.getFeature(featureId)) || []
-  },
-
-  getMidpoints(featureId) {
-    const feature = this.getFeature(featureId)
-    const coords = getCoords(feature)
-    if (!coords) {
-      return []
-    }
-
-    // For lines, don't create midpoint between last and first vertex
-    const count = feature.type === 'LineString' ? coords.length - 1 : coords.length
-    const midpoints = []
-    for (let i = 0; i < count; i++) {
-      const next = coords[(i + 1) % coords.length]
-      midpoints.push([(coords[i][0] + next[0]) / 2, (coords[i][1] + next[1]) / 2])
-    }
-    return midpoints
-  },
-
-  getVertexOrMidpoint(state, direction) {
-    // Ensure vertices and midpoints are populated
-    if (!state.vertecies?.length) {
-      state.vertecies = this.getVerticies(state.featureId)
-      state.midpoints = this.getMidpoints(state.featureId)
-    }
-    if (!state.vertecies?.length) {
-      return [-1, null]
-    }
-    const project = (p) => p ? Object.values(this.map.project(p)) : null
-    const pixels = [...state.vertecies.map(project), ...state.midpoints.map(project)].filter(Boolean)
-    if (!pixels.length) {
-      return [-1, null]
-    }
-    const start = pixels[state.selectedVertexIndex] || Object.values(this.map.project(this.map.getCenter()))
-    const idx = spatialNavigate(start, pixels, direction)
-    return [idx, idx < state.vertecies.length ? 'vertex' : 'midpoint']
-  },
-
-  getVertexIndexFromMidpoint(state, coordPath) {
-    // Handle both "0.1" (Polygon) and "1" (LineString) formats
-    const parts = coordPath.split('.')
-    const afterIdx = Number.parseInt(parts[parts.length - 1], 10)
-
-    // Get feature type from cache or look it up
-    const featureType = state.featureType || this.getFeature(state.featureId)?.type
-
-    // For LineString, coord_path is insertion position (1-indexed), so subtract 1 for midpoint array index
-    // For Polygon, adjust for ring wrapping
-    if (featureType === 'LineString') {
-      return state.vertecies.length + (afterIdx - 1)
-    }
-    return state.vertecies.length + ((afterIdx - 1 + state.vertecies.length) % state.vertecies.length)
-  },
-
-  addTouchVertexTarget(state) {
-    let el = state.container.querySelector('[data-touch-vertex-target]')
-    if (!el) {
-      state.container.insertAdjacentHTML('beforeend', touchVertexTarget)
-      el = state.container.querySelector('[data-touch-vertex-target]')
-    }
-    state.touchVertexTarget = el
-  },
-
-  updateTouchVertexTarget(state, point) {
-    if (point && state.interfaceType === 'touch' && state.selectedVertexIndex >= 0) {
-      Object.assign(state.touchVertexTarget.style, { display: 'block', top: `${point.y}px`, left: `${point.x}px` })
-    } else {
-      state.touchVertexTarget.style.display = 'none'
-    }
-  },
-
-  hideTouchVertexIndicator(state) {
-    state.touchVertexTarget.style.display = 'none'
-  },
-
-  updateMidpoint(coordinates) {
-    setTimeout(() => {
-      this.map.getSource('mapbox-gl-draw-hot').setData({
-        type: 'Feature',
-        properties: { meta: 'midpoint', active: 'true', id: 'active-midpoint' },
-        geometry: { type: 'Point', coordinates }
-      })
-    }, 0)
-  },
-
-  updateVertex(state, direction) {
-    const [idx, type] = this.getVertexOrMidpoint(state, direction)
-    if (idx < 0 || !type) {
-      return
-    }
-    this.changeMode(state, { selectedVertexIndex: idx, selectedVertexType: type, ...(type === 'vertex' && { coordPath: this.getCoordPath(state, idx) }) })
-  },
-
-  getOffset(coord, e) {
-    const pt = this.map.project(coord)
-    const offset = e?.shiftKey ? NUDGE : STEP
-    const [dx, dy] = e ? ARROW_OFFSETS[e.key].map(v => v * offset) : [0, 0]
-    return this.map.unproject({ x: pt.x + dx, y: pt.y + dy })
-  },
-
-  getNewCoord(state, e) {
-    return this.getOffset(getCoords(this.getFeature(state.featureId))[state.selectedVertexIndex], e)
-  },
-
-  insertVertex(state, e) {
-    const midIdx = state.selectedVertexIndex - state.vertecies.length
-    const newCoord = this.getOffset(state.midpoints[midIdx], e)
-    const geojson = this.getFeature(state.featureId).toGeoJSON()
-    const newIdx = midIdx + 1
-    getModifiableCoords(geojson).splice(newIdx, 0, [newCoord.lng, newCoord.lat])
-    this._ctx.api.add(geojson)
-
-    this.pushUndo({ type: 'insert_vertex', featureId: state.featureId, vertexIndex: newIdx })
-    this.changeMode(state, { selectedVertexIndex: newIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, newIdx) })
-  },
-
-  moveVertex(state, coord, options = {}) {
-    if (options.checkSnap && state.enableSnap !== false) {
-      const snap = this.map._snapInstance
-      if (snap?.snapStatus && snap.snapCoords?.length >= 2) {
-        coord = { lng: snap.snapCoords[0], lat: snap.snapCoords[1] }
-      }
-    }
-    const geojson = this.getFeature(state.featureId).toGeoJSON()
-    getModifiableCoords(geojson)[state.selectedVertexIndex] = [coord.lng, coord.lat]
-    this._ctx.api.add(geojson)
-    state.vertecies = this.getVerticies(state.featureId)
-
-    this.map.fire('draw.geometrychange', state.feature)
-  },
-
-  deleteVertex(state) {
-    const featureType = state.featureType || this.getFeature(state.featureId)?.type
-    // Minimum vertices: 3 for Polygon, 2 for LineString
-    const minVertices = featureType === 'Polygon' ? 3 : 2
-    if (state.vertecies.length <= minVertices) {
-      return
-    }
-
-    // Save position for undo before deletion
-    const deletedPosition = [...state.vertecies[state.selectedVertexIndex]]
-    const deletedIndex = state.selectedVertexIndex
-
-    const nextIdx = state.selectedVertexIndex >= state.vertecies.length - 1 ? state.selectedVertexIndex - 1 : state.selectedVertexIndex
-    this._ctx.api.trash()
-
-    // Push undo operation
-    this.pushUndo({
-      type: 'delete_vertex',
-      featureId: state.featureId,
-      vertexIndex: deletedIndex,
-      position: deletedPosition
-    })
-
-    this.changeMode(state, { selectedVertexIndex: nextIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, nextIdx) })
+  clickNoTarget(state) {
+    this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null, isPanEnabled: true })
   },
 
   // Prevent selecting other features
@@ -689,86 +414,6 @@ export const EditVertexMode = {
       return
     }
     this._ctx.api.changeMode('edit_vertex', { ...state, ...updates })
-  },
-
-  // Fire geometry change event (for external listeners)
-  fireGeometryChange(state) {
-    const feature = this.getFeature(state.featureId)
-    if (feature) {
-      this.map.fire('draw.update', {
-        features: [feature.toGeoJSON()],
-        action: 'change_coordinates'
-      })
-    }
-  },
-
-  // Undo support
-  pushUndo(operation) {
-    const undoStack = this.map._undoStack
-    if (!undoStack) {
-      return
-    }
-    undoStack.push(operation)
-  },
-
-  undoMoveVertex(state, op) {
-    const { vertexIndex, previousPosition, featureId } = op
-    const feature = this.getFeature(featureId)
-    if (!feature) {
-      return
-    }
-
-    const geojson = feature.toGeoJSON()
-    getModifiableCoords(geojson)[vertexIndex] = previousPosition
-    this._applyUndoAndSync(state, geojson, featureId)
-
-    // Update touch vertex target position
-    const vertex = state.vertecies[state.selectedVertexIndex]
-    if (vertex) {
-      this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
-    }
-  },
-
-  undoInsertVertex(state, op) {
-    const { vertexIndex, featureId } = op
-    const feature = this.getFeature(featureId)
-    if (!feature) {
-      return
-    }
-
-    const geojson = feature.toGeoJSON()
-    getModifiableCoords(geojson).splice(vertexIndex, 1)
-    this._applyUndoAndSync(state, geojson, featureId)
-
-    this.hideTouchVertexIndicator(state)
-    this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null })
-  },
-
-  undoDeleteVertex(state, op) {
-    const { vertexIndex, position, featureId } = op
-    const feature = this.getFeature(featureId)
-    if (!feature) {
-      return
-    }
-
-    const geojson = feature.toGeoJSON()
-    getModifiableCoords(geojson).splice(vertexIndex, 0, position)
-    this._applyUndoAndSync(state, geojson, featureId)
-
-    // Update touch vertex target to restored vertex position
-    const vertex = state.vertecies[vertexIndex]
-    if (vertex) {
-      this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
-    }
-    this.changeMode(state, { selectedVertexIndex: vertexIndex, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, vertexIndex) })
-  },
-
-  _applyUndoAndSync(state, geojson, featureId) {
-    this._ctx.api.add(geojson)
-    state.vertecies = this.getVerticies(featureId)
-    state.midpoints = this.getMidpoints(featureId)
-    this._ctx.store.render()
-    this.fireGeometryChange(state)
   },
 
   onStop(state) {

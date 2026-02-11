@@ -9,14 +9,20 @@ export const useInteractionHandlers = ({
   mapProvider,
 }) => {
   const { markers } = mapState
-  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, selectedFeatures, selectionBounds } = pluginState
+  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, tolerance, selectedFeatures, selectionBounds } = pluginState
   const { eventBus } = services
   const lastEmittedSelectionChange = useRef(null)
   const layerConfigMap = buildLayerConfigMap(dataLayers)
 
   const handleInteraction = useCallback(({ point, coords }) => {
-    const allFeatures = getFeaturesAtPoint(mapProvider, point)
+    const allFeatures = getFeaturesAtPoint(mapProvider, point, { radius: tolerance })
     const hasDataLayers = dataLayers.length > 0
+
+    // Debug option to inspect the map style data
+    if (pluginState?.debug) {
+      console.log(`--- Features at ${coords} ---`)
+      console.log(allFeatures)
+    }
 
     const canMatchFeature = hasDataLayers && (interactionMode === 'select' || interactionMode === 'auto')
     const match = canMatchFeature ? findMatchingFeature(allFeatures, layerConfigMap) : null
