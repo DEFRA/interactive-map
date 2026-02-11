@@ -18,20 +18,9 @@ export const useInteractionHandlers = ({
     const allFeatures = getFeaturesAtPoint(mapProvider, point, { radius: tolerance })
     const hasDataLayers = dataLayers.length > 0
 
-<<<<<<< HEAD
     if (pluginState?.debug) {
       console.log(`--- Features at ${coords} ---`, allFeatures)
     }
-=======
-    // Debug option to inspect the map style data
-    if (pluginState?.debug) {
-      console.log(`--- Features at ${coords} ---`)
-      console.log(allFeatures)
-    }
-
-    const canMatchFeature = hasDataLayers && (interactionMode === 'select' || interactionMode === 'auto')
-    const match = canMatchFeature ? findMatchingFeature(allFeatures, layerConfigMap) : null
->>>>>>> main
 
     const canMatch = hasDataLayers && (interactionMode === 'select' || interactionMode === 'auto')
     const match = canMatch ? findMatchingFeature(allFeatures, layerConfigMap) : null

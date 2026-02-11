@@ -21,7 +21,6 @@ const getRequestConfig = (ds, query, transformRequest) => {
  * Helper to fetch and parse results for a single dataset
  * This flattens the nesting in the main loop.
  */
-<<<<<<< HEAD
 const fetchDatasetResults = async (ds, request, query) => {
   try {
     const response = await fetch(request.url, request.options)
@@ -30,9 +29,6 @@ const fetchDatasetResults = async (ds, request, query) => {
       console.error(`Fetch error for ${ds.label || 'dataset'}: ${response.status}`)
       return null
     }
-=======
-const sanitiseQuery = (value) => value.replace(/[^a-zA-Z0-9\s\-.,]/g, '').trim()
->>>>>>> main
 
     const json = await response.json()
     return ds.parseResults(json, query)
