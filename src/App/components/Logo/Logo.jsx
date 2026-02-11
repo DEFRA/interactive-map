@@ -7,7 +7,7 @@ export const Logo = () => {
   const { mapStyle } = useMap()
 
   if (!mapStyle?.logo) {
-    return
+    return undefined
   }
 
   return (

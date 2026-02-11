@@ -63,6 +63,6 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
           break
         }
       }
-    },
+    }
   }
 }

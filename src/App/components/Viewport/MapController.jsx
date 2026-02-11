@@ -26,7 +26,7 @@ export const MapController = ({ mapContainerRef }) => {
   // Initialize map provider when props are available
   useEffect(() => {
     if (!safeZoneInset || !isLayoutReady || !mapStyle || !mapSize || isMapInitialized.current) {
-      return
+      return undefined
     }
 
     requestAnimationFrame(() => {
@@ -60,7 +60,7 @@ export const MapController = ({ mapContainerRef }) => {
   // Update padding when breakpoint or mapSize change
   useEffect(() => {
     if (!isMapReady || !syncMapPadding) {
-      return
+      return undefined
     }
     mapProvider.setPadding(scalePoints(safeZoneInset, scaleFactor[mapSize]))
   }, [isMapReady, mapSize, breakpoint, safeZoneInset])
