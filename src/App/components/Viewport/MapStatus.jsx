@@ -8,7 +8,7 @@ export const MapStatus = () => {
   const { mapStatusRef } = useService()
 
   return (
-    <div
+    <div // NOSONAR: div + status role is semantically correct here, <output> implies a calculation result
       ref={mapStatusRef}
       role='status'
       className='im-c-viewport__status'

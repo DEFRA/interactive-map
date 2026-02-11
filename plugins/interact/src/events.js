@@ -1,3 +1,16 @@
+// Helper for feature toggling logic
+const createFeatureHandler = (mapState, pluginState) => (args, addToExisting) => {
+  mapState.markers.remove('location')
+  pluginState.dispatch({
+    type: 'TOGGLE_SELECTED_FEATURES',
+    payload: {
+      multiSelect: pluginState.multiSelect,
+      addToExisting,
+      ...args
+    }
+  })
+}
+
 export function attachEvents ({
   appState,
   mapState,
@@ -8,41 +21,24 @@ export function attachEvents ({
   handleInteraction,
   closeApp
 }) {
-  const {
-    selectDone,
-    selectAtTarget,
-    selectCancel
-  } = buttonConfig
-
+  const { selectDone, selectAtTarget, selectCancel } = buttonConfig
   const { viewportRef } = appState.layoutRefs
 
+  // Keyboard Logic
   let enterOnViewport = false
-  const handleKeydown = (e) => {
-    enterOnViewport = e.key === 'Enter' && viewportRef.current === e.target
-  }
-  document.addEventListener('keydown', handleKeydown)
-
+  const handleKeydown = (e) => { enterOnViewport = e.key === 'Enter' && viewportRef.current === e.target }
   const handleKeyup = (e) => {
-    if (e.key !== 'Enter' || !enterOnViewport) {
-      return
+    if (e.key === 'Enter' && enterOnViewport) {
+      e.preventDefault()
+      handleSelectAtTarget()
     }
-    e.preventDefault()
-    handleSelectAtTarget()
   }
-  document.addEventListener('keyup', handleKeyup)
 
-  // Allow tapping on touch devices as well as accurate placement
-  const handleMapClick = (e) => {
-    handleInteraction(e)
-  }
-  eventBus.on(events.MAP_CLICK, handleMapClick)
+  // Interaction Handlers
+  const handleMapClick = (e) => handleInteraction(e)
+  const handleSelectAtTarget = () => handleInteraction(mapState.crossHair.getDetail())
 
-  const handleSelectAtTarget = () => {
-    handleInteraction(mapState.crossHair.getDetail())
-  }
-  selectAtTarget.onClick = handleSelectAtTarget
-  
-  const handleSelectDone = (e) => {
+  const handleSelectDone = () => {
     const marker = mapState.markers.getMarker('location')
     const { coords } = marker || {}
     const { selectionBounds, selectedFeatures } = pluginState
@@ -57,43 +53,32 @@ export function attachEvents ({
       ...(!coords && selectionBounds && { selectionBounds })
     })
 
-    if (!(pluginState.closeOnAction ?? true)) {
-      return
+    if (pluginState.closeOnAction ?? true) {
+      closeApp()
     }
-
-    closeApp()
   }
-  selectDone.onClick = handleSelectDone
 
   const handleSelectCancel = () => {
     eventBus.emit('interact:cancel')
-
-    if (!(pluginState.closeOnAction ?? true)) {
-      return
+    if (pluginState.closeOnAction ?? true) {
+      closeApp()
     }
-
-    closeApp()
   }
-  selectCancel.onClick = handleSelectCancel
 
-  const handleToggleFeature = (args, addToExisting) => {
-    mapState.markers.remove('location')
+  const toggleFeature = createFeatureHandler(mapState, pluginState)
+  const handleSelect = (args) => toggleFeature(args, true)
+  const handleUnselect = (args) => toggleFeature(args, false)
 
-    pluginState.dispatch({
-      type: 'TOGGLE_SELECTED_FEATURES',
-      payload: {
-        multiSelect: pluginState.multiSelect,
-        addToExisting,
-        ...args
-      }
-    })
-  }
-  const handleSelect = (args) => handleToggleFeature(args, true)
-  const handleUnselect = (args) => handleToggleFeature(args, false)
+  // Attach Listeners
+  document.addEventListener('keydown', handleKeydown)
+  document.addEventListener('keyup', handleKeyup)
+  eventBus.on(events.MAP_CLICK, handleMapClick)
   eventBus.on('interact:selectFeature', handleSelect)
   eventBus.on('interact:unselectFeature', handleUnselect)
+  selectAtTarget.onClick = handleSelectAtTarget
+  selectDone.onClick = handleSelectDone
+  selectCancel.onClick = handleSelectCancel
 
-  // Return cleanup function
   return () => {
     selectDone.onClick = null
     selectAtTarget.onClick = null

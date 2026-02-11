@@ -3,7 +3,7 @@ import { useApp } from '../../store/appContext'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Actions = ({ slot, children }) => {
+export const Actions = ({ children }) => {
   const { openPanels, panelConfig, breakpoint } = useApp()
 
   const childArray = React.Children.toArray(children)
@@ -21,7 +21,7 @@ export const Actions = ({ slot, children }) => {
   ].filter(Boolean).join(' ')
 
   return (
-    <div className={className} style={!visibleChild ? { display: 'none' } : undefined}>
+    <div className={className} style={visibleChild ? undefined : { display: 'none' }}>
       {children}
     </div>
   )

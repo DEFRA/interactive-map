@@ -26,23 +26,25 @@
         $type: button
     );
 
-    & {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-        padding-left: var(--button-padding);
-        padding-right: var(--button-padding);
+    padding-left: var(--button-padding);
+    padding-right: var(--button-padding);
 
-        pointer-events: auto;
-        color: var(--foreground-color);
-        background-color: var(--button-background-color);
+    pointer-events: auto;
+    color: var(--foreground-color);
+    background-color: var(--button-background-color);
 
-        min-height: var(--button-size);
-        min-width: var(--button-size);
+    min-height: var(--button-size);
+    min-width: var(--button-size);
 
-        user-select: none;
-        cursor: pointer;
+    user-select: none;
+    cursor: pointer;
+
+    &--primary[aria-disabled="true"], &--tertiary[aria-disabled="true"] {
+        opacity: var(--disabled-button-opacity);
     }
 }
 
@@ -66,9 +68,7 @@
             transition: background-color var(--duration) ease;
         }
 
-        & {
-            background-color: var(--button-hover-color);
-        }
+        background-color: var(--button-hover-color);
     }
 }
 
@@ -178,11 +178,6 @@
     }
 }
 
-.im-c-map-button {
-    &--primary[aria-disabled="true"], &--tertiary[aria-disabled="true"] {
-        opacity: var(--disabled-button-opacity);
-    }
-}
 
 .im-o-app__actions .im-c-map-button[aria-pressed="true"] {
     color: var(--pressed-button-foreground-color);

@@ -6,7 +6,7 @@ const MAX_RESULTS = 8
 
 const isPostcode = (value) => {
   value = value.replace(/\s/g, '')
-  const regex = /^(([A-Z]{1,2}\d[A-Z\d]?|ASCN|STHL|TDCU|BBND|[BFS]IQQ|PCRN|TKCA) ?\d[A-Z]{2}|BFPO ?\d{1,4}|(KY\d|MSR|VG|AI)[ -]?\d{4}|[A-Z]{2} ?\d{2}|GE ?CX|GIR ?0A{2}|SAN ?TA1)$/i
+  const regex = /^(([A-Z]{1,2}\d[A-Z\d]?|ASCN|STHL|TDCU|BBND|[BFS]IQQ|PCRN|TKCA) ?\d[A-Z]{2}|BFPO ?\d{1,4}|(KY\d|MSR|VG|AI)[ -]?\d{4}|[A-Z]{2} ?\d{2}|GE ?CX|GIR ?0A{2}|SAN ?TA1)$/i //NOSONAR
   return regex.test(value)
 }
 
@@ -22,7 +22,7 @@ const markString = (string, find) => {
   const clean = find.replace(/\s+/g, '')
   // Create a pattern where whitespace is optional between every character
   // e.g. "ab12cd" -> "a\s* b\s* 1\s* 2\s* c\s* d"
-  const spacedPattern = clean.split('').join('\\s*')
+  const spacedPattern = clean.split('').join(String.raw`\s*`)
   const reg = new RegExp(`(${spacedPattern})`, 'i')
   return string.replace(reg, '<mark>$1</mark>')
 }
@@ -33,16 +33,16 @@ const bounds = (crs, { MBR_XMIN, MBR_YMIN, MBR_XMAX, MBR_YMAX, GEOMETRY_X, GEOME
   let minX, minY, maxX, maxY
 
   // Use either MBR or buffered point depending on what's provided
-  if (MBR_XMIN != null) {
-    minX = MBR_XMIN
-    minY = MBR_YMIN
-    maxX = MBR_XMAX
-    maxY = MBR_YMAX
-  } else {
+  if (MBR_XMIN == null) {
     minX = GEOMETRY_X - POINT_BUFFER
     minY = GEOMETRY_Y - POINT_BUFFER
     maxX = GEOMETRY_X + POINT_BUFFER
     maxY = GEOMETRY_Y + POINT_BUFFER
+  } else {
+    minX = MBR_XMIN
+    minY = MBR_YMIN
+    maxX = MBR_XMAX
+    maxY = MBR_YMAX
   }
 
   // If CRS is already EPSG:27700 (OSGB), just return the raw values
@@ -78,7 +78,7 @@ const point = (crs, { GEOMETRY_X, GEOMETRY_Y }) => {
 }
 
 const label = (query, { NAME1, COUNTY_UNITARY, DISTRICT_BOROUGH, POSTCODE_DISTRICT, LOCAL_TYPE }) => {
-  const qualifier = `${!['City', 'Postcode'].includes(LOCAL_TYPE) ? POSTCODE_DISTRICT + ', ' : ''}${LOCAL_TYPE !== 'City' ? (COUNTY_UNITARY || DISTRICT_BOROUGH) : ''}`
+  const qualifier = `${['City', 'Postcode'].includes(LOCAL_TYPE) ? '' : POSTCODE_DISTRICT + ', '}${LOCAL_TYPE === 'City' ? '' : (COUNTY_UNITARY || DISTRICT_BOROUGH)}`
   const text = `${NAME1}${qualifier ? ', ' + qualifier : ''}`
   return {
     text,
