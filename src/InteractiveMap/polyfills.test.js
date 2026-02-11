@@ -1,6 +1,6 @@
 describe('Polyfills', () => {
   const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
-  
+
   const originalCryptoUUID = crypto.randomUUID
   const originalCreateObjectURL = URL.createObjectURL
   const signalProto = Object.getPrototypeOf(new AbortController().signal)
@@ -16,9 +16,9 @@ describe('Polyfills', () => {
       configurable: true,
       writable: true
     })
-    
+
     URL.createObjectURL = originalCreateObjectURL
-    
+
     if (originalThrowIfAborted) {
       signalProto.throwIfAborted = originalThrowIfAborted
     } else {
@@ -44,7 +44,7 @@ describe('Polyfills', () => {
       })
 
       load()
-      
+
       expect(typeof crypto.randomUUID).toBe('function')
       expect(crypto.randomUUID()).toMatch(UUID_RE)
     })
@@ -71,7 +71,7 @@ describe('Polyfills', () => {
       expect(crypto.randomUUID).toBe(fake)
     })
   })
-  
+
   describe('AbortSignal.throwIfAborted', () => {
     test('throws AbortError when aborted (True branch)', () => {
       delete signalProto.throwIfAborted
@@ -91,22 +91,22 @@ describe('Polyfills', () => {
 
     test('wraps URL.createObjectURL for JS blobs', async () => {
       delete signalProto.throwIfAborted
-      
+
       const mockCreate = jest.fn(() => 'blob:mock')
       URL.createObjectURL = mockCreate
-      
+
       load()
-      
+
       const content = 'console.log(1)'
       const blob = new Blob([content], { type: 'text/javascript' })
       const result = URL.createObjectURL(blob)
-      
+
       expect(result).toBe('blob:mock')
       expect(mockCreate).toHaveBeenCalled()
-      
+
       const passedBlob = mockCreate.mock.calls[0][0]
       const text = await readBlobText(passedBlob)
-      
+
       expect(text).toContain('throwIfAborted')
       expect(text).toContain(content)
     })
@@ -115,12 +115,12 @@ describe('Polyfills', () => {
       delete signalProto.throwIfAborted
       const mockCreate = jest.fn(() => 'blob:mock')
       URL.createObjectURL = mockCreate
-      
+
       load()
-      
+
       const blob = new Blob(['{}'], { type: 'application/json' })
       URL.createObjectURL(blob)
-      
+
       expect(mockCreate).toHaveBeenCalledWith(blob)
     })
   })
