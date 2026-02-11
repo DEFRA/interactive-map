@@ -165,10 +165,10 @@ export default class InteractiveMap {
       delete appInstance._root
 
       // Only assign properties but don't eventBus methods
-      const protectedKeys = ['on', 'off', 'emit']
+      const protectedKeys = new Set(['on', 'off', 'emit'])
 
       Object.keys(appInstance).forEach(key => {
-        if (!protectedKeys.includes(key)) {
+        if (!protectedKeys.has(key)) {
           this[key] = appInstance[key]
         }
       })

@@ -13,7 +13,7 @@ export const Markers = () => {
   const { markers, markerRef } = useMarkers()
 
   if (!mapStyle) {
-    return
+    return undefined
   }
 
   const defaultSvgPaths = markerSvgPaths.find(m => m.shape === markerShape)

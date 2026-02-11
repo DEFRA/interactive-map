@@ -30,7 +30,7 @@ export const addPanel = (currentConfig, id, config) => {
 }
 
 export const removePanel = (currentConfig, id) => {
-  const { [id]: _, ...rest } = currentConfig
+  const { [id]: _, ...rest } = currentConfig // NOSONAR - _ is required to destructure out the key
   return rest
 }
 

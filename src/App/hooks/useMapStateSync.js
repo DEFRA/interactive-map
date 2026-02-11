@@ -4,6 +4,12 @@ import { useMap } from '../store/mapContext.js'
 import { useService } from '../store/serviceContext.js'
 import { EVENTS as events } from '../../config/events.js'
 
+/**
+ * Keeps React state in sync with the map provider by listening to move,
+ * move-end and first-idle events. On each move-end it also emits a
+ * MAP_STATE_UPDATED event carrying both the previous and current state,
+ * which other hooks (e.g. useMapAnnouncements) use to determine what changed.
+ */
 export function useMapStateSync () {
   const { mapProvider } = useConfig()
   const { dispatch } = useMap()
@@ -14,7 +20,7 @@ export function useMapStateSync () {
 
   useEffect(() => {
     if (!mapProvider) {
-      return
+      return undefined
     }
 
     // Handle map move

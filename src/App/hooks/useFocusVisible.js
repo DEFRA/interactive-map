@@ -11,7 +11,7 @@ export function useFocusVisible () {
   useEffect(() => {
     const scope = layoutRefs.appContainerRef.current
     if (!scope) {
-      return
+      return undefined
     }
 
     function handleFocusIn (e) {
@@ -22,7 +22,7 @@ export function useFocusVisible () {
       delete e.target.dataset.focusVisible
     }
 
-    function handlePointerdown (e) {
+    function handlePointerdown () {
       delete document.activeElement.dataset.focusVisible
     }
 

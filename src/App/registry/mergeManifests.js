@@ -8,7 +8,7 @@ export function mergeManifests (base = {}, override = {}) {
     }
     const map = new Map(baseArr.map(item => [item.id, item]))
     overrideArr.forEach(item => {
-      if (!item || !item.id) {
+      if (!item?.id) {
         return
       }
       if (map.has(item.id)) {

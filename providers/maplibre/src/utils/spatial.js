@@ -123,6 +123,16 @@ const getCardinalMove = (from, to) => {
  * @param {Array<[number, number]>} pixels - Array of pixel coordinates.
  * @returns {number} Index of the closest pixel in the given direction.
  */
+const isInDirection = (direction, dx, dy) => {
+  switch (direction) {
+    case 'ArrowUp': return dy < 0 && Math.abs(dy) >= Math.abs(dx)
+    case 'ArrowDown': return dy > 0 && Math.abs(dy) >= Math.abs(dx)
+    case 'ArrowLeft': return dx < 0 && Math.abs(dx) > Math.abs(dy)
+    case 'ArrowRight': return dx > 0 && Math.abs(dx) > Math.abs(dy)
+    default: return false
+  }
+}
+
 const spatialNavigate = (direction, start, pixels) => {
   const [sx, sy] = start
 
@@ -131,17 +141,7 @@ const spatialNavigate = (direction, start, pixels) => {
     if (x === sx && y === sy) {
       return false
     }
-
-    const dx = x - sx
-    const dy = y - sy
-
-    switch (direction) {
-      case 'ArrowUp': return dy < 0 && Math.abs(dy) >= Math.abs(dx)
-      case 'ArrowDown': return dy > 0 && Math.abs(dy) >= Math.abs(dx)
-      case 'ArrowLeft': return dx < 0 && Math.abs(dx) > Math.abs(dy)
-      case 'ArrowRight': return dx > 0 && Math.abs(dx) > Math.abs(dy)
-      default: return false
-    }
+    return isInDirection(direction, x - sx, y - sy)
   })
 
   if (!candidates.length) {
@@ -169,7 +169,7 @@ const getResolution = (center, zoom) => {
   const TILE_SIZE = 512
   const lat = center.lat
   const scale = Math.pow(2, zoom)
-  const resolution = (EARTH_CIRCUMFERENCE * Math.cos((lat * Math.PI) / 180)) / (scale * TILE_SIZE)
+  const resolution = (EARTH_CIRCUMFERENCE * Math.cos((lat * Math.PI) / 180)) / (scale * TILE_SIZE) // NOSONAR - 180 is degrees-to-radians conversion
   return resolution
 }
 

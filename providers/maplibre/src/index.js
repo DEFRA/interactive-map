@@ -32,7 +32,7 @@ function supportsModernMaplibre() {
  * @param {Partial<MapProviderConfig>} [config={}] - Optional provider configuration overrides.
  * @returns {MapProviderDescriptor} The map provider descriptor.
  */
-export default function (config = {}) {
+export default function createMapLibreProvider (config = {}) {
   return {
     checkDeviceCapabilities: () => {
       const webGL = getWebGL(['webgl2', 'webgl1'])

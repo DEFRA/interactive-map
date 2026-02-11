@@ -9,7 +9,7 @@ export function useResizeObserver (targetRefs, callback) {
     const elements = refs.map(r => r?.current).filter(Boolean)
 
     if (!elements.length || !callback) {
-      return
+      return undefined
     }
 
     const observer = new window.ResizeObserver(entries => {

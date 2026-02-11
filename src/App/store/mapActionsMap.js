@@ -1,28 +1,16 @@
+/**
+ * Generic reducer action that shallow-merges the payload into state.
+ * Shared by MAP_MOVE, MAP_MOVE_END and MAP_FIRST_IDLE.
+ */
+const mergePayload = (state, payload) => ({
+  ...state,
+  ...payload
+})
+
 const setMapReady = (state) => {
   return {
     ...state,
     isMapReady: true
-  }
-}
-
-const mapMove = (state, payload) => {
-  return {
-    ...state,
-    ...payload
-  }
-}
-
-const mapMoveEnd = (state, payload) => {
-  return {
-    ...state,
-    ...payload
-  }
-}
-
-const mapFirstIdle = (state, payload) => {
-  return {
-    ...state,
-    ...payload
   }
 }
 
@@ -78,9 +66,9 @@ const removeMarker = (state, payload) => {
 
 export const actionsMap = {
   SET_MAP_READY: setMapReady,
-  MAP_MOVE: mapMove,
-  MAP_MOVE_END: mapMoveEnd,
-  MAP_FIRST_IDLE: mapFirstIdle,
+  MAP_MOVE: mergePayload,
+  MAP_MOVE_END: mergePayload,
+  MAP_FIRST_IDLE: mergePayload,
   SET_MAP_STYLE: setMapStyle,
   SET_MAP_SIZE: setMapSize,
   UPDATE_CROSS_HAIR: updateCrossHair,

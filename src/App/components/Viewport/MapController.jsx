@@ -60,7 +60,7 @@ export const MapController = ({ mapContainerRef }) => {
   // Update padding when breakpoint or mapSize change
   useEffect(() => {
     if (!isMapReady || !syncMapPadding) {
-      return undefined
+      return
     }
     mapProvider.setPadding(scalePoints(safeZoneInset, scaleFactor[mapSize]))
   }, [isMapReady, mapSize, breakpoint, safeZoneInset])
