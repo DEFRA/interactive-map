@@ -268,7 +268,10 @@
   // Panel overrides
   .im-c-panel {
     position: absolute;
-    inset: 0 0 auto;
+    top: 0;
+    right: 0;
+    bottom: auto;
+    left: 0;
     z-index: 1000;
   }
 
@@ -318,7 +321,10 @@
   }
 
   [class*="im-c-panel--"][class*="-button"] { // Adjacent to button
-    inset: var(--modal-inset);
+    top: var(--modal-inset);
+    right: var(--modal-inset);
+    bottom: var(--modal-inset);
+    left: var(--modal-inset);
   }
 }
 

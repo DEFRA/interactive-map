@@ -76,7 +76,6 @@ export default class MapLibreProvider {
       map.fitBounds(bounds, { duration: 0 })
     }
 
-
     applyPreventDefaultFix(map)
     cleanCanvas(map)
 

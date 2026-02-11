@@ -27,7 +27,10 @@
     content: '';
     z-index: 1;
     position: absolute;
-    inset: -1px;
+		top: -1px;
+		right: -1px;
+		bottom: -1px;
+		left: -1px;
     border-radius: var(--button-border-radius);
     border: 2px solid var(--foreground-color);
     pointer-events: none;

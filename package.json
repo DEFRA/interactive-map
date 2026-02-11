@@ -124,6 +124,7 @@
     "@turf/line-intersect": "^7.3.3",
     "@turf/point-to-line-distance": "^7.3.3",
     "@turf/polygon-to-line": "^7.3.3",
+    "abortcontroller-polyfill": "^1.7.8",
     "core-js": "^3.44.0",
     "govuk-frontend": "^5.13.0",
     "maplibre-gl": "^5.15.0",

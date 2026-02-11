@@ -1,53 +1,127 @@
-// polyfills.test.js
 describe('Polyfills', () => {
+  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+  
+  const originalCryptoUUID = crypto.randomUUID
+  const originalCreateObjectURL = URL.createObjectURL
+  const signalProto = Object.getPrototypeOf(new AbortController().signal)
+  const originalThrowIfAborted = signalProto.throwIfAborted
+
   beforeEach(() => {
-    // remove globals to simulate missing polyfills
-    delete window.ResizeObserver
-    delete Object.fromEntries
+    jest.resetModules()
   })
 
-  test('should polyfill ResizeObserver', () => {
-    // Side-effect import
-    jest.isolateModules(() => {
-      require('./polyfills.js') // adjust path
+  afterEach(() => {
+    Object.defineProperty(crypto, 'randomUUID', {
+      value: originalCryptoUUID,
+      configurable: true,
+      writable: true
     })
-
-    expect(window.ResizeObserver).toBeDefined()
-    expect(typeof window.ResizeObserver).toBe('function')
-    expect(window.ResizeObserver.prototype.observe).toBeDefined()
-    expect(window.ResizeObserver.prototype.disconnect).toBeDefined()
+    
+    URL.createObjectURL = originalCreateObjectURL
+    
+    if (originalThrowIfAborted) {
+      signalProto.throwIfAborted = originalThrowIfAborted
+    } else {
+      delete signalProto.throwIfAborted
+    }
   })
 
-  test('should polyfill Object.fromEntries', () => {
-    jest.isolateModules(() => {
-      require('./polyfills.js')
-    })
+  const load = () => jest.isolateModules(() => require('./polyfills.js'))
 
-    expect(Object.fromEntries).toBeDefined()
-    const entries = [['a', 1], ['b', 2]]
-    expect(Object.fromEntries(entries)).toEqual({ a: 1, b: 2 })
+  // Helper to read Blob text in environments without blob.text()
+  const readBlobText = (blob) => new Promise((resolve) => {
+    const reader = new FileReader()
+    reader.onload = () => resolve(reader.result)
+    reader.readAsText(blob)
   })
 
-  test('should not overwrite existing window.ResizeObserver', () => {
-    const fakeObserver = jest.fn()
-    window.ResizeObserver = fakeObserver
+  describe('crypto.randomUUID', () => {
+    test('polyfills crypto.randomUUID when missing (Lines 3-8)', () => {
+      Object.defineProperty(crypto, 'randomUUID', {
+        value: undefined,
+        configurable: true,
+        writable: true
+      })
 
-    jest.isolateModules(() => {
-      require('./polyfills.js')
+      load()
+      
+      expect(typeof crypto.randomUUID).toBe('function')
+      expect(crypto.randomUUID()).toMatch(UUID_RE)
     })
 
-    // Should remain unchanged
-    expect(window.ResizeObserver).toBe(fakeObserver)
+    test('crypto.randomUUID generates unique UUIDs', () => {
+      Object.defineProperty(crypto, 'randomUUID', {
+        value: undefined,
+        configurable: true,
+        writable: true
+      })
+      load()
+      const ids = new Set(Array.from({ length: 100 }, () => crypto.randomUUID()))
+      expect(ids.size).toBe(100)
+    })
+
+    test('does not overwrite existing crypto.randomUUID', () => {
+      const fake = jest.fn(() => 'fake')
+      Object.defineProperty(crypto, 'randomUUID', {
+        value: fake,
+        configurable: true,
+        writable: true
+      })
+      load()
+      expect(crypto.randomUUID).toBe(fake)
+    })
   })
-
-  test('should not overwrite existing Object.fromEntries', () => {
-    const fakeFromEntries = jest.fn()
-    Object.fromEntries = fakeFromEntries
-
-    jest.isolateModules(() => {
-      require('./polyfills.js')
+  
+  describe('AbortSignal.throwIfAborted', () => {
+    test('throws AbortError when aborted (True branch)', () => {
+      delete signalProto.throwIfAborted
+      load()
+      const ac = new AbortController()
+      ac.abort()
+      expect(() => ac.signal.throwIfAborted()).toThrow('The operation was aborted.')
     })
 
-    expect(Object.fromEntries).toBe(fakeFromEntries)
+    test('does nothing when not aborted (False branch)', () => {
+      delete signalProto.throwIfAborted
+      load()
+      const ac = new AbortController()
+      // This call should execute line 20, see that aborted is false, and return undefined
+      expect(() => ac.signal.throwIfAborted()).not.toThrow()
+    })
+
+    test('wraps URL.createObjectURL for JS blobs', async () => {
+      delete signalProto.throwIfAborted
+      
+      const mockCreate = jest.fn(() => 'blob:mock')
+      URL.createObjectURL = mockCreate
+      
+      load()
+      
+      const content = 'console.log(1)'
+      const blob = new Blob([content], { type: 'text/javascript' })
+      const result = URL.createObjectURL(blob)
+      
+      expect(result).toBe('blob:mock')
+      expect(mockCreate).toHaveBeenCalled()
+      
+      const passedBlob = mockCreate.mock.calls[0][0]
+      const text = await readBlobText(passedBlob)
+      
+      expect(text).toContain('throwIfAborted')
+      expect(text).toContain(content)
+    })
+
+    test('does not wrap URL.createObjectURL for non-JS blobs', () => {
+      delete signalProto.throwIfAborted
+      const mockCreate = jest.fn(() => 'blob:mock')
+      URL.createObjectURL = mockCreate
+      
+      load()
+      
+      const blob = new Blob(['{}'], { type: 'application/json' })
+      URL.createObjectURL(blob)
+      
+      expect(mockCreate).toHaveBeenCalledWith(blob)
+    })
   })
 })

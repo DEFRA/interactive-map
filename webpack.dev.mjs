@@ -16,7 +16,7 @@ export default {
     index: path.join(__dirname, 'demo/js/index.js'),
     forms: path.join(__dirname, 'demo/js/forms.js'),
     farming: path.join(__dirname, 'demo/js/farming.js'),
-    planning: path.join(__dirname, 'demo/js/planning.js')
+    // planning: path.join(__dirname, 'demo/js/planning.js')
   },
   output: {
     path: path.resolve(__dirname, 'public'),
@@ -76,7 +76,7 @@ export default {
       {
         test: /\.jsx?$/,
         loader: 'babel-loader',
-        exclude: /node_modules\/(?!(lucide-react))/
+        exclude: /node_modules/
       },{
         test: /\.s[ac]ss$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
