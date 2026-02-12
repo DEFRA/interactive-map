@@ -16,12 +16,13 @@ export default {
     index: path.join(__dirname, 'demo/js/index.js'),
     forms: path.join(__dirname, 'demo/js/forms.js'),
     farming: path.join(__dirname, 'demo/js/farming.js'),
-    planning: path.join(__dirname, 'demo/js/planning.js')
+    planning: path.join(__dirname, 'demo/js/planning.js'),
+    toolbar: path.join(__dirname, 'demo/js/toolbar.js')
   },
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: '[name].js',
-    clean: true,
+    clean: true
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js']
@@ -52,11 +53,17 @@ export default {
         // OS Vector Tile API (3857)
         VTS_OUTDOOR_URL: JSON.stringify(process.env.VTS_OUTDOOR_URL),
         VTS_DARK_URL: JSON.stringify(process.env.VTS_DARK_URL),
-        VTS_BLACK_AND_WHITE_URL: JSON.stringify(process.env.VTS_BLACK_AND_WHITE_URL),
+        VTS_BLACK_AND_WHITE_URL: JSON.stringify(
+          process.env.VTS_BLACK_AND_WHITE_URL
+        ),
         // OS Vector Tile API (27700)
-        VTS_OUTDOOR_URL_27700: JSON.stringify(process.env.VTS_OUTDOOR_URL_27700),
+        VTS_OUTDOOR_URL_27700: JSON.stringify(
+          process.env.VTS_OUTDOOR_URL_27700
+        ),
         VTS_DARK_URL_27700: JSON.stringify(process.env.VTS_DARK_URL_27700),
-        VTS_BLACK_AND_WHITE_URL_27700: JSON.stringify(process.env.VTS_BLACK_AND_WHITE_URL_27700),
+        VTS_BLACK_AND_WHITE_URL_27700: JSON.stringify(
+          process.env.VTS_BLACK_AND_WHITE_URL_27700
+        ),
         // Aerial photography
         AERIAL_URL: JSON.stringify(process.env.AERIAL_URL),
         // OS Auth
@@ -66,7 +73,9 @@ export default {
         OS_NAMES_URL: JSON.stringify(process.env.OS_NAMES_URL),
         OS_NEAREST_URL: JSON.stringify(process.env.OS_NEAREST_URL),
         // Data services
-        PARCEL_TILE_SERVICE_URL: JSON.stringify(process.env.PARCEL_TILE_SERVICE_URL),
+        PARCEL_TILE_SERVICE_URL: JSON.stringify(
+          process.env.PARCEL_TILE_SERVICE_URL
+        ),
         GRIDREF_SERVICE_URL: JSON.stringify(process.env.GRIDREF_SERVICE_URL),
         PARCEL_SERVICE_URL: JSON.stringify(process.env.PARCEL_SERVICE_URL)
       }
@@ -78,28 +87,30 @@ export default {
         test: /\.jsx?$/,
         loader: 'babel-loader',
         exclude: /node_modules\/(?!(lucide-react))/
-      },{
+      },
+      {
         test: /\.s[ac]ss$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
-      },{
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
+      },
+      {
         test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
+        use: [MiniCssExtractPlugin.loader, 'css-loader']
       }
-    ],
+    ]
   },
   devServer: {
     static: [
-    {
-      directory: path.join(__dirname, 'demo'),
-    },
-    {
-      directory: path.join(__dirname, 'public'),
-    },
-    {
-      directory: path.join(__dirname, 'assets'),
-      publicPath: '/assets' // Images served from here as used in both demo and prototype kit plugin
-    }
-  ],
+      {
+        directory: path.join(__dirname, 'demo')
+      },
+      {
+        directory: path.join(__dirname, 'public')
+      },
+      {
+        directory: path.join(__dirname, 'assets'),
+        publicPath: '/assets' // Images served from here as used in both demo and prototype kit plugin
+      }
+    ],
     compress: true,
     port: 8080,
     open: true,

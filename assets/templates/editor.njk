@@ -1,0 +1,30 @@
+
+<dl class="govuk-summary-list">
+  {% for feature in geojson.features %}
+    <div class="govuk-summary-list__row">
+      <dt class="govuk-summary-list__key" style="width: 40%">
+        <div class="description">{{ feature.properties.description }}</div>
+        <div class="description-editor" data-id="{{ feature.id }}" hidden>
+          <input class="govuk-input govuk-!-width-two-thirds" type="text" name="description" value="{{ feature.properties.description }}"><button class="govuk-button govuk-!-margin-bottom-0">Save</button>
+        </div>
+      </dt>
+      <dd class="govuk-summary-list__value">
+        {{ feature.geometry.type }}
+      </dd>
+      <dd class="govuk-summary-list__actions" style="width: 30%">
+        <ul class="govuk-summary-list__actions-list">
+          {% if feature.geometry.type != "Point" %}
+            <li class="govuk-summary-list__actions-list-item">
+              <a class="govuk-link" href="#" data-action="edit" data-id="{{ feature.id }}" data-type="{{ feature.geometry.type }}">Change<span class="govuk-visually-hidden"> geo feature</span></a>
+            </li>
+          {% endif %}
+          <li class="govuk-summary-list__actions-list-item">
+            <a class="govuk-link" href="#" data-action="delete" data-id="{{ feature.id }}" data-type="{{ feature.geometry.type }}">Delete<span class="govuk-visually-hidden"> geo feature</span></a>
+          </li>
+        </ul>
+      </dd>
+    </div>  
+  {% endfor %}
+</dl>
+
+<pre style="height: 300px; overflow: auto;"><code>{{ geojson | dump(2) | safe }}</code></pre>

@@ -26,7 +26,8 @@
     "lint:js:fix": "standard \"src/**/*.{js,jsx,ts,tsx}\" --fix",
     "lint:scss:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
     "test": "jest --color --coverage --verbose",
-    "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public"
+    "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public",
+    "precompile": "nunjucks-precompile assets/templates/editor.njk >> assets/js/templates.js"
   },
   "standard": {
     "envs": [
@@ -116,6 +117,7 @@
   "dependencies": {
     "@arcgis/core": "^4.34.8",
     "@turf/area": "^7.2.0",
+    "@turf/bbox": "^7.3.4",
     "@turf/bearing": "^7.3.3",
     "@turf/boolean-disjoint": "^7.3.3",
     "@turf/boolean-valid": "^7.2.0",
@@ -128,6 +130,7 @@
     "govuk-frontend": "^5.13.0",
     "maplibre-gl": "^5.15.0",
     "maplibre-gl-legacy": "npm:maplibre-gl@1.15.3",
+    "nunjucks": "^3.2.4",
     "polygon-splitter": "^0.0.11",
     "preact": "^10.27.2"
   }

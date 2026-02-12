@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>React TypeScript Webpack App</title>
+        <link href="/assets/govuk-frontend.min.css" rel="stylesheet" media="all">
+        <link href="./index.css" rel="stylesheet" media="all">
+    </head>
+    <body style="padding: 20px">
+        <script>document.body.classList.add('im-is-loading')</script>
+        <h1>Toolbar editor</h1>
+
+        <div class="govuk-grid-row">
+            <div class="govuk-grid-column-one-half">
+                <div id="map"></div>
+            </div>
+            <div class="govuk-grid-column-one-half">
+                <div id="list"></div>
+            </div>
+        </div>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/nunjucks/3.2.4/nunjucks-slim.js" integrity="sha512-pr0mTTGQ0WsLKtDdE4rueAjhSC7preuJnStv4/0rDuGmYwNsafBoHA10rZxPG+ew5YZ0bi4vKOPxmwNLC96CcA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script src="/assets/js/templates.js"></script>
+        <script src="./toolbar.js"></script>
+    </body>
+</html>
