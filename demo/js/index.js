@@ -161,9 +161,9 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	interactPlugin.enable({
-		debug: true
-	})
+	// interactPlugin.enable({
+	// 	debug: true
+	// })
 })
 
 interactiveMap.on('datasets:ready', function () {

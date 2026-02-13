@@ -168,21 +168,33 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     // Clear draw mode undo stack - editing starts fresh
     mapProvider.undoStack?.clear()
 
-    // Switch straight to edit vertex mode
-    dispatch({ type: 'SET_MODE', payload: 'edit_vertex'})
+    if (pluginState.editAfterCreate) {
+      // Switch straight to edit vertex mode
+      dispatch({ type: 'SET_MODE', payload: 'edit_vertex'})
 
-    setTimeout(() => {
-      draw.changeMode('edit_vertex', {
-        container: appState.layoutRefs.viewportRef.current,
-        deleteVertexButtonId: `${appConfig.id}-draw-delete-point`,
-        undoButtonId: `${appConfig.id}-draw-undo`,
-        isPanEnabled: appState.interfaceType !== 'keyboard',
-        interfaceType: appState.interfaceType,
-        scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
-        featureId: newFeature.id,
-        getSnapEnabled: () => mapProvider.snapEnabled === true
-      })
-    }, 0)
+      setTimeout(() => {
+        draw.changeMode('edit_vertex', {
+          container: appState.layoutRefs.viewportRef.current,
+          deleteVertexButtonId: `${appConfig.id}-draw-delete-point`,
+          undoButtonId: `${appConfig.id}-draw-undo`,
+          isPanEnabled: appState.interfaceType !== 'keyboard',
+          interfaceType: appState.interfaceType,
+          scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
+          featureId: newFeature.id,
+          getSnapEnabled: () => mapProvider.snapEnabled === true
+        })
+      }, 0)
+    } else {
+      // Switch to disabled mode - feature stays on map but not editable
+      dispatch({ type: 'SET_MODE', payload: null })
+      dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null }})
+
+      setTimeout(() => {
+        draw.changeMode('disabled')
+      }, 0)
+
+      eventBus.emit('draw:done', { newFeature })
+    }
   }
   map.on('draw.create', onCreate)
 
