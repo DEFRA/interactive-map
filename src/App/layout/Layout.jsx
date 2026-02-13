@@ -9,6 +9,7 @@ import { Logo } from '../components/Logo/Logo'
 import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
 import { SlotRenderer } from '../renderer/SlotRenderer'
+import { HtmlElementHost } from '../renderer/HtmlElementHost'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
@@ -73,7 +74,7 @@ export const Layout = () => {
               <SlotRenderer slot={layoutSlots.RIGHT_BOTTOM} />
             </div>
           </div>
-          <div className='im-o-app__middle'>
+          <div className='im-o-app__middle' ref={layoutRefs.middleRef}>
             <SlotRenderer slot={layoutSlots.MIDDLE} />
           </div>
           <div className='im-o-app__footer' ref={layoutRefs.footerRef}>
@@ -87,7 +88,7 @@ export const Layout = () => {
               </div>
             </div>
           </div>
-          <div className='im-o-app__bottom'>
+          <div className='im-o-app__bottom' ref={layoutRefs.bottomRef}>
             <SlotRenderer slot={layoutSlots.BOTTOM} />
           </div>
           <div className='im-o-app__actions' ref={layoutRefs.actionsRef}>
@@ -95,7 +96,8 @@ export const Layout = () => {
           </div>
         </div>
       </div>
-      <div className='im-o-app__modal'>
+      <HtmlElementHost />
+      <div className='im-o-app__modal' ref={layoutRefs.modalRef}>
         <SlotRenderer slot={layoutSlots.MODAL} />
         <div className='im-o-app__modal-backdrop' />
       </div>

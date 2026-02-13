@@ -28,8 +28,17 @@ export const manifest = {
     label: ({ pluginState }) => pluginState.action ? pluginState.action.charAt(0).toUpperCase() + pluginState.action.slice(1) : 'Done',
     hiddenWhen: ({ appState, pluginState }) => !pluginState.mode || appState.interfaceType !== 'mouse' && pluginState.mode !== 'edit_vertex',
     enableWhen: ({ pluginState }) => pluginState.action ? pluginState.actionValid : !!pluginState.tempFeature,
-    ...createButtonSlots(true),
+    excludeWhen: () => true,
+    ...createButtonSlots(false),
     variant: 'primary',
+  },{
+    id: 'drawFinish',
+    label: 'Finish shape',
+    iconId: 'check',
+    variant: 'primary',
+    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
+    enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
+    ...createButtonSlots(false)
   },{
     id: 'drawAddPoint',
     label: 'Add point',
@@ -45,17 +54,9 @@ export const manifest = {
     enableWhen: ({ pluginState }) => pluginState.undoStackLength > 0,
     ...createButtonSlots(false)
   },{
-    id: 'drawFinish',
-    label: 'Finish shape',
-    iconId: 'check',
-    variant: 'tertiary',
-    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode),
-    enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
-    ...createButtonSlots(false)
-  },{
     id: 'drawDeletePoint',
     label: 'Delete point',
-    iconId: 'close',
+    iconId: 'delete-vertex',
     variant: 'tertiary',
     enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > (pluginState.tempFeature?.geometry?.type === 'Polygon' ? 3 : 2),
     hiddenWhen: ({ pluginState }) => !(['simple_select', 'edit_vertex'].includes(pluginState.mode)),
@@ -71,9 +72,11 @@ export const manifest = {
   },{
     id: 'drawCancel',
     label: 'Cancel',
+    iconId: 'close',
     variant: 'tertiary',
     hiddenWhen: ({ pluginState }) => !pluginState.mode,
-    ...createButtonSlots(true)
+    // excludeWhen: () => true,
+    ...createButtonSlots(false)
   }],
 
   keyboardShortcuts: [{
@@ -92,6 +95,9 @@ export const manifest = {
   },{
     id: 'magnet',
     svgContent: '<path d="m12 15 4 4"/><path d="M2.352 10.648a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.029-6.029a1 1 0 1 1 3 3l-6.029 6.029a1.205 1.205 0 0 0 0 1.704l2.296 2.296a1.205 1.205 0 0 0 1.704 0l6.365-6.367A1 1 0 0 0 8.716 4.282z"/><path d="m5 8 4 4"/>'
+  },{
+    id: 'delete-vertex',
+    svgContent: '<path d="M18 6L6 18"/><path d="M6,6l12,12"/><circle cx="12" cy="12" r="5"/>'
   }],
 
   api: {

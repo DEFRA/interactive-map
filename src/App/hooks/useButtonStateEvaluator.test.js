@@ -130,4 +130,20 @@ describe('useButtonStateEvaluator', () => {
     renderHook(() => useButtonStateEvaluator((fn) => fn({ pluginState: {} })))
     expect(enableWhen).toHaveBeenCalled()
   })
+
+  it('covers fallback to empty array when manifest or buttons is missing', () => {
+    // Branch 1: Plugin exists but manifest is missing
+    // Branch 2: Manifest exists but buttons is missing
+    mockPluginRegistry.registeredPlugins = [
+      { id: 'p1' },
+      { id: 'p2', manifest: {} },
+      { id: 'p3', manifest: { buttons: null } }
+    ]
+
+    renderHook(() => useButtonStateEvaluator((fn) => fn()))
+
+    // If the fallback (|| []) works, the code continues to the next plugin
+    // without throwing a "cannot read property forEach of undefined" error.
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
 })

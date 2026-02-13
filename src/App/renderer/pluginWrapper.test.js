@@ -44,4 +44,32 @@ describe('withPluginContexts', () => {
 
     expect(Wrapped2).toBe(Wrapped1)
   })
+
+  it('filters buttonConfig by pluginId', () => {
+    const Inner = jest.fn(() => <div>Inner</div>)
+
+    // Provide a buttonConfig with buttons for multiple plugins
+    const appStateMock = {
+      user: 'testUser',
+      buttonConfig: {
+        btn1: { label: 'A', pluginId: 'plugin1' },
+        btn2: { label: 'B', pluginId: 'plugin2' }
+      }
+    }
+
+    // Override the useApp hook for this test
+    const { useApp } = require('../store/appContext.js')
+    useApp.mockImplementation(() => appStateMock)
+
+    const Wrapped = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: { foo: 'bar' } })
+
+    render(<Wrapped customProp='xyz' />)
+
+    const props = Inner.mock.calls[0][0]
+
+    // buttonConfig should include only buttons belonging to plugin1
+    expect(props.buttonConfig).toEqual({
+      btn1: { label: 'A', pluginId: 'plugin1' }
+    })
+  })
 })

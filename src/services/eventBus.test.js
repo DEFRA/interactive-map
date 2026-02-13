@@ -1,5 +1,5 @@
 // src/services/eventBus.test.js
-import eventBus from './eventBus.js'
+import eventBus, { createEventBus } from './eventBus.js'
 
 describe('EventBus singleton', () => {
   beforeEach(() => {
@@ -91,5 +91,28 @@ describe('EventBus singleton', () => {
 
     expect(handler).not.toHaveBeenCalled()
     expect(eventBus.events).toEqual({})
+  })
+})
+
+describe('createEventBus factory', () => {
+  /**
+   * Test to ensure coverage for the factory function (Line 50).
+   * Validates that createEventBus returns a fresh, working EventBus instance.
+   */
+  it('creates a new, independent EventBus instance', () => {
+    const newBus = createEventBus()
+    const handler = jest.fn()
+
+    // Verify it is an instance of the same logic
+    expect(newBus).toHaveProperty('on')
+    expect(newBus).toHaveProperty('emit')
+
+    // Verify it is independent of the singleton
+    newBus.on('instanceTest', handler)
+    eventBus.emit('instanceTest', 'data') // Emit on singleton
+    expect(handler).not.toHaveBeenCalled()
+
+    newBus.emit('instanceTest', 'data') // Emit on the new instance
+    expect(handler).toHaveBeenCalledWith('data')
   })
 })

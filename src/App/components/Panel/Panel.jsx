@@ -57,7 +57,7 @@ const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, children }) => {
+export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, children, isOpen = true, rootRef }) => {
   const { id } = useConfig()
   const { dispatch, breakpoint, layoutRefs } = useApp()
 
@@ -67,23 +67,34 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
 
   const { isAside, isDialog, isModal, isDismissable, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement)
 
+  // For persistent panels, gate modal behaviour on open state
+  const isModalActive = isModal && isOpen
+
   const mainRef = layoutRefs.mainRef
-  const panelRef = useRef(null)
+  const internalPanelRef = useRef(null)
   const bodyRef = useRef(null)
+  const prevIsOpenRef = useRef(isOpen)
   const isBodyScrollable = useIsScrollable(bodyRef)
+
+  // Merge internal ref with optional external rootRef
+  const panelRef = rootRef || internalPanelRef
 
   const handleClose = () => {
     requestAnimationFrame(() => { (props?.triggeringElement || layoutRefs.viewportRef.current).focus?.() })
     dispatch({ type: 'CLOSE_PANEL', payload: panelId })
   }
 
-  useModalPanelBehaviour({ mainRef, panelRef, isModal, isAside, rootEl, buttonContainerEl, handleClose })
+  useModalPanelBehaviour({ mainRef, panelRef, isModal: isModalActive, isAside, rootEl, buttonContainerEl, handleClose })
 
   useEffect(() => {
-    if (shouldFocus) {
-      panelRef.current.focus()
+    // Focus on initial mount (non-persistent) or when isOpen transitions to true (persistent)
+    const justOpened = isOpen && !prevIsOpenRef.current
+    prevIsOpenRef.current = isOpen
+
+    if (shouldFocus && (justOpened || isOpen)) {
+      panelRef.current?.focus()
     }
-  }, [])
+  }, [isOpen])
 
   const panelClass = buildPanelClassNames(bpConfig.slot, panelConfig.showLabel)
   const panelBodyClass = buildPanelBodyClassNames(panelConfig.showLabel, isDismissable)

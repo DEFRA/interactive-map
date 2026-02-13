@@ -68,4 +68,22 @@ describe('getSafeZoneInset', () => {
     expect(result.left).toBe(80)
     expect(result.right).toBe(80)
   })
+
+  /**
+   * Test to ensure coverage for the safety guardrail (Line 29).
+   * Validates that the function returns undefined if React refs are
+   * not yet attached to DOM elements.
+   */
+  it('returns undefined if any ref.current is null (unattached)', () => {
+    const unattachedRefs = {
+      mainRef: { current: null },
+      insetRef: { current: null },
+      rightRef: { current: null },
+      actionsRef: { current: null },
+      footerRef: { current: null }
+    }
+
+    const result = getSafeZoneInset(unattachedRefs)
+    expect(result).toBeUndefined()
+  })
 })
