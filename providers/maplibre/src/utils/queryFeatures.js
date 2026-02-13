@@ -17,20 +17,20 @@ const distToSegmentSquared = (p, v, w) => {
 const isPointInPolygon = (point, ring) => {
   const [px, py] = point
   let inside = false
-  for (let i = 0, j = ring.length - 1; i < ring.length; j = i++) {
+  for (let i = 0, j = ring.length - 1; i < ring.length; j = i, i++) {
     const [xi, yi] = ring[i]
     const [xj, yj] = ring[j]
     const isAboveI = yi > py
     const isAboveJ = yj > py
-    if (isAboveI !== isAboveJ) {
-      const intersectX = (xj - xi) * (py - yi) / (yj - yi) + xi
-      if (px < intersectX) {
-        if (inside === true) {
-          inside = false
-        } else {
-          inside = true
-        }
-      }
+
+    if (isAboveI === isAboveJ) {
+      continue
+    }
+    // 2. Calculate horizontal intersection
+    const intersectX = ((xj - xi) * (py - yi)) / (yj - yi) + xi
+
+    if (px < intersectX) {
+      inside = !inside;
     }
   }
   return inside
@@ -72,6 +72,8 @@ const getMinDistToGeometry = (map, point, geometry) => {
     coords.forEach(processLine)
   } else if (type === 'MultiPolygon') {
     coords.forEach((poly) => poly.forEach(processLine))
+  } else {
+    // No action
   }
   return minSqDist
 }
@@ -100,7 +102,7 @@ export const queryFeatures = (map, point, options = {}) => {
   const uniqueFeatures = []
   for (let i = rawFeatures.length - 1; i >= 0; i--) {
     const f = rawFeatures[i]
-    const featureId = f.id !== undefined ? f.id : JSON.stringify(f.properties)
+    const featureId = f.id === undefined ? JSON.stringify(f.properties) : f.id
     if (seenIds.has(featureId) === false) {
       seenIds.add(featureId)
       uniqueFeatures.push(f)
@@ -127,10 +129,10 @@ export const queryFeatures = (map, point, options = {}) => {
         
         if (isInside === true) {
           // Massive boost for polygons if we are actually inside them
-          score -= 500000 
+          score -= 500000 // NOSONAR - tolerance used only here
         } else {
           // If we are outside a polygon, it loses significantly to anything we ARE inside
-          score += 100000 
+          score += 100000 // NOSONAR - tolerance used only here
         }
       }
 

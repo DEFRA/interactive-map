@@ -64,23 +64,25 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, allowedModal
 
   // Determine visibility using the same logic as mapPanels
   const isVisible = (() => {
+    // 1. Initial Guard: Basic requirements
     if (!isOpen || !bpConfig || !targetSlot) {
       return false
     }
+
+    // 2. Slot Validation
     const isNextToButton = `${stringToKebab(panelId)}-button` === targetSlot
-    if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
+    const isSlotAllowed = allowedSlots.panel.includes(targetSlot) || isNextToButton
+
+    if (!isSlotAllowed) {
       return false
     }
-    if (!isModeAllowed(config, mode)) {
-      return false
-    }
-    if (config.inline === false && !isFullscreen) {
-      return false
-    }
-    if (bpConfig.modal && panelId !== allowedModalPanelId) {
-      return false
-    }
-    return true
+
+    // 3. Business Logic: Combine remaining conditions into a single "fail" check
+    const isForbiddenModal = bpConfig.modal && panelId !== allowedModalPanelId
+    const isForbiddenInline = config.inline === false && !isFullscreen
+    const isInvalidMode = !isModeAllowed(config, mode)
+
+    return !(isForbiddenModal || isForbiddenInline || isInvalidMode)
   })()
 
   useDomProjection(panelRootRef, targetSlot, isVisible, layoutRefs, breakpoint)
