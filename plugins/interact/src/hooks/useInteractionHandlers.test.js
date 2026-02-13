@@ -264,3 +264,53 @@ it('emits selectionchange once when bounds exist', () => {
     })
   )
 })
+
+it('skips emission when selection remains empty after being cleared', () => {
+  const eventBus = { emit: jest.fn() }
+  
+  // 1. First render with a feature (prev is null, emission happens)
+  const { rerender } = renderHook(
+    ({ features }) => useInteractionHandlers({
+      mapState: { markers: {} },
+      pluginState: { selectedFeatures: features, selectionBounds: { b: 1 } },
+      services: { eventBus },
+      mapProvider: {}
+    }),
+    { initialProps: { features: [{ id: 'f1' }] } }
+  )
+  
+  expect(eventBus.emit).toHaveBeenCalledTimes(1)
+  eventBus.emit.mockClear()
+
+  // 2. Rerender with empty selection (prev is now [{id: 'f1'}], emission happens)
+  rerender({ features: [] })
+  expect(eventBus.emit).toHaveBeenCalledTimes(1)
+  eventBus.emit.mockClear()
+
+  // 3. Rerender with empty selection AGAIN 
+  // This triggers: prev !== null AND prev.length === 0
+  rerender({ features: [] })
+  
+  // Should skip emission because wasEmpty is true (via prev.length === 0) 
+  // and current features.length is 0
+  expect(eventBus.emit).not.toHaveBeenCalled()
+})
+
+/* ------------------------------------------------------------------ */
+/* Debug mode                                                         */
+/* ------------------------------------------------------------------ */
+
+it('logs features when debug mode is enabled', () => {
+  const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+
+  const { result } = setup({ debug: true })
+
+  click(result)
+
+  expect(logSpy).toHaveBeenCalledWith(
+    expect.stringContaining('--- Features at'),
+    expect.any(Array)
+  )
+
+  logSpy.mockRestore()
+})

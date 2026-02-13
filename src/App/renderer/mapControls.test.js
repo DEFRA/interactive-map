@@ -90,12 +90,20 @@ describe('mapControls', () => {
     expect(result[0].order).toBe(0)
   })
 
-  it('renders HTML controls with dangerouslySetInnerHTML', () => {
+  it('renders plugin HTML controls with dangerouslySetInnerHTML', () => {
+    defaultAppState.controlConfig = ({
+      ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
+    })
+    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
+    expect(result[0].element.props.dangerouslySetInnerHTML).toEqual({ __html: '<p>Hi</p>' })
+  })
+
+  it('filters out consumer HTML controls (handled by HtmlElementHost)', () => {
     defaultAppState.controlConfig = ({
       ctrlHtml: { id: 'ctrlHtml', desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
-    expect(result[0].element.props.dangerouslySetInnerHTML).toEqual({ __html: '<p>Hi</p>' })
+    expect(result).toEqual([])
   })
 
   it('handles plugin-less controls gracefully', () => {

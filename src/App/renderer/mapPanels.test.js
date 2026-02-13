@@ -65,6 +65,28 @@ describe('mapPanels', () => {
     expect(map()).toEqual([])
   })
 
+  it('skips panel if mode is not allowed (isModeAllowed returns false)', () => {
+    // 1. Define config that only allows 'edit' mode
+    const panelConfig = {
+      p1: {
+        desktop: { slot: 'header' },
+        includeModes: ['edit']
+      }
+    }
+
+    // 2. Mock appState with 'view' mode
+    const state = {
+      ...defaultAppState,
+      mode: 'view',
+      panelConfig,
+      openPanels: { p1: { props: {} } }
+    }
+
+    // 3. Verify it's filtered out even though it's the right slot
+    const result = map(state, 'header')
+    expect(result).toEqual([])
+  })
+
   it('only allows last opened modal panel', () => {
     defaultAppState.panelConfig = ({
       p1: { desktop: { modal: true }, includeModes: ['view'] },
@@ -158,5 +180,12 @@ describe('mapPanels', () => {
       p1: baseConfig
     })
     expect(map().map(p => p.id)).toEqual(['p1'])
+  })
+
+  it('filters out consumer HTML panels (handled by HtmlElementHost)', () => {
+    defaultAppState.panelConfig = ({
+      p1: { desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
+    })
+    expect(map()).toEqual([])
   })
 })

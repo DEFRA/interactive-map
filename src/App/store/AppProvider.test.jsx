@@ -4,6 +4,7 @@ import { AppProvider, AppContext } from './AppProvider.jsx'
 import { createMockRegistries } from '../../test-utils.js'
 import * as mediaHook from '../hooks/useMediaQueryDispatch.js'
 import * as detectInterface from '../../utils/detectInterfaceType.js'
+import * as appReducerModule from './appReducer.js'
 
 jest.mock('../hooks/useMediaQueryDispatch.js')
 jest.mock('../../utils/detectInterfaceType.js')
@@ -110,5 +111,44 @@ describe('AppProvider', () => {
     expect(contextValue).toHaveProperty('openPanels')
     expect(contextValue.layoutRefs).toHaveProperty('mainRef')
     expect(contextValue.layoutRefs).toHaveProperty('footerRef')
+  })
+
+  test('dispatch fallback uses options.panelRegistry.getPanelConfig() when state.panelConfig missing', () => {
+    const getPanelConfigMock = jest.fn(() => ({ panel1: {} }))
+
+    // Mock initialState to return state without panelConfig but with panelRegistry
+    jest.spyOn(appReducerModule, 'initialState').mockImplementation(() => ({
+      mode: 'view',
+      previousMode: 'edit',
+      openPanels: {},
+      previousOpenPanels: {},
+      interfaceType: 'default',
+      isFullscreen: false,
+      hasExclusiveControl: false,
+      panelRegistry: { getPanelConfig: getPanelConfigMock } // <-- provide it here!
+    }))
+
+    const mockEventBus = { on: jest.fn(), off: jest.fn() }
+    const mockBreakpointDetector = { subscribe: jest.fn(() => jest.fn()) }
+    const mockOptions = {
+      ...createMockRegistries({ panelConfig: undefined }),
+      eventBus: mockEventBus,
+      breakpointDetector: mockBreakpointDetector
+    }
+
+    render(
+      <AppProvider options={mockOptions}>
+        <div>Child</div>
+      </AppProvider>
+    )
+
+    // Trigger a dispatch via eventBus to hit the dispatch wrapper
+    act(() => {
+      mockEventBus.on.mock.calls.forEach(([event, handler]) => {
+        if (event === 'app:setmode') handler('newMode')
+      })
+    })
+
+    expect(getPanelConfigMock).toHaveBeenCalled()
   })
 })

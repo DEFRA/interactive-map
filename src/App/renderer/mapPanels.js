@@ -4,35 +4,7 @@ import { stringToKebab } from '../../utils/stringToKebab.js'
 import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { allowedSlots } from './slots.js'
-
-/**
- * Resolves the target slot for a panel based on its breakpoint config.
- * Modal panels always render in the 'modal' slot, and the bottom slot
- * is only available on mobile — tablet and desktop fall back to 'inset'.
- */
-const resolveTargetSlot = (bpConfig, breakpoint) => {
-  if (bpConfig.modal) {
-    return 'modal'
-  }
-  if (bpConfig.slot === 'bottom' && ['tablet', 'desktop'].includes(breakpoint)) {
-    return 'inset'
-  }
-  return bpConfig.slot
-}
-
-/**
- * Checks whether the current application mode permits the panel to be shown,
- * based on its includeModes and excludModes configuration.
- */
-const isModeAllowed = (config, mode) => {
-  if (config.includeModes && !config.includeModes.includes(mode)) {
-    return false
-  }
-  if (config.excludeModes?.includes(mode)) {
-    return false
-  }
-  return true
-}
+import { resolveTargetSlot, isModeAllowed, isConsumerHtml } from './slotHelpers.js'
 
 /**
  * Determines whether a panel should be rendered in the given slot.
@@ -78,6 +50,11 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
   return openPanelEntries.map(([panelId, { props }]) => {
     const config = panelConfig[panelId]
     if (!config) {
+      return null
+    }
+
+    // Consumer HTML panels are managed by HtmlElementHost
+    if (isConsumerHtml(config)) {
       return null
     }
 

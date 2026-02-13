@@ -148,4 +148,39 @@ describe('attachEvents', () => {
     cleanup()
     Object.values(params.buttonConfig).forEach(btn => expect(btn.onClick).toBeNull())
   })
+
+  it('selectDone handles emission when no marker/coords exist', () => {
+    const params = createParams()
+    cleanup = attachEvents(params)
+
+    // Ensure marker returns null (no coords)
+    params.mapState.markers.getMarker.mockReturnValue(null)
+    
+    // Set up features and bounds
+    params.pluginState.selectedFeatures = [{ id: 'f1' }]
+    params.pluginState.selectionBounds = { sw: [0, 0], ne: [1, 1] }
+
+    params.buttonConfig.selectDone.onClick()
+
+    expect(params.eventBus.emit).toHaveBeenCalledWith('interact:done', {
+      selectedFeatures: [{ id: 'f1' }],
+      selectionBounds: { sw: [0, 0], ne: [1, 1] }
+    })
+  })
+
+  it('respects default closeOnAction when value is undefined (fallback to true)', () => {
+    const params = createParams()
+    // Explicitly set to undefined to trigger the ?? fallback
+    params.pluginState.closeOnAction = undefined 
+    cleanup = attachEvents(params)
+
+    // Test for selectDone
+    params.buttonConfig.selectDone.onClick()
+    expect(params.closeApp).toHaveBeenCalledTimes(1)
+
+    // Test for selectCancel
+    params.closeApp.mockClear()
+    params.buttonConfig.selectCancel.onClick()
+    expect(params.closeApp).toHaveBeenCalledTimes(1)
+  })
 })

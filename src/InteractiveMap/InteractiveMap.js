@@ -110,16 +110,31 @@ export default class InteractiveMap {
     }
   }
 
+  _removeMapParamFromUrl (href, key) {
+    const regex = new RegExp(`[?&]${key}=[^&]*(&|$)`)
+
+    if (!regex.test(href)) {
+      return href
+    }
+
+    return href
+      .replace(regex, (_, p1) => {
+        return p1 === '&' ? '?' : ''
+      })
+      .replace(/\?$/, '')
+  }
+
   _handleExitClick () {
     if (this.config.preserveStateOnClose) {
       this.hideApp()
     } else {
       this.removeApp()
     }
-    // Remove the map param from the URL using regex to prevent encoding
+
     const key = this.config.mapViewParamKey
     const href = location.href
-    const newUrl = href.replace(new RegExp(`[?&]${key}=[^&]*(&|$)`), (_, p1) => (p1 === '&' ? '?' : '')).replace(/\?$/, '')
+    const newUrl = this._removeMapParamFromUrl(href, key)
+
     history.replaceState(history.state, '', newUrl)
   }
 

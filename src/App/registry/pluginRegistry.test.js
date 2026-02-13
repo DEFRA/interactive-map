@@ -103,4 +103,21 @@ describe('pluginRegistry', () => {
     pluginRegistry.registerPlugin(pluginB)
     expect(pluginRegistry.registeredPlugins).toEqual([pluginA, pluginB])
   })
+
+  it('clears all registered plugins', () => {
+    const pluginA = { id: 'A', config: {}, manifest: {} }
+    const pluginB = { id: 'B', config: {}, manifest: {} }
+
+    // Fill the registry
+    pluginRegistry.registerPlugin(pluginA)
+    pluginRegistry.registerPlugin(pluginB)
+    expect(pluginRegistry.registeredPlugins.length).toBe(2)
+
+    // Execute clear
+    pluginRegistry.clear()
+
+    // Verify it is empty
+    expect(pluginRegistry.registeredPlugins.length).toBe(0)
+    expect(pluginRegistry.registeredPlugins).toEqual([])
+  })
 })

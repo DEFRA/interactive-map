@@ -351,6 +351,33 @@ describe('InteractiveMap Core Functionality', () => {
     expect(mockButtonInstance.focus).toHaveBeenCalled()
   })
 
+  it('hideApp restores document title when it contains a map prefix', () => {
+    document.title = 'Map View: Original Page Title'
+
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      mapProvider: mapProviderMock
+    })
+
+    map._openButton = mockButtonInstance
+    map.hideApp()
+
+    expect(document.title).toBe('Original Page Title')
+  })
+
+  it('hideApp works when _openButton is null', () => {
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      mapProvider: mapProviderMock
+    })
+
+    map._openButton = null
+    map.hideApp()
+
+    expect(map._isHidden).toBe(true)
+    expect(map.rootEl.style.display).toBe('none')
+  })
+
   it('showApp sets _isHidden false and shows element', () => {
     const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
     map._isHidden = true
@@ -363,6 +390,59 @@ describe('InteractiveMap Core Functionality', () => {
     expect(map.rootEl.style.display).toBe('')
     expect(mockButtonInstance.style.display).toBe('none')
     expect(updateDOMState).toHaveBeenCalledWith(map)
+  })
+
+  it('showApp works when _openButton is null', () => {
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      mapProvider: mapProviderMock
+    })
+
+    map._isHidden = true
+    map._openButton = null
+    map.rootEl.style.display = 'none'
+
+    map.showApp()
+
+    expect(map._isHidden).toBe(false)
+    expect(map.rootEl.style.display).toBe('')
+    expect(updateDOMState).toHaveBeenCalledWith(map)
+  })
+})
+
+describe('_removeMapParamFromUrl', () => {
+  let map
+
+  beforeEach(() => {
+    document.body.innerHTML = '<div id="map"></div>'
+    map = new InteractiveMap('map', {
+      mapProvider: { load: jest.fn() },
+      mapViewParamKey: 'mv'
+    })
+  })
+
+  it('removes param when followed by another param (& branch)', () => {
+    const href = 'https://example.com/page?mv=map&foo=1'
+    const result = map._removeMapParamFromUrl(href, 'mv')
+    expect(result).toBe('https://example.com/page?foo=1')
+  })
+
+  it('removes param when it is the last param (end-of-string branch)', () => {
+    const href = 'https://example.com/page?foo=1&mv=map'
+    const result = map._removeMapParamFromUrl(href, 'mv')
+    expect(result).toBe('https://example.com/page?foo=1')
+  })
+
+  it('removes lone param and trailing ?', () => {
+    const href = 'https://example.com/page?mv=map'
+    const result = map._removeMapParamFromUrl(href, 'mv')
+    expect(result).toBe('https://example.com/page')
+  })
+
+  it('returns href unchanged when param does not exist (no-match branch)', () => {
+    const href = 'https://example.com/page?foo=1'
+    const result = map._removeMapParamFromUrl(href, 'mv')
+    expect(result).toBe(href)
   })
 })
 
@@ -419,5 +499,14 @@ describe('InteractiveMap Public API Methods', () => {
     // New assertions for coverage
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', 'panel2')
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:hidepanel', 'panel3')
+  })
+
+  it('delegates toggleButtonState correctly', () => {
+    map.toggleButtonState('btn-1', 'disabled', true)
+
+    expect(map.eventBus.emit).toHaveBeenCalledWith(
+      'app:togglebuttonstate',
+      { id: 'btn-1', prop: 'disabled', value: true }
+    )
   })
 })

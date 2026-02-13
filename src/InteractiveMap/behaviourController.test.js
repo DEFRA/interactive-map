@@ -209,5 +209,21 @@ describe('setupBehavior', () => {
 
       expect(mockMapInstance.hideApp).toHaveBeenCalled()
     })
+
+    it('does nothing when should not load and map has no root', () => {
+      mockMapInstance._root = null
+      mockMapInstance._isHidden = false
+
+      // Force shouldLoadComponent === false
+      window.matchMedia = jest.fn().mockImplementation(() => ({ matches: true }))
+      queryString.getQueryParam.mockReturnValue(null)
+
+      handleChange()
+
+      expect(mockMapInstance.hideApp).not.toHaveBeenCalled()
+      expect(mockMapInstance.loadApp).not.toHaveBeenCalled()
+      expect(mockMapInstance.showApp).not.toHaveBeenCalled()
+      expect(updateDOMState).not.toHaveBeenCalled()
+    })
   })
 })

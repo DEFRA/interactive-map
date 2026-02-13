@@ -204,6 +204,18 @@ describe('actionsMap full coverage', () => {
     expect(state.buttonRegistry.addButton).toHaveBeenCalled()
   })
 
+  test('ADD_BUTTON sets hidden, disabled, and pressed state when config flags are true', () => {
+    const payload = {
+      id: 'btnSpecial',
+      config: { isHidden: true, isDisabled: true, isPressed: true }
+    }
+    const result = actionsMap.ADD_BUTTON(state, payload)
+    expect(result.buttonConfig.btnSpecial).toBeDefined()
+    expect(result.hiddenButtons.has('btnSpecial')).toBe(true)
+    expect(result.disabledButtons.has('btnSpecial')).toBe(true)
+    expect(result.pressedButtons.has('btnSpecial')).toBe(true)
+  })
+
   // ---------------------- FALLBACK / OPTIONAL BRANCHES ----------------------
   test('SET_MODE uses panelRegistry.getPanelConfig() when panelConfig missing', () => {
     const tmp = { ...state, panelConfig: undefined }
