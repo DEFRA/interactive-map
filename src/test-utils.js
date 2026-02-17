@@ -48,6 +48,7 @@ export const createMockAppState = (overrides = {}) => {
     disabledButtons: new Set(),
     hiddenButtons: new Set(),
     pressedButtons: new Set(),
+    expandedButtons: new Set(),
     buttonConfig: registries.buttonRegistry.getButtonConfig(),
     panelConfig: registries.panelRegistry.getPanelConfig(),
     controlConfig: registries.controlRegistry.getControlConfig(),

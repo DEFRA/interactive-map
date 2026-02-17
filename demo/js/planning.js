@@ -162,14 +162,6 @@ interactiveMap.on('app:ready', function (e) {
 		tablet: { slot: 'inset', width: '260px', initiallyOpen: false, exclusive: true },
 		desktop: { slot: 'inset', width: '280px', initiallyOpen: false, exclusive: true }
 	})
-	interactiveMap.addPanel('banner', {
-		label: 'Banner',
-		showLabel: false,
-		html: '<p>Test banner</p>',
-		mobile: { slot: 'banner' },
-		tablet: { slot: 'banner' },
-		desktop: { slot: 'banner' }
-	})
 })
 
 interactiveMap.on('map:exit', function (e) {

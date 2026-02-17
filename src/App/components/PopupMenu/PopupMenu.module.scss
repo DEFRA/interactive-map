@@ -1,0 +1,70 @@
+// ===================================================
+// Component: PopupMenu
+// ===================================================
+
+@use '../../../scss/tools/index' as tools;
+
+// 1. Base styles
+
+.fm-c-popup-menu {
+  @include tools.border-focus-base(
+    $is-inset: false,
+    $type: button
+  );
+
+  background-color: var(--background-color);
+  position: absolute;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+// 2. Elements
+.fm-c-popup-menu__item {
+  display: flex;
+  align-items: center;
+  padding: var(--divider-gap);
+  border-top: 1px solid var(--button-hover-color);
+  text-align: left;
+  cursor: pointer;
+  min-width: var(--popup-menu-min-width);
+  max-width: var(--popup-menu-max-width);
+
+  &:first-child {
+    border-top: 0;
+  }
+
+  &:hover:not(.fm-c-popup-menu__item--selected) {
+    @media (hover: hover) and (pointer: fine) {
+        background-color: var(--button-hover-color);
+    }
+  }
+
+  &:hover:not(.fm-c-popup-menu__item--selected) .fm-c-popup-menu__item-label {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+    text-decoration-thickness: 2px;
+    text-decoration-color: var(--foreground-color);
+    text-decoration-skip-ink: none;
+  }
+
+  &--selected {
+    background-color: var(--button-hover-color);
+  }
+
+  &--selected .fm-c-popup-menu__item-label {
+      @include tools.link-focus;
+  }
+
+  svg + span {
+    margin-left: var(--button-icon-label-offset);
+    white-space: nowrap;
+  }
+}
+
+// 3. Modifiers
+.im-o-app__actions .fm-c-popup-menu {
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(100% + (var(--primary-gap) * 2));
+}

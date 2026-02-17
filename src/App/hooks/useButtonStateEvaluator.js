@@ -4,6 +4,52 @@ import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
 import { PluginContext } from '../store/PluginProvider.jsx'
 
+function evaluateButtonState ({ btn, pluginId, appState, dispatch, evaluateProp }) {
+  const checks = [{
+    prop: 'enableWhen',
+    state: appState.disabledButtons,
+    action: 'TOGGLE_BUTTON_DISABLED',
+    invert: true,
+    key: 'isDisabled'
+  },
+  {
+    prop: 'hiddenWhen',
+    state: appState.hiddenButtons,
+    action: 'TOGGLE_BUTTON_HIDDEN',
+    key: 'isHidden'
+  },
+  {
+    prop: 'pressedWhen',
+    state: appState.pressedButtons,
+    action: 'TOGGLE_BUTTON_PRESSED',
+    key: 'isPressed'
+  },
+  {
+    prop: 'expandedWhen',
+    state: appState.expandedButtons,
+    action: 'TOGGLE_BUTTON_EXPANDED',
+    key: 'isExpanded'
+  }]
+
+  checks.forEach(({ prop, state, action, key, invert }) => {
+    if (typeof btn[prop] !== 'function') {
+      return
+    }
+
+    try {
+      const result = evaluateProp(btn[prop], pluginId)
+      const next = invert ? !result : result
+      const current = state.has(btn.id)
+
+      if (current !== next) {
+        dispatch({ type: action, payload: { id: btn.id, [key]: next } })
+      }
+    } catch (err) {
+      console.warn(`${prop} error for button ${btn.id}:`, err)
+    }
+  })
+}
+
 export function useButtonStateEvaluator (evaluateProp) {
   const appState = useApp()
   const { pluginRegistry } = useConfig()
@@ -13,54 +59,21 @@ export function useButtonStateEvaluator (evaluateProp) {
     if (!appState?.dispatch || !pluginContext) {
       return
     }
+
     const { dispatch } = appState
 
-    pluginRegistry.registeredPlugins.forEach((plugin) => {
-      const buttons = plugin?.manifest?.buttons || []
+    pluginRegistry.registeredPlugins.forEach(plugin => {
+      const buttons = (plugin?.manifest?.buttons ?? []).flatMap(b => [b, ...(b.menuItems ?? [])])
 
-      buttons.forEach((btn) => {
-        const pluginId = plugin.id
-
-        // EnableWhen
-        if (typeof btn.enableWhen === 'function') {
-          try {
-            const shouldBeEnabled = evaluateProp(btn.enableWhen, pluginId)
-            const currentlyDisabled = appState.disabledButtons.has(btn.id)
-            const isDisabled = !shouldBeEnabled
-            if (currentlyDisabled !== isDisabled) {
-              dispatch({ type: 'TOGGLE_BUTTON_DISABLED', payload: { id: btn.id, isDisabled } })
-            }
-          } catch (err) {
-            console.warn(`enableWhen error for button ${btn.id}:`, err)
-          }
-        }
-
-        // HiddenWhen
-        if (typeof btn.hiddenWhen === 'function') {
-          try {
-            const shouldBeHidden = evaluateProp(btn.hiddenWhen, pluginId)
-            const currentlyHidden = appState.hiddenButtons.has(btn.id)
-            if (currentlyHidden !== shouldBeHidden) {
-              dispatch({ type: 'TOGGLE_BUTTON_HIDDEN', payload: { id: btn.id, isHidden: shouldBeHidden } })
-            }
-          } catch (err) {
-            console.warn(`hiddenWhen error for button ${btn.id}:`, err)
-          }
-        }
-
-        // PressedWhen
-        if (typeof btn.pressedWhen === 'function') {
-          try {
-            const shouldBePressed = evaluateProp(btn.pressedWhen, pluginId)
-            const currentlyPressed = appState.pressedButtons.has(btn.id)
-            if (currentlyPressed !== shouldBePressed) {
-              dispatch({ type: 'TOGGLE_BUTTON_PRESSED', payload: { id: btn.id, isPressed: shouldBePressed } })
-            }
-          } catch (err) {
-            console.warn(`pressedWhen error for button ${btn.id}:`, err)
-          }
-        }
-      })
+      buttons.forEach(btn =>
+        evaluateButtonState({
+          btn,
+          pluginId: plugin.id,
+          appState,
+          dispatch,
+          evaluateProp
+        })
+      )
     })
   }, [appState, pluginContext, evaluateProp])
 }

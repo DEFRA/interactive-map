@@ -41,7 +41,7 @@ describe('pluginRegistry', () => {
         buttons: { id: 'btn1' },
         panels: [{ id: 'panel1' }],
         controls: { id: 'ctrl1' },
-        icons: { id: 'icon1', svgContent: 'Comp' }, // match implementation
+        icons: { id: 'icon1', svgContent: 'Comp' },
         keyboardShortcuts: { key: 'K' }
       }
     }
@@ -65,13 +65,48 @@ describe('pluginRegistry', () => {
     })
     expect(registerIcon).toHaveBeenCalledWith({ icon1: 'Comp' })
     expect(registerKeyboardShortcut).toHaveBeenCalledWith(
-      expect.objectContaining({
-        ...expectedPluginConfig,
-        shortcut: { key: 'K' }
-      })
+      expect.objectContaining({ ...expectedPluginConfig, shortcut: { key: 'K' } })
     )
-
     expect(pluginRegistry.registeredPlugins).toContain(plugin)
+  })
+
+  it('registers nested menuItems for buttons', () => {
+    const plugin = {
+      id: 'plugin-menu',
+      config: { includeModes: ['mode1'], excludeModes: [] },
+      manifest: {
+        buttons: [
+          {
+            id: 'parentBtn',
+            menuItems: [
+              { id: 'childBtn1', label: 'Child 1' },
+              { id: 'childBtn2', label: 'Child 2' }
+            ]
+          }
+        ]
+      }
+    }
+
+    pluginRegistry.registerPlugin(plugin)
+
+    const expectedPluginConfig = {
+      pluginId: 'plugin-menu',
+      includeModes: ['mode1'],
+      excludeModes: []
+    }
+
+    // Parent button
+    expect(registerButton).toHaveBeenCalledWith({
+      parentBtn: expect.objectContaining(expectedPluginConfig)
+    })
+
+    // Each menu item
+    expect(registerButton).toHaveBeenCalledWith({
+      childBtn1: expect.objectContaining(expectedPluginConfig)
+    })
+    expect(registerButton).toHaveBeenCalledWith({
+      childBtn2: expect.objectContaining(expectedPluginConfig)
+    })
   })
 
   it('handles single vs array manifests correctly', () => {
@@ -108,15 +143,11 @@ describe('pluginRegistry', () => {
     const pluginA = { id: 'A', config: {}, manifest: {} }
     const pluginB = { id: 'B', config: {}, manifest: {} }
 
-    // Fill the registry
     pluginRegistry.registerPlugin(pluginA)
     pluginRegistry.registerPlugin(pluginB)
     expect(pluginRegistry.registeredPlugins.length).toBe(2)
 
-    // Execute clear
     pluginRegistry.clear()
-
-    // Verify it is empty
     expect(pluginRegistry.registeredPlugins.length).toBe(0)
     expect(pluginRegistry.registeredPlugins).toEqual([])
   })

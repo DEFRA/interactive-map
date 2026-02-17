@@ -22,3 +22,9 @@
     flex: 1 1 auto;
     min-width: fit-content;
 }
+
+// Position touch select button
+.im-c-button-wrapper--select-at-target {
+    position: absolute;
+    bottom: calc(100% + var(--primary-gap));
+}

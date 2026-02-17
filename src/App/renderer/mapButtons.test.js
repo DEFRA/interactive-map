@@ -36,6 +36,7 @@ describe('mapButtons module', () => {
       disabledButtons: new Set(),
       hiddenButtons: new Set(),
       pressedButtons: new Set(),
+      expandedButtons: new Set(),
       buttonConfig: {},
       panelConfig: {}
     }
@@ -137,15 +138,16 @@ describe('mapButtons module', () => {
       })
     })
 
-    it('renders correct state flags for disabled, hidden, and pressed buttons', () => {
+    it('renders correct state flags for disabled, hidden, pressed and expanded buttons', () => {
       const state = {
         ...appState,
         disabledButtons: new Set(['id']),
         hiddenButtons: new Set(['id']),
-        pressedButtons: new Set(['id'])
+        pressedButtons: new Set(['id']),
+        expandedButtons: new Set(['id'])
       }
-      const result = render({ ...baseBtn, pressedWhen: jest.fn() }, state)
-      expect(result.props).toMatchObject({ isDisabled: true, isHidden: true, isPressed: true })
+      const result = render({ ...baseBtn, pressedWhen: jest.fn(), expandedWhen: jest.fn() }, state)
+      expect(result.props).toMatchObject({ isDisabled: true, isHidden: true, isPressed: true, isExpanded: true })
     })
 
     it('uses empty object fallback for missing breakpoint config', () => {
