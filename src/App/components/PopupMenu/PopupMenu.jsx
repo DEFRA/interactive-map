@@ -32,7 +32,7 @@ import { useEvaluateProp } from '../../hooks/useEvaluateProp.js'
  */
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, id: idProp, pluginId, startPos, startIndex, menuRef, items, setIsOpen }) => {
+export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, startPos, startIndex, menuRef, items, setIsOpen }) => {
   const { id } = useConfig()
   const { buttonRefs, buttonConfig, hiddenButtons, disabledButtons, pressedButtons } = useApp()
   const instigatorKey = buttonId ?? instigatorId
