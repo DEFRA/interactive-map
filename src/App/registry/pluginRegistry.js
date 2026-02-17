@@ -19,6 +19,10 @@ export function createPluginRegistry ({ registerButton, registerPanel, registerC
     if (manifest.buttons) {
       asArray(manifest.buttons).forEach(button => {
         registerButton({ [button.id]: { ...pluginConfig, ...button } })
+        // Flat button registry including anu menu items
+        button?.menuItems?.forEach(menuItem => {
+          registerButton({ [menuItem.id]: { ...pluginConfig, ...menuItem } })
+        })
       })
     }
 

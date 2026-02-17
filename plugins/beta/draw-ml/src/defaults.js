@@ -13,6 +13,5 @@ export const DEFAULTS = {
     midpoint: 'rgba(40,161,151,1)',
     edge: 'rgba(29,112,184,1)'
   },
-  snapRadius: 10,
-  editAfterCreate: false
+  snapRadius: 10
 }

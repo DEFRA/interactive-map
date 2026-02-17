@@ -134,9 +134,9 @@ var interactiveMap = new InteractiveMap('map', {
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles3857
 		}),
-		scaleBarPlugin({
-			units: 'metric'
-		}),
+		// scaleBarPlugin({
+		// 	units: 'metric'
+		// }),
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,
@@ -161,9 +161,7 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	interactPlugin.enable({
-		debug: true
-	})
+	interactPlugin.enable()
 })
 
 interactiveMap.on('datasets:ready', function () {
@@ -271,14 +269,15 @@ interactiveMap.on('draw:start', function (e) {
 
 interactiveMap.on('draw:create', function (e) {
 	console.log('draw:create')
+	interactPlugin.enable()
 })
 
 interactiveMap.on('draw:update', function (e) {
 	console.log('draw:update')
 })
 
-interactiveMap.on('draw:done', function (e) {
-	console.log('draw:done')
+interactiveMap.on('draw:edit', function (e) {
+	console.log('draw:edit')
 	interactPlugin.enable()
 })
 
@@ -299,6 +298,8 @@ interactiveMap.on('interact:cancel', function (e) {
 interactiveMap.on('interact:selectionchange', function (e) {
 	var singleFeature = e.selectedFeatures.length === 1
 	selectedFeatureId = singleFeature ? e.selectedFeatures?.[0]?.featureId : null
+	console.log(selectedFeatureId)
+	console.log(e.selectedFeatures)
 	interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
 	interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
 	interactiveMap.toggleButtonState('editFeature', 'disabled', !singleFeature)

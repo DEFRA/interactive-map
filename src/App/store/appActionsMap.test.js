@@ -30,6 +30,7 @@ describe('actionsMap full coverage', () => {
       disabledButtons: new Set(['btn1']),
       hiddenButtons: new Set(['btn3']),
       pressedButtons: new Set(['btn5']),
+      expandedButtons: new Set(['btn7']),
       panelConfig: mockPanelConfig,
       panelRegistry: { addPanel: jest.fn(), removePanel: jest.fn(), getPanelConfig: jest.fn(() => mockPanelConfig) },
       buttonConfig: {},
@@ -152,6 +153,13 @@ describe('actionsMap full coverage', () => {
     expect(r2.pressedButtons.has('btn5')).toBe(false)
   })
 
+  test('TOGGLE_BUTTON_EXPANDED adds/removes button', () => {
+    const r1 = actionsMap.TOGGLE_BUTTON_EXPANDED(state, { id: 'btn8', isExpanded: true })
+    expect(r1.expandedButtons.has('btn8')).toBe(true)
+    const r2 = actionsMap.TOGGLE_BUTTON_EXPANDED(state, { id: 'btn7', isExpanded: false })
+    expect(r2.expandedButtons.has('btn7')).toBe(false)
+  })
+
   test('REGISTER_PANEL updates panelConfig', () => {
     const payload = { id: 'panelX', config: { desktop: { slot: 'side' } } }
     const result = actionsMap.REGISTER_PANEL(state, payload)
@@ -204,16 +212,17 @@ describe('actionsMap full coverage', () => {
     expect(state.buttonRegistry.addButton).toHaveBeenCalled()
   })
 
-  test('ADD_BUTTON sets hidden, disabled, and pressed state when config flags are true', () => {
+  test('ADD_BUTTON sets hidden, disabled, pressed and expanded state when config flags are true', () => {
     const payload = {
       id: 'btnSpecial',
-      config: { isHidden: true, isDisabled: true, isPressed: true }
+      config: { isHidden: true, isDisabled: true, isPressed: true, isExpanded: true }
     }
     const result = actionsMap.ADD_BUTTON(state, payload)
     expect(result.buttonConfig.btnSpecial).toBeDefined()
     expect(result.hiddenButtons.has('btnSpecial')).toBe(true)
     expect(result.disabledButtons.has('btnSpecial')).toBe(true)
     expect(result.pressedButtons.has('btnSpecial')).toBe(true)
+    expect(result.expandedButtons.has('btnSpecial')).toBe(true)
   })
 
   // ---------------------- FALLBACK / OPTIONAL BRANCHES ----------------------

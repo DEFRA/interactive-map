@@ -8,8 +8,7 @@ const initialState = {
   numVertecies: null,
   snap: false,
   hasSnapLayers: false,
-  undoStackLength: 0,
-  editAfterCreate: true
+  undoStackLength: 0
 }
 
 const setMode = (state, payload) => {
@@ -71,13 +70,6 @@ const setUndoStackLength = (state, payload) => {
   }
 }
 
-const setEditAfterCreate = (state, payload) => {
-  return {
-    ...state,
-    editAfterCreate: !!payload
-  }
-}
-
 const actions = {
   SET_MODE: setMode,
   SET_ACTION: setAction,
@@ -86,8 +78,7 @@ const actions = {
   TOGGLE_SNAP: toggleSnap,
   SET_SNAP: setSnap,
   SET_HAS_SNAP_LAYERS: setHasSnapLayers,
-  SET_UNDO_STACK_LENGTH: setUndoStackLength,
-  SET_EDIT_AFTER_CREATE: setEditAfterCreate
+  SET_UNDO_STACK_LENGTH: setUndoStackLength
 }
 
 export {

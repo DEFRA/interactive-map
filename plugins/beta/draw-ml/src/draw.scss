@@ -7,3 +7,26 @@
         fill: var(--map-overlay-halo-color);
     }
 }
+
+// Ensure action buttons take up same width
+.im-c-actions {
+    .im-c-button-wrapper--draw-done,
+    .im-c-button-wrapper--draw-menu,
+    .im-c-button-wrapper--draw-cancel {
+        width: 33.33%;
+    }
+}
+.im-o-app--tablet .im-c-actions,
+.im-o-app--desktop .im-c-actions {
+    .im-c-button-wrapper--draw-done,
+    .im-c-button-wrapper--draw-menu,
+    .im-c-button-wrapper--draw-cancel {
+        width: 100px;
+    }
+}
+
+// Position touch add point button
+.im-c-button-wrapper--draw-add-point {
+    position: absolute;
+    bottom: calc(100% + var(--primary-gap));
+}

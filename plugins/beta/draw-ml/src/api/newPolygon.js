@@ -44,10 +44,6 @@ export const newPolygon = ({ appState, appConfig, pluginConfig, pluginState, map
   // Update state so UI can react to snap layer availability
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
-  // Resolve editAfterCreate from per-call options or pluginConfig (default: true)
-  const editAfterCreate = options.editAfterCreate ?? pluginConfig.editAfterCreate ?? DEFAULTS.editAfterCreate
-  dispatch({ type: 'SET_EDIT_AFTER_CREATE', payload: editAfterCreate })
-
   // Extract style props and flatten variants into properties
   const { stroke, fill, strokeWidth, properties: customProperties, ...modeOptions } = options
   const properties = {

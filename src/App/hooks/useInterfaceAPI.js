@@ -5,7 +5,7 @@ import { useApp } from '../store/appContext.js'
 import { useService } from '../store/serviceContext.js'
 
 export const useInterfaceAPI = () => {
-  const { dispatch, hiddenButtons, pressedButtons, disabledButtons } = useApp()
+  const { dispatch, hiddenButtons, disabledButtons, pressedButtons, expandedButtons } = useApp()
   const { eventBus } = useService()
 
   useEffect(() => {
@@ -20,14 +20,19 @@ export const useInterfaceAPI = () => {
           dispatch({ type: 'TOGGLE_BUTTON_HIDDEN', payload: { id, isHidden } })
           break
         }
+        case 'disabled': {
+          const isDisabled = typeof value === 'boolean' ? value : !disabledButtons.has(id)
+          dispatch({ type: 'TOGGLE_BUTTON_DISABLED', payload: { id, isDisabled } })
+          break
+        }
         case 'pressed': {
           const isPressed = typeof value === 'boolean' ? value : !pressedButtons.has(id)
           dispatch({ type: 'TOGGLE_BUTTON_PRESSED', payload: { id, isPressed } })
           break
         }
-        case 'disabled': {
-          const isDisabled = typeof value === 'boolean' ? value : !disabledButtons.has(id)
-          dispatch({ type: 'TOGGLE_BUTTON_DISABLED', payload: { id, isDisabled } })
+        case 'expanded': {
+          const isExpanded = typeof value === 'boolean' ? value : !expandedButtons.has(id)
+          dispatch({ type: 'TOGGLE_BUTTON_EXPANDED', payload: { id, isExpanded } })
           break
         }
         default:

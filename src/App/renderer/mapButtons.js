@@ -36,7 +36,7 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
 
 function createButtonClickHandler (btn, appState, evaluateProp) {
   const [, config] = btn
-  const isOpen = !!(config.panelId && appState.openPanels[config.panelId])
+  const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
 
   return (e) => {
     if (typeof config.onClick === 'function') {
@@ -47,8 +47,8 @@ function createButtonClickHandler (btn, appState, evaluateProp) {
     if (config.panelId) {
       const triggeringElement = e.currentTarget
       appState.dispatch({
-        type: isOpen ? 'CLOSE_PANEL' : 'OPEN_PANEL',
-        payload: isOpen
+        type: isPanelOpen ? 'CLOSE_PANEL' : 'OPEN_PANEL',
+        payload: isPanelOpen
           ? config.panelId
           : { panelId: config.panelId, props: { triggeringElement } }
       })
@@ -60,7 +60,7 @@ function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, gro
   const [buttonId, config] = btn
   const bpConfig = config[appState.breakpoint] ?? {}
   const handleClick = createButtonClickHandler(btn, appState, evaluateProp)
-  const isOpen = !!(config.panelId && appState.openPanels[config.panelId])
+  const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
 
   return (
     <MapButton
@@ -75,9 +75,11 @@ function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, gro
       isDisabled={appState.disabledButtons.has(buttonId)}
       isHidden={appState.hiddenButtons.has(buttonId)}
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
-      isOpen={isOpen}
+      isExpanded={(config.isExpanded !== undefined || config.expandedWhen) ? appState.expandedButtons.has(buttonId) : undefined}
+      isPanelOpen={isPanelOpen}
       onClick={handleClick}
       panelId={config.panelId}
+      menuItems={config.menuItems}
       idPrefix={appConfig.id}
       groupStart={groupStart}
       groupMiddle={groupMiddle}
