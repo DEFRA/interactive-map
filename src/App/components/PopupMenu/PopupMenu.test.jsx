@@ -13,6 +13,9 @@ jest.mock('../../hooks/useEvaluateProp.js', () => ({
   useEvaluateProp: () => mockEvaluateProp
 }))
 
+// Mock useConfig to provide `id` used for stable item ids
+jest.mock('../../store/configContext', () => ({ useConfig: () => ({ id: 'app' }) }))
+
 // Mock useApp
 const mockUseApp = {
   buttonRefs: { current: { instigator: { focus: jest.fn(), contains: () => false } } },

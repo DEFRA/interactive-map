@@ -10,7 +10,14 @@ export const useInterfaceAPI = () => {
 
   useEffect(() => {
     const handleAddButton = ({ id, config }) => {
+      // Add the button
       dispatch({ type: 'ADD_BUTTON', payload: { id, config } })
+      // Add all optional menu items as individual buttons
+      if (Array.isArray(config.menuItems)) {
+        config.menuItems.forEach(item => {
+          dispatch({ type: 'ADD_BUTTON', payload: { id: item.id, config: item } })
+        })
+      }
     }
 
     const handleToggleButtonState = ({ id, prop, value }) => {

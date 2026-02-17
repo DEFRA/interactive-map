@@ -260,7 +260,7 @@ export const MapButton = ({
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
       {panelId && <SlotRenderer slot={`${stringToKebab(buttonId)}-button`} />}
-      {isPopupOpen && <PopupMenu id={controlledElement.id} startPos={menuStartPos} instigatorId={buttonId} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} />}
+      {isPopupOpen && <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} />}
     </div>
   )
 }

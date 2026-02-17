@@ -23,7 +23,16 @@ jest.mock('../../renderer/SlotRenderer', () => ({
 }))
 
 jest.mock('../PopupMenu/PopupMenu', () => ({
-  PopupMenu: ({ startIndex }) => <div data-testid='popup-menu' data-start-index={startIndex} />
+  PopupMenu: ({ startPos, items }) => {
+    let selectedIndex = -1
+    if (startPos === 'first' && items?.length > 0) {
+      selectedIndex = 0
+    }
+    if (startPos === 'last' && items?.length > 0) {
+      selectedIndex = items.length - 1
+    }
+    return <div data-testid='popup-menu' data-start-pos={String(startPos)} data-selected-index={String(selectedIndex)}>{items?.map((item, i) => <div key={i} data-testid={`menu-item-${i}`}>{item.label}</div>)}</div>
+  }
 }))
 
 jest.mock('../../store/configContext', () => ({ useConfig: () => ({ id: 'app' }) }))
@@ -123,7 +132,7 @@ describe('MapButton', () => {
     expect(button).toHaveAttribute('aria-haspopup', 'true')
   })
 
-  it('toggles popup aria-expanded and startIndex', () => {
+  it('toggles popup aria-expanded and startPos', () => {
     renderButton({ menuItems: [{ label: 'Item' }] })
     const button = getButton()
 
@@ -131,19 +140,21 @@ describe('MapButton', () => {
 
     fireEvent.click(button)
     expect(button).toHaveAttribute('aria-expanded', 'true')
-    expect(screen.getByTestId('popup-menu')).toHaveAttribute('data-start-index', '-1')
+    expect(screen.getByTestId('popup-menu')).toHaveAttribute('data-start-pos', 'null')
 
     fireEvent.click(button)
     expect(button).toHaveAttribute('aria-expanded', 'false')
   })
 
   it.each([
-    ['ArrowDown', '0'],
-    ['ArrowUp', '1']
-  ])('keyboard menu navigation %s', (key, expectedIndex) => {
+    ['ArrowDown', 'first', 0],
+    ['ArrowUp', 'last', 1]
+  ])('keyboard menu navigation %s', (key, expectedPos, expectedIndex) => {
     renderButton({ menuItems: [{ label: 'One' }, { label: 'Two' }] })
     fireEvent.keyUp(getButton(), { key })
-    expect(screen.getByTestId('popup-menu')).toHaveAttribute('data-start-index', expectedIndex)
+    const menu = screen.getByTestId('popup-menu')
+    expect(menu).toHaveAttribute('data-start-pos', expectedPos)
+    expect(menu).toHaveAttribute('data-selected-index', String(expectedIndex))
   })
 
   it('does nothing for arrow keys when no menu', () => {

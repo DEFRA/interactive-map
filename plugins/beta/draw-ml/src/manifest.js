@@ -55,7 +55,7 @@ export const manifest = {
       hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
       pressedWhen: ({ pluginState }) => !!pluginState.snap,
     },{
-      id: 'drawDeleteVertex',
+      id: 'drawDeletePoint',
       label: 'Delete point',
       iconId: 'trash',
       enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > (pluginState.tempFeature?.geometry?.type === 'Polygon' ? 3 : 2),
