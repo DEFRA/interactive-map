@@ -1,5 +1,15 @@
-.fmp-menu h3 {
-  color: var(--foreground-color);
+// ===================================================
+// Component: Menu
+// ===================================================
+
+.fmp-menu {
+  padding-top: 5px;
+  // border-top: 1px solid #cecece;
+}
+
+.fmp-menu .govuk-heading-s {
+  font-size: 1rem;
+  line-height: 1.25;
 }
 
 .fmp-menu-list {
@@ -10,7 +20,7 @@
 
 .fmp-menu-item {
   display: flex;
-  margin-top: 15px;
+  margin-top: 20px;
 }
 
 .fmp-menu-button {
@@ -51,4 +61,25 @@
   &[aria-disabled="true"] {
     opacity: 0.5;
   }
+}
+
+// ===================================================
+// Component: Datasets
+// ===================================================
+
+.fmp-datasets {
+  padding-top: 5px;
+}
+
+// GOVUK fieldset overrides
+.fmp-datasets .govuk-heading-s,
+.fmp-datasets .govuk-radios__label,
+.fmp-datasets .govuk-checkboxes__label {
+  font-size: 1rem;
+  line-height: 1.25;
+}
+
+.fmp-datasets .govuk-fieldset__legend {
+  padding-top: 15px;
+  padding-bottom: 10px;
 }
