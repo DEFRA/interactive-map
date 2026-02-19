@@ -11,6 +11,11 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
   return Object.entries(buttonConfig).filter(([_, config]) => {
     const bpConfig = config[breakpoint]
 
+    // Skip menu items — they render inside a parent button's popup, not in a slot
+    if (config.isMenuItem) {
+      return false
+    }
+
     // Dynamic exclusion
     if (typeof config.excludeWhen === 'function' && evaluateProp(config.excludeWhen, config.pluginId)) {
       return false

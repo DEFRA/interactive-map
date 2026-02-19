@@ -62,36 +62,7 @@ export const manifest = {
       hiddenWhen: ({ pluginState }) => !(['simple_select', 'edit_vertex'].includes(pluginState.mode)),
     }],
     ...createButtonSlots(true)
-  },
-  // {
-  //   id: 'drawUndo',
-  //   label: 'Undo',
-  //   iconId: 'undo',
-  //   variant: 'tertiary',
-  //   hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
-  //   enableWhen: ({ pluginState }) => pluginState.undoStackLength > 0,
-  //   excludeWhen: () => true,
-  //   ...createButtonSlots(false)
-  // },{
-  //   id: 'drawDeletePoint',
-  //   label: 'Delete point',
-  //   iconId: 'trash',
-  //   variant: 'tertiary',
-  //   enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > (pluginState.tempFeature?.geometry?.type === 'Polygon' ? 3 : 2),
-  //   hiddenWhen: ({ pluginState }) => !(['simple_select', 'edit_vertex'].includes(pluginState.mode)),
-  //   excludeWhen: () => true,
-  //   ...createButtonSlots(false)
-  // },{
-  //   id: 'drawSnap',
-  //   label: 'Snap to line',
-  //   iconId: 'magnet',
-  //   variant: 'tertiary',
-  //   hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
-  //   pressedWhen: ({ pluginState }) => !!pluginState.snap,
-  //   excludeWhen: () => true,
-  //   ...createButtonSlots(false)
-  // },
-  {
+  },{
     id: 'drawCancel',
     label: 'Cancel',
     variant: 'tertiary',
@@ -108,7 +79,7 @@ export const manifest = {
 
   icons: [{
     id: 'menu',
-    svgContent: '<circle cx="12" cy="12" r="10"/><path d="m16 10-4 4-4-4"/>'
+    svgContent: '<path d="m6 9 6 6 6-6"/>'
   },{
     id: 'undo',
     svgContent: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>'
