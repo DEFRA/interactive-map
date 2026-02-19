@@ -6,7 +6,7 @@
 
 // 1. Base styles
 
-.fm-c-popup-menu {
+.im-c-popup-menu {
   @include tools.border-focus-base(
     $is-inset: false,
     $type: button
@@ -20,7 +20,7 @@
 }
 
 // 2. Elements
-.fm-c-popup-menu__item {
+.im-c-popup-menu__item {
   display: flex;
   align-items: center;
   padding: var(--divider-gap);
@@ -34,13 +34,13 @@
     border-top: 0;
   }
 
-  &:hover:not(.fm-c-popup-menu__item--selected) {
+  &:hover:not(.im-c-popup-menu__item--selected) {
     @media (hover: hover) and (pointer: fine) {
         background-color: var(--button-hover-color);
     }
   }
 
-  &:hover:not(.fm-c-popup-menu__item--selected) .fm-c-popup-menu__item-label {
+  &:hover:not(.im-c-popup-menu__item--selected) .im-c-popup-menu__item-label {
     text-decoration: underline;
     text-underline-offset: 2px;
     text-decoration-thickness: 2px;
@@ -52,7 +52,7 @@
     background-color: var(--button-hover-color);
   }
 
-  &--selected .fm-c-popup-menu__item-label {
+  &--selected .im-c-popup-menu__item-label {
       @include tools.link-focus;
   }
 
@@ -60,10 +60,15 @@
     margin-left: var(--button-icon-label-offset);
     white-space: nowrap;
   }
+
+  &[aria-disabled="true"] .im-c-popup-menu__item-label,
+  &[aria-disabled="true"] svg {
+    opacity: 0.5;
+  }
 }
 
 // 3. Modifiers
-.im-o-app__actions .fm-c-popup-menu {
+.im-o-app__actions .im-c-popup-menu {
   left: 50%;
   transform: translateX(-50%);
   bottom: calc(100% + (var(--primary-gap) * 2));

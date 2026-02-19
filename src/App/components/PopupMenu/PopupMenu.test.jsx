@@ -91,8 +91,8 @@ describe('PopupMenu', () => {
     Object.defineProperty(ev, 'target', { value: target, enumerable: true })
     document.dispatchEvent(ev)
   }
-  const expectSelected = (text) => expect(screen.getByText(text).parentElement).toHaveClass('fm-c-popup-menu__item--selected')
-  const expectNotSelected = (text) => expect(screen.getByText(text).parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
+  const expectSelected = (text) => expect(screen.getByText(text).parentElement).toHaveClass('im-c-popup-menu__item--selected')
+  const expectNotSelected = (text) => expect(screen.getByText(text).parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
 
   it('renders items with labels and icons', () => {
     renderMenu()
@@ -104,7 +104,7 @@ describe('PopupMenu', () => {
   it('applies selected class to active index', () => {
     renderMenu({ startIndex: 1 })
     expect(screen.getByText('Item 2').parentElement).toHaveClass(
-      'fm-c-popup-menu__item--selected'
+      'im-c-popup-menu__item--selected'
     )
   })
 
@@ -112,15 +112,15 @@ describe('PopupMenu', () => {
     renderMenu()
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 1').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'ArrowUp' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'Home' })
-    expect(screen.getByText('Item 1').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'End' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('handles Enter key to call onClick and close menu', () => {
@@ -215,22 +215,22 @@ describe('PopupMenu', () => {
     renderMenu({ startIndex: -1 })
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 1').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'ArrowUp' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('ArrowUp from no selection picks last visible', () => {
     renderMenu({ startIndex: -1 })
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowUp' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('initializes with no selection when neither startIndex nor startPos provided', () => {
     renderMenu({ startIndex: undefined, startPos: undefined })
-    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
-    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('does nothing when navigating and no visible items', () => {
@@ -238,8 +238,8 @@ describe('PopupMenu', () => {
     renderMenu({ startIndex: -1 })
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
-    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('Enter with no selection closes but does not call any item onClick', () => {

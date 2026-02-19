@@ -219,7 +219,7 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
     <ul // NOSONAR
       ref={menuRef}
       id={popupMenuId}
-      className='fm-c-popup-menu'
+      className='im-c-popup-menu'
       role='menu' // NOSONAR
       tabIndex='-1'
       aria-labelledby={instigatorKey}
@@ -230,7 +230,7 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
         <li // NOSONAR
           key={item.id}
           id={`${id}-${stringToKebab(items[i].id)}`}
-          className={`fm-c-popup-menu__item${index === i ? ' fm-c-popup-menu__item--selected' : ''}`}
+          className={`im-c-popup-menu__item${index === i ? ' im-c-popup-menu__item--selected' : ''}`}
           role='menuitem' // NOSONAR
           aria-disabled={disabledButtons.has(items[i].id) || undefined} // NOSONAR
           aria-pressed={(items[i].isPressed !== undefined || items[i].pressedWhen) ? pressedButtons.has(items[i].id) : undefined} // NOSONAR
@@ -238,7 +238,7 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
           onClick={(e) => handleItemClick(e, items[i])} // NOSONAR
         >
           {(item.iconId || item.iconSvgContent) && <Icon id={item.iconId} svgContent={item.iconSvgContent} />}
-          <span className='fm-c-popup-menu__item-label'>{item.label}</span>
+          <span className='im-c-popup-menu__item-label'>{item.label}</span>
         </li>
       ))}
     </ul>
