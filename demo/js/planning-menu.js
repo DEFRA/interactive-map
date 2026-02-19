@@ -8,7 +8,7 @@ import { getQueryParam, setQueryParam } from './planning-utils.js'
    Menu button configuration
 -------------------------------- */
 
-var menuItems = [{
+const menuItems = [{
   id: 'shape-btn',
   label: 'Draw shape',
   disabled: feature => !!feature,
@@ -46,14 +46,14 @@ var menuItems = [{
    Dataset configuration
 -------------------------------- */
 
-var datasetsConfig = [{
+const datasetsConfig = [{
   type: 'radios',
   legend: 'Datasets',
   name: 'datasets',
   items: [
-    { id: 'floodzones', value: 'floodzones', label: 'Flood zones 2 and 3', fieldsets: ['datasets', 'scenario'] },
-    { id: 'surfacewater', value: 'surfacewater', label: 'Surface water', fieldsets: ['datasets', 'likelihood'] },
-    { id: 'none', value: 'none', label: 'None', fieldsets: ['datasets'] }
+    { id: 'floodzones', value: 'floodzones', label: 'Flood zones 2 and 3', formGroups: ['datasets', 'scenario'] },
+    { id: 'surfacewater', value: 'surfacewater', label: 'Surface water', formGroups: ['datasets', 'likelihood'] },
+    { id: 'none', value: 'none', label: 'None', formGroups: ['datasets'] }
   ]
 },{
   type: 'radios',
@@ -92,19 +92,19 @@ function isEnabled(button) {
 }
 
 function toggleButtonState(enabledButtons) {
-  var buttons = document.querySelectorAll('.fmp-menu-button')
+  const buttons = document.querySelectorAll('.fmp-menu-button')
   buttons.forEach(button => {
-    var key = button.id.slice(0, -4)
+    const key = button.id.slice(0, -4)
     button.setAttribute('aria-disabled', !enabledButtons.includes(key))
   })
 }
 
 function addMenuClickHandlers({ onDrawShape, onDrawFrame, onEdit, onDelete }) {
   document.addEventListener('click', e => {
-    var shapeBtn = e.target.closest('#shape-btn')
-    var squareBtn = e.target.closest('#square-btn')
-    var editBtn = e.target.closest('#edit-btn')
-    var deleteBtn = e.target.closest('#delete-btn')
+    const shapeBtn = e.target.closest('#shape-btn')
+    const squareBtn = e.target.closest('#square-btn')
+    const editBtn = e.target.closest('#edit-btn')
+    const deleteBtn = e.target.closest('#delete-btn')
 
     if (shapeBtn && isEnabled(shapeBtn)) { toggleButtonState([]); onDrawShape?.(); return }
     if (squareBtn && isEnabled(squareBtn)) { toggleButtonState([]); onDrawFrame?.(); return }
@@ -118,51 +118,67 @@ function addMenuClickHandlers({ onDrawShape, onDrawFrame, onEdit, onDelete }) {
 -------------------------------- */
 
 function addDatasetChangeHandler() {
-  function toggleFieldsetsVisibility(activeFieldsets) {
-    if (!activeFieldsets) {
+  function toggleFormGroupVisibility(activeFormGroups) {
+    if (!activeFormGroups) {
       return
     }
 
-    var allFieldsets = Array.from(document.querySelectorAll('.fmp-datasets fieldset[data-name]'))
+    const allFormGroups = Array.from(document.querySelectorAll('.fmp-datasets .govuk-form-group[data-name]'))
 
-    allFieldsets.forEach(function(fs) {
-      var isFieldsetVisible = fs.style.display !== 'none'
+    allFormGroups.forEach(function(fg) {
+      const isFormGroupVisible = fg.style.display !== 'none'
 
       // Show fieldset and check first radio
-      if (activeFieldsets.includes(fs.dataset.name) && !isFieldsetVisible) {
-        fs.style.display = 'block'
-        var firstRadio = fs.querySelector('input[type="radio"]')
+      if (activeFormGroups.includes(fg.dataset.name) && !isFormGroupVisible) {
+        fg.style.display = 'block'
+        const firstRadio = fg.querySelector('input[type="radio"]')
         if (firstRadio) {
           firstRadio.checked = true
         }
       }
 
       // Hide fieldset and uncheck all radios
-      if (!activeFieldsets.includes(fs.dataset.name) && isFieldsetVisible) {
-        fs.style.display = 'none'
-        var radios = fs.querySelectorAll('input[type="radio"]')
+      if (!activeFormGroups.includes(fg.dataset.name) && isFormGroupVisible) {
+        fg.style.display = 'none'
+        const radios = fg.querySelectorAll('input[type="radio"]')
         radios.forEach(r => r.checked = false)
       }
     })
   }
 
   function update(e) {
-    if (!e.target.classList.contains('govuk-radios__input') && !e.target.closest('.fmp-datasets')) {
-      return
+    // Radio change
+    if (e.target.classList.contains('govuk-radios__input') && e.target.closest('.fmp-datasets')) {
+      const radio = e.target
+      const datasetName = radio.closest('.govuk-form-group').dataset.name
+      const dataSet = datasetsConfig.find(ds => ds.name === datasetName)
+      const activeFormGroups = dataSet.items.find(item => item.id === radio.id).formGroups
+      
+      toggleFormGroupVisibility(activeFormGroups)
+
+      const checkedIds = Array.from(document.querySelectorAll('.fmp-datasets input[type="radio"]')).filter(r => r.checked).map(r => r.id)
+
+      const dataset = checkedIds.join('-')
+      setQueryParam('dataset', dataset)
+
+      const event = new CustomEvent('fmp:datasetchanged', {
+        detail: { dataset }
+      })
+      document.dispatchEvent(event)
     }
 
-    var radio = e.target
-    var datasetName = radio.closest('fieldset').dataset.name
-    var dataSet = datasetsConfig.find(ds => ds.name === datasetName)
-    var activeFieldsets = dataSet.items.find(item => item.id === radio.id).fieldsets
-    
-    toggleFieldsetsVisibility(activeFieldsets)
+    // Checkbox change
+    if (e.target.classList.contains('govuk-checkboxes__input') && e.target.closest('.fmp-datasets')) {
+      const checkedIds = Array.from(document.querySelectorAll('.fmp-datasets input[type="checkbox"]')).filter(cb => cb.checked).map(cb => cb.id)
 
-    var checkedIds = Array.from(document.querySelectorAll('.fmp-datasets input[type="radio"]'))
-      .filter(radio => radio.checked)
-      .map(radio => radio.id)
+      const mapFeatures = checkedIds.join(',')
+      setQueryParam('features', mapFeatures)
 
-    setQueryParam('dataset', checkedIds.join('-'))
+      const event = new CustomEvent('fmp:featureschanged', {
+        detail: { mapFeatures }
+      })
+      document.dispatchEvent(event)
+    } 
   }
 
   document.addEventListener('change', update)
@@ -176,18 +192,18 @@ function parseDatasetQuery(value) {
   return value.split('-').filter(Boolean)
 }
 
-var datasetQuery = getQueryParam('dataset', 'floodzones-presentday')
-var datasetState = parseDatasetQuery(datasetQuery)
+const datasetQuery = getQueryParam('dataset', 'floodzones-presentday')
+const datasetState = parseDatasetQuery(datasetQuery)
 
-var featuresQuery = getQueryParam('features', '')
-var featureState = featuresQuery ? featuresQuery.split(',').filter(Boolean) : []
+const featuresQuery = getQueryParam('features', '')
+const featureState = featuresQuery ? featuresQuery.split(',').filter(Boolean) : []
 
 /* -------------------------------
    Render helpers
 -------------------------------- */
 
 function hideMenu(interactiveMap) {
-  var menu = document.querySelector('#map-panel-menu')
+  const menu = document.querySelector('#map-panel-menu')
   if (menu?.getAttribute('aria-modal') === 'true') {
     interactiveMap.hidePanel('menu')
   }
@@ -230,33 +246,37 @@ function renderMenu(feature) {
 
 function renderRadios({ legend, name, items, visible, checkedValue }) {
   return `
-    <fieldset class="govuk-fieldset" ${visible ? '' : 'style="display:none"'} ${name ? `data-name="${name}"` : ''}>
-      <legend class="govuk-fieldset__legend"><h3 class="govuk-heading-s">${legend}</h3></legend>
-      <div class="govuk-radios govuk-radios--small" data-module="govuk-radios">
-        ${items.map(i => `
-          <div class="govuk-radios__item">
-            <input class="govuk-radios__input" id="${i.id}" name="${name}" type="radio" value="${i.value}" ${i.value === checkedValue ? 'checked' : ''}>
-            <label class="govuk-label govuk-radios__label" for="${i.id}">${i.label}</label>
-          </div>
-        `).join('')}
-      </div>
-    </fieldset>
+    <div class="govuk-form-group" ${visible ? '' : 'style="display:none"'} ${name ? `data-name="${name}"` : ''}>
+      <fieldset class="govuk-fieldset">
+        <legend class="govuk-fieldset__legend"><h3 class="govuk-heading-s">${legend}</h3></legend>
+        <div class="govuk-radios govuk-radios--small" data-module="govuk-radios">
+          ${items.map(i => `
+            <div class="govuk-radios__item">
+              <input class="govuk-radios__input" id="${i.id}" name="${name}" type="radio" value="${i.value}" ${i.value === checkedValue ? 'checked' : ''}>
+              <label class="govuk-label govuk-radios__label" for="${i.id}">${i.label}</label>
+            </div>
+          `).join('')}
+        </div>
+      </fieldset>
+    </div>
   `
 }
 
 function renderCheckboxes({ legend, name, items }) {
   return `
-    <fieldset class="govuk-fieldset">
-      <legend class="govuk-fieldset__legend"><h3 class="govuk-heading-s">${legend}</h3></legend>
-      <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
-        ${items.map(i => `
-          <div class="govuk-checkboxes__item">
-            <input class="govuk-checkboxes__input" id="${i.id}" name="${name}" type="checkbox" value="${i.value}" ${featureState.includes(i.id) ? 'checked' : ''}>
-            <label class="govuk-label govuk-checkboxes__label" for="${i.id}">${i.label}</label>
-          </div>
-        `).join('')}
-      </div>
-    </fieldset>
+    <div class="govuk-form-group">
+      <fieldset class="govuk-fieldset">
+        <legend class="govuk-fieldset__legend"><h3 class="govuk-heading-s">${legend}</h3></legend>
+        <div class="govuk-checkboxes govuk-checkboxes--small" data-module="govuk-checkboxes">
+          ${items.map(i => `
+            <div class="govuk-checkboxes__item">
+              <input class="govuk-checkboxes__input" id="${i.id}" name="${name}" type="checkbox" value="${i.value}" ${featureState.includes(i.id) ? 'checked' : ''}>
+              <label class="govuk-label govuk-checkboxes__label" for="${i.id}">${i.label}</label>
+            </div>
+          `).join('')}
+        </div>
+      </fieldset>
+    </div>
   `
 }
 
@@ -265,7 +285,7 @@ function renderDatasets() {
     <div class="fmp-datasets">
       ${datasetsConfig.map(section => {
         if (section.type === 'radios') {
-          var checked = datasetState.find(id => section.items.some(i => i.value === id))
+          const checked = datasetState.find(id => section.items.some(i => i.value === id))
           return renderRadios({ ...section, visible: !!checked, checkedValue: checked })
         }
         return renderCheckboxes(section)
@@ -275,7 +295,7 @@ function renderDatasets() {
 }
 
 function renderMenuHTML(feature) {
-  var html = `
+  const html = `
     ${renderMenu(feature)}
     ${renderDatasets()}
   `

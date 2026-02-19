@@ -15,12 +15,14 @@ import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 // Demo utils
 import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning-menu.js'
-import { getGeometryShape, getQueryParam, setQueryParam } from './planning-utils.js'
+import { renderKeyHTML, toggleKeyItemVisibility } from './planning-key.js'
+import { getGeometryShape, getQueryParam } from './planning-utils.js'
+import { addOrRemoveDatasets, addOrRemoveMapFeatures } from './planning-layers.js'
 
 let feature
-// var feature = { id: 'boundary', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[371013.629737365,518087.27160546643],[371026.76930227707,518103.6431258204],[371076.00861123804,518150.38583537703],[371082.5004262571,518144.458668744],[371088.1419858577,518146.24617482634],[371119.04499505187,518121.1373772673],[371061.7528809118,518034.9300132221],[371044.3521903893,518057.18438187643],[371013.629737365,518087.27160546643]]]}, properties: { id: 'boundary' }}
+// const feature = { id: 'boundary', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[371013.629737365,518087.27160546643],[371026.76930227707,518103.6431258204],[371076.00861123804,518150.38583537703],[371082.5004262571,518144.458668744],[371088.1419858577,518146.24617482634],[371119.04499505187,518121.1373772673],[371061.7528809118,518034.9300132221],[371044.3521903893,518057.18438187643],[371013.629737365,518087.27160546643]]]}, properties: { id: 'boundary' }}
 
-var interactPlugin = createInteractPlugin({
+const interactPlugin = createInteractPlugin({
 	dataLayers: [{
 		layerId: 'field-parcels',
 		idProperty: 'ID',
@@ -35,13 +37,13 @@ var interactPlugin = createInteractPlugin({
 	// multiSelect: true
 })
 
-var drawPlugin = createDrawPlugin()
+const drawPlugin = createDrawPlugin()
 
-var framePlugin = createFramePlugin({
+const framePlugin = createFramePlugin({
 	aspectRatio: 1.5
 })
 
-var interactiveMap = new InteractiveMap('map', {
+const interactiveMap = new InteractiveMap('map', {
 	behaviour: 'inline',
 	mapProvider: esriProvider({
 		setupConfig: setupEsriConfig
@@ -126,10 +128,31 @@ interactiveMap.on('app:ready', function (e) {
 	})
 	interactiveMap.addPanel('key', {
 		label: 'Key',
-		html: '<p>Key</p>',
+		html: renderKeyHTML(),
 		mobile: { slot: 'bottom', initiallyOpen: false, exclusive: true },
 		tablet: { slot: 'inset', width: '260px', initiallyOpen: false, exclusive: true },
 		desktop: { slot: 'inset', width: '280px', initiallyOpen: false, exclusive: true }
+	})
+})
+
+interactiveMap.on('map:ready', function (e) {
+	// Add datasets and map features
+	const dataset = getQueryParam('dataset', 'floodzones-presentday')
+	const mapFeatures = getQueryParam('features')
+	addOrRemoveDatasets(e, dataset)
+	addOrRemoveMapFeatures(e, mapFeatures)
+	toggleKeyItemVisibility({ dataset })
+	toggleKeyItemVisibility({ mapFeatures })
+
+	// Menu radio and checkbox events
+	document.addEventListener('fmp:datasetchanged', (e) => {
+		addOrRemoveDatasets(e.detail)
+		toggleKeyItemVisibility(e.detail)
+	})
+
+	document.addEventListener('fmp:featureschanged', (e) => {
+		addOrRemoveMapFeatures(e.detail)
+		toggleKeyItemVisibility(e.detail)
 	})
 })
 
@@ -143,6 +166,7 @@ interactiveMap.on('draw:ready', function () {
 		drawPlugin.addFeature(feature)
 	}
 
+	// Add menu click handlers
 	addMenuClickHandlers({
 		onDrawShape: function() {
 			drawPlugin.newPolygon('boundary')
