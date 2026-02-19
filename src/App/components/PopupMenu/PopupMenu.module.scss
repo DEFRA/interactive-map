@@ -57,7 +57,7 @@
   }
 
   svg + span {
-    margin-left: var(--button-icon-label-offset);
+    margin-left: calc(var(--button-icon-label-offset) + 3px);
     white-space: nowrap;
   }
 

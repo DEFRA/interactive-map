@@ -159,6 +159,32 @@ describe('PopupMenu', () => {
     expect(mockSetIsOpen).toHaveBeenCalled()
   })
 
+  it('does not call onClick or close menu when clicking a disabled item', () => {
+    mockUseApp.disabledButtons = new Set(['item1'])
+    renderMenu()
+    fireEvent.click(screen.getByText('Item 1'))
+    expect(items[0].onClick).not.toHaveBeenCalled()
+    expect(mockSetIsOpen).not.toHaveBeenCalled()
+  })
+
+  it('Enter calls buttonConfig.onClick with evaluateProp context', () => {
+    const mockOnClick = jest.fn()
+    mockUseApp.buttonConfig = { item1: { onClick: mockOnClick } }
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockOnClick).toHaveBeenCalled()
+    expect(mockEvaluateProp).toHaveBeenCalled()
+    expect(mockSetIsOpen).toHaveBeenCalled()
+  })
+
+  it('Enter on a disabled item closes menu but does not call onClick', () => {
+    mockUseApp.disabledButtons = new Set(['item1'])
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(items[0].onClick).not.toHaveBeenCalled()
+    expect(mockSetIsOpen).toHaveBeenCalled()
+  })
+
   it('does nothing if click is inside menu', () => {
     renderMenu()
     const element = document.createElement('div')

@@ -4,6 +4,7 @@ describe('attachEvents', () => {
   let createParams, cleanup
 
   beforeEach(() => {
+    jest.useFakeTimers()
     // factory function to create fresh params for each test
     createParams = () => ({
       appState: { layoutRefs: { viewportRef: { current: document.body } }, disabledButtons: new Set() },
@@ -20,7 +21,10 @@ describe('attachEvents', () => {
     })
   })
 
-  afterEach(() => cleanup?.())
+  afterEach(() => {
+    cleanup?.()
+    jest.useRealTimers()
+  })
 
   it('keyboard Enter triggers only on viewport', () => {
     const params = createParams()
@@ -61,15 +65,25 @@ describe('attachEvents', () => {
     expect(params.handleInteraction).not.toHaveBeenCalled()
   })
 
-  it('map click triggers interaction', () => {
+  it('map click triggers interaction after timer fires', () => {
+    const params = createParams()
+    cleanup = attachEvents(params)
+    jest.runAllTimers()
+
+    const handler = params.eventBus.on.mock.calls.find(c => c[0]==='map:click')[1]
+    handler({ point:{x:1,y:2}, coords:[3,4] })
+
+    expect(params.handleInteraction).toHaveBeenCalledWith({ point:{x:1,y:2}, coords:[3,4] })
+  })
+
+  it('map click is suppressed immediately after enable before timer fires', () => {
     const params = createParams()
     cleanup = attachEvents(params)
 
     const handler = params.eventBus.on.mock.calls.find(c => c[0]==='map:click')[1]
-    const clickData = { point:{x:1,y:2}, coords:[3,4] }
-    handler(clickData)
+    handler({ point:{x:1,y:2}, coords:[3,4] })
 
-    expect(params.handleInteraction).toHaveBeenCalledWith(clickData)
+    expect(params.handleInteraction).not.toHaveBeenCalled()
   })
 
   it('selectAtTarget triggers crosshair interaction', () => {

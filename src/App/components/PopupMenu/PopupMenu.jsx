@@ -112,8 +112,22 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
   }
 
   /**
+   * Helper: Invoke a menu item's action via buttonConfig or item.onClick.
+   * @param {Event} e - The triggering event
+   * @param {Object} item - The item to activate
+   */
+  const activateItem = (e, item) => {
+    const menuItemConfig = buttonConfig[item.id]
+    if (typeof menuItemConfig?.onClick === 'function') {
+      menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
+    } else {
+      item.onClick?.(e.nativeEvent)
+    }
+  }
+
+  /**
    * Helper: Handle Enter key press.
-   * Calls onClick on selected item (by index), then closes menu and returns focus to instigator.
+   * Closes menu, returns focus to instigator, then activates the selected item if enabled.
    * @param {KeyboardEvent} e
    *   The Enter keydown event
    */
@@ -121,7 +135,10 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
     e.preventDefault()
     instigator.focus()
     setIsOpen(false)
-    items[index]?.onClick(e.nativeEvent)
+    const item = items[index]
+    if (item && !disabledButtons.has(item.id)) {
+      activateItem(e, item)
+    }
   }
 
   /**
@@ -177,21 +194,18 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
 
   /**
    * Helper: Handle item click.
-   * Looks up buttonConfig[item.id] to decide which onClick to call (item's or buttonConfig's).
-   * Closes menu after invoking onClick.
+   * Closes menu and activates the item; does nothing if the item is disabled.
    * @param {React.MouseEvent} e
    *   React synthetic event from the LI click
    * @param {Object} item
    *   The clicked item object with {id, label, onClick, ...}
    */
   const handleItemClick = (e, item) => {
-    const menuItemConfig = buttonConfig[item.id]
-    setIsOpen(false)
-    if (typeof menuItemConfig?.onClick !== 'function') {
-      item.onClick?.(e.nativeEvent)
+    if (disabledButtons.has(item.id)) {
       return
     }
-    menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
+    setIsOpen(false)
+    activateItem(e, item)
   }
 
   useEffect(() => {

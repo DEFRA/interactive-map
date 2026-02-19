@@ -35,7 +35,11 @@ export function attachEvents ({
   }
 
   // Interaction Handlers
-  const handleMapClick = (e) => handleInteraction(e)
+  // Defer click handling by one macrotask so any click that triggered the enable
+  // (e.g. finishing a draw gesture) fires before this handler is live.
+  let clickReady = false
+  const clickReadyTimer = setTimeout(() => { clickReady = true }, 0)
+  const handleMapClick = (e) => { if (clickReady) { handleInteraction(e) } }
   const handleSelectAtTarget = () => handleInteraction(mapState.crossHair.getDetail())
 
   const handleSelectDone = () => {
@@ -80,6 +84,7 @@ export function attachEvents ({
   selectCancel.onClick = handleSelectCancel
 
   return () => {
+    clearTimeout(clickReadyTimer)
     selectDone.onClick = null
     selectAtTarget.onClick = null
     selectCancel.onClick = null
