@@ -331,11 +331,16 @@ export const EditVertexMode = {
 
       // Push undo for vertex insertion (from dragging midpoint)
       if (wasInsertion) {
+        const insertedIndex = state._insertedVertexIndex
         this.pushUndo({
           type: 'insert_vertex',
           featureId: state.featureId,
-          vertexIndex: state._insertedVertexIndex
+          vertexIndex: insertedIndex
         })
+        // selectedVertexIndex was pointing to the old midpoint-range index;
+        // update it to the actual flat index of the newly inserted vertex
+        state.selectedVertexIndex = insertedIndex
+        state.selectedVertexType = 'vertex'
         state._isInsertingVertex = false
         state._insertedVertexIndex = undefined
       }
