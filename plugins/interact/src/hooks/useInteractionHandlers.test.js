@@ -220,6 +220,34 @@ describe('contiguous selection', () => {
 })
 
 /* ------------------------------------------------------------------ */
+/* deselectOnClickOutside                                             */
+/* ------------------------------------------------------------------ */
+
+describe('deselectOnClickOutside', () => {
+  beforeEach(() => {
+    featureQueries.getFeaturesAtPoint.mockReturnValue([])
+    featureQueries.findMatchingFeature.mockReturnValue(null)
+  })
+
+  it('clears selection when clicking outside a feature in select mode', () => {
+    const { result, deps } = setup({ deselectOnClickOutside: true })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith({ type: 'CLEAR_SELECTED_FEATURES' })
+    expect(deps.mapState.markers.add).not.toHaveBeenCalled()
+  })
+
+  it('does not clear selection when deselectOnClickOutside is false', () => {
+    const { result, deps } = setup({ deselectOnClickOutside: false })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).not.toHaveBeenCalled()
+  })
+})
+
+/* ------------------------------------------------------------------ */
 /* Marker condition guard (FULL COVERAGE)                             */
 /* ------------------------------------------------------------------ */
 

@@ -34,7 +34,8 @@ const interactPlugin = createInteractPlugin({
 	}],
 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
-	contiguous: true
+	contiguous: true,
+	deselectOnClickOutside: true
 })
 
 const drawPlugin = createDrawPlugin({
@@ -208,9 +209,10 @@ interactiveMap.on('map:ready', function (e) {
 			label: 'Delete feature',
 			iconSvgContent: '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
 			isDisabled: true,
-			onClick: function (e) {		
+			onClick: function (e) {
 				interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
 				drawPlugin.deleteFeature(selectedFeatureIds)
+				interactPlugin.clear()
 				interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
 				interactiveMap.toggleButtonState('drawLine', 'disabled', false)
 				interactiveMap.toggleButtonState('editFeature', 'disabled', true)

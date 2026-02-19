@@ -5,6 +5,7 @@ const initialState = {
   interactionMode: null,
   multiSelect: false,
   contiguous: false,
+  deselectOnClickOutside: false,
   selectedFeatures: [],
   selectionBounds: null,
   closeOnAction: true // Done or Cancel
