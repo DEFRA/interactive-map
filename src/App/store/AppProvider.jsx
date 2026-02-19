@@ -44,22 +44,6 @@ export const AppProvider = ({ options, children }) => {
 
   useMediaQueryDispatch(rawDispatch, options)
 
-  const handleBreakpointChange = breakpointDetector.subscribe((breakpoint) => {
-    dispatch({
-      type: 'SET_BREAKPOINT',
-      payload: {
-        behaviour: options.behaviour,
-        breakpoint,
-        hybridWidth: options.hybridWidth,
-        maxMobileWidth: options.maxMobileWidth
-      }
-    })
-  })
-
-  const handleInterfaceTypeChange = subscribeToInterfaceChanges((newType) => {
-    dispatch({ type: 'SET_INTERFACE_TYPE', payload: newType })
-  })
-
   const handleSetMode = (mode) => {
     dispatch({ type: 'SET_MODE', payload: mode })
   }
@@ -72,11 +56,27 @@ export const AppProvider = ({ options, children }) => {
     eventBus.on(events.APP_SET_MODE, handleSetMode)
     eventBus.on(events.APP_REVERT_MODE, handleRevertMode)
 
+    const unsubBreakpoint = breakpointDetector.subscribe((breakpoint) => {
+      dispatch({
+        type: 'SET_BREAKPOINT',
+        payload: {
+          behaviour: options.behaviour,
+          breakpoint,
+          hybridWidth: options.hybridWidth,
+          maxMobileWidth: options.maxMobileWidth
+        }
+      })
+    })
+
+    const unsubInterface = subscribeToInterfaceChanges((newType) => {
+      dispatch({ type: 'SET_INTERFACE_TYPE', payload: newType })
+    })
+
     return () => {
       eventBus.off(events.APP_SET_MODE, handleSetMode)
       eventBus.off(events.APP_REVERT_MODE, handleRevertMode)
-      handleBreakpointChange()
-      handleInterfaceTypeChange()
+      unsubBreakpoint()
+      unsubInterface()
     }
   }, [])
 

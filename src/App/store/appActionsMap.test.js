@@ -83,6 +83,11 @@ describe('actionsMap full coverage', () => {
     expect(result.interfaceType).toBe('compact')
   })
 
+  test('SET_INTERFACE_TYPE returns same state reference when interfaceType unchanged', () => {
+    const result = actionsMap.SET_INTERFACE_TYPE(state, state.interfaceType)
+    expect(result).toBe(state)
+  })
+
   test('OPEN_PANEL adds a panel with props', () => {
     const result = actionsMap.OPEN_PANEL(state, { panelId: 'panel2', props: { foo: 'bar' } })
     expect(result.openPanels.panel2?.props).toEqual({ foo: 'bar' })
