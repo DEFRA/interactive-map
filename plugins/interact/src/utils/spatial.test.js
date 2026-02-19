@@ -80,13 +80,20 @@ describe('areAllContiguous', () => {
   const C = poly([[4,0],[6,0],[6,2],[4,2],[4,0]]) // touches B
   const D = poly([[10,10],[12,10],[12,12],[10,12],[10,10]]) // isolated
 
+  const noGeom = { geometry: undefined }
+  const noType = { geometry: {} }
+
   it.each([
     [[], false],
     [[A], false],
     [[A, B], true],
     [[A, B, C], true],
     [[A, D], false],
-    [[A, B, D], false]
+    [[A, B, D], false],
+    [[noGeom, A], false],
+    [[A, noGeom], false],
+    [[noGeom, noGeom], false],
+    [[noType, A], false]
   ])('returns expected result for %# features', (features, expected) => {
     expect(areAllContiguous(features)).toBe(expected)
   })

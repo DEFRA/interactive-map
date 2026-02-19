@@ -67,6 +67,10 @@ function areAllContiguous(features) {
     return false
   }
 
+  if (features.some(f => !f.geometry?.type)) {
+    return false
+  }
+
   const connected = new Set([0])
   let changed = true
 

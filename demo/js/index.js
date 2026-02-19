@@ -298,8 +298,6 @@ interactiveMap.on('interact:cancel', function (e) {
 interactiveMap.on('interact:selectionchange', function (e) {
 	var singleFeature = e.selectedFeatures.length === 1
 	selectedFeatureId = singleFeature ? e.selectedFeatures?.[0]?.featureId : null
-	console.log(selectedFeatureId)
-	console.log(e.selectedFeatures)
 	interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
 	interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
 	interactiveMap.toggleButtonState('editFeature', 'disabled', !singleFeature)
