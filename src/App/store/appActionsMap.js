@@ -91,6 +91,9 @@ const setBreakpoint = (state, payload) => {
 }
 
 const setInterfaceType = (state, payload) => {
+  if (state.interfaceType === payload) {
+    return state
+  }
   return {
     ...state,
     interfaceType: payload

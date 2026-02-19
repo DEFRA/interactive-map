@@ -33,7 +33,7 @@ function notifyListeners (newType) {
 function createInterfaceDetector () {
   const mql = window.matchMedia('(pointer: coarse)')
 
-  // handle DevTools / system pointer type changes
+  // System pointer type changes
   const handleMediaChange = e => {
     notifyListeners(e.matches ? 'touch' : 'mouse')
   }
@@ -66,6 +66,7 @@ function createInterfaceDetector () {
 
 function getInterfaceType () {
   if (lastInterfaceType === 'unknown') {
+    lastInterfaceType = 'mouse'
     return 'mouse'
   }
 
