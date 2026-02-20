@@ -19,6 +19,7 @@ export const initialState = (config) => {
 
   return {
     isMapReady: false,
+    mapProvider: null,
     mapStyle: pluginHandlesMapStyles ? null : mapStyle,
     mapSize,
     center,

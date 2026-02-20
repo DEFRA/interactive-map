@@ -68,6 +68,7 @@ export default class EsriProvider {
 
     // Attach map events and store handles
     this.mapEventHandles = attachMapEvents({
+      mapProvider: this,
       map,
       view,
       baseTileLayer,
@@ -108,6 +109,17 @@ export default class EsriProvider {
     if (this.map) {
       this.map.removeAll()
       this.map = null
+    }
+  }
+
+  /** Returns the public API exposed via the map:ready event. */
+  getMapAPI () {
+    return {
+      map: this.map,
+      view: this.view,
+      crs: this.crs,
+      fitToBounds: this.fitToBounds.bind(this),
+      setView: this.setView.bind(this)
     }
   }
 
