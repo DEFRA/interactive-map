@@ -72,7 +72,8 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
       path: path.resolve(__dirname, outDir, '../css'),
       filename: '../esm/[name].js',
       chunkFilename: '../esm/[name].js',
-      library: { type: 'module' }
+      library: { type: 'module' },
+      asyncChunks: false
     },
     resolve: {
       extensions: ['.js', '.jsx'],
