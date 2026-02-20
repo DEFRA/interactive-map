@@ -136,6 +136,8 @@ interactiveMap.on('app:ready', function (e) {
 })
 
 interactiveMap.on('map:ready', function (e) {
+	console.log(e)
+	
 	// Add datasets and map features
 	const dataset = getQueryParam('dataset', 'floodzones-presentday')
 	const mapFeatures = getQueryParam('features')

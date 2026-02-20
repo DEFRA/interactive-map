@@ -86,15 +86,23 @@ const createESMConfig = (entryName, entryPath, outDir, isCore = false) => {
     },
     externals: isCore
       ? {}
-      : {
-          react: 'react',
-          'react-dom': 'react-dom',
-          'react/jsx-runtime': 'react/jsx-runtime',
-          preact: 'preact',
-          'preact/compat': 'preact/compat',
-          'preact/hooks': 'preact/hooks',
-          'preact/jsx-runtime': 'preact/jsx-runtime'
-        },
+      : [
+          {
+            react: 'react',
+            'react-dom': 'react-dom',
+            'react/jsx-runtime': 'react/jsx-runtime',
+            preact: 'preact',
+            'preact/compat': 'preact/compat',
+            'preact/hooks': 'preact/hooks',
+            'preact/jsx-runtime': 'preact/jsx-runtime'
+          },
+          ({ request }, callback) => {
+            if (request.startsWith('@arcgis/core')) {
+              return callback(null, `module ${request}`)
+            }
+            return callback()
+          }
+        ],
     module: {
       rules: [
         { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
@@ -119,7 +127,7 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', outDir: 'providers/maplibre/dist/esm' },
   { entryPath: './providers/beta/open-names/src/index.js', outDir: 'providers/beta/open-names/dist/esm' },
-  // { entryPath: './providers/beta/esri/src/index.js', outDir: 'providers/beta/esri/dist/esm' },
+  { entryPath: './providers/beta/esri/src/index.js', outDir: 'providers/beta/esri/dist/esm' },
 
   // Plugins
   { entryPath: './plugins/beta/scale-bar/src/index.js', outDir: 'plugins/beta/scale-bar/dist/esm' },
@@ -129,6 +137,7 @@ const ALL_BUILDS = [
   { entryPath: './plugins/beta/datasets/src/index.js', outDir: 'plugins/beta/datasets/dist/esm' },
   { entryPath: './plugins/beta/map-styles/src/index.js', outDir: 'plugins/beta/map-styles/dist/esm' },
   { entryPath: './plugins/beta/draw-ml/src/index.js', outDir: 'plugins/beta/draw-ml/dist/esm' },
+  { entryPath: './plugins/beta/draw-es/src/index.js', outDir: 'plugins/beta/draw-es/dist/esm' },
   { entryPath: './plugins/beta/frame/src/index.js', outDir: 'plugins/beta/frame/dist/esm' }
 ]
 

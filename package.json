@@ -5,8 +5,56 @@
   "main": "dist/umd/index.js",
   "module": "dist/esm/index.js",
   "exports": {
-    "import": "./dist/esm/index.js",
-    "require": "./dist/umd/index.js"
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/umd/index.js"
+    },
+    "./providers/maplibre": {
+      "import": "./providers/maplibre/dist/esm/index.js",
+      "require": "./providers/maplibre/dist/umd/index.js"
+    },
+    "./providers/open-names": {
+      "import": "./providers/beta/open-names/dist/esm/index.js",
+      "require": "./providers/beta/open-names/dist/umd/index.js"
+    },
+    "./providers/esri": {
+      "import": "./providers/beta/esri/dist/esm/index.js"
+    },
+    "./plugins/scale-bar": {
+      "import": "./plugins/beta/scale-bar/dist/esm/index.js",
+      "require": "./plugins/beta/scale-bar/dist/umd/index.js"
+    },
+    "./plugins/use-location": {
+      "import": "./plugins/beta/use-location/dist/esm/index.js",
+      "require": "./plugins/beta/use-location/dist/umd/index.js"
+    },
+    "./plugins/search": {
+      "import": "./plugins/search/dist/esm/index.js",
+      "require": "./plugins/search/dist/umd/index.js"
+    },
+    "./plugins/interact": {
+      "import": "./plugins/interact/dist/esm/index.js",
+      "require": "./plugins/interact/dist/umd/index.js"
+    },
+    "./plugins/datasets": {
+      "import": "./plugins/beta/datasets/dist/esm/index.js",
+      "require": "./plugins/beta/datasets/dist/umd/index.js"
+    },
+    "./plugins/map-styles": {
+      "import": "./plugins/beta/map-styles/dist/esm/index.js",
+      "require": "./plugins/beta/map-styles/dist/umd/index.js"
+    },
+    "./plugins/draw-ml": {
+      "import": "./plugins/beta/draw-ml/dist/esm/index.js",
+      "require": "./plugins/beta/draw-ml/dist/umd/index.js"
+    },
+    "./plugins/draw-es": {
+      "import": "./plugins/beta/draw-es/dist/esm/index.js"
+    },
+    "./plugins/frame": {
+      "import": "./plugins/beta/frame/dist/esm/index.js",
+      "require": "./plugins/beta/frame/dist/umd/index.js"
+    }
   },
   "type": "module",
   "scripts": {
@@ -41,10 +89,14 @@
     ]
   },
   "peerDependencies": {
+    "@arcgis/core": "^4.34.8",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
   "peerDependenciesMeta": {
+    "@arcgis/core": {
+      "optional": true
+    },
     "react": {
       "optional": true
     },
@@ -53,6 +105,7 @@
     }
   },
   "devDependencies": {
+    "@arcgis/core": "^4.34.8",
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.1",
@@ -114,7 +167,6 @@
     "@turf/bearing": "^7.3.3"
   },
   "dependencies": {
-    "@arcgis/core": "^4.34.8",
     "@turf/area": "^7.2.0",
     "@turf/bearing": "^7.3.3",
     "@turf/boolean-disjoint": "^7.3.3",
