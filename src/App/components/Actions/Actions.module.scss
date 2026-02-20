@@ -4,6 +4,20 @@
   justify-content: center;
   gap: calc(var(--divider-gap) / 2);
   padding: var(--panel-margin);
+  max-height: 200px;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: max-height var(--duration) ease, opacity var(--duration) ease,
+      padding-top var(--duration) ease, padding-bottom var(--duration) ease;
+  }
+
+  &--hidden {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 
   .im-c-button-wrapper--wide {
     display: flex;

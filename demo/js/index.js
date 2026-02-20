@@ -164,12 +164,12 @@ interactiveMap.on('map:ready', function (e) {
 	// })
 	interactPlugin.enable()
 	interactiveMap.addButton('geometryActions', {
-		label: 'Actions',
+		label: 'Draw tools',
 		variant: 'tertiary',
 		iconSvgContent: '<path d="m6 9 6 6 6-6"/>',
-		mobile: { slot: 'actions', order: 2, showLabel: true },
-		tablet: { slot: 'actions', order: 2, showLabel: true },
-		desktop: { slot: 'actions', order: 2, showLabel: true },
+		mobile: { slot: 'actions', order: 3, showLabel: true },
+		tablet: { slot: 'actions', order: 3, showLabel: true },
+		desktop: { slot: 'actions', order: 3, showLabel: true },
 		menuItems: [{
 			id: 'drawPolygon',
 			label: 'Draw polygon',

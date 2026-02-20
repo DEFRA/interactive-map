@@ -133,12 +133,12 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
    */
   const handleEnter = (e) => {
     e.preventDefault()
-    instigator.focus()
-    setIsOpen(false)
     const item = items[index]
     if (item && !disabledButtons.has(item.id)) {
       activateItem(e, item)
     }
+    instigator.focus()
+    setIsOpen(false)
   }
 
   /**
@@ -155,12 +155,10 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
       return
     }
     const isCheckbox = item.isPressed !== undefined || item.pressedWhen
-    if (isCheckbox) {
-      activateItem(e, item)
-    } else {
+    activateItem(e, item)
+    if (!isCheckbox) {
       instigator.focus()
       setIsOpen(false)
-      activateItem(e, item)
     }
   }
 

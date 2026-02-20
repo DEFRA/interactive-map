@@ -409,6 +409,34 @@ export const createDrawMode = (ParentMode, config) => {
       }
     },
 
+    // Called by mapbox-gl-draw's event system (capital U — distinct from onKeyup above).
+    // Override to restart drawing on Escape instead of exiting to simple_select.
+    // Three cases:
+    //   1. A UI element inside the viewport has focus (e.g. popup menu) → ignore, let React handle
+    //   2. The viewport itself has focus (keyboard drawing mode) → Escape restarts; other keys ignored
+    //   3. No viewport focus (mouse drawing) → Escape falls through to ParentMode (delete + exit)
+    onKeyUp(state, e) {
+      const activeEl = document.activeElement
+      if (activeEl && activeEl !== state.container && state.container.contains(activeEl)) {
+        return
+      }
+      if (e.key === 'Escape') {
+        if (activeEl === state.container) {
+          const undoStack = this.map._undoStack
+          if (undoStack) {
+            undoStack.clear()
+          }
+          this._reinitializeFeature(state, getFeature(state))
+        } else {
+          ParentMode.onKeyUp.call(this, state, e)
+        }
+        return
+      }
+      if (activeEl !== state.container) {
+        ParentMode.onKeyUp.call(this, state, e)
+      }
+    },
+
     onFocus(state) {
       state.vertexMarker.style.display = ['touch', 'keyboard'].includes(state.interfaceType) ? 'block' : 'none'
     },

@@ -30,11 +30,10 @@ export const manifest = {
     hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType === 'mouse',
     ...createButtonSlots(true)
   },{
-    id: 'drawDone',
-    label: 'Done',
-    variant: 'primary',
-    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
-    enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
+    id: 'drawCancel',
+    label: 'Cancel',
+    variant: 'tertiary',
+    hiddenWhen: ({ pluginState }) => !pluginState.mode,
     ...createButtonSlots(true)
   },{
     id: 'drawMenu',
@@ -63,10 +62,11 @@ export const manifest = {
     }],
     ...createButtonSlots(true)
   },{
-    id: 'drawCancel',
-    label: 'Cancel',
-    variant: 'tertiary',
-    hiddenWhen: ({ pluginState }) => !pluginState.mode,
+    id: 'drawDone',
+    label: 'Done',
+    variant: 'primary',
+    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
+    enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
     ...createButtonSlots(true)
   }],
 
