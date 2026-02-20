@@ -162,6 +162,7 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
+	console.log(e)
 	interactPlugin.enable()
 	interactiveMap.addButton('geometryActions', {
 		label: 'Draw tools',

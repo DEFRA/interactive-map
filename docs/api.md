@@ -682,16 +682,21 @@ interactiveMap.on('app:ready', () => {
 
 Emitted when the underlying map is in a state ready to interact with. For example, when using MapLibre this event is emitted after the map has been instantiated; for ESRI SDK it is emitted when `view.ready` is first true.
 
-**Payload:** Determined by the underlying map engine. MapLibre returns the map instance; ESRI returns `{ map, mapView }`.
+**Payload:** A controlled API object with the following properties:
+
+| Property | Type | Description |
+|---|---|---|
+| `map` | Object | The underlying map instance (all providers) |
+| `view` | Object | The map view (ESRI only) |
+| `crs` | string | The coordinate reference system (e.g. `'EPSG:4326'`) |
+| `fitToBounds` | Function | Fit the map to a bounding box |
+| `setView` | Function | Set the map center and zoom |
 
 ```js
-interactiveMap.on('map:ready', (map) => {
+interactiveMap.on('map:ready', ({ map, crs, fitToBounds, setView }) => {
   interactiveMap.addMarker('home', [-0.1276, 51.5074])
 })
 ```
-
-> [!NOTE]
-> If you need lower-level control beyond what InteractiveMap offers, you can use the map instance directly.
 
 ---
 

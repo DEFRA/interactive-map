@@ -7,10 +7,11 @@ const mergePayload = (state, payload) => ({
   ...payload
 })
 
-const setMapReady = (state) => {
+const setMapReady = (state, mapProvider) => {
   return {
     ...state,
-    isMapReady: true
+    isMapReady: true,
+    mapProvider
   }
 }
 

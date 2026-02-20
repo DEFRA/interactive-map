@@ -8,8 +8,8 @@ export const MapContext = createContext(null)
 export const MapProvider = ({ options, children }) => {
   const [state, dispatch] = useReducer(reducer, initialState(options))
 
-  const handleMapReady = () => {
-    dispatch({ type: 'SET_MAP_READY' })
+  const handleMapReady = (mapProvider) => {
+    dispatch({ type: 'SET_MAP_READY', payload: mapProvider })
   }
 
   const handleInitMapStyles = (mapStyles) => {
