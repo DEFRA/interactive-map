@@ -8,7 +8,7 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
     return []
   }
 
-  return Object.entries(buttonConfig).filter(([_, config]) => {
+  return Object.entries(buttonConfig).filter(([_, config]) => { // NOSONAR, extractig to a hleper wouldn't necessarily improve readability
     const bpConfig = config[breakpoint]
 
     // Skip menu items — they render inside a parent button's popup, not in a slot

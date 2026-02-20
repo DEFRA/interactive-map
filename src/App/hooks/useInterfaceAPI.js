@@ -27,25 +27,25 @@ export const useInterfaceAPI = () => {
     }
 
     const handleToggleButtonState = ({ id, prop, value }) => {
-      const { hiddenButtons, disabledButtons, pressedButtons, expandedButtons } = stateRef.current
+      const { hiddenButtons: hidden, disabledButtons: disabled, pressedButtons: pressed, expandedButtons: expanded } = stateRef.current
       switch (prop) {
         case 'hidden': {
-          const isHidden = typeof value === 'boolean' ? value : !hiddenButtons.has(id)
+          const isHidden = typeof value === 'boolean' ? value : !hidden.has(id)
           dispatchRef.current({ type: 'TOGGLE_BUTTON_HIDDEN', payload: { id, isHidden } })
           break
         }
         case 'disabled': {
-          const isDisabled = typeof value === 'boolean' ? value : !disabledButtons.has(id)
+          const isDisabled = typeof value === 'boolean' ? value : !disabled.has(id)
           dispatchRef.current({ type: 'TOGGLE_BUTTON_DISABLED', payload: { id, isDisabled } })
           break
         }
         case 'pressed': {
-          const isPressed = typeof value === 'boolean' ? value : !pressedButtons.has(id)
+          const isPressed = typeof value === 'boolean' ? value : !pressed.has(id)
           dispatchRef.current({ type: 'TOGGLE_BUTTON_PRESSED', payload: { id, isPressed } })
           break
         }
         case 'expanded': {
-          const isExpanded = typeof value === 'boolean' ? value : !expandedButtons.has(id)
+          const isExpanded = typeof value === 'boolean' ? value : !expanded.has(id)
           dispatchRef.current({ type: 'TOGGLE_BUTTON_EXPANDED', payload: { id, isExpanded } })
           break
         }
@@ -54,25 +54,11 @@ export const useInterfaceAPI = () => {
       }
     }
 
-    const handleAddPanel = ({ id, config }) => {
-      dispatchRef.current({ type: 'ADD_PANEL', payload: { id, config } })
-    }
-
-    const handleRemovePanel = (id) => {
-      dispatchRef.current({ type: 'REMOVE_PANEL', payload: id })
-    }
-
-    const handleShowPanel = (id) => {
-      dispatchRef.current({ type: 'OPEN_PANEL', payload: { panelId: id } })
-    }
-
-    const handleHidePanel = (id) => {
-      dispatchRef.current({ type: 'CLOSE_PANEL', payload: id })
-    }
-
-    const handleAddControl = ({ id, config }) => {
-      dispatchRef.current({ type: 'ADD_CONTROL', payload: { id, config } })
-    }
+    const handleAddPanel = ({ id, config }) => dispatchRef.current({ type: 'ADD_PANEL', payload: { id, config } })
+    const handleRemovePanel = (id) => dispatchRef.current({ type: 'REMOVE_PANEL', payload: id })
+    const handleShowPanel = (id) => dispatchRef.current({ type: 'OPEN_PANEL', payload: { panelId: id } })
+    const handleHidePanel = (id) => dispatchRef.current({ type: 'CLOSE_PANEL', payload: id })
+    const handleAddControl = ({ id, config }) => dispatchRef.current({ type: 'ADD_CONTROL', payload: { id, config } })
 
     eventBus.on(events.APP_ADD_BUTTON, handleAddButton)
     eventBus.on(events.APP_TOGGLE_BUTTON_STATE, handleToggleButtonState)

@@ -66,6 +66,8 @@ export const useInteractionHandlers = ({
       eventBus.emit('interact:markerchange', { coords })
     } else if (deselectOnClickOutside) {
       dispatch({ type: 'CLEAR_SELECTED_FEATURES' })
+    } else {
+      // No action
     }
 
     // Internal helper to keep complexity low

@@ -122,6 +122,8 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
       menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
     } else if (typeof item.onClick === 'function') {
       item.onClick(e.nativeEvent)
+    } else {
+      // No action
     }
     // For keyboard events, also dispatch a synthetic click so native window listeners fire
     // (e.g. editVertexMode.onButtonClick for delete/undo in edit_vertex mode).
