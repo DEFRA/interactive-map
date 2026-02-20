@@ -317,7 +317,7 @@ describe('PopupMenu', () => {
     const item1 = screen.getByText('Item 1').parentElement
     const item2 = screen.getByText('Item 2').parentElement
     expect(item1).toHaveStyle('display: none')
-    expect(item2).toHaveAttribute('aria-pressed', 'true')
+    expect(item2).toHaveAttribute('aria-checked', 'true')
   })
 
   it('ignores unrelated keys (covers Enter false branch)', () => {
@@ -326,5 +326,41 @@ describe('PopupMenu', () => {
     fireEvent.keyDown(ul, { key: 'a' })
     expect(items[1].onClick).not.toHaveBeenCalled()
     expect(mockSetIsOpen).not.toHaveBeenCalled()
+  })
+
+  describe('Space key', () => {
+    it('Space on a menuitem calls onClick and closes menu', () => {
+      renderMenu({ startIndex: 0 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[0].onClick).toHaveBeenCalled()
+      expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+    })
+
+    it('Space on a menuitemcheckbox calls onClick but does not close menu', () => {
+      renderMenu({ startIndex: 1 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[1].onClick).toHaveBeenCalled()
+      expect(mockSetIsOpen).not.toHaveBeenCalled()
+    })
+
+    it('Space on a disabled item does nothing', () => {
+      mockUseApp.disabledButtons = new Set(['item1'])
+      renderMenu({ startIndex: 0 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[0].onClick).not.toHaveBeenCalled()
+      expect(mockSetIsOpen).not.toHaveBeenCalled()
+    })
+
+    it('Space with no selection does nothing', () => {
+      renderMenu({ startIndex: -1 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[0].onClick).not.toHaveBeenCalled()
+      expect(items[1].onClick).not.toHaveBeenCalled()
+      expect(mockSetIsOpen).not.toHaveBeenCalled()
+    })
   })
 })

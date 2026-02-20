@@ -142,6 +142,29 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
   }
 
   /**
+   * Helper: Handle Space key press.
+   * For menuitemcheckbox: activates item only (menu stays open).
+   * For menuitem: closes menu, returns focus to instigator, then activates item.
+   * @param {KeyboardEvent} e
+   *   The Space keydown event
+   */
+  const handleSpace = (e) => {
+    e.preventDefault()
+    const item = items[index]
+    if (!item || disabledButtons.has(item.id)) {
+      return
+    }
+    const isCheckbox = item.isPressed !== undefined || item.pressedWhen
+    if (isCheckbox) {
+      activateItem(e, item)
+    } else {
+      instigator.focus()
+      setIsOpen(false)
+      activateItem(e, item)
+    }
+  }
+
+  /**
    * Main keyboard handler for the menu.
    * Dispatches to helpers or directly handles:
    * - Escape/Esc: close & focus instigator
@@ -176,6 +199,9 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
     }
     if (e.key === 'Enter') {
       handleEnter(e)
+    }
+    if (e.key === ' ') {
+      handleSpace(e)
     }
   }
 
@@ -245,9 +271,9 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
           key={item.id}
           id={`${id}-${stringToKebab(items[i].id)}`}
           className={`im-c-popup-menu__item${index === i ? ' im-c-popup-menu__item--selected' : ''}`}
-          role='menuitem' // NOSONAR
+          role={items[i].isPressed !== undefined || items[i].pressedWhen ? 'menuitemcheckbox' : 'menuitem'} // NOSONAR
           aria-disabled={disabledButtons.has(items[i].id) || undefined} // NOSONAR
-          aria-pressed={(items[i].isPressed !== undefined || items[i].pressedWhen) ? pressedButtons.has(items[i].id) : undefined} // NOSONAR
+          aria-checked={(items[i].isPressed !== undefined || items[i].pressedWhen) ? pressedButtons.has(items[i].id) : undefined} // NOSONAR
           style={hiddenButtons.has(items[i].id) ? { display: 'none' } : undefined}
           onClick={(e) => handleItemClick(e, items[i])} // NOSONAR
         >
