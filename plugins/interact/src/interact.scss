@@ -27,4 +27,5 @@
 .im-c-button-wrapper--select-at-target {
     position: absolute;
     bottom: calc(100% + var(--primary-gap));
+    z-index: 0;
 }

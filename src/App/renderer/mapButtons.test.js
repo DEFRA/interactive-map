@@ -82,6 +82,16 @@ describe('mapButtons module', () => {
       const state = { ...appState, isFullscreen: false }
       expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(1)
     })
+
+    it('filters out buttons with isMenuItem:true', () => {
+      const config = { b1: { ...baseBtn, isMenuItem: true } }
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp }).length).toBe(0)
+    })
+
+    it('does not filter out buttons without isMenuItem', () => {
+      const config = { b1: baseBtn, b2: { ...baseBtn, isMenuItem: false } }
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp }).length).toBe(2)
+    })
   })
 
   // -------------------------
@@ -202,6 +212,16 @@ describe('mapButtons module', () => {
     it('falls back to order 0 when order is not specified in breakpoint config', () => {
       appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header' } } })
       expect(map()[0].order).toBe(0)
+    })
+
+    it('excludes menu items from slot rendering even when they have a matching slot', () => {
+      appState.buttonConfig = ({
+        parent: baseBtn,
+        child: { ...baseBtn, isMenuItem: true }
+      })
+      const result = map()
+      expect(result).toHaveLength(1)
+      expect(result[0].id).toBe('parent')
     })
   })
 })

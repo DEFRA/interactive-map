@@ -112,16 +112,68 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
   }
 
   /**
+   * Helper: Invoke a menu item's action via buttonConfig or item.onClick.
+   * @param {Event} e - The triggering event
+   * @param {Object} item - The item to activate
+   */
+  const activateItem = (e, item) => {
+    const menuItemConfig = buttonConfig[item.id]
+    if (typeof menuItemConfig?.onClick === 'function') {
+      menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
+    } else if (typeof item.onClick === 'function') {
+      item.onClick(e.nativeEvent)
+    } else {
+      // No action
+    }
+    // For keyboard events, also dispatch a synthetic click so native window listeners fire
+    // (e.g. editVertexMode.onButtonClick for delete/undo in edit_vertex mode).
+    // Marked with _fromKeyboardActivation so handleItemClick ignores it and only the
+    // window listener handles it — preventing double-activation.
+    if (e.nativeEvent instanceof KeyboardEvent) {
+      const el = document.getElementById(`${id}-${stringToKebab(item.id)}`)
+      if (el) {
+        const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+        click._fromKeyboardActivation = true
+        el.dispatchEvent(click)
+      }
+    }
+  }
+
+  /**
    * Helper: Handle Enter key press.
-   * Calls onClick on selected item (by index), then closes menu and returns focus to instigator.
+   * Closes menu, returns focus to instigator, then activates the selected item if enabled.
    * @param {KeyboardEvent} e
    *   The Enter keydown event
    */
   const handleEnter = (e) => {
     e.preventDefault()
+    const item = items[index]
+    if (item && !disabledButtons.has(item.id)) {
+      activateItem(e, item)
+    }
     instigator.focus()
     setIsOpen(false)
-    items[index]?.onClick(e.nativeEvent)
+  }
+
+  /**
+   * Helper: Handle Space key press.
+   * For menuitemcheckbox: activates item only (menu stays open).
+   * For menuitem: closes menu, returns focus to instigator, then activates item.
+   * @param {KeyboardEvent} e
+   *   The Space keydown event
+   */
+  const handleSpace = (e) => {
+    e.preventDefault()
+    const item = items[index]
+    if (!item || disabledButtons.has(item.id)) {
+      return
+    }
+    const isCheckbox = item.isPressed !== undefined || item.pressedWhen
+    activateItem(e, item)
+    if (!isCheckbox) {
+      instigator.focus()
+      setIsOpen(false)
+    }
   }
 
   /**
@@ -160,6 +212,9 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
     if (e.key === 'Enter') {
       handleEnter(e)
     }
+    if (e.key === ' ') {
+      handleSpace(e)
+    }
   }
 
   /**
@@ -177,21 +232,21 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
 
   /**
    * Helper: Handle item click.
-   * Looks up buttonConfig[item.id] to decide which onClick to call (item's or buttonConfig's).
-   * Closes menu after invoking onClick.
+   * Closes menu and activates the item; does nothing if the item is disabled.
    * @param {React.MouseEvent} e
    *   React synthetic event from the LI click
    * @param {Object} item
    *   The clicked item object with {id, label, onClick, ...}
    */
   const handleItemClick = (e, item) => {
-    const menuItemConfig = buttonConfig[item.id]
-    setIsOpen(false)
-    if (typeof menuItemConfig?.onClick !== 'function') {
-      item.onClick?.(e.nativeEvent)
+    if (e.nativeEvent._fromKeyboardActivation) {
       return
     }
-    menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
+    if (disabledButtons.has(item.id)) {
+      return
+    }
+    setIsOpen(false)
+    activateItem(e, item)
   }
 
   useEffect(() => {
@@ -219,7 +274,7 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
     <ul // NOSONAR
       ref={menuRef}
       id={popupMenuId}
-      className='fm-c-popup-menu'
+      className='im-c-popup-menu'
       role='menu' // NOSONAR
       tabIndex='-1'
       aria-labelledby={instigatorKey}
@@ -230,15 +285,15 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
         <li // NOSONAR
           key={item.id}
           id={`${id}-${stringToKebab(items[i].id)}`}
-          className={`fm-c-popup-menu__item${index === i ? ' fm-c-popup-menu__item--selected' : ''}`}
-          role='menuitem' // NOSONAR
+          className={`im-c-popup-menu__item${index === i ? ' im-c-popup-menu__item--selected' : ''}`}
+          role={items[i].isPressed !== undefined || items[i].pressedWhen ? 'menuitemcheckbox' : 'menuitem'} // NOSONAR
           aria-disabled={disabledButtons.has(items[i].id) || undefined} // NOSONAR
-          aria-pressed={(items[i].isPressed !== undefined || items[i].pressedWhen) ? pressedButtons.has(items[i].id) : undefined} // NOSONAR
+          aria-checked={(items[i].isPressed !== undefined || items[i].pressedWhen) ? pressedButtons.has(items[i].id) : undefined} // NOSONAR
           style={hiddenButtons.has(items[i].id) ? { display: 'none' } : undefined}
           onClick={(e) => handleItemClick(e, items[i])} // NOSONAR
         >
           {(item.iconId || item.iconSvgContent) && <Icon id={item.iconId} svgContent={item.iconSvgContent} />}
-          <span className='fm-c-popup-menu__item-label'>{item.label}</span>
+          <span className='im-c-popup-menu__item-label'>{item.label}</span>
         </li>
       ))}
     </ul>

@@ -13,6 +13,7 @@ const groupFeaturesBySource = (map, selectedFeatures) => {
     if (!featuresBySource[sourceId]) {
       featuresBySource[sourceId] = {
         ids: new Set(),
+        fillIds: new Set(),
         idProperty,
         layerId,
         hasFillGeometry: false
@@ -22,6 +23,7 @@ const groupFeaturesBySource = (map, selectedFeatures) => {
     // Track whether any selected feature on this source is a polygon
     if (geometry && (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')) {
       featuresBySource[sourceId].hasFillGeometry = true
+      featuresBySource[sourceId].fillIds.add(featureId)
     }
 
     featuresBySource[sourceId].ids.add(featureId)
@@ -95,7 +97,7 @@ export function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures,
 
   // Apply highlights for current sources
   currentSources.forEach(sourceId => {
-    const { ids, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
+    const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
     const baseLayer = map.getLayer(layerId)
     const srcLayer = baseLayer.sourceLayer
 
@@ -107,11 +109,13 @@ export function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures,
     // Use ['id'] for feature.id, ['get', idProperty] for properties
     const idExpression = idProperty ? ['get', idProperty] : ['id']
     const filter = ['in', idExpression, ['literal', [...ids]]]
+    const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
 
     const linePaint = { 'line-color': stroke, 'line-width': strokeWidth }
 
     if (geom === 'fill') {
-      applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, filter)
+      // Only apply fill highlight to polygon features, not to any co-selected line features
+      applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
       applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, linePaint, filter)
     }
 

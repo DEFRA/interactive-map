@@ -1,5 +1,5 @@
 // src/core/hooks/useButtonStateEvaluator.js
-import { useEffect, useContext } from 'react'
+import { useLayoutEffect, useContext } from 'react'
 import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
 import { PluginContext } from '../store/PluginProvider.jsx'
@@ -55,7 +55,7 @@ export function useButtonStateEvaluator (evaluateProp) {
   const { pluginRegistry } = useConfig()
   const pluginContext = useContext(PluginContext)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     if (!appState?.dispatch || !pluginContext) {
       return
     }

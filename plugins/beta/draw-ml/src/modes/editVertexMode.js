@@ -153,6 +153,10 @@ export const EditVertexMode = {
   },
 
   onKeydown(state, e) {
+    if (!state.container.contains(document.activeElement)) {
+      return
+    }
+
     state.interfaceType = 'keyboard'
     this.hideTouchVertexIndicator(state)
 
@@ -244,6 +248,10 @@ export const EditVertexMode = {
   },
 
   onKeyup(state, e) {
+    if (!state.container.contains(document.activeElement)) {
+      return
+    }
+
     state.interfaceType = 'keyboard'
     if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.stopPropagation()
@@ -331,13 +339,21 @@ export const EditVertexMode = {
 
       // Push undo for vertex insertion (from dragging midpoint)
       if (wasInsertion) {
+        const insertedIndex = state._insertedVertexIndex
         this.pushUndo({
           type: 'insert_vertex',
           featureId: state.featureId,
-          vertexIndex: state._insertedVertexIndex
+          vertexIndex: insertedIndex
         })
+        // selectedVertexIndex was pointing to the old midpoint-range index;
+        // update it to the actual flat index of the newly inserted vertex
+        state.selectedVertexIndex = insertedIndex
+        state.selectedVertexType = 'vertex'
         state._isInsertingVertex = false
         state._insertedVertexIndex = undefined
+        // Broadcast the updated vertex count — DirectSelect.onMouseUp only fires
+        // draw.update (not draw.selectionchange), so onSelectionChange never runs
+        this.map.fire('draw.vertexselection', { index: insertedIndex, numVertecies: state.vertecies.length })
       }
       // Push undo for the move if vertex actually moved
       else if (vertexMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {

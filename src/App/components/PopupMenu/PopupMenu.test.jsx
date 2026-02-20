@@ -91,8 +91,8 @@ describe('PopupMenu', () => {
     Object.defineProperty(ev, 'target', { value: target, enumerable: true })
     document.dispatchEvent(ev)
   }
-  const expectSelected = (text) => expect(screen.getByText(text).parentElement).toHaveClass('fm-c-popup-menu__item--selected')
-  const expectNotSelected = (text) => expect(screen.getByText(text).parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
+  const expectSelected = (text) => expect(screen.getByText(text).parentElement).toHaveClass('im-c-popup-menu__item--selected')
+  const expectNotSelected = (text) => expect(screen.getByText(text).parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
 
   it('renders items with labels and icons', () => {
     renderMenu()
@@ -104,7 +104,7 @@ describe('PopupMenu', () => {
   it('applies selected class to active index', () => {
     renderMenu({ startIndex: 1 })
     expect(screen.getByText('Item 2').parentElement).toHaveClass(
-      'fm-c-popup-menu__item--selected'
+      'im-c-popup-menu__item--selected'
     )
   })
 
@@ -112,15 +112,15 @@ describe('PopupMenu', () => {
     renderMenu()
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 1').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'ArrowUp' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'Home' })
-    expect(screen.getByText('Item 1').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'End' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('handles Enter key to call onClick and close menu', () => {
@@ -156,6 +156,32 @@ describe('PopupMenu', () => {
 
     expect(mockOnClick).toHaveBeenCalled()
     expect(mockEvaluateProp).toHaveBeenCalled()
+    expect(mockSetIsOpen).toHaveBeenCalled()
+  })
+
+  it('does not call onClick or close menu when clicking a disabled item', () => {
+    mockUseApp.disabledButtons = new Set(['item1'])
+    renderMenu()
+    fireEvent.click(screen.getByText('Item 1'))
+    expect(items[0].onClick).not.toHaveBeenCalled()
+    expect(mockSetIsOpen).not.toHaveBeenCalled()
+  })
+
+  it('Enter calls buttonConfig.onClick with evaluateProp context', () => {
+    const mockOnClick = jest.fn()
+    mockUseApp.buttonConfig = { item1: { onClick: mockOnClick } }
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockOnClick).toHaveBeenCalled()
+    expect(mockEvaluateProp).toHaveBeenCalled()
+    expect(mockSetIsOpen).toHaveBeenCalled()
+  })
+
+  it('Enter on a disabled item closes menu but does not call onClick', () => {
+    mockUseApp.disabledButtons = new Set(['item1'])
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(items[0].onClick).not.toHaveBeenCalled()
     expect(mockSetIsOpen).toHaveBeenCalled()
   })
 
@@ -215,22 +241,22 @@ describe('PopupMenu', () => {
     renderMenu({ startIndex: -1 })
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 1').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).toHaveClass('im-c-popup-menu__item--selected')
     fireEvent.keyDown(ul, { key: 'ArrowUp' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('ArrowUp from no selection picks last visible', () => {
     renderMenu({ startIndex: -1 })
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowUp' })
-    expect(screen.getByText('Item 2').parentElement).toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('initializes with no selection when neither startIndex nor startPos provided', () => {
     renderMenu({ startIndex: undefined, startPos: undefined })
-    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
-    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('does nothing when navigating and no visible items', () => {
@@ -238,8 +264,8 @@ describe('PopupMenu', () => {
     renderMenu({ startIndex: -1 })
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'ArrowDown' })
-    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
-    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('fm-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 1').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
+    expect(screen.getByText('Item 2').parentElement).not.toHaveClass('im-c-popup-menu__item--selected')
   })
 
   it('Enter with no selection closes but does not call any item onClick', () => {
@@ -291,7 +317,7 @@ describe('PopupMenu', () => {
     const item1 = screen.getByText('Item 1').parentElement
     const item2 = screen.getByText('Item 2').parentElement
     expect(item1).toHaveStyle('display: none')
-    expect(item2).toHaveAttribute('aria-pressed', 'true')
+    expect(item2).toHaveAttribute('aria-checked', 'true')
   })
 
   it('ignores unrelated keys (covers Enter false branch)', () => {
@@ -300,5 +326,65 @@ describe('PopupMenu', () => {
     fireEvent.keyDown(ul, { key: 'a' })
     expect(items[1].onClick).not.toHaveBeenCalled()
     expect(mockSetIsOpen).not.toHaveBeenCalled()
+  })
+
+  it('activateItem does nothing when item has no onClick and no buttonConfig.onClick (line 123 false branch)', () => {
+    const noHandlerItems = [{ id: 'noHandler', label: 'No Handler' }]
+    render(
+      <PopupMenu
+        pluginId='plugin1'
+        instigatorId='instigator'
+        startIndex={0}
+        menuRef={menuRef}
+        items={noHandlerItems}
+        setIsOpen={mockSetIsOpen}
+      />
+    )
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('activateItem skips synthetic click when element is not found in DOM (line 132 false branch)', () => {
+    const getByIdSpy = jest.spyOn(document, 'getElementById').mockReturnValue(null)
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+    getByIdSpy.mockRestore()
+  })
+
+  describe('Space key', () => {
+    it('Space on a menuitem calls onClick and closes menu', () => {
+      renderMenu({ startIndex: 0 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[0].onClick).toHaveBeenCalled()
+      expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+    })
+
+    it('Space on a menuitemcheckbox calls onClick but does not close menu', () => {
+      renderMenu({ startIndex: 1 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[1].onClick).toHaveBeenCalled()
+      expect(mockSetIsOpen).not.toHaveBeenCalled()
+    })
+
+    it('Space on a disabled item does nothing', () => {
+      mockUseApp.disabledButtons = new Set(['item1'])
+      renderMenu({ startIndex: 0 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[0].onClick).not.toHaveBeenCalled()
+      expect(mockSetIsOpen).not.toHaveBeenCalled()
+    })
+
+    it('Space with no selection does nothing', () => {
+      renderMenu({ startIndex: -1 })
+      const ul = screen.getByRole('menu')
+      fireEvent.keyDown(ul, { key: ' ' })
+      expect(items[0].onClick).not.toHaveBeenCalled()
+      expect(items[1].onClick).not.toHaveBeenCalled()
+      expect(mockSetIsOpen).not.toHaveBeenCalled()
+    })
   })
 })

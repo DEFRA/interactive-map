@@ -16,45 +16,46 @@ export const manifest = {
   },
 
   buttons: [{
-    id: 'selectDone',
-    label: 'Done',
-    variant: 'primary',
-    excludeWhen: ({ appState, pluginState }) => !pluginState.enabled || !appState.isFullscreen,
-    enableWhen: ({ mapState, pluginState }) => !!mapState.markers.items.some(m => m.id === 'location') || !!pluginState.selectionBounds,
-    mobile: {
-      slot: 'actions',
-      showLabel: true
-    },
-    tablet: {
-      slot: 'actions',
-      showLabel: true
-    },
-    desktop: {
-      slot: 'actions',
-      showLabel: true
-    }
-  },{
     id: 'selectAtTarget',
     label: 'Select',
-    variant: 'primary',
-    hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || !['touch', 'keyboard'].includes(appState.interfaceType),
+    iconId: 'select',
+    variant: 'touch',
+    hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || appState.interfaceType !== 'touch',
     mobile: {
       slot: 'actions',
-      showLabel: true
+      showLabel: false
     },
     tablet: {
       slot: 'actions',
-      showLabel: true
+      showLabel: false
     },
     desktop: {
       slot: 'actions',
-      showLabel: true
+      showLabel: false
     }
   },{
     id: 'selectCancel',
-    label: 'Cancel',
+    label: 'Back',
     variant: 'tertiary',
     hiddenWhen: ({ appConfig, appState, pluginState }) => !pluginState.enabled || !(['hybrid', 'buttonFirst'].includes(appConfig.behaviour) && appState.isFullscreen),
+    mobile: {
+      slot: 'actions',
+      showLabel: true
+    },
+    tablet: {
+      slot: 'actions',
+      showLabel: true
+    },
+    desktop: {
+      slot: 'actions',
+      showLabel: true
+    }
+  },{
+    id: 'selectDone',
+    label: 'Continue',
+    variant: 'primary',
+    excludeWhen: ({ appState, pluginState }) => !pluginState.enabled || !appState.isFullscreen,
+    enableWhen: ({ mapState, pluginState }) => !!mapState.markers.items.some(m => m.id === 'location') || !!pluginState.selectionBounds,
     mobile: {
       slot: 'actions',
       showLabel: true
@@ -74,6 +75,11 @@ export const manifest = {
     group: 'Select',
     title: 'Select feature',
     command: '<kbd>Enter</kbd></dd>'
+  }],
+
+  icons: [{
+    id: 'select',
+    svgContent: '<path d="M22 14a8 8 0 0 1-8 8"/><path d="M18 11v-1a2 2 0 0 0-2-2a2 2 0 0 0-2 2"/><path d="M14 10V9a2 2 0 0 0-2-2a2 2 0 0 0-2 2v1"/><path d="M10 9.5V4a2 2 0 0 0-2-2a2 2 0 0 0-2 2v10"/><path d="M18 11a2 2 0 1 1 4 0v3a8 8 0 0 1-8 8h-2c-2.8 0-4.5-.86-5.99-2.34l-3.6-3.6a2 2 0 0 1 2.83-2.82L7 15"/>'
   }],
 
   api: {

@@ -14,14 +14,17 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
     return
   }
 
+  // Guard: feature must exist in draw before doing anything
+  if (!draw.get(featureId)) {
+    return
+  }
+
   // Determin snapLayers from pluginConfig or runtime config
   let snapLayers = null
-  if (options.snapLayers !== undefined) {
-    snapLayers = options.snapLayers
-  } else if (pluginConfig.snapLayers !== undefined) {
-    snapLayers = pluginConfig.snapLayers
+  if (options.snapLayers === undefined) {
+    snapLayers = pluginConfig.snapLayers ?? null
   } else {
-    snapLayers = null
+    snapLayers = options.snapLayers
   }
 
   // Set per-call snap layers if provided
@@ -59,4 +62,6 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
 
   // Set mode to edit_vertex
   dispatch({ type: 'SET_MODE', payload: 'edit_vertex' })
+
+  return true
 }

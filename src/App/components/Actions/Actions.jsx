@@ -17,11 +17,12 @@ export const Actions = ({ children }) => {
   const className = [
     'im-c-panel',
     'im-c-actions',
+    !visibleChild && 'im-c-actions--hidden',
     isBottomSlotUsed && 'im-c-actions--border-top'
   ].filter(Boolean).join(' ')
 
   return (
-    <div className={className} style={visibleChild ? undefined : { display: 'none' }}>
+    <div className={className}>
       {children}
     </div>
   )
