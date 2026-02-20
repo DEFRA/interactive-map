@@ -4,6 +4,8 @@ import { createMapboxDraw } from './mapboxDraw.js'
 
 export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
 	const { events, eventBus } = services
+	const { crossHair } = mapState
+	const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
 
 	// Create draw instance once
 	useEffect(() => {
@@ -32,6 +34,19 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
 		return () => remove()
 
   }, [mapState.isMapReady, appState.mode])
+
+	// Show crosshair immediately on touch/keyboard when entering draw mode
+	useEffect(() => {
+		if (['draw_polygon', 'draw_line'].includes(pluginState.mode) && isTouchOrKeyboard) {
+			const wasAlreadyVisible = crossHair.isVisible
+			crossHair.fixAtCenter()
+			return () => {
+				if (!wasAlreadyVisible) {
+					crossHair.hide()
+				}
+			}
+		}
+	}, [pluginState.mode, appState.interfaceType])
 
 	// Attach events when plgin state changes
 	useEffect(() => {

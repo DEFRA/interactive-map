@@ -328,6 +328,30 @@ describe('PopupMenu', () => {
     expect(mockSetIsOpen).not.toHaveBeenCalled()
   })
 
+  it('activateItem does nothing when item has no onClick and no buttonConfig.onClick (line 123 false branch)', () => {
+    const noHandlerItems = [{ id: 'noHandler', label: 'No Handler' }]
+    render(
+      <PopupMenu
+        pluginId='plugin1'
+        instigatorId='instigator'
+        startIndex={0}
+        menuRef={menuRef}
+        items={noHandlerItems}
+        setIsOpen={mockSetIsOpen}
+      />
+    )
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('activateItem skips synthetic click when element is not found in DOM (line 132 false branch)', () => {
+    const getByIdSpy = jest.spyOn(document, 'getElementById').mockReturnValue(null)
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+    getByIdSpy.mockRestore()
+  })
+
   describe('Space key', () => {
     it('Space on a menuitem calls onClick and closes menu', () => {
       renderMenu({ startIndex: 0 })

@@ -19,7 +19,7 @@ export const manifest = {
     id: 'selectAtTarget',
     label: 'Select',
     variant: 'primary',
-    hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || !['touch', 'keyboard'].includes(appState.interfaceType),
+    hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || appState.interfaceType !== 'touch',
     mobile: {
       slot: 'actions',
       showLabel: true

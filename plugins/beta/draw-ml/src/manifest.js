@@ -27,7 +27,7 @@ export const manifest = {
     id: 'drawAddPoint',
     label: 'Add point',
     variant: 'primary',
-    hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType === 'mouse',
+    hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
     ...createButtonSlots(true)
   },{
     id: 'drawCancel',

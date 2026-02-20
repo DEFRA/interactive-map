@@ -120,8 +120,20 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
     const menuItemConfig = buttonConfig[item.id]
     if (typeof menuItemConfig?.onClick === 'function') {
       menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
-    } else {
-      item.onClick?.(e.nativeEvent)
+    } else if (typeof item.onClick === 'function') {
+      item.onClick(e.nativeEvent)
+    }
+    // For keyboard events, also dispatch a synthetic click so native window listeners fire
+    // (e.g. editVertexMode.onButtonClick for delete/undo in edit_vertex mode).
+    // Marked with _fromKeyboardActivation so handleItemClick ignores it and only the
+    // window listener handles it — preventing double-activation.
+    if (e.nativeEvent instanceof KeyboardEvent) {
+      const el = document.getElementById(`${id}-${stringToKebab(item.id)}`)
+      if (el) {
+        const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+        click._fromKeyboardActivation = true
+        el.dispatchEvent(click)
+      }
     }
   }
 
@@ -225,6 +237,9 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
    *   The clicked item object with {id, label, onClick, ...}
    */
   const handleItemClick = (e, item) => {
+    if (e.nativeEvent._fromKeyboardActivation) {
+      return
+    }
     if (disabledButtons.has(item.id)) {
       return
     }
