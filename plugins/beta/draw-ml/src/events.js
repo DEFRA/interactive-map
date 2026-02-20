@@ -148,6 +148,7 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
   drawSnap.onClick = handleSnap
 
   map.on('styledata', handleStyleData)
+  map.on('draw.cancel', handleCancel)
   map.on('draw.create', onCreate)
   map.on('draw.editfinish', onEditFinish)
   map.on('draw.update', onUpdate)
@@ -161,6 +162,7 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
       btn.onClick = null
     }})
     map.off('styledata', handleStyleData)
+    map.off('draw.cancel', handleCancel)
     map.off('draw.create', onCreate)
     map.off('draw.editfinish', onEditFinish)
     map.off('draw.update', onUpdate)

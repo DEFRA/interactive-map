@@ -94,16 +94,16 @@
     svg + span {
         padding-left: 0;
     }
+
+    &::before {
+        box-shadow: none;
+    }
 }
 
 @media (hover: hover) and (pointer: fine) {
     .im-c-map-button--primary:hover {
         background-color: var(--primary-button-hover-color);
     }
-}
-
-.im-c-map-button--primary::before {
-    box-shadow: none;
 }
 
 .im-c-map-button--tertiary {
@@ -118,10 +118,23 @@
     svg + span {
         padding-left: 0;
     }
+
+    &::before {
+        box-shadow: none;
+    }
 }
 
-.im-c-map-button--tertiary::before {
-    box-shadow: none;
+.im-c-map-button--touch {
+    background-color: var(--map-overlay-foreground-color);
+    color: var(--map-overlay-halo-color);
+
+    width: var(--touch-button-size);
+    height: var(--touch-button-size);
+    border-radius: 100%;
+
+    &::before {
+        box-shadow: none;
+    }
 }
 
 .im-o-app__right {

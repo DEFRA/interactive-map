@@ -26,9 +26,10 @@ export const manifest = {
   buttons: [{
     id: 'drawAddPoint',
     label: 'Add point',
-    variant: 'primary',
+    iconId: 'plus',
+    variant: 'touch',
     hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
-    ...createButtonSlots(true)
+    ...createButtonSlots(false)
   },{
     id: 'drawCancel',
     label: 'Cancel',
