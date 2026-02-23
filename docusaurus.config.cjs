@@ -11,7 +11,7 @@ const config = {
 
   organizationName: 'defra',
   projectName: 'interactive-map',
-  deploymentBranch: 'gh-pages',
+  deploymentBranch: 'main',
   trailingSlash: false,
 
   onBrokenLinks: 'warn',
