@@ -66,7 +66,11 @@
     "./providers/esri/css": "./providers/beta/esri/dist/css/index.css"
   },
   "type": "module",
-  "sideEffects": ["**/*.css", "**/*.scss"],
+  "sideEffects": [
+    "**/*.css",
+    "**/*.scss",
+    "./src/InteractiveMap/polyfills.js"
+  ],
   "scripts": {
     "clean": "rimraf dist",
     "sass:watch": "sass --watch demo/scss/farming.scss:public/farming-demo.css demo/scss/planning.scss:public/planning-demo.css",
@@ -84,7 +88,8 @@
     "lint:js:fix": "standard \"src/**/*.{js,jsx,ts,tsx}\" --fix",
     "lint:scss:fix": "stylelint \"src/**/*.{css,scss}\" --fix",
     "test": "jest --color --coverage --verbose",
-    "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public"
+    "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public",
+    "report:esm": "ANALYZE=1 rollup --config rollup.esm.mjs"
   },
   "standard": {
     "envs": [
@@ -109,6 +114,7 @@
   "devDependencies": {
     "@arcgis/core": "^4.34.8",
     "@babel/core": "^7.28.0",
+    "@babel/plugin-transform-runtime": "^7.29.0",
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.1",
     "@esri/arcgis-rest-request": "^4.7.3",
@@ -144,6 +150,7 @@
     "rimraf": "^6.1.0",
     "rollup": "^4.59.0",
     "rollup-plugin-postcss": "^4.0.2",
+    "rollup-plugin-visualizer": "^7.0.0",
     "sass": "^1.89.2",
     "sass-loader": "^16.0.5",
     "standard": "^17.1.2",
@@ -169,6 +176,7 @@
     "@turf/bearing": "^7.3.3"
   },
   "dependencies": {
+    "@babel/runtime": "^7.28.6",
     "@turf/area": "^7.2.0",
     "@turf/bearing": "^7.3.3",
     "@turf/boolean-disjoint": "^7.3.3",

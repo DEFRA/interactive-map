@@ -9,6 +9,7 @@ import alias from '@rollup/plugin-alias'
 import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import postcss from 'rollup-plugin-postcss'
+import { visualizer } from 'rollup-plugin-visualizer'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -24,6 +25,24 @@ const cleanPlugin = (dirs) => ({
         fs.rmSync(dir, { recursive: true, force: true })
       }
       fs.mkdirSync(dir, { recursive: true })
+    }
+  }
+})
+
+// Adds webpackChunkName magic comments to all relative dynamic imports in the
+// output, deriving the name from the imported file's basename.
+// Must run AFTER terser() so the comments survive minification.
+// This lets webpack consumers produce named chunks matching Rollup chunk names.
+const webpackChunkNamesPlugin = () => ({
+  name: 'webpack-chunk-names',
+  renderChunk (code) {
+    return {
+      // Matches import("./some-chunk-name.js") — flat relative paths only
+      code: code.replace(
+        /import\("(\.\/([^/"]+))\.js"\)/g,
+        (_, relPath, chunkName) => `import(/* webpackChunkName: "${chunkName}" */ "${relPath}.js")`
+      ),
+      map: null
     }
   }
 })
@@ -56,7 +75,14 @@ const PREACT_EXTERNALS = [
   'preact/jsx-runtime'
 ]
 
-const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null) => {
+// @babel/runtime helpers are externalised so Rollup never inlines or
+// deduplicates them across chunks.  Without this, shared helpers (classCallCheck,
+// objectSpread2, etc.) end up in the lazy im-core chunk, forcing a static import
+// from index.js and defeating lazy loading.  @babel/runtime is a regular
+// dependency so it auto-installs for consumers and is resolved transparently.
+const BABEL_RUNTIME_EXTERNAL = /@babel\/runtime/
+
+const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, preserveModules = false) => {
   const esmDir = path.resolve(__dirname, outDir)
   // Use the parent dir as output.dir so CSS can be emitted to css/index.css
   // (a sibling subdir) without Rollup 4's ban on ".." in emitted file names.
@@ -74,9 +100,10 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null)
     // react/* is intentionally absent — the alias plugin rewrites those imports
     // to preact/* before Rollup's external check, so only the preact IDs appear.
     external: isCore
-      ? PREACT_EXTERNALS
+      ? [...PREACT_EXTERNALS, BABEL_RUNTIME_EXTERNAL]
       : [
           ...PREACT_EXTERNALS,
+          BABEL_RUNTIME_EXTERNAL,
           // maplibre-gl is externalised so ESM consumers get a single shared
           // instance from their own node_modules rather than a 1 MB copy bundled
           // into the provider.  (UMD keeps it bundled — no bundler available there.)
@@ -105,16 +132,33 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null)
         ]
       }),
 
-      nodeResolve({ extensions: ['.js', '.jsx'] }),
+      nodeResolve({
+        extensions: ['.js', '.jsx'],
+        // Force these packages to resolve from root node_modules only,
+        // preventing nested copies inside geojson-rbush and mapbox-gl-snap
+        // from being bundled separately (saves ~200 KB in draw-ml).
+        dedupe: ['@turf/meta', '@turf/helpers', 'robust-predicates']
+      }),
       commonjs({ include: /node_modules/ }),
 
       babel({
-        babelHelpers: 'bundled',
+        // 'runtime' mode imports helpers from @babel/runtime rather than
+        // inlining them.  This prevents Rollup from deduplicating helpers across
+        // chunks (which caused static imports between entry and lazy chunks).
+        babelHelpers: 'runtime',
         exclude: /node_modules/,
-        extensions: ['.js', '.jsx']
-        // Picks up babel.config.json automatically.
-        // @rollup/plugin-babel passes a caller that tells @babel/preset-env
-        // to keep ES module syntax (modules: 'auto' default behaviour).
+        extensions: ['.js', '.jsx'],
+        plugins: ['@babel/plugin-transform-runtime'],
+        // Override babel.config.json targets for ESM: target browsers that
+        // natively support ES modules (Chrome 61+, Firefox 60+, Safari 10.1+).
+        // The UMD build targets old browsers; the ESM build ships modern syntax
+        // and lets the consumer's bundler handle their own browser targets.
+        // This avoids transpiling classes, arrow functions, async/await etc.
+        // into verbose ES5 — the single biggest driver of ESM bundle size.
+        presets: [
+          ['@babel/preset-env', { targets: { esmodules: true } }],
+          ['@babel/preset-react', { runtime: 'automatic' }]
+        ]
       }),
 
       // extract is an absolute path; Rollup resolves it relative to output.dir
@@ -126,28 +170,56 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null)
 
       terser(),
 
-      ...(isCore ? [removeFullCssPlugin(cssDir)] : [])
+      // webpackChunkNamesPlugin must come after terser so comments survive
+      webpackChunkNamesPlugin(),
+
+      ...(isCore ? [removeFullCssPlugin(cssDir)] : []),
+
+      // Only runs when ANALYZE=1 is set; writes stats to dist/stats/<name>.html
+      ...(process.env.ANALYZE ? [visualizer({
+        filename: path.resolve(__dirname, 'dist/stats', `${outDir.replace(/\//g, '-')}.html`),
+        open: false,
+        gzipSize: true
+      })] : [])
     ],
 
-    output: {
-      dir: rootDir,
-      format: 'es',
-      // JS files go into the esm/ subdirectory within rootDir
-      entryFileNames: 'esm/index.js',
-      chunkFileNames: 'esm/[name].js',
-      // Rollup ignores webpack magic comments; manualChunks is how we assign
-      // meaningful names to lazy-loaded splits.
-      manualChunks: isCore
-        ? (id) => { if (id.includes('/App/initialiseApp')) return 'im-core' }
-        : (manualChunks || undefined)
-    }
+    output: preserveModules
+      ? {
+          // Per-module output: one compiled JS file per source module.
+          // Enables full tree-shaking for webpack consumers (no pre-bundled chunks).
+          dir: esmDir,
+          format: 'es',
+          preserveModules: true,
+          preserveModulesRoot: 'src',
+          entryFileNames: '[name].js'
+        }
+      : {
+          dir: rootDir,
+          format: 'es',
+          // JS files go into the esm/ subdirectory within rootDir
+          entryFileNames: 'esm/index.js',
+          // Core: give auto-generated chunks meaningful names.
+          // - initialiseApp → im-core.js  (the lazy Preact app chunk)
+          // - anything else → im-shell.js (the sync InteractiveMap + shared utils chunk)
+          chunkFileNames: isCore
+            ? (chunk) => chunk.name === 'initialiseApp' ? 'esm/im-core.js' : 'esm/im-shell.js'
+            : 'esm/[name].js',
+          // Rollup ignores webpack magic comments; manualChunks is how we assign
+          // meaningful names to lazy-loaded splits.
+          // Core: no manualChunks — Rollup's natural algorithm keeps shared source
+          // modules in the entry chunk, so the lazy initialiseApp split has no static
+          // back-imports into index.js.  The chunk gets a name via chunkFileNames.
+          manualChunks: isCore
+            ? undefined
+            : (manualChunks || undefined)
+        }
   }
 }
 
 // === All builds ===
 const ALL_BUILDS = [
   // Core
-  { entryPath: './src/index.js', outDir: 'dist/esm', isCore: true },
+  { entryPath: './src/index.js', outDir: 'dist/esm', isCore: true, preserveModules: true },
 
   // Providers
   {
