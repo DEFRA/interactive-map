@@ -9,8 +9,6 @@
  */
 
 import '../scss/main.scss'
-// Polyfills to ensure entry point works on all devices
-import './polyfills.js'
 import historyManager from './historyManager.js'
 import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
@@ -25,6 +23,9 @@ import { createReverseGeocode } from '../services/reverseGeocode.js'
 import { EVENTS as events } from '../config/events.js'
 import { createEventBus } from '../services/eventBus.js'
 import { toggleInertElements } from '../utils/toggleInertElements.js'
+
+// Polyfills to ensure entry point works on all devices
+import './polyfills.js'
 
 /**
  * Main entry point for the Interactive Map component.

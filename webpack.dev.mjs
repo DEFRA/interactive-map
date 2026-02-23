@@ -24,7 +24,14 @@ export default {
     clean: true,
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.jsx', '.js']
+    extensions: ['.tsx', '.ts', '.jsx', '.js'],
+    alias: {
+      // Force these to resolve from root node_modules, preventing nested copies
+      // inside geojson-rbush and mapbox-gl-snap from being bundled separately.
+      '@turf/meta': path.resolve(__dirname, 'node_modules/@turf/meta'),
+      '@turf/helpers': path.resolve(__dirname, 'node_modules/@turf/helpers'),
+      'robust-predicates': path.resolve(__dirname, 'node_modules/robust-predicates')
+    }
   },
   plugins: [
     new MiniCssExtractPlugin({
@@ -106,6 +113,7 @@ export default {
     setupMiddlewares
   },
   optimization: {
+    chunkIds: 'named',
     splitChunks: {
       chunks () {
         return false

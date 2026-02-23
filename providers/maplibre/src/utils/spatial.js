@@ -28,7 +28,8 @@ const formatDimension = (meters) => {
 
   const miles = meters / METERS_PER_MILE
 
-  if (miles < MILE_THRESHOLD / METERS_PER_MILE) {
+  // Check if we are under the half-mile threshold
+  if (miles < MILE_THRESHOLD) {
     return `${Math.round(meters)}m`
   }
 
@@ -39,8 +40,7 @@ const formatDimension = (meters) => {
   }
 
   const rounded = Math.round(miles)
-  const unit = rounded === 1 ? 'mile' : 'miles'
-  return `${rounded} ${unit}`
+  return `${rounded} miles`
 }
 
 // -----------------------------------------------------------------------------
@@ -191,5 +191,6 @@ export {
   getCardinalMove,
   spatialNavigate,
   getResolution,
-  getPaddedBounds
+  getPaddedBounds,
+  formatDimension
 }
