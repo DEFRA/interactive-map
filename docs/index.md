@@ -46,7 +46,6 @@ const interactiveMap = new InteractiveMap('map', {
 - 🔌 Extensible plugin system
 - 🎨 Customizable styling and behaviors
 - 📱 Responsive design
-- ⚛️ React integration
 
 ## Support
 
