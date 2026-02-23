@@ -519,6 +519,7 @@ Add a button to the UI at runtime.
 See [ButtonDefinition](./api/button-definition.md) for configuration options.
 
 ```js
+// Simple button
 interactiveMap.addButton('my-button', {
   label: 'Click me',
   iconId: 'info',
@@ -526,6 +527,19 @@ interactiveMap.addButton('my-button', {
   mobile: { slot: 'top-right' },
   tablet: { slot: 'top-right' },
   desktop: { slot: 'top-right' }
+})
+
+// Button with a popup menu (experimental: only reliable when centred in the action bar)
+interactiveMap.addButton('my-menu', {
+  label: 'Options',
+  iconId: 'menu',
+  mobile: { slot: 'top-right' },
+  tablet: { slot: 'top-right' },
+  desktop: { slot: 'top-right' },
+  menuItems: [
+    { id: 'opt-a', label: 'Option A', onClick: () => console.log('A') },
+    { id: 'opt-b', label: 'Option B', onClick: () => console.log('B') }
+  ]
 })
 ```
 
@@ -630,7 +644,7 @@ Set or toggle a button state.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `id` | `string` | Button identifier |
-| `prop` | `string` | The button state to change: `'hidden'`, `'pressed'`, or `'disabled'` |
+| `prop` | `string` | The button state to change: `'hidden'`, `'pressed'`, `'disabled'`, or `'expanded'` |
 | `value` | `boolean` | Optional. If provided, sets state explicitly; otherwise toggles |
 
 ```js
@@ -642,6 +656,12 @@ interactiveMap.toggleButtonState('my-button', 'disabled', true)
 
 // Hide a button
 interactiveMap.toggleButtonState('my-button', 'hidden', true)
+
+// Set expanded state (e.g. for a button controlling collapsible content)
+interactiveMap.toggleButtonState('my-button', 'expanded', true)
+
+// Control a menu item's state using its id
+interactiveMap.toggleButtonState('opt-a', 'pressed', true)
 ```
 
 ---
