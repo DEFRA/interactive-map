@@ -49,3 +49,4 @@ stats.json
 # Docusaurus
 .docusaurus
 build
+.playwright-mcp
