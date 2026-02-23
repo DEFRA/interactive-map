@@ -7,7 +7,7 @@ const config = {
   favicon: 'img/favicon.ico',
 
   url: 'https://defra.github.io',
-  baseUrl: '/interactive-map/',
+  baseUrl: '/',
 
   organizationName: 'defra',
   projectName: 'interactive-map',
@@ -31,7 +31,6 @@ const config = {
       '@docusaurus/plugin-content-docs',
       {
         routeBasePath: '/',
-        sidebarPath: './sidebars.cjs',
         editUrl: 'https://github.com/DEFRA/interactive-map/tree/main/',
       },
     ],
