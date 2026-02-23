@@ -7,7 +7,7 @@ const config = {
   favicon: 'img/favicon.ico',
 
   url: 'https://defra.github.io',
-  baseUrl: '/',
+  baseUrl: '/interactive-map/',
 
   organizationName: 'defra',
   projectName: 'interactive-map',
