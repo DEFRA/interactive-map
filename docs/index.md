@@ -1,35 +1,6 @@
-# Interactive Map Documentation
+# InteractiveMap documentation
 
-Welcome to the DEFRA Interactive Map documentation. This is an accessible map component designed for specific use cases with a focus on accessibility.
-
-## Quick Start
-
-Install the package:
-
-```shell
-npm i @defra/interactive-map
-```
-
-Create a simple map:
-
-```js
-import InteractiveMap from '@defra/interactive-map'
-import maplibreProvider from '@defra/interactive-map/providers/maplibre'
-
-const interactiveMap = new InteractiveMap('map', {
-  mapProvider: maplibreProvider(),
-  behaviour: 'hybrid',
-  mapLabel: 'Ambleside',
-  zoom: 14,
-  center: [-2.968, 54.425],
-  containerHeight: '650px',
-  mapStyle: {
-    url: 'https://tiles.openfreemap.org/styles/liberty',
-    attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',
-    backgroundColor: '#f5f5f0'
-  }
-})
-```
+InteractiveMap is a lightweight map component designed for public-facing government services, and available for anyone to use. Built to GOV.UK standards, with accessibility at its core, Interactive Map supports a wide range of users across abilities, devices and input methods. It is open source and works with multiple mapping engines. The component can be extended through plugins to meet the specific needs of a service.
 
 ## What's Inside
 
