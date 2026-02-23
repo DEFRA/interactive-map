@@ -109,7 +109,7 @@
     "@docusaurus/plugin-content-docs": "3.4.0",
     "@docusaurus/module-type-aliases": "3.4.0",
     "@docusaurus/tsconfig": "3.4.0",
-    "docusaurus-theme-govuk": "file:../../docusaurus-govuk/packages/docusaurus-theme-govuk"
+    "@defra/docusaurus-theme-govuk": "0.0.1-alpha"
   },
   "keywords": [
     "react",

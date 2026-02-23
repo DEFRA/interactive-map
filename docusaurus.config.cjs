@@ -24,7 +24,7 @@ const config = {
 
   presets: [],
 
-  themes: ['docusaurus-theme-govuk'],
+  themes: ['@defra/docusaurus-theme-govuk'],
 
   plugins: [
     [
