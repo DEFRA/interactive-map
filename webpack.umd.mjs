@@ -136,7 +136,7 @@ const ALL_BUILDS = [
 
   // Plugins
   { entryPath: './plugins/beta/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/beta/scale-bar/dist/umd' },
-  { entryPath: './plugins/beta/use-location/src/index.js', libraryPath: 'drawPolygonMLPlugin', outDir: 'plugins/beta/use-location/dist/umd' },
+  { entryPath: './plugins/beta/use-location/src/index.js', libraryPath: 'useLocationPlugin', outDir: 'plugins/beta/use-location/dist/umd' },
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },
   { entryPath: './plugins/beta/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/beta/datasets/dist/umd' },

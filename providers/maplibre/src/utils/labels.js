@@ -234,9 +234,7 @@ export function createMapLabelNavigator(map, mapColorScheme, events, eventBus) {
     }
     const centerPoint = map.project(map.getCenter())
     const closest = findClosestLabel(state.labels, centerPoint)
-    if (closest) {
-      state.currentPixel = { x: closest.x, y: closest.y }
-    }
+    state.currentPixel = { x: closest.x, y: closest.y }
     applyHighlight(map, closest, state)
     return `${closest.text} (${closest.layer.id})`
   }

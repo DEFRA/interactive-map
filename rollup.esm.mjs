@@ -82,7 +82,7 @@ const PREACT_EXTERNALS = [
 // dependency so it auto-installs for consumers and is resolved transparently.
 const BABEL_RUNTIME_EXTERNAL = /@babel\/runtime/
 
-const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, preserveModules = false) => {
+const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null) => {
   const esmDir = path.resolve(__dirname, outDir)
   // Use the parent dir as output.dir so CSS can be emitted to css/index.css
   // (a sibling subdir) without Rollup 4's ban on ".." in emitted file names.
@@ -183,43 +183,33 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       })] : [])
     ],
 
-    output: preserveModules
-      ? {
-          // Per-module output: one compiled JS file per source module.
-          // Enables full tree-shaking for webpack consumers (no pre-bundled chunks).
-          dir: esmDir,
-          format: 'es',
-          preserveModules: true,
-          preserveModulesRoot: 'src',
-          entryFileNames: '[name].js'
-        }
-      : {
-          dir: rootDir,
-          format: 'es',
-          // JS files go into the esm/ subdirectory within rootDir
-          entryFileNames: 'esm/index.js',
-          // Core: give auto-generated chunks meaningful names.
-          // - initialiseApp → im-core.js  (the lazy Preact app chunk)
-          // - anything else → im-shell.js (the sync InteractiveMap + shared utils chunk)
-          chunkFileNames: isCore
-            ? (chunk) => chunk.name === 'initialiseApp' ? 'esm/im-core.js' : 'esm/im-shell.js'
-            : 'esm/[name].js',
-          // Rollup ignores webpack magic comments; manualChunks is how we assign
-          // meaningful names to lazy-loaded splits.
-          // Core: no manualChunks — Rollup's natural algorithm keeps shared source
-          // modules in the entry chunk, so the lazy initialiseApp split has no static
-          // back-imports into index.js.  The chunk gets a name via chunkFileNames.
-          manualChunks: isCore
-            ? undefined
-            : (manualChunks || undefined)
-        }
+    output: {
+      dir: rootDir,
+      format: 'es',
+      // JS files go into the esm/ subdirectory within rootDir
+      entryFileNames: 'esm/index.js',
+      // Core: give auto-generated chunks meaningful names.
+      // - initialiseApp → im-core.js  (the lazy Preact app chunk)
+      // - anything else → im-shell.js (the sync InteractiveMap + shared utils chunk)
+      chunkFileNames: isCore
+        ? (chunk) => chunk.name === 'initialiseApp' ? 'esm/im-core.js' : 'esm/im-shell.js'
+        : 'esm/[name].js',
+      // Rollup ignores webpack magic comments; manualChunks is how we assign
+      // meaningful names to lazy-loaded splits.
+      // Core: no manualChunks — Rollup's natural algorithm keeps shared source
+      // modules in the entry chunk, so the lazy initialiseApp split has no static
+      // back-imports into index.js.  The chunk gets a name via chunkFileNames.
+      manualChunks: isCore
+        ? undefined
+        : (manualChunks || undefined)
+    }
   }
 }
 
 // === All builds ===
 const ALL_BUILDS = [
   // Core
-  { entryPath: './src/index.js', outDir: 'dist/esm', isCore: true, preserveModules: true },
+  { entryPath: './src/index.js', outDir: 'dist/esm', isCore: true },
 
   // Providers
   {
