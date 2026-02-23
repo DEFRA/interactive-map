@@ -3,12 +3,21 @@ import React from 'react'
 import { render, screen, within } from '@testing-library/react'
 import { KeyboardHelp } from './KeyboardHelp'
 import { getKeyboardShortcuts } from '../../registry/keyboardShortcutRegistry.js'
+import { useConfig } from '../../store/configContext'
 
 jest.mock('../../registry/keyboardShortcutRegistry.js', () => ({
   getKeyboardShortcuts: jest.fn()
 }))
 
+jest.mock('../../store/configContext', () => ({
+  useConfig: jest.fn()
+}))
+
 describe('KeyboardHelp', () => {
+  beforeEach(() => {
+    useConfig.mockReturnValue({})
+  })
+
   afterEach(() => {
     jest.clearAllMocks()
   })

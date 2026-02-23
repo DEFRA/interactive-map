@@ -6,7 +6,7 @@ import { getSnapInstance } from '../utils/snapHelpers.js'
  * @param {string} featureId - ID of the feature to edit
  * @param {object} options - Options including snapLayers
  */
-export const editFeature = ({ appState, appConfig, mapState, pluginState, mapProvider }, featureId, options = {}) => {
+export const editFeature = ({ appState, appConfig, mapState, pluginConfig, pluginState, mapProvider }, featureId, options = {}) => {
   const { dispatch } = pluginState
   const { draw, map } = mapProvider
 
@@ -14,24 +14,38 @@ export const editFeature = ({ appState, appConfig, mapState, pluginState, mapPro
     return
   }
 
+  // Guard: feature must exist in draw before doing anything
+  if (!draw.get(featureId)) {
+    return
+  }
+
+  // Determin snapLayers from pluginConfig or runtime config
+  let snapLayers = null
+  if (options.snapLayers === undefined) {
+    snapLayers = pluginConfig.snapLayers ?? null
+  } else {
+    snapLayers = options.snapLayers
+  }
+
   // Set per-call snap layers if provided
   const snap = getSnapInstance(map)
   if (snap?.setSnapLayers) {
-    snap.setSnapLayers(options.snapLayers || null)
-  } else if (options.snapLayers) {
+    snap.setSnapLayers(snapLayers)
+  } else if (snapLayers) {
     // Snap instance not ready yet - store for later
-    map._pendingSnapLayers = options.snapLayers
+    map._pendingSnapLayers = snapLayers
   } else {
     // No action
   }
 
   // Update state so UI can react to snap layer availability
-  dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: options.snapLayers?.length > 0 })
+  dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
   // Change mode to edit_vertex
   draw.changeMode('edit_vertex', {
     container: appState.layoutRefs.viewportRef.current,
     deleteVertexButtonId: `${appConfig.id}-draw-delete-point`,
+    undoButtonId: `${appConfig.id}-draw-undo`,
     isPanEnabled: appState.interfaceType !== 'keyboard',
     interfaceType: appState.interfaceType,
     scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
@@ -48,4 +62,6 @@ export const editFeature = ({ appState, appConfig, mapState, pluginState, mapPro
 
   // Set mode to edit_vertex
   dispatch({ type: 'SET_MODE', payload: 'edit_vertex' })
+
+  return true
 }

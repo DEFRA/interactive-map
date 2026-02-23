@@ -13,7 +13,7 @@ export function applyPreventDefaultFix (map) {
   const originalPreventDefault = Event.prototype.preventDefault
 
   // Override preventDefault only for events targeting our map
-  Event.prototype.preventDefault = function () {
+  Event.prototype.preventDefault = function () { // NOSONAR: intentional monkey-patch to fix MapLibre touch event bug
     if ((this.type === 'touchmove' || this.type === 'touchstart') && !this.cancelable) {
       // Check if the event target is within our map container
       const canvas = map.getCanvas()
@@ -21,6 +21,6 @@ export function applyPreventDefaultFix (map) {
         return
       }
     }
-    return originalPreventDefault.call(this)
+    originalPreventDefault.call(this)
   }
 }

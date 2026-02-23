@@ -4,6 +4,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { Panel } from './Panel'
 import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext'
+import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 
 jest.mock('../../store/configContext', () => ({ useConfig: jest.fn() }))
 jest.mock('../../store/appContext', () => ({ useApp: jest.fn() }))
@@ -60,6 +61,23 @@ describe('Panel', () => {
     it('applies width style if provided', () => {
       renderPanel({ desktop: { slot: 'side', dismissable: true, initiallyOpen: true, width: '300px' } })
       expect(screen.getByRole('complementary')).toHaveStyle({ width: '300px' })
+    })
+
+    it('adds scrollable attributes to body when content overflows', () => {
+      // 1. Force the mock to true ONLY for this test
+      useIsScrollable.mockReturnValue(true)
+
+      const { container } = renderPanel()
+
+      // 2. Target by class to avoid role collision with the parent panel
+      const body = container.querySelector('.im-c-panel__body')
+
+      expect(body).toHaveAttribute('tabIndex', '0')
+      expect(body).toHaveAttribute('role', 'region')
+      expect(body).toHaveAttribute('aria-labelledby', 'app-panel-settings-label')
+
+      // 3. IMPORTANT: Reset to false so other tests don't see two regions
+      useIsScrollable.mockReturnValue(false)
     })
   })
 

@@ -1,4 +1,4 @@
-export const deleteFeature = ({ mapProvider, services }, featureId) => {
+export const deleteFeature = ({ mapProvider, services }, featureIds) => {
   const { draw } = mapProvider
   const { eventBus } = services
 
@@ -6,8 +6,8 @@ export const deleteFeature = ({ mapProvider, services }, featureId) => {
     return
   }
 
-  // --- Delete feature from draw instance
-  draw.delete(featureId)
+  // --- Delete features from draw instance
+  draw.delete(featureIds)
 
-  eventBus.emit('draw:delete', { featureId })
+  eventBus.emit('draw:delete', { featureIds })
 }

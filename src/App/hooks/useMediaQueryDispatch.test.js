@@ -115,4 +115,52 @@ describe('useMediaQueryDispatch', () => {
       payload: { preferredColorScheme: 'light', prefersReducedMotion: true }
     })
   })
+
+  it('sets up hybrid media query and dispatches on change', () => {
+    const options = {
+      behaviour: 'hybrid',
+      hybridWidth: 500,
+      maxMobileWidth: 768,
+      appColorScheme: 'light',
+      autoColorScheme: true
+    }
+
+    renderHook(() => useMediaQueryDispatch(dispatch, options))
+
+    // Verify matchMedia was called with the hybrid threshold
+    expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 500px)')
+
+    // Verify addEventListener was called for the 2 standard queries + 1 hybrid query
+    expect(mockMediaQuery.addEventListener).toHaveBeenCalledTimes(3)
+
+    // Find the hybrid change handler (the last one registered)
+    const hybridHandler = mockMediaQuery.addEventListener.mock.calls[2][1]
+
+    // Simulate a media query match event
+    act(() => {
+      hybridHandler({ matches: true })
+    })
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'SET_HYBRID_FULLSCREEN',
+      payload: true
+    })
+  })
+
+  it('falls back to maxMobileWidth for hybrid threshold when hybridWidth is missing', () => {
+    const options = {
+      behaviour: 'hybrid',
+      // hybridWidth is undefined here
+      maxMobileWidth: 800,
+      appColorScheme: 'light',
+      autoColorScheme: true
+    }
+
+    renderHook(() => useMediaQueryDispatch(dispatch, options))
+
+    // This covers the right side of the ?? operator
+    expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 800px)')
+
+    expect(mockMediaQuery.addEventListener).toHaveBeenCalledTimes(3)
+  })
 })

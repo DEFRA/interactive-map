@@ -12,7 +12,7 @@ let mockedQueries = {}
 
 class MockResizeObserver {
   constructor (callback) { this.callback = callback }
-  observe (el) { MockResizeObserver.instance = this }
+  observe () { MockResizeObserver.instance = this }
   disconnect () { MockResizeObserver.instance = null }
   trigger (width, fallback) {
     this.callback([fallback ? { contentRect: { width } } : { borderBoxSize: [{ inlineSize: width }], contentRect: { width } }])
@@ -35,7 +35,9 @@ const mockMatchMedia = (query) => {
 window.matchMedia = jest.fn(mockMatchMedia)
 
 const triggerMQ = (query, matches) => {
-  if (mockedQueries[query]) mockedQueries[query].matches = matches
+  if (mockedQueries[query]) {
+    mockedQueries[query].matches = matches
+  }
   mediaListeners[query]?.forEach(fn => fn({ matches }))
 }
 
@@ -68,6 +70,46 @@ describe('detectBreakpoint', () => {
     detector.destroy()
   })
 
+  /**
+   * Test to ensure coverage for the concurrency guard (Line 75).
+   * Validates that if multiple breakpoint changes occur before a RAF
+   * frame fires, only the most recent (current) state notifies listeners.
+   */
+  it('does not notify listeners if the breakpoint changed again before RAF fired', () => {
+    const listener = jest.fn()
+    const detector = createBreakpointDetector(cfg)
+    detector.subscribe(listener)
+
+    // 1. Initial flush to clear the "mount" notification
+    flushRAF()
+    listener.mockClear()
+
+    // 2. Trigger 'mobile'.
+    // This sets lastBreakpoint = 'mobile' and queues RAF #1 (type: 'mobile')
+    triggerMQ('(max-width: 768px)', true)
+
+    // 3. IMMEDIATELY switch to 'desktop' before flushing.
+    // IMPORTANT: We must turn mobile OFF so the detector sees 'desktop'.
+    triggerMQ('(max-width: 768px)', false)
+    triggerMQ('(min-width: 1024px)', true)
+
+    // At this point:
+    // - lastBreakpoint is now 'desktop'
+    // - There are 3 callbacks in the RAF queue:
+    //   - RAF #1 from the mobile trigger (type: 'mobile')
+    //   - RAF #2 from the mobile=false trigger (type: 'tablet')
+    //   - RAF #3 from the desktop trigger (type: 'desktop')
+
+    flushRAF()
+
+    // RAF #1: ('mobile' === 'desktop') is false -> skip listener
+    // RAF #2: ('tablet' === 'desktop') is false -> skip listener
+    // RAF #3: ('desktop' === 'desktop') is true -> call listener
+    expect(listener).toHaveBeenCalledTimes(1)
+    expect(listener).toHaveBeenCalledWith('desktop')
+    expect(detector.getBreakpoint()).toBe('desktop')
+  })
+
   describe('viewport mode', () => {
     it.each([
       ['mobile', true, false],
@@ -76,8 +118,12 @@ describe('detectBreakpoint', () => {
     ])('detects %s', (name, mobile, desktop) => {
       window.matchMedia.mockImplementation(q => {
         const mq = mockMatchMedia(q)
-        if (q === '(max-width: 768px)') mq.matches = mobile
-        if (q === '(min-width: 1024px)') mq.matches = desktop
+        if (q === '(max-width: 768px)') {
+          mq.matches = mobile
+        }
+        if (q === '(min-width: 1024px)') {
+          mq.matches = desktop
+        }
         return mq
       })
       const detector = createBreakpointDetector(cfg)

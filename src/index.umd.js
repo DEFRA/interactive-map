@@ -6,7 +6,7 @@ import * as JSXRuntime from 'react/jsx-runtime'
 
 import InteractiveMap from './index.js'
 
-const g = typeof window !== 'undefined' ? window : globalThis
+const g = typeof window === 'undefined' ? globalThis : window
 
 // Create `defra` namespace if missing
 g.defra = g.defra || {}

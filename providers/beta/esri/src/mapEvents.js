@@ -7,7 +7,7 @@ const MOVE_THROTTLE_TIME = 10
 const ZOOM_TOLERANCE = 0.01
 
 export function attachMapEvents ({
-  map,
+  mapProvider,
   view,
   baseTileLayer,
   events,
@@ -54,7 +54,7 @@ export function attachMapEvents ({
   // ready
   once(() => view.ready).then(() => {
     if (!destroyed) {
-      eventBus.emit(events.MAP_READY, { map, view })
+      eventBus.emit(events.MAP_READY, mapProvider.getMapAPI())
     }
   })
 

@@ -21,8 +21,18 @@ export const setProviderSupportedShortcuts = (ids = []) => {
   providerSupportedIds = new Set(ids)
 }
 
-export const getKeyboardShortcuts = () => {
-  const filteredCore = coreShortcuts.filter(s => providerSupportedIds.has(s.id))
+export const getKeyboardShortcuts = (appConfig = {}) => {
+  const filteredCore = coreShortcuts.filter(s => {
+    // Must be supported by provider
+    if (!providerSupportedIds.has(s.id)) {
+      return false
+    }
+    // Check requiredConfig - all specified config values must be truthy
+    if (s.requiredConfig) {
+      return s.requiredConfig.every(key => appConfig[key])
+    }
+    return true
+  })
 
   return [
     ...filteredCore, // supported core shortcuts

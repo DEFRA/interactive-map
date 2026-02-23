@@ -54,7 +54,7 @@ describe('Actions component', () => {
       </Actions>
     )
     const container = screen.getByTestId('child1').closest('.im-c-actions')
-    expect(container).toHaveStyle('display: none')
+    expect(container).toHaveClass('im-c-actions--hidden')
   })
 
   it('shows the container when at least one child is visible', () => {
@@ -65,6 +65,6 @@ describe('Actions component', () => {
       </Actions>
     )
     const container = screen.getByTestId('child1').closest('.im-c-actions')
-    expect(container).not.toHaveStyle('display: none')
+    expect(container).not.toHaveClass('im-c-actions--hidden')
   })
 })

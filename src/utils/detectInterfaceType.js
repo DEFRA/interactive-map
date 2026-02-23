@@ -33,7 +33,7 @@ function notifyListeners (newType) {
 function createInterfaceDetector () {
   const mql = window.matchMedia('(pointer: coarse)')
 
-  // handle DevTools / system pointer type changes
+  // System pointer type changes
   const handleMediaChange = e => {
     notifyListeners(e.matches ? 'touch' : 'mouse')
   }
@@ -53,19 +53,20 @@ function createInterfaceDetector () {
     }
   }
 
-  globalThis.addEventListener('pointerdown', handlePointer, { passive: true })
-  globalThis.addEventListener('keydown', handleKeyDown, { passive: true })
+  window.addEventListener('pointerdown', handlePointer, { passive: true })
+  window.addEventListener('keydown', handleKeyDown, { passive: true })
 
   // cleanup
   return () => {
     mql.removeEventListener('change', handleMediaChange)
-    globalThis.removeEventListener('pointerdown', handlePointer)
-    globalThis.removeEventListener('keydown', handleKeyDown)
+    window.removeEventListener('pointerdown', handlePointer)
+    window.removeEventListener('keydown', handleKeyDown)
   }
 }
 
 function getInterfaceType () {
   if (lastInterfaceType === 'unknown') {
+    lastInterfaceType = 'mouse'
     return 'mouse'
   }
 

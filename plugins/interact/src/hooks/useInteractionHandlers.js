@@ -1,7 +1,34 @@
 import { useCallback, useEffect, useRef } from 'react'
-import booleanDisjoint from '@turf/boolean-disjoint'
-import { toTurfGeometry } from '../utils/turfHelpers.js'
+import { isContiguousWithAny, canSplitFeatures, areAllContiguous } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
+
+const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectionBounds) => {
+  const lastEmittedSelectionChange = useRef(null)
+
+  useEffect(() => {
+    // Skip if features exist but bounds not yet calculated
+    const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
+    if (awaitingBounds) {
+      return
+    }
+
+    // Skip if selection was already empty and remains empty
+    const prev = lastEmittedSelectionChange.current
+    const wasEmpty = prev === null || prev.length === 0
+    if (wasEmpty && selectedFeatures.length === 0) {
+      return
+    }
+
+    eventBus.emit('interact:selectionchange', {
+      selectedFeatures,
+      selectionBounds,
+      canMerge: areAllContiguous(selectedFeatures),
+      canSplit: canSplitFeatures(selectedFeatures)
+    })
+
+    lastEmittedSelectionChange.current = selectedFeatures
+  }, [selectedFeatures, selectionBounds])
+}
 
 export const useInteractionHandlers = ({
   mapState,
@@ -10,70 +37,80 @@ export const useInteractionHandlers = ({
   mapProvider,
 }) => {
   const { markers } = mapState
-  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, selectedFeatures, selectionBounds } = pluginState
+  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, tolerance, selectedFeatures, selectionBounds, deselectOnClickOutside } = pluginState
   const { eventBus } = services
-  const lastEmittedSelectionChange = useRef(null)
   const layerConfigMap = buildLayerConfigMap(dataLayers)
 
   const handleInteraction = useCallback(({ point, coords }) => {
-    const allFeatures = getFeaturesAtPoint(mapProvider, point)
+    const allFeatures = getFeaturesAtPoint(mapProvider, point, { radius: tolerance })
     const hasDataLayers = dataLayers.length > 0
 
-    const canMatchFeature = hasDataLayers && (interactionMode === 'select' || interactionMode === 'auto')
-    const match = canMatchFeature ? findMatchingFeature(allFeatures, layerConfigMap) : null
+    if (pluginState?.debug) {
+      console.log(`--- Features at ${coords} ---`, allFeatures)
+    }
 
+    const canMatch = hasDataLayers && (interactionMode === 'select' || interactionMode === 'auto')
+    const match = canMatch ? findMatchingFeature(allFeatures, layerConfigMap) : null
+
+    // 1. Handle Feature Match
     if (match) {
-      markers.remove('location')
-      const { feature, config } = match
-
-      // Using Turf not booleanDisjoint to test if the new feature is contiguous
-      let isNewFeatureContiguous = false
-      if (contiguous) {
-        isNewFeatureContiguous = selectedFeatures.some(sf => !booleanDisjoint(toTurfGeometry(sf), toTurfGeometry(feature)))
-      }
-
-      const featureId = feature.properties?.[config.idProperty]
-
-      if (featureId) {
-        dispatch({
-          type: 'TOGGLE_SELECTED_FEATURES',
-          payload: {
-            featureId,
-            multiSelect,
-            layerId: config.layerId,
-            idProperty: config.idProperty,
-            properties: feature.properties,
-            geometry: feature.geometry,
-            replaceAll: contiguous && !isNewFeatureContiguous
-          },
-        })
-      }
-
+      processFeatureMatch(match)
       return
     }
 
-    // Marker mode
-    if (interactionMode === 'marker' || (interactionMode === 'auto' && hasDataLayers)) {
+    // 2. Handle Marker Mode (Fallback)
+    const isMarkerMode = interactionMode === 'marker' || (interactionMode === 'auto' && hasDataLayers)
+    if (isMarkerMode) {
       dispatch({ type: 'CLEAR_SELECTED_FEATURES' })
       markers.add('location', coords, { color: markerColor })
-
       eventBus.emit('interact:markerchange', { coords })
-    }
-  }, [mapProvider, dataLayers, interactionMode, multiSelect, eventBus, dispatch, markers])
-
-  // Emit event when selectedFeatures change
-  useEffect(() => {
-    if (!selectionBounds || selectedFeatures === lastEmittedSelectionChange.current) {
-      return
+    } else if (deselectOnClickOutside) {
+      dispatch({ type: 'CLEAR_SELECTED_FEATURES' })
+    } else {
+      // No action
     }
 
-    eventBus.emit('interact:selectionchange', {
-      selectedFeatures,
-      selectionBounds
-    })
+    // Internal helper to keep complexity low
+    function processFeatureMatch({ feature, config }) {
+      markers.remove('location')
+      const isNewContiguous = contiguous && isContiguousWithAny(feature, selectedFeatures)
+      const featureId = feature.properties?.[config.idProperty] ?? feature.id
 
-    lastEmittedSelectionChange.current = selectedFeatures
-  }, [selectedFeatures, selectionBounds])
+      if (!featureId) {
+        return
+      }
+
+      dispatch({
+        type: 'TOGGLE_SELECTED_FEATURES',
+        payload: {
+          featureId,
+          multiSelect,
+          layerId: config.layerId,
+          idProperty: config.idProperty,
+          properties: feature.properties,
+          geometry: feature.geometry,
+          replaceAll: contiguous && !isNewContiguous
+        }
+      })
+    }
+  }, [
+    mapProvider,
+    dataLayers,
+    interactionMode,
+    multiSelect,
+    eventBus,
+    dispatch,
+    markers,
+    contiguous,
+    selectedFeatures,
+    layerConfigMap,
+    pluginState?.debug,
+    tolerance,
+    markerColor,
+    deselectOnClickOutside
+  ])
+
+  useSelectionChangeEmitter(eventBus, selectedFeatures, selectionBounds)
 
   return {
     handleInteraction

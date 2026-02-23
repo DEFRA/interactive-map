@@ -49,13 +49,13 @@ describe('checkDeviceSupport', () => {
     expect(console.log).toHaveBeenCalledWith('WebGL not available')
   })
 
-  it('logs "No map provider" and returns undefined if mapProvider is missing', () => {
+  it('logs "No map provider" and returns false if mapProvider is missing', () => {
     config = {
       mapProvider: null,
       deviceNotSupportedText: 'Device not supported'
     }
 
-    expect(checkDeviceSupport(rootEl, config)).toBeUndefined()
+    expect(checkDeviceSupport(rootEl, config)).toBe(false)
     expect(console.log).toHaveBeenCalledWith('No map provider')
     expect(renderError).not.toHaveBeenCalled()
     expect(removeLoadingState).not.toHaveBeenCalled()

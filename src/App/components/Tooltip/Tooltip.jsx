@@ -71,6 +71,8 @@ export const Tooltip = ({ children, content }) => {
       childRef(node)
     } else if (childRef && typeof childRef === 'object') {
       childRef.current = node
+    } else {
+      // No action
     }
   }
 
@@ -80,13 +82,13 @@ export const Tooltip = ({ children, content }) => {
     onMouseLeave: hide,
     onMouseDown: cancel,
     onKeyDown: cancel,
-    onFocus: (e) => {
+    onFocus: () => {
       if (interfaceType === 'keyboard') {
         show()
       }
       setFocused(true)
     },
-    onBlur: (e) => {
+    onBlur: () => {
       hide()
       setFocused(false)
     },

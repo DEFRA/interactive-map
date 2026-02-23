@@ -11,14 +11,12 @@
         $type: panel
     );
 
-    & {
-        display: flex;
-        flex-direction: column;
-        max-height: 100vh;
-        min-width: var(--min-panel-width);
-        pointer-events: auto;
-        background-color: var(--background-color);
-    }
+    display: flex;
+    flex-direction: column;
+    max-height: 100vh;
+    min-width: var(--min-panel-width);
+    pointer-events: auto;
+    background-color: var(--background-color);
 }
 
 // 2. Elements
@@ -39,22 +37,20 @@
         $type: button
     );
 
-    & {
-        border: 0;
-        position: absolute;
-        top: var(--panel-close-button-gap);
-        right: var(--panel-close-button-gap);
+    border: 0;
+    position: absolute;
+    top: var(--panel-close-button-gap);
+    right: var(--panel-close-button-gap);
 
-        padding-left: var(--button-padding);
-        padding-right: var(--button-padding);
+    padding-left: var(--button-padding);
+    padding-right: var(--button-padding);
 
-        min-height: var(--button-size);
-        min-width: var(--button-size);
+    min-height: var(--button-size);
+    min-width: var(--button-size);
 
-        color: var(--foreground-color);
-        background-color: transparent;
-        cursor: pointer;
-    }
+    color: var(--foreground-color);
+    background-color: transparent;
+    cursor: pointer;
 }
 
 .im-c-panel__body {
@@ -77,9 +73,7 @@
         transition: background-color var(--duration) ease;
     }
 
-    & {
-        background-color: var(--button-hover-color);
-    }
+    background-color: var(--button-hover-color);
 }
 
 // 3. Modifiers

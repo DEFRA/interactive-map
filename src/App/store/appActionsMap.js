@@ -66,7 +66,7 @@ const setHybridFullscreen = (state, payload) => {
 const setBreakpoint = (state, payload) => {
   const { behaviour, hybridWidth, maxMobileWidth } = payload
   const panelIds = Object.keys(state.openPanels)
-  const lastPanelId = panelIds.at(-1)
+  const lastPanelId = panelIds[panelIds.length - 1]
 
   // For hybrid, isFullscreen is controlled by media query via SET_HYBRID_FULLSCREEN
   // For other behaviours, calculate it here
@@ -91,6 +91,9 @@ const setBreakpoint = (state, payload) => {
 }
 
 const setInterfaceType = (state, payload) => {
+  if (state.interfaceType === payload) {
+    return state
+  }
   return {
     ...state,
     interfaceType: payload
@@ -200,6 +203,22 @@ const toggleButtonPressed = (state, payload) => {
   }
 }
 
+const toggleButtonExpanded = (state, payload) => {
+  const { id, isExpanded } = payload
+  const updated = new Set(state.expandedButtons)
+
+  if (isExpanded) {
+    updated.add(id)
+  } else {
+    updated.delete(id)
+  }
+
+  return {
+    ...state,
+    expandedButtons: updated
+  }
+}
+
 // Registry mutation actions
 const registerButton = (state, payload) => {
   return {
@@ -230,6 +249,12 @@ const addButton = (state, payload) => {
     pressedButtons.add(id)
   }
 
+  // Set expanded state
+  const expandedButtons = new Set(state.expandedButtons)
+  if (config.isExpanded) {
+    expandedButtons.add(id)
+  }
+
   // Also update the registry instance for persistence across app lifecycle
   if (state.buttonRegistry?.addButton) {
     state.buttonRegistry.addButton(id, config)
@@ -240,7 +265,8 @@ const addButton = (state, payload) => {
     buttonConfig: newButtonConfig,
     hiddenButtons,
     disabledButtons,
-    pressedButtons
+    pressedButtons,
+    expandedButtons
   }
 }
 
@@ -334,6 +360,7 @@ export const actionsMap = {
   TOGGLE_BUTTON_DISABLED: toggleButtonDisabled,
   TOGGLE_BUTTON_HIDDEN: toggleButtonHidden,
   TOGGLE_BUTTON_PRESSED: toggleButtonPressed,
+  TOGGLE_BUTTON_EXPANDED: toggleButtonExpanded,
   // Registry actions
   REGISTER_BUTTON: registerButton,
   ADD_BUTTON: addButton,

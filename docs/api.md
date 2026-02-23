@@ -392,6 +392,14 @@ See [PluginDescriptor](./plugins/plugin-descriptor.md) for full details.
 
 ---
 
+### `preserveStateOnClose`
+**Type:** `boolean`  
+**Default:** `false`  
+
+Controls whether closing the map (via the browser back button or the exit map button when `hasExitButton` is `true` and the map is fullscreen) destroys the map instance or hides it while preserving its current state. Set to `true` to keep the map state intact, which is useful for implementations like a toggle map view list view pattern.
+
+---
+
 ### `readMapText`
 **Type:** `boolean`
 **Default:** `false`
@@ -515,6 +523,7 @@ Add a button to the UI at runtime.
 See [ButtonDefinition](./api/button-definition.md) for configuration options.
 
 ```js
+// Simple button
 interactiveMap.addButton('my-button', {
   label: 'Click me',
   iconId: 'info',
@@ -522,6 +531,19 @@ interactiveMap.addButton('my-button', {
   mobile: { slot: 'top-right' },
   tablet: { slot: 'top-right' },
   desktop: { slot: 'top-right' }
+})
+
+// Button with a popup menu (experimental: only reliable when centred in the action bar)
+interactiveMap.addButton('my-menu', {
+  label: 'Options',
+  iconId: 'menu',
+  mobile: { slot: 'top-right' },
+  tablet: { slot: 'top-right' },
+  desktop: { slot: 'top-right' },
+  menuItems: [
+    { id: 'opt-a', label: 'Option A', onClick: () => console.log('A') },
+    { id: 'opt-b', label: 'Option B', onClick: () => console.log('B') }
+  ]
 })
 ```
 
@@ -626,7 +648,7 @@ Set or toggle a button state.
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `id` | `string` | Button identifier |
-| `prop` | `string` | The button state to change: `'hidden'`, `'pressed'`, or `'disabled'` |
+| `prop` | `string` | The button state to change: `'hidden'`, `'pressed'`, `'disabled'`, or `'expanded'` |
 | `value` | `boolean` | Optional. If provided, sets state explicitly; otherwise toggles |
 
 ```js
@@ -638,6 +660,12 @@ interactiveMap.toggleButtonState('my-button', 'disabled', true)
 
 // Hide a button
 interactiveMap.toggleButtonState('my-button', 'hidden', true)
+
+// Set expanded state (e.g. for a button controlling collapsible content)
+interactiveMap.toggleButtonState('my-button', 'expanded', true)
+
+// Control a menu item's state using its id
+interactiveMap.toggleButtonState('opt-a', 'pressed', true)
 ```
 
 ---
@@ -678,16 +706,21 @@ interactiveMap.on('app:ready', () => {
 
 Emitted when the underlying map is in a state ready to interact with. For example, when using MapLibre this event is emitted after the map has been instantiated; for ESRI SDK it is emitted when `view.ready` is first true.
 
-**Payload:** Determined by the underlying map engine. MapLibre returns the map instance; ESRI returns `{ map, mapView }`.
+**Payload:** A controlled API object with the following properties:
+
+| Property | Type | Description |
+|---|---|---|
+| `map` | Object | The underlying map instance (all providers) |
+| `view` | Object | The map view (ESRI only) |
+| `crs` | string | The coordinate reference system (e.g. `'EPSG:4326'`) |
+| `fitToBounds` | Function | Fit the map to a bounding box |
+| `setView` | Function | Set the map center and zoom |
 
 ```js
-interactiveMap.on('map:ready', (map) => {
+interactiveMap.on('map:ready', ({ map, crs, fitToBounds, setView }) => {
   interactiveMap.addMarker('home', [-0.1276, 51.5074])
 })
 ```
-
-> [!NOTE]
-> If you need lower-level control beyond what InteractiveMap offers, you can use the map instance directly.
 
 ---
 

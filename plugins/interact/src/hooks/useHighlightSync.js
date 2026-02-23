@@ -32,7 +32,7 @@ export const useHighlightSync = ({
 
   useEffect(() => {
     if (!mapProvider || !selectedFeatures || !stylesMap) {
-      return
+      return undefined // Explicit return to match the cleanup function return below
     }
 
     // Update updateHighlightedFeatures on interaction

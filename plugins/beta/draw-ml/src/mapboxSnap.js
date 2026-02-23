@@ -112,9 +112,9 @@ function applyMapboxSnapPatches(colors) {
     return r
   }
 
-  // Skip when disabled, clean up internal arrays to prevent memory accumulation
+  // Skip when disabled or zooming, clean up internal arrays to prevent memory accumulation
   proto.snapToClosestPoint = function(e) {
-    if (!this.status) {
+    if (!this.status || this.map?._isZooming) {
       return
     }
     try {
@@ -140,6 +140,8 @@ function applyMapboxSnapPatches(colors) {
 function pollUntil(checkFn, onSuccess) {
   (function poll() {
     const result = checkFn()
+    // null signals to stop polling, falsy continues polling
+    if (result === null) return
     result ? onSuccess(result) : requestAnimationFrame(poll)
   })()
 }
@@ -267,7 +269,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   // Handle style changes - re-patch source and ensure snap layer exists
   map.on('style.load', () => {
     pollUntil(
-      () => map.getSource('mapbox-gl-draw-hot'),
+      () => map._removed ? null : map.getSource('mapbox-gl-draw-hot'),
       (source) => {
         patchSourceData(source)
 
@@ -295,24 +297,26 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
     )
   })
 
-  // Hide snap indicator during zoom
+  // Suppress snap processing during zoom (indicator freezes in place)
   map.on('zoomstart', () => {
-    if (map.getLayer(SNAP_HELPER_LAYER)) {
-      map.setLayoutProperty(SNAP_HELPER_LAYER, 'visibility', 'none')
-    }
+    map._isZooming = true
   })
 
   map.on('zoomend', () => {
-    // Only show indicator if snap is enabled
-    const snap = map._snapInstance
-    if (map.getLayer(SNAP_HELPER_LAYER) && snap?.status) {
-      map.setLayoutProperty(SNAP_HELPER_LAYER, 'visibility', 'visible')
+    map._isZooming = false
+    // Force hide then re-show to reset indicator at new zoom level (Safari fix)
+    if (map.getLayer(SNAP_HELPER_LAYER)) {
+      map.setLayoutProperty(SNAP_HELPER_LAYER, 'visibility', 'none')
+      const snap = map._snapInstance
+      if (snap?.status) {
+        map.setLayoutProperty(SNAP_HELPER_LAYER, 'visibility', 'visible')
+      }
     }
   })
 
   // Initial setup - poll until draw source exists
   pollUntil(
-    () => map.getSource('mapbox-gl-draw-hot'),
+    () => map._removed ? null : map.getSource('mapbox-gl-draw-hot'),
     createSnap
   )
 }

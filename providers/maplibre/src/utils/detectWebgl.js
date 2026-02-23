@@ -16,8 +16,7 @@ export const getWebGL = (names) => {
           isEnabled: true
         }
       }
-    } catch (e) {
-      // No action required
+    } catch (_) { // NOSONAR - getContext may throw; failure is handled by the loop fallthrough
     }
   }
   // WebGL is supported, but disabled

@@ -6,26 +6,60 @@ sidebar_position: 2
 
 ## Installation
 
-Run:
-
 ```shell
 npm i @defra/interactive-map
 ```
 
-## Use in production
+### MapLibre provider (recommended)
 
-In your html, you will need to add a container element for the map:
+**ESM:** `maplibre-gl` is a peer dependency, install it separately:
 
-```html
-<div id="map"></div>
+```shell
+npm i maplibre-gl
 ```
 
-You will need to initialise and configure InteractiveMap in your client side code:
+**UMD:** `maplibre-gl` is bundled — no separate install needed.
+
+### ESRI provider (optional)
+
+If you are using the ESRI map provider instead, install `@arcgis/core`:
+
+```shell
+npm i @arcgis/core
+```
+
+### Include in your project
+
+**ESM** — import in your JavaScript:
 
 ```js
 import InteractiveMap from '@defra/interactive-map'
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 
+import '@defra/interactive-map/css'
+```
+
+**UMD** — copy the `dist/umd/` folders to your assets and include via script and link tags in your `<head>`:
+
+```html
+<link rel="stylesheet" href="/assets/interactive-map.css">
+<script defer src="/assets/interactive-map/index.js"></script>
+<script defer src="/assets/maplibre-provider/index.js"></script>
+```
+
+> Chunks are loaded dynamically — all files in each `umd/` folder must be served from the same directory as their `index.js`.
+
+## Basic usage
+
+Add a container element in your HTML:
+
+```html
+<div id="map"></div>
+```
+
+Initialise the map in your JavaScript. UMD users replace `InteractiveMap` and `maplibreProvider` with `defra.InteractiveMap` and `defra.maplibreProvider`:
+
+```js
 const interactiveMap = new InteractiveMap('map', {
   mapProvider: maplibreProvider(),
   behaviour: 'hybrid',
@@ -41,10 +75,46 @@ const interactiveMap = new InteractiveMap('map', {
 })
 ```
 
+## Using plugins
+
+**ESM** — import each plugin and its CSS:
+
+```js
+import createSearchPlugin from '@defra/interactive-map/plugins/search'
+import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+
+import '@defra/interactive-map/plugins/search/css'
+import '@defra/interactive-map/plugins/interact/css'
+```
+
+**UMD** — copy each plugin's `dist/umd/` folder and CSS file to your assets:
+
+```html
+<link rel="stylesheet" href="/assets/search-plugin.css">
+<link rel="stylesheet" href="/assets/interact-plugin.css">
+<script src="/assets/search-plugin/index.js"></script>
+<script src="/assets/interact-plugin/index.js"></script>
+```
+
+Then pass plugins when initialising. UMD users replace `createSearchPlugin` and `createInteractPlugin` with `defra.searchPlugin` and `defra.interactPlugin`:
+
+```js
+const interactiveMap = new InteractiveMap('map', {
+  mapProvider: maplibreProvider(),
+  plugins: [
+    createSearchPlugin(),
+    createInteractPlugin()
+  ],
+  // ... other options
+})
+```
+
+Each plugin distributes its own CSS. Import or copy only the CSS for the plugins you use. See [Plugins](./plugins.md) for the full list including their CSS paths.
+
 ## GOV.UK Prototype kit plugin
 
 Following installation the InteractiveMap plugin will be added to your prototype. You can now create pages with a map, and configure for specific use cases.
 
 See [Install and use plugins](https://prototype-kit.service.gov.uk/docs/install-and-use-plugins).
 
-See [Configuring InteractiveMap in a GOVUK Prototype](./docs/govuk-prototype).
+See [Configuring InteractiveMap in a GOVUK Prototype](./govuk-prototype.md).

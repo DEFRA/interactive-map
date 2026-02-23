@@ -7,6 +7,7 @@ export const DEFAULTS = {
   stroke: 'rgba(212,53,28,1)',
   strokeWidth: 2,
   fill: 'rgba(212,53,28,0.1)',
+  snapLayers: [],
   snapColors: {
     vertex: 'rgba(212,53,28,1)',
     midpoint: 'rgba(40,161,151,1)',

@@ -2,8 +2,22 @@
   display: flex;
   flex-direction: row;
   justify-content: center;
-  gap: var(--divider-gap);
+  gap: calc(var(--divider-gap) / 2);
   padding: var(--panel-margin);
+  max-height: 200px;
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: max-height var(--duration) ease, opacity var(--duration) ease,
+      padding-top var(--duration) ease, padding-bottom var(--duration) ease;
+  }
+
+  &--hidden {
+    max-height: 0;
+    overflow: hidden;
+    opacity: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+  }
 
   .im-c-button-wrapper--wide {
     display: flex;
@@ -22,6 +36,6 @@
 
 .im-o-app--tablet, .im-o-app--desktop {
   .im-c-actions {
-    min-width: 280px;
+    min-width: 0;
   }
 }

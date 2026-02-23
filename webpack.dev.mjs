@@ -24,7 +24,14 @@ export default {
     clean: true,
   },
   resolve: {
-    extensions: ['.tsx', '.ts', '.jsx', '.js']
+    extensions: ['.tsx', '.ts', '.jsx', '.js'],
+    alias: {
+      // Force these to resolve from root node_modules, preventing nested copies
+      // inside geojson-rbush and mapbox-gl-snap from being bundled separately.
+      '@turf/meta': path.resolve(__dirname, 'node_modules/@turf/meta'),
+      '@turf/helpers': path.resolve(__dirname, 'node_modules/@turf/helpers'),
+      'robust-predicates': path.resolve(__dirname, 'node_modules/robust-predicates')
+    }
   },
   plugins: [
     new MiniCssExtractPlugin({
@@ -66,9 +73,8 @@ export default {
         OS_NAMES_URL: JSON.stringify(process.env.OS_NAMES_URL),
         OS_NEAREST_URL: JSON.stringify(process.env.OS_NEAREST_URL),
         // Data services
-        PARCEL_TILE_SERVICE_URL: JSON.stringify(process.env.PARCEL_TILE_SERVICE_URL),
-        GRIDREF_SERVICE_URL: JSON.stringify(process.env.GRIDREF_SERVICE_URL),
-        PARCEL_SERVICE_URL: JSON.stringify(process.env.PARCEL_SERVICE_URL)
+        FARMING_TILE_SERVICE_URL: JSON.stringify(process.env.FARMING_TILE_SERVICE_URL),
+        FARMING_API_URL: JSON.stringify(process.env.FARMING_API_URL)
       }
     })
   ],
@@ -77,7 +83,7 @@ export default {
       {
         test: /\.jsx?$/,
         loader: 'babel-loader',
-        exclude: /node_modules\/(?!(lucide-react))/
+        exclude: /node_modules/
       },{
         test: /\.s[ac]ss$/i,
         use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
@@ -107,6 +113,7 @@ export default {
     setupMiddlewares
   },
   optimization: {
+    chunkIds: 'named',
     splitChunks: {
       chunks () {
         return false

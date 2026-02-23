@@ -1,4 +1,4 @@
-import { registerPanel, addPanel, removePanel, getPanelConfig } from './panelRegistry.js'
+import { createPanelRegistry, registerPanel, addPanel, removePanel, getPanelConfig } from './panelRegistry.js'
 import { defaultPanelConfig } from '../../config/appConfig.js'
 
 describe('panelRegistry', () => {
@@ -87,5 +87,34 @@ describe('panelRegistry', () => {
     expect(updatedConfig.panel2).toBeDefined()
     expect(updatedConfig.panel1).toBeUndefined()
     expect(updatedConfig).not.toBe(config) // Immutable
+  })
+
+  describe('createPanelRegistry (Factory)', () => {
+    let registry
+
+    beforeEach(() => {
+      registry = createPanelRegistry()
+    })
+
+    test('should manage state internally via all methods', () => {
+      // Test registerPanel state
+      registry.registerPanel({ p1: { title: 'P1' } })
+      expect(registry.getPanelConfig()).toHaveProperty('p1')
+      expect(registry.getPanelConfig().p1.showLabel).toBe(true)
+
+      // Test addPanel state and return value
+      const added = registry.addPanel('p2', { title: 'P2' })
+      expect(added.title).toBe('P2')
+      expect(registry.getPanelConfig()).toHaveProperty('p2')
+
+      // Test removePanel state
+      registry.removePanel('p1')
+      expect(registry.getPanelConfig()).not.toHaveProperty('p1')
+      expect(registry.getPanelConfig()).toHaveProperty('p2')
+
+      // Test clear state
+      registry.clear()
+      expect(registry.getPanelConfig()).toEqual({})
+    })
   })
 })

@@ -26,7 +26,7 @@ export const MapController = ({ mapContainerRef }) => {
   // Initialize map provider when props are available
   useEffect(() => {
     if (!safeZoneInset || !isLayoutReady || !mapStyle || !mapSize || isMapInitialized.current) {
-      return
+      return undefined
     }
 
     requestAnimationFrame(() => {

@@ -21,6 +21,7 @@ describe('useButtonStateEvaluator', () => {
       disabledButtons: new Set(),
       hiddenButtons: new Set(),
       pressedButtons: new Set(),
+      expandedButtons: new Set(),
       dispatch: mockDispatch
     }
     useApp.mockReturnValue(mockAppState)
@@ -89,15 +90,30 @@ describe('useButtonStateEvaluator', () => {
     })
   })
 
+  it('toggles button expanded state based on expandedWhen', () => {
+    mockPluginRegistry.registeredPlugins = [{
+      id: 'p1',
+      manifest: { buttons: [{ id: 'btn1', expandedWhen: () => true }] }
+    }]
+
+    renderHook(() => useButtonStateEvaluator((fn) => fn()))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'TOGGLE_BUTTON_EXPANDED',
+      payload: { id: 'btn1', isExpanded: true }
+    })
+  })
+
   it('does not dispatch if state already matches', () => {
     mockAppState.disabledButtons.add('btn1')
     mockAppState.hiddenButtons.add('btn2')
     mockAppState.pressedButtons.add('btn3')
+    mockAppState.expandedButtons.add('btn4')
 
     mockPluginRegistry.registeredPlugins = [
       { id: 'p1', manifest: { buttons: [{ id: 'btn1', enableWhen: () => false }] } },
       { id: 'p2', manifest: { buttons: [{ id: 'btn2', hiddenWhen: () => true }] } },
-      { id: 'p3', manifest: { buttons: [{ id: 'btn3', pressedWhen: () => true }] } }
+      { id: 'p3', manifest: { buttons: [{ id: 'btn3', pressedWhen: () => true }] } },
+      { id: 'p4', manifest: { buttons: [{ id: 'btn4', expandedWhen: () => true }] } }
     ]
 
     renderHook(() => useButtonStateEvaluator((fn) => fn()))
@@ -112,13 +128,14 @@ describe('useButtonStateEvaluator', () => {
         buttons: [
           { id: 'btn1', enableWhen: failingFn },
           { id: 'btn2', hiddenWhen: failingFn },
-          { id: 'btn3', pressedWhen: failingFn }
+          { id: 'btn3', pressedWhen: failingFn },
+          { id: 'btn4', expandedWhen: failingFn }
         ]
       }
     }]
 
     renderHook(() => useButtonStateEvaluator((fn, pluginId) => fn(pluginId)))
-    expect(console.warn).toHaveBeenCalledTimes(3)
+    expect(console.warn).toHaveBeenCalledTimes(4)
     expect(mockDispatch).not.toHaveBeenCalled()
   })
 
@@ -129,5 +146,21 @@ describe('useButtonStateEvaluator', () => {
 
     renderHook(() => useButtonStateEvaluator((fn) => fn({ pluginState: {} })))
     expect(enableWhen).toHaveBeenCalled()
+  })
+
+  it('covers fallback to empty array when manifest or buttons is missing', () => {
+    // Branch 1: Plugin exists but manifest is missing
+    // Branch 2: Manifest exists but buttons is missing
+    mockPluginRegistry.registeredPlugins = [
+      { id: 'p1' },
+      { id: 'p2', manifest: {} },
+      { id: 'p3', manifest: { buttons: null } }
+    ]
+
+    renderHook(() => useButtonStateEvaluator((fn) => fn()))
+
+    // If the fallback (|| []) works, the code continues to the next plugin
+    // without throwing a "cannot read property forEach of undefined" error.
+    expect(mockDispatch).not.toHaveBeenCalled()
   })
 })

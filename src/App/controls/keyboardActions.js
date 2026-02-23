@@ -35,11 +35,12 @@ export const createKeyboardActions = (mapProvider, announce, {
 
     zoomOut: (e) => mapProvider.zoomOut(getZoom(e.shiftKey)),
 
-    getInfo: async (e) => {
+    getInfo: async (_e) => {
       const coord = mapProvider.getCenter()
       const place = await reverseGeocode(mapProvider.getZoom(), coord)
       const area = mapProvider.getAreaDimensions?.()
-      announce(`${place}.${area ? ' Covering ' + area + '.' : ''}`, 'core')
+      const message = area ? `${place}. Covering ${area}.` : `${place}.`
+      announce(message, 'core')
     },
 
     highlightNextLabel: (e) => {

@@ -1,3 +1,5 @@
+import { DEFAULTS } from '../defaults.js'
+
 export const createInputHandlers = ({ dispatch, debouncedFetchSuggestions }) => ({
   handleInputClick() {
     dispatch({ type: 'SHOW_SUGGESTIONS' })
@@ -15,7 +17,7 @@ export const createInputHandlers = ({ dispatch, debouncedFetchSuggestions }) => 
     const value = e.target.value
     dispatch({ type: 'SET_VALUE', payload: value })
 
-    if (value.length < 3) {
+    if (value.length < DEFAULTS.minSearchLength) {
       debouncedFetchSuggestions.cancel()
       dispatch({ type: 'UPDATE_SUGGESTIONS', payload: [] })
       dispatch({ type: 'HIDE_SUGGESTIONS' })

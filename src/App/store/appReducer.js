@@ -41,6 +41,7 @@ export const initialState = (config) => {
     disabledButtons: new Set(),
     hiddenButtons: new Set(),
     pressedButtons: new Set(),
+    expandedButtons: new Set(),
     hasExclusiveControl: false,
     openPanels,
     previousOpenPanels: {},

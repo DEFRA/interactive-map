@@ -13,7 +13,7 @@ const arrayFindLast = {
 const webGL = getWebGL(['webgl2', 'webgl1'])
 
 // ESRI provider descriptor
-export default function (config = {}) {
+export default function createEsriProvider (config = {}) {
   return {
     checkDeviceCapabilities: () => {
       return {

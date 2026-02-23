@@ -9,6 +9,7 @@
     --button-padding: 8px;
     --button-icon-label-offset: 7px;
     --label-button-padding: 10px;
+    --touch-button-size: 50px;
 
     // Borders and focus
     --app-border-width: 1px;
@@ -36,6 +37,10 @@
     --banner-close-button-gap: 0px;
     --banner-max-desktop-width: 400px;
     --banner-collapse-margin: 14px;
+
+    // Popup menu
+    --popup-menu-min-width: 200px;
+    --popup-menu-max-width: 300px;
 
     // Action bar (Needs to fit evently if tools are in right hand column)
     --action-bar-max-width: calc(100% - (var(--button-size) * 2) - (var(--primary-gap) * 4));

@@ -28,7 +28,8 @@ const formatDimension = (meters) => {
 
   const miles = meters / METERS_PER_MILE
 
-  if (miles < MILE_THRESHOLD / METERS_PER_MILE) {
+  // Check if we are under the half-mile threshold
+  if (miles < MILE_THRESHOLD) {
     return `${Math.round(meters)}m`
   }
 
@@ -39,8 +40,7 @@ const formatDimension = (meters) => {
   }
 
   const rounded = Math.round(miles)
-  const unit = rounded === 1 ? 'mile' : 'miles'
-  return `${rounded} ${unit}`
+  return `${rounded} miles`
 }
 
 // -----------------------------------------------------------------------------
@@ -123,26 +123,23 @@ const getCardinalMove = (from, to) => {
  * @param {Array<[number, number]>} pixels - Array of pixel coordinates.
  * @returns {number} Index of the closest pixel in the given direction.
  */
+const isInDirection = (direction, dx, dy) => {
+  switch (direction) {
+    case 'ArrowUp': return dy < 0 && Math.abs(dy) >= Math.abs(dx)
+    case 'ArrowDown': return dy > 0 && Math.abs(dy) >= Math.abs(dx)
+    case 'ArrowLeft': return dx < 0 && Math.abs(dx) > Math.abs(dy)
+    case 'ArrowRight': return dx > 0 && Math.abs(dx) > Math.abs(dy)
+    default: return false
+  }
+}
+
 const spatialNavigate = (direction, start, pixels) => {
   const [sx, sy] = start
 
   // Direction filters
-  const candidates = pixels.filter(([x, y]) => {
-    if (x === sx && y === sy) {
-      return false
-    }
-
-    const dx = x - sx
-    const dy = y - sy
-
-    switch (direction) {
-      case 'ArrowUp': return dy < 0 && Math.abs(dy) >= Math.abs(dx)
-      case 'ArrowDown': return dy > 0 && Math.abs(dy) >= Math.abs(dx)
-      case 'ArrowLeft': return dx < 0 && Math.abs(dx) > Math.abs(dy)
-      case 'ArrowRight': return dx > 0 && Math.abs(dx) > Math.abs(dy)
-      default: return false
-    }
-  })
+  const candidates = pixels.filter(([x, y]) =>
+    (x !== sx || y !== sy) && isInDirection(direction, x - sx, y - sy)
+  )
 
   if (!candidates.length) {
     return pixels.findIndex(p => p[0] === sx && p[1] === sy)
@@ -169,7 +166,7 @@ const getResolution = (center, zoom) => {
   const TILE_SIZE = 512
   const lat = center.lat
   const scale = Math.pow(2, zoom)
-  const resolution = (EARTH_CIRCUMFERENCE * Math.cos((lat * Math.PI) / 180)) / (scale * TILE_SIZE)
+  const resolution = (EARTH_CIRCUMFERENCE * Math.cos((lat * Math.PI) / 180)) / (scale * TILE_SIZE) // NOSONAR - 180 is degrees-to-radians conversion
   return resolution
 }
 
@@ -194,5 +191,6 @@ export {
   getCardinalMove,
   spatialNavigate,
   getResolution,
-  getPaddedBounds
+  getPaddedBounds,
+  formatDimension
 }

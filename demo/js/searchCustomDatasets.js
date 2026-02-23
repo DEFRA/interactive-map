@@ -59,7 +59,7 @@ const buildGridrefRequest = (query) => {
   }
 
   return {
-    url: process.env.GRIDREF_SERVICE_URL,
+    url: `${process.env.FARMING_API_URL}/convert-to-wgs84`,
     options: {
       method: 'POST',
       headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
@@ -93,9 +93,9 @@ const parseGridrefResults = (json, query) => {
 
 const buildParcelRequest = (query) => {
   const sanitisedQuery = query.replace(/ /g,'')
-
+  const url = `${process.env.FARMING_API_URL}/parcel/{query}`
   return {
-    url: process.env.PARCEL_SERVICE_URL.replace('{query}', encodeURIComponent(sanitisedQuery)),
+    url: url.replace('{query}', encodeURIComponent(sanitisedQuery)),
     options: {
       method: 'GET'
     }
@@ -124,7 +124,6 @@ const searchCustomDatasets = [{
   includeRegex: /^(?:[A-Za-z]{2}\s*(?:\d{3}\s*\d{3}|\d{4}\s*\d{4}|\d{5}\s*\d{5})|\d+\s*,?\s*\d+)$/i,
   buildRequest: buildGridrefRequest,
   parseResults: parseGridrefResults
-  // urlTemplate: process.env.GRIDREF_SERVICE_URL // optional fallback
 }]
 
 export {

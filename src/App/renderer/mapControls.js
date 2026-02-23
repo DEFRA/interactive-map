@@ -2,6 +2,7 @@
 import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { allowedSlots } from './slots.js'
+import { isConsumerHtml } from './slotHelpers.js'
 
 /**
  * Map controls for a given slot and app state.
@@ -12,6 +13,11 @@ export function mapControls ({ slot, appState, evaluateProp }) {
 
   return Object.values(controlConfig)
     .filter(control => {
+      // Consumer HTML controls are managed by HtmlElementHost
+      if (isConsumerHtml(control)) {
+        return false
+      }
+
       const bpConfig = control[breakpoint]
       if (!bpConfig) {
         return false

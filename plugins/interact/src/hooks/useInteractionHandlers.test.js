@@ -1,15 +1,16 @@
 import { renderHook, act } from '@testing-library/react'
 import { useInteractionHandlers } from './useInteractionHandlers.js'
 import * as featureQueries from '../utils/featureQueries.js'
-import booleanDisjoint from '@turf/boolean-disjoint'
+import { isContiguousWithAny } from '../utils/spatial.js'
 
 /* ------------------------------------------------------------------ */
 /* Mocks                                                              */
 /* ------------------------------------------------------------------ */
 
-jest.mock('@turf/boolean-disjoint', () => jest.fn())
-jest.mock('../utils/turfHelpers.js', () => ({
-  toTurfGeometry: jest.fn(g => g)
+jest.mock('../utils/spatial.js', () => ({
+  isContiguousWithAny: jest.fn(),
+  canSplitFeatures: jest.fn(() => false),
+  areAllContiguous: jest.fn(() => false)
 }))
 jest.mock('../utils/featureQueries.js', () => ({
   getFeaturesAtPoint: jest.fn(),
@@ -172,7 +173,7 @@ it('passes multiSelect flag through to dispatch', () => {
 
 describe('contiguous selection', () => {
   it('does NOT replace selection when feature is contiguous', () => {
-    booleanDisjoint.mockReturnValue(false) // overlapping
+    isContiguousWithAny.mockReturnValue(true) // contiguous
 
     const { result, deps } = setup({
       contiguous: true,
@@ -191,7 +192,7 @@ describe('contiguous selection', () => {
   })
 
   it('replaces selection when feature is NOT contiguous', () => {
-    booleanDisjoint.mockReturnValue(true) // disjoint
+    isContiguousWithAny.mockReturnValue(false) // disjoint
 
     const { result, deps } = setup({
       contiguous: true,
@@ -214,7 +215,35 @@ describe('contiguous selection', () => {
 
     click(result)
 
-    expect(booleanDisjoint).not.toHaveBeenCalled()
+    expect(isContiguousWithAny).not.toHaveBeenCalled()
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* deselectOnClickOutside                                             */
+/* ------------------------------------------------------------------ */
+
+describe('deselectOnClickOutside', () => {
+  beforeEach(() => {
+    featureQueries.getFeaturesAtPoint.mockReturnValue([])
+    featureQueries.findMatchingFeature.mockReturnValue(null)
+  })
+
+  it('clears selection when clicking outside a feature in select mode', () => {
+    const { result, deps } = setup({ deselectOnClickOutside: true })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith({ type: 'CLEAR_SELECTED_FEATURES' })
+    expect(deps.mapState.markers.add).not.toHaveBeenCalled()
+  })
+
+  it('does not clear selection when deselectOnClickOutside is false', () => {
+    const { result, deps } = setup({ deselectOnClickOutside: false })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).not.toHaveBeenCalled()
   })
 })
 
@@ -255,6 +284,61 @@ it('emits selectionchange once when bounds exist', () => {
 
   expect(deps.services.eventBus.emit).toHaveBeenCalledWith(
     'interact:selectionchange',
-    deps.pluginState
+    expect.objectContaining({
+      selectedFeatures: deps.pluginState.selectedFeatures,
+      selectionBounds: deps.pluginState.selectionBounds,
+      canMerge: false,
+      canSplit: false
+    })
   )
+})
+
+it('skips emission when selection remains empty after being cleared', () => {
+  const eventBus = { emit: jest.fn() }
+  
+  // 1. First render with a feature (prev is null, emission happens)
+  const { rerender } = renderHook(
+    ({ features }) => useInteractionHandlers({
+      mapState: { markers: {} },
+      pluginState: { selectedFeatures: features, selectionBounds: { b: 1 } },
+      services: { eventBus },
+      mapProvider: {}
+    }),
+    { initialProps: { features: [{ id: 'f1' }] } }
+  )
+  
+  expect(eventBus.emit).toHaveBeenCalledTimes(1)
+  eventBus.emit.mockClear()
+
+  // 2. Rerender with empty selection (prev is now [{id: 'f1'}], emission happens)
+  rerender({ features: [] })
+  expect(eventBus.emit).toHaveBeenCalledTimes(1)
+  eventBus.emit.mockClear()
+
+  // 3. Rerender with empty selection AGAIN 
+  // This triggers: prev !== null AND prev.length === 0
+  rerender({ features: [] })
+  
+  // Should skip emission because wasEmpty is true (via prev.length === 0) 
+  // and current features.length is 0
+  expect(eventBus.emit).not.toHaveBeenCalled()
+})
+
+/* ------------------------------------------------------------------ */
+/* Debug mode                                                         */
+/* ------------------------------------------------------------------ */
+
+it('logs features when debug mode is enabled', () => {
+  const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+
+  const { result } = setup({ debug: true })
+
+  click(result)
+
+  expect(logSpy).toHaveBeenCalledWith(
+    expect.stringContaining('--- Features at'),
+    expect.any(Array)
+  )
+
+  logSpy.mockRestore()
 })

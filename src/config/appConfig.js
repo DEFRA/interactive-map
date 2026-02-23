@@ -18,12 +18,12 @@ const exitButtonSlots = {
 }
 
 // Default app buttons, panels and icons
-export const appConfig = {
+export const defaultAppConfig = {
   buttons: [{
     id: 'exit',
     label: 'Exit',
     iconId: 'close',
-    onClick: (e, { services }) => services.closeApp(),
+    onClick: (_e, { services }) => services.closeApp(),
     excludeWhen: ({ appConfig, appState }) => !appConfig.hasExitButton || !(appState.isFullscreen && (new URL(window.location.href)).searchParams.has(appConfig.mapViewParamKey)),
     mobile: exitButtonSlots,
     tablet: exitButtonSlots,
@@ -32,7 +32,7 @@ export const appConfig = {
     id: 'fullscreen',
     label: () => `${document.fullscreenElement ? 'Exit' : 'Enter'} fullscreen`,
     iconId: () => document.fullscreenElement ? 'minimise' : 'maximise',
-    onClick: (e, { appState }) => {
+    onClick: (_e, { appState }) => {
       const container = appState.layoutRefs.appContainerRef.current
       document.fullscreenElement ? document.exitFullscreen() : container.requestFullscreen()
     },
@@ -45,7 +45,7 @@ export const appConfig = {
     group: 'zoom',
     label: 'Zoom in',
     iconId: 'plus',
-    onClick: (e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
+    onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
     excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMaxZoom,
     mobile: buttonSlots,
@@ -56,7 +56,7 @@ export const appConfig = {
     group: 'zoom',
     label: 'Zoom out',
     iconId: 'minus',
-    onClick: (e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
+    onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
     excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMinZoom,
     mobile: buttonSlots,

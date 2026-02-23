@@ -3,13 +3,14 @@
  * @typedef {import('../../../src/types.js').MapProviderConfig} MapProviderConfig
  */
 
-import { defaults, supportedShortcuts } from './defaults.js'
+import { DEFAULTS, supportedShortcuts } from './defaults.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds } from './utils/spatial.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
+import { queryFeatures } from './utils/queryFeatures.js'
 
 /**
  * MapLibre GL JS implementation of the MapProvider interface.
@@ -75,7 +76,6 @@ export default class MapLibreProvider {
       map.fitBounds(bounds, { duration: 0 })
     }
 
-
     applyPreventDefaultFix(map)
     cleanCanvas(map)
 
@@ -100,7 +100,17 @@ export default class MapLibreProvider {
       this.labelNavigator = createMapLabelNavigator(map, mapStyle?.mapColorScheme, events, eventBus)
     })
 
-    this.eventBus.emit(events.MAP_READY, { map })
+    this.eventBus.emit(events.MAP_READY, this.getMapAPI())
+  }
+
+  /** Returns the public API exposed via the map:ready event. */
+  getMapAPI () {
+    return {
+      map: this.map,
+      crs: this.crs,
+      fitToBounds: this.fitToBounds.bind(this),
+      setView: this.setView.bind(this)
+    }
   }
 
   /** Destroy the map and clean up resources. */
@@ -129,7 +139,7 @@ export default class MapLibreProvider {
     this.map.flyTo({
       center: center || this.getCenter(),
       zoom: zoom || this.getZoom(),
-      duration: defaults.animationDuration
+      duration: DEFAULTS.animationDuration
     })
   }
 
@@ -141,7 +151,7 @@ export default class MapLibreProvider {
   zoomIn (zoomDelta) {
     this.map.easeTo({
       zoom: this.getZoom() + zoomDelta,
-      duration: defaults.animationDuration
+      duration: DEFAULTS.animationDuration
     })
   }
 
@@ -153,7 +163,7 @@ export default class MapLibreProvider {
   zoomOut (zoomDelta) {
     this.map.easeTo({
       zoom: this.getZoom() - zoomDelta,
-      duration: defaults.animationDuration
+      duration: DEFAULTS.animationDuration
     })
   }
 
@@ -163,7 +173,7 @@ export default class MapLibreProvider {
    * @param {[number, number]} offset - Pixel offset [x, y].
    */
   panBy (offset) {
-    this.map.panBy(offset, { duration: defaults.animationDuration })
+    this.map.panBy(offset, { duration: DEFAULTS.animationDuration })
   }
 
   /**
@@ -172,7 +182,7 @@ export default class MapLibreProvider {
    * @param {[number, number, number, number]} bounds - Bounds as [west, south, east, north].
    */
   fitToBounds (bounds) {
-    this.map.fitBounds(bounds, { duration: defaults.animationDuration })
+    this.map.fitBounds(bounds, { duration: DEFAULTS.animationDuration })
   }
 
   /**
@@ -241,7 +251,7 @@ export default class MapLibreProvider {
    */
   getCenter () {
     const coord = this.map.getCenter()
-    return [Number(coord.lng.toFixed(7)), Number(coord.lat.toFixed(7))]
+    return [Number(coord.lng.toFixed(DEFAULTS.coordinatePrecision)), Number(coord.lat.toFixed(DEFAULTS.coordinatePrecision))]
   }
 
   /**
@@ -250,7 +260,7 @@ export default class MapLibreProvider {
    * @returns {number}
    */
   getZoom () {
-    return Number(this.map.getZoom().toFixed(7))
+    return Number(this.map.getZoom().toFixed(DEFAULTS.coordinatePrecision))
   }
 
   /**
@@ -266,10 +276,12 @@ export default class MapLibreProvider {
    * Query rendered features at a screen pixel position (x from left edge, y from top edge of viewport).
    *
    * @param {{ x: number, y: number }} point - Screen pixel position.
+   * @param {Object} [options]
+   * @param {number} [options.radius] - Pixel radius to expand the query area. Results sorted closest-first.
    * @returns {any[]}
    */
-  getFeaturesAtPoint (point) {
-    return this.map.queryRenderedFeatures(point)
+  getFeaturesAtPoint (point, options) {
+    return queryFeatures(this.map, point, options)
   }
 
   // ==========================

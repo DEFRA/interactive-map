@@ -88,8 +88,22 @@ async function getOsToken() {
   return osAuth.token
 }
 
+/**
+ * Transform request for dynamic GeoJSON datasets
+ * @param {string} url - Base URL
+ * @param {Object} context - { bbox, zoom, dataset }
+ * @returns {Object} { url, headers }
+ */
+const transformDataRequest = (url, { bbox, zoom }) => {
+  const separator = url.includes('?') ? '&' : '?'
+  return {
+    url: `${url}${separator}bbox=${bbox.join(',')}`
+  }
+}
+
 export {
   transformGeocodeRequest,
   transformTileRequest,
+  transformDataRequest,
   setupEsriConfig
 }

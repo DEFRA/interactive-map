@@ -32,14 +32,14 @@ export const useMapProviderOverrides = () => {
 
   useEffect(() => {
     if (!mapProvider) {
-      return
+      return undefined
     }
 
     const originalFitToBounds = mapProvider.fitToBounds
 
     mapProvider.fitToBounds = (bounds, skipPaddingCalc = false) => {
       if (!bounds) {
-        return
+        return undefined
       }
 
       // Calculate and set safe zone padding unless explicitly skipped
@@ -54,7 +54,7 @@ export const useMapProviderOverrides = () => {
 
     mapProvider.setView = ({ center, zoom }) => {
       if (!center) {
-        return
+        return undefined
       }
 
       updatePadding()

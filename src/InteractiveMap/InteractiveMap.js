@@ -22,6 +22,10 @@ import { createInterfaceDetector, getInterfaceType } from '../utils/detectInterf
 import { createReverseGeocode } from '../services/reverseGeocode.js'
 import { EVENTS as events } from '../config/events.js'
 import { createEventBus } from '../services/eventBus.js'
+import { toggleInertElements } from '../utils/toggleInertElements.js'
+
+// Polyfills to ensure entry point works on all devices
+import './polyfills.js'
 
 /**
  * Main entry point for the Interactive Map component.
@@ -33,6 +37,7 @@ export default class InteractiveMap {
   _breakpointDetector = null
   _interfaceDetectorCleanup = null
   _hybridBehaviourCleanup = null
+  _isHidden = false // tracks if map is hidden but preserved (hybrid mode)
 
   /**
    * Create a new InteractiveMap instance.
@@ -98,16 +103,39 @@ export default class InteractiveMap {
   }
 
   _handleButtonClick (e) {
-    this.loadApp()
     history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
+    if (this._isHidden) {
+      this.showApp()
+    } else {
+      this.loadApp()
+    }
+  }
+
+  _removeMapParamFromUrl (href, key) {
+    const regex = new RegExp(`[?&]${key}=[^&]*(&|$)`)
+
+    if (!regex.test(href)) {
+      return href
+    }
+
+    return href
+      .replace(regex, (_, p1) => {
+        return p1 === '&' ? '?' : ''
+      })
+      .replace(/\?$/, '')
   }
 
   _handleExitClick () {
-    this.removeApp()
-    // Remove the map param from the URL using regex to prevent encoding
+    if (this.config.preserveStateOnClose) {
+      this.hideApp()
+    } else {
+      this.removeApp()
+    }
+
     const key = this.config.mapViewParamKey
     const href = location.href
-    const newUrl = href.replace(new RegExp(`[?&]${key}=[^&]*(&|$)`), (_, p1) => (p1 === '&' ? '?' : '')).replace(/\?$/, '')
+    const newUrl = this._removeMapParamFromUrl(href, key)
+
     history.replaceState(history.state, '', newUrl)
   }
 
@@ -153,10 +181,10 @@ export default class InteractiveMap {
       delete appInstance._root
 
       // Only assign properties but don't eventBus methods
-      const protectedKeys = ['on', 'off', 'emit']
+      const protectedKeys = new Set(['on', 'off', 'emit'])
 
       Object.keys(appInstance).forEach(key => {
-        if (!protectedKeys.includes(key)) {
+        if (!protectedKeys.has(key)) {
           this[key] = appInstance[key]
         }
       })
@@ -188,6 +216,52 @@ export default class InteractiveMap {
     updateDOMState(this)
 
     this.eventBus.emit(events.MAP_DESTROY, { mapId: this.id })
+  }
+
+  /**
+   * Hide the map application without destroying it (preserves state).
+   * Used in hybrid mode when resizing below breakpoint.
+   *
+   * @internal Not intended for end-user use.
+   */
+  hideApp () {
+    this._isHidden = true
+    this.rootEl.style.display = 'none'
+
+    // Restore inert elements before focusing button
+    toggleInertElements({ containerEl: this.rootEl, isFullscreen: false })
+
+    if (this._openButton) {
+      this._openButton.removeAttribute('style')
+      this._openButton.focus()
+    }
+
+    // Remove fullscreen classes
+    document.documentElement.classList.remove('im-is-fullscreen')
+    this.rootEl.classList.remove('im-is-fullscreen')
+
+    // Reset page title (remove prepended map title)
+    const parts = document.title.split(': ')
+    if (parts.length > 1) {
+      document.title = parts[parts.length - 1]
+    }
+  }
+
+  /**
+   * Show a previously hidden map application.
+   * Used in hybrid mode when resizing above breakpoint or clicking button.
+   *
+   * @internal Not intended for end-user use.
+   */
+  showApp () {
+    this._isHidden = false
+    this.rootEl.style.display = ''
+
+    if (this._openButton) {
+      this._openButton.style.display = 'none'
+    }
+
+    updateDOMState(this)
   }
 
   /**

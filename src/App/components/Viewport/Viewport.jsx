@@ -30,7 +30,7 @@ export const Viewport = ({ keyboardHintPortalRef }) => {
 
   // Attach map events
   useMapEvents({
-    [events.MAP_CLICK]: (e) => mapProvider?.clearHighlightedLabel?.()
+    [events.MAP_CLICK]: () => mapProvider?.clearHighlightedLabel?.()
   })
 
   // Manage keyboard hint visibility using local state
@@ -53,7 +53,7 @@ export const Viewport = ({ keyboardHintPortalRef }) => {
   useEffect(() => {
     const mainEl = layoutRefs.mainRef?.current
     if (!mainEl) {
-      return
+      return undefined
     }
 
     mainEl.classList.toggle('im-o-app__main--keyboard-hint-visible', showHint)

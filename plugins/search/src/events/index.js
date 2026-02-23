@@ -7,7 +7,7 @@ import { createSuggestionHandlers } from './suggestionHandlers.js'
 const DEBOUNCE_FETCH_TIME = 350
 
 export function attachEvents(args) {
-  const { dispatch, viewportRef, searchContainerRef } = args
+  const { dispatch, searchContainerRef } = args
 
   // Debounce data fetching
   const debouncedFetchSuggestions = debounce(

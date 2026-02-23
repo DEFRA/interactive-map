@@ -7,6 +7,40 @@ import defaults from '../config/defaults.js'
 // -----------------------------------------------------------------------------
 
 /**
+ * Opens the map application for a given map instance.
+ *
+ * If the map instance was previously hidden, it restores the existing app.
+ * Otherwise, it loads the app for the first time.
+ *
+ * @param {MapInstance} mapInstance
+ *   The map instance whose application should be opened.
+ */
+function openMap (mapInstance) {
+  if (mapInstance._isHidden) {
+    mapInstance.showApp?.()
+  } else {
+    mapInstance.loadApp?.()
+  }
+}
+
+/**
+ * Closes the map application for a given map instance.
+ *
+ * Depending on the configuration, the map state is either preserved
+ * by hiding the app or fully removed from the DOM.
+ *
+ * @param {MapInstance} mapInstance
+ *   The map instance whose application should be closed.
+ */
+function closeMap (mapInstance) {
+  if (mapInstance.config.preserveStateOnClose) {
+    mapInstance.hideApp?.()
+  } else {
+    mapInstance.removeApp?.()
+  }
+}
+
+/**
  * Handles the `popstate` event triggered by browser back/forward navigation.
  *
  * - Determines which component should be open based on the `view` query parameter in the URL.
@@ -28,11 +62,13 @@ function handlePopstate () {
     const isHybridVisible = mapInstance.config.behaviour === 'hybrid' && !isHybridFullscreen(mapInstance.config)
     const isOpen = mapInstance.rootEl?.children.length
 
-    if (shouldBeOpen && !isOpen) {
-      mapInstance.loadApp?.()
-    } else if (!shouldBeOpen && isOpen && !isHybridVisible) {
-      mapInstance.removeApp?.()
-      mapInstance.openButton?.focus?.()
+    if (shouldBeOpen && (!isOpen || mapInstance._isHidden)) {
+      openMap(mapInstance)
+      continue
+    }
+
+    if (!shouldBeOpen && isOpen && !isHybridVisible) {
+      closeMap(mapInstance)
     }
   }
 }

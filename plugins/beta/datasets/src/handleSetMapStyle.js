@@ -6,17 +6,24 @@ export const handleSetMapStyle = ({
   events,
   eventBus,
   getDatasets,
-  getHiddenFeatures
+  getHiddenFeatures,
+  getDynamicSources
 }) => {
   const onSetStyle = (e) => {
     map.once('idle', () => {
       const newStyleId = e.id
       const datasets = getDatasets()
       const hiddenFeatures = getHiddenFeatures()
+      const dynamicSources = getDynamicSources ? getDynamicSources() : new Map()
 
       // Re-add all layers with correct colors for new style
       datasets.forEach(dataset => {
         addMapLayers(map, newStyleId, dataset)
+      })
+
+      // Reapply cached data for dynamic sources
+      dynamicSources.forEach(source => {
+        source.reapply()
       })
 
       // Reapply hidden features filters

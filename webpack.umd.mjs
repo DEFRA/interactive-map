@@ -111,7 +111,6 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
     module: {
       rules: [
         { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
-        { test: /\.tsx?$/, loader: 'ts-loader', exclude: /node_modules/ },
         { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/i, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]
@@ -134,11 +133,10 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', libraryPath: 'maplibreProvider', outDir: 'providers/maplibre/dist/umd' },
   { entryPath: './providers/beta/open-names/src/index.js', libraryPath: 'openNamesProvider', outDir: 'providers/beta/open-names/dist/umd' },
-  // { entryPath: './providers/beta/esri/src/index.js', libraryPath: 'esriProvider', outDir: 'providers/beta/esri/dist/umd' },
 
   // Plugins
   { entryPath: './plugins/beta/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/beta/scale-bar/dist/umd' },
-  { entryPath: './plugins/beta/use-location/src/index.js', libraryPath: 'drawPolygonMLPlugin', outDir: 'plugins/beta/use-location/dist/umd' },
+  { entryPath: './plugins/beta/use-location/src/index.js', libraryPath: 'useLocationPlugin', outDir: 'plugins/beta/use-location/dist/umd' },
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },
   { entryPath: './plugins/beta/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/beta/datasets/dist/umd' },

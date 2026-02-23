@@ -8,8 +8,13 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
     return []
   }
 
-  return Object.entries(buttonConfig).filter(([_, config]) => {
+  return Object.entries(buttonConfig).filter(([_, config]) => { // NOSONAR, extractig to a hleper wouldn't necessarily improve readability
     const bpConfig = config[breakpoint]
+
+    // Skip menu items — they render inside a parent button's popup, not in a slot
+    if (config.isMenuItem) {
+      return false
+    }
 
     // Dynamic exclusion
     if (typeof config.excludeWhen === 'function' && evaluateProp(config.excludeWhen, config.pluginId)) {
@@ -36,18 +41,19 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
 
 function createButtonClickHandler (btn, appState, evaluateProp) {
   const [, config] = btn
-  const isOpen = !!(config.panelId && appState.openPanels[config.panelId])
+  const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
 
   return (e) => {
     if (typeof config.onClick === 'function') {
-      return config.onClick(e, evaluateProp(ctx => ctx, config.pluginId))
+      config.onClick(e, evaluateProp(ctx => ctx, config.pluginId))
+      return
     }
 
     if (config.panelId) {
       const triggeringElement = e.currentTarget
       appState.dispatch({
-        type: isOpen ? 'CLOSE_PANEL' : 'OPEN_PANEL',
-        payload: isOpen
+        type: isPanelOpen ? 'CLOSE_PANEL' : 'OPEN_PANEL',
+        payload: isPanelOpen
           ? config.panelId
           : { panelId: config.panelId, props: { triggeringElement } }
       })
@@ -59,7 +65,7 @@ function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, gro
   const [buttonId, config] = btn
   const bpConfig = config[appState.breakpoint] ?? {}
   const handleClick = createButtonClickHandler(btn, appState, evaluateProp)
-  const isOpen = !!(config.panelId && appState.openPanels[config.panelId])
+  const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
 
   return (
     <MapButton
@@ -74,9 +80,11 @@ function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, gro
       isDisabled={appState.disabledButtons.has(buttonId)}
       isHidden={appState.hiddenButtons.has(buttonId)}
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
-      isOpen={isOpen}
+      isExpanded={(config.isExpanded !== undefined || config.expandedWhen) ? appState.expandedButtons.has(buttonId) : undefined}
+      isPanelOpen={isPanelOpen}
       onClick={handleClick}
       panelId={config.panelId}
+      menuItems={config.menuItems}
       idPrefix={appConfig.id}
       groupStart={groupStart}
       groupMiddle={groupMiddle}
@@ -115,10 +123,10 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
   return matching.map((btn, idx) => {
     const [buttonId, config] = btn
     const key = config.group
-    const indices = key != null ? groupMap.get(key) : null
+    const indices = key == null ? null : groupMap.get(key)
     const groupStart = indices ? idx === indices[0] : false
     const groupEnd = indices ? idx === indices[indices.length - 1] : false
-    const groupMiddle = indices && indices.length >= 3 && !groupStart && !groupEnd
+    const groupMiddle = indices && indices.length >= 3 && !groupStart && !groupEnd // NOSONAR: 3 = minimum for a start/middle/end group
     const order = config[breakpoint]?.order ?? 0
 
     return {

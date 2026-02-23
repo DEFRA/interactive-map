@@ -8,7 +8,7 @@ import { attachEvents } from './events/index.js'
 
 export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
   const { id } = appConfig
-  const { interfaceType, breakpoint } = appState
+  const { interfaceType } = appState
   const { isExpanded: defaultExpanded, customDatasets, osNamesURL } = pluginConfig
   const { dispatch, isExpanded, areSuggestionsVisible, suggestions } = pluginState
 
@@ -58,7 +58,7 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
     appState.dispatch({ type: 'TOGGLE_HAS_EXCLUSIVE_CONTROL', payload: isExpanded })
 
     if (!searchOpen) {
-      return
+      return undefined
     }
 
     // Disable clicks on the viewport while search is open

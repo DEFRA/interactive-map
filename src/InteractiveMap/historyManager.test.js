@@ -13,19 +13,25 @@ describe('historyManager', () => {
   beforeEach(() => {
     component1 = {
       id: 'map',
-      config: { behaviour: 'buttonFirst', hybridWidth: null, maxMobileWidth: 640 },
+      config: { behaviour: 'buttonFirst', hybridWidth: null, maxMobileWidth: 640, preserveStateOnClose: false },
       rootEl: document.createElement('div'),
       loadApp: jest.fn(),
       removeApp: jest.fn(),
-      openButton: { focus: jest.fn() }
+      hideApp: jest.fn(),
+      showApp: jest.fn(),
+      openButton: { focus: jest.fn() },
+      _isHidden: false
     }
     component2 = {
       id: 'list',
-      config: { behaviour: 'hybrid', hybridWidth: null, maxMobileWidth: 640 },
+      config: { behaviour: 'hybrid', hybridWidth: null, maxMobileWidth: 640, preserveStateOnClose: false },
       rootEl: document.createElement('div'),
       loadApp: jest.fn(),
       removeApp: jest.fn(),
-      openButton: { focus: jest.fn() }
+      hideApp: jest.fn(),
+      showApp: jest.fn(),
+      openButton: { focus: jest.fn() },
+      _isHidden: false
     }
     popstateEvent = new PopStateEvent('popstate')
     jest.clearAllMocks()
@@ -63,7 +69,8 @@ describe('historyManager', () => {
     expect(component1.loadApp).not.toHaveBeenCalled()
   })
 
-  it('removes component and focuses button when view param does not match', () => {
+  it('removes component when view param does not match and preserveStateOnClose is false', () => {
+    component1.config.preserveStateOnClose = false
     component1.rootEl.appendChild(document.createElement('div'))
     historyManager.register(component1)
     queryString.getQueryParam.mockReturnValue(null)
@@ -71,7 +78,19 @@ describe('historyManager', () => {
     window.dispatchEvent(popstateEvent)
 
     expect(component1.removeApp).toHaveBeenCalled()
-    expect(component1.openButton.focus).toHaveBeenCalled()
+    expect(component1.hideApp).not.toHaveBeenCalled()
+  })
+
+  it('hides component when view param does not match and preserveStateOnClose is true', () => {
+    component1.config.preserveStateOnClose = true
+    component1.rootEl.appendChild(document.createElement('div'))
+    historyManager.register(component1)
+    queryString.getQueryParam.mockReturnValue(null)
+
+    window.dispatchEvent(popstateEvent)
+
+    expect(component1.hideApp).toHaveBeenCalled()
+    expect(component1.removeApp).not.toHaveBeenCalled()
   })
 
   it('does not remove hybrid component when viewport is wide (inline mode)', () => {
@@ -87,6 +106,7 @@ describe('historyManager', () => {
   })
 
   it('removes hybrid component when viewport is narrow and view does not match', () => {
+    component2.config.preserveStateOnClose = false
     component2.rootEl.appendChild(document.createElement('div'))
     historyManager.register(component2)
     queryString.getQueryParam.mockReturnValue(null)
@@ -96,6 +116,17 @@ describe('historyManager', () => {
     window.dispatchEvent(popstateEvent)
 
     expect(component2.removeApp).toHaveBeenCalled()
+  })
+
+  it('calls showApp when view param matches and component is hidden', () => {
+    component1._isHidden = true
+    historyManager.register(component1)
+    queryString.getQueryParam.mockReturnValue('map')
+
+    window.dispatchEvent(popstateEvent)
+
+    expect(component1.showApp).toHaveBeenCalled()
+    expect(component1.loadApp).not.toHaveBeenCalled()
   })
 
   it('uses hybridWidth for media query when provided', () => {

@@ -26,23 +26,25 @@
         $type: button
     );
 
-    & {
-        display: flex;
-        justify-content: center;
-        align-items: center;
+    display: flex;
+    justify-content: center;
+    align-items: center;
 
-        padding-left: var(--button-padding);
-        padding-right: var(--button-padding);
+    padding-left: var(--button-padding);
+    padding-right: var(--button-padding);
 
-        pointer-events: auto;
-        color: var(--foreground-color);
-        background-color: var(--button-background-color);
+    pointer-events: auto;
+    color: var(--foreground-color);
+    background-color: var(--button-background-color);
 
-        min-height: var(--button-size);
-        min-width: var(--button-size);
+    min-height: var(--button-size);
+    min-width: var(--button-size);
 
-        user-select: none;
-        cursor: pointer;
+    user-select: none;
+    cursor: pointer;
+
+    &--primary[aria-disabled="true"], &--tertiary[aria-disabled="true"] {
+        opacity: var(--disabled-button-opacity);
     }
 }
 
@@ -66,9 +68,7 @@
             transition: background-color var(--duration) ease;
         }
 
-        & {
-            background-color: var(--button-hover-color);
-        }
+        background-color: var(--button-hover-color);
     }
 }
 
@@ -94,16 +94,16 @@
     svg + span {
         padding-left: 0;
     }
+
+    &::before {
+        box-shadow: none;
+    }
 }
 
 @media (hover: hover) and (pointer: fine) {
     .im-c-map-button--primary:hover {
         background-color: var(--primary-button-hover-color);
     }
-}
-
-.im-c-map-button--primary::before {
-    box-shadow: none;
 }
 
 .im-c-map-button--tertiary {
@@ -118,10 +118,23 @@
     svg + span {
         padding-left: 0;
     }
+
+    &::before {
+        box-shadow: none;
+    }
 }
 
-.im-c-map-button--tertiary::before {
-    box-shadow: none;
+.im-c-map-button--touch {
+    background-color: var(--map-overlay-foreground-color);
+    color: var(--map-overlay-halo-color);
+
+    width: var(--touch-button-size);
+    height: var(--touch-button-size);
+    border-radius: 100%;
+
+    &::before {
+        box-shadow: none;
+    }
 }
 
 .im-o-app__right {
@@ -132,6 +145,14 @@
 
     .im-c-button-wrapper--group-start .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'top');
+    }
+
+    .im-c-button-wrapper--group-middle .im-c-map-button {
+        @include tools.border-focus-corner-override($corners: 'none');
+
+        &::before {
+            clip-path: inset(0 -20px 0 -20px);
+        }
     }
 
     .im-c-button-wrapper--group-end .im-c-map-button {
@@ -150,6 +171,14 @@
         @include tools.border-focus-corner-override($corners: 'left');
     }
 
+    .im-c-button-wrapper--group-middle .im-c-map-button {
+        @include tools.border-focus-corner-override($corners: 'none');
+
+        &::before {
+            clip-path: inset(-20px 0 -20px 0);
+        }
+    }
+
     .im-c-button-wrapper--group-end .im-c-map-button {
         @include tools.border-focus-corner-override($corners: 'right');
     }
@@ -162,11 +191,6 @@
     }
 }
 
-.im-c-map-button {
-    &--primary[aria-disabled="true"], &--tertiary[aria-disabled="true"] {
-        opacity: var(--disabled-button-opacity);
-    }
-}
 
 .im-o-app__actions .im-c-map-button[aria-pressed="true"] {
     color: var(--pressed-button-foreground-color);

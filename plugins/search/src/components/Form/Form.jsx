@@ -44,7 +44,7 @@ export const Form = ({
           aria-expanded={pluginState.suggestionsVisible}
           aria-controls={`${id}-search-suggestions`}
           aria-activedescendant={pluginState.selectedIndex >= 0 ? `${id}-search-suggestion-${pluginState.selectedIndex}` : undefined}
-          aria-describedby={!pluginState.value ? `${id}-search-hint` : undefined}
+          aria-describedby={pluginState.value ? undefined : `${id}-search-hint`}
           aria-autocomplete="list"
           autoComplete="off"
           placeholder="Search"

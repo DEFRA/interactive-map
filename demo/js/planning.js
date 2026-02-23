@@ -1,20 +1,31 @@
-import InteractiveMap from '../../src/index.js'
+// CSS
+import '../../dist/css/index.css'
+import '/plugins/beta/map-styles/dist/css/index.css'
+import '/plugins/beta/scale-bar/dist/css/index.css'
+import '/plugins/search/dist/css/index.css'
+import '/plugins/interact/dist/css/index.css'
+import '/plugins/beta/frame/dist/css/index.css'
+// InteractiveMap
+import InteractiveMap from '../../dist/esm/index.js'
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
 // Providers
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
-import esriProvider from '/providers/beta/esri/src/index.js'
+import openNamesProvider from '/providers/beta/open-names/dist/esm/index.js'
+import esriProvider from '/providers/beta/esri/dist/esm/index.js'
 // Plugins
-import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import createDrawPlugin from '/plugins/beta/draw-es/src/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
-import searchPlugin from '/plugins/search/src/index.js'
-import createInteractPlugin from '/plugins/interact/src/index.js'
-import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import useLocationPlugin from '/plugins/beta/use-location/dist/esm/index.js'
+import mapStylesPlugin from '/plugins/beta/map-styles/dist/esm/index.js'
+import createDrawPlugin from '/plugins/beta/draw-es/dist/esm/index.js'
+import scaleBarPlugin from '/plugins/beta/scale-bar/dist/esm/index.js'
+import searchPlugin from '/plugins/search/dist/esm/index.js'
+import createInteractPlugin from '/plugins/interact/dist/esm/index.js'
+import createFramePlugin from '/plugins/beta/frame/dist/esm/index.js'
 // Demo utils
-import { hideMenu, toggleButtonState, getGeometryShape } from './planning-utils.js'
+import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning-menu.js'
+import { renderKeyHTML, toggleKeyItemVisibility } from './planning-key.js'
+import { getGeometryShape, getQueryParam } from './planning-utils.js'
+import { addOrRemoveDatasets, addOrRemoveMapFeatures } from './planning-layers.js'
 
 let feature
 // const feature = { id: 'boundary', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[371013.629737365,518087.27160546643],[371026.76930227707,518103.6431258204],[371076.00861123804,518150.38583537703],[371082.5004262571,518144.458668744],[371088.1419858577,518146.24617482634],[371119.04499505187,518121.1373772673],[371061.7528809118,518034.9300132221],[371044.3521903893,518057.18438187643],[371013.629737365,518087.27160546643]]]}, properties: { id: 'boundary' }}
@@ -33,38 +44,6 @@ const interactPlugin = createInteractPlugin({
 	interactionMode: 'marker', // 'auto', 'select', 'marker' // defaults to 'marker'
 	// multiSelect: true
 })
-
-const menuHTML = `
-	<div class="fmp-menu">
-		<h3 class="govuk-heading-s" id="boundary-heading">Get a boundary report</h3>
-		<ul id="fmp-menu-list" class="fmp-menu-list" aria-labelledby="boundary-heading" role="menu">
-			<li class="fmp-menu-item" role="presentation">
-				<button id="shapeBtn" class="govuk-body-s fmp-menu-button" aria-disabled="${!!feature}">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/></svg>
-					<span class="fmp-menu-button__label">Draw shape</span>
-				</button>
-			</li>
-			<li class="fmp-menu-item" role="presentation">
-				<button id="squareBtn" class="govuk-body-s fmp-menu-button" aria-disabled="${!!feature}">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><rect width="18" height="18" x="3" y="3" rx="2"/></svg>
-					<span class="fmp-menu-button__label">Draw square</span>
-				</button>
-			</li>
-			<li class="fmp-menu-item" role="presentation">
-				<button id="editBtn" class="govuk-body-s fmp-menu-button" aria-disabled="${!feature}">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/></svg>
-					<span class="fmp-menu-button__label">Edit area</span>
-				</button>
-			</li>
-			<li class="fmp-menu-item" role="presentation">
-				<button id="deleteBtn" class="govuk-body-s fmp-menu-button" aria-disabled="${!feature}">
-					<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" focusable="false"><path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg>
-					<span class="fmp-menu-button__label">Delete area</span>
-				</button>
-			</li>
-		</ul>
-	</div>
-`
 
 const drawPlugin = createDrawPlugin()
 
@@ -131,36 +110,59 @@ const interactiveMap = new InteractiveMap('map', {
 	// search
 })
 
-interactiveMap.on('map:ready', function (e) {
+interactiveMap.on('app:ready', function (e) {
 	interactiveMap.addButton('menu', {
 		label: 'Menu',
 		panelId: 'menu',
 		iconSvgContent: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
-		mobile: { slot: 'top-left' },
-		tablet: { slot: 'top-left', showLabel: true },
-		desktop: { slot: 'top-left', showLabel: true }
+		mobile: { slot: 'top-left', order: 1 },
+		tablet: { slot: 'top-left', order: 2, showLabel: true },
+		desktop: { slot: 'top-left', order: 2, showLabel: true }
 	})
 	interactiveMap.addButton('key', {
 		label: 'Key',
 		panelId: 'key',
 		iconSvgContent: '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
-		mobile: { slot: 'top-left' },
-		tablet: { slot: 'top-left', showLabel: true },
-		desktop: { slot: 'top-left', showLabel: true }
+		mobile: { slot: 'top-left', order: 2 },
+		tablet: { slot: 'top-left', order: 3, showLabel: true },
+		desktop: { slot: 'top-left', order: 3, showLabel: true }
 	})
 	interactiveMap.addPanel('menu', {
 		label: 'Menu',
-		html: menuHTML,
+		html: renderMenuHTML(feature),
 		mobile: { slot: 'side', modal: true, initiallyOpen: true },
 		tablet: { slot: 'side', width: '260px', initiallyOpen: true },
 		desktop: { slot: 'side', width: '280px', initiallyOpen: true }
 	})
 	interactiveMap.addPanel('key', {
 		label: 'Key',
-		html: '<p>Key</p>',
+		html: renderKeyHTML(),
 		mobile: { slot: 'bottom', initiallyOpen: false, exclusive: true },
 		tablet: { slot: 'inset', width: '260px', initiallyOpen: false, exclusive: true },
 		desktop: { slot: 'inset', width: '280px', initiallyOpen: false, exclusive: true }
+	})
+})
+
+interactiveMap.on('map:ready', function (e) {
+	console.log(e)
+	
+	// Add datasets and map features
+	const dataset = getQueryParam('dataset', 'floodzones-presentday')
+	const mapFeatures = getQueryParam('features')
+	addOrRemoveDatasets(e, dataset)
+	addOrRemoveMapFeatures(e, mapFeatures)
+	toggleKeyItemVisibility({ dataset })
+	toggleKeyItemVisibility({ mapFeatures })
+
+	// Menu radio and checkbox events
+	document.addEventListener('fmp:datasetchanged', (e) => {
+		addOrRemoveDatasets(e.detail)
+		toggleKeyItemVisibility(e.detail)
+	})
+
+	document.addEventListener('fmp:featureschanged', (e) => {
+		addOrRemoveMapFeatures(e.detail)
+		toggleKeyItemVisibility(e.detail)
 	})
 })
 
@@ -174,28 +176,19 @@ interactiveMap.on('draw:ready', function () {
 		drawPlugin.addFeature(feature)
 	}
 
-	// Menu button click events
-	document.addEventListener('click', e => {
-		// Draw area
-		const shapeBtn = e.target.closest('#shapeBtn')
-		if (shapeBtn && shapeBtn.getAttribute('aria-disabled') !== 'true') {
-			toggleButtonState([])
+	// Add menu click handlers
+	addMenuClickHandlers({
+		onDrawShape: function() {
 			drawPlugin.newPolygon('boundary')
 			hideMenu(interactiveMap)
-		}
-		// Draw frame
-		const squareBtn = e.target.closest('#squareBtn')
-		if (squareBtn && squareBtn.getAttribute('aria-disabled') !== 'true') {
-			toggleButtonState([])
+		},
+		onDrawFrame: function() {
 			framePlugin.addFrame('boundary', {
 				aspectRatio: 1
 			})
 			hideMenu(interactiveMap)
-		}
-		// Edit area
-		const editBtn = e.target.closest('#editBtn')
-		if (editBtn && editBtn.getAttribute('aria-disabled') !== 'true') {
-			toggleButtonState([])
+		},
+		onEdit: function() {
 			if (getGeometryShape(feature.geometry) === 'square') {
 				drawPlugin.deleteFeature('boundary')
 				framePlugin.editFeature(feature)
@@ -203,13 +196,10 @@ interactiveMap.on('draw:ready', function () {
 				drawPlugin.editFeature('boundary')
 			}
 			hideMenu(interactiveMap)
-		}
-		// Delete area
-		const deleteBtn = e.target.closest('#deleteBtn')
-		if (deleteBtn && deleteBtn.getAttribute('aria-disabled') !== 'true') {
+		},
+		onDelete: function() {
 			drawPlugin.deleteFeature('boundary')
 			feature = null
-			toggleButtonState(['shape', 'square'])
 			hideMenu(interactiveMap)
 		}
 	})

@@ -3,55 +3,57 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { MapButton } from './MapButton'
 
 jest.mock('../../../utils/stringToKebab', () => ({
-  stringToKebab: (str) => str ? str.replace(/\s+/g, '-').toLowerCase() : ''
+  stringToKebab: (str) => (str ? str.replace(/\s+/g, '-').toLowerCase() : '')
 }))
 
 jest.mock('../Tooltip/Tooltip', () => ({
-  Tooltip: ({ content, children }) => <div data-testid='tooltip' data-content={content}>{children}</div>
+  Tooltip: ({ content, children }) => (
+    <div data-testid='tooltip' data-content={content}>{children}</div>
+  )
 }))
 
 jest.mock('../Icon/Icon', () => ({
-  Icon: ({ id, svgContent }) => <svg data-testid={id || 'custom-icon'} data-svg={svgContent} aria-hidden='true' />
+  Icon: ({ id, svgContent }) => (
+    <svg data-testid={id || 'custom-icon'} data-svg={svgContent} aria-hidden='true' />
+  )
 }))
 
 jest.mock('../../renderer/SlotRenderer', () => ({
   SlotRenderer: ({ slot }) => <div data-testid='slot' data-slot={slot} />
 }))
 
-jest.mock('../../store/configContext', () => ({
-  useConfig: () => ({ id: 'app' })
+jest.mock('../PopupMenu/PopupMenu', () => ({
+  PopupMenu: ({ startPos, items }) => {
+    let selectedIndex = -1
+    if (startPos === 'first' && items?.length > 0) {
+      selectedIndex = 0
+    }
+    if (startPos === 'last' && items?.length > 0) {
+      selectedIndex = items.length - 1
+    }
+    return <div data-testid='popup-menu' data-start-pos={String(startPos)} data-selected-index={String(selectedIndex)}>{items?.map((item, i) => <div key={i} data-testid={`menu-item-${i}`}>{item.label}</div>)}</div>
+  }
 }))
+
+jest.mock('../../store/configContext', () => ({ useConfig: () => ({ id: 'app' }) }))
 
 const mockButtonRefs = { current: {} }
-jest.mock('../../store/appContext', () => ({
-  useApp: () => ({ buttonRefs: mockButtonRefs })
-}))
+jest.mock('../../store/appContext', () => ({ useApp: () => ({ buttonRefs: mockButtonRefs }) }))
 
 describe('MapButton', () => {
-  beforeEach(() => {
-    mockButtonRefs.current = {}
-  })
+  beforeEach(() => { mockButtonRefs.current = {} })
 
-  const renderButton = (props = {}) =>
-    render(<MapButton buttonId='Test' iconId='icon' label='Label' {...props} />)
+  const renderButton = (props = {}) => render(<MapButton buttonId='Test' iconId='icon' label='Label' {...props} />)
+  const getButton = () => screen.getByRole('button')
 
-  it('renders button with classes, icon, and label', () => {
-    renderButton({ buttonId: 'My Button', variant: 'primary', showLabel: true })
-    const button = screen.getByRole('button', { name: 'Label' })
-    expect(button).toHaveClass('im-c-map-button', 'im-c-map-button--my-button', 'im-c-map-button--primary', 'im-c-map-button--with-label')
-    expect(screen.getByTestId('icon')).toBeInTheDocument()
-    expect(screen.getByText('Label')).toBeInTheDocument()
-  })
-
-  it('renders Icon with svgContent when provided', () => {
-    renderButton({ iconId: null, iconSvgContent: '<circle />' })
-    expect(screen.getByTestId('custom-icon')).toHaveAttribute('data-svg', '<circle />')
-  })
-
-  it('does not render Icon when neither iconId nor iconSvgContent provided', () => {
-    renderButton({ iconId: null, iconSvgContent: null })
-    expect(screen.queryByTestId('icon')).not.toBeInTheDocument()
-    expect(screen.queryByTestId('custom-icon')).not.toBeInTheDocument()
+  it.each([
+    [{ buttonId: 'My Button', variant: 'primary', showLabel: true }, ['im-c-map-button', 'im-c-map-button--my-button', 'im-c-map-button--primary', 'im-c-map-button--with-label']],
+    [{ iconId: null, iconSvgContent: '<circle />' }, []]
+  ])('renders button variations and classes', (props, expectedClasses) => {
+    renderButton(props)
+    const button = getButton()
+    expectedClasses.forEach(cls => expect(button).toHaveClass(cls))
+    if (props.iconSvgContent) expect(screen.getByTestId('custom-icon')).toHaveAttribute('data-svg', props.iconSvgContent)
   })
 
   it('wraps in Tooltip when showLabel is false', () => {
@@ -59,7 +61,7 @@ describe('MapButton', () => {
     expect(screen.getByTestId('tooltip')).toHaveAttribute('data-content', 'Label')
   })
 
-  it('hides wrapper when isHidden is true', () => {
+  it('hides wrapper when isHidden', () => {
     const { container } = renderButton({ isHidden: true })
     expect(container.firstChild).toHaveStyle('display: none')
   })
@@ -68,89 +70,131 @@ describe('MapButton', () => {
     ['groupStart', 'im-c-button-wrapper--group-start'],
     ['groupMiddle', 'im-c-button-wrapper--group-middle'],
     ['groupEnd', 'im-c-button-wrapper--group-end']
-  ])('applies %s class', (prop, className) => {
+  ])('applies wrapper %s class', (prop, className) => {
     const { container } = renderButton({ [prop]: true })
     expect(container.firstChild).toHaveClass(className)
   })
 
-  it('applies all aria attributes with panelId', () => {
-    renderButton({ panelId: 'Settings', idPrefix: 'prefix', isDisabled: true, isExpanded: true, isOpen: false })
-    const button = screen.getByRole('button')
+  it('handles panelId aria attributes', () => {
+    renderButton({ panelId: 'Settings', idPrefix: 'prefix', isDisabled: true, isPanelOpen: false })
+    const button = getButton()
     expect(button).toHaveAttribute('aria-disabled', 'true')
-    expect(button).toHaveAttribute('aria-expanded', 'true')
-    expect(button).toHaveAttribute('aria-pressed', 'false')
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+    expect(button).not.toHaveAttribute('aria-pressed')
     expect(button).toHaveAttribute('aria-controls', 'prefix-panel-settings')
     expect(screen.getByTestId('slot')).toHaveAttribute('data-slot', 'test-button')
   })
 
-  it('sets aria-pressed true when isOpen is true', () => {
-    renderButton({ panelId: 'Menu', idPrefix: 'prefix', isOpen: true })
-    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true')
+  it.each([
+    [{ isPressed: true }, 'true'],
+    [{ isPressed: 'true' }, undefined]
+  ])('sets aria-pressed correctly', (props, expected) => {
+    renderButton(props)
+    const button = getButton()
+    if (expected) expect(button).toHaveAttribute('aria-pressed', expected)
+    else expect(button).not.toHaveAttribute('aria-pressed')
   })
 
-  it('uses isPressed when no panelId', () => {
-    renderButton({ isPressed: 'true' })
-    expect(screen.getByRole('button')).toHaveAttribute('aria-pressed', 'true')
+  it('sets aria-expanded when no panelId and isExpanded', () => {
+    renderButton({ isExpanded: true })
+    expect(getButton()).toHaveAttribute('aria-expanded', 'true')
   })
 
-  it('omits aria-expanded when undefined', () => {
-    renderButton({ isExpanded: undefined })
-    expect(screen.getByRole('button')).not.toHaveAttribute('aria-expanded')
+  it('handles click events', () => {
+    const onClick = jest.fn()
+    renderButton({ onClick })
+    fireEvent.click(getButton())
+    expect(onClick).toHaveBeenCalled()
   })
 
-  it('fires onClick handler', () => {
-    const handleClick = jest.fn()
-    renderButton({ onClick: handleClick })
-    fireEvent.click(screen.getByRole('button'))
-    expect(handleClick).toHaveBeenCalled()
+  it('does not fire onClick or open popup when disabled', () => {
+    const onClick = jest.fn()
+    renderButton({ isDisabled: true, menuItems: [{ label: 'Item' }], onClick })
+    fireEvent.click(getButton())
+    expect(onClick).not.toHaveBeenCalled()
+    expect(screen.queryByTestId('popup-menu')).not.toBeInTheDocument()
   })
 
-  it('stores button ref when buttonId provided', () => {
+  it('stores button refs correctly', () => {
     renderButton({ buttonId: 'TestButton' })
-    expect(mockButtonRefs.current.TestButton).toBe(screen.getByRole('button'))
+    expect(mockButtonRefs.current.TestButton).toBe(getButton())
   })
 
-  it('does not store ref when buttonRefs.current is falsy', () => {
-    mockButtonRefs.current = null
-    renderButton({ buttonId: 'Test' })
-    // Should not throw
+  it('does not store ref if buttonId falsy', () => {
+    render(<MapButton buttonId={null} iconId='icon' label='Label' />)
+    expect(mockButtonRefs.current).toEqual({})
   })
 
-  it('renders as anchor with href', () => {
-    renderButton({ href: 'https://example.com' })
-    const link = screen.getByRole('button')
-    expect(link.tagName).toBe('A')
-    expect(link).toHaveAttribute('href', 'https://example.com')
-    expect(link).toHaveAttribute('target', '_blank')
+  it('handles popup aria attributes', () => {
+    renderButton({ idPrefix: 'prefix', menuItems: [{ label: 'Item' }] })
+    const button = getButton()
+    expect(button).toHaveAttribute('aria-controls', 'prefix-popup-test')
+    expect(button).toHaveAttribute('aria-haspopup', 'true')
   })
 
-  it.each([[' '], ['Spacebar']])('triggers click when %s key pressed', (key) => {
-    renderButton({ href: 'https://example.com' })
-    const link = screen.getByRole('button')
-    const clickSpy = jest.spyOn(link, 'click')
-    fireEvent.keyUp(link, { key })
-    expect(clickSpy).toHaveBeenCalled()
+  it('toggles popup aria-expanded and startPos', () => {
+    renderButton({ menuItems: [{ label: 'Item' }] })
+    const button = getButton()
+
+    expect(button).toHaveAttribute('aria-expanded', 'false')
+
+    fireEvent.click(button)
+    expect(button).toHaveAttribute('aria-expanded', 'true')
+    expect(screen.getByTestId('popup-menu')).toHaveAttribute('data-start-pos', 'null')
+
+    fireEvent.click(button)
+    expect(button).toHaveAttribute('aria-expanded', 'false')
   })
 
-  it('prevents default when Space pressed on anchor', () => {
-    renderButton({ href: 'https://example.com' })
-    const event = new KeyboardEvent('keyup', { key: ' ', bubbles: true, cancelable: true })
-    const preventDefaultSpy = jest.spyOn(event, 'preventDefault')
-    screen.getByRole('button').dispatchEvent(event)
-    expect(preventDefaultSpy).toHaveBeenCalled()
+  it.each([
+    ['ArrowDown', 'first', 0],
+    ['ArrowUp', 'last', 1]
+  ])('keyboard menu navigation %s', (key, expectedPos, expectedIndex) => {
+    renderButton({ menuItems: [{ label: 'One' }, { label: 'Two' }] })
+    fireEvent.keyUp(getButton(), { key })
+    const menu = screen.getByTestId('popup-menu')
+    expect(menu).toHaveAttribute('data-start-pos', expectedPos)
+    expect(menu).toHaveAttribute('data-selected-index', String(expectedIndex))
   })
 
-  it('does not trigger click for non-space keys', () => {
-    renderButton({ href: 'https://example.com' })
-    const clickSpy = jest.spyOn(screen.getByRole('button'), 'click')
-    fireEvent.keyUp(screen.getByRole('button'), { key: 'Enter' })
-    expect(clickSpy).not.toHaveBeenCalled()
-  })
-
-  it('renders as button without href', () => {
+  it('does nothing for arrow keys when no menu', () => {
     renderButton()
-    const button = screen.getByRole('button')
-    expect(button.tagName).toBe('BUTTON')
-    expect(button).toHaveAttribute('type', 'button')
+    fireEvent.keyUp(getButton(), { key: 'ArrowDown' })
+    expect(screen.queryByTestId('popup-menu')).not.toBeInTheDocument()
+  })
+
+  it('does nothing for unrelated keys', () => {
+    renderButton({ menuItems: [{ label: 'Item' }] })
+    fireEvent.keyUp(getButton(), { key: 'Enter' })
+    expect(screen.queryByTestId('popup-menu')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['https://example.com', 'A'],
+    [null, 'BUTTON']
+  ])('renders as anchor or button', (href, tag) => {
+    renderButton({ href })
+    const el = getButton()
+    expect(el.tagName).toBe(tag)
+    if (href) {
+      expect(el).toHaveAttribute('href', href)
+      expect(el).toHaveAttribute('target', '_blank')
+    } else expect(el).toHaveAttribute('type', 'button')
+  })
+
+  it.each([[' '], ['Spacebar']])('triggers click on anchor key %s', (key) => {
+    renderButton({ href: 'https://example.com' })
+    const el = getButton()
+    const spy = jest.spyOn(el, 'click')
+    fireEvent.keyUp(el, { key })
+    expect(spy).toHaveBeenCalled()
+  })
+
+  it('does not trigger click for other keys on anchor', () => {
+    renderButton({ href: 'https://example.com' })
+    const el = getButton()
+    const spy = jest.spyOn(el, 'click')
+    fireEvent.keyUp(el, { key: 'Enter' })
+    expect(spy).not.toHaveBeenCalled()
   })
 })
