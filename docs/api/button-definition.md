@@ -77,6 +77,29 @@ Associated panel identifier. When set, clicking the button toggles the panel ope
 
 ---
 
+### `menuItems`
+**Type:** `MenuItemDefinition[]`
+
+> [!WARNING]
+> **Experimental:** Popup menu positioning is currently only reliable when the button is centred in the action bar. Placement in other slots may produce incorrect positioning.
+
+Array of items to render in a popup menu when the button is clicked. When provided, the button acts as a menu trigger (`aria-haspopup`) rather than invoking `onClick` directly.
+
+Each item is a `MenuItemDefinition`. See [Menu item properties](#menu-item-properties) below.
+
+```js
+menuItems: [
+  { id: 'opt-a', label: 'Option A', onClick: (e) => console.log('A') },
+  { id: 'opt-b', label: 'Option B', onClick: (e) => console.log('B') }
+]
+```
+
+Items whose `isPressed` or `pressedWhen` is set are rendered as `menuitemcheckbox` and support a checked state. Plain items are rendered as `menuitem`.
+
+Menu item state (`hidden`, `disabled`, `pressed`) can be controlled at runtime via [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) using the item's `id`.
+
+---
+
 ### `inline`
 **Type:** `boolean`
 **Default:** `true`
@@ -85,12 +108,26 @@ Whether the button is rendered when the app is in 'inline' mode. Set to `false` 
 
 ---
 
-### `isToggle`
+### `isPressed`
 **Type:** `boolean`
 
-Enables pressed state tracking for the button. When `true`, `aria-pressed` is set based on the button's pressed state. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to control the pressed state.
+Initial pressed state of the button. Sets `aria-pressed` when provided. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to update at runtime.
 
-This is intended for host buttons added via `addButton()` as an alternative to the `pressedWhen` callback.
+Intended for host buttons added via `addButton()`. For plugin buttons, use the reactive `pressedWhen` callback instead.
+
+---
+
+### `isDisabled`
+**Type:** `boolean`
+
+Initial disabled state of the button. Sets `aria-disabled` when `true`. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to update at runtime.
+
+---
+
+### `isHidden`
+**Type:** `boolean`
+
+Initial hidden state of the button. Sets `display: none` when `true`. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) to update at runtime.
 
 ---
 
@@ -155,6 +192,17 @@ pressedWhen: (context) => context.pluginState.isActive
 
 ---
 
+### `expandedWhen`
+**Type:** `function`
+
+Callback to determine if the button should appear expanded. Sets `aria-expanded` accordingly. Typically used for buttons that control collapsible content other than a panel.
+
+```js
+expandedWhen: (context) => context.pluginState.isExpanded
+```
+
+---
+
 ## Breakpoint Configuration
 
 Each breakpoint (`mobile`, `tablet`, `desktop`) accepts the following properties:
@@ -174,3 +222,56 @@ The order the button appears within its slot.
 **Type:** `boolean`
 
 Whether to show the label. If `false`, a tooltip is generated from the label instead.
+
+---
+
+## Menu item properties
+
+Each object in a button's `menuItems` array supports the following properties:
+
+### `id`
+**Type:** `string`
+**Required**
+
+Unique identifier for the menu item. Used to control item state via [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value).
+
+### `label`
+**Type:** `string`
+**Required**
+
+Display text for the item.
+
+### `onClick`
+**Type:** `function`
+
+Click handler. Receives the native event as its only argument.
+
+```js
+onClick: (event) => console.log('Item clicked')
+```
+
+### `iconId`
+**Type:** `string`
+
+Icon identifier from the icon registry.
+
+### `iconSvgContent`
+**Type:** `string`
+
+Raw SVG content for the item icon. The outer `<svg>` tag should be excluded.
+
+### `isPressed`
+**Type:** `boolean`
+
+Initial checked state of the item. When set, the item renders as `menuitemcheckbox` with `aria-checked` reflecting the pressed state. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) with the item's `id` to update at runtime.
+
+Intended for host buttons added via `addButton()`. For plugin buttons, use `pressedWhen` instead.
+
+### `pressedWhen`
+**Type:** `function`
+
+Reactive callback to determine if the item should appear checked. When set, the item renders as `menuitemcheckbox`. Plugin buttons only.
+
+```js
+pressedWhen: (context) => context.pluginState.selectedOption === 'opt-a'
+```
