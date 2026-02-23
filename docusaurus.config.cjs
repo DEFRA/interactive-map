@@ -2,8 +2,8 @@
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  title: 'DEFRA Interactive Map',
-  tagline: 'An accessible map component',
+  title: 'Interactive Map',
+  tagline: 'Accessibility-first interactive map component for government frontends ',
   favicon: 'img/favicon.ico',
 
   url: 'https://defra.github.io',
@@ -40,7 +40,7 @@ const config = {
   themeConfig: {
     govuk: {
       header: {
-        serviceName: 'DEFRA Interactive Map',
+        serviceName: 'Interactive Map',
         serviceHref: '/',
       },
 
