@@ -106,11 +106,10 @@
     "webpack-merge": "^6.0.1",
     "webpack-remove-empty-scripts": "^1.1.1",
     "@docusaurus/core": "3.4.0",
-    "@docusaurus/preset-classic": "3.4.0",
+    "@docusaurus/plugin-content-docs": "3.4.0",
     "@docusaurus/module-type-aliases": "3.4.0",
     "@docusaurus/tsconfig": "3.4.0",
-    "clsx": "^2.1.1",
-    "prism-react-renderer": "^2.3.1"
+    "docusaurus-theme-govuk": "file:../../docusaurus-govuk/packages/docusaurus-theme-govuk"
   },
   "keywords": [
     "react",
