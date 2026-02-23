@@ -111,7 +111,6 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
     module: {
       rules: [
         { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
-        { test: /\.tsx?$/, loader: 'ts-loader', exclude: /node_modules/ },
         { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/i, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]

@@ -54,9 +54,19 @@
     "./plugins/frame": {
       "import": "./plugins/beta/frame/dist/esm/index.js",
       "require": "./plugins/beta/frame/dist/umd/index.js"
-    }
+    },
+    "./css": "./dist/css/index.css",
+    "./plugins/draw-ml/css": "./plugins/beta/draw-ml/dist/css/index.css",
+    "./plugins/scale-bar/css": "./plugins/beta/scale-bar/dist/css/index.css",
+    "./plugins/datasets/css": "./plugins/beta/datasets/dist/css/index.css",
+    "./plugins/frame/css": "./plugins/beta/frame/dist/css/index.css",
+    "./plugins/map-styles/css": "./plugins/beta/map-styles/dist/css/index.css",
+    "./plugins/search/css": "./plugins/search/dist/css/index.css",
+    "./plugins/interact/css": "./plugins/interact/dist/css/index.css",
+    "./providers/esri/css": "./providers/beta/esri/dist/css/index.css"
   },
   "type": "module",
+  "sideEffects": ["**/*.css", "**/*.scss"],
   "scripts": {
     "clean": "rimraf dist",
     "sass:watch": "sass --watch demo/scss/farming.scss:public/farming-demo.css demo/scss/planning.scss:public/planning-demo.css",
@@ -64,7 +74,7 @@
     "dev": "npm-run-all --parallel sass:watch webpack:serve",
     "prod": "webpack serve --config webpack.prod.mjs",
     "build:umd": "webpack --config webpack.umd.mjs --mode production",
-    "build:esm": "webpack --config webpack.esm.mjs --mode production",
+    "build:esm": "rollup --config rollup.esm.mjs",
     "build": "npm run clean && npm-run-all --parallel build:umd build:esm",
     "type-check": "tsc --noEmit",
     "lint": "npm run lint:js && npm run lint:scss",
@@ -89,18 +99,10 @@
     ]
   },
   "peerDependencies": {
-    "@arcgis/core": "^4.34.8",
-    "react": "^19.2.0",
-    "react-dom": "^19.2.0"
+    "@arcgis/core": "^4.34.8"
   },
   "peerDependenciesMeta": {
     "@arcgis/core": {
-      "optional": true
-    },
-    "react": {
-      "optional": true
-    },
-    "react-dom": {
       "optional": true
     }
   },
@@ -109,9 +111,14 @@
     "@babel/core": "^7.28.0",
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.1",
-    "@babel/preset-typescript": "^7.27.1",
     "@esri/arcgis-rest-request": "^4.7.3",
     "@mapbox/mapbox-gl-draw": "^1.5.0",
+    "@rollup/plugin-alias": "^6.0.0",
+    "@rollup/plugin-babel": "^6.1.0",
+    "@rollup/plugin-commonjs": "^29.0.0",
+    "@rollup/plugin-node-resolve": "^16.0.3",
+    "@rollup/plugin-replace": "^6.0.3",
+    "@rollup/plugin-terser": "^0.4.4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
     "@types/geojson": "^7946.0.16",
@@ -122,11 +129,8 @@
     "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
     "dotenv": "^17.2.0",
-    "event-target-polyfill": "^0.0.4",
     "express-static-gzip": "^3.0.0",
     "geodesy": "^2.4.0",
-    "html-webpack-plugin": "^5.6.3",
-    "install": "^0.13.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^30.0.4",
     "mapbox-gl-snap": "^1.1.9",
@@ -134,20 +138,18 @@
     "node-fetch": "^3.3.2",
     "npm": "^11.8.0",
     "npm-run-all": "^4.1.5",
-    "prettier": "^3.6.2",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "remove-files-webpack-plugin": "^1.5.0",
-    "resize-observer-polyfill": "^1.5.1",
     "rimraf": "^6.1.0",
+    "rollup": "^4.59.0",
+    "rollup-plugin-postcss": "^4.0.2",
     "sass": "^1.89.2",
     "sass-loader": "^16.0.5",
     "standard": "^17.1.2",
-    "style-loader": "^4.0.0",
     "stylelint": "^16.21.1",
     "stylelint-config-gds": "^2.0.0",
     "stylelint-scss": "^6.12.1",
-    "ts-loader": "^9.5.2",
     "typescript": "^5.8.3",
     "webpack": "^5.100.1",
     "webpack-bundle-analyzer": "^4.10.2",
@@ -176,11 +178,8 @@
     "@turf/line-intersect": "^7.3.3",
     "@turf/point-to-line-distance": "^7.3.3",
     "@turf/polygon-to-line": "^7.3.3",
-    "abortcontroller-polyfill": "^1.7.8",
-    "core-js": "^3.44.0",
     "govuk-frontend": "^5.13.0",
     "maplibre-gl": "^5.15.0",
-    "maplibre-gl-legacy": "npm:maplibre-gl@1.15.3",
     "polygon-splitter": "^0.0.11",
     "preact": "^10.27.2"
   }
