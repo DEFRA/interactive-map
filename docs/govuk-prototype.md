@@ -1,7 +1,3 @@
----
-sidebar_position: 7
----
-
 # GOV.UK Prototype Kit
 
 This guide explains how to use the Interactive Map component in a GOV.UK Prototype Kit project.

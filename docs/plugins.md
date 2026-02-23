@@ -1,7 +1,3 @@
----
-sidebar_position: 5
----
-
 # Plugins
 
 Plugins extend the InteractiveMap with additional functionality. This page lists the available plugins and links to their documentation.

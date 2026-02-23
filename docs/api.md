@@ -1,7 +1,3 @@
----
-sidebar_position: 4
----
-
 # API reference
 
 **InteractiveMap** is a customisable mapping interface, designed for specific use cases and with a focus on accessibiity. It is provided as a high-level API that works in conjunction with a mapping framework such as MapLibre. Alternative mapping frameworks are catererd for through the development of a custom provider.

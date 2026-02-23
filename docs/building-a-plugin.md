@@ -1,7 +1,3 @@
----
-sidebar_position: 6
----
-
 # Building Plugins
 
 Plugins extend the InteractiveMap with custom buttons, panels, controls, and behaviours. This guide introduces the plugin system and links to the detailed reference documentation.

@@ -1,8 +1,3 @@
----
-sidebar_position: 1
-slug: /
----
-
 # Interactive Map Documentation
 
 Welcome to the DEFRA Interactive Map documentation. This is an accessible map component designed for specific use cases with a focus on accessibility.
