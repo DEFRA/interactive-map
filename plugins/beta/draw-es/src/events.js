@@ -89,7 +89,7 @@ export function attachEvents({ pluginState, mapProvider, events, eventBus, butto
     // Emit event on update
     if (toolInfoType === 'reshape-stop') {
       const tempFeature = graphicToGeoJSON(graphic)
-      eventBus.emit('draw:update', tempFeature)
+      eventBus.emit('draw:updated', tempFeature)
       dispatch({ type: 'SET_FEATURE', payload: { tempFeature }})
     }
   }
@@ -136,7 +136,7 @@ export function attachEvents({ pluginState, mapProvider, events, eventBus, butto
     sketchViewModel.layer = emptySketchLayer
 
     dispatch({ type: 'SET_MODE', payload: null })
-    eventBus.emit('draw:cancel')
+    eventBus.emit('draw:cancelled')
   }
 
   // Attach all event listeners
