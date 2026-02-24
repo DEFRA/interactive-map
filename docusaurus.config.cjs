@@ -53,6 +53,7 @@ const config = {
           sidebar: [
             { text: 'Overview', href: '/architecture' },
             { text: 'Diagrams', href: 'architecture-diagrams' },
+            { text: 'Diagram Viewer', href: 'diagrams-viewer' },
           ],
         },
         { text: 'GOV.UK Prototype', href: '/govuk-prototype' },

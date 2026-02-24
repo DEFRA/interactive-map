@@ -4,9 +4,7 @@ Interactive C4 architecture diagrams for the Interactive Map component.
 
 ## View Online
 
-The diagrams are deployed to GitHub Pages:
-
-**[View Architecture Diagrams](https://defra.github.io/interactive-map/)**
+**[View Architecture Diagrams](/interactive-map/architecture/diagrams-viewer)**
 
 ## Available Views
 

@@ -91,8 +91,8 @@
     "report": "webpack --profile --json --config webpack.prod.mjs > stats.json && webpack-bundle-analyzer --host 0.0.0.0 --port 8888 ./stats.json ./public",
     "docs:dev": "docusaurus start --host 0.0.0.0",
     "docs:build": "docusaurus build",
-    "docs:build:likec4": "likec4 build --output dist --base /interactive-map/architecture-diagrams/ docs/architecture",
-    "docs:build:all": "npm run docs:build && npm run docs:build:likec4 && mkdir -p build/architecture-diagrams && cp -r dist/. build/architecture-diagrams/",
+    "docs:build:likec4": "likec4 build --output dist --base /interactive-map/likec4/ docs/architecture",
+    "docs:build:all": "npm run docs:build && npm run docs:build:likec4 && mkdir -p build/likec4 && cp -r dist/. build/likec4/",
     "docs:serve": "docusaurus serve --host 0.0.0.0",
     "docs:clear": "docusaurus clear",
     "report:esm": "ANALYZE=1 rollup --config rollup.esm.mjs"
