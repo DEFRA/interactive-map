@@ -17,8 +17,8 @@ export const newLine = ({ appState, appConfig, pluginConfig, pluginState, mapPro
     return
   }
 
-  // Emit draw:start
-  eventBus.emit('draw:start', { mode: 'draw_line' })
+  // Emit draw:started
+  eventBus.emit('draw:started', { mode: 'draw_line' })
 
   // Determin snapLayers from pluginConfig or runtime config
   let snapLayers = null

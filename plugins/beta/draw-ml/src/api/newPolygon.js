@@ -17,8 +17,8 @@ export const newPolygon = ({ appState, appConfig, pluginConfig, pluginState, map
     return
   }
 
-  // Emit draw:start
-  eventBus.emit('draw:start', { mode: 'draw_polygon' })
+  // Emit draw:started
+  eventBus.emit('draw:started', { mode: 'draw_polygon' })
 
   // Determin snapLayers from pluginConfig or runtime config
   let snapLayers = null

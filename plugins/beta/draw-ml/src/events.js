@@ -29,14 +29,14 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
   // --- Button handlers
   const handleDone = () => {
     const mode = draw.getMode()
-    const features = draw.getAll().features
-    const feature = features?.[0]
 
     disableSnap()
     mapProvider.undoStack?.clear()
 
+    const features = draw.getAll().features
+    
     if (mode === 'edit_vertex') {
-      map.fire('draw.editfinish', { features: [feature] })
+      map.fire('draw.editfinish', { features: [draw.get(tempFeature.id)] })
       return
     }
 
@@ -44,7 +44,9 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
       return
     }
 
+    const feature = features?.[0]
     const geom = feature.geometry
+
     if (geom.type === 'Polygon') {
       const ring = geom.coordinates[0]
       geom.coordinates[0] = [...ring.slice(0, -2), ring[0]]
@@ -56,6 +58,7 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
   }
 
   const handleCancel = () => {
+    draw.trash()
     if (tempFeature?.id) {
       draw.delete(tempFeature.id)
     }
@@ -65,7 +68,7 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
     disableSnap()
     draw.changeMode('disabled')
     resetDrawModeAndFeature()
-    eventBus.emit('draw:cancel', { originalFeature: feature })
+    eventBus.emit('draw:cancelled', feature)
   }
 
   const handleUndo = () => {
@@ -122,14 +125,19 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
     const newFeature = e.features[0]
     resetDrawModeAndFeature()
     setTimeout(() => draw.changeMode('disabled'), 0)
-    eventBus.emit(eventName, { newFeature })
+    eventBus.emit(eventName, newFeature)
   }
 
-  const onCreate = handleDrawCompletion('draw:create')
-  const onEditFinish = handleDrawCompletion('draw:edit')
+  // --- Draw update handler
+  const handleUpdate = (e) => {
+    const tempFeature = e.features[0]
+    eventBus.emit('draw:updated', tempFeature)
+  }
+
+  const onCreate = handleDrawCompletion('draw:created')
+  const onEditFinish = handleDrawCompletion('draw:edited')
 
   // --- Other map events
-  const onUpdate = (e) => eventBus.emit('draw:update', e)
   const onVertexSelection = (e) => {
     dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e })
     eventBus.emit('draw:vertexselection', e)
@@ -151,7 +159,7 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
   map.on('draw.cancel', handleCancel)
   map.on('draw.create', onCreate)
   map.on('draw.editfinish', onEditFinish)
-  map.on('draw.update', onUpdate)
+  map.on('draw.update', handleUpdate)
   map.on('draw.vertexselection', onVertexSelection)
   map.on('draw.vertexchange', onVertexChange)
   map.on('draw.undochange', onUndoChange)
@@ -165,7 +173,7 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
     map.off('draw.cancel', handleCancel)
     map.off('draw.create', onCreate)
     map.off('draw.editfinish', onEditFinish)
-    map.off('draw.update', onUpdate)
+    map.off('draw.update', handleUpdate)
     map.off('draw.vertexselection', onVertexSelection)
     map.off('draw.vertexchange', onVertexChange)
     map.off('draw.undochange', onUndoChange)

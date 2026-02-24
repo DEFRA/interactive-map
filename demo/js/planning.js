@@ -1,26 +1,26 @@
 // CSS
-import '../../dist/css/index.css'
-import '/plugins/beta/map-styles/dist/css/index.css'
-import '/plugins/beta/scale-bar/dist/css/index.css'
-import '/plugins/search/dist/css/index.css'
-import '/plugins/interact/dist/css/index.css'
-import '/plugins/beta/frame/dist/css/index.css'
+// import '../../dist/css/index.css'
+// import '/plugins/beta/map-styles/dist/css/index.css'
+// import '/plugins/beta/scale-bar/dist/css/index.css'
+// import '/plugins/search/dist/css/index.css'
+// import '/plugins/interact/dist/css/index.css'
+// import '/plugins/beta/frame/dist/css/index.css'
 // InteractiveMap
-import InteractiveMap from '../../dist/esm/index.js'
+import InteractiveMap from '../../src/index.js'
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
 // Providers
-import openNamesProvider from '/providers/beta/open-names/dist/esm/index.js'
-import esriProvider from '/providers/beta/esri/dist/esm/index.js'
+import openNamesProvider from '/providers/beta/open-names/src/index.js'
+import esriProvider from '/providers/beta/esri/src/index.js'
 // Plugins
-import useLocationPlugin from '/plugins/beta/use-location/dist/esm/index.js'
-import mapStylesPlugin from '/plugins/beta/map-styles/dist/esm/index.js'
-import createDrawPlugin from '/plugins/beta/draw-es/dist/esm/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/dist/esm/index.js'
-import searchPlugin from '/plugins/search/dist/esm/index.js'
-import createInteractPlugin from '/plugins/interact/dist/esm/index.js'
-import createFramePlugin from '/plugins/beta/frame/dist/esm/index.js'
+import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
+import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
+import createDrawPlugin from '/plugins/beta/draw-es/src/index.js'
+import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import searchPlugin from '/plugins/search/src/index.js'
+import createInteractPlugin from '/plugins/interact/src/index.js'
+import createFramePlugin from '/plugins/beta/frame/src/index.js'
 // Demo utils
 import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning-menu.js'
 import { renderKeyHTML, toggleKeyItemVisibility } from './planning-key.js'
@@ -211,21 +211,21 @@ interactiveMap.on('draw:done', function (e) {
 	toggleButtonState(['edit', 'delete'])
 })
 
-interactiveMap.on('draw:update', function (e) {
-	console.log('draw:update', e)
+interactiveMap.on('draw:updated', function (e) {
+	console.log('draw:updated', e)
 })
 
-interactiveMap.on('draw:create', function (e) {
-	console.log('draw:create', e)
+interactiveMap.on('draw:created', function (e) {
+	console.log('draw:created', e)
 })
 
-interactiveMap.on('draw:cancel', function (e) {
-	console.log('draw:cancel', e)
+interactiveMap.on('draw:cancelled', function (e) {
+	console.log('draw:cancelled', e)
 	toggleButtonState(feature ? ['edit', 'delete'] : ['shape', 'square'])
 })
 
-interactiveMap.on('draw:delete', function (e) {
-	// console.log('draw:delete', e)
+interactiveMap.on('draw:deleted', function (e) {
+	// console.log('draw:deleted', e)
 })
 
 interactiveMap.on('frame:done', function (e) {
