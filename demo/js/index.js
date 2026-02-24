@@ -145,9 +145,9 @@ const interactiveMap = new InteractiveMap('map', {
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles3857
 		}),
-		// scaleBarPlugin({
-		// 	units: 'metric'
-		// }),
+		scaleBarPlugin({
+			units: 'metric'
+		}),
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,

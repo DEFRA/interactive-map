@@ -105,5 +105,6 @@ const parseOsNamesResults = (json, query, crs) => {
 }
 
 export {
-  parseOsNamesResults
+  parseOsNamesResults,
+  point
 }
