@@ -121,7 +121,7 @@
     "@babel/plugin-transform-runtime": "^7.29.0",
     "@babel/preset-env": "^7.28.0",
     "@babel/preset-react": "^7.27.1",
-    "@defra/docusaurus-theme-govuk": "^0.0.3-alpha",
+    "@defra/docusaurus-theme-govuk": "^0.0.5-alpha",
     "@docusaurus/core": "3.4.0",
     "@docusaurus/module-type-aliases": "3.4.0",
     "@docusaurus/plugin-content-docs": "3.4.0",
