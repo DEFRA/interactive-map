@@ -100,7 +100,7 @@ export default class MapLibreProvider {
       this.labelNavigator = createMapLabelNavigator(map, mapStyle?.mapColorScheme, events, eventBus)
     })
 
-    this.eventBus.emit(events.MAP_READY, this.getMapAPI())
+    this.eventBus.emit(events.MAP_PROVIDER_READY, this.getMapAPI())
   }
 
   /** Returns the public API exposed via the map:ready event. */

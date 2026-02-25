@@ -1,7 +1,7 @@
 export function attachAppEvents ({ baseTileLayer, events, eventBus }) {
   const handleSetMapStyle = mapStyle => {
     baseTileLayer.loadStyle(mapStyle.url).then(() => {
-      eventBus.emit(events.MAP_STYLE_CHANGE, mapStyle)
+      eventBus.emit(events.MAP_STYLE_CHANGE, { styleId: mapStyle.id })
     })
   }
 

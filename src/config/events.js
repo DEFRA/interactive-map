@@ -87,7 +87,7 @@ export const EVENTS = {
   // Map commands (internal / plugin authors)
   // ============================================
 
-  /** @internal Set map style. Payload: styleId */
+  /** @internal Set map style. Payload: MapStyleConfig */
   MAP_SET_STYLE: 'map:setstyle',
   /** @internal Set map size. Payload: { width, height } */
   MAP_SET_SIZE: 'map:setsize',
@@ -101,14 +101,55 @@ export const EVENTS = {
   /** @internal Emitted when map styles are initialized. */
   MAP_INIT_MAP_STYLES: 'map:initmapstyles',
 
-  /** Emitted when the map style changes. Payload: { styleId: string } */
+  /**
+   * @internal Emitted by the map provider when the underlying map view is ready.
+   * Consumed by MapProvider to compose and emit the consumer-facing MAP_READY event.
+   */
+  MAP_PROVIDER_READY: 'map:providerready',
+
+  /**
+   * Emitted when the map style has finished loading.
+   * Payload: `{ styleId: string }`
+   *
+   * @example
+   * map.on(EVENTS.MAP_STYLE_CHANGE, ({ styleId }) => {
+   *   console.log('Style changed to', styleId)
+   * })
+   */
   MAP_STYLE_CHANGE: 'map:stylechange',
 
-  /** Emitted when the map style has fully loaded. */
+  /** Emitted when the map has fully loaded. */
   MAP_LOADED: 'map:loaded',
 
-  /** Emitted when the map is ready for interaction. Payload: { map } */
+  /**
+   * Emitted when the map is ready for interaction and initial app state is settled.
+   *
+   * Payload:
+   * - `map` — the underlying map instance
+   * - `view` — the map view (ESRI SDK only)
+   * - `crs` — coordinate reference system string (e.g. `'EPSG:4326'`)
+   * - `fitToBounds` — function to fit the map to a bounding box
+   * - `setView` — function to set the map center and zoom
+   * - `mapStyleId` — the ID of the active map style (e.g. `'outdoor'`, `'dark'`)
+   * - `mapSize` — the active map size string (e.g. `'small'`, `'medium'`, `'large'`)
+   *
+   * @example
+   * map.on(EVENTS.MAP_READY, ({ map, mapStyleId, mapSize }) => {
+   *   console.log('Map ready, style:', mapStyleId, 'size:', mapSize)
+   * })
+   */
   MAP_READY: 'map:ready',
+
+  /**
+   * Emitted when the map size changes.
+   * Payload: `{ mapSize: string }`
+   *
+   * @example
+   * map.on(EVENTS.MAP_SIZE_CHANGE, ({ mapSize }) => {
+   *   console.log('Map size changed to', mapSize)
+   * })
+   */
+  MAP_SIZE_CHANGE: 'map:sizechange',
 
   /** Emitted once after the map first becomes idle following initial load. */
   MAP_FIRST_IDLE: 'map:firstidle',

@@ -54,7 +54,7 @@ export function attachMapEvents ({
   // ready
   once(() => view.ready).then(() => {
     if (!destroyed) {
-      eventBus.emit(events.MAP_READY, mapProvider.getMapAPI())
+      eventBus.emit(events.MAP_PROVIDER_READY, mapProvider.getMapAPI())
     }
   })
 

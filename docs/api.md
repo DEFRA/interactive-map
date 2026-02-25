@@ -700,9 +700,9 @@ interactiveMap.on('app:ready', () => {
 
 ### `map:ready`
 
-Emitted when the underlying map is in a state ready to interact with. For example, when using MapLibre this event is emitted after the map has been instantiated; for ESRI SDK it is emitted when `view.ready` is first true.
+Emitted when the underlying map is ready and initial app state (style and size) has settled.
 
-**Payload:** A controlled API object with the following properties:
+**Payload:**
 
 | Property | Type | Description |
 |---|---|---|
@@ -711,10 +711,40 @@ Emitted when the underlying map is in a state ready to interact with. For exampl
 | `crs` | string | The coordinate reference system (e.g. `'EPSG:4326'`) |
 | `fitToBounds` | Function | Fit the map to a bounding box |
 | `setView` | Function | Set the map center and zoom |
+| `mapStyleId` | string | The ID of the active map style |
+| `mapSize` | string | The active map size (`'small'`, `'medium'`, or `'large'`) |
 
 ```js
-interactiveMap.on('map:ready', ({ map, crs, fitToBounds, setView }) => {
-  interactiveMap.addMarker('home', [-0.1276, 51.5074])
+interactiveMap.on('map:ready', ({ map, mapStyleId, mapSize }) => {
+  console.log('Active style:', mapStyleId, 'Size:', mapSize)
+})
+```
+
+---
+
+### `map:stylechange`
+
+Emitted when the map style finishes loading after a style change.
+
+**Payload:** `{ styleId: string }`
+
+```js
+interactiveMap.on('map:stylechange', ({ styleId }) => {
+  console.log('Style changed to', styleId)
+})
+```
+
+---
+
+### `map:sizechange`
+
+Emitted when the map size changes.
+
+**Payload:** `{ mapSize: string }`
+
+```js
+interactiveMap.on('map:sizechange', ({ mapSize }) => {
+  console.log('Map size changed to', mapSize)
 })
 ```
 
