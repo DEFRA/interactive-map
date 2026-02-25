@@ -6,7 +6,10 @@ export default async function getToken({ clientId, clientSecret }) {
     clientSecret
   })
 
-  const token = await appManager.getToken() // or refreshToken()
+  const token = await appManager.getToken()
+  const expires_in = appManager.expires
+    ? Math.floor((appManager.expires.getTime() - Date.now()) / 1000)
+    : 7170
 
-  return token
+  return { token, expires_in }
 }

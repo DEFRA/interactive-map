@@ -1,5 +1,5 @@
 // src/App/store/MapProvider.jsx
-import React, { createContext, useEffect, useReducer, useMemo } from 'react'
+import React, { createContext, useEffect, useReducer, useMemo, useRef } from 'react'
 import { initialState, reducer } from './mapReducer.js'
 import { EVENTS as events } from '../../config/events.js'
 
@@ -8,8 +8,14 @@ export const MapContext = createContext(null)
 export const MapProvider = ({ options, children }) => {
   const [state, dispatch] = useReducer(reducer, initialState(options))
 
-  const handleMapReady = (mapProvider) => {
-    dispatch({ type: 'SET_MAP_READY', payload: mapProvider })
+  const { eventBus } = options
+  const mapProviderAPIRef = useRef(null)
+  const hasEmittedMapReadyRef = useRef(false)
+  const isMapSizeInitialisedRef = useRef(false)
+
+  const handleProviderReady = (mapProviderAPI) => {
+    mapProviderAPIRef.current = mapProviderAPI
+    dispatch({ type: 'SET_MAP_READY', payload: mapProviderAPI })
   }
 
   const handleInitMapStyles = (mapStyles) => {
@@ -30,21 +36,45 @@ export const MapProvider = ({ options, children }) => {
   }
 
   // Listen to eventBus and update state
-  const { eventBus } = options
-
   useEffect(() => {
-    eventBus.on(events.MAP_READY, handleMapReady)
+    eventBus.on(events.MAP_PROVIDER_READY, handleProviderReady)
     eventBus.on(events.MAP_INIT_MAP_STYLES, handleInitMapStyles)
     eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)
     eventBus.on(events.MAP_SET_SIZE, handleSetMapSize)
 
     return () => {
-      eventBus.off(events.MAP_READY, handleMapReady)
+      eventBus.off(events.MAP_PROVIDER_READY, handleProviderReady)
       eventBus.off(events.MAP_INIT_MAP_STYLES, handleInitMapStyles)
       eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)
       eventBus.off(events.MAP_SET_SIZE, handleSetMapSize)
     }
   }, [])
+
+  // Emit consumer-facing map:ready once provider, mapStyle and mapSize are all settled.
+  // Fires exactly once — the ref guard prevents re-emission if state later changes.
+  useEffect(() => {
+    if (!state.isMapReady || !state.mapStyle || !state.mapSize || hasEmittedMapReadyRef.current) {
+      return
+    }
+    hasEmittedMapReadyRef.current = true
+    eventBus.emit(events.MAP_READY, {
+      ...mapProviderAPIRef.current,
+      mapStyleId: state.mapStyle.id,
+      mapSize: state.mapSize
+    })
+  }, [state.isMapReady, state.mapStyle, state.mapSize])
+
+  // Emit map:sizechange when mapSize changes, skipping the initial value.
+  useEffect(() => {
+    if (!state.mapSize) {
+      return
+    }
+    if (!isMapSizeInitialisedRef.current) {
+      isMapSizeInitialisedRef.current = true
+      return
+    }
+    eventBus.emit(events.MAP_SIZE_CHANGE, { mapSize: state.mapSize })
+  }, [state.mapSize])
 
   // Persist mapStyle and mapSize in localStorage
   useEffect(() => {

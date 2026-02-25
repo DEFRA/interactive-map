@@ -6,15 +6,18 @@ describe('attachAppEvents', () => {
   beforeEach(() => {
     map = {
       setStyle: jest.fn(),
-      setPixelRatio: jest.fn()
+      setPixelRatio: jest.fn(),
+      once: jest.fn()
     }
     eventBus = {
       on: jest.fn(),
-      off: jest.fn()
+      off: jest.fn(),
+      emit: jest.fn()
     }
     events = {
       MAP_SET_STYLE: 'map:set-style',
-      MAP_SET_PIXEL_RATIO: 'map:set-pixel-ratio'
+      MAP_SET_PIXEL_RATIO: 'map:set-pixel-ratio',
+      MAP_STYLE_CHANGE: 'map:stylechange'
     }
   })
 
@@ -30,11 +33,17 @@ describe('attachAppEvents', () => {
     const pixelHandler = eventBus.on.mock.calls.find(c => c[0] === events.MAP_SET_PIXEL_RATIO)[1]
 
     // Call handlers to verify map methods
-    styleHandler({ url: 'style.json' })
+    styleHandler({ id: 'outdoor', url: 'style.json' })
     pixelHandler(2)
 
     expect(map.setStyle).toHaveBeenCalledWith('style.json', { diff: false })
+    expect(map.once).toHaveBeenCalledWith('style.load', expect.any(Function))
     expect(map.setPixelRatio).toHaveBeenCalledWith(2)
+
+    // Simulate style.load firing — should emit MAP_STYLE_CHANGE
+    const styleLoadCallback = map.once.mock.calls.find(c => c[0] === 'style.load')[1]
+    styleLoadCallback()
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_STYLE_CHANGE, { styleId: 'outdoor' })
 
     // Verify remove detaches handlers
     controller.remove()
