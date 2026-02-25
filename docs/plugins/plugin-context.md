@@ -5,9 +5,9 @@ Plugin components and callbacks receive the base [Context](../api/context.md) pl
 PluginContext is received by:
 - [InitComponent](./plugin-manifest.md#initcomponent) - as props
 - [API methods](./plugin-manifest.md#api) - as the first argument
-- [Panel render components](./panel-definition.md#render) - as props
-- [Control render components](./control-definition.md#render) - as props
-- [Button callbacks](./button-definition.md) (`onClick`, `enableWhen`, `hiddenWhen`, `excludeWhen`, `pressedWhen`) - as an argument (`onClick` receives event first, context second)
+- [Panel render components](../api/panel-definition.md#render) - as props
+- [Control render components](../api/control-definition.md#render) - as props
+- [Button callbacks](../api/button-definition.md) (`onClick`, `enableWhen`, `hiddenWhen`, `excludeWhen`, `pressedWhen`) - as an argument (`onClick` receives event first, context second)
 
 ## Base Context Properties
 

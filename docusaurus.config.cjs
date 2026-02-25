@@ -41,10 +41,11 @@ const config = {
       header: {
         serviceName: 'Interactive Map',
         serviceHref: '/',
+        organisationText: 'Defra DDTS',
+        organisationHref: 'https://github.com/defra',
       },
 
       navigation: [
-        { text: 'Home', href: '/' },
         { text: 'Getting Started', href: '/getting-started' },
         {
           text: 'Architecture',
@@ -52,6 +53,7 @@ const config = {
           sidebar: [
             { text: 'Overview', href: '/architecture' },
             { text: 'Diagrams', href: 'architecture-diagrams' },
+            { text: 'Diagram Viewer', href: 'diagrams-viewer' },
           ],
         },
         { text: 'GOV.UK Prototype', href: '/govuk-prototype' },
@@ -89,7 +91,7 @@ const config = {
 
       phaseBanner: {
         phase: 'alpha',
-        text: 'This is a new service – your feedback will help us to improve it.',
+        text: 'This is a new frontend component. Help us improve it and give your feedback on Slack.',
       },
 
       footer: {
