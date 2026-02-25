@@ -60,17 +60,7 @@ const config = {
         {
           text: 'API',
           href: '/api',
-          sidebar: [
-            { text: 'Overview', href: '/api' },
-            { text: 'Button Definition', href: 'button-definition' },
-            { text: 'Context', href: 'context' },
-            { text: 'Control Definition', href: 'control-definition' },
-            { text: 'Icon Definition', href: 'icon-definition' },
-            { text: 'Map Style Config', href: 'map-style-config' },
-            { text: 'Marker Config', href: 'marker-config' },
-            { text: 'Panel Definition', href: 'panel-definition' },
-            { text: 'Slots', href: 'slots' },
-          ],
+          sidebar: 'auto',
         },
         {
           text: 'Plugins',
@@ -78,13 +68,27 @@ const config = {
           sidebar: [
             { text: 'Overview', href: '/plugins' },
             { text: 'Building a Plugin', href: '/building-a-plugin' },
-            { text: 'Interact', href: 'interact' },
-            { text: 'Map Styles', href: 'map-styles' },
-            { text: 'Plugin Context', href: 'plugin-context' },
-            { text: 'Plugin Descriptor', href: 'plugin-descriptor' },
-            { text: 'Plugin Manifest', href: 'plugin-manifest' },
-            { text: 'Scale Bar', href: 'scale-bar' },
-            { text: 'Search', href: 'search' },
+            {
+              text: 'Available Plugins',
+              href: '/plugins#available-plugins',
+              items: [
+                { text: 'Interact', href: '/plugins#interact' },
+                { text: 'Map Styles', href: '/plugins#map-styles' },
+                { text: 'Scale Bar', href: '/plugins#scale-bar' },
+                { text: 'Search', href: '/plugins#search' },
+              ],
+            },
+            {
+              text: 'Alpha Plugins',
+              href: '/plugins#alpha-plugins',
+              items: [
+                { text: 'Datasets', href: '/plugins#datasets' },
+                { text: 'Draw for MapLibre', href: '/plugins#draw-for-maplibre' },
+                { text: 'Draw for ESRI SDK', href: '/plugins#draw-for-esri-sdk' },
+                { text: 'Frame', href: '/plugins#frame' },
+                { text: 'Use Location', href: '/plugins#use-location' },
+              ],
+            },
           ],
         },
       ],
