@@ -7,9 +7,6 @@
 // import '/plugins/beta/frame/dist/css/index.css'
 // InteractiveMap
 import InteractiveMap from '../../src/index.js'
-import { vtsMapStyles27700 } from './mapStyles.js'
-import { searchCustomDatasets } from './searchCustomDatasets.js'
-import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
 // Providers
 import openNamesProvider from '/providers/beta/open-names/src/index.js'
 import esriProvider from '/providers/beta/esri/src/index.js'
@@ -22,6 +19,9 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 // Demo utils
+import { vtsMapStyles27700 } from './mapStyles.js'
+import { searchCustomDatasets } from './searchCustomDatasets.js'
+import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
 import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning-menu.js'
 import { renderKeyHTML, toggleKeyItemVisibility } from './planning-key.js'
 import { getGeometryShape, getQueryParam } from './planning-utils.js'
@@ -111,6 +111,7 @@ const interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
+	console.log('app:ready', e)
 	interactiveMap.addButton('menu', {
 		label: 'Menu',
 		panelId: 'menu',
@@ -144,24 +145,23 @@ interactiveMap.on('app:ready', function (e) {
 })
 
 interactiveMap.on('map:ready', function (e) {
-	console.log(e)
-	
+	const mapProvider = e
 	// Add datasets and map features
 	const dataset = getQueryParam('dataset', 'floodzones-presentday')
 	const mapFeatures = getQueryParam('features')
-	addOrRemoveDatasets(e, dataset)
-	addOrRemoveMapFeatures(e, mapFeatures)
+	addOrRemoveDatasets(mapProvider, dataset)
+	addOrRemoveMapFeatures(mapProvider, mapFeatures)
 	toggleKeyItemVisibility({ dataset })
 	toggleKeyItemVisibility({ mapFeatures })
 
 	// Menu radio and checkbox events
 	document.addEventListener('fmp:datasetchanged', (e) => {
-		addOrRemoveDatasets(e.detail)
+		addOrRemoveDatasets(mapProvider, e.detail.dataset)
 		toggleKeyItemVisibility(e.detail)
 	})
 
 	document.addEventListener('fmp:featureschanged', (e) => {
-		addOrRemoveMapFeatures(e.detail)
+		addOrRemoveMapFeatures(mapProvider, e.detail.mapFeatures)
 		toggleKeyItemVisibility(e.detail)
 	})
 })

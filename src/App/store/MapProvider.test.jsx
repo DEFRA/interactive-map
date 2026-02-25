@@ -71,6 +71,17 @@ describe('MapProvider', () => {
     expect(contextValue).toHaveProperty('isMapReady')
   })
 
+  test('subscribes to MAP_PROVIDER_READY instead of MAP_READY', () => {
+    render(
+      <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
+        <div>Child</div>
+      </MapProvider>
+    )
+
+    expect(mockEventBus.on).toHaveBeenCalledWith('map:providerready', expect.any(Function))
+    expect(mockEventBus.on).not.toHaveBeenCalledWith('map:ready', expect.any(Function))
+  })
+
   test('subscribes and unsubscribes to eventBus', () => {
     render(
       <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
@@ -78,19 +89,88 @@ describe('MapProvider', () => {
       </MapProvider>
     )
 
-    // Ensure all events subscribed
-    expect(mockEventBus.on).toHaveBeenCalledWith('map:ready', expect.any(Function))
+    expect(mockEventBus.on).toHaveBeenCalledWith('map:providerready', expect.any(Function))
     expect(mockEventBus.on).toHaveBeenCalledWith('map:initmapstyles', expect.any(Function))
     expect(mockEventBus.on).toHaveBeenCalledWith('map:setstyle', expect.any(Function))
     expect(mockEventBus.on).toHaveBeenCalledWith('map:setsize', expect.any(Function))
 
     // Trigger handlers → covers reducer calls
     act(() => {
-      capturedHandlers['map:ready']()
+      capturedHandlers['map:providerready']({ map: {} })
       capturedHandlers['map:setstyle']({ id: 'style1' })
       capturedHandlers['map:setsize']('300x300')
       capturedHandlers['map:initmapstyles']([{ id: 'style1' }])
     })
+  })
+
+  test('emits consumer map:ready with enriched payload once provider, mapStyle and mapSize are settled', () => {
+    render(
+      <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
+        <div>Child</div>
+      </MapProvider>
+    )
+
+    const mapProviderAPI = { map: {}, crs: 'EPSG:4326', fitToBounds: jest.fn(), setView: jest.fn() }
+    const mapStyle = { id: 'outdoor' }
+
+    act(() => {
+      capturedHandlers['map:providerready'](mapProviderAPI)
+      capturedHandlers['map:initmapstyles']([mapStyle])
+    })
+
+    expect(mockEventBus.emit).toHaveBeenCalledWith('map:ready', expect.objectContaining({
+      map: mapProviderAPI.map,
+      crs: mapProviderAPI.crs,
+      mapStyleId: mapStyle.id,
+      mapSize: '100x100'
+    }))
+  })
+
+  test('emits consumer map:ready only once even if state changes after', () => {
+    render(
+      <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
+        <div>Child</div>
+      </MapProvider>
+    )
+
+    const mapProviderAPI = { map: {} }
+    const mapStyle = { id: 'outdoor' }
+
+    act(() => {
+      capturedHandlers['map:providerready'](mapProviderAPI)
+      capturedHandlers['map:initmapstyles']([mapStyle])
+    })
+
+    // Trigger a size change after ready
+    act(() => {
+      capturedHandlers['map:setsize']('large')
+    })
+
+    const mapReadyCalls = mockEventBus.emit.mock.calls.filter(([event]) => event === 'map:ready')
+    expect(mapReadyCalls).toHaveLength(1)
+  })
+
+  test('emits map:sizechange when mapSize changes after initial value', () => {
+    render(
+      <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
+        <div>Child</div>
+      </MapProvider>
+    )
+
+    // Initial mapSize set via initmapstyles — should NOT emit sizechange
+    act(() => {
+      capturedHandlers['map:initmapstyles']([{ id: 'style1' }])
+    })
+
+    const afterInitCalls = mockEventBus.emit.mock.calls.filter(([event]) => event === 'map:sizechange')
+    expect(afterInitCalls).toHaveLength(0)
+
+    // Subsequent size change — SHOULD emit sizechange
+    act(() => {
+      capturedHandlers['map:setsize']('large')
+    })
+
+    expect(mockEventBus.emit).toHaveBeenCalledWith('map:sizechange', { mapSize: 'large' })
   })
 
   test('initMapStyles uses options.mapSize if localStorage has no saved mapSize', () => {
@@ -138,7 +218,7 @@ describe('MapProvider', () => {
     )
 
     act(() => {
-      capturedHandlers['map:ready']()
+      capturedHandlers['map:providerready']({ map: {} })
       capturedHandlers['map:setstyle']({ id: 'style2' })
       capturedHandlers['map:setsize']('400x400')
     })

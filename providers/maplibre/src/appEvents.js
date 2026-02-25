@@ -1,5 +1,8 @@
 export function attachAppEvents ({ map, events, eventBus }) {
   const handleSetMapStyle = (mapStyle) => {
+    map.once('style.load', () => {
+      eventBus.emit(events.MAP_STYLE_CHANGE, { styleId: mapStyle.id })
+    })
     map.setStyle(mapStyle.url, { diff: false })
   }
 
