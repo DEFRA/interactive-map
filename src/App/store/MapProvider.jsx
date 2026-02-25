@@ -66,7 +66,9 @@ export const MapProvider = ({ options, children }) => {
 
   // Emit map:sizechange when mapSize changes, skipping the initial value.
   useEffect(() => {
-    if (!state.mapSize) return
+    if (!state.mapSize) {
+      return
+    }
     if (!isMapSizeInitialisedRef.current) {
       isMapSizeInitialisedRef.current = true
       return
