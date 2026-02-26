@@ -66,6 +66,7 @@ const config = {
 
       navigation: [
         { text: 'Getting Started', href: '/getting-started' },
+        { text: 'Demo', href: '/demo' },
         {
           text: 'Architecture',
           href: '/architecture',
