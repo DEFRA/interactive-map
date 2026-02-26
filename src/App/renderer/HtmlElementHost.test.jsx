@@ -199,6 +199,95 @@ describe('HtmlElementHost', () => {
     expect(container.firstChild).toBeNull() // still renders safely
   })
 
+  it('inserts panel before backdrop when modal slot contains a backdrop element', () => {
+    const modalRef = React.createRef()
+    const appContainerRef = React.createRef()
+    const refs = { ...layoutRefs, modalRef, appContainerRef }
+
+    mockApp({
+      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Menu', desktop: { slot: 'side', modal: true } } },
+      openPanels: { p1: { props: {} } },
+      layoutRefs: refs
+    })
+
+    render(
+      <div>
+        <div ref={appContainerRef}>
+          <div ref={modalRef}>
+            <div className='im-o-app__modal-backdrop' />
+          </div>
+        </div>
+        <HtmlElementHost />
+      </div>
+    )
+
+    const children = Array.from(modalRef.current.children)
+    const panelIndex = children.findIndex(el => el.dataset.testid === 'panel-p1')
+    const backdropIndex = children.findIndex(el => el.classList.contains('im-o-app__modal-backdrop'))
+
+    expect(panelIndex).toBeGreaterThanOrEqual(0)
+    expect(panelIndex).toBeLessThan(backdropIndex)
+  })
+
+  it('moves panel from modal to appContainerRef when hidden', () => {
+    // Create refs
+    const modalRef = React.createRef()
+    const appContainerRef = React.createRef()
+    const refs = { ...layoutRefs, modalRef, appContainerRef }
+
+    // Panel config: modal slot
+    const panelConfig = {
+      p1: { html: '<p>Hi</p>', label: 'Menu', desktop: { slot: 'modal', modal: true } }
+    }
+
+    // App state: panel initially open
+    mockApp({
+      panelConfig,
+      openPanels: { p1: { props: {} } },
+      layoutRefs: refs
+    })
+
+    // Render a harness that includes both refs
+    const { rerender } = render(
+      <div>
+        <div ref={appContainerRef} />
+        <div ref={modalRef} />
+        <HtmlElementHost />
+      </div>
+    )
+
+    // Now it should actually be inside modalRef
+    const panelInModal = modalRef.current.querySelector('[data-testid="panel-p1"]')
+    expect(panelInModal).toBeTruthy()
+    expect(modalRef.current.contains(panelInModal)).toBe(true)
+
+    // Close the panel
+    useApp.mockReturnValue({
+      breakpoint: 'desktop',
+      mode: 'view',
+      isFullscreen: false,
+      panelConfig,
+      controlConfig: {},
+      openPanels: {}, // closed now
+      layoutRefs: refs,
+      dispatch: jest.fn()
+    })
+
+    rerender(
+      <div>
+        <div ref={appContainerRef} />
+        <div ref={modalRef} />
+        <HtmlElementHost />
+      </div>
+    )
+
+    // It should have moved to appContainerRef
+    const panelInApp = appContainerRef.current.querySelector('[data-testid="panel-p1"]')
+    expect(panelInApp).toBeTruthy()
+    expect(appContainerRef.current.contains(panelInApp)).toBe(true)
+    expect(modalRef.current.contains(panelInApp)).toBe(false)
+  })
+
   test('getSlotRef returns null for unknown slot', () => {
     expect(getSlotRef('unknown-slot', {})).toBeNull()
   })

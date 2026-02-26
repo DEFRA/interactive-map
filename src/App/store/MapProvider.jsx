@@ -73,7 +73,10 @@ export const MapProvider = ({ options, children }) => {
       isMapSizeInitialisedRef.current = true
       return
     }
-    eventBus.emit(events.MAP_SIZE_CHANGE, { mapSize: state.mapSize })
+    eventBus.emit(events.MAP_SIZE_CHANGE, {
+      ...mapProviderAPIRef.current,
+      mapSize: state.mapSize
+    })
   }, [state.mapSize])
 
   // Persist mapStyle and mapSize in localStorage

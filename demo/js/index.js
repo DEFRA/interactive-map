@@ -172,7 +172,6 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	console.log(e)
 	interactPlugin.enable()
 	interactiveMap.addButton('geometryActions', {
 		label: 'Draw tools',
@@ -199,7 +198,8 @@ interactiveMap.on('map:ready', function (e) {
 			onClick: function (e) {
 				interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
 				drawPlugin.newLine(crypto.randomUUID(), {
-					stroke: { outdoor: '#99704a', dark: '#ffffff' }
+					stroke: { outdoor: '#99704a', dark: '#ffffff' },
+					strokeWidth: 6
 				})
 			}
 		},{

@@ -4,7 +4,16 @@ import { throttle } from '../../../src/utils/throttle.js'
 const DEBOUNCE_IDLE_TIME = 500
 const MOVE_THROTTLE_TIME = 10
 
-export function attachMapEvents ({ map, events, eventBus, getCenter, getZoom, getBounds, getResolution }) {
+export function attachMapEvents ({
+  mapProvider,
+  map,
+  events,
+  eventBus,
+  getCenter,
+  getZoom,
+  getBounds,
+  getResolution
+}) {
   const handlers = []
   const debouncers = []
 

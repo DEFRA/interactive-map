@@ -43,7 +43,7 @@ describe('attachAppEvents', () => {
     // Simulate style.load firing — should emit MAP_STYLE_CHANGE
     const styleLoadCallback = map.once.mock.calls.find(c => c[0] === 'style.load')[1]
     styleLoadCallback()
-    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_STYLE_CHANGE, { styleId: 'outdoor' })
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_STYLE_CHANGE, { mapStyleId: 'outdoor' })
 
     // Verify remove detaches handlers
     controller.remove()

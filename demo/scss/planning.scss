@@ -75,11 +75,16 @@
   padding: 0;
 }
 
+.fmp-key__heading {
+  font-size: 1rem;
+  line-height: 1.2;
+  padding: 10px 0;
+}
+
 .fmp-key__item {
   display: flex;
   align-items: start;
-  padding-top: 12px;
-  padding-bottom: 12px;
+  padding: 10px 0;
   align-self: auto;
   font-size: 1rem;
   line-height: 1.2;

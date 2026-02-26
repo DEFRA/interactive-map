@@ -22,10 +22,10 @@ import createFramePlugin from '/plugins/beta/frame/src/index.js'
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
-import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning-menu.js'
-import { renderKeyHTML, toggleKeyItemVisibility } from './planning-key.js'
-import { getGeometryShape, getQueryParam } from './planning-utils.js'
-import { addOrRemoveDatasets, addOrRemoveMapFeatures } from './planning-layers.js'
+import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning/menu.js'
+import { renderKeyHTML, toggleKeyItemVisibility, updateKeyColours } from './planning/key.js'
+import { getGeometryShape, getQueryParam } from './planning/utils.js'
+import { addVectorTileLayers, addFeatureLayers, setDataset, setMapFeatures, setColors } from './planning/layers.js'
 
 let feature
 // const feature = { id: 'boundary', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[371013.629737365,518087.27160546643],[371026.76930227707,518103.6431258204],[371076.00861123804,518150.38583537703],[371082.5004262571,518144.458668744],[371088.1419858577,518146.24617482634],[371119.04499505187,518121.1373772673],[371061.7528809118,518034.9300132221],[371044.3521903893,518057.18438187643],[371013.629737365,518087.27160546643]]]}, properties: { id: 'boundary' }}
@@ -45,7 +45,9 @@ const interactPlugin = createInteractPlugin({
 	// multiSelect: true
 })
 
-const drawPlugin = createDrawPlugin()
+const drawPlugin = createDrawPlugin({
+	onGeometryChange: (geometry) => true
+})
 
 const framePlugin = createFramePlugin({
 	aspectRatio: 1.5
@@ -111,7 +113,6 @@ const interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
-	console.log('app:ready', e)
 	interactiveMap.addButton('menu', {
 		label: 'Menu',
 		panelId: 'menu',
@@ -149,21 +150,26 @@ interactiveMap.on('map:ready', function (e) {
 	// Add datasets and map features
 	const dataset = getQueryParam('dataset', 'floodzones-presentday')
 	const mapFeatures = getQueryParam('features')
-	addOrRemoveDatasets(mapProvider, dataset)
-	addOrRemoveMapFeatures(mapProvider, mapFeatures)
+	addVectorTileLayers(mapProvider, dataset)
+	addFeatureLayers(mapProvider, mapFeatures)
 	toggleKeyItemVisibility({ dataset })
 	toggleKeyItemVisibility({ mapFeatures })
 
 	// Menu radio and checkbox events
 	document.addEventListener('fmp:datasetchanged', (e) => {
-		addOrRemoveDatasets(mapProvider, e.detail.dataset)
+		setDataset(e.detail.dataset)
 		toggleKeyItemVisibility(e.detail)
 	})
 
 	document.addEventListener('fmp:featureschanged', (e) => {
-		addOrRemoveMapFeatures(mapProvider, e.detail.mapFeatures)
+		setMapFeatures(e.detail.mapFeatures)
 		toggleKeyItemVisibility(e.detail)
 	})
+})
+
+interactiveMap.on('map:stylechange', function (e) {
+	setColors(e.mapStyleId)
+	updateKeyColours(e.mapStyleId)
 })
 
 interactiveMap.on('map:exit', function (e) {
@@ -179,7 +185,9 @@ interactiveMap.on('draw:ready', function () {
 	// Add menu click handlers
 	addMenuClickHandlers({
 		onDrawShape: function() {
-			drawPlugin.newPolygon('boundary')
+			drawPlugin.newPolygon('boundary', {
+				onGeometryChange: (geometry) => true
+			})
 			hideMenu(interactiveMap)
 		},
 		onDrawFrame: function() {
@@ -193,7 +201,9 @@ interactiveMap.on('draw:ready', function () {
 				drawPlugin.deleteFeature('boundary')
 				framePlugin.editFeature(feature)
 			} else {
-				drawPlugin.editFeature('boundary')
+				drawPlugin.editFeature('boundary', {
+					onGeometryChange: (geometry) => true
+				})
 			}
 			hideMenu(interactiveMap)
 		},

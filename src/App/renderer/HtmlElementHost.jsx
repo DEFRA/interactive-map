@@ -1,5 +1,5 @@
 // src/App/renderer/HtmlElementHost.jsx
-import React, { useRef, useEffect, useMemo } from 'react'
+import React, { useRef, useLayoutEffect, useMemo } from 'react'
 import { useApp } from '../store/appContext.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml } from './slotHelpers.js'
@@ -31,16 +31,24 @@ export const getSlotRef = (slot, layoutRefs) => {
  * (e.g. the banner slot swaps DOM nodes between mobile and desktop).
  */
 export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, breakpoint) => {
-  useEffect(() => {
+  useLayoutEffect(() => {
     const wrapper = wrapperRef.current
 
     if (isVisible) {
       const slotRef = getSlotRef(targetSlot, layoutRefs)
       if (slotRef?.current) {
-        slotRef.current.appendChild(wrapper)
+        const backdrop = slotRef.current.querySelector(':scope > .im-o-app__modal-backdrop')
+        if (backdrop) {
+          slotRef.current.insertBefore(wrapper, backdrop)
+        } else {
+          slotRef.current.appendChild(wrapper)
+        }
         wrapper.style.display = ''
       }
     } else {
+      if (wrapper.parentElement === layoutRefs.modalRef?.current) {
+        layoutRefs.appContainerRef?.current?.appendChild(wrapper)
+      }
       wrapper.style.display = 'none'
     }
 
