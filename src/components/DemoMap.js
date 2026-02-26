@@ -4,15 +4,13 @@ import useBaseUrl from '@docusaurus/useBaseUrl'
 
 const OS_ATTRIBUTION = `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`
 
-function buildMapStyles (logoUrl, logoWhiteUrl) {
+function buildMapStyles (thumbnailUrl) {
   return [
     {
       id: 'outdoor',
       label: 'Outdoor',
       url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
-      thumbnail: '',
-      logo: logoUrl,
-      logoAltText: 'Ordnance Survey logo',
+      thumbnail: thumbnailUrl,
       attribution: OS_ATTRIBUTION,
       backgroundColor: '#f5f5f0'
     },
@@ -20,9 +18,7 @@ function buildMapStyles (logoUrl, logoWhiteUrl) {
       id: 'night',
       label: 'Night',
       url: 'https://labs.os.uk/tiles/styles/open-zoomstack-night/style.json',
-      thumbnail: '',
-      logo: logoWhiteUrl,
-      logoAltText: 'Ordnance Survey logo',
+      thumbnail: thumbnailUrl,
       mapColorScheme: 'dark',
       appColorScheme: 'dark',
       attribution: OS_ATTRIBUTION
@@ -31,18 +27,14 @@ function buildMapStyles (logoUrl, logoWhiteUrl) {
       id: 'deuteranopia',
       label: 'Deuteranopia',
       url: 'https://labs.os.uk/tiles/styles/open-zoomstack-deuteranopia/style.json',
-      thumbnail: '',
-      logo: logoUrl,
-      logoAltText: 'Ordnance Survey logo',
+      thumbnail: thumbnailUrl,
       attribution: OS_ATTRIBUTION
     },
     {
       id: 'tritanopia',
       label: 'Tritanopia',
       url: 'https://labs.os.uk/tiles/styles/open-zoomstack-tritanopia/style.json',
-      thumbnail: '',
-      logo: logoUrl,
-      logoAltText: 'Ordnance Survey logo',
+      thumbnail: thumbnailUrl,
       attribution: OS_ATTRIBUTION
     }
   ]
@@ -106,9 +98,8 @@ function MapInner ({ mapStyles }) {
 }
 
 export default function DemoMap () {
-  const logoUrl = useBaseUrl('/img/os-logo.svg')
-  const logoWhiteUrl = useBaseUrl('/img/os-logo-white.svg')
-  const mapStyles = buildMapStyles(logoUrl, logoWhiteUrl)
+  const thumbnailUrl = useBaseUrl('/img/outdoor-map-thumb.jpg')
+  const mapStyles = buildMapStyles(thumbnailUrl)
 
   return (
     <BrowserOnly
