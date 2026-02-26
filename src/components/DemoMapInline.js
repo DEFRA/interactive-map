@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
 import useBaseUrl from '@docusaurus/useBaseUrl'
 
@@ -48,7 +48,7 @@ function MapInner ({ mapStyles }) {
     initialised.current = true
 
     Promise.all([
-      import('../../src/index.js'),
+      import('../index.js'),
       import('../../providers/maplibre/src/index.js'),
       import('../../plugins/search/src/index.js'),
       import('../../plugins/beta/scale-bar/src/index.js'),
@@ -65,19 +65,29 @@ function MapInner ({ mapStyles }) {
         urlTemplate: 'https://nominatim.openstreetmap.org/search?q={query}&format=json&limit=8&countrycodes=gb',
         parseResults: (json, query) => {
           if (!Array.isArray(json)) return []
+          const esc = q => q.replace(/[.*+?^${}()|[\\]\\]/g, '\\$&')
+          const rx = new RegExp(`(${esc(query)})`, 'i')
           return json.map(r => {
             const [south, north, west, east] = r.boundingbox.map(Number)
-            const lon = parseFloat(r.lon)
-            const lat = parseFloat(r.lat)
-            const text = r.display_name
-            const marked = text.replace(new RegExp(`(${query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'i'), '<mark>$1</mark>')
-            return { id: String(r.place_id), bounds: [west, south, east, north], point: [lon, lat], text, marked, type: 'nominatim' }
+            const lon = +r.lon
+            const lat = +r.lat
+            const full = r.display_name || ''
+            const text = full.length > 80 ? `${full.slice(0, 79).trim()}…` : full
+            const marked = text.replace(rx, '<mark>$1</mark>')
+            return {
+              id: String(r.place_id),
+              bounds: [west, south, east, north],
+              point: [lon, lat],
+              text,
+              marked,
+              type: 'nominatim'
+            }
           })
         }
       }
 
       // eslint-disable-next-line no-new
-      new InteractiveMap('demo-map', {
+      new InteractiveMap('demo-map-inline', {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: mapStyles[0],
@@ -93,11 +103,26 @@ function MapInner ({ mapStyles }) {
       })
     })
   }, [])
+  return (
+    <>
+      <style>{`
+        .map-loading-overlay { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; background: rgba(255,255,255,0.92); z-index: 40; font-weight: 600; color: #0b0c0c; }
+        .map-loading-dots { display: inline-block; margin-left: 6px; }
+        .map-loading-dots::after { content: '.'; animation: map-dots 1s steps(3,end) infinite; }
+        @keyframes map-dots { 0% { content: ''; } 33% { content: '.'; } 66% { content: '..'; } 100% { content: '...'; } }
+        @media (prefers-reduced-motion: reduce) { .map-loading-dots::after { animation: none; content: '...'; } }
+      `}</style>
 
-  return <div id='demo-map' />
+      <div id='demo-map-inline'>
+        <div className='map-loading-overlay' aria-hidden='true'>
+          Loading<span className='map-loading-dots' />
+        </div>
+      </div>
+    </>
+  )
 }
 
-export default function DemoMap () {
+export default function DemoMapInline () {
   const thumbnailUrl = useBaseUrl('/img/outdoor-map-thumb.jpg')
   const mapStyles = buildMapStyles(thumbnailUrl)
 
