@@ -3,7 +3,7 @@
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Interactive Map',
-  tagline: 'Accessibility-first interactive map component for government frontends ',
+  tagline: 'An accessibility-first interactive map component for government frontends',
   favicon: 'img/favicon.ico',
 
   url: 'https://defra.github.io',
@@ -24,7 +24,23 @@ const config = {
 
   presets: [],
 
-  themes: ['@defra/docusaurus-theme-govuk'],
+  themes: [
+    [
+      require.resolve('@easyops-cn/docusaurus-search-local'),
+      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+      ({
+        // docs-only mode: routeBasePath is '/'
+        docsRouteBasePath: '/',
+        indexBlog: false,
+        indexPages: false,
+        // hashed filenames for long-term caching of the search index
+        hashed: 'filename',
+        highlightSearchTermsOnTargetPage: true,
+        searchResultContextMaxLength: 60,
+      }),
+    ],
+    '@defra/docusaurus-theme-govuk',
+  ],
 
   plugins: [
     [
@@ -37,6 +53,12 @@ const config = {
   ],
 
   themeConfig: {
+    // Required by @docusaurus/plugin-content-docs when not using preset-classic.
+    // easyops SearchBarWrapper calls useThemeConfig().docs.versionPersistence
+    // during SSR; without this it throws "Cannot read properties of undefined".
+    docs: {
+      versionPersistence: 'localStorage',
+    },
     govuk: {
       header: {
         serviceName: 'Interactive Map',
@@ -102,6 +124,11 @@ const config = {
         meta: [
           { text: 'GitHub', href: 'https://github.com/DEFRA/interactive-map' },
         ],
+      },
+
+      homepage: {
+        getStartedHref: '/getting-started',
+        description: 'A lightweight, accessible map component for public-facing government services. Open source, multi-engine, and extendable through plugins.',
       },
     },
   },
