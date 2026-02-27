@@ -2,9 +2,10 @@
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
+  staticDirectories: ['assets'],
   title: 'Interactive Map',
   tagline: 'An accessibility-first interactive map component for government frontends',
-  favicon: 'img/favicon.ico',
+  favicon: 'images/favicon.ico',
 
   url: 'https://defra.github.io',
   baseUrl: '/interactive-map/',
