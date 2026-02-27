@@ -103,20 +103,21 @@ const vectorTileLayersConfig = {
 function setStyleLayerColors (vectorTileLayer) {
   const { layers: styleLayers } = vectorTileLayer.styleRepository
   styleLayers.forEach((styleLayer) => {
+    const fill = styleLayerConfig[styleLayer.id]?.['fill-color']
+    const fillColor = fill && (fill[mapStyleId] || fill.outdoor)
+    const line = styleLayerConfig[styleLayer.id]?.['line-color']
+    const lineColor = line && (line[mapStyleId] || line.outdoor)
     const paintProperties = vectorTileLayer.getPaintProperties(styleLayer.id)
     // Set fill colour
-    const fillColor = styleLayerConfig[styleLayer.id]?.['fill-color']?.[mapStyleId]
     if (fillColor) {
       paintProperties['fill-color'] = fillColor
     }
     // Set line colour
-    const lineColor = styleLayerConfig[styleLayer.id]?.['line-color']?.[mapStyleId]
     if (lineColor) {
       paintProperties['line-color'] = lineColor
     }
     // Set surface water depth fill colors
     if (styleLayer.id.includes(surfaceWaterBaseId)) {
-      const fillColor = styleLayerConfig[styleLayer.id]?.['fill-color']?.[mapStyleId]
       paintProperties['fill-color'] = dataset.includes('bydepth') ? fillColor : depthFlatFills[mapStyleId]
     }
     // Set new paint properties

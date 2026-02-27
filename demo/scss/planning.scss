@@ -73,7 +73,7 @@
   padding: 0;
 }
 
-.fmp-key__group + .fmp-key__group {
+.fmp-key__group:not(.fmp-key--hidden) + .fmp-key__group {
   margin-top: 20px;
 }
 
@@ -94,13 +94,13 @@
   align-self: auto;
   font-size: 1rem;
 
-  &--first {
-    margin-top: 10px;
-  }
-
   &--last {
     padding-bottom: 2px;
   }
+}
+
+.fmp-key__group--no-heading .fmp-key__item--first {
+  margin-top: 10px;
 }
 
 .fmp-key__item svg {

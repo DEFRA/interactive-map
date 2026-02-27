@@ -20,7 +20,7 @@ import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 // Demo utils
 import { vtsMapStyles27700 } from './mapStyles.js'
-import { parcelSearch, gridRefSearchOSGB36 } from './searchCustomDatasets.js'
+import { gridRefSearchOSGB36 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
 import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning/menu.js'
 import { renderKeyHTML, toggleKeyItemVisibility, updateKeyColours } from './planning/key.js'
@@ -31,15 +31,6 @@ let feature
 // const feature = { id: 'boundary', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[371013.629737365,518087.27160546643],[371026.76930227707,518103.6431258204],[371076.00861123804,518150.38583537703],[371082.5004262571,518144.458668744],[371088.1419858577,518146.24617482634],[371119.04499505187,518121.1373772673],[371061.7528809118,518034.9300132221],[371044.3521903893,518057.18438187643],[371013.629737365,518087.27160546643]]]}, properties: { id: 'boundary' }}
 
 const interactPlugin = createInteractPlugin({
-	dataLayers: [{
-		layerId: 'field-parcels',
-		idProperty: 'ID',
-		selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
-	},{
-		layerId: 'linked-parcels',
-		idProperty: 'ID',
-		selectedFeatureStyle: { stroke: { outdoor: '#ff0000', dark: '#00ff00' }, strokeWidth: 2, fill: 'rgba(255, 0, 0, 0.1)' }
-	}],
 	markerColor: { outdoor: '#ff0000' },
 	interactionMode: 'marker', // 'auto', 'select', 'marker' // defaults to 'marker'
 	// multiSelect: true
@@ -60,9 +51,7 @@ const interactiveMap = new InteractiveMap('map', {
 	}),
 	reverseGeocodeProvider: openNamesProvider({
 		url: process.env.OS_NEAREST_URL,
-		// url: '/api/os-nearest-proxy?query={query}',
 		transformRequest: transformGeocodeRequest
-		// showMarker: true
 	}),
 	// maxMobileWidth: 700,
 	// minDesktopWidth: 960,
@@ -78,18 +67,6 @@ const interactiveMap = new InteractiveMap('map', {
 	enableFullscreen: false,
 	enableZoomControls: true,
 	hasExitButton: true,
-	// markers: [{
-	// 	id: 'location',
-	// 	coords: [-2.9592267, 54.9045977],
-	// 	color: { outdoor: '#ff0000', dark: '#00ff00' }
-	// }],
-	// mapStyle: {
-	// 	url: process.env.VTS_OUTDOOR_URL_27700,
-	// 	logo: '/assets/images/os-logo.svg',
-	// 	logoAltText: 'Ordnance survey logo',
-	// 	attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
-	// 	backgroundColor: '#f5f5f0'
-	// },
 	plugins: [
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles27700
@@ -100,12 +77,12 @@ const interactiveMap = new InteractiveMap('map', {
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,
-			customDatasets: [parcelSearch, gridRefSearchOSGB36],
+			customDatasets: [gridRefSearchOSGB36],
 			width: '300px',
 			showMarker: true
 		}),
 		useLocationPlugin(),
-		// interactPlugin,
+		interactPlugin,
 		drawPlugin,
 		framePlugin
 	]
@@ -155,6 +132,7 @@ interactiveMap.on('map:ready', function (e) {
 	toggleKeyItemVisibility({ dataset })
 	toggleKeyItemVisibility({ mapFeatures })
 	updateKeyColours(e.mapStyleId)
+	interactPlugin.enable()
 
 	// Menu radio and checkbox events
 	document.addEventListener('fmp:datasetchanged', (e) => {

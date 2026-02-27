@@ -246,19 +246,17 @@ function toggleKeyItemVisibility (e) {
     const noHeading = !!match?.visuallyHidden
     headingEl.textContent = match ? match.label : group.label
     headingEl.classList.toggle('govuk-visually-hidden', noHeading)
+    headingEl.closest('.fmp-key__group')?.classList.toggle('fmp-key__group--no-heading', noHeading)
+  })
 
-    const groupEl = headingEl.closest('.fmp-key__group')
-    if (groupEl) {
-      groupEl.querySelectorAll('.fmp-key__item').forEach(item => {
-        item.classList.remove('fmp-key__item--first')
-        item.classList.remove('fmp-key__item--last')
-      })
-      if (noHeading) {
-        const visibleItems = [...groupEl.querySelectorAll('.fmp-key__item:not(.fmp-key--hidden)')]
-        if (visibleItems[0]) visibleItems[0].classList.add('fmp-key__item--first')
-        if (visibleItems.at(-1)) visibleItems.at(-1).classList.add('fmp-key__item--last')
-      }
-    }
+  document.querySelectorAll('.fmp-key__group').forEach(groupEl => {
+    groupEl.querySelectorAll('.fmp-key__item').forEach(item => {
+      item.classList.remove('fmp-key__item--first')
+      item.classList.remove('fmp-key__item--last')
+    })
+    const groupVisibleItems = [...groupEl.querySelectorAll('.fmp-key__item:not(.fmp-key--hidden)')]
+    if (groupVisibleItems[0]) groupVisibleItems[0].classList.add('fmp-key__item--first')
+    if (groupVisibleItems.at(-1)) groupVisibleItems.at(-1).classList.add('fmp-key__item--last')
   })
 }
 
