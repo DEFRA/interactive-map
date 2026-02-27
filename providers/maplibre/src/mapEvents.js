@@ -5,7 +5,6 @@ const DEBOUNCE_IDLE_TIME = 500
 const MOVE_THROTTLE_TIME = 10
 
 export function attachMapEvents ({
-  mapProvider,
   map,
   events,
   eventBus,
