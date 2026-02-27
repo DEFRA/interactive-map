@@ -20,7 +20,7 @@ import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 // Demo utils
 import { vtsMapStyles27700 } from './mapStyles.js'
-import { searchCustomDatasets } from './searchCustomDatasets.js'
+import { parcelSearch, gridRefSearchOSGB36 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
 import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning/menu.js'
 import { renderKeyHTML, toggleKeyItemVisibility, updateKeyColours } from './planning/key.js'
@@ -100,7 +100,7 @@ const interactiveMap = new InteractiveMap('map', {
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,
-			customDatasets: searchCustomDatasets,
+			customDatasets: [parcelSearch, gridRefSearchOSGB36],
 			width: '300px',
 			showMarker: true
 		}),
@@ -132,7 +132,7 @@ interactiveMap.on('app:ready', function (e) {
 	interactiveMap.addPanel('menu', {
 		label: 'Menu',
 		html: renderMenuHTML(feature),
-		mobile: { slot: 'side', modal: true, initiallyOpen: true },
+		mobile: { slot: 'side', modal: true, initiallyOpen: false },
 		tablet: { slot: 'side', width: '260px', initiallyOpen: true },
 		desktop: { slot: 'side', width: '280px', initiallyOpen: true }
 	})
@@ -154,6 +154,7 @@ interactiveMap.on('map:ready', function (e) {
 	addFeatureLayers(mapProvider, mapFeatures)
 	toggleKeyItemVisibility({ dataset })
 	toggleKeyItemVisibility({ mapFeatures })
+	updateKeyColours(e.mapStyleId)
 
 	// Menu radio and checkbox events
 	document.addEventListener('fmp:datasetchanged', (e) => {
@@ -171,6 +172,7 @@ interactiveMap.on('map:stylechange', function (e) {
 	setColors(e.mapStyleId)
 	updateKeyColours(e.mapStyleId)
 })
+
 
 interactiveMap.on('map:exit', function (e) {
 	drawOptions = ['shape', 'square']

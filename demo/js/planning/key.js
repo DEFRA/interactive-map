@@ -65,7 +65,7 @@ const keyItems = [{
   symbolDescription: 'Symbol description',
 },{
   id: 'floodZoneClimateChange',
-  label: 'Flood zones 2070 to 2125',
+  label: 'Flood zones with climate change (2070 to 2125)',
   group: 'model-data',
   requires: ['floodzones', 'climatechange'],
   colourKey: 'floodZoneClimateChange',
@@ -73,7 +73,7 @@ const keyItems = [{
   symbolDescription: 'Symbol description',
 },{
   id: 'floodZoneClimateChangeNoData',
-  label: 'Flood zones 2070 to 2125 missing data',
+  label: 'Climate change data unavailable',
   group: 'model-data',
   requires: ['floodzones', 'climatechange'],
   colourKey: 'floodZoneClimateChangeNoData',
@@ -90,7 +90,7 @@ const keyItems = [{
   symbolDescription: 'Symbol description',
 },{
   id: 'subheading-bydepth',
-  label: 'Surface water flood extent',
+  label: 'Flood extent by depth',
   group: 'model-data',
   itemType: 'subheading',
   requires: ['surfacewater', 'bydepth'],
@@ -177,7 +177,14 @@ const keyItems = [{
 }]
 
 const keyGroups = [
-  { id: 'model-data', label: 'Flood model data' },
+  {
+    id: 'model-data',
+    label: 'Flood model data',
+    conditionalLabels: [
+      { requires: ['floodzones'], label: 'Flood zones', visuallyHidden: true },
+      { requires: ['surfacewater'], label: 'Surface water' },
+    ]
+  },
   { id: 'map-features', label: 'Map features' },
 ]
 
@@ -190,8 +197,12 @@ let visibleMapFeatures = []
 let mapStyleId = 'outdoor'
 
 function toggleKeyItemVisibility (e) {
-  if (e.dataset != null) visibleDatasets = e.dataset.split('-').filter(Boolean)
-  if (e.mapFeatures != null) visibleMapFeatures = e.mapFeatures.split(',').filter(Boolean)
+  if (e.dataset != null) {
+    visibleDatasets = e.dataset.split('-').filter(Boolean)
+  }
+  if (e.mapFeatures != null) {
+    visibleMapFeatures = e.mapFeatures.split(',').filter(Boolean)
+  }
   const visibleItems = visibleDatasets.concat(visibleMapFeatures)
 
   document.querySelectorAll('.fmp-key__item').forEach(keyItem => {
@@ -199,22 +210,59 @@ function toggleKeyItemVisibility (e) {
     const excludes = keyItem.dataset.excludes ? keyItem.dataset.excludes.split(',').filter(Boolean) : []
     const allRequiresMet = requires.every(part => visibleItems.includes(part))
     const noExcludesPresent = excludes.every(part => !visibleItems.includes(part))
-    keyItem.style.display = (allRequiresMet && noExcludesPresent) ? 'flex' : 'none'
+    keyItem.classList.toggle('fmp-key--hidden', !(allRequiresMet && noExcludesPresent))
+  })
+
+  document.querySelectorAll('.fmp-key__subheading').forEach(subheading => {
+    const requires = subheading.dataset.requires.split(',')
+    const allRequiresMet = requires.every(part => visibleItems.includes(part))
+    subheading.classList.toggle('fmp-key--hidden', !allRequiresMet)
   })
 
   let anyVisible = false
-  document.querySelectorAll('.fmp-key__heading').forEach(heading => {
-    const groupItems = document.querySelectorAll(`.fmp-key__item[data-group="${heading.dataset.group}"]`)
-    const hasVisible = Array.from(groupItems).some(el => el.style.display !== 'none')
-    heading.style.display = hasVisible ? '' : 'none'
-    if (hasVisible) anyVisible = true
+  document.querySelectorAll('.fmp-key__group').forEach(section => {
+    const groupItems = document.querySelectorAll(`.fmp-key__item[data-group="${section.dataset.group}"]`)
+    const hasVisible = Array.from(groupItems).some(el => !el.classList.contains('fmp-key--hidden'))
+    section.classList.toggle('fmp-key--hidden', !hasVisible)
+    if (hasVisible) {
+      anyVisible = true
+    }
   })
 
   const emptyEl = document.querySelector('.fmp-key__empty')
-  if (emptyEl) emptyEl.style.display = anyVisible ? 'none' : ''
+  if (emptyEl) {
+    emptyEl.classList.toggle('fmp-key--hidden', anyVisible)
+  }
+
+  keyGroups.forEach(group => {
+    if (!group.conditionalLabels) {
+      return
+    }
+    const headingEl = document.getElementById(`fmp-key-heading-${group.id}`)
+    if (!headingEl) {
+      return
+    }
+    const match = group.conditionalLabels.find(cond => cond.requires.every(part => visibleItems.includes(part)))
+    const noHeading = !!match?.visuallyHidden
+    headingEl.textContent = match ? match.label : group.label
+    headingEl.classList.toggle('govuk-visually-hidden', noHeading)
+
+    const groupEl = headingEl.closest('.fmp-key__group')
+    if (groupEl) {
+      groupEl.querySelectorAll('.fmp-key__item').forEach(item => {
+        item.classList.remove('fmp-key__item--first')
+        item.classList.remove('fmp-key__item--last')
+      })
+      if (noHeading) {
+        const visibleItems = [...groupEl.querySelectorAll('.fmp-key__item:not(.fmp-key--hidden)')]
+        if (visibleItems[0]) visibleItems[0].classList.add('fmp-key__item--first')
+        if (visibleItems.at(-1)) visibleItems.at(-1).classList.add('fmp-key__item--last')
+      }
+    }
+  })
 }
 
-function updateKeyColours (newMapStyleId) {
+function updateKeyColours (newMapStyleId = mapStyleId) {
   mapStyleId = newMapStyleId
   keyItems.forEach(item => {
     const el = document.querySelector(`.fmp-key__item[data-id="${item.id}"]`)
@@ -230,27 +278,30 @@ function updateKeyColours (newMapStyleId) {
 
 function renderKeyHTML () {
   return `
-    <p class="fmp-key__empty" style="display: none">No key items to display</p>
-    ${keyGroups.map(group => `
-      <h3 class="fmp-key__heading" data-group="${group.id}" style="display: none">${group.label}</h3>
-      <ul class="fmp-key">
-        ${keyItems.filter(item => item.group === group.id).map(item => item.itemType === 'subheading' ? `
-          <li class="fmp-key__item fmp-key__subheading" data-id="${item.id}" data-group="${item.group}" data-requires="${item.requires.join(',')}" data-excludes="" style="display: none">
-            <p>${item.label}</p>
-          </li>
-        ` : `
-          <li class="fmp-key__item" data-id="${item.id}" data-group="${item.group}" data-requires="${item.requires.join(',')}" data-excludes="${(item.excludes || []).join(',')}" style="display: none">
-            <svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' aria-hidden='true' focusable='false'>
-              ${getSvgContent(item.colourKey, item.svgType, mapStyleId)}
-            </svg>
-            <span class="fmp-key__item-label">${item.label}</span>
-            <span class="govuk-visually-hidden">
-              ${item.symbolDescription}
-            </span>
-          </li>
-        `).join('')}
-      </ul>
-    `).join('')}
+    <p class="fmp-key__empty fmp-key--hidden">No key items to display</p>
+    ${keyGroups.map(group => {
+      const subheading = keyItems.find(item => item.group === group.id && item.itemType === 'subheading')
+      const items = keyItems.filter(item => item.group === group.id && !item.itemType)
+      return `
+        <section class="fmp-key__group fmp-key--hidden" aria-labelledby="fmp-key-heading-${group.id}" data-group="${group.id}">
+          <h3 class="govuk-heading-s fmp-key__heading" id="fmp-key-heading-${group.id}">${group.label}</h3>
+          ${subheading ? `<p class="govuk-body-s fmp-key__subheading fmp-key--hidden" data-requires="${subheading.requires.join(',')}">${subheading.label}</p>` : ''}
+          <dl class="fmp-key">
+            ${items.map(item => `
+              <div class="fmp-key__item fmp-key--hidden" data-id="${item.id}" data-group="${item.group}" data-requires="${item.requires.join(',')}" data-excludes="${(item.excludes || []).join(',')}">
+                <dt>
+                  <svg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 20 20' aria-hidden='true' focusable='false'>
+                    ${getSvgContent(item.colourKey, item.svgType, mapStyleId)}
+                  </svg>
+                  <span class="govuk-visually-hidden">${item.symbolDescription}</span>
+                </dt>
+                <dd>${item.label}</dd>
+              </div>
+            `).join('')}
+          </dl>
+        </section>
+      `
+    }).join('')}
   `
 }
 
