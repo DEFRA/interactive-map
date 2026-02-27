@@ -1,0 +1,70 @@
+import DemoMapInline from '../src/components/DemoMapInline.js'
+import DemoMapButton from '../src/components/DemoMapButton.js'
+
+# Demo
+
+See [Getting started](getting-started) for installation and full configuration options.
+
+## Inline map
+
+Embed an interactive map directly on the page, allowing users to explore and interact with the map without leaving the current context.
+
+<DemoMapInline />
+
+```js
+import InteractiveMap from '@defra/interactive-map'
+import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+import searchPlugin from '@defra/interactive-map/plugins/search'
+import scaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
+import mapStylesPlugin from '@defra/interactive-map/plugins/map-styles'
+
+new InteractiveMap('my-map', {
+  behaviour: 'inline',
+  mapProvider: maplibreProvider(),
+  mapStyle: {
+    url: '/assets/my-map-style.json',
+    attribution: '© OpenStreetMap contributors'
+  },
+  center: [-1.6, 53.1],
+  zoom: 6,
+  containerHeight: '500px',
+  enableZoomControls: true,
+  plugins: [
+    searchPlugin({ customDatasets: [nominatimDataset], showMarker: true }),
+    scaleBarPlugin({ units: 'metric' }),
+    mapStylesPlugin({ mapStyles: [...] })
+  ]
+})
+```
+
+## Button-triggered map
+
+Trigger the map to show on button press, allowing users to access the map when needed without it taking up space on the page by default.
+
+<DemoMapButton />
+
+```js
+import InteractiveMap from '@defra/interactive-map'
+import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+import searchPlugin from '@defra/interactive-map/plugins/search'
+import scaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
+import mapStylesPlugin from '@defra/interactive-map/plugins/map-styles'
+
+new InteractiveMap('my-map', {
+  behaviour: 'buttonFirst',
+  mapProvider: maplibreProvider(),
+  mapStyle: {
+    url: '/assets/my-map-style.json',
+    attribution: '© OpenStreetMap contributors'
+  },
+  center: [-1.6, 53.1],
+  zoom: 6,
+  containerHeight: '500px',
+  enableZoomControls: true,
+  plugins: [
+    searchPlugin({ customDatasets: [nominatimDataset], showMarker: true }),
+    scaleBarPlugin({ units: 'metric' }),
+    mapStylesPlugin({ mapStyles: [...] })
+  ]
+})
+```

@@ -1,6 +1,6 @@
 # API reference
 
-**InteractiveMap** is a customisable mapping interface, designed for specific use cases and with a focus on accessibiity. It is provided as a high-level API that works in conjunction with a mapping framework such as MapLibre. Alternative mapping frameworks are catererd for through the development of a custom provider.
+**InteractiveMap** is a customisable mapping interface, designed for specific use cases and with a focus on accessibiity. It is provided as a high-level API that works in conjunction with a mapping framework such as MapLibre. Alternative mapping frameworks are catered for through the development of a custom provider.
 
 The `InteractiveMap` object represents an instance of an InteractiveMap on your page. It emits events and provides methods that allow you to programmatically modify the map and trigger behaviour as users interact with it.
 

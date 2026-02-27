@@ -1,7 +1,3 @@
-# InteractiveMap documentation
-
-InteractiveMap is a lightweight map component designed for public-facing government services, and available for anyone to use. Built to GOV.UK standards, with accessibility at its core, Interactive Map supports a wide range of users across abilities, devices and input methods. It is open source and works with multiple mapping engines. The component can be extended through plugins to meet the specific needs of a service.
-
 ## What's Inside
 
 - **[Getting Started](getting-started)** - Installation and basic usage

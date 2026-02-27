@@ -3,7 +3,7 @@
 /** @type {import('@docusaurus/types').Config} */
 const config = {
   title: 'Interactive Map',
-  tagline: 'Accessibility-first interactive map component for government frontends ',
+  tagline: 'An accessibility-first interactive map component for government frontends',
   favicon: 'img/favicon.ico',
 
   url: 'https://defra.github.io',
@@ -13,10 +13,7 @@ const config = {
   projectName: 'interactive-map',
   deploymentBranch: 'main',
   trailingSlash: false,
-
-  onBrokenLinks: 'warn',
-  onBrokenMarkdownLinks: 'warn',
-
+  
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
@@ -24,7 +21,23 @@ const config = {
 
   presets: [],
 
-  themes: ['@defra/docusaurus-theme-govuk'],
+  themes: [
+    [
+      require.resolve('@easyops-cn/docusaurus-search-local'),
+      /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
+      ({
+        // docs-only mode: routeBasePath is '/'
+        docsRouteBasePath: '/',
+        indexBlog: false,
+        indexPages: false,
+        // hashed filenames for long-term caching of the search index
+        hashed: 'filename',
+        highlightSearchTermsOnTargetPage: true,
+        searchResultContextMaxLength: 60,
+      }),
+    ],
+    '@defra/docusaurus-theme-govuk',
+  ],
 
   plugins: [
     [
@@ -37,6 +50,12 @@ const config = {
   ],
 
   themeConfig: {
+    // Required by @docusaurus/plugin-content-docs when not using preset-classic.
+    // easyops SearchBarWrapper calls useThemeConfig().docs.versionPersistence
+    // during SSR; without this it throws "Cannot read properties of undefined".
+    docs: {
+      versionPersistence: 'localStorage',
+    },
     govuk: {
       header: {
         serviceName: 'Interactive Map',
@@ -47,6 +66,7 @@ const config = {
 
       navigation: [
         { text: 'Getting Started', href: '/getting-started' },
+        { text: 'Demo', href: '/demo', sidebar: 'auto' },
         {
           text: 'Architecture',
           href: '/architecture',
@@ -60,17 +80,7 @@ const config = {
         {
           text: 'API',
           href: '/api',
-          sidebar: [
-            { text: 'Overview', href: '/api' },
-            { text: 'Button Definition', href: 'button-definition' },
-            { text: 'Context', href: 'context' },
-            { text: 'Control Definition', href: 'control-definition' },
-            { text: 'Icon Definition', href: 'icon-definition' },
-            { text: 'Map Style Config', href: 'map-style-config' },
-            { text: 'Marker Config', href: 'marker-config' },
-            { text: 'Panel Definition', href: 'panel-definition' },
-            { text: 'Slots', href: 'slots' },
-          ],
+          sidebar: 'auto',
         },
         {
           text: 'Plugins',
@@ -78,13 +88,27 @@ const config = {
           sidebar: [
             { text: 'Overview', href: '/plugins' },
             { text: 'Building a Plugin', href: '/building-a-plugin' },
-            { text: 'Interact', href: 'interact' },
-            { text: 'Map Styles', href: 'map-styles' },
-            { text: 'Plugin Context', href: 'plugin-context' },
-            { text: 'Plugin Descriptor', href: 'plugin-descriptor' },
-            { text: 'Plugin Manifest', href: 'plugin-manifest' },
-            { text: 'Scale Bar', href: 'scale-bar' },
-            { text: 'Search', href: 'search' },
+            {
+              text: 'Available Plugins',
+              href: '/plugins#available-plugins',
+              items: [
+                { text: 'Interact', href: '/plugins#interact' },
+                { text: 'Map Styles', href: '/plugins#map-styles' },
+                { text: 'Scale Bar', href: '/plugins#scale-bar' },
+                { text: 'Search', href: '/plugins#search' },
+              ],
+            },
+            {
+              text: 'Alpha Plugins',
+              href: '/plugins#alpha-plugins',
+              items: [
+                { text: 'Datasets', href: '/plugins#datasets' },
+                { text: 'Draw for MapLibre', href: '/plugins#draw-for-maplibre' },
+                { text: 'Draw for ESRI SDK', href: '/plugins#draw-for-esri-sdk' },
+                { text: 'Frame', href: '/plugins#frame' },
+                { text: 'Use Location', href: '/plugins#use-location' },
+              ],
+            },
           ],
         },
       ],
@@ -98,6 +122,11 @@ const config = {
         meta: [
           { text: 'GitHub', href: 'https://github.com/DEFRA/interactive-map' },
         ],
+      },
+
+      homepage: {
+        getStartedHref: '/getting-started',
+        description: 'A lightweight, accessible map component for public-facing government services. Open source, multi-engine, and extendable through plugins.',
       },
     },
   },
