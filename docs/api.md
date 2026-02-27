@@ -726,11 +726,11 @@ interactiveMap.on('map:ready', ({ map, mapStyleId, mapSize }) => {
 
 Emitted when the map style finishes loading after a style change.
 
-**Payload:** `{ styleId: string }`
+**Payload:** `{ mapStyleId: string }`
 
 ```js
-interactiveMap.on('map:stylechange', ({ styleId }) => {
-  console.log('Style changed to', styleId)
+interactiveMap.on('map:stylechange', ({ mapStyleId }) => {
+  console.log('Style changed to', mapStyleId)
 })
 ```
 

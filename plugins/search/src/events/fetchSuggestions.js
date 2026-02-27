@@ -42,7 +42,7 @@ export const fetchSuggestions = async (value, datasets, dispatch, transformReque
   const sanitisedValue = sanitiseQuery(value)
 
   const activeDatasets = datasets.filter(ds => {
-    const include = ds.includeRegex ? ds.includeRegex.test(sanitisedValue) : true
+    const include = ds.includeRegex ? ds.includeRegex.test(value) : true
     const exclude = ds.excludeRegex ? ds.excludeRegex.test(sanitisedValue) : false
     return include && !exclude
   })

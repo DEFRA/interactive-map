@@ -109,11 +109,11 @@ export const EVENTS = {
 
   /**
    * Emitted when the map style has finished loading.
-   * Payload: `{ styleId: string }`
+   * Payload: `{ mapStyleId: string }`
    *
    * @example
-   * map.on(EVENTS.MAP_STYLE_CHANGE, ({ styleId }) => {
-   *   console.log('Style changed to', styleId)
+   * map.on(EVENTS.MAP_STYLE_CHANGE, ({ mapStyleId }) => {
+   *   console.log('Style changed to', mapStyleId)
    * })
    */
   MAP_STYLE_CHANGE: 'map:stylechange',

@@ -44,49 +44,59 @@ const formatGridRef = (query) => {
 }
 
 // Dataset-level buildRequest
-const buildGridrefRequest = (query) => {
-  let bodyData
+const buildGridrefRequest = (query, crs = 'wgs84') => {
+  const clean = query.trim()
+  const params = new URLSearchParams({ output: crs })
 
-  if (query.includes(',')) {
-    const parts = query.split(',')
-    const easting = Number(parts[0]?.trim())
-    const northing = Number(parts[1]?.trim())
-    bodyData = (!isNaN(easting) && !isNaN(northing))
-      ? [{ easting, northing }]
-      : [{ gridref: query }]
+  if (clean.includes(',')) {
+    const parts = clean.split(',')
+    const eastingStr = parts[0]?.trim()
+    const northingStr = parts[1]?.trim()
+    const easting = Number(eastingStr)
+    const northing = Number(northingStr)
+    if (!Number.isNaN(easting) && !Number.isNaN(northing) && eastingStr.length === northingStr.length) {
+      params.set('easting', easting)
+      params.set('northing', northing)
+    } else {
+      params.set('gridref', clean)
+    }
   } else {
-    bodyData = [{ gridref: query }]
+    params.set('gridref', clean)
   }
 
   return {
-    url: `${process.env.FARMING_API_URL}/convert-to-wgs84`,
-    options: {
-      method: 'POST',
-      headers: { 'Accept': 'application/json', 'Content-Type': 'application/json' },
-      body: JSON.stringify(bodyData)
-    }
+    url: `${process.env.FARMING_API_URL}/gridref?${params}`,
+    options: { method: 'GET' }
   }
 }
 
 const parseGridrefResults = (json, query) => {
-  if (!json?.[0]) return []
+  if (!json) {
+    return []
+  }
 
-  const { coordinates, bounds } = json[0]
-  const isEastingNorthing = query.includes(',')
+  const clean = query.trim()
+  const isWgs84 = 'lat' in json
+  const isEastingNorthing = clean.includes(',')
 
   const formattedQuery = isEastingNorthing
-    ? query
-        .split(',')
-        .map(part => part.trim().replace(/\s+/g, ''))
-        .join(', ')
-    : formatGridRef(query)
+    ? clean.split(',').map(part => part.trim().replace(/\s+/g, '')).join(', ')
+    : formatGridRef(clean)
+
+  const point = isWgs84
+    ? [json.lon, json.lat]
+    : [json.easting, json.northing]
+
+  const bounds = isWgs84
+    ? [json.bounds.min_lon, json.bounds.min_lat, json.bounds.max_lon, json.bounds.max_lat]
+    : [json.bounds.min_easting, json.bounds.min_northing, json.bounds.max_easting, json.bounds.max_northing]
 
   return [{
     id: formattedQuery,
-    point: coordinates,
-    bounds: [bounds.min_lon, bounds.min_lat, bounds.max_lon, bounds.max_lat],
+    point,
+    bounds,
     text: formattedQuery,
-    marked: `<mark>${formattedQuery}</mark>${!isEastingNorthing ? ' (Grid reference)' : ''}`,
+    marked: `<mark>${formattedQuery}</mark> (Grid reference)`,
     type: 'gridref'
   }]
 }
@@ -113,19 +123,30 @@ const parseParcelResults = (json, query) => {
   }] : []
 }
 
-const searchCustomDatasets = [{
+const parcelSearch = {
   name: 'parcel',
   includeRegex: /^[A-Z]{2}\s?\d{4}\s?\d{4}$/i,
   buildRequest: buildParcelRequest,
   parseResults: parseParcelResults,
   exclusive: true,
-},{
+}
+
+const gridRefSearchETRS89 = {
   name: 'gridref',
-  includeRegex: /^(?:[A-Za-z]{2}\s*(?:\d{3}\s*\d{3}|\d{4}\s*\d{4}|\d{5}\s*\d{5})|\d+\s*,?\s*\d+)$/i,
-  buildRequest: buildGridrefRequest,
+  includeRegex: /^(?:[A-Za-z]{2}\s*(?:\d{3}\s*\d{3}|\d{4}\s*\d{4}|\d{5}\s*\d{5})|\d+\s*,\s*\d+)$/i,
+  buildRequest: (query) => buildGridrefRequest(query, 'wgs84'),
   parseResults: parseGridrefResults
-}]
+}
+
+const gridRefSearchOSGB36 = {
+  name: 'gridref',
+  includeRegex: /^(?:[A-Za-z]{2}\s*(?:\d{3}\s*\d{3}|\d{4}\s*\d{4}|\d{5}\s*\d{5})|\d+\s*,\s*\d+)$/i,
+  buildRequest: (query) => buildGridrefRequest(query, 'osgb36'),
+  parseResults: parseGridrefResults
+}
 
 export {
-  searchCustomDatasets
+  parcelSearch,
+  gridRefSearchETRS89,
+  gridRefSearchOSGB36
 }

@@ -82,6 +82,7 @@ export default class EsriProvider {
 
     // Attach app events and store handles
     this.appEventHandles = attachAppEvents({
+      mapProvider: this,
       baseTileLayer,
       events,
       eventBus

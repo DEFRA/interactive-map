@@ -7,7 +7,7 @@ on:
     paths:
       - 'docs/**'
       - 'src/**'
-      - 'static/**'
+      - 'assets/**'
       - 'docusaurus.config.cjs'
       - 'sidebars.cjs'
       - 'package.json'

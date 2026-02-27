@@ -10,7 +10,6 @@
 
 .fmp-menu .govuk-heading-s {
   font-size: 1rem;
-  line-height: 1.25;
   color: var(--foreground-color);
 }
 
@@ -70,25 +69,48 @@
 // ===================================================
 
 .fmp-key {
-  list-style: none;
   margin: 0;
   padding: 0;
+}
+
+.fmp-key__group:not(.fmp-key--hidden) + .fmp-key__group {
+  margin-top: 20px;
+}
+
+.fmp-key__heading.govuk-heading-s {
+  font-size: 1rem;
+  color: var(--foreground-color);
+}
+
+.fmp-key__subheading {
+  color: var(--secondary-text-color);
 }
 
 .fmp-key__item {
   display: flex;
   align-items: start;
-  padding-top: 12px;
-  padding-bottom: 12px;
+  padding: 0;
+  margin-top: 20px;
   align-self: auto;
   font-size: 1rem;
-  line-height: 1.2;
+
+  &--last {
+    padding-bottom: 2px;
+  }
+}
+
+.fmp-key__group--no-heading .fmp-key__item--first {
+  margin-top: 10px;
 }
 
 .fmp-key__item svg {
   position: relative;
   flex-shrink: 0;
-  margin: 0px 13px 0 2px;
+  margin: 0px 13px 0px 2px;
+}
+
+.fmp-key--hidden {
+  display: none;
 }
 
 // ===================================================
@@ -109,7 +131,6 @@
 .fmp-datasets .govuk-radios__label,
 .fmp-datasets .govuk-checkboxes__label {
   font-size: 1rem;
-  line-height: 1.25;
   color: var(--foreground-color);
 }
 

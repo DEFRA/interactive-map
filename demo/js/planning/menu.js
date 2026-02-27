@@ -1,4 +1,4 @@
-import { getQueryParam, setQueryParam } from './planning-utils.js'
+import { getQueryParam, setQueryParam } from './utils.js'
 
 /* ==========================================================================
    Menu utilities
@@ -52,7 +52,7 @@ const datasetsConfig = [{
   name: 'datasets',
   items: [
     { id: 'floodzones', value: 'floodzones', label: 'Flood zones 2 and 3', formGroups: ['datasets', 'scenario'] },
-    { id: 'surfacewater', value: 'surfacewater', label: 'Surface water', formGroups: ['datasets', 'likelihood'] },
+    { id: 'surfacewater', value: 'surfacewater', label: 'Surface water', formGroups: ['datasets', 'scenario', 'likelihood', 'depth'] },
     { id: 'none', value: 'none', label: 'None', formGroups: ['datasets'] }
   ]
 },{
@@ -71,6 +71,20 @@ const datasetsConfig = [{
     { id: 'high', value: 'high', label: '1 in 30' },
     { id: 'medium', value: 'medium', label: '1 in 100' },
     { id: 'low', value: 'low', label: '1 in 1000' }
+  ]
+},{
+  type: 'radios',
+  legend: 'Depth of flooding',
+  name: 'depth',
+  items: [
+    { id: 'bydepth', value: 'bydepth', label: 'Extent by depth' },
+    { id: 'alldepths', value: 'alldepths', label: 'All depths' },
+    { id: 'above150', value: 'above150', label: 'Above 150mm' },
+    { id: 'above300', value: 'above300', label: 'Above 300mm' },
+    { id: 'above600', value: 'above600', label: 'Above 600mm' },
+    { id: 'above900', value: 'above900', label: 'Above 900mm' },
+    { id: 'above1200', value: 'above1200', label: 'Above 1200mm' },
+    { id: 'above2300', value: 'above2300', label: 'Above 2300mm' }
   ]
 },{
   type: 'checkboxes',
@@ -106,10 +120,25 @@ function addMenuClickHandlers({ onDrawShape, onDrawFrame, onEdit, onDelete }) {
     const editBtn = e.target.closest('#edit-btn')
     const deleteBtn = e.target.closest('#delete-btn')
 
-    if (shapeBtn && isEnabled(shapeBtn)) { toggleButtonState([]); onDrawShape?.(); return }
-    if (squareBtn && isEnabled(squareBtn)) { toggleButtonState([]); onDrawFrame?.(); return }
-    if (editBtn && isEnabled(editBtn)) { toggleButtonState([]); onEdit?.(); return }
-    if (deleteBtn && isEnabled(deleteBtn)) { onDelete?.(); toggleButtonState(['shape','square']); return }
+    if (shapeBtn && isEnabled(shapeBtn)) {
+      toggleButtonState([])
+      onDrawShape?.()
+      return
+    }
+    if (squareBtn && isEnabled(squareBtn)) {
+      toggleButtonState([])
+      onDrawFrame?.()
+      return
+    }
+    if (editBtn && isEnabled(editBtn)) {
+      toggleButtonState([])
+      onEdit?.()
+      return
+    }
+    if (deleteBtn && isEnabled(deleteBtn)) {
+      onDelete?.()
+      toggleButtonState(['shape','square'])
+    }
   })
 }
 

@@ -2,7 +2,7 @@
  * Returns the appropriate color for the given mapStyleId.
  * Supports:
  *  - Simple string colors (#fff, rgba(...))
- *  - Object maps of styleId → color
+ *  - Object maps of mapStyleId → color
  *
  * @param {string|object} colors - Color string or style-mapped color object
  * @param {string} mapStyleId - Current style/theme identifier

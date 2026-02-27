@@ -10,7 +10,7 @@
 // InteractiveMap
 import InteractiveMap from '../../src/index.js'
 import { openMapStyles, vtsMapStyles3857 } from './mapStyles.js'
-import { searchCustomDatasets } from './searchCustomDatasets.js'
+import { parcelSearch, gridRefSearchETRS89 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, transformDataRequest } from './auth.js'
 // Providers
 import maplibreProvider from '/providers/maplibre/src/index.js'
@@ -151,7 +151,7 @@ const interactiveMap = new InteractiveMap('map', {
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,
-			customDatasets: searchCustomDatasets,
+			customDatasets: [parcelSearch, gridRefSearchETRS89],
 			width: '300px',
 			showMarker: false,
 			// isExpanded: true
@@ -172,7 +172,6 @@ interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
 	// 	aspectRatio: 1
 	// })
-	console.log(e)
 	interactPlugin.enable()
 	interactiveMap.addButton('geometryActions', {
 		label: 'Draw tools',
@@ -199,7 +198,8 @@ interactiveMap.on('map:ready', function (e) {
 			onClick: function (e) {
 				interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
 				drawPlugin.newLine(crypto.randomUUID(), {
-					stroke: { outdoor: '#99704a', dark: '#ffffff' }
+					stroke: { outdoor: '#99704a', dark: '#ffffff' },
+					strokeWidth: 6
 				})
 			}
 		},{

@@ -11,12 +11,17 @@
       padding-top var(--duration) ease, padding-bottom var(--duration) ease;
   }
 
+  &--border-top {
+    border-top: 1px solid var(--app-border-color);
+  }
+
   &--hidden {
     max-height: 0;
     overflow: hidden;
     opacity: 0;
     padding-top: 0;
     padding-bottom: 0;
+    border: 0;
   }
 
   .im-c-button-wrapper--wide {
@@ -28,10 +33,6 @@
   .im-c-map-button--tertiary {
     width: 100%;
   }
-}
-
-.im-c-actions--border-top {
-  border-top: 1px solid var(--app-border-color);
 }
 
 .im-o-app--tablet, .im-o-app--desktop {

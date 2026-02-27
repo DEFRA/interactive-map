@@ -1,6 +1,6 @@
 import InteractiveMap from '../../src/index.js'
 import { openMapStyles, vtsMapStyles3857 } from './mapStyles.js'
-import { searchCustomDatasets } from './searchCustomDatasets.js'
+import { parcelSearch, gridRefSearchETRS89 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest, transformDataRequest } from './auth.js'
 // Providers
 import maplibreProvider from '/providers/maplibre/src/index.js'
@@ -137,7 +137,7 @@ var interactiveMap = new InteractiveMap('map', {
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,
-			customDatasets: searchCustomDatasets,
+			customDatasets: [parcelSearch, gridRefSearchETRS89],
 			width: '300px',
 			showMarker: false,
 			// manifest: { controls: [{ id: 'search',

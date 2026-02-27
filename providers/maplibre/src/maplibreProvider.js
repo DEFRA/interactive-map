@@ -90,6 +90,7 @@ export default class MapLibreProvider {
     })
 
     attachAppEvents({
+      mapProvider: this,
       map,
       events,
       eventBus
