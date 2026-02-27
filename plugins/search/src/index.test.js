@@ -17,16 +17,16 @@ describe('createPlugin', () => {
     expect(typeof plugin.load).toBe('function')
   })
 
-  it('overrides manifest when isExpanded is true', () => {
-    const plugin = createPlugin({ isExpanded: true })
-    expect(plugin.isExpanded).toBe(true)
+  it('overrides manifest when expanded is true', () => {
+    const plugin = createPlugin({ expanded: true })
+    expect(plugin.expanded).toBe(true)
     expect(plugin.manifest).toEqual({
       controls: [{ id: 'search', mobile: { slot: 'banner' } }]
     })
   })
 
   it('spreads custom options correctly', () => {
-    const custom = { foo: 'bar', isExpanded: false }
+    const custom = { foo: 'bar', expanded: false }
     const plugin = createPlugin(custom)
     expect(plugin.foo).toBe('bar')
     expect(plugin.showMarker).toBe(true)

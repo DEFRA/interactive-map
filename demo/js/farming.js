@@ -143,7 +143,7 @@ var interactiveMap = new InteractiveMap('map', {
 			// manifest: { controls: [{ id: 'search',
 			// 	inline: false
 			// }]}
-			// isExpanded: true
+			// expanded: true
 		}),
 		// useLocationPlugin(),
 		datasetsPlugin,

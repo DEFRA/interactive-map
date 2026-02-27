@@ -13,7 +13,7 @@ export const Form = ({
 
   const classNames = [
     'im-c-search-form',
-    pluginConfig.isExpanded && 'im-c-search-form--default-expanded',
+    pluginConfig.expanded && 'im-c-search-form--default-expanded',
     'im-c-panel'
   ].filter(Boolean).join(' ')
 
@@ -23,7 +23,7 @@ export const Form = ({
       role="search"
       className={classNames}
       style={{
-        display: pluginConfig.isExpanded || pluginState.isExpanded ? 'flex' : undefined,
+        display: pluginConfig.expanded || pluginState.isExpanded ? 'flex' : undefined,
         ...(appState.breakpoint !== 'mobile' && pluginConfig?.width && { width: pluginConfig.width }),
       }}
       aria-controls={`${id}-viewport`}

@@ -32,7 +32,7 @@ let feature
 
 const interactPlugin = createInteractPlugin({
 	markerColor: { outdoor: '#ff0000' },
-	interactionMode: 'marker', // 'auto', 'select', 'marker' // defaults to 'marker'
+	// interactionMode: 'marker', // 'auto', 'select', 'marker' // defaults to 'marker'
 	// multiSelect: true
 })
 
@@ -154,6 +154,10 @@ interactiveMap.on('map:stylechange', function (e) {
 
 interactiveMap.on('map:exit', function (e) {
 	drawOptions = ['shape', 'square']
+})
+
+interactiveMap.on('interact:markerchange', function (e) {
+	console.log(e)
 })
 
 interactiveMap.on('draw:ready', function () {

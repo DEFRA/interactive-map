@@ -28,7 +28,7 @@ describe('Form', () => {
       hasKeyboardFocusWithin: false,
     },
     pluginConfig: {
-      isExpanded: false,
+      expanded: false,
       width: '400px',
     },
     appState: {
@@ -62,7 +62,7 @@ describe('Form', () => {
     render(
       <Form
         {...baseProps}
-        pluginConfig={{ ...baseProps.pluginConfig, isExpanded: true }}
+        pluginConfig={{ ...baseProps.pluginConfig, expanded: true }}
       />
     )
     const form = screen.getByRole('search')

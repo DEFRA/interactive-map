@@ -70,6 +70,8 @@
 .im-o-app--desktop .im-c-search-suggestions {
     border-bottom-left-radius: var(--button-border-radius);
     border-bottom-right-radius: var(--button-border-radius);
+    box-shadow: var(--panel-box-shadow);
+    clip-path: inset(0px -30px -30px -30px);
 
     &__item {
         padding: var(--divider-gap) calc(var(--divider-gap) + 2px);
