@@ -32,8 +32,7 @@ describe('Panel', () => {
 
   const renderPanel = (config = {}, props = {}) => {
     const panelConfig = {
-      showLabel: true,
-      desktop: { slot: 'side', initiallyOpen: true, dismissable: false, modal: false },
+      desktop: { slot: 'side', open: true, dismissable: false, modal: false, showLabel: true },
       ...config
     }
     return render(<Panel panelId='Settings' panelConfig={panelConfig} label='Settings' {...props} />)
@@ -49,17 +48,17 @@ describe('Panel', () => {
     })
 
     it('renders visually hidden label when showLabel=false', () => {
-      renderPanel({ showLabel: false })
+      renderPanel({ desktop: { slot: 'side', open: true, dismissable: false, modal: false, showLabel: false } })
       expect(screen.getByText('Settings')).toHaveClass('im-u-visually-hidden')
     })
 
     it('applies offset class to body when showLabel=false and dismissable', () => {
-      renderPanel({ showLabel: false, desktop: { slot: 'side', dismissable: true, initiallyOpen: false } })
+      renderPanel({ desktop: { slot: 'side', dismissable: true, open: false, showLabel: false } })
       expect(screen.getByRole('dialog').querySelector('.im-c-panel__body')).toHaveClass('im-c-panel__body--offset')
     })
 
     it('applies width style if provided', () => {
-      renderPanel({ desktop: { slot: 'side', dismissable: true, initiallyOpen: true, width: '300px' } })
+      renderPanel({ desktop: { slot: 'side', dismissable: true, open: true, width: '300px' } })
       expect(screen.getByRole('complementary')).toHaveStyle({ width: '300px' })
     })
 
@@ -88,12 +87,12 @@ describe('Panel', () => {
     })
 
     it('renders dialog role for dismissable non-aside panels', () => {
-      renderPanel({ desktop: { slot: 'side', dismissable: true, initiallyOpen: false } })
+      renderPanel({ desktop: { slot: 'side', dismissable: true, open: false } })
       expect(screen.getByRole('dialog')).toBeInTheDocument()
     })
 
     it('renders complementary role for dismissable aside panels', () => {
-      renderPanel({ desktop: { slot: 'side', initiallyOpen: true, dismissable: true } })
+      renderPanel({ desktop: { slot: 'side', open: true, dismissable: true } })
       expect(screen.getByRole('complementary')).toBeInTheDocument()
     })
 
@@ -111,7 +110,7 @@ describe('Panel', () => {
       const triggeringElement = { focus: focusMock, parentNode: document.createElement('div') }
 
       renderPanel(
-        { desktop: { slot: 'top-button', dismissable: true, initiallyOpen: false } },
+        { desktop: { slot: 'top-button', dismissable: true, open: false } },
         { props: { triggeringElement } }
       )
 
@@ -134,7 +133,7 @@ describe('Panel', () => {
     })
 
     it('falls back to viewportRef focus when no triggeringElement', () => {
-      renderPanel({ desktop: { slot: 'side', dismissable: true, initiallyOpen: false } })
+      renderPanel({ desktop: { slot: 'side', dismissable: true, open: false } })
 
       fireEvent.click(screen.getByRole('button', { name: 'Close Settings' }))
       expect(layoutRefs.viewportRef.current.focus).toHaveBeenCalled()

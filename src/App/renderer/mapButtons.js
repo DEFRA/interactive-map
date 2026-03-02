@@ -31,6 +31,15 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
     if (config.inline === false && !appState.isFullscreen) {
       return false
     }
+
+    // Skip panel-toggle buttons when the panel is non-dismissable (always visible) at this breakpoint
+    if (config.panelId) {
+      const panelBpConfig = appState.panelConfig?.[config.panelId]?.[breakpoint]
+      if (panelBpConfig?.open === true && panelBpConfig?.dismissable === false) {
+        return false
+      }
+    }
+
     if (bpConfig?.slot !== slot || !allowedSlots.button.includes(bpConfig.slot)) {
       return false
     }
@@ -76,7 +85,7 @@ function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, gro
       variant={config.variant}
       label={evaluateProp(config.label, config.pluginId)}
       href={evaluateProp(config.href, config.pluginId)}
-      showLabel={bpConfig.showLabel}
+      showLabel={bpConfig.showLabel ?? true}
       isDisabled={appState.disabledButtons.has(buttonId)}
       isHidden={appState.hiddenButtons.has(buttonId)}
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}

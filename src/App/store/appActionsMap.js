@@ -74,19 +74,27 @@ const setBreakpoint = (state, payload) => {
     ? state.isFullscreen
     : getIsFullscreen({ behaviour, hybridWidth, maxMobileWidth })
 
+  const transitionedOpenPanels = lastPanelId
+    ? buildOpenPanels(state, lastPanelId, payload.breakpoint, state.openPanels[lastPanelId]?.props || {})
+    : {}
+
+  // Restore panels that are non-dismissable and always open at the new breakpoint
+  const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
+  const persistentPanels = Object.fromEntries(
+    Object.entries(panelConfig)
+      .filter(([panelId, config]) => {
+        const bpConfig = config[payload.breakpoint]
+        return bpConfig?.open === true && bpConfig?.dismissable === false && !transitionedOpenPanels[panelId]
+      })
+      .map(([panelId]) => [panelId, state.openPanels[panelId] || { props: {} }])
+  )
+
   return {
     ...state,
     breakpoint: payload.breakpoint,
     isFullscreen,
     previousOpenPanels: state.openPanels,
-    openPanels: lastPanelId
-      ? buildOpenPanels(
-        state,
-        lastPanelId,
-        payload.breakpoint,
-        state.openPanels[lastPanelId]?.props || {}
-      )
-      : {}
+    openPanels: { ...transitionedOpenPanels, ...persistentPanels }
   }
 }
 
@@ -289,7 +297,7 @@ const addPanel = (state, payload) => {
 
   // Check if panel should be initially open
   const bpConfig = panel?.[state.breakpoint]
-  const shouldOpen = bpConfig?.initiallyOpen
+  const shouldOpen = bpConfig?.open
 
   return {
     ...state,

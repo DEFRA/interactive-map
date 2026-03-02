@@ -22,6 +22,8 @@
   position: relative;
   overflow: visible;
   border-radius: var(--button-border-radius);
+  box-shadow: none;
+  filter: var(--search-drop-shadow);
 
   &:before {
     border-radius: var(--button-border-radius);

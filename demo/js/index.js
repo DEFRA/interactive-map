@@ -177,9 +177,9 @@ interactiveMap.on('map:ready', function (e) {
 		label: 'Draw tools',
 		variant: 'tertiary',
 		iconSvgContent: '<path d="m6 9 6 6 6-6"/>',
-		mobile: { slot: 'actions', order: 3, showLabel: true },
-		tablet: { slot: 'actions', order: 3, showLabel: true },
-		desktop: { slot: 'actions', order: 3, showLabel: true },
+		mobile: { slot: 'actions', order: 3 },
+		tablet: { slot: 'actions', order: 3 },
+		desktop: { slot: 'actions', order: 3 },
 		menuItems: [{
 			id: 'drawPolygon',
 			label: 'Draw polygon',

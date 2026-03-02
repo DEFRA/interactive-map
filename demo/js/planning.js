@@ -94,31 +94,31 @@ interactiveMap.on('app:ready', function (e) {
 		label: 'Menu',
 		panelId: 'menu',
 		iconSvgContent: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
-		mobile: { slot: 'top-left', order: 1 },
-		tablet: { slot: 'top-left', order: 2, showLabel: true },
-		desktop: { slot: 'top-left', order: 2, showLabel: true }
+		mobile: { slot: 'top-left', order: 1, showLabel: false },
+		tablet: { slot: 'top-left', order: 2 },
+		desktop: { slot: 'top-left', order: 2 }
 	})
 	interactiveMap.addButton('key', {
 		label: 'Key',
 		panelId: 'key',
 		iconSvgContent: '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
-		mobile: { slot: 'top-left', order: 2 },
-		tablet: { slot: 'top-left', order: 3, showLabel: true },
-		desktop: { slot: 'top-left', order: 3, showLabel: true }
+		mobile: { slot: 'top-left', order: 2, showLabel: false },
+		tablet: { slot: 'top-left', order: 3 },
+		desktop: { slot: 'top-left', order: 3 }
 	})
 	interactiveMap.addPanel('menu', {
 		label: 'Menu',
 		html: renderMenuHTML(feature),
-		mobile: { slot: 'side', modal: true, initiallyOpen: false },
-		tablet: { slot: 'side', width: '260px', initiallyOpen: true },
-		desktop: { slot: 'side', width: '280px', initiallyOpen: true }
+		mobile: { slot: 'side', modal: true, open: false },
+		tablet: { slot: 'side', width: '260px', open: true },
+		desktop: { slot: 'side', width: '280px', open: true }
 	})
 	interactiveMap.addPanel('key', {
 		label: 'Key',
 		html: renderKeyHTML(),
-		mobile: { slot: 'bottom', initiallyOpen: false, exclusive: true },
-		tablet: { slot: 'inset', width: '260px', initiallyOpen: false, exclusive: true },
-		desktop: { slot: 'inset', width: '280px', initiallyOpen: false, exclusive: true }
+		mobile: { slot: 'bottom', open: false, exclusive: true },
+		tablet: { slot: 'inset', width: '260px', open: false, exclusive: true },
+		desktop: { slot: 'inset', width: '280px', open: false, exclusive: true }
 	})
 })
 

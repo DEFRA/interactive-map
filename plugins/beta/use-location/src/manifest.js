@@ -32,19 +32,19 @@ export const manifest = {
     label: 'Problem getting your location',
     mobile: {
       slot: 'banner',
-      initiallyOpen: false,
+      open: false,
       dismissable: true,
       modal: true
     },
     tablet: {
       slot: 'banner',
-      initiallyOpen: false,
+      open: false,
       dismissable: true,
       modal: true
     },
     desktop: {
       slot: 'banner',
-      initiallyOpen: false,
+      open: false,
       dismissable: true,
       modal: true
     },

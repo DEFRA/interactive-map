@@ -1,10 +1,13 @@
 @use '../../../src/scss/tools/index' as tools;
 
-
 // Components, using 'CSS in Component' pattern
 @use './components/Form/Form.module';
 @use './components/CloseButton/CloseButton.module';
 @use './components/Suggestions/Suggestions.module';
+
+:root {
+  --search-drop-shadow: drop-shadow(0 -2px 20px rgba(0,0,0,.1)) drop-shadow(0 0 12px rgba(0,0,0,.1));
+}
 
 // ===================================================
 // Component: Search

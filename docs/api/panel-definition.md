@@ -73,14 +73,6 @@ HTML content to render in the panel.
 
 ---
 
-### `showLabel`
-**Type:** `boolean`
-**Default:** `true`
-
-Whether to show the panel heading. If `false`, the heading is visually hidden but remains accessible to screen readers.
-
----
-
 ## Breakpoint Configuration
 
 Each breakpoint (`mobile`, `tablet`, `desktop`) accepts the following properties:
@@ -94,17 +86,23 @@ The [slot](./slots.md) where the panel should appear at this breakpoint. Slots a
 ### `dismissable`
 **Type:** `boolean`
 
-Whether the panel can be dismissed (closed) by the user.
+Whether the panel can be dismissed (closed) by the user. When `false` and `open` is `true`, the panel is always visible at this breakpoint and any associated panel-toggle button is automatically suppressed.
 
 ### `exclusive`
 **Type:** `boolean`
 
 Whether the panel is exclusive. An exclusive panel will hide other panels when it becomes visible.
 
-### `initiallyOpen`
+### `open`
 **Type:** `boolean`
 
-Whether the panel is initially open when the app loads.
+Whether the panel is open. When `true` and combined with `dismissable: false`, the panel is always visible at this breakpoint and will be restored automatically when the breakpoint is entered.
+
+### `showLabel`
+**Type:** `boolean`
+**Default:** `true`
+
+Whether to show the panel heading. If `false`, the heading is visually hidden but remains accessible to screen readers.
 
 ### `modal`
 **Type:** `boolean`

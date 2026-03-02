@@ -92,6 +92,18 @@ describe('mapButtons module', () => {
       const config = { b1: baseBtn, b2: { ...baseBtn, isMenuItem: false } }
       expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp }).length).toBe(2)
     })
+
+    it('filters out panel-toggle button when panel is open and non-dismissable at current breakpoint', () => {
+      const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissable: false } } } }
+      const config = { b1: { ...baseBtn, panelId: 'myPanel' } }
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(0)
+    })
+
+    it('includes panel-toggle button when panel is dismissable at current breakpoint', () => {
+      const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissable: true } } } }
+      const config = { b1: { ...baseBtn, panelId: 'myPanel' } }
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(1)
+    })
   })
 
   // -------------------------
@@ -162,7 +174,7 @@ describe('mapButtons module', () => {
 
     it('uses empty object fallback for missing breakpoint config', () => {
       const result = render(baseBtn, { ...appState, breakpoint: 'mobile' })
-      expect(result.props.showLabel).toBeUndefined()
+      expect(result.props.showLabel).toBe(true)
     })
 
     it('does nothing when clicked if button has no panelId and no onClick', () => {

@@ -220,6 +220,7 @@ The order the button appears within its slot.
 
 ### `showLabel`
 **Type:** `boolean`
+**Default:** `true`
 
 Whether to show the label. If `false`, a tooltip is generated from the label instead.
 
