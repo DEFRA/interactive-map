@@ -18,7 +18,7 @@ export const manifest = {
 
   buttons: [{
     id: 'useLocation',
-    group: 'location',
+    group: { name: 'location', label: 'Location', order: 0 },
     label: 'Use your location',
     iconId: 'locateFixed',
     hiddenWhen: () => !navigator.geolocation,

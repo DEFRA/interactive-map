@@ -64,9 +64,24 @@ Raw SVG content for the button icon. The outer `<svg>` tag should be excluded.
 ---
 
 ### `group`
-**Type:** `string`
+**Type:** `{ name: string, label?: string, order?: number }`
 
-Button group label for grouping related buttons.
+Groups this button with other buttons that share the same `name`. Two or more buttons sharing a group are rendered inside a semantic `<div role="group">` wrapper, collapsing their visual borders into a single grouped unit.
+
+- **`name`** — Internal identifier used to collect group members. Buttons with the same `name` are grouped together.
+- **`label`** — Accessible label for the group, announced by screen readers. Defaults to `name` if not provided. Should be a short human-readable description (e.g. `'Zoom controls'`).
+- **`order`** — The group's position within its slot, equivalent to the `order` property on singleton buttons. All buttons in the same group must share the same value. Defaults to `0`.
+
+```js
+// Two buttons rendered as a labelled group at slot position 2
+{ group: { name: 'zoom', label: 'Zoom controls', order: 2 }, ... }
+```
+
+The `order` property on each button's breakpoint config (e.g. `desktop.order`) controls the button's position *within* the group when an explicit sequence is needed. If omitted, buttons appear in their declaration order.
+
+> If only one button declares a given group name, it is rendered as a standalone button and the group wrapper is not created.
+
+> **Note:** Passing a plain string (e.g. `group: 'zoom'`) is deprecated and will log a warning in development.
 
 ---
 
@@ -216,7 +231,9 @@ The [slot](./slots.md) where the button should appear at this breakpoint. Slots 
 ### `order`
 **Type:** `number`
 
-The order the button appears within its slot.
+For **ungrouped buttons**, this is the button's position within its slot.
+
+For **grouped buttons**, this is the button's position *within its group*. The group's position within the slot is controlled by `group.order` instead. If omitted, buttons appear in their declaration order within the group.
 
 ### `showLabel`
 **Type:** `boolean`

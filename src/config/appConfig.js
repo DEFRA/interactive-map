@@ -42,7 +42,7 @@ export const defaultAppConfig = {
     desktop: buttonSlots
   }, {
     id: 'zoomIn',
-    group: 'zoom',
+    group: { name: 'zoom', label: 'Zoom controls', order: 0 },
     label: 'Zoom in',
     iconId: 'plus',
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
@@ -53,7 +53,7 @@ export const defaultAppConfig = {
     desktop: buttonSlots
   }, {
     id: 'zoomOut',
-    group: 'zoom',
+    group: { name: 'zoom', label: 'Zoom controls', order: 0 },
     label: 'Zoom out',
     iconId: 'minus',
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),

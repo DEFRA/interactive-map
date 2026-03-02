@@ -70,7 +70,48 @@ function createButtonClickHandler (btn, appState, evaluateProp) {
   }
 }
 
-function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, groupMiddle, groupEnd }) {
+/**
+ * Resolves the group name from a button config's group property.
+ * Accepts either the new object form `{ name, label?, order? }` or a deprecated plain string.
+ * @param {string|{name: string, label?: string, order?: number}|null|undefined} group
+ * @returns {string|null}
+ */
+function resolveGroupName (group) {
+  if (group == null) {
+    return null
+  }
+  return typeof group === 'string' ? group : (group.name ?? null)
+}
+
+/**
+ * Resolves the accessible label for a group.
+ * Uses `label` if provided, otherwise falls back to `name`.
+ * @param {string|{name: string, label?: string, order?: number}|null|undefined} group
+ * @returns {string}
+ */
+function resolveGroupLabel (group) {
+  if (!group) {
+    return ''
+  }
+  if (typeof group === 'string') {
+    return group
+  }
+  return group.label ?? group.name ?? ''
+}
+
+/**
+ * Resolves the slot-level order for a group.
+ * @param {string|{name: string, label?: string, order?: number}|null|undefined} group
+ * @returns {number}
+ */
+function resolveGroupOrder (group) {
+  if (!group || typeof group === 'string') {
+    return 0
+  }
+  return group.order ?? 0
+}
+
+function renderButton ({ btn, appState, appConfig, evaluateProp }) {
   const [buttonId, config] = btn
   const bpConfig = config[appState.breakpoint] ?? {}
   const handleClick = createButtonClickHandler(btn, appState, evaluateProp)
@@ -95,9 +136,6 @@ function renderButton ({ btn, appState, appConfig, evaluateProp, groupStart, gro
       panelId={config.panelId}
       menuItems={config.menuItems}
       idPrefix={appConfig.id}
-      groupStart={groupStart}
-      groupMiddle={groupMiddle}
-      groupEnd={groupEnd}
     />
   )
 }
@@ -111,40 +149,90 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
     return []
   }
 
-  const groupMap = new Map()
-  matching.forEach(([, config], idx) => {
-    const key = config.group
-    if (key == null) {
+  // Partition matching buttons into named groups and ungrouped singletons
+  const groupMap = new Map() // name -> { label, order, members: [[buttonId, config]] }
+  const singletons = []
+
+  matching.forEach(([buttonId, config]) => {
+    const { group } = config
+
+    if (group == null) {
+      singletons.push([buttonId, config])
       return
     }
-    if (!groupMap.has(key)) {
-      groupMap.set(key, [])
+
+    /* istanbul ignore next */
+    if (process.env.NODE_ENV !== 'production' && typeof group === 'string') {
+      console.warn(`[interactive-map] Button "${buttonId}": group should be an object { name, label?, order? } — string groups are deprecated.`)
     }
-    groupMap.get(key).push(idx)
+
+    const name = resolveGroupName(group)
+    const label = resolveGroupLabel(group)
+    const order = resolveGroupOrder(group)
+
+    if (!groupMap.has(name)) {
+      groupMap.set(name, { label, order, members: [] })
+    } else {
+      const existing = groupMap.get(name)
+      /* istanbul ignore next */
+      if (process.env.NODE_ENV !== 'production' && existing.order !== order) {
+        console.warn(`[interactive-map] Group "${name}" has inconsistent order values (${existing.order} vs ${order}). Using the lower value.`)
+        existing.order = Math.min(existing.order, order)
+      }
+    }
+
+    groupMap.get(name).members.push([buttonId, config])
   })
 
-  for (const [key, indices] of groupMap) {
-    if (indices.length < 2) {
-      groupMap.delete(key)
-    }
-  }
+  const result = []
 
-  return matching.map((btn, idx) => {
+  // Ungrouped buttons — order is the breakpoint-level slot position
+  for (const btn of singletons) {
     const [buttonId, config] = btn
-    const key = config.group
-    const indices = key == null ? null : groupMap.get(key)
-    const groupStart = indices ? idx === indices[0] : false
-    const groupEnd = indices ? idx === indices[indices.length - 1] : false
-    const groupMiddle = indices && indices.length >= 3 && !groupStart && !groupEnd // NOSONAR: 3 = minimum for a start/middle/end group
     const order = config[breakpoint]?.order ?? 0
-
-    return {
+    result.push({
       id: buttonId,
       type: 'button',
       order,
-      element: renderButton({ btn, appState, appConfig, evaluateProp, groupStart, groupMiddle, groupEnd })
+      element: renderButton({ btn, appState, appConfig, evaluateProp })
+    })
+  }
+
+  for (const [groupName, { label, order: groupOrder, members }] of groupMap) {
+    if (members.length < 2) {
+      // Singleton group: degrade to a regular button using the group's slot order
+      const btn = members[0]
+      const [buttonId, config] = btn
+      const order = groupOrder || config[breakpoint]?.order || 0
+      result.push({
+        id: buttonId,
+        type: 'button',
+        order,
+        element: renderButton({ btn, appState, appConfig, evaluateProp })
+      })
+      continue
     }
-  })
+
+    // Sort group members by their intra-group order (breakpoint-level order prop)
+    const sorted = [...members].sort((a, b) => {
+      const orderA = a[1][breakpoint]?.order ?? 0
+      const orderB = b[1][breakpoint]?.order ?? 0
+      return orderA - orderB
+    })
+
+    result.push({
+      id: `group-${groupName}`,
+      type: 'group',
+      order: groupOrder,
+      element: (
+        <div key={`group-${groupName}`} role='group' aria-label={label} className='im-c-button-group'>
+          {sorted.map(btn => renderButton({ btn, appState, appConfig, evaluateProp }))}
+        </div>
+      )
+    })
+  }
+
+  return result
 }
 
 export {

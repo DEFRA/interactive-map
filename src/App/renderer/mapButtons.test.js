@@ -110,17 +110,12 @@ describe('mapButtons module', () => {
   // renderButton tests
   // -------------------------
   describe('renderButton', () => {
-    const render = (config, state = appState, flags = {}) =>
-      renderButton({ btn: ['id', config], appState: state, appConfig, evaluateProp, groupStart: false, groupMiddle: false, groupEnd: false, ...flags })
+    const render = (config, state = appState) =>
+      renderButton({ btn: ['id', config], appState: state, appConfig, evaluateProp })
 
     it('renders a MapButton with correct basic props', () => {
       const result = render(baseBtn)
       expect(result.props).toMatchObject({ buttonId: 'id', iconId: 'i1', label: 'Btn', showLabel: true })
-    })
-
-    it('applies group flags correctly', () => {
-      const result = render(baseBtn, appState, { groupStart: true, groupEnd: true })
-      expect(result.props).toMatchObject({ groupStart: true, groupEnd: true })
     })
 
     it('evaluates dynamic label, iconId, and href via evaluateProp', () => {
@@ -204,21 +199,46 @@ describe('mapButtons module', () => {
       expect(result[0]).toMatchObject({ id: 'b1', type: 'button', order: 1 })
     })
 
-    it('sets groupStart, groupMiddle, and groupEnd flags correctly for multiple buttons', () => {
+    it('renders grouped buttons as a single group item with role=group', () => {
       appState.buttonConfig = ({
-        b1: { ...baseBtn, group: 'g1' },
-        b2: { ...baseBtn, desktop: { slot: 'header', order: 2 }, group: 'g1' },
-        b3: { ...baseBtn, desktop: { slot: 'header', order: 3 }, group: 'g1' }
+        b1: { ...baseBtn, group: { name: 'g1', label: 'Group 1', order: 2 } },
+        b2: { ...baseBtn, desktop: { slot: 'header', order: 2 }, group: { name: 'g1', label: 'Group 1', order: 2 } }
       })
       const result = map()
-      expect(result[0].element.props).toMatchObject({ groupStart: true })
-      expect(result[1].element.props.groupMiddle).toBe(true)
-      expect(result[2].element.props).toMatchObject({ groupEnd: true })
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ id: 'group-g1', type: 'group', order: 2 })
+      expect(result[0].element.props.role).toBe('group')
+      expect(result[0].element.props['aria-label']).toBe('Group 1')
     })
 
-    it('ignores singleton groups when calculating group flags', () => {
-      appState.buttonConfig = ({ b1: { ...baseBtn, group: 'g1' } })
-      expect(map()[0].element.props).toMatchObject({ groupStart: false, groupEnd: false })
+    it('uses group name as aria-label when no explicit label is provided', () => {
+      appState.buttonConfig = ({
+        b1: { ...baseBtn, group: { name: 'g1', order: 0 } },
+        b2: { ...baseBtn, group: { name: 'g1', order: 0 } }
+      })
+      const result = map()
+      expect(result[0].element.props['aria-label']).toBe('g1')
+    })
+
+    it('sorts group members by intra-group order', () => {
+      appState.buttonConfig = ({
+        b1: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 3 } },
+        b2: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 1 } },
+        b3: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 2 } }
+      })
+      const result = map()
+      expect(result).toHaveLength(1)
+      const children = result[0].element.props.children
+      expect(children[0].props.buttonId).toBe('b2')
+      expect(children[1].props.buttonId).toBe('b3')
+      expect(children[2].props.buttonId).toBe('b1')
+    })
+
+    it('renders singleton groups as regular buttons using group slot order', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, group: { name: 'g1', label: 'Group 1', order: 3 } } })
+      const result = map()
+      expect(result).toHaveLength(1)
+      expect(result[0]).toMatchObject({ id: 'b1', type: 'button', order: 3 })
     })
 
     it('falls back to order 0 when order is not specified in breakpoint config', () => {
