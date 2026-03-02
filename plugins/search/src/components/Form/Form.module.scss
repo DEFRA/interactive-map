@@ -19,10 +19,22 @@
 
 .im-o-app--tablet .im-c-search-form,
 .im-o-app--desktop .im-c-search-form {
+  position: relative;
+  overflow: visible;
   border-radius: var(--button-border-radius);
+  box-shadow: none;
+  filter: var(--search-drop-shadow);
 
   &:before {
     border-radius: var(--button-border-radius);
+  }
+
+  .im-c-search-suggestions {
+    position: absolute;
+    top: calc(100% + 1px);
+    left: 0;
+    right: 0;
+    z-index: 1;
   }
 }
 

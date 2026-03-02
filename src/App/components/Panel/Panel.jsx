@@ -7,7 +7,7 @@ import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 import { Icon } from '../Icon/Icon'
 
 const computePanelState = (bpConfig, triggeringElement) => {
-  const isAside = bpConfig.slot === 'side' && bpConfig.initiallyOpen && !bpConfig.modal
+  const isAside = bpConfig.slot === 'side' && bpConfig.open && !bpConfig.modal
   const isDialog = !isAside && bpConfig.dismissable
   const isModal = bpConfig.modal === true
   const isDismissable = bpConfig.dismissable !== false
@@ -96,8 +96,8 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
     }
   }, [isOpen])
 
-  const panelClass = buildPanelClassNames(bpConfig.slot, panelConfig.showLabel)
-  const panelBodyClass = buildPanelBodyClassNames(panelConfig.showLabel, isDismissable)
+  const panelClass = buildPanelClassNames(bpConfig.slot, bpConfig.showLabel ?? true)
+  const panelBodyClass = buildPanelBodyClassNames(bpConfig.showLabel ?? true, isDismissable)
   const innerHtmlProp = useMemo(() => html ? { __html: html } : null, [html])
 
   const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissable, isModal, width: bpConfig.width, panelClass })
@@ -110,7 +110,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
     >
       <h2
         id={`${elementId}-label`}
-        className={panelConfig.showLabel ? 'im-c-panel__heading im-e-heading-m' : 'im-u-visually-hidden'}
+        className={(bpConfig.showLabel ?? true) ? 'im-c-panel__heading im-e-heading-m' : 'im-u-visually-hidden'}
       >
         {label}
       </h2>

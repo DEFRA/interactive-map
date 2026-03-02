@@ -2,7 +2,7 @@ import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
 
 const keyboardBasePanelSlots = {
   slot: 'middle',
-  initiallyOpen: false,
+  open: false,
   dismissable: true,
   modal: true
 }
@@ -99,7 +99,7 @@ export const defaultAppConfig = {
 // Used by addButton
 const defaultButtonSlots = {
   slot: 'right-top',
-  showLabel: false
+  showLabel: true
 }
 
 export const defaultButtonConfig = {
@@ -111,25 +111,27 @@ export const defaultButtonConfig = {
 
 // Used by addPanel
 export const defaultPanelConfig = {
-  showLabel: true,
   label: 'Panel',
   mobile: {
     slot: 'bottom',
-    initiallyOpen: true,
+    open: true,
     dismissable: true,
-    modal: false
+    modal: false,
+    showLabel: true
   },
   tablet: {
     slot: 'inset',
-    initiallyOpen: true,
+    open: true,
     dismissable: true,
-    modal: false
+    modal: false,
+    showLabel: true
   },
   desktop: {
     slot: 'inset',
-    initiallyOpen: true,
+    open: true,
     dismissable: true,
-    modal: false
+    modal: false,
+    showLabel: true
   },
   render: null,
   html: null

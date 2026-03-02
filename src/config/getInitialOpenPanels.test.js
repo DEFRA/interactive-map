@@ -8,17 +8,17 @@ describe('getInitialOpenPanels', () => {
     expect(getInitialOpenPanels({}, breakpoint)).toEqual({})
   })
 
-  it('includes panels with initiallyOpen = true and no prev state', () => {
+  it('includes panels with open = true and no prev state', () => {
     const config = {
-      PanelA: { desktop: { initiallyOpen: true } }
+      PanelA: { desktop: { open: true } }
     }
     const result = getInitialOpenPanels(config, breakpoint)
     expect(result).toEqual({ PanelA: { props: {} } })
   })
 
-  it('skips panels with initiallyOpen = false', () => {
+  it('skips panels with open = false', () => {
     const config = {
-      PanelA: { desktop: { initiallyOpen: false } }
+      PanelA: { desktop: { open: false } }
     }
     const result = getInitialOpenPanels(config, breakpoint)
     expect(result).toEqual({})
@@ -34,7 +34,7 @@ describe('getInitialOpenPanels', () => {
 
   it('preserves prevOpenPanels state if exists', () => {
     const config = {
-      PanelA: { desktop: { initiallyOpen: true } }
+      PanelA: { desktop: { open: true } }
     }
     const prevOpenPanels = {
       PanelA: { props: { some: 'value' } }
@@ -45,8 +45,8 @@ describe('getInitialOpenPanels', () => {
 
   it('uses empty props object if no prevOpenPanels entry exists', () => {
     const config = {
-      PanelA: { desktop: { initiallyOpen: true } },
-      PanelB: { desktop: { initiallyOpen: true } }
+      PanelA: { desktop: { open: true } },
+      PanelB: { desktop: { open: true } }
     }
     const prevOpenPanels = {
       PanelA: { props: { existing: true } }

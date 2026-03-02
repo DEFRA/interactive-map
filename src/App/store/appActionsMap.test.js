@@ -11,9 +11,10 @@ describe('actionsMap full coverage', () => {
 
   beforeEach(() => {
     const mockPanelConfig = {
-      panel1: { desktop: { exclusive: true, modal: false, initiallyOpen: true }, mobile: { exclusive: true, modal: false } },
+      panel1: { desktop: { exclusive: true, modal: false, open: true }, mobile: { exclusive: true, modal: false } },
       panel2: { desktop: { exclusive: false, modal: true }, mobile: { exclusive: false, modal: true } },
-      panel3: { desktop: { exclusive: false, modal: false }, mobile: { exclusive: false, modal: false } }
+      panel3: { desktop: { exclusive: false, modal: false }, mobile: { exclusive: false, modal: false } },
+      panel4: { desktop: { open: true, dismissable: false }, mobile: { open: true, dismissable: true } }
     }
 
     state = {
@@ -171,15 +172,15 @@ describe('actionsMap full coverage', () => {
     expect(result.panelConfig.panelX).toBeDefined()
   })
 
-  test('ADD_PANEL adds panelConfig and opens initiallyOpen panel', () => {
-    const payload = { id: 'panelY', config: { desktop: { initiallyOpen: true } } }
+  test('ADD_PANEL adds panelConfig and opens panel when open=true', () => {
+    const payload = { id: 'panelY', config: { desktop: { open: true } } }
     const result = actionsMap.ADD_PANEL(state, payload)
     expect(result.panelConfig.panelY).toBeDefined()
     expect(result.openPanels.panelY).toBeDefined()
   })
 
-  test('ADD_PANEL does not open if initiallyOpen false', () => {
-    const payload = { id: 'panelZ', config: { desktop: { initiallyOpen: false } } }
+  test('ADD_PANEL does not open if open=false', () => {
+    const payload = { id: 'panelZ', config: { desktop: { open: false } } }
     const result = actionsMap.ADD_PANEL(state, payload)
     expect(result.panelConfig.panelZ).toBeDefined()
     expect(result.openPanels.panelZ).toBeUndefined()
@@ -274,6 +275,31 @@ describe('actionsMap full coverage', () => {
     expect(result.isFullscreen).toBe(true)
   })
 
+  test('SET_BREAKPOINT restores non-dismissable open panel at new breakpoint', () => {
+    const tmp = { ...state, openPanels: {} }
+    const result = actionsMap.SET_BREAKPOINT(tmp, { breakpoint: 'desktop', behaviour: 'responsive', hybridWidth: null, maxMobileWidth: 640 })
+    expect(result.openPanels.panel4).toBeDefined()
+  })
+
+  test('SET_BREAKPOINT does not force-open a non-dismissable panel where it is dismissable', () => {
+    const tmp = { ...state, openPanels: {} }
+    const result = actionsMap.SET_BREAKPOINT(tmp, { breakpoint: 'mobile', behaviour: 'responsive', hybridWidth: null, maxMobileWidth: 640 })
+    expect(result.openPanels.panel4).toBeUndefined()
+  })
+
+  test('SET_BREAKPOINT preserves existing props when restoring a non-dismissable panel', () => {
+    const props = { myProp: 'value' }
+    const tmp = { ...state, openPanels: { panel4: { props } } }
+    const result = actionsMap.SET_BREAKPOINT(tmp, { breakpoint: 'desktop', behaviour: 'responsive', hybridWidth: null, maxMobileWidth: 640 })
+    expect(result.openPanels.panel4.props).toEqual(props)
+  })
+
+  test('SET_BREAKPOINT uses panelRegistry.getPanelConfig() when panelConfig missing', () => {
+    const tmp = { ...state, panelConfig: undefined, openPanels: {} }
+    const result = actionsMap.SET_BREAKPOINT(tmp, { breakpoint: 'desktop', behaviour: 'responsive', hybridWidth: null, maxMobileWidth: 640 })
+    expect(result.openPanels.panel4).toBeDefined()
+  })
+
   test('SET_HYBRID_FULLSCREEN updates isFullscreen', () => {
     const tmp = { ...state, isFullscreen: false }
     const result = actionsMap.SET_HYBRID_FULLSCREEN(tmp, true)
@@ -294,7 +320,7 @@ describe('actionsMap full coverage', () => {
 
   test('ADD_PANEL skips registry if panelRegistry missing', () => {
     const tmp = { ...state, panelRegistry: undefined }
-    const payload = { id: 'panelY', config: { desktop: { initiallyOpen: true } } }
+    const payload = { id: 'panelY', config: { desktop: { open: true } } }
     const result = actionsMap.ADD_PANEL(tmp, payload)
     expect(result.panelConfig.panelY).toBeDefined()
     expect(result.openPanels.panelY).toBeDefined()

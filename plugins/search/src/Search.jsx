@@ -9,7 +9,7 @@ import { attachEvents } from './events/index.js'
 export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
   const { id } = appConfig
   const { interfaceType } = appState
-  const { isExpanded: defaultExpanded, customDatasets, osNamesURL } = pluginConfig
+  const { expanded: defaultExpanded, customDatasets, osNamesURL } = pluginConfig
   const { dispatch, isExpanded, areSuggestionsVisible, suggestions } = pluginState
 
   const closeIcon = iconRegistry['close']

@@ -5,9 +5,9 @@ export function getInitialOpenPanels (panelConfig, breakpoint, prevOpenPanels = 
     const configPanel = panelConfig[panelId]
     const bpConfig = configPanel[breakpoint]
 
-    const isInitiallyOpen = bpConfig?.initiallyOpen ?? false
+    const isOpen = bpConfig?.open ?? false
 
-    if (isInitiallyOpen) {
+    if (isOpen) {
       // Preserve any props that were already set in state
       openPanels[panelId] = prevOpenPanels[panelId] || { props: {} }
     }

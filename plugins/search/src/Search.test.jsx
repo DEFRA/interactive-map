@@ -58,7 +58,7 @@ describe('Search component', () => {
         suggestions: [],
       },
       pluginConfig: {
-        isExpanded: false, // This is destructured as defaultExpanded in the component
+        expanded: false, // This is destructured as defaultExpanded in the component
         customDatasets: [],
         osNamesURL: 'url',
       },
@@ -77,15 +77,15 @@ describe('Search component', () => {
     cleanup()
   })
 
-  it('renders OpenButton when defaultExpanded/isExpanded is false', () => {
+  it('renders OpenButton when expanded is false', () => {
     render(<Search {...props} />)
     expect(screen.getByTestId('open-button')).toBeInTheDocument()
     expect(screen.getByTestId('form')).toBeInTheDocument()
     expect(screen.getByTestId('close-button')).toBeInTheDocument()
   })
 
-  it('does not render OpenButton when defaultExpanded/isExpanded is true', () => {
-    props.pluginConfig.isExpanded = true
+  it('does not render OpenButton when expanded is true', () => {
+    props.pluginConfig.expanded = true
     render(<Search {...props} />)
     expect(screen.queryByTestId('open-button')).not.toBeInTheDocument()
     expect(screen.getByTestId('close-button')).toBeInTheDocument()
@@ -138,7 +138,7 @@ describe('Search component', () => {
     })
 
     it('is true when defaultExpanded is true and suggestions exist', () => {
-      props.pluginConfig.isExpanded = true // defaultExpanded
+      props.pluginConfig.expanded = true // defaultExpanded
       props.pluginState.isExpanded = false
       props.pluginState.areSuggestionsVisible = true
       props.pluginState.suggestions = ['item 1']
@@ -148,7 +148,7 @@ describe('Search component', () => {
     })
 
     it('is false when defaultExpanded is true but suggestions are empty', () => {
-      props.pluginConfig.isExpanded = true 
+      props.pluginConfig.expanded = true
       props.pluginState.isExpanded = false
       props.pluginState.areSuggestionsVisible = true
       props.pluginState.suggestions = [] 

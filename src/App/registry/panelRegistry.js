@@ -4,16 +4,7 @@ import { deepMerge } from '../../utils/deepMerge.js'
 
 // Pure utility functions for panel registry operations
 export const registerPanel = (currentConfig, panel) => {
-  const normalizedPanelConfig = Object.fromEntries(
-    Object.entries(panel).map(([key, value]) => [
-      key,
-      {
-        showLabel: true,
-        ...value
-      }
-    ])
-  )
-  return { ...currentConfig, ...normalizedPanelConfig }
+  return { ...currentConfig, ...panel }
 }
 
 export const addPanel = (currentConfig, id, config) => {

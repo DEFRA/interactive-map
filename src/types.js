@@ -16,8 +16,8 @@
  * @property {number} [order]
  * The order the button appears within its slot.
  *
- * @property {boolean} [showLabel]
- * Whether to a show label, if false then a tooltip is generated from the the label.
+ * @property {boolean} [showLabel=true]
+ * Whether to show a label. If false, a tooltip is generated from the label instead. Defaults to true.
  *
  * @property {string} slot
  * The slot that the button should appear in at this breakpoint.
@@ -38,13 +38,18 @@
  * @typedef {Object} PanelBreakpointConfig
  *
  * @property {boolean} [dismissable]
- * Whether panel can be dismissed.
+ * Whether panel can be dismissed. When `false` and `open` is `true`, the panel is always visible at this
+ * breakpoint and any associated panel-toggle button is automatically suppressed.
  *
  * @property {boolean} [exclusive]
  * Whether panel is exclusive. An exclusive panel will hide other panels when it is visible.
  *
- * @property {boolean} [initiallyOpen]
- * Whether panel is initially open.
+ * @property {boolean} [open]
+ * Whether the panel is open. When `true` and combined with `dismissable: false`, the panel is always visible at this
+ * breakpoint and will be restored automatically when the breakpoint is entered.
+ *
+ * @property {boolean} [showLabel]
+ * Whether to show the panel heading. Defaults to true. The heading is visually hidden if false.
  *
  * @property {boolean} [modal]
  * Whether panel is modal.
@@ -365,9 +370,6 @@
  *
  * @property {ComponentType} [render]
  * Render component.
- *
- * @property {boolean} [showLabel]
- * Whether to show the panel heading. The panel heading is visually hidden if false.
  *
  * @property {PanelBreakpointConfig} tablet
  * Tablet breakpoint configuration.

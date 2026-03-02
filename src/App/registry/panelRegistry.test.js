@@ -2,31 +2,28 @@ import { createPanelRegistry, registerPanel, addPanel, removePanel, getPanelConf
 import { defaultPanelConfig } from '../../config/appConfig.js'
 
 describe('panelRegistry', () => {
-  test('registerPanel should store a panel with showLabel default', () => {
+  test('registerPanel should store a panel', () => {
     const panel = { settings: { title: 'Settings Panel' } }
     const config = registerPanel({}, panel)
     expect(config).toEqual({
       settings: {
-        title: 'Settings Panel',
-        showLabel: true
+        title: 'Settings Panel'
       }
     })
   })
 
   test('registerPanel should merge multiple panels', () => {
     const panel1 = { settings: { title: 'Settings Panel' } }
-    const panel2 = { dashboard: { title: 'Dashboard Panel', showLabel: false } }
+    const panel2 = { dashboard: { title: 'Dashboard Panel' } }
     let config = {}
     config = registerPanel(config, panel1)
     config = registerPanel(config, panel2)
     expect(config).toEqual({
       settings: {
-        title: 'Settings Panel',
-        showLabel: true
+        title: 'Settings Panel'
       },
       dashboard: {
-        title: 'Dashboard Panel',
-        showLabel: false
+        title: 'Dashboard Panel'
       }
     })
   })
@@ -37,8 +34,7 @@ describe('panelRegistry', () => {
     const result = getPanelConfig(config)
     expect(result).toEqual({
       reports: {
-        title: 'Reports Panel',
-        showLabel: true
+        title: 'Reports Panel'
       }
     })
   })
@@ -100,7 +96,6 @@ describe('panelRegistry', () => {
       // Test registerPanel state
       registry.registerPanel({ p1: { title: 'P1' } })
       expect(registry.getPanelConfig()).toHaveProperty('p1')
-      expect(registry.getPanelConfig().p1.showLabel).toBe(true)
 
       // Test addPanel state and return value
       const added = registry.addPanel('p2', { title: 'P2' })

@@ -69,7 +69,7 @@ var interactiveMap = new InteractiveMap('map', {
 			customDatasets: [parcelSearch, gridRefSearchETRS89],
 			width: '300px',
 			showMarker: false,
-			// isExpanded: true
+			// expanded: true
 		}),
 		useLocationPlugin(),
 		interactPlugin
