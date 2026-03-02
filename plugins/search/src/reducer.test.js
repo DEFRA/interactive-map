@@ -3,15 +3,17 @@
 import { initialState, actions } from './reducer'
 
 describe('search state actions', () => {
-  it('TOGGLE_EXPANDED sets isExpanded and areSuggestionsVisible', () => {
-    const state = { ...initialState }
+  it('TOGGLE_EXPANDED sets isExpanded and areSuggestionsVisible, and resets hasFetchedSuggestions', () => {
+    const state = { ...initialState, hasFetchedSuggestions: true }
     const newState = actions.TOGGLE_EXPANDED(state, true)
     expect(newState.isExpanded).toBe(true)
     expect(newState.areSuggestionsVisible).toBe(true)
+    expect(newState.hasFetchedSuggestions).toBe(false)
 
     const collapsed = actions.TOGGLE_EXPANDED(state, false)
     expect(collapsed.isExpanded).toBe(false)
     expect(collapsed.areSuggestionsVisible).toBe(false)
+    expect(collapsed.hasFetchedSuggestions).toBe(false)
   })
 
   it('SET_KEYBOARD_FOCUS_WITHIN sets focus and shows suggestions', () => {
@@ -47,23 +49,26 @@ describe('search state actions', () => {
     expect(newState.value).toBe('test')
   })
 
-  it('UPDATE_SUGGESTIONS updates the suggestions array', () => {
+  it('UPDATE_SUGGESTIONS updates the suggestions array and sets hasFetchedSuggestions', () => {
     const state = { ...initialState }
     const suggestions = [{ id: 1 }, { id: 2 }]
     const newState = actions.UPDATE_SUGGESTIONS(state, suggestions)
     expect(newState.suggestions).toEqual(suggestions)
+    expect(newState.hasFetchedSuggestions).toBe(true)
   })
 
-  it('SHOW_SUGGESTIONS sets areSuggestionsVisible to true', () => {
-    const state = { ...initialState, areSuggestionsVisible: false }
+  it('SHOW_SUGGESTIONS sets areSuggestionsVisible to true and resets hasFetchedSuggestions', () => {
+    const state = { ...initialState, areSuggestionsVisible: false, hasFetchedSuggestions: true }
     const newState = actions.SHOW_SUGGESTIONS(state)
     expect(newState.areSuggestionsVisible).toBe(true)
+    expect(newState.hasFetchedSuggestions).toBe(false)
   })
 
-  it('HIDE_SUGGESTIONS sets areSuggestionsVisible to false', () => {
-    const state = { ...initialState, areSuggestionsVisible: true }
+  it('HIDE_SUGGESTIONS sets areSuggestionsVisible to false and resets hasFetchedSuggestions', () => {
+    const state = { ...initialState, areSuggestionsVisible: true, hasFetchedSuggestions: true }
     const newState = actions.HIDE_SUGGESTIONS(state)
     expect(newState.areSuggestionsVisible).toBe(false)
+    expect(newState.hasFetchedSuggestions).toBe(false)
   })
 
   it('SET_SELECTED updates selectedIndex and visibility', () => {

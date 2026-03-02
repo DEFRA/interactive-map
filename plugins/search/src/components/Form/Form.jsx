@@ -1,4 +1,5 @@
 // src/plugins/search/Form.jsx
+import { useEffect } from 'react'
 import { Suggestions } from '../Suggestions/Suggestions'
 
 export const Form = ({
@@ -8,14 +9,30 @@ export const Form = ({
   appState,
   inputRef,
   events,
+  services,
   children, // For SearchClose
 }) => {
+  const { areSuggestionsVisible, hasFetchedSuggestions, suggestions = [] } = pluginState
+
+  // Announce when a fetch has completed (hasFetchedSuggestions flips to true),
+  // not when the input is merely focused/clicked (SHOW_SUGGESTIONS resets it to false).
+  useEffect(() => {
+    if (!areSuggestionsVisible || !hasFetchedSuggestions) {
+      return
+    }
+    const count = suggestions.length
+    const plural = count === 1 ? '' : 's'
+    const message = count === 0 ? 'No results available' : `${count} result${plural} available`
+    services.announce(message)
+  }, [suggestions, hasFetchedSuggestions])
 
   const classNames = [
     'im-c-search-form',
     pluginConfig.expanded && 'im-c-search-form--default-expanded',
     'im-c-panel'
   ].filter(Boolean).join(' ')
+
+  const showNoResults = areSuggestionsVisible && hasFetchedSuggestions && !suggestions.length
 
   return (
     <form
@@ -65,7 +82,11 @@ export const Form = ({
         {/* Close button passed as child */}
         {children}
       </div>
-
+      {showNoResults && (
+        <div className="im-c-search__status" aria-hidden="true">
+          No results available
+        </div>
+      )}
       <Suggestions
         id={id}
         appState={appState}

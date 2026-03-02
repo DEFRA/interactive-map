@@ -94,6 +94,7 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
         appState={appState}
         inputRef={inputRef}
         events={events}
+        services={services}
       >
         <CloseButton
           defaultExpanded={defaultExpanded}
