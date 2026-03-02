@@ -10,12 +10,27 @@ const isPostcode = (value) => {
   return regex.test(value)
 }
 
+const removeRegions = (results, regions) => results.filter(r => {
+  const country = r?.GAZETTEER_ENTRY?.COUNTRY?.toLowerCase()
+  return country && regions.includes(country)
+})
+
 const removeDuplicates = (results) =>
   Array.from(new Map(results.map(r => [r.GAZETTEER_ENTRY.ID, r])).values())
 
+const transformGazetteerResult = (result) => {
+  const gazetterEntry = result.GAZETTEER_ENTRY
+  // Sometimes the NAME1 value can be welsh, so we should use NAME2 instead
+  const name = gazetterEntry.NAME2_LANG === 'eng' ? gazetterEntry.NAME2 : gazetterEntry.NAME1
+  // Force NAME1 to be the english value
+  result.GAZETTEER_ENTRY.NAME1 = name
+  result.GAZETTEER_ENTRY.NAME1_LANG = 'eng'
+  return result
+}
+
 const removeTenuousResults = (results, query) => {
   const words = query.toLowerCase().replace(/,/g, '').split(' ')
-  return results.filter(l => words.some(w => l.GAZETTEER_ENTRY.NAME1.toLowerCase().includes(w) || isPostcode(query)))
+  return results.map(transformGazetteerResult).filter(l => words.some(w => l.GAZETTEER_ENTRY.NAME1.toLowerCase().includes(w) || isPostcode(query)))
 }
 
 const markString = (string, find) => {
@@ -86,13 +101,14 @@ const label = (query, { NAME1, COUNTY_UNITARY, DISTRICT_BOROUGH, POSTCODE_DISTRI
   }
 }
 
-const parseOsNamesResults = (json, query, crs) => {
+const parseOsNamesResults = (json, query, regions, crs) => {
   if (!json || json.error || json.header?.totalresults === 0) {
     return []
   }
   let results = json.results
   results = removeTenuousResults(results, query)
   results = removeDuplicates(results)
+  results = removeRegions(results, regions)
   results = results.slice(0, MAX_RESULTS)
 
   return results.map(l => ({

@@ -170,15 +170,15 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
     const label = resolveGroupLabel(group)
     const order = resolveGroupOrder(group)
 
-    if (!groupMap.has(name)) {
-      groupMap.set(name, { label, order, members: [] })
-    } else {
+    if (groupMap.has(name)) {
       const existing = groupMap.get(name)
       /* istanbul ignore next */
       if (process.env.NODE_ENV !== 'production' && existing.order !== order) {
         console.warn(`[interactive-map] Group "${name}" has inconsistent order values (${existing.order} vs ${order}). Using the lower value.`)
         existing.order = Math.min(existing.order, order)
       }
+    } else {
+      groupMap.set(name, { label, order, members: [] })
     }
 
     groupMap.get(name).members.push([buttonId, config])
@@ -238,5 +238,8 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
 export {
   mapButtons,
   getMatchingButtons,
-  renderButton
+  renderButton,
+  resolveGroupName,
+  resolveGroupLabel,
+  resolveGroupOrder
 }

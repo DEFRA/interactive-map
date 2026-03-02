@@ -1,5 +1,5 @@
 import React from 'react'
-import { mapButtons, getMatchingButtons, renderButton } from './mapButtons.js'
+import { mapButtons, getMatchingButtons, renderButton, resolveGroupName, resolveGroupLabel, resolveGroupOrder } from './mapButtons.js'
 import { getPanelConfig } from '../registry/panelRegistry.js'
 
 jest.mock('../registry/buttonRegistry.js')
@@ -42,6 +42,52 @@ describe('mapButtons module', () => {
     }
     appState.buttonConfig = ({})
     getPanelConfig.mockReturnValue({})
+  })
+
+  // -------------------------
+  // resolveGroup* helper tests
+  // -------------------------
+  describe('resolveGroupName', () => {
+    it('returns null when group is null or undefined', () => {
+      expect(resolveGroupName(null)).toBeNull()
+      expect(resolveGroupName(undefined)).toBeNull()
+    })
+    it('returns the string when group is a string', () => {
+      expect(resolveGroupName('g1')).toBe('g1')
+    })
+    it('returns group.name when group is an object', () => {
+      expect(resolveGroupName({ name: 'g1' })).toBe('g1')
+      expect(resolveGroupName({ name: undefined })).toBeNull()
+    })
+  })
+
+  describe('resolveGroupLabel', () => {
+    it('returns empty string when group is falsy', () => {
+      expect(resolveGroupLabel(null)).toBe('')
+      expect(resolveGroupLabel(undefined)).toBe('')
+    })
+    it('returns the string itself when group is a string', () => {
+      expect(resolveGroupLabel('My Group')).toBe('My Group')
+    })
+    it('returns group.label when provided, else group.name, else empty string', () => {
+      expect(resolveGroupLabel({ name: 'g1', label: 'Group One' })).toBe('Group One')
+      expect(resolveGroupLabel({ name: 'g1' })).toBe('g1')
+      expect(resolveGroupLabel({ order: 5 })).toBe('')
+    })
+  })
+
+  describe('resolveGroupOrder', () => {
+    it('returns 0 when group is falsy', () => {
+      expect(resolveGroupOrder(null)).toBe(0)
+      expect(resolveGroupOrder(undefined)).toBe(0)
+    })
+    it('returns 0 when group is a string', () => {
+      expect(resolveGroupOrder('g1')).toBe(0)
+    })
+    it('returns group.order when provided, else 0', () => {
+      expect(resolveGroupOrder({ name: 'g1', order: 5 })).toBe(5)
+      expect(resolveGroupOrder({ name: 'g1' })).toBe(0)
+    })
   })
 
   // -------------------------
@@ -239,6 +285,28 @@ describe('mapButtons module', () => {
       const result = map()
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({ id: 'b1', type: 'button', order: 3 })
+    })
+
+    it('falls back to breakpoint order for singleton group when group order is 0', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header', order: 4 }, group: { name: 'g1', order: 0 } } })
+      expect(map()[0].order).toBe(4)
+    })
+
+    it('falls back to 0 for singleton group when both group order and breakpoint order are absent', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header' }, group: { name: 'g1', order: 0 } } })
+      expect(map()[0].order).toBe(0)
+    })
+
+    it('sorts group members treating missing breakpoint order as 0', () => {
+      appState.buttonConfig = ({
+        b1: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 2 } },
+        b2: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header' } },
+        b3: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 1 } }
+      })
+      const children = map()[0].element.props.children
+      expect(children[0].props.buttonId).toBe('b2')
+      expect(children[1].props.buttonId).toBe('b3')
+      expect(children[2].props.buttonId).toBe('b1')
     })
 
     it('falls back to order 0 when order is not specified in breakpoint config', () => {

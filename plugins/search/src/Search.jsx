@@ -3,13 +3,14 @@ import { useRef, useEffect } from 'react'
 import { OpenButton } from './components/OpenButton/OpenButton'
 import { Form } from './components/Form/Form'
 import { CloseButton } from './components/CloseButton/CloseButton'
+import { SubmitButton } from './components/SubmitButton/SubmitButton'
 import { createDatasets } from './datasets.js'
 import { attachEvents } from './events/index.js'
 
 export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
   const { id } = appConfig
   const { interfaceType } = appState
-  const { expanded: defaultExpanded, customDatasets, osNamesURL } = pluginConfig
+  const { expanded: defaultExpanded, customDatasets, osNamesURL, regions } = pluginConfig
   const { dispatch, isExpanded, areSuggestionsVisible, suggestions } = pluginState
 
   const closeIcon = iconRegistry['close']
@@ -17,13 +18,13 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
   const searchContainerRef = useRef(null)
   const buttonRef = useRef(null)
   const inputRef = useRef(null)
-  const closeButtonRef = useRef(null)
   const viewportRef = appState.layoutRefs.viewportRef
 
   // Build datasets array from default plus custom
   const mergedDatasets = createDatasets({
     customDatasets,
     osNamesURL,
+    regions,
     crs: mapProvider.crs
   })
 
@@ -98,7 +99,11 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
           defaultExpanded={defaultExpanded}
           onClick={(e) => events.handleCloseClick(e, buttonRef, appState)}
           closeIcon={closeIcon}
-          ref={closeButtonRef}
+        />
+        <SubmitButton
+          defaultExpanded={defaultExpanded}
+          onClick={(e) => events.handleCloseClick(e, buttonRef, appState)}
+          submitIcon={searchIcon}
         />
       </Form>
     </div>
