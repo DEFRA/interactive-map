@@ -3,7 +3,7 @@ import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
 const keyboardBasePanelSlots = {
   slot: 'middle',
   open: false,
-  dismissable: true,
+  dismissible: true,
   modal: true
 }
 
@@ -115,21 +115,21 @@ export const defaultPanelConfig = {
   mobile: {
     slot: 'bottom',
     open: true,
-    dismissable: true,
+    dismissible: true,
     modal: false,
     showLabel: true
   },
   tablet: {
     slot: 'inset',
     open: true,
-    dismissable: true,
+    dismissible: true,
     modal: false,
     showLabel: true
   },
   desktop: {
     slot: 'inset',
     open: true,
-    dismissable: true,
+    dismissible: true,
     modal: false,
     showLabel: true
   },

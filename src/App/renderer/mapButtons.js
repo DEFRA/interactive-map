@@ -32,10 +32,10 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
       return false
     }
 
-    // Skip panel-toggle buttons when the panel is non-dismissable (always visible) at this breakpoint
+    // Skip panel-toggle buttons when the panel is non-dismissible (always visible) at this breakpoint
     if (config.panelId) {
       const panelBpConfig = appState.panelConfig?.[config.panelId]?.[breakpoint]
-      if (panelBpConfig?.open === true && panelBpConfig?.dismissable === false) {
+      if (panelBpConfig?.open === true && panelBpConfig?.dismissible === false) {
         return false
       }
     }

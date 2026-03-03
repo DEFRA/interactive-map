@@ -139,14 +139,14 @@ describe('mapButtons module', () => {
       expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp }).length).toBe(2)
     })
 
-    it('filters out panel-toggle button when panel is open and non-dismissable at current breakpoint', () => {
-      const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissable: false } } } }
+    it('filters out panel-toggle button when panel is open and non-dismissible at current breakpoint', () => {
+      const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissible: false } } } }
       const config = { b1: { ...baseBtn, panelId: 'myPanel' } }
       expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(0)
     })
 
-    it('includes panel-toggle button when panel is dismissable at current breakpoint', () => {
-      const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissable: true } } } }
+    it('includes panel-toggle button when panel is dismissible at current breakpoint', () => {
+      const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissible: true } } } }
       const config = { b1: { ...baseBtn, panelId: 'myPanel' } }
       expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(1)
     })

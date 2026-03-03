@@ -24,18 +24,18 @@ export const manifest = {
     mobile: {
       slot: 'bottom',
       modal: true,
-      dismissable: true
+      dismissible: true
     },
     tablet: {
       slot: 'inset',
-      dismissable: true,
+      dismissible: true,
       exclusive: true,
       width: '300px'
     },
     desktop: {
       slot: 'inset',
       modal: false,
-      dismissable: true,
+      dismissible: true,
       exclusive: true,
       width: '320px'
     },

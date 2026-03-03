@@ -83,7 +83,7 @@ Each breakpoint (`mobile`, `tablet`, `desktop`) accepts the following properties
 
 The [slot](./slots.md) where the panel should appear at this breakpoint. Slots are named regions in the UI layout.
 
-### `dismissable`
+### `dismissible`
 **Type:** `boolean`
 
 Whether the panel can be dismissed (closed) by the user. When `false` and `open` is `true`, the panel is always visible at this breakpoint and any associated panel-toggle button is automatically suppressed.
@@ -96,7 +96,7 @@ Whether the panel is exclusive. An exclusive panel will hide other panels when i
 ### `open`
 **Type:** `boolean`
 
-Whether the panel is open. When `true` and combined with `dismissable: false`, the panel is always visible at this breakpoint and will be restored automatically when the breakpoint is entered.
+Whether the panel is open. When `true` and combined with `dismissible: false`, the panel is always visible at this breakpoint and will be restored automatically when the breakpoint is entered.
 
 ### `showLabel`
 **Type:** `boolean`

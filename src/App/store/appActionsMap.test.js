@@ -14,7 +14,7 @@ describe('actionsMap full coverage', () => {
       panel1: { desktop: { exclusive: true, modal: false, open: true }, mobile: { exclusive: true, modal: false } },
       panel2: { desktop: { exclusive: false, modal: true }, mobile: { exclusive: false, modal: true } },
       panel3: { desktop: { exclusive: false, modal: false }, mobile: { exclusive: false, modal: false } },
-      panel4: { desktop: { open: true, dismissable: false }, mobile: { open: true, dismissable: true } }
+      panel4: { desktop: { open: true, dismissible: false }, mobile: { open: true, dismissible: true } }
     }
 
     state = {
@@ -275,19 +275,19 @@ describe('actionsMap full coverage', () => {
     expect(result.isFullscreen).toBe(true)
   })
 
-  test('SET_BREAKPOINT restores non-dismissable open panel at new breakpoint', () => {
+  test('SET_BREAKPOINT restores non-dismissible open panel at new breakpoint', () => {
     const tmp = { ...state, openPanels: {} }
     const result = actionsMap.SET_BREAKPOINT(tmp, { breakpoint: 'desktop', behaviour: 'responsive', hybridWidth: null, maxMobileWidth: 640 })
     expect(result.openPanels.panel4).toBeDefined()
   })
 
-  test('SET_BREAKPOINT does not force-open a non-dismissable panel where it is dismissable', () => {
+  test('SET_BREAKPOINT does not force-open a non-dismissible panel where it is dismissible', () => {
     const tmp = { ...state, openPanels: {} }
     const result = actionsMap.SET_BREAKPOINT(tmp, { breakpoint: 'mobile', behaviour: 'responsive', hybridWidth: null, maxMobileWidth: 640 })
     expect(result.openPanels.panel4).toBeUndefined()
   })
 
-  test('SET_BREAKPOINT preserves existing props when restoring a non-dismissable panel', () => {
+  test('SET_BREAKPOINT preserves existing props when restoring a non-dismissible panel', () => {
     const props = { myProp: 'value' }
     const tmp = { ...state, openPanels: { panel4: { props } } }
     const result = actionsMap.SET_BREAKPOINT(tmp, { breakpoint: 'desktop', behaviour: 'responsive', hybridWidth: null, maxMobileWidth: 640 })

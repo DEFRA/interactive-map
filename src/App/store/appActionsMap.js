@@ -78,13 +78,13 @@ const setBreakpoint = (state, payload) => {
     ? buildOpenPanels(state, lastPanelId, payload.breakpoint, state.openPanels[lastPanelId]?.props || {})
     : {}
 
-  // Restore panels that are non-dismissable and always open at the new breakpoint
+  // Restore panels that are non-dismissible and always open at the new breakpoint
   const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
   const persistentPanels = Object.fromEntries(
     Object.entries(panelConfig)
       .filter(([panelId, config]) => {
         const bpConfig = config[payload.breakpoint]
-        return bpConfig?.open === true && bpConfig?.dismissable === false && !transitionedOpenPanels[panelId]
+        return bpConfig?.open === true && bpConfig?.dismissible === false && !transitionedOpenPanels[panelId]
       })
       .map(([panelId]) => [panelId, state.openPanels[panelId] || { props: {} }])
   )

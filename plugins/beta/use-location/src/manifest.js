@@ -33,19 +33,19 @@ export const manifest = {
     mobile: {
       slot: 'banner',
       open: false,
-      dismissable: true,
+      dismissible: true,
       modal: true
     },
     tablet: {
       slot: 'banner',
       open: false,
-      dismissable: true,
+      dismissible: true,
       modal: true
     },
     desktop: {
       slot: 'banner',
       open: false,
-      dismissable: true,
+      dismissible: true,
       modal: true
     },
     render: UseLocation
