@@ -7,7 +7,7 @@ import { DEFAULTS, supportedShortcuts } from './defaults.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
-import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, getResolution, getPaddedBounds } from './utils/spatial.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
@@ -44,7 +44,9 @@ export default class MapLibreProvider {
    * @returns {Promise<void>}
    */
   async initMap (config) {
-    const { container, padding, mapStyle, center, zoom, bounds, pixelRatio, ...initConfig } = config
+    const { container, padding, mapStyle, mapSize, center, zoom, bounds, pixelRatio, ...initConfig } = config
+    this.mapStyleId = mapStyle?.id
+    this.mapSize = mapSize
     const { Map: MaplibreMap } = this.maplibreModule
     const { events, eventBus } = this
 
@@ -101,17 +103,12 @@ export default class MapLibreProvider {
       this.labelNavigator = createMapLabelNavigator(map, mapStyle?.mapColorScheme, events, eventBus)
     })
 
-    this.eventBus.emit(events.MAP_PROVIDER_READY, this.getMapAPI())
-  }
-
-  /** Returns the public API exposed via the map:ready event. */
-  getMapAPI () {
-    return {
+    this.eventBus.emit(events.MAP_READY, {
       map: this.map,
-      crs: this.crs,
-      fitToBounds: this.fitToBounds.bind(this),
-      setView: this.setView.bind(this)
-    }
+      mapStyleId: this.mapStyleId,
+      mapSize: this.mapSize,
+      crs: this.crs
+    })
   }
 
   /** Destroy the map and clean up resources. */
@@ -178,12 +175,13 @@ export default class MapLibreProvider {
   }
 
   /**
-   * Fit map view to the specified bounds [west, south, east, north].
+   * Fit map view to the specified bounds or GeoJSON geometry.
    *
-   * @param {[number, number, number, number]} bounds - Bounds as [west, south, east, north].
+   * @param {[number, number, number, number] | object} bounds - Bounds as [west, south, east, north], or a GeoJSON Feature, FeatureCollection, or geometry. Bbox is computed from GeoJSON using @turf/bbox.
    */
   fitToBounds (bounds) {
-    this.map.fitBounds(bounds, { duration: DEFAULTS.animationDuration })
+    const bbox = Array.isArray(bounds) ? bounds : getBboxFromGeoJSON(bounds)
+    this.map.fitBounds(bbox, { duration: DEFAULTS.animationDuration })
   }
 
   /**

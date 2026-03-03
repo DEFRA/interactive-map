@@ -114,7 +114,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.topRef, layoutRefs.actionsRef, layoutRefs.footerRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.footerRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()

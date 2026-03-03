@@ -81,7 +81,7 @@ export function useLayoutMeasurements () {
   // --------------------------------
   // 3. Recaluclate CSS vars when elements resize
   // --------------------------------
-  useResizeObserver([bannerRef, mainRef, topRef, actionsRef, footerRef], () => {
+  useResizeObserver([bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, footerRef], () => {
     requestAnimationFrame(() => {
       calculateLayout()
     })

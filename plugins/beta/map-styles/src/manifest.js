@@ -11,19 +11,19 @@ export const manifest = {
     mobile: {
       slot: 'bottom',
       modal: true,
-      dismissable: true
+      dismissible: true
     },
     tablet: {
       slot: 'inset',
       modal: true,
       width: '400px',
-      dismissable: true
+      dismissible: true
     },
     desktop: {
       slot: 'inset',
       modal: true,
       width: '400px',
-      dismissable: true
+      dismissible: true
     },
     render: MapStyles // will be wrapped automatically
   }],

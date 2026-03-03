@@ -6,6 +6,7 @@
   
   &:before {
     border-radius: 0;
+    box-shadow: none;
   }
 }
 
@@ -15,6 +16,8 @@
   top: 0;
   right: 0;
   height: auto;
+  overflow: visible;
+  filter: var(--search-drop-shadow);
 }
 
 .im-o-app--tablet .im-c-search-form,
@@ -36,6 +39,18 @@
     right: 0;
     z-index: 1;
   }
+}
+
+// Status
+.im-c-search__status {
+  position: absolute;
+  top: calc(100% + 1px);
+  left: 0;
+  right: 0;
+  padding: var(--divider-gap) calc(var(--divider-gap) + 2px);
+  background-color: var(--background-color);
+  border-bottom-left-radius: var(--button-border-radius);
+  border-bottom-right-radius: var(--button-border-radius);
 }
 
 // Default expanded

@@ -7,6 +7,8 @@ jest.mock('geodesy/latlon-spherical.js', () =>
   }))
 )
 
+jest.mock('@turf/bbox', () => jest.fn(() => [-1, 50, 1, 52]))
+
 describe('spatial utils', () => {
 
   test('formatDimension hits all branches', () => {
@@ -92,5 +94,15 @@ describe('spatial utils', () => {
     const bounds = spatial.getPaddedBounds(LngLatBounds,map)
     expect(bounds.sw).toBeDefined()
     expect(bounds.ne).toBeDefined()
+  })
+
+  test('getBboxFromGeoJSON delegates to @turf/bbox and returns flat bbox array', () => {
+    const turfBbox = require('@turf/bbox')
+    const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 52] }, properties: {} }
+
+    const result = spatial.getBboxFromGeoJSON(feature)
+
+    expect(turfBbox).toHaveBeenCalledWith(feature)
+    expect(result).toEqual([-1, 50, 1, 52])
   })
 })

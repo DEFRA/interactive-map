@@ -1,5 +1,19 @@
 // src/plugins/search/Form.jsx
+import { useEffect } from 'react'
 import { Suggestions } from '../Suggestions/Suggestions'
+
+const getResultMessage = (count) => {
+  if (count === 0) {
+    return 'No results available'
+  }
+  const plural = count === 1 ? 'result' : 'results'
+  return `${count} ${plural} available`
+}
+
+const getFormStyle = (pluginConfig, pluginState, appState) => ({
+  display: pluginConfig.expanded || pluginState.isExpanded ? 'flex' : undefined,
+  ...(appState.breakpoint !== 'mobile' && pluginConfig?.width && { width: pluginConfig.width }),
+})
 
 export const Form = ({
   id,
@@ -8,8 +22,19 @@ export const Form = ({
   appState,
   inputRef,
   events,
+  services,
   children, // For SearchClose
 }) => {
+  const { areSuggestionsVisible, hasFetchedSuggestions, suggestions = [] } = pluginState
+
+  // Announce when a fetch has completed (hasFetchedSuggestions flips to true),
+  // not when the input is merely focused/clicked (SHOW_SUGGESTIONS resets it to false).
+  useEffect(() => {
+    if (!areSuggestionsVisible || !hasFetchedSuggestions) {
+      return
+    }
+    services.announce(getResultMessage(suggestions.length))
+  }, [suggestions, hasFetchedSuggestions])
 
   const classNames = [
     'im-c-search-form',
@@ -17,15 +42,14 @@ export const Form = ({
     'im-c-panel'
   ].filter(Boolean).join(' ')
 
+  const showNoResults = areSuggestionsVisible && hasFetchedSuggestions && !suggestions.length
+
   return (
     <form
       id={`${id}-search-form`}
       role="search"
       className={classNames}
-      style={{
-        display: pluginConfig.expanded || pluginState.isExpanded ? 'flex' : undefined,
-        ...(appState.breakpoint !== 'mobile' && pluginConfig?.width && { width: pluginConfig.width }),
-      }}
+      style={getFormStyle(pluginConfig, pluginState, appState)}
       aria-controls={`${id}-viewport`}
       onSubmit={(e) => events.handleSubmit(e, appState, pluginState)}
     >
@@ -65,7 +89,11 @@ export const Form = ({
         {/* Close button passed as child */}
         {children}
       </div>
-
+      {showNoResults && (
+        <div className="im-c-search__status" aria-hidden="true">
+          No results available
+        </div>
+      )}
       <Suggestions
         id={id}
         appState={appState}

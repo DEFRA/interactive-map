@@ -26,18 +26,12 @@ const buildButtonClassNames = (buttonId, variant, showLabel) => [
  * Builds CSS class names for the wrapper div that contains the button.
  * @param {string} buttonId - Unique identifier for the button
  * @param {boolean} showLabel - Whether the button label is displayed
- * @param {boolean} groupStart - Whether this button is at the start of a button group
- * @param {boolean} groupMiddle - Whether this button is in the middle of a button group
- * @param {boolean} groupEnd - Whether this button is at the end of a button group
  * @returns {string} Space-separated CSS class names for the wrapper
  */
-const buildWrapperClassNames = (buttonId, showLabel, groupStart, groupMiddle, groupEnd) => [
+const buildWrapperClassNames = (buttonId, showLabel) => [
   'im-c-button-wrapper',
   buttonId && `im-c-button-wrapper--${stringToKebab(buttonId)}`,
-  showLabel && 'im-c-button-wrapper--wide',
-  groupStart && 'im-c-button-wrapper--group-start',
-  groupMiddle && 'im-c-button-wrapper--group-middle',
-  groupEnd && 'im-c-button-wrapper--group-end'
+  showLabel && 'im-c-button-wrapper--wide'
 ].filter(Boolean).join(' ')
 
 /**
@@ -159,9 +153,6 @@ const buildButtonProps = ({
  * @param {Array<Object>} [props.menuItems] - Array of items for popup menu
  * @param {string} [props.idPrefix=''] - Prefix for generated panel/popup IDs
  * @param {string} [props.href] - URL for anchor element; if provided, renders as <a> instead of <button>
- * @param {boolean} [props.groupStart=false] - Whether button is at start of button group
- * @param {boolean} [props.groupMiddle=false] - Whether button is in middle of button group
- * @param {boolean} [props.groupEnd=false] - Whether button is at end of button group
  * @returns {JSX.Element} The rendered button component
  */
 export const MapButton = ({
@@ -180,10 +171,7 @@ export const MapButton = ({
   panelId,
   menuItems,
   idPrefix,
-  href,
-  groupMiddle,
-  groupStart,
-  groupEnd
+  href
 }) => {
   const { id: appId } = useConfig()
   const { buttonRefs } = useApp()
@@ -255,7 +243,7 @@ export const MapButton = ({
 
   return (
     <div
-      className={buildWrapperClassNames(buttonId, showLabel, groupStart, groupMiddle, groupEnd)}
+      className={buildWrapperClassNames(buttonId, showLabel)}
       style={isHidden ? { display: 'none' } : undefined}
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}

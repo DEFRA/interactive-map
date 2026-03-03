@@ -3,6 +3,7 @@
 // Components, using 'CSS in Component' pattern
 @use './components/Form/Form.module';
 @use './components/CloseButton/CloseButton.module';
+@use './components/SubmitButton/SubmitButton.module';
 @use './components/Suggestions/Suggestions.module';
 
 :root {

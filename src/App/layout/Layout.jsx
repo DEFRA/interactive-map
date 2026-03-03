@@ -94,11 +94,11 @@ export const Layout = () => {
           <div className='im-o-app__actions' ref={layoutRefs.actionsRef}>
             <SlotRenderer slot={layoutSlots.ACTIONS} />
           </div>
+          <div className='im-o-app__modal' ref={layoutRefs.modalRef}>
+            <SlotRenderer slot={layoutSlots.MODAL} />
+            <div className='im-o-app__modal-backdrop' />
+          </div>
         </div>
-      </div>
-      <div className='im-o-app__modal' ref={layoutRefs.modalRef}>
-        <SlotRenderer slot={layoutSlots.MODAL} />
-        <div className='im-o-app__modal-backdrop' />
       </div>
       <HtmlElementHost />
     </div>

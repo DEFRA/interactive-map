@@ -11,6 +11,21 @@ describe('createDatasets', () => {
     jest.clearAllMocks()
   })
 
+  it('returns only customDatasets if osNamesURL is not provided', () => {
+    const custom = [
+      { name: 'custom1', urlTemplate: 'https://custom.com' },
+      { name: 'custom2', urlTemplate: 'https://custom2.com' }
+    ]
+    const datasets = createDatasets({ customDatasets: custom, crs })
+    expect(datasets).toHaveLength(2)
+    expect(datasets).toEqual(custom)
+  })
+
+  it('returns empty array if neither osNamesURL nor customDatasets are provided', () => {
+    const datasets = createDatasets({ crs })
+    expect(datasets).toEqual([])
+  })
+
   it('returns default dataset with correct properties', () => {
     const datasets = createDatasets({ osNamesURL, crs })
     expect(datasets).toHaveLength(1)
@@ -39,7 +54,7 @@ describe('createDatasets', () => {
     const query = 'test query'
 
     const result = datasets[0].parseResults(json, query)
-    expect(parseMock).toHaveBeenCalledWith(json, query, crs)
+    expect(parseMock).toHaveBeenCalledWith(json, query, ['england', 'scotland', 'wales'], crs)
     expect(result).toBe('parsed')
     parseMock.mockRestore()
   })

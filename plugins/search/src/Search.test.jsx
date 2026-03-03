@@ -21,6 +21,14 @@ jest.mock('./components/CloseButton/CloseButton', () => ({
   ),
 }))
 
+jest.mock('./components/SubmitButton/SubmitButton', () => ({
+  SubmitButton: ({ defaultExpanded, submitIcon, onClick }) => (
+    <button data-testid="submit-button" type="submit" onClick={onClick}>
+      SubmitButton-{defaultExpanded ? 'defaultExpanded' : 'collapsed'}
+    </button>
+  ),
+}))
+
 jest.mock('./components/Form/Form', () => ({
   Form: ({ children }) => <div data-testid="form">{children}</div>,
 }))
@@ -112,6 +120,18 @@ describe('Search component', () => {
     const events = attachEvents.mock.results[0].value
     fireEvent.click(screen.getByTestId('open-button'))
     expect(events.handleOpenClick).toHaveBeenCalledTimes(1)
+  })
+
+  it('renders SubmitButton when expanded is false', () => {
+    render(<Search {...props} />)
+    expect(screen.getByTestId('submit-button')).toBeInTheDocument()
+  })
+
+  it('SubmitButton click triggers handleCloseClick', () => {
+    render(<Search {...props} />)
+    const events = attachEvents.mock.results[0].value
+    fireEvent.click(screen.getByTestId('submit-button'))
+    expect(events.handleCloseClick).toHaveBeenCalledTimes(1)
   })
 
   it('CloseButton click triggers handleCloseClick', () => {

@@ -404,4 +404,22 @@ export default class InteractiveMap {
   addControl (id, config) {
     this.eventBus.emit(events.APP_ADD_CONTROL, { id, config })
   }
+
+  /**
+   * Fit the map view to a bounding box or GeoJSON geometry, respecting the safe zone padding.
+   *
+   * @param {[number, number, number, number] | object} bbox - Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs, or a GeoJSON Feature, FeatureCollection, or geometry.
+   */
+  fitToBounds (bbox) {
+    this.eventBus.emit(events.MAP_FIT_TO_BOUNDS, bbox)
+  }
+
+  /**
+   * Set the map center and zoom, respecting the safe zone padding.
+   *
+   * @param {{ center?: [number, number], zoom?: number }} opts - View options.
+   */
+  setView (opts) {
+    this.eventBus.emit(events.MAP_SET_VIEW, opts)
+  }
 }

@@ -92,7 +92,7 @@ const InitComponent = ({ context }) => {
 
 Panel definitions to register in the UI.
 
-Panels come with pre-built behaviour and styling, including headings, dismissable states, and modal overlays. Supports responsive breakpoint configuration.
+Panels come with pre-built behaviour and styling, including headings, dismissible states, and modal overlays. Supports responsive breakpoint configuration.
 
 See [PanelDefinition](../api/panel-definition.md) for full details.
 

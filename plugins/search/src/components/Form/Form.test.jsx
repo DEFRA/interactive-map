@@ -24,6 +24,9 @@ describe('Form', () => {
       isExpanded: false,
       value: '',
       suggestionsVisible: false,
+      areSuggestionsVisible: false,
+      hasFetchedSuggestions: false,
+      suggestions: [],
       selectedIndex: -1,
       hasKeyboardFocusWithin: false,
     },
@@ -44,10 +47,19 @@ describe('Form', () => {
       handleInputKeyDown: jest.fn(),
       handleSuggestionClick: jest.fn(),
     },
+    services: {
+      announce: jest.fn(),
+    },
   }
 
   beforeEach(() => {
     jest.clearAllMocks()
+  })
+
+  it('renders without error when suggestions is undefined (uses default empty array)', () => {
+    const { suggestions: _omit, ...pluginStateWithoutSuggestions } = baseProps.pluginState
+    render(<Form {...baseProps} pluginState={pluginStateWithoutSuggestions} />)
+    expect(screen.getByRole('search')).toBeInTheDocument()
   })
 
   it('renders the form element with correct role, ID, and base classes', () => {
@@ -154,5 +166,90 @@ describe('Form', () => {
       'clicked-suggestion',
       baseProps.appState
     )
+  })
+
+  describe('status element and announce', () => {
+    // Helper: pluginState representing a completed fetch (hasFetchedSuggestions: true)
+    const searchedState = { areSuggestionsVisible: true, hasFetchedSuggestions: true }
+
+    it('hides the status element when suggestions are not visible', () => {
+      const { container } = render(<Form {...baseProps} />)
+      expect(container.querySelector('.im-c-search__status')).toBeNull()
+    })
+
+    it('shows the status element when a search returned no results', () => {
+      render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, ...searchedState, suggestions: [] }}
+        />
+      )
+      expect(screen.getByText('No results available')).toBeInTheDocument()
+    })
+
+    it('hides the status element when there are results', () => {
+      const { container } = render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, ...searchedState, suggestions: [{ text: 'London' }] }}
+        />
+      )
+      expect(container.querySelector('.im-c-search__status')).toBeNull()
+    })
+
+    it('hides the status element when the fetch has not yet completed', () => {
+      const { container } = render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, areSuggestionsVisible: true, hasFetchedSuggestions: false, suggestions: [] }}
+        />
+      )
+      expect(container.querySelector('.im-c-search__status')).toBeNull()
+    })
+
+    it('announces "No results available" when a search returned no results', () => {
+      render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, ...searchedState, suggestions: [] }}
+        />
+      )
+      expect(baseProps.services.announce).toHaveBeenCalledWith('No results available')
+    })
+
+    it('announces result count when suggestions are visible and populated', () => {
+      render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, ...searchedState, suggestions: [{ text: 'A' }, { text: 'B' }] }}
+        />
+      )
+      expect(baseProps.services.announce).toHaveBeenCalledWith('2 results available')
+    })
+
+    it('uses singular "result" for a single result', () => {
+      render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, ...searchedState, suggestions: [{ text: 'A' }] }}
+        />
+      )
+      expect(baseProps.services.announce).toHaveBeenCalledWith('1 result available')
+    })
+
+    it('does not announce when suggestions are not visible', () => {
+      render(<Form {...baseProps} />)
+      expect(baseProps.services.announce).not.toHaveBeenCalled()
+    })
+
+    it('does not announce when the fetch has not yet completed', () => {
+      render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, areSuggestionsVisible: true, hasFetchedSuggestions: false, suggestions: [] }}
+        />
+      )
+      expect(baseProps.services.announce).not.toHaveBeenCalled()
+    })
   })
 })

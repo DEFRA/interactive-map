@@ -9,7 +9,7 @@ import { attachAppEvents } from './appEvents.js'
 import { attachMapEvents } from './mapEvents.js'
 import { getAreaDimensions, getCardinalMove, getPaddedExtent } from './utils/spatial.js'
 import { queryVectorTileFeatures } from './utils/query.js'
-import { getExtentFromFlatCoords, getPointFromFlatCoords } from './utils/coords.js'
+import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON } from './utils/coords.js'
 import { cleanDOM } from './utils/esriFixes.js'
 
 export default class EsriProvider {
@@ -28,7 +28,9 @@ export default class EsriProvider {
   }
 
   async initMap (config) {
-    const { container, padding, mapStyle, maxExtent, ...initConfig } = config
+    const { container, padding, mapStyle, mapSize, maxExtent, ...initConfig } = config
+    this.mapStyleId = mapStyle?.id
+    this.mapSize = mapSize
     const { events, eventBus } = this
 
     if (this.setupConfig) {
@@ -82,7 +84,6 @@ export default class EsriProvider {
 
     // Attach app events and store handles
     this.appEventHandles = attachAppEvents({
-      mapProvider: this,
       baseTileLayer,
       events,
       eventBus
@@ -113,17 +114,6 @@ export default class EsriProvider {
     }
   }
 
-  /** Returns the public API exposed via the map:ready event. */
-  getMapAPI () {
-    return {
-      map: this.map,
-      view: this.view,
-      crs: this.crs,
-      fitToBounds: this.fitToBounds.bind(this),
-      setView: this.setView.bind(this)
-    }
-  }
-
   // ==========================
   // Side-effects
   // ==========================
@@ -151,7 +141,8 @@ export default class EsriProvider {
   }
 
   fitToBounds (bounds) {
-    this.view.goTo(getExtentFromFlatCoords(bounds), { duration: defaults.DELAY })
+    const extent = Array.isArray(bounds) ? getExtentFromFlatCoords(bounds) : getBboxFromGeoJSON(bounds)
+    this.view.goTo(extent, { duration: defaults.DELAY })
   }
 
   setPadding (padding) {

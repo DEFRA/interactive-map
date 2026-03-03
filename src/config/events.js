@@ -93,6 +93,10 @@ export const EVENTS = {
   MAP_SET_SIZE: 'map:setsize',
   /** @internal Set pixel ratio. Payload: pixelRatio */
   MAP_SET_PIXEL_RATIO: 'map:setpixelratio',
+  /** @internal Fit the map to a bounding box. Payload: [west, south, east, north] */
+  MAP_FIT_TO_BOUNDS: 'map:fittobounds',
+  /** @internal Set the map center and zoom. Payload: { center: [number, number], zoom?: number } */
+  MAP_SET_VIEW: 'map:setview',
 
   // ============================================
   // Map responses (advanced / subscribe)
@@ -100,12 +104,6 @@ export const EVENTS = {
 
   /** @internal Emitted when map styles are initialized. */
   MAP_INIT_MAP_STYLES: 'map:initmapstyles',
-
-  /**
-   * @internal Emitted by the map provider when the underlying map view is ready.
-   * Consumed by MapProvider to compose and emit the consumer-facing MAP_READY event.
-   */
-  MAP_PROVIDER_READY: 'map:providerready',
 
   /**
    * Emitted when the map style has finished loading.
@@ -128,8 +126,6 @@ export const EVENTS = {
    * - `map` — the underlying map instance
    * - `view` — the map view (ESRI SDK only)
    * - `crs` — coordinate reference system string (e.g. `'EPSG:4326'`)
-   * - `fitToBounds` — function to fit the map to a bounding box
-   * - `setView` — function to set the map center and zoom
    * - `mapStyleId` — the ID of the active map style (e.g. `'outdoor'`, `'dark'`)
    * - `mapSize` — the active map size string (e.g. `'small'`, `'medium'`, `'large'`)
    *

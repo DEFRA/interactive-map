@@ -666,6 +666,51 @@ interactiveMap.toggleButtonState('opt-a', 'pressed', true)
 
 ---
 
+### `fitToBounds(bounds)`
+
+Fit the map view to a bounding box or GeoJSON geometry. Safe zone padding is automatically applied so the content remains fully visible.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `bounds` | `[number, number, number, number]` | Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on CRS |
+| `bounds` | `object` | A GeoJSON Feature, FeatureCollection, or geometry — bbox is computed automatically |
+
+```js
+// Flat bbox
+interactiveMap.fitToBounds([-0.489, 51.28, 0.236, 51.686])
+
+// GeoJSON Feature
+interactiveMap.fitToBounds({
+  type: 'Feature',
+  geometry: { type: 'Point', coordinates: [-0.1276, 51.5074] },
+  properties: {}
+})
+
+// GeoJSON FeatureCollection
+interactiveMap.fitToBounds({
+  type: 'FeatureCollection',
+  features: [featureA, featureB]
+})
+```
+
+---
+
+### `setView(opts)`
+
+Set the map center and zoom. Safe zone padding is automatically applied.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `opts` | `Object` | View options |
+| `opts.center` | `[number, number]` | Optional center [lng, lat] or [easting, northing] depending on CRS |
+| `opts.zoom` | `number` | Optional zoom level |
+
+```js
+interactiveMap.setView({ center: [-0.1276, 51.5074], zoom: 12 })
+```
+
+---
+
 ## Events
 
 Subscribe to events using `interactiveMap.on()` and unsubscribe with `interactiveMap.off()`.
@@ -709,8 +754,6 @@ Emitted when the underlying map is ready and initial app state (style and size) 
 | `map` | Object | The underlying map instance (all providers) |
 | `view` | Object | The map view (ESRI only) |
 | `crs` | string | The coordinate reference system (e.g. `'EPSG:4326'`) |
-| `fitToBounds` | Function | Fit the map to a bounding box |
-| `setView` | Function | Set the map center and zoom |
 | `mapStyleId` | string | The ID of the active map style |
 | `mapSize` | string | The active map size (`'small'`, `'medium'`, or `'large'`) |
 

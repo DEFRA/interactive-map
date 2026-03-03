@@ -77,9 +77,11 @@ const interactiveMap = new InteractiveMap('map', {
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,
+			regions: ['england', 'wales'],
 			customDatasets: [gridRefSearchOSGB36],
 			width: '300px',
-			showMarker: true
+			showMarker: true,
+			// expanded: true
 		}),
 		useLocationPlugin(),
 		interactPlugin,

@@ -38,7 +38,8 @@ export const MapController = ({ mapContainerRef }) => {
         center: initialState.center,
         zoom: initialState.zoom,
         bounds: initialState.bounds,
-        mapStyle
+        mapStyle,
+        mapSize
       })
     })
 

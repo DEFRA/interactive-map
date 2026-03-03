@@ -3,7 +3,7 @@ import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
 const keyboardBasePanelSlots = {
   slot: 'middle',
   open: false,
-  dismissable: true,
+  dismissible: true,
   modal: true
 }
 
@@ -42,7 +42,7 @@ export const defaultAppConfig = {
     desktop: buttonSlots
   }, {
     id: 'zoomIn',
-    group: 'zoom',
+    group: { name: 'zoom', label: 'Zoom controls', order: 0 },
     label: 'Zoom in',
     iconId: 'plus',
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
@@ -53,7 +53,7 @@ export const defaultAppConfig = {
     desktop: buttonSlots
   }, {
     id: 'zoomOut',
-    group: 'zoom',
+    group: { name: 'zoom', label: 'Zoom controls', order: 0 },
     label: 'Zoom out',
     iconId: 'minus',
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
@@ -115,21 +115,21 @@ export const defaultPanelConfig = {
   mobile: {
     slot: 'bottom',
     open: true,
-    dismissable: true,
+    dismissible: true,
     modal: false,
     showLabel: true
   },
   tablet: {
     slot: 'inset',
     open: true,
-    dismissable: true,
+    dismissible: true,
     modal: false,
     showLabel: true
   },
   desktop: {
     slot: 'inset',
     open: true,
-    dismissable: true,
+    dismissible: true,
     modal: false,
     showLabel: true
   },

@@ -37,7 +37,7 @@
  *
  * @typedef {Object} PanelBreakpointConfig
  *
- * @property {boolean} [dismissable]
+ * @property {boolean} [dismissible]
  * Whether panel can be dismissed. When `false` and `open` is `true`, the panel is always visible at this
  * breakpoint and any associated panel-toggle button is automatically suppressed.
  *
@@ -45,7 +45,7 @@
  * Whether panel is exclusive. An exclusive panel will hide other panels when it is visible.
  *
  * @property {boolean} [open]
- * Whether the panel is open. When `true` and combined with `dismissable: false`, the panel is always visible at this
+ * Whether the panel is open. When `true` and combined with `dismissible: false`, the panel is always visible at this
  * breakpoint and will be restored automatically when the breakpoint is entered.
  *
  * @property {boolean} [showLabel]
@@ -203,8 +203,8 @@
  * @property {(offset: [number, number]) => void} panBy
  * Pan map by pixel offset [x, y]. Positive x pans right, positive y pans down.
  *
- * @property {(bounds: [number, number, number, number]) => void} fitToBounds
- * Fit map view to the specified bounds [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs of the map provider.
+ * @property {(bounds: [number, number, number, number] | object) => void} fitToBounds
+ * Fit map view to the specified bounds [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs, or a GeoJSON Feature, FeatureCollection, or geometry.
  *
  * @property {(padding: { top?: number, bottom?: number, left?: number, right?: number }) => void} setPadding
  * Set map padding as pixel insets from the top, bottom, left and right edges of the map.

@@ -8,9 +8,9 @@ import { Icon } from '../Icon/Icon'
 
 const computePanelState = (bpConfig, triggeringElement) => {
   const isAside = bpConfig.slot === 'side' && bpConfig.open && !bpConfig.modal
-  const isDialog = !isAside && bpConfig.dismissable
+  const isDialog = !isAside && bpConfig.dismissible
   const isModal = bpConfig.modal === true
-  const isDismissable = bpConfig.dismissable !== false
+  const isDismissable = bpConfig.dismissible !== false
   const shouldFocus = Boolean(isModal || triggeringElement)
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
   return { isAside, isDialog, isModal, isDismissable, shouldFocus, buttonContainerEl }

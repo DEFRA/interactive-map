@@ -66,15 +66,6 @@ describe('MapButton', () => {
     expect(container.firstChild).toHaveStyle('display: none')
   })
 
-  it.each([
-    ['groupStart', 'im-c-button-wrapper--group-start'],
-    ['groupMiddle', 'im-c-button-wrapper--group-middle'],
-    ['groupEnd', 'im-c-button-wrapper--group-end']
-  ])('applies wrapper %s class', (prop, className) => {
-    const { container } = renderButton({ [prop]: true })
-    expect(container.firstChild).toHaveClass(className)
-  })
-
   it('handles panelId aria attributes', () => {
     renderButton({ panelId: 'Settings', idPrefix: 'prefix', isDisabled: true, isPanelOpen: false })
     const button = getButton()
