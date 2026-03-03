@@ -225,7 +225,7 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
       type: 'group',
       order: groupOrder,
       element: (
-        <div key={`group-${groupName}`} role='group' aria-label={label} className='im-c-button-group'>
+        <div key={`group-${groupName}`} role='group' aria-label={label} className='im-c-button-group'>{/* NOSONAR - div with role="group" is correct for a button group */}
           {sorted.map(btn => renderButton({ btn, appState, appConfig, evaluateProp }))}
         </div>
       )

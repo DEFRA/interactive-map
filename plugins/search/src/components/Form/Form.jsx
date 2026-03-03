@@ -2,6 +2,14 @@
 import { useEffect } from 'react'
 import { Suggestions } from '../Suggestions/Suggestions'
 
+const getResultMessage = (count) =>
+  count === 0 ? 'No results available' : `${count} result${count === 1 ? '' : 's'} available`
+
+const getFormStyle = (pluginConfig, pluginState, appState) => ({
+  display: pluginConfig.expanded || pluginState.isExpanded ? 'flex' : undefined,
+  ...(appState.breakpoint !== 'mobile' && pluginConfig?.width && { width: pluginConfig.width }),
+})
+
 export const Form = ({
   id,
   pluginState,
@@ -20,10 +28,7 @@ export const Form = ({
     if (!areSuggestionsVisible || !hasFetchedSuggestions) {
       return
     }
-    const count = suggestions.length
-    const plural = count === 1 ? '' : 's'
-    const message = count === 0 ? 'No results available' : `${count} result${plural} available`
-    services.announce(message)
+    services.announce(getResultMessage(suggestions.length))
   }, [suggestions, hasFetchedSuggestions])
 
   const classNames = [
@@ -39,10 +44,7 @@ export const Form = ({
       id={`${id}-search-form`}
       role="search"
       className={classNames}
-      style={{
-        display: pluginConfig.expanded || pluginState.isExpanded ? 'flex' : undefined,
-        ...(appState.breakpoint !== 'mobile' && pluginConfig?.width && { width: pluginConfig.width }),
-      }}
+      style={getFormStyle(pluginConfig, pluginState, appState)}
       aria-controls={`${id}-viewport`}
       onSubmit={(e) => events.handleSubmit(e, appState, pluginState)}
     >

@@ -72,7 +72,9 @@ export const useMapProviderOverrides = () => {
   // Forward public API events to the (overridden) mapProvider methods so that
   // interactiveMap.fitToBounds() and interactiveMap.setView() respect safe zone padding.
   useEffect(() => {
-    if (!mapProvider || !eventBus) return undefined
+    if (!mapProvider || !eventBus) {
+      return undefined
+    }
 
     const handleFitToBounds = (bbox) => mapProvider.fitToBounds(bbox)
     const handleSetView = (opts) => mapProvider.setView(opts)
