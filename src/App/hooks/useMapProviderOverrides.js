@@ -2,12 +2,13 @@ import { useEffect, useRef } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
+import { EVENTS as events } from '../../config/events.js'
 import { getSafeZoneInset } from '../../utils/getSafeZoneInset.js'
 import { scalePoints } from '../../utils/scalePoints.js'
 import { scaleFactor } from '../../config/appConfig.js'
 
 export const useMapProviderOverrides = () => {
-  const { mapProvider } = useConfig()
+  const { mapProvider, eventBus } = useConfig()
   const { dispatch: appDispatch, layoutRefs } = useApp()
   const { mapSize } = useMap()
 
@@ -67,4 +68,21 @@ export const useMapProviderOverrides = () => {
       mapProvider.setView = originalSetView
     }
   }, [mapProvider, appDispatch, layoutRefs, mapSize])
+
+  // Forward public API events to the (overridden) mapProvider methods so that
+  // interactiveMap.fitToBounds() and interactiveMap.setView() respect safe zone padding.
+  useEffect(() => {
+    if (!mapProvider || !eventBus) return undefined
+
+    const handleFitToBounds = (bbox) => mapProvider.fitToBounds(bbox)
+    const handleSetView = (opts) => mapProvider.setView(opts)
+
+    eventBus.on(events.MAP_FIT_TO_BOUNDS, handleFitToBounds)
+    eventBus.on(events.MAP_SET_VIEW, handleSetView)
+
+    return () => {
+      eventBus.off(events.MAP_FIT_TO_BOUNDS, handleFitToBounds)
+      eventBus.off(events.MAP_SET_VIEW, handleSetView)
+    }
+  }, [mapProvider, eventBus])
 }

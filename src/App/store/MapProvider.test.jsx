@@ -71,15 +71,15 @@ describe('MapProvider', () => {
     expect(contextValue).toHaveProperty('isMapReady')
   })
 
-  test('subscribes to MAP_PROVIDER_READY instead of MAP_READY', () => {
+  test('subscribes to MAP_READY (not MAP_PROVIDER_READY)', () => {
     render(
       <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
         <div>Child</div>
       </MapProvider>
     )
 
-    expect(mockEventBus.on).toHaveBeenCalledWith('map:providerready', expect.any(Function))
-    expect(mockEventBus.on).not.toHaveBeenCalledWith('map:ready', expect.any(Function))
+    expect(mockEventBus.on).toHaveBeenCalledWith('map:ready', expect.any(Function))
+    expect(mockEventBus.on).not.toHaveBeenCalledWith('map:providerready', expect.any(Function))
   })
 
   test('subscribes and unsubscribes to eventBus', () => {
@@ -89,65 +89,40 @@ describe('MapProvider', () => {
       </MapProvider>
     )
 
-    expect(mockEventBus.on).toHaveBeenCalledWith('map:providerready', expect.any(Function))
+    expect(mockEventBus.on).toHaveBeenCalledWith('map:ready', expect.any(Function))
     expect(mockEventBus.on).toHaveBeenCalledWith('map:initmapstyles', expect.any(Function))
     expect(mockEventBus.on).toHaveBeenCalledWith('map:setstyle', expect.any(Function))
     expect(mockEventBus.on).toHaveBeenCalledWith('map:setsize', expect.any(Function))
 
     // Trigger handlers → covers reducer calls
     act(() => {
-      capturedHandlers['map:providerready']({ map: {} })
+      capturedHandlers['map:ready']()
       capturedHandlers['map:setstyle']({ id: 'style1' })
       capturedHandlers['map:setsize']('300x300')
       capturedHandlers['map:initmapstyles']([{ id: 'style1' }])
     })
   })
 
-  test('emits consumer map:ready with enriched payload once provider, mapStyle and mapSize are settled', () => {
+  test('dispatches SET_MAP_READY when MAP_READY fires', () => {
+    let contextValue
+    const Child = () => {
+      contextValue = React.useContext(MapContext)
+      return null
+    }
+
     render(
       <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
-        <div>Child</div>
+        <Child />
       </MapProvider>
     )
 
-    const mapProviderAPI = { map: {}, crs: 'EPSG:4326', fitToBounds: jest.fn(), setView: jest.fn() }
-    const mapStyle = { id: 'outdoor' }
+    expect(contextValue.isMapReady).toBe(false)
 
     act(() => {
-      capturedHandlers['map:providerready'](mapProviderAPI)
-      capturedHandlers['map:initmapstyles']([mapStyle])
+      capturedHandlers['map:ready']()
     })
 
-    expect(mockEventBus.emit).toHaveBeenCalledWith('map:ready', expect.objectContaining({
-      map: mapProviderAPI.map,
-      crs: mapProviderAPI.crs,
-      mapStyleId: mapStyle.id,
-      mapSize: '100x100'
-    }))
-  })
-
-  test('emits consumer map:ready only once even if state changes after', () => {
-    render(
-      <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
-        <div>Child</div>
-      </MapProvider>
-    )
-
-    const mapProviderAPI = { map: {} }
-    const mapStyle = { id: 'outdoor' }
-
-    act(() => {
-      capturedHandlers['map:providerready'](mapProviderAPI)
-      capturedHandlers['map:initmapstyles']([mapStyle])
-    })
-
-    // Trigger a size change after ready
-    act(() => {
-      capturedHandlers['map:setsize']('large')
-    })
-
-    const mapReadyCalls = mockEventBus.emit.mock.calls.filter(([event]) => event === 'map:ready')
-    expect(mapReadyCalls).toHaveLength(1)
+    expect(contextValue.isMapReady).toBe(true)
   })
 
   test('emits map:sizechange when mapSize changes after initial value', () => {
@@ -218,7 +193,7 @@ describe('MapProvider', () => {
     )
 
     act(() => {
-      capturedHandlers['map:providerready']({ map: {} })
+      capturedHandlers['map:ready']()
       capturedHandlers['map:setstyle']({ id: 'style2' })
       capturedHandlers['map:setsize']('400x400')
     })

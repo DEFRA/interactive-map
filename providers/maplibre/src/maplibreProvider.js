@@ -44,7 +44,9 @@ export default class MapLibreProvider {
    * @returns {Promise<void>}
    */
   async initMap (config) {
-    const { container, padding, mapStyle, center, zoom, bounds, pixelRatio, ...initConfig } = config
+    const { container, padding, mapStyle, mapSize, center, zoom, bounds, pixelRatio, ...initConfig } = config
+    this.mapStyleId = mapStyle?.id
+    this.mapSize = mapSize
     const { Map: MaplibreMap } = this.maplibreModule
     const { events, eventBus } = this
 
@@ -101,17 +103,12 @@ export default class MapLibreProvider {
       this.labelNavigator = createMapLabelNavigator(map, mapStyle?.mapColorScheme, events, eventBus)
     })
 
-    this.eventBus.emit(events.MAP_PROVIDER_READY, this.getMapAPI())
-  }
-
-  /** Returns the public API exposed via the map:ready event. */
-  getMapAPI () {
-    return {
+    this.eventBus.emit(events.MAP_READY, {
       map: this.map,
-      crs: this.crs,
-      fitToBounds: this.fitToBounds.bind(this),
-      setView: this.setView.bind(this)
-    }
+      mapStyleId: this.mapStyleId,
+      mapSize: this.mapSize,
+      crs: this.crs
+    })
   }
 
   /** Destroy the map and clean up resources. */

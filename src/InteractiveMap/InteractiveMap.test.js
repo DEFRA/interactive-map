@@ -509,4 +509,16 @@ describe('InteractiveMap Public API Methods', () => {
       { id: 'btn-1', prop: 'disabled', value: true }
     )
   })
+
+  it('fitToBounds emits MAP_FIT_TO_BOUNDS with bbox', () => {
+    const bbox = [-0.489, 51.28, 0.236, 51.686]
+    map.fitToBounds(bbox)
+    expect(map.eventBus.emit).toHaveBeenCalledWith('map:fittobounds', bbox)
+  })
+
+  it('setView emits MAP_SET_VIEW with opts', () => {
+    const opts = { center: [-0.1276, 51.5074], zoom: 12 }
+    map.setView(opts)
+    expect(map.eventBus.emit).toHaveBeenCalledWith('map:setview', opts)
+  })
 })

@@ -59,7 +59,7 @@ describe('MapLibreProvider', () => {
 
   const makeProvider = (config = {}) => new MapLibreProvider({
     mapFramework: maplibreModule,
-    events: { MAP_PROVIDER_READY: 'map:providerready' },
+    events: { MAP_READY: 'map:ready' },
     eventBus,
     ...config
   })
@@ -84,7 +84,7 @@ describe('MapLibreProvider', () => {
     expect(map.setPadding).toHaveBeenCalled()
     expect(attachMapEvents).toHaveBeenCalled()
     expect(attachAppEvents).toHaveBeenCalled()
-    expect(eventBus.emit).toHaveBeenCalledWith('map:providerready', expect.any(Object))
+    expect(eventBus.emit).toHaveBeenCalledWith('map:ready', { map, mapStyleId: undefined, mapSize: undefined, crs: undefined })
   })
 
   test('initMap: fitBounds called when bounds provided; skipped when absent; null mapStyle → style undefined', async () => {

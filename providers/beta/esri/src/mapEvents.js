@@ -54,7 +54,13 @@ export function attachMapEvents ({
   // ready
   once(() => view.ready).then(() => {
     if (!destroyed) {
-      eventBus.emit(events.MAP_PROVIDER_READY, mapProvider.getMapAPI())
+      eventBus.emit(events.MAP_READY, {
+        map: mapProvider.map,
+        view: mapProvider.view,
+        mapStyleId: mapProvider.mapStyleId,
+        mapSize: mapProvider.mapSize,
+        crs: mapProvider.crs
+      })
     }
   })
 

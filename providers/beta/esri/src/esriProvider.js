@@ -28,7 +28,9 @@ export default class EsriProvider {
   }
 
   async initMap (config) {
-    const { container, padding, mapStyle, maxExtent, ...initConfig } = config
+    const { container, padding, mapStyle, mapSize, maxExtent, ...initConfig } = config
+    this.mapStyleId = mapStyle?.id
+    this.mapSize = mapSize
     const { events, eventBus } = this
 
     if (this.setupConfig) {
@@ -82,7 +84,6 @@ export default class EsriProvider {
 
     // Attach app events and store handles
     this.appEventHandles = attachAppEvents({
-      mapProvider: this,
       baseTileLayer,
       events,
       eventBus
@@ -110,17 +111,6 @@ export default class EsriProvider {
     if (this.map) {
       this.map.removeAll()
       this.map = null
-    }
-  }
-
-  /** Returns the public API exposed via the map:ready event. */
-  getMapAPI () {
-    return {
-      map: this.map,
-      view: this.view,
-      crs: this.crs,
-      fitToBounds: this.fitToBounds.bind(this),
-      setView: this.setView.bind(this)
     }
   }
 

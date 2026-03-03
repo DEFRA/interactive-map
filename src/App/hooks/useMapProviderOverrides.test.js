@@ -22,15 +22,21 @@ const setup = (overrides = {}) => {
     setPadding: jest.fn(),
     ...overrides.mapProvider
   }
+  const capturedHandlers = {}
+  const eventBus = {
+    on: jest.fn((event, handler) => { capturedHandlers[event] = handler }),
+    off: jest.fn(),
+    ...overrides.eventBus
+  }
 
-  useConfig.mockReturnValue({ mapProvider, ...overrides.config })
+  useConfig.mockReturnValue({ mapProvider, eventBus, ...overrides.config })
   useApp.mockReturnValue({ dispatch, layoutRefs, ...overrides.app })
   useMap.mockReturnValue({ mapSize: 'md', ...overrides.map })
 
   getSafeZoneInset.mockReturnValue({ top: 10, right: 5, bottom: 15, left: 5 })
   scalePoints.mockReturnValue({ top: 20, right: 10, bottom: 30, left: 10 })
 
-  return { dispatch, layoutRefs, mapProvider }
+  return { dispatch, layoutRefs, mapProvider, eventBus, capturedHandlers }
 }
 
 describe('useMapProviderOverrides', () => {
@@ -132,5 +138,48 @@ describe('useMapProviderOverrides', () => {
     rerender()
 
     expect(mapProvider.fitToBounds).not.toBe(firstOverride)
+  })
+
+  test('subscribes to MAP_FIT_TO_BOUNDS and MAP_SET_VIEW on eventBus', () => {
+    const { eventBus } = setup()
+    renderHook(() => useMapProviderOverrides())
+
+    expect(eventBus.on).toHaveBeenCalledWith('map:fittobounds', expect.any(Function))
+    expect(eventBus.on).toHaveBeenCalledWith('map:setview', expect.any(Function))
+  })
+
+  test('MAP_FIT_TO_BOUNDS event forwards bbox to mapProvider.fitToBounds', () => {
+    const { mapProvider, capturedHandlers } = setup()
+    const originalFitToBounds = mapProvider.fitToBounds
+    renderHook(() => useMapProviderOverrides())
+
+    capturedHandlers['map:fittobounds']([0, 0, 1, 1])
+
+    expect(originalFitToBounds).toHaveBeenCalledWith([0, 0, 1, 1])
+  })
+
+  test('MAP_SET_VIEW event forwards opts to mapProvider.setView', () => {
+    const { mapProvider, capturedHandlers } = setup()
+    const originalSetView = mapProvider.setView
+    renderHook(() => useMapProviderOverrides())
+
+    capturedHandlers['map:setview']({ center: [1, 2], zoom: 10 })
+
+    expect(originalSetView).toHaveBeenCalledWith({ center: [1, 2], zoom: 10 })
+  })
+
+  test('unsubscribes from MAP_FIT_TO_BOUNDS and MAP_SET_VIEW on unmount', () => {
+    const { eventBus } = setup()
+    const { unmount } = renderHook(() => useMapProviderOverrides())
+
+    unmount()
+
+    expect(eventBus.off).toHaveBeenCalledWith('map:fittobounds', expect.any(Function))
+    expect(eventBus.off).toHaveBeenCalledWith('map:setview', expect.any(Function))
+  })
+
+  test('skips event subscriptions when eventBus is null', () => {
+    setup({ config: { eventBus: null } })
+    expect(() => renderHook(() => useMapProviderOverrides())).not.toThrow()
   })
 })
