@@ -2,8 +2,13 @@
 import { useEffect } from 'react'
 import { Suggestions } from '../Suggestions/Suggestions'
 
-const getResultMessage = (count) =>
-  count === 0 ? 'No results available' : `${count} result${count === 1 ? '' : 's'} available`
+const getResultMessage = (count) => {
+  if (count === 0) {
+    return 'No results available'
+  }
+  const plural = count === 1 ? 'result' : 'results'
+  return `${count} ${plural} available`
+}
 
 const getFormStyle = (pluginConfig, pluginState, appState) => ({
   display: pluginConfig.expanded || pluginState.isExpanded ? 'flex' : undefined,

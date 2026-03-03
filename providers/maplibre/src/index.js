@@ -7,23 +7,15 @@
 import { getWebGL } from './utils/detectWebgl.js'
 
 /**
- * Checks whether the browser supports modern ES2020 syntax
- * (optional chaining `?.` and nullish coalescing `??`), which
- * Chrome 80+ supports. Safe to use in ES5 bootstrap code.
+ * Checks whether the browser supports the ES2020+ feature set required by
+ * MapLibre, using `String.prototype.replaceAll` as a proxy. This method
+ * landed in Chrome 85 / Firefox 77 / Safari 13.1 — the same cohort that
+ * supports optional chaining `?.` and nullish coalescing `??`.
  *
  * @returns {boolean} true if modern syntax is supported, false otherwise
  */
 function supportsModernMaplibre() {
-  try {
-    // Try compiling ES2020 syntax dynamically
-    new Function('var x = null ?? 5; var y = ({a:1})?.a;')
-    return true
-  }
-  catch (e) {
-    // Exception intentionally ignored; returns false for unsupported syntax
-    void e // NOSONAR
-    return false
-  }
+  return typeof ''.replaceAll === 'function'
 }
 
 /**
