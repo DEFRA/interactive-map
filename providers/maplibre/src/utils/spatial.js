@@ -1,5 +1,6 @@
 // src/utils/spatial.js
 import LatLon from 'geodesy/latlon-spherical.js'
+import turfBbox from '@turf/bbox'
 
 // -----------------------------------------------------------------------------
 // Internal (not exported)
@@ -186,9 +187,19 @@ const getPaddedBounds = (LngLatBounds, map) => {
 }
 
 
+/**
+ * Get a flat bbox [west, south, east, north] from any GeoJSON object
+ * (Feature, FeatureCollection, or geometry).
+ *
+ * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry
+ * @returns {[number, number, number, number]}
+ */
+const getBboxFromGeoJSON = (geojson) => turfBbox(geojson)
+
 export {
   getAreaDimensions,
   getCardinalMove,
+  getBboxFromGeoJSON,
   spatialNavigate,
   getResolution,
   getPaddedBounds,

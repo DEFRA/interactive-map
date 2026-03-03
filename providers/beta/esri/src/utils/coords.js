@@ -23,7 +23,39 @@ const getPointFromFlatCoords = (coords) => {
     : undefined
 }
 
+const collectCoords = (obj, acc) => {
+  if (!obj) return
+  if (obj.type === 'FeatureCollection') {
+    obj.features.forEach(f => collectCoords(f, acc))
+  } else if (obj.type === 'Feature') {
+    collectCoords(obj.geometry, acc)
+  } else if (obj.type === 'GeometryCollection') {
+    obj.geometries.forEach(g => collectCoords(g, acc))
+  } else {
+    const flatten = (coords) => {
+      if (typeof coords[0] === 'number') acc.push(coords)
+      else coords.forEach(flatten)
+    }
+    flatten(obj.coordinates)
+  }
+}
+
+/**
+ * Get an ESRI Extent from any GeoJSON object (Feature, FeatureCollection, or geometry).
+ *
+ * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry
+ * @returns {import('@arcgis/core/geometry/Extent.js').default}
+ */
+const getBboxFromGeoJSON = (geojson) => {
+  const points = []
+  collectCoords(geojson, points)
+  const xs = points.map(p => p[0])
+  const ys = points.map(p => p[1])
+  return getExtentFromFlatCoords([Math.min(...xs), Math.min(...ys), Math.max(...xs), Math.max(...ys)])
+}
+
 export {
   getExtentFromFlatCoords,
-  getPointFromFlatCoords
+  getPointFromFlatCoords,
+  getBboxFromGeoJSON
 }

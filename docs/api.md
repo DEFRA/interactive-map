@@ -666,16 +666,31 @@ interactiveMap.toggleButtonState('opt-a', 'pressed', true)
 
 ---
 
-### `fitToBounds(bbox)`
+### `fitToBounds(bounds)`
 
-Fit the map view to a bounding box. Safe zone padding is automatically applied so the content remains fully visible.
+Fit the map view to a bounding box or GeoJSON geometry. Safe zone padding is automatically applied so the content remains fully visible.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `bbox` | `[number, number, number, number]` | Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on CRS |
+| `bounds` | `[number, number, number, number]` | Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on CRS |
+| `bounds` | `object` | A GeoJSON Feature, FeatureCollection, or geometry — bbox is computed automatically |
 
 ```js
+// Flat bbox
 interactiveMap.fitToBounds([-0.489, 51.28, 0.236, 51.686])
+
+// GeoJSON Feature
+interactiveMap.fitToBounds({
+  type: 'Feature',
+  geometry: { type: 'Point', coordinates: [-0.1276, 51.5074] },
+  properties: {}
+})
+
+// GeoJSON FeatureCollection
+interactiveMap.fitToBounds({
+  type: 'FeatureCollection',
+  features: [featureA, featureB]
+})
 ```
 
 ---

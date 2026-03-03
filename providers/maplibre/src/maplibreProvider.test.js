@@ -19,6 +19,7 @@ jest.mock('./appEvents.js', () => ({ attachAppEvents: jest.fn() }))
 jest.mock('./utils/spatial.js', () => ({
   getAreaDimensions: jest.fn(() => '400m by 750m'),
   getCardinalMove: jest.fn(() => 'north'),
+  getBboxFromGeoJSON: jest.fn(() => [-1, 50, 1, 52]),
   getResolution: jest.fn(() => 10),
   getPaddedBounds: jest.fn(() => [[0, 0], [1, 1]])
 }))
@@ -155,6 +156,18 @@ describe('MapLibreProvider', () => {
     expect(map.fitBounds).toHaveBeenCalledWith([[0, 0], [1, 1]], { duration: 400 })
     p.setPadding({ top: 5 })
     expect(map.setPadding).toHaveBeenCalledWith({ top: 5 })
+  })
+
+  test('fitToBounds accepts GeoJSON: computes bbox via getBboxFromGeoJSON', async () => {
+    const { getBboxFromGeoJSON } = require('./utils/spatial.js')
+    const p = makeProvider()
+    await doInitMap(p)
+    const feature = { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 52] }, properties: {} }
+
+    p.fitToBounds(feature)
+
+    expect(getBboxFromGeoJSON).toHaveBeenCalledWith(feature)
+    expect(map.fitBounds).toHaveBeenCalledWith([-1, 50, 1, 52], { duration: 400 })
   })
 
   test('getCenter, getZoom, getBounds return formatted values', async () => {

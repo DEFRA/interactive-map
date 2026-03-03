@@ -203,8 +203,8 @@
  * @property {(offset: [number, number]) => void} panBy
  * Pan map by pixel offset [x, y]. Positive x pans right, positive y pans down.
  *
- * @property {(bounds: [number, number, number, number]) => void} fitToBounds
- * Fit map view to the specified bounds [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs of the map provider.
+ * @property {(bounds: [number, number, number, number] | object) => void} fitToBounds
+ * Fit map view to the specified bounds [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs, or a GeoJSON Feature, FeatureCollection, or geometry.
  *
  * @property {(padding: { top?: number, bottom?: number, left?: number, right?: number }) => void} setPadding
  * Set map padding as pixel insets from the top, bottom, left and right edges of the map.

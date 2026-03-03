@@ -197,6 +197,7 @@
     "@docusaurus/theme-common": "^3.9.2",
     "@easyops-cn/docusaurus-search-local": "^0.55.0",
     "@turf/area": "^7.2.0",
+    "@turf/bbox": "^7.3.4",
     "@turf/bearing": "^7.3.3",
     "@turf/boolean-disjoint": "^7.3.3",
     "@turf/boolean-valid": "^7.2.0",

@@ -9,7 +9,7 @@ import { attachAppEvents } from './appEvents.js'
 import { attachMapEvents } from './mapEvents.js'
 import { getAreaDimensions, getCardinalMove, getPaddedExtent } from './utils/spatial.js'
 import { queryVectorTileFeatures } from './utils/query.js'
-import { getExtentFromFlatCoords, getPointFromFlatCoords } from './utils/coords.js'
+import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON } from './utils/coords.js'
 import { cleanDOM } from './utils/esriFixes.js'
 
 export default class EsriProvider {
@@ -141,7 +141,8 @@ export default class EsriProvider {
   }
 
   fitToBounds (bounds) {
-    this.view.goTo(getExtentFromFlatCoords(bounds), { duration: defaults.DELAY })
+    const extent = Array.isArray(bounds) ? getExtentFromFlatCoords(bounds) : getBboxFromGeoJSON(bounds)
+    this.view.goTo(extent, { duration: defaults.DELAY })
   }
 
   setPadding (padding) {

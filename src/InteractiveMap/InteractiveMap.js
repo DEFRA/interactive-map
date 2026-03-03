@@ -406,9 +406,9 @@ export default class InteractiveMap {
   }
 
   /**
-   * Fit the map view to a bounding box, respecting the safe zone padding.
+   * Fit the map view to a bounding box or GeoJSON geometry, respecting the safe zone padding.
    *
-   * @param {[number, number, number, number]} bbox - Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs.
+   * @param {[number, number, number, number] | object} bbox - Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs, or a GeoJSON Feature, FeatureCollection, or geometry.
    */
   fitToBounds (bbox) {
     this.eventBus.emit(events.MAP_FIT_TO_BOUNDS, bbox)

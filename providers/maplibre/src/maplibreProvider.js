@@ -7,7 +7,7 @@ import { DEFAULTS, supportedShortcuts } from './defaults.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
-import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, getResolution, getPaddedBounds } from './utils/spatial.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
@@ -175,12 +175,13 @@ export default class MapLibreProvider {
   }
 
   /**
-   * Fit map view to the specified bounds [west, south, east, north].
+   * Fit map view to the specified bounds or GeoJSON geometry.
    *
-   * @param {[number, number, number, number]} bounds - Bounds as [west, south, east, north].
+   * @param {[number, number, number, number] | object} bounds - Bounds as [west, south, east, north], or a GeoJSON Feature, FeatureCollection, or geometry. Bbox is computed from GeoJSON using @turf/bbox.
    */
   fitToBounds (bounds) {
-    this.map.fitBounds(bounds, { duration: DEFAULTS.animationDuration })
+    const bbox = Array.isArray(bounds) ? bounds : getBboxFromGeoJSON(bounds)
+    this.map.fitBounds(bbox, { duration: DEFAULTS.animationDuration })
   }
 
   /**
