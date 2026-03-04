@@ -153,13 +153,20 @@ interactiveMap.on('map:stylechange', function (e) {
 	updateKeyColours(e.mapStyleId)
 })
 
+interactiveMap.on('app:panelopened', (e) => {
+	// console.log('app:panelopened', e)
+})
 
 interactiveMap.on('map:exit', function (e) {
 	drawOptions = ['shape', 'square']
 })
 
 interactiveMap.on('interact:markerchange', function (e) {
-	console.log(e)
+	interactiveMap.addPanel('info', {
+		label: 'Info',
+		html: '<p>Some info</p>',
+		visibleGeometry: {type: 'Feature', geometry: {type: 'Point', coordinates: e.coords}}
+	})
 })
 
 interactiveMap.on('draw:ready', function () {

@@ -1,4 +1,6 @@
 import Extent from '@arcgis/core/geometry/Extent.js'
+import Point from '@arcgis/core/geometry/Point.js'
+import { getBboxFromGeoJSON } from './coords.js'
 
 // -----------------------------------------------------------------------------
 // Internal (not exported)
@@ -124,8 +126,52 @@ const getPaddedExtent = (view, padding = DEFAULT_PADDING) => {
 }
 
 
+/**
+ * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
+ * Used to decide whether to pan/zoom when a panel opens over a visibleGeometry target.
+ *
+ * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry
+ * @param {DOMRect} panelRect - Bounding rect of the panel element (viewport coordinates)
+ * @param {import('@arcgis/core/views/MapView.js').default} view - ESRI MapView instance
+ * @returns {boolean}
+ */
+const isGeometryObscured = (geojson, panelRect, view) => {
+  if (!view?.container) {
+    return false
+  }
+
+  const containerRect = view.container.getBoundingClientRect()
+  const extent = getBboxFromGeoJSON(geojson)
+
+  const corners = [
+    view.toScreen(new Point({ x: extent.xmin, y: extent.ymin, spatialReference: extent.spatialReference })),
+    view.toScreen(new Point({ x: extent.xmin, y: extent.ymax, spatialReference: extent.spatialReference })),
+    view.toScreen(new Point({ x: extent.xmax, y: extent.ymin, spatialReference: extent.spatialReference })),
+    view.toScreen(new Point({ x: extent.xmax, y: extent.ymax, spatialReference: extent.spatialReference }))
+  ]
+
+  const screenMinX = Math.min(...corners.map(c => c.x))
+  const screenMaxX = Math.max(...corners.map(c => c.x))
+  const screenMinY = Math.min(...corners.map(c => c.y))
+  const screenMaxY = Math.max(...corners.map(c => c.y))
+
+  // Convert panelRect from viewport coords to view-container-relative coords
+  const panelLeft = panelRect.left - containerRect.left
+  const panelTop = panelRect.top - containerRect.top
+  const panelRight = panelRect.right - containerRect.left
+  const panelBottom = panelRect.bottom - containerRect.top
+
+  return (
+    screenMinX < panelRight &&
+    screenMaxX > panelLeft &&
+    screenMinY < panelBottom &&
+    screenMaxY > panelTop
+  )
+}
+
 export {
   getAreaDimensions,
   getCardinalMove,
-  getPaddedExtent
+  getPaddedExtent,
+  isGeometryObscured
 }

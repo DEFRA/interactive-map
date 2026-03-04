@@ -33,6 +33,7 @@ const collectCoords = (obj, acc) => {
     obj.geometries.forEach(g => collectCoords(g, acc))
   } else {
     const flatten = (coords) => {
+      if (!Array.isArray(coords)) { return }
       if (typeof coords[0] === 'number') acc.push(coords)
       else coords.forEach(flatten)
     }

@@ -4,7 +4,7 @@ import { attachAppEvents } from './appEvents.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
-import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
 
 jest.mock('./defaults.js', () => ({
   DEFAULTS: { animationDuration: 400, coordinatePrecision: 7 },
@@ -20,6 +20,7 @@ jest.mock('./utils/spatial.js', () => ({
   getAreaDimensions: jest.fn(() => '400m by 750m'),
   getCardinalMove: jest.fn(() => 'north'),
   getBboxFromGeoJSON: jest.fn(() => [-1, 50, 1, 52]),
+  isGeometryObscured: jest.fn(() => true),
   getResolution: jest.fn(() => 10),
   getPaddedBounds: jest.fn(() => [[0, 0], [1, 1]])
 }))
@@ -168,6 +169,18 @@ describe('MapLibreProvider', () => {
 
     expect(getBboxFromGeoJSON).toHaveBeenCalledWith(feature)
     expect(map.fitBounds).toHaveBeenCalledWith([-1, 50, 1, 52], { duration: 400 })
+  })
+
+  test('isGeometryObscured delegates to spatial utility with map instance', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    const geojson = { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 52] }, properties: {} }
+    const panelRect = { left: 600, top: 0, right: 1000, bottom: 800, width: 400, height: 800 }
+
+    const result = p.isGeometryObscured(geojson, panelRect)
+
+    expect(isGeometryObscured).toHaveBeenCalledWith(geojson, panelRect, map)
+    expect(result).toBe(true)
   })
 
   test('getCenter, getZoom, getBounds return formatted values', async () => {

@@ -105,4 +105,39 @@ describe('spatial utils', () => {
     expect(turfBbox).toHaveBeenCalledWith(feature)
     expect(result).toEqual([-1, 50, 1, 52])
   })
+
+  describe('isGeometryObscured', () => {
+    const geojson = { type: 'Feature', geometry: { type: 'Point', coordinates: [0, 51] }, properties: {} }
+    // getBboxFromGeoJSON is mocked to always return [-1, 50, 1, 52]
+
+    // Container sits at viewport origin so container-relative coords equal viewport coords
+    const makeMap = (projectFn) => ({
+      getContainer: jest.fn(() => ({
+        getBoundingClientRect: jest.fn(() => ({ left: 0, top: 0, right: 1000, bottom: 800 }))
+      })),
+      project: jest.fn(projectFn)
+    })
+
+    // Panel occupies the right 400px of the viewport
+    const panelRect = { left: 600, top: 0, right: 1000, bottom: 800, width: 400, height: 800 }
+
+    test('returns true when geometry screen bbox overlaps the panel rect', () => {
+      // Corners project into the panel (x: 650 is between panelLeft 600 and panelRight 1000)
+      const map = makeMap(() => ({ x: 650, y: 400 }))
+      expect(spatial.isGeometryObscured(geojson, panelRect, map)).toBe(true)
+    })
+
+    test('returns false when geometry screen bbox does not overlap the panel rect', () => {
+      // Corners project to x: 300, entirely left of panelLeft (600)
+      const map = makeMap(() => ({ x: 300, y: 400 }))
+      expect(spatial.isGeometryObscured(geojson, panelRect, map)).toBe(false)
+    })
+
+    test('projects all four bbox corners', () => {
+      const map = makeMap(() => ({ x: 300, y: 400 }))
+      spatial.isGeometryObscured(geojson, panelRect, map)
+      // bbox is [-1, 50, 1, 52]: corners are [-1,50], [-1,52], [1,50], [1,52]
+      expect(map.project).toHaveBeenCalledTimes(4)
+    })
+  })
 })

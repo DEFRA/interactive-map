@@ -177,4 +177,60 @@ describe('appDispatchMiddleware', () => {
       )
     })
   })
+
+  describe('ADD_PANEL', () => {
+    it('emits APP_PANEL_OPENED with slot when panel opens by default', async () => {
+      run(
+        { type: 'ADD_PANEL', payload: { id: 'newPanel', config: {} } },
+        { breakpoint: 'desktop' }
+      )
+
+      await flushMicrotasks()
+
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        events.APP_PANEL_OPENED,
+        { panelId: 'newPanel', slot: 'inset' }
+      )
+    })
+
+    it('emits APP_PANEL_OPENED with visibleGeometry when provided in config', async () => {
+      const visibleGeometry = { type: 'Feature', geometry: { type: 'Point', coordinates: [1, 2] }, properties: {} }
+      run(
+        { type: 'ADD_PANEL', payload: { id: 'geoPanel', config: { visibleGeometry } } },
+        { breakpoint: 'desktop' }
+      )
+
+      await flushMicrotasks()
+
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        events.APP_PANEL_OPENED,
+        { panelId: 'geoPanel', slot: 'inset', visibleGeometry }
+      )
+    })
+
+    it('does not emit APP_PANEL_OPENED when breakpoint config sets open: false', async () => {
+      run(
+        { type: 'ADD_PANEL', payload: { id: 'hiddenPanel', config: { desktop: { open: false } } } },
+        { breakpoint: 'desktop' }
+      )
+
+      await flushMicrotasks()
+
+      expect(eventBus.emit).not.toHaveBeenCalled()
+    })
+
+    it('emits APP_PANEL_OPENED with slot for mobile breakpoint', async () => {
+      run(
+        { type: 'ADD_PANEL', payload: { id: 'mobilePanel', config: {} } },
+        { breakpoint: 'mobile' }
+      )
+
+      await flushMicrotasks()
+
+      expect(eventBus.emit).toHaveBeenCalledWith(
+        events.APP_PANEL_OPENED,
+        { panelId: 'mobilePanel', slot: 'bottom' }
+      )
+    })
+  })
 })

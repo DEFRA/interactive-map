@@ -4,10 +4,11 @@ import esriConfig from '@arcgis/core/config.js'
 import EsriMap from '@arcgis/core/Map.js'
 import MapView from '@arcgis/core/views/MapView.js'
 import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
+import Point from '@arcgis/core/geometry/Point.js'
 import { defaults, supportedShortcuts } from './defaults.js'
 import { attachAppEvents } from './appEvents.js'
 import { attachMapEvents } from './mapEvents.js'
-import { getAreaDimensions, getCardinalMove, getPaddedExtent } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 import { queryVectorTileFeatures } from './utils/query.js'
 import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON } from './utils/coords.js'
 import { cleanDOM } from './utils/esriFixes.js'
@@ -118,9 +119,11 @@ export default class EsriProvider {
   // Side-effects
   // ==========================
 
-  setView ({ center, zoom }) {
+  setView({ center, zoom }) {
     this.view.animation?.destroy()
-    this.view.goTo({ center, zoom, duration: defaults.animationDuration })
+    const point = center ? new Point({ x: center[0], y: center[1], spatialReference: { wkid: 27700 }}) : this.view.center
+    const target = { center: point, zoom: zoom ?? this.view.zoom }
+    this.view.goTo({ ...target, duration: defaults.animationDuration })
   }
 
   zoomIn (zoomDelta) {
@@ -202,5 +205,16 @@ export default class EsriProvider {
   screenToMap (point) {
     const mapPoint = this.view.toMap(point)
     return [mapPoint.x, mapPoint.y]
+  }
+
+  /**
+   * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
+   *
+   * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry.
+   * @param {DOMRect} panelRect - Bounding rect of the panel element (viewport coordinates).
+   * @returns {boolean}
+   */
+  isGeometryObscured (geojson, panelRect) {
+    return isGeometryObscured(geojson, panelRect, this.view)
   }
 }

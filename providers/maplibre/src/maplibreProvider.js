@@ -7,7 +7,7 @@ import { DEFAULTS, supportedShortcuts } from './defaults.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
-import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, getResolution, getPaddedBounds } from './utils/spatial.js'
+import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, isGeometryObscured, getResolution, getPaddedBounds } from './utils/spatial.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
@@ -336,5 +336,16 @@ export default class MapLibreProvider {
   screenToMap (point) {
     const { lng, lat } = this.map.unproject([point.x, point.y])
     return [lng, lat]
+  }
+
+  /**
+   * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
+   *
+   * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry.
+   * @param {DOMRect} panelRect - Bounding rect of the panel element (viewport coordinates).
+   * @returns {boolean}
+   */
+  isGeometryObscured (geojson, panelRect) {
+    return isGeometryObscured(geojson, panelRect, this.map)
   }
 }

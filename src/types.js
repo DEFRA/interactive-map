@@ -247,6 +247,10 @@
  *
  * @property {() => void} [clearHighlightedLabel]
  * @experimental Clear any highlighted label.
+ *
+ * @property {(geojson: object, panelRect: DOMRect) => boolean} [isGeometryObscured]
+ * Returns true if the geometry's screen bounding box overlaps the given panel element rectangle.
+ * Used internally by useVisibleGeometry to decide whether to pan/zoom when a panel opens.
  */
 
 /**
@@ -373,6 +377,11 @@
  *
  * @property {PanelBreakpointConfig} tablet
  * Tablet breakpoint configuration.
+ *
+ * @property {object} [visibleGeometry]
+ * GeoJSON Feature, FeatureCollection, or geometry to keep visible when this panel opens.
+ * If any part of the geometry's bounding box is obscured by the safe zone after the panel opens,
+ * the map automatically adjusts: Point or MultiPoint geometry routes to setView(), all other types to fitToBounds().
  */
 
 /**

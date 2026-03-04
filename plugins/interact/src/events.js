@@ -39,7 +39,11 @@ export function attachEvents ({
   // (e.g. finishing a draw gesture) fires before this handler is live.
   let clickReady = false
   const clickReadyTimer = setTimeout(() => { clickReady = true }, 0)
-  const handleMapClick = (e) => { if (clickReady) { handleInteraction(e) } }
+  const handleMapClick = (e) => {
+    if (clickReady) {
+      handleInteraction(e)
+    }
+  }
   const handleSelectAtTarget = () => handleInteraction(mapState.crossHair.getDetail())
 
   const handleSelectDone = () => {
