@@ -131,8 +131,8 @@ describe('useVisibleGeometry', () => {
     capturedHandlers['app:panelopened']({ panelId: 'myPanel' })
 
     // Run the current pending animation frame
-    jest.runOnlyPendingTimers() 
-    
+    jest.runOnlyPendingTimers()
+
     expect(mapProvider.isGeometryObscured).not.toHaveBeenCalled()
   })
 
