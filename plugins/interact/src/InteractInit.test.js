@@ -1,4 +1,4 @@
-import { render } from '@testing-library/react'
+import { act, render } from '@testing-library/react'
 import { InteractInit } from './InteractInit.jsx'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
@@ -70,9 +70,9 @@ describe('InteractInit', () => {
   it('attaches events and returns cleanup', () => {
     const { unmount } = render(<InteractInit {...props} />)
     expect(attachEvents).toHaveBeenCalledWith(expect.objectContaining({
-      handleInteraction: handleInteractionMock,
-      appState: props.appState,
-      pluginState: props.pluginState,
+      getAppState: expect.any(Function),
+      getPluginState: expect.any(Function),
+      handleInteraction: expect.any(Function),
       mapState: props.mapState,
       buttonConfig: props.buttonConfig,
       events: props.services.events,
@@ -80,9 +80,23 @@ describe('InteractInit', () => {
       closeApp: props.services.closeApp
     }))
 
-    // simulate unmount
+    const { getAppState, getPluginState, handleInteraction } = attachEvents.mock.calls.at(-1)[0]
+    expect(getAppState()).toMatchObject(props.appState)
+    expect(getPluginState()).toMatchObject({ enabled: props.pluginState.enabled })
+
+    const event = { point: {}, coords: [] }
+    handleInteraction(event)
+    expect(handleInteractionMock).toHaveBeenCalledWith(event)
+
     unmount()
     expect(cleanupMock).toHaveBeenCalled()
+  })
+
+  it('enables click handling after a macrotask', () => {
+    jest.useFakeTimers()
+    render(<InteractInit {...props} />)
+    act(() => jest.runAllTimers())
+    jest.useRealTimers()
   })
 
   it('does not attach events if plugin not enabled', () => {

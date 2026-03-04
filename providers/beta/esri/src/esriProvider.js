@@ -1,6 +1,7 @@
 // src/plugins/mapStyles/EsriProvider.jsx
 import './esriProvider.scss'
 import esriConfig from '@arcgis/core/config.js'
+import TileInfo from '@arcgis/core/layers/support/TileInfo.js'
 import EsriMap from '@arcgis/core/Map.js'
 import MapView from '@arcgis/core/views/MapView.js'
 import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
@@ -50,6 +51,7 @@ export default class EsriProvider {
       center: getPointFromFlatCoords(config.center),
       maxExtent: maxExtent,
       constraints: {
+        lods: TileInfo.create({ spatialReference: { wkid: 27700 } }).lods,
         snapToZoom: false,
         minZoom: config.minZoom,
         maxZoom: config.maxZoom,

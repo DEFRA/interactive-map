@@ -6,19 +6,27 @@ describe('attachEvents', () => {
   beforeEach(() => {
     jest.useFakeTimers()
     // factory function to create fresh params for each test
-    createParams = () => ({
-      appState: { layoutRefs: { viewportRef: { current: document.body } }, disabledButtons: new Set() },
-      mapState: {
-        markers: { remove: jest.fn(), getMarker: jest.fn(() => null) },
-        crossHair: { getDetail: jest.fn(() => ({ point: { x: 0, y: 0 }, coords: [0,0] })) }
-      },
-      pluginState: { dispatch: jest.fn(), selectionBounds: null, selectedFeatures: [], closeOnAction: true, multiSelect: false },
-      buttonConfig: { selectDone: {}, selectAtTarget: {}, selectCancel: {} },
-      events: { MAP_CLICK: 'map:click' },
-      eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
-      handleInteraction: jest.fn(),
-      closeApp: jest.fn()
-    })
+    createParams = () => {
+      const appState = { layoutRefs: { viewportRef: { current: document.body } }, disabledButtons: new Set() }
+      const pluginState = { dispatch: jest.fn(), selectionBounds: null, selectedFeatures: [], closeOnAction: true, multiSelect: false }
+      const clickReadyRef = { current: false }
+      return {
+        appState,
+        pluginState,
+        clickReadyRef,
+        getAppState: () => appState,
+        getPluginState: () => pluginState,
+        mapState: {
+          markers: { remove: jest.fn(), getMarker: jest.fn(() => null) },
+          crossHair: { getDetail: jest.fn(() => ({ point: { x: 0, y: 0 }, coords: [0,0] })) }
+        },
+        buttonConfig: { selectDone: {}, selectAtTarget: {}, selectCancel: {} },
+        events: { MAP_CLICK: 'map:click' },
+        eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
+        handleInteraction: jest.fn(),
+        closeApp: jest.fn()
+      }
+    }
   })
 
   afterEach(() => {
@@ -65,10 +73,10 @@ describe('attachEvents', () => {
     expect(params.handleInteraction).not.toHaveBeenCalled()
   })
 
-  it('map click triggers interaction after timer fires', () => {
+  it('map click triggers interaction when clickReadyRef is true', () => {
     const params = createParams()
+    params.clickReadyRef.current = true
     cleanup = attachEvents(params)
-    jest.runAllTimers()
 
     const handler = params.eventBus.on.mock.calls.find(c => c[0]==='map:click')[1]
     handler({ point:{x:1,y:2}, coords:[3,4] })
@@ -76,8 +84,9 @@ describe('attachEvents', () => {
     expect(params.handleInteraction).toHaveBeenCalledWith({ point:{x:1,y:2}, coords:[3,4] })
   })
 
-  it('map click is suppressed immediately after enable before timer fires', () => {
+  it('map click is suppressed when clickReadyRef is false', () => {
     const params = createParams()
+    params.clickReadyRef.current = false
     cleanup = attachEvents(params)
 
     const handler = params.eventBus.on.mock.calls.find(c => c[0]==='map:click')[1]

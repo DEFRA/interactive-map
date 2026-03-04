@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useMap } from '../store/mapContext.js'
 import { useService } from '../store/serviceContext.js'
@@ -99,8 +99,10 @@ export const useMarkers = () => {
   const { markers, dispatch, mapSize, isMapReady } = useMap()
   const markerRefs = useRef(new Map())
 
-  // Attach add, remove, and getMarker methods to the markers store object
-  useEffect(() => {
+  // Attach add, remove, and getMarker methods to the markers store object.
+  // useLayoutEffect ensures these are assigned before paint so rapid clicks can't
+  // arrive between a render (new markers object) and the async useEffect assignment.
+  useLayoutEffect(() => {
     if (!mapProvider) {
       return
     }

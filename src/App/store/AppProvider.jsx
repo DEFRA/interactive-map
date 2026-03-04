@@ -21,6 +21,7 @@ export const AppProvider = ({ options, children }) => {
     topRightColRef: useRef(null),
     insetRef: useRef(null),
     rightRef: useRef(null),
+    rightBottomRef: useRef(null),
     middleRef: useRef(null),
     bottomRef: useRef(null),
     footerRef: useRef(null),

@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { attachEvents } from './events.js'
@@ -27,6 +27,27 @@ export const InteractInit = ({
     mapProvider,
   })
 
+  // Refs updated synchronously each render — keeps callbacks fresh without re-attaching events
+  const handleInteractionRef = useRef(handleInteraction)
+  handleInteractionRef.current = handleInteraction
+
+  const pluginStateRef = useRef(pluginState)
+  pluginStateRef.current = pluginState
+
+  const appStateRef = useRef(appState)
+  appStateRef.current = appState
+
+  // Defer click handling by one macrotask so any click that triggered the enable
+  // (e.g. finishing a draw gesture) fires before this handler is live.
+  // Managed separately from attachEvents so re-runs of that effect don't reset it —
+  // only resets when enabled actually changes.
+  const clickReadyRef = useRef(false)
+  useEffect(() => {
+    clickReadyRef.current = false
+    const timer = setTimeout(() => { clickReadyRef.current = true }, 0)
+    return () => clearTimeout(timer)
+  }, [pluginState.enabled])
+
   // Highlight features and sync state selectedBounds from mapProvider
   useHighlightSync({
     mapProvider,
@@ -54,18 +75,19 @@ export const InteractInit = ({
     }
 
     const cleanupEvents = attachEvents({
-      appState,
-      pluginState,
+      getAppState: () => appStateRef.current,
       mapState,
+      getPluginState: () => pluginStateRef.current,
       buttonConfig,
       events,
       eventBus,
-      handleInteraction,
+      handleInteraction: (e) => handleInteractionRef.current(e),
+      clickReadyRef,
       closeApp
     })
-    
+
     return cleanupEvents
-  }, [appState, mapState, pluginState, buttonConfig, eventBus, handleInteraction])
+  }, [pluginState.enabled, buttonConfig, events, eventBus, closeApp])
 
 
   return null

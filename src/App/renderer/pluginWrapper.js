@@ -1,4 +1,5 @@
 // src/core/renderers/pluginWrapper.js
+import { useMemo } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
@@ -59,11 +60,11 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
           services={services}
           mapProvider={appConfig.mapProvider}
           iconRegistry={getIconRegistry()}
-          buttonConfig={Object.fromEntries(
+          buttonConfig={useMemo(() => Object.fromEntries(
             Object.entries(appState.buttonConfig).filter(
               ([_, btn]) => btn.pluginId === pluginId
             )
-          )}
+          ), [appState.buttonConfig])}
         />
       )
     })
