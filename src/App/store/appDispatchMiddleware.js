@@ -1,5 +1,7 @@
 // src/App/store/dispatchMiddleware.js
 import { EVENTS as events } from '../../config/events.js'
+import { defaultPanelConfig } from '../../config/appConfig.js'
+import { deepMerge } from '../../utils/deepMerge.js'
 
 /**
  * Determines which panels were implicitly closed when opening a new panel
@@ -77,5 +79,22 @@ export function handleActionSideEffects (action, previousState, panelConfig, eve
       // Emit open event for the new panel
       eventBus.emit(events.APP_PANEL_OPENED, { panelId, props })
     })
+  }
+
+  if (type === 'ADD_PANEL') {
+    const { id, config } = payload
+    const mergedConfig = deepMerge(defaultPanelConfig, config)
+    const bpConfig = mergedConfig[previousState.breakpoint]
+    if (bpConfig?.open) {
+      queueMicrotask(() => {
+        const slot = bpConfig.slot
+        const { visibleGeometry } = mergedConfig
+        const eventPayload = { panelId: id, slot }
+        if (visibleGeometry) {
+          eventPayload.visibleGeometry = visibleGeometry
+        }
+        eventBus.emit(events.APP_PANEL_OPENED, eventPayload)
+      })
+    }
   }
 }

@@ -196,10 +196,50 @@ const getPaddedBounds = (LngLatBounds, map) => {
  */
 const getBboxFromGeoJSON = (geojson) => turfBbox(geojson)
 
+/**
+ * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
+ * Used to decide whether to pan/zoom when a panel opens over a visibleGeometry target.
+ *
+ * @param {object} geojson - GeoJSON Feature, FeatureCollection, or geometry
+ * @param {DOMRect} panelRect - Bounding rect of the panel element (viewport coordinates)
+ * @param {object} map - MapLibre map instance
+ * @returns {boolean}
+ */
+const isGeometryObscured = (geojson, panelRect, map) => {
+  const containerRect = map.getContainer().getBoundingClientRect()
+  const [west, south, east, north] = getBboxFromGeoJSON(geojson)
+
+  const corners = [
+    map.project([west, south]),
+    map.project([west, north]),
+    map.project([east, south]),
+    map.project([east, north])
+  ]
+
+  const screenMinX = Math.min(...corners.map(c => c.x))
+  const screenMaxX = Math.max(...corners.map(c => c.x))
+  const screenMinY = Math.min(...corners.map(c => c.y))
+  const screenMaxY = Math.max(...corners.map(c => c.y))
+
+  // Convert panelRect from viewport coords to map-container-relative coords
+  const panelLeft = panelRect.left - containerRect.left
+  const panelTop = panelRect.top - containerRect.top
+  const panelRight = panelRect.right - containerRect.left
+  const panelBottom = panelRect.bottom - containerRect.top
+
+  return (
+    screenMinX < panelRight &&
+    screenMaxX > panelLeft &&
+    screenMinY < panelBottom &&
+    screenMaxY > panelTop
+  )
+}
+
 export {
   getAreaDimensions,
   getCardinalMove,
   getBboxFromGeoJSON,
+  isGeometryObscured,
   spatialNavigate,
   getResolution,
   getPaddedBounds,

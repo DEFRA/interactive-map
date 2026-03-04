@@ -6,6 +6,7 @@ import { useMapStateSync } from '../../hooks/useMapStateSync'
 import { useMapURLSync } from '../../hooks/useMapURLSync'
 import { useMapAnnouncements } from '../../hooks/useMapAnnouncements'
 import { useMapProviderOverrides } from '../../hooks/useMapProviderOverrides'
+import { useVisibleGeometry } from '../../hooks/useVisibleGeometry'
 import { getInitialMapState } from '../../../utils/mapStateSync'
 import { scaleFactor } from '../../../config/appConfig'
 import { scalePoints } from '../../../utils/scalePoints.js'
@@ -57,6 +58,9 @@ export const MapController = ({ mapContainerRef }) => {
 
   // Override mapProvider functions
   useMapProviderOverrides()
+
+  // Pan/zoom to keep visibleGeometry visible when panels open
+  useVisibleGeometry()
 
   // Update padding when breakpoint or mapSize change
   useEffect(() => {
