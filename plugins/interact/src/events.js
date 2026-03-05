@@ -1,5 +1,6 @@
 // Helper for feature toggling logic
-const createFeatureHandler = (mapState, pluginState) => (args, addToExisting) => {
+const createFeatureHandler = (mapState, getPluginState) => (args, addToExisting) => {
+  const pluginState = getPluginState()
   mapState.markers.remove('location')
   pluginState.dispatch({
     type: 'TOGGLE_SELECTED_FEATURES',
@@ -12,17 +13,18 @@ const createFeatureHandler = (mapState, pluginState) => (args, addToExisting) =>
 }
 
 export function attachEvents ({
-  appState,
+  getAppState,
   mapState,
-  pluginState,
+  getPluginState,
   buttonConfig,
   events,
   eventBus,
   handleInteraction,
+  clickReadyRef,
   closeApp
 }) {
   const { selectDone, selectAtTarget, selectCancel } = buttonConfig
-  const { viewportRef } = appState.layoutRefs
+  const { viewportRef } = getAppState().layoutRefs
 
   // Keyboard Logic
   let enterOnViewport = false
@@ -35,23 +37,20 @@ export function attachEvents ({
   }
 
   // Interaction Handlers
-  // Defer click handling by one macrotask so any click that triggered the enable
-  // (e.g. finishing a draw gesture) fires before this handler is live.
-  let clickReady = false
-  const clickReadyTimer = setTimeout(() => { clickReady = true }, 0)
   const handleMapClick = (e) => {
-    if (clickReady) {
+    if (clickReadyRef.current) {
       handleInteraction(e)
     }
   }
   const handleSelectAtTarget = () => handleInteraction(mapState.crossHair.getDetail())
 
   const handleSelectDone = () => {
+    const pluginState = getPluginState()
     const marker = mapState.markers.getMarker('location')
     const { coords } = marker || {}
     const { selectionBounds, selectedFeatures } = pluginState
-    
-    if (appState.disabledButtons.has('selectDone')) {
+
+    if (getAppState().disabledButtons.has('selectDone')) {
       return
     }
 
@@ -68,12 +67,12 @@ export function attachEvents ({
 
   const handleSelectCancel = () => {
     eventBus.emit('interact:cancel')
-    if (pluginState.closeOnAction ?? true) {
+    if (getPluginState().closeOnAction ?? true) {
       closeApp()
     }
   }
 
-  const toggleFeature = createFeatureHandler(mapState, pluginState)
+  const toggleFeature = createFeatureHandler(mapState, getPluginState)
   const handleSelect = (args) => toggleFeature(args, true)
   const handleUnselect = (args) => toggleFeature(args, false)
 
@@ -88,7 +87,6 @@ export function attachEvents ({
   selectCancel.onClick = handleSelectCancel
 
   return () => {
-    clearTimeout(clickReadyTimer)
     selectDone.onClick = null
     selectAtTarget.onClick = null
     selectCancel.onClick = null

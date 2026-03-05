@@ -33,28 +33,18 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
     disableSnap()
     mapProvider.undoStack?.clear()
 
-    const features = draw.getAll().features
-    
     if (mode === 'edit_vertex') {
       map.fire('draw.editfinish', { features: [draw.get(tempFeature.id)] })
       return
     }
 
-    if (!['draw_polygon', 'draw_line'].includes(mode) || features.length === 0) {
+    if (!['draw_polygon', 'draw_line'].includes(mode)) {
       return
     }
 
-    const feature = features?.[0]
-    const geom = feature.geometry
-
-    if (geom.type === 'Polygon') {
-      const ring = geom.coordinates[0]
-      geom.coordinates[0] = [...ring.slice(0, -2), ring[0]]
-    } else {
-      geom.coordinates = geom.coordinates.slice(0, -1)
-    }
-
-    map.fire('draw.create', { features: [feature] })
+    // Trigger onStop → ParentMode.onStop, which strips the rubber-band vertex
+    // and fires draw.create once with the correct geometry.
+    draw.changeMode('disabled')
   }
 
   const handleCancel = () => {

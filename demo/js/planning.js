@@ -57,8 +57,8 @@ const interactiveMap = new InteractiveMap('map', {
 	// minDesktopWidth: 960,
 	mapLabel: 'Ambleside',
 	// zoom: 14,
-	minZoom: 2,
-	maxZoom: 15,
+	minZoom: 6,
+	maxZoom: 20,
 	autoColorScheme: true,
 	// center: [337672, 504580],
 	extent: [337047, 503795, 338120, 505281],
@@ -69,7 +69,11 @@ const interactiveMap = new InteractiveMap('map', {
 	hasExitButton: true,
 	plugins: [
 		mapStylesPlugin({
-			mapStyles: vtsMapStyles27700
+			mapStyles: vtsMapStyles27700,
+			manifest: {
+				buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false }}],
+				panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: false }}]
+			}
 		}),
 		scaleBarPlugin({
 			units: 'metric'
@@ -92,6 +96,14 @@ const interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
+	interactiveMap.addButton('help', {
+		label: 'Help',
+		href: 'https://google.co.uk',
+		iconSvgContent: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
+		mobile: { slot: 'right-top', showLabel: false },
+		tablet: { slot: 'right-top', showLabel: false, order: 1 },
+		desktop: { slot: 'right-top', showLabel: false, order: 1 }
+	})
 	interactiveMap.addButton('menu', {
 		label: 'Menu',
 		panelId: 'menu',

@@ -105,10 +105,41 @@ export function attachMapEvents ({
     updating => !updating && emitDataChange()
   ))
 
-  // click
-  handlers.push(view.on('click', e => {
-    const mapPoint = e.mapPoint
+  // Click
+  // handlers.push(view.on('click', e => {
+  //   const mapPoint = e.mapPoint
+  //   const screenPoint = { x: e.x, y: e.y }
+  //   eventBus.emit(events.MAP_CLICK, { point: screenPoint, coords: [mapPoint.x, mapPoint.y] })
+  // }))
+
+  // Using pointer-up instead of click/immediate-click — significantly more responsive as it
+  // bypasses ArcGIS's internal hit-testing pipeline. Track pointer-down position to suppress
+  // pointer-up after a drag/pan. Also suppress when SketchViewModel is active so draw/edit
+  // vertex clicks don't leak through to the map click handler.
+  const DRAG_TOLERANCE = 6
+  let pointerDownX = null
+  let pointerDownY = null
+
+  handlers.push(view.on('pointer-down', e => {
+    pointerDownX = e.x
+    pointerDownY = e.y
+  }))
+
+  handlers.push(view.on('pointer-up', e => {
+    if (e.button !== 0) {
+      return
+    }
+    if (Math.hypot(e.x - pointerDownX, e.y - pointerDownY) > DRAG_TOLERANCE) {
+      return
+    }
+    if (mapProvider.sketchViewModel?.state === 'active') {
+      return
+    }
     const screenPoint = { x: e.x, y: e.y }
+    const mapPoint = view.toMap(screenPoint)
+    if (!mapPoint) {
+      return
+    }
     eventBus.emit(events.MAP_CLICK, { point: screenPoint, coords: [mapPoint.x, mapPoint.y] })
   }))
 

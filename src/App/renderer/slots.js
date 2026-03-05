@@ -30,10 +30,10 @@ export const allowedSlots = Object.freeze({
     layoutSlots.SIDE,
     layoutSlots.BANNER,
     layoutSlots.INSET,
+    layoutSlots.RIGHT_BOTTOM,
     layoutSlots.MIDDLE,
     layoutSlots.BOTTOM,
     layoutSlots.ACTIONS,
-    layoutSlots.DRAWER,
     layoutSlots.MODAL
   ],
   button: [

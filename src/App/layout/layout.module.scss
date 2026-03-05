@@ -322,10 +322,7 @@
   }
 
   [class*="im-c-panel--"][class*="-button"] { // Adjacent to button
-    top: var(--modal-inset);
-    right: var(--modal-inset);
-    bottom: var(--modal-inset);
-    left: var(--modal-inset);
+    inset: var(--modal-inset);
   }
 }
 

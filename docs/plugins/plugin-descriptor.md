@@ -69,3 +69,40 @@ Async function that loads and returns a [PluginManifest](./plugin-manifest.md).
 **Type:** `Partial<PluginManifest>`
 
 Optional manifest overrides. Allows overriding properties of the loaded [PluginManifest](./plugin-manifest.md).
+
+Use when you need to customise the UI of a plugin at registration time — particularly for predefined or third-party plugins where you cannot modify the original manifest directly.
+
+Only the properties you provide are merged into the loaded manifest. Overrides are matched by `id`.
+
+#### Example
+
+This example:
+
+- Moves the `mapStyles` button to the `right-top` slot on desktop.
+- Hides the button label.
+- Positions the related panel so it opens from the `map-styles-button` slot.
+- Sets the panel width to `400px`.
+- Makes the panel modal.
+
+```js
+manifest: {
+  buttons: [
+    {
+      id: 'mapStyles',
+      desktop: {
+        slot: 'right-top',
+        showLabel: false
+      }
+    }
+  ],
+  panels: [
+    {
+      id: 'mapStyles',
+      desktop: {
+        slot: 'map-styles-button',
+        width: '400px',
+        modal: true
+      }
+    }
+  ]
+}
