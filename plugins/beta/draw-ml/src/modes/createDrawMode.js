@@ -137,9 +137,7 @@ export const createDrawMode = (ParentMode, config) => {
         // For lines: clicking same spot (like double-click) should finish the line
         if (finishOnInvalidClick && coords.length > 1) {
           coords.pop()
-          this.map.fire('draw.create', {
-            features: [feature.toGeoJSON()]
-          })
+          this.map.fire('draw.create', { features: [feature.toGeoJSON()] })
           this.changeMode('simple_select', { featureIds: [feature.id] })
         }
         return
