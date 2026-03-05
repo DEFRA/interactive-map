@@ -19,15 +19,15 @@ describe('useModalPanelBehaviour', () => {
     }
     // Give panel an ID for aria-controls tests
     refs.panel.current.id = 'modal-panel-id'
-    
+
     elements = {
       buttonContainer: document.createElement('div'),
       root: document.createElement('div')
     }
-    
+
     elements.root.appendChild(refs.panel.current)
     document.body.appendChild(elements.root)
-    
+
     handleClose = jest.fn()
     jest.clearAllMocks()
     document.documentElement.style.setProperty('--modal-inset', '')
@@ -37,10 +37,10 @@ describe('useModalPanelBehaviour', () => {
     document.body.innerHTML = ''
   })
 
-  const TestComponent = ({ 
-    isModal = true, 
+  const TestComponent = ({
+    isModal = true,
     buttonContainerEl,
-    rootEl = elements.root 
+    rootEl = elements.root
   }) => {
     useModalPanelBehaviour({
       mainRef: refs.main,
@@ -76,7 +76,7 @@ describe('useModalPanelBehaviour', () => {
     beforeEach(() => {
       // Force ResizeObserver to run the callback immediately
       useResizeObserverModule.useResizeObserver.mockImplementation((_, cb) => cb())
-      
+
       Object.defineProperty(refs.main.current, 'getBoundingClientRect', {
         value: () => ({ top: 0, right: 100, bottom: 50, left: 0, width: 100, height: 50 }),
         configurable: true
@@ -139,7 +139,7 @@ describe('useModalPanelBehaviour', () => {
 
       const externalEl = document.createElement('button')
       document.body.appendChild(externalEl) // Outside elements.root
-      
+
       dispatchFocusIn(externalEl)
 
       // Since isInsideApp is false, it should hit the "return" and not call focus()
@@ -160,7 +160,7 @@ describe('useModalPanelBehaviour', () => {
     it('handles null focus targets gracefully', () => {
       render(<TestComponent />)
       dispatchFocusIn(null)
-      expect(true).toBe(true) 
+      expect(true).toBe(true)
     })
   })
 
@@ -169,7 +169,7 @@ describe('useModalPanelBehaviour', () => {
       const backdrop = document.createElement('div')
       backdrop.className = 'im-o-app__modal-backdrop'
       elements.root.appendChild(backdrop)
-      
+
       render(<TestComponent />)
       fireEvent.click(backdrop)
       expect(handleClose).toHaveBeenCalled()
