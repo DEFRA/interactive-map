@@ -127,7 +127,7 @@ describe('getSafeZoneInset', () => {
 
     const dividerGap = 10
     const expectedBottom = Math.max(mainRef.current.offsetHeight - actionsRef.current.offsetTop,
-                                    mainRef.current.offsetHeight - footerRef.current.offsetTop) + dividerGap
+      mainRef.current.offsetHeight - footerRef.current.offsetTop) + dividerGap
     expect(result.bottom).toBe(expectedBottom)
   })
 })
