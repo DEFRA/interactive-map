@@ -43,3 +43,8 @@ body, html {
     line-height: inherit !important;
   }
 }
+
+// Hide the ESRI Attribution, manage this elsewhere
+.esri-view-attribution {
+  display: none;
+}

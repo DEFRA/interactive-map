@@ -148,6 +148,31 @@
 }
 
 // ---------------------------------------------------
+// Right: Buttons and panels
+// ---------------------------------------------------
+
+.im-o-app__left {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  left: var(--primary-gap);
+  top: var(--left-offset-top);
+  bottom: var(--left-offset-bottom);
+}
+
+.im-o-app__left-top {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  align-items: flex-end;
+  gap: var(--divider-gap);
+}
+
+.im-o-app__left-bottom {
+  margin-top: auto;
+}
+
+// ---------------------------------------------------
 // Middle:
 // ---------------------------------------------------
 
@@ -164,7 +189,7 @@
 }
 
 // ---------------------------------------------------
-// Right: Buttons and inset panel
+// Right: Buttons and panels
 // ---------------------------------------------------
 
 .im-o-app__right {

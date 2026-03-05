@@ -134,6 +134,13 @@ interactiveMap.on('app:ready', function (e) {
 		tablet: { slot: 'inset', width: '260px', open: false, exclusive: true },
 		desktop: { slot: 'inset', width: '280px', open: false, exclusive: true }
 	})
+	interactiveMap.addPanel('test', {
+		label: 'test',
+		html: '<p>Test</p>',
+		mobile: { slot: 'left-top', open: true },
+		tablet: { slot: 'inset', open: true },
+		desktop: { slot: 'left-top', open: true }
+	})
 })
 
 interactiveMap.on('map:ready', function (e) {

@@ -40,17 +40,23 @@ export function useLayoutMeasurements () {
     const root = document.documentElement
     const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
 
+    // === Top column width ===
+    const leftWidth = topLeftCol.offsetWidth || 0
+    const rightWidth = topRightCol.offsetWidth || 0
+    const finalWidth = leftWidth || rightWidth ? Math.max(leftWidth, rightWidth) : 0
+    appContainer.style.setProperty('--top-col-width', `${finalWidth}px`)
+
     // === Inset offsets ===
     const insetOffsetTop = topLeftCol.offsetHeight + top.offsetTop
     const insetMaxHeight = main.offsetHeight - insetOffsetTop - top.offsetTop
     appContainer.style.setProperty('--inset-offset-top', `${insetOffsetTop}px`)
     appContainer.style.setProperty('--inset-max-height', `${insetMaxHeight}px`)
 
-    // === Bottom left offset ===
-    const insetBottom = inset.offsetHeight + insetOffsetTop
-    const bottomOffsetTop = Math.min(bottom.offsetTop, actions.offsetTop)
-    const bottomOffsetLeft = bottomOffsetTop - dividerGap > insetBottom ? 0 : inset.offsetLeft + inset.offsetWidth
-    appContainer.style.setProperty('--offset-left', `${bottomOffsetLeft}px`)
+    // === Left container offsets ===
+    const leftOffsetTop = topLeftCol.offsetHeight + top.offsetTop
+    const leftOffsetBottom = main.offsetHeight - bottom.offsetTop + dividerGap
+    appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
+    appContainer.style.setProperty('--left-offset-bottom', `${leftOffsetBottom}px`)
 
     // === Right container offsets ===
     const rightOffsetTop = topRightCol.offsetHeight + top.offsetTop
@@ -58,11 +64,11 @@ export function useLayoutMeasurements () {
     appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
     appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom}px`)
 
-    // === Top column width ===
-    const leftWidth = topLeftCol.offsetWidth || 0
-    const rightWidth = topRightCol.offsetWidth || 0
-    const finalWidth = leftWidth || rightWidth ? Math.max(leftWidth, rightWidth) : 0
-    appContainer.style.setProperty('--top-col-width', `${finalWidth}px`)
+    // === Bottom left offset ===
+    const insetBottom = inset.offsetHeight + insetOffsetTop
+    const bottomOffsetTop = Math.min(bottom.offsetTop, actions.offsetTop)
+    const bottomOffsetLeft = bottomOffsetTop - dividerGap > insetBottom ? 0 : inset.offsetLeft + inset.offsetWidth
+    appContainer.style.setProperty('--offset-left', `${bottomOffsetLeft}px`)
   }
 
   // --------------------------------

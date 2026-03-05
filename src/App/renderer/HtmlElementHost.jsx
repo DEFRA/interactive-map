@@ -16,9 +16,12 @@ export const getSlotRef = (slot, layoutRefs) => {
     'top-left': layoutRefs.topLeftColRef,
     'top-right': layoutRefs.topRightColRef,
     inset: layoutRefs.insetRef,
+    'left-top': layoutRefs.leftTopRef,
+    'left-bottom': layoutRefs.leftBottomRef,
     middle: layoutRefs.middleRef,
-    bottom: layoutRefs.bottomRef,
+    'right-top': layoutRefs.rightTopRef,
     'right-bottom': layoutRefs.rightBottomRef,
+    bottom: layoutRefs.bottomRef,
     actions: layoutRefs.actionsRef,
     modal: layoutRefs.modalRef
   }

@@ -1,7 +1,7 @@
 import { getSafeZoneInset } from './getSafeZoneInset'
 
 describe('getSafeZoneInset', () => {
-  let mainRef, insetRef, rightRef, footerRef, actionsRef
+  let mainRef, insetRef, leftRef, rightRef, actionsRef, footerRef
   let originalGetComputedStyle
 
   beforeAll(() => { originalGetComputedStyle = window.getComputedStyle })
@@ -10,80 +10,124 @@ describe('getSafeZoneInset', () => {
   beforeEach(() => {
     mainRef = { current: { offsetWidth: 800, offsetHeight: 600, offsetLeft: 0 } }
     insetRef = { current: { offsetWidth: 100, offsetHeight: 50, offsetTop: 50, offsetLeft: 20 } }
-    rightRef = { current: { offsetWidth: 50, offsetLeft: 0 } }
-    footerRef = { current: { offsetTop: 550 } }
+    leftRef = { current: { offsetWidth: 50, offsetLeft: 20, offsetTop: 10 } }
+    rightRef = { current: { offsetWidth: 50, offsetLeft: 730 } }
     actionsRef = { current: { offsetTop: 520 } }
+    footerRef = { current: { offsetTop: 550 } }
 
-    // Mock CSS var --divider-gap = 10
+    // CSS var mock
     window.getComputedStyle = jest.fn().mockReturnValue({ getPropertyValue: () => '10' })
   })
 
-  const runScenario = ({ isLandscape, insetHeight }) => {
-    insetRef.current.offsetHeight = insetHeight
-
-    // Manipulate dimensions to influence landscape heuristic
-    if (isLandscape) {
-      mainRef.current.offsetWidth = 1000
-      insetRef.current.offsetWidth = 400
-    } else {
-      mainRef.current.offsetWidth = 600
-      insetRef.current.offsetWidth = 100
-    }
-
-    return getSafeZoneInset({ mainRef, insetRef, rightRef, footerRef, actionsRef })
-  }
-
-  it('topOffset adds 0 when portrait and height = 0', () => {
-    const result = runScenario({ isLandscape: false, insetHeight: 0 })
-    expect(result.top).toBe(insetRef.current.offsetTop)
+  it('returns undefined if any ref.current is null', () => {
+    const result = getSafeZoneInset({
+      mainRef: { current: null },
+      insetRef,
+      leftRef,
+      rightRef,
+      actionsRef,
+      footerRef
+    })
+    expect(result).toBeUndefined()
   })
 
-  it('landscape returns left = rightOffset when there is enough room', () => {
-    const result = runScenario({ isLandscape: true, insetHeight: 50 })
-    expect(result.top).toBe(insetRef.current.offsetTop)
-    expect(result.left).toBe(80) // rightOffset = 20 + 50 + 10
-    expect(result.left).toBe(result.right) // left equals returned rightOffset
-  })
-
-  it('landscape returns left = rightOffset even when inset height = 0', () => {
-    const result = runScenario({ isLandscape: true, insetHeight: 0 })
-    expect(result.top).toBe(insetRef.current.offsetTop)
-    expect(result.left).toBe(80)
-    expect(result.left).toBe(result.right)
-  })
-
-  it('portrait shifts inset below itself when it does NOT have enough vertical room', () => {
-    // Force a portrait overflow case
+  it('portrait mode shifts inset below itself when it does NOT have enough vertical room', () => {
+    // Mock layout
     mainRef.current.offsetWidth = 200
+    mainRef.current.offsetHeight = 200
     insetRef.current.offsetWidth = 100
     insetRef.current.offsetHeight = 50
     insetRef.current.offsetTop = 50
-    window.getComputedStyle = jest.fn().mockReturnValue({ getPropertyValue: () => '10' })
+    insetRef.current.offsetLeft = 20
 
-    const result = getSafeZoneInset({ mainRef, insetRef, rightRef, footerRef, actionsRef })
+    leftRef.current.offsetWidth = 50
+    leftRef.current.offsetLeft = 10
+    leftRef.current.offsetTop = 10
 
-    // topOffset = 50 + 50 + 10 = 110
-    expect(result.top).toBe(110)
-    // left = rightOffset = 20 + 50 + 10 = 80
-    expect(result.left).toBe(80)
-    expect(result.right).toBe(80)
+    rightRef.current.offsetWidth = 50
+    rightRef.current.offsetLeft = 140
+
+    actionsRef.current.offsetTop = 150
+    footerRef.current.offsetTop = 180
+
+    const dividerGap = 10
+
+    const result = getSafeZoneInset({ mainRef, insetRef, leftRef, rightRef, actionsRef, footerRef })
+
+    // Compute expected values exactly as function would
+    const availableHeight = actionsRef.current.offsetTop - insetRef.current.offsetTop - dividerGap // 150 - 50 - 10 = 90
+    const leftOffset = leftRef.current.offsetLeft + leftRef.current.offsetWidth + dividerGap // 10 + 50 + 10 = 70
+    const rightOffset = leftRef.current.offsetLeft + rightRef.current.offsetWidth + dividerGap // 10 + 50 + 10 = 70
+    const availableWidth = mainRef.current.offsetWidth - (leftOffset + rightOffset) // 200 - (70+70) = 60
+    const insetOverlapWidth = insetRef.current.offsetWidth - leftOffset + leftRef.current.offsetLeft // 100 - 70 + 10 = 40
+    const isLandscape = availableWidth - insetOverlapWidth > availableHeight - insetRef.current.offsetHeight // 60-40 > 90-50 => 20>40 false
+
+    const topOffset = leftRef.current.offsetTop + (!isLandscape && insetRef.current.offsetHeight > 0 ? insetRef.current.offsetHeight + dividerGap : 0) // 10 + 50 +10 = 70
+    const combinedLeftOffset = isLandscape ? Math.max(insetRef.current.offsetWidth, leftRef.current.offsetWidth) + leftRef.current.offsetLeft + dividerGap : rightOffset // isLandscape=false -> 70
+    const actionsOffset = mainRef.current.offsetHeight - actionsRef.current.offsetTop // 200-150=50
+    const footerOffset = mainRef.current.offsetHeight - footerRef.current.offsetTop // 200-180=20
+    const hasRoom = insetOverlapWidth < availableWidth / 2 && insetRef.current.offsetHeight < availableHeight / 2 // 40 < 60/2? 40<30 false
+
+    const expectedTop = hasRoom ? insetRef.current.offsetTop : topOffset // false -> topOffset = 70
+    const expectedLeft = mainRef.current.offsetLeft + (hasRoom ? rightOffset : combinedLeftOffset) // 0+70=70
+    const expectedRight = rightOffset // 70
+    const expectedBottom = Math.max(actionsOffset, footerOffset) + dividerGap // max(50,20)+10 = 60
+
+    expect(result.top).toBe(expectedTop)
+    expect(result.left).toBe(expectedLeft)
+    expect(result.right).toBe(expectedRight)
+    expect(result.bottom).toBe(expectedBottom)
   })
 
-  /**
-   * Test to ensure coverage for the safety guardrail (Line 29).
-   * Validates that the function returns undefined if React refs are
-   * not yet attached to DOM elements.
-   */
-  it('returns undefined if any ref.current is null (unattached)', () => {
-    const unattachedRefs = {
-      mainRef: { current: null },
-      insetRef: { current: null },
-      rightRef: { current: null },
-      actionsRef: { current: null },
-      footerRef: { current: null }
-    }
+  it('landscape mode places inset beside panel when enough room', () => {
+    mainRef.current.offsetWidth = 1000
+    insetRef.current.offsetWidth = 200
+    insetRef.current.offsetHeight = 50
 
-    const result = getSafeZoneInset(unattachedRefs)
-    expect(result).toBeUndefined()
+    const result = getSafeZoneInset({ mainRef, insetRef, leftRef, rightRef, actionsRef, footerRef })
+
+    const dividerGap = 10
+    const leftOffset = leftRef.current.offsetLeft + leftRef.current.offsetWidth + dividerGap
+    const rightOffset = leftRef.current.offsetLeft + rightRef.current.offsetWidth + dividerGap
+    const availableWidth = mainRef.current.offsetWidth - (leftOffset + rightOffset)
+    const insetOverlapWidth = insetRef.current.offsetWidth - leftOffset + leftRef.current.offsetLeft
+    const availableHeight = actionsRef.current.offsetTop - insetRef.current.offsetTop - dividerGap
+    const isLandscape = availableWidth - insetOverlapWidth > availableHeight - insetRef.current.offsetHeight
+
+    const topOffset = leftRef.current.offsetTop + (!isLandscape && insetRef.current.offsetHeight > 0 ? insetRef.current.offsetHeight + dividerGap : 0)
+    const combinedLeftOffset = isLandscape ? Math.max(insetRef.current.offsetWidth, leftRef.current.offsetWidth) + leftRef.current.offsetLeft + dividerGap : rightOffset
+    const actionsOffset = mainRef.current.offsetHeight - actionsRef.current.offsetTop
+    const footerOffset = mainRef.current.offsetHeight - footerRef.current.offsetTop
+    const hasRoom = insetOverlapWidth < availableWidth / 2 && insetRef.current.offsetHeight < availableHeight / 2
+    const top = hasRoom ? insetRef.current.offsetTop : topOffset
+    const combinedLeft = mainRef.current.offsetLeft + (hasRoom ? rightOffset : combinedLeftOffset)
+    const bottom = Math.max(actionsOffset, footerOffset) + dividerGap
+
+    expect(result.top).toBe(top)
+    expect(result.left).toBe(combinedLeft)
+    expect(result.right).toBe(rightOffset)
+    expect(result.bottom).toBe(bottom)
+  })
+
+  it('portrait mode with zero inset height leaves top unchanged', () => {
+    insetRef.current.offsetHeight = 0
+    mainRef.current.offsetWidth = 500
+    insetRef.current.offsetWidth = 100
+
+    const result = getSafeZoneInset({ mainRef, insetRef, leftRef, rightRef, actionsRef, footerRef })
+    expect(result.top).toBe(insetRef.current.offsetTop)
+  })
+
+  it('calculates correct bottom using max of actions and footer offsets', () => {
+    mainRef.current.offsetHeight = 600
+    actionsRef.current.offsetTop = 500
+    footerRef.current.offsetTop = 550
+
+    const result = getSafeZoneInset({ mainRef, insetRef, leftRef, rightRef, actionsRef, footerRef })
+
+    const dividerGap = 10
+    const expectedBottom = Math.max(mainRef.current.offsetHeight - actionsRef.current.offsetTop,
+                                    mainRef.current.offsetHeight - footerRef.current.offsetTop) + dividerGap
+    expect(result.bottom).toBe(expectedBottom)
   })
 })
