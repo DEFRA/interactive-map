@@ -75,11 +75,28 @@ export function useModalPanelBehaviour ({
   const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
 
   useResizeObserver([mainRef], () => {
-    if (!isModal || !buttonContainerEl || !mainRef.current) {
+    if (!isModal || !mainRef.current) {
       return
     }
+
+    // buttonContainerEl is only defined for button-slot panels (bpConfig.slot ends with '-button').
+    // Skip positioning for all other modal types.
+    if (buttonContainerEl === undefined) {
+      return
+    }
+
+    // Dynamically query the current controlling button via aria-controls to handle the case
+    // where the button has remounted after a breakpoint change (stale triggeringElement).
+    const panelElId = panelRef.current?.id
+    const currentButtonEl = panelElId ? document.querySelector(`[aria-controls="${panelElId}"]`) : null
+    const effectiveContainer = currentButtonEl?.parentElement ?? (buttonContainerEl?.isConnected ? buttonContainerEl : null)
+
+    if (!effectiveContainer) {
+      return
+    }
+
     const mainRect = mainRef.current.getBoundingClientRect()
-    const buttonRect = buttonContainerEl.getBoundingClientRect()
+    const buttonRect = effectiveContainer.getBoundingClientRect()
     const offsetTop = buttonRect.top - mainRect.top
     const offsetRight = Math.round(mainRect.right - buttonRect.right + buttonRect.width + dividerGap)
     root.style.setProperty('--modal-inset', `${offsetTop}px ${offsetRight}px auto auto`)
