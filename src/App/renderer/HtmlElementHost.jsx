@@ -22,6 +22,7 @@ export const getSlotRef = (slot, layoutRefs) => {
     'right-top': layoutRefs.rightTopRef,
     'right-bottom': layoutRefs.rightBottomRef,
     bottom: layoutRefs.bottomRef,
+    'right-bottom': layoutRefs.rightBottomRef,
     actions: layoutRefs.actionsRef,
     modal: layoutRefs.modalRef
   }
