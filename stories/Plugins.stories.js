@@ -222,7 +222,6 @@ export const KitchenSink = {
         { default: mapStylesPlugin },
         { default: useLocationPlugin },
         { default: createDatasetsPlugin },
-        { default: createDrawPlugin },
         { default: createFramePlugin }
       ] = await Promise.all([
         import('../plugins/search/src/index.js'),
@@ -231,7 +230,6 @@ export const KitchenSink = {
         import('../plugins/beta/map-styles/src/index.js'),
         import('../plugins/beta/use-location/src/index.js'),
         import('../plugins/beta/datasets/src/index.js'),
-        import('../plugins/beta/draw-ml/src/index.js'),
         import('../plugins/beta/frame/src/index.js')
       ])
 
@@ -242,9 +240,12 @@ export const KitchenSink = {
         mapStylesPlugin({ mapStyles: MAP_STYLES }),
         useLocationPlugin(),
         createDatasetsPlugin({ datasets: [] }),
-        createDrawPlugin({}),
         createFramePlugin({ aspectRatio: 1.5 })
       ]
+    },
+    onReady: (map, plugins) => {
+      const interactPlugin = plugins.find(p => p.id === 'interact')
+      interactPlugin?.enable()
     }
   },
   play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
@@ -254,7 +255,8 @@ export const KitchenSink = {
 export const ButtonFirstKitchenSink = {
   args: {
     mapConfig: { behaviour: 'buttonFirst', containerHeight: '500px' },
-    buildPlugins: KitchenSink.args.buildPlugins
+    buildPlugins: KitchenSink.args.buildPlugins,
+    onReady: KitchenSink.args.onReady
   },
   play: async ({ canvasElement }) => {
     const { within } = await import('@storybook/test')
