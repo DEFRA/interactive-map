@@ -1,6 +1,5 @@
 // src/core/renderers/mapPanels.js
 import React from 'react'
-import { stringToKebab } from '../../utils/stringToKebab.js'
 import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { allowedSlots } from './slots.js'
@@ -12,7 +11,7 @@ import { resolveTargetSlot, isModeAllowed, isConsumerHtml } from './slotHelpers.
  * and ensures only the topmost modal panel is shown.
  */
 const isPanelVisible = (panelId, config, bpConfig, { targetSlot, slot, mode, isFullscreen, allowedModalPanelId }) => {
-  const isNextToButton = `${stringToKebab(panelId)}-button` === targetSlot
+  const isNextToButton = targetSlot.endsWith('-button')
   if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
     return false
   }

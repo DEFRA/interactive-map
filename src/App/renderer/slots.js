@@ -31,15 +31,14 @@ export const allowedSlots = Object.freeze({
   panel: [
     layoutSlots.SIDE,
     layoutSlots.BANNER,
-    layoutSlots.INSET,
+    layoutSlots.INSET, // Deprecate
     layoutSlots.LEFT_TOP,
     layoutSlots.LEFT_BOTTOM,
     layoutSlots.MIDDLE,
     layoutSlots.RIGHT_TOP,
     layoutSlots.RIGHT_BOTTOM,
-    layoutSlots.BOTTOM,
-    layoutSlots.ACTIONS,
-    layoutSlots.MODAL
+    layoutSlots.BOTTOM, // Typicaly on mobile
+    layoutSlots.MODAL // Internal only
   ],
   button: [
     layoutSlots.TOP_LEFT,

@@ -2,19 +2,22 @@
 
 export const sanitiseQuery = (value) => value.replace(/[^a-zA-Z0-9\s\-.,]/g, '').trim()
 
-const getRequestConfig = (ds, query, transformRequest) => {
+const getRequestConfig = async (ds, query, transformRequest) => {
   const defaultRequest = {
     url: ds.urlTemplate?.replace('{query}', encodeURIComponent(query)),
     options: { method: 'GET' }
   }
 
-  if (typeof ds.buildRequest === 'function') {
+  if (ds.buildRequest) {
     return ds.buildRequest(query, () => defaultRequest)
   }
 
-  return typeof transformRequest === 'function'
-    ? transformRequest(defaultRequest, query)
-    : defaultRequest
+  if (transformRequest) {
+    const transformedRequest = await transformRequest(defaultRequest, query)
+    return transformedRequest
+  }
+
+  return defaultRequest
 }
 
 /**
@@ -50,7 +53,7 @@ export const fetchSuggestions = async (value, datasets, dispatch, transformReque
   let finalResults = []
 
   for (const ds of activeDatasets) {
-    const request = getRequestConfig(ds, sanitisedValue, transformRequest)
+    const request = await getRequestConfig(ds, sanitisedValue, transformRequest)
     const results = await fetchDatasetResults(ds, request, sanitisedValue)
 
     // Check if we have results to add

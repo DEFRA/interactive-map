@@ -10,17 +10,17 @@ const computePanelState = (bpConfig, triggeringElement) => {
   const isAside = bpConfig.slot === 'side' && bpConfig.open && !bpConfig.modal
   const isDialog = !isAside && bpConfig.dismissible
   const isModal = bpConfig.modal === true
-  const isDismissable = bpConfig.dismissible !== false
+  const isDismissible = bpConfig.dismissible !== false
   const shouldFocus = Boolean(isModal || triggeringElement)
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
-  return { isAside, isDialog, isModal, isDismissable, shouldFocus, buttonContainerEl }
+  return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
 }
 
-const getPanelRole = (isDialog, isDismissable) => {
+const getPanelRole = (isDialog, isDismissible) => {
   if (isDialog) {
     return 'dialog'
   }
-  if (isDismissable) {
+  if (isDismissible) {
     return 'complementary'
   }
   return 'region'
@@ -32,19 +32,20 @@ const buildPanelClassNames = (slot, showLabel) => [
   !showLabel && 'im-c-panel--no-heading'
 ].filter(Boolean).join(' ')
 
-const buildPanelBodyClassNames = (showLabel, isDismissable) => [
+const buildPanelBodyClassNames = (showLabel, isDismissible) => [
   'im-c-panel__body',
-  !showLabel && isDismissable && 'im-c-panel__body--offset'
+  !showLabel && isDismissible && 'im-c-panel__body--offset'
 ].filter(Boolean).join(' ')
 
-const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissable, isModal, width, panelClass }) => ({
+const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissible, isModal, width, panelClass, slot }) => ({
   id: elementId,
   'aria-labelledby': `${elementId}-label`,
   tabIndex: shouldFocus ? -1 : undefined, // nosonar
-  role: getPanelRole(isDialog, isDismissable),
+  role: getPanelRole(isDialog, isDismissible),
   'aria-modal': isDialog && isModal ? 'true' : undefined,
   style: width ? { width } : undefined,
-  className: panelClass
+  className: panelClass,
+  'data-slot': slot
 })
 
 const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }) => ({
@@ -65,7 +66,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
   const bpConfig = panelConfig[breakpoint]
   const elementId = `${id}-panel-${stringToKebab(panelId)}`
 
-  const { isAside, isDialog, isModal, isDismissable, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement)
+  const { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement)
 
   // For persistent panels, gate modal behaviour on open state
   const isModalActive = isModal && isOpen
@@ -97,10 +98,10 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
   }, [isOpen])
 
   const panelClass = buildPanelClassNames(bpConfig.slot, bpConfig.showLabel ?? true)
-  const panelBodyClass = buildPanelBodyClassNames(bpConfig.showLabel ?? true, isDismissable)
+  const panelBodyClass = buildPanelBodyClassNames(bpConfig.showLabel ?? true, isDismissible)
   const innerHtmlProp = useMemo(() => html ? { __html: html } : null, [html])
 
-  const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissable, isModal, width: bpConfig.width, panelClass })
+  const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissible, isModal, width: bpConfig.width, panelClass, slot: bpConfig.slot })
   const bodyProps = buildBodyProps({ bodyRef, panelBodyClass, isBodyScrollable, elementId })
 
   return (
@@ -115,7 +116,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
         {label}
       </h2>
 
-      {isDismissable && (
+      {isDismissible && (
         <button
           aria-label={`Close ${label}`}
           className='im-c-panel__close'

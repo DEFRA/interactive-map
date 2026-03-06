@@ -4,7 +4,6 @@ import { useApp } from '../store/appContext.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml } from './slotHelpers.js'
 import { allowedSlots } from './slots.js'
-import { stringToKebab } from '../../utils/stringToKebab.js'
 
 /**
  * Maps slot names to their corresponding layout refs.
@@ -25,6 +24,11 @@ export const getSlotRef = (slot, layoutRefs) => {
     actions: layoutRefs.actionsRef,
     modal: layoutRefs.modalRef
   }
+  if (slot?.endsWith('-button')) {
+    const el = document.querySelector(`[data-button-slot="${slot}"]`)
+    return el ? { current: el } : null
+  }
+
   return slotRefMap[slot] || null
 }
 
@@ -82,7 +86,7 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, allowedModal
     }
 
     // 2. Slot Validation
-    const isNextToButton = `${stringToKebab(panelId)}-button` === targetSlot
+    const isNextToButton = targetSlot.endsWith('-button')
     const isSlotAllowed = allowedSlots.panel.includes(targetSlot) || isNextToButton
 
     if (!isSlotAllowed) {

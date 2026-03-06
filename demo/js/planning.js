@@ -71,8 +71,8 @@ const interactiveMap = new InteractiveMap('map', {
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles27700,
 			manifest: {
-				buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false }}],
-				panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: false }}]
+				buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false, modal: true }}],
+				panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px' }}]
 			}
 		}),
 		scaleBarPlugin({
@@ -136,10 +136,17 @@ interactiveMap.on('app:ready', function (e) {
 	})
 	interactiveMap.addPanel('test', {
 		label: 'test',
-		html: '<p>Test</p>',
-		mobile: { slot: 'left-top', open: true },
-		tablet: { slot: 'inset', open: true },
+		html: '<p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p>',
+		mobile: { slot: 'inset', open: true, modal: true },
+		tablet: { slot: 'left-top', open: true },
 		desktop: { slot: 'left-top', open: true }
+	})
+	interactiveMap.addPanel('test2', {
+		label: 'test2',
+		html: '<p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p>',
+		mobile: { slot: 'inset', open: true, modal: true },
+		tablet: { slot: 'left-bottom', open: true },
+		desktop: { slot: 'left-bottom', open: true }
 	})
 })
 
