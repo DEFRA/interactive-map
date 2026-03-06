@@ -154,6 +154,8 @@ export default class InteractiveMap {
       const { initialiseApp } = await import(/* webpackChunkName: "im-core" */ '../App/initialiseApp.js')
       const { MapProvider, mapFramework, mapProviderConfig } = await this.config.mapProvider.load()
 
+      if (this._destroyed) return
+
       // Initialise reverseGeocode service if provided, using crs from mapProvider
       if (this.config.reverseGeocodeProvider) {
         createReverseGeocode(
@@ -270,6 +272,7 @@ export default class InteractiveMap {
    * @internal Not intended for end-user use.
    */
   destroy () {
+    this._destroyed = true
     this.removeApp()
     this._breakpointDetector?.destroy()
     this._interfaceDetectorCleanup?.()
