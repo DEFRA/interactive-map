@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { waitFor, expect } from '@storybook/test'
 
 const nominatimDataset = {
@@ -192,23 +192,138 @@ export const WithDatasets = {
   play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
 }
 
-export const WithDrawML = {
-  args: {
-    buildPlugins: async () => {
-      const { default: createDrawPlugin } = await import('../plugins/beta/draw-ml/src/index.js')
-      return [createDrawPlugin({})]
+function DrawMLStory () {
+  const id = useRef(`story-map-${++counter}`).current
+  const mapRef = useRef(null)
+  const drawPluginRef = useRef(null)
+  const [ready, setReady] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all([
+      import('../src/index.js'),
+      import('../providers/maplibre/src/index.js'),
+      import('../plugins/beta/draw-ml/src/index.js')
+    ]).then(([{ default: InteractiveMap }, { default: maplibreProvider }, { default: createDrawPlugin }]) => {
+      if (cancelled) return
+
+      drawPluginRef.current = createDrawPlugin({})
+      mapRef.current = new InteractiveMap(id, {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          id: 'outdoor',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
+          attribution: OS_ATTRIBUTION,
+          backgroundColor: '#f5f5f0'
+        },
+        center: [-1.6, 53.1],
+        zoom: 6,
+        containerHeight: '500px',
+        enableZoomControls: true,
+        plugins: [drawPluginRef.current]
+      })
+
+      mapRef.current.on('draw:ready', () => setReady(true))
+    })
+
+    return () => {
+      cancelled = true
+      mapRef.current?.destroy()
+      mapRef.current = null
     }
-  },
+  }, [])
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
+        <button
+          disabled={!ready}
+          onClick={() => drawPluginRef.current.newPolygon(crypto.randomUUID())}
+        >
+          New polygon
+        </button>
+        <button
+          disabled={!ready}
+          onClick={() => drawPluginRef.current.newLine(crypto.randomUUID())}
+        >
+          New line
+        </button>
+      </div>
+      <div id={id} style={{ minHeight: '50px' }} />
+    </div>
+  )
+}
+
+export const WithDrawML = {
+  render: () => <DrawMLStory />,
   play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
 }
 
-export const WithFrame = {
-  args: {
-    buildPlugins: async () => {
-      const { default: createFramePlugin } = await import('../plugins/beta/frame/src/index.js')
-      return [createFramePlugin({ aspectRatio: 1.5 })]
+function FrameStory () {
+  const id = useRef(`story-map-${++counter}`).current
+  const mapRef = useRef(null)
+  const framePluginRef = useRef(null)
+  const [ready, setReady] = useState(false)
+  const [hasFrame, setHasFrame] = useState(false)
+
+  useEffect(() => {
+    let cancelled = false
+
+    Promise.all([
+      import('../src/index.js'),
+      import('../providers/maplibre/src/index.js'),
+      import('../plugins/beta/frame/src/index.js')
+    ]).then(([{ default: InteractiveMap }, { default: maplibreProvider }, { default: createFramePlugin }]) => {
+      if (cancelled) return
+
+      framePluginRef.current = createFramePlugin({ aspectRatio: 1.5 })
+      mapRef.current = new InteractiveMap(id, {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          id: 'outdoor',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
+          attribution: OS_ATTRIBUTION,
+          backgroundColor: '#f5f5f0'
+        },
+        center: [-1.6, 53.1],
+        zoom: 6,
+        containerHeight: '500px',
+        enableZoomControls: true,
+        plugins: [framePluginRef.current]
+      })
+
+      mapRef.current.on('map:ready', () => setReady(true))
+    })
+
+    return () => {
+      cancelled = true
+      mapRef.current?.destroy()
+      mapRef.current = null
     }
-  },
+  }, [])
+
+  const handleAddFrame = () => {
+    framePluginRef.current.addFrame('story-frame')
+    setHasFrame(true)
+  }
+
+  return (
+    <div>
+      <div style={{ marginBottom: '8px' }}>
+        <button disabled={!ready || hasFrame} onClick={handleAddFrame}>
+          Add frame
+        </button>
+      </div>
+      <div id={id} style={{ minHeight: '50px' }} />
+    </div>
+  )
+}
+
+export const WithFrame = {
+  render: () => <FrameStory />,
   play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
 }
 
