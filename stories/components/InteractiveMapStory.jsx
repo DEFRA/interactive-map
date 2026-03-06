@@ -19,6 +19,7 @@ export default function InteractiveMapStory ({ mapConfig = {}, plugins = [] }) {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: {
+          id: 'outdoor',
           url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
           attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
           backgroundColor: '#f5f5f0'

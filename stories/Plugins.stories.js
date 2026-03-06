@@ -43,9 +43,30 @@ const MAP_STYLES = [
   }
 ]
 
+// Sample dataset for the WithDatasets story — provides visible Layers UI
+const SAMPLE_DATASET = {
+  id: 'sample-points',
+  label: 'Sample Points',
+  showInLayers: true,
+  type: 'geojson',
+  data: {
+    type: 'FeatureCollection',
+    features: [
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [-1.5491, 53.8008] }, properties: { name: 'Leeds' } },
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [-2.2426, 53.4808] }, properties: { name: 'Manchester' } },
+      { type: 'Feature', geometry: { type: 'Point', coordinates: [-1.8904, 52.4862] }, properties: { name: 'Birmingham' } }
+    ]
+  },
+  layers: [{
+    id: 'sample-points-circle',
+    type: 'circle',
+    paint: { 'circle-radius': 8, 'circle-color': '#d4351c', 'circle-opacity': 0.8 }
+  }]
+}
+
 let counter = 0
 
-function PluginStory ({ buildPlugins, mapConfig = {} }) {
+function PluginStory ({ buildPlugins, mapConfig = {}, onReady }) {
   const id = useRef(`story-map-${++counter}`).current
   const mapRef = useRef(null)
 
@@ -63,6 +84,7 @@ function PluginStory ({ buildPlugins, mapConfig = {} }) {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: {
+          id: 'outdoor',
           url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
           attribution: OS_ATTRIBUTION,
           backgroundColor: '#f5f5f0'
@@ -74,6 +96,10 @@ function PluginStory ({ buildPlugins, mapConfig = {} }) {
         ...mapConfig,
         plugins
       })
+
+      if (onReady) {
+        mapRef.current.on('map:ready', () => onReady(mapRef.current, plugins))
+      }
     })
 
     return () => {
@@ -119,7 +145,9 @@ export const WithInteract = {
     buildPlugins: async () => {
       const { default: createInteractPlugin } = await import('../plugins/interact/src/index.js')
       return [createInteractPlugin({ interactionMode: 'marker' })]
-    }
+    },
+    // The plugin starts disabled — enable it on map:ready (mirrors demo/js/index.js:175)
+    onReady: (map, [interactPlugin]) => interactPlugin.enable()
   },
   play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
 }
@@ -158,7 +186,7 @@ export const WithDatasets = {
   args: {
     buildPlugins: async () => {
       const { default: createDatasetsPlugin } = await import('../plugins/beta/datasets/src/index.js')
-      return [createDatasetsPlugin({ datasets: [] })]
+      return [createDatasetsPlugin({ datasets: [SAMPLE_DATASET] })]
     }
   },
   play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
@@ -222,15 +250,14 @@ export const KitchenSink = {
   play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
 }
 
+// Shows the open-map button with all plugins loaded. Click manually to load the map.
 export const ButtonFirstKitchenSink = {
   args: {
     mapConfig: { behaviour: 'buttonFirst', containerHeight: '500px' },
     buildPlugins: KitchenSink.args.buildPlugins
   },
   play: async ({ canvasElement }) => {
-    const { within, userEvent } = await import('@storybook/test')
-    const button = await within(canvasElement).findByRole('button', {}, { timeout: 5000 })
-    await userEvent.click(button)
-    await waitForCanvas(canvasElement)
+    const { within } = await import('@storybook/test')
+    await within(canvasElement).findByRole('button', {}, { timeout: 5000 })
   }
 }

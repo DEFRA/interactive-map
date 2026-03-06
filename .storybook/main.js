@@ -13,6 +13,23 @@ const config = {
     options: {}
   },
   webpackFinal: async (config) => {
+    // Transpile JSX in both .js and .jsx story files via babel-loader.
+    // Storybook's react preset configures babel-loader for the framework
+    // source, but stories outside src/ may not be covered.
+    config.module.rules.push({
+      test: /\.(js|jsx)$/,
+      exclude: /node_modules/,
+      use: {
+        loader: 'babel-loader',
+        options: {
+          presets: [
+            ['@babel/preset-env', { targets: { chrome: 90 } }],
+            ['@babel/preset-react', { runtime: 'automatic' }]
+          ]
+        }
+      }
+    })
+
     // Add SCSS support. Uses style-loader (injects into DOM) rather than
     // MiniCssExtractPlugin (which writes separate files for production builds).
     config.module.rules.push({
