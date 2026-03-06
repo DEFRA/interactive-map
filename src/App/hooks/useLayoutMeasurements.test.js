@@ -85,13 +85,13 @@ describe('useLayoutMeasurements', () => {
   // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
   test.each([
     ['--left-top-panel-max-height', {}, '332px'],
-    ['--left-top-panel-max-height', { leftBottom: { offsetHeight: 50 } }, '274px'],  // 332 - 50 - 8
+    ['--left-top-panel-max-height', { leftBottom: { offsetHeight: 50 } }, '274px'], // 332 - 50 - 8
     ['--left-bottom-panel-max-height', {}, '332px'],
-    ['--left-bottom-panel-max-height', { leftTop: { offsetHeight: 40 } }, '284px'],  // 332 - 40 - 8
+    ['--left-bottom-panel-max-height', { leftTop: { offsetHeight: 40 } }, '284px'], // 332 - 40 - 8
     ['--right-top-panel-max-height', {}, '342px'],
     ['--right-top-panel-max-height', { rightBottom: { offsetHeight: 60 } }, '274px'], // 342 - 60 - 8
     ['--right-bottom-panel-max-height', {}, '342px'],
-    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '304px']  // 342 - 30 - 8
+    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '304px'] // 342 - 30 - 8
   ])('calculates %s with sibling buttons=%o correctly', (varName, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
