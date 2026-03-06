@@ -59,6 +59,8 @@ export const createDatasets = ({
       dynamicSources.forEach(source => source.destroy())
       dynamicSources.clear()
 
+      if (!map.style) return
+
       const allDatasets = getDatasets()
       const removedSourceIds = new Set()
 
