@@ -2,6 +2,10 @@
   "name": "@defra/interactive-map",
   "version": "0.0.0-development",
   "description": "An accessible map component",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map"
+  },
   "main": "dist/umd/index.js",
   "module": "dist/esm/index.js",
   "exports": {
@@ -136,7 +140,7 @@
     "@rollup/plugin-commonjs": "^29.0.0",
     "@rollup/plugin-node-resolve": "^16.0.3",
     "@rollup/plugin-replace": "^6.0.3",
-    "@rollup/plugin-terser": "^0.4.4",
+    "@rollup/plugin-terser": "^1.0.0",
     "@testing-library/dom": "^10.4.1",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",
@@ -144,7 +148,7 @@
     "@types/react": "^19.1.8",
     "@types/react-dom": "^19.1.6",
     "babel-loader": "^10.0.0",
-    "compression-webpack-plugin": "^11.1.0",
+    "compression-webpack-plugin": "^12.0.0",
     "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
     "dotenv": "^17.2.0",
@@ -156,7 +160,6 @@
     "mapbox-gl-snap": "^1.1.9",
     "mini-css-extract-plugin": "^2.9.2",
     "node-fetch": "^3.3.2",
-    "npm": "^11.8.0",
     "npm-run-all": "^4.1.5",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
@@ -190,7 +193,10 @@
     "@turf/bearing": "^7.3.3",
     "@react-foundry/router": {
       "react-router": "$react-router"
-    }
+    },
+    "serialize-javascript": "^7.0.3",
+    "qs": "^6.14.2",
+    "glob": "^13.0.6"
   },
   "dependencies": {
     "@babel/runtime": "^7.28.6",
