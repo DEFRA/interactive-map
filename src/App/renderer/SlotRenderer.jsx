@@ -24,7 +24,7 @@ export const SlotRenderer = ({ slot }) => {
     <>
       {slot === 'actions'
         ? (
-          <Actions slot={slot}>
+          <Actions slot='actions'>
             {slotItems.map(item => item.element)}
           </Actions>
           )

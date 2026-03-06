@@ -244,6 +244,7 @@ export const MapButton = ({
   return (
     <div
       className={buildWrapperClassNames(buttonId, showLabel)}
+      data-button-slot={panelId ? `${stringToKebab(buttonId)}-button` : undefined}
       style={isHidden ? { display: 'none' } : undefined}
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}

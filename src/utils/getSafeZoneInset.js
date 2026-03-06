@@ -10,6 +10,7 @@
  * @param {Object} refs - React refs for the key layout elements.
  * @param {React.RefObject} refs.mainRef - The main content area.
  * @param {React.RefObject} refs.insetRef - The inset panel (e.g. search results).
+ * @param {React.RefObject} refs.leftRef - The left-hand button column.
  * @param {React.RefObject} refs.rightRef - The right-hand button column.
  * @param {React.RefObject} refs.actionsRef - The bottom action bar.
  * @param {React.RefObject} refs.footerRef - The footer (logo, copyright etc).
@@ -19,29 +20,31 @@
 export const getSafeZoneInset = ({
   mainRef,
   insetRef,
+  leftRef,
   rightRef,
   actionsRef,
   footerRef
 }) => {
-  const refs = [mainRef, insetRef, rightRef, actionsRef, footerRef]
+  const refs = [mainRef, insetRef, leftRef, rightRef, actionsRef, footerRef]
 
   if (refs.some(ref => !ref.current)) {
     return undefined
   }
 
-  const [main, inset, right, actions, footer] = refs.map(ref => ref.current)
+  const [main, inset, left, right, actions, footer] = refs.map(ref => ref.current)
 
   const root = document.documentElement
   const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
 
   // === Safe area logic ===
   const availableHeight = actions.offsetTop - inset.offsetTop - dividerGap
-  const rightOffset = inset.offsetLeft + right.offsetWidth + dividerGap
-  const availableWidth = main.offsetWidth - rightOffset * 2
-  const insetOverlapWidth = inset.offsetWidth - rightOffset + inset.offsetLeft
+  const leftOffset = left.offsetLeft + left.offsetWidth + dividerGap
+  const rightOffset = left.offsetLeft + right.offsetWidth + dividerGap
+  const availableWidth = main.offsetWidth - (leftOffset + rightOffset)
+  const insetOverlapWidth = inset.offsetWidth - leftOffset + left.offsetLeft
   const isLandscape = availableWidth - insetOverlapWidth > availableHeight - inset.offsetHeight
-  const topOffset = inset.offsetTop + (!isLandscape && inset.offsetHeight > 0 ? inset.offsetHeight + dividerGap : 0)
-  const leftOffset = isLandscape ? inset.offsetWidth + inset.offsetLeft + dividerGap : rightOffset
+  const topOffset = left.offsetTop + (!isLandscape && inset.offsetHeight > 0 ? inset.offsetHeight + dividerGap : 0)
+  const combinedLeftOffset = isLandscape ? Math.max(inset.offsetWidth, left.offsetWidth) + left.offsetLeft + dividerGap : rightOffset
   const actionsOffset = main.offsetHeight - actions.offsetTop
   const footerOffset = main.offsetHeight - footer.offsetTop
 
@@ -49,8 +52,8 @@ export const getSafeZoneInset = ({
   const hasRoom = insetOverlapWidth < availableWidth / RATIO && inset.offsetHeight < availableHeight / RATIO
 
   const top = hasRoom ? inset.offsetTop : topOffset
-  const left = main.offsetLeft + (hasRoom ? rightOffset : Math.max(leftOffset, rightOffset))
+  const combinedLeft = main.offsetLeft + (hasRoom ? rightOffset : combinedLeftOffset)
   const bottom = Math.max(actionsOffset, footerOffset) + dividerGap
 
-  return { top, right: rightOffset, left, bottom }
+  return { top, right: rightOffset, left: combinedLeft, bottom }
 }

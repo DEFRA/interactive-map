@@ -66,16 +66,24 @@ export const Layout = () => {
           <div className='im-o-app__inset' ref={layoutRefs.insetRef}>
             <SlotRenderer slot={layoutSlots.INSET} />
           </div>
+          <div className='im-o-app__left' ref={layoutRefs.leftRef}>
+            <div className='im-o-app__left-top' ref={layoutRefs.leftTopRef}>
+              <SlotRenderer slot={layoutSlots.LEFT_TOP} />
+            </div>
+            <div className='im-o-app__left-bottom' ref={layoutRefs.leftBottomRef}>
+              <SlotRenderer slot={layoutSlots.LEFT_BOTTOM} />
+            </div>
+          </div>
+          <div className='im-o-app__middle' ref={layoutRefs.middleRef}>
+            <SlotRenderer slot={layoutSlots.MIDDLE} />
+          </div>
           <div className='im-o-app__right' ref={layoutRefs.rightRef}>
-            <div className='im-o-app__right-top'>
+            <div className='im-o-app__right-top' ref={layoutRefs.rightTopRef}>
               <SlotRenderer slot={layoutSlots.RIGHT_TOP} />
             </div>
             <div className='im-o-app__right-bottom' ref={layoutRefs.rightBottomRef}>
               <SlotRenderer slot={layoutSlots.RIGHT_BOTTOM} />
             </div>
-          </div>
-          <div className='im-o-app__middle' ref={layoutRefs.middleRef}>
-            <SlotRenderer slot={layoutSlots.MIDDLE} />
           </div>
           <div className='im-o-app__footer' ref={layoutRefs.footerRef}>
             <div className='im-o-app__footer-col'>

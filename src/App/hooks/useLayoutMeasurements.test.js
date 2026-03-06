@@ -26,7 +26,11 @@ const refs = (o = {}) => ({
   topRightColRef: { current: el({ offsetHeight: 40, offsetWidth: 180, ...o.topRightCol }) },
   insetRef: { current: o.inset === null ? null : el({ offsetHeight: 100, offsetLeft: 20, offsetWidth: 300, ...o.inset }) },
   footerRef: { current: o.footer === null ? null : el({ offsetTop: 400, ...o.footer }) },
-  actionsRef: { current: el({ offsetTop: 450, ...o.actions }) }
+  actionsRef: { current: el({ offsetTop: 450, ...o.actions }) },
+  leftTopRef: { current: el({ offsetHeight: 0, ...o.leftTop }) },
+  leftBottomRef: { current: el({ offsetHeight: 0, ...o.leftBottom }) },
+  rightTopRef: { current: el({ offsetHeight: 0, ...o.rightTop }) },
+  rightBottomRef: { current: el({ offsetHeight: 0, ...o.rightBottom }) }
 })
 
 const setup = (o = {}) => {
@@ -62,21 +66,37 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     const spy = layoutRefs.appContainerRef.current.style.setProperty
-    ;['--inset-offset-top', '--inset-max-height', '--offset-left', '--right-offset-top', '--right-offset-bottom', '--top-col-width']
+    ;['--offset-left', '--right-offset-top', '--right-offset-bottom', '--top-col-width']
       .forEach(prop => expect(spy).toHaveBeenCalledWith(prop, expect.any(String)))
   })
 
   test.each([
-    ['inset-offset-top', { main: { offsetHeight: 500 }, top: { offsetTop: 20 }, topLeftCol: { offsetHeight: 50 } }, '70px'],
-    ['inset-max-height', { main: { offsetHeight: 500 }, top: { offsetTop: 20 }, topLeftCol: { offsetHeight: 50 } }, '410px'],
     ['offset-left with overlap', { inset: { offsetHeight: 200, offsetLeft: 30, offsetWidth: 150 }, footer: { offsetTop: 100 }, actions: { offsetTop: 120 }, topLeftCol: { offsetHeight: 50 }, top: { offsetTop: 10 } }, '180px'],
     ['offset-left without overlap', { inset: { offsetHeight: 50, offsetLeft: 30, offsetWidth: 150 }, footer: { offsetTop: 200 }, actions: { offsetTop: 220 }, topLeftCol: { offsetHeight: 50 }, top: { offsetTop: 10 } }, '0px'],
     ['right-offset-top', { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } }, '95px'],
-    ['right-offset-bottom', { main: { offsetHeight: 600 }, footer: { offsetTop: 500 } }, '108px']
+    ['right-offset-bottom', { main: { offsetHeight: 600 }, footer: { offsetTop: 500 } }, '108px'],
+    // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
+    ['left-top-max-height', {}, '332px'],
+    ['right-top-max-height', {}, '342px']
   ])('calculates %s correctly', (name, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
     const varName = `--${name.replace(/ .+/, '')}`
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith(varName, expected)
+  })
+
+  test.each([
+    ['--left-top-panel-max-height', {}, '332px'],
+    ['--left-top-panel-max-height', { leftBottom: { offsetHeight: 50 } }, '274px'], // 332 - 50 - 8
+    ['--left-bottom-panel-max-height', {}, '332px'],
+    ['--left-bottom-panel-max-height', { leftTop: { offsetHeight: 40 } }, '284px'], // 332 - 40 - 8
+    ['--right-top-panel-max-height', {}, '342px'],
+    ['--right-top-panel-max-height', { rightBottom: { offsetHeight: 60 } }, '274px'], // 342 - 60 - 8
+    ['--right-bottom-panel-max-height', {}, '342px'],
+    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '304px'] // 342 - 30 - 8
+  ])('calculates %s with sibling buttons=%o correctly', (varName, refOverrides, expected) => {
+    const { layoutRefs } = setup({ refs: refOverrides })
+    renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith(varName, expected)
   })
 
@@ -88,6 +108,18 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup({ refs: { topLeftCol: { offsetHeight: 50, ...left }, topRightCol: { offsetHeight: 40, ...right } } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--top-col-width', expected)
+  })
+
+  test('uses 0 when sub-slot refs have null current', () => {
+    const { layoutRefs } = setup()
+    layoutRefs.leftTopRef.current = null
+    layoutRefs.leftBottomRef.current = null
+    layoutRefs.rightTopRef.current = null
+    layoutRefs.rightBottomRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    // With all sub-slot refs null, buttons = 0 ?? 0 = 0, so max-heights equal full column height
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-top-panel-max-height', '332px')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-bottom-panel-max-height', '342px')
   })
 
   test('dispatches safe zone inset', () => {
@@ -114,7 +146,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.footerRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.footerRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()

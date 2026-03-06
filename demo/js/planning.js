@@ -72,7 +72,7 @@ const interactiveMap = new InteractiveMap('map', {
 			mapStyles: vtsMapStyles27700,
 			manifest: {
 				buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false }}],
-				panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: false }}]
+				panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: true }}]
 			}
 		}),
 		scaleBarPlugin({

@@ -126,7 +126,7 @@ const interactiveMap = new InteractiveMap('map', {
 	transformRequest: transformTileRequest,
 	enableZoomControls: true,
 	readMapText: true,
-	enableFullscreen: true,
+	// enableFullscreen: true,
 	// hasExitButton: true,
 	// markers: [{
 	// 	id: 'location',

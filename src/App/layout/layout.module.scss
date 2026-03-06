@@ -139,12 +139,57 @@
   flex-direction: column;
   position: absolute;
   gap: var(--divider-gap);
-  top: var(--inset-offset-top);
+  top: var(--left-offset-top);
 }
 
-.im-o-app__inset .im-c-panel {
-  height: 100%;
-  max-height: var(--inset-max-height);
+// ---------------------------------------------------
+// Left: Buttons and panels
+// ---------------------------------------------------
+
+.im-o-app__left {
+  position: absolute;
+  display: flex;
+  flex-direction: column;
+  left: var(--primary-gap);
+  top: var(--left-offset-top);
+  bottom: var(--left-offset-bottom);
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: bottom 0.15s ease;
+  }
+}
+
+.im-o-app__left-top {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  align-items: flex-end;
+  position: relative;
+  gap: var(--divider-gap);
+
+  .im-c-panel {
+    position: absolute;
+    top: 0;
+    left: 0;
+    max-height: var(--left-top-panel-max-height);
+  }
+}
+
+.im-o-app__left-bottom {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  margin-top: auto;
+  align-items: flex-end;
+  position: relative;
+  gap: var(--divider-gap);
+
+  .im-c-panel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    max-height: var(--left-bottom-panel-max-height);
+  }
 }
 
 // ---------------------------------------------------
@@ -164,7 +209,7 @@
 }
 
 // ---------------------------------------------------
-// Right: Buttons and inset panel
+// Right: Buttons and panels
 // ---------------------------------------------------
 
 .im-o-app__right {
@@ -174,18 +219,87 @@
   right: var(--primary-gap);
   top: var(--right-offset-top);
   bottom: var(--right-offset-bottom);
+
+  @media (prefers-reduced-motion: no-preference) {
+    transition: bottom 0.15s ease;
+  }
 }
 
 .im-o-app__right-top {
   display: flex;
   flex-direction: column;
-  flex-shrink: 0;
+  flex: 0 0 auto;
   align-items: flex-end;
+  position: relative;
   gap: var(--divider-gap);
+
+  .im-c-panel {
+    position: absolute;
+    top: 0;
+    right: 0;
+    max-height: var(--right-top-panel-max-height);
+  }
 }
 
 .im-o-app__right-bottom {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
   margin-top: auto;
+  align-items: flex-end;
+  position: relative;
+  gap: var(--divider-gap);
+
+  .im-c-panel {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    max-height: var(--right-bottom-panel-max-height);
+  }
+}
+
+// When both left sub-slots have panels, split the column proportionally
+// so panels don't overlap. flex: 1 1 auto gives each sub-slot a share of the
+// column; max-height: 100% caps the panel at its sub-slot height (not forced).
+.im-o-app__left:has(.im-o-app__left-top > .im-c-panel:not([style*="display: none"])):has(.im-o-app__left-bottom > .im-c-panel:not([style*="display: none"])) {
+  gap: var(--divider-gap);
+
+  .im-o-app__left-top,
+  .im-o-app__left-bottom {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .im-o-app__left-bottom {
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+
+  .im-o-app__left-top .im-c-panel,
+  .im-o-app__left-bottom .im-c-panel {
+    max-height: 100%;
+  }
+}
+
+// Same for right column
+.im-o-app__right:has(.im-o-app__right-top > .im-c-panel:not([style*="display: none"])):has(.im-o-app__right-bottom > .im-c-panel:not([style*="display: none"])) {
+  gap: var(--divider-gap);
+
+  .im-o-app__right-top,
+  .im-o-app__right-bottom {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+
+  .im-o-app__right-bottom {
+    margin-top: 0;
+    justify-content: flex-end;
+  }
+
+  .im-o-app__right-top .im-c-panel,
+  .im-o-app__right-bottom .im-c-panel {
+    max-height: 100%;
+  }
 }
 
 // ---------------------------------------------------
@@ -301,10 +415,33 @@
   }
 
   .im-c-panel--inset {
-    top: var(--inset-offset-top);
-    left: var(--primary-gap);
+    inset: var(--modal-inset);
     max-width: calc(100% - (var(--primary-gap) * 2));
-    max-height: calc(100% - var(--inset-offset-top) - var(--primary-gap));
+    max-height: var(--modal-max-height);
+  }
+
+  .im-c-panel--left-top,
+  .im-c-panel.im-c-panel--left-top-button {
+    inset: var(--left-offset-top) auto auto var(--primary-gap);
+    max-height: calc(100% - var(--left-offset-top) - var(--primary-gap));
+  }
+
+  .im-c-panel--left-bottom,
+  .im-c-panel.im-c-panel--left-bottom-button {
+    inset: auto auto var(--left-offset-bottom) var(--primary-gap);
+    max-height: calc(100% - var(--left-offset-bottom) - var(--primary-gap));
+  }
+
+  .im-c-panel--right-top,
+  .im-c-panel.im-c-panel--right-top-button {
+    inset: var(--right-offset-top) var(--primary-gap) auto auto;
+    max-height: calc(100% - var(--right-offset-top) - var(--primary-gap));
+  }
+
+  .im-c-panel--right-bottom,
+  .im-c-panel.im-c-panel--right-bottom-button {
+    inset: auto var(--primary-gap) var(--right-offset-bottom) auto;
+    max-height: calc(100% - var(--right-offset-bottom) - var(--primary-gap));
   }
 
   .im-c-panel--middle {
@@ -323,7 +460,9 @@
 
   [class*="im-c-panel--"][class*="-button"] { // Adjacent to button
     inset: var(--modal-inset);
+    max-height: var(--modal-max-height);
   }
+
 }
 
 // Mobile and tablet

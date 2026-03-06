@@ -292,6 +292,18 @@ describe('HtmlElementHost', () => {
     expect(getSlotRef('unknown-slot', {})).toBeNull()
   })
 
+  test('getSlotRef returns wrapped element for button slot when element exists', () => {
+    const el = document.createElement('div')
+    el.dataset.buttonSlot = 'my-panel-button'
+    document.body.appendChild(el)
+    expect(getSlotRef('my-panel-button', {})).toEqual({ current: el })
+    el.remove()
+  })
+
+  test('getSlotRef returns null for button slot when no element found', () => {
+    expect(getSlotRef('nonexistent-button', {})).toBeNull()
+  })
+
   it('does not append child if slotRef exists but current is null', () => {
     // 1. Setup refs where the slot exists in the map but the DOM node (current) is null
     const incompleteRefs = {
