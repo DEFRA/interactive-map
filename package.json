@@ -95,7 +95,10 @@
     "docs:build:all": "npm run docs:build && npm run docs:build:likec4 && mkdir -p build/likec4 && cp -r dist/. build/likec4/",
     "docs:serve": "docusaurus serve --host 0.0.0.0",
     "docs:clear": "docusaurus clear",
-    "report:esm": "ANALYZE=1 rollup --config rollup.esm.mjs"
+    "report:esm": "ANALYZE=1 rollup --config rollup.esm.mjs",
+    "storybook": "storybook dev -p 6006",
+    "build:storybook": "storybook build",
+    "test:storybook": "test-storybook"
   },
   "standard": {
     "envs": [
