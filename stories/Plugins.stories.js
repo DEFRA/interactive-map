@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react'
-import { waitFor, expect } from '@storybook/test'
+import { waitFor, expect, within, userEvent } from '@storybook/test'
 
 const nominatimDataset = {
   name: 'nominatim',
@@ -159,7 +159,13 @@ export const WithScaleBar = {
       return [scaleBarPlugin({ units: 'metric' })]
     }
   },
-  play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
+  play: async ({ canvasElement }) => {
+    await waitForCanvas(canvasElement)
+    await waitFor(
+      () => expect(canvasElement.querySelector('.im-c-scale-bar')).not.toBeNull(),
+      { timeout: 5000 }
+    )
+  }
 }
 
 export const WithMapStyles = {
@@ -169,7 +175,18 @@ export const WithMapStyles = {
       return [mapStylesPlugin({ mapStyles: MAP_STYLES })]
     }
   },
-  play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
+  play: async ({ canvasElement }) => {
+    await waitForCanvas(canvasElement)
+    const canvas = within(canvasElement)
+    // Open the map styles panel
+    const stylesButton = await canvas.findByRole('button', { name: /styles/i }, { timeout: 5000 })
+    await userEvent.click(stylesButton)
+    // Panel is now open — one style button should be active
+    await waitFor(
+      () => expect(canvasElement.querySelector('[aria-pressed="true"]')).not.toBeNull(),
+      { timeout: 5000 }
+    )
+  }
 }
 
 export const WithUseLocation = {
@@ -197,6 +214,7 @@ function DrawMLStory () {
   const mapRef = useRef(null)
   const drawPluginRef = useRef(null)
   const [ready, setReady] = useState(false)
+  const [drawnFeatures, setDrawnFeatures] = useState([])
 
   useEffect(() => {
     let cancelled = false
@@ -226,6 +244,7 @@ function DrawMLStory () {
       })
 
       mapRef.current.on('draw:ready', () => setReady(true))
+      mapRef.current.on('draw:created', (feature) => setDrawnFeatures(prev => [...prev, feature]))
     })
 
     return () => {
@@ -237,6 +256,11 @@ function DrawMLStory () {
 
   return (
     <div>
+      <ul hidden aria-hidden="true" data-testid="drawn-features">
+        {drawnFeatures.map(f => (
+          <li key={f.id} data-geometry-type={f.geometry.type} />
+        ))}
+      </ul>
       <div style={{ display: 'flex', gap: '8px', marginBottom: '8px' }}>
         <button
           disabled={!ready}
@@ -258,7 +282,56 @@ function DrawMLStory () {
 
 export const WithDrawML = {
   render: () => <DrawMLStory />,
-  play: async ({ canvasElement }) => { await waitForCanvas(canvasElement) }
+  play: async ({ canvasElement }) => {
+    await waitForCanvas(canvasElement)
+    const canvas = within(canvasElement)
+
+    // draw:ready enables the control buttons
+    const [newPolygonButton, newLineButton] = await Promise.all([
+      canvas.findByRole('button', { name: 'New polygon' }, { timeout: 10000 }),
+      canvas.findByRole('button', { name: 'New line' }, { timeout: 10000 })
+    ])
+    await waitFor(() => {
+      expect(newPolygonButton).not.toBeDisabled()
+      expect(newLineButton).not.toBeDisabled()
+    }, { timeout: 10000 })
+
+    const mapCanvas = canvasElement.querySelector('canvas')
+    const rect = mapCanvas.getBoundingClientRect()
+    const cx = rect.left + rect.width / 2
+    const cy = rect.top + rect.height / 2
+
+    const clickAt = (dx, dy) => mapCanvas.dispatchEvent(
+      new MouseEvent('click', { bubbles: true, cancelable: true, view: window, button: 0, clientX: cx + dx, clientY: cy + dy })
+    )
+    const dblclickAt = (dx, dy) => {
+      const opts = { bubbles: true, cancelable: true, view: window, button: 0, clientX: cx + dx, clientY: cy + dy }
+      mapCanvas.dispatchEvent(new MouseEvent('click', opts))
+      mapCanvas.dispatchEvent(new MouseEvent('dblclick', opts))
+    }
+
+    const drawnList = canvasElement.querySelector('[data-testid="drawn-features"]')
+
+    // Draw a square: click 4 corners, double-click to finish
+    await userEvent.click(newPolygonButton)
+    clickAt(-60, -60) // top-left
+    clickAt(60, -60)  // top-right
+    clickAt(60, 60)   // bottom-right
+    dblclickAt(-60, 60) // bottom-left + finish
+    await waitFor(
+      () => expect(drawnList.querySelector('[data-geometry-type="Polygon"]')).not.toBeNull(),
+      { timeout: 5000 }
+    )
+
+    // Draw a line: click start + end, double-click to finish
+    await userEvent.click(newLineButton)
+    clickAt(-60, 0)
+    dblclickAt(60, 0)
+    await waitFor(
+      () => expect(drawnList.querySelector('[data-geometry-type="LineString"]')).not.toBeNull(),
+      { timeout: 5000 }
+    )
+  }
 }
 
 function FrameStory () {
