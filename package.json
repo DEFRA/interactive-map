@@ -98,7 +98,8 @@
     "report:esm": "ANALYZE=1 rollup --config rollup.esm.mjs",
     "storybook": "storybook dev -p 6006",
     "build:storybook": "storybook build",
-    "test:storybook": "test-storybook"
+    "test:storybook": "test-storybook",
+    "test:storybook:ci": "start-server-and-test 'storybook dev -p 6006' 6006 test:storybook"
   },
   "standard": {
     "envs": [
@@ -176,6 +177,7 @@
     "sass": "^1.89.2",
     "sass-loader": "^16.0.5",
     "standard": "^17.1.2",
+    "start-server-and-test": "^2.1.5",
     "storybook": "^8.6.18",
     "style-loader": "^4.0.0",
     "stylelint": "^16.21.1",

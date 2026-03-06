@@ -50,3 +50,6 @@ stats.json
 .docusaurus
 build
 .playwright-mcp
+
+# Storybook
+storybook-static
