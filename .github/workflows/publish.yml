@@ -3,6 +3,11 @@ on:
   release:
     types:
       - published
+
+permissions:
+  id-token: write  # Required for OIDC trusted publishing
+  contents: read
+
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
@@ -44,5 +49,3 @@ jobs:
 
       - name: Publish
         run: ./scripts/publish-package.sh "${{ github.event.release.tag_name }}" "${{ github.event.release.prerelease }}"
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
