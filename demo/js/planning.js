@@ -71,8 +71,8 @@ const interactiveMap = new InteractiveMap('map', {
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles27700,
 			manifest: {
-				buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false, modal: true }}],
-				panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px' }}]
+				buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false }}],
+				panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: true }}]
 			}
 		}),
 		scaleBarPlugin({
@@ -133,20 +133,6 @@ interactiveMap.on('app:ready', function (e) {
 		mobile: { slot: 'bottom', open: false, exclusive: true },
 		tablet: { slot: 'inset', width: '260px', open: false, exclusive: true },
 		desktop: { slot: 'inset', width: '280px', open: false, exclusive: true }
-	})
-	interactiveMap.addPanel('test', {
-		label: 'test',
-		html: '<p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p>',
-		mobile: { slot: 'inset', open: true, modal: true },
-		tablet: { slot: 'left-top', open: true },
-		desktop: { slot: 'left-top', open: true }
-	})
-	interactiveMap.addPanel('test2', {
-		label: 'test2',
-		html: '<p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p>',
-		mobile: { slot: 'inset', open: true, modal: true },
-		tablet: { slot: 'left-bottom', open: true },
-		desktop: { slot: 'left-bottom', open: true }
 	})
 })
 

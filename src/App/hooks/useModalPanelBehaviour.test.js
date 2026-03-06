@@ -11,6 +11,11 @@ jest.mock('../../utils/constrainKeyboardFocus.js')
 jest.mock('../../utils/toggleInertElements.js')
 jest.mock('../store/appContext.js')
 
+const MODAL_INSET = '--modal-inset'
+const MODAL_MAX_HEIGHT = '--modal-max-height'
+const PANEL_ID = 'modal-panel-id'
+const ARIA_CONTROLS = 'aria-controls'
+
 describe('useModalPanelBehaviour', () => {
   let refs, elements, handleClose
 
@@ -20,7 +25,7 @@ describe('useModalPanelBehaviour', () => {
       panel: { current: document.createElement('div') }
     }
     // Give panel an ID for aria-controls tests and a slot for setSlotCSSVar
-    refs.panel.current.id = 'modal-panel-id'
+    refs.panel.current.id = PANEL_ID
     refs.panel.current.dataset.slot = 'inset'
 
     elements = {
@@ -33,8 +38,8 @@ describe('useModalPanelBehaviour', () => {
 
     handleClose = jest.fn()
     jest.clearAllMocks()
-    document.documentElement.style.setProperty('--modal-inset', '')
-    document.documentElement.style.setProperty('--modal-max-height', '')
+    document.documentElement.style.setProperty(MODAL_INSET, '')
+    document.documentElement.style.setProperty(MODAL_MAX_HEIGHT, '')
     useApp.mockReturnValue({ layoutRefs: {} })
   })
 
@@ -83,6 +88,7 @@ describe('useModalPanelBehaviour', () => {
     beforeEach(() => {
       // Force ResizeObserver to run the callback immediately
       useResizeObserverModule.useResizeObserver.mockImplementation((_, cb) => cb())
+      jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({ getPropertyValue: () => '8' })
 
       Object.defineProperty(refs.main.current, 'getBoundingClientRect', {
         value: () => ({ top: 0, right: 100, bottom: 50, left: 0, width: 100, height: 50 }),
@@ -94,12 +100,25 @@ describe('useModalPanelBehaviour', () => {
       })
     })
 
-    it('sets --modal-inset via SLOT_MODAL_VARS for left/right slots', () => {
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('sets --modal-inset via SLOT_MODAL_VARS for top slot', () => {
       refs.panel.current.dataset.slot = 'left-top'
       render(<TestComponent />)
-      expect(document.documentElement.style.getPropertyValue('--modal-inset'))
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET))
         .toBe('var(--left-offset-top) auto auto var(--primary-gap)')
-      expect(document.documentElement.style.getPropertyValue('--modal-max-height'))
+      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT))
+        .toBe('var(--left-top-max-height)')
+    })
+
+    it('sets --modal-inset via SLOT_MODAL_VARS for bottom slot', () => {
+      refs.panel.current.dataset.slot = 'left-bottom'
+      render(<TestComponent />)
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET))
+        .toBe('auto auto var(--left-offset-bottom) var(--primary-gap)')
+      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT))
         .toBe('var(--left-top-max-height)')
     })
 
@@ -114,28 +133,28 @@ describe('useModalPanelBehaviour', () => {
 
       render(<TestComponent />)
 
-      expect(document.documentElement.style.getPropertyValue('--modal-inset')).toBe('60px auto auto 8px')
-      expect(document.documentElement.style.getPropertyValue('--modal-max-height')).toContain('px')
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('60px auto auto 8px')
+      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
     })
 
     it('leaves --modal-inset unset when slot ref cannot be resolved', () => {
       render(<TestComponent />)
-      expect(document.documentElement.style.getPropertyValue('--modal-inset')).toBe('')
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('')
     })
 
     it('updates --modal-inset and --modal-max-height via aria-controls when buttonContainerEl is stale', () => {
       refs.panel.current.dataset.slot = buttonSlot
 
       const button = document.createElement('button')
-      button.setAttribute('aria-controls', 'modal-panel-id')
+      button.setAttribute(ARIA_CONTROLS, PANEL_ID)
       elements.buttonContainer.appendChild(button)
       document.body.appendChild(elements.buttonContainer)
 
       const staleEl = document.createElement('div') // detached
       render(<TestComponent buttonContainerEl={staleEl} />)
 
-      expect(document.documentElement.style.getPropertyValue('--modal-inset')).toContain('10px')
-      expect(document.documentElement.style.getPropertyValue('--modal-max-height')).toContain('px')
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
     })
 
     it('uses data-button-slot fallback when no aria-controls button and no buttonContainerEl', () => {
@@ -145,14 +164,57 @@ describe('useModalPanelBehaviour', () => {
 
       render(<TestComponent buttonContainerEl={undefined} />)
 
-      expect(document.documentElement.style.getPropertyValue('--modal-inset')).toContain('10px')
-      expect(document.documentElement.style.getPropertyValue('--modal-max-height')).toContain('px')
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+    })
+
+    it('uses connected buttonContainerEl when panel has no ID', () => {
+      refs.panel.current.id = '' // falsy panelElId → currentButtonEl = null (line 152 false branch)
+      refs.panel.current.dataset.slot = buttonSlot
+      document.body.appendChild(elements.buttonContainer) // isConnected = true (line 154 true branch)
+
+      render(<TestComponent buttonContainerEl={elements.buttonContainer} />)
+
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
     })
 
     it('skips update when effectiveContainer cannot be resolved', () => {
       refs.panel.current.dataset.slot = buttonSlot
       render(<TestComponent buttonContainerEl={null} />)
-      expect(document.documentElement.style.getPropertyValue('--modal-inset')).toBe('')
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('')
+    })
+
+    it('anchors to bottom when button is in a bottom sub-slot', () => {
+      refs.panel.current.dataset.slot = buttonSlot
+      const button = document.createElement('button')
+      button.setAttribute(ARIA_CONTROLS, PANEL_ID)
+      elements.buttonContainer.appendChild(button)
+      const bottomSlot = document.createElement('div')
+      bottomSlot.className = 'im-o-app__right-bottom'
+      bottomSlot.appendChild(elements.buttonContainer)
+      document.body.appendChild(bottomSlot)
+
+      render(<TestComponent />)
+
+      // Bottom slot: insetTop='auto', insetBottom = mainRect.bottom - buttonRect.bottom = 50 - 40 = 10px
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toMatch(/^auto/)
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+    })
+
+    it('uses left inset when button is in a left sub-slot', () => {
+      refs.panel.current.dataset.slot = buttonSlot
+      const button = document.createElement('button')
+      button.setAttribute(ARIA_CONTROLS, PANEL_ID)
+      elements.buttonContainer.appendChild(button)
+      const leftSlot = document.createElement('div')
+      leftSlot.className = 'im-o-app__left-top'
+      leftSlot.appendChild(elements.buttonContainer)
+      document.body.appendChild(leftSlot)
+
+      render(<TestComponent />)
+
+      // Left slot: insetTop = buttonRect.top - mainRect.top = 10, insetLeft = buttonRect.right - mainRect.left + dividerGap = 80 + 8 = 88
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('10px auto auto 88px')
     })
   })
 
@@ -209,6 +271,16 @@ describe('useModalPanelBehaviour', () => {
       render(<TestComponent />)
       fireEvent.click(backdrop)
       expect(handleClose).toHaveBeenCalled()
+    })
+
+    it('does not close when backdrop is outside rootEl', () => {
+      const externalBackdrop = document.createElement('div')
+      externalBackdrop.className = 'im-o-app__modal-backdrop'
+      document.body.appendChild(externalBackdrop)
+
+      render(<TestComponent />)
+      fireEvent.click(externalBackdrop)
+      expect(handleClose).not.toHaveBeenCalled()
     })
 
     it('toggles inert elements on mount and cleanup', () => {

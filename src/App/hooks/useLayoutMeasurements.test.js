@@ -74,7 +74,10 @@ describe('useLayoutMeasurements', () => {
     ['offset-left with overlap', { inset: { offsetHeight: 200, offsetLeft: 30, offsetWidth: 150 }, footer: { offsetTop: 100 }, actions: { offsetTop: 120 }, topLeftCol: { offsetHeight: 50 }, top: { offsetTop: 10 } }, '180px'],
     ['offset-left without overlap', { inset: { offsetHeight: 50, offsetLeft: 30, offsetWidth: 150 }, footer: { offsetTop: 200 }, actions: { offsetTop: 220 }, topLeftCol: { offsetHeight: 50 }, top: { offsetTop: 10 } }, '0px'],
     ['right-offset-top', { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } }, '95px'],
-    ['right-offset-bottom', { main: { offsetHeight: 600 }, footer: { offsetTop: 500 } }, '108px']
+    ['right-offset-bottom', { main: { offsetHeight: 600 }, footer: { offsetTop: 500 } }, '108px'],
+    // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
+    ['left-top-max-height', {}, '332px'],
+    ['right-top-max-height', {}, '342px']
   ])('calculates %s correctly', (name, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
@@ -82,7 +85,6 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith(varName, expected)
   })
 
-  // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
   test.each([
     ['--left-top-panel-max-height', {}, '332px'],
     ['--left-top-panel-max-height', { leftBottom: { offsetHeight: 50 } }, '274px'], // 332 - 50 - 8
@@ -106,6 +108,18 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup({ refs: { topLeftCol: { offsetHeight: 50, ...left }, topRightCol: { offsetHeight: 40, ...right } } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--top-col-width', expected)
+  })
+
+  test('uses 0 when sub-slot refs have null current', () => {
+    const { layoutRefs } = setup()
+    layoutRefs.leftTopRef.current = null
+    layoutRefs.leftBottomRef.current = null
+    layoutRefs.rightTopRef.current = null
+    layoutRefs.rightBottomRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    // With all sub-slot refs null, buttons = 0 ?? 0 = 0, so max-heights equal full column height
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-top-panel-max-height', '332px')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-bottom-panel-max-height', '342px')
   })
 
   test('dispatches safe zone inset', () => {
