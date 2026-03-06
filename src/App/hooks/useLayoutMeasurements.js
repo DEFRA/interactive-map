@@ -4,6 +4,17 @@ import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
 import { getSafeZoneInset } from '../../utils/getSafeZoneInset.js'
 
+const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
+
+const topColWidth = (left, right) =>
+  left || right ? Math.max(left, right) : 0
+
+const subSlotMaxHeight = (columnHeight, siblingButtons, gap) =>
+  columnHeight - (siblingButtons ? siblingButtons + gap : 0)
+
+const calcOffsetLeft = (bottomOffsetTop, gap, insetBottom, inset) =>
+  bottomOffsetTop - gap > insetBottom ? 0 : inset.offsetLeft + inset.offsetWidth
+
 export function useLayoutMeasurements () {
   const { dispatch, breakpoint, layoutRefs } = useApp()
   const { mapSize, isMapReady } = useMap()
@@ -37,53 +48,38 @@ export function useLayoutMeasurements () {
     const bottom = footerRef.current
     const actions = actionsRef.current
 
-    if (!main || !top || !inset || !bottom) {
+    if ([main, top, inset, bottom].some(r => !r)) {
       return
     }
 
     const root = document.documentElement
-    const styles = getComputedStyle(root)
-    const dividerGap = Number.parseInt(styles.getPropertyValue('--divider-gap'), 10)
+    const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
 
     // === Top column width ===
-    const leftWidth = topLeftCol.offsetWidth || 0
-    const rightWidth = topRightCol.offsetWidth || 0
-    const finalWidth = leftWidth || rightWidth ? Math.max(leftWidth, rightWidth) : 0
-    appContainer.style.setProperty('--top-col-width', `${finalWidth}px`)
+    appContainer.style.setProperty('--top-col-width', `${topColWidth(topLeftCol.offsetWidth, topRightCol.offsetWidth)}px`)
 
     // === Left container offsets ===
     const leftOffsetTop = topLeftCol.offsetHeight + top.offsetTop
-    const leftOffsetBottom = main.offsetHeight - bottom.offsetTop + dividerGap
-    appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
-    appContainer.style.setProperty('--left-offset-bottom', `${leftOffsetBottom}px`)
     const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap
+    appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
+    appContainer.style.setProperty('--left-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
     appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
 
     // === Right container offsets ===
     const rightOffsetTop = topRightCol.offsetHeight + top.offsetTop
-    const rightOffsetBottom = main.offsetHeight - bottom.offsetTop + dividerGap
-    appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-    appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom}px`)
     const rightColumnHeight = bottom.offsetTop - rightOffsetTop - dividerGap
+    appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
+    appContainer.style.setProperty('--right-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
     appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
     // === Sub-slot panel max-heights ===
-    // Panel max-height = column height minus the sibling's button height (and a gap if non-zero)
-    const leftTopButtons = leftTopRef.current?.offsetHeight ?? 0
-    const leftBottomButtons = leftBottomRef.current?.offsetHeight ?? 0
-    appContainer.style.setProperty('--left-top-panel-max-height', `${leftColumnHeight - (leftBottomButtons ? leftBottomButtons + dividerGap : 0)}px`)
-    appContainer.style.setProperty('--left-bottom-panel-max-height', `${leftColumnHeight - (leftTopButtons ? leftTopButtons + dividerGap : 0)}px`)
-
-    const rightTopButtons = rightTopRef.current?.offsetHeight ?? 0
-    const rightBottomButtons = rightBottomRef.current?.offsetHeight ?? 0
-    appContainer.style.setProperty('--right-top-panel-max-height', `${rightColumnHeight - (rightBottomButtons ? rightBottomButtons + dividerGap : 0)}px`)
-    appContainer.style.setProperty('--right-bottom-panel-max-height', `${rightColumnHeight - (rightTopButtons ? rightTopButtons + dividerGap : 0)}px`)
+    appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)
+    appContainer.style.setProperty('--left-bottom-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftTopRef), dividerGap)}px`)
+    appContainer.style.setProperty('--right-top-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightBottomRef), dividerGap)}px`)
+    appContainer.style.setProperty('--right-bottom-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightTopRef), dividerGap)}px`)
 
     // === Bottom left offset ===
-    const insetBottom = inset.offsetHeight + leftOffsetTop
-    const bottomOffsetTop = Math.min(bottom.offsetTop, actions.offsetTop)
-    const bottomOffsetLeft = bottomOffsetTop - dividerGap > insetBottom ? 0 : inset.offsetLeft + inset.offsetWidth
-    appContainer.style.setProperty('--offset-left', `${bottomOffsetLeft}px`)
+    appContainer.style.setProperty('--offset-left', `${calcOffsetLeft(Math.min(bottom.offsetTop, actions.offsetTop), dividerGap, inset.offsetHeight + leftOffsetTop, inset)}px`)
   }
 
   // --------------------------------
