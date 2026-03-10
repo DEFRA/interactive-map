@@ -12,32 +12,32 @@ const EARLY_ACTIONS_TOP = 500
 const GAP = 8
 
 // Base insets: main.offsetLeft=0 in tests
-const BASE_LEFT = LEFT_LEFT + LEFT_WIDTH + GAP   // 58
+const BASE_LEFT = LEFT_LEFT + LEFT_WIDTH + GAP // 58
 const BASE_RIGHT = LEFT_LEFT + RIGHT_WIDTH + GAP // 58
-const BASE_TOP = LEFT_TOP                        // 60
+const BASE_TOP = LEFT_TOP // 60
 const BASE_BOTTOM = (MAIN_HEIGHT - ACTIONS_TOP) + GAP // 68
 
 // Height threshold: availableHeight / RATIO = (600-60-68)/2 = 236
 const ABOVE_THRESHOLD = 240
 const BELOW_THRESHOLD = 230
-const COMBINED_ABOVE = 120  // two × 120 + gap = 248 > 236
-const COMBINED_BELOW = 100  // two × 100 + gap = 208 < 236
+const COMBINED_ABOVE = 120 // two × 120 + gap = 248 > 236
+const COMBINED_BELOW = 100 // two × 100 + gap = 208 < 236
 
 // Width threshold: availableWidth / RATIO = (900-58-58)/2 = 392
 const ABOVE_W_THRESHOLD = 400
-const COMBINED_ABOVE_W = 200  // two × 200 = 400 > 392 → triggers combined
-const COMBINED_BELOW_W = 180  // two × 180 = 360 < 392 → does not trigger
+const COMBINED_ABOVE_W = 200 // two × 200 = 400 > 392 → triggers combined
+const COMBINED_BELOW_W = 180 // two × 180 = 360 < 392 → does not trigger
 const PANEL_H_TALL = 150
 const PANEL_H_SHORT = 100
 
-const ABOVE_CAP_TOP = 330    // 60+330+8=398 > CAP_HEIGHT ≈ 389.3 → capped
+const ABOVE_CAP_TOP = 330 // 60+330+8=398 > CAP_HEIGHT ≈ 389.3 → capped
 const FOOTER_INSET = MAIN_HEIGHT - FOOTER_TOP + GAP // 48
 const ABOVE_CAP_BOTTOM = 342 // 48+342+8=398 > CAP_HEIGHT → capped
 
 const PANEL_W_STANDARD = 200
 const PANEL_W_WIDE = 250
 const PANEL_W_NARROW = 100
-const PANEL_W_XLARGE = 600   // 10+600+8=618 > CAP_WIDTH ≈ 589.3 → capped
+const PANEL_W_XLARGE = 600 // 10+600+8=618 > CAP_WIDTH ≈ 589.3 → capped
 
 const leftInset = w => LEFT_LEFT + w + GAP
 const rightInset = w => LEFT_LEFT + w + GAP
@@ -59,7 +59,9 @@ const colRef = (offsetWidth, offsetLeft, offsetTop) => {
   const buttonGroup = { offsetWidth }
   return {
     current: {
-      offsetWidth, offsetLeft, offsetTop,
+      offsetWidth,
+      offsetLeft,
+      offsetTop,
       querySelector: (sel) => sel === '.im-c-button-group' ? buttonGroup : null
     }
   }
@@ -125,8 +127,10 @@ describe('getSafeZoneInset — base structural insets', () => {
   it('returns base insets when all panel slots are empty (height 0)', () => {
     expect(getSafeZoneInset({
       ...base(),
-      leftTopRef: panel(PANEL_W_STANDARD, 0), leftBottomRef: panel(PANEL_W_STANDARD, 0),
-      rightTopRef: panel(PANEL_W_STANDARD, 0), rightBottomRef: panel(PANEL_W_STANDARD, 0)
+      leftTopRef: panel(PANEL_W_STANDARD, 0),
+      leftBottomRef: panel(PANEL_W_STANDARD, 0),
+      rightTopRef: panel(PANEL_W_STANDARD, 0),
+      rightBottomRef: panel(PANEL_W_STANDARD, 0)
     })).toEqual({ left: BASE_LEFT, right: BASE_RIGHT, top: BASE_TOP, bottom: BASE_BOTTOM })
   })
   it('uses max of actions and footer for base bottom', () => {
