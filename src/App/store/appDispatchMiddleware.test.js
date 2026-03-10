@@ -189,7 +189,7 @@ describe('appDispatchMiddleware', () => {
 
       expect(eventBus.emit).toHaveBeenCalledWith(
         events.APP_PANEL_OPENED,
-        { panelId: 'newPanel', slot: 'inset' }
+        { panelId: 'newPanel', slot: 'left-top' }
       )
     })
 
@@ -204,7 +204,7 @@ describe('appDispatchMiddleware', () => {
 
       expect(eventBus.emit).toHaveBeenCalledWith(
         events.APP_PANEL_OPENED,
-        { panelId: 'geoPanel', slot: 'inset', visibleGeometry }
+        { panelId: 'geoPanel', slot: 'left-top', visibleGeometry }
       )
     })
 

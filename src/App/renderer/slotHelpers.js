@@ -4,14 +4,14 @@ import { allowedSlots } from './slots.js'
 /**
  * Resolves the target slot for a panel based on its breakpoint config.
  * Modal panels always render in the 'modal' slot, and the bottom slot
- * is only available on mobile — tablet and desktop fall back to 'inset'.
+ * is only available on mobile — tablet and desktop fall back to 'left-top'.
  */
 export const resolveTargetSlot = (bpConfig, breakpoint) => {
   if (bpConfig.modal) {
     return 'modal'
   }
   if (bpConfig.slot === 'bottom' && ['tablet', 'desktop'].includes(breakpoint)) {
-    return 'inset'
+    return 'left-top'
   }
   return bpConfig.slot
 }

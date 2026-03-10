@@ -14,8 +14,8 @@ jest.mock('../components/Panel/Panel.jsx', () => ({
 }))
 jest.mock('./slots.js', () => ({
   allowedSlots: {
-    panel: ['inset', 'side', 'modal', 'bottom'],
-    control: ['inset', 'banner', 'bottom', 'actions']
+    panel: ['left-top', 'side', 'modal', 'bottom'],
+    control: ['left-top', 'banner', 'bottom', 'actions']
   }
 }))
 
@@ -25,7 +25,7 @@ jest.mock('./slots.js', () => ({
  */
 const SlotHarness = ({ layoutRefs, children }) => (
   <div>
-    <div ref={layoutRefs.insetRef} data-slot='inset' />
+    <div ref={layoutRefs.leftTopRef} data-slot='left-top' />
     <div ref={layoutRefs.sideRef} data-slot='side' />
     <div ref={layoutRefs.modalRef} data-slot='modal' />
     <div ref={layoutRefs.bottomRef} data-slot='bottom' />
@@ -45,7 +45,7 @@ describe('HtmlElementHost', () => {
       bannerRef: { current: null },
       topLeftColRef: { current: null },
       topRightColRef: { current: null },
-      insetRef: { current: null },
+      leftTopRef: { current: null },
       middleRef: { current: null },
       bottomRef: { current: null },
       actionsRef: { current: null },
@@ -105,10 +105,10 @@ describe('HtmlElementHost', () => {
 
   it('projects open panel into correct slot', () => {
     const { container } = renderWithSlots({
-      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'inset' } } },
+      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'left-top' } } },
       openPanels: { p1: { props: {} } }
     })
-    expect(container.querySelector('[data-slot="inset"] [data-testid="panel-p1"]')).toBeTruthy()
+    expect(container.querySelector('[data-slot="left-top"] [data-testid="panel-p1"]')).toBeTruthy()
   })
 
   it('hides panel when closed and passes isOpen=false', () => {
@@ -130,19 +130,28 @@ describe('HtmlElementHost', () => {
 
   it('hides panel with inline:false when not fullscreen', () => {
     const { getByTestId } = renderWithSlots({
-      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'inset' }, inline: false } },
+      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'left-top' }, inline: false } },
       openPanels: { p1: { props: {} } },
       isFullscreen: false
     })
     expect(getByTestId('panel-p1').style.display).toBe('none')
   })
 
-  it('resolves bottom slot to inset on desktop', () => {
+  it('shows panel with inline:false when fullscreen', () => {
+    const { getByTestId } = renderWithSlots({
+      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'left-top' }, inline: false } },
+      openPanels: { p1: { props: {} } },
+      isFullscreen: true
+    })
+    expect(getByTestId('panel-p1').dataset.open).toBe('true')
+  })
+
+  it('resolves bottom slot to left-top on desktop', () => {
     const { container } = renderWithSlots({
       panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'bottom' } } },
       openPanels: { p1: { props: {} } }
     })
-    expect(container.querySelector('[data-slot="inset"] [data-testid="panel-p1"]')).toBeTruthy()
+    expect(container.querySelector('[data-slot="left-top"] [data-testid="panel-p1"]')).toBeTruthy()
     expect(container.querySelector('[data-slot="bottom"] [data-testid="panel-p1"]')).toBeNull()
   })
 
@@ -169,9 +178,9 @@ describe('HtmlElementHost', () => {
 
   it('projects visible control into correct slot', () => {
     const { container } = renderWithSlots({
-      controlConfig: { c1: { id: 'c1', html: '<input type="checkbox">', desktop: { slot: 'inset' } } }
+      controlConfig: { c1: { id: 'c1', html: '<input type="checkbox">', desktop: { slot: 'left-top' } } }
     })
-    const control = container.querySelector('[data-slot="inset"] .im-c-control')
+    const control = container.querySelector('[data-slot="left-top"] .im-c-control')
     expect(control).toBeTruthy()
     expect(control.innerHTML).toBe('<input type="checkbox">')
   })

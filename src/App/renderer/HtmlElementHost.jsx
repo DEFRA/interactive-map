@@ -14,7 +14,6 @@ export const getSlotRef = (slot, layoutRefs) => {
     banner: layoutRefs.bannerRef,
     'top-left': layoutRefs.topLeftColRef,
     'top-right': layoutRefs.topRightColRef,
-    inset: layoutRefs.insetRef,
     'left-top': layoutRefs.leftTopRef,
     'left-bottom': layoutRefs.leftBottomRef,
     middle: layoutRefs.middleRef,

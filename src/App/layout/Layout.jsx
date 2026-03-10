@@ -63,9 +63,6 @@ export const Layout = () => {
               <SlotRenderer slot={layoutSlots.TOP_RIGHT} />
             </div>
           </div>
-          <div className='im-o-app__inset' ref={layoutRefs.insetRef}>
-            <SlotRenderer slot={layoutSlots.INSET} />
-          </div>
           <div className='im-o-app__left' ref={layoutRefs.leftRef}>
             <div className='im-o-app__left-top' ref={layoutRefs.leftTopRef}>
               <SlotRenderer slot={layoutSlots.LEFT_TOP} />

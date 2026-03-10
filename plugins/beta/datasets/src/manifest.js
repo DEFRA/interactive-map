@@ -27,13 +27,13 @@ export const manifest = {
       dismissible: true
     },
     tablet: {
-      slot: 'inset',
+      slot: 'left-top',
       dismissible: true,
       exclusive: true,
       width: '300px'
     },
     desktop: {
-      slot: 'inset',
+      slot: 'left-top',
       modal: false,
       dismissible: true,
       exclusive: true,
@@ -48,11 +48,11 @@ export const manifest = {
       modal: true
     },
     tablet: {
-      slot: 'inset',
+      slot: 'left-top',
       width: '300px'
     },
     desktop: {
-      slot: 'inset',
+      slot: 'left-top',
       width: '320px'
     },
     render: Key

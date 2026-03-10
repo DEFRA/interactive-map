@@ -24,7 +24,6 @@ const refs = (o = {}) => ({
   topRef: { current: o.top === null ? null : el({ offsetTop: 10, ...o.top }) },
   topLeftColRef: { current: el({ offsetHeight: 50, offsetWidth: 200, ...o.topLeftCol }) },
   topRightColRef: { current: el({ offsetHeight: 40, offsetWidth: 180, ...o.topRightCol }) },
-  insetRef: { current: o.inset === null ? null : el({ offsetHeight: 100, offsetLeft: 20, offsetWidth: 300, ...o.inset }) },
   footerRef: { current: o.footer === null ? null : el({ offsetTop: 400, ...o.footer }) },
   actionsRef: { current: el({ offsetTop: 450, ...o.actions }) },
   leftTopRef: { current: el({ offsetHeight: 0, ...o.leftTop }) },
@@ -57,7 +56,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('early return when required refs are null', () => {
-    const { layoutRefs } = setup({ refs: { main: null, top: null, inset: null, footer: null } })
+    const { layoutRefs } = setup({ refs: { main: null, top: null, footer: null } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalled()
   })
@@ -66,13 +65,11 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     const spy = layoutRefs.appContainerRef.current.style.setProperty
-    ;['--offset-left', '--right-offset-top', '--right-offset-bottom', '--top-col-width']
+    ;['--right-offset-top', '--right-offset-bottom', '--top-col-width']
       .forEach(prop => expect(spy).toHaveBeenCalledWith(prop, expect.any(String)))
   })
 
   test.each([
-    ['offset-left with overlap', { inset: { offsetHeight: 200, offsetLeft: 30, offsetWidth: 150 }, footer: { offsetTop: 100 }, actions: { offsetTop: 120 }, topLeftCol: { offsetHeight: 50 }, top: { offsetTop: 10 } }, '180px'],
-    ['offset-left without overlap', { inset: { offsetHeight: 50, offsetLeft: 30, offsetWidth: 150 }, footer: { offsetTop: 200 }, actions: { offsetTop: 220 }, topLeftCol: { offsetHeight: 50 }, top: { offsetTop: 10 } }, '0px'],
     ['right-offset-top', { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } }, '95px'],
     ['right-offset-bottom', { main: { offsetHeight: 600 }, footer: { offsetTop: 500 } }, '108px'],
     // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
