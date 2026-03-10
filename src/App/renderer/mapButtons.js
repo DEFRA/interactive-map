@@ -1,6 +1,7 @@
 // src/core/renderers/mapButtons.js
 import { MapButton } from '../components/MapButton/MapButton.jsx'
 import { allowedSlots } from './slots.js'
+import { logger } from '../../utils/logger.js'
 
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
   const { breakpoint, mode } = appState
@@ -163,7 +164,7 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
 
     /* istanbul ignore next */
     if (process.env.NODE_ENV !== 'production' && typeof group === 'string') {
-      console.warn(`[interactive-map] Button "${buttonId}": group should be an object { name, label?, order? } — string groups are deprecated.`)
+      logger.warn(`Button "${buttonId}": group should be an object { name, label?, order? } — string groups are deprecated.`)
     }
 
     const name = resolveGroupName(group)
@@ -174,7 +175,7 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
       const existing = groupMap.get(name)
       /* istanbul ignore next */
       if (process.env.NODE_ENV !== 'production' && existing.order !== order) {
-        console.warn(`[interactive-map] Group "${name}" has inconsistent order values (${existing.order} vs ${order}). Using the lower value.`)
+        logger.warn(`Group "${name}" has inconsistent order values (${existing.order} vs ${order}). Using the lower value.`)
         existing.order = Math.min(existing.order, order)
       }
     } else {

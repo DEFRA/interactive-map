@@ -139,6 +139,39 @@ describe('pluginRegistry', () => {
     expect(pluginRegistry.registeredPlugins).toEqual([pluginA, pluginB])
   })
 
+  describe('slot validation', () => {
+    const INVALID_SLOT = 'invalid-slot'
+
+    beforeEach(() => jest.spyOn(console, 'warn').mockImplementation(() => {}))
+    afterEach(() => jest.restoreAllMocks())
+
+    it('warns when a manifest item has an invalid slot', () => {
+      const plugin = {
+        id: 'bad-plugin',
+        config: {},
+        manifest: {
+          buttons: [{ id: 'btn1', desktop: { slot: INVALID_SLOT } }],
+          panels: [{ id: 'panel1', desktop: { slot: INVALID_SLOT } }],
+          controls: [{ id: 'ctrl1', desktop: { slot: INVALID_SLOT } }]
+        }
+      }
+      pluginRegistry.registerPlugin(plugin)
+      expect(console.warn).toHaveBeenCalledWith('[interactive-map]', expect.stringContaining(INVALID_SLOT))
+    })
+
+    it('does not warn for a panel with a button-adjacent slot', () => {
+      const plugin = {
+        id: 'adj-plugin',
+        config: {},
+        manifest: {
+          panels: [{ id: 'panel1', desktop: { slot: 'left-top-button' } }]
+        }
+      }
+      pluginRegistry.registerPlugin(plugin)
+      expect(console.warn).not.toHaveBeenCalled()
+    })
+  })
+
   it('clears all registered plugins', () => {
     const pluginA = { id: 'A', config: {}, manifest: {} }
     const pluginB = { id: 'B', config: {}, manifest: {} }

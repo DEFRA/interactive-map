@@ -134,20 +134,6 @@ interactiveMap.on('app:ready', function (e) {
 		tablet: { slot: 'left-top', width: '260px', open: false, exclusive: true },
 		desktop: { slot: 'left-top', width: '280px', open: false, exclusive: true }
 	})
-	// interactiveMap.addPanel('test1', {
-	// 	label: 'Test1',
-	// 	html: '<p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p><p>Test</p>',
-	// 	mobile: { slot: 'bottom', open: true },
-	// 	tablet: { slot: 'left-top', open: true },
-	// 	desktop: { slot: 'left-top', open: true, width: '200px' },
-	// })
-	interactiveMap.addPanel('test2', {
-		label: 'Test2',
-		html: '<p>Test</p><p>Test</p>',
-		mobile: { slot: 'bottom', open: true },
-		tablet: { slot: 'left-top', open: true },
-		desktop: { slot: 'left-top', open: true, width: '400px' },
-	})
 })
 
 interactiveMap.on('map:ready', function (e) {
