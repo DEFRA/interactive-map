@@ -153,6 +153,11 @@
   left: var(--primary-gap);
   top: var(--left-offset-top);
   bottom: var(--left-offset-bottom);
+  gap: var(--divider-gap);
+
+  & > *:empty {
+    display: none;
+  }
 
   @media (prefers-reduced-motion: no-preference) {
     transition: bottom 0.15s ease;
@@ -162,34 +167,21 @@
 .im-o-app__left-top {
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
-  align-items: flex-end;
+  align-items: flex-start;
+  min-height: 0;
   position: relative;
   gap: var(--divider-gap);
-
-  .im-c-panel {
-    position: absolute;
-    top: 0;
-    left: 0;
-    max-height: var(--left-top-panel-max-height);
-  }
 }
 
 .im-o-app__left-bottom {
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  align-items: flex-start;
+  justify-content: flex-end;
+  min-height: 0;
   margin-top: auto;
-  align-items: flex-end;
   position: relative;
   gap: var(--divider-gap);
-
-  .im-c-panel {
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    max-height: var(--left-bottom-panel-max-height);
-  }
 }
 
 // ---------------------------------------------------
@@ -219,6 +211,7 @@
   right: var(--primary-gap);
   top: var(--right-offset-top);
   bottom: var(--right-offset-bottom);
+  gap: var(--divider-gap);
 
   @media (prefers-reduced-motion: no-preference) {
     transition: bottom 0.15s ease;
@@ -232,13 +225,6 @@
   align-items: flex-end;
   position: relative;
   gap: var(--divider-gap);
-
-  .im-c-panel {
-    position: absolute;
-    top: 0;
-    right: 0;
-    max-height: var(--right-top-panel-max-height);
-  }
 }
 
 .im-o-app__right-bottom {
@@ -249,57 +235,6 @@
   align-items: flex-end;
   position: relative;
   gap: var(--divider-gap);
-
-  .im-c-panel {
-    position: absolute;
-    bottom: 0;
-    right: 0;
-    max-height: var(--right-bottom-panel-max-height);
-  }
-}
-
-// When both left sub-slots have panels, split the column proportionally
-// so panels don't overlap. flex: 1 1 auto gives each sub-slot a share of the
-// column; max-height: 100% caps the panel at its sub-slot height (not forced).
-.im-o-app__left:has(.im-o-app__left-top > .im-c-panel:not([style*="display: none"])):has(.im-o-app__left-bottom > .im-c-panel:not([style*="display: none"])) {
-  gap: var(--divider-gap);
-
-  .im-o-app__left-top,
-  .im-o-app__left-bottom {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  .im-o-app__left-bottom {
-    margin-top: 0;
-    justify-content: flex-end;
-  }
-
-  .im-o-app__left-top .im-c-panel,
-  .im-o-app__left-bottom .im-c-panel {
-    max-height: 100%;
-  }
-}
-
-// Same for right column
-.im-o-app__right:has(.im-o-app__right-top > .im-c-panel:not([style*="display: none"])):has(.im-o-app__right-bottom > .im-c-panel:not([style*="display: none"])) {
-  gap: var(--divider-gap);
-
-  .im-o-app__right-top,
-  .im-o-app__right-bottom {
-    flex: 1 1 auto;
-    min-height: 0;
-  }
-
-  .im-o-app__right-bottom {
-    margin-top: 0;
-    justify-content: flex-end;
-  }
-
-  .im-o-app__right-top .im-c-panel,
-  .im-o-app__right-bottom .im-c-panel {
-    max-height: 100%;
-  }
 }
 
 // ---------------------------------------------------
@@ -517,7 +452,6 @@
     width: 100%;
     left: 0;
     bottom: calc(var(--primary-gap) * 2);
-    padding-left: var(--offset-left);
     
     .im-c-panel {
       max-width: var(--action-bar-max-width);

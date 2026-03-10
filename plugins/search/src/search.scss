@@ -84,9 +84,14 @@
     opacity: 0;
     z-index: -1;
   }
-  .im-o-app__inset .im-c-panel {
-    opacity: 0;
-    z-index: -1;
+  .im-o-app__left-top,
+  .im-o-app__left-bottom,
+  .im-o-app__right-top,
+  .im-o-app__right-bottom {
+    .im-c-panel {
+      opacity: 0;
+      z-index: -1;
+    }
   }
 }
 

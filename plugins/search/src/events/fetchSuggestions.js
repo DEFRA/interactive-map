@@ -26,7 +26,7 @@ const getRequestConfig = async (ds, query, transformRequest) => {
  */
 const fetchDatasetResults = async (ds, request, query) => {
   try {
-    const response = await fetch(request.url, request.options)
+    const response = await fetch(request)
     
     if (!response.ok) {
       console.error(`Fetch error for ${ds.label || 'dataset'}: ${response.status}`)

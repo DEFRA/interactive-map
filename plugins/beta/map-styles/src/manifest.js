@@ -14,13 +14,13 @@ export const manifest = {
       dismissible: true
     },
     tablet: {
-      slot: 'inset',
+      slot: 'left-top',
       modal: true,
       width: '400px',
       dismissible: true
     },
     desktop: {
-      slot: 'inset',
+      slot: 'left-top',
       modal: true,
       width: '400px',
       dismissible: true

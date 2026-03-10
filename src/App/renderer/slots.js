@@ -5,7 +5,6 @@ export const layoutSlots = Object.freeze({
   TOP_LEFT: 'top-left',
   TOP_MIDDLE: 'top-middle',
   TOP_RIGHT: 'top-right',
-  INSET: 'inset',
   LEFT_TOP: 'left-top',
   LEFT_BOTTOM: 'left-bottom',
   MIDDLE: 'middle',
@@ -22,7 +21,6 @@ export const allowedSlots = Object.freeze({
     layoutSlots.BANNER,
     layoutSlots.TOP_LEFT,
     layoutSlots.TOP_RIGHT,
-    layoutSlots.INSET,
     layoutSlots.MIDDLE,
     layoutSlots.FOOTER_RIGHT,
     layoutSlots.BOTTOM,
@@ -31,7 +29,6 @@ export const allowedSlots = Object.freeze({
   panel: [
     layoutSlots.SIDE,
     layoutSlots.BANNER,
-    layoutSlots.INSET, // Deprecate
     layoutSlots.LEFT_TOP,
     layoutSlots.LEFT_BOTTOM,
     layoutSlots.MIDDLE,

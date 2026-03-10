@@ -12,9 +12,6 @@ const topColWidth = (left, right) =>
 const subSlotMaxHeight = (columnHeight, siblingButtons, gap) =>
   columnHeight - (siblingButtons ? siblingButtons + gap : 0)
 
-const calcOffsetLeft = (bottomOffsetTop, gap, insetBottom, inset) =>
-  bottomOffsetTop - gap > insetBottom ? 0 : inset.offsetLeft + inset.offsetWidth
-
 export function useLayoutMeasurements () {
   const { dispatch, breakpoint, layoutRefs } = useApp()
   const { mapSize, isMapReady } = useMap()
@@ -26,7 +23,6 @@ export function useLayoutMeasurements () {
     topRef,
     topLeftColRef,
     topRightColRef,
-    insetRef,
     footerRef,
     actionsRef,
     leftTopRef,
@@ -44,11 +40,9 @@ export function useLayoutMeasurements () {
     const top = topRef.current
     const topLeftCol = topLeftColRef.current
     const topRightCol = topRightColRef.current
-    const inset = insetRef.current
     const bottom = footerRef.current
-    const actions = actionsRef.current
 
-    if ([main, top, inset, bottom].some(r => !r)) {
+    if ([main, top, bottom].some(r => !r)) {
       return
     }
 
@@ -77,9 +71,6 @@ export function useLayoutMeasurements () {
     appContainer.style.setProperty('--left-bottom-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftTopRef), dividerGap)}px`)
     appContainer.style.setProperty('--right-top-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightBottomRef), dividerGap)}px`)
     appContainer.style.setProperty('--right-bottom-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightTopRef), dividerGap)}px`)
-
-    // === Bottom left offset ===
-    appContainer.style.setProperty('--offset-left', `${calcOffsetLeft(Math.min(bottom.offsetTop, actions.offsetTop), dividerGap, inset.offsetHeight + leftOffsetTop, inset)}px`)
   }
 
   // --------------------------------

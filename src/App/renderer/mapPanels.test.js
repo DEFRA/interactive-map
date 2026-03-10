@@ -7,7 +7,7 @@ jest.mock('../registry/panelRegistry.js')
 jest.mock('../registry/pluginRegistry.js', () => ({ registeredPlugins: [] }))
 jest.mock('./pluginWrapper.js', () => ({ withPluginContexts: jest.fn((c) => c) }))
 jest.mock('../components/Panel/Panel.jsx', () => ({ Panel: (props) => <div data-testid='panel' {...props} /> }))
-jest.mock('./slots.js', () => ({ allowedSlots: { panel: ['header', 'modal', 'inset'] } }))
+jest.mock('./slots.js', () => ({ allowedSlots: { panel: ['header', 'modal', 'left-top'] } }))
 
 describe('mapPanels', () => {
   const baseConfig = {
@@ -145,7 +145,7 @@ describe('mapPanels', () => {
     expect(map()).toHaveLength(1)
   })
 
-  it('replaces bottom slot with inset on non-mobile breakpoints', () => {
+  it('replaces bottom slot with left-top on non-mobile breakpoints', () => {
     defaultAppState.panelConfig = ({
       p1: {
         desktop: { slot: 'bottom' },
@@ -153,7 +153,7 @@ describe('mapPanels', () => {
       }
     })
 
-    const result = map(defaultAppState, 'inset')
+    const result = map(defaultAppState, 'left-top')
     expect(result).toHaveLength(1)
     expect(result[0].id).toBe('p1')
   })

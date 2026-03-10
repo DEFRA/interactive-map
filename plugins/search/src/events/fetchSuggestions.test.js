@@ -35,7 +35,7 @@ describe('fetchSuggestions', () => {
 
     const result = await fetchSuggestions('test', datasets, dispatch)
 
-    expect(fetch).toHaveBeenCalledWith('/api?q=test', { method: 'GET' })
+    expect(fetch).toHaveBeenCalledWith({ url: '/api?q=test', options: { method: 'GET' } })
     expect(result.results).toEqual(['a', 'b'])
     expect(dispatch).toHaveBeenCalledWith({
       type: 'UPDATE_SUGGESTIONS',
@@ -77,7 +77,7 @@ describe('fetchSuggestions', () => {
 
     const result = await fetchSuggestions('abc', datasets, dispatch)
 
-    expect(fetch).toHaveBeenCalledWith('/custom/abc', { method: 'POST' })
+    expect(fetch).toHaveBeenCalledWith({ url: '/custom/abc', options: { method: 'POST' } })
     expect(result.results).toEqual(['y'])
   })
 
@@ -101,7 +101,7 @@ describe('fetchSuggestions', () => {
 
     await fetchSuggestions('x', datasets, dispatch, transformRequest)
 
-    expect(fetch).toHaveBeenCalledWith('/t?q=x', { method: 'PUT' })
+    expect(fetch).toHaveBeenCalledWith({ url: '/t?q=x', options: { method: 'PUT' } })
   })
 
   test('handles fetch HTTP error', async () => {
@@ -206,7 +206,7 @@ describe('fetchSuggestions', () => {
 
     const result = await fetchSuggestions('hi', datasets, dispatch)
 
-    expect(fetch).toHaveBeenCalledWith('/default?q=hi', { method: 'GET' })
+    expect(fetch).toHaveBeenCalledWith({ url: '/default?q=hi', options: { method: 'GET' } })
     expect(result.results).toEqual(['ok'])
   })
 })

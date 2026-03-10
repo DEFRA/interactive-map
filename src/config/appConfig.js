@@ -120,14 +120,14 @@ export const defaultPanelConfig = {
     showLabel: true
   },
   tablet: {
-    slot: 'inset',
+    slot: 'left-top',
     open: true,
     dismissible: true,
     modal: false,
     showLabel: true
   },
   desktop: {
-    slot: 'inset',
+    slot: 'left-top',
     open: true,
     dismissible: true,
     modal: false,
@@ -144,10 +144,10 @@ export const defaultControlConfig = {
     slot: 'bottom'
   },
   tablet: {
-    slot: 'inset'
+    slot: 'left-top'
   },
   desktop: {
-    slot: 'inset'
+    slot: 'left-top'
   }
 }
 

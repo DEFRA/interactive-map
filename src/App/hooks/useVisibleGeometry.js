@@ -31,14 +31,8 @@ export const getPointCoordinates = (geojson) => {
   return null
 }
 
-const SLOT_REFS = {
-  inset: 'insetRef',
-  bottom: 'bottomRef',
-  side: 'sideRef'
-}
-
 export const useVisibleGeometry = () => {
-  const { mapProvider, eventBus } = useConfig()
+  const { id, mapProvider, eventBus } = useConfig()
   const { layoutRefs, panelConfig, panelRegistry, breakpoint } = useApp()
 
   const latestRef = useRef({ layoutRefs, panelConfig, panelRegistry, breakpoint })
@@ -49,14 +43,13 @@ export const useVisibleGeometry = () => {
       return undefined
     }
 
-    const handlePanelOpened = ({ panelId, slot: eventSlot, visibleGeometry: eventVisibleGeometry }) => {
-      const { panelConfig: config, panelRegistry: registry, layoutRefs: refs, breakpoint: bp } = latestRef.current
+    const handlePanelOpened = ({ panelId, visibleGeometry: eventVisibleGeometry }) => {
+      const { panelConfig: config, panelRegistry: registry } = latestRef.current
       const resolvedConfig = config?.[panelId] ? config : (registry?.getPanelConfig() ?? config)
       const visibleGeometry = eventVisibleGeometry ?? resolvedConfig?.[panelId]?.visibleGeometry
-      const slot = eventSlot ?? resolvedConfig?.[panelId]?.[bp]?.slot
-      const slotRef = refs[SLOT_REFS[slot]]
+      const panel = layoutRefs.appContainerRef.current?.querySelector(`#${id}-panel-${panelId}`)
 
-      if (!visibleGeometry || !slotRef) {
+      if (!visibleGeometry) {
         return
       }
       if (typeof mapProvider.isGeometryObscured !== 'function') {
@@ -64,7 +57,8 @@ export const useVisibleGeometry = () => {
       }
 
       const waitForPanel = () => {
-        const panelRect = slotRef.current?.getBoundingClientRect()
+        if (!panel) { return }
+        const panelRect = panel.getBoundingClientRect()
 
         if (!panelRect || panelRect.width === 0 || panelRect.height === 0) {
           // Not ready yet, check on the next animation frame
