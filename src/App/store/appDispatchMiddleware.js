@@ -1,7 +1,11 @@
 // src/App/store/dispatchMiddleware.js
 import { EVENTS as events } from '../../config/events.js'
-import { defaultPanelConfig } from '../../config/appConfig.js'
+import { defaultPanelConfig, defaultButtonConfig, defaultControlConfig } from '../../config/appConfig.js'
 import { deepMerge } from '../../utils/deepMerge.js'
+import { allowedSlots } from '../renderer/slots.js'
+import { logger } from '../../utils/logger.js'
+
+const BREAKPOINTS = ['mobile', 'tablet', 'desktop']
 
 /**
  * Determines which panels were implicitly closed when opening a new panel
@@ -81,9 +85,37 @@ export function handleActionSideEffects (action, previousState, panelConfig, eve
     })
   }
 
+  if (type === 'ADD_BUTTON') {
+    const { id, config } = payload
+    const mergedConfig = deepMerge(defaultButtonConfig, config)
+    BREAKPOINTS.forEach(bp => {
+      const slot = mergedConfig[bp]?.slot
+      if (slot && !allowedSlots.button.includes(slot)) {
+        logger.warn(`button "${id}" has invalid slot "${slot}" at breakpoint "${bp}". Allowed slots: ${allowedSlots.button.join(', ')}.`)
+      }
+    })
+  }
+
+  if (type === 'ADD_CONTROL') {
+    const { id, config } = payload
+    const mergedConfig = deepMerge(defaultControlConfig, config)
+    BREAKPOINTS.forEach(bp => {
+      const slot = mergedConfig[bp]?.slot
+      if (slot && !allowedSlots.control.includes(slot)) {
+        logger.warn(`control "${id}" has invalid slot "${slot}" at breakpoint "${bp}". Allowed slots: ${allowedSlots.control.join(', ')}.`)
+      }
+    })
+  }
+
   if (type === 'ADD_PANEL') {
     const { id, config } = payload
     const mergedConfig = deepMerge(defaultPanelConfig, config)
+    BREAKPOINTS.forEach(bp => {
+      const slot = mergedConfig[bp]?.slot
+      if (slot && !allowedSlots.panel.includes(slot) && !slot.endsWith('-button')) {
+        logger.warn(`panel "${id}" has invalid slot "${slot}" at breakpoint "${bp}". Allowed slots: ${allowedSlots.panel.join(', ')}.`)
+      }
+    })
     const bpConfig = mergedConfig[previousState.breakpoint]
     if (bpConfig?.open) {
       queueMicrotask(() => {

@@ -144,10 +144,10 @@ export const defaultControlConfig = {
     slot: 'bottom'
   },
   tablet: {
-    slot: 'left-top'
+    slot: 'top-left'
   },
   desktop: {
-    slot: 'left-top'
+    slot: 'top-left'
   }
 }
 
