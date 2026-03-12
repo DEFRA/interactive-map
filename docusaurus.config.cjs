@@ -41,6 +41,14 @@ const config = {
   ],
 
   plugins: [
+    function customCssPlugin() {
+      return {
+        name: 'custom-css',
+        getClientModules() {
+          return [require.resolve('./assets/css/docusaurus.css')];
+        },
+      };
+    },
     [
       '@docusaurus/plugin-content-docs',
       {
@@ -66,18 +74,17 @@ const config = {
       },
 
       navigation: [
-        { text: 'Getting Started', href: '/getting-started' },
-        { text: 'Demo', href: '/demo', sidebar: 'auto' },
         {
-          text: 'Architecture',
-          href: '/architecture',
+          text: 'Getting Started',
+          href: '/getting-started',
           sidebar: [
-            { text: 'Overview', href: '/architecture' },
-            { text: 'Diagrams', href: 'architecture-diagrams' },
-            { text: 'Diagram Viewer', href: 'diagrams-viewer' },
+            { text: 'Installation', href: '/getting-started#installation' },
+            { text: 'Basic usage', href: '/getting-started#basic-usage' },
+            { text: 'Using plugins', href: '/getting-started#using-plugins' },
+            { text: 'GOV.UK Prototype kit', href: '/getting-started#govuk-prototype-kit-plugin' }
           ],
         },
-        { text: 'GOV.UK Prototype', href: '/govuk-prototype' },
+        { text: 'Examples', href: '/examples', sidebar: 'auto' },
         {
           text: 'API',
           href: '/api',
@@ -87,31 +94,24 @@ const config = {
           text: 'Plugins',
           href: '/plugins',
           sidebar: [
-            { text: 'Overview', href: '/plugins' },
-            { text: 'Building a Plugin', href: '/building-a-plugin' },
-            {
-              text: 'Available Plugins',
-              href: '/plugins#available-plugins',
-              items: [
-                { text: 'Interact', href: '/plugins#interact' },
-                { text: 'Map Styles', href: '/plugins#map-styles' },
-                { text: 'Scale Bar', href: '/plugins#scale-bar' },
-                { text: 'Search', href: '/plugins#search' },
-              ],
-            },
-            {
-              text: 'Alpha Plugins',
-              href: '/plugins#alpha-plugins',
-              items: [
-                { text: 'Datasets', href: '/plugins#datasets' },
-                { text: 'Draw for MapLibre', href: '/plugins#draw-for-maplibre' },
-                { text: 'Draw for ESRI SDK', href: '/plugins#draw-for-esri-sdk' },
-                { text: 'Frame', href: '/plugins#frame' },
-                { text: 'Use Location', href: '/plugins#use-location' },
-              ],
-            },
+            // { text: 'Overview', href: '/plugins' },
+            // { text: 'Building a Plugin', href: '/building-a-plugin' },
+            { text: 'Available Plugins', href: '/plugins#available-plugins' },
+            { text: 'Coming soon', href: '/plugins#coming-soon' },
+            { text: 'Using plugins', href: '/plugins#using-plugins' },
+            { text: 'Plugin events', href: '/plugins#plugin-events' },
+            { text: 'Plugin methods', href: '/plugins#plugin-methods' },
+            { text: 'Further reading', href: '/plugins#further-reading' },
           ],
         },
+        {
+          text: 'Architecture',
+          href: '/architecture',
+          sidebar: [
+            { text: 'Diagrams', href: 'architecture-diagrams' },
+            { text: 'Diagram Viewer', href: 'diagrams-viewer' },
+          ],
+        }
       ],
 
       phaseBanner: {
@@ -127,7 +127,7 @@ const config = {
 
       homepage: {
         getStartedHref: '/getting-started',
-        description: 'A lightweight, accessible map component for public-facing government services. Open source, multi-engine, and extendable through plugins.',
+description: 'A lightweight, accessible map component for public-facing government services. Open source, works with different mapping libraries, and extendable through plugins.',
       },
     },
   },

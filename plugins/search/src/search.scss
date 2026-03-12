@@ -50,13 +50,20 @@
   }
 }
 
-.im-c-search__input {
+// Input reset (extra specificity to reset govuk)
+.im-o-app .im-c-search__input {
   width: 100%;
-  border: 0;
-  padding: var(--divider-gap) calc(var(--divider-gap) + 2px);
   color: var(--foreground-color);
   background-color: transparent;
+  font-size: 1rem;
+  border: 0;
+  padding: var(--divider-gap) calc(var(--divider-gap) + 2px);
   outline: 0;
+
+  &:focus {
+    outline: 3px solid transparent;
+    box-shadow: none;
+  }
 
   &::placeholder {
     color: var(--foreground-color);

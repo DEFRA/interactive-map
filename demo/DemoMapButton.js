@@ -103,7 +103,7 @@ function MapInner ({ mapStyles }) {
       })
     })
   }, [])
-  return <div id='demo-map-button'></div>
+  return <div id='demo-map-button' className='app-no-prose'></div>
 }
 
 export default function DemoMapButton () {

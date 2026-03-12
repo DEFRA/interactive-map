@@ -7,7 +7,9 @@ At its core, it provides:
 * A plugin system for extending functionality 
 * An abstraction layer over multiple mapping engines 
 
-The system is designed so that **the core controls rendering and layout**, while **plugins declaratively contribute behaviour and UI.** ---
+The system is designed so that **the core controls rendering and layout**, while **plugins declaratively contribute behaviour and UI.**
+
+---
 
 ## High-level Structure 
 

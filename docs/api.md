@@ -6,7 +6,7 @@ The `InteractiveMap` object represents an instance of an InteractiveMap on your 
 
 You create an instance of a InteractiveMap by specifying a `container` and `options` in the `constructor`. An InteractiveMap is then initialized on the page and returns an instance of an InteractiveMap object.
 
-## Getting started
+## Getting started <!-- no-sidebar -->
 
 For installation and setup instructions, see the [Getting started](./getting-started.md) guide.
 

@@ -1,0 +1,25 @@
+/* Custom styles for the Interactive Map docs site */
+
+.app-section {
+  padding: 40px 0;
+}
+
+.govuk-template__body.app-homepage .govuk-template__body-inner {
+  background-color: #f4f8fb;
+}
+
+.app-section {
+  background-color: #ffffff;
+}
+
+.app-section--features {
+  background-color: #f4f8fb;
+  border-bottom: 1px solid #8eb8dc;
+}
+
+.app-prose-scope .app-section--features  p {
+  @media (min-width: 40.0625em) {
+    margin-bottom: 0 !important;
+  }
+}
+
