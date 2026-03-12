@@ -18,8 +18,13 @@ export default {
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
       '<rootDir>/src/test-utils.js',
-      '<rootDir>/plugins/beta/',
-      '<rootDir>/providers/beta/'
+      '<rootDir>/plugins/beta/datasets/',
+      '<rootDir>/providers/beta/',
+      '<rootDir>/plugins/beta/draw-ml',
+      '<rootDir>/plugins/beta/frame',
+      '<rootDir>/plugins/beta/map-styles',
+      '<rootDir>/plugins/beta/scale-bar',
+      '<rootDir>/plugins/beta/use-location'
     ],
     transformIgnorePatterns: []
   }]
