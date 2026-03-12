@@ -1,5 +1,12 @@
 import { attachEvents } from './events.js'
 import { EVENTS as events } from '../../../../src/config/events.js'
+
+import * as graphicJs from './graphic.js'
+jest.mock('./graphic.js')
+const createGraphic = jest.spyOn(graphicJs, 'createGraphic')
+// const createSymbol = jest.spyOn(graphicJs, 'createSymbol')
+// const graphicToGeoJSON = jest.spyOn(graphicJs, 'graphicToGeoJSON')
+
 const dispatch = jest.fn()
 const feature = {
   type: 'Feature',
@@ -92,8 +99,14 @@ describe('attachEvents - draw-es', () => {
     },
     mapProvider: {
       view: createMockEventHandler('view'),
-      sketchViewModel: createMockEventHandler('sketchViewModel'),
-      sketchLayer: {},
+      sketchViewModel: {
+        ...createMockEventHandler('sketchViewModel'),
+        cancel: jest.fn()
+      },
+      sketchLayer: {
+        removeAll: jest.fn(),
+        add: jest.fn()
+      },
       emptySketchLayer: {}
     },
     events,
@@ -133,6 +146,58 @@ describe('attachEvents - draw-es', () => {
       it('should teardown the eventBus listeners', eventBus.assertRemoveCalls([events.MAP_STYLE_CHANGE]))
       it('should reset the Done click handler', drawDone.assertOnClickReset())
       it('should reset the Cancel click handler', drawCancel.assertOnClickReset())
+    })
+  })
+
+  describe('internal methods', () => {
+    beforeEach(() => {
+      jest.clearAllMocks()
+    })
+
+    it('should return null if sketchViewModel is not set', async () => {
+      const response = attachEvents({
+        ...mockAttachEventParameters,
+        mapProvider: {}
+      })
+      expect(response).toBeNull()
+    })
+
+    it('should call handleDone when Done is clicked', async () => {
+      const { drawDone } = mockAttachEventParameters.buttonConfig
+      const { sketchViewModel } = mockAttachEventParameters.mapProvider
+      const { eventBus } = mockAttachEventParameters
+      attachEvents({
+        ...mockAttachEventParameters,
+        pluginState: {
+          ...mockAttachEventParameters.pluginState, tempFeature: 'Test Feature'
+        }
+      })
+      drawDone.onClick()
+      expect(sketchViewModel.cancel).toHaveBeenCalled()
+      expect(sketchViewModel.layer).toEqual(mockAttachEventParameters.mapProvider.emptySketchLayer)
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:done', { newFeature: 'Test Feature' })
+    })
+
+    it('should call handleCancel when Cancel is clicked', async () => {
+      const { drawCancel } = mockAttachEventParameters.buttonConfig
+      const { sketchViewModel, sketchLayer } = mockAttachEventParameters.mapProvider
+      const { eventBus } = mockAttachEventParameters
+      attachEvents({
+        ...mockAttachEventParameters,
+        pluginState: {
+          ...mockAttachEventParameters.pluginState, tempFeature: 'Test Feature'
+        }
+      })
+      drawCancel.onClick()
+      expect(sketchViewModel.cancel).toHaveBeenCalled()
+      expect(sketchLayer.removeAll).toHaveBeenCalled()
+      expect(createGraphic).toHaveBeenCalled()
+      expect(sketchLayer.add).toHaveBeenCalled()
+      expect(sketchViewModel.layer).toEqual(mockAttachEventParameters.mapProvider.emptySketchLayer)
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled')
     })
   })
 })
