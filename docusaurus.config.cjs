@@ -41,6 +41,14 @@ const config = {
   ],
 
   plugins: [
+    function customCssPlugin() {
+      return {
+        name: 'custom-css',
+        getClientModules() {
+          return [require.resolve('./assets/css/docusaurus.css')];
+        },
+      };
+    },
     [
       '@docusaurus/plugin-content-docs',
       {
@@ -67,16 +75,16 @@ const config = {
 
       navigation: [
         { text: 'Getting Started', href: '/getting-started' },
-        { text: 'Demo', href: '/demo', sidebar: 'auto' },
-        {
-          text: 'Architecture',
-          href: '/architecture',
-          sidebar: [
-            { text: 'Overview', href: '/architecture' },
-            { text: 'Diagrams', href: 'architecture-diagrams' },
-            { text: 'Diagram Viewer', href: 'diagrams-viewer' },
-          ],
-        },
+        { text: 'Examples', href: '/examples', sidebar: 'auto' },
+        // {
+        //   text: 'Architecture',
+        //   href: '/architecture',
+        //   sidebar: [
+        //     { text: 'Overview', href: '/architecture' },
+        //     { text: 'Diagrams', href: 'architecture-diagrams' },
+        //     { text: 'Diagram Viewer', href: 'diagrams-viewer' },
+        //   ],
+        // },
         { text: 'GOV.UK Prototype', href: '/govuk-prototype' },
         {
           text: 'API',
@@ -87,8 +95,8 @@ const config = {
           text: 'Plugins',
           href: '/plugins',
           sidebar: [
-            { text: 'Overview', href: '/plugins' },
-            { text: 'Building a Plugin', href: '/building-a-plugin' },
+            // { text: 'Overview', href: '/plugins' },
+            // { text: 'Building a Plugin', href: '/building-a-plugin' },
             {
               text: 'Available Plugins',
               href: '/plugins#available-plugins',
@@ -100,8 +108,8 @@ const config = {
               ],
             },
             {
-              text: 'Alpha Plugins',
-              href: '/plugins#alpha-plugins',
+              text: 'Coming soon',
+              href: '/plugins#coming-soon',
               items: [
                 { text: 'Datasets', href: '/plugins#datasets' },
                 { text: 'Draw for MapLibre', href: '/plugins#draw-for-maplibre' },
@@ -127,7 +135,7 @@ const config = {
 
       homepage: {
         getStartedHref: '/getting-started',
-        description: 'A lightweight, accessible map component for public-facing government services. Open source, multi-engine, and extendable through plugins.',
+description: 'A lightweight, accessible map component for public-facing government services. Open source, works with different mapping libraries, and extendable through plugins.',
       },
     },
   },

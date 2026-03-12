@@ -113,7 +113,7 @@ function MapInner ({ mapStyles }) {
         @media (prefers-reduced-motion: reduce) { .map-loading-dots::after { animation: none; content: '...'; } }
       `}</style>
 
-      <div id='demo-map-inline'>
+      <div id='demo-map-inline' className='app-no-prose'>
         <div className='map-loading-overlay' aria-hidden='true'>
           Loading<span className='map-loading-dots' />
         </div>

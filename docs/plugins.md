@@ -24,7 +24,7 @@ Scale bar display plugin that shows the current map scale.
 
 Location search plugin with autocomplete functionality. Include custom datasets to search.
 
-## Alpha Plugins
+## Coming soon
 
 The following plugins are in early development. APIs and features may change.
 
@@ -34,7 +34,7 @@ Add datasets to your map, configure the display, layer toggling and render a key
 
 ### Draw for MapLibre
 
-Draw lines and polygons using the MapLibre map provider.
+Draw lines, polygons and place points using the MapLibre map provider. Includes geometry actions such as split and merge.
 
 ### Draw for ESRI SDK
 
@@ -47,14 +47,6 @@ Add a regular shaped frame to the map and control its position. Use to generate 
 ### Use Location
 
 Geolocation plugin that allows users to centre the map on their current location.
-
-## Coming Soon
-
-The following plugins are planned for future releases.
-
-### Geometry Actions
-
-Split and merge polygons.
 
 ## Using Plugins
 
