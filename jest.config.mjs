@@ -9,7 +9,7 @@ export default {
   projects: [{
     displayName: 'unit-tests',
     testEnvironment: 'jsdom',
-    setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+    setupFilesAfterEnv: ['jest-expect-message', '<rootDir>/jest.setup.js'],
     testMatch: [
       '<rootDir>/src/**/*.test.[jt]s?(x)',
       '<rootDir>/plugins/**/*.test.[jt]s?(x)',

@@ -10,7 +10,7 @@ const feature = {
   properties: { id: 'boundary' }
 }
 
-const createMockEventHandler = (isEventBus = false) => {
+const createMockEventHandler = (type) => {
   const callbackSpies = {}
   const removeSpy = jest.fn()
   const onSpy = jest.fn((eventType, callback) => {
@@ -19,15 +19,19 @@ const createMockEventHandler = (isEventBus = false) => {
   })
 
   const assertOnCalls = (methodArray) => {
-    expect(onSpy.mock.calls).toHaveLength(methodArray.length)
-    methodArray.forEach((method) => expect(onSpy).toHaveBeenCalledWith(method, callbackSpies[method]))
+    expect(onSpy.mock.calls, `${type}.on should be called ${methodArray.length} times`)
+      .toHaveLength(methodArray.length)
+    methodArray.forEach((method) =>
+      expect(onSpy, `${type}.on should be called with ${method} and a callback`)
+        .toHaveBeenCalledWith(method, callbackSpies[method]))
   }
 
   const assertRemoveCalls = (methodArray) => {
-    expect(removeSpy.mock.calls).toHaveLength(methodArray.length)
+    expect(removeSpy.mock.calls, `${type}.remove/off should be called ${methodArray.length} times`)
+      .toHaveLength(methodArray.length)
     methodArray.forEach((method) => {
-      const removeParams = isEventBus ? [method, callbackSpies[[method]]] : [method]
-      expect(removeSpy).toHaveBeenCalledWith(...removeParams)
+      const removeParams = type === 'eventBus' ? [method, callbackSpies[[method]]] : [method]
+      expect(removeSpy, `${type}.remove/off should be called with ${removeParams} `).toHaveBeenCalledWith(...removeParams)
     })
   }
 
@@ -66,13 +70,13 @@ describe('attachEvents - draw-es', () => {
       feature
     },
     mapProvider: {
-      view: createMockEventHandler(),
-      sketchViewModel: createMockEventHandler(),
+      view: createMockEventHandler('view'),
+      sketchViewModel: createMockEventHandler('sketchViewModel'),
       sketchLayer: {},
       emptySketchLayer: {}
     },
     events,
-    eventBus: createMockEventHandler(true /* isEventBus */),
+    eventBus: createMockEventHandler('eventBus'),
     buttonConfig: {
       drawDone: new ButtonConfigMock(),
       drawCancel: new ButtonConfigMock()
@@ -104,6 +108,5 @@ describe('attachEvents - draw-es', () => {
   })
 
   // it('should call handleDone when Done is clicked', async () => {
-
   // })
 })
