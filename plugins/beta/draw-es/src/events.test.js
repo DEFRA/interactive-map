@@ -18,7 +18,8 @@ const createMockEventHandler = (type) => {
     return { remove: () => removeSpy(eventType) }
   })
 
-  const assertOnCalls = (methodArray) => {
+  // returns an async function that runs asserts
+  const assertOnCalls = (methodArray) => async () => {
     expect(onSpy.mock.calls, `${type}.on should be called ${methodArray.length} times`)
       .toHaveLength(methodArray.length)
     methodArray.forEach((method) =>
@@ -26,7 +27,7 @@ const createMockEventHandler = (type) => {
         .toHaveBeenCalledWith(method, callbackSpies[method]))
   }
 
-  const assertRemoveCalls = (methodArray) => {
+  const assertRemoveCalls = (methodArray) => async () => {
     expect(removeSpy.mock.calls, `${type}.remove/off should be called ${methodArray.length} times`)
       .toHaveLength(methodArray.length)
     methodArray.forEach((method) => {
@@ -48,17 +49,37 @@ const createMockEventHandler = (type) => {
 }
 
 class ButtonConfigMock {
-  constructor () {
-    this._onClick = jest.fn()
-    this.assignOnClickSpy = jest.spyOn(this, 'onClick')
+  constructor (name) {
+    this.name = name
+    this._onClick = 'Initial Value'
+    this._initialOnClick = this._onClick
+    this.assignOnClickSpy = jest.spyOn(this, 'onClick', 'set')
   }
 
   set onClick (onClick) {
-    this._onClick = jest.fn(onClick)
+    this._onClick = onClick
   }
 
   get onClick () {
     return this._onClick
+  }
+
+  assertOnClickAssignment () {
+    return async () => {
+      expect(this.assignOnClickSpy.mock.calls, `${this.name}.onClick should have been reassigned once`)
+        .toHaveLength(1)
+      expect(this._onClick, `${this.name}.onClick should have changed`)
+        .not.toEqual(this._initialOnClick)
+    }
+  }
+
+  assertOnClickReset () {
+    return async () => {
+      expect(this.assignOnClickSpy.mock.calls, `${this.name}.onClick should have been assigned twice`)
+        .toHaveLength(2)
+      expect(this._onClick, `${this.name}.onClick should been set back to its initial value`)
+        .toEqual(this._initialOnClick)
+    }
   }
 }
 
@@ -78,8 +99,8 @@ describe('attachEvents - draw-es', () => {
     events,
     eventBus: createMockEventHandler('eventBus'),
     buttonConfig: {
-      drawDone: new ButtonConfigMock(),
-      drawCancel: new ButtonConfigMock()
+      drawDone: new ButtonConfigMock('Done'),
+      drawCancel: new ButtonConfigMock('Cancel')
     },
     mapColorScheme: 'MOCK_COLOUR_SCHEME'
   }
@@ -92,21 +113,26 @@ describe('attachEvents - draw-es', () => {
     jest.useRealTimers()
   })
 
-  it('should add listeners and return a method that tears them down', async () => {
+  describe('listeners', () => {
+    const { drawDone, drawCancel } = mockAttachEventParameters.buttonConfig
     const { eventBus } = mockAttachEventParameters
     const { sketchViewModel, view } = mockAttachEventParameters.mapProvider
     const teardown = attachEvents(mockAttachEventParameters)
-    view.assertOnCalls(['click'])
-    sketchViewModel.assertOnCalls(['update', 'create', 'undo'])
-    eventBus.assertOnCalls([events.MAP_STYLE_CHANGE])
+    describe('attach', () => {
+      it('should add view listeners', view.assertOnCalls(['click']))
+      it('should add sketchViewModel listeners', sketchViewModel.assertOnCalls(['update', 'create', 'undo']))
+      it('should add eventBus listeners', eventBus.assertOnCalls([events.MAP_STYLE_CHANGE]))
+      it('should assign a Done click handler', drawDone.assertOnClickAssignment())
+      it('should assign a Cancel click handler', drawCancel.assertOnClickAssignment())
+    })
 
-    teardown()
-
-    view.assertRemoveCalls(['click'])
-    sketchViewModel.assertRemoveCalls(['update', 'create', 'undo'])
-    eventBus.assertRemoveCalls([events.MAP_STYLE_CHANGE])
+    describe('teardown', () => {
+      beforeAll(teardown)
+      it('should teardown the view listeners', view.assertRemoveCalls(['click']))
+      it('should teardown the sketchViewModel listeners', sketchViewModel.assertRemoveCalls(['update', 'create', 'undo']))
+      it('should teardown the eventBus listeners', eventBus.assertRemoveCalls([events.MAP_STYLE_CHANGE]))
+      it('should reset the Done click handler', drawDone.assertOnClickReset())
+      it('should reset the Cancel click handler', drawCancel.assertOnClickReset())
+    })
   })
-
-  // it('should call handleDone when Done is clicked', async () => {
-  // })
 })
