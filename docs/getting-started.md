@@ -111,6 +111,4 @@ Each plugin distributes its own CSS. Import or copy only the CSS for the plugins
 
 Following installation the InteractiveMap plugin will be added to your prototype. You can now create pages with a map, and configure for specific use cases.
 
-See [Install and use plugins](https://prototype-kit.service.gov.uk/docs/install-and-use-plugins).
-
-See [Configuring InteractiveMap in a GOVUK Prototype](./govuk-prototype.md).
+See [GOV.UK Prototype Kit - Install and use plugins](https://prototype-kit.service.gov.uk/docs/install-and-use-plugins).

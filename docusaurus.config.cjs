@@ -74,18 +74,17 @@ const config = {
       },
 
       navigation: [
-        { text: 'Getting Started', href: '/getting-started' },
+        {
+          text: 'Getting Started',
+          href: '/getting-started',
+          sidebar: [
+            { text: 'Installation', href: '/getting-started#installation' },
+            { text: 'Basic usage', href: '/getting-started#basic-usage' },
+            { text: 'Using plugins', href: '/getting-started#using-plugins' },
+            { text: 'GOV.UK Prototype kit', href: '/getting-started#govuk-prototype-kit-plugin' }
+          ],
+        },
         { text: 'Examples', href: '/examples', sidebar: 'auto' },
-        // {
-        //   text: 'Architecture',
-        //   href: '/architecture',
-        //   sidebar: [
-        //     { text: 'Overview', href: '/architecture' },
-        //     { text: 'Diagrams', href: 'architecture-diagrams' },
-        //     { text: 'Diagram Viewer', href: 'diagrams-viewer' },
-        //   ],
-        // },
-        { text: 'GOV.UK Prototype', href: '/govuk-prototype' },
         {
           text: 'API',
           href: '/api',
@@ -120,6 +119,15 @@ const config = {
             },
           ],
         },
+        {
+          text: 'Architecture',
+          href: '/architecture',
+          sidebar: [
+            { text: 'Overview', href: '/architecture' },
+            { text: 'Diagrams', href: 'architecture-diagrams' },
+            { text: 'Diagram Viewer', href: 'diagrams-viewer' },
+          ],
+        }
       ],
 
       phaseBanner: {

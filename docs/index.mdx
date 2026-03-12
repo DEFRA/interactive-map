@@ -1,3 +1,5 @@
+import Link from '@docusaurus/Link';
+
 <div className="app-section app-section--features">
   <div className="govuk-width-container">
     <div className="govuk-grid-row">
@@ -21,16 +23,16 @@
     <div className="govuk-grid-row">
       <div className="govuk-grid-column-two-thirds">
         <h2>Documentation</h2>
-        <h3><a href="/getting-started" className="govuk-link">Getting Started</a></h3>
+        <h3><Link to="/getting-started" className="govuk-link">Getting Started</Link></h3>
         <p>How to install and configure the component. Covers setup, initialisation options, and integration with common build tools.</p>
-        <h3><a href="/examples" className="govuk-link">Examples</a></h3>
+        <h3><Link to="/examples" className="govuk-link">Examples</Link></h3>
         <p>Live interactive demos showing the component in action, including inline maps, button-triggered maps, and various configuration options.</p>
-        <h3><a href="/govuk-prototype" className="govuk-link">GOV.UK Prototype</a></h3>
-        <p>Guidance for using the component inside the GOV.UK Prototype Kit, including pre-built macros and page templates.</p>
-        <h3><a href="/api" className="govuk-link">API Reference</a></h3>
+        <h3><Link to="/api" className="govuk-link">API Reference</Link></h3>
         <p>Full reference for all configuration options, events, methods, and plugin interfaces exposed by the component.</p>
-        <h3><a href="/plugins" className="govuk-link">Plugins</a></h3>
+        <h3><Link to="/plugins" className="govuk-link">Plugins</Link></h3>
         <p>Extend the component with built-in plugins for search, map styles, drawing tools, and more. Includes a guide to building your own.</p>
+        <h3><Link to="/architecture" className="govuk-link">Architecture</Link></h3>
+        <p>Technical overview of how the component is structured, including the plugin system, rendering pipeline, and integration patterns.</p>
         <hr className="govuk-section-break govuk-section-break--visible govuk-section-break--xl" />
         <h2>Support</h2>
         <p>For issues and feature requests, visit our <a href="https://github.com/DEFRA/interactive-map" className="govuk-link">GitHub repository</a>.</p>
