@@ -17,9 +17,16 @@
   border-bottom: 1px solid #8eb8dc;
 }
 
-.app-prose-scope .app-section--features  p {
-  @media (min-width: 40.0625em) {
-    margin-bottom: 0 !important;
+.app-prose-scope .app-section--features p:not(.app-no-prose *) {
+  margin-bottom: 0;
+}
+
+.app-section--features .govuk-grid-column-one-third:not(:first-child) {
+  margin-top: 30px;
+
+  @media (min-width: 48.125em) {
+    margin-top: 0;
   }
 }
+
 
