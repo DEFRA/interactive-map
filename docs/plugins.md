@@ -4,7 +4,7 @@ Plugins extend the InteractiveMap with additional functionality. This page lists
 
 For guidance on building your own plugins, see [Building a Plugin](./building-a-plugin.md).
 
-## Available Plugins
+## Available plugins
 
 The following plugins are available for use with InteractiveMap.
 
@@ -48,7 +48,7 @@ Add a regular shaped frame to the map and control its position. Use to generate 
 
 Geolocation plugin that allows users to centre the map on their current location.
 
-## Using Plugins
+## Using plugins
 
 Plugins are registered via the `plugins` option when creating an InteractiveMap. Plugins typically export a factory function that accepts configuration options:
 
@@ -72,7 +72,7 @@ The factory function returns a [PluginDescriptor](./plugins/plugin-descriptor.md
 - **load** - Function that returns a [PluginManifest](./plugins/plugin-manifest.md)
 - **...options** - Configuration passed to the factory, available as [pluginConfig](./plugins/plugin-context.md#pluginconfig)
 
-## Plugin Events
+## Plugin events
 
 Plugins can emit events that you can listen to using `interactiveMap.on()`:
 
@@ -86,7 +86,7 @@ interactiveMap.on('highlight:removed', ({ id }) => {
 })
 ```
 
-## Plugin Methods
+## Plugin methods
 
 Plugins can expose methods that you call on the plugin instance:
 
@@ -100,7 +100,7 @@ interactiveMap.on('map:ready', () => {
 
 See individual plugin documentation for available events and methods.
 
-## Further Reading
+## Further reading
 
 - [Building a Plugin](./building-a-plugin.md) - Guide to creating custom plugins
 - [PluginDescriptor](./plugins/plugin-descriptor.md) - Plugin registration reference

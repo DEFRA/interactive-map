@@ -96,34 +96,18 @@ const config = {
           sidebar: [
             // { text: 'Overview', href: '/plugins' },
             // { text: 'Building a Plugin', href: '/building-a-plugin' },
-            {
-              text: 'Available Plugins',
-              href: '/plugins#available-plugins',
-              items: [
-                { text: 'Interact', href: '/plugins#interact' },
-                { text: 'Map Styles', href: '/plugins#map-styles' },
-                { text: 'Scale Bar', href: '/plugins#scale-bar' },
-                { text: 'Search', href: '/plugins#search' },
-              ],
-            },
-            {
-              text: 'Coming soon',
-              href: '/plugins#coming-soon',
-              items: [
-                { text: 'Datasets', href: '/plugins#datasets' },
-                { text: 'Draw for MapLibre', href: '/plugins#draw-for-maplibre' },
-                { text: 'Draw for ESRI SDK', href: '/plugins#draw-for-esri-sdk' },
-                { text: 'Frame', href: '/plugins#frame' },
-                { text: 'Use Location', href: '/plugins#use-location' },
-              ],
-            },
+            { text: 'Available Plugins', href: '/plugins#available-plugins' },
+            { text: 'Coming soon', href: '/plugins#coming-soon' },
+            { text: 'Using plugins', href: '/plugins#using-plugins' },
+            { text: 'Plugin events', href: '/plugins#plugin-events' },
+            { text: 'Plugin methods', href: '/plugins#plugin-methods' },
+            { text: 'Further reading', href: '/plugins#further-reading' },
           ],
         },
         {
           text: 'Architecture',
           href: '/architecture',
           sidebar: [
-            { text: 'Overview', href: '/architecture' },
             { text: 'Diagrams', href: 'architecture-diagrams' },
             { text: 'Diagram Viewer', href: 'diagrams-viewer' },
           ],
