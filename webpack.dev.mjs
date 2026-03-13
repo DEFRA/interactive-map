@@ -12,6 +12,10 @@ dotenv.config({ path: path.join(__dirname, './.env'), quiet: true })
 export default {
   mode: 'development',
   target: ['web', 'es5'],
+  devtool: [
+    // produce a source-map to aid debugging
+    { type: 'javascript', use: 'source-map' }
+  ],
   entry: {
     index: path.join(__dirname, 'demo/js/index.js'),
     forms: path.join(__dirname, 'demo/js/forms.js'),
@@ -21,7 +25,7 @@ export default {
   output: {
     path: path.resolve(__dirname, 'public'),
     filename: '[name].js',
-    clean: true,
+    clean: true
   },
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js'],
@@ -84,28 +88,28 @@ export default {
         test: /\.jsx?$/,
         loader: 'babel-loader',
         exclude: /node_modules/
-      },{
+      }, {
         test: /\.s[ac]ss$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'],
-      },{
+        use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader']
+      }, {
         test: /\.css$/i,
-        use: [MiniCssExtractPlugin.loader, 'css-loader'],
+        use: [MiniCssExtractPlugin.loader, 'css-loader']
       }
-    ],
+    ]
   },
   devServer: {
     static: [
-    {
-      directory: path.join(__dirname, 'demo'),
-    },
-    {
-      directory: path.join(__dirname, 'public'),
-    },
-    {
-      directory: path.join(__dirname, 'assets'),
-      publicPath: '/assets' // Images served from here as used in both demo and prototype kit plugin
-    }
-  ],
+      {
+        directory: path.join(__dirname, 'demo')
+      },
+      {
+        directory: path.join(__dirname, 'public')
+      },
+      {
+        directory: path.join(__dirname, 'assets'),
+        publicPath: '/assets' // Images served from here as used in both demo and prototype kit plugin
+      }
+    ],
     compress: true,
     port: 8080,
     open: true,
