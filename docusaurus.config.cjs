@@ -127,7 +127,7 @@ const config = {
 
       homepage: {
         getStartedHref: '/getting-started',
-description: 'A lightweight, accessible map component for public-facing government services. Open source, works with different mapping libraries, and extendable through plugins.',
+        description: 'Built for developers creating public-facing services on GOV.UK. Takes care of the hard work of building an accessible, standards-compliant mapping interface, so you can focus on your data.',
       },
     },
   },

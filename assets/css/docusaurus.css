@@ -29,4 +29,55 @@
   }
 }
 
+/* Black */
+/* .govuk-template--rebranded .govuk-service-navigation:not(.govuk-service-navigation--inverse) .govuk-service-navigation__list__link,
+.govuk-template--rebranded .govuk-service-navigation:not(.govuk-service-navigation--inverse) .govuk-service-navigation__toggle {
+  color: #0b0c0c !important;
+}
 
+.govuk-template--rebranded .govuk-service-navigation:not(.govuk-service-navigation--inverse) .govuk-service-navigation__list__item--active {
+  border-color: #0b0c0c !important;
+} */
+
+/* Color 100% */
+.govuk-template--rebranded .app-masthead .govuk-button--inverse,
+.govuk-template--rebranded .app-masthead .govuk-button--inverse:visited,
+.govuk-template--rebranded .app-masthead .govuk-button--inverse:active,
+.govuk-template--rebranded .app-masthead .govuk-button--inverse:hover {
+  color: #008531;
+}
+
+/* Background colour 100% */
+.govuk-template--rebranded .govuk-header__link--homepage:not(:focus),
+.govuk-template--rebranded .govuk-header,
+.govuk-template--rebranded .govuk-service-navigation.govuk-service-navigation--inverse,
+.govuk-template--rebranded .app-masthead {
+  background-color: #008531 !important;
+}
+
+/* Background colour 4% tint */
+/* .govuk-template--rebranded .app-homepage .app-section.app-section--features,
+.govuk-template--rebranded .govuk-template__body.app-homepage .govuk-template__body-inner,
+.govuk-template--rebranded .govuk-service-navigation,
+.govuk-template--rebranded .govuk-footer {
+  background-color: #f5faf7 !important;
+} */
+
+/* Border colour 100% */
+/* .govuk-template--rebranded .govuk-footer {
+  border-color: #008531 !important;
+} */
+
+/* Border colour 30% tint */
+/* .govuk-template--rebranded .app-homepage .app-section.app-section--features,
+.govuk-template--rebranded .govuk-service-navigation {
+  border-color: #b3dac1 !important;
+} */
+
+/* Border colour 50% tint */
+.govuk-template--rebranded .app-homepage .govuk-service-navigation--inverse .govuk-width-container {
+  border-color: #66B683 !important;
+}
+
+
+/* #8eb8dc */
