@@ -4,18 +4,10 @@ import { EVENTS as events } from '../../../../src/config/events.js'
 import * as graphicJs from './graphic.js'
 jest.mock('./graphic.js')
 const createGraphic = jest.spyOn(graphicJs, 'createGraphic')
-// const createSymbol = jest.spyOn(graphicJs, 'createSymbol')
+const createSymbol = jest.spyOn(graphicJs, 'createSymbol')
 // const graphicToGeoJSON = jest.spyOn(graphicJs, 'graphicToGeoJSON')
 
 const dispatch = jest.fn()
-const feature = {
-  type: 'Feature',
-  geometry: {
-    type: 'Polygon',
-    coordinates: [[[337560, 504846], [337580, 504855], [337587, 504838], [337565, 504833], [337560, 504846]]]
-  },
-  properties: { id: 'boundary' }
-}
 
 const createMockEventHandler = (type) => {
   const callbackSpies = {}
@@ -54,6 +46,30 @@ const createMockEventHandler = (type) => {
     triggerEvent: (eventType, event) => callbackSpies[eventType](event)
   }
 }
+const coordinates = [[[337560, 504846], [337580, 504855], [337587, 504838], [337565, 504833], [337560, 504846]]]
+const feature = {
+  type: 'Feature',
+  geometry: {
+    type: 'Polygon',
+    coordinates
+  },
+  properties: { id: 'boundary' }
+}
+
+const mockSymbol = { color: 'blue' }
+const newGraphicMock = { symbol: { color: 'red' } }
+
+const mockGraphic = {
+  attributes: { id: 'boundary' },
+  geometry: { rings: coordinates },
+  symbol: null
+}
+
+const sketchLayer = {
+  removeAll: jest.fn(),
+  add: jest.fn(),
+  graphics: { items: [mockGraphic] }
+}
 
 class ButtonConfigMock {
   constructor (name) {
@@ -89,25 +105,30 @@ class ButtonConfigMock {
     }
   }
 }
+const emptySketchLayer = {}
 
-describe('attachEvents - draw-es', () => {
-  const mockAttachEventParameters = {
+const buildParams = (overrides = {}) => {
+  return {
     pluginState: {
       dispatch,
       mode: 'new-polygon', // or: edit-feature
-      feature
+      feature,
+      ...overrides.pluginState
     },
     mapProvider: {
       view: createMockEventHandler('view'),
       sketchViewModel: {
         ...createMockEventHandler('sketchViewModel'),
-        cancel: jest.fn()
+        layer: sketchLayer,
+        cancel: jest.fn(),
+        state: 'idle',
+        polygonSymbol: null,
+        update: jest.fn().mockResolvedValue(undefined)
       },
-      sketchLayer: {
-        removeAll: jest.fn(),
-        add: jest.fn()
-      },
-      emptySketchLayer: {}
+      // sketchViewModel: { ...sketchViewModel, ...overrides.sketchViewModel },
+      sketchLayer,
+      emptySketchLayer,
+      ...overrides.mapProvider
     },
     events,
     eventBus: createMockEventHandler('eventBus'),
@@ -117,7 +138,9 @@ describe('attachEvents - draw-es', () => {
     },
     mapColorScheme: 'MOCK_COLOUR_SCHEME'
   }
+}
 
+describe('attachEvents - draw-es', () => {
   beforeEach(() => {
     jest.useFakeTimers()
   })
@@ -127,10 +150,11 @@ describe('attachEvents - draw-es', () => {
   })
 
   describe('listeners', () => {
-    const { drawDone, drawCancel } = mockAttachEventParameters.buttonConfig
-    const { eventBus } = mockAttachEventParameters
-    const { sketchViewModel, view } = mockAttachEventParameters.mapProvider
-    const teardown = attachEvents(mockAttachEventParameters)
+    const params = buildParams()
+    const { drawDone, drawCancel } = params.buttonConfig
+    const { eventBus } = params
+    const { sketchViewModel, view } = params.mapProvider
+    const teardown = attachEvents(params)
     describe('attach', () => {
       it('should add view listeners', view.assertOnCalls(['click']))
       it('should add sketchViewModel listeners', sketchViewModel.assertOnCalls(['update', 'create', 'undo']))
@@ -150,54 +174,128 @@ describe('attachEvents - draw-es', () => {
   })
 
   describe('internal methods', () => {
-    beforeEach(() => {
-      jest.clearAllMocks()
-    })
+    beforeEach(jest.clearAllMocks)
 
     it('should return null if sketchViewModel is not set', async () => {
-      const response = attachEvents({
-        ...mockAttachEventParameters,
-        mapProvider: {}
-      })
+      const response = attachEvents(buildParams({
+        mapProvider: { sketchViewModel: null }
+      }))
       expect(response).toBeNull()
     })
 
     it('should call handleDone when Done is clicked', async () => {
-      const { drawDone } = mockAttachEventParameters.buttonConfig
-      const { sketchViewModel } = mockAttachEventParameters.mapProvider
-      const { eventBus } = mockAttachEventParameters
-      attachEvents({
-        ...mockAttachEventParameters,
-        pluginState: {
-          ...mockAttachEventParameters.pluginState, tempFeature: 'Test Feature'
-        }
-      })
-      drawDone.onClick()
-      expect(sketchViewModel.cancel).toHaveBeenCalled()
-      expect(sketchViewModel.layer).toEqual(mockAttachEventParameters.mapProvider.emptySketchLayer)
+      const params = buildParams()
+      params.pluginState.tempFeature = 'Test Feature'
+      attachEvents(params)
+      params.buttonConfig.drawDone.onClick()
+      expect(params.mapProvider.sketchViewModel.cancel).toHaveBeenCalled()
+      expect(params.mapProvider.sketchViewModel.layer).toEqual(emptySketchLayer)
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
-      expect(eventBus.emit).toHaveBeenCalledWith('draw:done', { newFeature: 'Test Feature' })
+      expect(params.eventBus.emit).toHaveBeenCalledWith('draw:done', { newFeature: 'Test Feature' })
     })
 
     it('should call handleCancel when Cancel is clicked', async () => {
-      const { drawCancel } = mockAttachEventParameters.buttonConfig
-      const { sketchViewModel, sketchLayer } = mockAttachEventParameters.mapProvider
-      const { eventBus } = mockAttachEventParameters
-      attachEvents({
-        ...mockAttachEventParameters,
-        pluginState: {
-          ...mockAttachEventParameters.pluginState, tempFeature: 'Test Feature'
-        }
-      })
+      const params = buildParams()
+      params.pluginState.tempFeature = 'Test Feature'
+      // params.pluginState.feature = { properties: { id: 'boundary' } }
+      const { drawCancel } = params.buttonConfig
+      const { sketchViewModel, sketchLayer } = params.mapProvider
+      const { eventBus } = params
+      attachEvents(params)
       drawCancel.onClick()
       expect(sketchViewModel.cancel).toHaveBeenCalled()
       expect(sketchLayer.removeAll).toHaveBeenCalled()
       expect(createGraphic).toHaveBeenCalled()
       expect(sketchLayer.add).toHaveBeenCalled()
-      expect(sketchViewModel.layer).toEqual(mockAttachEventParameters.mapProvider.emptySketchLayer)
+      expect(sketchViewModel.layer).toEqual(emptySketchLayer)
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
       expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled')
+    })
+
+    describe('reColour', () => {
+      beforeEach(() => {
+        createSymbol.mockReturnValue(mockSymbol)
+        createGraphic.mockReturnValue(newGraphicMock)
+        mockGraphic.symbol = null
+      })
+
+      it('should update polygonSymbol and graphic symbols when state is not active', async () => {
+        const params = buildParams()
+        attachEvents(params)
+        params.eventBus.triggerEvent(events.MAP_STYLE_CHANGE)
+        await Promise.resolve()
+        expect(params.mapProvider.sketchViewModel.polygonSymbol).toEqual(mockSymbol)
+        expect(createGraphic).toHaveBeenCalledWith('boundary', mockGraphic.geometry.rings, params.mapColorScheme)
+        expect(mockGraphic.symbol).toEqual(newGraphicMock.symbol)
+        expect(params.mapProvider.sketchViewModel.cancel).not.toHaveBeenCalled()
+      })
+
+      it('should cancel and re-enter update mode when state is active and activeGraphicId is set (edit mode)', async () => {
+        const params = buildParams()
+        params.mapProvider.sketchViewModel.state = 'active'
+        attachEvents(params)
+        params.eventBus.triggerEvent(events.MAP_STYLE_CHANGE)
+        expect(params.mapProvider.sketchViewModel.cancel).toHaveBeenCalled()
+        jest.advanceTimersByTime(50)
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(params.mapProvider.sketchViewModel.update).toHaveBeenCalledWith(mockGraphic, {
+          tool: 'reshape',
+          toggleToolOnClick: false
+        })
+      })
+
+      it('should not cancel or re-enter update mode when isCreating (active state, no activeGraphicId)', async () => {
+        const params = buildParams({
+          pluginState: { feature: null }
+        })
+        attachEvents(params)
+        params.eventBus.triggerEvent(events.MAP_STYLE_CHANGE)
+        await Promise.resolve()
+        expect(params.mapProvider.sketchViewModel.cancel).not.toHaveBeenCalled()
+        expect(params.mapProvider.sketchViewModel.update).not.toHaveBeenCalled()
+      })
+
+      it('should not call sketchViewModel.update if layer is not sketchLayer', async () => {
+        const params = buildParams()
+        params.mapProvider.sketchViewModel.layer = emptySketchLayer
+        attachEvents(params)
+        params.eventBus.triggerEvent(events.MAP_STYLE_CHANGE)
+        await Promise.resolve()
+        expect(params.mapProvider.sketchViewModel.update).not.toHaveBeenCalled()
+      })
+
+      it('should swallow AbortError thrown by sketchViewModel.update', async () => {
+        const abortError = Object.assign(new Error('Aborted'), { name: 'AbortError' })
+        const params = buildParams()
+        params.mapProvider.sketchViewModel.update.mockRejectedValue(abortError)
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+        attachEvents(params)
+        params.eventBus.triggerEvent(events.MAP_STYLE_CHANGE)
+        jest.advanceTimersByTime(50)
+        await Promise.resolve()
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(consoleSpy).not.toHaveBeenCalled()
+        consoleSpy.mockRestore()
+      })
+
+      it('should log non-AbortError thrown by sketchViewModel.update', async () => {
+        const genericError = new Error('Something went wrong')
+        const params = buildParams()
+        params.mapProvider.sketchViewModel.state = 'active'
+        params.mapProvider.sketchViewModel.update.mockRejectedValue(genericError)
+        const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {})
+        attachEvents(params)
+        params.eventBus.triggerEvent(events.MAP_STYLE_CHANGE)
+        jest.advanceTimersByTime(50)
+        await Promise.resolve()
+        await Promise.resolve()
+        await Promise.resolve()
+        expect(consoleSpy).toHaveBeenCalledWith('Error updating sketch:', genericError)
+        consoleSpy.mockRestore()
+      })
     })
   })
 })
