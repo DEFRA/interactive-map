@@ -20,6 +20,7 @@ export default {
       '<rootDir>/src/test-utils.js',
       '<rootDir>/plugins/beta/datasets/',
       '<rootDir>/providers/beta/',
+      '<rootDir>/plugins/beta/draw-es',
       '<rootDir>/plugins/beta/draw-ml',
       '<rootDir>/plugins/beta/frame',
       '<rootDir>/plugins/beta/map-styles',
