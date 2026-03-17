@@ -42,7 +42,7 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'stroke-inactive.cold',
 		idProperty: 'id'
 	}],
-	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
+	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true
