@@ -1,4 +1,5 @@
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
+import { hasPattern, getPatternImageId } from './fillPatterns.js'
 
 // Generate a hash for consistent source ID generation
 const hashString = (str) => {
@@ -117,7 +118,10 @@ const addMapLayers = (map, mapStyleId, dataset) => {
 
   // --- Add fill layer ---
   if (hasFill && !map.getLayer(fillLayerId)) {
-    const fillColor = getValueForStyle(dataset.fill, mapStyleId)
+    const patternImageId = hasPattern(dataset) ? getPatternImageId(dataset, mapStyleId) : null
+    const fillPaint = patternImageId
+      ? { 'fill-pattern': patternImageId, 'fill-opacity': dataset.opacity || 1 }
+      : { 'fill-color': getValueForStyle(dataset.fill, mapStyleId), 'fill-opacity': dataset.opacity || 1 }
     map.addLayer({
       id: fillLayerId,
       type: 'fill',
@@ -126,10 +130,7 @@ const addMapLayers = (map, mapStyleId, dataset) => {
       layout: {
         visibility
       },
-      paint: {
-        'fill-color': fillColor,
-        'fill-opacity': dataset.opacity || 1
-      },
+      paint: fillPaint,
       ...(dataset.filter ? { filter: dataset.filter } : {})
     })
   }

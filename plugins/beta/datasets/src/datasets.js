@@ -1,6 +1,7 @@
 import { handleSetMapStyle } from './handleSetMapStyle.js'
 import { addMapLayers, getSourceId, getLayersUsingSource, isDynamicSource, updateSourceData } from './mapLayers.js'
 import { createDynamicSource } from './fetch/createDynamicSource.js'
+import { registerPatternImages } from './fillPatterns.js'
 
 export const createDatasets = ({
   pluginConfig,
@@ -19,26 +20,28 @@ export const createDatasets = ({
   const getDatasets = () => pluginStateRef.current.datasets || datasets
   const getHiddenFeatures = () => pluginStateRef.current.hiddenFeatures || {}
 
-  // Initialize all datasets once
-  datasets.forEach(dataset => {
-    addMapLayers(map, mapStyleId, dataset)
+  // Pre-register pattern images before adding layers, then initialise all datasets
+  registerPatternImages(map, datasets, mapStyleId).then(() => {
+    datasets.forEach(dataset => {
+      addMapLayers(map, mapStyleId, dataset)
 
-    // Initialize dynamic source if applicable
-    if (isDynamicSource(dataset)) {
-      const sourceId = getSourceId(dataset)
-      const dynamicSource = createDynamicSource({
-        dataset,
-        map,
-        sourceId,
-        onUpdate: (id, geojson) => updateSourceData(map, id, geojson)
-      })
-      dynamicSources.set(dataset.id, dynamicSource)
-    }
-  })
+      // Initialize dynamic source if applicable
+      if (isDynamicSource(dataset)) {
+        const sourceId = getSourceId(dataset)
+        const dynamicSource = createDynamicSource({
+          dataset,
+          map,
+          sourceId,
+          onUpdate: (id, geojson) => updateSourceData(map, id, geojson)
+        })
+        dynamicSources.set(dataset.id, dynamicSource)
+      }
+    })
 
-  // Emit ready event once map has processed the layers
-  map.once('idle', () => {
-    eventBus.emit('datasets:ready')
+    // Emit ready event once map has processed the layers
+    map.once('idle', () => {
+      eventBus.emit('datasets:ready')
+    })
   })
 
   // Handle style changes

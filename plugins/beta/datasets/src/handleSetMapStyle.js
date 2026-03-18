@@ -1,5 +1,6 @@
 import { addMapLayers } from './mapLayers.js'
 import { applyExclusionFilter } from './utils/filters.js'
+import { registerPatternImages } from './fillPatterns.js'
 
 export const handleSetMapStyle = ({
   map,
@@ -10,11 +11,14 @@ export const handleSetMapStyle = ({
   getDynamicSources
 }) => {
   const onSetStyle = (e) => {
-    map.once('idle', () => {
+    map.once('idle', async () => {
       const newStyleId = e.id
       const datasets = getDatasets()
       const hiddenFeatures = getHiddenFeatures()
       const dynamicSources = getDynamicSources ? getDynamicSources() : new Map()
+
+      // Re-register pattern images (wiped on style change) before re-adding layers
+      await registerPatternImages(map, datasets, newStyleId)
 
       // Re-add all layers with correct colors for new style
       datasets.forEach(dataset => {
