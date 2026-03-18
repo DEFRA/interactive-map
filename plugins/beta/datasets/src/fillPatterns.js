@@ -7,7 +7,8 @@ import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 
 const BUILT_IN_PATTERNS = {
   crosshatch: '<path d="M0 8.707V7.293L7.293 0h1.414L16 7.293v1.414L8.707 16H7.293L0 8.707zM.707 8L8 15.293 15.293 8 8 .707.707 8z" fill="{{foreground}}" />',
-  dots: '<path d="M4 2a2 2 0 1 1 0 4 2 2 0 1 1 0-4zm0 8a2 2 0 1 1 0 4 2 2 0 1 1 0-4zm8-8a2 2 0 1 1 0 4 2 2 0 1 1 0-4zm0 8a2 2 0 1 1 0 4 2 2 0 1 1 0-4z" fill="{{foreground}}" />'
+  dots: '<path d="M4 2a2 2 0 1 1 0 4 2 2 0 1 1 0-4zm0 8a2 2 0 1 1 0 4 2 2 0 1 1 0-4zm8-8a2 2 0 1 1 0 4 2 2 0 1 1 0-4zm0 8a2 2 0 1 1 0 4 2 2 0 1 1 0-4z" fill="{{foreground}}" />',
+  diagonal: '<path d="M0 8.707V7.293L8.707 16H7.293L0 8.707zm16 0L7.293 0h1.414L16 7.293v1.414z" fill="{{foreground}}" />'
 }
 
 // Plugin-controlled border path used in the key symbol (20×20 coordinate space).
@@ -62,8 +63,8 @@ const getPatternInnerContent = (dataset) => {
 const getPatternImageId = (dataset, mapStyleId) => {
   const innerContent = getPatternInnerContent(dataset)
   if (!innerContent) return null
-  const fg = getValueForStyle(dataset.fillPatternForeground, mapStyleId) || 'black'
-  const bg = getValueForStyle(dataset.fillPatternBackground, mapStyleId) || 'transparent'
+  const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
+  const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
   return `pattern-${hashString(innerContent + fg + bg)}`
 }
 
@@ -77,8 +78,8 @@ const getPatternImageId = (dataset, mapStyleId) => {
 const getKeyPatternPaths = (dataset, mapStyleId) => {
   const innerContent = getPatternInnerContent(dataset)
   if (!innerContent) { return null }
-  const fg = getValueForStyle(dataset.fillPatternForeground, mapStyleId) || 'black'
-  const bg = getValueForStyle(dataset.fillPatternBackground, mapStyleId) || 'transparent'
+  const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
+  const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
   const borderStroke = getValueForStyle(dataset.stroke, mapStyleId) || fg
   return {
     border: injectColors(KEY_BORDER_PATH, borderStroke, bg),
@@ -132,8 +133,8 @@ const registerPatternImages = async (map, datasets, mapStyleId) => {
     const innerContent = getPatternInnerContent(dataset)
     if (!innerContent) return
 
-    const fg = getValueForStyle(dataset.fillPatternForeground, mapStyleId) || 'black'
-    const bg = getValueForStyle(dataset.fillPatternBackground, mapStyleId) || 'transparent'
+    const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
+    const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
     const imageId = `pattern-${hashString(innerContent + fg + bg)}`
 
     // Already registered on this map instance (e.g. another dataset sharing the same pattern)

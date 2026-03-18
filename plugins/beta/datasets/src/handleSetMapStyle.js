@@ -1,6 +1,6 @@
 import { addMapLayers } from './mapLayers.js'
 import { applyExclusionFilter } from './utils/filters.js'
-import { registerPatternImages } from './fillPatterns.js'
+import { registerPatternImages, hasPattern } from './fillPatterns.js'
 
 export const handleSetMapStyle = ({
   map,
@@ -38,7 +38,7 @@ export const handleSetMapStyle = ({
         }
 
         const originalFilter = dataset.filter || null
-        const hasFill = !!dataset.fill
+        const hasFill = !!dataset.fill || hasPattern(dataset)
         const hasStroke = !!dataset.stroke
         const fillLayerId = hasFill ? datasetId : null
         const strokeLayerId = hasStroke ? (hasFill ? `${datasetId}-stroke` : datasetId) : null

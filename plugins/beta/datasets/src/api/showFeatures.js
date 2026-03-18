@@ -1,4 +1,5 @@
 import { applyExclusionFilter } from '../utils/filters.js'
+import { hasPattern } from '../fillPatterns.js'
 
 export const showFeatures = ({ mapProvider, pluginState }, { featureIds, idProperty, datasetId }) => {
   const map = mapProvider.map
@@ -16,7 +17,7 @@ export const showFeatures = ({ mapProvider, pluginState }, { featureIds, idPrope
   }
 
   const originalFilter = dataset.filter || null
-  const hasFill = !!dataset.fill
+  const hasFill = !!dataset.fill || hasPattern(dataset)
   const hasStroke = !!dataset.stroke
   const fillLayerId = hasFill ? datasetId : null
 

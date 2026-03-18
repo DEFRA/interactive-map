@@ -108,7 +108,7 @@ const addMapLayers = (map, mapStyleId, dataset) => {
   }
 
   // --- Determine layer IDs ---
-  const hasFill = !!dataset.fill
+  const hasFill = !!dataset.fill || hasPattern(dataset)
   const hasStroke = !!dataset.stroke
   const fillLayerId = hasFill ? dataset.id : null
   const strokeLayerId = hasStroke ? (hasFill ? `${dataset.id}-stroke` : dataset.id) : null

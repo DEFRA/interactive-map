@@ -1,7 +1,8 @@
 import { getSourceId } from '../mapLayers.js'
+import { hasPattern } from '../fillPatterns.js'
 
 const getLayerIds = (dataset) => {
-  const hasFill = !!dataset.fill
+  const hasFill = !!dataset.fill || hasPattern(dataset)
   const hasStroke = !!dataset.stroke
 
   const fillLayerId = hasFill ? dataset.id : null
