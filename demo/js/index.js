@@ -103,9 +103,9 @@ const datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		showInLayers: true,
-		fillPattern: 'diamond',
-		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		fillPatternBackgroundColor: 'transparent'
+		// fillPattern: 'cross-hatch',
+		// fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+		// fillPatternBackgroundColor: 'transparent'
 	}]
 })
 
