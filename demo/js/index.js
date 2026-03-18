@@ -25,6 +25,8 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
+const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.882445487962059,54.70938250564518],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8775970686837695,54.70966586215056],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8732152153681056,54.70892223300439],'type': 'Point'}}]}
+
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
 		layerId: 'field-parcels',
@@ -101,8 +103,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		showInLayers: true,
-		// fillPattern: 'dots',
-		fillPatternSvgContent: '<path d="M0 8.707V7.293L8.707 16H7.293L0 8.707zm16 0L7.293 0h1.414L16 7.293v1.414z" fill="{{foreground}}" />',
+		fillPattern: 'diamond',
 		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
 		fillPatternBackgroundColor: 'transparent'
 	}]
