@@ -10,7 +10,6 @@ export const manifest = {
 
   controls: [{
     id: 'search',
-    label: 'Search',
     mobile: {
       slot: 'top-right'
     },
