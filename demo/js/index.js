@@ -44,7 +44,7 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'stroke-inactive.cold',
 		idProperty: 'id'
 	}],
-	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
+	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true
@@ -86,7 +86,7 @@ const datasetsPlugin = createDatasetsPlugin({
 	// 	showInLayers: true,
 	// 	visibility: 'hidden'
 	// }]
-
+	
 	// Example: Dynamic bbox-based fetching (uncomment to test)
 	datasets: [{
 		id: 'field-parcels',
@@ -103,9 +103,9 @@ const datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		showInLayers: true,
-		// fillPattern: 'cross-hatch',
-		// fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		// fillPatternBackgroundColor: 'transparent'
+		fillPattern: 'diagonal-cross-hatch',
+		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+		fillPatternBackgroundColor: 'transparent'
 	}]
 })
 
