@@ -59,7 +59,7 @@ export const Form = ({
       </button>
 
       <div className={`im-c-search__input-container${pluginState.hasKeyboardFocusWithin ? ' im-c-search__input-container--keyboard-focus-within' : ''}`}>
-        <label htmlFor={`${id}-search`} className='im-u-visually-hidden'>{pluginConfig.label}</label>
+        <label htmlFor={`${id}-search`} className='im-u-visually-hidden'>{pluginConfig.placeholder}</label>
         <input
           id={`${id}-search`}
           className='im-c-search__input'
@@ -71,7 +71,7 @@ export const Form = ({
           aria-describedby={pluginState.value ? undefined : `${id}-search-hint`}
           aria-autocomplete='list'
           autoComplete='off'
-          placeholder={pluginConfig.label}
+          placeholder={pluginConfig.placeholder}
           name={`${id}-search`}
           spellCheck={false}
           enterKeyHint='search'

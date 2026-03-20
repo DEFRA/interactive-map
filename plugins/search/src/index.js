@@ -9,7 +9,7 @@ export default function createPlugin (options = {}) {
 
   return {
     showMarker: true,
-    label: 'Search',
+    placeholder: 'Search',
     ...options,
     id: 'search',
     load: async () => {

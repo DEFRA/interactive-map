@@ -80,7 +80,10 @@ const interactiveMap = new InteractiveMap('map', {
 		}),
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
-			label: 'Search for a place in England',
+			placeholder: 'Search for a place in England',
+			manifest: {
+				controls: [{id: 'search', desktop: {slot: 'top-left', showLabel: true}}]
+			},
 			osNamesURL: process.env.OS_NAMES_URL,
 			regions: ['england'],
 			customDatasets: [gridRefSearchOSGB36],
