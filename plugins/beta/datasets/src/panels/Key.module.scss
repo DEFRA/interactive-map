@@ -12,6 +12,10 @@
   line-height: 1.2;
 }
 
+.im-c-datasets-key__item:last-child .im-c-datasets-key__item-label {
+  padding-bottom: 2px;
+}
+
 .im-c-datasets-key__item-label svg {
   position: relative;
   flex-shrink: 0;

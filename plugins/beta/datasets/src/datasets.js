@@ -1,9 +1,12 @@
-import { handleSetMapStyle } from './handleSetMapStyle.js'
-import { addMapLayers, getSourceId, getLayersUsingSource, isDynamicSource, updateSourceData } from './mapLayers.js'
 import { createDynamicSource } from './fetch/createDynamicSource.js'
-import { registerPatternImages } from './fillPatterns.js'
+
+const isDynamicSource = (dataset) =>
+  typeof dataset.geojson === 'string' &&
+  !!dataset.idProperty &&
+  typeof dataset.transformRequest === 'function'
 
 export const createDatasets = ({
+  adapter,
   pluginConfig,
   pluginStateRef,
   mapStyleId,
@@ -11,106 +14,55 @@ export const createDatasets = ({
   events,
   eventBus
 }) => {
-  const { map } = mapProvider
   const { datasets } = pluginConfig
 
-  // Track dynamic sources for cleanup
+
   const dynamicSources = new Map()
 
   const getDatasets = () => pluginStateRef.current.datasets || datasets
   const getHiddenFeatures = () => pluginStateRef.current.hiddenFeatures || {}
 
-  // Pre-register pattern images before adding layers, then initialise all datasets
-  registerPatternImages(map, datasets, mapStyleId).then(() => {
+  // Initialise all datasets via the adapter, then set up dynamic sources
+  adapter.init(datasets, mapStyleId).then(() => {
     datasets.forEach(dataset => {
-      addMapLayers(map, mapStyleId, dataset)
+      if (!isDynamicSource(dataset)) return
 
-      // Initialize dynamic source if applicable
-      if (isDynamicSource(dataset)) {
-        const sourceId = getSourceId(dataset)
-        const dynamicSource = createDynamicSource({
-          dataset,
-          map,
-          sourceId,
-          onUpdate: (id, geojson) => updateSourceData(map, id, geojson)
-        })
-        dynamicSources.set(dataset.id, dynamicSource)
-      }
+      const dynamicSource = createDynamicSource({
+        dataset,
+        map: mapProvider.map,
+        onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
+      })
+      dynamicSources.set(dataset.id, dynamicSource)
     })
 
-    // Emit ready event once map has processed the layers
-    map.once('idle', () => {
-      eventBus.emit('datasets:ready')
-    })
+    eventBus.emit('datasets:ready')
   })
 
-  // Handle style changes
-  const styleHandler = handleSetMapStyle({
-    map,
-    events,
-    eventBus,
-    getDatasets,
-    getHiddenFeatures,
-    getDynamicSources: () => dynamicSources
-  })
+  // Handle basemap style changes — delegate entirely to the adapter
+  const onSetStyle = (e) => {
+    adapter.onStyleChange(getDatasets(), e.id, getHiddenFeatures(), dynamicSources)
+  }
+
+  eventBus.on(events.MAP_SET_STYLE, onSetStyle)
 
   return {
-    remove() {
-      eventBus.off(events.MAP_SET_STYLE, styleHandler)
-
-      // Clean up dynamic sources
+    remove () {
+      eventBus.off(events.MAP_SET_STYLE, onSetStyle)
       dynamicSources.forEach(source => source.destroy())
       dynamicSources.clear()
-
-      const allDatasets = getDatasets()
-      const removedSourceIds = new Set()
-
-      // Remove layers and sources
-      allDatasets.forEach(dataset => {
-        const sourceId = getSourceId(dataset)
-        const layers = getLayersUsingSource(map, sourceId)
-
-        // Remove all layers using this source
-        layers.forEach(id => map.removeLayer(id))
-
-        // Remove the source once
-        if (!removedSourceIds.has(sourceId) && map.getSource(sourceId)) {
-          map.removeSource(sourceId)
-          removedSourceIds.add(sourceId)
-        }
-      })
+      adapter.destroy(getDatasets())
     },
 
-    /**
-     * Refresh a dynamic source - clears cache and re-fetches
-     * @param {string} datasetId - Dataset ID to refresh
-     */
-    refreshDataset(datasetId) {
-      const dynamicSource = dynamicSources.get(datasetId)
-      if (dynamicSource) {
-        dynamicSource.refresh()
-      }
+    refreshDataset (datasetId) {
+      dynamicSources.get(datasetId)?.refresh()
     },
 
-    /**
-     * Clear a dynamic source's cache
-     * @param {string} datasetId - Dataset ID to clear
-     */
-    clearDatasetCache(datasetId) {
-      const dynamicSource = dynamicSources.get(datasetId)
-      if (dynamicSource) {
-        dynamicSource.clear()
-      }
+    clearDatasetCache (datasetId) {
+      dynamicSources.get(datasetId)?.clear()
     },
 
-    /**
-     * Get feature count for a dynamic source
-     * @param {string} datasetId - Dataset ID
-     * @returns {number|null} Feature count or null if not a dynamic source
-     */
-    getFeatureCount(datasetId) {
-      const dynamicSource = dynamicSources.get(datasetId)
-      return dynamicSource ? dynamicSource.getFeatureCount() : null
+    getFeatureCount (datasetId) {
+      return dynamicSources.get(datasetId)?.getFeatureCount() ?? null
     }
   }
 }

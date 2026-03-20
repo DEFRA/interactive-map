@@ -19,6 +19,7 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
+import { maplibreLayerAdapter } from '/plugins/beta/datasets/src/adapters/maplibre/index.js'
 import createDrawPlugin from '/plugins/beta/draw-ml/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
@@ -59,6 +60,7 @@ const framePlugin = createFramePlugin({
 })
 
 const datasetsPlugin = createDatasetsPlugin({
+	layerAdapter: maplibreLayerAdapter,
 	// datasets: [{
 	// 	id: 'linked-parcels',
 	// 	label: 'Existing fields',
@@ -71,7 +73,7 @@ const datasetsPlugin = createDatasetsPlugin({
 	// 	minZoom: 10,
 	// 	maxZoom: 24,
 	// 	showInKey: true,
-	// 	showInLayers: true
+	// 	toggleVisibility: true
 	// },{
 	// 	id: 'permanent-grassland',
 	// 	label: 'Permanent grassland',
@@ -83,7 +85,7 @@ const datasetsPlugin = createDatasetsPlugin({
 	// 	minZoom: 10,
 	// 	maxZoom: 24,
 	// 	showInKey: true,
-	// 	showInLayers: true,
+	// 	toggleVisibility: true,
 	// 	visibility: 'hidden'
 	// }]
 	
@@ -92,20 +94,31 @@ const datasetsPlugin = createDatasetsPlugin({
 		id: 'field-parcels',
 		label: 'Field parcels',
 		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+		featureLayer: '',
+		vectorTileLayer: '',
 		idProperty: 'id',  // Enables dynamic fetching + deduplication
+		// filter: ['get', ['propertyName', 'warning']],
+		query: {},
 		transformRequest: transformDataRequest,  // Builds URL with bbox
 		maxFeatures: 50000,  // Optional: evict distant features when exceeded
-		stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-		strokeWidth: 2,
-		fill: 'rgba(0,0,255,0.1)',
-		symbolDescription: { outdoor: 'blue outline' },
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true,
+		toggleVisibility: true,
+		// visibility: 'hidden',
+		stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+		strokeWidth: 2,
+		// symbol: '',
+		// symbolSvgContent: '',
+		// symbolForegroundColor: '',
+		// symbolBackgroundColor: '',
+		// symbolDescription: { outdoor: 'blue outline' },
+		// symbolOffset: [],
+		fill: 'rgba(0,0,255,0.1)',
 		fillPattern: 'diagonal-cross-hatch',
 		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		fillPatternBackgroundColor: 'transparent'
+		fillPatternBackgroundColor: 'transparent',
+		opacity: 0.5
 	}]
 })
 

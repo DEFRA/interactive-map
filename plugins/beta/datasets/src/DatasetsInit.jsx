@@ -31,17 +31,31 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
 
     // Only initialise state if not already set
     if (!pluginState.datasets) {
-      dispatch({ type: 'SET_DATASETS', payload: { datasets: pluginConfig.datasets, datasetDefaults }})
+      dispatch({ type: 'SET_DATASETS', payload: { datasets: pluginConfig.datasets, datasetDefaults } })
     }
 
-    datasetsInstanceRef.current = createDatasets({
-      mapStyleId: mapState.mapStyle.id,
-      pluginConfig,
-      pluginStateRef,
-      mapProvider,
-      events,
-      eventBus
-    })
+    const initDatasets = async () => {
+      if (!pluginConfig.layerAdapter) {
+        throw new Error('datasets plugin: no layerAdapter provided. Import and pass maplibreLayerAdapter or a custom adapter.')
+      }
+
+      const { default: LayerAdapter } = await pluginConfig.layerAdapter.load()
+      const adapter = new LayerAdapter(mapProvider.map)
+
+      dispatch({ type: 'SET_LAYER_ADAPTER', payload: adapter })
+
+      datasetsInstanceRef.current = createDatasets({
+        adapter,
+        pluginConfig,
+        pluginStateRef,
+        mapStyleId: mapState.mapStyle.id,
+        mapProvider,
+        events,
+        eventBus
+      })
+    }
+
+    initDatasets()
   }, [isMapStyleReady, appState.mode])
 
   // Cleanup only on unmount
@@ -51,6 +65,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         datasetsInstanceRef.current.remove()
         datasetsInstanceRef.current = null
       }
+      dispatch({ type: 'SET_LAYER_ADAPTER', payload: null })
     }
   }, [])
 

@@ -1,6 +1,7 @@
 const initialState = {
   datasets: null,
-  hiddenFeatures: {} // { [layerId]: { idProperty: string, ids: string[] } }
+  hiddenFeatures: {}, // { [layerId]: { idProperty: string, ids: string[] } }
+  layerAdapter: null
 }
 
 const setDatasets = (state, payload) => {
@@ -79,13 +80,16 @@ const showFeatures = (state, payload) => {
   }
 }
 
+const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
+
 const actions = {
   SET_DATASETS: setDatasets,
   ADD_DATASET: addDataset,
   REMOVE_DATASET: removeDataset,
   SET_DATASET_VISIBILITY: setDatasetVisibility,
   HIDE_FEATURES: hideFeatures,
-  SHOW_FEATURES: showFeatures
+  SHOW_FEATURES: showFeatures,
+  SET_LAYER_ADAPTER: setLayerAdapter
 }
 
 export {

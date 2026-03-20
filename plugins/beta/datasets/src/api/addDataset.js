@@ -1,12 +1,6 @@
 import { datasetDefaults } from '../defaults.js'
-import { addMapLayers } from '../mapLayers.js'
 
-export const addDataset = ({ mapProvider, mapState, pluginState }, dataset) => {
-  const map = mapProvider.map
-
-  // Add source and layers to the map
-  addMapLayers(map, mapState.mapStyle.id, { ...datasetDefaults, ...dataset })
-
-  // Update state
+export const addDataset = ({ pluginState, mapState }, dataset) => {
+  pluginState.layerAdapter?.addDataset({ ...datasetDefaults, ...dataset }, mapState.mapStyle.id)
   pluginState.dispatch({ type: 'ADD_DATASET', payload: { dataset, datasetDefaults } })
 }

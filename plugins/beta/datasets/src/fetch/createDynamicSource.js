@@ -14,7 +14,7 @@ const EVICTION_THRESHOLD = 1.2 // Trigger eviction at 120% of maxFeatures
  * @param {Function} options.onUpdate - Callback when source data should be updated
  * @returns {Object} { destroy, clear, refresh }
  */
-export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
+export const createDynamicSource = ({ dataset, map, onUpdate }) => {
   const { geojson: baseUrl, idProperty, transformRequest, maxFeatures, minZoom = 0 } = dataset
 
   // Feature cache: id → { feature, bbox, addedAt }
@@ -139,7 +139,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
       evictIfNeeded(currentBbox)
 
       // Update map source
-      onUpdate(sourceId, toFeatureCollection())
+      onUpdate(dataset.id, toFeatureCollection())
     } catch (error) {
       console.error(`Failed to fetch dynamic GeoJSON for ${dataset.id}:`, error)
     } finally {
@@ -175,7 +175,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
     clear() {
       features.clear()
       fetchedBbox = null
-      onUpdate(sourceId, { type: 'FeatureCollection', features: [] })
+      onUpdate(dataset.id, { type: 'FeatureCollection', features: [] })
     },
 
     /**
@@ -199,7 +199,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
      */
     reapply() {
       if (features.size > 0) {
-        onUpdate(sourceId, toFeatureCollection())
+        onUpdate(dataset.id, toFeatureCollection())
       }
     }
   }

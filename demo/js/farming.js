@@ -49,7 +49,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true
+		toggleVisibility: true
 	},{
 		id: 'linked-parcels',
 		label: 'Existing fields',
@@ -67,7 +67,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true
+		toggleVisibility: true
 	},{
 		id: 'hedge-control',
 		label: 'Hedge control',
@@ -80,7 +80,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true,
+		toggleVisibility: true,
 		visibility: 'hidden',
 		keySymbolShape: 'line'
 	}]
