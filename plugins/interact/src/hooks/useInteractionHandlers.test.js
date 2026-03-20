@@ -295,7 +295,7 @@ it('emits selectionchange once when bounds exist', () => {
 
 it('skips emission when selection remains empty after being cleared', () => {
   const eventBus = { emit: jest.fn() }
-  
+
   // 1. First render with a feature (prev is null, emission happens)
   const { rerender } = renderHook(
     ({ features }) => useInteractionHandlers({
@@ -306,7 +306,7 @@ it('skips emission when selection remains empty after being cleared', () => {
     }),
     { initialProps: { features: [{ id: 'f1' }] } }
   )
-  
+
   expect(eventBus.emit).toHaveBeenCalledTimes(1)
   eventBus.emit.mockClear()
 
@@ -315,11 +315,11 @@ it('skips emission when selection remains empty after being cleared', () => {
   expect(eventBus.emit).toHaveBeenCalledTimes(1)
   eventBus.emit.mockClear()
 
-  // 3. Rerender with empty selection AGAIN 
+  // 3. Rerender with empty selection AGAIN
   // This triggers: prev !== null AND prev.length === 0
   rerender({ features: [] })
-  
-  // Should skip emission because wasEmpty is true (via prev.length === 0) 
+
+  // Should skip emission because wasEmpty is true (via prev.length === 0)
   // and current features.length is 0
   expect(eventBus.emit).not.toHaveBeenCalled()
 })

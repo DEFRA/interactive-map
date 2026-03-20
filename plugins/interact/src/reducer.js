@@ -35,7 +35,7 @@ const disable = (state) => {
 const toggleSelectedFeatures = (state, payload) => {
   const { featureId, multiSelect, layerId, idProperty, addToExisting = true, replaceAll = false, properties, geometry } = payload
   const currentSelected = Array.isArray(state.selectedFeatures) ? state.selectedFeatures : []
-  
+
   const existingIndex = currentSelected.findIndex(
     f => f.featureId === featureId && f.layerId === layerId
   )
@@ -50,7 +50,7 @@ const toggleSelectedFeatures = (state, payload) => {
   const featureObj = { featureId, layerId, idProperty, properties, geometry }
   let nextSelected
 
-  // 2. Determine New State 
+  // 2. Determine New State
   // We combine 'replaceAll' and 'single-select' because they share the same logic
   if (multiSelect && !replaceAll) {
     const selectedCopy = [...currentSelected]

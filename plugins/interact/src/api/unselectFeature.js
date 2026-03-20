@@ -6,8 +6,8 @@
  */
 export const unselectFeature = ({ services }, { featureId, layerId, idProperty }) => {
   services.eventBus.emit('interact:unselectFeature', {
-		featureId,
-		layerId,
-		idProperty
-	})
+    featureId,
+    layerId,
+    idProperty
+  })
 }

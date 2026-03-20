@@ -81,7 +81,6 @@ const addMapLayers = (map, mapStyleId, dataset) => {
 
   // --- Add source (shared across datasets with same tiles/data URL) ---
   if (!map.getSource(sourceId)) {
-
     if (dataset.tiles) {
       // Tiles
       map.addSource(sourceId, {
@@ -111,7 +110,7 @@ const addMapLayers = (map, mapStyleId, dataset) => {
   const hasStroke = !!dataset.stroke
   const fillLayerId = hasFill ? dataset.id : null
   const strokeLayerId = hasStroke ? (hasFill ? `${dataset.id}-stroke` : dataset.id) : null
-  
+
   // --- Determie visiblity ---
   const visibility = dataset.visibility === 'hidden' ? 'none' : 'visible'
 

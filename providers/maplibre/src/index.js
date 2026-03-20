@@ -14,7 +14,7 @@ import { getWebGL } from './utils/detectWebgl.js'
  *
  * @returns {boolean} true if modern syntax is supported, false otherwise
  */
-function supportsModernMaplibre() {
+function supportsModernMaplibre () {
   return typeof ''.replaceAll === 'function'
 }
 

@@ -1,9 +1,9 @@
 export default {
   extends: [
-    'stylelint-config-gds',
+    'stylelint-config-gds'
   ],
   plugins: [
-    'stylelint-scss',
+    'stylelint-scss'
   ],
   ignoreFiles: [
     'node_modules/**/*',
@@ -15,7 +15,7 @@ export default {
       // Disable duplicate selectors check in SCSS files only
       'no-duplicate-selectors': null
     }
-  },{
+  }, {
     files: ['**/*.js', '**/*.jsx'],
     rules: {
       'react/prop-types': 'off'

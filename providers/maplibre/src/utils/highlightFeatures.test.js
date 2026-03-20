@@ -2,7 +2,7 @@ import { updateHighlightedFeatures } from './highlightFeatures.js'
 
 describe('Highlighting Utils', () => {
   let map
-  const LngLatBounds = function() {
+  const LngLatBounds = function () {
     this.coords = []
     this.extend = (c) => this.coords.push(c)
     this.getWest = () => Math.min(...this.coords.map(c => c[0]))
@@ -60,7 +60,7 @@ describe('Highlighting Utils', () => {
     // Line 13 verify: map.getLayer returned null and function returned early
     // Line 49-50 verify: Stale sources filtered out
     expect(map.setFilter).toHaveBeenCalledWith('highlight-stale-fill', ['==', 'id', ''])
-    
+
     // Line 124 verify: Clear fill highlight when switching to line geometry
     expect(map.setFilter).toHaveBeenCalledWith('highlight-s2-fill', ['==', 'id', ''])
 
@@ -76,7 +76,9 @@ describe('Highlighting Utils', () => {
     map._highlightedSources = undefined
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null)
     map.queryRenderedFeatures.mockReturnValue([])
-    updateHighlightedFeatures({ LngLatBounds, map,
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
       selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
       stylesMap: { l1: { stroke: 'red' } }
     })
@@ -88,7 +90,9 @@ describe('Highlighting Utils', () => {
     map._highlightedSources = new Set(['stale', 's1'])
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null)
     map.queryRenderedFeatures.mockReturnValue([])
-    updateHighlightedFeatures({ LngLatBounds, map,
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
       selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
       stylesMap: { l1: { stroke: 'red' } }
     })
@@ -105,7 +109,9 @@ describe('Highlighting Utils', () => {
       return null
     })
     map.queryRenderedFeatures.mockReturnValue([])
-    updateHighlightedFeatures({ LngLatBounds, map,
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
       selectedFeatures: [
         { featureId: 1, layerId: 'l1' },
         { featureId: 2, layerId: 'l2' }

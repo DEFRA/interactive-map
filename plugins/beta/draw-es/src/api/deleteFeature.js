@@ -10,9 +10,9 @@ export const deleteFeature = ({ pluginState, mapProvider, services }, featureId)
   sketchViewModel.cancel()
   sketchLayer.remove(graphic)
   sketchViewModel.layer = emptySketchLayer
-  
+
   // Reset state
-  dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null }})
+  dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
 
   // Emit event
   eventBus.emit('draw:delete', { featureId })

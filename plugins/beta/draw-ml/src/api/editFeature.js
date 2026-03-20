@@ -55,10 +55,13 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
 
   // Put feature in state
   const feature = draw.get(featureId)
-  dispatch({ type: 'SET_FEATURE', payload: {
-    feature,
-    tempFeature: feature
-  }})
+  dispatch({
+    type: 'SET_FEATURE',
+    payload: {
+      feature,
+      tempFeature: feature
+    }
+  })
 
   // Set mode to edit_vertex
   dispatch({ type: 'SET_MODE', payload: 'edit_vertex' })

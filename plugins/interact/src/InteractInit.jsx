@@ -24,7 +24,7 @@ export const InteractInit = ({
     mapState,
     pluginState,
     services,
-    mapProvider,
+    mapProvider
   })
 
   // Refs updated synchronously each render — keeps callbacks fresh without re-attaching events
@@ -88,7 +88,6 @@ export const InteractInit = ({
 
     return cleanupEvents
   }, [pluginState.enabled, buttonConfig, events, eventBus, closeApp])
-
 
   return null
 }

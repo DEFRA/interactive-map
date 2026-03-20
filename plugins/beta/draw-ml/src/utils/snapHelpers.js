@@ -8,7 +8,7 @@
  * @param {maplibregl.Map} map - Map instance
  * @returns {MapboxSnap|null} Snap instance or null
  */
-export function getSnapInstance(map) {
+export function getSnapInstance (map) {
   return map?._snapInstance ?? null
 }
 
@@ -17,7 +17,7 @@ export function getSnapInstance(map) {
  * @param {MapboxSnap} snap - Snap instance
  * @returns {boolean} True if snap is active with valid coordinates
  */
-export function isSnapActive(snap) {
+export function isSnapActive (snap) {
   // Also check snap.status to ensure snap feature is enabled
   return !!(snap?.status && snap?.snapStatus && snap.snapCoords?.length >= 2)
 }
@@ -27,7 +27,7 @@ export function isSnapActive(snap) {
  * @param {MapboxSnap} snap - Snap instance
  * @returns {{ lng: number, lat: number }|null} Snapped coordinates or null
  */
-export function getSnapLngLat(snap) {
+export function getSnapLngLat (snap) {
   if (!isSnapActive(snap)) {
     return null
   }
@@ -42,7 +42,7 @@ export function getSnapLngLat(snap) {
  * @param {MapboxSnap} snap - Snap instance
  * @returns {[number, number]|null} Snapped coordinates or null
  */
-export function getSnapCoords(snap) {
+export function getSnapCoords (snap) {
   if (!isSnapActive(snap)) {
     return null
   }
@@ -56,7 +56,7 @@ export function getSnapCoords(snap) {
  * @param {{ x: number, y: number }} point - Screen point
  * @returns {boolean} True if snap was triggered
  */
-export function triggerSnapAtPoint(snap, map, point) {
+export function triggerSnapAtPoint (snap, map, point) {
   if (!snap || !map || !snap.status) {
     return false
   }
@@ -72,7 +72,7 @@ export function triggerSnapAtPoint(snap, map, point) {
  * @param {maplibregl.Map} map - Map instance
  * @returns {boolean} True if snap was triggered
  */
-export function triggerSnapAtCenter(snap, map) {
+export function triggerSnapAtCenter (snap, map) {
   // Don't trigger snap if library is disabled
   if (!snap || !map || !snap.status) {
     return false
@@ -89,7 +89,7 @@ export function triggerSnapAtCenter(snap, map) {
  * @param {MapboxSnap} snap - Snap instance
  * @param {maplibregl.Map} [map] - Optional map instance for direct layer control
  */
-export function clearSnapIndicator(snap, map) {
+export function clearSnapIndicator (snap, map) {
   if (snap) {
     snap.snapStatus = false
     snap.snapCoords = null
@@ -116,7 +116,7 @@ export function clearSnapIndicator(snap, map) {
  * Clear all snap state (for use between drag operations)
  * @param {MapboxSnap} snap - Snap instance
  */
-export function clearSnapState(snap) {
+export function clearSnapState (snap) {
   if (!snap) {
     return
   }
@@ -139,7 +139,7 @@ export function clearSnapState(snap) {
  * @param {MapboxSnap} snap - Snap instance
  * @returns {number} Snap radius in pixels (default 15)
  */
-export function getSnapRadius(snap) {
+export function getSnapRadius (snap) {
   return snap?.options?.radius ?? 15
 }
 
@@ -148,7 +148,7 @@ export function getSnapRadius(snap) {
  * @param {object} state - Mode state with optional getSnapEnabled function
  * @returns {boolean} True if snapping is enabled
  */
-export function isSnapEnabled(state) {
+export function isSnapEnabled (state) {
   // Only return true if getSnapEnabled exists and explicitly returns true
   if (typeof state?.getSnapEnabled !== 'function') {
     return false
@@ -162,7 +162,7 @@ export function isSnapEnabled(state) {
  * @param {MapboxSnap} snap - Snap instance
  * @returns {object} Event with snapped lngLat or original event
  */
-export function createSnappedEvent(e, snap) {
+export function createSnappedEvent (e, snap) {
   const lngLat = getSnapLngLat(snap)
   if (!lngLat) {
     return e
@@ -180,7 +180,7 @@ export function createSnappedEvent(e, snap) {
  * @param {MapboxSnap} snap - Snap instance
  * @returns {object|null} Synthetic event or null if no snap
  */
-export function createSnappedClickEvent(map, snap) {
+export function createSnappedClickEvent (map, snap) {
   const lngLat = getSnapLngLat(snap)
   if (!lngLat) {
     return null

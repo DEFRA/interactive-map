@@ -10,7 +10,7 @@
  * @param {boolean} showMarker - Whether to display a marker
  * @param {boolean} showMarker - Marker colour
  */
-export function updateMap({ mapProvider, bounds, point, markers, showMarker, markerColor }) {
+export function updateMap ({ mapProvider, bounds, point, markers, showMarker, markerColor }) {
   mapProvider.fitToBounds(bounds)
   if (showMarker) {
     markers.add('search', point, { color: markerColor })

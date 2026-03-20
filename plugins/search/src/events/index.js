@@ -6,7 +6,7 @@ import { createSuggestionHandlers } from './suggestionHandlers.js'
 
 const DEBOUNCE_FETCH_TIME = 350
 
-export function attachEvents(args) {
+export function attachEvents (args) {
   const { dispatch, searchContainerRef } = args
 
   // Debounce data fetching
@@ -26,7 +26,7 @@ export function attachEvents(args) {
     ...inputHandlers,
     ...suggestionHandlers,
 
-    handleOutside(e) {
+    handleOutside (e) {
       if (searchContainerRef.current.contains(e.target)) {
         return
       }

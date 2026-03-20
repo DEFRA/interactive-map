@@ -7,7 +7,7 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
       : `${suggestions.length} suggestions available`
 
   return {
-    handleSuggestionClick(suggestion, appState) {
+    handleSuggestionClick (suggestion, appState) {
       dispatch({ type: 'SET_VALUE', payload: suggestion.text })
       dispatch({ type: 'HIDE_SUGGESTIONS' })
       dispatch({ type: 'SET_SELECTED', payload: -1 })
@@ -21,7 +21,7 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
       services.eventBus.emit('search:match', { query: suggestion.text, ...suggestion })
     },
 
-    handleInputKeyDown(e, pluginState) {
+    handleInputKeyDown (e, pluginState) {
       const { suggestions, selectedIndex } = pluginState
 
       switch (e.key) {

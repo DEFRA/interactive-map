@@ -10,7 +10,10 @@ jest.mock('@arcgis/core/geometry/Point.js', () =>
 
 jest.mock('./coords.js', () => ({
   getBboxFromGeoJSON: jest.fn(() => ({
-    xmin: 100, ymin: 200, xmax: 500, ymax: 600,
+    xmin: 100,
+    ymin: 200,
+    xmax: 500,
+    ymax: 600,
     spatialReference: { wkid: 27700 },
     type: 'extent'
   }))

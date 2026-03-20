@@ -4,7 +4,7 @@ import { calculateLinearTextSize } from './calculateLinearTextSize.js'
 const HIGHLIGHT_SCALE_FACTOR = 1.5
 const HIGHLIGHT_LABEL_SOURCE = 'highlighted-label'
 
-export function getGeometryCenter(geometry) {
+export function getGeometryCenter (geometry) {
   const { type, coordinates } = geometry
   if (type === 'Point') {
     return coordinates
@@ -24,7 +24,7 @@ export function getGeometryCenter(geometry) {
   return null
 }
 
-export function evalInterpolate(expr, zoom) {
+export function evalInterpolate (expr, zoom) {
   if (typeof expr === 'number') {
     return expr
   }
@@ -50,14 +50,14 @@ export function evalInterpolate(expr, zoom) {
   return stops[stops.length - 1]
 }
 
-export function getHighlightColors(isDarkStyle) {
+export function getHighlightColors (isDarkStyle) {
   if (isDarkStyle) {
     return { text: '#ffffff', halo: '#000000' }
   }
   return { text: '#000000', halo: '#ffffff' }
 }
 
-export function extractTextPropertyName(textField) {
+export function extractTextPropertyName (textField) {
   if (typeof textField === 'string') {
     return /^{(.+)}$/.exec(textField)?.[1]
   }
@@ -67,7 +67,7 @@ export function extractTextPropertyName(textField) {
   return null
 }
 
-export function buildLabelFromFeature(feature, layer, propName, map) {
+export function buildLabelFromFeature (feature, layer, propName, map) {
   const center = getGeometryCenter(feature.geometry)
   if (!center) {
     return null
@@ -76,7 +76,7 @@ export function buildLabelFromFeature(feature, layer, propName, map) {
   return { text: feature.properties[propName], x: projected.x, y: projected.y, feature, layer }
 }
 
-export function buildLabelsFromLayers(map, symbolLayers, features) {
+export function buildLabelsFromLayers (map, symbolLayers, features) {
   return symbolLayers.flatMap(layer => {
     const textField = layer.layout?.['text-field']
     const propName = extractTextPropertyName(textField)
@@ -90,7 +90,7 @@ export function buildLabelsFromLayers(map, symbolLayers, features) {
   })
 }
 
-export function findClosestLabel(labels, centerPoint) {
+export function findClosestLabel (labels, centerPoint) {
   return labels.reduce((best, label) => {
     const dist = (label.x - centerPoint.x) ** 2 + (label.y - centerPoint.y) ** 2
     if (!best || dist < best.dist) {
@@ -100,7 +100,7 @@ export function findClosestLabel(labels, centerPoint) {
   }, null)?.label
 }
 
-export function createHighlightLayerConfig(sourceLayer, highlightSize, colors) {
+export function createHighlightLayerConfig (sourceLayer, highlightSize, colors) {
   return {
     id: `highlight-${sourceLayer.id}`,
     type: sourceLayer.type,
@@ -123,18 +123,17 @@ export function createHighlightLayerConfig(sourceLayer, highlightSize, colors) {
   }
 }
 
-export function removeHighlightLayer(map, state) {
+export function removeHighlightLayer (map, state) {
   if (state.highlightLayerId && map.getLayer(state.highlightLayerId)) {
     try {
       map.removeLayer(state.highlightLayerId)
-    }
-    catch {}
+    } catch {}
     state.highlightLayerId = null
     state.highlightedExpr = null
   }
 }
 
-export function applyHighlight(map, labelData, state) {
+export function applyHighlight (map, labelData, state) {
   if (!labelData?.feature?.layer) {
     return
   }
@@ -156,7 +155,7 @@ export function applyHighlight(map, labelData, state) {
   map.moveLayer(state.highlightLayerId)
 }
 
-export function navigateToNextLabel(direction, state) {
+export function navigateToNextLabel (direction, state) {
   if (!state.currentPixel) {
     return null
   }
@@ -174,19 +173,19 @@ export function navigateToNextLabel(direction, state) {
   return state.labels[filtered[nextFilteredIndex].index]
 }
 
-function initLabelSource(map) {
+function initLabelSource (map) {
   if (!map.getSource(HIGHLIGHT_LABEL_SOURCE)) {
     map.addSource(HIGHLIGHT_LABEL_SOURCE, { type: 'geojson', data: { type: 'FeatureCollection', features: [] } })
   }
 }
 
-function setLineCenterPlacement(map) {
+function setLineCenterPlacement (map) {
   map.getStyle().layers
     .filter(l => l.layout?.['symbol-placement'] === 'line')
     .forEach(l => map.setLayoutProperty(l.id, 'symbol-placement', 'line-center'))
 }
 
-function setSymbolTextOpacity(map) {
+function setSymbolTextOpacity (map) {
   map.getStyle().layers
     .filter(l => l.type === 'symbol')
     .forEach(layer => {
@@ -194,7 +193,7 @@ function setSymbolTextOpacity(map) {
     })
 }
 
-export function createMapLabelNavigator(map, mapColorScheme, events, eventBus) {
+export function createMapLabelNavigator (map, mapColorScheme, events, eventBus) {
   const state = {
     isDarkStyle: mapColorScheme === 'dark',
     labels: [],
@@ -221,13 +220,13 @@ export function createMapLabelNavigator(map, mapColorScheme, events, eventBus) {
     }
   })
 
-  function refreshLabels() {
+  function refreshLabels () {
     const symbolLayers = map.getStyle().layers.filter(l => l.type === 'symbol')
     const features = map.queryRenderedFeatures({ layers: symbolLayers.map(l => l.id) })
     state.labels = buildLabelsFromLayers(map, symbolLayers, features)
   }
 
-  function highlightCenter() {
+  function highlightCenter () {
     refreshLabels()
     if (!state.labels.length) {
       return null
@@ -239,7 +238,7 @@ export function createMapLabelNavigator(map, mapColorScheme, events, eventBus) {
     return `${closest.text} (${closest.layer.id})`
   }
 
-  function highlightNext(direction) {
+  function highlightNext (direction) {
     refreshLabels()
     if (!state.labels.length) {
       return null

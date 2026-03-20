@@ -23,8 +23,8 @@ export const FrameInit = ({
   // Attach events
   useEffect(() => {
     if (!isActive) {
-			return
-		}
+      return
+    }
 
     // --- Done
     frameDone.onClick = () => {
@@ -32,7 +32,7 @@ export const FrameInit = ({
         frameEl: frameRefs.displayRef.current,
         viewportEl: layoutRefs.viewportRef.current,
         featureId: frame?.featureId,
-        scale: {small: 1, medium: 1.5, large: 2}[mapState.mapSize],
+        scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
         mapProvider
       })
 

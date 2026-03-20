@@ -6,7 +6,6 @@ jest.mock('maplibre-gl', () => ({ VERSION: '3.x' }))
 jest.mock('./maplibreProvider.js', () => ({ default: class MockProvider {} }))
 
 describe('createMapLibreProvider', () => {
-
   beforeEach(() => {
     getWebGL.mockReturnValue({ isEnabled: true, error: null })
 

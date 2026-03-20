@@ -18,7 +18,7 @@ describe('attachEvents', () => {
         getPluginState: () => pluginState,
         mapState: {
           markers: { remove: jest.fn(), getMarker: jest.fn(() => null) },
-          crossHair: { getDetail: jest.fn(() => ({ point: { x: 0, y: 0 }, coords: [0,0] })) }
+          crossHair: { getDetail: jest.fn(() => ({ point: { x: 0, y: 0 }, coords: [0, 0] })) }
         },
         buttonConfig: { selectDone: {}, selectAtTarget: {}, selectCancel: {} },
         events: { MAP_CLICK: 'map:click' },
@@ -78,10 +78,10 @@ describe('attachEvents', () => {
     params.clickReadyRef.current = true
     cleanup = attachEvents(params)
 
-    const handler = params.eventBus.on.mock.calls.find(c => c[0]==='map:click')[1]
-    handler({ point:{x:1,y:2}, coords:[3,4] })
+    const handler = params.eventBus.on.mock.calls.find(c => c[0] === 'map:click')[1]
+    handler({ point: { x: 1, y: 2 }, coords: [3, 4] })
 
-    expect(params.handleInteraction).toHaveBeenCalledWith({ point:{x:1,y:2}, coords:[3,4] })
+    expect(params.handleInteraction).toHaveBeenCalledWith({ point: { x: 1, y: 2 }, coords: [3, 4] })
   })
 
   it('map click is suppressed when clickReadyRef is false', () => {
@@ -89,8 +89,8 @@ describe('attachEvents', () => {
     params.clickReadyRef.current = false
     cleanup = attachEvents(params)
 
-    const handler = params.eventBus.on.mock.calls.find(c => c[0]==='map:click')[1]
-    handler({ point:{x:1,y:2}, coords:[3,4] })
+    const handler = params.eventBus.on.mock.calls.find(c => c[0] === 'map:click')[1]
+    handler({ point: { x: 1, y: 2 }, coords: [3, 4] })
 
     expect(params.handleInteraction).not.toHaveBeenCalled()
   })
@@ -99,7 +99,7 @@ describe('attachEvents', () => {
     const params = createParams()
     cleanup = attachEvents(params)
 
-    const crossDetail = { point:{x:1,y:2}, coords:[3,4] }
+    const crossDetail = { point: { x: 1, y: 2 }, coords: [3, 4] }
     params.mapState.crossHair.getDetail.mockReturnValue(crossDetail)
 
     params.buttonConfig.selectAtTarget.onClick()
@@ -111,14 +111,14 @@ describe('attachEvents', () => {
     cleanup = attachEvents(params)
 
     // closeOnAction = true (already covered)
-    params.mapState.markers.getMarker.mockReturnValue({ coords:[1,2] })
+    params.mapState.markers.getMarker.mockReturnValue({ coords: [1, 2] })
     params.buttonConfig.selectDone.onClick()
     expect(params.closeApp).toHaveBeenCalled()
 
     // cover closeOnAction = false
     params.closeApp.mockClear()
     params.pluginState.closeOnAction = false
-    params.mapState.markers.getMarker.mockReturnValue({ coords:[3,4] })
+    params.mapState.markers.getMarker.mockReturnValue({ coords: [3, 4] })
     params.buttonConfig.selectDone.onClick()
     expect(params.closeApp).not.toHaveBeenCalled()
   })
@@ -155,11 +155,11 @@ describe('attachEvents', () => {
     const params = createParams()
     cleanup = attachEvents(params)
 
-    const selectHandler = params.eventBus.on.mock.calls.find(c => c[0]==='interact:selectFeature')[1]
-    const unselectHandler = params.eventBus.on.mock.calls.find(c => c[0]==='interact:unselectFeature')[1]
+    const selectHandler = params.eventBus.on.mock.calls.find(c => c[0] === 'interact:selectFeature')[1]
+    const unselectHandler = params.eventBus.on.mock.calls.find(c => c[0] === 'interact:unselectFeature')[1]
 
-    selectHandler({ featureId:'F1' })
-    unselectHandler({ featureId:'F2' })
+    selectHandler({ featureId: 'F1' })
+    unselectHandler({ featureId: 'F2' })
 
     expect(params.pluginState.dispatch).toHaveBeenCalledTimes(2)
     expect(params.mapState.markers.remove).toHaveBeenCalledTimes(2)
@@ -178,7 +178,7 @@ describe('attachEvents', () => {
 
     // Ensure marker returns null (no coords)
     params.mapState.markers.getMarker.mockReturnValue(null)
-    
+
     // Set up features and bounds
     params.pluginState.selectedFeatures = [{ id: 'f1' }]
     params.pluginState.selectionBounds = { sw: [0, 0], ne: [1, 1] }
@@ -194,7 +194,7 @@ describe('attachEvents', () => {
   it('respects default closeOnAction when value is undefined (fallback to true)', () => {
     const params = createParams()
     // Explicitly set to undefined to trigger the ?? fallback
-    params.pluginState.closeOnAction = undefined 
+    params.pluginState.closeOnAction = undefined
     cleanup = attachEvents(params)
 
     // Test for selectDone

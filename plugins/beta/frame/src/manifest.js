@@ -6,8 +6,8 @@ import { addFrame } from './api/addFrame.js'
 import { editFeature } from './api/editFeature.js'
 
 const buttonSlots = {
-  mobile:  { slot: 'actions', showLabel: true },
-  tablet:  { slot: 'actions', showLabel: true },
+  mobile: { slot: 'actions', showLabel: true },
+  tablet: { slot: 'actions', showLabel: true },
   desktop: { slot: 'actions', showLabel: true }
 }
 
@@ -40,7 +40,7 @@ export const manifest = {
     variant: 'primary',
     hiddenWhen: ({ pluginState }) => !pluginState.frame,
     ...buttonSlots
-  },{
+  }, {
     id: 'frameCancel',
     label: 'Cancel',
     variant: 'tertiary',

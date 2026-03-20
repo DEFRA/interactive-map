@@ -8,7 +8,6 @@ const initialState = {
   selectedIndex: -1
 }
 
-
 const toggleExpanded = (state, payload) => {
   return {
     ...state,
@@ -31,7 +30,7 @@ const inputBlur = (state, payload) => {
     ...state,
     hasKeyboardFocusWithin: false,
     areSuggestionsVisible: state.areSuggestionsVisible && payload !== 'keyboard',
-    selectedIndex: -1,
+    selectedIndex: -1
   }
 }
 

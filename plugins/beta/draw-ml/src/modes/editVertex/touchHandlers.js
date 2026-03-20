@@ -13,7 +13,7 @@ const touchVertexTarget = `
 `
 
 export const touchHandlers = {
-  addTouchVertexTarget(state) {
+  addTouchVertexTarget (state) {
     let el = state.container.querySelector('[data-touch-vertex-target]')
     if (!el) {
       state.container.insertAdjacentHTML('beforeend', touchVertexTarget)
@@ -22,7 +22,7 @@ export const touchHandlers = {
     state.touchVertexTarget = el
   },
 
-  updateTouchVertexTarget(state, point) {
+  updateTouchVertexTarget (state, point) {
     if (point && state.interfaceType === 'touch' && state.selectedVertexIndex >= 0) {
       Object.assign(state.touchVertexTarget.style, { display: 'block', top: `${point.y}px`, left: `${point.x}px` })
     } else {
@@ -30,11 +30,11 @@ export const touchHandlers = {
     }
   },
 
-  hideTouchVertexIndicator(state) {
+  hideTouchVertexIndicator (state) {
     state.touchVertexTarget.style.display = 'none'
   },
 
-  onPointerevent(state, e) {
+  onPointerevent (state, e) {
     state.interfaceType = e.pointerType === 'touch' ? 'touch' : 'pointer'
     state.isPanEnabled = true
     if (e.pointerType === 'touch' && e.type === 'pointermove' && !isOnSVG(e.target.parentNode) && !state._ignorePointermoveDeselect) {
@@ -43,11 +43,11 @@ export const touchHandlers = {
   },
 
   // Empty stubs required by DirectSelect
-  onTouchStart() {},
-  onTouchMove() {},
-  onTouchEnd() {},
+  onTouchStart () {},
+  onTouchMove () {},
+  onTouchEnd () {},
 
-  onTouchend(state) {
+  onTouchend (state) {
     clearSnapState(getSnapInstance(this.map))
     if (state?.featureId) {
       this.syncVertices(state)
@@ -67,7 +67,7 @@ export const touchHandlers = {
     }
   },
 
-  onTap(state, e) {
+  onTap (state, e) {
     // Hide snap indicator on any tap
     const snap = getSnapInstance(this.map)
     if (snap) {
@@ -92,7 +92,7 @@ export const touchHandlers = {
     }
   },
 
-  onTouchstart(state, e) {
+  onTouchstart (state, e) {
     clearSnapState(getSnapInstance(this.map))
     const vertex = state.vertecies?.[state.selectedVertexIndex]
     if (!vertex || !isOnSVG(e.target.parentNode)) {
@@ -111,7 +111,7 @@ export const touchHandlers = {
     state.deltaVertex = { x: (touch.x / state.scale) - vertexPt.x, y: (touch.y / state.scale) - vertexPt.y }
   },
 
-  onTouchmove(state, e) {
+  onTouchmove (state, e) {
     if (state.selectedVertexIndex < 0 || !isOnSVG(e.target.parentNode)) {
       return
     }

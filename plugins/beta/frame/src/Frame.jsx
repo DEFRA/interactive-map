@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { computeInset } from './utils.js'
 
-export function Frame({ appState, mapState, pluginState, mapProvider }) {
+export function Frame ({ appState, mapState, pluginState, mapProvider }) {
   const { actionsRef, mainRef, footerRef, viewportRef } = appState.layoutRefs
   const { dispatch } = pluginState
   const elRef = useRef(null)
@@ -87,7 +87,7 @@ export function Frame({ appState, mapState, pluginState, mapProvider }) {
     const viewportRect = viewportEl.getBoundingClientRect()
 
     // Calculate padding from viewport edges to frame edges
-    const scale = {small: 1, medium: 1.5, large: 2}[mapState.mapSize]
+    const scale = { small: 1, medium: 1.5, large: 2 }[mapState.mapSize]
 
     const padding = {
       top: (frameRect.top - viewportRect.top) / scale,
@@ -108,11 +108,11 @@ export function Frame({ appState, mapState, pluginState, mapProvider }) {
   return (
     <>
       {/* Spacer */}
-      <div className="im-c-frame-spacer" style={{ inset: parentInset }} ref={elRef} />
+      <div className='im-c-frame-spacer' style={{ inset: parentInset }} ref={elRef} />
 
       {/* Child */}
       {childStyle && (
-        <div ref={displayRef} className="im-c-frame-display" style={{ ...childStyle }} />
+        <div ref={displayRef} className='im-c-frame-display' style={{ ...childStyle }} />
       )}
     </>
   )

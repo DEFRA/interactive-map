@@ -31,7 +31,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
 
     // Only initialise state if not already set
     if (!pluginState.datasets) {
-      dispatch({ type: 'SET_DATASETS', payload: { datasets: pluginConfig.datasets, datasetDefaults }})
+      dispatch({ type: 'SET_DATASETS', payload: { datasets: pluginConfig.datasets, datasetDefaults } })
     }
 
     datasetsInstanceRef.current = createDatasets({
