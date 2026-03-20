@@ -88,7 +88,9 @@ export default class MaplibreLayerAdapter {
     // Reapply hidden feature filters
     Object.entries(hiddenFeatures).forEach(([datasetId, { idProperty, ids }]) => {
       const dataset = datasets.find(d => d.id === datasetId)
-      if (!dataset) return
+      if (!dataset) {
+        return
+      }
       this._applyFeatureFilter(dataset, idProperty, ids)
     })
   }

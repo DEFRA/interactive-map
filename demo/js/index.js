@@ -31,10 +31,10 @@ const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','pr
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
 		layerId: 'field-parcels',
-		// idProperty: 'id'
+		// idProperty: 'gid'
 	},{
 		layerId: 'linked-parcels',
-		// idProperty: 'id'
+		// idProperty: 'gid'
 	},{
 		layerId: 'OS/TopographicArea_1/Agricultural Land',
 		idProperty: 'TOID'
@@ -95,6 +95,13 @@ const datasetsPlugin = createDatasetsPlugin({
 		id: 'field-parcels',
 		label: 'Field parcels',
 		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+		// filter: [
+		// 	'all',
+		// 	['!=', ['get', 'sbi'], '106223377'],
+		// 	['==', ['get', 'is_dominant_land_cover'], true]
+		// ],
+		// tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		// sourceLayer: 'field_parcels_filtered',
 		featureLayer: '',
 		vectorTileLayer: '',
 		// idProperty: 'id',  // Enables dynamic fetching + deduplication
