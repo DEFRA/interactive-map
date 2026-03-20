@@ -30,7 +30,7 @@ export default class EsriProvider {
   }
 
   async initMap (config) {
-    const { container, padding, mapStyle, mapSize, maxExtent, ...initConfig } = config
+    const { container, padding, mapStyle, mapSize, maxExtent } = config
     this.mapStyleId = mapStyle?.id
     this.mapSize = mapSize
     const { events, eventBus } = this

@@ -1,5 +1,4 @@
 import { manifest } from './manifest.js'
-import { initialState, actions } from './reducer.js'
 
 jest.mock('./api/enable.js', () => ({ enable: jest.fn() }))
 jest.mock('./api/disable.js', () => ({ disable: jest.fn() }))

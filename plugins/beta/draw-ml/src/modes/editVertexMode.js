@@ -360,10 +360,11 @@ export const EditVertexMode = {
         state._insertedVertexIndex = undefined
         // Broadcast the updated vertex count — DirectSelect.onMouseUp only fires
         // draw.update (not draw.selectionchange), so onSelectionChange never runs
-        this.map.fire('draw.vertexselection', { index: insertedIndex, numVertecies: state.vertecies.length })
-      }
-      // Push undo for the move if vertex actually moved
-      else if (vertexMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {
+        this.map.fire('draw.vertexselection', {
+          index: insertedIndex, numVertecies: state.vertecies.length
+        })
+      } else if (vertexMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {
+        // Push undo for the move if vertex actually moved
         this.pushUndo({
           type: 'move_vertex',
           featureId: state.featureId,

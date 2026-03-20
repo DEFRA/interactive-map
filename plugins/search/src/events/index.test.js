@@ -69,7 +69,7 @@ describe('attachEvents', () => {
   })
 
   test('debouncedFetchSuggestions calls fetchSuggestions with correct args', () => {
-    const handlers = attachEvents(args)
+    attachEvents(args)
 
     // grab the debounced function passed to input handlers
     const { debouncedFetchSuggestions } =

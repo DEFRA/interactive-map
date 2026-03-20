@@ -1,6 +1,5 @@
 import { getSnapInstance } from '../utils/snapHelpers.js'
 import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
-import { DEFAULTS } from '../defaults.js'
 
 /**
  * Programmatically create a new polygon
