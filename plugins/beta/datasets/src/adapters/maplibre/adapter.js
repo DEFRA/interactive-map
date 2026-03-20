@@ -1,5 +1,5 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
-import { hasPattern, getPatternInnerContent, getPatternImageId, rasterisePattern } from '../../styles/patterns.js'
+import { hasPattern, getPatternImageId, rasterisePattern } from '../../styles/patterns.js'
 import { applyExclusionFilter } from '../../utils/filters.js'
 
 const isDynamicSource = (dataset) =>

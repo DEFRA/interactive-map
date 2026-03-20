@@ -45,6 +45,7 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'stroke-inactive.cold',
 		idProperty: 'id'
 	}],
+	// debug: true,
 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
 	contiguous: true,
@@ -96,7 +97,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
 		featureLayer: '',
 		vectorTileLayer: '',
-		idProperty: 'id',  // Enables dynamic fetching + deduplication
+		// idProperty: 'id',  // Enables dynamic fetching + deduplication
 		// filter: ['get', ['propertyName', 'warning']],
 		query: {},
 		transformRequest: transformDataRequest,  // Builds URL with bbox
@@ -252,11 +253,8 @@ interactiveMap.on('map:ready', function (e) {
 })
 
 interactiveMap.on('datasets:ready', function () {
-	// datasetsPlugin.hideFeatures({
-	// 	featureIds: [1148, 1134],
-	// 	idProperty: 'gid',
-	// 	datasetId: 'field-parcels'
-	// })
+	// setTimeout(() => datasetsPlugin.hideDataset('field-parcels'), 2000)
+	// setTimeout(() => datasetsPlugin.showDataset('field-parcels'), 4000)
 })
 
 // Ref to the selected features

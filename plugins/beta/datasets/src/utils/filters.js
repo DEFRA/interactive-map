@@ -8,8 +8,10 @@ export const buildExclusionFilter = (originalFilter, idProperty, excludeIds) => 
   }
 
   // Coerce both sides to strings to handle number/string type mismatches
+  // When no idProperty, use feature-level id via ['id'] (GeoJSON feature.id)
+  const idExpr = idProperty ? ['to-string', ['get', idProperty]] : ['to-string', ['id']]
   const stringIds = excludeIds.map(id => String(id))
-  const exclusionFilter = ['!', ['in', ['to-string', ['get', idProperty]], ['literal', stringIds]]]
+  const exclusionFilter = ['!', ['in', idExpr, ['literal', stringIds]]]
 
   if (!originalFilter) {
     return exclusionFilter
