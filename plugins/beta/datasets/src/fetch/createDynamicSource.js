@@ -164,7 +164,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
     /**
      * Clean up event listeners
      */
-    destroy() {
+    destroy () {
       map.off('moveend', handleMoveEnd)
       debouncedFetch.cancel()
     },
@@ -172,7 +172,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
     /**
      * Clear all cached features and reset fetch tracking
      */
-    clear() {
+    clear () {
       features.clear()
       fetchedBbox = null
       onUpdate(sourceId, { type: 'FeatureCollection', features: [] })
@@ -181,7 +181,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
     /**
      * Force refresh - clear cache and fetch current viewport
      */
-    refresh() {
+    refresh () {
       features.clear()
       fetchedBbox = null
       fetchData()
@@ -190,14 +190,14 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
     /**
      * Get current feature count
      */
-    getFeatureCount() {
+    getFeatureCount () {
       return features.size
     },
 
     /**
      * Re-push cached features to the source (e.g., after style change)
      */
-    reapply() {
+    reapply () {
       if (features.size > 0) {
         onUpdate(sourceId, toFeatureCollection())
       }

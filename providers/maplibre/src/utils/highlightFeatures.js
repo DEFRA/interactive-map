@@ -68,7 +68,7 @@ const calculateBounds = (LngLatBounds, renderedFeatures) => {
   }
 
   const bounds = new LngLatBounds()
-  
+
   renderedFeatures.forEach(f => {
     const add = (c) => typeof c[0] === 'number' ? bounds.extend(c) : c.forEach(add)
     add(f.geometry.coordinates)
@@ -81,7 +81,7 @@ const calculateBounds = (LngLatBounds, renderedFeatures) => {
  * Update highlighted features using pure filters.
  * Supports fill + line geometry, multi-source, cleanup, and bounds.
  */
-export function updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, stylesMap }) {
+export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures, stylesMap }) {
   if (!map) {
     return null
   }

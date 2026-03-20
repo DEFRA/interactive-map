@@ -186,7 +186,6 @@ const getPaddedBounds = (LngLatBounds, map) => {
   return new LngLatBounds(swLngLat, neLngLat)
 }
 
-
 /**
  * Get a flat bbox [west, south, east, north] from any GeoJSON object
  * (Feature, FeatureCollection, or geometry).

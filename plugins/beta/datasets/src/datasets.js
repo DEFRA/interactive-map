@@ -52,7 +52,7 @@ export const createDatasets = ({
   })
 
   return {
-    remove() {
+    remove () {
       eventBus.off(events.MAP_SET_STYLE, styleHandler)
 
       // Clean up dynamic sources
@@ -82,7 +82,7 @@ export const createDatasets = ({
      * Refresh a dynamic source - clears cache and re-fetches
      * @param {string} datasetId - Dataset ID to refresh
      */
-    refreshDataset(datasetId) {
+    refreshDataset (datasetId) {
       const dynamicSource = dynamicSources.get(datasetId)
       if (dynamicSource) {
         dynamicSource.refresh()
@@ -93,7 +93,7 @@ export const createDatasets = ({
      * Clear a dynamic source's cache
      * @param {string} datasetId - Dataset ID to clear
      */
-    clearDatasetCache(datasetId) {
+    clearDatasetCache (datasetId) {
       const dynamicSource = dynamicSources.get(datasetId)
       if (dynamicSource) {
         dynamicSource.clear()
@@ -105,7 +105,7 @@ export const createDatasets = ({
      * @param {string} datasetId - Dataset ID
      * @returns {number|null} Feature count or null if not a dynamic source
      */
-    getFeatureCount(datasetId) {
+    getFeatureCount (datasetId) {
       const dynamicSource = dynamicSources.get(datasetId)
       return dynamicSource ? dynamicSource.getFeatureCount() : null
     }

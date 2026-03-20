@@ -31,9 +31,15 @@ describe('attachMapEvents', () => {
     }
     eventBus = { emit: jest.fn() }
     events = {
-      MAP_LOADED: 'loaded', MAP_FIRST_IDLE: 'firstIdle', MAP_MOVE_START: 'moveStart',
-      MAP_MOVE_END: 'moveEnd', MAP_MOVE: 'move', MAP_RENDER: 'render',
-      MAP_DATA_CHANGE: 'dataChange', MAP_STYLE_CHANGE: 'styleChange', MAP_CLICK: 'click'
+      MAP_LOADED: 'loaded',
+      MAP_FIRST_IDLE: 'firstIdle',
+      MAP_MOVE_START: 'moveStart',
+      MAP_MOVE_END: 'moveEnd',
+      MAP_MOVE: 'move',
+      MAP_RENDER: 'render',
+      MAP_DATA_CHANGE: 'dataChange',
+      MAP_STYLE_CHANGE: 'styleChange',
+      MAP_CLICK: 'click'
     }
     getCenter = jest.fn(() => [0, 0])
     getZoom = jest.fn(() => 10)
@@ -62,8 +68,12 @@ describe('attachMapEvents', () => {
 
   test('stateful events emit map state', () => {
     const state = {
-      center: [0, 0], bounds: [[0, 0], [1, 1]], resolution: 100,
-      zoom: 10, isAtMaxZoom: false, isAtMinZoom: false
+      center: [0, 0],
+      bounds: [[0, 0], [1, 1]],
+      resolution: 100,
+      zoom: 10,
+      isAtMaxZoom: false,
+      isAtMinZoom: false
     }
     map.once.mock.calls.find(([e]) => e === 'idle')[1]()
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_FIRST_IDLE, state)

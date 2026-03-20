@@ -1,6 +1,6 @@
 import { errorMessages } from './defaults.js'
 
-export function attachEvents({ appState, pluginState, mapProvider, useLocationButton }) {
+export function attachEvents ({ appState, pluginState, mapProvider, useLocationButton }) {
   const { dispatch: appDispatch, buttonRefs } = appState
   const { dispatch: pluginDispatch } = pluginState
 
@@ -30,7 +30,7 @@ export function attachEvents({ appState, pluginState, mapProvider, useLocationBu
       const message = getFriendlyError(err)
       const triggeringElement = buttonRefs.current[useLocationButton.id]
       pluginDispatch({ type: 'SET_ERROR_MESSAGE', payload: message })
-      appDispatch({ type: 'OPEN_PANEL', payload: { panelId: 'useLocation', props: { triggeringElement }}})
+      appDispatch({ type: 'OPEN_PANEL', payload: { panelId: 'useLocation', props: { triggeringElement } } })
     }, {
       enableHighAccuracy: true,
       maximumAge: 0,

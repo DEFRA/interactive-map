@@ -10,11 +10,11 @@ describe('Suggestions', () => {
       areSuggestionsVisible: true,
       suggestions: [
         { id: '1', marked: 'First' },
-        { id: '2', marked: 'Second' },
+        { id: '2', marked: 'Second' }
       ],
-      selectedIndex: 0,
+      selectedIndex: 0
     },
-    handleSuggestionClick: jest.fn(),
+    handleSuggestionClick: jest.fn()
   }
 
   beforeEach(() => {

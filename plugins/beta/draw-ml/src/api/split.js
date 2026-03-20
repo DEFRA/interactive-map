@@ -53,7 +53,7 @@ export const split = ({ appState, appConfig, pluginState, mapProvider }, feature
     const lineFeature = e.features[0]
     const featureCollection = splitPolygon(polygonFeature, lineFeature)
     draw.setFeatureProperty('_splitter', 'splitter', featureCollection ? 'valid' : 'invalid')
-    dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: !!featureCollection }})
+    dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: !!featureCollection } })
   })
 
   // Real time check for valid line
@@ -62,13 +62,13 @@ export const split = ({ appState, appConfig, pluginState, mapProvider }, feature
     if (e.coordinates.length < 2) {
       return
     }
-    const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates: e.coordinates }}
+    const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates: e.coordinates } }
     const featureCollection = splitPolygon(polygonFeature, lineFeature)
     const isValid = !!featureCollection
     e.properties.splitter = isValid ? 'valid' : 'invalid'
     e.ctx.store.render()
     if (draw.getMode() === 'edit_vertex') {
-      dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid }})
+      dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
     }
   }, DEBOUNCE_SPLIT_POLYGON)
   map.on('draw.geometrychange', onGeometryChange)
@@ -77,5 +77,5 @@ export const split = ({ appState, appConfig, pluginState, mapProvider }, feature
   dispatch({ type: 'SET_MODE', payload: 'draw_line' })
 
   // Set action to 'split'
-  dispatch({ type: 'SET_ACTION', payload: { name: 'split' }})
+  dispatch({ type: 'SET_ACTION', payload: { name: 'split' } })
 }

@@ -39,7 +39,7 @@ export const createDrawMode = (ParentMode, config) => {
   return {
     ...ParentMode,
 
-    onSetup(options) {
+    onSetup (options) {
       const { map } = this
 
       // Some parent modes (DrawLineString) interpret featureId as "continue existing"
@@ -97,7 +97,7 @@ export const createDrawMode = (ParentMode, config) => {
       return state
     },
 
-    onClick(state, e) {
+    onClick (state, e) {
       // Skip non-primary clicks, undo operations, or clicks outside canvas
       if (e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()) {
         return
@@ -119,11 +119,11 @@ export const createDrawMode = (ParentMode, config) => {
       }
     },
 
-    onTap() {
-      return
+    onTap () {
+
     },
 
-    doClick(state) {
+    doClick (state) {
       // Skip during undo operation
       if (this.map._undoInProgress) {
         return
@@ -160,7 +160,7 @@ export const createDrawMode = (ParentMode, config) => {
       }
     },
 
-    dispatchVertexChange(coords) {
+    dispatchVertexChange (coords) {
       this.map.fire('draw.vertexchange', {
         numVertecies: coords.length
       })
@@ -169,7 +169,7 @@ export const createDrawMode = (ParentMode, config) => {
     /**
      * Push an undo operation for the last added vertex
      */
-    pushDrawUndo(state) {
+    pushDrawUndo (state) {
       const undoStack = this.map._undoStack
       // Don't push during undo operations
       if (!undoStack || this.map._undoInProgress) {
@@ -185,7 +185,7 @@ export const createDrawMode = (ParentMode, config) => {
     /**
      * Undo the last added vertex during drawing
      */
-    undoVertex(state) {
+    undoVertex (state) {
       const feature = getFeature(state)
       const coords = getCoords(feature)
 
@@ -207,7 +207,7 @@ export const createDrawMode = (ParentMode, config) => {
      * For Polygon: reinitialize in place
      * For LineString: restart the draw mode with fresh state
      */
-    _reinitializeFeature(state, feature) {
+    _reinitializeFeature (state, feature) {
       const featureId = feature.id
       this._ctx.store.delete([featureId])
 
@@ -258,7 +258,7 @@ export const createDrawMode = (ParentMode, config) => {
     /**
      * Remove the last committed vertex and update rubber band
      */
-    _removeLastVertex(state, feature, coords) {
+    _removeLastVertex (state, feature, coords) {
       // Structure during drawing: [v1, v2, ..., vN, rubber_band]
       const ring = geometryType === 'Polygon' ? feature.coordinates[0] : coords
       ring.splice(ring.length - 2, 1)
@@ -279,7 +279,7 @@ export const createDrawMode = (ParentMode, config) => {
     /**
      * Update rubber band position based on interface type
      */
-    _updateRubberBand(state, coords) {
+    _updateRubberBand (state, coords) {
       if (['touch', 'keyboard'].includes(state.interfaceType)) {
         // Touch/keyboard: move to map center for add point to work
         this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
@@ -305,13 +305,13 @@ export const createDrawMode = (ParentMode, config) => {
     /**
      * Handle draw.undo event
      */
-    onUndo(state, e) {
+    onUndo (state, e) {
       if (e.operation?.type === 'draw_vertex') {
         this.undoVertex(state)
       }
     },
 
-    _simulateMouse(type, fn, state) {
+    _simulateMouse (type, fn, state) {
       const { map } = this
       const center = map.getCenter()
       const point = map.project(center)
@@ -330,14 +330,14 @@ export const createDrawMode = (ParentMode, config) => {
       this.map.fire('draw.geometrychange', state.polygon || state.line)
     },
 
-    _setInterface(state, type, show = true) {
+    _setInterface (state, type, show = true) {
       state.interfaceType = type
       if (show) {
         state.vertexMarker.style.display = 'block'
       }
     },
 
-    onCreate(state, e) {
+    onCreate (state, e) {
       const draw = this._ctx.api
       const feature = e.features[0]
       draw.delete(feature.id)
@@ -345,24 +345,24 @@ export const createDrawMode = (ParentMode, config) => {
       draw.add(feature, { userProperties: true })
     },
 
-    onVertexButtonClick(state, e) {
+    onVertexButtonClick (state, e) {
       // Only trigger for the specific add vertex button, and skip during undo
       if (state.addVertexButtonId && !this.map._undoInProgress && e.target.closest(`#${state.addVertexButtonId}`)) {
         this.doClick(state)
       }
     },
 
-    onTouchStart(state, e) {
+    onTouchStart (state, e) {
       this._setInterface(state, 'touch')
       this.onMove(state, e)
     },
 
-    onTouchEnd(state, e) {
+    onTouchEnd (state, e) {
       this._setInterface(state, 'touch')
       this.onMove(state, e)
     },
 
-    onKeydown(state, e) {
+    onKeydown (state, e) {
       // Undo with Cmd/Ctrl+Z (works without viewport focus, but not in input fields)
       if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
         const tag = document.activeElement?.tagName
@@ -396,7 +396,7 @@ export const createDrawMode = (ParentMode, config) => {
       this.onMove(state, e)
     },
 
-    onKeyup(state, e) {
+    onKeyup (state, e) {
       if (e.key === 'Escape') {
         if (state.interfaceType !== 'keyboard') {
           // Mouse/touch: cancel drawing — onKeyUp (capital U) won't fire since container isn't focused
@@ -420,7 +420,7 @@ export const createDrawMode = (ParentMode, config) => {
     //   1. A UI element inside the viewport has focus (e.g. popup menu) → ignore, let React handle
     //   2. Keyboard drawing (container focused, interfaceType === 'keyboard') → Escape restarts
     //   3. Non-keyboard with container focused → skip (already handled by window onKeyup via draw.cancel)
-    onKeyUp(state, e) {
+    onKeyUp (state, e) {
       const activeEl = document.activeElement
       if (activeEl && activeEl !== state.container && state.container.contains(activeEl)) {
         return
@@ -441,17 +441,17 @@ export const createDrawMode = (ParentMode, config) => {
       }
     },
 
-    onFocus(state) {
+    onFocus (state) {
       state.vertexMarker.style.display = ['touch', 'keyboard'].includes(state.interfaceType) ? 'block' : 'none'
     },
 
-    onBlur(state, e) {
+    onBlur (state, e) {
       if (e.target !== state.container) {
         state.vertexMarker.style.display = 'none'
       }
     },
 
-    onMouseMove(state, e) {
+    onMouseMove (state, e) {
       if (isSnapEnabled(state)) {
         const snap = getSnapInstance(this.map)
         triggerSnapAtPoint(snap, this.map, e.point)
@@ -463,11 +463,11 @@ export const createDrawMode = (ParentMode, config) => {
       }
 
       this.map.fire('draw.geometrychange', state.polygon || state.line)
-      
+
       ParentMode.onMouseMove.call(this, state, e)
     },
 
-    onMove(state) {
+    onMove (state) {
       if (['touch', 'keyboard'].includes(state.interfaceType)) {
         if (isSnapEnabled(state)) {
           triggerSnapAtCenter(getSnapInstance(this.map), this.map)
@@ -495,23 +495,23 @@ export const createDrawMode = (ParentMode, config) => {
       }
     },
 
-    onPointerdown(state, e) {
+    onPointerdown (state, e) {
       if (e.pointerType !== 'touch') {
         this._setInterface(state, 'pointer', false)
       }
     },
 
-    onPointermove(state, e) {
+    onPointermove (state, e) {
       if (e.pointerType !== 'touch') {
         state.vertexMarker.style.display = 'none'
       }
     },
 
-    onPointerup(state) {
+    onPointerup (state) {
       this.dispatchVertexChange(getCoords(getFeature(state)))
     },
 
-    toDisplayFeatures(state, geojson, display) {
+    toDisplayFeatures (state, geojson, display) {
       ParentMode.toDisplayFeatures.call(this, state, geojson, display)
 
       const feature = getFeature(state)
@@ -520,7 +520,7 @@ export const createDrawMode = (ParentMode, config) => {
       }
     },
 
-    onStop(state) {
+    onStop (state) {
       ParentMode.onStop.call(this, state)
       this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
       state.vertexMarker.style.display = 'none'

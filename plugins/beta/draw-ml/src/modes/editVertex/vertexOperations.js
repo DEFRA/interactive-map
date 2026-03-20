@@ -6,10 +6,10 @@ import {
 } from './geometryHelpers.js'
 
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
-const NUDGE = 1, STEP = 5
+const NUDGE = 1; const STEP = 5
 
 export const vertexOperations = {
-  updateMidpoint(coordinates) {
+  updateMidpoint (coordinates) {
     setTimeout(() => {
       this.map.getSource('mapbox-gl-draw-hot').setData({
         type: 'Feature',
@@ -19,7 +19,7 @@ export const vertexOperations = {
     }, 0)
   },
 
-  updateVertex(state, direction) {
+  updateVertex (state, direction) {
     const [idx, type] = this.getVertexOrMidpoint(state, direction)
     if (idx < 0 || !type) {
       return
@@ -27,18 +27,18 @@ export const vertexOperations = {
     this.changeMode(state, { selectedVertexIndex: idx, selectedVertexType: type, ...(type === 'vertex' && { coordPath: this.getCoordPath(state, idx) }) })
   },
 
-  getOffset(coord, e) {
+  getOffset (coord, e) {
     const pt = this.map.project(coord)
     const offset = e?.shiftKey ? NUDGE : STEP
     const [dx, dy] = e ? ARROW_OFFSETS[e.key].map(v => v * offset) : [0, 0]
     return this.map.unproject({ x: pt.x + dx, y: pt.y + dy })
   },
 
-  getNewCoord(state, e) {
+  getNewCoord (state, e) {
     return this.getOffset(getCoords(this.getFeature(state.featureId))[state.selectedVertexIndex], e)
   },
 
-  insertVertex(state, e) {
+  insertVertex (state, e) {
     const midIdx = state.selectedVertexIndex - state.vertecies.length
     const newCoord = this.getOffset(state.midpoints[midIdx], e)
     const feature = this.getFeature(state.featureId)
@@ -74,7 +74,7 @@ export const vertexOperations = {
     this.changeMode(state, { selectedVertexIndex: globalInsertIdx, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, globalInsertIdx) })
   },
 
-  moveVertex(state, coord, options = {}) {
+  moveVertex (state, coord, options = {}) {
     if (options.checkSnap && state.enableSnap !== false) {
       const snap = this.map._snapInstance
       if (snap?.snapStatus && snap.snapCoords?.length >= 2) {
@@ -96,7 +96,7 @@ export const vertexOperations = {
     this.map.fire('draw.geometrychange', state.feature)
   },
 
-  deleteVertex(state) {
+  deleteVertex (state) {
     const feature = this.getFeature(state.featureId)
     if (!feature) {
       return

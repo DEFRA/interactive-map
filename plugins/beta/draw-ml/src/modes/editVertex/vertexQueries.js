@@ -6,7 +6,7 @@ import {
 import { spatialNavigate } from '../../utils/spatial.js'
 
 export const vertexQueries = {
-  findVertexIndex(coords, targetCoord, currentIdx) {
+  findVertexIndex (coords, targetCoord, currentIdx) {
     // Search for vertex, preferring matches near currentIdx to handle duplicate coords (e.g., closing vertices)
     const matches = []
     coords.forEach((c, i) => {
@@ -27,7 +27,7 @@ export const vertexQueries = {
     return matches[0]
   },
 
-  getCoordPath(state, idx) {
+  getCoordPath (state, idx) {
     const feature = this.getFeature(state.featureId)
     if (!feature) return '0'
 
@@ -39,16 +39,16 @@ export const vertexQueries = {
     return [...segment.path, localIdx].join('.')
   },
 
-  syncVertices(state) {
+  syncVertices (state) {
     state.vertecies = this.getVerticies(state.featureId)
     state.midpoints = this.getMidpoints(state.featureId)
   },
 
-  getVerticies(featureId) {
+  getVerticies (featureId) {
     return getCoords(this.getFeature(featureId)) || []
   },
 
-  getMidpoints(featureId) {
+  getMidpoints (featureId) {
     const feature = this.getFeature(featureId)
     const coords = getCoords(feature)
     const segments = getRingSegments(feature)
@@ -73,7 +73,7 @@ export const vertexQueries = {
     return midpoints
   },
 
-  getVertexOrMidpoint(state, direction) {
+  getVertexOrMidpoint (state, direction) {
     // Ensure vertices and midpoints are populated
     if (!state.vertecies?.length) {
       state.vertecies = this.getVerticies(state.featureId)
@@ -92,7 +92,7 @@ export const vertexQueries = {
     return [idx, idx < state.vertecies.length ? 'vertex' : 'midpoint']
   },
 
-  getVertexIndexFromMidpoint(state, coordPath) {
+  getVertexIndexFromMidpoint (state, coordPath) {
     const feature = this.getFeature(state.featureId)
     const segments = getRingSegments(feature)
     const parts = coordPath.split('.').map(Number)

@@ -7,9 +7,12 @@
 import { DEFAULTS } from '../defaults.js'
 
 export const enable = ({ pluginState, pluginConfig }, options) => {
-  pluginState.dispatch({ type: 'ENABLE', payload: {
-    ...DEFAULTS,
-    ...pluginConfig,
-    ...options
-  }})
+  pluginState.dispatch({
+    type: 'ENABLE',
+    payload: {
+      ...DEFAULTS,
+      ...pluginConfig,
+      ...options
+    }
+  })
 }

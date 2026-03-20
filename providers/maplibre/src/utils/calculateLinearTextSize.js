@@ -5,7 +5,7 @@
  * @param {number} zoom - The current map zoom level.
  * @returns {number} The interpolated size value.
  */
-export function calculateLinearTextSize(expression, zoom) {
+export function calculateLinearTextSize (expression, zoom) {
   const { stops } = expression
 
   if (stops.length < 2) {
@@ -40,8 +40,8 @@ export function calculateLinearTextSize(expression, zoom) {
 
   // 3. Perform Simple Linear Interpolation (LERP)
   // t is the proportion of the distance between Z0 and Z1 that 'zoom' has traveled.
-  const t = (zoom - Z0) / (Z1 - Z0) 
-  
+  const t = (zoom - Z0) / (Z1 - Z0)
+
   // S0 + (S1 - S0) * t
   const interpolatedSize = S0 + (S1 - S0) * t
 

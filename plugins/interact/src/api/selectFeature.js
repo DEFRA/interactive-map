@@ -6,8 +6,8 @@
  */
 export const selectFeature = ({ services }, { featureId, layerId, idProperty }) => {
   services.eventBus.emit('interact:selectFeature', {
-		featureId,
-		layerId,
-		idProperty
-	})
+    featureId,
+    layerId,
+    idProperty
+  })
 }

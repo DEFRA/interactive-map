@@ -32,7 +32,7 @@ describe('CloseButton', () => {
     )
 
     const button = screen.getByLabelText('Close search', {
-      selector: 'button',
+      selector: 'button'
     })
 
     expect(button).toHaveStyle({ display: 'none' })

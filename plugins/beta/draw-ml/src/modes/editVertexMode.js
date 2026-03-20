@@ -20,7 +20,7 @@ export const EditVertexMode = {
   ...vertexOperations,
   ...vertexQueries,
 
-  onSetup(options) {
+  onSetup (options) {
     const state = DirectSelect.onSetup.call(this, options)
     Object.assign(state, {
       container: options.container,
@@ -88,15 +88,22 @@ export const EditVertexMode = {
     return state
   },
 
-  setupEventListeners(state) {
+  setupEventListeners (state) {
     const bind = (fn) => (e) => fn.call(this, state, e)
     const h = this.handlers = {
-      keydown: bind(this.onKeydown), keyup: bind(this.onKeyup),
-      pointerdown: bind(this.onPointerevent), pointermove: bind(this.onPointerevent), pointerup: bind(this.onPointerevent),
+      keydown: bind(this.onKeydown),
+      keyup: bind(this.onKeyup),
+      pointerdown: bind(this.onPointerevent),
+      pointermove: bind(this.onPointerevent),
+      pointerup: bind(this.onPointerevent),
       click: bind(this.onButtonClick),
-      touchstart: bind(this.onTouchstart), touchmove: bind(this.onTouchmove), touchend: bind(this.onTouchend),
-      selectionchange: bind(this.onSelectionChange), scalechange: bind(this.onScaleChange),
-      update: bind(this.onUpdate), move: bind(this.onMove)
+      touchstart: bind(this.onTouchstart),
+      touchmove: bind(this.onTouchmove),
+      touchend: bind(this.onTouchend),
+      selectionchange: bind(this.onSelectionChange),
+      scalechange: bind(this.onScaleChange),
+      update: bind(this.onUpdate),
+      move: bind(this.onMove)
     }
 
     window.addEventListener('keydown', h.keydown, { capture: true })
@@ -114,7 +121,7 @@ export const EditVertexMode = {
     this.map.on('move', h.move)
   },
 
-  onSelectionChange(state, e) {
+  onSelectionChange (state, e) {
     const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
 
     // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
@@ -139,11 +146,11 @@ export const EditVertexMode = {
     this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
-  onScaleChange(state, e) {
+  onScaleChange (state, e) {
     state.scale = e.scale
   },
 
-  onUpdate(state) {
+  onUpdate (state) {
     const prev = new Set(state.vertecies.map(c => JSON.stringify(c)))
     if (prev.size === state.vertecies.length) {
       return
@@ -152,7 +159,7 @@ export const EditVertexMode = {
     state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
   },
 
-  onKeydown(state, e) {
+  onKeydown (state, e) {
     if (!state.container.contains(document.activeElement)) {
       return
     }
@@ -247,7 +254,7 @@ export const EditVertexMode = {
     }
   },
 
-  onKeyup(state, e) {
+  onKeyup (state, e) {
     if (!state.container.contains(document.activeElement)) {
       return
     }
@@ -273,7 +280,7 @@ export const EditVertexMode = {
     }
   },
 
-  onMouseDown(state, e) {
+  onMouseDown (state, e) {
     clearSnapState(getSnapInstance(this.map))
     const meta = e.featureTarget?.properties.meta
     const coordPath = e.featureTarget?.properties.coord_path
@@ -313,7 +320,7 @@ export const EditVertexMode = {
     }
   },
 
-  onMouseUp(state, e) {
+  onMouseUp (state, e) {
     clearSnapState(getSnapInstance(this.map))
 
     // Check if vertex actually moved by comparing current position to start position
@@ -353,10 +360,11 @@ export const EditVertexMode = {
         state._insertedVertexIndex = undefined
         // Broadcast the updated vertex count — DirectSelect.onMouseUp only fires
         // draw.update (not draw.selectionchange), so onSelectionChange never runs
-        this.map.fire('draw.vertexselection', { index: insertedIndex, numVertecies: state.vertecies.length })
-      }
-      // Push undo for the move if vertex actually moved
-      else if (vertexMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {
+        this.map.fire('draw.vertexselection', {
+          index: insertedIndex, numVertecies: state.vertecies.length
+        })
+      } else if (vertexMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {
+        // Push undo for the move if vertex actually moved
         this.pushUndo({
           type: 'move_vertex',
           featureId: state.featureId,
@@ -373,7 +381,7 @@ export const EditVertexMode = {
     DirectSelect.onMouseUp.call(this, state, e)
   },
 
-  onDrag(state, e) {
+  onDrag (state, e) {
     if (state.interfaceType === 'touch') {
       return
     }
@@ -404,14 +412,14 @@ export const EditVertexMode = {
     state.dragMoveLocation = e.lngLat
   },
 
-  onMove(state) {
+  onMove (state) {
     const vertex = state.vertecies[state.selectedVertexIndex]
     if (vertex) {
       this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
     }
   },
 
-  onButtonClick(state, e) {
+  onButtonClick (state, e) {
     if (e.target.closest(`#${state.deleteVertexButtonId}`) && state.selectedVertexType === 'vertex') {
       this.deleteVertex(state)
     }
@@ -420,19 +428,19 @@ export const EditVertexMode = {
     }
   },
 
-  clickNoTarget(state) {
+  clickNoTarget (state) {
     this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null, isPanEnabled: true })
   },
 
   // Prevent selecting other features
-  changeMode(state, updates) {
+  changeMode (state, updates) {
     if (!state.featureId) {
       return
     }
     this._ctx.api.changeMode('edit_vertex', { ...state, ...updates })
   },
 
-  onStop(state) {
+  onStop (state) {
     const h = this.handlers
     state.container.removeEventListener('pointerdown', h.pointerdown)
     state.container.removeEventListener('pointermove', h.pointermove)

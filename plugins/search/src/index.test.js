@@ -1,9 +1,9 @@
 // /plugins/search/index.test.js
 
 // Mock SCSS import so Jest can run without parsing errors
-jest.mock('./search.scss', () => {})
-
 import createPlugin from './index'
+
+jest.mock('./search.scss', () => {})
 
 describe('createPlugin', () => {
   beforeEach(() => {

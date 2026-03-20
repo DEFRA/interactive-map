@@ -7,8 +7,8 @@ import { addFeature } from './api/addFeature.js'
 import { deleteFeature } from './api/deleteFeature.js'
 
 const buttonSlots = {
-  mobile:  { slot: 'actions', showLabel: true },
-  tablet:  { slot: 'actions', showLabel: true },
+  mobile: { slot: 'actions', showLabel: true },
+  tablet: { slot: 'actions', showLabel: true },
   desktop: { slot: 'actions', showLabel: true }
 }
 
@@ -27,7 +27,7 @@ export const manifest = {
     hiddenWhen: ({ pluginState }) => !pluginState.mode,
     enableWhen: ({ pluginState }) => !!pluginState.tempFeature,
     ...buttonSlots
-  },{
+  }, {
     id: 'drawCancel',
     label: 'Cancel',
     variant: 'tertiary',

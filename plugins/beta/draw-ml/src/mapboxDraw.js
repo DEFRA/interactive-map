@@ -122,7 +122,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   // --- Return instance and cleanup function ---
   return {
     draw,
-    remove() {
+    remove () {
       // Remove touch workaround listeners
       canvas.removeEventListener('touchstart', handleTouchStart)
       canvas.removeEventListener('touchend', handleTouchEnd)

@@ -18,12 +18,12 @@ export const editFeature = ({ pluginState, mapProvider }, featureId) => {
     tool: 'reshape',
     toggleToolOnClick: false,
     enableRotation: false,
-    enableScaling: false 
+    enableScaling: false
   })
 
   // Set original feature
   const feature = graphicToGeoJSON(graphic)
-  dispatch({ type: 'SET_FEATURE', payload: { feature }})
+  dispatch({ type: 'SET_FEATURE', payload: { feature } })
 
   dispatch({ type: 'SET_MODE', payload: 'edit-feature' })
 }

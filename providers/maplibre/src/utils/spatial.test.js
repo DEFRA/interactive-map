@@ -10,7 +10,6 @@ jest.mock('geodesy/latlon-spherical.js', () =>
 jest.mock('@turf/bbox', () => jest.fn(() => [-1, 50, 1, 52]))
 
 describe('spatial utils', () => {
-
   test('formatDimension hits all branches', () => {
     // < 0.5 miles
     expect(spatial.formatDimension(500)).toMatch(/m$/)
@@ -43,55 +42,55 @@ describe('spatial utils', () => {
   })
 
   test('north/south/east/west moves', () => {
-    expect(spatial.getCardinalMove([0,0],[0,0.5])).toMatch(/north/)
-    expect(spatial.getCardinalMove([0,0],[0,-0.5])).toMatch(/south/)
-    expect(spatial.getCardinalMove([0,0],[0.5,0])).toMatch(/east/)
-    expect(spatial.getCardinalMove([0,0],[-0.5,0])).toMatch(/west/)
-    expect(spatial.getCardinalMove([0,0],[0.5,0.5])).toMatch(/north.*east|east.*north/)
-    expect(spatial.getCardinalMove([0,0],[0.00001,0.00001])).toBe('')
+    expect(spatial.getCardinalMove([0, 0], [0, 0.5])).toMatch(/north/)
+    expect(spatial.getCardinalMove([0, 0], [0, -0.5])).toMatch(/south/)
+    expect(spatial.getCardinalMove([0, 0], [0.5, 0])).toMatch(/east/)
+    expect(spatial.getCardinalMove([0, 0], [-0.5, 0])).toMatch(/west/)
+    expect(spatial.getCardinalMove([0, 0], [0.5, 0.5])).toMatch(/north.*east|east.*north/)
+    expect(spatial.getCardinalMove([0, 0], [0.00001, 0.00001])).toBe('')
   })
 
   test('spatialNavigate all directions and fallback', () => {
-    const pixels = [[0,0],[0,-1],[1,0],[0,1],[-1,0]]
-    expect(spatial.spatialNavigate('ArrowUp',[0,0],pixels)).toBe(1)
-    expect(spatial.spatialNavigate('ArrowDown',[0,0],pixels)).toBe(3)
-    expect(spatial.spatialNavigate('ArrowLeft',[0,0],pixels)).toBe(4)
-    expect(spatial.spatialNavigate('ArrowRight',[0,0],pixels)).toBe(2)
-    expect(spatial.spatialNavigate('InvalidDir',[0,0],pixels)).toBe(0)
+    const pixels = [[0, 0], [0, -1], [1, 0], [0, 1], [-1, 0]]
+    expect(spatial.spatialNavigate('ArrowUp', [0, 0], pixels)).toBe(1)
+    expect(spatial.spatialNavigate('ArrowDown', [0, 0], pixels)).toBe(3)
+    expect(spatial.spatialNavigate('ArrowLeft', [0, 0], pixels)).toBe(4)
+    expect(spatial.spatialNavigate('ArrowRight', [0, 0], pixels)).toBe(2)
+    expect(spatial.spatialNavigate('InvalidDir', [0, 0], pixels)).toBe(0)
   })
 
   test('spatialNavigate finds closer candidates (hits dist < minDist)', () => {
-    const start = [0,0]
-    const pixels = [[0,0],[10,0],[2,0]] 
+    const start = [0, 0]
+    const pixels = [[0, 0], [10, 0], [2, 0]]
     expect(spatial.spatialNavigate('ArrowRight', start, pixels)).toBe(2)
   })
 
   test('spatialNavigate skips farther candidate (dist >= minDist false branch)', () => {
     // Closer candidate first → second candidate fails dist < minDist
-    const pixels = [[0,0],[2,0],[10,0]]
-    expect(spatial.spatialNavigate('ArrowRight', [0,0], pixels)).toBe(1)
+    const pixels = [[0, 0], [2, 0], [10, 0]]
+    expect(spatial.spatialNavigate('ArrowRight', [0, 0], pixels)).toBe(1)
   })
 
   test('spatialNavigate diagonal with dx>dy', () => {
-    const start = [0,0]
-    const pixels = [[0,0],[3,1],[1,0]] // dx>dy
+    const start = [0, 0]
+    const pixels = [[0, 0], [3, 1], [1, 0]] // dx>dy
     expect(spatial.spatialNavigate('ArrowRight', start, pixels)).toBe(2)
   })
 
   test('getResolution returns positive value', () => {
-    expect(spatial.getResolution({lat:0},1)).toBeGreaterThan(0)
+    expect(spatial.getResolution({ lat: 0 }, 1)).toBeGreaterThan(0)
   })
 
   test('getPaddedBounds returns bounds', () => {
     const map = {
-      getContainer: () => ({ getBoundingClientRect: () => ({ width:100,height:200 }) }),
-      getPadding: () => ({ top:1,right:2,bottom:3,left:4 }),
-      unproject: p => ({ x:p[0], y:p[1] })
+      getContainer: () => ({ getBoundingClientRect: () => ({ width: 100, height: 200 }) }),
+      getPadding: () => ({ top: 1, right: 2, bottom: 3, left: 4 }),
+      unproject: p => ({ x: p[0], y: p[1] })
     }
-    const LngLatBounds = function(sw,ne){
-      return {sw,ne}
+    const LngLatBounds = function (sw, ne) {
+      return { sw, ne }
     }
-    const bounds = spatial.getPaddedBounds(LngLatBounds,map)
+    const bounds = spatial.getPaddedBounds(LngLatBounds, map)
     expect(bounds.sw).toBeDefined()
     expect(bounds.ne).toBeDefined()
   })

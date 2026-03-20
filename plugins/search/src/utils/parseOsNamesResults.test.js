@@ -134,13 +134,13 @@ describe('osNamesUtils', () => {
    */
 
   test('uses NAME2 when NAME2_LANG is eng', () => {
-    const entry = { GAZETTEER_ENTRY: { ...sampleEntry.GAZETTEER_ENTRY, NAME1: 'Caerdydd', NAME2: 'Cardiff', NAME2_LANG: 'eng' }}
+    const entry = { GAZETTEER_ENTRY: { ...sampleEntry.GAZETTEER_ENTRY, NAME1: 'Caerdydd', NAME2: 'Cardiff', NAME2_LANG: 'eng' } }
     const output = parseOsNamesResults({ results: [entry] }, 'Cardiff', regions, 'EPSG:27700')
     expect(output[0].text).toContain('Cardiff')
   })
 
   test('falls back to NAME1 when NAME2_LANG is not eng', () => {
-    const entry = { GAZETTEER_ENTRY: { ...sampleEntry.GAZETTEER_ENTRY, NAME1: 'London', NAME2: 'Londres', NAME2_LANG: 'fra' }}
+    const entry = { GAZETTEER_ENTRY: { ...sampleEntry.GAZETTEER_ENTRY, NAME1: 'London', NAME2: 'Londres', NAME2_LANG: 'fra' } }
     const output = parseOsNamesResults({ results: [entry] }, 'London', regions, 'EPSG:27700')
     expect(output[0].text).toContain('London')
   })

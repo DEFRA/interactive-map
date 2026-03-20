@@ -17,7 +17,7 @@ export const createUndoStack = (map) => {
      * Push an undo operation onto the stack
      * @param {Object} operation - { type, undo: Function, ...data }
      */
-    push(operation) {
+    push (operation) {
       stack.push(operation)
       fireChange()
     },
@@ -26,7 +26,7 @@ export const createUndoStack = (map) => {
      * Pop and return the last operation (does not execute it)
      * @returns {Object|undefined} The operation or undefined if empty
      */
-    pop() {
+    pop () {
       const op = stack.pop()
       fireChange()
       return op
@@ -35,7 +35,7 @@ export const createUndoStack = (map) => {
     /**
      * Clear all operations from the stack
      */
-    clear() {
+    clear () {
       stack.length = 0
       fireChange()
     },
@@ -43,7 +43,7 @@ export const createUndoStack = (map) => {
     /**
      * Get current stack length
      */
-    get length() {
+    get length () {
       return stack.length
     }
   }

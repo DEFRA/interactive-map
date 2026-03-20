@@ -9,22 +9,22 @@ import booleanDisjoint from '@turf/boolean-disjoint'
  *
  * @throws Will throw if the geometry type is not supported.
  */
-function toTurfGeometry(featureOrGeom) {
+function toTurfGeometry (featureOrGeom) {
   const geom = featureOrGeom.geometry || featureOrGeom
 
   switch (geom.type) {
     case 'Polygon':
-      return polygon(geom.coordinates);
+      return polygon(geom.coordinates)
     case 'MultiPolygon':
-      return multiPolygon(geom.coordinates);
+      return multiPolygon(geom.coordinates)
     case 'LineString':
-      return lineString(geom.coordinates);
+      return lineString(geom.coordinates)
     case 'MultiLineString':
-      return multiLineString(geom.coordinates);
+      return multiLineString(geom.coordinates)
     case 'Point':
-      return point(geom.coordinates);
+      return point(geom.coordinates)
     case 'MultiPoint':
-      return multiPoint(geom.coordinates);
+      return multiPoint(geom.coordinates)
     default:
       throw new Error(`Unsupported geometry type: ${geom.type}`)
   }
@@ -37,7 +37,7 @@ function toTurfGeometry(featureOrGeom) {
  * @param {Array} features - Array of features to test against
  * @returns {boolean} True if the feature is contiguous with at least one feature in the array
  */
-function isContiguousWithAny(feature, features) {
+function isContiguousWithAny (feature, features) {
   return features.some(f => !booleanDisjoint(toTurfGeometry(f), toTurfGeometry(feature)))
 }
 
@@ -47,7 +47,7 @@ function isContiguousWithAny(feature, features) {
  * @param {Array} features - Array of features
  * @returns {boolean} True if exactly one polygon or multipolygon feature
  */
-function canSplitFeatures(features) {
+function canSplitFeatures (features) {
   if (features.length !== 1) {
     return false
   }
@@ -62,7 +62,7 @@ function canSplitFeatures(features) {
  * @param {Array} features - Array of features to test
  * @returns {boolean} True if 2+ features and all are contiguous
  */
-function areAllContiguous(features) {
+function areAllContiguous (features) {
   if (features.length < 2) {
     return false
   }

@@ -2,14 +2,14 @@ import { useEffect } from 'react'
 import { createSketchViewModel } from './sketchViewModel.js'
 import { attachEvents } from './events.js'
 
-export const DrawInit = ({ 
-  appState, 
-  mapState, 
-  pluginConfig, 
-  pluginState, 
-  services, 
-  mapProvider, 
-  buttonConfig 
+export const DrawInit = ({
+  appState,
+  mapState,
+  pluginConfig,
+  pluginState,
+  services,
+  mapProvider,
+  buttonConfig
 }) => {
   const { events, eventBus } = services
   const { mapColorScheme } = mapState.mapStyle || {}
@@ -22,9 +22,9 @@ export const DrawInit = ({
   // Initialize sketch components once
   useEffect(() => {
     if (!isActive || mapProvider.sketchViewModel) {
-			return
-		}
-    
+      return
+    }
+
     const { sketchViewModel, sketchLayer, emptySketchLayer } = createSketchViewModel({
       pluginState,
       mapProvider,
@@ -33,21 +33,21 @@ export const DrawInit = ({
 
     mapProvider.sketchViewModel = sketchViewModel
     mapProvider.sketchLayer = sketchLayer
-		mapProvider.emptySketchLayer = emptySketchLayer
+    mapProvider.emptySketchLayer = emptySketchLayer
     eventBus.emit('draw:ready')
 
     return () => {
       mapProvider.sketchViewModel = null
       mapProvider.sketchLayer = null
-			mapProvider.emptySketchLayer = null
+      mapProvider.emptySketchLayer = null
     }
   }, [mapState.isMapReady, appState.mode])
 
   // Attach/detach events
   useEffect(() => {
     if (!isActive || !mapProvider.sketchViewModel) {
-			return
-		}
+      return
+    }
 
     const cleanup = attachEvents({
       pluginState,
