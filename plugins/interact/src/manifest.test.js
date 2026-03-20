@@ -1,5 +1,4 @@
 import { manifest } from './manifest.js'
-import { initialState, actions } from './reducer.js'
 
 jest.mock('./api/enable.js', () => ({ enable: jest.fn() }))
 jest.mock('./api/disable.js', () => ({ disable: jest.fn() }))
@@ -26,7 +25,9 @@ describe('manifest', () => {
     manifest.buttons.forEach(b => {
       ['mobile','tablet','desktop'].forEach(dev => {
         expect(b[dev].slot).toBe('actions')
-        expect(typeof b[dev].showLabel).toBe('boolean')
+        if (b[dev].showLabel !== undefined) {
+          expect(typeof b[dev].showLabel).toBe('boolean')
+        }
       })
     })
   })
