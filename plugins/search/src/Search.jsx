@@ -7,14 +7,14 @@ import { SubmitButton } from './components/SubmitButton/SubmitButton'
 import { createDatasets } from './datasets.js'
 import { attachEvents } from './events/index.js'
 
-export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
+export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
   const { id } = appConfig
   const { interfaceType } = appState
   const { expanded: defaultExpanded, customDatasets, osNamesURL, regions } = pluginConfig
   const { dispatch, isExpanded, areSuggestionsVisible, suggestions } = pluginState
-
-  const closeIcon = iconRegistry['close']
-  const searchIcon = iconRegistry['search']
+  const showLabel = appState?.controlConfig?.search?.[appState?.breakpoint].showLabel || false
+  const closeIcon = iconRegistry.close
+  const searchIcon = iconRegistry.search
   const searchContainerRef = useRef(null)
   const buttonRef = useRef(null)
   const inputRef = useRef(null)
@@ -77,7 +77,7 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
   }, [isExpanded, interfaceType, areSuggestionsVisible, suggestions])
 
   return (
-    <div className="im-c-search" ref={searchContainerRef}>
+    <div className='im-c-search' ref={searchContainerRef}>
       {!defaultExpanded && (
         <OpenButton
           id={id}
@@ -85,6 +85,7 @@ export function Search({ appConfig, iconRegistry, pluginState, pluginConfig, app
           onClick={() => events.handleOpenClick(appState)}
           buttonRef={buttonRef}
           searchIcon={searchIcon}
+          showLabel={showLabel}
         />
       )}
       <Form

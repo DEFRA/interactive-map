@@ -9,7 +9,7 @@ describe('OpenButton', () => {
     isExpanded: false,
     onClick: jest.fn(),
     buttonRef: { current: null },
-    searchIcon: null,
+    searchIcon: null
   }
 
   beforeEach(() => {
@@ -43,5 +43,9 @@ describe('OpenButton', () => {
   it('does not render an SVG when searchIcon is not provided', () => {
     const { container } = render(<OpenButton {...baseProps} />)
     expect(container.querySelector('svg')).toBeNull()
+  })
+  it('should show a label if showLabel is true', () => {
+    const { container } = render(<OpenButton {...baseProps} showLabel />)
+    expect(container.querySelector('span').innerHTML).toContain('Search')
   })
 })

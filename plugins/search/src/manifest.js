@@ -10,15 +10,17 @@ export const manifest = {
 
   controls: [{
     id: 'search',
-    label: 'Search',
     mobile: {
-      slot: 'top-right'
+      slot: 'top-right',
+      showLabel: false
     },
     tablet: {
-      slot: 'top-left'
+      slot: 'top-left',
+      showLabel: false
     },
     desktop: {
-      slot: 'top-left'
+      slot: 'top-left',
+      showLabel: false
     },
     render: Search
   }],
