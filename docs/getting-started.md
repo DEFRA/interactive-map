@@ -3,8 +3,11 @@
 ## Installation
 
 ```shell
-npm i @defra/interactive-map
+npm i @defra/interactive-map@x.y.z-alpha
 ```
+
+[!NOTE]  
+Install using a fixed version (e.g. npm install @defra/interactive-map@x.y.z-alpha) as this package is currently in alpha and may introduce breaking changes. Check the GitHub releases page for the latest available [version](https://github.com/DEFRA/interactive-map/tags).
 
 ### MapLibre provider (recommended)
 
