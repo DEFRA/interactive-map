@@ -5,7 +5,7 @@ import { DEFAULTS } from './defaults.js'
 const SNAP_HELPER_LAYER = 'snap-helper-circle'
 
 /** Apply patches to MapboxSnap prototype (once only) */
-function applyMapboxSnapPatches(colors) {
+function applyMapboxSnapPatches (colors) {
   if (MapboxSnap.prototype.__snapPatched) {
     return
   }
@@ -27,7 +27,7 @@ function applyMapboxSnapPatches(colors) {
   proto.changeSnappedPoints = () => {}
 
   // Skip setMapData when disabled, ensure layer visibility when enabled
-  proto.setMapData = function(data) {
+  proto.setMapData = function (data) {
     if (!this.status) {
       return
     }
@@ -39,7 +39,7 @@ function applyMapboxSnapPatches(colors) {
   }
 
   // Skip drawingSnapCheck when disabled
-  proto.drawingSnapCheck = function() {
+  proto.drawingSnapCheck = function () {
     if (!this.status) {
       return
     }
@@ -48,7 +48,7 @@ function applyMapboxSnapPatches(colors) {
 
   // Fix typo: original uses 'coodinates' instead of 'coordinates' for Multi* types
   // Also validate coordinates to prevent "coordinates must contain numbers" errors
-  proto.getLines = function(feature, mouse, radiusArg) {
+  proto.getLines = function (feature, mouse, radiusArg) {
     const geom = feature.geometry
     if (!geom || !geom.coordinates) {
       return []
@@ -74,7 +74,7 @@ function applyMapboxSnapPatches(colors) {
   }
 
   // Query within radius bbox instead of just point, filter to existing layers
-  proto.getCloseFeatures = function(e, radiusInMeters) {
+  proto.getCloseFeatures = function (e, radiusInMeters) {
     if (!this.status) {
       return []
     }
@@ -90,21 +90,21 @@ function applyMapboxSnapPatches(colors) {
   }
 
   // Custom colors for snap indicators
-  proto.searchInVertex = function(...args) {
+  proto.searchInVertex = function (...args) {
     const r = orig.searchInVertex.apply(this, args)
     if (r) {
       r.color = colors.vertex
     }
     return r
   }
-  proto.searchInMidPoint = function(...args) {
+  proto.searchInMidPoint = function (...args) {
     const r = orig.searchInMidPoint.apply(this, args)
     if (r) {
       r.color = colors.midpoint
     }
     return r
   }
-  proto.searchInEdge = function(...args) {
+  proto.searchInEdge = function (...args) {
     const r = orig.searchInEdge.apply(this, args)
     if (r) {
       r.color = colors.edge
@@ -113,7 +113,7 @@ function applyMapboxSnapPatches(colors) {
   }
 
   // Skip when disabled or zooming, clean up internal arrays to prevent memory accumulation
-  proto.snapToClosestPoint = function(e) {
+  proto.snapToClosestPoint = function (e) {
     if (!this.status || this.map?._isZooming) {
       return
     }
@@ -131,14 +131,13 @@ function applyMapboxSnapPatches(colors) {
       console.log(err)
       this.snapStatus = false
       this.snapCoords = null
-      return
     }
   }
 }
 
 /** Poll until checkFn returns truthy, then call onSuccess with the result */
-function pollUntil(checkFn, onSuccess) {
-  (function poll() {
+function pollUntil (checkFn, onSuccess) {
+  (function poll () {
     const result = checkFn()
     // null signals to stop polling, falsy continues polling
     if (result === null) return
@@ -150,7 +149,7 @@ function pollUntil(checkFn, onSuccess) {
  * Patch a GeoJSON source to expose _data for MapboxSnap compatibility
  * MapboxSnap expects source._data.features but MapLibre doesn't expose this
  */
-export function patchSourceData(source) {
+export function patchSourceData (source) {
   if (!source || (source._data && Array.isArray(source._data?.features))) {
     return
   }
@@ -168,7 +167,7 @@ export function patchSourceData(source) {
 }
 
 /** Initialize MapboxSnap with MapLibre + MapboxDraw */
-export function initMapLibreSnap(map, draw, snapOptions = {}) {
+export function initMapLibreSnap (map, draw, snapOptions = {}) {
   // Prevent multiple initializations (causes event listener duplication)
   if (map._snapInitialized) {
     return map._snapInstance
@@ -188,7 +187,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   applyMapboxSnapPatches({ ...DEFAULTS.snapColors, ...colors })
 
   // Clean up old snap instance's source and layer
-  function cleanupOldSnap() {
+  function cleanupOldSnap () {
     if (map.getLayer(SNAP_HELPER_LAYER)) {
       map.removeLayer(SNAP_HELPER_LAYER)
     }
@@ -198,7 +197,7 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
   }
 
   // Create snap instance once source is available
-  function createSnap(source) {
+  function createSnap (source) {
     // Prevent duplicate creation (race condition between initial poll and style.load)
     if (map._snapInstance || map._snapCreating) {
       return map._snapInstance
@@ -247,9 +246,9 @@ export function initMapLibreSnap(map, draw, snapOptions = {}) {
     // Set snap layers (overrides defaults, pass null to reset to defaults)
     snap.setSnapLayers = (overrideLayers) => {
       if (overrideLayers === null || overrideLayers === undefined) {
-        snap._activeLayers = null  // Use defaults
+        snap._activeLayers = null // Use defaults
       } else if (Array.isArray(overrideLayers)) {
-        snap._activeLayers = overrideLayers  // Override defaults
+        snap._activeLayers = overrideLayers // Override defaults
       } else {
         // No action
       }

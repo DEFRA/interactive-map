@@ -18,9 +18,9 @@ describe('enable', () => {
     expect(dispatch).toHaveBeenCalledWith({
       type: 'ENABLE',
       payload: expect.objectContaining({
-        interactionMode: 'select',   // options override DEFAULTS
+        interactionMode: 'select', // options override DEFAULTS
         multiSelect: DEFAULTS.multiSelect, // default preserved
-        markerColor: 'green',        // options override pluginConfig
+        markerColor: 'green', // options override pluginConfig
         dataLayers: [{ layerId: 'test' }] // options passed
       })
     })

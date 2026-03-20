@@ -7,6 +7,11 @@ export const showFeatures = ({ pluginState }, { featureIds, idProperty, datasetI
 
   const remainingHiddenIds = existingHidden.ids.filter(id => !featureIds.includes(id))
 
-  pluginState.dispatch({ type: 'SHOW_FEATURES', payload: { layerId: datasetId, featureIds } })
+  // Update state
+  pluginState.dispatch({
+    type: 'SHOW_FEATURES',
+    payload: { layerId: datasetId, featureIds }
+  })
+
   pluginState.layerAdapter?.showFeatures(dataset, idProperty, remainingHiddenIds)
 }

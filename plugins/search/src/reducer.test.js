@@ -73,7 +73,7 @@ describe('search state actions', () => {
 
   it('SET_SELECTED updates selectedIndex and visibility', () => {
     const state = { ...initialState, areSuggestionsVisible: false }
-    
+
     const selected = actions.SET_SELECTED(state, 1)
     expect(selected.selectedIndex).toBe(1)
     expect(selected.areSuggestionsVisible).toBe(true)

@@ -12,7 +12,7 @@ const getResultMessage = (count) => {
 
 const getFormStyle = (pluginConfig, pluginState, appState) => ({
   display: pluginConfig.expanded || pluginState.isExpanded ? 'flex' : undefined,
-  ...(appState.breakpoint !== 'mobile' && pluginConfig?.width && { width: pluginConfig.width }),
+  ...(appState.breakpoint !== 'mobile' && pluginConfig?.width && { width: pluginConfig.width })
 })
 
 export const Form = ({
@@ -23,7 +23,7 @@ export const Form = ({
   inputRef,
   events,
   services,
-  children, // For SearchClose
+  children // For SearchClose
 }) => {
   const { areSuggestionsVisible, hasFetchedSuggestions, suggestions = [] } = pluginState
 
@@ -47,34 +47,34 @@ export const Form = ({
   return (
     <form
       id={`${id}-search-form`}
-      role="search"
+      role='search'
       className={classNames}
       style={getFormStyle(pluginConfig, pluginState, appState)}
       aria-controls={`${id}-viewport`}
       onSubmit={(e) => events.handleSubmit(e, appState, pluginState)}
     >
       {/* Hidden submit button - required for Enter key to trigger form submission */}
-      <button type="submit" style={{ display: 'none' }} aria-hidden="true" tabIndex={-1}>
+      <button type='submit' style={{ display: 'none' }} aria-hidden='true' tabIndex={-1}>
         Submit
       </button>
 
       <div className={`im-c-search__input-container${pluginState.hasKeyboardFocusWithin ? ' im-c-search__input-container--keyboard-focus-within' : ''}`}>
-        <label htmlFor={`${id}-search`} className="im-u-visually-hidden">Search</label>
+        <label htmlFor={`${id}-search`} className='im-u-visually-hidden'>{pluginConfig.placeholder}</label>
         <input
           id={`${id}-search`}
-          className="im-c-search__input"
-          type="search"
-          role="combobox"
+          className='im-c-search__input'
+          type='search'
+          role='combobox'
           aria-expanded={pluginState.suggestionsVisible}
           aria-controls={`${id}-search-suggestions`}
           aria-activedescendant={pluginState.selectedIndex >= 0 ? `${id}-search-suggestion-${pluginState.selectedIndex}` : undefined}
           aria-describedby={pluginState.value ? undefined : `${id}-search-hint`}
-          aria-autocomplete="list"
-          autoComplete="off"
-          placeholder="Search"
+          aria-autocomplete='list'
+          autoComplete='off'
+          placeholder={pluginConfig.placeholder}
           name={`${id}-search`}
           spellCheck={false}
-          enterKeyHint="search"
+          enterKeyHint='search'
           value={pluginState.value}
           onClick={events.handleInputClick}
           onChange={events.handleInputChange}
@@ -83,14 +83,14 @@ export const Form = ({
           onKeyDown={(e) => events.handleInputKeyDown(e, pluginState)}
           ref={inputRef}
         />
-        <span id={`${id}-search-hint`} className="im-c-search__hint">
+        <span id={`${id}-search-hint`} className='im-c-search__hint'>
           When search results are available use up and down arrows to review and enter to select. Touch device users, explore by touch or with swipe gestures.
         </span>
         {/* Close button passed as child */}
         {children}
       </div>
       {showNoResults && (
-        <div className="im-c-search__status" aria-hidden="true">
+        <div className='im-c-search__status' aria-hidden='true'>
           No results available
         </div>
       )}

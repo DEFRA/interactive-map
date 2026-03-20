@@ -42,7 +42,6 @@ describe('ENABLE/DISABLE actions', () => {
   })
 })
 
-
 describe('TOGGLE_SELECTED_FEATURES action', () => {
   const createFeature = (id, layerId = 'layer1') => ({
     featureId: id,

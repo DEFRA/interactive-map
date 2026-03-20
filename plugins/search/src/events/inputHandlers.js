@@ -1,19 +1,19 @@
 import { DEFAULTS } from '../defaults.js'
 
 export const createInputHandlers = ({ dispatch, debouncedFetchSuggestions }) => ({
-  handleInputClick() {
+  handleInputClick () {
     dispatch({ type: 'SHOW_SUGGESTIONS' })
   },
 
-  handleInputFocus(interfaceType) {
+  handleInputFocus (interfaceType) {
     dispatch({ type: 'SET_KEYBOARD_FOCUS_WITHIN', payload: interfaceType === 'keyboard' })
   },
 
-  handleInputBlur(interfaceType) {
+  handleInputBlur (interfaceType) {
     dispatch({ type: 'INPUT_BLUR', payload: interfaceType })
   },
 
-  handleInputChange(e) {
+  handleInputChange (e) {
     const value = e.target.value
     dispatch({ type: 'SET_VALUE', payload: value })
 

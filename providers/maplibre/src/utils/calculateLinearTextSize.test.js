@@ -23,8 +23,8 @@ describe('calculateLinearTextSize', () => {
 
   it('works with multiple stops', () => {
     const expr = { stops: [[0, 5], [5, 15], [10, 25]] }
-    expect(calculateLinearTextSize(expr, -1)).toBe(5)  // below first
-    expect(calculateLinearTextSize(expr, 12)).toBe(25)  // above last
+    expect(calculateLinearTextSize(expr, -1)).toBe(5) // below first
+    expect(calculateLinearTextSize(expr, 12)).toBe(25) // above last
     expect(calculateLinearTextSize(expr, 2.5)).toBe(10) // between first two
     expect(calculateLinearTextSize(expr, 7.5)).toBe(20) // between last two
   })

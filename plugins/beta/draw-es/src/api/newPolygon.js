@@ -12,7 +12,7 @@ export const newPolygon = ({ mapState, pluginState, mapProvider, services }, fea
   const handleCreateComplete = sketchViewModel.on('create', (e) => {
     if (e.state === 'complete') {
       e.graphic.attributes = { id: featureId }
-      
+
       // Fix: to address calling some sketchViewModel methods syncronously
       requestAnimationFrame(() => {
         sketchViewModel.update(e.graphic, {
@@ -24,7 +24,7 @@ export const newPolygon = ({ mapState, pluginState, mapProvider, services }, fea
       // Store temp feature in state and emit create
       const tempFeature = graphicToGeoJSON(e.graphic)
       eventBus.emit('draw:created', tempFeature)
-      dispatch({ type: 'SET_FEATURE', payload: { tempFeature }})
+      dispatch({ type: 'SET_FEATURE', payload: { tempFeature } })
 
       handleCreateComplete.remove()
     }

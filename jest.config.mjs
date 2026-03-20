@@ -9,7 +9,7 @@ export default {
   projects: [{
     displayName: 'unit-tests',
     testEnvironment: 'jsdom',
-    setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
+    setupFilesAfterEnv: ['jest-expect-message', '<rootDir>/jest.setup.js'],
     testMatch: [
       '<rootDir>/src/**/*.test.[jt]s?(x)',
       '<rootDir>/plugins/**/*.test.[jt]s?(x)',
@@ -18,8 +18,14 @@ export default {
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
       '<rootDir>/src/test-utils.js',
-      '<rootDir>/plugins/beta/',
-      '<rootDir>/providers/beta/'
+      '<rootDir>/plugins/beta/datasets/',
+      '<rootDir>/providers/beta/',
+      '<rootDir>/plugins/beta/draw-es',
+      '<rootDir>/plugins/beta/draw-ml',
+      '<rootDir>/plugins/beta/frame',
+      '<rootDir>/plugins/beta/map-styles',
+      '<rootDir>/plugins/beta/scale-bar',
+      '<rootDir>/plugins/beta/use-location'
     ],
     transformIgnorePatterns: []
   }]

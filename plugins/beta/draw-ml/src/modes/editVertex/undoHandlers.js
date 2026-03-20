@@ -7,7 +7,7 @@ import { scalePoint } from './helpers.js'
 
 export const undoHandlers = {
   // Fire geometry change event (for external listeners)
-  fireGeometryChange(state) {
+  fireGeometryChange (state) {
     const feature = this.getFeature(state.featureId)
     if (feature) {
       this.map.fire('draw.update', {
@@ -18,7 +18,7 @@ export const undoHandlers = {
   },
 
   // Undo support
-  pushUndo(operation) {
+  pushUndo (operation) {
     const undoStack = this.map._undoStack
     if (!undoStack) {
       return
@@ -26,7 +26,7 @@ export const undoHandlers = {
     undoStack.push(operation)
   },
 
-  handleUndo(state) {
+  handleUndo (state) {
     const undoStack = this.map._undoStack
     if (!undoStack || undoStack.length === 0) {
       return
@@ -43,7 +43,7 @@ export const undoHandlers = {
     }
   },
 
-  undoMoveVertex(state, op) {
+  undoMoveVertex (state, op) {
     const { vertexIndex, previousPosition, featureId } = op
     const feature = this.getFeature(featureId)
     if (!feature) return
@@ -64,7 +64,7 @@ export const undoHandlers = {
     }
   },
 
-  undoInsertVertex(state, op) {
+  undoInsertVertex (state, op) {
     const { vertexIndex, featureId } = op
     const feature = this.getFeature(featureId)
     if (!feature) return
@@ -84,7 +84,7 @@ export const undoHandlers = {
     this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null })
   },
 
-  undoDeleteVertex(state, op) {
+  undoDeleteVertex (state, op) {
     const { vertexIndex, position, featureId } = op
     const feature = this.getFeature(featureId)
     if (!feature) {
@@ -123,7 +123,7 @@ export const undoHandlers = {
     this.changeMode(state, { selectedVertexIndex: vertexIndex, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, vertexIndex) })
   },
 
-  _applyUndoAndSync(state, geojson, featureId) {
+  _applyUndoAndSync (state, geojson, featureId) {
     this._ctx.api.add(geojson)
     state.vertecies = this.getVerticies(featureId)
     state.midpoints = this.getMidpoints(featureId)

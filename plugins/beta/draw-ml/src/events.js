@@ -1,6 +1,6 @@
 import { clearSnapState, getSnapInstance } from './utils/snapHelpers.js'
 
-export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus }) {
+export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus }) {
   const { drawDone, drawAddPoint, drawUndo, drawDeletePoint, drawSnap, drawCancel } = buttonConfig
   const { map, draw } = mapProvider
   const { dispatch, feature, tempFeature } = pluginState
@@ -23,7 +23,7 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
   const resetDrawModeAndFeature = () => {
     mapProvider.undoStack?.clear()
     dispatch({ type: 'SET_MODE', payload: null })
-    dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null }})
+    dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
   }
 
   // --- Button handlers
@@ -156,9 +156,11 @@ export function attachEvents({ pluginState, mapProvider, buttonConfig, eventBus 
 
   // --- Cleanup
   return () => {
-    [drawDone, drawAddPoint, drawUndo, drawDeletePoint, drawSnap, drawCancel].forEach(btn => { if (btn) {
-      btn.onClick = null
-    }})
+    [drawDone, drawAddPoint, drawUndo, drawDeletePoint, drawSnap, drawCancel].forEach(btn => {
+      if (btn) {
+        btn.onClick = null
+      }
+    })
     map.off('styledata', handleStyleData)
     map.off('draw.cancel', handleCancel)
     map.off('draw.create', onCreate)

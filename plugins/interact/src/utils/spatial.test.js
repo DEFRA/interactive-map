@@ -3,12 +3,12 @@ import { polygon, multiPolygon, lineString, multiLineString, point, multiPoint }
 
 describe('toTurfGeometry', () => {
   const geomTypes = [
-    { type: 'Polygon', coords: [[[0,0],[1,0],[1,1],[0,0]]], fn: polygon },
-    { type: 'MultiPolygon', coords: [[[[0,0],[1,0],[1,1],[0,0]]]], fn: multiPolygon },
-    { type: 'LineString', coords: [[0,0],[1,1]], fn: lineString },
-    { type: 'MultiLineString', coords: [[[0,0],[1,1]]], fn: multiLineString },
-    { type: 'Point', coords: [0,0], fn: point },
-    { type: 'MultiPoint', coords: [[0,0],[1,1]], fn: multiPoint }
+    { type: 'Polygon', coords: [[[0, 0], [1, 0], [1, 1], [0, 0]]], fn: polygon },
+    { type: 'MultiPolygon', coords: [[[[0, 0], [1, 0], [1, 1], [0, 0]]]], fn: multiPolygon },
+    { type: 'LineString', coords: [[0, 0], [1, 1]], fn: lineString },
+    { type: 'MultiLineString', coords: [[[0, 0], [1, 1]]], fn: multiLineString },
+    { type: 'Point', coords: [0, 0], fn: point },
+    { type: 'MultiPoint', coords: [[0, 0], [1, 1]], fn: multiPoint }
   ]
 
   geomTypes.forEach(({ type, coords, fn }) => {
@@ -35,12 +35,12 @@ describe('isContiguousWithAny', () => {
     geometry: { type: 'Polygon', coordinates: [coords] }
   })
 
-  const featureA = makePolygonFeature([[0,0],[2,0],[2,2],[0,2],[0,0]])
-  const featureB = makePolygonFeature([[2,0],[4,0],[4,2],[2,2],[2,0]]) // shares edge with A
-  const featureC = makePolygonFeature([[5,5],[7,5],[7,7],[5,7],[5,5]]) // disjoint from A and B
+  const featureA = makePolygonFeature([[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]])
+  const featureB = makePolygonFeature([[2, 0], [4, 0], [4, 2], [2, 2], [2, 0]]) // shares edge with A
+  const featureC = makePolygonFeature([[5, 5], [7, 5], [7, 7], [5, 7], [5, 5]]) // disjoint from A and B
 
   it('returns true when feature overlaps with one in the array', () => {
-    const overlapping = makePolygonFeature([[1,0],[3,0],[3,2],[1,2],[1,0]]) // overlaps A
+    const overlapping = makePolygonFeature([[1, 0], [3, 0], [3, 2], [1, 2], [1, 0]]) // overlaps A
     expect(isContiguousWithAny(overlapping, [featureA])).toBe(true)
   })
 
@@ -75,10 +75,10 @@ describe('canSplitFeatures', () => {
 
 describe('areAllContiguous', () => {
   const poly = (coords) => ({ geometry: { type: 'Polygon', coordinates: [coords] } })
-  const A = poly([[0,0],[2,0],[2,2],[0,2],[0,0]])
-  const B = poly([[2,0],[4,0],[4,2],[2,2],[2,0]]) // touches A
-  const C = poly([[4,0],[6,0],[6,2],[4,2],[4,0]]) // touches B
-  const D = poly([[10,10],[12,10],[12,12],[10,12],[10,10]]) // isolated
+  const A = poly([[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]])
+  const B = poly([[2, 0], [4, 0], [4, 2], [2, 2], [2, 0]]) // touches A
+  const C = poly([[4, 0], [6, 0], [6, 2], [4, 2], [4, 0]]) // touches B
+  const D = poly([[10, 10], [12, 10], [12, 12], [10, 12], [10, 10]]) // isolated
 
   const noGeom = { geometry: undefined }
   const noType = { geometry: {} }

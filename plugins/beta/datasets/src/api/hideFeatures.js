@@ -7,6 +7,11 @@ export const hideFeatures = ({ pluginState }, { featureIds, idProperty, datasetI
     ? [...new Set([...existingHidden.ids, ...featureIds])]
     : featureIds
 
-  pluginState.dispatch({ type: 'HIDE_FEATURES', payload: { layerId: datasetId, idProperty, featureIds } })
+  // Update state (store by datasetId, not individual layer IDs)
+  pluginState.dispatch({
+    type: 'HIDE_FEATURES',
+    payload: { layerId: datasetId, idProperty, featureIds }
+  })
+
   pluginState.layerAdapter?.hideFeatures(dataset, idProperty, allHiddenIds)
 }

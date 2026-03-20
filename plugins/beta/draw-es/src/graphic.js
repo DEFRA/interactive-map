@@ -25,7 +25,7 @@ function createGraphic (id, coordinates, mapColorScheme) {
   })
 }
 
-function graphicToGeoJSON(graphic) {
+function graphicToGeoJSON (graphic) {
   if (!graphic?.geometry) {
     throw new Error('Invalid graphic')
   }

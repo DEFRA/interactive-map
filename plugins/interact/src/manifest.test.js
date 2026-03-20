@@ -23,7 +23,7 @@ describe('manifest', () => {
 
   it('buttons have slots and showLabel', () => {
     manifest.buttons.forEach(b => {
-      ['mobile','tablet','desktop'].forEach(dev => {
+      ['mobile', 'tablet', 'desktop'].forEach(dev => {
         expect(b[dev].slot).toBe('actions')
         if (b[dev].showLabel !== undefined) {
           expect(typeof b[dev].showLabel).toBe('boolean')
@@ -52,7 +52,7 @@ describe('manifest', () => {
     })).toBe(false)
     expect(done.enableWhen({
       mapState: { markers: { items: [] } },
-      pluginState: { selectionBounds: { sw:[0,0], ne:[1,1] } }
+      pluginState: { selectionBounds: { sw: [0, 0], ne: [1, 1] } }
     })).toBe(true)
 
     // selectAtTarget.hiddenWhen
@@ -88,7 +88,7 @@ describe('manifest', () => {
   })
 
   it('api exposes expected methods', () => {
-    ['enable','disable','clear','selectFeature','unselectFeature'].forEach(fn => {
+    ['enable', 'disable', 'clear', 'selectFeature', 'unselectFeature'].forEach(fn => {
       expect(typeof manifest.api[fn]).toBe('function')
     })
   })

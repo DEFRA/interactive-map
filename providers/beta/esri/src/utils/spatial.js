@@ -69,7 +69,7 @@ const getAreaDimensions = (extent) => {
  * @param {number[]} to - [easting, northing]
  * @returns {string}
  */
-function getCardinalMove(from, to) {
+function getCardinalMove (from, to) {
   const [x1, y1] = from
   const [x2, y2] = to
 
@@ -124,7 +124,6 @@ const getPaddedExtent = (view, padding = DEFAULT_PADDING) => {
     spatialReference: swMap.spatialReference
   })
 }
-
 
 /**
  * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.

@@ -30,7 +30,7 @@ export default class EsriProvider {
   }
 
   async initMap (config) {
-    const { container, padding, mapStyle, mapSize, maxExtent, ...initConfig } = config
+    const { container, padding, mapStyle, mapSize, maxExtent } = config
     this.mapStyleId = mapStyle?.id
     this.mapSize = mapSize
     const { events, eventBus } = this
@@ -49,7 +49,7 @@ export default class EsriProvider {
       map,
       zoom: config.zoom,
       center: getPointFromFlatCoords(config.center),
-      maxExtent: maxExtent,
+      maxExtent,
       constraints: {
         lods: TileInfo.create({ spatialReference: { wkid: 27700 } }).lods,
         snapToZoom: false,
@@ -121,9 +121,9 @@ export default class EsriProvider {
   // Side-effects
   // ==========================
 
-  setView({ center, zoom }) {
+  setView ({ center, zoom }) {
     this.view.animation?.destroy()
-    const point = center ? new Point({ x: center[0], y: center[1], spatialReference: { wkid: 27700 }}) : this.view.center
+    const point = center ? new Point({ x: center[0], y: center[1], spatialReference: { wkid: 27700 } }) : this.view.center
     const target = { center: point, zoom: zoom ?? this.view.zoom }
     this.view.goTo({ ...target, duration: defaults.animationDuration })
   }
@@ -185,7 +185,7 @@ export default class EsriProvider {
   // ==========================
   // Spatial helpers
   // ==========================
-  
+
   getAreaDimensions () {
     return getAreaDimensions(getPaddedExtent(this.view))
   }

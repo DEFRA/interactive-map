@@ -6,7 +6,7 @@ import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
  * @param {{x: number, y: number}} screenPoint - pixel coordinates relative to the view container
  * @returns {Promise<Array>} Array of objects with info about each vector tile layer hit
  */
-export async function queryVectorTileFeatures(view, screenPoint) {
+export async function queryVectorTileFeatures (view, screenPoint) {
   if (!view || !screenPoint) {
     return []
   }
@@ -27,9 +27,9 @@ export async function queryVectorTileFeatures(view, screenPoint) {
   return hitResults.results.map(result => ({
     layerId: result.layer.id,
     layerTitle: result.layer.title || result.layer.id,
-    type: result.layer.type,          // 'vectortile'
+    type: result.layer.type, // 'vectortile'
     geometry: result.graphic.geometry, // usually a point representing the symbol
-    symbol: result.graphic.symbol     // symbol info (color, style, etc.)
+    symbol: result.graphic.symbol // symbol info (color, style, etc.)
     // Note: feature attributes are not exposed by the Esri SDK
   }))
 }

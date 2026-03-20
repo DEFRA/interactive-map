@@ -132,7 +132,7 @@ function getFeatureAspectRatio (feature, mapProvider) {
   if (height === 0) {
     return null
   }
-  
+
   // Round to 6 decimal places to account for floating point precision
   return Math.round((width / height) * 1000000) / 1000000
 }

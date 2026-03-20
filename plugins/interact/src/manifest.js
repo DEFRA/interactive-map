@@ -29,7 +29,7 @@ export const manifest = {
     desktop: {
       slot: 'actions'
     }
-  },{
+  }, {
     id: 'selectCancel',
     label: 'Back',
     variant: 'tertiary',
@@ -46,7 +46,7 @@ export const manifest = {
       slot: 'actions',
       showLabel: true
     }
-  },{
+  }, {
     id: 'selectDone',
     label: 'Continue',
     variant: 'primary',

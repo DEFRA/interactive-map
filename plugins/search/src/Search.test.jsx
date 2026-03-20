@@ -7,43 +7,43 @@ import { createDatasets } from './datasets.js'
 // Mock sub-components
 jest.mock('./components/OpenButton/OpenButton', () => ({
   OpenButton: ({ id, isExpanded, onClick }) => (
-    <button data-testid="open-button" onClick={onClick}>
+    <button data-testid='open-button' onClick={onClick}>
       OpenButton-{id}-{isExpanded ? 'expanded' : 'collapsed'}
     </button>
-  ),
+  )
 }))
 
 jest.mock('./components/CloseButton/CloseButton', () => ({
   CloseButton: ({ defaultExpanded, onClick }) => (
-    <button data-testid="close-button" onClick={onClick}>
+    <button data-testid='close-button' onClick={onClick}>
       CloseButton-{defaultExpanded ? 'defaultExpanded' : 'collapsed'}
     </button>
-  ),
+  )
 }))
 
 jest.mock('./components/SubmitButton/SubmitButton', () => ({
   SubmitButton: ({ defaultExpanded, submitIcon, onClick }) => (
-    <button data-testid="submit-button" type="submit" onClick={onClick}>
+    <button data-testid='submit-button' type='submit' onClick={onClick}>
       SubmitButton-{defaultExpanded ? 'defaultExpanded' : 'collapsed'}
     </button>
-  ),
+  )
 }))
 
 jest.mock('./components/Form/Form', () => ({
-  Form: ({ children }) => <div data-testid="form">{children}</div>,
+  Form: ({ children }) => <div data-testid='form'>{children}</div>
 }))
 
 // Mock external logic
 jest.mock('./datasets.js', () => ({
-  createDatasets: jest.fn(() => ['dataset1', 'dataset2']),
+  createDatasets: jest.fn(() => ['dataset1', 'dataset2'])
 }))
 
 jest.mock('./events/index.js', () => ({
   attachEvents: jest.fn(() => ({
     handleOpenClick: jest.fn(),
     handleCloseClick: jest.fn(),
-    handleOutside: jest.fn(),
-  })),
+    handleOutside: jest.fn()
+  }))
 }))
 
 describe('Search component', () => {
@@ -63,21 +63,21 @@ describe('Search component', () => {
         dispatch: jest.fn(),
         isExpanded: false,
         areSuggestionsVisible: false,
-        suggestions: [],
+        suggestions: []
       },
       pluginConfig: {
         expanded: false, // This is destructured as defaultExpanded in the component
         customDatasets: [],
-        osNamesURL: 'url',
+        osNamesURL: 'url'
       },
       appState: {
         dispatch: jest.fn(),
         interfaceType: 'keyboard',
-        layoutRefs: { viewportRef },
+        layoutRefs: { viewportRef }
       },
       mapState: { markers: {} },
       services: {},
-      mapProvider: { crs: 'EPSG:3857' },
+      mapProvider: { crs: 'EPSG:3857' }
     }
   })
 
@@ -101,16 +101,16 @@ describe('Search component', () => {
 
   it('calls attachEvents once and persists it across re-renders (useRef coverage)', () => {
     const { rerender } = render(<Search {...props} />)
-    
+
     expect(createDatasets).toHaveBeenCalledWith({
       customDatasets: [],
       osNamesURL: 'url',
-      crs: 'EPSG:3857',
+      crs: 'EPSG:3857'
     })
-    
+
     // Trigger a re-render with a prop change
     rerender(<Search {...props} appState={{ ...props.appState, interfaceType: 'touch' }} />)
-    
+
     // attachEvents should still only have been called once due to the useRef check
     expect(attachEvents).toHaveBeenCalledTimes(1)
   })
@@ -162,7 +162,7 @@ describe('Search component', () => {
       props.pluginState.isExpanded = false
       props.pluginState.areSuggestionsVisible = true
       props.pluginState.suggestions = ['item 1']
-      
+
       render(<Search {...props} />)
       expect(viewportRef.current.style.pointerEvents).toBe('none')
     })
@@ -171,8 +171,8 @@ describe('Search component', () => {
       props.pluginConfig.expanded = true
       props.pluginState.isExpanded = false
       props.pluginState.areSuggestionsVisible = true
-      props.pluginState.suggestions = [] 
-      
+      props.pluginState.suggestions = []
+
       render(<Search {...props} />)
       // Should remain 'auto' (or not 'none')
       expect(viewportRef.current.style.pointerEvents).toBe('auto')
@@ -183,7 +183,7 @@ describe('Search component', () => {
     props.pluginState.isExpanded = true
     const { unmount } = render(<Search {...props} />)
     expect(viewportRef.current.style.pointerEvents).toBe('none')
-    
+
     unmount()
     expect(viewportRef.current.style.pointerEvents).toBe('auto')
   })

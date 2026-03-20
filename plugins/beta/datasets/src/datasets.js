@@ -16,7 +16,6 @@ export const createDatasets = ({
 }) => {
   const { datasets } = pluginConfig
 
-
   const dynamicSources = new Map()
 
   const getDatasets = () => pluginStateRef.current.datasets || datasets
@@ -48,19 +47,34 @@ export const createDatasets = ({
   return {
     remove () {
       eventBus.off(events.MAP_SET_STYLE, onSetStyle)
+
+      // Clean up dynamic sources
       dynamicSources.forEach(source => source.destroy())
       dynamicSources.clear()
       adapter.destroy(getDatasets())
     },
 
+    /**
+     * Refresh a dynamic source - clears cache and re-fetches
+     * @param {string} datasetId - Dataset ID to refresh
+     */
     refreshDataset (datasetId) {
       dynamicSources.get(datasetId)?.refresh()
     },
 
+    /**
+     * Clear a dynamic source's cache
+     * @param {string} datasetId - Dataset ID to clear
+     */
     clearDatasetCache (datasetId) {
       dynamicSources.get(datasetId)?.clear()
     },
 
+    /**
+     * Get feature count for a dynamic source
+     * @param {string} datasetId - Dataset ID
+     * @returns {number|null} Feature count or null if not a dynamic source
+     */
     getFeatureCount (datasetId) {
       return dynamicSources.get(datasetId)?.getFeatureCount() ?? null
     }

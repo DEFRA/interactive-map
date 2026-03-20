@@ -10,11 +10,11 @@ describe('updateMap', () => {
 
   beforeEach(() => {
     mapProvider = {
-      fitToBounds: jest.fn(),
+      fitToBounds: jest.fn()
     }
 
     markers = {
-      add: jest.fn(),
+      add: jest.fn()
     }
   })
 
@@ -25,7 +25,7 @@ describe('updateMap', () => {
       point,
       markers,
       showMarker: true,
-      markerColor: 'red',
+      markerColor: 'red'
     })
 
     expect(mapProvider.fitToBounds).toHaveBeenCalledWith(bounds)
@@ -43,7 +43,7 @@ describe('updateMap', () => {
       point,
       markers,
       showMarker: false,
-      markerColor: 'blue',
+      markerColor: 'blue'
     })
 
     expect(mapProvider.fitToBounds).toHaveBeenCalledWith(bounds)

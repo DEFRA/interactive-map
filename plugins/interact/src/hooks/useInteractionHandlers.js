@@ -34,7 +34,7 @@ export const useInteractionHandlers = ({
   mapState,
   pluginState,
   services,
-  mapProvider,
+  mapProvider
 }) => {
   const { markers } = mapState
   const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, tolerance, selectedFeatures, selectionBounds, deselectOnClickOutside } = pluginState
@@ -71,7 +71,7 @@ export const useInteractionHandlers = ({
     }
 
     // Internal helper to keep complexity low
-    function processFeatureMatch({ feature, config }) {
+    function processFeatureMatch ({ feature, config }) {
       markers.remove('location')
       const isNewContiguous = contiguous && isContiguousWithAny(feature, selectedFeatures)
       const featureId = feature.properties?.[config.idProperty] ?? feature.id

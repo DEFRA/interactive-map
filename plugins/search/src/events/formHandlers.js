@@ -16,12 +16,12 @@ export const createFormHandlers = ({
   let lastFetchedValue = ''
 
   return {
-    handleOpenClick() {
+    handleOpenClick () {
       dispatch({ type: 'TOGGLE_EXPANDED', payload: true })
       services.eventBus.emit('search:open')
     },
 
-    handleCloseClick(_e, buttonRef) {
+    handleCloseClick (_e, buttonRef) {
       dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
       dispatch({ type: 'UPDATE_SUGGESTIONS', payload: [] })
       dispatch({ type: 'SET_VALUE', payload: '' })
@@ -31,7 +31,7 @@ export const createFormHandlers = ({
       services.eventBus.emit('search:close')
     },
 
-    async handleSubmit(e, appState, pluginState) {
+    async handleSubmit (e, appState, pluginState) {
       e.preventDefault()
       const { suggestions, selectedIndex, value } = pluginState
       const trimmedValue = value?.trim()

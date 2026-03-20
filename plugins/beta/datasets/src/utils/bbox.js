@@ -22,7 +22,7 @@ export const bboxContains = (outer, inner) => {
     inner[0] >= outer[0] && // west
     inner[1] >= outer[1] && // south
     inner[2] <= outer[2] && // east
-    inner[3] <= outer[3]    // north
+    inner[3] <= outer[3] // north
   )
 }
 
@@ -40,7 +40,7 @@ export const expandBbox = (existing, addition) => {
     Math.min(existing[0], addition[0]), // west
     Math.min(existing[1], addition[1]), // south
     Math.max(existing[2], addition[2]), // east
-    Math.max(existing[3], addition[3])  // north
+    Math.max(existing[3], addition[3]) // north
   ]
 }
 
@@ -58,7 +58,7 @@ export const bboxIntersects = (a, b) => {
     a[2] < b[0] || // a is left of b
     a[0] > b[2] || // a is right of b
     a[3] < b[1] || // a is below b
-    a[1] > b[3]    // a is above b
+    a[1] > b[3] // a is above b
   )
 }
 
@@ -68,7 +68,7 @@ export const bboxIntersects = (a, b) => {
  * @returns {number[]} bbox as [west, south, east, north]
  */
 export const getGeometryBbox = (geometry) => {
-  let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity
+  let minX = Infinity; let minY = Infinity; let maxX = -Infinity; let maxY = -Infinity
 
   const processCoord = (coord) => {
     minX = Math.min(minX, coord[0])

@@ -6,12 +6,8 @@ jest.mock('maplibre-gl', () => ({ VERSION: '3.x' }))
 jest.mock('./maplibreProvider.js', () => ({ default: class MockProvider {} }))
 
 describe('createMapLibreProvider', () => {
-
   beforeEach(() => {
     getWebGL.mockReturnValue({ isEnabled: true, error: null })
-
-    // Ensure modern support by default
-    String.prototype.replaceAll = jest.fn()
   })
 
   afterEach(() => {
@@ -53,11 +49,13 @@ describe('createMapLibreProvider', () => {
   })
 
   test('checkDeviceCapabilities: no replaceAll support → isSupported false', () => {
+    const restoreReplaceAll = String.prototype.replaceAll
     delete String.prototype.replaceAll
 
     const result = createMapLibreProvider().checkDeviceCapabilities()
 
     expect(result.isSupported).toBe(false)
+    String.prototype.replaceAll = restoreReplaceAll // eslint-disable-line
   })
 
   test('load returns MapProvider, mapFramework, and merged mapProviderConfig', async () => {

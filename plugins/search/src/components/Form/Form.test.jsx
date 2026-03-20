@@ -7,13 +7,13 @@ import { Form } from './Form'
 jest.mock('../Suggestions/Suggestions', () => ({
   Suggestions: ({ handleSuggestionClick, id }) => (
     <button
-      data-testid="suggestion"
+      data-testid='suggestion'
       onClick={() => handleSuggestionClick('clicked-suggestion')}
       id={`${id}-search-suggestions`}
     >
       Suggestion
     </button>
-  ),
+  )
 }))
 
 describe('Form', () => {
@@ -28,15 +28,15 @@ describe('Form', () => {
       hasFetchedSuggestions: false,
       suggestions: [],
       selectedIndex: -1,
-      hasKeyboardFocusWithin: false,
+      hasKeyboardFocusWithin: false
     },
     pluginConfig: {
       expanded: false,
-      width: '400px',
+      width: '400px'
     },
     appState: {
       breakpoint: 'desktop',
-      interfaceType: 'keyboard',
+      interfaceType: 'keyboard'
     },
     events: {
       handleSubmit: jest.fn(),
@@ -45,11 +45,11 @@ describe('Form', () => {
       handleInputFocus: jest.fn(),
       handleInputBlur: jest.fn(),
       handleInputKeyDown: jest.fn(),
-      handleSuggestionClick: jest.fn(),
+      handleSuggestionClick: jest.fn()
     },
     services: {
-      announce: jest.fn(),
-    },
+      announce: jest.fn()
+    }
   }
 
   beforeEach(() => {
@@ -98,7 +98,7 @@ describe('Form', () => {
         pluginState={{
           ...baseProps.pluginState,
           suggestionsVisible: true,
-          selectedIndex: 2,
+          selectedIndex: 2
         }}
       />
     )
@@ -148,7 +148,7 @@ describe('Form', () => {
   it('renders children passed into the input container (e.g., CloseButton)', () => {
     render(
       <Form {...baseProps}>
-        <div data-testid="close-button" />
+        <div data-testid='close-button' />
       </Form>
     )
     expect(screen.getByTestId('close-button')).toBeInTheDocument()

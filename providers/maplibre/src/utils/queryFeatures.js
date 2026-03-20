@@ -30,7 +30,7 @@ const isPointInPolygon = (point, ring) => {
     const intersectX = ((xj - xi) * (py - yi)) / (yj - yi) + xi
 
     if (px < intersectX) {
-      inside = !inside;
+      inside = !inside
     }
   }
   return inside
@@ -43,7 +43,7 @@ const getMinDistToGeometry = (map, point, geometry) => {
   const { coordinates: coords, type } = geometry
   let minSqDist = Infinity
   const getScreenPt = (lngLat) => map.project(lngLat)
-  
+
   const processLine = (lineCoords) => {
     for (let i = 0; i < lineCoords.length - 1; i++) {
       const d2 = distToSegmentSquared(point, getScreenPt(lineCoords[i]), getScreenPt(lineCoords[i + 1]))
@@ -52,7 +52,7 @@ const getMinDistToGeometry = (map, point, geometry) => {
       }
     }
   }
-  
+
   if (type === 'Point') {
     const p = getScreenPt(coords)
     minSqDist = (point.x - p.x) ** 2 + (point.y - p.y) ** 2
@@ -117,7 +117,7 @@ export const queryFeatures = (map, point, options = {}) => {
       let score = 0
       const type = f.geometry.type
       const pixelDistSq = getMinDistToGeometry(map, point, f.geometry)
-      
+
       // PRIORITY 1: LAYER ORDER
       const layerRank = layerStack.indexOf(f.layer.id)
       score += (layerRank * 1000000)
@@ -126,7 +126,7 @@ export const queryFeatures = (map, point, options = {}) => {
       if (type.includes('Polygon')) {
         const polys = type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
         const isInside = polys.some((ring) => isPointInPolygon(clickPt, ring[0]))
-        
+
         if (isInside === true) {
           // Massive boost for polygons if we are actually inside them
           score -= 500000 // NOSONAR - tolerance used only here

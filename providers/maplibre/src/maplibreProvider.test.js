@@ -67,8 +67,12 @@ describe('MapLibreProvider', () => {
   })
 
   const doInitMap = (p, extra = {}) => p.initMap({
-    container: 'div', padding: {}, mapStyle: { url: 'style.json', mapColorScheme: 'dark' },
-    center: [0, 0], zoom: 5, ...extra
+    container: 'div',
+    padding: {},
+    mapStyle: { url: 'style.json', mapColorScheme: 'dark' },
+    center: [0, 0],
+    zoom: 5,
+    ...extra
   })
 
   test('constructor spreads mapProviderConfig and sets capabilities', () => {

@@ -9,4 +9,3 @@ export const DEFAULTS = {
   selectedFill: 'rgba(255, 0, 0, 0.1)',
   selectedStrokeWidth: 2
 }
-

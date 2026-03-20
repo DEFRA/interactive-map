@@ -28,7 +28,7 @@ import {
  * @param {Feature<LineString>} line
  * @param {number} extendDist (distance to extend in Turf units)
  */
-function extendLine(line, extendDist = 1, units = 'meters') {
+function extendLine (line, extendDist = 1, units = 'meters') {
   const coords = line.geometry.coordinates
   const result = []
 
@@ -113,17 +113,17 @@ const toTurfGeometry = (featureOrGeom) => {
 
   switch (geom.type) {
     case 'Polygon':
-      return turfPolygon(geom.coordinates);
+      return turfPolygon(geom.coordinates)
     case 'MultiPolygon':
-      return turfMultiPolygon(geom.coordinates);
+      return turfMultiPolygon(geom.coordinates)
     case 'LineString':
-      return turfLineString(geom.coordinates);
+      return turfLineString(geom.coordinates)
     case 'MultiLineString':
-      return turfMultiLineString(geom.coordinates);
+      return turfMultiLineString(geom.coordinates)
     case 'Point':
-      return turfPoint(geom.coordinates);
+      return turfPoint(geom.coordinates)
     case 'MultiPoint':
-      return turfMultiPoint(geom.coordinates);
+      return turfMultiPoint(geom.coordinates)
     default:
       throw new Error(`Unsupported geometry type: ${geom.type}`)
   }
@@ -251,8 +251,8 @@ export {
   toTurfGeometry,
   splitPolygon,
   extendLine,
-	isNewCoordinate,
-	isValidClick,
-	isValidLineClick,
+  isNewCoordinate,
+  isValidClick,
+  isValidLineClick,
   spatialNavigate
 }
