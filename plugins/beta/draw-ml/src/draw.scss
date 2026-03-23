@@ -24,10 +24,3 @@
         width: 100px;
     }
 }
-
-// Position touch add point button
-.im-c-button-wrapper--draw-add-point {
-    position: absolute;
-    bottom: calc(100% + var(--primary-gap));
-    z-index: 0;
-}

@@ -24,7 +24,8 @@ const refs = (o = {}) => ({
   topRef: { current: o.top === null ? null : el({ offsetTop: 10, ...o.top }) },
   topLeftColRef: { current: el({ offsetHeight: 50, offsetWidth: 200, ...o.topLeftCol }) },
   topRightColRef: { current: el({ offsetHeight: 40, offsetWidth: 180, ...o.topRightCol }) },
-  footerRef: { current: o.footer === null ? null : el({ offsetTop: 400, ...o.footer }) },
+  bottomRef: { current: o.bottom === null ? null : el({ offsetTop: 400, ...o.bottom }) },
+  bottomRightRef: { current: el({ offsetTop: 400, ...o.bottomRight }) },
   actionsRef: { current: el({ offsetTop: 450, ...o.actions }) },
   leftTopRef: { current: el({ offsetHeight: 0, ...o.leftTop }) },
   leftBottomRef: { current: el({ offsetHeight: 0, ...o.leftBottom }) },
@@ -56,7 +57,7 @@ describe('useLayoutMeasurements', () => {
   })
 
   test('early return when required refs are null', () => {
-    const { layoutRefs } = setup({ refs: { main: null, top: null, footer: null } })
+    const { layoutRefs } = setup({ refs: { main: null, top: null, bottom: null } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalled()
   })
@@ -71,7 +72,7 @@ describe('useLayoutMeasurements', () => {
 
   test.each([
     ['right-offset-top', { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } }, '95px'],
-    ['right-offset-bottom', { main: { offsetHeight: 600 }, footer: { offsetTop: 500 } }, '108px'],
+    ['right-offset-bottom', { main: { offsetHeight: 600 }, bottom: { offsetTop: 500 } }, '116px'],
     // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
     ['left-top-max-height', {}, '332px'],
     ['right-top-max-height', {}, '342px']
@@ -105,6 +106,13 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup({ refs: { topLeftCol: { offsetHeight: 50, ...left }, topRightCol: { offsetHeight: 40, ...right } } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--top-col-width', expected)
+  })
+
+  test('uses 0 when bottomRightRef current is null', () => {
+    const { layoutRefs } = setup()
+    layoutRefs.bottomRightRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-bottom', '116px')
   })
 
   test('uses 0 when sub-slot refs have null current', () => {
@@ -143,7 +151,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.footerRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()

@@ -7,7 +7,7 @@ const LEFT_WIDTH = 40
 const LEFT_TOP = 60
 const RIGHT_WIDTH = 40
 const ACTIONS_TOP = 540
-const FOOTER_TOP = 560
+const BOTTOM_TOP = 560
 const EARLY_ACTIONS_TOP = 500
 const GAP = 8
 
@@ -31,7 +31,7 @@ const PANEL_H_TALL = 150
 const PANEL_H_SHORT = 100
 
 const ABOVE_CAP_TOP = 330 // 60+330+8=398 > CAP_HEIGHT ≈ 389.3 → capped
-const FOOTER_INSET = MAIN_HEIGHT - FOOTER_TOP + GAP // 48
+const BOTTOM_INSET = GAP + (MAIN_HEIGHT - BOTTOM_TOP) + GAP // 56: max(0,gap) + bottomContainerPad + gap
 const ABOVE_CAP_BOTTOM = 342 // 48+342+8=398 > CAP_HEIGHT → capped
 
 const PANEL_W_STANDARD = 200
@@ -49,7 +49,7 @@ const CAP_HEIGHT = (MAIN_HEIGHT - 2 * GAP) * (MAX_RATIO - 1) / MAX_RATIO
 
 // ─── Setup ──────────────────────────────────────────────────────────────────
 
-let mainRef, leftRef, rightRef, actionsRef, footerRef
+let mainRef, leftRef, rightRef, actionsRef, bottomRef
 
 beforeAll(() => {
   globalThis.getComputedStyle = jest.fn().mockReturnValue({ getPropertyValue: () => String(GAP) })
@@ -72,10 +72,10 @@ beforeEach(() => {
   leftRef = colRef(LEFT_WIDTH, LEFT_LEFT, LEFT_TOP)
   rightRef = colRef(RIGHT_WIDTH)
   actionsRef = { current: { offsetTop: ACTIONS_TOP } }
-  footerRef = { current: { offsetTop: FOOTER_TOP } }
+  bottomRef = { current: { offsetTop: BOTTOM_TOP, offsetHeight: 0 } }
 })
 
-const base = () => ({ mainRef, leftRef, rightRef, actionsRef, footerRef })
+const base = () => ({ mainRef, leftRef, rightRef, actionsRef, bottomRef })
 
 // Slot container where an .im-c-panel is the first element child.
 const panel = (offsetWidth, offsetHeight) => {
@@ -96,7 +96,7 @@ describe('getSafeZoneInset — missing refs', () => {
     expect(getSafeZoneInset({ ...base(), leftRef: { current: null } })).toBeUndefined()
   })
   it('returns undefined when actionsRef is undefined', () => {
-    expect(getSafeZoneInset({ mainRef, leftRef, rightRef, footerRef })).toBeUndefined()
+    expect(getSafeZoneInset({ mainRef, leftRef, rightRef, bottomRef })).toBeUndefined()
   })
 })
 
@@ -120,7 +120,7 @@ describe('getSafeZoneInset — base structural insets', () => {
   it('uses zero button width when column ref has no button group', () => {
     const noGroupLeft = { current: { offsetWidth: 0, offsetLeft: LEFT_LEFT, offsetTop: LEFT_TOP, querySelector: () => null } }
     const noGroupRight = { current: { offsetWidth: 0, offsetLeft: 0, offsetTop: 0, querySelector: () => null } }
-    expect(getSafeZoneInset({ mainRef, leftRef: noGroupLeft, rightRef: noGroupRight, actionsRef, footerRef })).toEqual({
+    expect(getSafeZoneInset({ mainRef, leftRef: noGroupLeft, rightRef: noGroupRight, actionsRef, bottomRef })).toEqual({
       left: LEFT_LEFT + GAP, right: LEFT_LEFT + GAP, top: LEFT_TOP, bottom: BASE_BOTTOM
     })
   })
@@ -133,7 +133,7 @@ describe('getSafeZoneInset — base structural insets', () => {
       rightBottomRef: panel(PANEL_W_STANDARD, 0)
     })).toEqual({ left: BASE_LEFT, right: BASE_RIGHT, top: BASE_TOP, bottom: BASE_BOTTOM })
   })
-  it('uses max of actions and footer for base bottom', () => {
+  it('uses max of actions and bottom for base bottom', () => {
     actionsRef.current.offsetTop = EARLY_ACTIONS_TOP
     expect(getSafeZoneInset(base()).bottom).toBe(MAIN_HEIGHT - EARLY_ACTIONS_TOP + GAP)
   })
@@ -244,7 +244,7 @@ describe('getSafeZoneInset — bottom edge', () => {
   })
   it('triggers when a bottom panel width exceeds threshold', () => {
     expect(getSafeZoneInset({ ...base(), leftBottomRef: panel(ABOVE_W_THRESHOLD, ABOVE_THRESHOLD) }).bottom)
-      .toBe(Math.min(FOOTER_INSET + ABOVE_THRESHOLD + GAP, CAP_HEIGHT))
+      .toBe(Math.min(BOTTOM_INSET + ABOVE_THRESHOLD + GAP, CAP_HEIGHT))
   })
   it('column-primary wide-and-tall bottom panel triggers left inset, not bottom', () => {
     // panel(400,342): h/availableH≈0.724 > w/availableW≈0.510 → column-primary
@@ -257,7 +257,7 @@ describe('getSafeZoneInset — bottom edge', () => {
       ...base(),
       leftBottomRef: panel(COMBINED_ABOVE_W, PANEL_H_TALL),
       rightBottomRef: panel(COMBINED_ABOVE_W, PANEL_H_SHORT)
-    }).bottom).toBe(Math.min(FOOTER_INSET + PANEL_H_TALL + GAP, CAP_HEIGHT))
+    }).bottom).toBe(Math.min(BOTTOM_INSET + PANEL_H_TALL + GAP, CAP_HEIGHT))
   })
   it('does not trigger when both bottom panels are below combined width threshold', () => {
     expect(getSafeZoneInset({

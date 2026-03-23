@@ -60,9 +60,9 @@ describe('createPlugin', () => {
       const manifest = await plugin.load()
 
       const scaleBarControl = manifest.controls[0]
-      expect(scaleBarControl.mobile.slot).toBe('footer-right')
-      expect(scaleBarControl.tablet.slot).toBe('footer-right')
-      expect(scaleBarControl.desktop.slot).toBe('footer-right')
+      expect(scaleBarControl.mobile.slot).toBe('right-bottom')
+      expect(scaleBarControl.tablet.slot).toBe('right-bottom')
+      expect(scaleBarControl.desktop.slot).toBe('right-bottom')
     })
 
     it('manifest control has render function', async () => {

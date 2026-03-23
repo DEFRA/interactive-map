@@ -24,22 +24,28 @@ export const manifest = {
   InitComponent: DrawInit,
 
   buttons: [{
-    id: 'drawAddPoint',
-    label: 'Add point',
-    variant: 'touch',
-    hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
-    ...createButtonSlots(false)
-  }, {
     id: 'drawCancel',
     label: 'Cancel',
     variant: 'tertiary',
     hiddenWhen: ({ pluginState }) => !pluginState.mode,
     ...createButtonSlots(true)
   }, {
+    id: 'drawAddPoint',
+    label: 'Add point',
+    variant: 'primary',
+    hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
+    ...createButtonSlots(true)
+  }, {
+    id: 'drawDone',
+    label: 'Done',
+    variant: 'primary',
+    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
+    enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
+    ...createButtonSlots(true)
+  }, {
     id: 'drawMenu',
     label: 'Menu',
     iconId: 'menu',
-    variant: 'tertiary',
     hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
     menuItems: [{
       id: 'drawUndo',
@@ -60,14 +66,9 @@ export const manifest = {
       enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > (pluginState.tempFeature?.geometry?.type === 'Polygon' ? 3 : 2),
       hiddenWhen: ({ pluginState }) => !(['simple_select', 'edit_vertex'].includes(pluginState.mode))
     }],
-    ...createButtonSlots(true)
-  }, {
-    id: 'drawDone',
-    label: 'Done',
-    variant: 'primary',
-    hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
-    enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
-    ...createButtonSlots(true)
+    mobile: { slot: 'bottom-right' },
+    tablet: { slot: 'top-middle' },
+    desktop: { slot: 'top-middle' }
   }],
 
   keyboardShortcuts: [{

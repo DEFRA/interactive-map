@@ -16,20 +16,6 @@ export const manifest = {
   },
 
   buttons: [{
-    id: 'selectAtTarget',
-    label: 'Select',
-    variant: 'touch',
-    hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || appState.interfaceType !== 'touch',
-    mobile: {
-      slot: 'actions'
-    },
-    tablet: {
-      slot: 'actions'
-    },
-    desktop: {
-      slot: 'actions'
-    }
-  }, {
     id: 'selectCancel',
     label: 'Back',
     variant: 'tertiary',
@@ -45,6 +31,20 @@ export const manifest = {
     desktop: {
       slot: 'actions',
       showLabel: true
+    }
+  }, {
+    id: 'selectAtTarget',
+    label: 'Select',
+    variant: 'primary',
+    hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || appState.interfaceType !== 'touch',
+    mobile: {
+      slot: 'actions'
+    },
+    tablet: {
+      slot: 'actions'
+    },
+    desktop: {
+      slot: 'actions'
     }
   }, {
     id: 'selectDone',

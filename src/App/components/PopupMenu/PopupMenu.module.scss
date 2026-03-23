@@ -13,10 +13,23 @@
   );
 
   background-color: var(--background-color);
-  position: absolute;
+  position: fixed;
+  z-index: 9999;
   list-style: none;
   margin: 0;
   padding: 0;
+
+  &[data-direction="below"] {
+    margin-top: var(--divider-gap);
+  }
+
+  &[data-direction="above"] {
+    margin-bottom: var(--divider-gap);
+  }
+
+  &[data-halign="center"] {
+    transform: translateX(-50%);
+  }
 }
 
 // 2. Elements
@@ -125,9 +138,3 @@
   opacity: 1;
 }
 
-// 3. Modifiers
-.im-o-app__actions .im-c-popup-menu {
-  left: 50%;
-  transform: translateX(-50%);
-  bottom: calc(100% + (var(--primary-gap) * 2));
-}

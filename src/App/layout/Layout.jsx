@@ -82,19 +82,24 @@ export const Layout = () => {
               <SlotRenderer slot={layoutSlots.RIGHT_BOTTOM} />
             </div>
           </div>
-          <div className='im-o-app__footer' ref={layoutRefs.footerRef}>
-            <div className='im-o-app__footer-col'>
+          <div className='im-o-app__bottom' ref={layoutRefs.bottomRef}>
+            <div className='im-o-app__bottom-col'>
               <Logo />
+              <div className='im-o-app__bottom-left'>
+                <SlotRenderer slot={layoutSlots.BOTTOM_LEFT} />
+              </div>
             </div>
-            <div className='im-o-app__footer-col'>
-              <SlotRenderer slot={layoutSlots.FOOTER_RIGHT} />
-              <div className='im-o-app__attributions'>
+            <div className='im-o-app__bottom-col'>
+              <div className='im-o-app__bottom-right' ref={layoutRefs.bottomRightRef}>
+                <SlotRenderer slot={layoutSlots.BOTTOM_RIGHT} />
+              </div>
+              <div className='im-o-app__attributions' ref={layoutRefs.attributionsRef}>
                 <Attributions />
               </div>
             </div>
           </div>
-          <div className='im-o-app__bottom' ref={layoutRefs.bottomRef}>
-            <SlotRenderer slot={layoutSlots.BOTTOM} />
+          <div className='im-o-app__drawer' ref={layoutRefs.drawerRef}>
+            <SlotRenderer slot={layoutSlots.DRAWER} />
           </div>
           <div className='im-o-app__actions' ref={layoutRefs.actionsRef}>
             <SlotRenderer slot={layoutSlots.ACTIONS} />

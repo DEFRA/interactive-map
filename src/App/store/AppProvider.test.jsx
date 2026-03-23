@@ -110,7 +110,7 @@ describe('AppProvider', () => {
     expect(contextValue).toHaveProperty('mode')
     expect(contextValue).toHaveProperty('openPanels')
     expect(contextValue.layoutRefs).toHaveProperty('mainRef')
-    expect(contextValue.layoutRefs).toHaveProperty('footerRef')
+    expect(contextValue.layoutRefs).toHaveProperty('bottomRef')
   })
 
   test('dispatch fallback uses options.panelRegistry.getPanelConfig() when state.panelConfig missing', () => {

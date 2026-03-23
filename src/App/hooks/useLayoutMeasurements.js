@@ -23,7 +23,8 @@ export function useLayoutMeasurements () {
     topRef,
     topLeftColRef,
     topRightColRef,
-    footerRef,
+    bottomRef,
+    bottomRightRef,
     actionsRef,
     leftTopRef,
     leftBottomRef,
@@ -40,7 +41,7 @@ export function useLayoutMeasurements () {
     const top = topRef.current
     const topLeftCol = topLeftColRef.current
     const topRightCol = topRightColRef.current
-    const bottom = footerRef.current
+    const bottom = bottomRef.current
 
     if ([main, top, bottom].some(r => !r)) {
       return
@@ -60,10 +61,17 @@ export function useLayoutMeasurements () {
     appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
 
     // === Right container offsets ===
+    // Mirrors the top formula (topRightCol.offsetHeight + top.offsetTop):
+    // bottomRight.offsetHeight is 0 when no buttons so the offset collapses to just
+    // the padding between the bottom of the bottom container and the bottom of main.
+    const bottomRightHeight = bottomRightRef?.current?.offsetHeight ?? 0
+    const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
     const rightOffsetTop = topRightCol.offsetHeight + top.offsetTop
-    const rightColumnHeight = bottom.offsetTop - rightOffsetTop - dividerGap
+    const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight
+    const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
+    const rightOffsetBottom = Math.max(bottomRightHeight, dividerGap) + bottomContainerPad + dividerGap
     appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-    appContainer.style.setProperty('--right-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
+    appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom}px`)
     appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
     // === Sub-slot panel max-heights ===
@@ -89,7 +97,7 @@ export function useLayoutMeasurements () {
   // --------------------------------
   // 3. Recaluclate CSS vars when elements resize
   // --------------------------------
-  useResizeObserver([bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, footerRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef], () => {
+  useResizeObserver([bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef], () => {
     requestAnimationFrame(() => {
       calculateLayout()
     })

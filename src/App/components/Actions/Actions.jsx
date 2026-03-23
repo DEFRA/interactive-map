@@ -11,7 +11,7 @@ export const Actions = ({ children }) => {
 
   // If a panel exists above we need so css adjustment
   const isBottomSlotUsed = Object.keys(openPanels).some(panelId => {
-    return breakpoint === 'mobile' && panelConfig[panelId]?.[breakpoint]?.slot === 'bottom'
+    return breakpoint === 'mobile' && panelConfig[panelId]?.[breakpoint]?.slot === 'drawer'
   })
 
   const className = [

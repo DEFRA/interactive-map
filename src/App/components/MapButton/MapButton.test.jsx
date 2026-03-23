@@ -23,7 +23,7 @@ jest.mock('../../renderer/SlotRenderer', () => ({
 }))
 
 jest.mock('../PopupMenu/PopupMenu', () => ({
-  PopupMenu: ({ startPos, items }) => {
+  PopupMenu: ({ startPos, items, buttonRect }) => {
     let selectedIndex = -1
     if (startPos === 'first' && items?.length > 0) {
       selectedIndex = 0
@@ -31,7 +31,7 @@ jest.mock('../PopupMenu/PopupMenu', () => ({
     if (startPos === 'last' && items?.length > 0) {
       selectedIndex = items.length - 1
     }
-    return <div data-testid='popup-menu' data-start-pos={String(startPos)} data-selected-index={String(selectedIndex)}>{items?.map((item, i) => <div key={i} data-testid={`menu-item-${i}`}>{item.label}</div>)}</div>
+    return <div data-testid='popup-menu' data-start-pos={String(startPos)} data-selected-index={String(selectedIndex)} data-has-rect={String(!!buttonRect)}>{items?.map((item, i) => <div key={i} data-testid={`menu-item-${i}`}>{item.label}</div>)}</div>
   }
 }))
 
@@ -41,7 +41,12 @@ const mockButtonRefs = { current: {} }
 jest.mock('../../store/appContext', () => ({ useApp: () => ({ buttonRefs: mockButtonRefs }) }))
 
 describe('MapButton', () => {
-  beforeEach(() => { mockButtonRefs.current = {} })
+  beforeEach(() => {
+    mockButtonRefs.current = {}
+    Element.prototype.getBoundingClientRect = jest.fn(() => ({
+      toJSON: () => ({ top: 0, left: 0, bottom: 0, right: 0, width: 0, height: 0 })
+    }))
+  })
 
   const renderButton = (props = {}) => render(<MapButton buttonId='Test' iconId='icon' label='Label' {...props} />)
   const getButton = () => screen.getByRole('button')
@@ -146,6 +151,19 @@ describe('MapButton', () => {
     const menu = screen.getByTestId('popup-menu')
     expect(menu).toHaveAttribute('data-start-pos', expectedPos)
     expect(menu).toHaveAttribute('data-selected-index', String(expectedIndex))
+  })
+
+  it('passes buttonRect to popup menu on open', () => {
+    renderButton({ menuItems: [{ label: 'Item' }] })
+    fireEvent.click(getButton())
+    expect(screen.getByTestId('popup-menu')).toHaveAttribute('data-has-rect', 'true')
+  })
+
+  it('captureMenuRect returns early when buttonRef is not stored', () => {
+    renderButton({ menuItems: [{ label: 'Item' }] })
+    mockButtonRefs.current = {}
+    fireEvent.click(getButton())
+    expect(screen.getByTestId('popup-menu')).toHaveAttribute('data-has-rect', 'false')
   })
 
   it('does nothing for arrow keys when no menu', () => {

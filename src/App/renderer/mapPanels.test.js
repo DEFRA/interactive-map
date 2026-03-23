@@ -145,10 +145,10 @@ describe('mapPanels', () => {
     expect(map()).toHaveLength(1)
   })
 
-  it('replaces bottom slot with left-top on non-mobile breakpoints', () => {
+  it('replaces drawer slot with left-top on non-mobile breakpoints', () => {
     defaultAppState.panelConfig = ({
       p1: {
-        desktop: { slot: 'bottom' },
+        desktop: { slot: 'drawer' },
         includeModes: ['view']
       }
     })
