@@ -4,7 +4,7 @@ Slots are named regions in the UI where buttons, controls, and panels can be pla
 
 ## Slot Map
 
-<img src="./slot-map.svg" alt="Slot map showing the position of each named slot in the UI layout" width="838" />
+<img src="/interactive-map/images/slot-map.svg" alt="Slot map showing the position of each named slot in the UI layout" width="838" />
 
 `banner` appears at the top of the map on mobile and tablet. On desktop it moves into the `top-middle` slot.
 
