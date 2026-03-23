@@ -479,6 +479,18 @@
     .im-c-panel {
       max-width: var(--action-bar-max-width);
     }
+
+    // max-height animation on a bottom-anchored element grows upward, looking like
+    // a slide-up. Override to opacity-only so the bar fades in instead.
+    @media (prefers-reduced-motion: no-preference) {
+      .im-c-actions {
+        transition: opacity var(--duration) ease;
+      }
+    }
+
+    .im-c-actions--hidden {
+      opacity: 0;
+    }
   }
 }
 
