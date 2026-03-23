@@ -38,68 +38,52 @@ const getMenuStyle = (buttonRect) => {
 }
 
 /**
- * Custom hook encapsulating all state and event-handler logic for PopupMenu.
+ * Invokes an item's action via buttonConfig.onClick (if configured) or item.onClick.
+ * For keyboard-triggered activations also dispatches a synthetic MouseEvent so that
+ * any window-level click listeners (e.g. editVertexMode) fire as expected.
+ * The synthetic event is marked _fromKeyboardActivation so handleItemClick can
+ * ignore it and avoid double-activation.
  *
- * @param {object} params
- * @param {Array}  params.items            - Menu item descriptors.
- * @param {Set}    params.hiddenButtons     - IDs of items that should not be visible.
- * @param {number} [params.startIndex]     - Exact index to select on mount; takes precedence over startPos.
- * @param {string} [params.startPos]       - 'first' | 'last' — initial selection strategy when startIndex is absent.
- * @param {object} params.instigator       - DOM ref of the button that opened the menu; receives focus on close.
- * @param {string} params.instigatorKey    - Key used to look up instigator in buttonRefs.
- * @param {object} params.buttonRefs       - Ref map of all registered button DOM nodes.
- * @param {object} params.buttonConfig     - Config map that may override item onClick handlers.
- * @param {Set}    params.disabledButtons  - IDs of items that are currently disabled.
- * @param {string} params.pluginId         - Plugin context passed to evaluateProp.
- * @param {Function} params.evaluateProp   - Context evaluator from useEvaluateProp.
- * @param {string} params.id               - App-level ID prefix used for DOM element IDs.
- * @param {object} params.menuRef          - Ref to the menu UL element.
- * @param {Function} params.setIsOpen      - Callback to open/close the menu.
- * @param {DOMRect|null} params.buttonRect - Bounding rect of the trigger button for positioning.
- * @returns {{ index: number, handleMenuKeyDown: Function, handleItemClick: Function,
- *             menuStyle: object, menuDirection: string, menuHAlign: string }}
+ * @param {React.SyntheticEvent} e   - The triggering React event.
+ * @param {object}               item - The item being activated.
+ * @param {object}               ctx  - Dependencies: { buttonConfig, evaluateProp, pluginId, id }.
  */
-export const usePopupMenu = ({
-  items, hiddenButtons, startIndex, startPos, instigator, instigatorKey,
-  buttonRefs, buttonConfig, disabledButtons, pluginId, evaluateProp, id, menuRef, setIsOpen, buttonRect
-}) => {
-  /**
-   * Indices of items that are not in hiddenButtons.
-   * Used by keyboard navigation to skip over hidden items.
-   */
-  const visibleIndices = useMemo(() => {
-    const visible = []
-    items.forEach((item, idx) => {
-      if (!hiddenButtons.has(item.id)) {
-        visible.push(idx)
-      }
-    })
-    return visible
-  }, [items, hiddenButtons])
+const activateItem = (e, item, { buttonConfig, evaluateProp, pluginId, id }) => {
+  const menuItemConfig = buttonConfig[item.id]
+  if (typeof menuItemConfig?.onClick === 'function') {
+    menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
+  } else if (typeof item.onClick === 'function') {
+    item.onClick(e.nativeEvent)
+  } else {
+    // No action
+  }
+  if (e.nativeEvent instanceof KeyboardEvent) {
+    const el = document.getElementById(`${id}-${stringToKebab(item.id)}`)
+    if (el) {
+      const click = new MouseEvent('click', { bubbles: true, cancelable: true })
+      click._fromKeyboardActivation = true
+      el.dispatchEvent(click)
+    }
+  }
+}
 
-  /**
-   * Currently highlighted item index (-1 means no selection).
-   * Initialised from startIndex, or from startPos ('first'/'last'), or -1.
-   */
-  const [index, setIndex] = useState(() => {
-    if (typeof startIndex === 'number') {
-      return startIndex
-    }
-    if (startPos === 'first') {
-      return visibleIndices[0] ?? -1
-    }
-    if (startPos === 'last') {
-      return visibleIndices[visibleIndices.length - 1] ?? -1
-    }
-    return -1
-  })
-
-  /**
-   * Closes the menu and returns keyboard focus to the instigator button.
-   *
-   * @param {Event}   e              - The triggering event.
-   * @param {boolean} [preventDefault=false] - Whether to call e.preventDefault().
-   */
+/**
+ * Builds the keydown handler for the menu UL. Handles Escape/Tab (close & focus),
+ * ArrowDown/Up (navigate visible items), Home/End (jump to ends),
+ * Enter (activate and close), Space (activate; close only for non-checkbox items).
+ *
+ * @param {object}   p
+ * @param {Array}    p.items           - All menu item descriptors.
+ * @param {number[]} p.visibleIndices  - Indices of non-hidden items.
+ * @param {number}   p.index           - Currently highlighted index.
+ * @param {Function} p.setIndex        - State setter for highlighted index.
+ * @param {Set}      p.disabledButtons - IDs of disabled items.
+ * @param {object}   p.instigator      - DOM node of the trigger button.
+ * @param {Function} p.setIsOpen       - Callback to close the menu.
+ * @param {object}   p.activateCtx     - Context passed through to activateItem.
+ * @returns {Function} onKeyDown handler for the menu element.
+ */
+const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disabledButtons, instigator, setIsOpen, activateCtx }) => {
   const closeAndFocus = (e, preventDefault = false) => {
     if (preventDefault && e?.preventDefault) {
       e.preventDefault()
@@ -108,21 +92,13 @@ export const usePopupMenu = ({
     setIsOpen(false)
   }
 
-  /**
-   * Moves selection up or down through visible items, wrapping at each end.
-   * ArrowDown with no current selection jumps to the first visible item;
-   * ArrowUp with no selection jumps to the last.
-   *
-   * @param {KeyboardEvent} e - The ArrowDown or ArrowUp keydown event.
-   */
   const navigateVisible = (e) => {
     e.preventDefault()
-    const vis = visibleIndices
-    const n = vis.length
+    const n = visibleIndices.length
     if (n === 0) {
       return
     }
-    const pos = vis.indexOf(index)
+    const pos = visibleIndices.indexOf(index)
     let nextPos
     if (e.key === 'ArrowDown') {
       nextPos = pos === -1 ? 0 : (pos + 1) % n
@@ -131,80 +107,33 @@ export const usePopupMenu = ({
     } else {
       nextPos = (pos - 1 + n) % n
     }
-    setIndex(vis[nextPos])
+    setIndex(visibleIndices[nextPos])
   }
 
-  /**
-   * Invokes an item's action via buttonConfig.onClick (if configured) or item.onClick.
-   * For keyboard-triggered activations also dispatches a synthetic MouseEvent so that
-   * any window-level click listeners (e.g. editVertexMode) fire as expected.
-   * The synthetic event is marked with _fromKeyboardActivation so handleItemClick
-   * can ignore it and avoid double-activation.
-   *
-   * @param {React.SyntheticEvent} e    - The triggering React event.
-   * @param {object}               item - The item being activated.
-   */
-  const activateItem = (e, item) => {
-    const menuItemConfig = buttonConfig[item.id]
-    if (typeof menuItemConfig?.onClick === 'function') {
-      menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
-    } else if (typeof item.onClick === 'function') {
-      item.onClick(e.nativeEvent)
-    }
-    if (e.nativeEvent instanceof KeyboardEvent) {
-      const el = document.getElementById(`${id}-${stringToKebab(item.id)}`)
-      if (el) {
-        const click = new MouseEvent('click', { bubbles: true, cancelable: true })
-        click._fromKeyboardActivation = true
-        el.dispatchEvent(click)
-      }
-    }
-  }
-
-  /**
-   * Handles the Enter key: activates the selected item (if enabled), then closes
-   * the menu and returns focus to the instigator.
-   *
-   * @param {KeyboardEvent} e - The Enter keydown event.
-   */
   const handleEnter = (e) => {
     e.preventDefault()
     const item = items[index]
     if (item && !disabledButtons.has(item.id)) {
-      activateItem(e, item)
+      activateItem(e, item, activateCtx)
     }
     instigator.focus()
     setIsOpen(false)
   }
 
-  /**
-   * Handles the Space key. For checkbox items (pressedWhen / isPressed) the menu
-   * stays open after activation. For regular items the menu closes and focus returns
-   * to the instigator.
-   *
-   * @param {KeyboardEvent} e - The Space keydown event.
-   */
   const handleSpace = (e) => {
     e.preventDefault()
     const item = items[index]
     if (!item || disabledButtons.has(item.id)) {
       return
     }
-    activateItem(e, item)
+    activateItem(e, item, activateCtx)
     if (!(item.isPressed !== undefined || item.pressedWhen)) {
       instigator.focus()
       setIsOpen(false)
     }
   }
 
-  /**
-   * Top-level keydown handler attached to the menu UL.
-   * Dispatches Escape/Tab → close, Arrow keys → navigate, Home/End → jump,
-   * Enter/Space → activate.
-   *
-   * @param {KeyboardEvent} e - Keydown event from the menu element.
-   */
-  const handleMenuKeyDown = (e) => {
+  return (e) => {
     if (['Escape', 'Esc'].includes(e.key)) {
       closeAndFocus(e, true)
       return
@@ -232,13 +161,63 @@ export const usePopupMenu = ({
       handleSpace(e)
     }
   }
+}
 
-  /**
-   * Closes the menu when a click or focus event originates outside both the menu
-   * and the instigator button. Registered on document focusin and pointerdown.
-   *
-   * @param {Event} e - The focusin or pointerdown event.
-   */
+/**
+ * Custom hook encapsulating all state and event-handler logic for PopupMenu.
+ *
+ * @param {object}   params
+ * @param {Array}    params.items            - Menu item descriptors.
+ * @param {Set}      params.hiddenButtons    - IDs of items that should not be visible.
+ * @param {number}   [params.startIndex]     - Exact index to select on mount; takes precedence over startPos.
+ * @param {string}   [params.startPos]       - 'first' | 'last' — initial selection strategy.
+ * @param {object}   params.instigator       - DOM node of the button that opened the menu.
+ * @param {string}   params.instigatorKey    - Key used to look up instigator in buttonRefs.
+ * @param {object}   params.buttonRefs       - Ref map of all registered button DOM nodes.
+ * @param {object}   params.buttonConfig     - Config map that may override item onClick handlers.
+ * @param {Set}      params.disabledButtons  - IDs of currently disabled items.
+ * @param {string}   params.pluginId         - Plugin context passed to evaluateProp.
+ * @param {Function} params.evaluateProp     - Context evaluator from useEvaluateProp.
+ * @param {string}   params.id               - App-level ID prefix for DOM element IDs.
+ * @param {object}   params.menuRef          - Ref to the menu UL element.
+ * @param {Function} params.setIsOpen        - Callback to open/close the menu.
+ * @param {DOMRect}  params.buttonRect       - Bounding rect of the trigger button for positioning.
+ * @returns {{ index: number, handleMenuKeyDown: Function, handleItemClick: Function,
+ *             menuStyle: object, menuDirection: string, menuHAlign: string }}
+ */
+export const usePopupMenu = ({
+  items, hiddenButtons, startIndex, startPos, instigator, instigatorKey,
+  buttonRefs, buttonConfig, disabledButtons, pluginId, evaluateProp, id, menuRef, setIsOpen, buttonRect
+}) => {
+  const visibleIndices = useMemo(() => {
+    const visible = []
+    items.forEach((item, idx) => {
+      if (!hiddenButtons.has(item.id)) {
+        visible.push(idx)
+      }
+    })
+    return visible
+  }, [items, hiddenButtons])
+
+  const [index, setIndex] = useState(() => {
+    if (typeof startIndex === 'number') {
+      return startIndex
+    }
+    if (startPos === 'first') {
+      return visibleIndices[0] ?? -1
+    }
+    if (startPos === 'last') {
+      return visibleIndices[visibleIndices.length - 1] ?? -1
+    }
+    return -1
+  })
+
+  const activateCtx = { buttonConfig, evaluateProp, pluginId, id }
+
+  const handleMenuKeyDown = createMenuKeyDownHandler({
+    items, visibleIndices, index, setIndex, disabledButtons, instigator, setIsOpen, activateCtx
+  })
+
   const handleOutside = (e) => {
     if (menuRef.current?.contains(e.target) || buttonRefs.current[instigatorKey]?.contains(e.target)) {
       return
@@ -246,32 +225,22 @@ export const usePopupMenu = ({
     setIsOpen(false)
   }
 
-  /**
-   * Click handler for individual menu items. Ignores synthetic keyboard-activation
-   * clicks (already handled by activateItem) and disabled items.
-   *
-   * @param {React.MouseEvent} e    - React synthetic click event from the LI.
-   * @param {object}           item - The clicked item descriptor.
-   */
   const handleItemClick = (e, item) => {
     if (e.nativeEvent._fromKeyboardActivation || disabledButtons.has(item.id)) {
       return
     }
     setIsOpen(false)
-    activateItem(e, item)
+    activateItem(e, item, activateCtx)
   }
 
-  /**
-   * On mount: focuses the menu, syncs selection to startPos if provided, and
-   * registers outside-click/focus and resize listeners.
-   * Cleans up all listeners on unmount.
-   */
   useEffect(() => {
     menuRef.current?.focus()
     if (startPos === 'first') {
       setIndex(visibleIndices[0] ?? -1)
     } else if (startPos === 'last') {
       setIndex(visibleIndices[visibleIndices.length - 1] ?? -1)
+    } else {
+      // No action
     }
     const handleResize = () => setIsOpen(false)
     document.addEventListener('focusin', handleOutside)
