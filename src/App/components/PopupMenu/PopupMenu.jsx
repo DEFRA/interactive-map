@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react'
+import { createPortal } from 'react-dom'
 import { stringToKebab } from '../../../utils/stringToKebab'
 import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext'
@@ -32,9 +33,37 @@ import { useEvaluateProp } from '../../hooks/useEvaluateProp.js'
  */
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, startPos, startIndex, menuRef, items, setIsOpen }) => {
+const getMenuStyle = (buttonRect) => {
+  if (!buttonRect) {
+    return { style: {}, direction: 'below' }
+  }
+  const style = {}
+  let direction
+  if (buttonRect.top >= window.innerHeight / 2) {
+    style.bottom = `${window.innerHeight - buttonRect.top}px`
+    direction = 'above'
+  } else {
+    style.top = `${buttonRect.bottom}px`
+    direction = 'below'
+  }
+  const buttonCenterX = (buttonRect.left + buttonRect.right) / 2
+  let halign
+  if (buttonCenterX > (window.innerWidth * 2) / 3) {
+    style.right = `${window.innerWidth - buttonRect.right}px`
+    halign = 'right'
+  } else if (buttonCenterX < window.innerWidth / 3) {
+    style.left = `${buttonRect.left}px`
+    halign = 'left'
+  } else {
+    style.left = `${buttonCenterX}px`
+    halign = 'center'
+  }
+  return { style, direction, halign }
+}
+
+export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, startPos, startIndex, menuRef, items, setIsOpen, buttonRect }) => {
   const { id } = useConfig()
-  const { buttonRefs, buttonConfig, hiddenButtons, disabledButtons, pressedButtons } = useApp()
+  const { buttonRefs, buttonConfig, hiddenButtons, disabledButtons, pressedButtons, layoutRefs } = useApp()
   const instigatorKey = buttonId ?? instigatorId
   const instigator = buttonRefs.current[instigatorKey]
   const evaluateProp = useEvaluateProp()
@@ -261,20 +290,29 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
       // No action
     }
 
+    const handleResize = () => setIsOpen(false)
+
     document.addEventListener('focusin', handleOutside)
     document.addEventListener('pointerdown', handleOutside)
+    window.addEventListener('resize', handleResize)
 
     return () => {
       document.removeEventListener('focusin', handleOutside)
       document.removeEventListener('pointerdown', handleOutside)
+      window.removeEventListener('resize', handleResize)
     }
   }, [])
 
-  return (
+  const { style: menuStyle, direction: menuDirection, halign: menuHAlign } = getMenuStyle(buttonRect)
+
+  return createPortal(
     <ul // NOSONAR
       ref={menuRef}
       id={popupMenuId}
       className='im-c-popup-menu'
+      data-direction={menuDirection}
+      data-halign={menuHAlign}
+      style={menuStyle}
       role='menu' // NOSONAR
       tabIndex='-1'
       aria-labelledby={instigatorKey}
@@ -296,6 +334,7 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
           <span className='im-c-popup-menu__item-label'>{item.label}</span>
         </li>
       ))}
-    </ul>
+    </ul>,
+    layoutRefs?.appContainerRef?.current ?? document.body
   )
 }

@@ -22,7 +22,8 @@ const mockUseApp = {
   buttonConfig: {},
   hiddenButtons: new Set(),
   disabledButtons: new Set(),
-  pressedButtons: new Set()
+  pressedButtons: new Set(),
+  layoutRefs: { appContainerRef: { current: document.body } }
 }
 jest.mock('../../store/appContext', () => ({
   useApp: jest.fn(() => mockUseApp)
@@ -386,5 +387,73 @@ describe('PopupMenu', () => {
       expect(items[1].onClick).not.toHaveBeenCalled()
       expect(mockSetIsOpen).not.toHaveBeenCalled()
     })
+  })
+
+  describe('buttonRect positioning', () => {
+    beforeEach(() => {
+      Object.defineProperty(window, 'innerWidth', { value: 1024, configurable: true })
+      Object.defineProperty(window, 'innerHeight', { value: 768, configurable: true })
+    })
+
+    it('uses top and data-direction=below when button is in top half', () => {
+      renderMenu({ buttonRect: { top: 100, bottom: 140, left: 50, right: 100 } })
+      const menu = screen.getByRole('menu')
+      expect(menu).toHaveStyle({ top: '140px' })
+      expect(menu).toHaveAttribute('data-direction', 'below')
+    })
+
+    it('uses bottom and data-direction=above when button is in bottom half', () => {
+      renderMenu({ buttonRect: { top: 500, bottom: 540, left: 50, right: 100 } })
+      const menu = screen.getByRole('menu')
+      expect(menu).toHaveStyle({ bottom: '268px' }) // 768 - 500
+      expect(menu).toHaveAttribute('data-direction', 'above')
+    })
+
+    it('uses left and data-halign=left when button center is in left third', () => {
+      // centerX = (50+100)/2 = 75 < 1024/3 ≈ 341
+      renderMenu({ buttonRect: { top: 100, bottom: 140, left: 50, right: 100 } })
+      const menu = screen.getByRole('menu')
+      expect(menu).toHaveStyle({ left: '50px' })
+      expect(menu).toHaveAttribute('data-halign', 'left')
+    })
+
+    it('uses right and data-halign=right when button center is in right third', () => {
+      // centerX = (700+750)/2 = 725 > 1024*2/3 ≈ 683
+      renderMenu({ buttonRect: { top: 100, bottom: 140, left: 700, right: 750 } })
+      const menu = screen.getByRole('menu')
+      expect(menu).toHaveStyle({ right: '274px' }) // 1024 - 750
+      expect(menu).toHaveAttribute('data-halign', 'right')
+    })
+
+    it('uses button centerX and data-halign=center when button center is in middle third', () => {
+      // centerX = (400+450)/2 = 425, between 341 and 683
+      renderMenu({ buttonRect: { top: 100, bottom: 140, left: 400, right: 450 } })
+      const menu = screen.getByRole('menu')
+      expect(menu).toHaveStyle({ left: '425px' })
+      expect(menu).toHaveAttribute('data-halign', 'center')
+    })
+
+    it('applies no inline style when buttonRect is not provided', () => {
+      renderMenu()
+      const style = screen.getByRole('menu').style
+      expect(style.top).toBe('')
+      expect(style.bottom).toBe('')
+      expect(style.left).toBe('')
+      expect(style.right).toBe('')
+    })
+  })
+
+  it('falls back to document.body when appContainerRef.current is null', () => {
+    const saved = mockUseApp.layoutRefs
+    mockUseApp.layoutRefs = { appContainerRef: { current: null } }
+    renderMenu()
+    expect(screen.getByRole('menu')).toBeInTheDocument()
+    mockUseApp.layoutRefs = saved
+  })
+
+  it('closes menu on window resize', () => {
+    renderMenu()
+    window.dispatchEvent(new Event('resize'))
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
   })
 })

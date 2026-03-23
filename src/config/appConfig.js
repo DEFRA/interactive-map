@@ -113,7 +113,7 @@ export const defaultButtonConfig = {
 export const defaultPanelConfig = {
   label: 'Panel',
   mobile: {
-    slot: 'bottom',
+    slot: 'drawer',
     open: true,
     dismissible: true,
     modal: false,
@@ -141,7 +141,7 @@ export const defaultPanelConfig = {
 export const defaultControlConfig = {
   label: 'Control',
   mobile: {
-    slot: 'bottom'
+    slot: 'drawer'
   },
   tablet: {
     slot: 'top-left'

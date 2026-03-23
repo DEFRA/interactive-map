@@ -24,7 +24,7 @@ export const manifest = {
     id: 'datasetsLayers',
     label: 'Layers',
     mobile: {
-      slot: 'bottom',
+      slot: 'drawer',
       modal: true,
       dismissible: true
     },
@@ -46,7 +46,7 @@ export const manifest = {
     id: 'datasetsKey',
     label: 'Key',
     mobile: {
-      slot: 'bottom',
+      slot: 'drawer',
       modal: true
     },
     tablet: {

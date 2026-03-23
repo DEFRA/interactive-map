@@ -167,13 +167,13 @@ const interactiveMap = new InteractiveMap('map', {
 		backgroundColor: '#f5f5f0'
 	},
 	plugins: [
-		datasetsPlugin,
+		// datasetsPlugin,
 		mapStylesPlugin({
 			mapStyles: vtsMapStyles3857
 		}),
-		scaleBarPlugin({
-			units: 'metric'
-		}),
+		// scaleBarPlugin({
+		// 	units: 'metric'
+		// }),
 		searchPlugin({
 			transformRequest: transformGeocodeRequest,
 			osNamesURL: process.env.OS_NAMES_URL,
@@ -201,11 +201,10 @@ interactiveMap.on('map:ready', function (e) {
 	interactPlugin.enable()
 	interactiveMap.addButton('geometryActions', {
 		label: 'Draw tools',
-		variant: 'tertiary',
 		iconSvgContent: '<path d="m6 9 6 6 6-6"/>',
-		mobile: { slot: 'actions', order: 3 },
-		tablet: { slot: 'actions', order: 3 },
-		desktop: { slot: 'actions', order: 3 },
+		mobile: { slot: 'bottom-right', order: 3 },
+		tablet: { slot: 'top-middle', order: 3 },
+		desktop: { slot: 'top-middle', order: 3 },
 		menuItems: [{
 			id: 'drawPolygon',
 			label: 'Draw polygon',

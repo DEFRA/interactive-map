@@ -180,7 +180,7 @@ describe('ADD_CONTROL', () => {
 
   it('does not warn when control has a valid slot', () => {
     run(
-      { type: 'ADD_CONTROL', payload: { id: 'myCtrl', config: { mobile: { slot: 'bottom' }, tablet: { slot: 'top-left' }, desktop: { slot: 'top-left' } } } },
+      { type: 'ADD_CONTROL', payload: { id: 'myCtrl', config: { mobile: { slot: 'drawer' }, tablet: { slot: 'top-left' }, desktop: { slot: 'top-left' } } } },
       { breakpoint: 'desktop' }
     )
     expect(console.warn).not.toHaveBeenCalled()
@@ -238,7 +238,7 @@ describe('ADD_PANEL', () => {
 
     expect(eventBus.emit).toHaveBeenCalledWith(
       events.APP_PANEL_OPENED,
-      { panelId: 'mobilePanel', slot: 'bottom' }
+      { panelId: 'mobilePanel', slot: 'drawer' }
     )
   })
 

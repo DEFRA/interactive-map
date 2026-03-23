@@ -27,7 +27,8 @@
  * @param {React.RefObject}  refs.leftRef          - Left button column.
  * @param {React.RefObject}  refs.rightRef         - Right button column.
  * @param {React.RefObject}  refs.actionsRef       - Bottom action bar.
- * @param {React.RefObject}  refs.footerRef        - Footer (logo, copyright, etc).
+ * @param {React.RefObject}  refs.bottomRef        - Bottom row (logo, copyright, etc).
+ * @param {React.RefObject} [refs.bottomRightRef]  - Bottom-right button container (collapses margin when empty).
  * @param {React.RefObject} [refs.leftTopRef]      - Top-left panel slot.
  * @param {React.RefObject} [refs.leftBottomRef]   - Bottom-left panel slot.
  * @param {React.RefObject} [refs.rightTopRef]     - Top-right panel slot.
@@ -107,15 +108,15 @@ const computeRow = (leftW, rightW, leftH, rightH, wThreshold, baseInset, gap) =>
   leftW + rightW > wThreshold ? baseInset + Math.max(leftH, rightH) + gap : 0
 
 export const getSafeZoneInset = ({
-  mainRef, leftRef, rightRef, actionsRef, footerRef,
+  mainRef, leftRef, rightRef, actionsRef, bottomRef, bottomRightRef,
   leftTopRef, leftBottomRef, rightTopRef, rightBottomRef
 }) => {
-  if ([mainRef, leftRef, rightRef, actionsRef, footerRef].some(ref => !ref?.current)) {
+  if ([mainRef, leftRef, rightRef, actionsRef, bottomRef].some(ref => !ref?.current)) {
     return undefined
   }
 
   const main = mainRef.current; const left = leftRef.current
-  const actions = actionsRef.current; const footer = footerRef.current
+  const actions = actionsRef.current; const bottom = bottomRef.current
 
   const gap = Number.parseInt(getComputedStyle(document.documentElement).getPropertyValue('--divider-gap'), 10)
 
@@ -127,8 +128,10 @@ export const getSafeZoneInset = ({
   const baseLeft = main.offsetLeft + left.offsetLeft + colWidth + gap
   const baseRight = left.offsetLeft + colWidth + gap
   const baseTop = left.offsetTop
-  const footerInset = main.offsetHeight - footer.offsetTop + gap // mirrors --left/right-offset-bottom CSS var
-  const baseBottom = Math.max(main.offsetHeight - actions.offsetTop + gap, footerInset)
+  const bottomRightHeight = bottomRightRef?.current?.offsetHeight ?? 0
+  const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
+  const bottomInset = Math.max(bottomRightHeight, gap) + bottomContainerPad + gap // mirrors --right-offset-bottom CSS var
+  const baseBottom = Math.max(main.offsetHeight - actions.offsetTop + gap, bottomInset)
 
   const availableH = main.offsetHeight - baseTop - baseBottom
   const availableW = main.offsetWidth - (baseLeft - main.offsetLeft) - baseRight
@@ -139,7 +142,7 @@ export const getSafeZoneInset = ({
   const leftPanelInset = leftCol.panelInset
   const rightPanelInset = rightCol.panelInset
   const topPanelInset = computeRow(leftCol.rowA.w, rightCol.rowA.w, leftCol.rowA.h, rightCol.rowA.h, availableW / RATIO, baseTop, gap)
-  const bottomPanelInset = computeRow(leftCol.rowB.w, rightCol.rowB.w, leftCol.rowB.h, rightCol.rowB.h, availableW / RATIO, footerInset, gap)
+  const bottomPanelInset = computeRow(leftCol.rowB.w, rightCol.rowB.w, leftCol.rowB.h, rightCol.rowB.h, availableW / RATIO, bottomInset, gap)
 
   const usableW = main.offsetWidth - 2 * gap
   const usableH = main.offsetHeight - 2 * gap

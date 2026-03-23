@@ -177,11 +177,20 @@ export const MapButton = ({
   const { buttonRefs } = useApp()
   const [isPopupOpen, setIsPopupOpen] = useState(false)
   const [menuStartPos, setMenuStartPos] = useState(null)
+  const [menuRect, setMenuRect] = useState(null)
   const menuRef = useRef(null)
 
   const Element = href ? 'a' : 'button'
   const hasMenu = menuItems?.length >= 1
   const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu })
+
+  const captureMenuRect = () => {
+    const btn = buttonRefs.current[buttonId]
+    if (!btn) {
+      return
+    }
+    setMenuRect(btn.getBoundingClientRect().toJSON())
+  }
 
   /**
    * Handles button click events.
@@ -197,6 +206,9 @@ export const MapButton = ({
       const isKeyboard = e.nativeEvent.pointerType === ''
       /* istanbul ignore next as pointerType can't be tested in jest */
       setMenuStartPos(isKeyboard ? 'first' : null)
+      if (!isPopupOpen) {
+        captureMenuRect()
+      }
       setIsPopupOpen((prev) => !prev)
     }
     if (onClick) {
@@ -214,6 +226,7 @@ export const MapButton = ({
     if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
       e.preventDefault()
       setMenuStartPos(e.key === 'ArrowUp' ? 'last' : 'first')
+      captureMenuRect()
       setIsPopupOpen(true)
     }
   }
@@ -249,7 +262,7 @@ export const MapButton = ({
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
       {panelId && <SlotRenderer slot={`${stringToKebab(buttonId)}-button`} />}
-      {isPopupOpen && <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} />}
+      {isPopupOpen && <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} buttonRect={menuRect} />}
     </div>
   )
 }

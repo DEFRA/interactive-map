@@ -2,7 +2,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import { computeInset } from './utils.js'
 
 export function Frame ({ appState, mapState, pluginState, mapProvider }) {
-  const { actionsRef, mainRef, footerRef, viewportRef } = appState.layoutRefs
+  const { actionsRef, mainRef, bottomRef, viewportRef } = appState.layoutRefs
   const { dispatch } = pluginState
   const elRef = useRef(null)
   const displayRef = useRef(null)
@@ -28,15 +28,15 @@ export function Frame ({ appState, mapState, pluginState, mapProvider }) {
     const parent = elRef.current
 
     const updateLayout = () => {
-      if (!actionsRef.current || !mainRef.current || !footerRef.current) {
+      if (!actionsRef.current || !mainRef.current || !bottomRef.current) {
         return
       }
 
       // Parent inset
       const mainHeight = mainRef.current.offsetHeight
-      const footerTop = footerRef.current.offsetTop
+      const bottomTop = bottomRef.current.offsetTop
       const actionsTop = actionsRef.current.offsetTop
-      const offsetBottom = mainHeight - Math.min(actionsTop, footerTop) + 10
+      const offsetBottom = mainHeight - Math.min(actionsTop, bottomTop) + 10
       setParentInset(`65px 65px ${offsetBottom}px 65px`)
 
       const { offsetWidth: parentWidth, offsetHeight: parentHeight } = parent
@@ -71,7 +71,7 @@ export function Frame ({ appState, mapState, pluginState, mapProvider }) {
     updateLayout()
 
     return () => observer.disconnect()
-  }, [pluginState.frame, appState.breakpoint, actionsRef, mainRef, footerRef])
+  }, [pluginState.frame, appState.breakpoint, actionsRef, mainRef, bottomRef])
 
   // Fit bounds after frame is rendered (for editFeature)
   useEffect(() => {

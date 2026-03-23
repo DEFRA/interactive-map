@@ -8,7 +8,7 @@ Slots are named regions in the UI where buttons, controls, and panels can be pla
 
 `banner` appears at the top of the map on mobile and tablet. On desktop it moves into the `top-middle` column.
 
-`bottom` is typically used on mobile. At tablet and desktop breakpoints, panels assigned to `bottom` automatically fall back to `left-top`.
+`drawer` is typically used on mobile. At tablet and desktop breakpoints, panels assigned to `drawer` automatically fall back to `left-top`.
 
 ## Available Slots
 
@@ -22,10 +22,11 @@ Slots are named regions in the UI where buttons, controls, and panels can be pla
 | `left-bottom` | Panels stacked on the left side (lower) |
 | `right-top` | Panels stacked on the right side (upper) |
 | `right-bottom` | Panels stacked on the right side (lower) |
+| `bottom-left` | Buttons in the bottom-left corner (logo area) |
+| `bottom-right` | Buttons and controls in the bottom-right corner |
 | `middle` | Overlays centred on the map (e.g. loading screens) |
-| `footer-right` | Scale bar or other footer controls |
-| `bottom` | Full-width area below the map — typically for mobile panels |
-| `actions` | Centred action bar above the footer |
+| `drawer` | Full-width drawer below the map — typically for mobile panels |
+| `actions` | Centred action bar above the drawer |
 | `side` | Persistent side panel alongside the map |
 
 ## Slot Eligibility
@@ -42,9 +43,10 @@ Not all element types can use every slot. The table below shows which slots are 
 | `left-bottom` | ✓ | ✓ | |
 | `right-top` | ✓ | ✓ | |
 | `right-bottom` | ✓ | ✓ | |
+| `bottom-left` | ✓ | | |
+| `bottom-right` | ✓ | | ✓ |
 | `middle` | | ✓ | ✓ |
-| `footer-right` | | | ✓ |
-| `bottom` | | ✓ | ✓ |
+| `drawer` | | ✓ | ✓ |
 | `actions` | ✓ | | ✓ |
 | `side` | | ✓ | |
 
@@ -54,7 +56,7 @@ Specify a slot in the breakpoint configuration for buttons, controls, or panels:
 
 ```js
 {
-  mobile: { slot: 'bottom' },
+  mobile: { slot: 'drawer' },
   tablet: { slot: 'left-top' },
   desktop: { slot: 'left-top' }
 }
@@ -63,7 +65,7 @@ Specify a slot in the breakpoint configuration for buttons, controls, or panels:
 Different slots can be used at each breakpoint, allowing an element to reposition itself as the layout changes.
 
 > [!NOTE]
-> At tablet and desktop breakpoints, panels assigned to `bottom` automatically fall back to `left-top`.
+> At tablet and desktop breakpoints, panels assigned to `drawer` automatically fall back to `left-top`.
 
 ## Ordering
 

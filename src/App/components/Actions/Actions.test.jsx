@@ -29,7 +29,7 @@ describe('Actions component', () => {
 
   it('adds the border class if a bottom slot panel is open', () => {
     mockUseApp.openPanels = { key: {} }
-    mockUseApp.panelConfig = { key: { mobile: { slot: 'bottom' } } }
+    mockUseApp.panelConfig = { key: { mobile: { slot: 'drawer' } } }
 
     render(<Actions slot='actions'>Content</Actions>)
     const container = screen.getByText('Content').closest('div')

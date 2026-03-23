@@ -178,6 +178,10 @@
 }
 
 // 4. State styles
+.im-c-map-button[aria-haspopup="true"][aria-expanded="true"] svg {
+    transform: rotate(180deg);
+}
+
 .im-c-map-button[aria-disabled="true"]:not(.im-c-map-button--primary):not(.im-c-map-button--tertiary) {
     svg, span {
         opacity: var(--disabled-button-opacity);

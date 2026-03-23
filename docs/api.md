@@ -560,9 +560,9 @@ See [PanelDefinition](./api/panel-definition.md) for configuration options. When
 interactiveMap.addPanel('info-panel', {
   label: 'Information',
   html: '<p>Panel content here</p>',
-  mobile: { slot: 'bottom' },
-  tablet: { slot: 'left' },
-  desktop: { slot: 'left' }
+  mobile: { slot: 'drawer' },
+  tablet: { slot: 'left-top' },
+  desktop: { slot: 'left-top' }
 })
 ```
 

@@ -238,32 +238,46 @@
 }
 
 // ---------------------------------------------------
-// Footer: Logo, scalebar, copyright etc
+// Bottom: Logo, scalebar, copyright etc
 // ---------------------------------------------------
 
-.im-o-app__footer {
+.im-o-app__bottom {
   display: flex;
   justify-content: space-between;
   align-items: flex-end;
   z-index: -2; // Support masking the viewport
 }
 
-.im-o-app__footer-col {
+.im-o-app__bottom-col {
   display: flex;
-  flex-direction: column;
   min-width: auto;
 }
 
-.im-o-app__footer-col:first-child {
-  justify-content: flex-start;
+.im-o-app__bottom-col:first-child {
+  flex-direction: row;
+  align-items: flex-end;
   flex-shrink: 0;
+  gap: var(--divider-gap);
 }
 
-.im-o-app__footer-col:last-child {
+.im-o-app__bottom-col:last-child {
+  position: relative; // anchor for absolutely-positioned attributions
   flex: 1 1 auto;
-  justify-content: flex-end;
-  text-align: right;
+  flex-direction: column;
+  align-items: flex-end;
   min-width: 0;
+}
+
+// Horizontal button rows within the bottom area
+.im-o-app__bottom-left,
+.im-o-app__bottom-right {
+  display: flex;
+  flex-direction: row;
+  gap: var(--divider-gap);
+}
+
+.im-o-app__bottom-right {
+  justify-content: flex-end;
 }
 
 // ---------------------------------------------------
@@ -271,20 +285,25 @@
 // ---------------------------------------------------
 
 .im-o-app__attributions:not(:empty) {
+  position: absolute;
+  bottom: calc(var(--primary-gap) * -1);
+  right: calc(var(--primary-gap) * -1);
   display: flex;
   justify-content: flex-end;
-  position: relative;
-  padding-top: var(--divider-gap);
-  margin-bottom: calc(var(--primary-gap) * -1);
-  margin-right: calc(var(--primary-gap) * -1);
 }
 
 // ---------------------------------------------------
-// Bottom:
+// Drawer:
 // ---------------------------------------------------
 
-.im-o-app__bottom {
+.im-o-app__drawer {
   z-index: 1;
+}
+
+.im-o-app__drawer .im-c-panel {
+  @include tools.border-focus-corner-override(
+    $corners: 'top'
+  );
 }
 
 // ---------------------------------------------------
@@ -387,10 +406,14 @@
     max-height: calc(100% - (var(--primary-gap) * 2));
   }
 
-  .im-c-panel--bottom {
+  .im-c-panel--drawer {
     top: auto;
     bottom: 0;
     max-height: 85%;
+
+    @include tools.border-focus-corner-override(
+      $corners: 'top'
+    );
   }
 
   [class*="im-c-panel--"][class*="-button"] { // Adjacent to button
@@ -452,15 +475,15 @@
     width: 100%;
     left: 0;
     bottom: calc(var(--primary-gap) * 2);
-    
+
     .im-c-panel {
       max-width: var(--action-bar-max-width);
     }
   }
 }
 
-// Bottom panels corners removed on mobile
-.im-o-app--mobile .im-o-app__bottom,
+// Drawer panels corners removed on mobile
+.im-o-app--mobile .im-o-app__drawer,
 .im-o-app--mobile .im-o-app__actions {
   margin: var(--primary-gap) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1);
 
@@ -473,8 +496,19 @@
   }
 }
 
-.im-o-app--mobile .im-o-app__bottom .im-c-panel {
+.im-o-app--mobile .im-o-app__drawer .im-c-panel {
     clip-path: inset(-20px 0 0 0);
+}
+
+// Inset focus ring on panels that are flush with the container edge,
+// so the ::after ring isn't clipped by the parent overflow:hidden
+.im-o-app--mobile .im-o-app__drawer .im-c-panel::after,
+.im-o-app--mobile .im-o-app__actions .im-c-panel::after,
+.im-o-app__modal .im-c-panel--drawer::after {
+  top: var(--focus-border-width);
+  right: var(--focus-border-width);
+  bottom: var(--focus-border-width);
+  left: var(--focus-border-width);
 }
 
 // 4. State styles

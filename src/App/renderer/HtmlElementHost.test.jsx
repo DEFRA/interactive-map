@@ -14,8 +14,8 @@ jest.mock('../components/Panel/Panel.jsx', () => ({
 }))
 jest.mock('./slots.js', () => ({
   allowedSlots: {
-    panel: ['left-top', 'side', 'modal', 'bottom'],
-    control: ['left-top', 'banner', 'bottom', 'actions']
+    panel: ['left-top', 'side', 'modal', 'drawer'],
+    control: ['left-top', 'banner', 'drawer', 'actions']
   }
 }))
 
@@ -28,7 +28,7 @@ const SlotHarness = ({ layoutRefs, children }) => (
     <div ref={layoutRefs.leftTopRef} data-slot='left-top' />
     <div ref={layoutRefs.sideRef} data-slot='side' />
     <div ref={layoutRefs.modalRef} data-slot='modal' />
-    <div ref={layoutRefs.bottomRef} data-slot='bottom' />
+    <div ref={layoutRefs.drawerRef} data-slot='drawer' />
     <div ref={layoutRefs.bannerRef} data-slot='banner' />
     <div ref={layoutRefs.actionsRef} data-slot='actions' />
     {children}
@@ -47,7 +47,7 @@ describe('HtmlElementHost', () => {
       topRightColRef: { current: null },
       leftTopRef: { current: null },
       middleRef: { current: null },
-      bottomRef: { current: null },
+      drawerRef: { current: null },
       actionsRef: { current: null },
       modalRef: { current: null },
       viewportRef: { current: null },
@@ -146,13 +146,13 @@ describe('HtmlElementHost', () => {
     expect(getByTestId('panel-p1').dataset.open).toBe('true')
   })
 
-  it('resolves bottom slot to left-top on desktop', () => {
+  it('resolves drawer slot to left-top on desktop', () => {
     const { container } = renderWithSlots({
-      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'bottom' } } },
+      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'drawer' } } },
       openPanels: { p1: { props: {} } }
     })
     expect(container.querySelector('[data-slot="left-top"] [data-testid="panel-p1"]')).toBeTruthy()
-    expect(container.querySelector('[data-slot="bottom"] [data-testid="panel-p1"]')).toBeNull()
+    expect(container.querySelector('[data-slot="drawer"] [data-testid="panel-p1"]')).toBeNull()
   })
 
   it('only shows topmost modal panel', () => {

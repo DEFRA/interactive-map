@@ -7,13 +7,13 @@ describe('resolveTargetSlot', () => {
     expect(resolveTargetSlot({ modal: true, slot: 'side' }, 'desktop')).toBe('modal')
   })
 
-  it('replaces bottom with left-top on tablet and desktop', () => {
-    expect(resolveTargetSlot({ slot: 'bottom' }, 'tablet')).toBe('left-top')
-    expect(resolveTargetSlot({ slot: 'bottom' }, 'desktop')).toBe('left-top')
+  it('replaces drawer with left-top on tablet and desktop', () => {
+    expect(resolveTargetSlot({ slot: 'drawer' }, 'tablet')).toBe('left-top')
+    expect(resolveTargetSlot({ slot: 'drawer' }, 'desktop')).toBe('left-top')
   })
 
-  it('keeps bottom on mobile', () => {
-    expect(resolveTargetSlot({ slot: 'bottom' }, 'mobile')).toBe('bottom')
+  it('keeps drawer on mobile', () => {
+    expect(resolveTargetSlot({ slot: 'drawer' }, 'mobile')).toBe('drawer')
   })
 
   it('returns slot as-is otherwise', () => {
