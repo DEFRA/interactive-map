@@ -5,14 +5,14 @@
  * @param {Function} transformRequest - Function to transform the request (builds URL with bbox, adds headers)
  * @returns {Promise<Object>} GeoJSON FeatureCollection
  */
-export const fetchGeoJSON = async (baseUrl, context, transformRequest) => {
+export const fetchGeoJSON = async (baseUrl, context, transformRequest, signal) => {
   const result = transformRequest(baseUrl, context)
 
   // Handle both string and object return values
   const config = typeof result === 'string' ? { url: result } : result
   const { url, headers = {} } = config
 
-  const response = await fetch(url, { headers })
+  const response = await fetch(url, { headers, signal })
 
   if (!response.ok) {
     throw new Error(`Failed to fetch GeoJSON: ${response.status} ${response.statusText}`)

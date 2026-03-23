@@ -6,7 +6,7 @@ const datasetDefaults = {
   minZoom: 6,
   maxZoom: 24,
   showInKey: false,
-  showInLayers: false,
+  toggleVisibility: false,
   visibility: 'visible'
 }
 

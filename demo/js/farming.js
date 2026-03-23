@@ -9,6 +9,7 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
+import { maplibreLayerAdapter } from '/plugins/beta/datasets/src/adapters/maplibre/index.js'
 import createDrawPlugin from '/plugins/beta/draw-ml/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
@@ -31,6 +32,7 @@ var interactPlugin = createInteractPlugin({
 })
 
 var datasetsPlugin = createDatasetsPlugin({
+	layerAdapter: maplibreLayerAdapter,
 	datasets: [{
 		id: 'field-parcels',
 		label: 'Field parcels',
@@ -49,7 +51,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true
+		toggleVisibility: true
 	},{
 		id: 'linked-parcels',
 		label: 'Existing fields',
@@ -67,7 +69,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true
+		toggleVisibility: true
 	},{
 		id: 'hedge-control',
 		label: 'Hedge control',
@@ -80,7 +82,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		showInLayers: true,
+		toggleVisibility: true,
 		visibility: 'hidden',
 		keySymbolShape: 'line'
 	}]

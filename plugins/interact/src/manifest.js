@@ -18,20 +18,16 @@ export const manifest = {
   buttons: [{
     id: 'selectAtTarget',
     label: 'Select',
-    iconId: 'select',
     variant: 'touch',
     hiddenWhen: ({ appState, pluginState }) => !pluginState.enabled || appState.interfaceType !== 'touch',
     mobile: {
-      slot: 'actions',
-      showLabel: false
+      slot: 'actions'
     },
     tablet: {
-      slot: 'actions',
-      showLabel: false
+      slot: 'actions'
     },
     desktop: {
-      slot: 'actions',
-      showLabel: false
+      slot: 'actions'
     }
   }, {
     id: 'selectCancel',

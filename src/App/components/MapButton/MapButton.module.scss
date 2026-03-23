@@ -125,16 +125,9 @@
 }
 
 .im-c-map-button--touch {
-    background-color: var(--map-overlay-foreground-color);
-    color: var(--map-overlay-halo-color);
-
-    width: var(--touch-button-size);
-    height: var(--touch-button-size);
-    border-radius: 100%;
-
-    &::before {
-        box-shadow: none;
-    }
+    background-color: var(--button-background-color);
+    color: var(--foreground-color);
+    padding: var(--touch-button-padding);
 }
 
 .im-o-app__right {

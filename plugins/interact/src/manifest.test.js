@@ -25,7 +25,9 @@ describe('manifest', () => {
     manifest.buttons.forEach(b => {
       ['mobile', 'tablet', 'desktop'].forEach(dev => {
         expect(b[dev].slot).toBe('actions')
-        expect(typeof b[dev].showLabel).toBe('boolean')
+        if (b[dev].showLabel !== undefined) {
+          expect(typeof b[dev].showLabel).toBe('boolean')
+        }
       })
     })
   })

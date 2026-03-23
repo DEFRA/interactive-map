@@ -1,7 +1,7 @@
 .im-c-datasets-layers__item {
   border: 1px solid var(--button-hover-color);
   padding-left: 10px;
-  &:not(last-child) {
+  &:not(:last-child) {
     margin-bottom: 5px;
   }
 }

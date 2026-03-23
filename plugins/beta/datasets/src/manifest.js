@@ -9,6 +9,8 @@ import { addDataset } from './api/addDataset.js'
 import { removeDataset } from './api/removeDataset.js'
 import { showFeatures } from './api/showFeatures.js'
 import { hideFeatures } from './api/hideFeatures.js'
+import { setStyle } from './api/setStyle.js'
+import { setData } from './api/setData.js'
 
 export const manifest = {
   InitComponent: DatasetsInit,
@@ -63,7 +65,7 @@ export const manifest = {
     label: 'Layers',
     panelId: 'datasetsLayers',
     iconId: 'layers',
-    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.find(l => l.showInLayers),
+    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.find(l => l.toggleVisibility),
     mobile: {
       slot: 'top-left',
       showLabel: true
@@ -110,6 +112,8 @@ export const manifest = {
     addDataset,
     removeDataset,
     showFeatures,
-    hideFeatures
+    hideFeatures,
+    setStyle,
+    setData
   }
 }

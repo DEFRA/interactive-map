@@ -1,46 +1,61 @@
 import React from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
+import { hasPattern, getKeyPatternPaths } from '../fillPatterns.js'
 
 export const Key = ({ mapState, pluginState }) => {
   const { mapStyle } = mapState
 
-  const itemSymbol = (dataset) => (
-    <svg
-      xmlns='http://www.w3.org/2000/svg'
-      width='20'
-      height='20'
-      viewBox='0 0 20 20'
-      aria-hidden='true'
-      focusable='false'
-    >
-      {dataset.keySymbolShape === 'line'
-        ? (
-          <line
-            x1={dataset.strokeWidth / 2}
-            y1='10'
-            x2={20 - dataset.strokeWidth / 2}
-            y2='10'
-            stroke={getValueForStyle(dataset.stroke, mapStyle.id)}
-            strokeWidth={dataset.strokeWidth}
-            strokeLinecap='round'
-          />
-          )
-        : (
-          <rect
-            x={dataset.strokeWidth / 2}
-            y={dataset.strokeWidth / 2}
-            width={20 - dataset.strokeWidth}
-            height={20 - dataset.strokeWidth}
-            rx={dataset.strokeWidth}
-            ry={dataset.strokeWidth}
-            fill={getValueForStyle(dataset.fill, mapStyle.id)}
-            stroke={getValueForStyle(dataset.stroke, mapStyle.id)}
-            strokeWidth={dataset.strokeWidth}
-            strokeLinejoin='round'
-          />
-          )}
-    </svg>
-  )
+  const itemSymbol = (dataset) => {
+    const svgProps = {
+      xmlns: 'http://www.w3.org/2000/svg',
+      width: '20',
+      height: '20',
+      viewBox: '0 0 20 20',
+      'aria-hidden': 'true',
+      focusable: 'false'
+    }
+
+    if (hasPattern(dataset)) {
+      const paths = getKeyPatternPaths(dataset, mapStyle.id)
+      return (
+        <svg {...svgProps}>
+          <g dangerouslySetInnerHTML={{ __html: paths.border }} />
+          <g transform='translate(2, 2)' dangerouslySetInnerHTML={{ __html: paths.content }} />
+        </svg>
+      )
+    }
+
+    return (
+      <svg {...svgProps}>
+        {dataset.keySymbolShape === 'line'
+          ? (
+            <line
+              x1={dataset.strokeWidth / 2}
+              y1='10'
+              x2={20 - dataset.strokeWidth / 2}
+              y2='10'
+              stroke={getValueForStyle(dataset.stroke, mapStyle.id)}
+              strokeWidth={dataset.strokeWidth}
+              strokeLinecap='round'
+            />
+            )
+          : (
+            <rect
+              x={dataset.strokeWidth / 2}
+              y={dataset.strokeWidth / 2}
+              width={20 - dataset.strokeWidth}
+              height={20 - dataset.strokeWidth}
+              rx={dataset.strokeWidth}
+              ry={dataset.strokeWidth}
+              fill={getValueForStyle(dataset.fill, mapStyle.id)}
+              stroke={getValueForStyle(dataset.stroke, mapStyle.id)}
+              strokeWidth={dataset.strokeWidth}
+              strokeLinejoin='round'
+            />
+            )}
+      </svg>
+    )
+  }
 
   return (
     <div className='im-c-datasets-key'>

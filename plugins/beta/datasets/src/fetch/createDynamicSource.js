@@ -14,17 +14,17 @@ const EVICTION_THRESHOLD = 1.2 // Trigger eviction at 120% of maxFeatures
  * @param {Function} options.onUpdate - Callback when source data should be updated
  * @returns {Object} { destroy, clear, refresh }
  */
-export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
+export const createDynamicSource = ({ dataset, map, onUpdate }) => {
   const { geojson: baseUrl, idProperty, transformRequest, maxFeatures, minZoom = 0 } = dataset
 
-  // Feature cache: id → { feature, bbox, addedAt }
+  // Feature cache: id → { feature, bbox, lastSeenAt }
   const features = new Map()
 
   // Track the bbox we've fetched data for
   let fetchedBbox = null
 
-  // Loading state
-  let isLoading = false
+  // Abort controller for the in-flight request
+  let currentController = null
 
   /**
    * Convert features Map to FeatureCollection
@@ -63,25 +63,25 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
       if (bboxIntersects(data.bbox, currentBbox)) {
         inView.push(id)
       } else {
-        outOfView.push({ id, addedAt: data.addedAt })
+        outOfView.push({ id, lastSeenAt: data.lastSeenAt })
       }
     }
 
-    // Sort out-of-view by insertion time (oldest first)
-    outOfView.sort((a, b) => a.addedAt - b.addedAt)
+    // Sort out-of-view by last seen time (least recently seen first)
+    outOfView.sort((a, b) => a.lastSeenAt - b.lastSeenAt)
 
-    // Evict oldest out-of-view features until under target
+    // Evict least-recently-seen out-of-view features until under target
     const toEvict = features.size - targetSize
     for (let i = 0; i < toEvict && i < outOfView.length; i++) {
       features.delete(outOfView[i].id)
     }
 
-    // If still over target (viewport has too many), evict oldest in-view
+    // If still over target (viewport has too many), evict least recently seen in-view
     if (features.size > targetSize) {
       const remaining = features.size - targetSize
       const inViewSorted = inView
-        .map(id => ({ id, addedAt: features.get(id).addedAt }))
-        .sort((a, b) => a.addedAt - b.addedAt)
+        .map(id => ({ id, lastSeenAt: features.get(id).lastSeenAt }))
+        .sort((a, b) => a.lastSeenAt - b.lastSeenAt)
 
       for (let i = 0; i < remaining && i < inViewSorted.length; i++) {
         features.delete(inViewSorted[i].id)
@@ -94,30 +94,24 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
    */
   const fetchData = async () => {
     const zoom = map.getZoom()
-    if (zoom < minZoom) {
-      return
-    }
+    if (zoom < minZoom) return
 
     const currentBbox = getBboxArray(map)
 
     // Skip if current viewport is already covered
-    if (fetchedBbox && bboxContains(fetchedBbox, currentBbox)) {
-      return
-    }
+    if (fetchedBbox && bboxContains(fetchedBbox, currentBbox)) return
 
-    if (isLoading) {
-      return
-    }
-
-    isLoading = true
+    // Abort any in-flight request — new viewport takes priority
+    if (currentController) currentController.abort()
+    currentController = new AbortController()
 
     try {
       const context = { bbox: currentBbox, zoom, dataset }
-      const data = await fetchGeoJSON(baseUrl, context, transformRequest)
+      const data = await fetchGeoJSON(baseUrl, context, transformRequest, currentController.signal)
 
       const now = Date.now()
 
-      // Add/update features with deduplication
+      // Add/update features with deduplication, refreshing lastSeenAt on each fetch
       data.features.forEach(feature => {
         const id = getFeatureId(feature)
         if (id == null) {
@@ -128,22 +122,26 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
         features.set(id, {
           feature,
           bbox: getGeometryBbox(feature.geometry),
-          addedAt: features.has(id) ? features.get(id).addedAt : now
+          lastSeenAt: now
         })
       })
 
       // Expand tracked bbox
       fetchedBbox = expandBbox(fetchedBbox, currentBbox)
 
-      // Evict if over limit
+      // Evict if over limit; if features were removed, fetchedBbox no longer
+      // covers those regions — reset to current viewport to force re-fetch on return
+      const sizeBeforeEviction = features.size
       evictIfNeeded(currentBbox)
+      if (features.size < sizeBeforeEviction) {
+        fetchedBbox = currentBbox
+      }
 
       // Update map source
-      onUpdate(sourceId, toFeatureCollection())
+      onUpdate(dataset.id, toFeatureCollection())
     } catch (error) {
+      if (error.name === 'AbortError') return
       console.error(`Failed to fetch dynamic GeoJSON for ${dataset.id}:`, error)
-    } finally {
-      isLoading = false
     }
   }
 
@@ -162,11 +160,12 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
 
   return {
     /**
-     * Clean up event listeners
+     * Clean up event listeners and cancel any in-flight request
      */
     destroy () {
       map.off('moveend', handleMoveEnd)
       debouncedFetch.cancel()
+      if (currentController) currentController.abort()
     },
 
     /**
@@ -175,7 +174,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
     clear () {
       features.clear()
       fetchedBbox = null
-      onUpdate(sourceId, { type: 'FeatureCollection', features: [] })
+      onUpdate(dataset.id, { type: 'FeatureCollection', features: [] })
     },
 
     /**
@@ -199,7 +198,7 @@ export const createDynamicSource = ({ dataset, map, sourceId, onUpdate }) => {
      */
     reapply () {
       if (features.size > 0) {
-        onUpdate(sourceId, toFeatureCollection())
+        onUpdate(dataset.id, toFeatureCollection())
       }
     }
   }
