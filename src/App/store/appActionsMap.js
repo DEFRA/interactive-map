@@ -152,6 +152,12 @@ const toggleHasExclusiveControl = (state, payload) => {
   }
 }
 
+const setPluginsEvaluated = (state) =>
+  state.arePluginsEvaluated ? state : { ...state, arePluginsEvaluated: true }
+
+const clearPluginsEvaluated = (state) =>
+  state.arePluginsEvaluated ? { ...state, arePluginsEvaluated: false } : state
+
 const setSafeZoneInset = (state, { safeZoneInset, syncMapPadding = true }) => {
   return shallowEqual(state.safeZoneInset, safeZoneInset)
     ? state
@@ -161,6 +167,13 @@ const setSafeZoneInset = (state, { safeZoneInset, syncMapPadding = true }) => {
         syncMapPadding,
         isLayoutReady: true
       }
+}
+
+const toggleAppVisible = (state, payload) => {
+  return {
+    ...state,
+    appVisible: payload
+  }
 }
 
 const toggleButtonDisabled = (state, payload) => {
@@ -358,12 +371,15 @@ export const actionsMap = {
   SET_HYBRID_FULLSCREEN: setHybridFullscreen,
   SET_INTERFACE_TYPE: setInterfaceType,
   SET_MODE: setMode,
+  PLUGINS_EVALUATED: setPluginsEvaluated,
+  CLEAR_PLUGINS_EVALUATED: clearPluginsEvaluated,
   SET_SAFE_ZONE_INSET: setSafeZoneInset,
   REVERT_MODE: revertMode,
   OPEN_PANEL: openPanel,
   CLOSE_PANEL: closePanel,
   CLOSE_ALL_PANELS: closeAllPanels,
   RESTORE_PREVIOUS_PANELS: restorePreviousPanels,
+  TOGGLE_APP_VISIBLE: toggleAppVisible,
   TOGGLE_HAS_EXCLUSIVE_CONTROL: toggleHasExclusiveControl,
   TOGGLE_BUTTON_DISABLED: toggleButtonDisabled,
   TOGGLE_BUTTON_HIDDEN: toggleButtonHidden,

@@ -128,6 +128,26 @@ describe('actionsMap full coverage', () => {
     expect(result.hasExclusiveControl).toBe(true)
   })
 
+  test('PLUGINS_EVALUATED is no-op when arePluginsEvaluated already true', () => {
+    const s = { ...state, arePluginsEvaluated: true }
+    expect(actionsMap.PLUGINS_EVALUATED(s)).toBe(s)
+  })
+
+  test('PLUGINS_EVALUATED sets arePluginsEvaluated when false', () => {
+    const s = { ...state, arePluginsEvaluated: false }
+    expect(actionsMap.PLUGINS_EVALUATED(s).arePluginsEvaluated).toBe(true)
+  })
+
+  test('CLEAR_PLUGINS_EVALUATED clears arePluginsEvaluated when true', () => {
+    const s = { ...state, arePluginsEvaluated: true }
+    expect(actionsMap.CLEAR_PLUGINS_EVALUATED(s).arePluginsEvaluated).toBe(false)
+  })
+
+  test('CLEAR_PLUGINS_EVALUATED is no-op when arePluginsEvaluated already false', () => {
+    const s = { ...state, arePluginsEvaluated: false }
+    expect(actionsMap.CLEAR_PLUGINS_EVALUATED(s)).toBe(s)
+  })
+
   test('SET_SAFE_ZONE_INSET branch true/false', () => {
     shallowEqualModule.shallowEqual.mockReturnValueOnce(false)
     const res1 = actionsMap.SET_SAFE_ZONE_INSET(state, { safeZoneInset: { top: 10, bottom: 10 } })
@@ -150,6 +170,13 @@ describe('actionsMap full coverage', () => {
     expect(r1.hiddenButtons.has('btn4')).toBe(true)
     const r2 = actionsMap.TOGGLE_BUTTON_HIDDEN(state, { id: 'btn3', isHidden: false })
     expect(r2.hiddenButtons.has('btn3')).toBe(false)
+  })
+
+  test('TOGGLE_APP_VISIBLE sets appVisible to payload', () => {
+    const r1 = actionsMap.TOGGLE_APP_VISIBLE(state, true)
+    expect(r1.appVisible).toBe(true)
+    const r2 = actionsMap.TOGGLE_APP_VISIBLE(state, false)
+    expect(r2.appVisible).toBe(false)
   })
 
   test('TOGGLE_BUTTON_PRESSED adds/removes button', () => {

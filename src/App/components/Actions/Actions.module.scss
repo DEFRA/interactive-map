@@ -6,11 +6,6 @@
   padding: var(--panel-margin);
   max-height: 200px;
 
-  @media (prefers-reduced-motion: no-preference) {
-    transition: max-height var(--duration) ease, opacity var(--duration) ease,
-      padding-top var(--duration) ease, padding-bottom var(--duration) ease;
-  }
-
   &--border-top {
     border-top: 1px solid var(--app-border-color);
   }

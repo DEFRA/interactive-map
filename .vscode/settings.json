@@ -1,6 +1,6 @@
 {
     "sonarlint.connectedMode.project": {
         "connectionId": "defra",
-        "projectKey": "DEFRA_defra-map"
+        "projectKey": "DEFRA_interactive-map"
     }
 }

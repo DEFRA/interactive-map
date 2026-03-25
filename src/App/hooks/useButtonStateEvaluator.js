@@ -1,4 +1,3 @@
-// src/core/hooks/useButtonStateEvaluator.js
 import { useLayoutEffect, useContext } from 'react'
 import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
@@ -61,6 +60,12 @@ export function useButtonStateEvaluator (evaluateProp) {
     }
 
     const { dispatch } = appState
+    let dispatchCount = 0
+
+    const trackingDispatch = (action) => {
+      dispatchCount++
+      dispatch(action)
+    }
 
     pluginRegistry.registeredPlugins.forEach(plugin => {
       const buttons = (plugin?.manifest?.buttons ?? []).flatMap(b => [b, ...(b.menuItems ?? [])])
@@ -70,10 +75,15 @@ export function useButtonStateEvaluator (evaluateProp) {
           btn,
           pluginId: plugin.id,
           appState,
-          dispatch,
+          dispatch: trackingDispatch,
           evaluateProp
         })
       )
     })
+
+    if (dispatchCount === 0 && !appState.arePluginsEvaluated) {
+      // No changes and flag not yet set — all button states have settled.
+      dispatch({ type: 'PLUGINS_EVALUATED' })
+    }
   }, [appState, pluginContext, evaluateProp])
 }

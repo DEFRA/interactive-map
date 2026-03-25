@@ -28,7 +28,6 @@
  * @param {React.RefObject}  refs.rightRef         - Right button column.
  * @param {React.RefObject}  refs.actionsRef       - Bottom action bar.
  * @param {React.RefObject}  refs.bottomRef        - Bottom row (logo, copyright, etc).
- * @param {React.RefObject} [refs.bottomRightRef]  - Bottom-right button container (collapses margin when empty).
  * @param {React.RefObject} [refs.leftTopRef]      - Top-left panel slot.
  * @param {React.RefObject} [refs.leftBottomRef]   - Bottom-left panel slot.
  * @param {React.RefObject} [refs.rightTopRef]     - Top-right panel slot.
@@ -108,7 +107,7 @@ const computeRow = (leftW, rightW, leftH, rightH, wThreshold, baseInset, gap) =>
   leftW + rightW > wThreshold ? baseInset + Math.max(leftH, rightH) + gap : 0
 
 export const getSafeZoneInset = ({
-  mainRef, leftRef, rightRef, actionsRef, bottomRef, bottomRightRef,
+  mainRef, leftRef, rightRef, actionsRef, bottomRef,
   leftTopRef, leftBottomRef, rightTopRef, rightBottomRef
 }) => {
   if ([mainRef, leftRef, rightRef, actionsRef, bottomRef].some(ref => !ref?.current)) {
@@ -128,9 +127,9 @@ export const getSafeZoneInset = ({
   const baseLeft = main.offsetLeft + left.offsetLeft + colWidth + gap
   const baseRight = left.offsetLeft + colWidth + gap
   const baseTop = left.offsetTop
-  const bottomRightHeight = bottomRightRef?.current?.offsetHeight ?? 0
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
-  const bottomInset = Math.max(bottomRightHeight, gap) + bottomContainerPad + gap // mirrors --right-offset-bottom CSS var
+  // Minimum: primary-gap above the bottom edge. Normally: divider-gap above the top of the bottom container.
+  const bottomInset = Math.max(bottomContainerPad, main.offsetHeight - bottom.offsetTop + gap)
   const baseBottom = Math.max(main.offsetHeight - actions.offsetTop + gap, bottomInset)
 
   const availableH = main.offsetHeight - baseTop - baseBottom

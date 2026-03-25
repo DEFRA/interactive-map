@@ -245,6 +245,8 @@ export default class InteractiveMap {
     if (parts.length > 1) {
       document.title = parts[parts.length - 1]
     }
+
+    this.eventBus.emit(events.APP_HIDDEN)
   }
 
   /**
@@ -262,6 +264,8 @@ export default class InteractiveMap {
     }
 
     updateDOMState(this)
+
+    this.eventBus.emit(events.APP_VISIBLE)
   }
 
   /**

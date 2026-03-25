@@ -44,11 +44,12 @@
 // Status
 .im-c-search__status {
   position: absolute;
-  top: calc(100% + 1px);
+  top: 100%;
   left: 0;
   right: 0;
   padding: var(--divider-gap) calc(var(--divider-gap) + 2px);
   background-color: var(--background-color);
+  border-top: 1px solid var(--button-hover-color);
   border-bottom-left-radius: var(--button-border-radius);
   border-bottom-right-radius: var(--button-border-radius);
 }

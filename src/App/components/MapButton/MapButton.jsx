@@ -46,6 +46,37 @@ const handleKeyUp = (e) => {
   }
 }
 
+const captureMenuRect = (buttonRefs, buttonId, setMenuRect) => {
+  const btn = buttonRefs.current[buttonId]
+  if (!btn) {
+    return
+  }
+  setMenuRect(btn.getBoundingClientRect().toJSON())
+}
+
+/**
+ * Returns a keyup handler for buttons that control a popup menu.
+ * ArrowDown opens the menu at the first item; ArrowUp opens at the last.
+ * @param {boolean} hasMenu - Whether the button has a popup menu
+ * @param {Object} buttonRefs - React ref map of button elements
+ * @param {string} buttonId - Unique button identifier
+ * @param {Function} setMenuStartPos - State setter for menu start position
+ * @param {Function} setMenuRect - State setter for button bounding rect
+ * @param {Function} setIsPopupOpen - State setter for popup open state
+ * @returns {Function} Keyboard event handler
+ */
+const makePopupKeyUpHandler = (hasMenu, buttonRefs, buttonId, setMenuStartPos, setMenuRect, setIsPopupOpen) => (e) => {
+  if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
+    e.preventDefault()
+    setMenuStartPos(e.key === 'ArrowUp' ? 'last' : 'first')
+    captureMenuRect(buttonRefs, buttonId, setMenuRect)
+    setIsPopupOpen(true)
+  }
+}
+
+const getButtonSlot = (panelId, buttonId) =>
+  panelId ? `${stringToKebab(buttonId)}-button` : undefined
+
 /**
  * Determines the controlled element (panel or popup menu) for ARIA attributes.
  * @param {Object} options - Configuration options
@@ -182,15 +213,9 @@ export const MapButton = ({
 
   const Element = href ? 'a' : 'button'
   const hasMenu = menuItems?.length >= 1
+  const showIcon = iconId || iconSvgContent || hasMenu
+  const buttonSlot = getButtonSlot(panelId, buttonId)
   const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu })
-
-  const captureMenuRect = () => {
-    const btn = buttonRefs.current[buttonId]
-    if (!btn) {
-      return
-    }
-    setMenuRect(btn.getBoundingClientRect().toJSON())
-  }
 
   /**
    * Handles button click events.
@@ -207,7 +232,7 @@ export const MapButton = ({
       /* istanbul ignore next as pointerType can't be tested in jest */
       setMenuStartPos(isKeyboard ? 'first' : null)
       if (!isPopupOpen) {
-        captureMenuRect()
+        captureMenuRect(buttonRefs, buttonId, setMenuRect)
       }
       setIsPopupOpen((prev) => !prev)
     }
@@ -216,20 +241,7 @@ export const MapButton = ({
     }
   }
 
-  /**
-   * Handles key up events on buttons that control popup menus.
-   * ArrowDown opens the menu at the first item.
-   * ArrowUp opens the menu at the last item.
-   * @param {React.KeyboardEvent} e - The keyboard event
-   */
-  const handleButtonKeyUp = e => {
-    if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
-      e.preventDefault()
-      setMenuStartPos(e.key === 'ArrowUp' ? 'last' : 'first')
-      captureMenuRect()
-      setIsPopupOpen(true)
-    }
-  }
+  const handleButtonKeyUp = makePopupKeyUpHandler(hasMenu, buttonRefs, buttonId, setMenuStartPos, setMenuRect, setIsPopupOpen)
 
   const buttonProps = buildButtonProps({
     appId,
@@ -249,7 +261,7 @@ export const MapButton = ({
 
   const buttonEl = (
     <Element {...buttonProps}>
-      {(iconId || iconSvgContent) && <Icon id={iconId} svgContent={iconSvgContent} />}
+      {showIcon && <Icon id={iconId} svgContent={iconSvgContent} isMenu={hasMenu} />}
       {showLabel && <span>{label}</span>}
     </Element>
   )
@@ -257,11 +269,11 @@ export const MapButton = ({
   return (
     <div
       className={buildWrapperClassNames(buttonId, showLabel)}
-      data-button-slot={panelId ? `${stringToKebab(buttonId)}-button` : undefined}
+      data-button-slot={buttonSlot}
       style={isHidden ? { display: 'none' } : undefined}
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
-      {panelId && <SlotRenderer slot={`${stringToKebab(buttonId)}-button`} />}
+      {buttonSlot && <SlotRenderer slot={buttonSlot} />}
       {isPopupOpen && <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} buttonRect={menuRect} />}
     </div>
   )

@@ -134,7 +134,7 @@ interactiveMap.on('app:ready', function (e) {
 	interactiveMap.addPanel('key', {
 		label: 'Key',
 		html: renderKeyHTML(),
-		mobile: { slot: 'bottom', open: false, exclusive: true },
+		mobile: { slot: 'drawer', open: false, exclusive: true },
 		tablet: { slot: 'left-top', width: '260px', open: false, exclusive: true },
 		desktop: { slot: 'left-top', width: '280px', open: false, exclusive: true }
 	})

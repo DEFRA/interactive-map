@@ -206,4 +206,10 @@ describe('MapButton', () => {
     fireEvent.keyUp(el, { key: 'Enter' })
     expect(spy).not.toHaveBeenCalled()
   })
+
+  it('renders no Icon when iconId, iconSvgContent and menuItems are all absent', () => {
+    render(<MapButton buttonId='Test' label='Label' />)
+    expect(screen.queryByRole('img', { hidden: true })).toBeNull()
+    expect(screen.queryByTestId('icon')).toBeNull()
+  })
 })
