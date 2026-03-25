@@ -74,6 +74,9 @@ const makePopupKeyUpHandler = (hasMenu, buttonRefs, buttonId, setMenuStartPos, s
   }
 }
 
+const getButtonSlot = (panelId, buttonId) =>
+  panelId ? `${stringToKebab(buttonId)}-button` : undefined
+
 /**
  * Determines the controlled element (panel or popup menu) for ARIA attributes.
  * @param {Object} options - Configuration options
@@ -210,6 +213,8 @@ export const MapButton = ({
 
   const Element = href ? 'a' : 'button'
   const hasMenu = menuItems?.length >= 1
+  const showIcon = iconId || iconSvgContent || hasMenu
+  const buttonSlot = getButtonSlot(panelId, buttonId)
   const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu })
 
   /**
@@ -256,7 +261,7 @@ export const MapButton = ({
 
   const buttonEl = (
     <Element {...buttonProps}>
-      {(iconId || iconSvgContent || hasMenu) && <Icon id={iconId} svgContent={iconSvgContent} isMenu={hasMenu} />}
+      {showIcon && <Icon id={iconId} svgContent={iconSvgContent} isMenu={hasMenu} />}
       {showLabel && <span>{label}</span>}
     </Element>
   )
@@ -264,11 +269,11 @@ export const MapButton = ({
   return (
     <div
       className={buildWrapperClassNames(buttonId, showLabel)}
-      data-button-slot={panelId ? `${stringToKebab(buttonId)}-button` : undefined}
+      data-button-slot={buttonSlot}
       style={isHidden ? { display: 'none' } : undefined}
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
-      {panelId && <SlotRenderer slot={`${stringToKebab(buttonId)}-button`} />}
+      {buttonSlot && <SlotRenderer slot={buttonSlot} />}
       {isPopupOpen && <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} buttonRect={menuRect} />}
     </div>
   )
