@@ -1,6 +1,8 @@
 export const hideFeatures = ({ pluginState }, { featureIds, idProperty, datasetId }) => {
   const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-  if (!dataset) return
+  if (!dataset) {
+    return
+  }
 
   const existingHidden = pluginState.hiddenFeatures[datasetId]
   const allHiddenIds = existingHidden

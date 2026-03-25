@@ -31,3 +31,16 @@
     margin-left: -3px;
   }
 }
+
+.im-c-datasets-layers__group {
+  &:not(:last-child) {
+    margin-bottom: 5px;
+  }
+}
+
+.im-c-datasets-layers__group-label {
+  padding: 8px 10px 4px;
+  font-size: 0.875rem;
+  font-weight: bold;
+  color: var(--foreground-color);
+}

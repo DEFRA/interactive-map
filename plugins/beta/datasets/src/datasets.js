@@ -24,7 +24,9 @@ export const createDatasets = ({
   // Initialise all datasets via the adapter, then set up dynamic sources
   adapter.init(datasets, mapStyleId).then(() => {
     datasets.forEach(dataset => {
-      if (!isDynamicSource(dataset)) return
+      if (!isDynamicSource(dataset)) {
+        return
+      }
 
       const dynamicSource = createDynamicSource({
         dataset,

@@ -94,15 +94,21 @@ export const createDynamicSource = ({ dataset, map, onUpdate }) => {
    */
   const fetchData = async () => {
     const zoom = map.getZoom()
-    if (zoom < minZoom) return
+    if (zoom < minZoom) {
+      return
+    }
 
     const currentBbox = getBboxArray(map)
 
     // Skip if current viewport is already covered
-    if (fetchedBbox && bboxContains(fetchedBbox, currentBbox)) return
+    if (fetchedBbox && bboxContains(fetchedBbox, currentBbox)) {
+      return
+    }
 
     // Abort any in-flight request — new viewport takes priority
-    if (currentController) currentController.abort()
+    if (currentController) {
+      currentController.abort()
+    }
     currentController = new AbortController()
 
     try {
@@ -140,7 +146,9 @@ export const createDynamicSource = ({ dataset, map, onUpdate }) => {
       // Update map source
       onUpdate(dataset.id, toFeatureCollection())
     } catch (error) {
-      if (error.name === 'AbortError') return
+      if (error.name === 'AbortError') {
+        return
+      }
       console.error(`Failed to fetch dynamic GeoJSON for ${dataset.id}:`, error)
     }
   }
@@ -165,7 +173,9 @@ export const createDynamicSource = ({ dataset, map, onUpdate }) => {
     destroy () {
       map.off('moveend', handleMoveEnd)
       debouncedFetch.cancel()
-      if (currentController) currentController.abort()
+      if (currentController) {
+        currentController.abort()
+      }
     },
 
     /**

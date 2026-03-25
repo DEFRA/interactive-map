@@ -14,5 +14,5 @@
  * })
  */
 export const maplibreLayerAdapter = {
-  load: () => import(/* webpackChunkName: "im-datasets-ml-adapter" */ './adapter.js')
+  load: () => import(/* webpackChunkName: "im-datasets-ml-adapter" */ './maplibreLayerAdapter.js')
 }
