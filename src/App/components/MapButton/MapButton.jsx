@@ -46,6 +46,34 @@ const handleKeyUp = (e) => {
   }
 }
 
+const captureMenuRect = (buttonRefs, buttonId, setMenuRect) => {
+  const btn = buttonRefs.current[buttonId]
+  if (!btn) {
+    return
+  }
+  setMenuRect(btn.getBoundingClientRect().toJSON())
+}
+
+/**
+ * Returns a keyup handler for buttons that control a popup menu.
+ * ArrowDown opens the menu at the first item; ArrowUp opens at the last.
+ * @param {boolean} hasMenu - Whether the button has a popup menu
+ * @param {Object} buttonRefs - React ref map of button elements
+ * @param {string} buttonId - Unique button identifier
+ * @param {Function} setMenuStartPos - State setter for menu start position
+ * @param {Function} setMenuRect - State setter for button bounding rect
+ * @param {Function} setIsPopupOpen - State setter for popup open state
+ * @returns {Function} Keyboard event handler
+ */
+const makePopupKeyUpHandler = (hasMenu, buttonRefs, buttonId, setMenuStartPos, setMenuRect, setIsPopupOpen) => (e) => {
+  if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
+    e.preventDefault()
+    setMenuStartPos(e.key === 'ArrowUp' ? 'last' : 'first')
+    captureMenuRect(buttonRefs, buttonId, setMenuRect)
+    setIsPopupOpen(true)
+  }
+}
+
 /**
  * Determines the controlled element (panel or popup menu) for ARIA attributes.
  * @param {Object} options - Configuration options
@@ -55,12 +83,6 @@ const handleKeyUp = (e) => {
  * @param {boolean} options.hasMenu - Whether the button has a popup menu
  * @returns {Object|null} Object with id and type ('panel' or 'popup'), or null if no controlled element
  */
-const captureMenuRect = (buttonRefs, buttonId, setMenuRect) => {
-  const btn = buttonRefs.current[buttonId]
-  if (!btn) return
-  setMenuRect(btn.getBoundingClientRect().toJSON())
-}
-
 const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu }) => {
   if (panelId) {
     return { id: `${idPrefix}-panel-${stringToKebab(panelId)}`, type: 'panel' }
@@ -214,20 +236,7 @@ export const MapButton = ({
     }
   }
 
-  /**
-   * Handles key up events on buttons that control popup menus.
-   * ArrowDown opens the menu at the first item.
-   * ArrowUp opens the menu at the last item.
-   * @param {React.KeyboardEvent} e - The keyboard event
-   */
-  const handleButtonKeyUp = e => {
-    if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
-      e.preventDefault()
-      setMenuStartPos(e.key === 'ArrowUp' ? 'last' : 'first')
-      captureMenuRect(buttonRefs, buttonId, setMenuRect)
-      setIsPopupOpen(true)
-    }
-  }
+  const handleButtonKeyUp = makePopupKeyUpHandler(hasMenu, buttonRefs, buttonId, setMenuStartPos, setMenuRect, setIsPopupOpen)
 
   const buttonProps = buildButtonProps({
     appId,
