@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef } from 'react'
+import { useLayoutEffect } from 'react'
 import { useResizeObserver } from './useResizeObserver.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
@@ -28,9 +28,11 @@ const subSlotMaxHeight = (columnHeight, siblingButtons, gap) =>
  * ### Trigger events
  * The following state changes can alter which buttons are visible and therefore
  * how much space the UI occupies:
- *   - `breakpoint` — responsive layout changes (desktop ↔ mobile / tablet)
- *   - `mapSize`    — map container size variant changes
- *   - `isMapReady` — plugins are enabled on `map:ready`, changing button visibility
+ *   - `breakpoint`   — responsive layout changes (desktop ↔ mobile / tablet)
+ *   - `mapSize`      — map container size variant changes
+ *   - `isMapReady`   — plugins are enabled on `map:ready`, changing button visibility
+ *   - `isFullscreen` — fullscreen entry/exit changes which buttons are visible
+ *   - `appVisible`   — app shown/hidden by parent HTML outside React (hybrid mode)
  *
  * When any of these change, `CLEAR_PLUGINS_EVALUATED` is dispatched (Effect 2),
  * which prevents the safe zone from being re-dispatched until
@@ -45,14 +47,12 @@ const subSlotMaxHeight = (columnHeight, siblingButtons, gap) =>
  *
  * ### Resize observer
  * Effect 4 keeps CSS custom properties up to date whenever any observed element
- * resizes (e.g. panels opening, banner appearing). It also re-dispatches the
- * safe zone when the main container transitions from hidden (height 0) to
- * visible — the only signal available when the map container is shown or hidden
- * by parent HTML outside of React (e.g. a hybrid-mode "Show map" button).
+ * resizes (e.g. panels opening, banner appearing, actions buttons toggling).
+ * It does not dispatch the safe zone — safe zone dispatch is owned entirely by
+ * Effect 3 to prevent jumps on panel open/close and other non-structural resizes.
  */
 export function useLayoutMeasurements () {
-  const { dispatch, breakpoint, layoutRefs, arePluginsEvaluated } = useApp()
-  const mainPrevHeightRef = useRef(null)
+  const { dispatch, breakpoint, layoutRefs, arePluginsEvaluated, appVisible, isFullscreen } = useApp()
   const { mapSize, isMapReady } = useMap()
 
   const {
@@ -130,7 +130,7 @@ export function useLayoutMeasurements () {
   // --------------------------------
   useLayoutEffect(() => {
     dispatch({ type: 'CLEAR_PLUGINS_EVALUATED' })
-  }, [breakpoint, mapSize, isMapReady])
+  }, [breakpoint, mapSize, isMapReady, appVisible, isFullscreen])
 
   // --------------------------------
   // 3. Once all plugin button props have been evaluated (arePluginsEvaluated),
@@ -151,25 +151,13 @@ export function useLayoutMeasurements () {
   }, [arePluginsEvaluated])
 
   // --------------------------------
-  // 4. Recalculate CSS vars whenever observed elements resize. Also dispatches
-  //    the safe zone when the main container transitions from hidden (height 0)
-  //    to visible — the only signal available when parent HTML shows the map
-  //    container outside of React (e.g. hybrid "Show map" button).
+  // 4. Recalculate CSS vars whenever observed elements resize (panels, banner,
+  //    actions buttons, etc.). Safe zone is intentionally not dispatched here —
+  //    that is Effect 3's responsibility.
   // --------------------------------
   useResizeObserver([bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef], () => {
     requestAnimationFrame(() => {
-      const mainHeight = mainRef?.current?.offsetHeight ?? 0
-      const wasHidden = mainPrevHeightRef.current === 0
-      mainPrevHeightRef.current = mainHeight
-
       calculateLayout()
-
-      if (wasHidden && mainHeight > 0) {
-        const safeZoneInset = getSafeZoneInset(layoutRefs)
-        if (safeZoneInset) {
-          dispatch({ type: 'SET_SAFE_ZONE_INSET', payload: { safeZoneInset } })
-        }
-      }
     })
   })
 }

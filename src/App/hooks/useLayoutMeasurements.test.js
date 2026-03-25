@@ -213,6 +213,15 @@ describe('useLayoutMeasurements', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
   })
 
+  test('dispatches CLEAR_PLUGINS_EVALUATED when appVisible changes', () => {
+    setup({ app: { appVisible: false } })
+    const { rerender } = renderHook(() => useLayoutMeasurements())
+    const { dispatch } = setup({ app: { appVisible: true } })
+    dispatch.mockClear()
+    rerender()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
+  })
+
   test('recalculates layout when arePluginsEvaluated becomes true', () => {
     setup({ app: { arePluginsEvaluated: false } })
     const { rerender } = renderHook(() => useLayoutMeasurements())
@@ -235,51 +244,18 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalled()
   })
 
-  test('resize observer dispatches safe zone when main transitions from hidden to visible', () => {
-    const { dispatch, layoutRefs } = setup()
-    getSafeZoneInset.mockReturnValue({ top: 5, right: 5, bottom: 10, left: 5 })
-    // Start with main hidden (height 0)
-    Object.defineProperty(layoutRefs.mainRef.current, 'offsetHeight', { value: 0, configurable: true })
+  test('resize observer does not dispatch safe zone (safe zone is Effect 3 only)', () => {
+    const { dispatch } = setup()
     renderHook(() => useLayoutMeasurements())
-    // First resize observer fire records height 0
-    useResizeObserver.mock.calls[0][1]()
     dispatch.mockClear()
-    // Main becomes visible (height > 0)
-    Object.defineProperty(layoutRefs.mainRef.current, 'offsetHeight', { value: 500, configurable: true })
     useResizeObserver.mock.calls[0][1]()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SAFE_ZONE_INSET', payload: { safeZoneInset: { top: 5, right: 5, bottom: 10, left: 5 } } })
+    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_SAFE_ZONE_INSET' }))
   })
 
-  test('resize observer handles null mainRef current (uses 0 via ??)', () => {
+  test('resize observer handles null mainRef without throwing', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     layoutRefs.mainRef.current = null
-    // Should not throw; mainHeight falls back to 0 via ?? operator
     expect(() => useResizeObserver.mock.calls[0][1]()).not.toThrow()
-  })
-
-  test('resize observer does not dispatch safe zone when getSafeZoneInset returns undefined on 0→visible transition', () => {
-    const { dispatch, layoutRefs } = setup()
-    getSafeZoneInset.mockReturnValue(undefined)
-    Object.defineProperty(layoutRefs.mainRef.current, 'offsetHeight', { value: 0, configurable: true })
-    renderHook(() => useLayoutMeasurements())
-    useResizeObserver.mock.calls[0][1]()
-    dispatch.mockClear()
-    Object.defineProperty(layoutRefs.mainRef.current, 'offsetHeight', { value: 500, configurable: true })
-    useResizeObserver.mock.calls[0][1]()
-    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_SAFE_ZONE_INSET' }))
-  })
-
-  test('resize observer does not dispatch safe zone when main is already visible', () => {
-    const { dispatch, layoutRefs } = setup()
-    // Main starts visible (non-zero height)
-    Object.defineProperty(layoutRefs.mainRef.current, 'offsetHeight', { value: 500, configurable: true })
-    renderHook(() => useLayoutMeasurements())
-    // Record initial height
-    useResizeObserver.mock.calls[0][1]()
-    dispatch.mockClear()
-    // Another resize (panel opens etc.) — height stays non-zero
-    useResizeObserver.mock.calls[0][1]()
-    expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_SAFE_ZONE_INSET' }))
   })
 })

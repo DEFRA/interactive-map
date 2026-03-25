@@ -174,7 +174,7 @@ describe('useButtonStateEvaluator', () => {
     expect(mockDispatch).not.toHaveBeenCalled()
   })
 
-  it('dispatches CLEAR_PLUGINS_EVALUATED when button states change, not PLUGINS_EVALUATED', () => {
+  it('does not dispatch CLEAR_PLUGINS_EVALUATED or PLUGINS_EVALUATED when button states change', () => {
     mockAppState.arePluginsEvaluated = false
     mockPluginRegistry.registeredPlugins = [{
       id: 'p1',
@@ -182,11 +182,12 @@ describe('useButtonStateEvaluator', () => {
     }]
 
     renderHook(() => useButtonStateEvaluator((fn) => fn()))
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_BUTTON_HIDDEN', payload: { id: 'btn1', isHidden: true } })
+    expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
     expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'PLUGINS_EVALUATED' })
   })
 
-  it('dispatches CLEAR_PLUGINS_EVALUATED when button states change even if already evaluated', () => {
+  it('does not dispatch CLEAR_PLUGINS_EVALUATED when button states change and already evaluated', () => {
     mockAppState.arePluginsEvaluated = true
     mockPluginRegistry.registeredPlugins = [{
       id: 'p1',
@@ -194,6 +195,6 @@ describe('useButtonStateEvaluator', () => {
     }]
 
     renderHook(() => useButtonStateEvaluator((fn) => fn()))
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
+    expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
   })
 })

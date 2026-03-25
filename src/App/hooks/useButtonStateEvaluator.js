@@ -1,4 +1,3 @@
-// src/core/hooks/useButtonStateEvaluator.js
 import { useLayoutEffect, useContext } from 'react'
 import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
@@ -82,11 +81,8 @@ export function useButtonStateEvaluator (evaluateProp) {
       )
     })
 
-    if (dispatchCount > 0) {
-      // Button states changed — clear the flag so the safe zone re-reads after the next stable pass.
-      dispatch({ type: 'CLEAR_PLUGINS_EVALUATED' })
-    } else if (!appState.arePluginsEvaluated) {
-      // No changes and flag not yet set — all hiddenWhen/enableWhen/etc. have settled.
+    if (dispatchCount === 0 && !appState.arePluginsEvaluated) {
+      // No changes and flag not yet set — all button states have settled.
       dispatch({ type: 'PLUGINS_EVALUATED' })
     }
   }, [appState, pluginContext, evaluateProp])

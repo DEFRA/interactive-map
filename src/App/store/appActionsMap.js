@@ -169,6 +169,13 @@ const setSafeZoneInset = (state, { safeZoneInset, syncMapPadding = true }) => {
       }
 }
 
+const toggleAppVisible = (state, payload) => {
+  return {
+    ...state,
+    appVisible: payload
+  }
+}
+
 const toggleButtonDisabled = (state, payload) => {
   const { id, isDisabled } = payload
   const updated = new Set(state.disabledButtons)
@@ -372,6 +379,7 @@ export const actionsMap = {
   CLOSE_PANEL: closePanel,
   CLOSE_ALL_PANELS: closeAllPanels,
   RESTORE_PREVIOUS_PANELS: restorePreviousPanels,
+  TOGGLE_APP_VISIBLE: toggleAppVisible,
   TOGGLE_HAS_EXCLUSIVE_CONTROL: toggleHasExclusiveControl,
   TOGGLE_BUTTON_DISABLED: toggleButtonDisabled,
   TOGGLE_BUTTON_HIDDEN: toggleButtonHidden,

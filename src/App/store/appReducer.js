@@ -29,6 +29,7 @@ export const initialState = (config) => {
   const openPanels = getInitialOpenPanels(panelConfig, initialBreakpoint)
 
   return {
+    appVisible: null,
     isLayoutReady: false,
     arePluginsEvaluated: false,
     breakpoint: initialBreakpoint,

@@ -55,6 +55,12 @@ const handleKeyUp = (e) => {
  * @param {boolean} options.hasMenu - Whether the button has a popup menu
  * @returns {Object|null} Object with id and type ('panel' or 'popup'), or null if no controlled element
  */
+const captureMenuRect = (buttonRefs, buttonId, setMenuRect) => {
+  const btn = buttonRefs.current[buttonId]
+  if (!btn) return
+  setMenuRect(btn.getBoundingClientRect().toJSON())
+}
+
 const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu }) => {
   if (panelId) {
     return { id: `${idPrefix}-panel-${stringToKebab(panelId)}`, type: 'panel' }
@@ -184,14 +190,6 @@ export const MapButton = ({
   const hasMenu = menuItems?.length >= 1
   const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu })
 
-  const captureMenuRect = () => {
-    const btn = buttonRefs.current[buttonId]
-    if (!btn) {
-      return
-    }
-    setMenuRect(btn.getBoundingClientRect().toJSON())
-  }
-
   /**
    * Handles button click events.
    * Toggles popup menu visibility if the button controls a popup.
@@ -207,7 +205,7 @@ export const MapButton = ({
       /* istanbul ignore next as pointerType can't be tested in jest */
       setMenuStartPos(isKeyboard ? 'first' : null)
       if (!isPopupOpen) {
-        captureMenuRect()
+        captureMenuRect(buttonRefs, buttonId, setMenuRect)
       }
       setIsPopupOpen((prev) => !prev)
     }
@@ -226,7 +224,7 @@ export const MapButton = ({
     if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
       e.preventDefault()
       setMenuStartPos(e.key === 'ArrowUp' ? 'last' : 'first')
-      captureMenuRect()
+      captureMenuRect(buttonRefs, buttonId, setMenuRect)
       setIsPopupOpen(true)
     }
   }

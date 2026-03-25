@@ -172,6 +172,13 @@ describe('actionsMap full coverage', () => {
     expect(r2.hiddenButtons.has('btn3')).toBe(false)
   })
 
+  test('TOGGLE_APP_VISIBLE sets appVisible to payload', () => {
+    const r1 = actionsMap.TOGGLE_APP_VISIBLE(state, true)
+    expect(r1.appVisible).toBe(true)
+    const r2 = actionsMap.TOGGLE_APP_VISIBLE(state, false)
+    expect(r2.appVisible).toBe(false)
+  })
+
   test('TOGGLE_BUTTON_PRESSED adds/removes button', () => {
     const r1 = actionsMap.TOGGLE_BUTTON_PRESSED(state, { id: 'btn6', isPressed: true })
     expect(r1.pressedButtons.has('btn6')).toBe(true)

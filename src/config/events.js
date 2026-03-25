@@ -62,6 +62,34 @@ export const EVENTS = {
   APP_READY: 'app:ready',
 
   /**
+   * Emitted when the map application becomes visible after being hidden.
+   *
+   * This can occur in 'hybrid behaviour' responsive scenarios where the map is already initialized
+   * (e.g. initialized inline on desktop) but was hidden and then shown again
+   * (e.g. resizing to mobile and opening the map).
+   *
+   * @remarks
+   * - Only emitted when transitioning from hidden → visible.
+   * - Not fired on initial open.
+   * - The existing map state may be preserved depending on configuration.
+   */
+  APP_VISIBLE: 'app:visible',
+
+  /**
+   * Emitted when the map application becomes hidden.
+   *
+   * This can occur in 'hybrid behaviour' responsive scenarios where the map was initialized inline
+   * (e.g. visible on desktop) but then becomes hidden
+   * (e.g. resizing to mobile or closing the map view).
+   *
+   * @remarks
+   * - Only emitted when transitioning from visible → hidden.
+   * - Not fired on initial load if the map starts hidden.
+   * - The map state may be preserved depending on configuration.
+   */
+  APP_HIDDEN: 'app:hidden',
+
+  /**
    * Emitted when a panel is opened.
    * Payload: { panelId: string }
    *
