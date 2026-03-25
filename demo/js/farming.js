@@ -36,57 +36,73 @@ var datasetsPlugin = createDatasetsPlugin({
 	datasets: [{
 		id: 'field-parcels',
 		label: 'Field parcels',
-		filter: [
-			'all',
-			['!=', ['get', 'sbi'], '106223377'],
-			['==', ['get', 'is_dominant_land_cover'], true]
-		],
-		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-		sourceLayer: 'field_parcels_filtered',
-		stroke: { outdoor: '#b1b4b6', dark: '#28a197', aerial: 'rgba(40,161,151,0.8)', 'black-and-white': '#28a197' },
-		strokeWidth: 2,
-		// strokeDashArray: [1, 2],
-		fill: 'transparent',
-		symbolDescription: { outdoor: 'turquiose outline' },
-		minZoom: 10,
-		maxZoom: 24,
-		showInKey: true,
-		toggleVisibility: true
-	},{
-		id: 'linked-parcels',
-		label: 'Existing fields',
-		filter: [
-			'all',
-			['==', ['get', 'sbi'], '106223377'],
-			['==', ['get', 'is_dominant_land_cover'], true]
-		],
-		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-		sourceLayer: 'field_parcels_filtered',
-		stroke: '#0000ff',
-		strokeWidth: 2,
-		fill: 'rgba(0,0,255,0.1)',
-		symbolDescription: { outdoor: 'blue outline' },
-		minZoom: 10,
-		maxZoom: 24,
-		showInKey: true,
-		toggleVisibility: true
-	},{
-		id: 'hedge-control',
-		label: 'Hedge control',
-		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-		sourceLayer: 'hedge_control',
-		stroke: '#b58840',
-		fill: 'transparent',
-		strokeWidth: 4,
-		symbolDescription: { outdoor: 'blue outline' },
+		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+		transformRequest: transformDataRequest,
+		maxFeatures: 50000,
+		// filter: [
+		// 	'all',
+		// 	['!=', ['get', 'sbi'], '106223377'],
+		// 	['==', ['get', 'is_dominant_land_cover'], true]
+		// ],
+		// tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		// sourceLayer: 'field_parcels_filtered',
+		// featureLayer: '',
+		// vectorTileLayer: '',
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
 		toggleVisibility: true,
-		visibility: 'hidden',
-		keySymbolShape: 'line'
-	}]
-})
+		stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+		strokeWidth: 2,
+		// strokeDashArray: [1, 2],
+		// symbol: '',
+		// symbolSvgContent: '',
+		// symbolForegroundColor: '',
+		// symbolBackgroundColor: '',
+		// symbolDescription: { outdoor: 'blue outline' },
+		// symbolOffset: [],
+		fill: 'rgba(0,0,255,0.1)',
+		fillPattern: 'diagonal-cross-hatch',
+		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+		fillPatternBackgroundColor: 'transparent',
+		opacity: 0.5
+	},
+	// {
+	// 	id: 'linked-parcels',
+	// 	label: 'Existing fields',
+	// 	filter: [
+	// 		'all',
+	// 		['==', ['get', 'sbi'], '106223377'],
+	// 		['==', ['get', 'is_dominant_land_cover'], true]
+	// 	],
+	// 	tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+	// 	sourceLayer: 'field_parcels_filtered',
+	// 	stroke: '#0000ff',
+	// 	strokeWidth: 2,
+	// 	fill: 'rgba(0,0,255,0.1)',
+	// 	symbolDescription: { outdoor: 'blue outline' },
+	// 	minZoom: 10,
+	// 	maxZoom: 24,
+	// 	showInKey: true,
+	// 	toggleVisibility: true
+	// },
+	// {
+	// 	id: 'hedge-control',
+	// 	label: 'Hedge control',
+	// 	tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+	// 	sourceLayer: 'hedge_control',
+	// 	stroke: '#b58840',
+	// 	fill: 'transparent',
+	// 	strokeWidth: 4,
+	// 	symbolDescription: { outdoor: 'blue outline' },
+	// 	minZoom: 10,
+	// 	maxZoom: 24,
+	// 	showInKey: true,
+	// 	toggleVisibility: true,
+	// 	visibility: 'hidden',
+	// 	keySymbolShape: 'line'
+	// }
+]})
 
 var drawPlugin = createDrawPlugin()
 
@@ -130,9 +146,6 @@ var interactiveMap = new InteractiveMap('map', {
 		backgroundColor: '#f5f5f0'
 	},
 	plugins: [
-		mapStylesPlugin({
-			mapStyles: vtsMapStyles3857
-		}),
 		scaleBarPlugin({
 			units: 'metric'
 		}),
@@ -142,13 +155,13 @@ var interactiveMap = new InteractiveMap('map', {
 			customDatasets: [parcelSearch, gridRefSearchETRS89],
 			width: '300px',
 			showMarker: false,
-			// manifest: { controls: [{ id: 'search',
-			// 	inline: false
-			// }]}
 			// expanded: true
 		}),
 		// useLocationPlugin(),
 		datasetsPlugin,
+		mapStylesPlugin({
+			mapStyles: vtsMapStyles3857
+		}),
 		interactPlugin,
 		// framePlugin,
 		// drawPlugin

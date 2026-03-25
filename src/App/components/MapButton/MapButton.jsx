@@ -249,7 +249,7 @@ export const MapButton = ({
 
   const buttonEl = (
     <Element {...buttonProps}>
-      {(iconId || iconSvgContent) && <Icon id={iconId} svgContent={iconSvgContent} />}
+      {(iconId || iconSvgContent || hasMenu) && <Icon id={iconId} svgContent={iconSvgContent} isMenu={hasMenu} />}
       {showLabel && <span>{label}</span>}
     </Element>
   )

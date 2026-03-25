@@ -9,10 +9,9 @@
     margin-left: auto;
     text-align: right;
     padding-bottom: 5px;
-    margin-bottom: 5px;
     color: var(--map-overlay-foreground-color);
     user-select: none;
-    min-height: 20px; // Required to ensure padding is calculated before scale bar is rendered
+    height: 25px; // Required to ensure padding is calculated before scale bar is rendered
     width: 100px;
 }
 

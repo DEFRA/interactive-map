@@ -30,6 +30,7 @@ export const initialState = (config) => {
 
   return {
     isLayoutReady: false,
+    arePluginsEvaluated: false,
     breakpoint: initialBreakpoint,
     interfaceType: initialInterfaceType,
     preferredColorScheme: autoColorScheme ? preferredColorScheme : appColorScheme,

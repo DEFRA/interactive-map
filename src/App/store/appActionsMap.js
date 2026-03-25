@@ -152,6 +152,12 @@ const toggleHasExclusiveControl = (state, payload) => {
   }
 }
 
+const setPluginsEvaluated = (state) =>
+  state.arePluginsEvaluated ? state : { ...state, arePluginsEvaluated: true }
+
+const clearPluginsEvaluated = (state) =>
+  state.arePluginsEvaluated ? { ...state, arePluginsEvaluated: false } : state
+
 const setSafeZoneInset = (state, { safeZoneInset, syncMapPadding = true }) => {
   return shallowEqual(state.safeZoneInset, safeZoneInset)
     ? state
@@ -358,6 +364,8 @@ export const actionsMap = {
   SET_HYBRID_FULLSCREEN: setHybridFullscreen,
   SET_INTERFACE_TYPE: setInterfaceType,
   SET_MODE: setMode,
+  PLUGINS_EVALUATED: setPluginsEvaluated,
+  CLEAR_PLUGINS_EVALUATED: clearPluginsEvaluated,
   SET_SAFE_ZONE_INSET: setSafeZoneInset,
   REVERT_MODE: revertMode,
   OPEN_PANEL: openPanel,

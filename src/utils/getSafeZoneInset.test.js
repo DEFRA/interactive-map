@@ -31,7 +31,7 @@ const PANEL_H_TALL = 150
 const PANEL_H_SHORT = 100
 
 const ABOVE_CAP_TOP = 330 // 60+330+8=398 > CAP_HEIGHT ≈ 389.3 → capped
-const BOTTOM_INSET = GAP + (MAIN_HEIGHT - BOTTOM_TOP) + GAP // 56: max(0,gap) + bottomContainerPad + gap
+const BOTTOM_INSET = MAIN_HEIGHT - BOTTOM_TOP + GAP // 48: divider-gap above top of bottom container
 const ABOVE_CAP_BOTTOM = 342 // 48+342+8=398 > CAP_HEIGHT → capped
 
 const PANEL_W_STANDARD = 200

@@ -93,6 +93,9 @@ export const defaultAppConfig = {
   }, {
     id: 'minus',
     svgContent: '<path d="M5 12h14"/>'
+  }, {
+    id: 'chevron',
+    svgContent: '<path d="m6 9 6 6 6-6"/>'
   }]
 }
 

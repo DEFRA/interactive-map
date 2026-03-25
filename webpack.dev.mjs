@@ -18,7 +18,7 @@ export default {
   ],
   entry: {
     index: path.join(__dirname, 'demo/js/index.js'),
-    forms: path.join(__dirname, 'demo/js/forms.js'),
+    draw: path.join(__dirname, 'demo/js/draw.js'),
     farming: path.join(__dirname, 'demo/js/farming.js'),
     planning: path.join(__dirname, 'demo/js/planning.js')
   },

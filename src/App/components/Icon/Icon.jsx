@@ -3,8 +3,8 @@ import { getIconRegistry } from '../../registry/iconRegistry.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Icon = ({ id, svgContent }) => {
-  const icon = getIconRegistry()[id] || svgContent
+export const Icon = ({ id, svgContent, isMenu }) => {
+  const icon = isMenu ? getIconRegistry().chevron : (getIconRegistry()[id] || svgContent)
 
   return (
     <svg
@@ -20,6 +20,7 @@ export const Icon = ({ id, svgContent }) => {
       aria-hidden='true'
       focusable='false'
       dangerouslySetInnerHTML={{ __html: icon }}
+      className={`im-c-icon${isMenu ? ' im-c-icon--narrow' : ''}`}
     />
   )
 }

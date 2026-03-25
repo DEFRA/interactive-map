@@ -61,6 +61,12 @@ export function useButtonStateEvaluator (evaluateProp) {
     }
 
     const { dispatch } = appState
+    let dispatchCount = 0
+
+    const trackingDispatch = (action) => {
+      dispatchCount++
+      dispatch(action)
+    }
 
     pluginRegistry.registeredPlugins.forEach(plugin => {
       const buttons = (plugin?.manifest?.buttons ?? []).flatMap(b => [b, ...(b.menuItems ?? [])])
@@ -70,10 +76,18 @@ export function useButtonStateEvaluator (evaluateProp) {
           btn,
           pluginId: plugin.id,
           appState,
-          dispatch,
+          dispatch: trackingDispatch,
           evaluateProp
         })
       )
     })
+
+    if (dispatchCount > 0) {
+      // Button states changed — clear the flag so the safe zone re-reads after the next stable pass.
+      dispatch({ type: 'CLEAR_PLUGINS_EVALUATED' })
+    } else if (!appState.arePluginsEvaluated) {
+      // No changes and flag not yet set — all hiddenWhen/enableWhen/etc. have settled.
+      dispatch({ type: 'PLUGINS_EVALUATED' })
+    }
   }, [appState, pluginContext, evaluateProp])
 }

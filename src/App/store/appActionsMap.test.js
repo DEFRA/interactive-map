@@ -128,6 +128,26 @@ describe('actionsMap full coverage', () => {
     expect(result.hasExclusiveControl).toBe(true)
   })
 
+  test('PLUGINS_EVALUATED is no-op when arePluginsEvaluated already true', () => {
+    const s = { ...state, arePluginsEvaluated: true }
+    expect(actionsMap.PLUGINS_EVALUATED(s)).toBe(s)
+  })
+
+  test('PLUGINS_EVALUATED sets arePluginsEvaluated when false', () => {
+    const s = { ...state, arePluginsEvaluated: false }
+    expect(actionsMap.PLUGINS_EVALUATED(s).arePluginsEvaluated).toBe(true)
+  })
+
+  test('CLEAR_PLUGINS_EVALUATED clears arePluginsEvaluated when true', () => {
+    const s = { ...state, arePluginsEvaluated: true }
+    expect(actionsMap.CLEAR_PLUGINS_EVALUATED(s).arePluginsEvaluated).toBe(false)
+  })
+
+  test('CLEAR_PLUGINS_EVALUATED is no-op when arePluginsEvaluated already false', () => {
+    const s = { ...state, arePluginsEvaluated: false }
+    expect(actionsMap.CLEAR_PLUGINS_EVALUATED(s)).toBe(s)
+  })
+
   test('SET_SAFE_ZONE_INSET branch true/false', () => {
     shallowEqualModule.shallowEqual.mockReturnValueOnce(false)
     const res1 = actionsMap.SET_SAFE_ZONE_INSET(state, { safeZoneInset: { top: 10, bottom: 10 } })

@@ -22,6 +22,7 @@ describe('useButtonStateEvaluator', () => {
       hiddenButtons: new Set(),
       pressedButtons: new Set(),
       expandedButtons: new Set(),
+      arePluginsEvaluated: true, // stable by default; override in settlement tests
       dispatch: mockDispatch
     }
     useApp.mockReturnValue(mockAppState)
@@ -149,8 +150,6 @@ describe('useButtonStateEvaluator', () => {
   })
 
   it('covers fallback to empty array when manifest or buttons is missing', () => {
-    // Branch 1: Plugin exists but manifest is missing
-    // Branch 2: Manifest exists but buttons is missing
     mockPluginRegistry.registeredPlugins = [
       { id: 'p1' },
       { id: 'p2', manifest: {} },
@@ -158,9 +157,43 @@ describe('useButtonStateEvaluator', () => {
     ]
 
     renderHook(() => useButtonStateEvaluator((fn) => fn()))
-
-    // If the fallback (|| []) works, the code continues to the next plugin
-    // without throwing a "cannot read property forEach of undefined" error.
     expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  // --- Plugin evaluation settlement ---
+
+  it('dispatches PLUGINS_EVALUATED when no button states changed and arePluginsEvaluated is false', () => {
+    mockAppState.arePluginsEvaluated = false
+    renderHook(() => useButtonStateEvaluator((fn) => fn()))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'PLUGINS_EVALUATED' })
+  })
+
+  it('does not dispatch PLUGINS_EVALUATED when arePluginsEvaluated is already true', () => {
+    mockAppState.arePluginsEvaluated = true
+    renderHook(() => useButtonStateEvaluator((fn) => fn()))
+    expect(mockDispatch).not.toHaveBeenCalled()
+  })
+
+  it('dispatches CLEAR_PLUGINS_EVALUATED when button states change, not PLUGINS_EVALUATED', () => {
+    mockAppState.arePluginsEvaluated = false
+    mockPluginRegistry.registeredPlugins = [{
+      id: 'p1',
+      manifest: { buttons: [{ id: 'btn1', hiddenWhen: () => true }] }
+    }]
+
+    renderHook(() => useButtonStateEvaluator((fn) => fn()))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
+    expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'PLUGINS_EVALUATED' })
+  })
+
+  it('dispatches CLEAR_PLUGINS_EVALUATED when button states change even if already evaluated', () => {
+    mockAppState.arePluginsEvaluated = true
+    mockPluginRegistry.registeredPlugins = [{
+      id: 'p1',
+      manifest: { buttons: [{ id: 'btn1', hiddenWhen: () => true }] }
+    }]
+
+    renderHook(() => useButtonStateEvaluator((fn) => fn()))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_PLUGINS_EVALUATED' })
   })
 })
