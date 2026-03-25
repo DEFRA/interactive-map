@@ -2,5 +2,13 @@
     "sonarlint.connectedMode.project": {
         "connectionId": "defra",
         "projectKey": "DEFRA_interactive-map"
+    },
+    "sonarlint.rules": {
+        "javascript:S6774": {
+            "level": "off"
+        },
+        "javascript:S100": {
+            "level": "off"
+        }
     }
 }
