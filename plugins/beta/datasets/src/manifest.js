@@ -12,6 +12,7 @@ import { hideFeatures } from './api/hideFeatures.js'
 import { showRule } from './api/showRule.js'
 import { hideRule } from './api/hideRule.js'
 import { setStyle } from './api/setStyle.js'
+import { setRuleStyle } from './api/setRuleStyle.js'
 import { setData } from './api/setData.js'
 
 export const manifest = {
@@ -120,6 +121,7 @@ export const manifest = {
     showRule,
     hideRule,
     setStyle,
+    setRuleStyle,
     setData
   }
 }

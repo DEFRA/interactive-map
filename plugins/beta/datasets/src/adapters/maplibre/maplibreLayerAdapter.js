@@ -1,6 +1,6 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getRuleLayerIds, getAllLayerIds } from './layerIds.js'
-import { addDatasetLayers } from './layerBuilders.js'
+import { addDatasetLayers, addRuleLayers } from './layerBuilders.js'
 import { registerPatterns } from './patternRegistry.js'
 
 /**
@@ -187,17 +187,45 @@ export default class MaplibreLayerAdapter {
     this._applyFeatureFilter(dataset, idProperty, allHiddenIds)
   }
 
-  // ─── API stubs ───────────────────────────────────────────────────────────────
+  /**
+   * Update a dataset's style and re-render all its layers.
+   * @param {Object} dataset - Updated dataset (style changes already merged in)
+   * @param {string} mapStyleId
+   * @returns {Promise<void>}
+   */
+  async setStyle (dataset, mapStyleId) {
+    getAllLayerIds(dataset).forEach(layerId => {
+      if (this._map.getLayer(layerId)) {
+        this._map.removeLayer(layerId)
+      }
+    })
+    await registerPatterns(this._map, [dataset], mapStyleId)
+    this._addLayers(dataset, mapStyleId)
+  }
 
   /**
-   * Update a dataset's style properties (fill, stroke, opacity, pattern etc).
-   * @param {Object} dataset
+   * Update a single featureStyleRule's style and re-render its layers.
+   * @param {Object} dataset - Updated dataset (rule style changes already merged in)
+   * @param {string} ruleId
    * @param {string} mapStyleId
-   * @param {Object} styleChanges
-   * @stub
+   * @returns {Promise<void>}
    */
-  setStyle (_dataset, _mapStyleId, _styleChanges) {
-    // Not yet implemented — will use map.setPaintProperty for fill-color, line-color, opacity etc
+  async setRuleStyle (dataset, ruleId, mapStyleId) {
+    const { fillLayerId, strokeLayerId } = getRuleLayerIds(dataset.id, ruleId)
+    if (this._map.getLayer(fillLayerId)) {
+      this._map.removeLayer(fillLayerId)
+    }
+    if (this._map.getLayer(strokeLayerId)) {
+      this._map.removeLayer(strokeLayerId)
+    }
+    const rule = dataset.featureStyleRules?.find(r => r.id === ruleId)
+    if (!rule) {
+      return
+    }
+    await registerPatterns(this._map, [dataset], mapStyleId)
+    const sourceId = this._datasetSourceMap.get(dataset.id)
+    const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
+    addRuleLayers(this._map, dataset, rule, sourceId, sourceLayer, mapStyleId)
   }
 
   /**

@@ -112,6 +112,36 @@ const setRuleVisibility = (state, payload) => {
   }
 }
 
+const setDatasetStyle = (state, payload) => {
+  const { datasetId, styleChanges } = payload
+  return {
+    ...state,
+    datasets: state.datasets?.map(dataset =>
+      dataset.id === datasetId ? { ...dataset, ...styleChanges } : dataset
+    )
+  }
+}
+
+const setRuleStyle = (state, payload) => {
+  const { datasetId, ruleId, styleChanges } = payload
+  return {
+    ...state,
+    datasets: state.datasets?.map(dataset => {
+      if (dataset.id !== datasetId) {
+        return dataset
+      }
+      return {
+        ...dataset,
+        featureStyleRules: dataset.featureStyleRules?.map(rule =>
+          rule.id === ruleId
+            ? { ...rule, style: { ...rule.style, ...styleChanges } }
+            : rule
+        )
+      }
+    })
+  }
+}
+
 const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
 
 const actions = {
@@ -120,6 +150,8 @@ const actions = {
   REMOVE_DATASET: removeDataset,
   SET_DATASET_VISIBILITY: setDatasetVisibility,
   SET_RULE_VISIBILITY: setRuleVisibility,
+  SET_DATASET_STYLE: setDatasetStyle,
+  SET_RULE_STYLE: setRuleStyle,
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
   SET_LAYER_ADAPTER: setLayerAdapter

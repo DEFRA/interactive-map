@@ -74,7 +74,7 @@ export const addStrokeLayer = (map, config, layerId, sourceId, sourceLayer, visi
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-const addRuleLayers = (map, dataset, rule, sourceId, sourceLayer, mapStyleId) => {
+export const addRuleLayers = (map, dataset, rule, sourceId, sourceLayer, mapStyleId) => {
   const merged = mergeRule(dataset, rule)
   const { fillLayerId, strokeLayerId } = getRuleLayerIds(dataset.id, rule.id)
   const parentHidden = dataset.visibility === 'hidden'

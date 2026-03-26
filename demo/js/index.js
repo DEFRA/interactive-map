@@ -113,20 +113,20 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		// visibility: 'hidden',
-		style: {
-			stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-			strokeWidth: 2,
-			// symbol: '',
-			// symbolSvgContent: '',
-			// symbolForegroundColor: '',
-			// symbolBackgroundColor: '',
-			// symbolDescription: { outdoor: 'blue outline' },
-			// symbolOffset: [],
-			// fill: 'rgba(0,0,255,0.1)',
-			fillPattern: 'diagonal-cross-hatch',
-			fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-			fillPatternBackgroundColor: 'transparent'
-		},
+		// style: {
+		// 	stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+		// 	strokeWidth: 2,
+		// 	symbol: '',
+		// 	symbolSvgContent: '',
+		// 	symbolForegroundColor: '',
+		// 	symbolBackgroundColor: '',
+		// 	symbolDescription: { outdoor: 'blue outline' },
+		// 	symbolOffset: [],
+		// 	fill: 'rgba(0,0,255,0.1)',
+		// 	fillPattern: 'diagonal-cross-hatch',
+		// 	fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+		// 	fillPatternBackgroundColor: 'transparent'
+		// },
 		featureStyleRules: [{
 			id: '130',
 			label: 'Permanent grassland',
@@ -273,6 +273,7 @@ interactiveMap.on('map:ready', function (e) {
 interactiveMap.on('datasets:ready', function () {
 	// setTimeout(() => datasetsPlugin.hideFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 2000)
 	// setTimeout(() => datasetsPlugin.showFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 4000)
+	// setTimeout(() => datasetsPlugin.setRuleStyle({ datasetId: 'field-parcels', ruleId: '130', style: { stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } } }), 2000)
 })
 
 // Ref to the selected features
