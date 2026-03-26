@@ -274,6 +274,10 @@ interactiveMap.on('datasets:ready', function () {
 	// setTimeout(() => datasetsPlugin.hideFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 2000)
 	// setTimeout(() => datasetsPlugin.showFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 4000)
 	// setTimeout(() => datasetsPlugin.setSublayerStyle({ datasetId: 'field-parcels', sublayerId: '130', style: { stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } } }), 2000)
+	setTimeout(() => {
+		console.log('getStyle (field-parcels):', datasetsPlugin.getStyle({ datasetId: 'field-parcels' }))
+		console.log('getSublayerStyle (field-parcels / 130):', datasetsPlugin.getSublayerStyle({ datasetId: 'field-parcels', sublayerId: '130' }))
+	}, 2000)
 })
 
 // Ref to the selected features

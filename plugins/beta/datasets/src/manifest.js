@@ -13,6 +13,8 @@ import { showSublayer } from './api/showSublayer.js'
 import { hideSublayer } from './api/hideSublayer.js'
 import { setStyle } from './api/setStyle.js'
 import { setSublayerStyle } from './api/setSublayerStyle.js'
+import { getStyle } from './api/getStyle.js'
+import { getSublayerStyle } from './api/getSublayerStyle.js'
 import { setData } from './api/setData.js'
 
 export const manifest = {
@@ -120,6 +122,8 @@ export const manifest = {
     hideFeatures,
     showSublayer,
     hideSublayer,
+    getStyle,
+    getSublayerStyle,
     setStyle,
     setSublayerStyle,
     setData
