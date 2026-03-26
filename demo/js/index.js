@@ -161,8 +161,7 @@ const datasetsPlugin = createDatasetsPlugin({
 				fillPatternForegroundColor: { outdoor: '#1d70b8', dark: '#ffffff' },
 				// fillPatternBackgroundColor: 'transparent'
 			}
-		}],
-		opacity: 0.5
+		}]
 	},{
 		id: 'hedge-control',
 		label: 'Hedge control',

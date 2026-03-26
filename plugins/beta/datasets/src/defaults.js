@@ -12,6 +12,13 @@ const datasetDefaults = {
   }
 }
 
+// All properties considered style properties — must be provided via dataset.style, not at the top level.
+const STYLE_PROPS = [
+  'stroke', 'strokeWidth', 'strokeDashArray',
+  'fill', 'fillPattern', 'fillPatternSvgContent', 'fillPatternForegroundColor', 'fillPatternBackgroundColor',
+  'opacity', 'symbolDescription', 'keySymbolShape'
+]
+
 // Props whose presence in a style object indicates a custom visual style.
 // When any are set, the default symbolDescription is not appropriate.
 const VISUAL_STYLE_PROPS = ['stroke', 'fill', 'fillPattern', 'fillPatternSvgContent']
@@ -21,6 +28,7 @@ const hasCustomVisualStyle = (style) =>
 
 /**
  * Merge a dataset config with defaults, flattening the nested `style` object.
+ * Style properties must be provided via dataset.style — top-level occurrences are ignored.
  * symbolDescription from defaults.style is dropped when custom visual styles
  * are present and the dataset doesn't explicitly set its own symbolDescription.
  */
@@ -32,6 +40,7 @@ const applyDatasetDefaults = (dataset, defaults) => {
   }
   const topLevel = { ...dataset }
   delete topLevel.style
+  STYLE_PROPS.forEach(prop => delete topLevel[prop])
   const topLevelDefaults = { ...defaults }
   delete topLevelDefaults.style
   return { ...topLevelDefaults, ...topLevel, ...mergedStyle }
