@@ -79,7 +79,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			fillPattern: 'diagonal-cross-hatch',
 			fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
 			fillPatternBackgroundColor: 'transparent',
-			opacity: 0.2
+			// opacity: 0.2
 		}
 	}]
 })
