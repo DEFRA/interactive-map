@@ -29,12 +29,10 @@ import createFramePlugin from '/plugins/beta/frame/src/index.js'
 const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.882445487962059,54.70938250564518],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8775970686837695,54.70966586215056],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8732152153681056,54.70892223300439],'type': 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
-	dataLayers: [
-	// {
-	// 	layerId: 'field-parcels-130',
-	// 	// idProperty: 'gid'
-	// },
-	{
+	dataLayers: [{
+		layerId: 'field-parcels-130',
+		// idProperty: 'gid'
+	},{
 		layerId: 'field-parcels-332',
 		// idProperty: 'gid'
 	},{
