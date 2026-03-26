@@ -22,7 +22,7 @@ export const addSource = (map, dataset, sourceId) => {
     const initialData = isDynamicSource(dataset)
       ? { type: 'FeatureCollection', features: [] }
       : dataset.geojson
-    map.addSource(sourceId, { type: 'geojson', data: initialData })
+    map.addSource(sourceId, { type: 'geojson', data: initialData, generateId: true })
   }
 }
 

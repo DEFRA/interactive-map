@@ -1,6 +1,49 @@
+import { hasCustomVisualStyle } from '../defaults.js'
+
+const getFillProps = (dataset, ruleStyle) => {
+  if (ruleStyle.fillPattern || ruleStyle.fillPatternSvgContent) {
+    return {
+      fillPattern: ruleStyle.fillPattern,
+      fillPatternSvgContent: ruleStyle.fillPatternSvgContent,
+      fillPatternForegroundColor: ruleStyle.fillPatternForegroundColor ?? dataset.fillPatternForegroundColor,
+      fillPatternBackgroundColor: ruleStyle.fillPatternBackgroundColor ?? dataset.fillPatternBackgroundColor
+    }
+  }
+  if ('fill' in ruleStyle) {
+    // Rule explicitly sets a plain fill — do not inherit any parent pattern
+    return { fill: ruleStyle.fill }
+  }
+  return {
+    fill: dataset.fill,
+    fillPattern: dataset.fillPattern,
+    fillPatternSvgContent: dataset.fillPatternSvgContent,
+    fillPatternForegroundColor: dataset.fillPatternForegroundColor,
+    fillPatternBackgroundColor: dataset.fillPatternBackgroundColor
+  }
+}
+
+const getCombinedFilter = (datasetFilter, ruleFilter) => {
+  if (datasetFilter && ruleFilter) {
+    return ['all', datasetFilter, ruleFilter]
+  }
+  return ruleFilter || datasetFilter || null
+}
+
+const getSymbolDescription = (dataset, ruleStyle) => {
+  if ('symbolDescription' in ruleStyle) {
+    return ruleStyle.symbolDescription
+  }
+  if (hasCustomVisualStyle(ruleStyle)) {
+    return undefined
+  }
+  return dataset.symbolDescription
+}
+
 /**
  * Merge a featureStyleRule with its parent dataset, producing a flat style
  * object suitable for layer creation and key symbol rendering.
+ *
+ * The rule's nested `style` object is flattened before merging.
  *
  * Fill precedence (highest to lowest):
  *   1. Rule's own fillPattern
@@ -8,51 +51,28 @@
  *   3. Parent's fillPattern
  *   4. Parent's fill
  *
- * All other style props fall back to the parent dataset if not set on the rule.
+ * symbolDescription is only inherited from the parent when the rule has no
+ * custom visual styles of its own. If the rule overrides stroke/fill/pattern
+ * without setting symbolDescription explicitly, no description is shown.
  */
 export const mergeRule = (dataset, rule) => {
-  const ruleHasPattern = !!(rule.fillPattern || rule.fillPatternSvgContent)
-  const ruleHasExplicitFill = 'fill' in rule
-
-  let fillProps
-  if (ruleHasPattern) {
-    fillProps = {
-      fillPattern: rule.fillPattern,
-      fillPatternSvgContent: rule.fillPatternSvgContent,
-      fillPatternForegroundColor: rule.fillPatternForegroundColor ?? dataset.fillPatternForegroundColor,
-      fillPatternBackgroundColor: rule.fillPatternBackgroundColor ?? dataset.fillPatternBackgroundColor
-    }
-  } else if (ruleHasExplicitFill) {
-    // Rule explicitly sets a plain fill — do not inherit any parent pattern
-    fillProps = { fill: rule.fill }
-  } else {
-    fillProps = {
-      fill: dataset.fill,
-      fillPattern: dataset.fillPattern,
-      fillPatternSvgContent: dataset.fillPatternSvgContent,
-      fillPatternForegroundColor: dataset.fillPatternForegroundColor,
-      fillPatternBackgroundColor: dataset.fillPatternBackgroundColor
-    }
-  }
-
-  const combinedFilter = dataset.filter && rule.filter
-    ? ['all', dataset.filter, rule.filter]
-    : (rule.filter || dataset.filter || null)
+  const ruleStyle = rule.style || {}
+  const combinedFilter = getCombinedFilter(dataset.filter, rule.filter)
 
   return {
     id: rule.id,
     label: rule.label,
-    stroke: rule.stroke ?? dataset.stroke,
-    strokeWidth: rule.strokeWidth ?? dataset.strokeWidth,
-    strokeDashArray: rule.strokeDashArray ?? dataset.strokeDashArray,
-    opacity: rule.opacity ?? dataset.opacity,
-    keySymbolShape: rule.keySymbolShape ?? dataset.keySymbolShape,
-    symbolDescription: rule.symbolDescription ?? dataset.symbolDescription,
+    stroke: ruleStyle.stroke ?? dataset.stroke,
+    strokeWidth: ruleStyle.strokeWidth ?? dataset.strokeWidth,
+    strokeDashArray: ruleStyle.strokeDashArray ?? dataset.strokeDashArray,
+    opacity: ruleStyle.opacity ?? dataset.opacity,
+    keySymbolShape: ruleStyle.keySymbolShape ?? dataset.keySymbolShape,
+    symbolDescription: getSymbolDescription(dataset, ruleStyle),
     showInKey: rule.showInKey ?? dataset.showInKey,
     toggleVisibility: rule.toggleVisibility ?? false,
     filter: combinedFilter,
     minZoom: dataset.minZoom,
     maxZoom: dataset.maxZoom,
-    ...fillProps
+    ...getFillProps(dataset, ruleStyle)
   }
 }

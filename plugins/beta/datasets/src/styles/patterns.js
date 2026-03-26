@@ -28,7 +28,7 @@ export const hashString = (str) => {
     hash = ((hash << 5) - hash) + ch.codePointAt(0)
     hash = hash & hash
   }
-  return Math.abs(hash).toString(36)
+  return Math.abs(hash).toString(36) // NOSONAR: base36 encoding for compact alphanumeric hash string
 }
 
 export const injectColors = (content, foreground, background) =>

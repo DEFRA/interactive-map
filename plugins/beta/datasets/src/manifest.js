@@ -34,14 +34,14 @@ export const manifest = {
       slot: 'left-top',
       dismissible: true,
       exclusive: true,
-      width: '300px'
+      width: '260px'
     },
     desktop: {
       slot: 'left-top',
       modal: false,
       dismissible: true,
       exclusive: true,
-      width: '320px'
+      width: '280px'
     },
     render: Layers
   }, {
@@ -53,11 +53,11 @@ export const manifest = {
     },
     tablet: {
       slot: 'left-top',
-      width: '300px'
+      width: '260px'
     },
     desktop: {
       slot: 'left-top',
-      width: '320px'
+      width: '280px'
     },
     render: Key
   }],

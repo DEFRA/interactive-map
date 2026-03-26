@@ -72,19 +72,21 @@ const datasetsPlugin = createDatasetsPlugin({
 		// showInKey: true,
 		// toggleVisibility: true,
 		// visibility: 'hidden',
-		stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-		strokeWidth: 2,
-		// symbol: '',
-		// symbolSvgContent: '',
-		// symbolForegroundColor: '',
-		// symbolBackgroundColor: '',
-		// symbolDescription: { outdoor: 'blue outline' },
-		// symbolOffset: [],
-		// fill: 'rgba(0,0,255,0.1)',
-		fillPattern: 'diagonal-cross-hatch',
-		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		fillPatternBackgroundColor: 'transparent',
-		opacity: 0.5
+		opacity: 0.5,
+		// style: {
+			stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+			strokeWidth: 2,
+			// symbol: '',
+			// symbolSvgContent: '',
+			// symbolForegroundColor: '',
+			// symbolBackgroundColor: '',
+			// symbolDescription: { outdoor: 'blue outline' },
+			// symbolOffset: [],
+			// fill: 'rgba(0,0,255,0.1)',
+			fillPattern: 'diagonal-cross-hatch',
+			fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+			fillPatternBackgroundColor: 'transparent'
+		// }
 	}]
 })
 

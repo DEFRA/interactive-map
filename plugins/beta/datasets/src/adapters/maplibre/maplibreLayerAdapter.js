@@ -110,9 +110,8 @@ export default class MaplibreLayerAdapter {
       }
     })
 
-    const sourceIsShared = allDatasets.some(
-      d => d.id !== dataset.id && getSourceId(d) === sourceId
-    )
+    const sourceIsShared = allDatasets.some(d => d.id !== dataset.id && getSourceId(d) === sourceId)
+    
     if (!sourceIsShared && this._map.getSource(sourceId)) {
       this._map.removeSource(sourceId)
     }
@@ -197,8 +196,8 @@ export default class MaplibreLayerAdapter {
    * @param {Object} styleChanges
    * @stub
    */
-  setStyle (dataset, mapStyleId, styleChanges) {
-    // TODO: implement — map.setPaintProperty for fill-color, line-color, opacity etc
+  setStyle (_dataset, _mapStyleId, _styleChanges) {
+    // Not yet implemented — will use map.setPaintProperty for fill-color, line-color, opacity etc
   }
 
   /**
@@ -229,13 +228,12 @@ export default class MaplibreLayerAdapter {
     if (!style?.layers) {
       return
     }
-    // Covers both base layers (datasetId, ${datasetId}-stroke) and rule layers
-    // (${datasetId}--rule-*) without needing the dataset object.
+    // Covers base fill layer (datasetId) and all suffixed layers
+    // (-stroke, -${ruleId}, -${ruleId}-stroke) without needing the dataset object.
     style.layers
       .filter(layer =>
         layer.id === datasetId ||
-        layer.id === `${datasetId}-stroke` ||
-        layer.id.startsWith(`${datasetId}--rule-`)
+        layer.id.startsWith(`${datasetId}-`)
       )
       .forEach(layer => this._map.setLayoutProperty(layer.id, 'visibility', visibility))
   }

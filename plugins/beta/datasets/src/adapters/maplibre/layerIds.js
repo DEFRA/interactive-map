@@ -45,13 +45,16 @@ export const getLayerIds = (dataset) => {
   const hasFill = !!dataset.fill || hasPattern(dataset)
   const hasStroke = !!dataset.stroke
   const fillLayerId = hasFill ? dataset.id : null
-  const strokeLayerId = hasStroke ? (hasFill ? `${dataset.id}-stroke` : dataset.id) : null
+  let strokeLayerId = null
+  if (hasStroke) {
+    strokeLayerId = hasFill ? `${dataset.id}-stroke` : dataset.id
+  }
   return { fillLayerId, strokeLayerId }
 }
 
 export const getRuleLayerIds = (datasetId, ruleId) => ({
-  fillLayerId: `${datasetId}--rule-${ruleId}`,
-  strokeLayerId: `${datasetId}--rule-${ruleId}-stroke`
+  fillLayerId: `${datasetId}-${ruleId}`,
+  strokeLayerId: `${datasetId}-${ruleId}-stroke`
 })
 
 export const getAllLayerIds = (dataset) => {

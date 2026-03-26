@@ -1,3 +1,5 @@
+import { applyDatasetDefaults } from './defaults.js'
+
 const initialState = {
   datasets: null,
   hiddenFeatures: {}, // { [layerId]: { idProperty: string, ids: string[] } }
@@ -19,10 +21,7 @@ const setDatasets = (state, payload) => {
   const { datasets, datasetDefaults } = payload
   return {
     ...state,
-    datasets: datasets.map(dataset => initRuleVisibility({
-      ...datasetDefaults,
-      ...dataset
-    }))
+    datasets: datasets.map(dataset => initRuleVisibility(applyDatasetDefaults(dataset, datasetDefaults)))
   }
 }
 
@@ -32,7 +31,7 @@ const addDataset = (state, payload) => {
     ...state,
     datasets: [
       ...(state.datasets || []),
-      initRuleVisibility({ ...datasetDefaults, ...dataset })
+      initRuleVisibility(applyDatasetDefaults(dataset, datasetDefaults))
     ]
   }
 }
