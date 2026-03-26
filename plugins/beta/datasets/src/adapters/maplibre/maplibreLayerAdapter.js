@@ -111,7 +111,7 @@ export default class MaplibreLayerAdapter {
     })
 
     const sourceIsShared = allDatasets.some(d => d.id !== dataset.id && getSourceId(d) === sourceId)
-    
+
     if (!sourceIsShared && this._map.getSource(sourceId)) {
       this._map.removeSource(sourceId)
     }
