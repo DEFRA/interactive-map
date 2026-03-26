@@ -52,16 +52,16 @@ export const getLayerIds = (dataset) => {
   return { fillLayerId, strokeLayerId }
 }
 
-export const getRuleLayerIds = (datasetId, ruleId) => ({
-  fillLayerId: `${datasetId}-${ruleId}`,
-  strokeLayerId: `${datasetId}-${ruleId}-stroke`
+export const getSublayerLayerIds = (datasetId, sublayerId) => ({
+  fillLayerId: `${datasetId}-${sublayerId}`,
+  strokeLayerId: `${datasetId}-${sublayerId}-stroke`
 })
 
 export const getAllLayerIds = (dataset) => {
-  if (dataset.featureStyleRules?.length) {
-    return dataset.featureStyleRules.flatMap(rule => {
-      const { fillLayerId: ruleFill, strokeLayerId: ruleStroke } = getRuleLayerIds(dataset.id, rule.id)
-      return [ruleStroke, ruleFill]
+  if (dataset.sublayers?.length) {
+    return dataset.sublayers.flatMap(sublayer => {
+      const { fillLayerId, strokeLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
+      return [strokeLayerId, fillLayerId]
     })
   }
   const { fillLayerId, strokeLayerId } = getLayerIds(dataset)

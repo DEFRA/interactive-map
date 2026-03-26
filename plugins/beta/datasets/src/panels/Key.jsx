@@ -1,7 +1,7 @@
 import React from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 import { hasPattern, getKeyPatternPaths } from '../styles/patterns.js'
-import { mergeRule } from '../utils/mergeRule.js'
+import { mergeSublayer } from '../utils/mergeSublayer.js'
 
 const SVG_SIZE = 20
 const SVG_CENTER = SVG_SIZE / 2
@@ -11,8 +11,8 @@ const buildKeyGroups = (datasets) => {
   const seenGroups = new Set()
   const items = []
   datasets.forEach(dataset => {
-    if (dataset.featureStyleRules?.length) {
-      items.push({ type: 'rules', dataset })
+    if (dataset.sublayers?.length) {
+      items.push({ type: 'sublayers', dataset })
       return
     }
     if (dataset.groupLabel) {
@@ -23,7 +23,7 @@ const buildKeyGroups = (datasets) => {
       items.push({
         type: 'group',
         groupLabel: dataset.groupLabel,
-        datasets: datasets.filter(d => !d.featureStyleRules?.length && d.groupLabel === dataset.groupLabel)
+        datasets: datasets.filter(d => !d.sublayers?.length && d.groupLabel === dataset.groupLabel)
       })
       return
     }
@@ -105,20 +105,20 @@ export const Key = ({ mapState, pluginState }) => {
     .filter(dataset => dataset.showInKey && dataset.visibility !== 'hidden')
 
   const keyGroups = buildKeyGroups(visibleDatasets)
-  const hasGroups = keyGroups.some(item => item.type === 'rules' || item.type === 'group')
+  const hasGroups = keyGroups.some(item => item.type === 'sublayers' || item.type === 'group')
   const containerClass = `im-c-datasets-key${hasGroups ? ' im-c-datasets-key--has-groups' : ''}`
 
   return (
     <div className={containerClass}>
       {keyGroups.map(item => {
-        if (item.type === 'rules') {
+        if (item.type === 'sublayers') {
           const headingId = `key-heading-${item.dataset.id}`
           return (
             <section key={item.dataset.id} className='im-c-datasets-key__group' aria-labelledby={headingId}>
               <h3 id={headingId} className='im-c-datasets-key__group-heading'>{item.dataset.label}</h3>
-              {item.dataset.featureStyleRules
-                .filter(rule => item.dataset.ruleVisibility?.[rule.id] !== 'hidden')
-                .map(rule => renderEntry(`${item.dataset.id}-${rule.id}`, mergeRule(item.dataset, rule)))}
+              {item.dataset.sublayers
+                .filter(sublayer => item.dataset.sublayerVisibility?.[sublayer.id] !== 'hidden')
+                .map(sublayer => renderEntry(`${item.dataset.id}-${sublayer.id}`, mergeSublayer(item.dataset, sublayer)))}
             </section>
           )
         }

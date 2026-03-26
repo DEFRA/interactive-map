@@ -127,7 +127,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		// 	fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
 		// 	fillPatternBackgroundColor: 'transparent'
 		// },
-		featureStyleRules: [{
+		sublayers: [{
 			id: '130',
 			label: 'Permanent grassland',
 			filter: ['==', ['get', 'dominant_land_cover'], '130'],
@@ -273,7 +273,7 @@ interactiveMap.on('map:ready', function (e) {
 interactiveMap.on('datasets:ready', function () {
 	// setTimeout(() => datasetsPlugin.hideFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 2000)
 	// setTimeout(() => datasetsPlugin.showFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 4000)
-	// setTimeout(() => datasetsPlugin.setRuleStyle({ datasetId: 'field-parcels', ruleId: '130', style: { stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } } }), 2000)
+	// setTimeout(() => datasetsPlugin.setSublayerStyle({ datasetId: 'field-parcels', sublayerId: '130', style: { stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } } }), 2000)
 })
 
 // Ref to the selected features

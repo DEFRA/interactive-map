@@ -1,18 +1,18 @@
 import { hasPattern, getPatternImageId, rasterisePattern } from '../../styles/patterns.js'
-import { mergeRule } from '../../utils/mergeRule.js'
+import { mergeSublayer } from '../../utils/mergeSublayer.js'
 
 /**
  * Collect all style configs that require a pattern image: top-level datasets
- * and any featureStyleRules whose merged style has a pattern.
+ * and any sublayers whose merged style has a pattern.
  * @param {Object[]} datasets
  * @returns {Object[]}
  */
 const getPatternConfigs = (datasets) =>
   datasets.flatMap(dataset => {
     const configs = hasPattern(dataset) ? [dataset] : []
-    if (dataset.featureStyleRules?.length) {
-      dataset.featureStyleRules.forEach(rule => {
-        const merged = mergeRule(dataset, rule)
+    if (dataset.sublayers?.length) {
+      dataset.sublayers.forEach(sublayer => {
+        const merged = mergeSublayer(dataset, sublayer)
         if (hasPattern(merged)) {
           configs.push(merged)
         }

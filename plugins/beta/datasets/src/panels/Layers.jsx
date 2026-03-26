@@ -1,16 +1,16 @@
 import React from 'react'
 import { showDataset } from '../api/showDataset'
 import { hideDataset } from '../api/hideDataset'
-import { showRule } from '../api/showRule'
-import { hideRule } from '../api/hideRule'
+import { showSublayer } from '../api/showSublayer'
+import { hideSublayer } from '../api/hideSublayer'
 
 const CHECKBOX_LABEL_CLASS = 'im-c-datasets-layers__item-label govuk-label govuk-checkboxes__label'
 
-const hasToggleableRules = (dataset) => dataset.featureStyleRules?.some(rule => rule.toggleVisibility)
+const hasToggleableSublayers = (dataset) => dataset.sublayers?.some(sublayer => sublayer.toggleVisibility)
 
 /**
  * Collapse the filtered dataset list into ordered render items:
- *   { type: 'rules', dataset }              — dataset with featureStyleRules (takes precedence)
+ *   { type: 'sublayers', dataset }              — dataset with sublayers (takes precedence)
  *   { type: 'group', groupLabel, datasets } — datasets sharing a groupLabel
  *   { type: 'flat', dataset }               — standalone dataset
  */
@@ -18,8 +18,8 @@ const buildRenderItems = (datasets) => {
   const seenGroups = new Set()
   const items = []
   datasets.forEach(dataset => {
-    if (hasToggleableRules(dataset)) {
-      items.push({ type: 'rules', dataset })
+    if (hasToggleableSublayers(dataset)) {
+      items.push({ type: 'sublayers', dataset })
       return
     }
     if (dataset.groupLabel) {
@@ -30,7 +30,7 @@ const buildRenderItems = (datasets) => {
       items.push({
         type: 'group',
         groupLabel: dataset.groupLabel,
-        datasets: datasets.filter(d => !hasToggleableRules(d) && d.groupLabel === dataset.groupLabel)
+        datasets: datasets.filter(d => !hasToggleableSublayers(d) && d.groupLabel === dataset.groupLabel)
       })
       return
     }
@@ -49,14 +49,14 @@ export const Layers = ({ pluginState }) => {
     }
   }
 
-  const handleRuleChange = (e) => {
+  const handleSublayerChange = (e) => {
     const { checked } = e.target
     const datasetId = e.target.dataset.datasetId
-    const ruleId = e.target.dataset.ruleId
+    const sublayerId = e.target.dataset.sublayerId
     if (checked) {
-      showRule({ pluginState }, datasetId, ruleId)
+      showSublayer({ pluginState }, datasetId, sublayerId)
     } else {
-      hideRule({ pluginState }, datasetId, ruleId)
+      hideSublayer({ pluginState }, datasetId, sublayerId)
     }
   }
 
@@ -83,45 +83,45 @@ export const Layers = ({ pluginState }) => {
   }
 
   const visibleDatasets = (pluginState.datasets || [])
-    .filter(dataset => dataset.toggleVisibility || hasToggleableRules(dataset))
+    .filter(dataset => dataset.toggleVisibility || hasToggleableSublayers(dataset))
 
   const renderItems = buildRenderItems(visibleDatasets)
-  const hasGroups = renderItems.some(item => item.type === 'rules' || item.type === 'group')
+  const hasGroups = renderItems.some(item => item.type === 'sublayers' || item.type === 'group')
   const containerClass = `im-c-datasets-layers${hasGroups ? ' im-c-datasets-layers--has-groups' : ''}`
 
   return (
     <div className={containerClass}>
       {renderItems.map(item => {
-        if (item.type === 'rules') {
+        if (item.type === 'sublayers') {
           const { dataset } = item
-          const anyRuleChecked = dataset.featureStyleRules
-            .filter(rule => rule.toggleVisibility)
-            .some(rule => dataset.ruleVisibility?.[rule.id] !== 'hidden')
-          const wrapperClass = `govuk-form-group im-c-datasets-layers-group${anyRuleChecked ? ' im-c-datasets-layers-group--items-checked' : ''}`
+          const anySublayerChecked = dataset.sublayers
+            .filter(sublayer => sublayer.toggleVisibility)
+            .some(sublayer => dataset.sublayerVisibility?.[sublayer.id] !== 'hidden')
+          const wrapperClass = `govuk-form-group im-c-datasets-layers-group${anySublayerChecked ? ' im-c-datasets-layers-group--items-checked' : ''}`
           return (
             <div key={dataset.id} className={wrapperClass}>
               <fieldset className='im-c-datasets-layers-group__fieldset'>
                 <legend className='im-c-datasets-layers-group__legend'>{dataset.label}</legend>
-                {dataset.featureStyleRules
-                  .filter(rule => rule.toggleVisibility)
-                  .map(rule => {
-                    const ruleVisible = dataset.ruleVisibility?.[rule.id] !== 'hidden'
-                    const inputId = `${dataset.id}-${rule.id}`
-                    const itemClass = `im-c-datasets-layers__item govuk-checkboxes govuk-checkboxes--small${ruleVisible ? ' im-c-datasets-layers__item--checked' : ''}`
+                {dataset.sublayers
+                  .filter(sublayer => sublayer.toggleVisibility)
+                  .map(sublayer => {
+                    const sublayerVisible = dataset.sublayerVisibility?.[sublayer.id] !== 'hidden'
+                    const inputId = `${dataset.id}-${sublayer.id}`
+                    const itemClass = `im-c-datasets-layers__item govuk-checkboxes govuk-checkboxes--small${sublayerVisible ? ' im-c-datasets-layers__item--checked' : ''}`
                     return (
-                      <div key={rule.id} className={itemClass} data-module='govuk-checkboxes'>
+                      <div key={sublayer.id} className={itemClass} data-module='govuk-checkboxes'>
                         <div className='govuk-checkboxes__item'>
                           <input
                             className='govuk-checkboxes__input'
                             id={inputId}
                             type='checkbox'
-                            checked={ruleVisible}
+                            checked={sublayerVisible}
                             data-dataset-id={dataset.id}
-                            data-rule-id={rule.id}
-                            onChange={handleRuleChange}
+                            data-sublayer-id={sublayer.id}
+                            onChange={handleSublayerChange}
                           />
                           <label className={CHECKBOX_LABEL_CLASS} htmlFor={inputId}>
-                            {rule.label}
+                            {sublayer.label}
                           </label>
                         </div>
                       </div>

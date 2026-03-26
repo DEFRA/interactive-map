@@ -6,22 +6,22 @@ const initialState = {
   layerAdapter: null
 }
 
-const initRuleVisibility = (dataset) => {
-  if (!dataset.featureStyleRules?.length) {
+const initSublayerVisibility = (dataset) => {
+  if (!dataset.sublayers?.length) {
     return dataset
   }
-  const ruleVisibility = {}
-  dataset.featureStyleRules.forEach(rule => {
-    ruleVisibility[rule.id] = 'visible'
+  const sublayerVisibility = {}
+  dataset.sublayers.forEach(sublayer => {
+    sublayerVisibility[sublayer.id] = 'visible'
   })
-  return { ...dataset, ruleVisibility }
+  return { ...dataset, sublayerVisibility }
 }
 
 const setDatasets = (state, payload) => {
   const { datasets, datasetDefaults } = payload
   return {
     ...state,
-    datasets: datasets.map(dataset => initRuleVisibility(applyDatasetDefaults(dataset, datasetDefaults)))
+    datasets: datasets.map(dataset => initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults)))
   }
 }
 
@@ -31,7 +31,7 @@ const addDataset = (state, payload) => {
     ...state,
     datasets: [
       ...(state.datasets || []),
-      initRuleVisibility(applyDatasetDefaults(dataset, datasetDefaults))
+      initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults))
     ]
   }
 }
@@ -93,8 +93,8 @@ const showFeatures = (state, payload) => {
   }
 }
 
-const setRuleVisibility = (state, payload) => {
-  const { datasetId, ruleId, visibility } = payload
+const setSublayerVisibility = (state, payload) => {
+  const { datasetId, sublayerId, visibility } = payload
   return {
     ...state,
     datasets: state.datasets?.map(dataset => {
@@ -103,9 +103,9 @@ const setRuleVisibility = (state, payload) => {
       }
       return {
         ...dataset,
-        ruleVisibility: {
-          ...dataset.ruleVisibility,
-          [ruleId]: visibility
+        sublayerVisibility: {
+          ...dataset.sublayerVisibility,
+          [sublayerId]: visibility
         }
       }
     })
@@ -122,8 +122,8 @@ const setDatasetStyle = (state, payload) => {
   }
 }
 
-const setRuleStyle = (state, payload) => {
-  const { datasetId, ruleId, styleChanges } = payload
+const setSublayerStyle = (state, payload) => {
+  const { datasetId, sublayerId, styleChanges } = payload
   return {
     ...state,
     datasets: state.datasets?.map(dataset => {
@@ -132,10 +132,10 @@ const setRuleStyle = (state, payload) => {
       }
       return {
         ...dataset,
-        featureStyleRules: dataset.featureStyleRules?.map(rule =>
-          rule.id === ruleId
-            ? { ...rule, style: { ...rule.style, ...styleChanges } }
-            : rule
+        sublayers: dataset.sublayers?.map(sublayer =>
+          sublayer.id === sublayerId
+            ? { ...sublayer, style: { ...sublayer.style, ...styleChanges } }
+            : sublayer
         )
       }
     })
@@ -149,9 +149,9 @@ const actions = {
   ADD_DATASET: addDataset,
   REMOVE_DATASET: removeDataset,
   SET_DATASET_VISIBILITY: setDatasetVisibility,
-  SET_RULE_VISIBILITY: setRuleVisibility,
+  SET_SUBLAYER_VISIBILITY: setSublayerVisibility,
   SET_DATASET_STYLE: setDatasetStyle,
-  SET_RULE_STYLE: setRuleStyle,
+  SET_SUBLAYER_STYLE: setSublayerStyle,
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
   SET_LAYER_ADAPTER: setLayerAdapter

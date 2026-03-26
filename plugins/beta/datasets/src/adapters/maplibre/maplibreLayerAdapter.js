@@ -1,6 +1,6 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
-import { getSourceId, getLayerIds, getRuleLayerIds, getAllLayerIds } from './layerIds.js'
-import { addDatasetLayers, addRuleLayers } from './layerBuilders.js'
+import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
+import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
 import { registerPatterns } from './patternRegistry.js'
 
 /**
@@ -136,12 +136,12 @@ export default class MaplibreLayerAdapter {
   }
 
   /**
-   * Make a single featureStyleRule's layers visible.
+   * Make a single sublayer's layers visible.
    * @param {string} datasetId
-   * @param {string} ruleId
+   * @param {string} sublayerId
    */
-  showRule (datasetId, ruleId) {
-    const { fillLayerId, strokeLayerId } = getRuleLayerIds(datasetId, ruleId)
+  showSublayer (datasetId, sublayerId) {
+    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(datasetId, sublayerId)
     if (this._map.getLayer(fillLayerId)) {
       this._map.setLayoutProperty(fillLayerId, 'visibility', 'visible')
     }
@@ -151,12 +151,12 @@ export default class MaplibreLayerAdapter {
   }
 
   /**
-   * Hide a single featureStyleRule's layers.
+   * Hide a single sublayer's layers.
    * @param {string} datasetId
-   * @param {string} ruleId
+   * @param {string} sublayerId
    */
-  hideRule (datasetId, ruleId) {
-    const { fillLayerId, strokeLayerId } = getRuleLayerIds(datasetId, ruleId)
+  hideSublayer (datasetId, sublayerId) {
+    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(datasetId, sublayerId)
     if (this._map.getLayer(fillLayerId)) {
       this._map.setLayoutProperty(fillLayerId, 'visibility', 'none')
     }
@@ -204,28 +204,28 @@ export default class MaplibreLayerAdapter {
   }
 
   /**
-   * Update a single featureStyleRule's style and re-render its layers.
-   * @param {Object} dataset - Updated dataset (rule style changes already merged in)
-   * @param {string} ruleId
+   * Update a single sublayer's style and re-render its layers.
+   * @param {Object} dataset - Updated dataset (sublayer style changes already merged in)
+   * @param {string} sublayerId
    * @param {string} mapStyleId
    * @returns {Promise<void>}
    */
-  async setRuleStyle (dataset, ruleId, mapStyleId) {
-    const { fillLayerId, strokeLayerId } = getRuleLayerIds(dataset.id, ruleId)
+  async setSublayerStyle (dataset, sublayerId, mapStyleId) {
+    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(dataset.id, sublayerId)
     if (this._map.getLayer(fillLayerId)) {
       this._map.removeLayer(fillLayerId)
     }
     if (this._map.getLayer(strokeLayerId)) {
       this._map.removeLayer(strokeLayerId)
     }
-    const rule = dataset.featureStyleRules?.find(r => r.id === ruleId)
-    if (!rule) {
+    const sublayer = dataset.sublayers?.find(s => s.id === sublayerId)
+    if (!sublayer) {
       return
     }
     await registerPatterns(this._map, [dataset], mapStyleId)
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
-    addRuleLayers(this._map, dataset, rule, sourceId, sourceLayer, mapStyleId)
+    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, mapStyleId)
   }
 
   /**
@@ -257,7 +257,7 @@ export default class MaplibreLayerAdapter {
       return
     }
     // Covers base fill layer (datasetId) and all suffixed layers
-    // (-stroke, -${ruleId}, -${ruleId}-stroke) without needing the dataset object.
+    // (-stroke, -${sublayerId}, -${sublayerId}-stroke) without needing the dataset object.
     style.layers
       .filter(layer =>
         layer.id === datasetId ||
@@ -267,14 +267,14 @@ export default class MaplibreLayerAdapter {
   }
 
   _applyFeatureFilter (dataset, idProperty, excludeIds) {
-    if (dataset.featureStyleRules?.length) {
-      dataset.featureStyleRules.forEach(rule => {
-        const { fillLayerId: ruleFillId, strokeLayerId: ruleStrokeId } = getRuleLayerIds(dataset.id, rule.id)
-        const ruleFilter = dataset.filter && rule.filter
-          ? ['all', dataset.filter, rule.filter]
-          : (rule.filter || dataset.filter || null)
-        applyExclusionFilter(this._map, ruleFillId, ruleFilter, idProperty, excludeIds)
-        applyExclusionFilter(this._map, ruleStrokeId, ruleFilter, idProperty, excludeIds)
+    if (dataset.sublayers?.length) {
+      dataset.sublayers.forEach(sublayer => {
+        const { fillLayerId, strokeLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
+        const sublayerFilter = dataset.filter && sublayer.filter
+          ? ['all', dataset.filter, sublayer.filter]
+          : (sublayer.filter || dataset.filter || null)
+        applyExclusionFilter(this._map, fillLayerId, sublayerFilter, idProperty, excludeIds)
+        applyExclusionFilter(this._map, strokeLayerId, sublayerFilter, idProperty, excludeIds)
       })
       return
     }

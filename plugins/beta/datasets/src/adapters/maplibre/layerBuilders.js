@@ -1,7 +1,7 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 import { hasPattern, getPatternImageId } from '../../styles/patterns.js'
-import { mergeRule } from '../../utils/mergeRule.js'
-import { getSourceId, getLayerIds, getRuleLayerIds, isDynamicSource, MAX_TILE_ZOOM } from './layerIds.js'
+import { mergeSublayer } from '../../utils/mergeSublayer.js'
+import { getSourceId, getLayerIds, getSublayerLayerIds, isDynamicSource, MAX_TILE_ZOOM } from './layerIds.js'
 
 // ─── Source ───────────────────────────────────────────────────────────────────
 
@@ -74,12 +74,12 @@ export const addStrokeLayer = (map, config, layerId, sourceId, sourceLayer, visi
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addRuleLayers = (map, dataset, rule, sourceId, sourceLayer, mapStyleId) => {
-  const merged = mergeRule(dataset, rule)
-  const { fillLayerId, strokeLayerId } = getRuleLayerIds(dataset.id, rule.id)
+export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer, mapStyleId) => {
+  const merged = mergeSublayer(dataset, sublayer)
+  const { fillLayerId, strokeLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
   const parentHidden = dataset.visibility === 'hidden'
-  const ruleHidden = dataset.ruleVisibility?.[rule.id] === 'hidden'
-  const visibility = (parentHidden || ruleHidden) ? 'none' : 'visible'
+  const sublayerHidden = dataset.sublayerVisibility?.[sublayer.id] === 'hidden'
+  const visibility = (parentHidden || sublayerHidden) ? 'none' : 'visible'
   addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, mapStyleId)
   addStrokeLayer(map, merged, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
 }
@@ -98,9 +98,9 @@ export const addDatasetLayers = (map, dataset, mapStyleId) => {
 
   const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
 
-  if (dataset.featureStyleRules?.length) {
-    dataset.featureStyleRules.forEach(rule => {
-      addRuleLayers(map, dataset, rule, sourceId, sourceLayer, mapStyleId)
+  if (dataset.sublayers?.length) {
+    dataset.sublayers.forEach(sublayer => {
+      addSublayerLayers(map, dataset, sublayer, sourceId, sourceLayer, mapStyleId)
     })
     return sourceId
   }

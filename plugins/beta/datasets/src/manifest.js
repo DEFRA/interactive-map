@@ -9,10 +9,10 @@ import { addDataset } from './api/addDataset.js'
 import { removeDataset } from './api/removeDataset.js'
 import { showFeatures } from './api/showFeatures.js'
 import { hideFeatures } from './api/hideFeatures.js'
-import { showRule } from './api/showRule.js'
-import { hideRule } from './api/hideRule.js'
+import { showSublayer } from './api/showSublayer.js'
+import { hideSublayer } from './api/hideSublayer.js'
 import { setStyle } from './api/setStyle.js'
-import { setRuleStyle } from './api/setRuleStyle.js'
+import { setSublayerStyle } from './api/setSublayerStyle.js'
 import { setData } from './api/setData.js'
 
 export const manifest = {
@@ -69,7 +69,7 @@ export const manifest = {
     panelId: 'datasetsLayers',
     iconId: 'layers',
     excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.some(l =>
-      l.toggleVisibility || l.featureStyleRules?.some(r => r.toggleVisibility)
+      l.toggleVisibility || l.sublayers?.some(r => r.toggleVisibility)
     ),
     mobile: {
       slot: 'top-left',
@@ -118,10 +118,10 @@ export const manifest = {
     removeDataset,
     showFeatures,
     hideFeatures,
-    showRule,
-    hideRule,
+    showSublayer,
+    hideSublayer,
     setStyle,
-    setRuleStyle,
+    setSublayerStyle,
     setData
   }
 }
