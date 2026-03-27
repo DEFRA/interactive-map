@@ -101,8 +101,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		// ],
 		// tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
 		// sourceLayer: 'field_parcels_filtered',
-		featureLayer: '',
-		vectorTileLayer: '',
+		// featureLayer: '',
 		// idProperty: 'id',  // Enables dynamic fetching + deduplication
 		// filter: ['get', ['propertyName', 'warning']],
 		query: {},
@@ -130,7 +129,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		sublayers: [{
 			id: '130',
 			label: 'Permanent grassland',
-			filter: ['==', ['get', 'dominant_land_cover'], '130'],
+			filter: ['==', ['get', 'dominant_land_cover'], '130'], // 'dominant_land_cover = "130"'
 			toggleVisibility: true,
 			style: {
 				stroke: { outdoor: '#82F584', dark: '#ffffff' },
@@ -274,10 +273,6 @@ interactiveMap.on('datasets:ready', function () {
 	// setTimeout(() => datasetsPlugin.hideFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 2000)
 	// setTimeout(() => datasetsPlugin.showFeatures({ featureIds: [55], idProperty: null, datasetId: 'field-parcels' }), 4000)
 	// setTimeout(() => datasetsPlugin.setSublayerStyle({ datasetId: 'field-parcels', sublayerId: '130', style: { stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } } }), 2000)
-	setTimeout(() => {
-		console.log('getStyle (field-parcels):', datasetsPlugin.getStyle({ datasetId: 'field-parcels' }))
-		console.log('getSublayerStyle (field-parcels / 130):', datasetsPlugin.getSublayerStyle({ datasetId: 'field-parcels', sublayerId: '130' }))
-	}, 2000)
 })
 
 // Ref to the selected features

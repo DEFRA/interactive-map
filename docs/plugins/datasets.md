@@ -104,7 +104,7 @@ Human-readable name shown in the Layers panel and Key panel.
 
 **Type:** `string | GeoJSON.FeatureCollection`
 
-GeoJSON source. Provide a URL string for remote data, or a GeoJSON object for inline data. Use alongside `transformRequest` for dynamic bbox-based fetching.
+GeoJSON source. Provide a URL string for remote data, or a GeoJSON object for inline data. Use alongside `transformRequest` to add authentication or append bbox parameters to the request.
 
 ---
 
@@ -128,10 +128,42 @@ The layer name within the vector tile source to render. Required when using `til
 
 **Type:** `Function`
 
-A function called with the current map bounds to build a dynamic fetch URL. Required for dynamic bbox-based GeoJSON fetching.
+A function called before each fetch to transform the request. Its primary purpose is to attach authentication credentials — API keys, OAuth tokens, or other headers. It also receives the current viewport context so you can append bbox or zoom parameters to the URL if your API supports spatial filtering.
+
+The plugin handles all dynamic fetching concerns (viewport tracking, debouncing, deduplication, caching, request cancellation) — `transformRequest` only needs to return the final URL and any headers.
+
+**Signature:** `transformRequest(url, { bbox, zoom, dataset })`
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `url` | `string` | The base URL from `geojson` |
+| `bbox` | `number[]` | Current viewport bounds as `[west, south, east, north]` |
+| `zoom` | `number` | Current map zoom level |
+| `dataset` | `Object` | The full dataset configuration |
+
+Return either a plain URL string or an object `{ url, headers }`. The object form is needed when attaching auth headers.
 
 ```js
-transformRequest: (bbox) => `https://example.com/api/items?bbox=${bbox.join(',')}`
+// Auth headers only (no bbox filtering)
+transformRequest: (url) => ({
+  url,
+  headers: { Authorization: `Bearer ${getToken()}` }
+})
+
+// Append bbox to URL for server-side spatial filtering
+transformRequest: (url, { bbox }) => {
+  const separator = url.includes('?') ? '&' : '?'
+  return { url: `${url}${separator}bbox=${bbox.join(',')}` }
+}
+
+// Both — auth + bbox
+transformRequest: (url, { bbox }) => {
+  const separator = url.includes('?') ? '&' : '?'
+  return {
+    url: `${url}${separator}bbox=${bbox.join(',')}`,
+    headers: { Authorization: `Bearer ${getToken()}` }
+  }
+}
 ```
 
 ---
@@ -140,7 +172,7 @@ transformRequest: (bbox) => `https://example.com/api/items?bbox=${bbox.join(',')
 
 **Type:** `string`
 
-Property name used as the unique feature identifier. Required for dynamic fetching and feature deduplication.
+Property name used to uniquely identify features. Required alongside `transformRequest` to enable dynamic bbox-based fetching — the plugin uses it internally to deduplicate features across successive viewport fetches.
 
 ---
 
@@ -177,8 +209,23 @@ Maximum zoom level at which the dataset is visible.
 ### `maxFeatures`
 
 **Type:** `number`
+**Default:** none — omitting this option disables eviction entirely
 
-Maximum number of features to hold in memory for dynamic sources. When exceeded, features far from the current viewport are evicted.
+Only applies to dynamic sources (those using `transformRequest`). When set, the plugin tracks how many features are held in memory across all viewport fetches and evicts older features once the limit is exceeded.
+
+Eviction triggers at 120% of `maxFeatures` to avoid running on every fetch when hovering near the limit. Out-of-viewport features are evicted first, sorted by how recently they were visible. Features currently in the viewport are only evicted if out-of-viewport eviction alone is not sufficient. When features are evicted, the plugin resets its tracked fetch area so those regions will be re-fetched if the user pans back.
+
+**When to set it:** omit `maxFeatures` for small or bounded datasets where accumulation is not a concern. Set it when your dataset is large enough that features could accumulate significantly over a long session — for example a national-scale dataset at medium zoom, or any dataset where users are expected to pan extensively.
+
+```js
+{
+  id: 'my-parcels',
+  geojson: 'https://example.com/api/parcels',
+  transformRequest: transformDataRequest,
+  idProperty: 'id',
+  maxFeatures: 10000
+}
+```
 
 ---
 
@@ -347,7 +394,7 @@ datasetsPlugin.removeDataset('my-parcels')
 
 ### `showDataset(datasetId)`
 
-Make a hidden dataset visible.
+Make a hidden dataset visible. If the dataset has sublayers, any that were individually hidden before the dataset was hidden will remain hidden — their individual visibility state is preserved.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -361,7 +408,7 @@ datasetsPlugin.showDataset('my-parcels')
 
 ### `hideDataset(datasetId)`
 
-Hide a visible dataset.
+Hide a visible dataset and all its sublayers. Individual sublayer visibility state is preserved so it can be correctly restored when the dataset is shown again.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -375,7 +422,7 @@ datasetsPlugin.hideDataset('my-parcels')
 
 ### `showSublayer(datasetId, sublayerId)`
 
-Make a hidden sublayer visible.
+Make a hidden sublayer visible. Has no effect if the parent dataset is currently hidden.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -390,7 +437,7 @@ datasetsPlugin.showSublayer('my-parcels', 'active')
 
 ### `hideSublayer(datasetId, sublayerId)`
 
-Hide a visible sublayer.
+Hide a single sublayer without affecting the parent dataset or other sublayers.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -411,13 +458,21 @@ Show previously hidden features within a dataset.
 |-----------|------|-------------|
 | `options.datasetId` | `string` | ID of the dataset |
 | `options.featureIds` | `(string \| number)[]` | IDs of features to show |
-| `options.idProperty` | `string` | Property name used as the feature identifier |
+| `options.idProperty` | `string \| null` | Property name to match features on. Pass `null` to match against the top-level `feature.id` instead |
 
 ```js
+// Match by a feature property
 datasetsPlugin.showFeatures({
   datasetId: 'my-parcels',
   featureIds: [123, 456],
-  idProperty: 'id'
+  idProperty: 'parcel_id'
+})
+
+// Match by feature.id (no property needed)
+datasetsPlugin.showFeatures({
+  datasetId: 'my-parcels',
+  featureIds: [123, 456],
+  idProperty: null
 })
 ```
 
@@ -431,13 +486,21 @@ Hide specific features within a dataset without removing them from the source.
 |-----------|------|-------------|
 | `options.datasetId` | `string` | ID of the dataset |
 | `options.featureIds` | `(string \| number)[]` | IDs of features to hide |
-| `options.idProperty` | `string` | Property name used as the feature identifier |
+| `options.idProperty` | `string \| null` | Property name to match features on. Pass `null` to match against the top-level `feature.id` instead |
 
 ```js
+// Match by a feature property
 datasetsPlugin.hideFeatures({
   datasetId: 'my-parcels',
   featureIds: [123, 456],
-  idProperty: 'id'
+  idProperty: 'parcel_id'
+})
+
+// Match by feature.id (no property needed)
+datasetsPlugin.hideFeatures({
+  datasetId: 'my-parcels',
+  featureIds: [123, 456],
+  idProperty: null
 })
 ```
 
@@ -515,6 +578,74 @@ Returns the current style object for a sublayer, or `null` if the dataset or sub
 ```js
 const style = datasetsPlugin.getSublayerStyle({ datasetId: 'my-parcels', sublayerId: 'active' })
 console.log(style) // { stroke: '#00703c', fill: 'rgba(0,112,60,0.1)' }
+```
+
+---
+
+### `setOpacity(opacity)` / `setOpacity(datasetId, opacity)`
+
+Set the opacity of all datasets or a single dataset. Safe to call on every tick from a slider — uses `setPaintProperty` internally rather than removing and re-adding layers.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `opacity` | `number` | Opacity from `0` (transparent) to `1` (fully opaque). Omit `datasetId` to apply globally |
+| `datasetId` | `string` | Optional. When provided, only that dataset is affected |
+
+```js
+// Global — all datasets
+datasetsPlugin.setOpacity(0.5)
+
+// Single dataset
+datasetsPlugin.setOpacity('my-parcels', 0.5)
+```
+
+---
+
+### `getOpacity()` / `getOpacity(datasetId)`
+
+Returns the current opacity for a dataset, or the first dataset's opacity when called without arguments. Returns `null` if the dataset is not found.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `datasetId` | `string` | Optional. When omitted, returns the opacity of the first dataset |
+
+```js
+// Read back after setting globally — useful for initialising a slider
+const opacity = datasetsPlugin.getOpacity()
+
+// Single dataset
+const opacity = datasetsPlugin.getOpacity('my-parcels')
+```
+
+---
+
+### `setSublayerOpacity(datasetId, sublayerId, opacity)`
+
+Set the opacity of a single sublayer. Safe to call on every tick from a slider.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `datasetId` | `string` | ID of the dataset |
+| `sublayerId` | `string` | ID of the sublayer |
+| `opacity` | `number` | Opacity from `0` to `1` |
+
+```js
+datasetsPlugin.setSublayerOpacity('my-parcels', 'active', 0.5)
+```
+
+---
+
+### `getSublayerOpacity(datasetId, sublayerId)`
+
+Returns the current opacity for a sublayer, or `null` if the dataset or sublayer is not found.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `datasetId` | `string` | ID of the dataset |
+| `sublayerId` | `string` | ID of the sublayer |
+
+```js
+const opacity = datasetsPlugin.getSublayerOpacity('my-parcels', 'active')
 ```
 
 ---

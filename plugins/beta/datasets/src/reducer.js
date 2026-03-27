@@ -142,6 +142,44 @@ const setSublayerStyle = (state, payload) => {
   }
 }
 
+const setOpacity = (state, payload) => {
+  const { datasetId, opacity } = payload
+  return {
+    ...state,
+    datasets: state.datasets?.map(dataset =>
+      dataset.id === datasetId ? { ...dataset, opacity } : dataset
+    )
+  }
+}
+
+const setGlobalOpacity = (state, payload) => {
+  const { opacity } = payload
+  return {
+    ...state,
+    datasets: state.datasets?.map(dataset => ({ ...dataset, opacity }))
+  }
+}
+
+const setSublayerOpacity = (state, payload) => {
+  const { datasetId, sublayerId, opacity } = payload
+  return {
+    ...state,
+    datasets: state.datasets?.map(dataset => {
+      if (dataset.id !== datasetId) {
+        return dataset
+      }
+      return {
+        ...dataset,
+        sublayers: dataset.sublayers?.map(sublayer =>
+          sublayer.id === sublayerId
+            ? { ...sublayer, style: { ...sublayer.style, opacity } }
+            : sublayer
+        )
+      }
+    })
+  }
+}
+
 const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
 
 const actions = {
@@ -152,6 +190,9 @@ const actions = {
   SET_SUBLAYER_VISIBILITY: setSublayerVisibility,
   SET_DATASET_STYLE: setDatasetStyle,
   SET_SUBLAYER_STYLE: setSublayerStyle,
+  SET_OPACITY: setOpacity,
+  SET_GLOBAL_OPACITY: setGlobalOpacity,
+  SET_SUBLAYER_OPACITY: setSublayerOpacity,
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
   SET_LAYER_ADAPTER: setLayerAdapter

@@ -15,6 +15,10 @@ import { setStyle } from './api/setStyle.js'
 import { setSublayerStyle } from './api/setSublayerStyle.js'
 import { getStyle } from './api/getStyle.js'
 import { getSublayerStyle } from './api/getSublayerStyle.js'
+import { setOpacity } from './api/setOpacity.js'
+import { getOpacity } from './api/getOpacity.js'
+import { setSublayerOpacity } from './api/setSublayerOpacity.js'
+import { getSublayerOpacity } from './api/getSublayerOpacity.js'
 import { setData } from './api/setData.js'
 
 export const manifest = {
@@ -124,6 +128,10 @@ export const manifest = {
     hideSublayer,
     getStyle,
     getSublayerStyle,
+    setOpacity,
+    getOpacity,
+    setSublayerOpacity,
+    getSublayerOpacity,
     setStyle,
     setSublayerStyle,
     setData

@@ -229,6 +229,35 @@ export default class MaplibreLayerAdapter {
   }
 
   /**
+   * Set opacity for all layers belonging to a dataset.
+   * Uses setPaintProperty directly — safe to call on every slider tick.
+   * @param {string} datasetId
+   * @param {number} opacity
+   */
+  setOpacity (datasetId, opacity) {
+    const style = this._map.getStyle()
+    if (!style?.layers) {
+      return
+    }
+    style.layers
+      .filter(layer => layer.id === datasetId || layer.id.startsWith(`${datasetId}-`))
+      .forEach(layer => this._setPaintOpacity(layer.id, opacity))
+  }
+
+  /**
+   * Set opacity for a single sublayer's fill and stroke layers.
+   * Uses setPaintProperty directly — safe to call on every slider tick.
+   * @param {string} datasetId
+   * @param {string} sublayerId
+   * @param {number} opacity
+   */
+  setSublayerOpacity (datasetId, sublayerId, opacity) {
+    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(datasetId, sublayerId)
+    this._setPaintOpacity(fillLayerId, opacity)
+    this._setPaintOpacity(strokeLayerId, opacity)
+  }
+
+  /**
    * Update the GeoJSON data for a dataset's source.
    * @param {string} datasetId
    * @param {Object} geojson - GeoJSON FeatureCollection
@@ -269,12 +298,12 @@ export default class MaplibreLayerAdapter {
   _applyFeatureFilter (dataset, idProperty, excludeIds) {
     if (dataset.sublayers?.length) {
       dataset.sublayers.forEach(sublayer => {
-        const { fillLayerId, strokeLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
+        const { fillLayerId: subFillId, strokeLayerId: subStrokeId } = getSublayerLayerIds(dataset.id, sublayer.id)
         const sublayerFilter = dataset.filter && sublayer.filter
           ? ['all', dataset.filter, sublayer.filter]
           : (sublayer.filter || dataset.filter || null)
-        applyExclusionFilter(this._map, fillLayerId, sublayerFilter, idProperty, excludeIds)
-        applyExclusionFilter(this._map, strokeLayerId, sublayerFilter, idProperty, excludeIds)
+        applyExclusionFilter(this._map, subFillId, sublayerFilter, idProperty, excludeIds)
+        applyExclusionFilter(this._map, subStrokeId, sublayerFilter, idProperty, excludeIds)
       })
       return
     }
@@ -286,6 +315,15 @@ export default class MaplibreLayerAdapter {
     if (strokeLayerId) {
       applyExclusionFilter(this._map, strokeLayerId, originalFilter, idProperty, excludeIds)
     }
+  }
+
+  _setPaintOpacity (layerId, opacity) {
+    const layer = this._map.getLayer(layerId)
+    if (!layer) {
+      return
+    }
+    const prop = layer.type === 'line' ? 'line-opacity' : 'fill-opacity'
+    this._map.setPaintProperty(layerId, prop, opacity)
   }
 
   _getLayersUsingSource (sourceId) {
