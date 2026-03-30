@@ -1,8 +1,5 @@
 import React from 'react'
-import { showDataset } from '../api/showDataset'
-import { hideDataset } from '../api/hideDataset'
-import { showSublayer } from '../api/showSublayer'
-import { hideSublayer } from '../api/hideSublayer'
+import { setDatasetVisibility } from '../api/setDatasetVisibility'
 
 const CHECKBOX_LABEL_CLASS = 'im-c-datasets-layers__item-label govuk-label govuk-checkboxes__label'
 
@@ -42,22 +39,14 @@ const buildRenderItems = (datasets) => {
 export const Layers = ({ pluginState }) => {
   const handleDatasetChange = (e) => {
     const { value, checked } = e.target
-    if (checked) {
-      showDataset({ pluginState }, value)
-    } else {
-      hideDataset({ pluginState }, value)
-    }
+    setDatasetVisibility({ pluginState }, checked, { datasetId: value })
   }
 
   const handleSublayerChange = (e) => {
     const { checked } = e.target
     const datasetId = e.target.dataset.datasetId
     const sublayerId = e.target.dataset.sublayerId
-    if (checked) {
-      showSublayer({ pluginState }, datasetId, sublayerId)
-    } else {
-      hideSublayer({ pluginState }, datasetId, sublayerId)
-    }
+    setDatasetVisibility({ pluginState }, checked, { datasetId, sublayerId })
   }
 
   const renderDatasetItem = (dataset) => {

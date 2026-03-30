@@ -3,22 +3,14 @@ import { initialState, actions } from './reducer.js'
 import { DatasetsInit } from './DatasetsInit.jsx'
 import { Layers } from './panels/Layers.jsx'
 import { Key } from './panels/Key.jsx'
-import { showDataset } from './api/showDataset.js'
-import { hideDataset } from './api/hideDataset.js'
 import { addDataset } from './api/addDataset.js'
 import { removeDataset } from './api/removeDataset.js'
-import { showFeatures } from './api/showFeatures.js'
-import { hideFeatures } from './api/hideFeatures.js'
-import { showSublayer } from './api/showSublayer.js'
-import { hideSublayer } from './api/hideSublayer.js'
+import { setDatasetVisibility } from './api/setDatasetVisibility.js'
+import { setFeatureVisibility } from './api/setFeatureVisibility.js'
 import { setStyle } from './api/setStyle.js'
-import { setSublayerStyle } from './api/setSublayerStyle.js'
 import { getStyle } from './api/getStyle.js'
-import { getSublayerStyle } from './api/getSublayerStyle.js'
 import { setOpacity } from './api/setOpacity.js'
 import { getOpacity } from './api/getOpacity.js'
-import { setSublayerOpacity } from './api/setSublayerOpacity.js'
-import { getSublayerOpacity } from './api/getSublayerOpacity.js'
 import { setData } from './api/setData.js'
 
 export const manifest = {
@@ -118,22 +110,14 @@ export const manifest = {
   }],
 
   api: {
-    showDataset,
-    hideDataset,
     addDataset,
     removeDataset,
-    showFeatures,
-    hideFeatures,
-    showSublayer,
-    hideSublayer,
+    setDatasetVisibility,
+    setFeatureVisibility,
+    setStyle,
     getStyle,
-    getSublayerStyle,
     setOpacity,
     getOpacity,
-    setSublayerOpacity,
-    getSublayerOpacity,
-    setStyle,
-    setSublayerStyle,
     setData
   }
 }

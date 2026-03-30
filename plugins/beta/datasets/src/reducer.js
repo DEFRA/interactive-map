@@ -54,6 +54,14 @@ const setDatasetVisibility = (state, payload) => {
   }
 }
 
+const setGlobalVisibility = (state, payload) => {
+  const { visibility } = payload
+  return {
+    ...state,
+    datasets: state.datasets?.map(dataset => ({ ...dataset, visibility }))
+  }
+}
+
 const hideFeatures = (state, payload) => {
   const { layerId, idProperty, featureIds } = payload
   const existing = state.hiddenFeatures[layerId]
@@ -187,6 +195,7 @@ const actions = {
   ADD_DATASET: addDataset,
   REMOVE_DATASET: removeDataset,
   SET_DATASET_VISIBILITY: setDatasetVisibility,
+  SET_GLOBAL_VISIBILITY: setGlobalVisibility,
   SET_SUBLAYER_VISIBILITY: setSublayerVisibility,
   SET_DATASET_STYLE: setDatasetStyle,
   SET_SUBLAYER_STYLE: setSublayerStyle,

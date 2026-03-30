@@ -21,10 +21,10 @@ var feature = { id: 'test1234', type: 'Feature', geometry: { coordinates: [[[-2.
 var interactPlugin = createInteractPlugin({
 	dataLayers: [{
 		layerId: 'field-parcels',
-		idProperty: 'gid'
+		// idProperty: 'gid'
 	},{
 		layerId: 'linked-parcels',
-		idProperty: 'gid'
+		// idProperty: 'gid'
 	}],
 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
@@ -52,20 +52,15 @@ var datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		toggleVisibility: true,
-		stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-		strokeWidth: 2,
-		// strokeDashArray: [1, 2],
-		// symbol: '',
-		// symbolSvgContent: '',
-		// symbolForegroundColor: '',
-		// symbolBackgroundColor: '',
-		// symbolDescription: { outdoor: 'blue outline' },
-		// symbolOffset: [],
-		fill: 'rgba(0,0,255,0.1)',
-		fillPattern: 'diagonal-cross-hatch',
-		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		fillPatternBackgroundColor: 'transparent',
-		opacity: 0.5
+		style: {
+			stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+			strokeWidth: 2,
+			fill: 'rgba(0,0,255,0.1)',
+			fillPattern: 'diagonal-cross-hatch',
+			fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+			fillPatternBackgroundColor: 'transparent',
+			opacity: 0.5
+		}
 	},
 	// {
 	// 	id: 'linked-parcels',

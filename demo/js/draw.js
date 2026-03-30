@@ -210,8 +210,8 @@ interactiveMap.on('map:ready', function (e) {
 })
 
 interactiveMap.on('datasets:ready', function () {
-	// setTimeout(() => datasetsPlugin.hideDataset('field-parcels'), 2000)
-	// setTimeout(() => datasetsPlugin.showDataset('field-parcels'), 4000)
+	// setTimeout(() => datasetsPlugin.setDatasetVisibility(false, { datasetId: 'field-parcels' }), 2000)
+	// setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'field-parcels' }), 4000)
 })
 
 // Ref to the selected features

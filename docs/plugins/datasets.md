@@ -209,23 +209,8 @@ Maximum zoom level at which the dataset is visible.
 ### `maxFeatures`
 
 **Type:** `number`
-**Default:** none — omitting this option disables eviction entirely
 
-Only applies to dynamic sources (those using `transformRequest`). When set, the plugin tracks how many features are held in memory across all viewport fetches and evicts older features once the limit is exceeded.
-
-Eviction triggers at 120% of `maxFeatures` to avoid running on every fetch when hovering near the limit. Out-of-viewport features are evicted first, sorted by how recently they were visible. Features currently in the viewport are only evicted if out-of-viewport eviction alone is not sufficient. When features are evicted, the plugin resets its tracked fetch area so those regions will be re-fetched if the user pans back.
-
-**When to set it:** omit `maxFeatures` for small or bounded datasets where accumulation is not a concern. Set it when your dataset is large enough that features could accumulate significantly over a long session — for example a national-scale dataset at medium zoom, or any dataset where users are expected to pan extensively.
-
-```js
-{
-  id: 'my-parcels',
-  geojson: 'https://example.com/api/parcels',
-  transformRequest: transformDataRequest,
-  idProperty: 'id',
-  maxFeatures: 10000
-}
-```
+Only applies to dynamic sources (those using `transformRequest`). Caps the number of features held in memory across all viewport fetches — older out-of-viewport features are evicted when the limit is exceeded. Omit for small or bounded datasets; set it when users are likely to pan extensively over a large dataset.
 
 ---
 
@@ -355,14 +340,16 @@ sublayers: [
 
 Methods are called on the plugin instance after the `datasets:ready` event.
 
+The API follows a consistent pattern: the primary value is the first argument, with an optional scope object as the second argument. Omitting the scope applies the operation globally where supported.
+
 ---
 
 ### `addDataset(dataset)`
 
 Add a new dataset to the map at runtime.
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Argument | Type | Description |
+|----------|------|-------------|
 | `dataset` | `Dataset` | Dataset configuration object. Accepts the same properties as `datasets` array entries |
 
 ```js
@@ -382,8 +369,8 @@ interactiveMap.on('datasets:ready', () => {
 
 Remove a dataset from the map.
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
+| Argument | Type | Description |
+|----------|------|-------------|
 | `datasetId` | `string` | ID of the dataset to remove |
 
 ```js
@@ -392,278 +379,163 @@ datasetsPlugin.removeDataset('my-parcels')
 
 ---
 
-### `showDataset(datasetId)`
+### `setDatasetVisibility(visible, scope?)`
 
-Make a hidden dataset visible. If the dataset has sublayers, any that were individually hidden before the dataset was hidden will remain hidden — their individual visibility state is preserved.
+Set the visibility of datasets or sublayers. Omit `scope` to apply to all datasets globally.
 
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `datasetId` | `string` | ID of the dataset |
-
-```js
-datasetsPlugin.showDataset('my-parcels')
-```
-
----
-
-### `hideDataset(datasetId)`
-
-Hide a visible dataset and all its sublayers. Individual sublayer visibility state is preserved so it can be correctly restored when the dataset is shown again.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `datasetId` | `string` | ID of the dataset |
-
-```js
-datasetsPlugin.hideDataset('my-parcels')
-```
-
----
-
-### `showSublayer(datasetId, sublayerId)`
-
-Make a hidden sublayer visible. Has no effect if the parent dataset is currently hidden.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `datasetId` | `string` | ID of the dataset |
-| `sublayerId` | `string` | ID of the sublayer |
-
-```js
-datasetsPlugin.showSublayer('my-parcels', 'active')
-```
-
----
-
-### `hideSublayer(datasetId, sublayerId)`
-
-Hide a single sublayer without affecting the parent dataset or other sublayers.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `datasetId` | `string` | ID of the dataset |
-| `sublayerId` | `string` | ID of the sublayer |
-
-```js
-datasetsPlugin.hideSublayer('my-parcels', 'active')
-```
-
----
-
-### `showFeatures(options)`
-
-Show previously hidden features within a dataset.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.datasetId` | `string` | ID of the dataset |
-| `options.featureIds` | `(string \| number)[]` | IDs of features to show |
-| `options.idProperty` | `string \| null` | Property name to match features on. Pass `null` to match against the top-level `feature.id` instead |
-
-```js
-// Match by a feature property
-datasetsPlugin.showFeatures({
-  datasetId: 'my-parcels',
-  featureIds: [123, 456],
-  idProperty: 'parcel_id'
-})
-
-// Match by feature.id (no property needed)
-datasetsPlugin.showFeatures({
-  datasetId: 'my-parcels',
-  featureIds: [123, 456],
-  idProperty: null
-})
-```
-
----
-
-### `hideFeatures(options)`
-
-Hide specific features within a dataset without removing them from the source.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.datasetId` | `string` | ID of the dataset |
-| `options.featureIds` | `(string \| number)[]` | IDs of features to hide |
-| `options.idProperty` | `string \| null` | Property name to match features on. Pass `null` to match against the top-level `feature.id` instead |
-
-```js
-// Match by a feature property
-datasetsPlugin.hideFeatures({
-  datasetId: 'my-parcels',
-  featureIds: [123, 456],
-  idProperty: 'parcel_id'
-})
-
-// Match by feature.id (no property needed)
-datasetsPlugin.hideFeatures({
-  datasetId: 'my-parcels',
-  featureIds: [123, 456],
-  idProperty: null
-})
-```
-
----
-
-### `setStyle(options)`
-
-Update the visual style of a dataset at runtime. Affects only properties that sublayers do not themselves override.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.datasetId` | `string` | ID of the dataset |
-| `options.style` | `Object` | Style properties to apply. Accepts the same properties as `dataset.style` |
-
-```js
-datasetsPlugin.setStyle({
-  datasetId: 'my-parcels',
-  style: {
-    stroke: '#0000ff',
-    strokeWidth: 3
-  }
-})
-```
-
----
-
-### `setSublayerStyle(options)`
-
-Update the visual style of a specific sublayer at runtime.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.datasetId` | `string` | ID of the dataset |
-| `options.sublayerId` | `string` | ID of the sublayer |
-| `options.style` | `Object` | Style properties to apply. Accepts the same properties as `sublayer.style` |
-
-```js
-datasetsPlugin.setSublayerStyle({
-  datasetId: 'my-parcels',
-  sublayerId: 'active',
-  style: {
-    stroke: '#00703c',
-    fillPattern: 'diagonal-cross-hatch',
-    fillPatternForegroundColor: '#00703c'
-  }
-})
-```
-
----
-
-### `getStyle(options)`
-
-Returns the current style object for a dataset, or `null` if the dataset is not found.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.datasetId` | `string` | ID of the dataset |
-
-```js
-const style = datasetsPlugin.getStyle({ datasetId: 'my-parcels' })
-console.log(style) // { stroke: '#d4351c', strokeWidth: 2, ... }
-```
-
----
-
-### `getSublayerStyle(options)`
-
-Returns the current style object for a sublayer, or `null` if the dataset or sublayer is not found.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.datasetId` | `string` | ID of the dataset |
-| `options.sublayerId` | `string` | ID of the sublayer |
-
-```js
-const style = datasetsPlugin.getSublayerStyle({ datasetId: 'my-parcels', sublayerId: 'active' })
-console.log(style) // { stroke: '#00703c', fill: 'rgba(0,112,60,0.1)' }
-```
-
----
-
-### `setOpacity(opacity)` / `setOpacity(datasetId, opacity)`
-
-Set the opacity of all datasets or a single dataset. Safe to call on every tick from a slider — uses `setPaintProperty` internally rather than removing and re-adding layers.
+When showing a dataset that has sublayers, any sublayers that were individually hidden before the dataset was hidden will remain hidden — their individual visibility state is preserved.
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `opacity` | `number` | Opacity from `0` (transparent) to `1` (fully opaque). Omit `datasetId` to apply globally |
-| `datasetId` | `string` | Optional. When provided, only that dataset is affected |
+| `visible` | `boolean` | `true` to show, `false` to hide |
+| `scope.datasetId` | `string` | Optional. When omitted, applies to all datasets |
+| `scope.sublayerId` | `string` | Optional. When provided alongside `datasetId`, targets a single sublayer |
+
+```js
+// Global — all datasets
+datasetsPlugin.setDatasetVisibility(false)
+datasetsPlugin.setDatasetVisibility(true)
+
+// Single dataset
+datasetsPlugin.setDatasetVisibility(false, { datasetId: 'my-parcels' })
+
+// Single sublayer
+datasetsPlugin.setDatasetVisibility(false, { datasetId: 'my-parcels', sublayerId: 'active' })
+```
+
+---
+
+### `setFeatureVisibility(visible, featureIds, scope)`
+
+Show or hide specific features within a dataset without removing them from the source.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `visible` | `boolean` | `true` to show, `false` to hide |
+| `featureIds` | `(string \| number)[]` | IDs of the features to target |
+| `scope.datasetId` | `string` | ID of the dataset |
+| `scope.idProperty` | `string \| null` | Property name to match features on. Pass `null` to match against the top-level `feature.id` |
+
+```js
+// Hide by a feature property
+datasetsPlugin.setFeatureVisibility(false, [123, 456], {
+  datasetId: 'my-parcels',
+  idProperty: 'parcel_id'
+})
+
+// Show using feature.id
+datasetsPlugin.setFeatureVisibility(true, [123, 456], {
+  datasetId: 'my-parcels',
+  idProperty: null
+})
+```
+
+---
+
+### `setStyle(style, scope)`
+
+Update the visual style of a dataset or sublayer at runtime. When targeting a sublayer, only the properties specified are overridden — the sublayer inherits all other styles from the parent dataset.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `style` | `Object` | Style properties to apply. Accepts the same properties as `dataset.style` |
+| `scope.datasetId` | `string` | ID of the dataset |
+| `scope.sublayerId` | `string` | Optional. When provided, targets a single sublayer |
+
+```js
+// Dataset level
+datasetsPlugin.setStyle(
+  { stroke: '#0000ff', strokeWidth: 3 },
+  { datasetId: 'my-parcels' }
+)
+
+// Sublayer level
+datasetsPlugin.setStyle(
+  { stroke: '#00703c', fillPattern: 'diagonal-cross-hatch', fillPatternForegroundColor: '#00703c' },
+  { datasetId: 'my-parcels', sublayerId: 'active' }
+)
+```
+
+---
+
+### `getStyle(scope)`
+
+Returns the current style object for a dataset or sublayer, or `null` if not found.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `scope.datasetId` | `string` | ID of the dataset |
+| `scope.sublayerId` | `string` | Optional. When provided, returns the sublayer's style |
+
+```js
+// Dataset style
+const style = datasetsPlugin.getStyle({ datasetId: 'my-parcels' })
+
+// Sublayer style
+const style = datasetsPlugin.getStyle({ datasetId: 'my-parcels', sublayerId: 'active' })
+```
+
+---
+
+### `setOpacity(opacity, scope?)`
+
+Set the opacity of datasets or a sublayer. Safe to call on every tick from a slider — uses `setPaintProperty` internally rather than removing and re-adding layers. Omit `scope` to apply globally.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `opacity` | `number` | Opacity from `0` (transparent) to `1` (fully opaque) |
+| `scope.datasetId` | `string` | Optional. When omitted, applies to all datasets |
+| `scope.sublayerId` | `string` | Optional. When provided alongside `datasetId`, targets a single sublayer |
 
 ```js
 // Global — all datasets
 datasetsPlugin.setOpacity(0.5)
 
 // Single dataset
-datasetsPlugin.setOpacity('my-parcels', 0.5)
+datasetsPlugin.setOpacity(0.5, { datasetId: 'my-parcels' })
+
+// Single sublayer
+datasetsPlugin.setOpacity(0.5, { datasetId: 'my-parcels', sublayerId: 'active' })
 ```
 
 ---
 
-### `getOpacity()` / `getOpacity(datasetId)`
+### `getOpacity(scope?)`
 
-Returns the current opacity for a dataset, or the first dataset's opacity when called without arguments. Returns `null` if the dataset is not found.
+Returns the current opacity for a dataset or sublayer. When called without arguments, returns the first dataset's opacity — useful for initialising a global slider. Returns `null` if not found.
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `datasetId` | `string` | Optional. When omitted, returns the opacity of the first dataset |
+| `scope.datasetId` | `string` | Optional. When omitted, returns the first dataset's opacity |
+| `scope.sublayerId` | `string` | Optional. When provided alongside `datasetId`, returns the sublayer's opacity |
 
 ```js
-// Read back after setting globally — useful for initialising a slider
+// Global — read back after setOpacity() for slider initialisation
 const opacity = datasetsPlugin.getOpacity()
 
 // Single dataset
-const opacity = datasetsPlugin.getOpacity('my-parcels')
+const opacity = datasetsPlugin.getOpacity({ datasetId: 'my-parcels' })
+
+// Single sublayer
+const opacity = datasetsPlugin.getOpacity({ datasetId: 'my-parcels', sublayerId: 'active' })
 ```
 
 ---
 
-### `setSublayerOpacity(datasetId, sublayerId, opacity)`
+### `setData(geojson, scope)`
 
-Set the opacity of a single sublayer. Safe to call on every tick from a slider.
+Replace the GeoJSON data for a dataset source. Has no effect on vector tile datasets.
 
 | Argument | Type | Description |
 |----------|------|-------------|
-| `datasetId` | `string` | ID of the dataset |
-| `sublayerId` | `string` | ID of the sublayer |
-| `opacity` | `number` | Opacity from `0` to `1` |
+| `geojson` | `GeoJSON.FeatureCollection` | New GeoJSON data |
+| `scope.datasetId` | `string` | ID of the dataset |
 
 ```js
-datasetsPlugin.setSublayerOpacity('my-parcels', 'active', 0.5)
-```
-
----
-
-### `getSublayerOpacity(datasetId, sublayerId)`
-
-Returns the current opacity for a sublayer, or `null` if the dataset or sublayer is not found.
-
-| Argument | Type | Description |
-|----------|------|-------------|
-| `datasetId` | `string` | ID of the dataset |
-| `sublayerId` | `string` | ID of the sublayer |
-
-```js
-const opacity = datasetsPlugin.getSublayerOpacity('my-parcels', 'active')
-```
-
----
-
-### `setData(options)`
-
-Replace the GeoJSON data for a dataset source. Has no effect on vector tile datasets — use `transformRequest` for those.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `options.datasetId` | `string` | ID of the dataset |
-| `options.geojson` | `GeoJSON.FeatureCollection` | New GeoJSON data |
-
-```js
-datasetsPlugin.setData({
-  datasetId: 'my-parcels',
-  geojson: { type: 'FeatureCollection', features: [...] }
-})
+datasetsPlugin.setData(
+  { type: 'FeatureCollection', features: [...] },
+  { datasetId: 'my-parcels' }
+)
 ```
 
 ---
@@ -684,6 +556,6 @@ Emitted once all datasets have been initialised and rendered on the map.
 interactiveMap.on('datasets:ready', () => {
   console.log('Datasets are ready')
   // Safe to call API methods from here
-  const style = datasetsPlugin.getStyle({ datasetId: 'my-parcels' })
+  const style = datasetsPlugin.getStyle({ datasetId: 'my-parcels' }) // unchanged — scope object
 })
 ```
