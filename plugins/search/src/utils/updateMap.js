@@ -8,11 +8,11 @@
  * @param {Object} point - Marker point
  * @param {Object} markers - Marker manager
  * @param {boolean} showMarker - Whether to display a marker
- * @param {boolean} showMarker - Marker colour
+ * @param {Object} markerOptions - Symbol and color options passed to markers.add()
  */
-export function updateMap ({ mapProvider, bounds, point, markers, showMarker, markerColor }) {
+export function updateMap ({ mapProvider, bounds, point, markers, showMarker, markerOptions }) {
   mapProvider.fitToBounds(bounds)
   if (showMarker) {
-    markers.add('search', point, { color: markerColor })
+    markers.add('search', point, markerOptions)
   }
 }

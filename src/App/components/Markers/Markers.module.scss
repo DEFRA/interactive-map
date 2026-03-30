@@ -10,13 +10,3 @@
   margin: -17px 0 0 -19px;
   pointer-events: none;
 }
-
-// 2. Elements
-.im-c-marker__graphic {
-  fill: var(--map-overlay-halo-color);
-}
-
-// 3. Modifiers
-.im-c-marker--pin .im-c-marker__graphic {
-  filter: opacity(50%) brightness(0.25);
-}

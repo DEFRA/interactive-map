@@ -37,7 +37,7 @@ export const useInteractionHandlers = ({
   mapProvider
 }) => {
   const { markers } = mapState
-  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, markerColor, tolerance, selectedFeatures, selectionBounds, deselectOnClickOutside } = pluginState
+  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, marker: markerOptions, tolerance, selectedFeatures, selectionBounds, deselectOnClickOutside } = pluginState
   const { eventBus } = services
   const layerConfigMap = buildLayerConfigMap(dataLayers)
 
@@ -62,7 +62,7 @@ export const useInteractionHandlers = ({
     const isMarkerMode = interactionMode === 'marker' || (interactionMode === 'auto' && hasDataLayers)
     if (isMarkerMode) {
       dispatch({ type: 'CLEAR_SELECTED_FEATURES' })
-      markers.add('location', coords, { color: markerColor })
+      markers.add('location', coords, markerOptions)
       eventBus.emit('interact:markerchange', { coords })
     } else if (deselectOnClickOutside) {
       dispatch({ type: 'CLEAR_SELECTED_FEATURES' })
@@ -106,7 +106,7 @@ export const useInteractionHandlers = ({
     layerConfigMap,
     pluginState?.debug,
     tolerance,
-    markerColor,
+    markerOptions,
     deselectOnClickOutside
   ])
 

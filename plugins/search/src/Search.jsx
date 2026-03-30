@@ -31,6 +31,7 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
   // This ensures factory `attachEvents` only runs once
   const eventsRef = useRef(null)
   if (!eventsRef.current) {
+    const { marker: markerOptions, ...restPluginConfig } = pluginConfig
     eventsRef.current = attachEvents({
       dispatch,
       datasets: mergedDatasets,
@@ -39,7 +40,8 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
       viewportRef,
       searchContainerRef,
       markers: mapState.markers,
-      ...pluginConfig
+      markerOptions,
+      ...restPluginConfig
     })
   }
   const events = eventsRef.current

@@ -1,6 +1,6 @@
 import { updateMap } from '../utils/updateMap.js'
 
-export const createSuggestionHandlers = ({ dispatch, services, mapProvider, markers, showMarker, markerColor }) => {
+export const createSuggestionHandlers = ({ dispatch, services, mapProvider, markers, showMarker, markerOptions }) => {
   const selectionMessage = (suggestions, index) =>
     index >= 0
       ? `${suggestions[index]?.text}. ${index + 1} of ${suggestions.length} is highlighted`
@@ -17,7 +17,7 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
         services.eventBus.emit('search:close')
       }
 
-      updateMap({ mapProvider, bounds: suggestion.bounds, point: suggestion.point, markers, showMarker, markerColor })
+      updateMap({ mapProvider, bounds: suggestion.bounds, point: suggestion.point, markers, showMarker, markerOptions })
       services.eventBus.emit('search:match', { query: suggestion.text, ...suggestion })
     },
 

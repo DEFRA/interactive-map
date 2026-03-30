@@ -264,18 +264,6 @@ URL query parameter key used to persist map visibility state.
 
 ---
 
-### `markerColor`
-**Type:** `string | Object<string, string>`
-**Default:** `'#ff0000'`
-
-Default colour for map markers. Can be overridden per marker when calling `addMarker()`.
-
-May be provided as:
-- A single colour value applied to all map styles
-- An object keyed by map style ID, allowing different colours per style
-
----
-
 ### `markers`
 **Type:** `MarkerConfig[]`
 
@@ -285,14 +273,13 @@ See [MarkerConfig](./api/marker-config.md) for full details.
 
 ---
 
-### `markerShape`
+### `markerSymbol`
 **Type:** `string`
 **Default:** `'pin'`
 
-Default shape for map markers. Can be overridden per marker when calling `addMarker()`.
+Default symbol for map markers. Must be a symbol ID registered in the symbol registry. Can be overridden per marker via `MarkerOptions.symbol`.
 
-> [!NOTE]
-> Currently only `'pin'` is available. Additional shapes are planned for a future release.
+Built-in symbols: `'pin'`, `'circle'`. Custom symbols can be registered via `symbolRegistry.register()`.
 
 ---
 

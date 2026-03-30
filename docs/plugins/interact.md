@@ -117,11 +117,22 @@ When `true`, the app closes after the user clicks "Done" or "Cancel".
 
 ---
 
-### `markerColor`
-**Type:** `string`
-**Default:** `'rgba(212,53,28,1)'`
+### `marker`
+**Type:** `MarkerOptions`
 
-Color of the location marker placed on the map.
+Appearance of the location marker placed on the map. Accepts the same properties as [`MarkerOptions`](../api/marker-config.md#markeroptions).
+
+```js
+createInteractPlugin({
+  marker: {
+    symbol: 'pin',
+    background: { outdoor: '#d4351c', dark: '#ff6b6b' },
+    foreground: '#ffffff'
+  }
+})
+```
+
+When not set, the marker uses the symbol defaults.
 
 ---
 

@@ -41,7 +41,7 @@ const setup = (pluginOverrides = {}) => {
       interactionMode: 'select',
       multiSelect: false,
       contiguous: false,
-      markerColor: 'red',
+      marker: { symbol: 'pin', background: 'red' },
       selectedFeatures: [],
       selectionBounds: null,
       ...pluginOverrides
@@ -88,7 +88,7 @@ describe('marker mode', () => {
     expect(deps.mapState.markers.add).toHaveBeenCalledWith(
       'location',
       [1, 2],
-      { color: 'red' }
+      { symbol: 'pin', background: 'red' }
     )
     expect(deps.services.eventBus.emit).toHaveBeenCalledWith(
       'interact:markerchange',

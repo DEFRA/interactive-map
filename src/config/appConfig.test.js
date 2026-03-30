@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { defaultAppConfig, defaultButtonConfig, scaleFactor, markerSvgPaths } from './appConfig'
+import { defaultAppConfig, defaultButtonConfig, scaleFactor } from './appConfig'
 
 describe('defaultAppConfig', () => {
   const appState = {
@@ -135,6 +135,5 @@ describe('defaultAppConfig', () => {
   it('exports supplementary configs and constants', () => {
     expect(defaultButtonConfig.label).toBe('Button')
     expect(scaleFactor.large).toBe(2)
-    expect(markerSvgPaths[0].shape).toBe('pin')
   })
 })

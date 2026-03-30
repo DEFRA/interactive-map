@@ -5,7 +5,7 @@ describe('initialState', () => {
     expect(initialState).toEqual({
       enabled: false,
       dataLayers: [],
-      markerColor: null,
+      marker: null,
       interactionMode: null,
       multiSelect: false,
       contiguous: false,
@@ -20,22 +20,24 @@ describe('initialState', () => {
 describe('ENABLE/DISABLE actions', () => {
   it('ENABLE sets enabled and merges payload', () => {
     const state = { ...initialState, enabled: false }
-    const payload = { dataLayers: [1], markerColor: 'red' }
+    const marker = { symbol: 'pin', background: 'red' }
+    const payload = { dataLayers: [1], marker }
     const result = actions.ENABLE(state, payload)
 
     expect(result.enabled).toBe(true)
     expect(result.dataLayers).toEqual([1])
-    expect(result.markerColor).toBe('red')
+    expect(result.marker).toEqual(marker)
     expect(result).not.toBe(state)
   })
 
   it('DISABLE sets enabled to false, clears selection, and preserves other state', () => {
-    const state = { ...initialState, enabled: true, dataLayers: [1], markerColor: 'red', selectedFeatures: [{ featureId: 'f1' }], selectionBounds: [0, 0, 1, 1] }
+    const marker = { symbol: 'pin', background: 'red' }
+    const state = { ...initialState, enabled: true, dataLayers: [1], marker, selectedFeatures: [{ featureId: 'f1' }], selectionBounds: [0, 0, 1, 1] }
     const result = actions.DISABLE(state)
 
     expect(result.enabled).toBe(false)
     expect(result.dataLayers).toEqual([1])
-    expect(result.markerColor).toBe('red')
+    expect(result.marker).toEqual(marker)
     expect(result.selectedFeatures).toEqual([])
     expect(result.selectionBounds).toBeNull()
     expect(result).not.toBe(state)

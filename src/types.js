@@ -341,15 +341,45 @@
  */
 
 /**
- * Options for customizing marker appearance.
+ * Options for customizing marker appearance. Any key corresponds to a token in the symbol's SVG template.
+ * Color values may be a plain string or an object keyed by map style ID e.g. `{ outdoor: '#fff', dark: '#000' }`.
  *
  * @typedef {Object} MarkerOptions
  *
- * @property {string | Record<string, string>} [color]
- * Marker color or object with colors keyed by style ID.
+ * @property {string} [symbol]
+ * Symbol id to use for this marker (e.g. 'pin', 'circle'). Overrides the default `markerSymbol` option.
  *
- * @property {string} [shape]
- * Marker shape (e.g., 'pin').
+ * @property {string} [symbolSvgContent]
+ * Inner SVG path content (no `<svg>` wrapper) to use instead of a registered symbol.
+ * Use `{{token}}` placeholders for colours — e.g. `fill="{{background}}"`.
+ * When set, `symbol` is ignored.
+ *
+ * @property {string} [viewBox]
+ * SVG viewBox attribute for the symbol, e.g. `'0 0 38 38'`.
+ * Defaults to the registered symbol's viewBox, or `'0 0 38 38'`.
+ *
+ * @property {[number, number]} [anchor]
+ * Anchor point as a normalised [x, y] pair where [0, 0] is top-left and [1, 1] is bottom-right.
+ * Determines which point on the symbol aligns with the geographic coordinate.
+ * Defaults to the registered symbol's anchor, or `[0.5, 0.5]` (centre).
+ *
+ * @property {string | Record<string, string>} [background]
+ * Background fill colour of the symbol.
+ *
+ * @property {string | Record<string, string>} [foreground]
+ * Foreground fill colour of the symbol (e.g. the inner dot on a pin).
+ *
+ * @property {string | Record<string, string>} [halo]
+ * Stroke colour of the halo ring. Defaults to white on light basemaps and dark on dark basemaps.
+ *
+ * @property {string | Record<string, string>} [selected]
+ * Stroke colour of the selection ring. Defaults to transparent (hidden).
+ *
+ * @property {string} [haloWidth]
+ * Stroke width of the halo in SVG units. Defaults to `'1'`.
+ *
+ * @property {string} [selectedWidth]
+ * Stroke width of the selection ring in SVG units. Defaults to `'6'`.
  */
 
 /**
@@ -540,14 +570,12 @@
  * @property {string} [mapViewParamKey='mv']
  * URL query parameter key used to control map view state.
  *
- * @property {string | Record<string, string>} [markerColor='#ff0000']
- * Colour used for map markers. May be a single colour value or an object keyed by map style ID.
- *
  * @property {MarkerConfig[]} [markers]
  * Initial markers to display on the map.
  *
- * @property {string} [markerShape='pin']
- * Shape used for map markers.
+ * @property {string} [markerSymbol='pin']
+ * Default symbol id used for map markers (e.g. `'pin'`, `'circle'`).
+ * Per-marker symbols set via `MarkerOptions.symbol` take precedence.
  *
  * @property {[number, number, number, number]} [maxExtent]
  * Maximum viewable extent [west, south, east, north].

@@ -49,7 +49,7 @@ const interactPlugin = createInteractPlugin({
 		idProperty: 'id'
 	}],
 	debug: true,
-	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
+	interactionMode: 'auto', // 'auto', 'select', 'marker' // defaults to 'marker'
 	multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true
