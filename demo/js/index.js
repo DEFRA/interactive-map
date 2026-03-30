@@ -172,12 +172,12 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		visibility: 'hidden',
-		keySymbolShape: 'line',
 		style: {
 			stroke: '#b58840',
 			fill: 'transparent',
 			strokeWidth: 4,
-			symbolDescription: { outdoor: 'blue outline' }
+			symbolDescription: { outdoor: 'blue outline' },
+			keySymbolShape: 'line',
 		}
 	},{
 		id: 'linked-parcels',
