@@ -22,7 +22,7 @@ export const bboxContains = (outer, inner) => {
     inner[0] >= outer[0] && // west
     inner[1] >= outer[1] && // south
     inner[2] <= outer[2] && // east
-    inner[3] <= outer[3] // north
+    inner[3] <= outer[3] // NOSONAR, north
   )
 }
 
@@ -40,7 +40,7 @@ export const expandBbox = (existing, addition) => {
     Math.min(existing[0], addition[0]), // west
     Math.min(existing[1], addition[1]), // south
     Math.max(existing[2], addition[2]), // east
-    Math.max(existing[3], addition[3]) // north
+    Math.max(existing[3], addition[3]) // NOSONAR, north
   ]
 }
 
@@ -57,8 +57,8 @@ export const bboxIntersects = (a, b) => {
   return !(
     a[2] < b[0] || // a is left of b
     a[0] > b[2] || // a is right of b
-    a[3] < b[1] || // a is below b
-    a[1] > b[3] // a is above b
+    a[3] < b[1] || // NOSONAR a is below b
+    a[1] > b[3] // NOSONAR a is above b
   )
 }
 
@@ -98,7 +98,7 @@ export const getGeometryBbox = (geometry) => {
       processCoords(geometry.coordinates, 2)
       break
     case 'MultiPolygon':
-      processCoords(geometry.coordinates, 3)
+      processCoords(geometry.coordinates, 3) // NOSONAR: 3 = coordinate nesting depth for MultiPolygon ([polygons][rings][points])
       break
     case 'GeometryCollection':
       geometry.geometries.forEach(g => {
@@ -109,6 +109,8 @@ export const getGeometryBbox = (geometry) => {
         maxY = Math.max(maxY, b[3])
       })
       break
+    default:
+      throw new Error(`Unsupported geometry type: ${geometry.type}`)
   }
 
   return [minX, minY, maxX, maxY]

@@ -28,7 +28,7 @@ Location search plugin with autocomplete functionality. Include custom datasets 
 
 The following plugins are in early development. APIs and features may change.
 
-### Datasets
+### [Datasets](./plugins/datasets.md)
 
 Add datasets to your map, configure the display, layer toggling and render a key of symbology.
 

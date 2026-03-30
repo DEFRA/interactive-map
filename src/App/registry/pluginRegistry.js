@@ -2,7 +2,7 @@
 import { registerIcon } from './iconRegistry.js'
 import { registerKeyboardShortcut } from './keyboardShortcutRegistry.js'
 import { allowedSlots } from '../renderer/slots.js'
-import { logger } from '../../utils/logger.js'
+import { logger } from '../../services/logger.js'
 
 const asArray = (value) => Array.isArray(value) ? value : [value]
 

@@ -30,10 +30,13 @@ const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','pr
 
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
-		layerId: 'field-parcels',
+		layerId: 'field-parcels-130',
 		// idProperty: 'gid'
 	},{
-		layerId: 'linked-parcels',
+		layerId: 'field-parcels-332',
+		// idProperty: 'gid'
+	},{
+		layerId: 'field-parcels-other',
 		// idProperty: 'gid'
 	},{
 		layerId: 'OS/TopographicArea_1/Agricultural Land',
@@ -98,8 +101,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		// ],
 		// tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
 		// sourceLayer: 'field_parcels_filtered',
-		featureLayer: '',
-		vectorTileLayer: '',
+		// featureLayer: '',
 		// idProperty: 'id',  // Enables dynamic fetching + deduplication
 		// filter: ['get', ['propertyName', 'warning']],
 		query: {},
@@ -110,39 +112,90 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		// visibility: 'hidden',
-		stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-		strokeWidth: 2,
-		// symbol: '',
-		// symbolSvgContent: '',
-		// symbolForegroundColor: '',
-		// symbolBackgroundColor: '',
-		// symbolDescription: { outdoor: 'blue outline' },
-		// symbolOffset: [],
-		// fill: 'rgba(0,0,255,0.1)',
-		fillPattern: 'diagonal-cross-hatch',
-		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		fillPatternBackgroundColor: 'transparent',
-		featureStyleRules: [{
+		// style: {
+		// 	stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+		// 	strokeWidth: 2,
+		// 	symbol: '',
+		// 	symbolSvgContent: '',
+		// 	symbolForegroundColor: '',
+		// 	symbolBackgroundColor: '',
+		// 	symbolDescription: { outdoor: 'blue outline' },
+		// 	symbolOffset: [],
+		// 	fill: 'rgba(0,0,255,0.1)',
+		// 	fillPattern: 'diagonal-cross-hatch',
+		// 	fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+		// 	fillPatternBackgroundColor: 'transparent'
+		// },
+		sublayers: [{
+			id: '130',
+			label: 'Permanent grassland',
+			filter: ['==', ['get', 'dominant_land_cover'], '130'], // 'dominant_land_cover = "130"'
+			toggleVisibility: true,
+			style: {
+				stroke: { outdoor: '#82F584', dark: '#ffffff' },
+				fillPattern: 'diagonal-cross-hatch',
+				fillPatternForegroundColor: { outdoor: '#82F584', dark: '#ffffff' },
+				fillPatternBackgroundColor: 'transparent'
+			}
+		},{
 			id: '332',
 			label: 'Woodland',
 			filter: ['==', ['get', 'dominant_land_cover'], '332'],
-			stroke: { outdoor: '#00ff00', dark: '#ffffff' },
-			fillPattern: 'cross-hatch',
-			fillPatternForegroundColor: { outdoor: '#00ff00', dark: '#ffffff' },
-			fillPatternBackgroundColor: 'transparent',
-			toggleVisibility: true
+			toggleVisibility: true,
+			style: {
+				stroke: { outdoor: '#66CA7A', dark: '#ffffff' },
+				fillPattern: 'dot',
+				fillPatternForegroundColor: { outdoor: '#66CA7A', dark: '#ffffff' },
+				fillPatternBackgroundColor: 'transparent'
+			}
 		},{
 			id: 'other',
 			label: 'Others',
-			filter: ['!=', ['get', 'dominant_land_cover'], '332'],
-			stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+			filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '332']]]],
+			toggleVisibility: true,
+			style: {
+				stroke: { outdoor: '	#1d70b8', dark: '#ffffff' },
+				fill: 'rgba(0,0,255,0.1)',
+				fillPattern: 'vertical-hatch',
+				fillPatternForegroundColor: { outdoor: '#1d70b8', dark: '#ffffff' },
+				// fillPatternBackgroundColor: 'transparent'
+			}
+		}]
+	},{
+		id: 'hedge-control',
+		label: 'Hedge control',
+		// groupLabel: 'Test group',
+		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		sourceLayer: 'hedge_control',
+		minZoom: 10,
+		maxZoom: 24,
+		showInKey: true,
+		toggleVisibility: true,
+		visibility: 'hidden',
+		keySymbolShape: 'line',
+		style: {
+			stroke: '#b58840',
+			fill: 'transparent',
+			strokeWidth: 4,
+			symbolDescription: { outdoor: 'blue outline' }
+		}
+	},{
+		id: 'linked-parcels',
+		label: 'Existing fields',
+		// groupLabel: 'Test group',
+		filter: ['all',['==', ['get', 'sbi'], '106223377'],['==', ['get', 'is_dominant_land_cover'], true]],
+		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		sourceLayer: 'field_parcels_filtered',
+		minZoom: 10,
+		maxZoom: 24,
+		showInKey: true,
+		toggleVisibility: true,
+		style: {
+			stroke: '#0000ff',
+			strokeWidth: 2,
 			fill: 'rgba(0,0,255,0.1)',
-			// fillPattern: 'cross-hatch',
-			// fillPatternForegroundColor: { outdoor: '#00ff00', dark: '#ffffff' },
-			// fillPatternBackgroundColor: 'transparent',
-			toggleVisibility: true
-		}],
-		opacity: 0.5
+			symbolDescription: { outdoor: 'blue outline' }
+		}
 	}]
 })
 
@@ -217,8 +270,9 @@ interactiveMap.on('map:ready', function (e) {
 })
 
 interactiveMap.on('datasets:ready', function () {
-	// setTimeout(() => datasetsPlugin.hideDataset('field-parcels'), 2000)
-	// setTimeout(() => datasetsPlugin.showDataset('field-parcels'), 4000)
+	// setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [55], { datasetId: 'field-parcels', idProperty: null }), 2000)
+	// setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [55], { datasetId: 'field-parcels', idProperty: null }), 4000)
+	// setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } }, { datasetId: 'field-parcels', sublayerId: '130' }), 2000)
 })
 
 // Ref to the selected features

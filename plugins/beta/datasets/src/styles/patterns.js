@@ -28,7 +28,7 @@ export const hashString = (str) => {
     hash = ((hash << 5) - hash) + ch.codePointAt(0)
     hash = hash & hash
   }
-  return Math.abs(hash).toString(36)
+  return Math.abs(hash).toString(36) // NOSONAR: base36 encoding for compact alphanumeric hash string
 }
 
 export const injectColors = (content, foreground, background) =>
@@ -52,7 +52,9 @@ export const hasPattern = (dataset) => !!(dataset.fillPattern || dataset.fillPat
  * @returns {string|null}
  */
 export const getPatternInnerContent = (dataset) => {
-  if (dataset.fillPatternSvgContent) return dataset.fillPatternSvgContent
+  if (dataset.fillPatternSvgContent) {
+    return dataset.fillPatternSvgContent
+  }
   if (dataset.fillPattern && BUILT_IN_PATTERNS[dataset.fillPattern]) {
     return BUILT_IN_PATTERNS[dataset.fillPattern]
   }
@@ -67,7 +69,9 @@ export const getPatternInnerContent = (dataset) => {
  */
 export const getPatternImageId = (dataset, mapStyleId) => {
   const innerContent = getPatternInnerContent(dataset)
-  if (!innerContent) return null
+  if (!innerContent) {
+    return null
+  }
   const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
   const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
   return `pattern-${hashString(innerContent + fg + bg)}`
@@ -82,7 +86,9 @@ export const getPatternImageId = (dataset, mapStyleId) => {
  */
 export const getKeyPatternPaths = (dataset, mapStyleId) => {
   const innerContent = getPatternInnerContent(dataset)
-  if (!innerContent) return null
+  if (!innerContent) {
+    return null
+  }
   const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
   const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
   const borderStroke = getValueForStyle(dataset.stroke, mapStyleId) || fg
@@ -129,7 +135,9 @@ const rasteriseToImageData = (svgString, width, height) =>
  */
 export const rasterisePattern = async (dataset, mapStyleId) => {
   const innerContent = getPatternInnerContent(dataset)
-  if (!innerContent) return null
+  if (!innerContent) {
+    return null
+  }
 
   const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
   const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'

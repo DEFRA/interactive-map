@@ -3,7 +3,7 @@ import { EVENTS as events } from '../../config/events.js'
 import { defaultPanelConfig, defaultButtonConfig, defaultControlConfig } from '../../config/appConfig.js'
 import { deepMerge } from '../../utils/deepMerge.js'
 import { allowedSlots } from '../renderer/slots.js'
-import { logger } from '../../utils/logger.js'
+import { logger } from '../../services/logger.js'
 
 const BREAKPOINTS = ['mobile', 'tablet', 'desktop']
 

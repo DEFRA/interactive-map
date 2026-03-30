@@ -72,19 +72,15 @@ const datasetsPlugin = createDatasetsPlugin({
 		// showInKey: true,
 		// toggleVisibility: true,
 		// visibility: 'hidden',
-		stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-		strokeWidth: 2,
-		// symbol: '',
-		// symbolSvgContent: '',
-		// symbolForegroundColor: '',
-		// symbolBackgroundColor: '',
-		// symbolDescription: { outdoor: 'blue outline' },
-		// symbolOffset: [],
-		// fill: 'rgba(0,0,255,0.1)',
-		fillPattern: 'diagonal-cross-hatch',
-		fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		fillPatternBackgroundColor: 'transparent',
-		opacity: 0.5
+		style: {
+			stroke: { outdoor: '#0000ff', dark: '#ffffff' },
+			strokeWidth: 2,
+			// fill: 'rgba(0,0,255,0.1)',
+			fillPattern: 'diagonal-cross-hatch',
+			fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
+			fillPatternBackgroundColor: 'transparent',
+			// opacity: 0.2
+		}
 	}]
 })
 
@@ -214,8 +210,8 @@ interactiveMap.on('map:ready', function (e) {
 })
 
 interactiveMap.on('datasets:ready', function () {
-	// setTimeout(() => datasetsPlugin.hideDataset('field-parcels'), 2000)
-	// setTimeout(() => datasetsPlugin.showDataset('field-parcels'), 4000)
+	// setTimeout(() => datasetsPlugin.setDatasetVisibility(false, { datasetId: 'field-parcels' }), 2000)
+	// setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'field-parcels' }), 4000)
 })
 
 // Ref to the selected features

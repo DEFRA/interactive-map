@@ -60,6 +60,7 @@ const applyHighlightLayer = (map, id, type, sourceId, srcLayer, paint, filter) =
     map.setPaintProperty(id, prop, value)
   })
   map.setFilter(id, filter)
+  map.moveLayer(id)
 }
 
 const calculateBounds = (LngLatBounds, renderedFeatures) => {

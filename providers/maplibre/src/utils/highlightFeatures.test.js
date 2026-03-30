@@ -16,6 +16,7 @@ describe('Highlighting Utils', () => {
       _highlightedSources: new Set(['stale']),
       getLayer: jest.fn(),
       addLayer: jest.fn(),
+      moveLayer: jest.fn(),
       setFilter: jest.fn(),
       setPaintProperty: jest.fn(),
       queryRenderedFeatures: jest.fn()

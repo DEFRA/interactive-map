@@ -1,4 +1,6 @@
 import { createDynamicSource } from './fetch/createDynamicSource.js'
+// NOSONAR: applyDatasetDefaults and datasetDefaults are used in processedDatasets.map
+import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 
 const isDynamicSource = (dataset) =>
   typeof dataset.geojson === 'string' &&
@@ -22,9 +24,12 @@ export const createDatasets = ({
   const getHiddenFeatures = () => pluginStateRef.current.hiddenFeatures || {}
 
   // Initialise all datasets via the adapter, then set up dynamic sources
-  adapter.init(datasets, mapStyleId).then(() => {
-    datasets.forEach(dataset => {
-      if (!isDynamicSource(dataset)) return
+  const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))
+  adapter.init(processedDatasets, mapStyleId).then(() => {
+    processedDatasets.forEach(dataset => {
+      if (!isDynamicSource(dataset)) {
+        return
+      }
 
       const dynamicSource = createDynamicSource({
         dataset,

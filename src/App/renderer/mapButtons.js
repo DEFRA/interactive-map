@@ -1,7 +1,7 @@
 // src/core/renderers/mapButtons.js
 import { MapButton } from '../components/MapButton/MapButton.jsx'
 import { allowedSlots } from './slots.js'
-import { logger } from '../../utils/logger.js'
+import { logger } from '../../services/logger.js'
 
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
   const { breakpoint, mode } = appState

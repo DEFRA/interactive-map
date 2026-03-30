@@ -3,13 +3,14 @@ import { initialState, actions } from './reducer.js'
 import { DatasetsInit } from './DatasetsInit.jsx'
 import { Layers } from './panels/Layers.jsx'
 import { Key } from './panels/Key.jsx'
-import { showDataset } from './api/showDataset.js'
-import { hideDataset } from './api/hideDataset.js'
 import { addDataset } from './api/addDataset.js'
 import { removeDataset } from './api/removeDataset.js'
-import { showFeatures } from './api/showFeatures.js'
-import { hideFeatures } from './api/hideFeatures.js'
+import { setDatasetVisibility } from './api/setDatasetVisibility.js'
+import { setFeatureVisibility } from './api/setFeatureVisibility.js'
 import { setStyle } from './api/setStyle.js'
+import { getStyle } from './api/getStyle.js'
+import { setOpacity } from './api/setOpacity.js'
+import { getOpacity } from './api/getOpacity.js'
 import { setData } from './api/setData.js'
 
 export const manifest = {
@@ -32,14 +33,14 @@ export const manifest = {
       slot: 'left-top',
       dismissible: true,
       exclusive: true,
-      width: '300px'
+      width: '260px'
     },
     desktop: {
       slot: 'left-top',
       modal: false,
       dismissible: true,
       exclusive: true,
-      width: '320px'
+      width: '280px'
     },
     render: Layers
   }, {
@@ -51,11 +52,11 @@ export const manifest = {
     },
     tablet: {
       slot: 'left-top',
-      width: '300px'
+      width: '260px'
     },
     desktop: {
       slot: 'left-top',
-      width: '320px'
+      width: '280px'
     },
     render: Key
   }],
@@ -65,7 +66,9 @@ export const manifest = {
     label: 'Layers',
     panelId: 'datasetsLayers',
     iconId: 'layers',
-    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.find(l => l.toggleVisibility),
+    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.some(l =>
+      l.toggleVisibility || l.sublayers?.some(r => r.toggleVisibility)
+    ),
     mobile: {
       slot: 'top-left',
       showLabel: true
@@ -83,7 +86,7 @@ export const manifest = {
     label: 'Key',
     panelId: 'datasetsKey',
     iconId: 'key',
-    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.find(l => l.showInKey),
+    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.some(l => l.showInKey),
     mobile: {
       slot: 'top-left',
       showLabel: false
@@ -107,13 +110,14 @@ export const manifest = {
   }],
 
   api: {
-    showDataset,
-    hideDataset,
     addDataset,
     removeDataset,
-    showFeatures,
-    hideFeatures,
+    setDatasetVisibility,
+    setFeatureVisibility,
     setStyle,
+    getStyle,
+    setOpacity,
+    getOpacity,
     setData
   }
 }
