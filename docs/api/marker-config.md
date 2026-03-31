@@ -33,8 +33,6 @@ Optional marker appearance options. See [MarkerOptions](#markeroptions) below.
 
 Controls the visual appearance of a marker. All properties are optional — unset values fall back through the cascade: constructor `symbolDefaults` → `symbolDefaults.js`.
 
-> **Note:** `selected` and `selectedWidth` are not settable per marker — the selection ring appearance is defined at the symbol or constructor level. See [SymbolDefaults](./symbol-registry.md#symboldefaults).
-
 Color values may be a plain string or an object keyed by map style ID, allowing different colors per basemap:
 
 ```js
@@ -65,9 +63,11 @@ markers.add('id', coords, {
   `,
   viewBox: '0 0 38 38',
   anchor: [0.5, 1],
-  background: '#d4351c'
+  background: { outdoor: '#d4351c', dark: '#ff6b6b' }
 })
 ```
+
+`{{selected}}` and `{{selectedWidth}}` are valid tokens in a custom SVG — they will be resolved when the marker is rendered in its selected state. Their values are app-wide and configured via constructor `symbolDefaults`, not per marker.
 
 ---
 
@@ -118,6 +118,22 @@ Stroke colour of the halo ring drawn around the symbol edge. Defaults to white o
 **Default:** `'1'`
 
 Stroke width of the halo in SVG units.
+
+---
+
+### `graphic`
+**Type:** `string`
+
+SVG `d` attribute value for the foreground graphic path of the symbol. Replaces the inner shape (e.g. the dot inside a pin) while keeping the background, halo and selection ring intact.
+
+Each built-in symbol (`pin`, `circle`) provides a default dot — pass a different `d` string to swap it. Use named values from `graphics.js` or supply your own path data:
+
+```js
+import { graphics } from './symbols/graphics.js'
+
+markers.add('id', coords, { symbol: 'pin', graphic: graphics.cross })
+markers.add('id', coords, { symbol: 'pin', graphic: 'M14 12 L24 20 L14 28 Z' })
+```
 
 ---
 

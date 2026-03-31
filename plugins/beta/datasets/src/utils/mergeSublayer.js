@@ -73,6 +73,7 @@ export const mergeSublayer = (dataset, sublayer) => {
     filter: combinedFilter,
     minZoom: dataset.minZoom,
     maxZoom: dataset.maxZoom,
+    symbol: sublayerStyle.symbol ?? dataset.symbol,
     ...getFillProps(dataset, sublayerStyle)
   }
 }

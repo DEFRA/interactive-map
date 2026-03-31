@@ -9,9 +9,13 @@ let _constructorDefaults = {}
 // Keys that are structural — not token values for SVG substitution
 const STRUCTURAL = new Set(['id', 'svg', 'viewBox', 'anchor', 'symbol', 'symbolSvgContent'])
 
+// selected/selectedWidth are app-wide concerns — not overridable at symbol registration level.
+// They can only be set in symbolDefaults.js or the constructor symbolDefaults config.
+const REGISTRY_EXCLUDED = new Set([...STRUCTURAL, 'selected', 'selectedWidth'])
+
 function resolveValues (symbolDef, markerValues, mapStyleId) {
   const symbolTokens = Object.fromEntries(
-    Object.entries(symbolDef || {}).filter(([k]) => !STRUCTURAL.has(k))
+    Object.entries(symbolDef || {}).filter(([k]) => !REGISTRY_EXCLUDED.has(k))
   )
   const constructorTokens = Object.fromEntries(
     Object.entries(_constructorDefaults).filter(([k]) => !STRUCTURAL.has(k))

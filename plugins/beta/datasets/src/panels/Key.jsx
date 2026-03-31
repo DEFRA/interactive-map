@@ -2,8 +2,11 @@ import React from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 import { hasPattern, getKeyPatternPaths } from '../styles/patterns.js'
 import { mergeSublayer } from '../utils/mergeSublayer.js'
+import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../adapters/maplibre/symbolImages.js'
+import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 
 const SVG_SIZE = 20
+const SVG_SYMBOL_SIZE = 32
 const SVG_CENTER = SVG_SIZE / 2
 const PATTERN_INSET = 2
 
@@ -38,11 +41,25 @@ export const Key = ({ mapState, pluginState }) => {
   const itemSymbol = (config) => {
     const svgProps = {
       xmlns: 'http://www.w3.org/2000/svg',
-      width: SVG_SIZE,
-      height: SVG_SIZE,
+      width: hasSymbol(config) ? SVG_SYMBOL_SIZE : SVG_SIZE,
+      height: hasSymbol(config) ? SVG_SYMBOL_SIZE : SVG_SIZE,
       viewBox: `0 0 ${SVG_SIZE} ${SVG_SIZE}`,
+      className: `am-c-datasets-key-symbol${hasSymbol(config) ? ' am-c-datasets-key-symbol--point' : ''}`,
       'aria-hidden': 'true',
       focusable: 'false'
+    }
+
+    if (hasSymbol(config)) {
+      const symbolDef = getSymbolDef(config, symbolRegistry)
+      if (symbolDef) {
+        const resolvedSvg = symbolRegistry.resolve(symbolDef, getSymbolStyleColors(config), mapStyle.id)
+        const viewBox = getSymbolViewBox(config, symbolDef)
+        return (
+          <svg {...svgProps} viewBox={viewBox}>
+            <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />
+          </svg>
+        )
+      }
     }
 
     if (hasPattern(config)) {

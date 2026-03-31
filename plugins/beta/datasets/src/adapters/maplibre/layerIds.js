@@ -2,6 +2,8 @@ import { hasPattern } from '../../styles/patterns.js'
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 
+const hasSymbol = (dataset) => !!dataset.symbol
+
 export const isDynamicSource = (dataset) =>
   typeof dataset.geojson === 'string' &&
   !!dataset.idProperty &&
@@ -42,6 +44,9 @@ export const getSourceId = (dataset) => {
 // ─── Layer IDs ────────────────────────────────────────────────────────────────
 
 export const getLayerIds = (dataset) => {
+  if (hasSymbol(dataset)) {
+    return { fillLayerId: null, strokeLayerId: null, symbolLayerId: dataset.id }
+  }
   const hasFill = !!dataset.fill || hasPattern(dataset)
   const hasStroke = !!dataset.stroke
   const fillLayerId = hasFill ? dataset.id : null
@@ -49,21 +54,22 @@ export const getLayerIds = (dataset) => {
   if (hasStroke) {
     strokeLayerId = hasFill ? `${dataset.id}-stroke` : dataset.id
   }
-  return { fillLayerId, strokeLayerId }
+  return { fillLayerId, strokeLayerId, symbolLayerId: null }
 }
 
 export const getSublayerLayerIds = (datasetId, sublayerId) => ({
   fillLayerId: `${datasetId}-${sublayerId}`,
-  strokeLayerId: `${datasetId}-${sublayerId}-stroke`
+  strokeLayerId: `${datasetId}-${sublayerId}-stroke`,
+  symbolLayerId: `${datasetId}-${sublayerId}-symbol`
 })
 
 export const getAllLayerIds = (dataset) => {
   if (dataset.sublayers?.length) {
     return dataset.sublayers.flatMap(sublayer => {
-      const { fillLayerId, strokeLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
-      return [strokeLayerId, fillLayerId]
+      const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
+      return [strokeLayerId, fillLayerId, symbolLayerId]
     })
   }
-  const { fillLayerId, strokeLayerId } = getLayerIds(dataset)
-  return [strokeLayerId, fillLayerId].filter(Boolean)
+  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds(dataset)
+  return [strokeLayerId, fillLayerId, symbolLayerId].filter(Boolean)
 }

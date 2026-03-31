@@ -343,7 +343,7 @@
  * @property {[number, number]} [anchor=[0.5, 0.5]]
  * Default anchor point as a normalised [x, y] pair.
  *
- * @property {string | Record<string, string>} [background='#1d70b8']
+ * @property {string | Record<string, string>} [background='#ca3535']
  * Default background fill colour.
  *
  * @property {string | Record<string, string>} [foreground='#ffffff']
@@ -352,14 +352,18 @@
  * @property {string | Record<string, string>} [halo]
  * Default halo stroke colour. Defaults to white on light basemaps, dark on dark basemaps.
  *
- * @property {string | Record<string, string>} [selected='#ffdd00']
- * Selected ring colour. Used by resolveSelected() — not overridable per marker.
- *
  * @property {string} [haloWidth='1']
  * Default halo stroke width in SVG units.
  *
+ * @property {string} [graphic]
+ * Default SVG `d` attribute value for the foreground graphic path. Each built-in symbol sets
+ * its own default (a small dot). Override to swap the graphic across all markers globally.
+ *
+ * @property {string | Record<string, string>} [selected]
+ * Selection ring colour. App-wide only — ignored at symbol registration and marker creation level.
+ *
  * @property {string} [selectedWidth='6']
- * Default selected ring stroke width in SVG units. Used by resolveSelected() — not overridable per marker.
+ * Selection ring stroke width in SVG units. App-wide only — ignored at symbol registration and marker creation level.
  */
 
 /**
@@ -411,6 +415,16 @@
  *
  * @property {string} [haloWidth]
  * Stroke width of the halo in SVG units. Defaults to `'1'`.
+ *
+ * @property {string} [graphic]
+ * SVG `d` attribute value for the foreground graphic path. Replaces the foreground shape of the
+ * symbol while keeping its background, halo and selection ring intact. Each built-in symbol
+ * (`pin`, `circle`) provides a default dot; pass a different `d` string to swap it.
+ * Use named values from `graphics.js` or supply your own path data.
+ *
+ * @example
+ * import { graphics } from './symbols/graphics.js'
+ * markers.add('id', coords, { symbol: 'pin', graphic: graphics.cross })
  *
  */
 

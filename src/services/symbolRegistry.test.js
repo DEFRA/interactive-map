@@ -2,6 +2,8 @@ import { symbolRegistry } from './symbolRegistry.js'
 import { symbolDefaults } from '../symbols/symbolDefaults.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
 
+const OUTDOOR = 'outdoor'
+
 beforeEach(() => {
   symbolRegistry.setDefaults({})
 })
@@ -74,7 +76,6 @@ describe('symbolRegistry — setDefaults / getDefaults', () => {
 })
 
 describe('symbolRegistry — resolve', () => {
-  const OUTDOOR = OUTDOOR
   const symbolDef = {
     id: 'test',
     svg: '<path fill="{{background}}" stroke="{{halo}}" stroke-width="{{haloWidth}}"/><path fill="{{foreground}}" stroke="{{selected}}"/>'
@@ -82,8 +83,8 @@ describe('symbolRegistry — resolve', () => {
 
   it('injects default token values when no overrides given', () => {
     const resolved = symbolRegistry.resolve(symbolDef, {}, OUTDOOR)
-    expect(resolved).toContain(`fill="${symbolDefaults.background}"`)
-    expect(resolved).toContain(`fill="${symbolDefaults.foreground}"`)
+    expect(resolved).toContain(`fill="${getValueForStyle(symbolDefaults.background, OUTDOOR)}"`)
+    expect(resolved).toContain(`fill="${getValueForStyle(symbolDefaults.foreground, OUTDOOR)}"`)
     expect(resolved).toContain(`stroke-width="${symbolDefaults.haloWidth}"`)
   })
 
@@ -114,7 +115,7 @@ describe('symbolRegistry — resolve', () => {
 
   it('ignores null override values — defaults are preserved', () => {
     const resolved = symbolRegistry.resolve(symbolDef, { background: null }, OUTDOOR)
-    expect(resolved).toContain(`fill="${symbolDefaults.background}"`)
+    expect(resolved).toContain(`fill="${getValueForStyle(symbolDefaults.background, OUTDOOR)}"`)
   })
 
   it('replaces custom tokens not in defaults', () => {
@@ -125,8 +126,8 @@ describe('symbolRegistry — resolve', () => {
 
   it('handles null styleColors — uses all defaults', () => {
     const resolved = symbolRegistry.resolve(symbolDef, null, OUTDOOR)
-    expect(resolved).toContain(`fill="${symbolDefaults.background}"`)
-    expect(resolved).toContain(`fill="${symbolDefaults.foreground}"`)
+    expect(resolved).toContain(`fill="${getValueForStyle(symbolDefaults.background, OUTDOOR)}"`)
+    expect(resolved).toContain(`fill="${getValueForStyle(symbolDefaults.foreground, OUTDOOR)}"`)
   })
 
   it('replaces token with empty string when override is an empty string', () => {
@@ -160,7 +161,6 @@ describe('symbolRegistry — resolve', () => {
 })
 
 describe('symbolRegistry — resolveSelected', () => {
-  const OUTDOOR = OUTDOOR
   const symbolDef = {
     id: 'test-sel',
     svg: '<path stroke="{{selected}}" stroke-width="{{selectedWidth}}"/><path fill="{{background}}"/>'
@@ -191,11 +191,11 @@ describe('symbolRegistry — resolveSelected', () => {
     expect(resolved).toContain('stroke="#ff0000"')
   })
 
-  it('symbol-level selected color overrides constructor default', () => {
+  it('symbol-level selected color is ignored — constructor default wins', () => {
     symbolRegistry.setDefaults({ selected: '#ff0000' })
     const defWithSelected = { ...symbolDef, selected: '#00ff00' }
     const resolved = symbolRegistry.resolveSelected(defWithSelected, {}, OUTDOOR)
-    expect(resolved).toContain('stroke="#00ff00"')
+    expect(resolved).toContain('stroke="#ff0000"')
   })
 
   it('resolves style-keyed selected color', () => {
@@ -207,5 +207,55 @@ describe('symbolRegistry — resolveSelected', () => {
   it('still resolves other tokens correctly', () => {
     const resolved = symbolRegistry.resolveSelected(symbolDef, { background: '#d4351c' }, OUTDOOR)
     expect(resolved).toContain('fill="#d4351c"')
+  })
+})
+
+describe('symbolRegistry — graphic token', () => {
+  const graphicDef = {
+    id: 'test-graphic',
+    graphic: 'M10 10 L20 20',
+    svg: '<path d="{{graphic}}" fill="{{foreground}}"/>'
+  }
+
+  it('substitutes graphic d attribute from symbol-level default', () => {
+    const resolved = symbolRegistry.resolve(graphicDef, {}, OUTDOOR)
+    expect(resolved).toContain('d="M10 10 L20 20"')
+  })
+
+  it('overrides symbol-level graphic with marker-level value', () => {
+    const resolved = symbolRegistry.resolve(graphicDef, { graphic: 'M0 0 L38 38' }, OUTDOOR)
+    expect(resolved).toContain('d="M0 0 L38 38"')
+  })
+
+  it('overrides graphic via constructor defaults', () => {
+    symbolRegistry.setDefaults({ graphic: 'M5 5 L15 15' })
+    const defNoGraphic = { id: 'no-graphic', svg: '<path d="{{graphic}}"/>' }
+    const resolved = symbolRegistry.resolve(defNoGraphic, {}, OUTDOOR)
+    expect(resolved).toContain('d="M5 5 L15 15"')
+  })
+
+  it('marker-level graphic overrides constructor default', () => {
+    symbolRegistry.setDefaults({ graphic: 'M5 5 L15 15' })
+    const defNoGraphic = { id: 'no-graphic2', svg: '<path d="{{graphic}}"/>' }
+    const resolved = symbolRegistry.resolve(defNoGraphic, { graphic: 'M1 1 L2 2' }, OUTDOOR)
+    expect(resolved).toContain('d="M1 1 L2 2"')
+  })
+
+  it('built-in pin symbol has a graphic default', () => {
+    const pin = symbolRegistry.get('pin')
+    expect(typeof pin.graphic).toBe('string')
+    expect(pin.graphic.length).toBeGreaterThan(0)
+  })
+
+  it('built-in circle symbol has a graphic default', () => {
+    const circle = symbolRegistry.get('circle')
+    expect(typeof circle.graphic).toBe('string')
+    expect(circle.graphic.length).toBeGreaterThan(0)
+  })
+
+  it('pin resolves graphic token into its svg', () => {
+    const pin = symbolRegistry.get('pin')
+    const resolved = symbolRegistry.resolve(pin, {}, OUTDOOR)
+    expect(resolved).toContain(`d="${pin.graphic}"`)
   })
 })

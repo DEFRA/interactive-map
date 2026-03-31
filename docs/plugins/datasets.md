@@ -1,6 +1,6 @@
 # Datasets Plugin
 
-The datasets plugin renders GeoJSON and vector tile datasets on the map, with support for sublayer style rules, layer visibility toggling, a key panel, and runtime style and data updates.
+The datasets plugin renders GeoJSON and vector tile datasets on the map, with support for polygon, line, and symbol (point) layer types, sublayer style rules, layer visibility toggling, a key panel, and runtime style and data updates.
 
 ## Usage
 
@@ -188,6 +188,64 @@ filter: ['==', ['get', 'status'], 'active']
 
 ---
 
+### `style.symbol`
+
+**Type:** `string | SymbolConfig`
+
+Renders the dataset as a symbol (point) layer instead of a polygon/line layer. Set inside the `style` object alongside other visual properties. When set, other `style` properties (`fill`, `stroke`, `fillPattern` etc.) are ignored.
+
+Set to a registered symbol ID to use a built-in or pre-registered symbol with default colours:
+
+```js
+style: { symbol: 'pin' }
+```
+
+Or pass a `SymbolConfig` object to override token values or provide a fully custom SVG:
+
+```js
+// Registered symbol with colour overrides
+style: { symbol: { id: 'pin', background: '#1d70b8', foreground: '#ffffff' } }
+
+// Swap the inner graphic shape using a built-in named graphic
+import { graphics } from '@interactive-map/symbols/graphics.js'
+style: { symbol: { id: 'pin', graphic: graphics.cross } }
+
+// Custom inline SVG
+style: {
+  symbol: {
+    symbolSvgContent: '<circle cx="19" cy="19" r="12" fill="{{background}}"/>',
+    viewBox: '0 0 38 38',
+    anchor: [0.5, 0.5],
+    background: '#1d70b8'
+  }
+}
+```
+
+Token values (`background`, `foreground`, `halo`, `haloWidth`, `graphic`) follow the same cascade as markers: `symbolDefaults.js` → constructor `symbolDefaults` → symbol registration → dataset config. See [Symbol Registry](../api/symbol-registry.md) for the full cascade.
+
+Style-keyed colour objects are supported for tokens, so a single dataset config works across all basemap styles:
+
+```js
+style: { symbol: { id: 'pin', background: { outdoor: '#1d70b8', dark: '#5694ca' } } }
+```
+
+#### `SymbolConfig` properties
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `id` | `string` | Registered symbol ID to use as the base |
+| `symbolSvgContent` | `string` | Raw SVG inner content (overrides `id`). Use `{{token}}` placeholders for colours |
+| `viewBox` | `string` | SVG viewBox e.g. `'0 0 38 38'`. Required when using `symbolSvgContent` |
+| `anchor` | `number[]` | Anchor point as `[x, y]` in 0–1 space. `[0.5, 1]` = bottom-centre (pin), `[0.5, 0.5]` = centre (circle). **Default:** `[0.5, 0.5]` |
+| `background` | `string \| Record<string, string>` | Fill colour token |
+| `foreground` | `string \| Record<string, string>` | Icon/foreground colour token |
+| `halo` | `string \| Record<string, string>` | Halo colour token |
+| `haloWidth` | `string` | Halo stroke width token |
+| `graphic` | `string` | SVG `d` attribute for the foreground graphic path — swaps the inner shape of a built-in symbol. See [Graphic token](../api/symbol-registry.md#graphic-token) |
+| *(custom)* | `string \| Record<string, string>` | Any additional `{{token}}` used in `symbolSvgContent` |
+
+---
+
 ### `minZoom`
 
 **Type:** `number`
@@ -261,7 +319,7 @@ Overrides the shape used to render the key symbol for this dataset. Defaults to 
 
 **Type:** `Object`
 
-Visual style for the dataset. All style properties must be nested within this object.
+Visual style for the dataset. All style properties must be nested within this object, including `symbol` for point datasets. When `symbol` is set, `fill`, `stroke`, and `fillPattern` properties are ignored.
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -292,9 +350,9 @@ style: {
 
 **Type:** `Sublayer[]`
 
-Array of sublayer rules that partition the dataset into visually distinct groups based on feature filters. Each sublayer is rendered as a separate pair of map layers.
+Array of sublayer rules that partition the dataset into visually distinct groups based on feature filters. Each sublayer is rendered as a separate map layer.
 
-Sublayers inherit the parent dataset's style and only override what they specify. Fill precedence (highest to lowest): sublayer's own `fillPattern` → sublayer's own `fill` → parent's `fillPattern` → parent's `fill`.
+Sublayers inherit the parent dataset's `style` and `symbol` and only override what they specify in their own `style` object. For polygon/line datasets, fill precedence is (highest to lowest): sublayer `fillPattern` → sublayer `fill` → parent `fillPattern` → parent `fill`. For symbol datasets, `style.symbol` overrides the parent's `symbol` entirely.
 
 #### `Sublayer` properties
 
@@ -303,9 +361,11 @@ Sublayers inherit the parent dataset's style and only override what they specify
 | `id` | `string` | **Required.** Unique identifier within the dataset |
 | `label` | `string` | Human-readable name shown in the Layers and Key panels |
 | `filter` | `FilterExpression` | MapLibre filter expression to match features for this sublayer |
-| `style` | `Object` | Style overrides for this sublayer. Accepts the same properties as the dataset `style` object |
+| `style` | `Object` | Style overrides. Accepts the same properties as the dataset `style` object, plus `symbol` to override the parent's symbol config |
 | `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from dataset if not set |
 | `toggleVisibility` | `boolean` | Shows this sublayer in the Layers panel. **Default:** `false` |
+
+**Polygon/line example:**
 
 ```js
 sublayers: [
@@ -332,6 +392,44 @@ sublayers: [
     }
   }
 ]
+```
+
+**Symbol (point) example — flood warnings by severity:**
+
+When the parent dataset has `style.symbol` set, each sublayer can override it with a different symbol config to represent different categories. If a sublayer does not set `style.symbol`, it inherits the parent's symbol unchanged.
+
+```js
+{
+  id: 'flood-warnings',
+  geojson: floodWarningsData,
+  style: { symbol: 'pin' },
+  sublayers: [
+    {
+      id: 'severe',
+      label: 'Severe flood warning',
+      filter: ['==', ['get', 'severity'], 'severe'],
+      showInKey: true,
+      toggleVisibility: true,
+      style: { symbol: { id: 'pin', background: '#d4351c' } }
+    },
+    {
+      id: 'warning',
+      label: 'Flood warning',
+      filter: ['==', ['get', 'severity'], 'warning'],
+      showInKey: true,
+      toggleVisibility: true,
+      style: { symbol: { id: 'pin', background: '#f47738' } }
+    },
+    {
+      id: 'alert',
+      label: 'Flood alert',
+      filter: ['==', ['get', 'severity'], 'alert'],
+      showInKey: true,
+      toggleVisibility: true,
+      style: { symbol: { id: 'pin', background: '#ffdd00' } }
+    }
+  ]
+}
 ```
 
 ---
@@ -436,23 +534,31 @@ datasetsPlugin.setFeatureVisibility(true, [123, 456], {
 
 Update the visual style of a dataset or sublayer at runtime. When targeting a sublayer, only the properties specified are overridden — the sublayer inherits all other styles from the parent dataset.
 
+For symbol datasets, pass `symbol` as the style property to change the symbol config.
+
 | Argument | Type | Description |
 |----------|------|-------------|
-| `style` | `Object` | Style properties to apply. Accepts the same properties as `dataset.style` |
+| `style` | `Object` | Style properties to apply. Accepts the same properties as `dataset.style`, plus `symbol` |
 | `scope.datasetId` | `string` | ID of the dataset |
 | `scope.sublayerId` | `string` | Optional. When provided, targets a single sublayer |
 
 ```js
-// Dataset level
+// Polygon/line dataset
 datasetsPlugin.setStyle(
   { stroke: '#0000ff', strokeWidth: 3 },
   { datasetId: 'my-parcels' }
 )
 
-// Sublayer level
+// Sublayer — polygon
 datasetsPlugin.setStyle(
   { stroke: '#00703c', fillPattern: 'diagonal-cross-hatch', fillPatternForegroundColor: '#00703c' },
   { datasetId: 'my-parcels', sublayerId: 'active' }
+)
+
+// Sublayer — symbol
+datasetsPlugin.setStyle(
+  { symbol: { id: 'pin', background: '#912b88' } },
+  { datasetId: 'flood-warnings', sublayerId: 'severe' }
 )
 ```
 

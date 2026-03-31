@@ -51,8 +51,14 @@
   padding-bottom: 5px;
 }
 
-.im-c-datasets-key__item svg {
+// Symbol
+
+.am-c-datasets-key-symbol {
   position: relative;
   flex-shrink: 0;
   margin: 0 13px 0 2px;
+}
+
+.am-c-datasets-key-symbol--point {
+  margin: -6px 6px -6px -4px;
 }

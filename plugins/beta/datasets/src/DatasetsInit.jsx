@@ -5,7 +5,7 @@ import { createDatasets } from './datasets.js'
 
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
-  const { events, eventBus } = services
+  const { events, eventBus, symbolRegistry } = services
 
   const isMapStyleReady = !!mapProvider.map?.getStyle()
 
@@ -40,7 +40,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
       }
 
       const { default: LayerAdapter } = await pluginConfig.layerAdapter.load()
-      const adapter = new LayerAdapter(mapProvider.map)
+      const adapter = new LayerAdapter(mapProvider.map, symbolRegistry)
 
       dispatch({ type: 'SET_LAYER_ADAPTER', payload: adapter })
 

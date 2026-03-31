@@ -489,7 +489,7 @@ Add a marker to the map.
 | `options` | [`MarkerOptions`](./api/marker-config.md#markeroptions) | Optional marker appearance options |
 
 ```js
-interactiveMap.addMarker('home', [-0.1276, 51.5074], { color: '#0000ff' })
+interactiveMap.addMarker('home', [-0.1276, 51.5074], { background: '#1d70b8' })
 ```
 
 ---

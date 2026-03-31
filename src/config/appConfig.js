@@ -159,4 +159,3 @@ export const scaleFactor = {
   medium: 1.5,
   large: 2
 }
-
