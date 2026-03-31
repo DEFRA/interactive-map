@@ -26,7 +26,7 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
-const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.4558622,54.5617135],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.439823,54.5525437],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.4481939,54.5575261],'type': 'Point'}}]}
+const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',id:1,properties: {},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',id:2,properties: {},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',id:3,properties: {},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
