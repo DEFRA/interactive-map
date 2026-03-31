@@ -31,7 +31,9 @@ Optional marker appearance options. See [MarkerOptions](#markeroptions) below.
 
 ## MarkerOptions
 
-Controls the visual appearance of a marker. All properties are optional — unset values fall back to `symbolDefaults`.
+Controls the visual appearance of a marker. All properties are optional — unset values fall back through the cascade: constructor `symbolDefaults` → `symbolDefaults.js`.
+
+> **Note:** `selected` and `selectedWidth` are not settable per marker — the selection ring appearance is defined at the symbol or constructor level. See [SymbolDefaults](./symbol-registry.md#symboldefaults).
 
 Color values may be a plain string or an object keyed by map style ID, allowing different colors per basemap:
 
@@ -43,7 +45,7 @@ background: { outdoor: '#d4351c', dark: '#ff6b6b' }
 
 ### `symbol`
 **Type:** `string`
-**Default:** value of `markerSymbol` on the map config
+**Default:** `symbolDefaults.symbol` (constructor) → `'pin'` (hardcoded)
 
 Symbol to use for this marker. Built-in values: `'pin'`, `'circle'`. Ignored when `symbolSvgContent` is set.
 
@@ -111,26 +113,11 @@ Stroke colour of the halo ring drawn around the symbol edge. Defaults to white o
 
 ---
 
-### `selected`
-**Type:** `string | Record<string, string>`
-
-Stroke colour of the selection ring drawn behind the halo. Defaults to `'transparent'` (hidden). Set this to show a marker as selected.
-
----
-
 ### `haloWidth`
 **Type:** `string`
 **Default:** `'1'`
 
 Stroke width of the halo in SVG units.
-
----
-
-### `selectedWidth`
-**Type:** `string`
-**Default:** `'6'`
-
-Stroke width of the selection ring in SVG units. The ring sits behind the halo, so the visible portion is `(selectedWidth - haloWidth) / 2` units wide outside the symbol edge.
 
 ---
 

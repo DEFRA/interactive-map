@@ -273,13 +273,27 @@ See [MarkerConfig](./api/marker-config.md) for full details.
 
 ---
 
-### `markerSymbol`
-**Type:** `string`
-**Default:** `'pin'`
+### `symbolDefaults`
+**Type:** `Partial<SymbolDefaults>`
 
-Default symbol for map markers. Must be a symbol ID registered in the symbol registry. Can be overridden per marker via `MarkerOptions.symbol`.
+App-wide defaults for symbol and marker appearance, applied at every level below the hardcoded defaults in `symbolDefaults.js`. Each property is optional — unset values fall through to the hardcoded fallback.
 
-Built-in symbols: `'pin'`, `'circle'`. Custom symbols can be registered via `symbolRegistry.register()`.
+```js
+new InteractiveMap('map', {
+  symbolDefaults: {
+    symbol: 'circle',
+    background: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+    halo: { outdoor: '#ffffff', dark: '#0b0c0c' },
+    selected: { outdoor: '#ffdd00', dark: '#ffaa00' }
+  }
+})
+```
+
+See [SymbolDefaults](./api/symbol-registry.md#symboldefaults) for the full property list.
+
+The cascade for all token values is:
+
+`symbolDefaults.js` → constructor `symbolDefaults` → symbol registration → marker creation
 
 ---
 

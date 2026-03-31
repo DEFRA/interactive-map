@@ -132,7 +132,7 @@ createInteractPlugin({
 })
 ```
 
-When not set, the marker uses the symbol defaults.
+When not set, the marker inherits from the constructor `symbolDefaults` cascade.
 
 ---
 

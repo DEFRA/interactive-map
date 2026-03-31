@@ -4,10 +4,7 @@ export const DEFAULTS = {
   multiSelect: false,
   contiguous: false,
   deselectOnClickOutside: false,
-  marker: {
-    symbol: 'pin',
-    background: 'rgba(212,53,28,1)'
-  },
+  marker: {},
   selectedStroke: 'rgba(212,53,28,1)',
   selectedFill: 'rgba(255, 0, 0, 0.1)',
   selectedStrokeWidth: 2

@@ -11,9 +11,11 @@ import { symbolRegistry } from '../../services/symbolRegistry.js'
 export const ServiceContext = createContext(null)
 
 export const ServiceProvider = ({ eventBus, children }) => {
-  const { id, handleExitClick } = useConfig()
+  const { id, handleExitClick, symbolDefaults: constructorSymbolDefaults } = useConfig()
   const mapStatusRef = useRef(null)
   const announce = useMemo(() => createAnnouncer(mapStatusRef), [])
+
+  symbolRegistry.setDefaults(constructorSymbolDefaults || {})
 
   const services = useMemo(() => ({
     announce,

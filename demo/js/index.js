@@ -235,6 +235,12 @@ const interactiveMap = new InteractiveMap('map', {
 		attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
 		backgroundColor: '#f5f5f0'
 	},
+	// symbolDefaults: {
+	// 	symbol: 'circle',
+	// 	background: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+	// 	halo: { outdoor: '#ffffff', dark: '#0b0c0c' },
+	// 	selected: { outdoor: '#ffdd00', dark: '#ffaa00' }
+	// },
 	plugins: [
 		datasetsPlugin,
 		mapStylesPlugin({
@@ -248,7 +254,7 @@ const interactiveMap = new InteractiveMap('map', {
 			osNamesURL: process.env.OS_NAMES_URL,
 			customDatasets: [parcelSearch, gridRefSearchETRS89],
 			width: '300px',
-			showMarker: false,
+			showMarker: true,
 			// expanded: true
 		}),
 		// useLocationPlugin(),

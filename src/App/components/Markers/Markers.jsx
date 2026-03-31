@@ -7,7 +7,7 @@ import { stringToKebab } from '../../../utils/stringToKebab.js'
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Markers = () => {
-  const { id, markerSymbol } = useConfig()
+  const { id } = useConfig()
   const { mapStyle } = useMap()
   const { markers, markerRef } = useMarkers()
   const { symbolRegistry } = useService()
@@ -16,31 +16,35 @@ export const Markers = () => {
     return undefined
   }
 
+  const defaults = symbolRegistry.getDefaults()
+
   return (
     <>
       {markers.items.map(marker => {
-        // Inline symbolSvgContent takes precedence over a registered symbol
-        const symbolDef = marker.symbolSvgContent
-          ? { svg: marker.symbolSvgContent }
-          : symbolRegistry.get(marker.symbol || markerSymbol)
+        // Inline symbolSvgContent takes precedence over a registered symbol,
+        // cascading through marker → constructor defaults
+        const symbolDef = (marker.symbolSvgContent || defaults.symbolSvgContent)
+          ? { svg: marker.symbolSvgContent || defaults.symbolSvgContent }
+          : symbolRegistry.get(marker.symbol || defaults.symbol)
 
-        // Pass all marker props through as token overrides — structural keys excluded
-        const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor'])
+        // selected and selectedWidth are controlled by the registry cascade — not per-marker
+        const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selected', 'selectedWidth'])
         const styleValues = Object.fromEntries(
           Object.entries(marker).filter(([k]) => !INTERNAL_KEYS.has(k))
         )
         const resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle.id)
 
-        const viewBox = marker.viewBox || symbolDef?.viewBox || '0 0 38 38'
+        const viewBox = marker.viewBox || defaults.viewBox || symbolDef?.viewBox || '0 0 38 38'
         const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
-        const anchor = marker.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
+        const anchor = marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
+        const shapeId = marker.symbol || defaults.symbol
 
         return (
           <svg
             key={marker.id}
             ref={markerRef(marker.id)}
             id={`${id}-marker-${marker.id}`}
-            className={`im-c-marker im-c-marker--${stringToKebab(marker.symbol || markerSymbol)}`}
+            className={`im-c-marker im-c-marker--${stringToKebab(shapeId)}`}
             width={svgWidth}
             height={svgHeight}
             viewBox={viewBox}

@@ -27,7 +27,6 @@ const defaults = {
   mapViewParamKey: 'mv',
   maxMobileWidth: 640,
   minDesktopWidth: 835,
-  markerSymbol: 'pin',
   nudgePanDelta: 5,
   nudgeZoomDelta: 0.1,
   panDelta: 100,

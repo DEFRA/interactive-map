@@ -326,6 +326,43 @@
  */
 
 /**
+ * App-wide symbol appearance defaults. All properties are optional.
+ * Color values may be a plain string or an object keyed by map style ID.
+ *
+ * @typedef {Object} SymbolDefaults
+ *
+ * @property {string} [symbol='pin']
+ * Default symbol ID. Built-in values: `'pin'`, `'circle'`.
+ *
+ * @property {string} [symbolSvgContent]
+ * Default inner SVG path content. When set, overrides `symbol`.
+ *
+ * @property {string} [viewBox='0 0 38 38']
+ * Default SVG viewBox.
+ *
+ * @property {[number, number]} [anchor=[0.5, 0.5]]
+ * Default anchor point as a normalised [x, y] pair.
+ *
+ * @property {string | Record<string, string>} [background='#1d70b8']
+ * Default background fill colour.
+ *
+ * @property {string | Record<string, string>} [foreground='#ffffff']
+ * Default foreground fill colour.
+ *
+ * @property {string | Record<string, string>} [halo]
+ * Default halo stroke colour. Defaults to white on light basemaps, dark on dark basemaps.
+ *
+ * @property {string | Record<string, string>} [selected='#ffdd00']
+ * Selected ring colour. Used by resolveSelected() — not overridable per marker.
+ *
+ * @property {string} [haloWidth='1']
+ * Default halo stroke width in SVG units.
+ *
+ * @property {string} [selectedWidth='6']
+ * Default selected ring stroke width in SVG units. Used by resolveSelected() — not overridable per marker.
+ */
+
+/**
  * Configuration for a map marker.
  *
  * @typedef {Object} MarkerConfig
@@ -347,7 +384,7 @@
  * @typedef {Object} MarkerOptions
  *
  * @property {string} [symbol]
- * Symbol id to use for this marker (e.g. 'pin', 'circle'). Overrides the default `markerSymbol` option.
+ * Symbol id to use for this marker (e.g. 'pin', 'circle'). Overrides the default `symbolDefaults.symbol` option.
  *
  * @property {string} [symbolSvgContent]
  * Inner SVG path content (no `<svg>` wrapper) to use instead of a registered symbol.
@@ -372,14 +409,9 @@
  * @property {string | Record<string, string>} [halo]
  * Stroke colour of the halo ring. Defaults to white on light basemaps and dark on dark basemaps.
  *
- * @property {string | Record<string, string>} [selected]
- * Stroke colour of the selection ring. Defaults to transparent (hidden).
- *
  * @property {string} [haloWidth]
  * Stroke width of the halo in SVG units. Defaults to `'1'`.
  *
- * @property {string} [selectedWidth]
- * Stroke width of the selection ring in SVG units. Defaults to `'6'`.
  */
 
 /**
@@ -573,9 +605,9 @@
  * @property {MarkerConfig[]} [markers]
  * Initial markers to display on the map.
  *
- * @property {string} [markerSymbol='pin']
- * Default symbol id used for map markers (e.g. `'pin'`, `'circle'`).
- * Per-marker symbols set via `MarkerOptions.symbol` take precedence.
+ * @property {Partial<SymbolDefaults>} [symbolDefaults]
+ * App-wide defaults for symbol appearance. Merged onto the hardcoded defaults in symbolDefaults.js.
+ * Values cascade: symbolDefaults.js → constructor symbolDefaults → symbol registration → marker creation.
  *
  * @property {[number, number, number, number]} [maxExtent]
  * Maximum viewable extent [west, south, east, north].

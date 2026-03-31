@@ -4,10 +4,22 @@ import { pin } from '../symbols/pin.js'
 import { circle } from '../symbols/circle.js'
 
 const symbols = new Map()
+let _constructorDefaults = {}
 
-function resolveValues (styleValues, mapStyleId) {
-  const defined = Object.fromEntries(Object.entries(styleValues).filter(([, v]) => v != null))
-  const merged = { ...symbolDefaults, ...defined }
+// Keys that are structural — not token values for SVG substitution
+const STRUCTURAL = new Set(['id', 'svg', 'viewBox', 'anchor', 'symbol', 'symbolSvgContent'])
+
+function resolveValues (symbolDef, markerValues, mapStyleId) {
+  const symbolTokens = Object.fromEntries(
+    Object.entries(symbolDef || {}).filter(([k]) => !STRUCTURAL.has(k))
+  )
+  const constructorTokens = Object.fromEntries(
+    Object.entries(_constructorDefaults).filter(([k]) => !STRUCTURAL.has(k))
+  )
+  const defined = Object.fromEntries(
+    Object.entries(markerValues).filter(([, v]) => v != null)
+  )
+  const merged = { ...symbolDefaults, ...constructorTokens, ...symbolTokens, ...defined }
   return Object.fromEntries(
     Object.entries(merged).map(([token, value]) => [token, getValueForStyle(value, mapStyleId) || ''])
   )
@@ -21,6 +33,26 @@ function resolveLayer (svgString, values) {
 }
 
 export const symbolRegistry = {
+  /**
+   * Set constructor-level defaults. Called once during app initialisation.
+   * Merges onto symbolDefaults to form the app-wide token baseline.
+   *
+   * @param {Object} defaults - Constructor symbolDefaults config
+   */
+  setDefaults (defaults) {
+    _constructorDefaults = defaults || {}
+  },
+
+  /**
+   * Returns the merged app-wide defaults (hardcoded + constructor overrides).
+   * Includes both structural properties (symbol, viewBox, anchor) and token values.
+   *
+   * @returns {Object}
+   */
+  getDefaults () {
+    return { ...symbolDefaults, ..._constructorDefaults }
+  },
+
   register (symbolDef) {
     symbols.set(symbolDef.id, symbolDef)
   },
@@ -34,21 +66,37 @@ export const symbolRegistry = {
   },
 
   /**
-   * Resolve a symbol's SVG string with colors injected.
+   * Resolve a symbol's SVG string for normal (unselected) rendering.
+   * The selected ring is always hidden regardless of cascade values.
    *
-   * @param {Object} symbolDef - Symbol definition from the registry
-   * @param {Object} styleColors - Color overrides. Each value may be a plain string
-   *   or a map-style-keyed object e.g. { outdoor: '#ff0000', dark: '#fff' }.
-   *   Keys: selected, halo, background, foreground
-   * @param {string} mapStyleId - Current map style id used to resolve keyed colors
-   * @returns {string} Resolved SVG string ready for rendering
+   * @param {Object} symbolDef - Symbol definition
+   * @param {Object} styleColors - Token overrides (selected and selectedWidth are ignored)
+   * @param {string} mapStyleId - Current map style id
+   * @returns {string} Resolved SVG string
    */
   resolve (symbolDef, styleColors, mapStyleId) {
-    const colors = resolveValues(styleColors || {}, mapStyleId)
+    const colors = resolveValues(symbolDef, styleColors || {}, mapStyleId)
+    if (!symbolDef) { return '' }
+    colors.selected = ''
+    return resolveLayer(symbolDef.svg, colors)
+  },
+
+  /**
+   * Resolve a symbol's SVG string for selected rendering.
+   * The selected ring colour and width come from the cascade
+   * (symbolDef → constructor symbolDefaults → symbolDefaults.js).
+   *
+   * @param {Object} symbolDef - Symbol definition
+   * @param {Object} styleColors - Token overrides (selected and selectedWidth come from cascade only)
+   * @param {string} mapStyleId - Current map style id
+   * @returns {string} Resolved SVG string
+   */
+  resolveSelected (symbolDef, styleColors, mapStyleId) {
+    const colors = resolveValues(symbolDef, styleColors || {}, mapStyleId)
+    if (!symbolDef) { return '' }
     return resolveLayer(symbolDef.svg, colors)
   }
 }
 
-// Register built-in defaults
 symbolRegistry.register(pin)
 symbolRegistry.register(circle)
