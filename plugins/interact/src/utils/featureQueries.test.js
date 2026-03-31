@@ -38,7 +38,7 @@ describe('getFeaturesAtPoint', () => {
 })
 
 describe('findMatchingFeature', () => {
-  const layerConfigMap = { layer1: { layerId: 'layer1' } }
+  const layerConfigMap = { layer1: { layerId: 'layer1' }, layer2: { layerId: 'layer2' } }
 
   it('returns first feature matching config, null otherwise', () => {
     const features = [
@@ -52,5 +52,12 @@ describe('findMatchingFeature', () => {
     expect(findMatchingFeature([{ id: 'f3', layer: {} }], layerConfigMap)).toBeNull()
     expect(findMatchingFeature([{ id: 'f4' }], layerConfigMap)).toBeNull()
     expect(findMatchingFeature([{ id: 'f5', layer: { id: 'other' } }], {})).toBeNull()
+  })
+
+  it('prioritises point geometry over non-point when both match', () => {
+    const polygon = { id: 'p1', layer: { id: 'layer1' }, geometry: { type: 'Polygon' } }
+    const point = { id: 'p2', layer: { id: 'layer2' }, geometry: { type: 'Point' } }
+    const result = findMatchingFeature([polygon, point], layerConfigMap)
+    expect(result).toEqual({ feature: point, config: layerConfigMap.layer2 })
   })
 })

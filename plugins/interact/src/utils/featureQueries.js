@@ -15,12 +15,17 @@ export const getFeaturesAtPoint = (mapProvider, point, options) => {
   }
 }
 
+const isPointGeometry = (feature) => {
+  const type = feature.geometry?.type
+  return type === 'Point' || type === 'MultiPoint'
+}
+
 export const findMatchingFeature = (features, layerConfigMap) => {
-  for (const feature of features) {
-    const layerId = feature.layer?.id
-    if (layerConfigMap[layerId]) {
-      return { feature, config: layerConfigMap[layerId] }
-    }
+  const matched = features.filter(f => layerConfigMap[f.layer?.id])
+  const pointMatch = matched.find(isPointGeometry)
+  if (pointMatch) {
+    return { feature: pointMatch, config: layerConfigMap[pointMatch.layer.id] }
   }
-  return null
+  const first = matched[0]
+  return first ? { feature: first, config: layerConfigMap[first.layer.id] } : null
 }

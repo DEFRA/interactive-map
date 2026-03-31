@@ -126,12 +126,13 @@ Stroke width of the halo in SVG units.
 
 SVG `d` attribute value for the foreground graphic path of the symbol. Replaces the inner shape (e.g. the dot inside a pin) while keeping the background, halo and selection ring intact.
 
-Each built-in symbol (`pin`, `circle`) provides a default dot — pass a different `d` string to swap it. Use named values from `graphics.js` or supply your own path data:
+Each built-in symbol (`pin`, `circle`) provides a default dot — pass a named graphic, a raw `d` string, or omit to keep the default:
 
 ```js
-import { graphics } from './symbols/graphics.js'
+// Named built-in graphic (resolved automatically)
+markers.add('id', coords, { symbol: 'pin', graphic: 'cross' })
 
-markers.add('id', coords, { symbol: 'pin', graphic: graphics.cross })
+// Inline path data
 markers.add('id', coords, { symbol: 'pin', graphic: 'M14 12 L24 20 L14 28 Z' })
 ```
 

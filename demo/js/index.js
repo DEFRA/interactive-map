@@ -26,7 +26,7 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
-const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',id:1,properties: {},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',id:2,properties: {},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',id:3,properties: {},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
+const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: {},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',properties: {},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',properties: {},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
@@ -168,7 +168,6 @@ const datasetsPlugin = createDatasetsPlugin({
 		style: {
 			symbol: 'square',
 			graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
-			// graphic: 'M6 14.5H2v-7l6-5 6 5v7h-4v-5H6v5zM1.32 6.717a.5.5 0 0 1-.704-.064.5.5 0 0 1 .064-.704l7-5.833a.5.5 0 0 1 .64 0l7 5.833a.5.5 0 0 1 .064.704.5.5 0 0 1-.704.064L8 1.15 1.32 6.717z' // House
 		}
 	},
 	{

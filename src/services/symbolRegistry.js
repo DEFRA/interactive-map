@@ -3,6 +3,7 @@ import { symbolDefaults } from '../symbols/symbolDefaults.js'
 import { pin } from '../symbols/pin.js'
 import { circle } from '../symbols/circle.js'
 import { square } from '../symbols/square.js'
+import { graphics } from '../symbols/graphics.js'
 
 const symbols = new Map()
 let _constructorDefaults = {}
@@ -25,6 +26,9 @@ function resolveValues (symbolDef, markerValues, mapStyleId) {
     Object.entries(markerValues).filter(([, v]) => v != null)
   )
   const merged = { ...symbolDefaults, ...constructorTokens, ...symbolTokens, ...defined }
+  if (typeof merged.graphic === 'string' && graphics[merged.graphic]) {
+    merged.graphic = graphics[merged.graphic]
+  }
   return Object.fromEntries(
     Object.entries(merged).map(([token, value]) => [token, getValueForStyle(value, mapStyleId) || ''])
   )

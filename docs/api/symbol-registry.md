@@ -165,25 +165,25 @@ const svg = services.symbolRegistry.resolveSelected(
 
 The built-in `pin` and `circle` symbols support a `{{graphic}}` token — the `d` attribute of their foreground path. This lets you swap the inner graphic shape without writing a custom SVG.
 
+Pass a built-in name as a plain string, or supply your own path data directly:
+
 ```js
-import { graphics } from './symbols/graphics.js'
+// Named built-in — resolved automatically, no import needed
+markers.add('id', coords, { symbol: 'pin', graphic: 'cross' })
 
-// Use a built-in named graphic
-markers.add('id', coords, { symbol: 'pin', graphic: graphics.cross })
-
-// Use inline path data
+// Inline path data
 markers.add('id', coords, { symbol: 'pin', graphic: 'M14 12 L24 20 L14 28 Z' })
 ```
 
-Built-in named graphics (all sized for the standard 38×38 viewBox):
+Built-in named graphics (all in a 16×16 coordinate space, centred at 8,8):
 
-| ID | Shape |
-|----|-------|
-| `graphics.dot` | Small filled circle — the default for `pin` |
-| `graphics.cross` | Filled plus / cross |
-| `graphics.diamond` | Filled diamond / rotated square |
-| `graphics.triangle` | Filled upward-pointing triangle |
-| `graphics.square` | Filled square |
+| Name | Shape |
+|------|-------|
+| `'dot'` | Small filled circle — the default for `pin` and `circle` |
+| `'cross'` | Filled plus / cross |
+| `'diamond'` | Filled diamond / rotated square |
+| `'triangle'` | Filled upward-pointing triangle |
+| `'square'` | Filled square |
 
 `graphic` follows the full token cascade — it can be set as a symbol-level default, a constructor default, or per-marker. Each built-in symbol sets its own `graphic` default, so omitting `graphic` always produces the standard appearance.
 

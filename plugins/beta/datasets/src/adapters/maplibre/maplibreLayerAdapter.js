@@ -19,6 +19,8 @@ export default class MaplibreLayerAdapter {
     this._symbolRegistry = symbolRegistry
     // datasetId → sourceId, used by setData to update the correct source
     this._datasetSourceMap = new Map()
+    // Tracks all active symbol-type layer IDs so non-symbol layers can be kept below them
+    this._symbolLayerIds = new Set()
   }
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
@@ -34,6 +36,7 @@ export default class MaplibreLayerAdapter {
       registerPatterns(this._map, datasets, mapStyleId),
       registerSymbols(this._map, datasets, mapStyleId, this._symbolRegistry)
     ])
+    this._symbolLayerIds.clear()
     datasets.forEach(dataset => this._addLayers(dataset, mapStyleId))
     await new Promise(resolve => this._map.once('idle', resolve))
   }
@@ -76,6 +79,7 @@ export default class MaplibreLayerAdapter {
       registerPatterns(this._map, datasets, newStyleId),
       registerSymbols(this._map, datasets, newStyleId, this._symbolRegistry)
     ])
+    this._symbolLayerIds.clear()
     datasets.forEach(dataset => this._addLayers(dataset, newStyleId))
 
     // Re-push cached data for dynamic sources
@@ -116,6 +120,7 @@ export default class MaplibreLayerAdapter {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
+      this._symbolLayerIds.delete(layerId)
     })
 
     const sourceIsShared = allDatasets.some(d => d.id !== dataset.id && getSourceId(d) === sourceId)
@@ -204,6 +209,7 @@ export default class MaplibreLayerAdapter {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
+      this._symbolLayerIds.delete(layerId)
     })
     await Promise.all([
       registerPatterns(this._map, [dataset], mapStyleId),
@@ -225,6 +231,7 @@ export default class MaplibreLayerAdapter {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
+      this._symbolLayerIds.delete(layerId)
     })
     const sublayer = dataset.sublayers?.find(s => s.id === sublayerId)
     if (!sublayer) {
@@ -237,6 +244,7 @@ export default class MaplibreLayerAdapter {
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
     addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, mapStyleId, this._symbolRegistry)
+    this._maintainSymbolOrdering(dataset)
   }
 
   /**
@@ -289,6 +297,36 @@ export default class MaplibreLayerAdapter {
   _addLayers (dataset, mapStyleId) {
     const sourceId = addDatasetLayers(this._map, dataset, mapStyleId, this._symbolRegistry)
     this._datasetSourceMap.set(dataset.id, sourceId)
+    this._maintainSymbolOrdering(dataset)
+  }
+
+  _getFirstSymbolLayerId () {
+    const style = this._map.getStyle()
+    if (!style?.layers) {
+      return null
+    }
+    const layer = style.layers.find(l => this._symbolLayerIds.has(l.id))
+    return layer?.id ?? null
+  }
+
+  _maintainSymbolOrdering (dataset) {
+    const layerIds = getAllLayerIds(dataset).filter(id => id && this._map.getLayer(id))
+    layerIds.forEach(id => {
+      if (this._map.getLayer(id)?.type === 'symbol') {
+        this._symbolLayerIds.add(id)
+      } else {
+        this._symbolLayerIds.delete(id)
+      }
+    })
+    const firstSymbolId = this._getFirstSymbolLayerId()
+    if (!firstSymbolId) {
+      return
+    }
+    layerIds.forEach(id => {
+      if (!this._symbolLayerIds.has(id)) {
+        this._map.moveLayer(id, firstSymbolId)
+      }
+    })
   }
 
   _setDatasetVisibility (datasetId, visibility) {

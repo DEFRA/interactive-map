@@ -76,7 +76,7 @@ export const useInteractionHandlers = ({
       const isNewContiguous = contiguous && isContiguousWithAny(feature, selectedFeatures)
       const featureId = feature.properties?.[config.idProperty] ?? feature.id
 
-      if (!featureId) {
+      if (featureId == null) {
         return
       }
 

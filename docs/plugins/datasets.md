@@ -207,8 +207,7 @@ Or pass a `SymbolConfig` object to override token values or provide a fully cust
 style: { symbol: { id: 'pin', background: '#1d70b8', foreground: '#ffffff' } }
 
 // Swap the inner graphic shape using a built-in named graphic
-import { graphics } from '@interactive-map/symbols/graphics.js'
-style: { symbol: { id: 'pin', graphic: graphics.cross } }
+style: { symbol: { id: 'pin', graphic: 'cross' } }
 
 // Custom inline SVG
 style: {
@@ -241,7 +240,7 @@ style: { symbol: { id: 'pin', background: { outdoor: '#1d70b8', dark: '#5694ca' 
 | `foreground` | `string \| Record<string, string>` | Icon/foreground colour token |
 | `halo` | `string \| Record<string, string>` | Halo colour token |
 | `haloWidth` | `string` | Halo stroke width token |
-| `graphic` | `string` | SVG `d` attribute for the foreground graphic path — swaps the inner shape of a built-in symbol. See [Graphic token](../api/symbol-registry.md#graphic-token) |
+| `graphic` | `string` | Built-in graphic name (e.g. `'cross'`) or SVG `d` attribute string — swaps the inner shape of a built-in symbol. See [Graphic token](../api/symbol-registry.md#graphic-token) |
 | *(custom)* | `string \| Record<string, string>` | Any additional `{{token}}` used in `symbolSvgContent` |
 
 ---

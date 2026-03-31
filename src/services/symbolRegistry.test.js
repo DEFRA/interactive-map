@@ -223,6 +223,11 @@ describe('symbolRegistry — graphic token', () => {
     expect(resolved).toContain('d="M10 10 L20 20"')
   })
 
+  it('resolves named graphic string to built-in path data', () => {
+    const resolved = symbolRegistry.resolve(graphicDef, { graphic: 'cross' }, OUTDOOR)
+    expect(resolved).toContain('d="M6 3H10V6H13V10H10V13H6V10H3V6H6Z"')
+  })
+
   it('overrides symbol-level graphic with marker-level value', () => {
     const resolved = symbolRegistry.resolve(graphicDef, { graphic: 'M0 0 L38 38' }, OUTDOOR)
     expect(resolved).toContain('d="M0 0 L38 38"')

@@ -149,6 +149,20 @@ describe('Highlighting Utils — symbol layers', () => {
     }))
   })
 
+  test('falls back to center anchor when icon-anchor is not set on original layer', () => {
+    map.getLayoutProperty.mockImplementation((_id, prop) => prop === ICON_IMAGE ? SYMBOL_IMAGE : null) // NOSONAR
+    run()
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      layout: expect.objectContaining({ [ICON_ANCHOR]: 'center' })
+    }))
+  })
+
+  test('spreads source-layer into symbol highlight layer for vector tile source', () => {
+    map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'symbol', sourceLayer: 'points' } : null) // NOSONAR
+    run()
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ 'source-layer': 'points' }))
+  })
+
   test('reuses existing symbol highlight layer without re-adding', () => {
     map.getLayer.mockImplementation(id => { // NOSONAR
       if (id === 'l1') { return { source: 's1', type: 'symbol' } }
