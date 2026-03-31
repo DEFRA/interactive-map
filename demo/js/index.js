@@ -30,6 +30,9 @@ const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','pr
 
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
+		layerId: 'historic-monuments',
+		// idProperty: 'gid'
+	},{
 		layerId: 'land-covers-130',
 		// idProperty: 'gid'
 	},{
@@ -63,7 +66,8 @@ const datasetsPlugin = createDatasetsPlugin({
 	layerAdapter: maplibreLayerAdapter,
 	
 	// Example: Dynamic bbox-based fetching (uncomment to test)
-	datasets: [{
+	datasets: [
+	{
 		id: 'land-covers',
 		label: 'Land covers',
 		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
@@ -134,7 +138,40 @@ const datasetsPlugin = createDatasetsPlugin({
 				// fillPatternBackgroundColor: 'transparent'
 			}
 		}]
-	},{
+	},
+	{
+		id: 'existing-fields',
+		label: 'Existing fields',
+		// groupLabel: 'Test group',
+		filter: ['all',['==', ['get', 'sbi'], '106223377'],['==', ['get', 'is_dominant_land_cover'], true]],
+		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		sourceLayer: 'field_parcels_filtered',
+		minZoom: 10,
+		maxZoom: 24,
+		showInKey: true,
+		toggleVisibility: true,
+		style: {
+			stroke: { outdoor: '#1d70b8', dark: '#ffffff'},
+			strokeWidth: 2,
+			fill: 'rgba(0,0,255,0.1)',
+			symbolDescription: { outdoor: 'blue outline' }
+		}
+	},
+	{
+		id: 'historic-monuments',
+		label: 'Historic monuments',
+		geojson: pointData,
+		minZoom: 10,
+		maxZoom: 24,
+		showInKey: true,
+		toggleVisibility: true,
+		style: {
+			symbol: 'square',
+			graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
+			// graphic: 'M6 14.5H2v-7l6-5 6 5v7h-4v-5H6v5zM1.32 6.717a.5.5 0 0 1-.704-.064.5.5 0 0 1 .064-.704l7-5.833a.5.5 0 0 1 .64 0l7 5.833a.5.5 0 0 1 .064.704.5.5 0 0 1-.704.064L8 1.15 1.32 6.717z' // House
+		}
+	},
+	{
 		id: 'hedge-control',
 		label: 'Hedge control',
 		// groupLabel: 'Test group',
@@ -152,37 +189,8 @@ const datasetsPlugin = createDatasetsPlugin({
 			symbolDescription: { outdoor: 'blue outline' },
 			keySymbolShape: 'line',
 		}
-	},{
-		id: 'existing-fields',
-		label: 'Existing fields',
-		// groupLabel: 'Test group',
-		filter: ['all',['==', ['get', 'sbi'], '106223377'],['==', ['get', 'is_dominant_land_cover'], true]],
-		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-		sourceLayer: 'field_parcels_filtered',
-		minZoom: 10,
-		maxZoom: 24,
-		showInKey: true,
-		toggleVisibility: true,
-		style: {
-			stroke: { outdoor: '#1d70b8', dark: '#ffffff'},
-			strokeWidth: 2,
-			fill: 'rgba(0,0,255,0.1)',
-			symbolDescription: { outdoor: 'blue outline' }
-		}
-	},{
-		id: 'historic-monuments',
-		label: 'Historic monuments',
-		geojson: pointData,
-		minZoom: 10,
-		maxZoom: 24,
-		showInKey: true,
-		toggleVisibility: true,
-		style: {
-			symbol: 'square',
-			graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
-			// graphic: 'M6 14.5H2v-7l6-5 6 5v7h-4v-5H6v5zM1.32 6.717a.5.5 0 0 1-.704-.064.5.5 0 0 1 .064-.704l7-5.833a.5.5 0 0 1 .64 0l7 5.833a.5.5 0 0 1 .064.704.5.5 0 0 1-.704.064L8 1.15 1.32 6.717z' // House
-		}
-	}]
+	},
+	]
 })
 
 const interactiveMap = new InteractiveMap('map', {

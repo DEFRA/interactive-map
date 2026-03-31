@@ -229,12 +229,22 @@ export const registerSymbols = async (map, datasets, mapStyleId, symbolRegistry)
   const symbolConfigs = getSymbolConfigs(datasets)
   if (!symbolConfigs.length) { return }
 
-  await Promise.all(symbolConfigs.flatMap(config => [false, true].map(async (selected) => {
-    const imageId = getSymbolImageId(config, mapStyleId, symbolRegistry, selected)
-    if (!imageId || map.hasImage(imageId)) { return }
-    const result = await rasteriseSymbolImage(config, mapStyleId, symbolRegistry, selected)
-    if (result) {
-      map.addImage(result.imageId, result.imageData, { pixelRatio: 2 })
+  // Reset the normal→selected image ID lookup so stale entries don't persist after a style change
+  map._symbolImageMap = {}
+
+  await Promise.all(symbolConfigs.flatMap(config => {
+    const normalId = getSymbolImageId(config, mapStyleId, symbolRegistry, false)
+    const selectedId = getSymbolImageId(config, mapStyleId, symbolRegistry, true)
+    if (normalId && selectedId) {
+      map._symbolImageMap[normalId] = selectedId
     }
-  })))
+    return [false, true].map(async (selected) => {
+      const imageId = selected ? selectedId : normalId
+      if (!imageId || map.hasImage(imageId)) { return }
+      const result = await rasteriseSymbolImage(config, mapStyleId, symbolRegistry, selected)
+      if (result) {
+        map.addImage(result.imageId, result.imageData, { pixelRatio: 2 })
+      }
+    })
+  }))
 }
