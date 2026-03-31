@@ -4,6 +4,9 @@ import { mergeSublayer } from '../../utils/mergeSublayer.js'
 // Keys in an object-form symbol config that are not token values
 const SYMBOL_STRUCTURAL = new Set(['id', 'symbolSvgContent', 'viewBox', 'anchor'])
 
+// Top-level dataset props (after style flattening) that are symbol token overrides
+const DATASET_SYMBOL_TOKENS = new Set(['graphic'])
+
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
 const SVG_ERROR_PREVIEW_LENGTH = 80
@@ -57,10 +60,18 @@ export const getSymbolDef = (dataset, symbolRegistry) => {
  */
 export const getSymbolStyleColors = (dataset) => {
   const { symbol } = dataset
-  if (!symbol || typeof symbol === 'string') { return {} }
-  return Object.fromEntries(
-    Object.entries(symbol).filter(([k]) => !SYMBOL_STRUCTURAL.has(k))
-  )
+  if (!symbol) { return {} }
+  // Collect top-level token overrides from the flattened dataset (e.g. dataset.graphic)
+  const tokens = {}
+  DATASET_SYMBOL_TOKENS.forEach(key => {
+    if (dataset[key] != null) { tokens[key] = dataset[key] }
+  })
+  if (typeof symbol === 'string') { return tokens }
+  // For object-form symbol, also merge token overrides from within the symbol object
+  Object.entries(symbol).forEach(([k, v]) => {
+    if (!SYMBOL_STRUCTURAL.has(k)) { tokens[k] = v }
+  })
+  return tokens
 }
 
 /**

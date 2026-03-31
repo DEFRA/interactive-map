@@ -13,7 +13,7 @@ describe('symbolRegistry — built-in symbols', () => {
     const pin = symbolRegistry.get('pin')
     expect(pin).toBeDefined()
     expect(pin.id).toBe('pin')
-    expect(pin.anchor).toEqual([0.5, 1])
+    expect(pin.anchor).toEqual([0.5, 0.9])
     expect(typeof pin.svg).toBe('string')
   })
 
@@ -76,6 +76,7 @@ describe('symbolRegistry — setDefaults / getDefaults', () => {
 })
 
 describe('symbolRegistry — resolve', () => {
+  const BACKGROUND_SVG = '<path fill="{{background}}"/>'
   const symbolDef = {
     id: 'test',
     svg: '<path fill="{{background}}" stroke="{{halo}}" stroke-width="{{haloWidth}}"/><path fill="{{foreground}}" stroke="{{selected}}"/>'
@@ -131,7 +132,7 @@ describe('symbolRegistry — resolve', () => {
   })
 
   it('replaces token with empty string when override is an empty string', () => {
-    const def = { id: 'es', svg: '<path fill="{{background}}"/>' }
+    const def = { id: 'es', svg: BACKGROUND_SVG }
     const resolved = symbolRegistry.resolve(def, { background: '' }, OUTDOOR)
     expect(resolved).toContain('fill=""')
   })
@@ -148,13 +149,13 @@ describe('symbolRegistry — resolve', () => {
 
   it('symbol-level token defaults take precedence over constructor defaults', () => {
     symbolRegistry.setDefaults({ background: '#abcdef' })
-    const defWithToken = { id: 'td', svg: '<path fill="{{background}}"/>', background: '#111111' }
+    const defWithToken = { id: 'td', svg: BACKGROUND_SVG, background: '#111111' }
     const resolved = symbolRegistry.resolve(defWithToken, {}, OUTDOOR)
     expect(resolved).toContain('fill="#111111"')
   })
 
   it('marker-level overrides take precedence over symbol-level defaults', () => {
-    const defWithToken = { id: 'td2', svg: '<path fill="{{background}}"/>', background: '#111111' }
+    const defWithToken = { id: 'td2', svg: BACKGROUND_SVG, background: '#111111' }
     const resolved = symbolRegistry.resolve(defWithToken, { background: '#ffffff' }, OUTDOOR)
     expect(resolved).toContain('fill="#ffffff"')
   })
@@ -253,9 +254,10 @@ describe('symbolRegistry — graphic token', () => {
     expect(circle.graphic.length).toBeGreaterThan(0)
   })
 
-  it('pin resolves graphic token into its svg', () => {
+  it('pin resolves graphic token into its svg within a g transform', () => {
     const pin = symbolRegistry.get('pin')
     const resolved = symbolRegistry.resolve(pin, {}, OUTDOOR)
     expect(resolved).toContain(`d="${pin.graphic}"`)
+    expect(resolved).toContain('translate(19, 16) scale(0.8) translate(-8, -8)')
   })
 })

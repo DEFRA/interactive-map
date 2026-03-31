@@ -6,7 +6,7 @@ import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from 
 import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 
 const SVG_SIZE = 20
-const SVG_SYMBOL_SIZE = 32
+const SVG_SYMBOL_SIZE = 38
 const SVG_CENTER = SVG_SIZE / 2
 const PATTERN_INSET = 2
 

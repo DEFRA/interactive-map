@@ -16,7 +16,7 @@ const datasetDefaults = {
 const STYLE_PROPS = [
   'stroke', 'strokeWidth', 'strokeDashArray',
   'fill', 'fillPattern', 'fillPatternSvgContent', 'fillPatternForegroundColor', 'fillPatternBackgroundColor',
-  'opacity', 'symbolDescription', 'keySymbolShape', 'symbol'
+  'opacity', 'symbolDescription', 'keySymbolShape', 'symbol', 'graphic'
 ]
 
 // Props whose presence in a style object indicates a custom visual style.

@@ -2,6 +2,7 @@ import { getValueForStyle } from '../utils/getValueForStyle.js'
 import { symbolDefaults } from '../symbols/symbolDefaults.js'
 import { pin } from '../symbols/pin.js'
 import { circle } from '../symbols/circle.js'
+import { square } from '../symbols/square.js'
 
 const symbols = new Map()
 let _constructorDefaults = {}
@@ -104,3 +105,4 @@ export const symbolRegistry = {
 
 symbolRegistry.register(pin)
 symbolRegistry.register(circle)
+symbolRegistry.register(square)

@@ -127,7 +127,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '332']]]],
 			toggleVisibility: true,
 			style: {
-				stroke: { outdoor: '	#1d70b8', dark: '#ffffff' },
+				stroke: { outdoor: '#1d70b8', dark: '#ffffff' },
 				fill: 'rgba(0,0,255,0.1)',
 				fillPattern: 'vertical-hatch',
 				fillPatternForegroundColor: { outdoor: '#1d70b8', dark: '#ffffff' },
@@ -164,7 +164,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		style: {
-			stroke: '#0000ff',
+			stroke: { outdoor: '#1d70b8', dark: '#ffffff'},
 			strokeWidth: 2,
 			fill: 'rgba(0,0,255,0.1)',
 			symbolDescription: { outdoor: 'blue outline' }
@@ -178,7 +178,9 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		style: {
-			symbol: 'pin'
+			symbol: 'square',
+			graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
+			// graphic: 'M6 14.5H2v-7l6-5 6 5v7h-4v-5H6v5zM1.32 6.717a.5.5 0 0 1-.704-.064.5.5 0 0 1 .064-.704l7-5.833a.5.5 0 0 1 .64 0l7 5.833a.5.5 0 0 1 .064.704.5.5 0 0 1-.704.064L8 1.15 1.32 6.717z' // House
 		}
 	}]
 })
