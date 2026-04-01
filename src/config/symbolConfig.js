@@ -6,10 +6,10 @@
  */
 export const symbolDefaults = {
   symbol: 'pin',
-  selected: { outdoor: '#0b0c0c', dark: '#ffffff' },
-  halo: { outdoor: '#ffffff', dark: '#0b0c0c' },
-  background: { outdoor: '#ca3535', dark: '#ffffff' },
-  foreground: { outdoor: '#ffff', dark: '#0b0c0c' },
+  selected: '#0b0c0c',
+  halo: '#ffffff',
+  background: '#ca3535',
+  foreground: '#ffff',
   haloWidth: '1',
   selectedWidth: '6'
 }

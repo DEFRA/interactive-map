@@ -134,7 +134,7 @@ const datasetsPlugin = createDatasetsPlugin({
 				stroke: { outdoor: '#1d70b8', dark: '#ffffff' },
 				fill: 'rgba(0,0,255,0.1)',
 				fillPattern: 'vertical-hatch',
-				fillPatternForegroundColor: { outdoor: '#1d70b8', dark: '#ffffff' },
+				fillPatternForegroundColor: { outdoor: '#1d70b8', dark: '#ffffff' }
 				// fillPatternBackgroundColor: 'transparent'
 			}
 		}]
@@ -154,10 +154,9 @@ const datasetsPlugin = createDatasetsPlugin({
 			stroke: { outdoor: '#1d70b8', dark: '#ffffff'},
 			strokeWidth: 2,
 			fill: 'rgba(0,0,255,0.1)',
-			symbolDescription: { outdoor: 'blue outline' }
+			symbolDescription: { outdoor: 'blue outline', dark: 'white outline' }
 		}
-	},
-	{
+	},{
 		id: 'historic-monuments',
 		label: 'Historic monuments',
 		geojson: pointData,
@@ -169,8 +168,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			symbol: 'square',
 			graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
 		}
-	},
-	{
+	},{
 		id: 'hedge-control',
 		label: 'Hedge control',
 		// groupLabel: 'Test group',
@@ -188,8 +186,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			symbolDescription: { outdoor: 'blue outline' },
 			keySymbolShape: 'line',
 		}
-	},
-	]
+	}]
 })
 
 const interactiveMap = new InteractiveMap('map', {
