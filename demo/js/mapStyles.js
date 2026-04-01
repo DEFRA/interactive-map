@@ -6,7 +6,9 @@ const openMapStyles = [{
 	logo: '/assets/images/os-logo.svg',
 	logoAltText: 'Ordnance survey logo',
 	attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
-	backgroundColor: '#f5f5f0'
+	backgroundColor: '#f5f5f0',
+	selectedColor: '#0b0c0c',
+	haloColor: '#ffffff'
 }, {
 	id: 'night',
 	label: 'Night',
@@ -16,7 +18,9 @@ const openMapStyles = [{
 	thumbnail: '',
 	logo: '/assets/images/os-logo-white.svg',
 	logoAltText: 'Ordnance survey logo',
-	attribution: 'Test'
+	attribution: 'Test',
+	selectedColor: '#ffffff',
+	haloColor: '#0b0c0c'
 }, {
 	id: 'deuteranopia',
 	label: 'Deuteranopia',
@@ -43,7 +47,9 @@ const vtsMapStyles3857 = [{
 	logo: '/assets/images/os-logo.svg',
 	logoAltText: 'Ordnance survey logo',
 	attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
-	backgroundColor: '#f5f5f0'
+	backgroundColor: '#f5f5f0',
+	selectedColor: '#0b0c0c',
+	haloColor: '#ffffff'
 }, {
 	id: 'dark',
 	label: 'Dark',
@@ -53,7 +59,9 @@ const vtsMapStyles3857 = [{
 	thumbnail: '/assets/images/dark-map-thumb.jpg',
 	logo: '/assets/images/os-logo-white.svg',
 	logoAltText: 'Ordnance survey logo',
-	attribution: 'Test'
+	attribution: 'Test',
+	selectedColor: '#ffffff',
+	haloColor: '#0b0c0c'
 }, {
 	id: 'black-and-white',
 	label: 'Black/White',
@@ -80,7 +88,9 @@ const vtsMapStyles27700 = [{
 	logo: '/assets/images/os-logo.svg',
 	logoAltText: 'Ordnance survey logo',
 	attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
-	backgroundColor: '#f5f5f0'
+	backgroundColor: '#f5f5f0',
+	selectedColor: '#0b0c0c',
+	haloColor: '#ffffff'
 }, {
 	id: 'dark',
 	label: 'Dark',
@@ -90,7 +100,9 @@ const vtsMapStyles27700 = [{
 	thumbnail: '/assets/images/dark-map-thumb.jpg',
 	logo: '/assets/images/os-logo-white.svg',
 	logoAltText: 'Ordnance survey logo',
-	attribution: 'Test'
+	attribution: 'Test',
+	selectedColor: '#ffffff',
+	haloColor: '#0b0c0c'
 }, {
 	id: 'black-and-white',
 	label: 'Black/White',

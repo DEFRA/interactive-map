@@ -38,16 +38,17 @@ export default class MaplibreLayerAdapter {
   /**
    * Initialise all datasets: register patterns, add layers, then wait for idle.
    * @param {Object[]} datasets
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
-  async init (datasets, mapStyleId) {
+  async init (datasets, mapStyle) {
+    const mapStyleId = mapStyle.id
     await Promise.all([
       this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
-      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
-    datasets.forEach(dataset => this._addLayers(dataset, mapStyleId))
+    datasets.forEach(dataset => this._addLayers(dataset, mapStyle))
     await new Promise(resolve => this._map.once('idle', resolve))
   }
 
@@ -76,21 +77,22 @@ export default class MaplibreLayerAdapter {
    * Re-register patterns and re-add all layers after a basemap style change,
    * then reapply cached dynamic source data and hidden-feature filters.
    * @param {Object[]} datasets
-   * @param {string} newStyleId
+   * @param {Object} newMapStyle
    * @param {Object} hiddenFeatures - pluginState.hiddenFeatures
    * @param {Map} dynamicSources - datasetId → dynamic source instance
    * @returns {Promise<void>}
    */
-  async onStyleChange (datasets, newStyleId, hiddenFeatures, dynamicSources) {
+  async onStyleChange (datasets, newMapStyle, hiddenFeatures, dynamicSources) {
     // MapLibre wipes all sources/layers on style change — must wait for idle first
     await new Promise(resolve => this._map.once('idle', resolve))
 
+    const newStyleId = newMapStyle.id
     await Promise.all([
       this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), newStyleId, this._patternRegistry),
-      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), newStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), newMapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
-    datasets.forEach(dataset => this._addLayers(dataset, newStyleId))
+    datasets.forEach(dataset => this._addLayers(dataset, newMapStyle))
 
     // Re-push cached data for dynamic sources
     dynamicSources.forEach(source => source.reapply())
@@ -110,10 +112,10 @@ export default class MaplibreLayerAdapter {
   /**
    * Add a single dataset's source and layers to the map.
    * @param {Object} dataset
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    */
-  addDataset (dataset, mapStyleId) {
-    this._addLayers(dataset, mapStyleId)
+  addDataset (dataset, mapStyle) {
+    this._addLayers(dataset, mapStyle)
   }
 
   /**
@@ -211,10 +213,11 @@ export default class MaplibreLayerAdapter {
   /**
    * Update a dataset's style and re-render all its layers.
    * @param {Object} dataset - Updated dataset (style changes already merged in)
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setStyle (dataset, mapStyleId) {
+  async setStyle (dataset, mapStyle) {
+    const mapStyleId = mapStyle.id
     getAllLayerIds(dataset).forEach(layerId => {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
@@ -223,19 +226,20 @@ export default class MaplibreLayerAdapter {
     })
     await Promise.all([
       this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
-      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
     ])
-    this._addLayers(dataset, mapStyleId)
+    this._addLayers(dataset, mapStyle)
   }
 
   /**
    * Update a single sublayer's style and re-render its layers.
    * @param {Object} dataset - Updated dataset (sublayer style changes already merged in)
    * @param {string} sublayerId
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setSublayerStyle (dataset, sublayerId, mapStyleId) {
+  async setSublayerStyle (dataset, sublayerId, mapStyle) {
+    const mapStyleId = mapStyle.id
     const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayerId)
     ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
       if (this._map.getLayer(layerId)) {
@@ -249,11 +253,11 @@ export default class MaplibreLayerAdapter {
     }
     await Promise.all([
       this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
-      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
     ])
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
-    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, { mapStyleId, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry })
+    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry })
     this._maintainSymbolOrdering(dataset)
   }
 
@@ -304,8 +308,8 @@ export default class MaplibreLayerAdapter {
 
   // ─── Private ─────────────────────────────────────────────────────────────────
 
-  _addLayers (dataset, mapStyleId) {
-    const sourceId = addDatasetLayers(this._map, dataset, mapStyleId, this._symbolRegistry, this._patternRegistry)
+  _addLayers (dataset, mapStyle) {
+    const sourceId = addDatasetLayers(this._map, dataset, mapStyle, this._symbolRegistry, this._patternRegistry)
     this._datasetSourceMap.set(dataset.id, sourceId)
     this._maintainSymbolOrdering(dataset)
   }

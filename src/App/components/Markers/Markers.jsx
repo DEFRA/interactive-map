@@ -27,12 +27,12 @@ export const Markers = () => {
           ? { svg: marker.symbolSvgContent || defaults.symbolSvgContent }
           : symbolRegistry.get(marker.symbol || defaults.symbol)
 
-        // selected and selectedWidth are controlled by the registry cascade — not per-marker
-        const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selected', 'selectedWidth'])
+        // selectedColor comes from mapStyle — not per-marker; selectedWidth stays in cascade
+        const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'selectedWidth'])
         const styleValues = Object.fromEntries(
           Object.entries(marker).filter(([k]) => !INTERNAL_KEYS.has(k))
         )
-        const resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle.id)
+        const resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
 
         const viewBox = marker.viewBox || defaults.viewBox || symbolDef?.viewBox || '0 0 38 38'
         const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)

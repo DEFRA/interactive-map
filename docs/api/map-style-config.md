@@ -74,3 +74,21 @@ Alt text for the logo image.
 **Type:** `string`
 
 URL to thumbnail image. Used in style switcher UI.
+
+---
+
+### `haloColor`
+**Type:** `string`
+
+Halo colour for symbols rendered on this basemap. Falls back to `#ffffff` when not set. Not overridable at symbol registration or marker level — set per-basemap here.
+
+Typically set to white on light basemaps and dark on dark basemaps to provide contrast against the map background.
+
+---
+
+### `selectedColor`
+**Type:** `string`
+
+Colour used to indicate selected features — applied to the symbol selection ring (by the symbol renderer) and to selected lines and polygons (by the interact plugin).
+
+Not overridable at symbol registration or marker level. Set once per basemap here to keep selection appearance consistent across the whole app.

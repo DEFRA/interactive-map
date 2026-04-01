@@ -1,5 +1,5 @@
 import { getValueForStyle } from '../utils/getValueForStyle.js'
-import { symbolDefaults, pin, circle, square, graphics } from '../config/symbolConfig.js'
+import { symbolDefaults, FALLBACK_SELECTED_COLOR, FALLBACK_HALO_COLOR, pin, circle, square, graphics } from '../config/symbolConfig.js'
 
 const symbols = new Map()
 let _constructorDefaults = {}
@@ -7,11 +7,12 @@ let _constructorDefaults = {}
 // Keys that are structural — not token values for SVG substitution
 const STRUCTURAL = new Set(['id', 'svg', 'viewBox', 'anchor', 'symbol', 'symbolSvgContent'])
 
-// selected/selectedWidth are app-wide concerns — not overridable at symbol registration level.
-// They can only be set in symbolDefaults.js or the constructor symbolDefaults config.
-const REGISTRY_EXCLUDED = new Set([...STRUCTURAL, 'selected', 'selectedWidth'])
+// selectedWidth is app-wide — not overridable at symbol registration level.
+// selectedColor is a map style concern — always injected from mapStyle, never from cascade.
+const REGISTRY_EXCLUDED = new Set([...STRUCTURAL, 'selectedWidth'])
 
-function resolveValues (symbolDef, markerValues, mapStyleId) {
+function resolveValues (symbolDef, markerValues, mapStyle) {
+  const mapStyleId = mapStyle?.id
   const symbolTokens = Object.fromEntries(
     Object.entries(symbolDef || {}).filter(([k]) => !REGISTRY_EXCLUDED.has(k))
   )
@@ -22,6 +23,9 @@ function resolveValues (symbolDef, markerValues, mapStyleId) {
     Object.entries(markerValues).filter(([, v]) => v != null)
   )
   const merged = { ...symbolDefaults, ...constructorTokens, ...symbolTokens, ...defined }
+  // haloColor and selectedColor are map style concerns — always injected from mapStyle, never from the cascade
+  merged.haloColor = mapStyle?.haloColor ?? FALLBACK_HALO_COLOR
+  merged.selectedColor = mapStyle?.selectedColor ?? FALLBACK_SELECTED_COLOR
   if (typeof merged.graphic === 'string' && graphics[merged.graphic]) {
     merged.graphic = graphics[merged.graphic]
   }
@@ -75,29 +79,28 @@ export const symbolRegistry = {
    * The selected ring is always hidden regardless of cascade values.
    *
    * @param {Object} symbolDef - Symbol definition
-   * @param {Object} styleColors - Token overrides (selected and selectedWidth are ignored)
-   * @param {string} mapStyleId - Current map style id
+   * @param {Object} styleColors - Token overrides
+   * @param {Object} mapStyle - Current map style config (provides selectedColor, haloColor)
    * @returns {string} Resolved SVG string
    */
-  resolve (symbolDef, styleColors, mapStyleId) {
-    const colors = resolveValues(symbolDef, styleColors || {}, mapStyleId)
+  resolve (symbolDef, styleColors, mapStyle) {
+    const colors = resolveValues(symbolDef, styleColors || {}, mapStyle)
     if (!symbolDef) { return '' }
-    colors.selected = ''
+    colors.selectedColor = ''
     return resolveLayer(symbolDef.svg, colors)
   },
 
   /**
    * Resolve a symbol's SVG string for selected rendering.
-   * The selected ring colour and width come from the cascade
-   * (symbolDef → constructor symbolDefaults → symbolDefaults.js).
+   * selectedColor comes from mapStyle.selectedColor (or the hardcoded fallback).
    *
    * @param {Object} symbolDef - Symbol definition
-   * @param {Object} styleColors - Token overrides (selected and selectedWidth come from cascade only)
-   * @param {string} mapStyleId - Current map style id
+   * @param {Object} styleColors - Token overrides
+   * @param {Object} mapStyle - Current map style config (provides selectedColor, haloColor)
    * @returns {string} Resolved SVG string
    */
-  resolveSelected (symbolDef, styleColors, mapStyleId) {
-    const colors = resolveValues(symbolDef, styleColors || {}, mapStyleId)
+  resolveSelected (symbolDef, styleColors, mapStyle) {
+    const colors = resolveValues(symbolDef, styleColors || {}, mapStyle)
     if (!symbolDef) { return '' }
     return resolveLayer(symbolDef.svg, colors)
   }

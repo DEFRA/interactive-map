@@ -120,14 +120,14 @@ When `true`, the app closes after the user clicks "Done" or "Cancel".
 ### `marker`
 **Type:** `MarkerOptions`
 
-Appearance of the location marker placed on the map. Accepts the same properties as [`MarkerOptions`](../api/marker-config.md#markeroptions).
+Appearance of the location marker placed on the map. Accepts the same properties as [`MarkerOptions`](../api/marker-config.md#markeroptions). See [Symbol Config](../api/symbol-config.md) for the full property reference.
 
 ```js
 createInteractPlugin({
   marker: {
     symbol: 'pin',
-    background: { outdoor: '#d4351c', dark: '#ff6b6b' },
-    foreground: '#ffffff'
+    backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' },
+    foregroundColor: '#ffffff'
   }
 })
 ```
@@ -154,7 +154,7 @@ Fill color used to highlight selected features. Can be overridden per layer via 
 
 ### `selectedStrokeWidth`
 **Type:** `number`
-**Default:** `2`
+**Default:** `3`
 
 Stroke width used to highlight selected features. Can be overridden per layer via `dataLayers`.
 

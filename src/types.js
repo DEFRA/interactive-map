@@ -321,6 +321,15 @@
  * @property {string} [thumbnail]
  * URL to thumbnail image.
  *
+ * @property {string} [haloColor]
+ * Halo colour for symbols rendered on this basemap. Falls back to `#ffffff` when not set.
+ * Not overridable at symbol registration or marker level — set per-basemap here.
+ *
+ * @property {string} [selectedColor]
+ * Colour used to indicate selected features (symbols, lines, polygons).
+ * Applied by the interact plugin and injected into symbol SVG rendering.
+ * Falls back to `#0b0c0c` when not set. Not overridable at symbol registration or marker level — set per-basemap here.
+ *
  * @property {string} url
  * URL to the style.json (Mapbox Style Specification).
  */
@@ -343,14 +352,11 @@
  * @property {[number, number]} [anchor=[0.5, 0.5]]
  * Default anchor point as a normalised [x, y] pair.
  *
- * @property {string | Record<string, string>} [background='#ca3535']
+ * @property {string | Record<string, string>} [backgroundColor='#ca3535']
  * Default background fill colour.
  *
- * @property {string | Record<string, string>} [foreground='#ffffff']
+ * @property {string | Record<string, string>} [foregroundColor='#ffffff']
  * Default foreground fill colour.
- *
- * @property {string | Record<string, string>} [halo]
- * Default halo stroke colour. Defaults to white on light basemaps, dark on dark basemaps.
  *
  * @property {string} [haloWidth='1']
  * Default halo stroke width in SVG units.
@@ -358,9 +364,6 @@
  * @property {string} [graphic]
  * Default SVG `d` attribute value for the foreground graphic path. Each built-in symbol sets
  * its own default (a small dot). Override to swap the graphic across all markers globally.
- *
- * @property {string | Record<string, string>} [selected]
- * Selection ring colour. App-wide only — ignored at symbol registration and marker creation level.
  *
  * @property {string} [selectedWidth='6']
  * Selection ring stroke width in SVG units. App-wide only — ignored at symbol registration and marker creation level.
@@ -392,7 +395,7 @@
  *
  * @property {string} [symbolSvgContent]
  * Inner SVG path content (no `<svg>` wrapper) to use instead of a registered symbol.
- * Use `{{token}}` placeholders for colours — e.g. `fill="{{background}}"`.
+ * Use `{{token}}` placeholders for colours — e.g. `fill="{{backgroundColor}}"`.
  * When set, `symbol` is ignored.
  *
  * @property {string} [viewBox]
@@ -404,14 +407,11 @@
  * Determines which point on the symbol aligns with the geographic coordinate.
  * Defaults to the registered symbol's anchor, or `[0.5, 0.5]` (centre).
  *
- * @property {string | Record<string, string>} [background]
+ * @property {string | Record<string, string>} [backgroundColor]
  * Background fill colour of the symbol.
  *
- * @property {string | Record<string, string>} [foreground]
+ * @property {string | Record<string, string>} [foregroundColor]
  * Foreground fill colour of the symbol (e.g. the inner dot on a pin).
- *
- * @property {string | Record<string, string>} [halo]
- * Stroke colour of the halo ring. Defaults to white on light basemaps and dark on dark basemaps.
  *
  * @property {string} [haloWidth]
  * Stroke width of the halo in SVG units. Defaults to `'1'`.

@@ -1,7 +1,8 @@
 import { anchorToMaplibre, getSymbolImageId, registerSymbols } from './symbolImages.js'
 import { symbolRegistry } from '../../../../src/services/symbolRegistry.js'
 
-const OUTDOOR = 'outdoor'
+const STYLE_ID = 'test'
+const mapStyle = { id: STYLE_ID }
 
 class MockImageData {
   constructor (width, height) {
@@ -99,59 +100,56 @@ describe('anchorToMaplibre', () => {
 
 describe('getSymbolImageId', () => {
   it('returns null when dataset has no symbol', () => {
-    expect(getSymbolImageId({}, OUTDOOR, symbolRegistry)).toBeNull()
+    expect(getSymbolImageId({}, mapStyle, symbolRegistry)).toBeNull()
   })
 
   it('returns null for an unregistered symbol id', () => {
-    expect(getSymbolImageId({ symbol: 'does-not-exist' }, OUTDOOR, symbolRegistry)).toBeNull()
+    expect(getSymbolImageId({ symbol: 'does-not-exist' }, mapStyle, symbolRegistry)).toBeNull()
   })
 
   it('returns a string prefixed symbol- for normal state', () => {
-    const id = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry)
+    const id = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
     expect(typeof id).toBe('string')
     expect(id).toMatch(/^symbol-[a-z0-9]+$/)
   })
 
   it('returns a string prefixed symbol-sel- for selected state', () => {
-    const id = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry, true)
+    const id = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, true)
     expect(typeof id).toBe('string')
     expect(id).toMatch(/^symbol-sel-[a-z0-9]+$/)
   })
 
   it('normal and selected ids differ for the same dataset', () => {
-    const normalId = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry, false)
-    const selectedId = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry, true)
+    const normalId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, false)
+    const selectedId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, true)
     expect(normalId).not.toBe(selectedId)
   })
 
   it('same dataset and style always produces the same id', () => {
-    const id1 = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry)
-    const id2 = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry)
+    const id1 = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
+    const id2 = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
     expect(id1).toBe(id2)
   })
 
   it('different symbols produce different ids', () => {
-    const pinId = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry)
-    const circleId = getSymbolImageId({ symbol: 'circle' }, OUTDOOR, symbolRegistry)
+    const pinId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
+    const circleId = getSymbolImageId({ symbol: 'circle' }, mapStyle, symbolRegistry)
     expect(pinId).not.toBe(circleId)
   })
 
   it('different backgrounds produce different ids', () => {
-    const redId = getSymbolImageId({ symbol: { id: 'pin', background: '#ff0000' } }, OUTDOOR, symbolRegistry)
-    const blueId = getSymbolImageId({ symbol: { id: 'pin', background: '#0000ff' } }, OUTDOOR, symbolRegistry)
+    const redId = getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#ff0000' }, mapStyle, symbolRegistry)
+    const blueId = getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#0000ff' }, mapStyle, symbolRegistry)
     expect(redId).not.toBe(blueId)
   })
 
   it('resolves inline symbolSvgContent', () => {
     const dataset = {
-      symbol: {
-        id: 'inline',
-        symbolSvgContent: '<circle cx="19" cy="19" r="12" fill="{{background}}"/>',
-        viewBox: '0 0 38 38',
-        anchor: [0.5, 0.5]
-      }
+      symbolSvgContent: '<circle cx="19" cy="19" r="12" fill="{{backgroundColor}}"/>',
+      symbolViewBox: '0 0 38 38',
+      symbolAnchor: [0.5, 0.5]
     }
-    const id = getSymbolImageId(dataset, OUTDOOR, symbolRegistry)
+    const id = getSymbolImageId(dataset, mapStyle, symbolRegistry)
     expect(id).toMatch(/^symbol-[a-z0-9]+$/)
   })
 })
@@ -167,7 +165,7 @@ const makeMap = (existingIds = []) => ({
 describe('registerSymbols', () => {
   it('returns early and does not touch map for empty configs', async () => {
     const map = makeMap()
-    await registerSymbols(map, [], OUTDOOR, symbolRegistry)
+    await registerSymbols(map, [], mapStyle, symbolRegistry)
     expect(map.hasImage).not.toHaveBeenCalled()
     expect(map.addImage).not.toHaveBeenCalled()
   })
@@ -175,13 +173,13 @@ describe('registerSymbols', () => {
   it('resets _symbolImageMap before processing', async () => {
     const map = makeMap()
     map._symbolImageMap = { stale: 'entry' }
-    await registerSymbols(map, [{ symbol: 'pin' }], OUTDOOR, symbolRegistry)
+    await registerSymbols(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
     expect(map._symbolImageMap).not.toHaveProperty('stale')
   })
 
   it('calls addImage for normal and selected variants', async () => {
     const map = makeMap()
-    await registerSymbols(map, [{ symbol: 'pin' }], OUTDOOR, symbolRegistry)
+    await registerSymbols(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
     expect(map.addImage).toHaveBeenCalledTimes(2)
     expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-[a-z0-9]+$/), expect.any(MockImageData), { pixelRatio: 2 })
     expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-sel-[a-z0-9]+$/), expect.any(MockImageData), { pixelRatio: 2 })
@@ -189,17 +187,17 @@ describe('registerSymbols', () => {
 
   it('populates _symbolImageMap with normal → selected id pairs', async () => {
     const map = makeMap()
-    await registerSymbols(map, [{ symbol: 'pin' }], OUTDOOR, symbolRegistry)
-    const normalId = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry, false)
-    const selectedId = getSymbolImageId({ symbol: 'pin' }, OUTDOOR, symbolRegistry, true)
+    await registerSymbols(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
+    const normalId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, false)
+    const selectedId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, true)
     expect(map._symbolImageMap[normalId]).toBe(selectedId)
   })
 
   it('skips addImage when image is already registered', async () => {
-    const normalId = getSymbolImageId({ symbol: 'circle' }, OUTDOOR, symbolRegistry, false)
-    const selectedId = getSymbolImageId({ symbol: 'circle' }, OUTDOOR, symbolRegistry, true)
+    const normalId = getSymbolImageId({ symbol: 'circle' }, mapStyle, symbolRegistry, false)
+    const selectedId = getSymbolImageId({ symbol: 'circle' }, mapStyle, symbolRegistry, true)
     const map = makeMap([normalId, selectedId])
-    await registerSymbols(map, [{ symbol: 'circle' }], OUTDOOR, symbolRegistry)
+    await registerSymbols(map, [{ symbol: 'circle' }], mapStyle, symbolRegistry)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
@@ -215,14 +213,14 @@ describe('registerSymbols', () => {
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(undefined)
     const map = makeMap()
-    await registerSymbols(map, [{ symbol: 'pin' }], OUTDOOR, symbolRegistry)
+    await registerSymbols(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
     expect(map.addImage).not.toHaveBeenCalled()
     getSpy.mockRestore()
   })
 
   it('skips config when symbolDef cannot be resolved', async () => {
     const map = makeMap()
-    await registerSymbols(map, [{ symbol: 'no-such-symbol' }], OUTDOOR, symbolRegistry)
+    await registerSymbols(map, [{ symbol: 'no-such-symbol' }], mapStyle, symbolRegistry)
     expect(map.addImage).not.toHaveBeenCalled()
     expect(map._symbolImageMap).toEqual({})
   })
@@ -236,10 +234,10 @@ describe('registerSymbols', () => {
     }
     try {
       // Register a custom symbol with unique SVG so the module-level cache is bypassed
-      const uniqueSvg = '<path d="M0 0 unique-onerror-symbol" fill="{{background}}"/>'
+      const uniqueSvg = '<path d="M0 0 unique-onerror-symbol" fill="{{backgroundColor}}"/>'
       symbolRegistry.register({ id: 'onerror-test', viewBox: '0 0 38 38', anchor: [0.5, 0.5], svg: uniqueSvg })
       const map = makeMap()
-      await expect(registerSymbols(map, [{ symbol: 'onerror-test' }], OUTDOOR, symbolRegistry))
+      await expect(registerSymbols(map, [{ symbol: 'onerror-test' }], mapStyle, symbolRegistry))
         .rejects.toThrow('Failed to rasterise symbol SVG')
     } finally {
       global.Image = originalImage
@@ -248,7 +246,7 @@ describe('registerSymbols', () => {
 
   it('processes multiple configs independently', async () => {
     const map = makeMap()
-    await registerSymbols(map, [{ symbol: 'pin' }, { symbol: 'circle' }], OUTDOOR, symbolRegistry)
+    await registerSymbols(map, [{ symbol: 'pin' }, { symbol: 'circle' }], mapStyle, symbolRegistry)
     expect(map.addImage).toHaveBeenCalledTimes(4)
     expect(Object.keys(map._symbolImageMap)).toHaveLength(2)
   })

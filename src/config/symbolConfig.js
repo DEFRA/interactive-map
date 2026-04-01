@@ -4,12 +4,15 @@
  * Colour values may be a plain string or a map-style-keyed object,
  * e.g. { outdoor: '#ffffff', dark: '#0b0c0c' }
  */
+// Fallback values used when no map style provides these properties.
+// Both are map style concerns — set them on MapStyleConfig, not symbolDefaults.
+export const FALLBACK_SELECTED_COLOR = '#0b0c0c'
+export const FALLBACK_HALO_COLOR = '#ffffff'
+
 export const symbolDefaults = {
   symbol: 'pin',
-  selected: '#0b0c0c',
-  halo: '#ffffff',
-  background: '#ca3535',
-  foreground: '#ffff',
+  backgroundColor: '#ca3535',
+  foregroundColor: '#ffffff',
   haloWidth: '1',
   selectedWidth: '6'
 }
@@ -56,9 +59,9 @@ export const pin = {
   viewBox: '0 0 38 38',
   anchor: [0.5, 0.9], // NOSONAR
   graphic: graphics.dot,
-  svg: `<path d="M19 33.499c-5.318-5-12-9.509-12-16.998 0-6.583 5.417-12 12-12s12 5.417 12 12c0 7.489-6.682 11.998-12 16.998z" fill="none" stroke="{{selected}}" stroke-width="{{selectedWidth}}"/>
-  <path d="M19 33.499c-5.318-5-12-9.509-12-16.998 0-6.583 5.417-12 12-12s12 5.417 12 12c0 7.489-6.682 11.998-12 16.998z" fill="{{background}}" stroke="{{halo}}" stroke-width="{{haloWidth}}"/>
-  <g transform="translate(19, 16) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foreground}}"/></g>`
+  svg: `<path d="M19 33.499c-5.318-5-12-9.509-12-16.998 0-6.583 5.417-12 12-12s12 5.417 12 12c0 7.489-6.682 11.998-12 16.998z" fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
+  <path d="M19 33.499c-5.318-5-12-9.509-12-16.998 0-6.583 5.417-12 12-12s12 5.417 12 12c0 7.489-6.682 11.998-12 16.998z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
+  <g transform="translate(19, 16) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
 }
 
 export const circle = {
@@ -66,9 +69,9 @@ export const circle = {
   viewBox: '0 0 38 38',
   anchor: [0.5, 0.5],
   graphic: graphics.dot,
-  svg: `<path d="M19 7C12.376 7 7 12.376 7 19s5.376 12 12 12a12.01 12.01 0 0 0 12-12A12.01 12.01 0 0 0 19 7z" fill="none" stroke="{{selected}}" stroke-width="{{selectedWidth}}"/>
-  <path d="M19 7C12.376 7 7 12.376 7 19s5.376 12 12 12a12.01 12.01 0 0 0 12-12A12.01 12.01 0 0 0 19 7z" fill="{{background}}" stroke="{{halo}}" stroke-width="{{haloWidth}}"/>
-  <g transform="translate(19, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foreground}}"/></g>`
+  svg: `<path d="M19 7C12.376 7 7 12.376 7 19s5.376 12 12 12a12.01 12.01 0 0 0 12-12A12.01 12.01 0 0 0 19 7z" fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
+  <path d="M19 7C12.376 7 7 12.376 7 19s5.376 12 12 12a12.01 12.01 0 0 0 12-12A12.01 12.01 0 0 0 19 7z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
+  <g transform="translate(19, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
 }
 
 export const square = {
@@ -76,7 +79,7 @@ export const square = {
   viewBox: '0 0 38 38',
   anchor: [0.5, 0.5],
   graphic: graphics.dot,
-  svg: `<path d="M28 7a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3h18z" fill="none" stroke="{{selected}}" stroke-width="{{selectedWidth}}"/>
-  <path d="M28 7a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3h18z" fill="{{background}}" stroke="{{halo}}" stroke-width="{{haloWidth}}"/>
-  <g transform="translate(19, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foreground}}"/></g>`
+  svg: `<path d="M28 7a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3h18z" fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
+  <path d="M28 7a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3h18z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
+  <g transform="translate(19, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
 }

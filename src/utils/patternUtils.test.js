@@ -9,7 +9,7 @@ import {
 } from './patternUtils.js'
 
 const mockRegistry = {
-  get: (id) => id === 'dot' ? { id: 'dot', svgContent: '<path d="M4 4" fill="{{foreground}}"/>' } : undefined
+  get: (id) => id === 'dot' ? { id: 'dot', svgContent: '<path d="M4 4" fill="{{foregroundColor}}"/>' } : undefined
 }
 
 describe('hashString', () => {
@@ -28,22 +28,22 @@ describe('hashString', () => {
 })
 
 describe('injectColors', () => {
-  test('replaces {{foreground}} and {{background}} tokens', () => {
-    const result = injectColors('fill="{{foreground}}" bg="{{background}}"', 'red', 'blue')
+  test('replaces {{foregroundColor}} and {{backgroundColor}} tokens', () => {
+    const result = injectColors('fill="{{foregroundColor}}" bg="{{backgroundColor}}"', 'red', 'blue')
     expect(result).toBe('fill="red" bg="blue"')
   })
 
   test('replaces all occurrences', () => {
-    const result = injectColors('{{foreground}} {{foreground}}', 'red', 'blue')
+    const result = injectColors('{{foregroundColor}} {{foregroundColor}}', 'red', 'blue')
     expect(result).toBe('red red')
   })
 
-  test('uses fallback "black" when foreground is falsy', () => {
-    expect(injectColors('{{foreground}}', '', 'blue')).toBe('black')
+  test('uses fallback "black" when foregroundColor is falsy', () => {
+    expect(injectColors('{{foregroundColor}}', '', 'blue')).toBe('black')
   })
 
-  test('uses fallback "transparent" when background is falsy', () => {
-    expect(injectColors('{{background}}', 'red', '')).toBe('transparent')
+  test('uses fallback "transparent" when backgroundColor is falsy', () => {
+    expect(injectColors('{{backgroundColor}}', 'red', '')).toBe('transparent')
   })
 })
 
@@ -70,7 +70,7 @@ describe('getPatternInnerContent', () => {
 
   test('returns svgContent from registry for a named fillPattern', () => {
     const dataset = { fillPattern: 'dot' }
-    expect(getPatternInnerContent(dataset, mockRegistry)).toBe('<path d="M4 4" fill="{{foreground}}"/>')
+    expect(getPatternInnerContent(dataset, mockRegistry)).toBe('<path d="M4 4" fill="{{foregroundColor}}"/>')
   })
 
   test('returns null for an unregistered fillPattern name', () => {
@@ -127,8 +127,8 @@ describe('getKeyPatternPaths', () => {
     expect(result.border).toContain('black') // stroke colour
     expect(result.border).toContain('white') // background colour
     expect(result.content).toContain('red') // foreground colour
-    expect(result.border).not.toContain('{{foreground}}')
-    expect(result.content).not.toContain('{{foreground}}')
+    expect(result.border).not.toContain('{{foregroundColor}}')
+    expect(result.content).not.toContain('{{foregroundColor}}')
   })
 
   test('returns null when no pattern content is found', () => {
@@ -153,8 +153,8 @@ describe('getKeyPatternPaths', () => {
     expect(result.border).toContain('green')
   })
 
-  test('KEY_BORDER_PATH contains foreground and background tokens', () => {
-    expect(KEY_BORDER_PATH).toContain('{{foreground}}')
-    expect(KEY_BORDER_PATH).toContain('{{background}}')
+  test('KEY_BORDER_PATH contains foregroundColor and backgroundColor tokens', () => {
+    expect(KEY_BORDER_PATH).toContain('{{foregroundColor}}')
+    expect(KEY_BORDER_PATH).toContain('{{backgroundColor}}')
   })
 })

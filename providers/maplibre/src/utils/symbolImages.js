@@ -48,18 +48,18 @@ export const anchorToMaplibre = ([ax, ay]) => {
  * Based on the hash of the fully resolved SVG content.
  *
  * @param {Object} dataset
- * @param {string} mapStyleId
+ * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} symbolRegistry
  * @param {boolean} [selected=false]
  * @returns {string|null}
  */
-export const getSymbolImageId = (dataset, mapStyleId, symbolRegistry, selected = false) => {
+export const getSymbolImageId = (dataset, mapStyle, symbolRegistry, selected = false) => {
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
   if (!symbolDef) { return null }
   const styleColors = getSymbolStyleColors(dataset)
   const resolved = selected
-    ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyleId)
-    : symbolRegistry.resolve(symbolDef, styleColors, mapStyleId)
+    ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
+    : symbolRegistry.resolve(symbolDef, styleColors, mapStyle)
   return `symbol-${selected ? 'sel-' : ''}${hashString(resolved)}`
 }
 
@@ -89,13 +89,13 @@ const rasteriseToImageData = (svgString, width, height) =>
     img.src = url
   })
 
-const rasteriseSymbolImage = async (dataset, mapStyleId, symbolRegistry, selected) => {
+const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected) => {
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
   if (!symbolDef) { return null }
   const styleColors = getSymbolStyleColors(dataset)
   const resolvedContent = selected
-    ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyleId)
-    : symbolRegistry.resolve(symbolDef, styleColors, mapStyleId)
+    ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
+    : symbolRegistry.resolve(symbolDef, styleColors, mapStyle)
 
   const imageId = `symbol-${selected ? 'sel-' : ''}${hashString(resolvedContent)}`
 
@@ -123,26 +123,26 @@ const rasteriseSymbolImage = async (dataset, mapStyleId, symbolRegistry, selecte
  *
  * @param {Object} map - MapLibre map instance
  * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers that have a symbol config
- * @param {string} mapStyleId
+ * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} symbolRegistry
  * @returns {Promise<void>}
  */
-export const registerSymbols = async (map, symbolConfigs, mapStyleId, symbolRegistry) => {
+export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegistry) => {
   if (!symbolConfigs.length) { return }
 
   // Reset the normal→selected image ID lookup so stale entries don't persist after a style change
   map._symbolImageMap = {}
 
   await Promise.all(symbolConfigs.flatMap(config => {
-    const normalId = getSymbolImageId(config, mapStyleId, symbolRegistry, false)
-    const selectedId = getSymbolImageId(config, mapStyleId, symbolRegistry, true)
+    const normalId = getSymbolImageId(config, mapStyle, symbolRegistry, false)
+    const selectedId = getSymbolImageId(config, mapStyle, symbolRegistry, true)
     if (normalId && selectedId) {
       map._symbolImageMap[normalId] = selectedId
     }
     return [false, true].map(async (selected) => {
       const imageId = selected ? selectedId : normalId
       if (!imageId || map.hasImage(imageId)) { return }
-      const result = await rasteriseSymbolImage(config, mapStyleId, symbolRegistry, selected)
+      const result = await rasteriseSymbolImage(config, mapStyle, symbolRegistry, selected)
       if (result) {
         map.addImage(result.imageId, result.imageData, { pixelRatio: 2 })
       }

@@ -276,24 +276,20 @@ See [MarkerConfig](./api/marker-config.md) for full details.
 ### `symbolDefaults`
 **Type:** `Partial<SymbolDefaults>`
 
-App-wide defaults for symbol and marker appearance, applied at every level below the hardcoded defaults in `symbolDefaults.js`. Each property is optional — unset values fall through to the hardcoded fallback.
+App-wide defaults for symbol and marker appearance. Each property is optional — unset values fall through to the hardcoded fallback. Values set here are overridden by anything set at symbol registration or per-marker level.
 
 ```js
 new InteractiveMap('map', {
   symbolDefaults: {
     symbol: 'circle',
-    background: { outdoor: '#1d70b8', dark: '#4c9ed9' },
-    halo: { outdoor: '#ffffff', dark: '#0b0c0c' },
-    selected: { outdoor: '#ffdd00', dark: '#ffaa00' }
+    backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+    haloColor: { outdoor: '#ffffff', dark: '#0b0c0c' },
+    selectedColor: { outdoor: '#ffdd00', dark: '#ffaa00' }
   }
 })
 ```
 
-See [SymbolDefaults](./api/symbol-registry.md#symboldefaults) for the full property list.
-
-The cascade for all token values is:
-
-`symbolDefaults.js` → constructor `symbolDefaults` → symbol registration → marker creation
+See [Symbol Config](./api/symbol-config.md) for the full property list and how values are resolved.
 
 ---
 
@@ -489,7 +485,7 @@ Add a marker to the map.
 | `options` | [`MarkerOptions`](./api/marker-config.md#markeroptions) | Optional marker appearance options |
 
 ```js
-interactiveMap.addMarker('home', [-0.1276, 51.5074], { background: '#1d70b8' })
+interactiveMap.addMarker('home', [-0.1276, 51.5074], { backgroundColor: '#1d70b8' })
 ```
 
 ---

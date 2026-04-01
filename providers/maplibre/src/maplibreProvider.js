@@ -292,12 +292,12 @@ export default class MapLibreProvider {
    *
    * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers with a symbol config.
    *   Callers are responsible for sublayer merging before passing configs here.
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
    * @param {Object} symbolRegistry
    * @returns {Promise<void>}
    */
-  async registerSymbols (symbolConfigs, mapStyleId, symbolRegistry) {
-    return registerSymbols(this.map, symbolConfigs, mapStyleId, symbolRegistry)
+  async registerSymbols (symbolConfigs, mapStyle, symbolRegistry) {
+    return registerSymbols(this.map, symbolConfigs, mapStyle, symbolRegistry)
   }
 
   /**

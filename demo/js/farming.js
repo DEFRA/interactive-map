@@ -61,42 +61,7 @@ var datasetsPlugin = createDatasetsPlugin({
 			fillPatternBackgroundColor: 'transparent',
 			opacity: 0.5
 		}
-	},
-	// {
-	// 	id: 'linked-parcels',
-	// 	label: 'Existing fields',
-	// 	filter: [
-	// 		'all',
-	// 		['==', ['get', 'sbi'], '106223377'],
-	// 		['==', ['get', 'is_dominant_land_cover'], true]
-	// 	],
-	// 	tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-	// 	sourceLayer: 'field_parcels_filtered',
-	// 	stroke: '#0000ff',
-	// 	strokeWidth: 2,
-	// 	fill: 'rgba(0,0,255,0.1)',
-	// 	symbolDescription: { outdoor: 'blue outline' },
-	// 	minZoom: 10,
-	// 	maxZoom: 24,
-	// 	showInKey: true,
-	// 	toggleVisibility: true
-	// },
-	// {
-	// 	id: 'hedge-control',
-	// 	label: 'Hedge control',
-	// 	tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-	// 	sourceLayer: 'hedge_control',
-	// 	stroke: '#b58840',
-	// 	fill: 'transparent',
-	// 	strokeWidth: 4,
-	// 	symbolDescription: { outdoor: 'blue outline' },
-	// 	minZoom: 10,
-	// 	maxZoom: 24,
-	// 	showInKey: true,
-	// 	toggleVisibility: true,
-	// 	visibility: 'hidden',
-	// 	keySymbolShape: 'line'
-	// }
+	}
 ]})
 
 var drawPlugin = createDrawPlugin()
@@ -128,6 +93,7 @@ var interactiveMap = new InteractiveMap('map', {
 	// enableFullscreen: true,
 	enableZoomControls: true,
 	hasExitButton: true,
+	preserveStateOnClose: true,
 	// markers: [{
 	// 	id: 'location',
 	// 	coords: [-2.9592267, 54.9045977],

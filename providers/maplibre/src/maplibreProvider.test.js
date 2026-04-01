@@ -228,9 +228,10 @@ describe('MapLibreProvider', () => {
     const p = makeProvider()
     await doInitMap(p)
     const configs = [{ symbol: 'pin' }]
+    const mapStyle = { id: 'test', selectedColor: '#0b0c0c' }
     const registry = {}
-    await p.registerSymbols(configs, 'outdoor', registry)
-    expect(registerSymbols).toHaveBeenCalledWith(map, configs, 'outdoor', registry)
+    await p.registerSymbols(configs, mapStyle, registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, configs, mapStyle, registry)
   })
 
   test('registerPatterns delegates to utility with map instance', async () => {
@@ -238,8 +239,8 @@ describe('MapLibreProvider', () => {
     await doInitMap(p)
     const configs = [{ fillPattern: 'dot' }]
     const registry = {}
-    await p.registerPatterns(configs, 'outdoor', registry)
-    expect(registerPatterns).toHaveBeenCalledWith(map, configs, 'outdoor', registry)
+    await p.registerPatterns(configs, 'test', registry)
+    expect(registerPatterns).toHaveBeenCalledWith(map, configs, 'test', registry)
   })
 
   test('label methods return null without labelNavigator; delegate when set', async () => {

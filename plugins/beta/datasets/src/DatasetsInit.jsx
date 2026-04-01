@@ -49,7 +49,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         adapter,
         pluginConfig,
         pluginStateRef,
-        mapStyleId: mapState.mapStyle.id,
+        mapStyle: mapState.mapStyle,
         mapProvider,
         events: EVENTS,
         eventBus

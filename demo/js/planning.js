@@ -33,9 +33,8 @@ let feature
 const interactPlugin = createInteractPlugin({
 	marker: {
 		symbol: 'pin',
-		halo: { outdoor: '#ffff', dark: '#0b0c0c' },
-		background: { outdoor: '#0b0c0c', dark: '#ffffff' },
-		foreground: { outdoor: '#ffff', dark: '#0b0c0c' }
+		backgroundColor: { outdoor: '#0b0c0c', dark: '#ffffff' },
+		foregroundColor: { outdoor: '#ffff', dark: '#0b0c0c' }
 	},
 	// interactionMode: 'marker', // 'auto', 'select', 'marker' // defaults to 'marker'
 	// multiSelect: true

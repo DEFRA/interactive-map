@@ -11,7 +11,7 @@ export const createDatasets = ({
   adapter,
   pluginConfig,
   pluginStateRef,
-  mapStyleId,
+  mapStyle,
   mapProvider,
   events,
   eventBus
@@ -25,7 +25,7 @@ export const createDatasets = ({
 
   // Initialise all datasets via the adapter, then set up dynamic sources
   const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))
-  adapter.init(processedDatasets, mapStyleId).then(() => {
+  adapter.init(processedDatasets, mapStyle).then(() => {
     processedDatasets.forEach(dataset => {
       if (!isDynamicSource(dataset)) {
         return
@@ -44,7 +44,7 @@ export const createDatasets = ({
 
   // Handle basemap style changes — delegate entirely to the adapter
   const onSetStyle = (e) => {
-    adapter.onStyleChange(getDatasets(), e.id, getHiddenFeatures(), dynamicSources)
+    adapter.onStyleChange(getDatasets(), e, getHiddenFeatures(), dynamicSources)
   }
 
   eventBus.on(events.MAP_SET_STYLE, onSetStyle)

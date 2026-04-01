@@ -88,21 +88,6 @@ const datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		toggleVisibility: true,
-		// visibility: 'hidden',
-		// style: {
-		// 	stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-		// 	strokeWidth: 2,
-		// 	symbol: '',
-		// 	symbolSvgContent: '',
-		// 	symbolForegroundColor: '',
-		// 	symbolBackgroundColor: '',
-		// 	symbolDescription: { outdoor: 'blue outline' },
-		// 	symbolOffset: [],
-		// 	fill: 'rgba(0,0,255,0.1)',
-		// 	fillPattern: 'diagonal-cross-hatch',
-		// 	fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		// 	fillPatternBackgroundColor: 'transparent'
-		// },
 		sublayers: [{
 			id: '130',
 			label: 'Permanent grassland',
@@ -166,7 +151,9 @@ const datasetsPlugin = createDatasetsPlugin({
 		toggleVisibility: true,
 		style: {
 			symbol: 'square',
-			graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
+			symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
+			symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
+			symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
 		}
 	},{
 		id: 'hedge-control',
@@ -227,9 +214,9 @@ const interactiveMap = new InteractiveMap('map', {
 	},
 	// symbolDefaults: {
 	// 	symbol: 'circle',
-	// 	background: { outdoor: '#1d70b8', dark: '#4c9ed9' },
-	// 	halo: { outdoor: '#ffffff', dark: '#0b0c0c' },
-	// 	selected: { outdoor: '#ffdd00', dark: '#ffaa00' }
+	// 	backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+	// 	haloColor: { outdoor: '#ffffff', dark: '#0b0c0c' },
+	// 	selectedColor: { outdoor: '#ffdd00', dark: '#ffaa00' }
 	// },
 	plugins: [
 		datasetsPlugin,

@@ -9,8 +9,8 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
   }
 
   dataLayers.forEach(layer => {
-    const stroke = layer.selectedStroke || DEFAULTS.selectedStroke
-    const fill = layer.selectedFill || DEFAULTS.selectedFill
+    const stroke = layer.selectedStroke || mapStyle.selectedColor || DEFAULTS.selectedColor
+    const fill = layer.selectedFill || 'transparent'
     const strokeWidth = layer.selectedStrokeWidth || DEFAULTS.selectedStrokeWidth
 
     stylesMap[layer.layerId] = {

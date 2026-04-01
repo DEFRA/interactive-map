@@ -20,7 +20,7 @@ describe('initialState', () => {
 describe('ENABLE/DISABLE actions', () => {
   it('ENABLE sets enabled and merges payload', () => {
     const state = { ...initialState, enabled: false }
-    const marker = { symbol: 'pin', background: 'red' }
+    const marker = { symbol: 'pin', backgroundColor: 'red' }
     const payload = { dataLayers: [1], marker }
     const result = actions.ENABLE(state, payload)
 
@@ -31,7 +31,7 @@ describe('ENABLE/DISABLE actions', () => {
   })
 
   it('DISABLE sets enabled to false, clears selection, and preserves other state', () => {
-    const marker = { symbol: 'pin', background: 'red' }
+    const marker = { symbol: 'pin', backgroundColor: 'red' }
     const state = { ...initialState, enabled: true, dataLayers: [1], marker, selectedFeatures: [{ featureId: 'f1' }], selectionBounds: [0, 0, 1, 1] }
     const result = actions.DISABLE(state)
 

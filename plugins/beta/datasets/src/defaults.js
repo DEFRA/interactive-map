@@ -16,12 +16,14 @@ const datasetDefaults = {
 const STYLE_PROPS = [
   'stroke', 'strokeWidth', 'strokeDashArray',
   'fill', 'fillPattern', 'fillPatternSvgContent', 'fillPatternForegroundColor', 'fillPatternBackgroundColor',
-  'opacity', 'symbolDescription', 'keySymbolShape', 'symbol', 'graphic'
+  'opacity', 'symbolDescription', 'keySymbolShape',
+  'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor',
+  'symbolBackgroundColor', 'symbolForegroundColor', 'symbolHaloWidth', 'symbolGraphic'
 ]
 
 // Props whose presence in a style object indicates a custom visual style.
 // When any are set, the default symbolDescription is not appropriate.
-const VISUAL_STYLE_PROPS = ['stroke', 'fill', 'fillPattern', 'fillPatternSvgContent', 'symbol']
+const VISUAL_STYLE_PROPS = ['stroke', 'fill', 'fillPattern', 'fillPatternSvgContent', 'symbol', 'symbolSvgContent']
 
 const hasCustomVisualStyle = (style) =>
   VISUAL_STYLE_PROPS.some(prop => prop in style)

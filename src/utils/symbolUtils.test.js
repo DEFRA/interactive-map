@@ -17,8 +17,8 @@ describe('hasSymbol', () => {
     expect(hasSymbol({ symbol: 'pin' })).toBe(true)
   })
 
-  it('returns true when dataset has an object-form symbol', () => {
-    expect(hasSymbol({ symbol: { id: 'pin' } })).toBe(true)
+  it('returns true when dataset has symbolSvgContent', () => {
+    expect(hasSymbol({ symbolSvgContent: '<circle/>' })).toBe(true)
   })
 
   it('returns false when symbol is absent', () => {
@@ -47,21 +47,17 @@ describe('getSymbolDef', () => {
     expect(getSymbolDef({ symbol: 'missing' }, mockRegistry())).toBeUndefined()
   })
 
-  it('returns inline def from symbolSvgContent with svg key added', () => {
-    const symbol = { symbolSvgContent: '<circle/>', viewBox: '0 0 10 10', anchor: [0.5, 0.5] }
-    const result = getSymbolDef({ symbol }, mockRegistry())
+  it('returns inline def from symbolSvgContent with svg key', () => {
+    const dataset = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 10 10' }
+    const result = getSymbolDef(dataset, mockRegistry())
     expect(result.svg).toBe('<circle/>')
-    expect(result.viewBox).toBe('0 0 10 10')
   })
 
-  it('looks up object-form symbol by id', () => {
-    const circleDef = { id: 'circle', svg: '<circle/>' }
-    const registry = mockRegistry({ circle: circleDef })
-    expect(getSymbolDef({ symbol: { id: 'circle' } }, registry)).toBe(circleDef)
-  })
-
-  it('returns undefined for object-form symbol with neither symbolSvgContent nor id', () => {
-    expect(getSymbolDef({ symbol: { viewBox: '0 0 10 10' } }, mockRegistry())).toBeUndefined()
+  it('symbolSvgContent takes precedence over symbol id', () => {
+    const pinDef = { id: 'pin', svg: '<g/>' }
+    const registry = mockRegistry({ pin: pinDef })
+    const result = getSymbolDef({ symbol: 'pin', symbolSvgContent: '<circle/>' }, registry)
+    expect(result.svg).toBe('<circle/>')
   })
 })
 
@@ -72,49 +68,60 @@ describe('getSymbolStyleColors', () => {
     expect(getSymbolStyleColors({})).toEqual({})
   })
 
-  it('returns empty object for string symbol with no top-level tokens', () => {
+  it('returns empty object for string symbol with no token props', () => {
     expect(getSymbolStyleColors({ symbol: 'pin' })).toEqual({})
   })
 
-  it('extracts top-level graphic token for string symbol', () => {
-    expect(getSymbolStyleColors({ symbol: 'pin', graphic: 'cross' })).toEqual({ graphic: 'cross' })
+  it('strips symbol prefix from token props', () => {
+    const dataset = {
+      symbol: 'pin',
+      symbolBackgroundColor: '#ff0000',
+      symbolForegroundColor: '#ffffff',
+      symbolHaloWidth: '2',
+      symbolGraphic: 'cross'
+    }
+    expect(getSymbolStyleColors(dataset)).toEqual({
+      backgroundColor: '#ff0000',
+      foregroundColor: '#ffffff',
+      haloWidth: '2',
+      graphic: 'cross'
+    })
   })
 
-  it('excludes structural keys from object-form symbol', () => {
-    const symbol = { id: 'pin', symbolSvgContent: '<g/>', viewBox: '0 0 38 38', anchor: [0.5, 0.5] }
-    expect(getSymbolStyleColors({ symbol })).toEqual({})
+  it('works with symbolSvgContent instead of symbol id', () => {
+    const dataset = { symbolSvgContent: '<circle/>', symbolBackgroundColor: '#0000ff' }
+    expect(getSymbolStyleColors(dataset)).toEqual({ backgroundColor: '#0000ff' })
   })
 
-  it('extracts token overrides from object-form symbol', () => {
-    const symbol = { id: 'pin', background: '#ff0000', foreground: '#ffffff' }
-    const result = getSymbolStyleColors({ symbol })
-    expect(result.background).toBe('#ff0000')
-    expect(result.foreground).toBe('#ffffff')
-    expect(result).not.toHaveProperty('id')
+  it('omits token props that are null or undefined', () => {
+    const dataset = { symbol: 'pin', symbolBackgroundColor: '#ff0000', symbolForegroundColor: null }
+    const result = getSymbolStyleColors(dataset)
+    expect(result).toEqual({ backgroundColor: '#ff0000' })
+    expect(result).not.toHaveProperty('foregroundColor')
   })
 
-  it('merges top-level graphic with object-form symbol tokens', () => {
-    const symbol = { id: 'pin', background: '#ff0000' }
-    expect(getSymbolStyleColors({ symbol, graphic: 'dot' })).toEqual({ background: '#ff0000', graphic: 'dot' })
+  it('supports style-keyed colour objects', () => {
+    const dataset = {
+      symbol: 'pin',
+      symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#5694ca' }
+    }
+    expect(getSymbolStyleColors(dataset)).toEqual({
+      backgroundColor: { outdoor: '#1d70b8', dark: '#5694ca' }
+    })
   })
 })
 
 // ─── getSymbolViewBox ─────────────────────────────────────────────────────────
 
 describe('getSymbolViewBox', () => {
-  it('returns viewBox from object-form symbol config', () => {
-    const dataset = { symbol: { id: 'custom', viewBox: '0 0 24 24' } }
+  it('returns symbolViewBox from dataset', () => {
+    const dataset = { symbol: 'custom', symbolViewBox: '0 0 24 24' }
     expect(getSymbolViewBox(dataset, undefined)).toBe('0 0 24 24')
   })
 
-  it('falls back to symbolDef viewBox when symbol is a string', () => {
+  it('falls back to symbolDef viewBox', () => {
     const symbolDef = { id: 'pin', viewBox: '0 0 38 38' }
     expect(getSymbolViewBox({ symbol: 'pin' }, symbolDef)).toBe('0 0 38 38')
-  })
-
-  it('falls back to symbolDef viewBox when object-form symbol has no viewBox', () => {
-    const symbolDef = { id: 'pin', viewBox: '0 0 38 38' }
-    expect(getSymbolViewBox({ symbol: { id: 'pin' } }, symbolDef)).toBe('0 0 38 38')
   })
 
   it('returns default viewBox when neither source has one', () => {
@@ -129,19 +136,14 @@ describe('getSymbolViewBox', () => {
 // ─── getSymbolAnchor ──────────────────────────────────────────────────────────
 
 describe('getSymbolAnchor', () => {
-  it('returns anchor from object-form symbol config', () => {
-    const dataset = { symbol: { id: 'custom', anchor: [0.5, 0.9] } }
+  it('returns symbolAnchor from dataset', () => {
+    const dataset = { symbol: 'custom', symbolAnchor: [0.5, 0.9] }
     expect(getSymbolAnchor(dataset, undefined)).toEqual([0.5, 0.9])
   })
 
-  it('falls back to symbolDef anchor when symbol is a string', () => {
+  it('falls back to symbolDef anchor', () => {
     const symbolDef = { id: 'pin', anchor: [0.5, 0.9] }
     expect(getSymbolAnchor({ symbol: 'pin' }, symbolDef)).toEqual([0.5, 0.9])
-  })
-
-  it('falls back to symbolDef anchor when object-form symbol has no anchor', () => {
-    const symbolDef = { anchor: [0.5, 0.5] }
-    expect(getSymbolAnchor({ symbol: { id: 'pin' } }, symbolDef)).toEqual([0.5, 0.5])
   })
 
   it('returns default [0.5, 0.5] when neither source has an anchor', () => {

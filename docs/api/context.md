@@ -141,10 +141,10 @@ See [Symbol Registry](./symbol-registry.md) for full documentation.
 Registry of named fill pattern definitions. Built-in patterns (`'dot'`, `'cross-hatch'`, `'diamond'`, etc.) are pre-registered. Use this to register custom named patterns that can be shared across plugins.
 
 ```js
-context.services.patternRegistry.register('my-hatch', '<path d="M0 0L16 16" stroke="{{foreground}}"/>')
+context.services.patternRegistry.register('my-hatch', '<path d="M0 0L16 16" stroke="{{foregroundColor}}"/>')
 ```
 
-Patterns authored in a 16×16 coordinate space. Use `{{foreground}}` and `{{background}}` tokens for colour injection.
+Patterns authored in a 16×16 coordinate space. Use `{{foregroundColor}}` and `{{backgroundColor}}` tokens for colour injection.
 
 ---
 

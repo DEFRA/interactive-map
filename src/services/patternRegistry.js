@@ -8,7 +8,7 @@ export const patternRegistry = {
    *
    * @param {string} id - Unique pattern name (e.g. 'my-hatch')
    * @param {string} svgContent - Inner SVG path content in a 16×16 coordinate space.
-   *   Use {{foreground}} and {{background}} tokens for colour injection.
+   *   Use {{foregroundColor}} and {{backgroundColor}} tokens for colour injection.
    */
   register (id, svgContent) {
     patterns.set(id, { id, svgContent })
