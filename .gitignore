@@ -24,6 +24,7 @@ nbproject/*
 .vscode
 .env
 .claude
+.claude.zip
 # Windows
 Thumbs.db
 
