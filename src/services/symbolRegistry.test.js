@@ -95,13 +95,13 @@ describe('symbolRegistry — resolve', () => {
   })
 
   it('resolves style-keyed halo color for outdoor', () => {
-    const resolved = symbolRegistry.resolve(symbolDef, {}, OUTDOOR)
-    expect(resolved).toContain(`stroke="${symbolDefaults.halo.outdoor}"`)
+    const resolved = symbolRegistry.resolve(symbolDef, { halo: { outdoor: '#aabbcc', dark: '#112233' } }, OUTDOOR)
+    expect(resolved).toContain('stroke="#aabbcc"')
   })
 
   it('resolves style-keyed halo color for dark', () => {
-    const resolved = symbolRegistry.resolve(symbolDef, {}, 'dark')
-    expect(resolved).toContain(`stroke="${symbolDefaults.halo.dark}"`)
+    const resolved = symbolRegistry.resolve(symbolDef, { halo: { outdoor: '#aabbcc', dark: '#112233' } }, 'dark')
+    expect(resolved).toContain('stroke="#112233"')
   })
 
   it('overrides default background with a plain string', () => {
