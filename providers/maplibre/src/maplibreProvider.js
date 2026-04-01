@@ -11,6 +11,7 @@ import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, isGeometryObscu
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
+import { registerSymbols } from './utils/symbolImages.js'
 
 /**
  * MapLibre GL JS implementation of the MapProvider interface.
@@ -281,6 +282,21 @@ export default class MapLibreProvider {
    */
   getFeaturesAtPoint (point, options) {
     return queryFeatures(this.map, point, options)
+  }
+
+  /**
+   * Rasterise and register symbol images for the given pre-resolved symbol configs.
+   * Delegates to the shared symbol image utility so any plugin's MapLibre adapter can
+   * register symbols without importing provider internals directly.
+   *
+   * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers with a symbol config.
+   *   Callers are responsible for sublayer merging before passing configs here.
+   * @param {string} mapStyleId
+   * @param {Object} symbolRegistry
+   * @returns {Promise<void>}
+   */
+  async registerSymbols (symbolConfigs, mapStyleId, symbolRegistry) {
+    return registerSymbols(this.map, symbolConfigs, mapStyleId, symbolRegistry)
   }
 
   // ==========================

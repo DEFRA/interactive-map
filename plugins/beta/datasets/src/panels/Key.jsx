@@ -2,8 +2,7 @@ import React from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 import { hasPattern, getKeyPatternPaths } from '../styles/patterns.js'
 import { mergeSublayer } from '../utils/mergeSublayer.js'
-import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../adapters/maplibre/symbolImages.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/symbols/symbolUtils.js'
 
 const SVG_SIZE = 20
 const SVG_SYMBOL_SIZE = 38
@@ -35,8 +34,9 @@ const buildKeyGroups = (datasets) => {
   return items
 }
 
-export const Key = ({ mapState, pluginState }) => {
+export const Key = ({ mapState, pluginState, services }) => {
   const { mapStyle } = mapState
+  const { symbolRegistry } = services
 
   const itemSymbol = (config) => {
     const svgProps = {

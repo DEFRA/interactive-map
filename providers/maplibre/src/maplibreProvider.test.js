@@ -4,6 +4,7 @@ import { attachAppEvents } from './appEvents.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
+import { registerSymbols } from './utils/symbolImages.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
 
 jest.mock('./defaults.js', () => ({
@@ -33,6 +34,7 @@ jest.mock('./utils/labels.js', () => ({
 }))
 jest.mock('./utils/highlightFeatures.js', () => ({ updateHighlightedFeatures: jest.fn(() => []) }))
 jest.mock('./utils/queryFeatures.js', () => ({ queryFeatures: jest.fn(() => []) }))
+jest.mock('./utils/symbolImages.js', () => ({ registerSymbols: jest.fn(() => Promise.resolve()) }))
 
 describe('MapLibreProvider', () => {
   let map, eventBus, maplibreModule, loadCallback
@@ -218,6 +220,15 @@ describe('MapLibreProvider', () => {
     expect(updateHighlightedFeatures).toHaveBeenCalledWith({
       LngLatBounds: maplibreModule.LngLatBounds, map, selectedFeatures: ['feat'], stylesMap: { style: 1 }
     })
+  })
+
+  test('registerSymbols delegates to utility with map instance', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    const configs = [{ symbol: 'pin' }]
+    const registry = {}
+    await p.registerSymbols(configs, 'outdoor', registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, configs, 'outdoor', registry)
   })
 
   test('label methods return null without labelNavigator; delegate when set', async () => {

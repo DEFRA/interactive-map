@@ -2,7 +2,7 @@ import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
 import { registerPatterns } from './patternRegistry.js'
-import { registerSymbols } from './symbolImages.js'
+import { getSymbolConfigs } from './symbolImages.js'
 
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
@@ -12,10 +12,18 @@ import { registerSymbols } from './symbolImages.js'
  * - Pattern image registration (delegated to patternRegistry)
  * - Visibility toggling, feature filtering, style changes
  * - Style-change recovery (re-adding layers after basemap swap)
+ *
+ * Symbol image rasterisation is delegated to the map provider via
+ * `mapProvider.registerSymbols()`, keeping this adapter free of provider internals.
  */
 export default class MaplibreLayerAdapter {
-  constructor (map, symbolRegistry) {
-    this._map = map
+  /**
+   * @param {Object} mapProvider - Map provider instance (e.g. MapLibreProvider)
+   * @param {Object} symbolRegistry
+   */
+  constructor (mapProvider, symbolRegistry) {
+    this._mapProvider = mapProvider
+    this._map = mapProvider.map
     this._symbolRegistry = symbolRegistry
     // datasetId → sourceId, used by setData to update the correct source
     this._datasetSourceMap = new Map()
@@ -34,7 +42,7 @@ export default class MaplibreLayerAdapter {
   async init (datasets, mapStyleId) {
     await Promise.all([
       registerPatterns(this._map, datasets, mapStyleId),
-      registerSymbols(this._map, datasets, mapStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyleId, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
     datasets.forEach(dataset => this._addLayers(dataset, mapStyleId))
@@ -77,7 +85,7 @@ export default class MaplibreLayerAdapter {
 
     await Promise.all([
       registerPatterns(this._map, datasets, newStyleId),
-      registerSymbols(this._map, datasets, newStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), newStyleId, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
     datasets.forEach(dataset => this._addLayers(dataset, newStyleId))
@@ -213,7 +221,7 @@ export default class MaplibreLayerAdapter {
     })
     await Promise.all([
       registerPatterns(this._map, [dataset], mapStyleId),
-      registerSymbols(this._map, [dataset], mapStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyleId, this._symbolRegistry)
     ])
     this._addLayers(dataset, mapStyleId)
   }
@@ -239,7 +247,7 @@ export default class MaplibreLayerAdapter {
     }
     await Promise.all([
       registerPatterns(this._map, [dataset], mapStyleId),
-      registerSymbols(this._map, [dataset], mapStyleId, this._symbolRegistry)
+      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyleId, this._symbolRegistry)
     ])
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined

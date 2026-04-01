@@ -1,11 +1,12 @@
 // src/plugins/datasets/datasetsInit.jsx
 import { useEffect, useRef } from 'react'
+import { EVENTS } from '../../../../src/config/events.js'
 import { datasetDefaults } from './defaults.js'
 import { createDatasets } from './datasets.js'
 
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
-  const { events, eventBus, symbolRegistry } = services
+  const { eventBus, symbolRegistry } = services
 
   const isMapStyleReady = !!mapProvider.map?.getStyle()
 
@@ -40,7 +41,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
       }
 
       const { default: LayerAdapter } = await pluginConfig.layerAdapter.load()
-      const adapter = new LayerAdapter(mapProvider.map, symbolRegistry)
+      const adapter = new LayerAdapter(mapProvider, symbolRegistry)
 
       dispatch({ type: 'SET_LAYER_ADAPTER', payload: adapter })
 
@@ -50,7 +51,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         pluginStateRef,
         mapStyleId: mapState.mapStyle.id,
         mapProvider,
-        events,
+        events: EVENTS,
         eventBus
       })
     }
