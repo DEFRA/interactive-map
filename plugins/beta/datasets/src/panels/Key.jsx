@@ -1,8 +1,8 @@
 import React from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
-import { hasPattern, getKeyPatternPaths } from '../styles/patterns.js'
+import { hasPattern, getKeyPatternPaths } from '../../../../../src/utils/patternUtils.js'
 import { mergeSublayer } from '../utils/mergeSublayer.js'
-import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/symbols/symbolUtils.js'
+import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
 
 const SVG_SIZE = 20
 const SVG_SYMBOL_SIZE = 38
@@ -36,7 +36,7 @@ const buildKeyGroups = (datasets) => {
 
 export const Key = ({ mapState, pluginState, services }) => {
   const { mapStyle } = mapState
-  const { symbolRegistry } = services
+  const { symbolRegistry, patternRegistry } = services
 
   const itemSymbol = (config) => {
     const svgProps = {
@@ -63,7 +63,7 @@ export const Key = ({ mapState, pluginState, services }) => {
     }
 
     if (hasPattern(config)) {
-      const paths = getKeyPatternPaths(config, mapStyle.id)
+      const paths = getKeyPatternPaths(config, mapStyle.id, patternRegistry)
       return (
         <svg {...svgProps}>
           <g dangerouslySetInnerHTML={{ __html: paths.border }} />

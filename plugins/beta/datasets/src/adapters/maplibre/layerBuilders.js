@@ -1,5 +1,5 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
-import { hasPattern, getPatternImageId } from '../../styles/patterns.js'
+import { hasPattern, getPatternImageId } from './patternImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, isDynamicSource, MAX_TILE_ZOOM } from './layerIds.js'
 import { hasSymbol, getSymbolDef, getSymbolAnchor, anchorToMaplibre, getSymbolImageId } from './symbolImages.js'
@@ -29,14 +29,14 @@ export const addSource = (map, dataset, sourceId) => {
 
 // ─── Fill layer ───────────────────────────────────────────────────────────────
 
-export const addFillLayer = (map, config, layerId, sourceId, sourceLayer, visibility, mapStyleId) => {
+export const addFillLayer = (map, config, layerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry }) => {
   if (!layerId || map.getLayer(layerId)) {
     return
   }
   if (!config.fill && !hasPattern(config)) {
     return
   }
-  const patternImageId = hasPattern(config) ? getPatternImageId(config, mapStyleId) : null
+  const patternImageId = hasPattern(config) ? getPatternImageId(config, mapStyleId, patternRegistry) : null
   const paint = patternImageId
     ? { 'fill-pattern': patternImageId, 'fill-opacity': config.opacity || 1 }
     : { 'fill-color': getValueForStyle(config.fill, mapStyleId), 'fill-opacity': config.opacity || 1 }
@@ -105,7 +105,7 @@ export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, vis
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer, mapStyleId, symbolRegistry) => {
+export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer, { mapStyleId, symbolRegistry, patternRegistry }) => {
   const merged = mergeSublayer(dataset, sublayer)
   const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
   const parentHidden = dataset.visibility === 'hidden'
@@ -115,7 +115,7 @@ export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer,
     addSymbolLayer(map, merged, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyleId, symbolRegistry })
     return
   }
-  addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, mapStyleId)
+  addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry })
   addStrokeLayer(map, merged, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
 }
 
@@ -126,9 +126,10 @@ export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer,
  * @param {Object} dataset
  * @param {string} mapStyleId
  * @param {Object} [symbolRegistry]
+ * @param {Object} [patternRegistry]
  * @returns {string} sourceId
  */
-export const addDatasetLayers = (map, dataset, mapStyleId, symbolRegistry) => {
+export const addDatasetLayers = (map, dataset, mapStyleId, symbolRegistry, patternRegistry) => {
   const sourceId = getSourceId(dataset)
   addSource(map, dataset, sourceId)
 
@@ -136,7 +137,7 @@ export const addDatasetLayers = (map, dataset, mapStyleId, symbolRegistry) => {
 
   if (dataset.sublayers?.length) {
     dataset.sublayers.forEach(sublayer => {
-      addSublayerLayers(map, dataset, sublayer, sourceId, sourceLayer, mapStyleId, symbolRegistry)
+      addSublayerLayers(map, dataset, sublayer, sourceId, sourceLayer, { mapStyleId, symbolRegistry, patternRegistry })
     })
     return sourceId
   }
@@ -149,7 +150,7 @@ export const addDatasetLayers = (map, dataset, mapStyleId, symbolRegistry) => {
     return sourceId
   }
 
-  addFillLayer(map, dataset, fillLayerId, sourceId, sourceLayer, visibility, mapStyleId)
+  addFillLayer(map, dataset, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry })
   addStrokeLayer(map, dataset, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
   return sourceId
 }

@@ -1,7 +1,7 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
-import { registerPatterns } from './patternRegistry.js'
+import { getPatternConfigs } from './patternImages.js'
 import { getSymbolConfigs } from './symbolImages.js'
 
 /**
@@ -20,11 +20,13 @@ export default class MaplibreLayerAdapter {
   /**
    * @param {Object} mapProvider - Map provider instance (e.g. MapLibreProvider)
    * @param {Object} symbolRegistry
+   * @param {Object} patternRegistry
    */
-  constructor (mapProvider, symbolRegistry) {
+  constructor (mapProvider, symbolRegistry, patternRegistry) {
     this._mapProvider = mapProvider
     this._map = mapProvider.map
     this._symbolRegistry = symbolRegistry
+    this._patternRegistry = patternRegistry
     // datasetId → sourceId, used by setData to update the correct source
     this._datasetSourceMap = new Map()
     // Tracks all active symbol-type layer IDs so non-symbol layers can be kept below them
@@ -41,7 +43,7 @@ export default class MaplibreLayerAdapter {
    */
   async init (datasets, mapStyleId) {
     await Promise.all([
-      registerPatterns(this._map, datasets, mapStyleId),
+      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyleId, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
@@ -84,7 +86,7 @@ export default class MaplibreLayerAdapter {
     await new Promise(resolve => this._map.once('idle', resolve))
 
     await Promise.all([
-      registerPatterns(this._map, datasets, newStyleId),
+      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), newStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs(datasets), newStyleId, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
@@ -220,7 +222,7 @@ export default class MaplibreLayerAdapter {
       this._symbolLayerIds.delete(layerId)
     })
     await Promise.all([
-      registerPatterns(this._map, [dataset], mapStyleId),
+      this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyleId, this._symbolRegistry)
     ])
     this._addLayers(dataset, mapStyleId)
@@ -246,12 +248,12 @@ export default class MaplibreLayerAdapter {
       return
     }
     await Promise.all([
-      registerPatterns(this._map, [dataset], mapStyleId),
+      this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyleId, this._symbolRegistry)
     ])
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
-    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, mapStyleId, this._symbolRegistry)
+    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, { mapStyleId, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry })
     this._maintainSymbolOrdering(dataset)
   }
 
@@ -303,7 +305,7 @@ export default class MaplibreLayerAdapter {
   // ─── Private ─────────────────────────────────────────────────────────────────
 
   _addLayers (dataset, mapStyleId) {
-    const sourceId = addDatasetLayers(this._map, dataset, mapStyleId, this._symbolRegistry)
+    const sourceId = addDatasetLayers(this._map, dataset, mapStyleId, this._symbolRegistry, this._patternRegistry)
     this._datasetSourceMap.set(dataset.id, sourceId)
     this._maintainSymbolOrdering(dataset)
   }

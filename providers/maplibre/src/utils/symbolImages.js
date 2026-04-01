@@ -1,4 +1,4 @@
-import { getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../src/symbols/symbolUtils.js'
+import { getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../src/utils/symbolUtils.js'
 
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75

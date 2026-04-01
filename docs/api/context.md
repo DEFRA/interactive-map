@@ -46,6 +46,21 @@ const center = context.mapProvider.getCenter()
 context.mapProvider.setView({ zoom: 10 })
 ```
 
+#### `mapProvider.registerPatterns(patternConfigs, mapStyleId, patternRegistry)`
+
+Rasterises and registers pattern fill images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
+
+- `patternConfigs` — flat array of dataset/sublayer configs that have a `fillPattern` or `fillPatternSvgContent` property (sublayer merging is the caller's responsibility)
+- `mapStyleId` — current map style ID
+- `patternRegistry` — the core pattern registry instance
+
+```js
+// In a plugin's MapLibre layer adapter
+await mapProvider.registerPatterns(getPatternConfigs(datasets, patternRegistry), mapStyleId, patternRegistry)
+```
+
+---
+
 #### `mapProvider.registerSymbols(symbolConfigs, mapStyleId, symbolRegistry)`
 
 Rasterises and registers symbol images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
@@ -112,6 +127,26 @@ Closes the map if in fullscreen mode and returns to the previous page. Use this 
 ```js
 context.services.closeApp()
 ```
+
+#### `symbolRegistry`
+
+Registry of named symbol definitions. Use this to register custom symbols that can be referenced by name in dataset or feature configs.
+
+See [Symbol Registry](./symbol-registry.md) for full documentation.
+
+---
+
+#### `patternRegistry`
+
+Registry of named fill pattern definitions. Built-in patterns (`'dot'`, `'cross-hatch'`, `'diamond'`, etc.) are pre-registered. Use this to register custom named patterns that can be shared across plugins.
+
+```js
+context.services.patternRegistry.register('my-hatch', '<path d="M0 0L16 16" stroke="{{foreground}}"/>')
+```
+
+Patterns authored in a 16×16 coordinate space. Use `{{foreground}}` and `{{background}}` tokens for colour injection.
+
+---
 
 #### `eventBus`
 

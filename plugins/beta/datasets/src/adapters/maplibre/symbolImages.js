@@ -1,8 +1,8 @@
 // Re-export pure symbol resolution utilities from core — no map engine dependency.
-import { hasSymbol } from '../../../../../../src/symbols/symbolUtils.js'
+import { hasSymbol } from '../../../../../../src/utils/symbolUtils.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 
-export { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox, getSymbolAnchor } from '../../../../../../src/symbols/symbolUtils.js'
+export { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox, getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
 
 // Re-export MapLibre-specific symbol utilities from the provider.
 // This is the single cross-boundary import in the adapter; in a separate-package

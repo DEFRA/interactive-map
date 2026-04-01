@@ -423,7 +423,7 @@
  * Use named values from `graphics.js` or supply your own path data.
  *
  * @example
- * import { graphics } from './symbols/graphics.js'
+ * import { graphics } from './config/symbolConfig.js'
  * markers.add('id', coords, { symbol: 'pin', graphic: graphics.cross })
  *
  */

@@ -1,4 +1,4 @@
-import { hasPattern } from '../../styles/patterns.js'
+import { hasPattern } from '../../../../../../src/utils/patternUtils.js'
 
 // ─── Internal helpers ─────────────────────────────────────────────────────────
 

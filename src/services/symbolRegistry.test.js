@@ -1,5 +1,5 @@
 import { symbolRegistry } from './symbolRegistry.js'
-import { symbolDefaults } from '../symbols/symbolDefaults.js'
+import { symbolDefaults } from '../config/symbolConfig.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
 
 const OUTDOOR = 'outdoor'

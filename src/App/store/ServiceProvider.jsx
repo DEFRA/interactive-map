@@ -5,6 +5,7 @@ import { reverseGeocode } from '../../services/reverseGeocode.js'
 import { useConfig } from '../store/configContext.js'
 import { closeApp } from '../../services/closeApp.js'
 import { symbolRegistry } from '../../services/symbolRegistry.js'
+import { patternRegistry } from '../../services/patternRegistry.js'
 
 export const ServiceContext = createContext(null)
 
@@ -21,7 +22,8 @@ export const ServiceProvider = ({ eventBus, children }) => {
     eventBus,
     mapStatusRef,
     closeApp: () => closeApp(id, handleExitClick, eventBus),
-    symbolRegistry
+    symbolRegistry,
+    patternRegistry
   }), [announce])
 
   return (
