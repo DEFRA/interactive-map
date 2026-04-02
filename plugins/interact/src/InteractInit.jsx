@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react'
+import { EVENTS } from '../../../src/config/events.js'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { attachEvents } from './events.js'
@@ -13,7 +14,7 @@ export const InteractInit = ({
 }) => {
   const { interfaceType } = appState
   const { dispatch, enabled, selectedFeatures, selectionBounds } = pluginState
-  const { events, eventBus, closeApp } = services
+  const { eventBus, closeApp } = services
   const { crossHair, mapStyle } = mapState
 
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(interfaceType)
@@ -56,7 +57,7 @@ export const InteractInit = ({
     selectedFeatures,
     selectionBounds,
     dispatch,
-    events,
+    events: EVENTS,
     eventBus
   })
 
@@ -79,7 +80,7 @@ export const InteractInit = ({
       mapState,
       getPluginState: () => pluginStateRef.current,
       buttonConfig,
-      events,
+      events: EVENTS,
       eventBus,
       handleInteraction: (e) => handleInteractionRef.current(e),
       clickReadyRef,
@@ -87,7 +88,7 @@ export const InteractInit = ({
     })
 
     return cleanupEvents
-  }, [pluginState.enabled, buttonConfig, events, eventBus, closeApp])
+  }, [pluginState.enabled, buttonConfig, eventBus, closeApp])
 
   return null
 }

@@ -1,7 +1,10 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
-import { registerPatterns } from './patternRegistry.js'
+import { getPatternConfigs } from './patternImages.js'
+import { getSymbolConfigs, getSymbolImageId } from './symbolImages.js'
+import { mergeSublayer } from '../../utils/mergeSublayer.js'
+import { scaleFactor } from '../../../../../../src/config/appConfig.js'
 
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
@@ -11,12 +14,25 @@ import { registerPatterns } from './patternRegistry.js'
  * - Pattern image registration (delegated to patternRegistry)
  * - Visibility toggling, feature filtering, style changes
  * - Style-change recovery (re-adding layers after basemap swap)
+ *
+ * Symbol image rasterisation is delegated to the map provider via
+ * `mapProvider.registerSymbols()`, keeping this adapter free of provider internals.
  */
 export default class MaplibreLayerAdapter {
-  constructor (map) {
-    this._map = map
+  /**
+   * @param {Object} mapProvider - Map provider instance (e.g. MapLibreProvider)
+   * @param {Object} symbolRegistry
+   * @param {Object} patternRegistry
+   */
+  constructor (mapProvider, symbolRegistry, patternRegistry) {
+    this._mapProvider = mapProvider
+    this._map = mapProvider.map
+    this._symbolRegistry = symbolRegistry
+    this._patternRegistry = patternRegistry
     // datasetId → sourceId, used by setData to update the correct source
     this._datasetSourceMap = new Map()
+    // Tracks all active symbol-type layer IDs so non-symbol layers can be kept below them
+    this._symbolLayerIds = new Set()
   }
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
@@ -24,12 +40,18 @@ export default class MaplibreLayerAdapter {
   /**
    * Initialise all datasets: register patterns, add layers, then wait for idle.
    * @param {Object[]} datasets
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
-  async init (datasets, mapStyleId) {
-    await registerPatterns(this._map, datasets, mapStyleId)
-    datasets.forEach(dataset => this._addLayers(dataset, mapStyleId))
+  async init (datasets, mapStyle) {
+    const mapStyleId = mapStyle.id
+    const pixelRatio = this._pixelRatio
+    await Promise.all([
+      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
+      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
+    ])
+    this._symbolLayerIds.clear()
+    datasets.forEach(dataset => this._addLayers(dataset, mapStyle, pixelRatio))
     await new Promise(resolve => this._map.once('idle', resolve))
   }
 
@@ -58,17 +80,23 @@ export default class MaplibreLayerAdapter {
    * Re-register patterns and re-add all layers after a basemap style change,
    * then reapply cached dynamic source data and hidden-feature filters.
    * @param {Object[]} datasets
-   * @param {string} newStyleId
+   * @param {Object} newMapStyle
    * @param {Object} hiddenFeatures - pluginState.hiddenFeatures
    * @param {Map} dynamicSources - datasetId → dynamic source instance
    * @returns {Promise<void>}
    */
-  async onStyleChange (datasets, newStyleId, hiddenFeatures, dynamicSources) {
+  async onStyleChange (datasets, newMapStyle, hiddenFeatures, dynamicSources) {
     // MapLibre wipes all sources/layers on style change — must wait for idle first
     await new Promise(resolve => this._map.once('idle', resolve))
 
-    await registerPatterns(this._map, datasets, newStyleId)
-    datasets.forEach(dataset => this._addLayers(dataset, newStyleId))
+    const newStyleId = newMapStyle.id
+    const pixelRatio = this._pixelRatio
+    await Promise.all([
+      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), newStyleId, this._patternRegistry),
+      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), newMapStyle, this._symbolRegistry)
+    ])
+    this._symbolLayerIds.clear()
+    datasets.forEach(dataset => this._addLayers(dataset, newMapStyle, pixelRatio))
 
     // Re-push cached data for dynamic sources
     dynamicSources.forEach(source => source.reapply())
@@ -83,15 +111,45 @@ export default class MaplibreLayerAdapter {
     })
   }
 
+  /**
+   * Re-register symbols at the new pixel ratio and update icon-image on all symbol layers.
+   * Called when the map size changes so symbols are rasterised at the correct resolution.
+   * @param {Object[]} datasets
+   * @param {Object} mapStyle
+   * @returns {Promise<void>}
+   */
+  async onSizeChange (datasets, mapStyle) {
+    await this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
+    const pixelRatio = this._pixelRatio
+    datasets.forEach(dataset => {
+      getAllLayerIds(dataset).forEach(layerId => {
+        if (!this._symbolLayerIds.has(layerId) || !this._map.getLayer(layerId)) { return }
+        const imageId = getSymbolImageId(dataset, mapStyle, this._symbolRegistry, false, pixelRatio)
+        if (imageId) {
+          this._map.setLayoutProperty(layerId, 'icon-image', imageId)
+        }
+      })
+      dataset.sublayers?.forEach(sublayer => {
+        const { symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
+        if (!this._map.getLayer(symbolLayerId)) { return }
+        const merged = mergeSublayer(dataset, sublayer)
+        const imageId = getSymbolImageId(merged, mapStyle, this._symbolRegistry, false, pixelRatio)
+        if (imageId) {
+          this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
+        }
+      })
+    })
+  }
+
   // ─── Dataset operations ─────────────────────────────────────────────────────
 
   /**
    * Add a single dataset's source and layers to the map.
    * @param {Object} dataset
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    */
-  addDataset (dataset, mapStyleId) {
-    this._addLayers(dataset, mapStyleId)
+  addDataset (dataset, mapStyle) {
+    this._addLayers(dataset, mapStyle, this._pixelRatio)
   }
 
   /**
@@ -108,6 +166,7 @@ export default class MaplibreLayerAdapter {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
+      this._symbolLayerIds.delete(layerId)
     })
 
     const sourceIsShared = allDatasets.some(d => d.id !== dataset.id && getSourceId(d) === sourceId)
@@ -141,13 +200,12 @@ export default class MaplibreLayerAdapter {
    * @param {string} sublayerId
    */
   showSublayer (datasetId, sublayerId) {
-    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(datasetId, sublayerId)
-    if (this._map.getLayer(fillLayerId)) {
-      this._map.setLayoutProperty(fillLayerId, 'visibility', 'visible')
-    }
-    if (this._map.getLayer(strokeLayerId)) {
-      this._map.setLayoutProperty(strokeLayerId, 'visibility', 'visible')
-    }
+    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(datasetId, sublayerId)
+    ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
+      if (this._map.getLayer(layerId)) {
+        this._map.setLayoutProperty(layerId, 'visibility', 'visible')
+      }
+    })
   }
 
   /**
@@ -156,13 +214,12 @@ export default class MaplibreLayerAdapter {
    * @param {string} sublayerId
    */
   hideSublayer (datasetId, sublayerId) {
-    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(datasetId, sublayerId)
-    if (this._map.getLayer(fillLayerId)) {
-      this._map.setLayoutProperty(fillLayerId, 'visibility', 'none')
-    }
-    if (this._map.getLayer(strokeLayerId)) {
-      this._map.setLayoutProperty(strokeLayerId, 'visibility', 'none')
-    }
+    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(datasetId, sublayerId)
+    ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
+      if (this._map.getLayer(layerId)) {
+        this._map.setLayoutProperty(layerId, 'visibility', 'none')
+      }
+    })
   }
 
   // ─── Feature operations ─────────────────────────────────────────────────────
@@ -190,42 +247,54 @@ export default class MaplibreLayerAdapter {
   /**
    * Update a dataset's style and re-render all its layers.
    * @param {Object} dataset - Updated dataset (style changes already merged in)
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setStyle (dataset, mapStyleId) {
+  async setStyle (dataset, mapStyle) {
+    const mapStyleId = mapStyle.id
+    const pixelRatio = this._pixelRatio
     getAllLayerIds(dataset).forEach(layerId => {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
+      this._symbolLayerIds.delete(layerId)
     })
-    await registerPatterns(this._map, [dataset], mapStyleId)
-    this._addLayers(dataset, mapStyleId)
+    await Promise.all([
+      this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
+      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
+    ])
+    this._addLayers(dataset, mapStyle, pixelRatio)
   }
 
   /**
    * Update a single sublayer's style and re-render its layers.
    * @param {Object} dataset - Updated dataset (sublayer style changes already merged in)
    * @param {string} sublayerId
-   * @param {string} mapStyleId
+   * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setSublayerStyle (dataset, sublayerId, mapStyleId) {
-    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(dataset.id, sublayerId)
-    if (this._map.getLayer(fillLayerId)) {
-      this._map.removeLayer(fillLayerId)
-    }
-    if (this._map.getLayer(strokeLayerId)) {
-      this._map.removeLayer(strokeLayerId)
-    }
+  async setSublayerStyle (dataset, sublayerId, mapStyle) {
+    const mapStyleId = mapStyle.id
+    const pixelRatio = this._pixelRatio
+    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayerId)
+    ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
+      if (this._map.getLayer(layerId)) {
+        this._map.removeLayer(layerId)
+      }
+      this._symbolLayerIds.delete(layerId)
+    })
     const sublayer = dataset.sublayers?.find(s => s.id === sublayerId)
     if (!sublayer) {
       return
     }
-    await registerPatterns(this._map, [dataset], mapStyleId)
+    await Promise.all([
+      this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
+      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
+    ])
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
-    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, mapStyleId)
+    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry, pixelRatio })
+    this._maintainSymbolOrdering(dataset)
   }
 
   /**
@@ -275,9 +344,43 @@ export default class MaplibreLayerAdapter {
 
   // ─── Private ─────────────────────────────────────────────────────────────────
 
-  _addLayers (dataset, mapStyleId) {
-    const sourceId = addDatasetLayers(this._map, dataset, mapStyleId)
+  get _pixelRatio () {
+    return this._mapProvider.map.getPixelRatio() * (scaleFactor[this._mapProvider.mapSize] || 1)
+  }
+
+  _addLayers (dataset, mapStyle, pixelRatio) {
+    const sourceId = addDatasetLayers(this._map, dataset, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
     this._datasetSourceMap.set(dataset.id, sourceId)
+    this._maintainSymbolOrdering(dataset)
+  }
+
+  _getFirstSymbolLayerId () {
+    const style = this._map.getStyle()
+    if (!style?.layers) {
+      return null
+    }
+    const layer = style.layers.find(l => this._symbolLayerIds.has(l.id))
+    return layer?.id ?? null
+  }
+
+  _maintainSymbolOrdering (dataset) {
+    const layerIds = getAllLayerIds(dataset).filter(id => id && this._map.getLayer(id))
+    layerIds.forEach(id => {
+      if (this._map.getLayer(id)?.type === 'symbol') {
+        this._symbolLayerIds.add(id)
+      } else {
+        this._symbolLayerIds.delete(id)
+      }
+    })
+    const firstSymbolId = this._getFirstSymbolLayerId()
+    if (!firstSymbolId) {
+      return
+    }
+    layerIds.forEach(id => {
+      if (!this._symbolLayerIds.has(id)) {
+        this._map.moveLayer(id, firstSymbolId)
+      }
+    })
   }
 
   _setDatasetVisibility (datasetId, visibility) {
@@ -307,14 +410,12 @@ export default class MaplibreLayerAdapter {
       })
       return
     }
-    const { fillLayerId, strokeLayerId } = getLayerIds(dataset)
+    const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds(dataset)
     const originalFilter = dataset.filter || null
-    if (fillLayerId) {
-      applyExclusionFilter(this._map, fillLayerId, originalFilter, idProperty, excludeIds)
-    }
-    if (strokeLayerId) {
-      applyExclusionFilter(this._map, strokeLayerId, originalFilter, idProperty, excludeIds)
-    }
+    const layerIds = [fillLayerId, strokeLayerId, symbolLayerId].filter(Boolean)
+    layerIds.forEach(layerId => {
+      applyExclusionFilter(this._map, layerId, originalFilter, idProperty, excludeIds)
+    })
   }
 
   _setPaintOpacity (layerId, opacity) {
@@ -322,7 +423,8 @@ export default class MaplibreLayerAdapter {
     if (!layer) {
       return
     }
-    const prop = layer.type === 'line' ? 'line-opacity' : 'fill-opacity'
+    const opacityProps = { line: 'line-opacity', symbol: 'icon-opacity' }
+    const prop = opacityProps[layer.type] || 'fill-opacity'
     this._map.setPaintProperty(layerId, prop, opacity)
   }
 

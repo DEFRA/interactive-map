@@ -25,14 +25,14 @@ describe('updateMap', () => {
       point,
       markers,
       showMarker: true,
-      markerColor: 'red'
+      markerOptions: { backgroundColor: 'red' }
     })
 
     expect(mapProvider.fitToBounds).toHaveBeenCalledWith(bounds)
     expect(markers.add).toHaveBeenCalledWith(
       'search',
       point,
-      { color: 'red' }
+      { backgroundColor: 'red' }
     )
   })
 
@@ -43,7 +43,7 @@ describe('updateMap', () => {
       point,
       markers,
       showMarker: false,
-      markerColor: 'blue'
+      markerOptions: { backgroundColor: 'blue' }
     })
 
     expect(mapProvider.fitToBounds).toHaveBeenCalledWith(bounds)

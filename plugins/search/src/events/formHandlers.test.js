@@ -40,7 +40,7 @@ describe('createFormHandlers', () => {
       datasets: [],
       transformRequest: jest.fn(),
       showMarker: true,
-      markerColor: 'red'
+      markerOptions: { backgroundColor: 'red' }
     })
 
     jest.clearAllMocks()

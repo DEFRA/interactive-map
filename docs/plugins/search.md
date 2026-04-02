@@ -90,10 +90,22 @@ Whether to place a marker on the map when a search result is selected.
 
 ---
 
-### `markerColor`
-**Type:** `string`
+### `marker`
+**Type:** `MarkerOptions`
 
-Colour of the search result marker.
+Appearance of the marker placed when a search result is selected. Accepts the same properties as [`MarkerOptions`](../api/marker-config.md#markeroptions). See [Symbol Config](../api/symbol-config.md) for the full property reference.
+
+```js
+searchPlugin({
+  showMarker: true,
+  marker: {
+    symbol: 'circle',
+    backgroundColor: { outdoor: '#1d70b8', dark: '#5694ca' }
+  }
+})
+```
+
+When not set, the marker inherits from the constructor `symbolDefaults` cascade.
 
 ---
 

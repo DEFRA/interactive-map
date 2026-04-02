@@ -25,7 +25,7 @@ describe('createSuggestionHandlers', () => {
       mapProvider: 'map',
       markers: 'markers',
       showMarker: true,
-      markerColor: 'blue'
+      markerOptions: { backgroundColor: 'blue' }
     })
 
     jest.clearAllMocks()

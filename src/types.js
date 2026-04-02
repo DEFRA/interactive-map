@@ -316,13 +316,65 @@
  * Alt text for logo.
  *
  * @property {'light' | 'dark'} [mapColorScheme]
- * Map color scheme. Used to determine the style of controls on the map. eg. Halo colours etc
+ * Map colour scheme. Sets the default values of `haloColor`, `selectedColor`, and `foregroundColor`
+ * when not explicitly provided, and signals to map overlay components which tonal range to use.
+ * `'light'` (default): dark overlays on a light basemap. `'dark'`: light overlays on a dark or aerial basemap.
  *
  * @property {string} [thumbnail]
  * URL to thumbnail image.
  *
+ * @property {string} [haloColor]
+ * Halo colour for elements rendered on top of the map (e.g. symbol outlines). Provides contrast
+ * between overlay elements and the map background. Falls back to `#ffffff` (light) or `#0b0c0c` (dark).
+ * Injected as the `--map-overlay-halo-color` CSS custom property.
+ *
+ * @property {string} [selectedColor]
+ * Theme colour for selected state — used by map overlay components to indicate a selected feature.
+ * Falls back to `#0b0c0c` (light) or `#ffffff` (dark).
+ * Injected as the `--map-overlay-selected-color` CSS custom property.
+ *
+ * @property {string} [foregroundColor]
+ * Foreground colour for elements rendered on top of the map (e.g. text or iconography in overlay components).
+ * Falls back to `#0b0c0c` (light) or `#ffffff` (dark).
+ * Injected as the `--map-overlay-foreground-color` CSS custom property.
+ *
  * @property {string} url
  * URL to the style.json (Mapbox Style Specification).
+ */
+
+/**
+ * App-wide symbol appearance defaults. All properties are optional.
+ * Color values may be a plain string or an object keyed by map style ID.
+ *
+ * @typedef {Object} SymbolDefaults
+ *
+ * @property {string} [symbol='pin']
+ * Default symbol ID. Built-in values: `'pin'`, `'circle'`.
+ *
+ * @property {string} [symbolSvgContent]
+ * Default inner SVG path content. When set, overrides `symbol`.
+ *
+ * @property {string} [viewBox='0 0 38 38']
+ * Default SVG viewBox.
+ *
+ * @property {[number, number]} [anchor=[0.5, 0.5]]
+ * Default anchor point as a normalised [x, y] pair.
+ *
+ * @property {string | Record<string, string>} [backgroundColor='#ca3535']
+ * Default background fill colour.
+ *
+ * @property {string | Record<string, string>} [foregroundColor='#ffffff']
+ * Default foreground fill colour.
+ *
+ * @property {string} [haloWidth='1']
+ * Default halo stroke width in SVG units.
+ *
+ * @property {string} [graphic]
+ * Default SVG `d` attribute value for the foreground graphic path. Each built-in symbol sets
+ * its own default (a small dot). Override to swap the graphic across all markers globally.
+ *
+ * @property {string} [selectedWidth='6']
+ * Selection ring stroke width in SVG units. App-wide only — ignored at symbol registration and marker creation level.
  */
 
 /**
@@ -341,15 +393,47 @@
  */
 
 /**
- * Options for customizing marker appearance.
+ * Options for customizing marker appearance. Any key corresponds to a token in the symbol's SVG template.
+ * Color values may be a plain string or an object keyed by map style ID e.g. `{ outdoor: '#fff', dark: '#000' }`.
  *
  * @typedef {Object} MarkerOptions
  *
- * @property {string | Record<string, string>} [color]
- * Marker color or object with colors keyed by style ID.
+ * @property {string} [symbol]
+ * Symbol id to use for this marker (e.g. 'pin', 'circle'). Overrides the default `symbolDefaults.symbol` option.
  *
- * @property {string} [shape]
- * Marker shape (e.g., 'pin').
+ * @property {string} [symbolSvgContent]
+ * Inner SVG path content (no `<svg>` wrapper) to use instead of a registered symbol.
+ * Use `{{token}}` placeholders for colours — e.g. `fill="{{backgroundColor}}"`.
+ * When set, `symbol` is ignored.
+ *
+ * @property {string} [viewBox]
+ * SVG viewBox attribute for the symbol, e.g. `'0 0 38 38'`.
+ * Defaults to the registered symbol's viewBox, or `'0 0 38 38'`.
+ *
+ * @property {[number, number]} [anchor]
+ * Anchor point as a normalised [x, y] pair where [0, 0] is top-left and [1, 1] is bottom-right.
+ * Determines which point on the symbol aligns with the geographic coordinate.
+ * Defaults to the registered symbol's anchor, or `[0.5, 0.5]` (centre).
+ *
+ * @property {string | Record<string, string>} [backgroundColor]
+ * Background fill colour of the symbol.
+ *
+ * @property {string | Record<string, string>} [foregroundColor]
+ * Foreground fill colour of the symbol (e.g. the inner dot on a pin).
+ *
+ * @property {string} [haloWidth]
+ * Stroke width of the halo in SVG units. Defaults to `'1'`.
+ *
+ * @property {string} [graphic]
+ * SVG `d` attribute value for the foreground graphic path. Replaces the foreground shape of the
+ * symbol while keeping its background, halo and selection ring intact. Each built-in symbol
+ * (`pin`, `circle`) provides a default dot; pass a different `d` string to swap it.
+ * Use named values from `graphics.js` or supply your own path data.
+ *
+ * @example
+ * import { graphics } from './config/symbolConfig.js'
+ * markers.add('id', coords, { symbol: 'pin', graphic: graphics.cross })
+ *
  */
 
 /**
@@ -540,14 +624,12 @@
  * @property {string} [mapViewParamKey='mv']
  * URL query parameter key used to control map view state.
  *
- * @property {string | Record<string, string>} [markerColor='#ff0000']
- * Colour used for map markers. May be a single colour value or an object keyed by map style ID.
- *
  * @property {MarkerConfig[]} [markers]
  * Initial markers to display on the map.
  *
- * @property {string} [markerShape='pin']
- * Shape used for map markers.
+ * @property {Partial<SymbolDefaults>} [symbolDefaults]
+ * App-wide defaults for symbol appearance. Merged onto the hardcoded defaults in symbolDefaults.js.
+ * Values cascade: symbolDefaults.js → constructor symbolDefaults → symbol registration → marker creation.
  *
  * @property {[number, number, number, number]} [maxExtent]
  * Maximum viewable extent [west, south, east, north].

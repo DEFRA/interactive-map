@@ -1,4 +1,5 @@
 import { useEffect } from 'react'
+import { EVENTS } from '../../../../src/config/events.js'
 import { createSketchViewModel } from './sketchViewModel.js'
 import { attachEvents } from './events.js'
 
@@ -11,7 +12,7 @@ export const DrawInit = ({
   mapProvider,
   buttonConfig
 }) => {
-  const { events, eventBus } = services
+  const { eventBus } = services
   const { mapColorScheme } = mapState.mapStyle || {}
 
   // Check if plugin should be active
@@ -52,7 +53,7 @@ export const DrawInit = ({
     const cleanup = attachEvents({
       pluginState,
       mapProvider,
-      events,
+      events: EVENTS,
       eventBus,
       buttonConfig,
       mapColorScheme

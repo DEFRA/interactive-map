@@ -1,12 +1,10 @@
-// When groups are present, every direct child (groups and flat items) gets a border-top
-.im-c-datasets-layers--has-groups > * {
+// When groups are present, every direct child except the first gets a border-top
+.im-c-datasets-layers--has-groups > *:not(:first-child) {
   border-top: 1px solid var(--button-hover-color);
 }
 
-// When no groups, only the first child gets a border-top with 15px padding
-.im-c-datasets-layers:not(.im-c-datasets-layers--has-groups) > *:first-child {
-  border-top: 1px solid var(--button-hover-color);
-  padding-top: 10px;
+.im-c-datasets-layers > *:first-child {
+  padding-top: 5px;
 }
 
 .im-c-datasets-layers > *:last-child {
@@ -20,7 +18,11 @@
 .im-c-datasets-layers__item {
   padding-bottom: 5px;
 
-  .im-c-datasets-layers--has-groups > & {
+  &:first-child {
+    padding-top: 0;
+  }
+
+  .im-c-datasets-layers--has-groups > &:not(:first-child) {
     padding-top: 5px;
   }
 
@@ -72,4 +74,8 @@
   font-size: 1rem;
   font-weight: bold;
   color: var(--foreground-color);
+}
+
+.im-c-datasets-layers-group:first-child .im-c-datasets-layers-group__legend {
+  padding-top: 0;
 }

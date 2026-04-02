@@ -73,6 +73,14 @@ export const mergeSublayer = (dataset, sublayer) => {
     filter: combinedFilter,
     minZoom: dataset.minZoom,
     maxZoom: dataset.maxZoom,
+    symbol: sublayerStyle.symbol ?? dataset.symbol,
+    symbolSvgContent: sublayerStyle.symbolSvgContent ?? dataset.symbolSvgContent,
+    symbolViewBox: sublayerStyle.symbolViewBox ?? dataset.symbolViewBox,
+    symbolAnchor: sublayerStyle.symbolAnchor ?? dataset.symbolAnchor,
+    symbolBackgroundColor: sublayerStyle.symbolBackgroundColor ?? dataset.symbolBackgroundColor,
+    symbolForegroundColor: sublayerStyle.symbolForegroundColor ?? dataset.symbolForegroundColor,
+    symbolHaloWidth: sublayerStyle.symbolHaloWidth ?? dataset.symbolHaloWidth,
+    symbolGraphic: sublayerStyle.symbolGraphic ?? dataset.symbolGraphic,
     ...getFillProps(dataset, sublayerStyle)
   }
 }

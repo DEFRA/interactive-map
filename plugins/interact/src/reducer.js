@@ -1,7 +1,7 @@
 const initialState = {
   enabled: false,
   dataLayers: [],
-  markerColor: null,
+  marker: null,
   interactionMode: null,
   multiSelect: false,
   contiguous: false,

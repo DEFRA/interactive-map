@@ -72,9 +72,11 @@ describe('Layout', () => {
     expect(root.className).toContain('im-o-app--map')
     expect(root.className).toContain('im-o-app--inline')
     expect(root.className).toContain('im-o-app--light-app')
-    expect(root.className).toContain('im-o-app--dark-map')
     expect(root.className).toContain('im-o-app--exclusive-control')
     expect(root.style.backgroundColor).toBe('pink')
+    expect(root.style.getPropertyValue('--map-overlay-halo-color')).toBe('#0b0c0c')
+    expect(root.style.getPropertyValue('--map-overlay-selected-color')).toBe('#ffffff')
+    expect(root.style.getPropertyValue('--map-overlay-foreground-color')).toBe('#ffffff')
 
     const overlay = root.querySelector('.im-o-app__overlay')
     expect(overlay.className).not.toContain('not-ready')
@@ -123,7 +125,7 @@ describe('Layout', () => {
 
     const root = document.getElementById('myApp-im-app')
     expect(root.className).toContain('im-o-app--dark-app')
-    expect(root.className).toContain('im-o-app--light-map') // fallback
+    expect(root.className).not.toContain('im-o-app--light-map')
     expect(root.style.backgroundColor).toBe('')
     expect(root.className).not.toContain('exclusive-control')
   })

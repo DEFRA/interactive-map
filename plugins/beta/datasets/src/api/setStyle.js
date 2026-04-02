@@ -12,11 +12,11 @@ export const setStyle = ({ pluginState, mapState }, style, { datasetId, sublayer
         sublayer.id === sublayerId ? { ...sublayer, style: { ...sublayer.style, ...style } } : sublayer
       )
     }
-    pluginState.layerAdapter?.setSublayerStyle(updatedSublayerDataset, sublayerId, mapState.mapStyle.id)
+    pluginState.layerAdapter?.setSublayerStyle(updatedSublayerDataset, sublayerId, mapState.mapStyle)
     return
   }
 
   pluginState.dispatch({ type: 'SET_DATASET_STYLE', payload: { datasetId, styleChanges: style } })
   const updatedDataset = { ...dataset, ...style }
-  pluginState.layerAdapter?.setStyle(updatedDataset, mapState.mapStyle.id)
+  pluginState.layerAdapter?.setStyle(updatedDataset, mapState.mapStyle)
 }

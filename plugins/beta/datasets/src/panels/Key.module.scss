@@ -1,10 +1,13 @@
 // When groups are present, every direct child gets a border-top
-.im-c-datasets-key--has-groups > * {
-  border-top: 1px solid var(--button-hover-color);
+.im-c-datasets-key > *:first-child {
+  padding-top: 5px;
+
+  .im-c-datasets-key__group-heading {
+    padding-top: 0;
+  }
 }
 
-// When no groups, only the first child gets a border-top
-.im-c-datasets-key:not(.im-c-datasets-key--has-groups) > *:first-child {
+.im-c-datasets-key--has-groups > *:not(:first-child) {
   border-top: 1px solid var(--button-hover-color);
 }
 
@@ -28,21 +31,23 @@
   padding-bottom: 10px;
   font-size: 1rem;
 
-  // When mixed with groups, flat items match group heading spacing
-  .im-c-datasets-key--has-groups > & {
-    padding-top: 15px;
-    padding-bottom: 15px;
-  }
-
   // First item inside a group — heading already provides top spacing
   .im-c-datasets-key__group &:first-child {
     padding-top: 0;
   }
 }
 
-// No-groups: first item needs 15px below the single border
-.im-c-datasets-key:not(.im-c-datasets-key--has-groups) > .im-c-datasets-key__item:first-child {
+.im-c-datasets-key--has-groups > .im-c-datasets-key__item:not(:first-child) {
   padding-top: 15px;
+}
+
+.im-c-datasets-key--has-groups > .im-c-datasets-key__item {
+  padding-bottom: 15px;
+}
+
+.im-c-datasets-key__group .im-c-datasets-key__item {
+  padding-top: 10px;
+  padding-bottom: 10px;
 }
 
 // Last item in all scenarios — flat or inside the last group
@@ -51,8 +56,14 @@
   padding-bottom: 5px;
 }
 
-.im-c-datasets-key__item svg {
+// Symbol
+
+.am-c-datasets-key-symbol {
   position: relative;
   flex-shrink: 0;
   margin: 0 13px 0 2px;
+}
+
+.am-c-datasets-key-symbol--point {
+  margin: -9px 3px -9px -7px;
 }

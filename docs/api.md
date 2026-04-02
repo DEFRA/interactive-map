@@ -264,18 +264,6 @@ URL query parameter key used to persist map visibility state.
 
 ---
 
-### `markerColor`
-**Type:** `string | Object<string, string>`
-**Default:** `'#ff0000'`
-
-Default colour for map markers. Can be overridden per marker when calling `addMarker()`.
-
-May be provided as:
-- A single colour value applied to all map styles
-- An object keyed by map style ID, allowing different colours per style
-
----
-
 ### `markers`
 **Type:** `MarkerConfig[]`
 
@@ -285,14 +273,23 @@ See [MarkerConfig](./api/marker-config.md) for full details.
 
 ---
 
-### `markerShape`
-**Type:** `string`
-**Default:** `'pin'`
+### `symbolDefaults`
+**Type:** `Partial<SymbolDefaults>`
 
-Default shape for map markers. Can be overridden per marker when calling `addMarker()`.
+App-wide defaults for symbol and marker appearance. Each property is optional — unset values fall through to the hardcoded fallback. Values set here are overridden by anything set at symbol registration or per-marker level.
 
-> [!NOTE]
-> Currently only `'pin'` is available. Additional shapes are planned for a future release.
+```js
+new InteractiveMap('map', {
+  symbolDefaults: {
+    symbol: 'circle',
+    backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+    haloColor: { outdoor: '#ffffff', dark: '#0b0c0c' },
+    selectedColor: { outdoor: '#ffdd00', dark: '#ffaa00' }
+  }
+})
+```
+
+See [Symbol Config](./api/symbol-config.md) for the full property list and how values are resolved.
 
 ---
 
@@ -488,7 +485,7 @@ Add a marker to the map.
 | `options` | [`MarkerOptions`](./api/marker-config.md#markeroptions) | Optional marker appearance options |
 
 ```js
-interactiveMap.addMarker('home', [-0.1276, 51.5074], { color: '#0000ff' })
+interactiveMap.addMarker('home', [-0.1276, 51.5074], { backgroundColor: '#1d70b8' })
 ```
 
 ---

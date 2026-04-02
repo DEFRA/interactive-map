@@ -46,6 +46,34 @@ const center = context.mapProvider.getCenter()
 context.mapProvider.setView({ zoom: 10 })
 ```
 
+#### `mapProvider.registerPatterns(patternConfigs, mapStyleId, patternRegistry)`
+
+Rasterises and registers pattern fill images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
+
+- `patternConfigs` — flat array of dataset/sublayer configs that have a `fillPattern` or `fillPatternSvgContent` property (sublayer merging is the caller's responsibility)
+- `mapStyleId` — current map style ID
+- `patternRegistry` — the core pattern registry instance
+
+```js
+// In a plugin's MapLibre layer adapter
+await mapProvider.registerPatterns(getPatternConfigs(datasets, patternRegistry), mapStyleId, patternRegistry)
+```
+
+---
+
+#### `mapProvider.registerSymbols(symbolConfigs, mapStyleId, symbolRegistry)`
+
+Rasterises and registers symbol images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
+
+- `symbolConfigs` — flat array of dataset/sublayer configs that have a `symbol` property (sublayer merging is the caller's responsibility — use `getSymbolConfigs` from the datasets adapter or equivalent)
+- `mapStyleId` — current map style ID, used to resolve style-variant token values
+- `symbolRegistry` — the core symbol registry instance
+
+```js
+// In a plugin's MapLibre layer adapter
+await mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyleId, symbolRegistry)
+```
+
 ---
 
 ### `mapState`
@@ -100,25 +128,43 @@ Closes the map if in fullscreen mode and returns to the previous page. Use this 
 context.services.closeApp()
 ```
 
+#### `symbolRegistry`
+
+Registry of named symbol definitions. Use this to register custom symbols that can be referenced by name in dataset or feature configs.
+
+See [Symbol Registry](./symbol-registry.md) for full documentation.
+
+---
+
+#### `patternRegistry`
+
+Registry of named fill pattern definitions. Built-in patterns (`'dot'`, `'cross-hatch'`, `'diamond'`, etc.) are pre-registered. Use this to register custom named patterns that can be shared across plugins.
+
+```js
+context.services.patternRegistry.register('my-hatch', '<path d="M0 0L16 16" stroke="{{foregroundColor}}"/>')
+```
+
+Patterns authored in a 16×16 coordinate space. Use `{{foregroundColor}}` and `{{backgroundColor}}` tokens for colour injection.
+
+---
+
 #### `eventBus`
 
 Pub/sub event bus for communication within the application.
 
 ```js
-const { eventBus, events } = context.services
+const { eventBus } = context.services
 
 // Subscribe to an event
-eventBus.on(events.APP_PANEL_OPENED, ({ panelId }) => {
+eventBus.on('map:panel-opened', ({ panelId }) => {
   console.log('Panel opened:', panelId)
 })
 
 // Unsubscribe from an event
-eventBus.off(events.APP_PANEL_OPENED, handler)
+eventBus.off('map:panel-opened', handler)
 
 // Emit an event
-eventBus.emit(events.MY_CUSTOM_EVENT, { data: 'value' })
+eventBus.emit('my-plugin:custom-event', { data: 'value' })
 ```
 
-#### `events`
-
-Event name constants for use with `eventBus`. See [Events](../api.md#events) for available events.
+See [Events](../api.md#events) for available event name constants.

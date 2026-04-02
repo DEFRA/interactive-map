@@ -19,7 +19,7 @@ describe('projectCoords', () => {
   const mockProvider = { mapToScreen: jest.fn(() => ({ x: 100, y: 200 })) }
 
   it('returns scaled coordinates when ready', () => {
-    expect(projectCoords({ lat: 1, lng: 1 }, mockProvider, 'medium', true)).toEqual({ x: 200, y: 381 })
+    expect(projectCoords({ lat: 1, lng: 1 }, mockProvider, 'medium', true)).toEqual({ x: 200, y: 400 })
   })
 
   it('returns zero when not ready or no provider', () => {
@@ -102,7 +102,7 @@ describe('useMarkers', () => {
 
     const renderCallback = mockEventBus.on.mock.calls.find(call => call[0] === 'map:render')[1]
     act(() => renderCallback())
-    expect(mockElement.style.transform).toBe('translate(200px, 381px)')
+    expect(mockElement.style.transform).toBe('translate(200px, 400px)')
   })
 
   it('skips map:render when not ready or no provider (line 60)', () => {
@@ -126,7 +126,7 @@ describe('useMarkers', () => {
       isMapReady: true
     })
     rerender()
-    expect(mockElement.style.transform).toBe('translate(300px, 581px)')
+    expect(mockElement.style.transform).toBe('translate(300px, 600px)')
   })
 
   it('handles app:addmarker safely', () => {
@@ -137,7 +137,7 @@ describe('useMarkers', () => {
     act(() => handleAddMarker(addPayload))
     expect(mockDispatch).toHaveBeenCalledWith({
       type: 'UPSERT_LOCATION_MARKER',
-      payload: { id: 'm1', coords: { lat: 1, lng: 1 }, label: 'Test', x: 200, y: 381, isVisible: true }
+      payload: { id: 'm1', coords: { lat: 1, lng: 1 }, label: 'Test', x: 200, y: 400, isVisible: true }
     })
   })
 

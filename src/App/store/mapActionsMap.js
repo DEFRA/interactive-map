@@ -12,12 +12,10 @@ const setMapReady = (state) => ({
   isMapReady: true
 })
 
-const setMapStyle = (state, payload) => {
-  return {
-    ...state,
-    mapStyle: payload
-  }
-}
+const setMapStyle = (state, payload) => ({
+  ...state,
+  mapStyle: payload
+})
 
 const setMapSize = (state, payload) => {
   return {

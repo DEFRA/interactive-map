@@ -1,9 +1,11 @@
 import React from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
-import { hasPattern, getKeyPatternPaths } from '../styles/patterns.js'
+import { hasPattern, getKeyPatternPaths } from '../../../../../src/utils/patternUtils.js'
 import { mergeSublayer } from '../utils/mergeSublayer.js'
+import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
 
 const SVG_SIZE = 20
+const SVG_SYMBOL_SIZE = 38
 const SVG_CENTER = SVG_SIZE / 2
 const PATTERN_INSET = 2
 
@@ -32,21 +34,41 @@ const buildKeyGroups = (datasets) => {
   return items
 }
 
-export const Key = ({ mapState, pluginState }) => {
+export const Key = ({ mapState, pluginState, services }) => {
   const { mapStyle } = mapState
+  const { symbolRegistry, patternRegistry } = services
+
+  // Key symbols are rendered in the app UI panel, not on the map, so use the app color
+  // scheme for halo fallback — not the map color scheme (which could differ, e.g. aerial).
+  const appColorScheme = mapStyle?.appColorScheme ?? 'light'
+  const keyMapStyle = mapStyle ? { ...mapStyle, mapColorScheme: appColorScheme } : mapStyle
 
   const itemSymbol = (config) => {
     const svgProps = {
       xmlns: 'http://www.w3.org/2000/svg',
-      width: SVG_SIZE,
-      height: SVG_SIZE,
+      width: hasSymbol(config) ? SVG_SYMBOL_SIZE : SVG_SIZE,
+      height: hasSymbol(config) ? SVG_SYMBOL_SIZE : SVG_SIZE,
       viewBox: `0 0 ${SVG_SIZE} ${SVG_SIZE}`,
+      className: `am-c-datasets-key-symbol${hasSymbol(config) ? ' am-c-datasets-key-symbol--point' : ''}`,
       'aria-hidden': 'true',
       focusable: 'false'
     }
 
+    if (hasSymbol(config)) {
+      const symbolDef = getSymbolDef(config, symbolRegistry)
+      if (symbolDef) {
+        const resolvedSvg = symbolRegistry.resolve(symbolDef, getSymbolStyleColors(config), keyMapStyle)
+        const viewBox = getSymbolViewBox(config, symbolDef)
+        return (
+          <svg {...svgProps} viewBox={viewBox}>
+            <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />
+          </svg>
+        )
+      }
+    }
+
     if (hasPattern(config)) {
-      const paths = getKeyPatternPaths(config, mapStyle.id)
+      const paths = getKeyPatternPaths(config, mapStyle.id, patternRegistry)
       return (
         <svg {...svgProps}>
           <g dangerouslySetInnerHTML={{ __html: paths.border }} />

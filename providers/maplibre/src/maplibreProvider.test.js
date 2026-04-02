@@ -4,6 +4,8 @@ import { attachAppEvents } from './appEvents.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
+import { registerSymbols } from './utils/symbolImages.js'
+import { registerPatterns } from './utils/patternImages.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
 
 jest.mock('./defaults.js', () => ({
@@ -33,6 +35,8 @@ jest.mock('./utils/labels.js', () => ({
 }))
 jest.mock('./utils/highlightFeatures.js', () => ({ updateHighlightedFeatures: jest.fn(() => []) }))
 jest.mock('./utils/queryFeatures.js', () => ({ queryFeatures: jest.fn(() => []) }))
+jest.mock('./utils/symbolImages.js', () => ({ registerSymbols: jest.fn(() => Promise.resolve()) }))
+jest.mock('./utils/patternImages.js', () => ({ registerPatterns: jest.fn(() => Promise.resolve()) }))
 
 describe('MapLibreProvider', () => {
   let map, eventBus, maplibreModule, loadCallback
@@ -53,7 +57,8 @@ describe('MapLibreProvider', () => {
       unproject: jest.fn(() => ({ lng: 1, lat: 2 })),
       getCenter: jest.fn(() => ({ lng: 1.2345678, lat: 2.3456789 })),
       getZoom: jest.fn(() => 10),
-      getBounds: jest.fn(() => ({ toArray: jest.fn(() => [[0, 0], [1, 1]]) }))
+      getBounds: jest.fn(() => ({ toArray: jest.fn(() => [[0, 0], [1, 1]]) })),
+      getPixelRatio: jest.fn(() => 1)
     }
     eventBus = { emit: jest.fn() }
     maplibreModule = { Map: jest.fn(() => map), LngLatBounds: jest.fn() }
@@ -218,6 +223,45 @@ describe('MapLibreProvider', () => {
     expect(updateHighlightedFeatures).toHaveBeenCalledWith({
       LngLatBounds: maplibreModule.LngLatBounds, map, selectedFeatures: ['feat'], stylesMap: { style: 1 }
     })
+  })
+
+  test('registerSymbols delegates to utility with map instance', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    const configs = [{ symbol: 'pin' }]
+    const mapStyle = { id: 'test', selectedColor: '#0b0c0c' }
+    const registry = {}
+    await p.registerSymbols(configs, mapStyle, registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, configs, mapStyle, registry, expect.any(Number))
+  })
+
+  test('registerSymbols computes pixelRatio from getPixelRatio and mapSize scale factor', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(2)
+    p.mapSize = 'medium' // scaleFactor['medium'] = 1.5
+    const registry = {}
+    await p.registerSymbols([], { id: 'test' }, registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 3) // 2 * 1.5
+  })
+
+  test('registerSymbols falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(0)
+    p.mapSize = 'small' // scaleFactor['small'] = 1
+    const registry = {}
+    await p.registerSymbols([], { id: 'test' }, registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 1) // (0 || 1) * 1
+  })
+
+  test('registerPatterns delegates to utility with map instance', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    const configs = [{ fillPattern: 'dot' }]
+    const registry = {}
+    await p.registerPatterns(configs, 'test', registry)
+    expect(registerPatterns).toHaveBeenCalledWith(map, configs, 'test', registry)
   })
 
   test('label methods return null without labelNavigator; delegate when set', async () => {

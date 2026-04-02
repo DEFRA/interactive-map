@@ -31,7 +31,11 @@ let feature
 // const feature = { id: 'boundary', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[371013.629737365,518087.27160546643],[371026.76930227707,518103.6431258204],[371076.00861123804,518150.38583537703],[371082.5004262571,518144.458668744],[371088.1419858577,518146.24617482634],[371119.04499505187,518121.1373772673],[371061.7528809118,518034.9300132221],[371044.3521903893,518057.18438187643],[371013.629737365,518087.27160546643]]]}, properties: { id: 'boundary' }}
 
 const interactPlugin = createInteractPlugin({
-	markerColor: { outdoor: '#ff0000' },
+	marker: {
+		symbol: 'pin',
+		backgroundColor: { outdoor: '#0b0c0c', dark: '#ffffff' },
+		foregroundColor: { outdoor: '#ffff', dark: '#0b0c0c' }
+	},
 	// interactionMode: 'marker', // 'auto', 'select', 'marker' // defaults to 'marker'
 	// multiSelect: true
 })

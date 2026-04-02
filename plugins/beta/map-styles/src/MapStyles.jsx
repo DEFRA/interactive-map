@@ -1,20 +1,21 @@
 import React from 'react'
+import { EVENTS } from '../../../../src/config/events.js'
 import { textSizeSvgPath } from './config.js'
 import { scaleFactor } from '../../../../src/config/appConfig.js'
 
 export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => {
   const { mapStyle: currentMapStyle, mapSize: currentMapSize } = mapState
   const { mapStyles } = pluginConfig
-  const { events, eventBus } = services
+  const { eventBus } = services
   const { supportsMapSizes } = mapProvider.capabilities
 
   const handleMapStyleClick = (newMapStyle) => {
-    eventBus.emit(events.MAP_SET_STYLE, newMapStyle)
+    eventBus.emit(EVENTS.MAP_SET_STYLE, newMapStyle)
   }
 
   const handleMapSizeClick = (newMapSize) => {
-    eventBus.emit(events.MAP_SET_SIZE, newMapSize)
-    eventBus.emit(events.MAP_SET_PIXEL_RATIO, window.devicePixelRatio * scaleFactor[newMapSize])
+    eventBus.emit(EVENTS.MAP_SET_SIZE, newMapSize)
+    eventBus.emit(EVENTS.MAP_SET_PIXEL_RATIO, window.devicePixelRatio * scaleFactor[newMapSize])
   }
 
   return (

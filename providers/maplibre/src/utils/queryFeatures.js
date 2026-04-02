@@ -97,12 +97,15 @@ export const queryFeatures = (map, point, options = {}) => {
     }
   })
 
-  // Deduplicate Bottom-Up to favor data layers over highlight layers
+  // Deduplicate Bottom-Up to favor data layers over highlight layers.
+  // Key includes source ID to prevent collisions between features from different
+  // sources that share the same numeric ID (e.g. generateId: true resets per source).
   const seenIds = new Set()
   const uniqueFeatures = []
   for (let i = rawFeatures.length - 1; i >= 0; i--) {
     const f = rawFeatures[i]
-    const featureId = f.id === undefined ? JSON.stringify(f.properties) : f.id
+    const rawId = f.id === undefined ? JSON.stringify(f.properties) : f.id
+    const featureId = `${f.layer?.source}:${rawId}`
     if (seenIds.has(featureId) === false) {
       seenIds.add(featureId)
       uniqueFeatures.push(f)

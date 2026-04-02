@@ -17,10 +17,11 @@ export const initialState = (config) => {
   // Does a plugin handle map styles
   const pluginHandlesMapStyles = !!registeredPlugins?.find(plugin => plugin.config?.handlesMapStyle)
 
+  const initialMapStyle = pluginHandlesMapStyles ? null : mapStyle
   return {
     isMapReady: false,
     mapProvider: null,
-    mapStyle: pluginHandlesMapStyles ? null : mapStyle,
+    mapStyle: initialMapStyle,
     mapSize,
     center,
     zoom,

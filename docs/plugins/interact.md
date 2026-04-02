@@ -71,9 +71,9 @@ dataLayers: [
 |----------|------|-------------|
 | `layerId` | `string` | **Required.** The map layer identifier to enable selection on |
 | `idProperty` | `string` | Property name used as the feature's unique identifier. If omitted, features are matched by index |
-| `selectedStroke` | `string` | Overrides the global `selectedStroke` for this layer |
-| `selectedFill` | `string` | Overrides the global `selectedFill` for this layer |
-| `selectedStrokeWidth` | `number` | Overrides the global `selectedStrokeWidth` for this layer |
+| `selectedStroke` | `string` | Overrides the selection stroke colour for this layer. Defaults to `MapStyleConfig.selectedColor` |
+| `selectedFill` | `string` | Overrides the selection fill colour for this layer. Defaults to `transparent` |
+| `selectedStrokeWidth` | `number` | Overrides the selection stroke width for this layer. Defaults to `3` |
 
 ---
 
@@ -117,35 +117,32 @@ When `true`, the app closes after the user clicks "Done" or "Cancel".
 
 ---
 
-### `markerColor`
-**Type:** `string`
-**Default:** `'rgba(212,53,28,1)'`
+### `marker`
+**Type:** `MarkerOptions`
 
-Color of the location marker placed on the map.
+Appearance of the location marker placed on the map. Accepts the same properties as [`MarkerOptions`](../api/marker-config.md#markeroptions). See [Symbol Config](../api/symbol-config.md) for the full property reference.
 
----
+```js
+createInteractPlugin({
+  marker: {
+    symbol: 'pin',
+    backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' },
+    foregroundColor: '#ffffff'
+  }
+})
+```
 
-### `selectedStroke`
-**Type:** `string`
-**Default:** `'rgba(212,53,28,1)'`
-
-Stroke color used to highlight selected features. Can be overridden per layer via `dataLayers`.
-
----
-
-### `selectedFill`
-**Type:** `string`
-**Default:** `'rgba(255, 0, 0, 0.1)'`
-
-Fill color used to highlight selected features. Can be overridden per layer via `dataLayers`.
+When not set, the marker inherits from the constructor `symbolDefaults` cascade.
 
 ---
 
 ### `selectedStrokeWidth`
 **Type:** `number`
-**Default:** `2`
+**Default:** `3`
 
-Stroke width used to highlight selected features. Can be overridden per layer via `dataLayers`.
+Stroke width used to highlight selected features. Can be overridden per layer via `dataLayers[].selectedStrokeWidth`.
+
+> **Selection colours** — stroke and fill colours for selected features are not configured here. Stroke colour comes from `MapStyleConfig.selectedColor` (falling back to the `mapColorScheme` scheme default), ensuring the selection colour stays consistent with the rest of the map theme. Fill defaults to `transparent`. Both can be overridden per layer via `dataLayers[].selectedStroke` and `dataLayers[].selectedFill`.
 
 ---
 

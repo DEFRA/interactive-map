@@ -53,7 +53,7 @@ const vtsMapStyles3857 = [{
 	thumbnail: '/assets/images/dark-map-thumb.jpg',
 	logo: '/assets/images/os-logo-white.svg',
 	logoAltText: 'Ordnance survey logo',
-	attribution: 'Test'
+	attribution: 'Test',
 }, {
 	id: 'black-and-white',
 	label: 'Black/White',
@@ -102,7 +102,7 @@ const vtsMapStyles27700 = [{
 }]
 
 export {
-  openMapStyles,
-  vtsMapStyles3857,
+	openMapStyles,
+	vtsMapStyles3857,
 	vtsMapStyles27700
 }

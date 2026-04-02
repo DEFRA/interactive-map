@@ -1,9 +1,10 @@
 import { useEffect } from 'react'
+import { EVENTS } from '../../../../src/config/events.js'
 import { attachEvents } from './events.js'
 import { createMapboxDraw } from './mapboxDraw.js'
 
 export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
-  const { events, eventBus } = services
+  const { eventBus } = services
   const { crossHair } = mapState
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
 
@@ -21,7 +22,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       mapStyle: mapState.mapStyle,
       snapLayers: pluginConfig.snapLayers,
       mapProvider,
-      events,
+      events: EVENTS,
       eventBus
     })
 
@@ -60,7 +61,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       mapProvider,
       buttonConfig,
       pluginState,
-      events,
+      events: EVENTS,
       eventBus
     })
 

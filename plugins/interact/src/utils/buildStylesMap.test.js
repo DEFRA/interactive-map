@@ -34,9 +34,23 @@ describe('buildStylesMap', () => {
     })
 
     // Default fallback values
-    expect(result.custom2.stroke).toBe(DEFAULTS.selectedStroke)
-    expect(result.custom2.fill).toBe(DEFAULTS.selectedFill)
+    expect(result.custom2.stroke).toBe('#0b0c0c')
+    expect(result.custom2.fill).toBe('transparent')
     expect(result.custom2.strokeWidth).toBe(DEFAULTS.selectedStrokeWidth)
+  })
+
+  it('uses mapStyle.selectedColor as default stroke when no layer override', () => {
+    const dataLayers = [{ layerId: 'layer1' }]
+    const mapStyle = { id: 'test', selectedColor: '#336699' }
+    const result = buildStylesMap(dataLayers, mapStyle)
+    expect(result.layer1.stroke).toBe('#336699')
+    expect(result.layer1.fill).toBe('transparent')
+  })
+
+  it('uses scheme default when mapStyle has no selectedColor', () => {
+    const dataLayers = [{ layerId: 'layer1' }]
+    expect(buildStylesMap(dataLayers, { id: 'light' }).layer1.stroke).toBe('#0b0c0c')
+    expect(buildStylesMap(dataLayers, { id: 'dark', mapColorScheme: 'dark' }).layer1.stroke).toBe('#ffffff')
   })
 
   it('calls getValueForStyle for stroke and fill with mapStyle.id', () => {

@@ -1,4 +1,5 @@
 import { act, render } from '@testing-library/react'
+import { EVENTS } from '../../../src/config/events.js'
 import { InteractInit } from './InteractInit.jsx'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
@@ -24,7 +25,7 @@ describe('InteractInit', () => {
     props = {
       appState: { interfaceType: 'mouse' },
       mapState: { crossHair: { fixAtCenter: jest.fn(), hide: jest.fn() }, mapStyle: {} },
-      services: { events: {}, eventBus: {}, closeApp: jest.fn() },
+      services: { eventBus: {}, closeApp: jest.fn() },
       buttonConfig: {},
       mapProvider: {},
       pluginState: { dispatch: jest.fn(), enabled: true, selectedFeatures: [], selectionBounds: {} }
@@ -50,7 +51,7 @@ describe('InteractInit', () => {
       pluginState: props.pluginState,
       selectedFeatures: props.pluginState.selectedFeatures,
       dispatch: props.pluginState.dispatch,
-      events: props.services.events,
+      events: EVENTS,
       eventBus: props.services.eventBus
     }))
   })
@@ -75,7 +76,7 @@ describe('InteractInit', () => {
       handleInteraction: expect.any(Function),
       mapState: props.mapState,
       buttonConfig: props.buttonConfig,
-      events: props.services.events,
+      events: EVENTS,
       eventBus: props.services.eventBus,
       closeApp: props.services.closeApp
     }))

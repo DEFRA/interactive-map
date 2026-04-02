@@ -26,17 +26,26 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
-const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.882445487962059,54.70938250564518],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8775970686837695,54.70966586215056],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8732152153681056,54.70892223300439],'type': 'Point'}}]}
+const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: {},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',properties: {},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',properties: {},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
-		layerId: 'field-parcels-130',
+		layerId: 'historic-monuments',
 		// idProperty: 'gid'
 	},{
-		layerId: 'field-parcels-332',
+		layerId: 'land-covers-110',
 		// idProperty: 'gid'
 	},{
-		layerId: 'field-parcels-other',
+		layerId: 'land-covers-130-131',
+		// idProperty: 'gid'
+	},{
+		layerId: 'land-covers-332',
+		// idProperty: 'gid'
+	},{
+		layerId: 'land-covers-379',
+		// idProperty: 'gid'
+	},{
+		layerId: 'land-covers-other',
 		// idProperty: 'gid'
 	},{
 		layerId: 'OS/TopographicArea_1/Agricultural Land',
@@ -61,38 +70,12 @@ const framePlugin = createFramePlugin({
 
 const datasetsPlugin = createDatasetsPlugin({
 	layerAdapter: maplibreLayerAdapter,
-	// datasets: [{
-	// 	id: 'linked-parcels',
-	// 	label: 'Existing fields',
-	// 	// Static GeoJSON - fetched once (current behaviour)
-	// 	geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106170272`,
-	// 	stroke: '#0000ff',
-	// 	strokeWidth: 2,
-	// 	fill: 'rgba(0,0,255,0.1)',
-	// 	symbolDescription: { outdoor: 'blue outline' },
-	// 	minZoom: 10,
-	// 	maxZoom: 24,
-	// 	showInKey: true,
-	// 	toggleVisibility: true
-	// },{
-	// 	id: 'permanent-grassland',
-	// 	label: 'Permanent grassland',
-	// 	geojson: `${process.env.FARMING_API_URL}/api/collections/land-covers/items?code=130&sbi=106170272`,
-	// 	stroke: '#00703c',
-	// 	strokeWidth: 2,
-	// 	fill: 'rgba(0,112,60,0.1)',
-	// 	symbolDescription: { outdoor: 'Green outline' },
-	// 	minZoom: 10,
-	// 	maxZoom: 24,
-	// 	showInKey: true,
-	// 	toggleVisibility: true,
-	// 	visibility: 'hidden'
-	// }]
 	
 	// Example: Dynamic bbox-based fetching (uncomment to test)
-	datasets: [{
-		id: 'field-parcels',
-		label: 'Field parcels',
+	datasets: [
+	{
+		id: 'land-covers',
+		label: 'Land covers',
 		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
 		// filter: [
 		// 	'all',
@@ -111,30 +94,15 @@ const datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		toggleVisibility: true,
-		// visibility: 'hidden',
-		// style: {
-		// 	stroke: { outdoor: '#0000ff', dark: '#ffffff' },
-		// 	strokeWidth: 2,
-		// 	symbol: '',
-		// 	symbolSvgContent: '',
-		// 	symbolForegroundColor: '',
-		// 	symbolBackgroundColor: '',
-		// 	symbolDescription: { outdoor: 'blue outline' },
-		// 	symbolOffset: [],
-		// 	fill: 'rgba(0,0,255,0.1)',
-		// 	fillPattern: 'diagonal-cross-hatch',
-		// 	fillPatternForegroundColor: { outdoor: '#0000ff', dark: '#ffffff' },
-		// 	fillPatternBackgroundColor: 'transparent'
-		// },
 		sublayers: [{
-			id: '130',
+			id: '130-131',
 			label: 'Permanent grassland',
-			filter: ['==', ['get', 'dominant_land_cover'], '130'], // 'dominant_land_cover = "130"'
+			filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
 			toggleVisibility: true,
 			style: {
-				stroke: { outdoor: '#82F584', dark: '#ffffff' },
+				stroke: { outdoor: '#00897B', dark: '#ffffff' },
 				fillPattern: 'diagonal-cross-hatch',
-				fillPatternForegroundColor: { outdoor: '#82F584', dark: '#ffffff' },
+				fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
 				fillPatternBackgroundColor: 'transparent'
 			}
 		},{
@@ -143,24 +111,78 @@ const datasetsPlugin = createDatasetsPlugin({
 			filter: ['==', ['get', 'dominant_land_cover'], '332'],
 			toggleVisibility: true,
 			style: {
-				stroke: { outdoor: '#66CA7A', dark: '#ffffff' },
+				stroke: { outdoor: '#2E7D32', dark: '#ffffff' },
 				fillPattern: 'dot',
-				fillPatternForegroundColor: { outdoor: '#66CA7A', dark: '#ffffff' },
+				fillPatternForegroundColor: { outdoor: '#2E7D32', dark: '#ffffff' },
+				fillPatternBackgroundColor: 'transparent'
+			}
+		},{
+			id: '110',
+			label: 'Arable',
+			filter: ['==', ['get', 'dominant_land_cover'], '110'],
+			toggleVisibility: true,
+			style: {
+				stroke: { outdoor: '#6D4C41', dark: '#ffffff' },
+				fillPattern: 'horizontal-hatch',
+				fillPatternForegroundColor: { outdoor: '#6D4C41', dark: '#ffffff' },
+				fillPatternBackgroundColor: 'transparent'
+			}
+		},{
+			id: '379',
+			label: 'Farmyards',
+			filter: ['==', ['get', 'dominant_land_cover'], '379'],
+			toggleVisibility: true,
+			style: {
+				stroke: { outdoor: '#6A1B9A', dark: '#ffffff' },
+				fillPattern: 'forward-diagonal-hatch',
+				fillPatternForegroundColor: { outdoor: '#6A1B9A', dark: '#ffffff' },
 				fillPatternBackgroundColor: 'transparent'
 			}
 		},{
 			id: 'other',
 			label: 'Others',
-			filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '332']]]],
+			filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['110', '130', '131', '332', '379']]]],
 			toggleVisibility: true,
 			style: {
-				stroke: { outdoor: '	#1d70b8', dark: '#ffffff' },
+				stroke: { outdoor: '#1565C0', dark: '#ffffff' },
 				fill: 'rgba(0,0,255,0.1)',
 				fillPattern: 'vertical-hatch',
-				fillPatternForegroundColor: { outdoor: '#1d70b8', dark: '#ffffff' },
+				fillPatternForegroundColor: { outdoor: '#1565C0', dark: '#ffffff' }
 				// fillPatternBackgroundColor: 'transparent'
 			}
 		}]
+	},
+	{
+		id: 'existing-fields',
+		label: 'Existing fields',
+		// groupLabel: 'Test group',
+		filter: ['all',['==', ['get', 'sbi'], '106223377'],['==', ['get', 'is_dominant_land_cover'], true]],
+		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+		sourceLayer: 'field_parcels_filtered',
+		minZoom: 10,
+		maxZoom: 24,
+		showInKey: true,
+		toggleVisibility: true,
+		style: {
+			stroke: { outdoor: '#1565C0', dark: '#ffffff'},
+			strokeWidth: 2,
+			fill: 'rgba(21,101,192,0.1)',
+			symbolDescription: { outdoor: 'blue outline', dark: 'white outline' }
+		}
+	},{
+		id: 'historic-monuments',
+		label: 'Historic monuments',
+		geojson: pointData,
+		minZoom: 10,
+		maxZoom: 24,
+		showInKey: true,
+		toggleVisibility: true,
+		style: {
+			symbol: 'square',
+			symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
+			symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
+			symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
+		}
 	},{
 		id: 'hedge-control',
 		label: 'Hedge control',
@@ -172,29 +194,12 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		visibility: 'hidden',
-		keySymbolShape: 'line',
 		style: {
 			stroke: '#b58840',
 			fill: 'transparent',
 			strokeWidth: 4,
-			symbolDescription: { outdoor: 'blue outline' }
-		}
-	},{
-		id: 'linked-parcels',
-		label: 'Existing fields',
-		// groupLabel: 'Test group',
-		filter: ['all',['==', ['get', 'sbi'], '106223377'],['==', ['get', 'is_dominant_land_cover'], true]],
-		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-		sourceLayer: 'field_parcels_filtered',
-		minZoom: 10,
-		maxZoom: 24,
-		showInKey: true,
-		toggleVisibility: true,
-		style: {
-			stroke: '#0000ff',
-			strokeWidth: 2,
-			fill: 'rgba(0,0,255,0.1)',
-			symbolDescription: { outdoor: 'blue outline' }
+			symbolDescription: { outdoor: 'blue outline' },
+			keySymbolShape: 'line',
 		}
 	}]
 })
@@ -235,6 +240,12 @@ const interactiveMap = new InteractiveMap('map', {
 		attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
 		backgroundColor: '#f5f5f0'
 	},
+	// symbolDefaults: {
+	// 	symbol: 'circle',
+	// 	backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+	// 	haloColor: { outdoor: '#ffffff', dark: '#0b0c0c' },
+	// 	selectedColor: { outdoor: '#ffdd00', dark: '#ffaa00' }
+	// },
 	plugins: [
 		datasetsPlugin,
 		mapStylesPlugin({
@@ -248,7 +259,7 @@ const interactiveMap = new InteractiveMap('map', {
 			osNamesURL: process.env.OS_NAMES_URL,
 			customDatasets: [parcelSearch, gridRefSearchETRS89],
 			width: '300px',
-			showMarker: false,
+			showMarker: true,
 			// expanded: true
 		}),
 		// useLocationPlugin(),
@@ -270,9 +281,9 @@ interactiveMap.on('map:ready', function (e) {
 })
 
 interactiveMap.on('datasets:ready', function () {
-	// setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [55], { datasetId: 'field-parcels', idProperty: null }), 2000)
-	// setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [55], { datasetId: 'field-parcels', idProperty: null }), 4000)
-	// setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } }, { datasetId: 'field-parcels', sublayerId: '130' }), 2000)
+	// setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [55], { datasetId: 'land-covers', idProperty: null }), 2000)
+	// setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [55], { datasetId: 'land-covers', idProperty: null }), 4000)
+	// setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ff0000', dark: '#ffffff' }, fillPattern: 'horizontal-hatch', fillPatternForegroundColor: { outdoor: '#ff0000', dark: '#ffffff' } }, { datasetId: 'land-covers', sublayerId: '130' }), 2000)
 })
 
 // Ref to the selected features
@@ -312,7 +323,7 @@ interactiveMap.on('search:match', function (e) {
 	interactPlugin.selectFeature({
 		idProperty: 'id',
 		featureId: e.properties.ngc,
-		layerId: 'linked-parcels'
+		layerId: 'existing-fields'
 	})
 })
 

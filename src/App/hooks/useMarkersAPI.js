@@ -5,12 +5,9 @@ import { useService } from '../store/serviceContext.js'
 import { scaleFactor } from '../../config/appConfig.js'
 import { EVENTS as events } from '../../config/events.js'
 
-// Vertical offset to align the marker tip with the coordinate point
-const MARKER_ANCHOR_OFFSET_Y = 19
-
 /**
  * Projects geographic coordinates to screen pixel position, scaled for the
- * current map size and offset so the marker tip aligns with the point.
+ * current map size. Anchor alignment is handled in CSS by the Markers component.
  *
  * @param {Array<number>} coords - [lng, lat] geographic coordinates
  * @param {Object} mapProvider - Map provider instance with `mapToScreen` method
@@ -25,7 +22,7 @@ export const projectCoords = (coords, mapProvider, mapSize, isMapReady) => {
   const { x, y } = mapProvider.mapToScreen(coords)
   return {
     x: x * scaleFactor[mapSize],
-    y: y * scaleFactor[mapSize] - MARKER_ANCHOR_OFFSET_Y
+    y: y * scaleFactor[mapSize]
   }
 }
 

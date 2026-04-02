@@ -4,6 +4,7 @@
  */
 
 import { DEFAULTS, supportedShortcuts } from './defaults.js'
+import { scaleFactor } from '../../../src/config/appConfig.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
@@ -11,6 +12,8 @@ import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, isGeometryObscu
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
+import { registerSymbols } from './utils/symbolImages.js'
+import { registerPatterns } from './utils/patternImages.js'
 
 /**
  * MapLibre GL JS implementation of the MapProvider interface.
@@ -281,6 +284,40 @@ export default class MapLibreProvider {
    */
   getFeaturesAtPoint (point, options) {
     return queryFeatures(this.map, point, options)
+  }
+
+  /**
+   * Rasterise and register symbol images for the given pre-resolved symbol configs.
+   * Delegates to the shared symbol image utility so any plugin's MapLibre adapter can
+   * register symbols without importing provider internals directly.
+   *
+   * The pixel ratio is computed as device pixel ratio × map size scale factor so symbols
+   * are rasterised at the correct resolution for the current device DPI and map size.
+   *
+   * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers with a symbol config.
+   *   Callers are responsible for sublayer merging before passing configs here.
+   * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
+   * @param {Object} symbolRegistry
+   * @returns {Promise<void>}
+   */
+  async registerSymbols (symbolConfigs, mapStyle, symbolRegistry) {
+    const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
+    return registerSymbols(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
+  }
+
+  /**
+   * Rasterise and register pattern images for the given pre-resolved pattern configs.
+   * Delegates to the shared pattern image utility so any plugin's MapLibre adapter can
+   * register patterns without importing provider internals directly.
+   *
+   * @param {Object[]} patternConfigs - Flat list of datasets/merged-sublayers with a pattern config.
+   *   Callers are responsible for sublayer merging before passing configs here.
+   * @param {string} mapStyleId
+   * @param {Object} patternRegistry
+   * @returns {Promise<void>}
+   */
+  async registerPatterns (patternConfigs, mapStyleId, patternRegistry) {
+    return registerPatterns(this.map, patternConfigs, mapStyleId, patternRegistry)
   }
 
   // ==========================

@@ -1,17 +1,18 @@
 // src/plugins/mapStyles/MapStylesInit.jsx
 import { useEffect } from 'react'
+import { EVENTS } from '../../../../src/config/events.js'
 
 export function MapStylesInit ({ pluginConfig, services }) {
-  const { events, eventBus } = services
+  const { eventBus } = services
 
   const handler = () => {
-    eventBus.emit(events.MAP_INIT_MAP_STYLES, pluginConfig.mapStyles)
+    eventBus.emit(EVENTS.MAP_INIT_MAP_STYLES, pluginConfig.mapStyles)
   }
 
   useEffect(() => {
-    eventBus.on(events.APP_READY, handler)
+    eventBus.on(EVENTS.APP_READY, handler)
 
-    return () => eventBus.off(events.APP_READY, handler)
+    return () => eventBus.off(EVENTS.APP_READY, handler)
   }, [])
 
   return <></> // no UI output, just side effects
