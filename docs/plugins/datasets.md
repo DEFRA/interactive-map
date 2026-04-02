@@ -263,6 +263,13 @@ Overrides the shape used to render the key symbol for this dataset. Defaults to 
 
 Visual style for the dataset. All style properties must be nested within this object.
 
+**Common properties:**
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `opacity` | `number` | Layer opacity from `0` to `1` |
+| `symbolDescription` | `string \| Record<string, string>` | Accessible description of the symbol shown in the key |
+
 **Polygon/line properties:**
 
 | Property | Type | Description |
@@ -275,8 +282,6 @@ Visual style for the dataset. All style properties must be nested within this ob
 | `fillPatternSvgContent` | `string` | Raw SVG content for a custom fill pattern |
 | `fillPatternForegroundColor` | `string \| Record<string, string>` | Foreground colour for the fill pattern |
 | `fillPatternBackgroundColor` | `string \| Record<string, string>` | Background colour for the fill pattern |
-| `opacity` | `number` | Layer opacity from `0` to `1` |
-| `symbolDescription` | `string \| Record<string, string>` | Accessible description of the symbol shown in the key |
 | `keySymbolShape` | `'polygon' \| 'line'` | Shape used for the key symbol |
 
 **Symbol (point) properties:**
@@ -295,6 +300,8 @@ Setting `symbol` or `symbolSvgContent` renders the dataset as a point layer inst
 | `symbolGraphic` | `string` | SVG `d` attribute for the foreground graphic path. Use named values (`'dot'`, `'cross'`, `'diamond'`, `'triangle'`, `'square'`) or supply your own path data |
 
 Symbol colour properties use the `symbol` prefix to distinguish them from polygon/line properties in the same style object. They follow the same resolution order and support style-keyed colour objects in the same way as markers — see [Symbol Config](../api/symbol-config.md) for details.
+
+`haloColor` and `selectedColor` are not settable here — they are basemap-level properties set on [`MapStyleConfig`](../api/map-style-config.md).
 
 ```js
 // Polygon/line dataset

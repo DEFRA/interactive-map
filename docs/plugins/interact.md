@@ -71,9 +71,9 @@ dataLayers: [
 |----------|------|-------------|
 | `layerId` | `string` | **Required.** The map layer identifier to enable selection on |
 | `idProperty` | `string` | Property name used as the feature's unique identifier. If omitted, features are matched by index |
-| `selectedStroke` | `string` | Overrides the global `selectedStroke` for this layer |
-| `selectedFill` | `string` | Overrides the global `selectedFill` for this layer |
-| `selectedStrokeWidth` | `number` | Overrides the global `selectedStrokeWidth` for this layer |
+| `selectedStroke` | `string` | Overrides the selection stroke colour for this layer. Defaults to `MapStyleConfig.selectedColor` |
+| `selectedFill` | `string` | Overrides the selection fill colour for this layer. Defaults to `transparent` |
+| `selectedStrokeWidth` | `number` | Overrides the selection stroke width for this layer. Defaults to `3` |
 
 ---
 
@@ -136,27 +136,13 @@ When not set, the marker inherits from the constructor `symbolDefaults` cascade.
 
 ---
 
-### `selectedStroke`
-**Type:** `string`
-**Default:** `'rgba(212,53,28,1)'`
-
-Stroke color used to highlight selected features. Can be overridden per layer via `dataLayers`.
-
----
-
-### `selectedFill`
-**Type:** `string`
-**Default:** `'rgba(255, 0, 0, 0.1)'`
-
-Fill color used to highlight selected features. Can be overridden per layer via `dataLayers`.
-
----
-
 ### `selectedStrokeWidth`
 **Type:** `number`
 **Default:** `3`
 
-Stroke width used to highlight selected features. Can be overridden per layer via `dataLayers`.
+Stroke width used to highlight selected features. Can be overridden per layer via `dataLayers[].selectedStrokeWidth`.
+
+> **Selection colours** — stroke and fill colours for selected features are not configured here. Stroke colour comes from `MapStyleConfig.selectedColor` (falling back to the `mapColorScheme` scheme default), ensuring the selection colour stays consistent with the rest of the map theme. Fill defaults to `transparent`. Both can be overridden per layer via `dataLayers[].selectedStroke` and `dataLayers[].selectedFill`.
 
 ---
 
