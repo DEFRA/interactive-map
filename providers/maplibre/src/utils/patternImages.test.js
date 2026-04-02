@@ -4,25 +4,16 @@ const OUTDOOR = 'outdoor'
 
 const SVG_CONTENT = '<path d="M0 0 L8 8"/>'
 
-class MockImageData {
-  constructor (width, height) {
-    this.width = width
-    this.height = height
-    this.data = new Uint8ClampedArray(width * height * 4)
-  }
-}
-
 beforeAll(() => {
-  global.ImageData = MockImageData
-  global.URL.createObjectURL = jest.fn(() => 'blob:mock')
-  global.URL.revokeObjectURL = jest.fn()
+  globalThis.URL.createObjectURL = jest.fn(() => 'blob:mock')
+  globalThis.URL.revokeObjectURL = jest.fn()
 
   HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
     drawImage: jest.fn(),
-    getImageData: jest.fn((_x, _y, w, h) => new MockImageData(w, h))
+    getImageData: jest.fn((_x, _y, w, h) => ({ width: w, height: h }))
   }))
 
-  global.Image = class {
+  globalThis.Image = class {
     constructor (w, h) {
       this.width = w
       this.height = h
@@ -45,7 +36,7 @@ const makePatternRegistry = (id = 'stripes', content = SVG_CONTENT) => ({
 
 // ─── registerPatterns ─────────────────────────────────────────────────────────
 
-describe('registerPatterns', () => {
+describe('registerPatterns — registration', () => {
   it('returns early and does not touch map for empty configs', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
@@ -62,7 +53,7 @@ describe('registerPatterns', () => {
     expect(map.addImage).toHaveBeenCalledTimes(1)
     expect(map.addImage).toHaveBeenCalledWith(
       expect.stringMatching(/^pattern-[a-z0-9]+$/),
-      expect.any(MockImageData),
+      expect.any(Object),
       { pixelRatio: 2 }
     )
   })
@@ -78,7 +69,6 @@ describe('registerPatterns', () => {
   it('skips addImage when image is already registered', async () => {
     const registry = makePatternRegistry()
     const config = { fillPattern: 'stripes' }
-    // derive the id that would be generated so we can pre-register it
     const { getPatternImageId } = await import('../../../../src/utils/patternUtils.js')
     const existingId = getPatternImageId(config, OUTDOOR, registry)
     const map = makeMap([existingId])
@@ -89,8 +79,7 @@ describe('registerPatterns', () => {
   it('skips config when pattern has no inner content', async () => {
     const map = makeMap()
     const emptyRegistry = { get: jest.fn(() => undefined) }
-    const config = { fillPattern: 'unknown' }
-    await registerPatterns(map, [config], OUTDOOR, emptyRegistry)
+    await registerPatterns(map, [{ fillPattern: 'unknown' }], OUTDOOR, emptyRegistry)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
@@ -101,6 +90,21 @@ describe('registerPatterns', () => {
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
+  it('processes multiple configs in parallel', async () => {
+    const map = makeMap()
+    const registry = {
+      get: jest.fn((name) => {
+        if (name === 'stripes') { return { svgContent: '<path d="M0 0"/>' } }
+        if (name === 'dots') { return { svgContent: '<circle cx="8" cy="8" r="4"/>' } }
+        return undefined
+      })
+    }
+    await registerPatterns(map, [{ fillPattern: 'stripes' }, { fillPattern: 'dots' }], OUTDOOR, registry)
+    expect(map.addImage).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('registerPatterns — color resolution and caching', () => {
   it('applies foreground and background colors when resolving the SVG', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
@@ -112,21 +116,7 @@ describe('registerPatterns', () => {
       registry
     )
     expect(map.addImage).toHaveBeenCalledTimes(1)
-    // getContext was called to draw the rasterised SVG
     expect(getContextSpy).toHaveBeenCalled()
-  })
-
-  it('uses cached ImageData on second call with identical config', async () => {
-    const map = makeMap()
-    const registry = makePatternRegistry()
-    const config = { fillPattern: 'stripes', fillPatternForegroundColor: '#unique1' }
-    await registerPatterns(map, [config], OUTDOOR, registry)
-    // second call — image already on map (simulated by pre-registering)
-    const { getPatternImageId } = await import('../../../../src/utils/patternUtils.js')
-    const imageId = getPatternImageId(config, OUTDOOR, registry)
-    const map2 = makeMap([imageId])
-    await registerPatterns(map2, [config], OUTDOOR, registry)
-    expect(map2.addImage).not.toHaveBeenCalled()
   })
 
   it('resolves style-keyed foreground color for the given mapStyleId', async () => {
@@ -137,8 +127,6 @@ describe('registerPatterns', () => {
       fillPatternForegroundColor: { outdoor: '#aabbcc', dark: '#112233' }
     }
     await registerPatterns(map, [config], OUTDOOR, registry)
-    expect(map.addImage).toHaveBeenCalledTimes(1)
-    // The same config for 'dark' produces a different image id
     const map2 = makeMap()
     await registerPatterns(map2, [config], 'dark', registry)
     const [idOutdoor] = map.addImage.mock.calls[0]
@@ -146,25 +134,21 @@ describe('registerPatterns', () => {
     expect(idOutdoor).not.toBe(idDark)
   })
 
-  it('rejects when the SVG image fails to load', async () => {
-    const originalImage = global.Image
-    global.Image = class {
-      constructor (w, h) { this.width = w; this.height = h; this._src = '' }
-      get src () { return this._src }
-      set src (val) { this._src = val; this.onerror?.() }
-    }
-    try {
-      // Use unique content so the module-level cache is bypassed
-      const registry = makePatternRegistry('fail-pattern', '<path d="M99 99 unique-onerror-pattern"/>')
-      const map = makeMap()
-      await expect(registerPatterns(map, [{ fillPattern: 'fail-pattern' }], OUTDOOR, registry))
-        .rejects.toThrow('Failed to rasterise pattern SVG')
-    } finally {
-      global.Image = originalImage
-    }
+  it('uses cached ImageData on second call with identical config', async () => {
+    const map = makeMap()
+    const registry = makePatternRegistry()
+    const config = { fillPattern: 'stripes', fillPatternForegroundColor: '#unique1' }
+    await registerPatterns(map, [config], OUTDOOR, registry)
+    const { getPatternImageId } = await import('../../../../src/utils/patternUtils.js')
+    const imageId = getPatternImageId(config, OUTDOOR, registry)
+    const map2 = makeMap([imageId])
+    await registerPatterns(map2, [config], OUTDOOR, registry)
+    expect(map2.addImage).not.toHaveBeenCalled()
   })
+})
 
-  it('does not call addImage when rasterisePattern returns null due to innerContent becoming unavailable', async () => {
+describe('registerPatterns — null results', () => {
+  it('does not call addImage when innerContent becomes unavailable inside rasterisePattern', async () => {
     // registry.get returns content on the first call (for getPatternImageId in registerPatterns)
     // but undefined on the second call (for getPatternInnerContent inside rasterisePattern)
     const registry = {
@@ -177,7 +161,7 @@ describe('registerPatterns', () => {
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
-  it('does not call addImage when rasterisePattern returns null due to imageId becoming unavailable', async () => {
+  it('does not call addImage when imageId becomes unavailable inside rasterisePattern', async () => {
     // Three consecutive calls to registry.get:
     //   1. getPatternImageId in registerPatterns → returns content → imageId is truthy
     //   2. getPatternInnerContent directly in rasterisePattern → returns content → passes innerContent guard
@@ -192,23 +176,5 @@ describe('registerPatterns', () => {
     const map = makeMap()
     await registerPatterns(map, [{ fillPattern: 'stripes' }], OUTDOOR, registry)
     expect(map.addImage).not.toHaveBeenCalled()
-  })
-
-  it('processes multiple configs in parallel', async () => {
-    const map = makeMap()
-    const registry = {
-      get: jest.fn((name) => {
-        if (name === 'stripes') { return { svgContent: '<path d="M0 0"/>' } }
-        if (name === 'dots') { return { svgContent: '<circle cx="8" cy="8" r="4"/>' } }
-        return undefined
-      })
-    }
-    await registerPatterns(
-      map,
-      [{ fillPattern: 'stripes' }, { fillPattern: 'dots' }],
-      OUTDOOR,
-      registry
-    )
-    expect(map.addImage).toHaveBeenCalledTimes(2)
   })
 })

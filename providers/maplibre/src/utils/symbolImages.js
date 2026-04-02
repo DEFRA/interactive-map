@@ -1,8 +1,8 @@
 import { getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../src/utils/symbolUtils.js'
+import { rasteriseToImageData } from './rasteriseToImageData.js'
 
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
-const SVG_ERROR_PREVIEW_LENGTH = 80
 const HASH_BASE = 36
 
 const hashString = (str) => {
@@ -77,27 +77,6 @@ export const getSymbolImageId = (dataset, mapStyle, symbolRegistry, selected = f
 
 // Module-level cache: imageId → ImageData. Avoids re-rasterising identical symbols.
 const imageDataCache = new Map()
-
-const rasteriseToImageData = (svgString, width, height) =>
-  new Promise((resolve, reject) => {
-    const blob = new Blob([svgString], { type: 'image/svg+xml' })
-    const url = URL.createObjectURL(blob)
-    const img = new Image(width, height)
-    img.onload = () => {
-      const canvas = document.createElement('canvas')
-      canvas.width = width
-      canvas.height = height
-      const ctx = canvas.getContext('2d')
-      ctx.drawImage(img, 0, 0, width, height)
-      URL.revokeObjectURL(url)
-      resolve(ctx.getImageData(0, 0, width, height))
-    }
-    img.onerror = () => {
-      URL.revokeObjectURL(url)
-      reject(new Error(`Failed to rasterise symbol SVG: ${svgString.slice(0, SVG_ERROR_PREVIEW_LENGTH)}`))
-    }
-    img.src = url
-  })
 
 const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected, pixelRatio) => {
   const symbolDef = getSymbolDef(dataset, symbolRegistry)

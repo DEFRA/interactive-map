@@ -4,6 +4,24 @@ import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
 
+// Marker properties handled internally — excluded from style value resolution
+const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'selectedWidth'])
+
+const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
+  const svgContent = marker.symbolSvgContent || defaults.symbolSvgContent
+  // Inline symbolSvgContent takes precedence over a registered symbol,
+  // cascading through marker → constructor defaults
+  return svgContent
+    ? { svg: svgContent }
+    : symbolRegistry.get(marker.symbol || defaults.symbol)
+}
+
+const resolveViewBox = (marker, defaults, symbolDef) =>
+  marker.viewBox || defaults.viewBox || symbolDef?.viewBox || '0 0 38 38'
+
+const resolveAnchor = (marker, defaults, symbolDef) =>
+  marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
+
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Markers = () => {
@@ -21,22 +39,16 @@ export const Markers = () => {
   return (
     <>
       {markers.items.map(marker => {
-        // Inline symbolSvgContent takes precedence over a registered symbol,
-        // cascading through marker → constructor defaults
-        const symbolDef = (marker.symbolSvgContent || defaults.symbolSvgContent)
-          ? { svg: marker.symbolSvgContent || defaults.symbolSvgContent }
-          : symbolRegistry.get(marker.symbol || defaults.symbol)
-
+        const symbolDef = resolveSymbolDef(marker, defaults, symbolRegistry)
         // selectedColor comes from mapStyle — not per-marker; selectedWidth stays in cascade
-        const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'selectedWidth'])
         const styleValues = Object.fromEntries(
           Object.entries(marker).filter(([k]) => !INTERNAL_KEYS.has(k))
         )
         const resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
 
-        const viewBox = marker.viewBox || defaults.viewBox || symbolDef?.viewBox || '0 0 38 38'
+        const viewBox = resolveViewBox(marker, defaults, symbolDef)
         const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
-        const anchor = marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
+        const anchor = resolveAnchor(marker, defaults, symbolDef)
         const shapeId = marker.symbol || defaults.symbol
 
         return (
