@@ -24,14 +24,22 @@ const hashString = (str) => {
  * @returns {string} MapLibre icon-anchor value
  */
 const xAnchor = (ax) => {
-  if (ax <= ANCHOR_LOW) { return 'left' }
-  if (ax >= ANCHOR_HIGH) { return 'right' }
+  if (ax <= ANCHOR_LOW) {
+    return 'left'
+  }
+  if (ax >= ANCHOR_HIGH) {
+    return 'right'
+  }
   return ''
 }
 
 const yAnchor = (ay) => {
-  if (ay <= ANCHOR_LOW) { return 'top' }
-  if (ay >= ANCHOR_HIGH) { return 'bottom' }
+  if (ay <= ANCHOR_LOW) {
+    return 'top'
+  }
+  if (ay >= ANCHOR_HIGH) {
+    return 'bottom'
+  }
   return ''
 }
 
@@ -55,7 +63,9 @@ export const anchorToMaplibre = ([ax, ay]) => {
  */
 export const getSymbolImageId = (dataset, mapStyle, symbolRegistry, selected = false) => {
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
-  if (!symbolDef) { return null }
+  if (!symbolDef) {
+    return null
+  }
   const styleColors = getSymbolStyleColors(dataset)
   const resolved = selected
     ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
@@ -91,7 +101,9 @@ const rasteriseToImageData = (svgString, width, height) =>
 
 const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected) => {
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
-  if (!symbolDef) { return null }
+  if (!symbolDef) {
+    return null
+  }
   const styleColors = getSymbolStyleColors(dataset)
   const resolvedContent = selected
     ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
@@ -128,7 +140,9 @@ const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected)
  * @returns {Promise<void>}
  */
 export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegistry) => {
-  if (!symbolConfigs.length) { return }
+  if (!symbolConfigs.length) {
+    return
+  }
 
   // Reset the normal→selected image ID lookup so stale entries don't persist after a style change
   map._symbolImageMap = {}
@@ -141,7 +155,9 @@ export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegist
     }
     return [false, true].map(async (selected) => {
       const imageId = selected ? selectedId : normalId
-      if (!imageId || map.hasImage(imageId)) { return }
+      if (!imageId || map.hasImage(imageId)) {
+        return
+      }
       const result = await rasteriseSymbolImage(config, mapStyle, symbolRegistry, selected)
       if (result) {
         map.addImage(result.imageId, result.imageData, { pixelRatio: 2 })

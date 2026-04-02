@@ -47,7 +47,7 @@ export const getSymbolStyleColors = (dataset) => {
   SYMBOL_STYLE_PROPS.forEach(key => {
     if (dataset[key] != null) {
       // Strip 'symbol' prefix: symbolBackgroundColor → backgroundColor
-      const tokenKey = key.charAt(6).toLowerCase() + key.slice(7)
+      const tokenKey = key.charAt(6).toLowerCase() + key.slice(7) // NOSONAR
       tokens[tokenKey] = dataset[key]
     }
   })
@@ -63,7 +63,9 @@ export const getSymbolStyleColors = (dataset) => {
  * @returns {string}
  */
 export const getSymbolViewBox = (dataset, symbolDef) => {
-  if (dataset.symbolViewBox) { return dataset.symbolViewBox }
+  if (dataset.symbolViewBox) {
+    return dataset.symbolViewBox
+  }
   return symbolDef?.viewBox ?? '0 0 38 38'
 }
 
@@ -76,6 +78,8 @@ export const getSymbolViewBox = (dataset, symbolDef) => {
  * @returns {number[]}
  */
 export const getSymbolAnchor = (dataset, symbolDef) => {
-  if (dataset.symbolAnchor) { return dataset.symbolAnchor }
+  if (dataset.symbolAnchor) {
+    return dataset.symbolAnchor
+  }
   return symbolDef?.anchor ?? [0.5, 0.5]
 }

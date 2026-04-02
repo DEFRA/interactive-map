@@ -33,10 +33,16 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'historic-monuments',
 		// idProperty: 'gid'
 	},{
-		layerId: 'land-covers-130',
+		layerId: 'land-covers-110',
+		// idProperty: 'gid'
+	},{
+		layerId: 'land-covers-130-131',
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-332',
+		// idProperty: 'gid'
+	},{
+		layerId: 'land-covers-379',
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-other',
@@ -89,14 +95,14 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		sublayers: [{
-			id: '130',
+			id: '130-131',
 			label: 'Permanent grassland',
-			filter: ['==', ['get', 'dominant_land_cover'], '130'], // 'dominant_land_cover = "130"'
+			filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
 			toggleVisibility: true,
 			style: {
-				stroke: { outdoor: '#82F584', dark: '#ffffff' },
+				stroke: { outdoor: '#00897B', dark: '#ffffff' },
 				fillPattern: 'diagonal-cross-hatch',
-				fillPatternForegroundColor: { outdoor: '#82F584', dark: '#ffffff' },
+				fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
 				fillPatternBackgroundColor: 'transparent'
 			}
 		},{
@@ -105,21 +111,43 @@ const datasetsPlugin = createDatasetsPlugin({
 			filter: ['==', ['get', 'dominant_land_cover'], '332'],
 			toggleVisibility: true,
 			style: {
-				stroke: { outdoor: '#66CA7A', dark: '#ffffff' },
+				stroke: { outdoor: '#2E7D32', dark: '#ffffff' },
 				fillPattern: 'dot',
-				fillPatternForegroundColor: { outdoor: '#66CA7A', dark: '#ffffff' },
+				fillPatternForegroundColor: { outdoor: '#2E7D32', dark: '#ffffff' },
+				fillPatternBackgroundColor: 'transparent'
+			}
+		},{
+			id: '110',
+			label: 'Arable',
+			filter: ['==', ['get', 'dominant_land_cover'], '110'],
+			toggleVisibility: true,
+			style: {
+				stroke: { outdoor: '#6D4C41', dark: '#ffffff' },
+				fillPattern: 'horizontal-hatch',
+				fillPatternForegroundColor: { outdoor: '#6D4C41', dark: '#ffffff' },
+				fillPatternBackgroundColor: 'transparent'
+			}
+		},{
+			id: '379',
+			label: 'Farmyards',
+			filter: ['==', ['get', 'dominant_land_cover'], '379'],
+			toggleVisibility: true,
+			style: {
+				stroke: { outdoor: '#6A1B9A', dark: '#ffffff' },
+				fillPattern: 'forward-diagonal-hatch',
+				fillPatternForegroundColor: { outdoor: '#6A1B9A', dark: '#ffffff' },
 				fillPatternBackgroundColor: 'transparent'
 			}
 		},{
 			id: 'other',
 			label: 'Others',
-			filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '332']]]],
+			filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['110', '130', '131', '332', '379']]]],
 			toggleVisibility: true,
 			style: {
-				stroke: { outdoor: '#1d70b8', dark: '#ffffff' },
+				stroke: { outdoor: '#1565C0', dark: '#ffffff' },
 				fill: 'rgba(0,0,255,0.1)',
 				fillPattern: 'vertical-hatch',
-				fillPatternForegroundColor: { outdoor: '#1d70b8', dark: '#ffffff' }
+				fillPatternForegroundColor: { outdoor: '#1565C0', dark: '#ffffff' }
 				// fillPatternBackgroundColor: 'transparent'
 			}
 		}]
@@ -136,9 +164,9 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		toggleVisibility: true,
 		style: {
-			stroke: { outdoor: '#1d70b8', dark: '#ffffff'},
+			stroke: { outdoor: '#1565C0', dark: '#ffffff'},
 			strokeWidth: 2,
-			fill: 'rgba(0,0,255,0.1)',
+			fill: 'rgba(21,101,192,0.1)',
 			symbolDescription: { outdoor: 'blue outline', dark: 'white outline' }
 		}
 	},{

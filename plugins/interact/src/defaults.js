@@ -5,6 +5,5 @@ export const DEFAULTS = {
   contiguous: false,
   deselectOnClickOutside: false,
   marker: {},
-  selectedColor: '#0b0c0c',
   selectedStrokeWidth: 3
 }

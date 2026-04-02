@@ -34,7 +34,7 @@ describe('buildStylesMap', () => {
     })
 
     // Default fallback values
-    expect(result.custom2.stroke).toBe(DEFAULTS.selectedColor)
+    expect(result.custom2.stroke).toBe('#0b0c0c')
     expect(result.custom2.fill).toBe('transparent')
     expect(result.custom2.strokeWidth).toBe(DEFAULTS.selectedStrokeWidth)
   })
