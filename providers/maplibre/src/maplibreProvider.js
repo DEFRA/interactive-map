@@ -4,6 +4,7 @@
  */
 
 import { DEFAULTS, supportedShortcuts } from './defaults.js'
+import { scaleFactor } from '../../../src/config/appConfig.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
@@ -290,6 +291,9 @@ export default class MapLibreProvider {
    * Delegates to the shared symbol image utility so any plugin's MapLibre adapter can
    * register symbols without importing provider internals directly.
    *
+   * The pixel ratio is computed as device pixel ratio × map size scale factor so symbols
+   * are rasterised at the correct resolution for the current device DPI and map size.
+   *
    * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers with a symbol config.
    *   Callers are responsible for sublayer merging before passing configs here.
    * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
@@ -297,7 +301,8 @@ export default class MapLibreProvider {
    * @returns {Promise<void>}
    */
   async registerSymbols (symbolConfigs, mapStyle, symbolRegistry) {
-    return registerSymbols(this.map, symbolConfigs, mapStyle, symbolRegistry)
+    const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
+    return registerSymbols(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
   }
 
   /**

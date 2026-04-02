@@ -1,4 +1,5 @@
 export function attachAppEvents ({
+  mapProvider,
   map,
   events,
   eventBus
@@ -16,13 +17,19 @@ export function attachAppEvents ({
     map.setPixelRatio(pixelRatio)
   }
 
+  const handleSizeChange = ({ mapSize }) => {
+    mapProvider.mapSize = mapSize
+  }
+
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)
   eventBus.on(events.MAP_SET_PIXEL_RATIO, handleSetPixelRatio)
+  eventBus.on(events.MAP_SIZE_CHANGE, handleSizeChange)
 
   return {
     remove () {
       eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)
       eventBus.off(events.MAP_SET_PIXEL_RATIO, handleSetPixelRatio)
+      eventBus.off(events.MAP_SIZE_CHANGE, handleSizeChange)
     }
   }
 }

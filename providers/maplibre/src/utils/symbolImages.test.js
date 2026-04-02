@@ -110,13 +110,13 @@ describe('getSymbolImageId', () => {
   it('returns a string prefixed symbol- for normal state', () => {
     const id = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
     expect(typeof id).toBe('string')
-    expect(id).toMatch(/^symbol-[a-z0-9]+$/)
+    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
   })
 
   it('returns a string prefixed symbol-sel- for selected state', () => {
     const id = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, true)
     expect(typeof id).toBe('string')
-    expect(id).toMatch(/^symbol-sel-[a-z0-9]+$/)
+    expect(id).toMatch(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/)
   })
 
   it('normal and selected ids differ for the same dataset', () => {
@@ -150,7 +150,7 @@ describe('getSymbolImageId', () => {
       symbolAnchor: [0.5, 0.5]
     }
     const id = getSymbolImageId(dataset, mapStyle, symbolRegistry)
-    expect(id).toMatch(/^symbol-[a-z0-9]+$/)
+    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
   })
 })
 
@@ -181,8 +181,8 @@ describe('registerSymbols', () => {
     const map = makeMap()
     await registerSymbols(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
     expect(map.addImage).toHaveBeenCalledTimes(2)
-    expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-[a-z0-9]+$/), expect.any(MockImageData), { pixelRatio: 2 })
-    expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-sel-[a-z0-9]+$/), expect.any(MockImageData), { pixelRatio: 2 })
+    expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(MockImageData), { pixelRatio: 2 })
+    expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(MockImageData), { pixelRatio: 2 })
   })
 
   it('populates _symbolImageMap with normal → selected id pairs', async () => {
@@ -249,5 +249,26 @@ describe('registerSymbols', () => {
     await registerSymbols(map, [{ symbol: 'pin' }, { symbol: 'circle' }], mapStyle, symbolRegistry)
     expect(map.addImage).toHaveBeenCalledTimes(4)
     expect(Object.keys(map._symbolImageMap)).toHaveLength(2)
+  })
+
+  it('reuses cached imageData when called again with the same pixelRatio', async () => {
+    // Use an unusual ratio so this test owns its cache entries
+    const uniqueRatio = 7
+
+    const map1 = makeMap()
+    const blobCallsBefore = global.URL.createObjectURL.mock.calls.length
+    await registerSymbols(map1, [{ symbol: 'pin' }], mapStyle, symbolRegistry, uniqueRatio)
+    const blobCallsAfterFirst = global.URL.createObjectURL.mock.calls.length
+    // Rasterisation ran — blob was created
+    expect(blobCallsAfterFirst).toBeGreaterThan(blobCallsBefore)
+
+    // Second call with a fresh map (hasImage → false) but same ratio → cache hit
+    const map2 = makeMap()
+    await registerSymbols(map2, [{ symbol: 'pin' }], mapStyle, symbolRegistry, uniqueRatio)
+    const blobCallsAfterSecond = global.URL.createObjectURL.mock.calls.length
+    // No new blob created — rasterisation was skipped via cache
+    expect(blobCallsAfterSecond).toBe(blobCallsAfterFirst)
+    // addImage still called because map2 has no pre-registered images
+    expect(map2.addImage).toHaveBeenCalledTimes(2)
   })
 })

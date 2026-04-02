@@ -57,7 +57,8 @@ describe('MapLibreProvider', () => {
       unproject: jest.fn(() => ({ lng: 1, lat: 2 })),
       getCenter: jest.fn(() => ({ lng: 1.2345678, lat: 2.3456789 })),
       getZoom: jest.fn(() => 10),
-      getBounds: jest.fn(() => ({ toArray: jest.fn(() => [[0, 0], [1, 1]]) }))
+      getBounds: jest.fn(() => ({ toArray: jest.fn(() => [[0, 0], [1, 1]]) })),
+      getPixelRatio: jest.fn(() => 1)
     }
     eventBus = { emit: jest.fn() }
     maplibreModule = { Map: jest.fn(() => map), LngLatBounds: jest.fn() }
@@ -231,7 +232,27 @@ describe('MapLibreProvider', () => {
     const mapStyle = { id: 'test', selectedColor: '#0b0c0c' }
     const registry = {}
     await p.registerSymbols(configs, mapStyle, registry)
-    expect(registerSymbols).toHaveBeenCalledWith(map, configs, mapStyle, registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, configs, mapStyle, registry, expect.any(Number))
+  })
+
+  test('registerSymbols computes pixelRatio from getPixelRatio and mapSize scale factor', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(2)
+    p.mapSize = 'medium' // scaleFactor['medium'] = 1.5
+    const registry = {}
+    await p.registerSymbols([], { id: 'test' }, registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 3) // 2 * 1.5
+  })
+
+  test('registerSymbols falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(0)
+    p.mapSize = 'small' // scaleFactor['small'] = 1
+    const registry = {}
+    await p.registerSymbols([], { id: 'test' }, registry)
+    expect(registerSymbols).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 1) // (0 || 1) * 1
   })
 
   test('registerPatterns delegates to utility with map instance', async () => {

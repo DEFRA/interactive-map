@@ -79,11 +79,11 @@ export const addStrokeLayer = (map, config, layerId, sourceId, sourceLayer, visi
 
 // ─── Symbol layer ─────────────────────────────────────────────────────────────
 
-export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry }) => {
+export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio }) => {
   if (!layerId || map.getLayer(layerId)) { return }
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
   if (!symbolDef) { return }
-  const imageId = getSymbolImageId(dataset, mapStyle, symbolRegistry, false)
+  const imageId = getSymbolImageId(dataset, mapStyle, symbolRegistry, false, pixelRatio)
   if (!imageId) { return }
   const anchor = getSymbolAnchor(dataset, symbolDef)
   map.addLayer({
@@ -105,7 +105,7 @@ export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, vis
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry }) => {
+export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
   const mapStyleId = mapStyle.id
   const merged = mergeSublayer(dataset, sublayer)
   const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
@@ -113,7 +113,7 @@ export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer,
   const sublayerHidden = dataset.sublayerVisibility?.[sublayer.id] === 'hidden'
   const visibility = (parentHidden || sublayerHidden) ? 'none' : 'visible'
   if (hasSymbol(merged) && symbolRegistry) {
-    addSymbolLayer(map, merged, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry })
+    addSymbolLayer(map, merged, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
     return
   }
   addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry })
@@ -128,9 +128,10 @@ export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer,
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} [symbolRegistry]
  * @param {Object} [patternRegistry]
+ * @param {number} [pixelRatio] - Device pixel ratio × map size scale factor
  * @returns {string} sourceId
  */
-export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, patternRegistry) => {
+export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
   const mapStyleId = mapStyle.id
   const sourceId = getSourceId(dataset)
   addSource(map, dataset, sourceId)
@@ -139,7 +140,7 @@ export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, pattern
 
   if (dataset.sublayers?.length) {
     dataset.sublayers.forEach(sublayer => {
-      addSublayerLayers(map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry })
+      addSublayerLayers(map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio })
     })
     return sourceId
   }
@@ -148,7 +149,7 @@ export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, pattern
   const visibility = dataset.visibility === 'hidden' ? 'none' : 'visible'
 
   if (hasSymbol(dataset) && symbolRegistry) {
-    addSymbolLayer(map, dataset, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry })
+    addSymbolLayer(map, dataset, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
     return sourceId
   }
 

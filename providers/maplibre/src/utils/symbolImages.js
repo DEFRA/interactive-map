@@ -3,7 +3,6 @@ import { getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../.
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
 const SVG_ERROR_PREVIEW_LENGTH = 80
-const RETINA_SCALE = 2
 const HASH_BASE = 36
 
 const hashString = (str) => {
@@ -53,15 +52,16 @@ export const anchorToMaplibre = ([ax, ay]) => {
 
 /**
  * Returns a deterministic image ID for a symbol in normal or selected state.
- * Based on the hash of the fully resolved SVG content.
+ * Based on the hash of the fully resolved SVG content and the pixel ratio.
  *
  * @param {Object} dataset
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} symbolRegistry
  * @param {boolean} [selected=false]
+ * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor
  * @returns {string|null}
  */
-export const getSymbolImageId = (dataset, mapStyle, symbolRegistry, selected = false) => {
+export const getSymbolImageId = (dataset, mapStyle, symbolRegistry, selected = false, pixelRatio = 2) => {
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
   if (!symbolDef) {
     return null
@@ -70,7 +70,7 @@ export const getSymbolImageId = (dataset, mapStyle, symbolRegistry, selected = f
   const resolved = selected
     ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
     : symbolRegistry.resolve(symbolDef, styleColors, mapStyle)
-  return `symbol-${selected ? 'sel-' : ''}${hashString(resolved)}`
+  return `symbol-${selected ? 'sel-' : ''}${hashString(resolved)}-${pixelRatio}x`
 }
 
 // ─── Rasterisation ────────────────────────────────────────────────────────────
@@ -99,7 +99,7 @@ const rasteriseToImageData = (svgString, width, height) =>
     img.src = url
   })
 
-const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected) => {
+const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected, pixelRatio) => {
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
   if (!symbolDef) {
     return null
@@ -109,16 +109,16 @@ const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected)
     ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
     : symbolRegistry.resolve(symbolDef, styleColors, mapStyle)
 
-  const imageId = `symbol-${selected ? 'sel-' : ''}${hashString(resolvedContent)}`
+  const imageId = `symbol-${selected ? 'sel-' : ''}${hashString(resolvedContent)}-${pixelRatio}x`
 
   let imageData = imageDataCache.get(imageId)
   if (!imageData) {
     const viewBox = getSymbolViewBox(dataset, symbolDef)
     const [,, width, height] = viewBox.split(' ').map(Number)
-    // Render at 2× to keep icons crisp on retina displays.
-    // MapLibre receives pixelRatio:2, so the image displays at its original logical size.
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * RETINA_SCALE}" height="${height * RETINA_SCALE}" viewBox="${viewBox}">${resolvedContent}</svg>`
-    imageData = await rasteriseToImageData(svgString, width * RETINA_SCALE, height * RETINA_SCALE)
+    // Render at pixelRatio× to keep icons crisp at the current device DPI and map size.
+    // MapLibre receives the matching pixelRatio so the image displays at its original logical size.
+    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelRatio}" height="${height * pixelRatio}" viewBox="${viewBox}">${resolvedContent}</svg>`
+    imageData = await rasteriseToImageData(svgString, width * pixelRatio, height * pixelRatio)
     imageDataCache.set(imageId, imageData)
   }
 
@@ -137,9 +137,10 @@ const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected)
  * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers that have a symbol config
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} symbolRegistry
+ * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)
  * @returns {Promise<void>}
  */
-export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegistry) => {
+export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio = 2) => {
   if (!symbolConfigs.length) {
     return
   }
@@ -148,8 +149,8 @@ export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegist
   map._symbolImageMap = {}
 
   await Promise.all(symbolConfigs.flatMap(config => {
-    const normalId = getSymbolImageId(config, mapStyle, symbolRegistry, false)
-    const selectedId = getSymbolImageId(config, mapStyle, symbolRegistry, true)
+    const normalId = getSymbolImageId(config, mapStyle, symbolRegistry, false, pixelRatio)
+    const selectedId = getSymbolImageId(config, mapStyle, symbolRegistry, true, pixelRatio)
     if (normalId && selectedId) {
       map._symbolImageMap[normalId] = selectedId
     }
@@ -158,9 +159,9 @@ export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegist
       if (!imageId || map.hasImage(imageId)) {
         return
       }
-      const result = await rasteriseSymbolImage(config, mapStyle, symbolRegistry, selected)
+      const result = await rasteriseSymbolImage(config, mapStyle, symbolRegistry, selected, pixelRatio)
       if (result) {
-        map.addImage(result.imageId, result.imageData, { pixelRatio: 2 })
+        map.addImage(result.imageId, result.imageData, { pixelRatio })
       }
     })
   }))
