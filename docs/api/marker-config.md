@@ -61,7 +61,7 @@ markers.add('id', coords, {
 })
 ```
 
-`{{selectedColor}}` and `{{selectedWidth}}` are valid tokens — they are resolved when the marker is in its selected state. `selectedColor` comes from `MapStyleConfig.selectedColor` (set per basemap) with a hardcoded fallback of `#0b0c0c`. `selectedWidth` follows the normal symbol cascade and can be set via constructor `symbolDefaults`.
+`{{selectedColor}}` and `{{selectedWidth}}` are valid tokens — they are resolved when the marker is in its selected state. `selectedColor` comes from `MapStyleConfig.selectedColor`, falling back to the `mapColorScheme` scheme default (`#0b0c0c` light / `#ffffff` dark). It cannot be set per marker. `selectedWidth` follows the normal symbol cascade and can be set via constructor `symbolDefaults`.
 
 ---
 
@@ -88,4 +88,6 @@ anchor: [0.5, 0.5] // centre — circle or dot
 
 ### Colour and graphic properties
 
-`backgroundColor`, `foregroundColor`, `haloColor`, `haloWidth`, `graphic`, `selectedColor`, `selectedWidth`, and any custom tokens are all supported. See [Symbol Config](./symbol-config.md) for the full property reference including style-keyed colour objects, built-in graphic names, and custom token substitution.
+`backgroundColor`, `foregroundColor`, `haloWidth`, `graphic`, `selectedWidth`, and any custom tokens are all supported. See [Symbol Config](./symbol-config.md) for the full property reference including style-keyed colour objects, built-in graphic names, and custom token substitution.
+
+`haloColor` and `selectedColor` are basemap-level properties set on `MapStyleConfig` — they cannot be set per marker.

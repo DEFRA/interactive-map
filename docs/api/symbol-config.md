@@ -15,7 +15,7 @@ Each property is optional. When a value is not set, the next level down supplies
 
 So a colour set on a marker always wins. If it is not set there, the symbol's registered default is used. If that is not set either, the constructor default applies, and so on back to the hardcoded fallback.
 
-**`selectedColor` is different.** It is always taken from `MapStyleConfig.selectedColor`, falling back to the hardcoded value `#0b0c0c`. It cannot be set at symbol registration or marker level. `selectedWidth` still follows the normal cascade from levels 1–4.
+**`haloColor` and `selectedColor` are different.** They are always taken from `MapStyleConfig`, falling back to the `mapColorScheme` scheme default (`haloColor`: `#ffffff` light / `#0b0c0c` dark; `selectedColor`: `#0b0c0c` light / `#ffffff` dark). Neither can be set at symbol registration or marker level. `haloWidth` and `selectedWidth` still follow the normal cascade from levels 1–4.
 
 ## Style-keyed colours
 

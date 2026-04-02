@@ -2,6 +2,15 @@
 
 Configuration for a map style (basemap appearance).
 
+## Colour schemes
+
+Two separate colour schemes can be set per style, because the map and the app UI can have different tonal backgrounds:
+
+- **`mapColorScheme`** — controls elements rendered *on top of the map*. Set to `'dark'` when the basemap is dark (e.g. night or aerial) so that overlays remain legible against it.
+- **`appColorScheme`** — controls the app UI chrome (panels, buttons, controls). Set to `'dark'` when the surrounding UI should use the dark theme to complement the basemap.
+
+These are independent. For example, an aerial basemap might use `mapColorScheme: 'dark'` (light overlays on dark imagery) while keeping `appColorScheme` unset (light panels).
+
 ## Properties
 
 ---
@@ -31,14 +40,17 @@ Display label for the style. Shown in style switcher UI.
 ### `appColorScheme`
 **Type:** `'light' | 'dark'`
 
-App UI colour scheme. Ensures that panels, buttons, and controls use the appropriate colour scheme to match the map style.
+App UI colour scheme. Controls the theme applied to panels, buttons, and controls — independent of the map itself. See [Colour schemes](#colour-schemes) above.
 
 ---
 
 ### `mapColorScheme`
 **Type:** `'light' | 'dark'`
 
-Map colour scheme. Used to determine the style of controls rendered on the map, such as halo colours.
+Map colour scheme. Sets the default values of `haloColor`, `selectedColor`, and `foregroundColor` when those are not explicitly provided, and signals to map overlay components which tonal range to use. See [Colour schemes](#colour-schemes) above.
+
+- `'light'` (default) — dark overlays (`#0b0c0c`) on a light basemap, white halo
+- `'dark'` — light overlays (`#ffffff`) on a dark or aerial basemap, dark halo
 
 ---
 
@@ -80,15 +92,24 @@ URL to thumbnail image. Used in style switcher UI.
 ### `haloColor`
 **Type:** `string`
 
-Halo colour for symbols rendered on this basemap. Falls back to `#ffffff` when not set. Not overridable at symbol registration or marker level — set per-basemap here.
+Halo colour for elements rendered on top of the map (e.g. symbol outlines). Provides contrast between overlay elements and the map background.
 
-Typically set to white on light basemaps and dark on dark basemaps to provide contrast against the map background.
+Falls back to the `mapColorScheme` default when not set (`#ffffff` for light, `#0b0c0c` for dark). Injected as the `--map-overlay-halo-color` CSS custom property.
 
 ---
 
 ### `selectedColor`
 **Type:** `string`
 
-Colour used to indicate selected features — applied to the symbol selection ring (by the symbol renderer) and to selected lines and polygons (by the interact plugin).
+Theme colour for selected state — used by map overlay components to indicate a selected feature.
 
-Not overridable at symbol registration or marker level. Set once per basemap here to keep selection appearance consistent across the whole app.
+Falls back to the `mapColorScheme` default when not set (`#0b0c0c` for light, `#ffffff` for dark). Injected as the `--map-overlay-selected-color` CSS custom property.
+
+---
+
+### `foregroundColor`
+**Type:** `string`
+
+Foreground colour for elements rendered on top of the map (e.g. text or iconography in overlay controls).
+
+Falls back to the `mapColorScheme` default when not set (`#0b0c0c` for light, `#ffffff` for dark). Injected as the `--map-overlay-foreground-color` CSS custom property.

@@ -316,23 +316,26 @@
  * Alt text for logo.
  *
  * @property {'light' | 'dark'} [mapColorScheme]
- * Map color scheme. Used to determine the style of controls on the map. eg. Halo colours etc
+ * Map colour scheme. Sets the default values of `haloColor`, `selectedColor`, and `foregroundColor`
+ * when not explicitly provided, and signals to map overlay components which tonal range to use.
+ * `'light'` (default): dark overlays on a light basemap. `'dark'`: light overlays on a dark or aerial basemap.
  *
  * @property {string} [thumbnail]
  * URL to thumbnail image.
  *
  * @property {string} [haloColor]
- * Halo colour for symbols rendered on this basemap. Falls back to `#ffffff` (light) or `#0b0c0c` (dark) when not set.
- * Not overridable at symbol registration or marker level — set per-basemap here.
+ * Halo colour for elements rendered on top of the map (e.g. symbol outlines). Provides contrast
+ * between overlay elements and the map background. Falls back to `#ffffff` (light) or `#0b0c0c` (dark).
+ * Injected as the `--map-overlay-halo-color` CSS custom property.
  *
  * @property {string} [selectedColor]
- * Colour used to indicate selected features (symbols, lines, polygons).
- * Applied by the interact plugin and injected into symbol SVG rendering.
- * Falls back to `#0b0c0c` (light) or `#ffffff` (dark) when not set. Not overridable at symbol registration or marker level — set per-basemap here.
+ * Theme colour for selected state — used by map overlay components to indicate a selected feature.
+ * Falls back to `#0b0c0c` (light) or `#ffffff` (dark).
+ * Injected as the `--map-overlay-selected-color` CSS custom property.
  *
  * @property {string} [foregroundColor]
- * Foreground colour for map overlay elements (e.g. scale bar text).
- * Falls back to `#0b0c0c` (light) or `#ffffff` (dark) when not set.
+ * Foreground colour for elements rendered on top of the map (e.g. text or iconography in overlay components).
+ * Falls back to `#0b0c0c` (light) or `#ffffff` (dark).
  * Injected as the `--map-overlay-foreground-color` CSS custom property.
  *
  * @property {string} url
