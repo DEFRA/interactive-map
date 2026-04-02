@@ -46,8 +46,9 @@ describe('actionsMap', () => {
   })
 
   test('SET_MAP_STYLE sets mapStyle', () => {
-    const result = actionsMap.SET_MAP_STYLE(state, 'satellite')
-    expect(result.mapStyle).toBe('satellite')
+    const mapStyle = { id: 'satellite' }
+    const result = actionsMap.SET_MAP_STYLE(state, mapStyle)
+    expect(result.mapStyle).toBe(mapStyle)
     expect(result.otherProp).toBe(state.otherProp)
   })
 

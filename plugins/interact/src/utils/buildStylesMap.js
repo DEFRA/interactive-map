@@ -8,8 +8,10 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
     return stylesMap
   }
 
+  const schemeSelectedColor = mapStyle.mapColorScheme === 'dark' ? '#ffffff' : '#0b0c0c'
+
   dataLayers.forEach(layer => {
-    const stroke = layer.selectedStroke || mapStyle.selectedColor || DEFAULTS.selectedColor
+    const stroke = layer.selectedStroke || mapStyle.selectedColor || schemeSelectedColor || DEFAULTS.selectedColor
     const fill = layer.selectedFill || 'transparent'
     const strokeWidth = layer.selectedStrokeWidth || DEFAULTS.selectedStrokeWidth
 

@@ -1,5 +1,6 @@
 import { symbolRegistry } from './symbolRegistry.js'
-import { symbolDefaults, FALLBACK_SELECTED_COLOR, FALLBACK_HALO_COLOR } from '../config/symbolConfig.js'
+import { symbolDefaults } from '../config/symbolConfig.js'
+import { SCHEME_COLORS } from '../config/mapTheme.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
 
 const STYLE_ID = 'test'
@@ -95,9 +96,9 @@ describe('symbolRegistry — resolve', () => {
     expect(resolved).toContain('stroke=""')
   })
 
-  it('uses FALLBACK_HALO_COLOR when mapStyle has no haloColor', () => {
+  it('uses light scheme haloColor when mapStyle has no haloColor', () => {
     const resolved = symbolRegistry.resolve(symbolDef, {}, mapStyle)
-    expect(resolved).toContain(`stroke="${FALLBACK_HALO_COLOR}"`)
+    expect(resolved).toContain(`stroke="${SCHEME_COLORS.light.haloColor}"`)
   })
 
   it('uses mapStyle.haloColor when provided', () => {
@@ -168,9 +169,9 @@ describe('symbolRegistry — resolveSelected', () => {
     svg: '<path stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/><path fill="{{backgroundColor}}"/>'
   }
 
-  it('uses FALLBACK_SELECTED_COLOR when mapStyle has no selectedColor', () => {
+  it('uses light scheme selectedColor when mapStyle has no selectedColor', () => {
     const resolved = symbolRegistry.resolveSelected(symbolDef, {}, mapStyle)
-    expect(resolved).toContain(`stroke="${FALLBACK_SELECTED_COLOR}"`)
+    expect(resolved).toContain(`stroke="${SCHEME_COLORS.light.selectedColor}"`)
   })
 
   it('uses mapStyle.selectedColor when provided', () => {
@@ -185,7 +186,7 @@ describe('symbolRegistry — resolveSelected', () => {
 
   it('handles null styleColors — uses cascade defaults', () => {
     const resolved = symbolRegistry.resolveSelected(symbolDef, null, mapStyle)
-    expect(resolved).toContain(`stroke="${FALLBACK_SELECTED_COLOR}"`)
+    expect(resolved).toContain(`stroke="${SCHEME_COLORS.light.selectedColor}"`)
   })
 
   it('returns empty string for null symbolDef', () => {

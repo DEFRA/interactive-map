@@ -10,6 +10,7 @@ import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
 import { SlotRenderer } from '../renderer/SlotRenderer'
 import { HtmlElementHost } from '../renderer/HtmlElementHost'
+import { getMapThemeVars } from '../../config/mapTheme.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
@@ -30,10 +31,9 @@ export const Layout = () => {
         `im-o-app--${interfaceType}`,
         `im-o-app--${isFullscreen ? 'fullscreen' : 'inline'}`,
         `im-o-app--${mapStyle?.appColorScheme || preferredColorScheme}-app`,
-        `im-o-app--${mapStyle?.mapColorScheme || 'light'}-map`,
         hasExclusiveControl && 'im-o-app--exclusive-control'
       ].filter(Boolean).join(' ')}
-      style={{ backgroundColor: mapStyle?.backgroundColor || undefined }}
+      style={{ backgroundColor: mapStyle?.backgroundColor || undefined, ...getMapThemeVars(mapStyle) }}
       ref={layoutRefs.appContainerRef}
     >
       <Viewport keyboardHintPortalRef={layoutRefs.topRef} />

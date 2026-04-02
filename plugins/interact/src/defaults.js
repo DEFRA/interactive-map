@@ -1,5 +1,3 @@
-import { FALLBACK_SELECTED_COLOR } from '../../../src/config/symbolConfig.js'
-
 export const DEFAULTS = {
   tolerance: 10,
   interactionMode: 'marker',
@@ -7,6 +5,6 @@ export const DEFAULTS = {
   contiguous: false,
   deselectOnClickOutside: false,
   marker: {},
-  selectedColor: FALLBACK_SELECTED_COLOR,
+  selectedColor: '#0b0c0c',
   selectedStrokeWidth: 3
 }

@@ -38,6 +38,11 @@ export const Key = ({ mapState, pluginState, services }) => {
   const { mapStyle } = mapState
   const { symbolRegistry, patternRegistry } = services
 
+  // Key symbols are rendered in the app UI panel, not on the map, so use the app color
+  // scheme for halo fallback — not the map color scheme (which could differ, e.g. aerial).
+  const appColorScheme = mapStyle?.appColorScheme ?? 'light'
+  const keyMapStyle = mapStyle ? { ...mapStyle, mapColorScheme: appColorScheme } : mapStyle
+
   const itemSymbol = (config) => {
     const svgProps = {
       xmlns: 'http://www.w3.org/2000/svg',
@@ -52,7 +57,7 @@ export const Key = ({ mapState, pluginState, services }) => {
     if (hasSymbol(config)) {
       const symbolDef = getSymbolDef(config, symbolRegistry)
       if (symbolDef) {
-        const resolvedSvg = symbolRegistry.resolve(symbolDef, getSymbolStyleColors(config), mapStyle.id)
+        const resolvedSvg = symbolRegistry.resolve(symbolDef, getSymbolStyleColors(config), keyMapStyle)
         const viewBox = getSymbolViewBox(config, symbolDef)
         return (
           <svg {...svgProps} viewBox={viewBox}>

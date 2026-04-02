@@ -47,6 +47,12 @@ describe('buildStylesMap', () => {
     expect(result.layer1.fill).toBe('transparent')
   })
 
+  it('uses scheme default when mapStyle has no selectedColor', () => {
+    const dataLayers = [{ layerId: 'layer1' }]
+    expect(buildStylesMap(dataLayers, { id: 'light' }).layer1.stroke).toBe('#0b0c0c')
+    expect(buildStylesMap(dataLayers, { id: 'dark', mapColorScheme: 'dark' }).layer1.stroke).toBe('#ffffff')
+  })
+
   it('calls getValueForStyle for stroke and fill with mapStyle.id', () => {
     const dataLayers = [
       { layerId: 'layer1', selectedStroke: 'strokeVal', selectedFill: 'fillVal' }

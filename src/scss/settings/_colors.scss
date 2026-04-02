@@ -35,10 +35,6 @@
     --attributions-foreground-color: #0b0c0c;
     --attributions-background-color: #ffffff80;
 
-    // Map overlays, such as scale bar, target marker etc
-    --map-overlay-foreground-color: #0b0c0c;
-    --map-overlay-halo-color: #ffffff;
-
     // Fixed colours (Dont chnage with dark mode)
     --fixed-foreground-color: #0b0c0c;
 
@@ -78,8 +74,3 @@
     --content-link-color: #ffffff;
 }
 
-// Map color scheme specific overrides
-:root .im-o-app--dark-map {
-  --map-overlay-foreground-color: #ffffff;
-  --map-overlay-halo-color: #0b0c0c;
-}

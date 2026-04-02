@@ -1,5 +1,6 @@
 import { getValueForStyle } from '../utils/getValueForStyle.js'
-import { symbolDefaults, FALLBACK_SELECTED_COLOR, FALLBACK_HALO_COLOR, pin, circle, square, graphics } from '../config/symbolConfig.js'
+import { symbolDefaults, pin, circle, square, graphics } from '../config/symbolConfig.js'
+import { SCHEME_COLORS } from '../config/mapTheme.js'
 
 const symbols = new Map()
 let _constructorDefaults = {}
@@ -24,8 +25,9 @@ function resolveValues (symbolDef, markerValues, mapStyle) {
   )
   const merged = { ...symbolDefaults, ...constructorTokens, ...symbolTokens, ...defined }
   // haloColor and selectedColor are map style concerns — always injected from mapStyle, never from the cascade
-  merged.haloColor = mapStyle?.haloColor ?? FALLBACK_HALO_COLOR
-  merged.selectedColor = mapStyle?.selectedColor ?? FALLBACK_SELECTED_COLOR
+  const scheme = SCHEME_COLORS[mapStyle?.mapColorScheme] ?? SCHEME_COLORS.light
+  merged.haloColor = mapStyle?.haloColor ?? scheme.haloColor
+  merged.selectedColor = mapStyle?.selectedColor ?? scheme.selectedColor
   if (typeof merged.graphic === 'string' && graphics[merged.graphic]) {
     merged.graphic = graphics[merged.graphic]
   }

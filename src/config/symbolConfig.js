@@ -4,11 +4,6 @@
  * Colour values may be a plain string or a map-style-keyed object,
  * e.g. { outdoor: '#ffffff', dark: '#0b0c0c' }
  */
-// Fallback values used when no map style provides these properties.
-// Both are map style concerns — set them on MapStyleConfig, not symbolDefaults.
-export const FALLBACK_SELECTED_COLOR = '#0b0c0c'
-export const FALLBACK_HALO_COLOR = '#ffffff'
-
 export const symbolDefaults = {
   symbol: 'pin',
   backgroundColor: '#ca3535',

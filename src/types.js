@@ -322,13 +322,18 @@
  * URL to thumbnail image.
  *
  * @property {string} [haloColor]
- * Halo colour for symbols rendered on this basemap. Falls back to `#ffffff` when not set.
+ * Halo colour for symbols rendered on this basemap. Falls back to `#ffffff` (light) or `#0b0c0c` (dark) when not set.
  * Not overridable at symbol registration or marker level — set per-basemap here.
  *
  * @property {string} [selectedColor]
  * Colour used to indicate selected features (symbols, lines, polygons).
  * Applied by the interact plugin and injected into symbol SVG rendering.
- * Falls back to `#0b0c0c` when not set. Not overridable at symbol registration or marker level — set per-basemap here.
+ * Falls back to `#0b0c0c` (light) or `#ffffff` (dark) when not set. Not overridable at symbol registration or marker level — set per-basemap here.
+ *
+ * @property {string} [foregroundColor]
+ * Foreground colour for map overlay elements (e.g. scale bar text).
+ * Falls back to `#0b0c0c` (light) or `#ffffff` (dark) when not set.
+ * Injected as the `--map-overlay-foreground-color` CSS custom property.
  *
  * @property {string} url
  * URL to the style.json (Mapbox Style Specification).
