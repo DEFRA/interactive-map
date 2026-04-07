@@ -139,7 +139,7 @@ export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegist
         return
       }
       const result = await rasteriseSymbolImage(config, mapStyle, symbolRegistry, selected, pixelRatio)
-      if (result) {
+      if (result && !map.hasImage(result.imageId)) {
         map.addImage(result.imageId, result.imageData, { pixelRatio })
       }
     })

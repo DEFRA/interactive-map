@@ -6,16 +6,9 @@ Symbol properties control the appearance of markers and point dataset features. 
 
 ## How values are resolved
 
-Each property is optional. When a value is not set, the next level down supplies it:
+Each property is optional. A value set directly on a marker or dataset layer takes priority over everything else. If a property is not set there, the value registered with the symbol is used. If the symbol has no value for that property, the app-wide `symbolDefaults` from the constructor applies. If none of those are set, the built-in fallback listed under each property below is used.
 
-1. **Hardcoded defaults** — the built-in fallback values in `symbolDefaults.js`
-2. **Constructor defaults** — set via `symbolDefaults` when creating the map instance
-3. **Symbol defaults** — properties set when registering a custom symbol via `symbolRegistry.register()` (plugin authors only)
-4. **Per-item config** — values passed directly when adding a marker or configuring a dataset layer
-
-So a colour set on a marker always wins. If it is not set there, the symbol's registered default is used. If that is not set either, the constructor default applies, and so on back to the hardcoded fallback.
-
-**`haloColor` and `selectedColor` are different.** They are always taken from `MapStyleConfig`, falling back to the `mapColorScheme` scheme default (`haloColor`: `#ffffff` light / `#0b0c0c` dark; `selectedColor`: `#0b0c0c` light / `#ffffff` dark). Neither can be set at symbol registration or marker level. `haloWidth` and `selectedWidth` still follow the normal cascade from levels 1–4.
+**`haloColor`, `selectedColor`, `haloWidth`, and `selectedWidth`** are used by the app to control how symbols render in their normal and selected states. They are documented below for completeness, but in most cases you will not need to change them.
 
 ## Style-keyed colours
 
@@ -34,7 +27,7 @@ backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' }
 **Type:** `string`
 **Default:** `'pin'`
 
-Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`. Ignored when `symbolSvgContent` is set.
+Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`. Ignored when `symbolSvgContent` is set.
 
 ---
 
@@ -96,17 +89,11 @@ Foreground fill colour — the inner graphic element (e.g. the dot inside a pin)
 
 ---
 
-### `haloColor`
-
-See [`MapStyleConfig.haloColor`](./map-style-config.md#halocolor). This is a basemap-level property — it cannot be set per symbol or per marker.
-
----
-
 ### `haloWidth`
 **Type:** `string`
 **Default:** `'1'`
 
-Stroke width of the halo in SVG units.
+Width of the halo stroke around the symbol shape, in SVG units.
 
 ---
 
@@ -139,17 +126,11 @@ Built-in named graphics (16×16 coordinate space, centred at 8,8):
 
 ---
 
-### `selectedColor`
-
-See [`MapStyleConfig.selectedColor`](./map-style-config.md#selectedcolor). This is a basemap-level property — it cannot be set per symbol or per marker.
-
----
-
 ### `selectedWidth`
 **Type:** `string`
 **Default:** `'6'`
 
-Stroke width of the selection ring in SVG units. **App-wide only** — same rules as `selected`.
+Width of the selection ring stroke, in SVG units.
 
 ---
 

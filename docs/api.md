@@ -276,20 +276,26 @@ See [MarkerConfig](./api/marker-config.md) for full details.
 ### `symbolDefaults`
 **Type:** `Partial<SymbolDefaults>`
 
-App-wide defaults for symbol and marker appearance. Each property is optional — unset values fall through to the hardcoded fallback. Values set here are overridden by anything set at symbol registration or per-marker level.
+App-wide defaults for symbol and marker appearance. These values apply across all markers and datasets unless a more specific value is set at the symbol or per-marker level. Any property omitted here falls back to the built-in default:
+
+| Property | Built-in default |
+|---|---|
+| `symbol` | `'pin'` |
+| `backgroundColor` | `'#ca3535'` |
+| `foregroundColor` | `'#ffffff'` |
+| `haloWidth` | `'1'` |
+| `selectedWidth` | `'6'` |
 
 ```js
 new InteractiveMap('map', {
   symbolDefaults: {
     symbol: 'circle',
-    backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' },
-    haloColor: { outdoor: '#ffffff', dark: '#0b0c0c' },
-    selectedColor: { outdoor: '#ffdd00', dark: '#ffaa00' }
+    backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
   }
 })
 ```
 
-See [Symbol Config](./api/symbol-config.md) for the full property list and how values are resolved.
+See [Symbol Config](./api/symbol-config.md) for the full property list.
 
 ---
 
