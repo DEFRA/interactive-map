@@ -57,9 +57,9 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'stroke-inactive.cold',
 		idProperty: 'id'
 	}],
-	debug: true,
+	// debug: true,
 	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
-	multiSelect: true,
+	// multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true
 })
@@ -303,6 +303,10 @@ interactiveMap.on('map:ready', function (e) {
 	// 	aspectRatio: 1
 	// })
 	interactPlugin.enable()
+	interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407])
+	interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], {
+		symbol: 'square'
+	})
 })
 
 interactiveMap.on('datasets:ready', function () {
@@ -324,6 +328,7 @@ interactiveMap.on('interact:cancel', function (e) {
 })
 
 interactiveMap.on('interact:selectionchange', function (e) {
+	console.log(e)
 	const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
 	const singleFeature = e.selectedFeatures.length === 1
 	const anyFeature = e.selectedFeatures.length > 0

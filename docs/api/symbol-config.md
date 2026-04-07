@@ -6,7 +6,7 @@ Symbol properties control the appearance of markers and point dataset features. 
 
 Each property is optional. A value set directly on a marker or dataset layer takes priority over everything else. If a property is not set there, the value registered with the symbol is used. If the symbol has no value for that property, the app-wide `symbolDefaults` from the constructor applies. If none of those are set, the built-in fallback listed under each property below is used.
 
-`haloColor`, `selectedColor`, `haloWidth`, and `selectedWidth` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically.
+`haloColor`, `selectedColor`, `haloWidth`, and `selectedWidth` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically. Note that `haloColor` and `selectedColor` are always derived from the active map style and cannot be configured.
 
 ## Style-keyed colours
 
@@ -87,6 +87,22 @@ Foreground fill colour — the inner graphic element (e.g. the dot inside a pin)
 
 ---
 
+### `haloWidth`
+**Type:** `number`
+**Default:** `1`
+
+Stroke width of the halo around the symbol background shape. Can be set in constructor `symbolDefaults`, at symbol registration, or per marker/dataset layer.
+
+---
+
+### `selectedWidth`
+**Type:** `number`
+**Default:** `6`
+
+Stroke width of the selection ring shown when a marker is selected. Can be set in constructor `symbolDefaults` or per marker/dataset layer.
+
+---
+
 ### `graphic`
 **Type:** `string`
 
@@ -140,3 +156,5 @@ svg: `
 - **Layer 1** — selection ring (stroke only, fill none) — hidden in normal rendering, visible when selected
 - **Layer 2** — background shape with halo stroke
 - **Layer 3** — foreground graphic (e.g. inner dot)
+
+> `{{haloColor}}` and `{{selectedColor}}` are always injected from the active map style. They must be present in the SVG but cannot be configured.

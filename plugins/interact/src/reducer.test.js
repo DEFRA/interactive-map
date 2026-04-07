@@ -11,6 +11,7 @@ describe('initialState', () => {
       contiguous: false,
       deselectOnClickOutside: false,
       selectedFeatures: [],
+      selectedMarkers: [],
       selectionBounds: null,
       closeOnAction: true
     })
@@ -30,15 +31,16 @@ describe('ENABLE/DISABLE actions', () => {
     expect(result).not.toBe(state)
   })
 
-  it('DISABLE sets enabled to false, clears selection, and preserves other state', () => {
+  it('DISABLE sets enabled to false, clears selection and markers, and preserves other state', () => {
     const marker = { symbol: 'pin', backgroundColor: 'red' }
-    const state = { ...initialState, enabled: true, dataLayers: [1], marker, selectedFeatures: [{ featureId: 'f1' }], selectionBounds: [0, 0, 1, 1] }
+    const state = { ...initialState, enabled: true, dataLayers: [1], marker, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: ['m1'], selectionBounds: [0, 0, 1, 1] }
     const result = actions.DISABLE(state)
 
     expect(result.enabled).toBe(false)
     expect(result.dataLayers).toEqual([1])
     expect(result.marker).toEqual(marker)
     expect(result.selectedFeatures).toEqual([])
+    expect(result.selectedMarkers).toEqual([])
     expect(result.selectionBounds).toBeNull()
     expect(result).not.toBe(state)
   })
@@ -98,6 +100,19 @@ describe('TOGGLE_SELECTED_FEATURES action', () => {
     expect(state.selectedFeatures[0].featureId).toBe('f3')
   })
 
+  it('clears selectedMarkers in single-select; preserves them in multi-select', () => {
+    const state = { ...initialState, selectedMarkers: ['m1'] }
+    const feature = createFeature('f1')
+
+    // single-select clears markers
+    const single = actions.TOGGLE_SELECTED_FEATURES(state, feature)
+    expect(single.selectedMarkers).toEqual([])
+
+    // multi-select preserves markers
+    const multi = actions.TOGGLE_SELECTED_FEATURES(state, { ...feature, multiSelect: true })
+    expect(multi.selectedMarkers).toEqual(['m1'])
+  })
+
   it('handles null or empty selectedFeatures gracefully', () => {
     let state = { ...initialState, selectedFeatures: null }
     state = actions.TOGGLE_SELECTED_FEATURES(state, createFeature('f1'))
@@ -129,15 +144,46 @@ describe('UPDATE_SELECTED_BOUNDS action', () => {
   })
 })
 
+describe('TOGGLE_SELECTED_MARKERS action', () => {
+  it('selects a marker in single-select mode and clears features', () => {
+    const state = { ...initialState, selectedFeatures: [{ featureId: 'f1' }], selectionBounds: { sw: [0, 0], ne: [1, 1] } }
+    const result = actions.TOGGLE_SELECTED_MARKERS(state, { markerId: 'm1', multiSelect: false })
+    expect(result.selectedMarkers).toEqual(['m1'])
+    expect(result.selectedFeatures).toEqual([])
+    expect(result.selectionBounds).toBeNull()
+  })
+
+  it('toggles off the only selected marker in single-select mode', () => {
+    const state = { ...initialState, selectedMarkers: ['m1'] }
+    const result = actions.TOGGLE_SELECTED_MARKERS(state, { markerId: 'm1', multiSelect: false })
+    expect(result.selectedMarkers).toEqual([])
+  })
+
+  it('adds a marker in multi-select mode without clearing features', () => {
+    const state = { ...initialState, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: ['m1'] }
+    const result = actions.TOGGLE_SELECTED_MARKERS(state, { markerId: 'm2', multiSelect: true })
+    expect(result.selectedMarkers).toEqual(['m1', 'm2'])
+    expect(result.selectedFeatures).toEqual([{ featureId: 'f1' }])
+  })
+
+  it('removes a marker in multi-select mode', () => {
+    const state = { ...initialState, selectedMarkers: ['m1', 'm2'] }
+    const result = actions.TOGGLE_SELECTED_MARKERS(state, { markerId: 'm1', multiSelect: true })
+    expect(result.selectedMarkers).toEqual(['m2'])
+  })
+})
+
 describe('CLEAR_SELECTED_FEATURES action', () => {
-  it('resets selection and bounds', () => {
+  it('resets features, markers and bounds', () => {
     const state = {
       ...initialState,
       selectedFeatures: [1],
+      selectedMarkers: ['m1'],
       selectionBounds: { sw: [0, 0], ne: [1, 1] }
     }
     const result = actions.CLEAR_SELECTED_FEATURES(state)
     expect(result.selectedFeatures).toEqual([])
+    expect(result.selectedMarkers).toEqual([])
     expect(result.selectionBounds).toBeNull()
     expect(result).not.toBe(state)
   })
@@ -149,6 +195,7 @@ describe('actions object', () => {
       'ENABLE',
       'DISABLE',
       'TOGGLE_SELECTED_FEATURES',
+      'TOGGLE_SELECTED_MARKERS',
       'UPDATE_SELECTED_BOUNDS',
       'CLEAR_SELECTED_FEATURES'
     ])

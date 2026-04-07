@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
+import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { attachEvents } from './events.js'
 
 export const InteractInit = ({
@@ -60,6 +61,13 @@ export const InteractInit = ({
     events: EVENTS,
     eventBus
   })
+
+  // Notify other components (e.g. Markers) whether interact is active
+  useEffect(() => {
+    eventBus.emit('interact:active', { active: enabled })
+  }, [enabled])
+
+  useHoverCursor(mapProvider, enabled, pluginState.interactionMode, pluginState.dataLayers)
 
   // Toggle target marker visibility
   useEffect(() => {

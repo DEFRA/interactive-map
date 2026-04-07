@@ -116,6 +116,7 @@ export default class MapLibreProvider {
 
   /** Destroy the map and clean up resources. */
   destroyMap () {
+    this.setHoverCursor([])
     this.mapEvents?.remove()
     this.appEvents?.remove()
 
@@ -123,6 +124,38 @@ export default class MapLibreProvider {
     this.appEvents = null
 
     this.map.remove()
+  }
+
+  /**
+   * Set pointer cursor on the map canvas when hovering over any of the given layer IDs.
+   * Call with an empty array to remove all hover cursor listeners.
+   *
+   * @param {string[]} layerIds
+   */
+  setHoverCursor (layerIds) {
+    if (!this.map) {
+      return
+    }
+    const canvas = this.map.getCanvas()
+
+    if (this._onHoverMove) {
+      this.map.off('mousemove', this._onHoverMove)
+      this._onHoverMove = null
+    }
+
+    this._hoverLayerIds = layerIds
+
+    if (!layerIds?.length) {
+      canvas.style.cursor = ''
+      return
+    }
+
+    this._onHoverMove = (e) => {
+      const existingLayers = layerIds.filter(id => this.map.getLayer(id))
+      const hit = existingLayers.length > 0 && this.map.queryRenderedFeatures(e.point, { layers: existingLayers }).length > 0
+      canvas.style.cursor = hit ? 'pointer' : ''
+    }
+    this.map.on('mousemove', this._onHoverMove)
   }
 
   // ==========================

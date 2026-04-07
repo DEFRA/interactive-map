@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { useMarkers } from '../../hooks/useMarkersAPI.js'
 import { useConfig } from '../../store/configContext.js'
 import { useMap } from '../../store/mapContext.js'
@@ -22,13 +23,67 @@ const resolveViewBox = (marker, defaults, symbolDef) =>
 const resolveAnchor = (marker, defaults, symbolDef) =>
   marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
 
+/**
+ * When the interact plugin is active, watch mousemove to set cursor:pointer whenever
+ * the mouse is over one of the marker SVG elements (which are pointer-events:none).
+ */
+const useMarkerCursor = (markers, interactActive, viewportRef) => {
+  useEffect(() => {
+    if (!interactActive) {
+      return undefined
+    }
+    const viewport = viewportRef.current
+    if (!viewport) {
+      return undefined
+    }
+    const onMove = (e) => {
+      const hit = markers.items.some(marker => {
+        const el = markers.markerRefs?.get(marker.id)
+        if (!el) {
+          return false
+        }
+        const { left, top, right, bottom } = el.getBoundingClientRect()
+        return e.clientX >= left && e.clientX <= right && e.clientY >= top && e.clientY <= bottom
+      })
+      viewport.style.cursor = hit ? 'pointer' : ''
+    }
+    viewport.addEventListener('mousemove', onMove)
+    return () => {
+      viewport.removeEventListener('mousemove', onMove)
+      viewport.style.cursor = ''
+    }
+  }, [markers, interactActive, viewportRef])
+}
+
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Markers = () => {
   const { id } = useConfig()
   const { mapStyle } = useMap()
   const { markers, markerRef } = useMarkers()
-  const { symbolRegistry } = useService()
+  const { symbolRegistry, eventBus } = useService()
+
+  const [interactActive, setInteractActive] = useState(false)
+  const [selectedMarkers, setSelectedMarkers] = useState([])
+  const viewportRef = useRef(null)
+
+  useEffect(() => {
+    const handleActive = ({ active }) => setInteractActive(active)
+    const handleSelectionChange = ({ selectedMarkers: next = [] }) => setSelectedMarkers(next)
+    eventBus.on('interact:active', handleActive)
+    eventBus.on('interact:selectionchange', handleSelectionChange)
+    return () => {
+      eventBus.off('interact:active', handleActive)
+      eventBus.off('interact:selectionchange', handleSelectionChange)
+    }
+  }, [eventBus])
+
+  // Resolve viewport element once on mount for cursor tracking
+  useEffect(() => {
+    viewportRef.current = document.querySelector('.im-c-viewport')
+  }, [])
+
+  useMarkerCursor(markers, interactActive, viewportRef)
 
   if (!mapStyle) {
     return undefined
@@ -44,7 +99,10 @@ export const Markers = () => {
         const styleValues = Object.fromEntries(
           Object.entries(marker).filter(([k]) => !INTERNAL_KEYS.has(k))
         )
-        const resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
+        const isSelected = selectedMarkers.includes(marker.id)
+        const resolvedSvg = isSelected
+          ? symbolRegistry.resolveSelected(symbolDef, styleValues, mapStyle)
+          : symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
 
         const viewBox = resolveViewBox(marker, defaults, symbolDef)
         const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
@@ -56,7 +114,11 @@ export const Markers = () => {
             key={marker.id}
             ref={markerRef(marker.id)}
             id={`${id}-marker-${marker.id}`}
-            className={`im-c-marker im-c-marker--${stringToKebab(shapeId)}`}
+            className={[
+              'im-c-marker',
+              `im-c-marker--${stringToKebab(shapeId)}`,
+              isSelected && 'im-c-marker--selected'
+            ].filter(Boolean).join(' ')}
             width={svgWidth}
             height={svgHeight}
             viewBox={viewBox}
