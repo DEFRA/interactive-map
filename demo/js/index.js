@@ -26,11 +26,11 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
-const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: {},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',properties: {},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',properties: {},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
+const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: {category:'prehistoric'},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',properties: {category:'roman'},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',properties: {category:'medieval'},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
 	dataLayers: [{
-		layerId: 'historic-monuments',
+		layerId: 'historic-monuments-prehistoric-symbol',
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-110',
@@ -180,9 +180,34 @@ const datasetsPlugin = createDatasetsPlugin({
 		style: {
 			symbol: 'square',
 			symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
-			symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
-			symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
-		}
+			// symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
+			// symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
+		},
+		sublayers: [{
+			id: 'prehistoric',
+			label: 'Prehistoric',
+			filter: ['in', ['get', 'category'], 'prehistoric'],
+			toggleVisibility: true,
+			style: {
+				symbolBackgroundColor: '#00897B',
+			}
+		},{
+			id: 'roman',
+			label: 'Roman',
+			filter: ['in', ['get', 'category'], 'roman'],
+			toggleVisibility: true,
+			style: {
+				symbolBackgroundColor: '#ca3535',
+			}
+		},{
+			id: 'medieval',
+			label: 'Medieval',
+			filter: ['in', ['get', 'category'], 'medieval'],
+			toggleVisibility: true,
+			style: {
+				symbolBackgroundColor: '#1565C0',
+			}
+		}]
 	},{
 		id: 'hedge-control',
 		label: 'Hedge control',
