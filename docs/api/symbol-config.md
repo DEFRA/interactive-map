@@ -2,13 +2,11 @@
 
 Symbol properties control the appearance of markers and point dataset features. The same properties apply whether you are configuring a marker, app-wide defaults via the constructor `symbolDefaults`, or a custom symbol registration.
 
-> **Dataset style:** When used in a dataset `style` object, colour and visual properties use a `symbol` prefix to distinguish them from polygon/line properties at the same level — `symbolBackgroundColor` instead of `backgroundColor`, etc. The full list of prefixed properties is documented in [Datasets — style](../plugins/datasets.md#style).
-
 ## How values are resolved
 
 Each property is optional. A value set directly on a marker or dataset layer takes priority over everything else. If a property is not set there, the value registered with the symbol is used. If the symbol has no value for that property, the app-wide `symbolDefaults` from the constructor applies. If none of those are set, the built-in fallback listed under each property below is used.
 
-**`haloColor`, `selectedColor`, `haloWidth`, and `selectedWidth`** are used by the app to control how symbols render in their normal and selected states. They are documented below for completeness, but in most cases you will not need to change them.
+`haloColor`, `selectedColor`, `haloWidth`, and `selectedWidth` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically.
 
 ## Style-keyed colours
 
@@ -89,14 +87,6 @@ Foreground fill colour — the inner graphic element (e.g. the dot inside a pin)
 
 ---
 
-### `haloWidth`
-**Type:** `string`
-**Default:** `'1'`
-
-Width of the halo stroke around the symbol shape, in SVG units.
-
----
-
 ### `graphic`
 **Type:** `string`
 
@@ -123,14 +113,6 @@ Built-in named graphics (16×16 coordinate space, centred at 8,8):
 | `'square'` | Filled square |
 
 `graphic` follows the full resolution order above — it can be set as a symbol default, a constructor default, or per item.
-
----
-
-### `selectedWidth`
-**Type:** `string`
-**Default:** `'6'`
-
-Width of the selection ring stroke, in SVG units.
 
 ---
 
