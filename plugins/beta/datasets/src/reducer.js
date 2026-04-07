@@ -1,5 +1,5 @@
 import { applyDatasetDefaults } from './defaults.js'
-import { buildKeyGroups } from './panels/Key.jsx'
+import { buildKeyState } from './utils/buildKeyState.js'
 
 const initialState = {
   datasets: null,
@@ -195,17 +195,17 @@ const setSublayerOpacity = (state, payload) => {
 
 const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
 
-const setKeyGroups = (state) => {
+const buildKeyGroups = (state) => {
   const visibleDatasets = state.datasets
     ? state.datasets.filter(dataset => dataset.showInKey && dataset.visibility !== 'hidden')
     : []
-  const items = buildKeyGroups(visibleDatasets)
+  const items = buildKeyState(visibleDatasets)
   const hasGroups = items.some(item => item.type === 'sublayers' || item.type === 'group')
   return { ...state, key: { items, hasGroups } }
 }
 
 const actions = {
-  SET_KEY_GROUPS: setKeyGroups,
+  BUILD_KEY_GROUPS: buildKeyGroups,
   SET_DATASETS: setDatasets,
   ADD_DATASET: addDataset,
   REMOVE_DATASET: removeDataset,
