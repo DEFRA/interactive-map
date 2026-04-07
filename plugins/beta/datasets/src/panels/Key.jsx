@@ -9,7 +9,7 @@ const SVG_SYMBOL_SIZE = 38
 const SVG_CENTER = SVG_SIZE / 2
 const PATTERN_INSET = 2
 
-const buildKeyGroups = (datasets) => {
+export const buildKeyGroups = (datasets) => {
   const seenGroups = new Set()
   const items = []
   datasets.forEach(dataset => {
@@ -123,11 +123,7 @@ export const Key = ({ mapState, pluginState, services }) => {
     </dl>
   )
 
-  const visibleDatasets = (pluginState.datasets || [])
-    .filter(dataset => dataset.showInKey && dataset.visibility !== 'hidden')
-
-  const keyGroups = buildKeyGroups(visibleDatasets)
-  const hasGroups = keyGroups.some(item => item.type === 'sublayers' || item.type === 'group')
+  const { items: keyGroups, hasGroups } = pluginState.key
   const containerClass = `im-c-datasets-key${hasGroups ? ' im-c-datasets-key--has-groups' : ''}`
 
   return (

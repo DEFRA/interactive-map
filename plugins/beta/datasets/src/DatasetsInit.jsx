@@ -59,6 +59,9 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     initDatasets()
   }, [isMapStyleReady, appState.mode])
 
+  useEffect(() => {
+    dispatch({ type: 'SET_KEY_GROUPS', payload: null })
+  }, [pluginState.datasets])
   // Cleanup only on unmount
   useEffect(() => {
     return () => {
