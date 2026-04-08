@@ -12,6 +12,7 @@ import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, isGeometryObscu
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
+import { setupHoverCursor } from './utils/hoverCursor.js'
 import { registerSymbols } from './utils/symbolImages.js'
 import { registerPatterns } from './utils/patternImages.js'
 
@@ -136,26 +137,7 @@ export default class MapLibreProvider {
     if (!this.map) {
       return
     }
-    const canvas = this.map.getCanvas()
-
-    if (this._onHoverMove) {
-      this.map.off('mousemove', this._onHoverMove)
-      this._onHoverMove = null
-    }
-
-    this._hoverLayerIds = layerIds
-
-    if (!layerIds?.length) {
-      canvas.style.cursor = ''
-      return
-    }
-
-    this._onHoverMove = (e) => {
-      const existingLayers = layerIds.filter(id => this.map.getLayer(id))
-      const hit = existingLayers.length > 0 && this.map.queryRenderedFeatures(e.point, { layers: existingLayers }).length > 0
-      canvas.style.cursor = hit ? 'pointer' : ''
-    }
-    this.map.on('mousemove', this._onHoverMove)
+    this._onHoverMove = setupHoverCursor(this.map, layerIds, this._onHoverMove)
   }
 
   // ==========================

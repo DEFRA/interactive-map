@@ -51,7 +51,7 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'OS/TopographicArea_1/Agricultural Land',
 		idProperty: 'TOID'
 	},{
-		layerId: 'hedge-control-stroke',
+		layerId: 'hedge-control',
 		idProperty: 'id'
 	},{
 		layerId: 'fill-inactive.cold',

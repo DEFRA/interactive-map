@@ -47,7 +47,7 @@ export const getLayerIds = (dataset) => {
   if (hasSymbol(dataset)) {
     return { fillLayerId: null, strokeLayerId: null, symbolLayerId: dataset.id }
   }
-  const hasFill = !!dataset.fill || hasPattern(dataset)
+  const hasFill = (!!dataset.fill && dataset.fill !== 'transparent') || hasPattern(dataset)
   const hasStroke = !!dataset.stroke
   const fillLayerId = hasFill ? dataset.id : null
   let strokeLayerId = null
