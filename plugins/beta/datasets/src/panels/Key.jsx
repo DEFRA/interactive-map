@@ -1,14 +1,8 @@
 import React from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
-import { hasPattern, getKeyPatternPaths } from '../../../../../src/utils/patternUtils.js'
 import { mergeSublayer } from '../utils/mergeSublayer.js'
-import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
-import { EmptyKey } from './EmptyKey.jsx'
-
-const SVG_SIZE = 20
-const SVG_SYMBOL_SIZE = 38
-const SVG_CENTER = SVG_SIZE / 2
-const PATTERN_INSET = 2
+import { EmptyKey } from '../components/EmptyKey.jsx'
+import { KeySvg } from '../components/KeySvg.jsx'
 
 export const Key = ({ pluginConfig, mapState, pluginState, services }) => {
   if (!pluginState?.key?.items?.length) {
@@ -17,80 +11,11 @@ export const Key = ({ pluginConfig, mapState, pluginState, services }) => {
   const { mapStyle } = mapState
   const { symbolRegistry, patternRegistry } = services
 
-  // Key symbols are rendered in the app UI panel, not on the map, so use the app color
-  // scheme for halo fallback — not the map color scheme (which could differ, e.g. aerial).
-  const appColorScheme = mapStyle?.appColorScheme ?? 'light'
-  const keyMapStyle = mapStyle ? { ...mapStyle, mapColorScheme: appColorScheme } : mapStyle
-
-  const itemSymbol = (config) => {
-    const svgProps = {
-      xmlns: 'http://www.w3.org/2000/svg',
-      width: hasSymbol(config) ? SVG_SYMBOL_SIZE : SVG_SIZE,
-      height: hasSymbol(config) ? SVG_SYMBOL_SIZE : SVG_SIZE,
-      viewBox: `0 0 ${SVG_SIZE} ${SVG_SIZE}`,
-      className: `am-c-datasets-key-symbol${hasSymbol(config) ? ' am-c-datasets-key-symbol--point' : ''}`,
-      'aria-hidden': 'true',
-      focusable: 'false'
-    }
-
-    if (hasSymbol(config)) {
-      const symbolDef = getSymbolDef(config, symbolRegistry)
-      if (symbolDef) {
-        const resolvedSvg = symbolRegistry.resolve(symbolDef, getSymbolStyleColors(config), keyMapStyle)
-        const viewBox = getSymbolViewBox(config, symbolDef)
-        return (
-          <svg {...svgProps} viewBox={viewBox}>
-            <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />
-          </svg>
-        )
-      }
-    }
-
-    if (hasPattern(config)) {
-      const paths = getKeyPatternPaths(config, mapStyle.id, patternRegistry)
-      return (
-        <svg {...svgProps}>
-          <g dangerouslySetInnerHTML={{ __html: paths.border }} />
-          <g transform={`translate(${PATTERN_INSET}, ${PATTERN_INSET})`} dangerouslySetInnerHTML={{ __html: paths.content }} />
-        </svg>
-      )
-    }
-
-    return (
-      <svg {...svgProps}>
-        {config.keySymbolShape === 'line'
-          ? (
-            <line
-              x1={config.strokeWidth / 2}
-              y1={SVG_CENTER}
-              x2={SVG_SIZE - config.strokeWidth / 2}
-              y2={SVG_CENTER}
-              stroke={getValueForStyle(config.stroke, mapStyle.id)}
-              strokeWidth={config.strokeWidth}
-              strokeLinecap='round'
-            />
-            )
-          : (
-            <rect
-              x={config.strokeWidth / 2}
-              y={config.strokeWidth / 2}
-              width={SVG_SIZE - config.strokeWidth}
-              height={SVG_SIZE - config.strokeWidth}
-              rx={config.strokeWidth}
-              ry={config.strokeWidth}
-              fill={getValueForStyle(config.fill, mapStyle.id)}
-              stroke={getValueForStyle(config.stroke, mapStyle.id)}
-              strokeWidth={config.strokeWidth}
-              strokeLinejoin='round'
-            />
-            )}
-      </svg>
-    )
-  }
-
   const renderEntry = (key, config) => (
     <dl key={key} className='im-c-datasets-key__item'>
-      <dt className='im-c-datasets-key__item-symbol'>{itemSymbol(config)}</dt>
+      <dt className='im-c-datasets-key__item-symbol'>
+        <KeySvg {...config} symbolRegistry={symbolRegistry} patternRegistry={patternRegistry} mapStyle={mapStyle} />
+      </dt>
       <dd className='im-c-datasets-key__item-label'>
         {config.label}
         {config.symbolDescription && (

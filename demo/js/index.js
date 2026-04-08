@@ -220,7 +220,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		maxZoom: 24,
 		showInKey: true,
 		toggleVisibility: true,
-		visibility: 'hidden',
+		// visibility: 'hidden',
 		style: {
 			stroke: '#b58840',
 			fill: 'transparent',
