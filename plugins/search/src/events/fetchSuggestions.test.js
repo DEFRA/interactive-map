@@ -9,6 +9,7 @@ describe('fetchSuggestions', () => {
   beforeEach(() => {
     dispatch.mockClear()
     global.fetch = jest.fn()
+    global.Request = jest.fn((url, options) => ({ url, ...options }))
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -35,7 +36,7 @@ describe('fetchSuggestions', () => {
 
     const result = await fetchSuggestions('test', datasets, dispatch)
 
-    expect(fetch).toHaveBeenCalledWith({ url: '/api?q=test', options: { method: 'GET' } })
+    expect(fetch).toHaveBeenCalledWith(expect.objectContaining({ url: '/api?q=test', method: 'GET' }))
     expect(result.results).toEqual(['a', 'b'])
     expect(dispatch).toHaveBeenCalledWith({
       type: 'UPDATE_SUGGESTIONS',
@@ -77,7 +78,7 @@ describe('fetchSuggestions', () => {
 
     const result = await fetchSuggestions('abc', datasets, dispatch)
 
-    expect(fetch).toHaveBeenCalledWith({ url: '/custom/abc', options: { method: 'POST' } })
+    expect(fetch).toHaveBeenCalledWith(expect.objectContaining({ url: '/custom/abc', method: 'POST' }))
     expect(result.results).toEqual(['y'])
   })
 
@@ -101,7 +102,7 @@ describe('fetchSuggestions', () => {
 
     await fetchSuggestions('x', datasets, dispatch, transformRequest)
 
-    expect(fetch).toHaveBeenCalledWith({ url: '/t?q=x', options: { method: 'PUT' } })
+    expect(fetch).toHaveBeenCalledWith(expect.objectContaining({ url: '/t?q=x', method: 'PUT' }))
   })
 
   test('handles fetch HTTP error', async () => {
@@ -206,7 +207,7 @@ describe('fetchSuggestions', () => {
 
     const result = await fetchSuggestions('hi', datasets, dispatch)
 
-    expect(fetch).toHaveBeenCalledWith({ url: '/default?q=hi', options: { method: 'GET' } })
+    expect(fetch).toHaveBeenCalledWith(expect.objectContaining({ url: '/default?q=hi', method: 'GET' }))
     expect(result.results).toEqual(['ok'])
   })
 })
