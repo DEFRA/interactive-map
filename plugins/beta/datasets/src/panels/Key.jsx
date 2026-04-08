@@ -3,38 +3,17 @@ import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 import { hasPattern, getKeyPatternPaths } from '../../../../../src/utils/patternUtils.js'
 import { mergeSublayer } from '../utils/mergeSublayer.js'
 import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
+import { EmptyKey } from './EmptyKey.jsx'
 
 const SVG_SIZE = 20
 const SVG_SYMBOL_SIZE = 38
 const SVG_CENTER = SVG_SIZE / 2
 const PATTERN_INSET = 2
 
-const buildKeyGroups = (datasets) => {
-  const seenGroups = new Set()
-  const items = []
-  datasets.forEach(dataset => {
-    if (dataset.sublayers?.length) {
-      items.push({ type: 'sublayers', dataset })
-      return
-    }
-    if (dataset.groupLabel) {
-      if (seenGroups.has(dataset.groupLabel)) {
-        return
-      }
-      seenGroups.add(dataset.groupLabel)
-      items.push({
-        type: 'group',
-        groupLabel: dataset.groupLabel,
-        datasets: datasets.filter(d => !d.sublayers?.length && d.groupLabel === dataset.groupLabel)
-      })
-      return
-    }
-    items.push({ type: 'flat', dataset })
-  })
-  return items
-}
-
-export const Key = ({ mapState, pluginState, services }) => {
+export const Key = ({ pluginConfig, mapState, pluginState, services }) => {
+  if (!pluginState?.key?.items?.length) {
+    return (<EmptyKey text={pluginConfig.noKeyItemText} />)
+  }
   const { mapStyle } = mapState
   const { symbolRegistry, patternRegistry } = services
 
@@ -123,11 +102,7 @@ export const Key = ({ mapState, pluginState, services }) => {
     </dl>
   )
 
-  const visibleDatasets = (pluginState.datasets || [])
-    .filter(dataset => dataset.showInKey && dataset.visibility !== 'hidden')
-
-  const keyGroups = buildKeyGroups(visibleDatasets)
-  const hasGroups = keyGroups.some(item => item.type === 'sublayers' || item.type === 'group')
+  const { items: keyGroups, hasGroups } = pluginState.key
   const containerClass = `im-c-datasets-key${hasGroups ? ' im-c-datasets-key--has-groups' : ''}`
 
   return (

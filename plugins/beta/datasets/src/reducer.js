@@ -1,7 +1,12 @@
 import { applyDatasetDefaults } from './defaults.js'
+import { keyReducer } from './reducers/keyReducer.js'
 
 const initialState = {
   datasets: null,
+  key: {
+    items: [],
+    hasGroups: false
+  },
   hiddenFeatures: {}, // { [layerId]: { idProperty: string, ids: string[] } }
   layerAdapter: null
 }
@@ -191,6 +196,7 @@ const setSublayerOpacity = (state, payload) => {
 const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
 
 const actions = {
+  BUILD_KEY_GROUPS: keyReducer,
   SET_DATASETS: setDatasets,
   ADD_DATASET: addDataset,
   REMOVE_DATASET: removeDataset,
