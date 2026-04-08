@@ -1,9 +1,18 @@
-export const buildKeyState = (datasets) => {
+export const keyReducer = (state) => {
+  const datasets = state.datasets || []
   const seenGroups = new Set()
   const items = []
+  let hasGroups = false
   datasets.forEach(dataset => {
+    if (!dataset.showInKey || dataset.visibility === 'hidden') {
+      return
+    }
     if (dataset.sublayers?.length) {
-      items.push({ type: 'sublayers', dataset })
+      const { sublayerVisibility = [] } = dataset
+      if (Object.values(sublayerVisibility).some((value) => value !== 'hidden')) {
+        hasGroups = true
+        items.push({ type: 'sublayers', dataset })
+      }
       return
     }
     if (dataset.groupLabel) {
@@ -11,6 +20,7 @@ export const buildKeyState = (datasets) => {
         return
       }
       seenGroups.add(dataset.groupLabel)
+      hasGroups = true
       items.push({
         type: 'group',
         groupLabel: dataset.groupLabel,
@@ -20,5 +30,5 @@ export const buildKeyState = (datasets) => {
     }
     items.push({ type: 'flat', dataset })
   })
-  return items
+  return { ...state, key: { items, hasGroups } }
 }

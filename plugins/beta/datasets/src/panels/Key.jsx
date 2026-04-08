@@ -3,13 +3,17 @@ import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 import { hasPattern, getKeyPatternPaths } from '../../../../../src/utils/patternUtils.js'
 import { mergeSublayer } from '../utils/mergeSublayer.js'
 import { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
+import { EmptyKey } from './EmptyKey.jsx'
 
 const SVG_SIZE = 20
 const SVG_SYMBOL_SIZE = 38
 const SVG_CENTER = SVG_SIZE / 2
 const PATTERN_INSET = 2
 
-export const Key = ({ mapState, pluginState, services }) => {
+export const Key = ({ pluginConfig, mapState, pluginState, services }) => {
+  if (!pluginState?.key?.items?.length) {
+    return (<EmptyKey text={pluginConfig.noKeyItemText} />)
+  }
   const { mapStyle } = mapState
   const { symbolRegistry, patternRegistry } = services
 

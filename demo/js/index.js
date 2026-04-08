@@ -70,7 +70,6 @@ const framePlugin = createFramePlugin({
 
 const datasetsPlugin = createDatasetsPlugin({
 	layerAdapter: maplibreLayerAdapter,
-	
 	// Example: Dynamic bbox-based fetching (uncomment to test)
 	datasets: [
 	{

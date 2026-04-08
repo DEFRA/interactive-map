@@ -1,8 +1,10 @@
 // /plugins/datasets/index.js
 import './datasets.scss'
 
-export default function createPlugin (options = {}) {
+export default function createPlugin (options = { }) {
+  console.log('options', options)
   const plugin = {
+    noKeyItemText: 'No features displayed',
     ...options,
     id: 'datasets',
     load: async () => {
