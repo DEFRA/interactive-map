@@ -1,6 +1,6 @@
 import InteractiveMap from '../../src/index.js'
 import { openMapStyles, vtsMapStyles3857 } from './mapStyles.js'
-import { searchCustomDatasets } from './searchCustomDatasets.js'
+// import { searchCustomDatasets } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformTileRequest } from './auth.js'
 // Providers
 import maplibreProvider from "/providers/maplibre/src/index.js"
@@ -112,7 +112,7 @@ const interactiveMap = new InteractiveMap('map', {
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       osNamesURL: process.env.OS_NAMES_URL,
-      customDatasets: searchCustomDatasets,
+      // customDatasets: searchCustomDatasets,
       width: '300px',
       showMarker: false
     }),
@@ -204,8 +204,41 @@ function removeFeature(id) {
   }
 }
 
-interactiveMap.on('draw:done', function (e) {
-  console.log('draw:done', e)
+interactiveMap.on('draw:created', function (e) {
+  console.log('draw:created', e)
+
+  const changedFeature = e.newFeature
+  const featureId = changedFeature.id
+  const feature = geojson.features.find((f) => f.id === featureId)
+
+  // Ensure the featureId exists in the geojson
+  if (feature && _changedFeature?.id === featureId) {
+    feature.geometry = _changedFeature.geometry
+
+    // Update the list
+    renderFeatureList(geojson)
+  } else {
+    // New feature
+    const typeName =
+      changedFeature.geometry.type === 'LineString' ? 'line' : 'polygon'
+    const description =
+      prompt(`What would you like to call this new ${typeName}?`) ??
+      `New ${typeName}`
+
+    geojson.features.push({
+      ...changedFeature,
+      properties: {
+        description
+      }
+    })
+
+    // Update the list
+    renderFeatureList(geojson)
+  }
+})
+
+interactiveMap.on('draw:edited', function (e) {
+  console.log('draw:edited', e)
 
   const changedFeature = e.newFeature
   const featureId = changedFeature.id
@@ -239,8 +272,8 @@ interactiveMap.on('draw:done', function (e) {
   resetChangedFeature()
 })
 
-interactiveMap.on('draw:create', function (e) {
-  console.log('draw:create', e)
+interactiveMap.on('draw:created', function (e) {
+  console.log('draw:created', e)
 
   // const newFeature = e.features.at(0)
   // const typeName =
@@ -260,8 +293,8 @@ interactiveMap.on('draw:create', function (e) {
   // renderFeatureList(geojson)
 })
 
-interactiveMap.on('draw:update', function (e) {
-  console.log('draw:update', e)
+interactiveMap.on('draw:updated', function (e) {
+  console.log('draw:updated', e)
   if (e.action === 'change_coordinates') {
     if (e.features.length === 1) {
       const changedFeature = e.features.at(0)
