@@ -11,6 +11,24 @@
  * @param {Function|null} prevHandler - Previous mousemove handler to remove
  * @returns {Function|null} The new handler, or null if layerIds is empty
  */
+const splitLayers = (map, layerIds) => {
+  const lineLayers = []
+  const otherLayers = []
+  for (const id of layerIds) {
+    const type = map.getLayer(id).type
+    if (type === 'line') {
+      const fillId = id.endsWith('-stroke') ? id.slice(0, -7) : null // NOSONAR
+      const hasFillCompanion = fillId !== null && layerIds.includes(fillId)
+      if (!hasFillCompanion) {
+        lineLayers.push(id)
+      }
+    } else {
+      otherLayers.push(id)
+    }
+  }
+  return { lineLayers, otherLayers }
+}
+
 export const setupHoverCursor = (map, layerIds, prevHandler) => {
   const canvas = map.getCanvas()
 
@@ -30,21 +48,7 @@ export const setupHoverCursor = (map, layerIds, prevHandler) => {
       return
     }
 
-    const lineLayers = []
-    const otherLayers = []
-    for (const id of existingLayers) {
-      const type = map.getLayer(id).type
-      if (type === 'line') {
-        const fillId = id.endsWith('-stroke') ? id.slice(0, -7) : null
-        const hasFillCompanion = fillId !== null && existingLayers.includes(fillId)
-        if (!hasFillCompanion) {
-          lineLayers.push(id)
-        }
-      } else {
-        otherLayers.push(id)
-      }
-    }
-
+    const { lineLayers, otherLayers } = splitLayers(map, existingLayers)
     const { x, y } = e.point
     const bbox = [[x - 10, y - 10], [x + 10, y + 10]]
     const lineHit = lineLayers.length > 0 && map.queryRenderedFeatures(bbox, { layers: lineLayers }).length > 0
