@@ -2,7 +2,6 @@
 import './datasets.scss'
 
 export default function createPlugin (options = { }) {
-  console.log('options', options)
   const plugin = {
     noKeyItemText: 'No features displayed',
     ...options,
