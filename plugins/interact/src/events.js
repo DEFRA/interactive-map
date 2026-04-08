@@ -1,3 +1,10 @@
+const buildDonePayload = (coords, selectedFeatures, selectedMarkers, selectionBounds) => ({
+  ...(coords && { coords }),
+  ...(!coords && selectedFeatures && { selectedFeatures }),
+  ...(!coords && selectedMarkers?.length && { selectedMarkers }),
+  ...(!coords && selectionBounds && { selectionBounds })
+})
+
 // Helper for feature toggling logic
 const createFeatureHandler = (mapState, getPluginState) => (args, addToExisting) => {
   const pluginState = getPluginState()
@@ -48,17 +55,13 @@ export function attachEvents ({
     const pluginState = getPluginState()
     const marker = mapState.markers.getMarker('location')
     const { coords } = marker || {}
-    const { selectionBounds, selectedFeatures } = pluginState
+    const { selectionBounds, selectedFeatures, selectedMarkers } = pluginState
 
     if (getAppState().disabledButtons.has('selectDone')) {
       return
     }
 
-    eventBus.emit('interact:done', {
-      ...(coords && { coords }),
-      ...(!coords && selectedFeatures && { selectedFeatures }),
-      ...(!coords && selectionBounds && { selectionBounds })
-    })
+    eventBus.emit('interact:done', buildDonePayload(coords, selectedFeatures, selectedMarkers, selectionBounds))
 
     if (pluginState.closeOnAction ?? true) {
       closeApp()

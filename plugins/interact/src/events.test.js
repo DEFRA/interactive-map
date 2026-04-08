@@ -172,14 +172,11 @@ describe('attachEvents', () => {
     Object.values(params.buttonConfig).forEach(btn => expect(btn.onClick).toBeNull())
   })
 
-  it('selectDone handles emission when no marker/coords exist', () => {
+  it('selectDone emits selectedFeatures and selectionBounds when no marker/coords', () => {
     const params = createParams()
     cleanup = attachEvents(params)
 
-    // Ensure marker returns null (no coords)
     params.mapState.markers.getMarker.mockReturnValue(null)
-
-    // Set up features and bounds
     params.pluginState.selectedFeatures = [{ id: 'f1' }]
     params.pluginState.selectionBounds = { sw: [0, 0], ne: [1, 1] }
 
@@ -189,6 +186,33 @@ describe('attachEvents', () => {
       selectedFeatures: [{ id: 'f1' }],
       selectionBounds: { sw: [0, 0], ne: [1, 1] }
     })
+  })
+
+  it('selectDone includes selectedMarkers in payload when present', () => {
+    const params = createParams()
+    cleanup = attachEvents(params)
+
+    params.mapState.markers.getMarker.mockReturnValue(null)
+    params.pluginState.selectedMarkers = ['m1', 'm2']
+
+    params.buttonConfig.selectDone.onClick()
+
+    expect(params.eventBus.emit).toHaveBeenCalledWith('interact:done',
+      expect.objectContaining({ selectedMarkers: ['m1', 'm2'] })
+    )
+  })
+
+  it('selectDone omits selectedMarkers from payload when empty', () => {
+    const params = createParams()
+    cleanup = attachEvents(params)
+
+    params.mapState.markers.getMarker.mockReturnValue(null)
+    params.pluginState.selectedMarkers = []
+
+    params.buttonConfig.selectDone.onClick()
+
+    const payload = params.eventBus.emit.mock.calls.find(c => c[0] === 'interact:done')[1]
+    expect(payload).not.toHaveProperty('selectedMarkers')
   })
 
   it('respects default closeOnAction when value is undefined (fallback to true)', () => {

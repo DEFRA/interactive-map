@@ -8,9 +8,9 @@ The interact plugin provides a unified way to handle user interactions for selec
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 
 const interactPlugin = createInteractPlugin({
-  interactionMode: 'auto',
+  interactionModes: ['selectMarker', 'selectFeature'],
   multiSelect: true,
-  dataLayers: [
+  layers: [
     { layerId: 'my-layer', idProperty: 'id' }
   ]
 })
@@ -40,32 +40,43 @@ Array of mode identifiers. When set, the plugin does not render when the app is 
 
 ---
 
-### `interactionMode`
-**Type:** `'marker' | 'select' | 'auto'`
-**Default:** `'marker'`
+### `interactionModes`
+**Type:** `Array<'selectMarker' | 'selectFeature' | 'placeMarker'>`
+**Default:** `['selectMarker']`
 
-Controls how user clicks are interpreted.
+Controls which interactions are active when the user clicks the map. Values can be combined freely — the plugin always processes them in a fixed priority order: marker selection → feature selection → place marker.
 
-- `'marker'` — clicking always places a location marker at the clicked coordinates
-- `'select'` — clicking attempts to match a feature from `dataLayers`; click outside clears selection (unless `deselectOnClickOutside` is `false`)
-- `'auto'` — attempts feature matching first, falls back to placing a marker if no feature is found
+- `'selectMarker'` — clicking a placed marker toggles its selection state
+- `'selectFeature'` — clicking the map attempts to match a feature from `layers`
+- `'placeMarker'` — if no feature is matched (or `selectFeature` is not active), places a location marker at the clicked coordinates
+
+**Common combinations:**
+
+```js
+interactionModes: ['selectMarker']                              // marker selection only (default)
+interactionModes: ['selectFeature']                             // feature selection only
+interactionModes: ['placeMarker']                               // always place a marker on click
+interactionModes: ['selectMarker', 'selectFeature']             // select markers or features
+interactionModes: ['selectFeature', 'placeMarker']              // select features, fall back to placing a marker
+interactionModes: ['selectMarker', 'selectFeature', 'placeMarker'] // all interactions active
+```
 
 ---
 
-### `dataLayers`
-**Type:** `Array<DataLayer>`
+### `layers`
+**Type:** `Array<LayerConfig>`
 **Default:** `[]`
 
 Array of map layer configurations that are selectable. Each entry specifies which layer to watch and how to identify features.
 
 ```js
-dataLayers: [
+layers: [
   { layerId: 'my-polygons', idProperty: 'id' },
   { layerId: 'my-lines' }
 ]
 ```
 
-#### `DataLayer` properties
+#### `LayerConfig` properties
 
 | Property | Type | Description |
 |----------|------|-------------|
@@ -74,6 +85,16 @@ dataLayers: [
 | `selectedStroke` | `string` | Overrides the selection stroke colour for this layer. Defaults to `MapStyleConfig.selectedColor` |
 | `selectedFill` | `string` | Overrides the selection fill colour for this layer. Defaults to `transparent` |
 | `selectedStrokeWidth` | `number` | Overrides the selection stroke width for this layer. Defaults to `3` |
+
+#### Finding layer IDs
+
+What to use as `layerId` depends on how your data is added to the map — these are the layers the plugin will enable for feature selection:
+
+- **MapLibre directly** — use the layer IDs defined in your style or added via `map.addLayer()`
+- **Datasets plugin** — use the dataset ID, or the sublayer ID for datasets with sublayers
+- **Draw plugin** — uses generated layer IDs such as `fill-inactive.cold` and `stroke-inactive.cold`
+
+If you're unsure of the layer IDs available at runtime, set `debug: true` in the map config — this lets you query the map and inspect layer names in the browser console.
 
 ---
 
@@ -105,7 +126,7 @@ When `true`, clicking outside any selectable layer clears the current selection.
 **Type:** `number`
 **Default:** `10`
 
-Click detection radius in pixels. Increases the hit area around the cursor when matching features, which is useful for lines and points.
+Click detection radius in pixels applied to line features. Lines have a 1px rendered width so a buffer is required for reliable selection. Polygon and symbol/icon features use exact hit detection and are unaffected by this value.
 
 ---
 
@@ -140,9 +161,9 @@ When not set, the marker inherits from the constructor `symbolDefaults` cascade.
 **Type:** `number`
 **Default:** `3`
 
-Stroke width used to highlight selected features. Can be overridden per layer via `dataLayers[].selectedStrokeWidth`.
+Stroke width used to highlight selected features. Can be overridden per layer via `layers[].selectedStrokeWidth`.
 
-> **Selection colours** — stroke and fill colours for selected features are not configured here. Stroke colour comes from `MapStyleConfig.selectedColor` (falling back to the `mapColorScheme` scheme default), ensuring the selection colour stays consistent with the rest of the map theme. Fill defaults to `transparent`. Both can be overridden per layer via `dataLayers[].selectedStroke` and `dataLayers[].selectedFill`.
+> **Selection colours** — stroke and fill colours for selected features are not configured here. Stroke colour comes from `MapStyleConfig.selectedColor` (falling back to the `mapColorScheme` scheme default), ensuring the selection colour stays consistent with the rest of the map theme. Fill defaults to `transparent`. Both can be overridden per layer via `layers[].selectedStroke` and `layers[].selectedFill`.
 
 ---
 
@@ -166,7 +187,7 @@ interactiveMap.on('map:ready', () => {
 })
 
 // Override options at runtime
-interactPlugin.enable({ multiSelect: true, interactionMode: 'select' })
+interactPlugin.enable({ multiSelect: true, interactionModes: ['selectFeature'] })
 ```
 
 ---

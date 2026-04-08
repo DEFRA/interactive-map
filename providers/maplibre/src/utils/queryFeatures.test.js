@@ -20,7 +20,7 @@ describe('queryFeatures coverage', () => {
       { type: 'MultiPoint', coords: [[0, 0], [10, 10]], p: { x: 1, y: 0 } },
       { type: 'MultiLineString', coords: [[[0, 0], [10, 0]]], p: { x: 5, y: 1 } },
       { type: 'Polygon', coords: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]], p: { x: 5, y: 5 } }, // Inside
-      { type: 'MultiPolygon', coords: [[[[0, 0], [10, 0], [10, 10], [0, 0]]]], p: { x: 20, y: 20 } }, // Outside
+      { type: 'MultiPolygon', coords: [[[[0, 0], [10, 0], [10, 10], [0, 0]]]], p: { x: 5, y: 3 } }, // Inside
       { type: 'Unknown', coords: [], p: { x: 0, y: 0 } }
     ]
 
@@ -49,12 +49,29 @@ describe('queryFeatures coverage', () => {
     expect(result.length).toBe(2)
     expect(result[0].layer.id).toBe('layer-A') // Sorted by layerStack index
 
-    // 4. Hit ray-casting intersect logic (Line 42 branch)
+    // 4. Hit ray-casting intersect logic — point inside the polygon
     const polyFeat = {
       layer: { id: 'L' },
       geometry: { type: 'Polygon', coordinates: [[[0, 0], [10, 10], [0, 10], [0, 0]]] }
     }
     const rayMap = { ...mockMap, queryRenderedFeatures: () => [polyFeat] }
-    expect(queryFeatures(rayMap, { x: -1, y: 5 }).length).toBe(1)
+    expect(queryFeatures(rayMap, { x: 2, y: 8 }).length).toBe(1)
+
+    // 5. Outside polygon is filtered out (tolerance only applies to lines)
+    const outsideMap = { ...mockMap, queryRenderedFeatures: () => [polyFeat] }
+    expect(queryFeatures(outsideMap, { x: -1, y: 5 }).length).toBe(0)
+
+    // 6. Symbol under exact click point is included
+    const symbolFeat = { id: 'sym', layer: { id: 'S', source: 'src' }, geometry: { type: 'Point', coordinates: [0, 0] } }
+    const symbolMap = { ...mockMap, queryRenderedFeatures: () => [symbolFeat] } // both calls return it
+    expect(queryFeatures(symbolMap, { x: 5, y: 5 }).length).toBe(1)
+
+    // 7. Symbol NOT under exact click point is filtered out
+    let call = 0
+    const symbolMissMap = {
+      ...mockMap,
+      queryRenderedFeatures: () => call++ === 0 ? [symbolFeat] : [] // bbox returns it, exact does not
+    }
+    expect(queryFeatures(symbolMissMap, { x: 5, y: 5 }).length).toBe(0)
   })
 })

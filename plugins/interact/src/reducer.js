@@ -1,12 +1,13 @@
 const initialState = {
   enabled: false,
-  dataLayers: [],
+  layers: [],
   marker: null,
-  interactionMode: null,
+  interactionModes: null,
   multiSelect: false,
   contiguous: false,
   deselectOnClickOutside: false,
   selectedFeatures: [],
+  selectedMarkers: [],
   selectionBounds: null,
   closeOnAction: true // Done or Cancel
 }
@@ -24,6 +25,7 @@ const disable = (state) => {
     ...state,
     enabled: false,
     selectedFeatures: [],
+    selectedMarkers: [],
     selectionBounds: null
   }
 }
@@ -67,7 +69,7 @@ const toggleSelectedFeatures = (state, payload) => {
     nextSelected = isSameSingle ? [] : [featureObj]
   }
 
-  return { ...state, selectedFeatures: nextSelected, selectionBounds: null }
+  return { ...state, selectedFeatures: nextSelected, selectedMarkers: multiSelect && !replaceAll ? state.selectedMarkers : [], selectionBounds: null }
 }
 
 // Update bounds (called from useEffect after map provider calculates them)
@@ -81,10 +83,26 @@ const updateSelectedBounds = (state, payload) => {
   }
 }
 
+const toggleSelectedMarkers = (state, { markerId, multiSelect }) => {
+  const current = state.selectedMarkers
+  const exists = current.includes(markerId)
+  if (multiSelect) {
+    const next = exists ? current.filter(id => id !== markerId) : [...current, markerId]
+    return { ...state, selectedMarkers: next }
+  }
+  return {
+    ...state,
+    selectedFeatures: [],
+    selectionBounds: null,
+    selectedMarkers: exists && current.length === 1 ? [] : [markerId]
+  }
+}
+
 const clearSelectedFeatures = (state) => {
   return {
     ...state,
     selectedFeatures: [],
+    selectedMarkers: [],
     selectionBounds: null
   }
 }
@@ -93,6 +111,7 @@ const actions = {
   ENABLE: enable,
   DISABLE: disable,
   TOGGLE_SELECTED_FEATURES: toggleSelectedFeatures,
+  TOGGLE_SELECTED_MARKERS: toggleSelectedMarkers,
   UPDATE_SELECTED_BOUNDS: updateSelectedBounds,
   CLEAR_SELECTED_FEATURES: clearSelectedFeatures
 }

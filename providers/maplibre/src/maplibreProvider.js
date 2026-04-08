@@ -12,6 +12,7 @@ import { getAreaDimensions, getCardinalMove, getBboxFromGeoJSON, isGeometryObscu
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
+import { setupHoverCursor } from './utils/hoverCursor.js'
 import { registerSymbols } from './utils/symbolImages.js'
 import { registerPatterns } from './utils/patternImages.js'
 
@@ -116,6 +117,7 @@ export default class MapLibreProvider {
 
   /** Destroy the map and clean up resources. */
   destroyMap () {
+    this.setHoverCursor([])
     this.mapEvents?.remove()
     this.appEvents?.remove()
 
@@ -123,6 +125,19 @@ export default class MapLibreProvider {
     this.appEvents = null
 
     this.map.remove()
+  }
+
+  /**
+   * Set pointer cursor on the map canvas when hovering over any of the given layer IDs.
+   * Call with an empty array to remove all hover cursor listeners.
+   *
+   * @param {string[]} layerIds
+   */
+  setHoverCursor (layerIds) {
+    if (!this.map) {
+      return
+    }
+    this._onHoverMove = setupHoverCursor(this.map, layerIds, this._onHoverMove)
   }
 
   // ==========================

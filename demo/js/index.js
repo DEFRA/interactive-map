@@ -29,7 +29,7 @@ import createFramePlugin from '/plugins/beta/frame/src/index.js'
 const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: {category:'prehistoric'},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',properties: {category:'roman'},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',properties: {category:'medieval'},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
-	dataLayers: [{
+	layers: [{
 		layerId: 'historic-monuments-prehistoric-symbol',
 		// idProperty: 'gid'
 	},{
@@ -51,6 +51,9 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'OS/TopographicArea_1/Agricultural Land',
 		idProperty: 'TOID'
 	},{
+		layerId: 'hedge-control',
+		idProperty: 'id'
+	},{
 		layerId: 'fill-inactive.cold',
 		idProperty: 'id'
 	},{
@@ -58,8 +61,8 @@ const interactPlugin = createInteractPlugin({
 		idProperty: 'id'
 	}],
 	debug: true,
-	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
-	multiSelect: true,
+	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
+	// multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true
 })
@@ -302,6 +305,10 @@ interactiveMap.on('map:ready', function (e) {
 	// 	aspectRatio: 1
 	// })
 	interactPlugin.enable()
+	interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407])
+	interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], {
+		symbol: 'square'
+	})
 })
 
 interactiveMap.on('datasets:ready', function () {
@@ -323,6 +330,7 @@ interactiveMap.on('interact:cancel', function (e) {
 })
 
 interactiveMap.on('interact:selectionchange', function (e) {
+	console.log(e)
 	const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
 	const singleFeature = e.selectedFeatures.length === 1
 	const anyFeature = e.selectedFeatures.length > 0

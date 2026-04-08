@@ -10,15 +10,15 @@ export const useHighlightSync = ({
   events,
   eventBus
 }) => {
-  const { dataLayers } = pluginState
+  const { layers } = pluginState
 
   // Memoize stylesMap so it only recalculates when style or layers change
   const stylesMap = useMemo(() => {
     if (!mapStyle) {
       return null
     }
-    return buildStylesMap(dataLayers, mapStyle)
-  }, [dataLayers, mapStyle])
+    return buildStylesMap(layers, mapStyle)
+  }, [layers, mapStyle])
 
   // Force re-application of all selected features
   const updateHighlightedFeatures = () => {

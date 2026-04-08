@@ -58,7 +58,10 @@ describe('MapLibreProvider', () => {
       getCenter: jest.fn(() => ({ lng: 1.2345678, lat: 2.3456789 })),
       getZoom: jest.fn(() => 10),
       getBounds: jest.fn(() => ({ toArray: jest.fn(() => [[0, 0], [1, 1]]) })),
-      getPixelRatio: jest.fn(() => 1)
+      getPixelRatio: jest.fn(() => 1),
+      getCanvas: jest.fn(() => ({ style: {} })),
+      getLayer: jest.fn(() => true),
+      queryRenderedFeatures: jest.fn(() => [])
     }
     eventBus = { emit: jest.fn() }
     maplibreModule = { Map: jest.fn(() => map), LngLatBounds: jest.fn() }
@@ -262,6 +265,63 @@ describe('MapLibreProvider', () => {
     const registry = {}
     await p.registerPatterns(configs, 'test', registry)
     expect(registerPatterns).toHaveBeenCalledWith(map, configs, 'test', registry)
+  })
+
+  describe('setHoverCursor', () => {
+    test('registers mousemove handler on the map when layerIds provided', async () => {
+      const p = makeProvider()
+      await doInitMap(p)
+      p.setHoverCursor(['layer-a'])
+      expect(map.on).toHaveBeenCalledWith('mousemove', expect.any(Function))
+    })
+
+    test('sets cursor to pointer when queryRenderedFeatures returns a hit', async () => {
+      const canvas = { style: {} }
+      map.getCanvas.mockReturnValue(canvas)
+      map.queryRenderedFeatures.mockReturnValue([{ id: 'f1' }])
+
+      const p = makeProvider()
+      await doInitMap(p)
+      p.setHoverCursor(['layer-a'])
+
+      const moveHandler = map.on.mock.calls.find(([e]) => e === 'mousemove')?.[1]
+      moveHandler({ point: { x: 10, y: 20 } })
+
+      expect(canvas.style.cursor).toBe('pointer')
+    })
+
+    test('clears cursor when queryRenderedFeatures returns no hit', async () => {
+      const canvas = { style: { cursor: 'pointer' } }
+      map.getCanvas.mockReturnValue(canvas)
+      map.queryRenderedFeatures.mockReturnValue([])
+
+      const p = makeProvider()
+      await doInitMap(p)
+      p.setHoverCursor(['layer-a'])
+
+      const moveHandler = map.on.mock.calls.find(([e]) => e === 'mousemove')?.[1]
+      moveHandler({ point: { x: 10, y: 20 } })
+
+      expect(canvas.style.cursor).toBe('')
+    })
+
+    test('removes mousemove handler and clears cursor when called with empty array', async () => {
+      const canvas = { style: { cursor: 'pointer' } }
+      map.getCanvas.mockReturnValue(canvas)
+
+      const p = makeProvider()
+      await doInitMap(p)
+      p.setHoverCursor(['layer-a'])
+      p.setHoverCursor([])
+
+      expect(map.off).toHaveBeenCalledWith('mousemove', expect.any(Function))
+      expect(canvas.style.cursor).toBe('')
+    })
+
+    test('does nothing when map is not initialised', () => {
+      const p = makeProvider()
+      expect(() => p.setHoverCursor(['layer-a'])).not.toThrow()
+    })
   })
 
   test('label methods return null without labelNavigator; delegate when set', async () => {

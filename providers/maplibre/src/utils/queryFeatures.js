@@ -83,11 +83,22 @@ const getMinDistToGeometry = (map, point, geometry) => {
  */
 export const queryFeatures = (map, point, options = {}) => {
   const { radius = 10 } = options
-  const queryArea = [[point.x - radius, point.y - radius], [point.x + radius, point.y + radius]]
-  const rawFeatures = map.queryRenderedFeatures(queryArea)
+
+  const bbox = [[point.x - radius, point.y - radius], [point.x + radius, point.y + radius]]
+  const rawFeatures = map.queryRenderedFeatures(bbox)
   if (rawFeatures.length === 0) {
     return []
   }
+
+  // For symbol/point features, tolerance must not apply — selection should only
+  // fire when the click lands within the rendered icon bounds. An exact point
+  // query uses MapLibre's own icon hit-testing, mirroring the hover cursor behaviour.
+  const exactFeatureKeys = new Set(
+    map.queryRenderedFeatures([point.x, point.y]).map(f => {
+      const rawId = f.id === undefined ? JSON.stringify(f.properties) : f.id
+      return `${f.layer?.source}:${rawId}`
+    })
+  )
 
   // Identify layer visual hierarchy
   const layerStack = []
@@ -115,7 +126,24 @@ export const queryFeatures = (map, point, options = {}) => {
   const clickLngLat = map.unproject(point)
   const clickPt = [clickLngLat.lng, clickLngLat.lat]
 
-  return uniqueFeatures
+  // Discard features where tolerance should not apply:
+  // - Polygons: only include if click is geometrically inside
+  // - Points/symbols: only include if under the exact click point (respects icon bounds)
+  // - Lines: allowed through — tolerance bbox is intentional for them
+  const candidates = uniqueFeatures.filter((f) => {
+    const type = f.geometry.type
+    if (type.includes('Polygon')) {
+      const polys = type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
+      return polys.some((ring) => isPointInPolygon(clickPt, ring[0]))
+    }
+    if (type === 'Point' || type === 'MultiPoint') {
+      const rawId = f.id === undefined ? JSON.stringify(f.properties) : f.id
+      return exactFeatureKeys.has(`${f.layer?.source}:${rawId}`)
+    }
+    return true
+  })
+
+  return candidates
     .map((f) => {
       let score = 0
       const type = f.geometry.type
@@ -125,18 +153,9 @@ export const queryFeatures = (map, point, options = {}) => {
       const layerRank = layerStack.indexOf(f.layer.id)
       score += (layerRank * 1000000)
 
-      // PRIORITY 2: CONTAINMENT (Polygon Special Treatment)
+      // PRIORITY 2: POLYGON BOOST (already filtered to inside-only)
       if (type.includes('Polygon')) {
-        const polys = type === 'Polygon' ? [f.geometry.coordinates] : f.geometry.coordinates
-        const isInside = polys.some((ring) => isPointInPolygon(clickPt, ring[0]))
-
-        if (isInside === true) {
-          // Massive boost for polygons if we are actually inside them
-          score -= 500000 // NOSONAR - tolerance used only here
-        } else {
-          // If we are outside a polygon, it loses significantly to anything we ARE inside
-          score += 100000 // NOSONAR - tolerance used only here
-        }
+        score -= 500000 // NOSONAR
       }
 
       // PRIORITY 3: DISTANCE (Final Tie-breaker)

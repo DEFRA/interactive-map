@@ -30,19 +30,27 @@ const click = result =>
     })
   )
 
-const setup = (pluginOverrides = {}) => {
+const makeMarkerEl = (rect) => ({
+  getBoundingClientRect: () => rect,
+  parentElement: {
+    getBoundingClientRect: () => ({ left: 0, top: 0 })
+  }
+})
+
+const setup = (pluginOverrides = {}, markerItems = [], markerRefs = new Map()) => {
   const deps = {
     mapState: {
-      markers: { add: jest.fn(), remove: jest.fn() }
+      markers: { add: jest.fn(), remove: jest.fn(), items: markerItems, markerRefs }
     },
     pluginState: {
       dispatch: jest.fn(),
-      dataLayers: [{ layerId: 'parcels', idProperty: 'parcelId' }],
-      interactionMode: 'select',
+      layers: [{ layerId: 'parcels', idProperty: 'parcelId' }],
+      interactionModes: ['selectMarker', 'selectFeature'],
       multiSelect: false,
       contiguous: false,
       marker: { symbol: 'pin', backgroundColor: 'red' },
       selectedFeatures: [],
+      selectedMarkers: [],
       selectionBounds: null,
       ...pluginOverrides
     },
@@ -73,12 +81,94 @@ beforeEach(() => {
 })
 
 /* ------------------------------------------------------------------ */
-/* Marker mode                                                        */
+/* DOM marker hit detection                                           */
 /* ------------------------------------------------------------------ */
 
-describe('marker mode', () => {
+describe('DOM marker hit detection', () => {
+  it('dispatches TOGGLE_SELECTED_MARKERS when click is within a marker bounds', () => {
+    const markerEl = makeMarkerEl({ left: 5, top: 15, right: 15, bottom: 25 })
+    const markerRefs = new Map([['marker-1', markerEl]])
+    const markerItems = [{ id: 'marker-1', coords: [1, 2] }]
+
+    const { result, deps } = setup({}, markerItems, markerRefs)
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith({
+      type: 'TOGGLE_SELECTED_MARKERS',
+      payload: { markerId: 'marker-1', multiSelect: false }
+    })
+  })
+
+  it('markers take precedence over features when both hit', () => {
+    const markerEl = makeMarkerEl({ left: 5, top: 15, right: 15, bottom: 25 })
+    const markerRefs = new Map([['marker-1', markerEl]])
+    const markerItems = [{ id: 'marker-1', coords: [1, 2] }]
+
+    const { result, deps } = setup({}, markerItems, markerRefs)
+    click(result)
+
+    expect(deps.pluginState.dispatch).not.toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+    expect(featureQueries.getFeaturesAtPoint).not.toHaveBeenCalled()
+  })
+
+  it('skips markers with no ref and continues to next', () => {
+    // marker in items but not in markerRefs — should not throw, should fall through to features
+    const markerItems = [{ id: 'marker-no-ref', coords: [1, 2] }]
+    const markerRefs = new Map() // no entry for marker-no-ref
+
+    const { result, deps } = setup({}, markerItems, markerRefs)
+    click(result)
+
+    expect(featureQueries.getFeaturesAtPoint).toHaveBeenCalled()
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+
+  it('uses zero offset when marker element has no parentElement', () => {
+    // parentElement is null — fallback parentRect { left: 0, top: 0 } should be used
+    const markerEl = {
+      getBoundingClientRect: () => ({ left: 5, top: 15, right: 15, bottom: 25 }),
+      parentElement: null
+    }
+    const markerRefs = new Map([['marker-1', markerEl]])
+    const markerItems = [{ id: 'marker-1', coords: [1, 2] }]
+
+    const { result, deps } = setup({}, markerItems, markerRefs)
+    click(result)
+
+    // click point { x: 10, y: 20 } is within [5,15,15,25] with zero parent offset
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith({
+      type: 'TOGGLE_SELECTED_MARKERS',
+      payload: { markerId: 'marker-1', multiSelect: false }
+    })
+  })
+
+  it('falls through to feature selection when click misses all markers', () => {
+    // marker bounds don't include the click point { x: 10, y: 20 }
+    const markerEl = makeMarkerEl({ left: 50, top: 50, right: 80, bottom: 80 })
+    const markerRefs = new Map([['marker-1', markerEl]])
+    const markerItems = [{ id: 'marker-1', coords: [1, 2] }]
+
+    const { result, deps } = setup({}, markerItems, markerRefs)
+    click(result)
+
+    expect(featureQueries.getFeaturesAtPoint).toHaveBeenCalled()
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+})
+
+/* ------------------------------------------------------------------ */
+/* placeMarker mode                                                   */
+/* ------------------------------------------------------------------ */
+
+describe('placeMarker mode', () => {
   it('places marker, clears selection, and emits event', () => {
-    const { result, deps } = setup({ interactionMode: 'marker' })
+    const { result, deps } = setup({ interactionModes: ['placeMarker'] })
 
     click(result)
 
@@ -98,32 +188,30 @@ describe('marker mode', () => {
 })
 
 /* ------------------------------------------------------------------ */
-/* Select & Auto modes                                                */
+/* selectFeature mode                                                 */
 /* ------------------------------------------------------------------ */
 
-describe.each(['select', 'auto'])('%s mode feature selection', mode => {
-  it('dispatches selection for matching feature', () => {
-    const { result, deps } = setup({ interactionMode: mode })
+it('selectFeature mode dispatches selection for matching feature', () => {
+  const { result, deps } = setup({ interactionModes: ['selectFeature'] })
 
-    click(result)
+  click(result)
 
-    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'TOGGLE_SELECTED_FEATURES',
-        payload: expect.objectContaining({
-          featureId: 'P1',
-          layerId: 'parcels'
-        })
+  expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: 'TOGGLE_SELECTED_FEATURES',
+      payload: expect.objectContaining({
+        featureId: 'P1',
+        layerId: 'parcels'
       })
-    )
-  })
+    })
+  )
 })
 
-it('falls back to marker in auto mode when no feature found', () => {
+it('falls back to placeMarker when selectFeature finds no match', () => {
   featureQueries.getFeaturesAtPoint.mockReturnValue([])
   featureQueries.findMatchingFeature.mockReturnValue(null)
 
-  const { result, deps } = setup({ interactionMode: 'auto' })
+  const { result, deps } = setup({ interactionModes: ['selectFeature', 'placeMarker'] })
 
   click(result)
 
@@ -248,21 +336,46 @@ describe('deselectOnClickOutside', () => {
 })
 
 /* ------------------------------------------------------------------ */
-/* Marker condition guard (FULL COVERAGE)                             */
+/* placeMarker / selectFeature guards                                 */
 /* ------------------------------------------------------------------ */
 
-it('does NOT place marker in auto mode when no dataLayers exist', () => {
+it('places marker with placeMarker mode even when no layers exist', () => {
   featureQueries.getFeaturesAtPoint.mockReturnValue([])
   featureQueries.findMatchingFeature.mockReturnValue(null)
 
   const { result, deps } = setup({
-    interactionMode: 'auto',
-    dataLayers: []
+    interactionModes: ['selectFeature', 'placeMarker'],
+    layers: []
   })
 
   click(result)
 
+  expect(deps.mapState.markers.add).toHaveBeenCalled()
+})
+
+it('does not place marker when placeMarker is not in interactionModes', () => {
+  featureQueries.getFeaturesAtPoint.mockReturnValue([])
+  featureQueries.findMatchingFeature.mockReturnValue(null)
+
+  const { result, deps } = setup({ interactionModes: ['selectFeature'] })
+
+  click(result)
+
   expect(deps.mapState.markers.add).not.toHaveBeenCalled()
+})
+
+it('does not check markers when selectMarker is not in interactionModes', () => {
+  const markerEl = makeMarkerEl({ left: 5, top: 15, right: 15, bottom: 25 })
+  const markerRefs = new Map([['marker-1', markerEl]])
+  const markerItems = [{ id: 'marker-1', coords: [1, 2] }]
+
+  const { result, deps } = setup({ interactionModes: ['selectFeature'] }, markerItems, markerRefs)
+  click(result)
+
+  expect(deps.pluginState.dispatch).not.toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'TOGGLE_SELECTED_MARKERS' })
+  )
+  expect(featureQueries.getFeaturesAtPoint).toHaveBeenCalled()
 })
 
 /* ------------------------------------------------------------------ */
@@ -271,9 +384,10 @@ it('does NOT place marker in auto mode when no dataLayers exist', () => {
 
 it('emits selectionchange once when bounds exist', () => {
   const deps = {
-    mapState: { markers: { add: jest.fn(), remove: jest.fn() } },
+    mapState: { markers: { add: jest.fn(), remove: jest.fn(), items: [], markerRefs: new Map() } },
     pluginState: {
       selectedFeatures: [{ featureId: 'F1' }],
+      selectedMarkers: [],
       selectionBounds: { sw: [0, 0], ne: [1, 1] }
     },
     services: { eventBus: { emit: jest.fn() } },
@@ -286,6 +400,7 @@ it('emits selectionchange once when bounds exist', () => {
     'interact:selectionchange',
     expect.objectContaining({
       selectedFeatures: deps.pluginState.selectedFeatures,
+      selectedMarkers: [],
       selectionBounds: deps.pluginState.selectionBounds,
       canMerge: false,
       canSplit: false
@@ -299,8 +414,8 @@ it('skips emission when selection remains empty after being cleared', () => {
   // 1. First render with a feature (prev is null, emission happens)
   const { rerender } = renderHook(
     ({ features }) => useInteractionHandlers({
-      mapState: { markers: {} },
-      pluginState: { selectedFeatures: features, selectionBounds: { b: 1 } },
+      mapState: { markers: { items: [], markerRefs: new Map() } },
+      pluginState: { selectedFeatures: features, selectedMarkers: [], selectionBounds: { b: 1 } },
       services: { eventBus },
       mapProvider: {}
     }),
