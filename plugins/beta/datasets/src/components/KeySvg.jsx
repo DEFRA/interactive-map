@@ -3,11 +3,10 @@ import { hasSymbol, getSymbolDef } from '../../../../../src/utils/symbolUtils.js
 import { hasPattern } from '../../../../../src/utils/patternUtils.js'
 import { KeySvgPattern } from './KeySvgPattern.jsx'
 import { KeySvgSymbol } from './KeySvgSymbol.jsx'
-const SVG_SIZE = 20
-const SVG_CENTER = SVG_SIZE / 2
+import { svgProps, SVG_SIZE, SVG_CENTER } from './svgProperties.js'
 
 export const KeySvg = (props) => {
-  const { symbolRegistry, patternRegistry } = props
+  const { symbolRegistry } = props
   const symbolDef = hasSymbol(props) && getSymbolDef(props, symbolRegistry)
   if (symbolDef) {
     return <KeySvgSymbol {...props} symbolDef={symbolDef} />
@@ -16,16 +15,6 @@ export const KeySvg = (props) => {
     return <KeySvgPattern {...props} />
   }
   const { mapStyle } = props
-  const svgProps = {
-    xmlns: 'http://www.w3.org/2000/svg',
-    width: SVG_SIZE,
-    height: SVG_SIZE,
-    viewBox: `0 0 ${SVG_SIZE} ${SVG_SIZE}`,
-    className: 'am-c-datasets-key-symbol',
-    'aria-hidden': 'true',
-    focusable: 'false'
-  }
-
   console.log('Rendering default:', props.keySymbolShape)
   return (
     <svg {...svgProps}>
