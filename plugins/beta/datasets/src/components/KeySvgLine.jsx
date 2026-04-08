@@ -3,7 +3,6 @@ import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 
 export const KeySvgLine = (props) => {
   const { mapStyle } = props
-  console.log('Rendering KeySvgLine:')
   return (
     <svg {...svgProps}>
       <line

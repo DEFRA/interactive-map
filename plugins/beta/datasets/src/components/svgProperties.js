@@ -2,7 +2,6 @@ export const SVG_SIZE = 20
 export const SVG_CENTER = SVG_SIZE / 2
 const SVG_SYMBOL_SIZE = 38
 
-// base svgProps
 export const svgProps = {
   xmlns: 'http://www.w3.org/2000/svg',
   width: SVG_SIZE,

@@ -2,7 +2,6 @@ import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils
 import { svgSymbolProps } from './svgProperties.js'
 
 export const KeySvgSymbol = (props) => {
-  console.log('Rendering KeySvgSymbol')
   const { symbolRegistry, mapStyle, symbolDef } = props
   const mapColorScheme = mapStyle?.appColorScheme ?? 'light'
   const keyMapStyle = { ...mapStyle, mapColorScheme }

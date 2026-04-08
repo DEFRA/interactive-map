@@ -7,8 +7,7 @@ export default {
     '\\.mjs$': 'babel-jest'
   },
   collectCoverageFrom: [
-    // '**/*.{js,jsx}'
-    '<rootDir>/plugins/beta/**/*.{js,jsx}'
+    '**/*.{js,jsx}'
   ],
   projects: [{
     displayName: 'unit-tests',
@@ -26,7 +25,7 @@ export default {
       '<rootDir>/coverage',
       '<rootDir>/demo',
       '<rootDir>/src/test-utils.js',
-      // '<rootDir>/plugins/beta/datasets/',
+      '<rootDir>/plugins/beta/datasets/',
       '<rootDir>/providers/beta/',
       '<rootDir>/plugins/beta/draw-es',
       '<rootDir>/plugins/beta/draw-ml',

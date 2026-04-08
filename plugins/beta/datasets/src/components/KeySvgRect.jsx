@@ -3,7 +3,6 @@ import { svgProps, SVG_SIZE } from './svgProperties.js'
 
 export const KeySvgRect = (props) => {
   const { mapStyle } = props
-  console.log('Rendering KeySvgRect:')
   return (
     <svg {...svgProps}>
       <rect
