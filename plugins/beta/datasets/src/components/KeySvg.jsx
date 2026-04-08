@@ -1,5 +1,5 @@
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
-import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
+import { hasSymbol, getSymbolDef } from '../../../../../src/utils/symbolUtils.js'
 import { hasPattern } from '../../../../../src/utils/patternUtils.js'
 import { KeySvgPattern } from './KeySvgPattern.jsx'
 import { KeySvgSymbol } from './KeySvgSymbol.jsx'
@@ -7,9 +7,10 @@ const SVG_SIZE = 20
 const SVG_CENTER = SVG_SIZE / 2
 
 export const KeySvg = (props) => {
-  if (hasSymbol(props)) {
-    console.log('Rendering KeySvgSymbol')
-    return <KeySvgSymbol {...props} />
+  const { symbolRegistry, patternRegistry } = props
+  const symbolDef = hasSymbol(props) && getSymbolDef(props, symbolRegistry)
+  if (symbolDef) {
+    return <KeySvgSymbol {...props} symbolDef={symbolDef} />
   }
   if (hasPattern(props)) {
     console.log('Rendering KeySvgPattern')
