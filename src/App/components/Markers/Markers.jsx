@@ -4,6 +4,7 @@ import { useConfig } from '../../store/configContext.js'
 import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
+import { scaleFactor } from '../../../config/appConfig.js'
 
 // Marker properties handled internally — excluded from style value resolution
 const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'selectedWidth'])
@@ -59,7 +60,7 @@ const useMarkerCursor = (markers, interactActive, viewportRef) => {
 // sonarjs/disable-next-line function-name
 export const Markers = () => {
   const { id } = useConfig()
-  const { mapStyle } = useMap()
+  const { mapStyle, mapSize } = useMap()
   const { markers, markerRef } = useMarkers()
   const { symbolRegistry, eventBus } = useService()
 
@@ -108,6 +109,9 @@ export const Markers = () => {
         const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
         const anchor = resolveAnchor(marker, defaults, symbolDef)
         const shapeId = marker.symbol || defaults.symbol
+        const scale = scaleFactor[mapSize] ?? 1
+        const scaledWidth = svgWidth * scale
+        const scaledHeight = svgHeight * scale
 
         return (
           <svg
@@ -119,14 +123,14 @@ export const Markers = () => {
               `im-c-marker--${stringToKebab(shapeId)}`,
               isSelected && 'im-c-marker--selected'
             ].filter(Boolean).join(' ')}
-            width={svgWidth}
-            height={svgHeight}
+            width={scaledWidth}
+            height={scaledHeight}
             viewBox={viewBox}
             overflow='visible'
             style={{
               display: marker.isVisible ? 'block' : 'none',
-              marginLeft: `${-anchor[0] * svgWidth}px`,
-              marginTop: `${-anchor[1] * svgHeight}px`
+              marginLeft: `${-anchor[0] * scaledWidth}px`,
+              marginTop: `${-anchor[1] * scaledHeight}px`
             }}
           >
             <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />

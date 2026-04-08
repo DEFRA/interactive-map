@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef } from 'react'
 import { isContiguousWithAny, canSplitFeatures, areAllContiguous } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
+import { scaleFactor } from '../../../../src/config/appConfig.js'
 
 /**
  * Returns the id of the first DOM marker whose visual bounds contain the given point.
@@ -13,7 +14,7 @@ import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '..
  * @param {{ x: number, y: number }} point - container-relative pixel coordinates
  * @returns {string|null}
  */
-const findMarkerAtPoint = (markers, point) => {
+const findMarkerAtPoint = (markers, point, scale) => {
   for (const marker of markers.items) {
     const el = markers.markerRefs?.get(marker.id)
     if (!el) {
@@ -22,9 +23,11 @@ const findMarkerAtPoint = (markers, point) => {
     const parent = el.parentElement
     const parentRect = parent ? parent.getBoundingClientRect() : { left: 0, top: 0 }
     const { left, top, right, bottom } = el.getBoundingClientRect()
+    const scaledX = point.x * scale
+    const scaledY = point.y * scale
     if (
-      point.x >= left - parentRect.left && point.x <= right - parentRect.left &&
-      point.y >= top - parentRect.top && point.y <= bottom - parentRect.top
+      scaledX >= left - parentRect.left && scaledX <= right - parentRect.left &&
+      scaledY >= top - parentRect.top && scaledY <= bottom - parentRect.top
     ) {
       return marker.id
     }
@@ -61,17 +64,12 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
   }, [selectedFeatures, selectedMarkers, selectionBounds])
 }
 
-export const useInteractionHandlers = ({
-  mapState,
-  pluginState,
-  services,
-  mapProvider
-}) => {
-  const { markers } = mapState
+export const useInteractionHandlers = ({ mapState, pluginState, services, mapProvider }) => {
+  const { markers, mapSize } = mapState
   const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, marker: markerOptions, tolerance, selectedFeatures, selectedMarkers, selectionBounds, deselectOnClickOutside } = pluginState
   const { eventBus } = services
   const layerConfigMap = buildLayerConfigMap(dataLayers)
-
+  const scale = scaleFactor[mapSize] ?? 1
   const processFeatureMatch = useCallback(({ feature, config }) => {
     markers.remove('location')
     const isNewContiguous = contiguous && isContiguousWithAny(feature, selectedFeatures)
@@ -107,7 +105,7 @@ export const useInteractionHandlers = ({
 
   const handleInteraction = useCallback(({ point, coords }) => {
     // DOM markers take precedence over layers — check them first
-    const markerHit = findMarkerAtPoint(markers, point)
+    const markerHit = findMarkerAtPoint(markers, point, scale)
     if (markerHit) {
       dispatch({ type: 'TOGGLE_SELECTED_MARKERS', payload: { markerId: markerHit, multiSelect } })
       return
@@ -140,10 +138,9 @@ export const useInteractionHandlers = ({
     pluginState?.debug,
     tolerance,
     processFeatureMatch,
-    processFallback
+    processFallback,
+    scale
   ])
-
   useSelectionChangeEmitter(eventBus, selectedFeatures, selectedMarkers, selectionBounds)
-
   return { handleInteraction }
 }
