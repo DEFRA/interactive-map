@@ -6,6 +6,9 @@ export default {
     '\\.jsx?$': 'babel-jest',
     '\\.mjs$': 'babel-jest'
   },
+  collectCoverageFrom: [
+    '**/*.{js,jsx}'
+  ],
   projects: [{
     displayName: 'unit-tests',
     testEnvironment: 'jsdom',
@@ -17,6 +20,10 @@ export default {
     ],
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
+      '<rootDir>/src/index.umd.js',
+      '<rootDir>/stylelint.config.js',
+      '<rootDir>/coverage',
+      '<rootDir>/demo',
       '<rootDir>/src/test-utils.js',
       '<rootDir>/plugins/beta/datasets/',
       '<rootDir>/providers/beta/',
