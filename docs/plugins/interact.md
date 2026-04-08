@@ -86,6 +86,16 @@ layers: [
 | `selectedFill` | `string` | Overrides the selection fill colour for this layer. Defaults to `transparent` |
 | `selectedStrokeWidth` | `number` | Overrides the selection stroke width for this layer. Defaults to `3` |
 
+#### Finding layer IDs
+
+What to use as `layerId` depends on how your data is added to the map — these are the layers the plugin will enable for feature selection:
+
+- **MapLibre directly** — use the layer IDs defined in your style or added via `map.addLayer()`
+- **Datasets plugin** — use the dataset ID, or the sublayer ID for datasets with sublayers
+- **Draw plugin** — uses generated layer IDs such as `fill-inactive.cold` and `stroke-inactive.cold`
+
+If you're unsure of the layer IDs available at runtime, set `debug: true` in the map config — this lets you query the map and inspect layer names in the browser console.
+
 ---
 
 ### `multiSelect`
