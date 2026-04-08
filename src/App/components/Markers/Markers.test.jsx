@@ -65,7 +65,7 @@ describe('Markers', () => {
 
   it.each([
     [true, 'block'],
-    [false, 'none'],
+    [false, 'none']
   ])('display is %s when isVisible=%s', (isVisible, display) => {
     const svg = setup({ markers: [makeMarker({ isVisible })] }).result.container.querySelector('svg')
     expect(svg).toHaveStyle({ display })
@@ -103,7 +103,7 @@ describe('Markers', () => {
   it.each([
     ['marker.anchor', makeMarker({ anchor: [0, 0] }), null, '0px', '0px'],
     ['symbolDef.anchor', makeMarker(), { get: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 38 38', anchor: [0, 0.5] })), getDefaults: jest.fn(() => ({ symbol: 'pin', viewBox: '0 0 38 38' })) }, '0px', '-19px'],
-    ['[0.5, 0.5] fallback', makeMarker(), { get: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 38 38' })), getDefaults: jest.fn(() => ({ symbol: 'pin', viewBox: '0 0 38 38' })) }, '-19px', '-19px'],
+    ['[0.5, 0.5] fallback', makeMarker(), { get: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 38 38' })), getDefaults: jest.fn(() => ({ symbol: 'pin', viewBox: '0 0 38 38' })) }, '-19px', '-19px']
   ])('resolveAnchor uses %s', (_, marker, srOverrides, left, top) => {
     const sr = srOverrides ? makeSymbolRegistry(srOverrides) : undefined
     expect(setup({ markers: [marker], symbolRegistry: sr }).result.container.querySelector('svg')).toHaveStyle({ marginLeft: left, marginTop: top })
@@ -113,7 +113,7 @@ describe('Markers', () => {
     ['small', '38', '38'],
     ['medium', '57', '57'],
     ['large', '76', '76'],
-    ['huge', '38', '38'],
+    ['huge', '38', '38']
   ])('scales svg dimensions for mapSize=%s', (mapSize, width, height) => {
     const svg = setup({ markers: [makeMarker()], mapSize }).result.container.querySelector('svg')
     expect(svg.getAttribute('width')).toBe(width)
@@ -141,7 +141,7 @@ describe('Markers', () => {
 
   it.each([
     ['explicit empty array', { selectedMarkers: [] }],
-    ['missing selectedMarkers key', {}],
+    ['missing selectedMarkers key', {}]
   ])('deselects when selectionchange has %s', (_, payload) => {
     const { eb, result } = setup({ markers: [makeMarker()] })
     act(() => eb.emit('interact:selectionchange', { selectedMarkers: ['marker-1'] }))
@@ -211,7 +211,7 @@ describe('Markers', () => {
 
     it.each([
       ['outside all markers', 100, 100],
-      ['marker has no ref element', 20, 20],
+      ['marker has no ref element', 20, 20]
     ])('cursor stays empty when %s', (label, x, y) => {
       const bounds = label.includes('no ref') ? null : { left: 10, top: 10, right: 50, bottom: 50 }
       const eb = setupCursor(bounds)
