@@ -127,6 +127,25 @@ describe('DOM marker hit detection', () => {
     )
   })
 
+  it('uses zero offset when marker element has no parentElement', () => {
+    // parentElement is null — fallback parentRect { left: 0, top: 0 } should be used
+    const markerEl = {
+      getBoundingClientRect: () => ({ left: 5, top: 15, right: 15, bottom: 25 }),
+      parentElement: null
+    }
+    const markerRefs = new Map([['marker-1', markerEl]])
+    const markerItems = [{ id: 'marker-1', coords: [1, 2] }]
+
+    const { result, deps } = setup({}, markerItems, markerRefs)
+    click(result)
+
+    // click point { x: 10, y: 20 } is within [5,15,15,25] with zero parent offset
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith({
+      type: 'TOGGLE_SELECTED_MARKERS',
+      payload: { markerId: 'marker-1', multiSelect: false }
+    })
+  })
+
   it('falls through to feature selection when click misses all markers', () => {
     // marker bounds don't include the click point { x: 10, y: 20 }
     const markerEl = makeMarkerEl({ left: 50, top: 50, right: 80, bottom: 80 })
