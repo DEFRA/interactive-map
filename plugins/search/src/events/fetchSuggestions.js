@@ -2,6 +2,8 @@
 
 export const sanitiseQuery = (value) => value.replace(/[^a-zA-Z0-9\s\-.,]/g, '').trim()
 
+const toRequest = ({ url, options }) => new Request(url, options)
+
 const getRequestConfig = async (ds, query, transformRequest) => {
   const defaultRequest = {
     url: ds.urlTemplate?.replace('{query}', encodeURIComponent(query)),
@@ -9,15 +11,14 @@ const getRequestConfig = async (ds, query, transformRequest) => {
   }
 
   if (ds.buildRequest) {
-    return ds.buildRequest(query, () => defaultRequest)
+    return toRequest(ds.buildRequest(query, () => defaultRequest))
   }
 
   if (transformRequest) {
-    const transformedRequest = await transformRequest(defaultRequest, query)
-    return transformedRequest
+    return toRequest(await transformRequest(defaultRequest, query))
   }
 
-  return defaultRequest
+  return toRequest(defaultRequest)
 }
 
 /**
