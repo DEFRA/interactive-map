@@ -1,6 +1,6 @@
 export const DEFAULTS = {
   tolerance: 10,
-  interactionMode: 'marker',
+  interactionModes: ['selectMarker'],
   multiSelect: false,
   contiguous: false,
   deselectOnClickOutside: false,

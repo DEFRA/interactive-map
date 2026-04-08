@@ -44,8 +44,8 @@ const setup = (pluginOverrides = {}, markerItems = [], markerRefs = new Map()) =
     },
     pluginState: {
       dispatch: jest.fn(),
-      dataLayers: [{ layerId: 'parcels', idProperty: 'parcelId' }],
-      interactionMode: 'select',
+      layers: [{ layerId: 'parcels', idProperty: 'parcelId' }],
+      interactionModes: ['selectMarker', 'selectFeature'],
       multiSelect: false,
       contiguous: false,
       marker: { symbol: 'pin', backgroundColor: 'red' },
@@ -163,12 +163,12 @@ describe('DOM marker hit detection', () => {
 })
 
 /* ------------------------------------------------------------------ */
-/* Marker mode                                                        */
+/* placeMarker mode                                                   */
 /* ------------------------------------------------------------------ */
 
-describe('marker mode', () => {
+describe('placeMarker mode', () => {
   it('places marker, clears selection, and emits event', () => {
-    const { result, deps } = setup({ interactionMode: 'marker' })
+    const { result, deps } = setup({ interactionModes: ['placeMarker'] })
 
     click(result)
 
@@ -188,32 +188,30 @@ describe('marker mode', () => {
 })
 
 /* ------------------------------------------------------------------ */
-/* Select & Auto modes                                                */
+/* selectFeature mode                                                 */
 /* ------------------------------------------------------------------ */
 
-describe.each(['select', 'auto'])('%s mode feature selection', mode => {
-  it('dispatches selection for matching feature', () => {
-    const { result, deps } = setup({ interactionMode: mode })
+it('selectFeature mode dispatches selection for matching feature', () => {
+  const { result, deps } = setup({ interactionModes: ['selectFeature'] })
 
-    click(result)
+  click(result)
 
-    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        type: 'TOGGLE_SELECTED_FEATURES',
-        payload: expect.objectContaining({
-          featureId: 'P1',
-          layerId: 'parcels'
-        })
+  expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+    expect.objectContaining({
+      type: 'TOGGLE_SELECTED_FEATURES',
+      payload: expect.objectContaining({
+        featureId: 'P1',
+        layerId: 'parcels'
       })
-    )
-  })
+    })
+  )
 })
 
-it('falls back to marker in auto mode when no feature found', () => {
+it('falls back to placeMarker when selectFeature finds no match', () => {
   featureQueries.getFeaturesAtPoint.mockReturnValue([])
   featureQueries.findMatchingFeature.mockReturnValue(null)
 
-  const { result, deps } = setup({ interactionMode: 'auto' })
+  const { result, deps } = setup({ interactionModes: ['selectFeature', 'placeMarker'] })
 
   click(result)
 
@@ -338,21 +336,46 @@ describe('deselectOnClickOutside', () => {
 })
 
 /* ------------------------------------------------------------------ */
-/* Marker condition guard (FULL COVERAGE)                             */
+/* placeMarker / selectFeature guards                                 */
 /* ------------------------------------------------------------------ */
 
-it('does NOT place marker in auto mode when no dataLayers exist', () => {
+it('places marker with placeMarker mode even when no layers exist', () => {
   featureQueries.getFeaturesAtPoint.mockReturnValue([])
   featureQueries.findMatchingFeature.mockReturnValue(null)
 
   const { result, deps } = setup({
-    interactionMode: 'auto',
-    dataLayers: []
+    interactionModes: ['selectFeature', 'placeMarker'],
+    layers: []
   })
 
   click(result)
 
+  expect(deps.mapState.markers.add).toHaveBeenCalled()
+})
+
+it('does not place marker when placeMarker is not in interactionModes', () => {
+  featureQueries.getFeaturesAtPoint.mockReturnValue([])
+  featureQueries.findMatchingFeature.mockReturnValue(null)
+
+  const { result, deps } = setup({ interactionModes: ['selectFeature'] })
+
+  click(result)
+
   expect(deps.mapState.markers.add).not.toHaveBeenCalled()
+})
+
+it('does not check markers when selectMarker is not in interactionModes', () => {
+  const markerEl = makeMarkerEl({ left: 5, top: 15, right: 15, bottom: 25 })
+  const markerRefs = new Map([['marker-1', markerEl]])
+  const markerItems = [{ id: 'marker-1', coords: [1, 2] }]
+
+  const { result, deps } = setup({ interactionModes: ['selectFeature'] }, markerItems, markerRefs)
+  click(result)
+
+  expect(deps.pluginState.dispatch).not.toHaveBeenCalledWith(
+    expect.objectContaining({ type: 'TOGGLE_SELECTED_MARKERS' })
+  )
+  expect(featureQueries.getFeaturesAtPoint).toHaveBeenCalled()
 })
 
 /* ------------------------------------------------------------------ */

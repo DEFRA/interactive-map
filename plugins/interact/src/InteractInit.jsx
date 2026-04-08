@@ -67,7 +67,7 @@ export const InteractInit = ({
     eventBus.emit('interact:active', { active: enabled })
   }, [enabled])
 
-  useHoverCursor(mapProvider, enabled, pluginState.interactionMode, pluginState.dataLayers)
+  useHoverCursor(mapProvider, enabled, pluginState.interactionModes, pluginState.layers)
 
   // Toggle target marker visibility
   useEffect(() => {

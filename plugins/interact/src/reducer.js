@@ -1,8 +1,8 @@
 const initialState = {
   enabled: false,
-  dataLayers: [],
+  layers: [],
   marker: null,
-  interactionMode: null,
+  interactionModes: null,
   multiSelect: false,
   contiguous: false,
   deselectOnClickOutside: false,

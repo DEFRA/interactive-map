@@ -1,10 +1,10 @@
 import { useEffect } from 'react'
 
-export const useHoverCursor = (mapProvider, enabled, interactionMode, dataLayers) => {
+export const useHoverCursor = (mapProvider, enabled, interactionModes, layers) => {
   useEffect(() => {
-    const canSelect = enabled && (interactionMode === 'select' || interactionMode === 'auto')
-    const layerIds = canSelect ? dataLayers.map(l => l.layerId) : []
+    const canSelect = enabled && interactionModes?.includes('selectFeature')
+    const layerIds = canSelect ? layers.map(l => l.layerId) : []
     mapProvider.setHoverCursor?.(layerIds)
     return () => mapProvider.setHoverCursor?.([])
-  }, [enabled, interactionMode, dataLayers])
+  }, [enabled, interactionModes, layers])
 }

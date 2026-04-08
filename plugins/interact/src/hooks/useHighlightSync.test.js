@@ -23,7 +23,7 @@ describe('useHighlightSync', () => {
       },
       mapStyle: { id: 'default-style' },
       pluginState: {
-        dataLayers: [{ layerId: 'layer1' }]
+        layers: [{ layerId: 'layer1' }]
       },
       selectedFeatures: [],
       dispatch: jest.fn(),
@@ -93,21 +93,21 @@ describe('useHighlightSync', () => {
     )
   })
 
-  it('rebuilds styles when dataLayers change', () => {
+  it('rebuilds styles when layers change', () => {
     mockDeps.selectedFeatures = [{ featureId: 'F1' }]
 
     const { rerender } = renderHook(
-      ({ dataLayers }) =>
+      ({ layers }) =>
         useHighlightSync({
           ...mockDeps,
-          pluginState: { dataLayers }
+          pluginState: { layers }
         }),
-      { initialProps: { dataLayers: [{ layerId: 'layer1' }] } }
+      { initialProps: { layers: [{ layerId: 'layer1' }] } }
     )
 
     buildStylesMap.mockClear()
 
-    rerender({ dataLayers: [{ layerId: 'layer1' }, { layerId: 'layer2' }] })
+    rerender({ layers: [{ layerId: 'layer1' }, { layerId: 'layer2' }] })
 
     expect(buildStylesMap).toHaveBeenCalled()
   })

@@ -4,9 +4,9 @@ describe('initialState', () => {
   it('has correct defaults', () => {
     expect(initialState).toEqual({
       enabled: false,
-      dataLayers: [],
+      layers: [],
       marker: null,
-      interactionMode: null,
+      interactionModes: null,
       multiSelect: false,
       contiguous: false,
       deselectOnClickOutside: false,
@@ -22,22 +22,22 @@ describe('ENABLE/DISABLE actions', () => {
   it('ENABLE sets enabled and merges payload', () => {
     const state = { ...initialState, enabled: false }
     const marker = { symbol: 'pin', backgroundColor: 'red' }
-    const payload = { dataLayers: [1], marker }
+    const payload = { layers: [1], marker }
     const result = actions.ENABLE(state, payload)
 
     expect(result.enabled).toBe(true)
-    expect(result.dataLayers).toEqual([1])
+    expect(result.layers).toEqual([1])
     expect(result.marker).toEqual(marker)
     expect(result).not.toBe(state)
   })
 
   it('DISABLE sets enabled to false, clears selection and markers, and preserves other state', () => {
     const marker = { symbol: 'pin', backgroundColor: 'red' }
-    const state = { ...initialState, enabled: true, dataLayers: [1], marker, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: ['m1'], selectionBounds: [0, 0, 1, 1] }
+    const state = { ...initialState, enabled: true, layers: [1], marker, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: ['m1'], selectionBounds: [0, 0, 1, 1] }
     const result = actions.DISABLE(state)
 
     expect(result.enabled).toBe(false)
-    expect(result.dataLayers).toEqual([1])
+    expect(result.layers).toEqual([1])
     expect(result.marker).toEqual(marker)
     expect(result.selectedFeatures).toEqual([])
     expect(result.selectedMarkers).toEqual([])

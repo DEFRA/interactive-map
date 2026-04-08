@@ -29,7 +29,7 @@ import createFramePlugin from '/plugins/beta/frame/src/index.js'
 const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: {category:'prehistoric'},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',properties: {category:'roman'},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',properties: {category:'medieval'},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
-	dataLayers: [{
+	layers: [{
 		layerId: 'historic-monuments-prehistoric-symbol',
 		// idProperty: 'gid'
 	},{
@@ -51,14 +51,17 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'OS/TopographicArea_1/Agricultural Land',
 		idProperty: 'TOID'
 	},{
+		layerId: 'hedge-control-stroke',
+		idProperty: 'id'
+	},{
 		layerId: 'fill-inactive.cold',
 		idProperty: 'id'
 	},{
 		layerId: 'stroke-inactive.cold',
 		idProperty: 'id'
 	}],
-	// debug: true,
-	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
+	debug: true,
+	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
 	// multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true

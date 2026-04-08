@@ -10,7 +10,7 @@ describe('enable', () => {
 
   it('dispatches ENABLE with merged payload correctly', () => {
     const pluginConfig = { marker: { symbol: 'pin', backgroundColor: 'blue' } }
-    const options = { interactionMode: 'select', marker: { symbol: 'circle', backgroundColor: 'green' }, dataLayers: [{ layerId: 'test' }] }
+    const options = { interactionModes: ['selectFeature'], marker: { symbol: 'circle', backgroundColor: 'green' }, layers: [{ layerId: 'test' }] }
 
     enable({ pluginState: { dispatch }, pluginConfig }, options)
 
@@ -18,10 +18,10 @@ describe('enable', () => {
     expect(dispatch).toHaveBeenCalledWith({
       type: 'ENABLE',
       payload: expect.objectContaining({
-        interactionMode: 'select',
+        interactionModes: ['selectFeature'],
         multiSelect: DEFAULTS.multiSelect,
         marker: { symbol: 'circle', backgroundColor: 'green' },
-        dataLayers: [{ layerId: 'test' }]
+        layers: [{ layerId: 'test' }]
       })
     })
   })

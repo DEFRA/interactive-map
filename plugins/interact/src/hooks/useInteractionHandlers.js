@@ -12,6 +12,7 @@ import { scaleFactor } from '../../../../src/config/appConfig.js'
  *
  * @param {Object} markers - markers object from mapState (has .items and .markerRefs)
  * @param {{ x: number, y: number }} point - container-relative pixel coordinates
+ * @param {number} scale - scaleFactor for the current mapSize (e.g. 1.5 for medium)
  * @returns {string|null}
  */
 const findMarkerAtPoint = (markers, point, scale) => {
@@ -64,11 +65,26 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
   }, [selectedFeatures, selectedMarkers, selectionBounds])
 }
 
+/**
+ * Core interaction hook. Processes map clicks in fixed priority order:
+ * selectMarker → selectFeature → placeMarker (fallback).
+ *
+ * Which steps are active is controlled by `pluginState.interactionModes`. Steps not
+ * present in the array are skipped entirely — e.g. omitting `'selectMarker'` means
+ * marker hit-testing is never performed.
+ *
+ * @param {Object} deps
+ * @param {Object} deps.mapState - Map state including markers and mapSize
+ * @param {Object} deps.pluginState - Plugin state including interactionModes, layers, etc.
+ * @param {Object} deps.services - Services including eventBus
+ * @param {Object} deps.mapProvider - Map provider instance for feature queries
+ * @returns {{ handleInteraction: Function }}
+ */
 export const useInteractionHandlers = ({ mapState, pluginState, services, mapProvider }) => {
   const { markers, mapSize } = mapState
-  const { dispatch, dataLayers, interactionMode, multiSelect, contiguous, marker: markerOptions, tolerance, selectedFeatures, selectedMarkers, selectionBounds, deselectOnClickOutside } = pluginState
+  const { dispatch, layers, interactionModes, multiSelect, contiguous, marker: markerOptions, tolerance, selectedFeatures, selectedMarkers, selectionBounds, deselectOnClickOutside } = pluginState
   const { eventBus } = services
-  const layerConfigMap = buildLayerConfigMap(dataLayers)
+  const layerConfigMap = buildLayerConfigMap(layers)
   const scale = scaleFactor[mapSize] ?? 1
   const processFeatureMatch = useCallback(({ feature, config }) => {
     markers.remove('location')
@@ -91,46 +107,44 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
     })
   }, [markers, contiguous, selectedFeatures, dispatch, multiSelect])
 
-  const processFallback = useCallback(({ coords, hasDataLayers }) => {
-    const isMarkerMode = interactionMode === 'marker' || (interactionMode === 'auto' && hasDataLayers)
-    if (!isMarkerMode && !deselectOnClickOutside) {
+  const processFallback = useCallback(({ coords }) => {
+    const canPlace = interactionModes.includes('placeMarker')
+    if (!canPlace && !deselectOnClickOutside) {
       return
     }
     dispatch({ type: 'CLEAR_SELECTED_FEATURES' })
-    if (isMarkerMode) {
+    if (canPlace) {
       markers.add('location', coords, markerOptions)
       eventBus.emit('interact:markerchange', { coords })
     }
-  }, [interactionMode, dispatch, markers, markerOptions, eventBus, deselectOnClickOutside])
+  }, [interactionModes, dispatch, markers, markerOptions, eventBus, deselectOnClickOutside])
 
   const handleInteraction = useCallback(({ point, coords }) => {
-    // DOM markers take precedence over layers — check them first
-    const markerHit = findMarkerAtPoint(markers, point, scale)
-    if (markerHit) {
-      dispatch({ type: 'TOGGLE_SELECTED_MARKERS', payload: { markerId: markerHit, multiSelect } })
-      return
+    if (interactionModes.includes('selectMarker')) {
+      const markerHit = findMarkerAtPoint(markers, point, scale)
+      if (markerHit) {
+        dispatch({ type: 'TOGGLE_SELECTED_MARKERS', payload: { markerId: markerHit, multiSelect } })
+        return
+      }
     }
 
-    const allFeatures = getFeaturesAtPoint(mapProvider, point, { radius: tolerance })
-    const hasDataLayers = dataLayers.length > 0
-
-    if (pluginState?.debug) {
-      console.log(`--- Features at ${coords} ---`, allFeatures)
+    if (interactionModes.includes('selectFeature') && layers.length > 0) {
+      const allFeatures = getFeaturesAtPoint(mapProvider, point, { radius: tolerance })
+      if (pluginState?.debug) {
+        console.log(`--- Features at ${coords} ---`, allFeatures)
+      }
+      const match = findMatchingFeature(allFeatures, layerConfigMap)
+      if (match) {
+        processFeatureMatch(match)
+        return
+      }
     }
 
-    const canMatch = hasDataLayers && (interactionMode === 'select' || interactionMode === 'auto')
-    const match = canMatch ? findMatchingFeature(allFeatures, layerConfigMap) : null
-
-    if (match) {
-      processFeatureMatch(match)
-      return
-    }
-
-    processFallback({ coords, hasDataLayers })
+    processFallback({ coords })
   }, [
     mapProvider,
-    dataLayers,
-    interactionMode,
+    layers,
+    interactionModes,
     multiSelect,
     dispatch,
     markers,

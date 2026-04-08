@@ -18,7 +18,7 @@ import createInteractPlugin from '/plugins/interact/src/index.js'
 const pointData = {type: 'FeatureCollection','features': [{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.882445487962059,54.70938250564518],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8775970686837695,54.70966586215056],'type': 'Point'}},{'type': 'Feature','properties': {},'geometry': {'coordinates': [-2.8732152153681056,54.70892223300439],'type': 'Point'}}]}
 
 const interactPlugin = createInteractPlugin({
-	dataLayers: [{
+	layers: [{
 		layerId: 'field-parcels',
 		// idProperty: 'gid'
 	},{
@@ -35,7 +35,7 @@ const interactPlugin = createInteractPlugin({
 		idProperty: 'id'
 	}],
 	debug: true,
-	interactionMode: 'select', // 'auto', 'select', 'marker' // defaults to 'marker'
+	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
 	multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true

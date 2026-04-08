@@ -37,8 +37,8 @@ describe('InteractInit', () => {
         selectedFeatures: [],
         selectedMarkers: [],
         selectionBounds: {},
-        interactionMode: 'select',
-        dataLayers: []
+        interactionModes: ['selectFeature'],
+        layers: []
       }
     }
   })
