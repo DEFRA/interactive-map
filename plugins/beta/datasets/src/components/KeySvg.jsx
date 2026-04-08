@@ -13,7 +13,6 @@ export const KeySvg = (props) => {
     return <KeySvgSymbol {...props} symbolDef={symbolDef} />
   }
   if (hasPattern(props)) {
-    console.log('Rendering KeySvgPattern')
     return <KeySvgPattern {...props} />
   }
   const { mapStyle } = props
@@ -27,6 +26,7 @@ export const KeySvg = (props) => {
     focusable: 'false'
   }
 
+  console.log('Rendering default:', props.keySymbolShape)
   return (
     <svg {...svgProps}>
       {props.keySymbolShape === 'line'
