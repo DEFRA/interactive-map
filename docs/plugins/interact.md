@@ -71,7 +71,7 @@ Array of map layer configurations that are selectable. Each entry specifies whic
 
 ```js
 layers: [
-  { layerId: 'my-polygons', idProperty: 'id' },
+  { layerId: 'my-polygons', idProperty: 'guid' },
   { layerId: 'my-lines' }
 ]
 ```
@@ -90,11 +90,11 @@ layers: [
 
 What to use as `layerId` depends on how your data is added to the map — these are the layers the plugin will enable for feature selection:
 
-- **MapLibre directly** — use the layer IDs defined in your style or added via `map.addLayer()`
+- **Map provider directly** — use the layer IDs defined in your style or added via your map provider's layer API
 - **Datasets plugin** — use the dataset ID, or the sublayer ID for datasets with sublayers
-- **Draw plugin** — uses generated layer IDs such as `fill-inactive.cold` and `stroke-inactive.cold`
+- **Draw plugin** — uses generated layer IDs; inspect the map at runtime to find them (e.g. `fill-inactive.cold`, `stroke-inactive.cold` when using MapLibre)
 
-If you're unsure of the layer IDs available at runtime, set `debug: true` in the map config — this lets you query the map and inspect layer names in the browser console.
+If you're unsure of the layer IDs available at runtime, set `debug: true` in the interact plugin options — this lets you query the map and inspect layer names in the browser console.
 
 ---
 
@@ -118,7 +118,7 @@ When `true`, only features that touch or overlap the existing selection can be a
 **Type:** `boolean`
 **Default:** `false`
 
-When `true`, clicking outside any selectable layer clears the current selection.
+When `true`, clicking outside any selectable feature clears the current selection.
 
 ---
 
@@ -265,12 +265,15 @@ Emitted when the user confirms their selection (clicks "Done").
 **Payload:**
 ```js
 {
-  // If a marker was placed:
+  // If a location marker was placed:
   coords: [lng, lat],
 
   // If features were selected:
   selectedFeatures: [...],
-  selectionBounds: [west, south, east, north]
+  selectionBounds: [west, south, east, north],
+
+  // If markers were selected:
+  selectedMarkers: ['...']
 }
 ```
 
@@ -281,6 +284,9 @@ interactiveMap.on('interact:done', (e) => {
   }
   if (e.selectedFeatures) {
     console.log('Features selected:', e.selectedFeatures)
+  }
+  if (e.selectedMarkers) {
+    console.log('Markers selected:', e.selectedMarkers)
   }
 })
 ```
@@ -303,7 +309,7 @@ interactiveMap.on('interact:cancel', () => {
 
 ### `interact:selectionchange`
 
-Emitted whenever the feature selection changes.
+Emitted whenever the selected features or selected markers change.
 
 **Payload:**
 ```js
@@ -311,6 +317,7 @@ Emitted whenever the feature selection changes.
   selectedFeatures: [
     { featureId: '...', layerId: '...', properties: {...}, geometry: {...} }
   ],
+  selectedMarkers: ['...'],  // array of selected marker IDs
   selectionBounds: [west, south, east, north] | null,
   canMerge: boolean,  // true when all selected features are contiguous
   canSplit: boolean   // true when exactly one Polygon or MultiPolygon is selected
