@@ -9,7 +9,10 @@ describe('fetchSuggestions', () => {
   beforeEach(() => {
     dispatch.mockClear()
     global.fetch = jest.fn()
-    global.Request = jest.fn((url, options) => ({ url, ...options }))
+    global.Request = jest.fn(function (url, options) {
+      this.url = url
+      if (options) { Object.assign(this, options) }
+    })
     jest.spyOn(console, 'error').mockImplementation(() => {})
   })
 
@@ -186,6 +189,24 @@ describe('fetchSuggestions', () => {
 
     expect(result.results).toEqual(['first'])
     expect(fetch).toHaveBeenCalledTimes(1)
+  })
+
+  test('uses buildRequest result directly when it returns a Request instance', async () => {
+    global.fetch.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({})
+    })
+
+    const datasets = [
+      {
+        buildRequest: (query) => new Request(`/custom/${query}`),
+        parseResults: () => ['z']
+      }
+    ]
+
+    await fetchSuggestions('abc', datasets, dispatch)
+
+    expect(fetch).toHaveBeenCalledWith(expect.objectContaining({ url: '/custom/abc' }))
   })
 
   test('buildRequest can call default request builder', async () => {
