@@ -202,6 +202,13 @@ describe('Markers', () => {
       expect(viewport.style.cursor).toBe('')
     })
 
+    it('does not track mousemove when interactionModes is absent from payload', () => {
+      const eb = setupCursor({ left: 10, top: 10, right: 50, bottom: 50 })
+      act(() => eb.emit('interact:active', { active: true }))
+      fireMove(20, 20)
+      expect(viewport.style.cursor).toBe('')
+    })
+
     it('does not track mousemove when viewport element is absent', () => {
       document.body.removeChild(viewport)
       const eb = setupCursor({ left: 0, top: 0, right: 50, bottom: 50 })
