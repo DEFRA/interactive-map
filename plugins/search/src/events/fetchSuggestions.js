@@ -11,7 +11,8 @@ const getRequestConfig = async (ds, query, transformRequest) => {
   }
 
   if (ds.buildRequest) {
-    return toRequest(ds.buildRequest(query, () => defaultRequest))
+    const result = ds.buildRequest(query, () => defaultRequest)
+    return result instanceof Request ? result : toRequest(result)
   }
 
   if (transformRequest) {
