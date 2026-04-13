@@ -14,7 +14,7 @@ export const InteractInit = ({
   pluginState
 }) => {
   const { interfaceType } = appState
-  const { dispatch, enabled, selectedFeatures, selectionBounds } = pluginState
+  const { dispatch, enabled, selectedFeatures, selectionBounds, interactionModes, layers } = pluginState
   const { eventBus, closeApp } = services
   const { crossHair, mapStyle } = mapState
 
@@ -64,10 +64,10 @@ export const InteractInit = ({
 
   // Notify other components (e.g. Markers) whether interact is active
   useEffect(() => {
-    eventBus.emit('interact:active', { active: enabled })
-  }, [enabled])
+    eventBus.emit('interact:active', { active: enabled, interactionModes })
+  }, [enabled, interactionModes])
 
-  useHoverCursor(mapProvider, enabled, pluginState.interactionModes, pluginState.layers)
+  useHoverCursor(mapProvider, enabled, interactionModes, layers)
 
   // Toggle target marker visibility
   useEffect(() => {

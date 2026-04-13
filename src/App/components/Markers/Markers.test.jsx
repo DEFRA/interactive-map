@@ -171,8 +171,8 @@ describe('Markers', () => {
       if (viewport.parentNode) document.body.removeChild(viewport)
     })
 
-    const activate = (eb) => act(() => eb.emit('interact:active', { active: true }))
-    const deactivate = (eb) => act(() => eb.emit('interact:active', { active: false }))
+    const activate = (eb) => act(() => eb.emit('interact:active', { active: true, interactionModes: ['selectMarker'] }))
+    const deactivate = (eb) => act(() => eb.emit('interact:active', { active: false, interactionModes: ['selectMarker'] }))
     const fireMove = (clientX, clientY) => act(() => {
       viewport.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX, clientY }))
     })
@@ -189,8 +189,22 @@ describe('Markers', () => {
       return eb
     }
 
-    it('does not track mousemove when interactActive is false', () => {
+    it('does not track mousemove when interact is not active', () => {
       setupCursor({ left: 0, top: 0, right: 50, bottom: 50 })
+      fireMove(20, 20)
+      expect(viewport.style.cursor).toBe('')
+    })
+
+    it('does not track mousemove when selectMarker is not in interactionModes', () => {
+      const eb = setupCursor({ left: 10, top: 10, right: 50, bottom: 50 })
+      act(() => eb.emit('interact:active', { active: true, interactionModes: ['selectFeature'] }))
+      fireMove(20, 20)
+      expect(viewport.style.cursor).toBe('')
+    })
+
+    it('does not track mousemove when interactionModes is absent from payload', () => {
+      const eb = setupCursor({ left: 10, top: 10, right: 50, bottom: 50 })
+      act(() => eb.emit('interact:active', { active: true }))
       fireMove(20, 20)
       expect(viewport.style.cursor).toBe('')
     })

@@ -104,6 +104,14 @@ describe('InteractInit', () => {
     expect(cleanupMock).toHaveBeenCalled()
   })
 
+  it('emits interact:active with active state and interactionModes on enable', () => {
+    render(<InteractInit {...props} />)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith('interact:active', {
+      active: true,
+      interactionModes: props.pluginState.interactionModes
+    })
+  })
+
   it('enables click handling after a macrotask', () => {
     jest.useFakeTimers()
     render(<InteractInit {...props} />)

@@ -64,7 +64,7 @@ const buildGridrefRequest = (query, crs = 'wgs84') => {
     params.set('gridref', clean)
   }
 
-  return `${process.env.FARMING_API_URL}/gridref?${params}`
+  return new Request(`${process.env.FARMING_API_URL}/gridref?${params}`)
 }
 
 const parseGridrefResults = (json, query) => {
@@ -100,8 +100,8 @@ const parseGridrefResults = (json, query) => {
 
 const buildParcelRequest = (query) => {
   const sanitisedQuery = query.replace(/ /g,'')
-  const url = `${process.env.FARMING_API_URL}/parcel/{query}`
-  return url.replace('{query}', encodeURIComponent(sanitisedQuery))
+  const url = `${process.env.FARMING_API_URL}/parcel/{query}`.replace('{query}', encodeURIComponent(sanitisedQuery))
+  return new Request(url)
 }
 
 const parseParcelResults = (json, query) => {
