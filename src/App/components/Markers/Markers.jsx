@@ -64,12 +64,12 @@ export const Markers = () => {
   const { markers, markerRef } = useMarkers()
   const { symbolRegistry, eventBus } = useService()
 
-  const [interactActive, setInteractActive] = useState(false)
+  const [canSelectMarker, setCanSelectMarker] = useState(false)
   const [selectedMarkers, setSelectedMarkers] = useState([])
   const viewportRef = useRef(null)
 
   useEffect(() => {
-    const handleActive = ({ active }) => setInteractActive(active)
+    const handleActive = ({ active, interactionModes = [] }) => setCanSelectMarker(active && interactionModes.includes('selectMarker'))
     const handleSelectionChange = ({ selectedMarkers: next = [] }) => setSelectedMarkers(next)
     eventBus.on('interact:active', handleActive)
     eventBus.on('interact:selectionchange', handleSelectionChange)
@@ -84,7 +84,7 @@ export const Markers = () => {
     viewportRef.current = document.querySelector('.im-c-viewport')
   }, [])
 
-  useMarkerCursor(markers, interactActive, viewportRef)
+  useMarkerCursor(markers, canSelectMarker, viewportRef)
 
   if (!mapStyle) {
     return undefined
