@@ -90,7 +90,7 @@ const config = {
           sidebar: [
             { text: 'Basic map', href: '/examples/basic-map' },
             { text: 'Button-triggered map', href: '/examples/button-map' },
-            { text: 'Add marker with panel', href: '/examples/add-marker-with-panel' },
+            { text: 'Add a marker with a panel', href: '/examples/add-marker-with-panel' },
           ],
         },
         {

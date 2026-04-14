@@ -28,7 +28,9 @@ function MapInner () {
       { default: maplibreProvider },
       { default: createInteractPlugin }
     ]) => {
-      const interactPlugin = createInteractPlugin()
+      const interactPlugin = createInteractPlugin({
+        deselectOnClickOutside: true
+      })
 
       const map = new InteractiveMap('demo-map-marker-panel', {
         behaviour: 'inline',
@@ -55,6 +57,7 @@ function MapInner () {
       })
 
       map.on('interact:selectionchange', ({ selectedMarkers }) => {
+        console.log(selectedMarkers)
         if (selectedMarkers.length > 0) {
           map.showPanel(PANEL_ID)
         }
