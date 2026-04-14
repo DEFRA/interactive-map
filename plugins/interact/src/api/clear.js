@@ -1,5 +1,5 @@
 /**
- * Programatically clear selected features and removes the location marker.
+ * Programmatically clear all selected features and markers, and remove the location marker.
  *
  * @param {Object} params
  * @param {{ dispatch: Function }} params.pluginState

@@ -6,6 +6,8 @@ import { disable } from './api/disable.js'
 import { clear } from './api/clear.js'
 import { selectFeature } from './api/selectFeature.js'
 import { unselectFeature } from './api/unselectFeature.js'
+import { selectMarker } from './api/selectMarker.js'
+import { unselectMarker } from './api/unselectMarker.js'
 
 export const manifest = {
   InitComponent: InteractInit,
@@ -83,6 +85,8 @@ export const manifest = {
     disable,
     clear,
     selectFeature,
-    unselectFeature
+    unselectFeature,
+    selectMarker,
+    unselectMarker
   }
 }

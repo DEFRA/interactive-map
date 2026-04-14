@@ -8,7 +8,8 @@ const MAP_STYLE = {
 }
 
 const MARKER_COORDS = [-2.9631008, 54.432306]
-const PANEL_ID = PANEL_ID
+const MARKER_ID = 'my-marker'
+const PANEL_ID = 'marker-info'
 
 function MapInner () {
   const initialised = useRef(false)
@@ -44,8 +45,9 @@ function MapInner () {
       })
 
       map.on('map:ready', () => {
-        map.addMarker('demo-marker', MARKER_COORDS)
+        map.addMarker(MARKER_ID, MARKER_COORDS)
         interactPlugin.enable()
+        interactPlugin.selectMarker({ markerId: MARKER_ID })
 
         map.addPanel(PANEL_ID, {
           label: 'Marker information',
@@ -57,9 +59,16 @@ function MapInner () {
       })
 
       map.on('interact:selectionchange', ({ selectedMarkers }) => {
-        console.log(selectedMarkers)
         if (selectedMarkers.length > 0) {
           map.showPanel(PANEL_ID)
+        } else {
+          map.hidePanel(PANEL_ID)
+        }
+      })
+
+      map.on('app:panelclosed', ({ panelId }) => {
+        if (panelId === PANEL_ID) {
+          interactPlugin.unselectMarker({ markerId: MARKER_ID })
         }
       })
 

@@ -19,6 +19,18 @@ const createFeatureHandler = (mapState, getPluginState) => (args, addToExisting)
   })
 }
 
+const createKeyboardHandlers = (viewportRef, onSelectAtTarget) => {
+  let enterOnViewport = false
+  const handleKeydown = (e) => { enterOnViewport = e.key === 'Enter' && viewportRef.current === e.target }
+  const handleKeyup = (e) => {
+    if (e.key === 'Enter' && enterOnViewport) {
+      e.preventDefault()
+      onSelectAtTarget()
+    }
+  }
+  return { handleKeydown, handleKeyup }
+}
+
 export function attachEvents ({
   getAppState,
   mapState,
@@ -31,55 +43,31 @@ export function attachEvents ({
   closeApp
 }) {
   const { selectDone, selectAtTarget, selectCancel } = buttonConfig
-  const { viewportRef } = getAppState().layoutRefs
 
-  // Keyboard Logic
-  let enterOnViewport = false
-  const handleKeydown = (e) => { enterOnViewport = e.key === 'Enter' && viewportRef.current === e.target }
-  const handleKeyup = (e) => {
-    if (e.key === 'Enter' && enterOnViewport) {
-      e.preventDefault()
-      handleSelectAtTarget()
-    }
-  }
-
-  // Interaction Handlers
-  const handleMapClick = (e) => {
-    if (clickReadyRef.current) {
-      handleInteraction(e)
-    }
-  }
   const handleSelectAtTarget = () => handleInteraction(mapState.crossHair.getDetail())
+  const handleMapClick = (e) => { if (clickReadyRef.current) { handleInteraction(e) } }
+
+  const { handleKeydown, handleKeyup } = createKeyboardHandlers(getAppState().layoutRefs.viewportRef, handleSelectAtTarget)
 
   const handleSelectDone = () => {
     const pluginState = getPluginState()
     const marker = mapState.markers.getMarker('location')
     const { coords } = marker || {}
     const { selectionBounds, selectedFeatures, selectedMarkers } = pluginState
-
-    if (getAppState().disabledButtons.has('selectDone')) {
-      return
-    }
-
+    if (getAppState().disabledButtons.has('selectDone')) { return }
     eventBus.emit('interact:done', buildDonePayload(coords, selectedFeatures, selectedMarkers, selectionBounds))
-
-    if (pluginState.closeOnAction ?? true) {
-      closeApp()
-    }
+    if (pluginState.closeOnAction ?? true) { closeApp() }
   }
 
   const handleSelectCancel = () => {
     eventBus.emit('interact:cancel')
-    if (getPluginState().closeOnAction ?? true) {
-      closeApp()
-    }
+    if (getPluginState().closeOnAction ?? true) { closeApp() }
   }
 
   const toggleFeature = createFeatureHandler(mapState, getPluginState)
   const handleSelect = (args) => toggleFeature(args, true)
   const handleUnselect = (args) => toggleFeature(args, false)
 
-  // Attach Listeners
   document.addEventListener('keydown', handleKeydown)
   document.addEventListener('keyup', handleKeyup)
   eventBus.on(events.MAP_CLICK, handleMapClick)

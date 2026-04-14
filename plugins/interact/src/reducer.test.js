@@ -189,6 +189,43 @@ describe('CLEAR_SELECTED_FEATURES action', () => {
   })
 })
 
+describe('SELECT_MARKER action', () => {
+  it('adds a marker in single-select mode, clearing selectedFeatures', () => {
+    const state = { ...initialState, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: [] }
+    const result = actions.SELECT_MARKER(state, { markerId: 'm1', multiSelect: false })
+    expect(result.selectedMarkers).toEqual(['m1'])
+    expect(result.selectedFeatures).toEqual([])
+    expect(result.selectionBounds).toBeNull()
+  })
+
+  it('adds a marker in multi-select mode without clearing selectedFeatures', () => {
+    const state = { ...initialState, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: ['m1'] }
+    const result = actions.SELECT_MARKER(state, { markerId: 'm2', multiSelect: true })
+    expect(result.selectedMarkers).toEqual(['m1', 'm2'])
+    expect(result.selectedFeatures).toEqual([{ featureId: 'f1' }])
+  })
+
+  it('is idempotent — does not change state if marker already selected', () => {
+    const state = { ...initialState, selectedMarkers: ['m1'] }
+    const result = actions.SELECT_MARKER(state, { markerId: 'm1', multiSelect: false })
+    expect(result).toBe(state)
+  })
+})
+
+describe('UNSELECT_MARKER action', () => {
+  it('removes a selected marker', () => {
+    const state = { ...initialState, selectedMarkers: ['m1', 'm2'] }
+    const result = actions.UNSELECT_MARKER(state, { markerId: 'm1' })
+    expect(result.selectedMarkers).toEqual(['m2'])
+  })
+
+  it('is idempotent — does not change state if marker not selected', () => {
+    const state = { ...initialState, selectedMarkers: ['m2'] }
+    const result = actions.UNSELECT_MARKER(state, { markerId: 'm1' })
+    expect(result).toBe(state)
+  })
+})
+
 describe('actions object', () => {
   it('exports all action handlers as functions', () => {
     expect(Object.keys(actions)).toEqual([
@@ -197,7 +234,9 @@ describe('actions object', () => {
       'TOGGLE_SELECTED_FEATURES',
       'TOGGLE_SELECTED_MARKERS',
       'UPDATE_SELECTED_BOUNDS',
-      'CLEAR_SELECTED_FEATURES'
+      'CLEAR_SELECTED_FEATURES',
+      'SELECT_MARKER',
+      'UNSELECT_MARKER'
     ])
     Object.values(actions).forEach(fn => expect(typeof fn).toBe('function'))
   })

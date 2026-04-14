@@ -32,6 +32,7 @@ const map = new InteractiveMap('my-map', {
 map.on('map:ready', () => {
   map.addMarker('my-marker', [-2.96, 54.43])
   interactPlugin.enable()
+  interactPlugin.selectMarker({ markerId: 'my-marker' })
 
   map.addPanel('marker-info', {
     label: 'Marker information',
@@ -47,6 +48,12 @@ map.on('interact:selectionchange', ({ selectedMarkers }) => {
     map.showPanel('marker-info')
   } else {
     map.hidePanel('marker-info')
+  }
+})
+
+map.on('app:panelclosed', ({ panelId }) => {
+  if (panelId === 'marker-info') {
+    interactPlugin.unselectMarker({ markerId: 'my-marker' })
   }
 })
 ```
