@@ -1,0 +1,49 @@
+import useBaseUrl from '@docusaurus/useBaseUrl'
+import basicMapImg from '../assets/basic-map.jpg'
+import buttonFirstImg from '../assets/button-first.jpg'
+import makerPanelImg from '../assets/maker-panel.jpg'
+
+export function ExampleCards() {
+  const basicHref = useBaseUrl('/examples/basic-map')
+  const buttonHref = useBaseUrl('/examples/button-map')
+  const interactHref = useBaseUrl('/examples/add-marker-with-panel')
+
+  return (
+    <div className='govuk-grid-row'>
+      <div className='govuk-grid-column-one-half'>
+        <div className='app-example-card'>
+          <img src={basicMapImg} alt='' />
+          <div className='app-example-card__body'>
+            <h2 className='govuk-heading-m'>
+              <a href={basicHref}>Basic map</a>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div className='govuk-grid-column-one-half'>
+        <div className='app-example-card'>
+          <img src={buttonFirstImg} alt='' />
+          <div className='app-example-card__body'>
+            <h2 className='govuk-heading-m'>
+              <a href={buttonHref}>Button-triggered map</a>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div className='govuk-grid-column-one-half'>
+        <div className='app-example-card'>
+          <img src={makerPanelImg} alt='' />
+          <div className='app-example-card__body'>
+            <h2 className='govuk-heading-m'>
+              <a href={interactHref}>Add marker with panel</a>
+            </h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+# Examples
+
+<ExampleCards />

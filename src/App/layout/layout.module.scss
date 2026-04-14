@@ -436,6 +436,7 @@
 // Inline border
 .im-o-app--inline {
   border: var(--app-border-width) solid var(--app-border-color);
+  box-sizing: border-box;
 }
 
 // Hide containers when keyboard hint is visible

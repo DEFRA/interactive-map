@@ -1,0 +1,25 @@
+import DemoMapBasic from '../../demo/DemoMapBasic.js'
+
+# Basic map
+
+Embed an interactive map directly on the page, allowing users to explore and interact with the map without leaving the current context.
+
+<DemoMapBasic />
+
+```js
+import InteractiveMap from '@defra/interactive-map'
+import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+
+new InteractiveMap('my-map', {
+  behaviour: 'inline',
+  mapProvider: maplibreProvider(),
+  mapStyle: {
+    url: 'https://your-tile-url/style.json',
+    attribution: 'Your tile attribution'
+  },
+  center: [-1.6, 53.1],
+  zoom: 6,
+  containerHeight: '500px',
+  enableZoomControls: true
+})
+```

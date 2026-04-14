@@ -84,7 +84,15 @@ const config = {
             { text: 'GOV.UK Prototype kit', href: '/getting-started#govuk-prototype-kit-plugin' }
           ],
         },
-        { text: 'Examples', href: '/examples', sidebar: 'auto' },
+        {
+          text: 'Examples',
+          href: '/examples',
+          sidebar: [
+            { text: 'Basic map', href: '/examples/basic-map' },
+            { text: 'Button-triggered map', href: '/examples/button-map' },
+            { text: 'Add marker with panel', href: '/examples/add-marker-with-panel' },
+          ],
+        },
         {
           text: 'API',
           href: '/api',

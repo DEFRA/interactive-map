@@ -24,20 +24,21 @@ function MapInner () {
       { default: maplibreProvider }
     ]) => {
       // eslint-disable-next-line no-new
-      new InteractiveMap('demo-map-button', {
-        behaviour: 'buttonFirst',
+      new InteractiveMap('demo-map-basic', {
+        behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
         center: [-2.9631008,54.432306],
         zoom: 15,
+        containerHeight: '500px',
         enableZoomControls: true
       })
     })
   }, [])
-  return <div id='demo-map-button' className='app-no-prose app-example'></div>
+  return <div id='demo-map-basic' className='app-no-prose app-example'></div>
 }
 
-export default function DemoMapButton () {
+export default function DemoMapBasic () {
   return (
     <BrowserOnly
       fallback={<div className='govuk-inset-text'>The map requires JavaScript to be enabled.</div>}
