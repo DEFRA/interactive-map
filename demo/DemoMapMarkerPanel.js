@@ -50,11 +50,11 @@ function MapInner () {
         interactPlugin.selectMarker({ markerId: MARKER_ID })
 
         map.addPanel(PANEL_ID, {
-          label: 'Marker information',
-          html: '<p class="govuk-body">You selected a marker.</p>',
+          label: 'Marker',
+          html: '<p class="govuk-body">Information about the selected marker</p>',
           mobile: { slot: 'drawer', dismissible: true },
-          tablet: { slot: 'left-top', dismissible: true },
-          desktop: { slot: 'left-top', dismissible: true }
+          tablet: { slot: 'left-top', dismissible: true, width: '280px' },
+          desktop: { slot: 'left-top', dismissible: true, width: '280px' }
         })
       })
 
