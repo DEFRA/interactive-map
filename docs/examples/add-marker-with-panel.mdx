@@ -11,7 +11,9 @@ import InteractiveMap from '@defra/interactive-map'
 import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 
-const interactPlugin = createInteractPlugin()
+const interactPlugin = createInteractPlugin({
+  deselectOnClickOutside: true
+})
 
 const map = new InteractiveMap('my-map', {
   behaviour: 'inline',
