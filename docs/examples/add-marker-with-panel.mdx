@@ -1,0 +1,52 @@
+import DemoMapMarkerPanel from '../../demo/DemoMapMarkerPanel.js'
+
+# Add a marker with a panel
+
+Add markers to the map and allow users to select them. Selecting a marker fires the `interact:selectionchange` event, which can be used to show a panel with relevant information.
+
+<DemoMapMarkerPanel />
+
+```js
+import InteractiveMap from '@defra/interactive-map'
+import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+
+const interactPlugin = createInteractPlugin({
+  deselectOnClickOutside: true
+})
+
+const map = new InteractiveMap('my-map', {
+  behaviour: 'inline',
+  mapProvider: maplibreProvider(),
+  mapStyle: {
+    url: 'https://your-tile-url/style.json',
+    attribution: 'Your tile attribution'
+  },
+  center: [-2.96, 54.43],
+  zoom: 15,
+  containerHeight: '500px',
+  enableZoomControls: true,
+  plugins: [interactPlugin]
+})
+
+map.on('map:ready', () => {
+  map.addMarker('my-marker', [-2.96, 54.43])
+  interactPlugin.enable()
+
+  map.addPanel('marker-info', {
+    label: 'Marker information',
+    html: '<p class="govuk-body">You selected a marker.</p>',
+    mobile: { slot: 'drawer', dismissible: true },
+    tablet: { slot: 'left-top', dismissible: true },
+    desktop: { slot: 'left-top', dismissible: true }
+  })
+})
+
+map.on('interact:selectionchange', ({ selectedMarkers }) => {
+  if (selectedMarkers.length > 0) {
+    map.showPanel('marker-info')
+  } else {
+    map.hidePanel('marker-info')
+  }
+})
+```
