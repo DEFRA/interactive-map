@@ -90,7 +90,7 @@ export const InteractInit = ({
       buttonConfig,
       events: EVENTS,
       eventBus,
-      handleInteraction: (e) => handleInteractionRef.current(e),
+      handleInteraction: (event) => handleInteractionRef.current(event),
       clickReadyRef,
       closeApp
     })

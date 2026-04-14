@@ -252,30 +252,30 @@ interactPlugin.unselectFeature({
 
 ---
 
-### `selectMarker(markerInfo)`
+### `selectMarker(markerId)`
 
-Programmatically select a marker. Has no effect if the marker is already selected. In single-select mode, clears any selected features and replaces the marker selection. In multi-select mode, adds to the existing selection.
+Programmatically select a marker. Idempotent — has no effect if the marker is already selected. In single-select mode, clears any selected features and replaces the marker selection. In multi-select mode, adds to the existing selection.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `markerInfo.markerId` | `string` | The ID of the marker to select |
+| `markerId` | `string` | The ID of the marker to select |
 
 ```js
-interactPlugin.selectMarker({ markerId: 'my-marker' })
+interactPlugin.selectMarker('my-marker')
 ```
 
 ---
 
-### `unselectMarker(markerInfo)`
+### `unselectMarker(markerId)`
 
-Programmatically unselect a specific marker. Has no effect if the marker is not selected.
+Programmatically unselect a specific marker. Idempotent — has no effect if the marker is not selected.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `markerInfo.markerId` | `string` | The ID of the marker to unselect |
+| `markerId` | `string` | The ID of the marker to unselect |
 
 ```js
-interactPlugin.unselectMarker({ markerId: 'my-marker' })
+interactPlugin.unselectMarker('my-marker')
 ```
 
 ---

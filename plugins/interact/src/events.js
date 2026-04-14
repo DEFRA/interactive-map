@@ -21,10 +21,10 @@ const createFeatureHandler = (mapState, getPluginState) => (args, addToExisting)
 
 const createKeyboardHandlers = (viewportRef, onSelectAtTarget) => {
   let enterOnViewport = false
-  const handleKeydown = (e) => { enterOnViewport = e.key === 'Enter' && viewportRef.current === e.target }
-  const handleKeyup = (e) => {
-    if (e.key === 'Enter' && enterOnViewport) {
-      e.preventDefault()
+  const handleKeydown = (event) => { enterOnViewport = event.key === 'Enter' && viewportRef.current === event.target }
+  const handleKeyup = (event) => {
+    if (event.key === 'Enter' && enterOnViewport) {
+      event.preventDefault()
       onSelectAtTarget()
     }
   }
@@ -45,7 +45,7 @@ export function attachEvents ({
   const { selectDone, selectAtTarget, selectCancel } = buttonConfig
 
   const handleSelectAtTarget = () => handleInteraction(mapState.crossHair.getDetail())
-  const handleMapClick = (e) => { if (clickReadyRef.current) { handleInteraction(e) } }
+  const handleMapClick = (mapEvent) => { if (clickReadyRef.current) { handleInteraction(mapEvent) } }
 
   const { handleKeydown, handleKeyup } = createKeyboardHandlers(getAppState().layoutRefs.viewportRef, handleSelectAtTarget)
 

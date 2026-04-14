@@ -4,10 +4,7 @@ describe('unselectMarker', () => {
   it('dispatches UNSELECT_MARKER with markerId', () => {
     const dispatch = jest.fn()
 
-    unselectMarker(
-      { pluginState: { dispatch } },
-      { markerId: 'm1' }
-    )
+    unselectMarker({ pluginState: { dispatch } }, 'm1')
 
     expect(dispatch).toHaveBeenCalledWith({
       type: 'UNSELECT_MARKER',

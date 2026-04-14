@@ -4,10 +4,9 @@
  *
  * @param {Object} params
  * @param {{ dispatch: Function }} params.pluginState
- * @param {{ markerId: string }} markerInfo
- * @param {string} markerInfo.markerId - The ID of the marker to unselect
+ * @param {string} markerId - The ID of the marker to unselect
  */
-export const unselectMarker = ({ pluginState }, { markerId }) => {
+export const unselectMarker = ({ pluginState }, markerId) => {
   pluginState.dispatch({
     type: 'UNSELECT_MARKER',
     payload: { markerId }

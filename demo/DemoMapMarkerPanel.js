@@ -47,7 +47,7 @@ function MapInner () {
       map.on('map:ready', () => {
         map.addMarker(MARKER_ID, MARKER_COORDS)
         interactPlugin.enable()
-        interactPlugin.selectMarker({ markerId: MARKER_ID })
+        interactPlugin.selectMarker(MARKER_ID)
 
         map.addPanel(PANEL_ID, {
           label: 'Marker',
@@ -68,7 +68,7 @@ function MapInner () {
 
       map.on('app:panelclosed', ({ panelId }) => {
         if (panelId === PANEL_ID) {
-          interactPlugin.unselectMarker({ markerId: MARKER_ID })
+          interactPlugin.unselectMarker(MARKER_ID)
         }
       })
 
