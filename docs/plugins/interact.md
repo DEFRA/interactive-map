@@ -204,7 +204,7 @@ interactPlugin.disable()
 
 ### `clear()`
 
-Clear the current selection or marker.
+Clear all selected features and markers, and remove the location marker.
 
 ```js
 interactPlugin.clear()
@@ -248,6 +248,34 @@ Programmatically unselect a specific feature.
 interactPlugin.unselectFeature({
   featureId: 'abc123'
 })
+```
+
+---
+
+### `selectMarker(markerId)`
+
+Programmatically select a marker. Idempotent — has no effect if the marker is already selected. In single-select mode, clears any selected features and replaces the marker selection. In multi-select mode, adds to the existing selection.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `markerId` | `string` | The ID of the marker to select |
+
+```js
+interactPlugin.selectMarker('my-marker')
+```
+
+---
+
+### `unselectMarker(markerId)`
+
+Programmatically unselect a specific marker. Idempotent — has no effect if the marker is not selected.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `markerId` | `string` | The ID of the marker to unselect |
+
+```js
+interactPlugin.unselectMarker('my-marker')
 ```
 
 ---

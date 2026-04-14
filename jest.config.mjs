@@ -32,7 +32,9 @@ export default {
       '<rootDir>/plugins/beta/frame',
       '<rootDir>/plugins/beta/map-styles',
       '<rootDir>/plugins/beta/scale-bar',
-      '<rootDir>/plugins/beta/use-location'
+      '<rootDir>/plugins/beta/use-location',
+      '<rootDir>/.docusaurus',
+      '<rootDir>/build/assets/js'
     ],
     transformIgnorePatterns: []
   }]

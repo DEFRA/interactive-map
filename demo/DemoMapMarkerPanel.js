@@ -8,7 +8,8 @@ const MAP_STYLE = {
 }
 
 const MARKER_COORDS = [-2.9631008, 54.432306]
-const PANEL_ID = PANEL_ID
+const MARKER_ID = 'my-marker'
+const PANEL_ID = 'marker-info'
 
 function MapInner () {
   const initialised = useRef(false)
@@ -44,22 +45,30 @@ function MapInner () {
       })
 
       map.on('map:ready', () => {
-        map.addMarker('demo-marker', MARKER_COORDS)
+        map.addMarker(MARKER_ID, MARKER_COORDS)
         interactPlugin.enable()
+        interactPlugin.selectMarker(MARKER_ID)
 
         map.addPanel(PANEL_ID, {
-          label: 'Marker information',
-          html: '<p class="govuk-body">You selected a marker.</p>',
+          label: 'Marker',
+          html: '<p class="govuk-body">Information about the selected marker</p>',
           mobile: { slot: 'drawer', dismissible: true },
-          tablet: { slot: 'left-top', dismissible: true },
-          desktop: { slot: 'left-top', dismissible: true }
+          tablet: { slot: 'left-top', dismissible: true, width: '280px' },
+          desktop: { slot: 'left-top', dismissible: true, width: '280px' }
         })
       })
 
       map.on('interact:selectionchange', ({ selectedMarkers }) => {
-        console.log(selectedMarkers)
         if (selectedMarkers.length > 0) {
           map.showPanel(PANEL_ID)
+        } else {
+          map.hidePanel(PANEL_ID)
+        }
+      })
+
+      map.on('app:panelclosed', ({ panelId }) => {
+        if (panelId === PANEL_ID) {
+          interactPlugin.unselectMarker(MARKER_ID)
         }
       })
 

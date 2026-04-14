@@ -107,13 +107,48 @@ const clearSelectedFeatures = (state) => {
   }
 }
 
+/**
+ * Explicitly select a marker. Has no effect if already selected.
+ * In single-select mode, clears selectedFeatures and replaces the selection.
+ * In multi-select mode, adds to the existing selection.
+ */
+const selectMarker = (state, { markerId, multiSelect }) => {
+  const current = state.selectedMarkers
+  if (current.includes(markerId)) {
+    return state
+  }
+  const nextMarkers = multiSelect ? [...current, markerId] : [markerId]
+  return {
+    ...state,
+    selectedFeatures: multiSelect ? state.selectedFeatures : [],
+    selectionBounds: null,
+    selectedMarkers: nextMarkers
+  }
+}
+
+/**
+ * Explicitly unselect a marker. Has no effect if not selected.
+ */
+const unselectMarker = (state, { markerId }) => {
+  const current = state.selectedMarkers
+  if (!current.includes(markerId)) {
+    return state
+  }
+  return {
+    ...state,
+    selectedMarkers: current.filter(id => id !== markerId)
+  }
+}
+
 const actions = {
   ENABLE: enable,
   DISABLE: disable,
   TOGGLE_SELECTED_FEATURES: toggleSelectedFeatures,
   TOGGLE_SELECTED_MARKERS: toggleSelectedMarkers,
   UPDATE_SELECTED_BOUNDS: updateSelectedBounds,
-  CLEAR_SELECTED_FEATURES: clearSelectedFeatures
+  CLEAR_SELECTED_FEATURES: clearSelectedFeatures,
+  SELECT_MARKER: selectMarker,
+  UNSELECT_MARKER: unselectMarker
 }
 
 export {
