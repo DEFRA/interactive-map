@@ -251,7 +251,6 @@ const interactiveMap = new InteractiveMap('map', {
 	bounds: [-2.989707, 54.864555, -2.878635, 54.937635],
 	containerHeight: '650px',
 	transformRequest: transformTileRequest,
-	enableZoomControls: true,
 	readMapText: true,
 	// enableFullscreen: true,
 	// hasExitButton: true,

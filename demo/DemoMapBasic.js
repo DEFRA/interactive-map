@@ -30,8 +30,7 @@ function MapInner () {
         mapStyle: MAP_STYLE,
         center: [-2.9631008,54.432306],
         zoom: 15,
-        containerHeight: '500px',
-        enableZoomControls: true
+        containerHeight: '500px'
       })
     })
   }, [])
