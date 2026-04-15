@@ -16,7 +16,7 @@ const defaults = {
   containerHeight: '600px',
   deviceNotSupportedText: 'Your device is not supported. A map is available with a more up-to-date browser or device.',
   enableFullscreen: false,
-  enableZoomControls: false,
+  enableZoomControls: true,
   genericErrorText: 'There was a problem loading the map. Please try again later.',
   hasExitButton: false,
   hybridWidth: null, // Defaults to maxMobileWidth if not set
