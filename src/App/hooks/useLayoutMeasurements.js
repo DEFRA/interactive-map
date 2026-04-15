@@ -98,10 +98,9 @@ function calculateLayout (layoutRefs) {
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
   // === Keyboard hint bottom offset ===
-  // Positions the hint at the bottom of im-o-app__bottom (above drawers on mobile)
-  const appRect = appContainer.getBoundingClientRect()
-  const bottomRect = bottom.getBoundingClientRect()
-  appContainer.style.setProperty('--keyboard-hint-bottom', `${Math.max(0, appRect.bottom - bottomRect.bottom)}px`)
+  // Distance from the bottom of im-o-app__bottom to the bottom of im-o-app__main.
+  // Used to position the hint above the bottom bar (and above drawers on mobile).
+  appContainer.style.setProperty('--keyboard-hint-bottom', `${main.offsetHeight - bottom.offsetTop - bottom.offsetHeight}px`)
 
   // === Sub-slot panel max-heights ===
   appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)

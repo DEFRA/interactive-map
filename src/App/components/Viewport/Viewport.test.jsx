@@ -24,7 +24,7 @@ jest.mock('../Markers/Markers', () => ({ Markers: jest.fn(() => <div data-testid
 
 describe('Viewport', () => {
   let viewportEl
-  let appContainerEl
+  let mainEl
   const mockMapProvider = { initMap: jest.fn(), updateMap: jest.fn(), clearHighlightedLabel: jest.fn() }
 
   beforeEach(() => {
@@ -32,9 +32,9 @@ describe('Viewport', () => {
     jest.clearAllMocks()
 
     viewportEl = document.createElement('div')
-    appContainerEl = document.createElement('div')
+    mainEl = document.createElement('div')
     document.body.appendChild(viewportEl)
-    document.body.appendChild(appContainerEl)
+    document.body.appendChild(mainEl)
 
     // ---------------------------
     // Hook mocks
@@ -50,7 +50,7 @@ describe('Viewport', () => {
       interfaceType: 'desktop',
       mode: 'default',
       previousMode: 'default',
-      layoutRefs: { appContainerRef: { current: appContainerEl }, viewportRef: { current: viewportEl }, mainRef: { current: null }, safeZoneRef: { current: null } },
+      layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewportEl }, safeZoneRef: { current: null } },
       safeZoneInset: {}
     })
 
@@ -80,7 +80,7 @@ describe('Viewport', () => {
 
   afterEach(() => {
     viewportEl.remove()
-    appContainerEl.remove()
+    mainEl.remove()
   })
 
   const renderViewport = () => {
@@ -88,7 +88,7 @@ describe('Viewport', () => {
     const viewport = container.querySelector('.im-c-viewport')
     const mapContainer = container.querySelector('.im-c-viewport__map-container')
     const safeZone = container.querySelector('.im-c-viewport__safezone')
-    const keyboardHint = appContainerEl.querySelector('.im-c-viewport__keyboard-hint')
+    const keyboardHint = mainEl.querySelector('.im-c-viewport__keyboard-hint')
     const crossHair = container.querySelector('[data-testid="cross-hair"]')
     const markers = container.querySelector('[data-testid="markers"]')
     return { viewport, mapContainer, safeZone, keyboardHint, crossHair, markers, rerender, unmount }
@@ -135,7 +135,7 @@ describe('Viewport', () => {
       interfaceType: 'desktop',
       mode: 'edit',
       previousMode: 'default',
-      layoutRefs: { appContainerRef: { current: appContainerEl }, viewportRef: { current: viewport }, mainRef: { current: null }, safeZoneRef: { current: null } },
+      layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewport }, safeZoneRef: { current: null } },
       safeZoneInset: {}
     })
     rerender(<Viewport />)

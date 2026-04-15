@@ -18,7 +18,7 @@ import { Markers } from '../Markers/Markers'
 export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText } = useConfig()
   const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset } = useApp()
-  const { appContainerRef } = layoutRefs
+  const { mainRef } = layoutRefs
   const { mapSize } = useMap()
 
   const mapContainerRef = useRef(null)
@@ -64,14 +64,14 @@ export const Viewport = () => {
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
       >
-        {showHint && appContainerRef?.current && createPortal(
+        {showHint && mainRef?.current && createPortal(
           <div
             className='im-c-viewport__keyboard-hint'
             aria-hidden='true'
             ref={keyboardHintRef}
             dangerouslySetInnerHTML={{ __html: keyboardHintText }}
           />,
-          appContainerRef.current
+          mainRef.current
         )}
         <div className='im-c-viewport__map-container' ref={mapContainerRef} />
         <div className='im-c-viewport__features' />
