@@ -51,80 +51,72 @@ const subSlotMaxHeight = (columnHeight, siblingButtons, gap) =>
  * It does not dispatch the safe zone — safe zone dispatch is owned entirely by
  * Effect 3 to prevent jumps on panel open/close and other non-structural resizes.
  */
+function calculateLayout (layoutRefs) {
+  const {
+    appContainerRef, mainRef, topRef, topLeftColRef, topRightColRef,
+    bottomRef, attributionsRef, bottomRightRef, leftTopRef, leftBottomRef,
+    rightTopRef, rightBottomRef
+  } = layoutRefs
+
+  const appContainer = appContainerRef.current
+  const main = mainRef.current
+  const top = topRef.current
+  const topLeftCol = topLeftColRef.current
+  const topRightCol = topRightColRef.current
+  const bottom = bottomRef.current
+  const attributions = attributionsRef.current
+
+  if ([main, top, bottom].some(r => !r)) {
+    return
+  }
+
+  const root = document.documentElement
+  const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
+
+  // === Top column width ===
+  appContainer.style.setProperty('--top-col-width', `${topColWidth(topLeftCol.offsetWidth, topRightCol.offsetWidth)}px`)
+
+  // === Left container offsets ===
+  const leftOffsetTop = topLeftCol.offsetHeight + top.offsetTop
+  const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap
+  appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
+  appContainer.style.setProperty('--left-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
+  appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
+
+  // === Right container offsets ===
+  // Mirrors the top formula (topRightCol.offsetHeight + top.offsetTop):
+  // bottomRight.offsetHeight is 0 when no buttons so the offset collapses to just
+  // the padding between the bottom of the bottom container and the bottom of main.
+  const bottomRightHeight = bottomRightRef?.current?.offsetHeight ?? 0
+  const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
+  const rightOffsetTop = topRightCol.offsetHeight + top.offsetTop
+  const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight
+  const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
+  const rightOffsetBottom = bottomContainerPad + (bottomRightHeight > 0 ? (bottomRightHeight + dividerGap) : attributions.offsetHeight)
+  appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
+  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom}px`)
+  appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
+
+  // === Keyboard hint bottom offset ===
+  // Distance from the bottom of im-o-app__bottom to the bottom of im-o-app__main.
+  // Used to position the hint above the bottom bar (and above drawers on mobile).
+  appContainer.style.setProperty('--keyboard-hint-bottom', `${main.offsetHeight - bottom.offsetTop - bottom.offsetHeight}px`)
+
+  // === Sub-slot panel max-heights ===
+  appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)
+  appContainer.style.setProperty('--left-bottom-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftTopRef), dividerGap)}px`)
+  appContainer.style.setProperty('--right-top-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightBottomRef), dividerGap)}px`)
+  appContainer.style.setProperty('--right-bottom-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightTopRef), dividerGap)}px`)
+}
+
 export function useLayoutMeasurements () {
   const { dispatch, breakpoint, layoutRefs, arePluginsEvaluated, appVisible, isFullscreen } = useApp()
   const { mapSize, isMapReady } = useMap()
 
-  const {
-    appContainerRef,
-    mainRef,
-    bannerRef,
-    topRef,
-    topLeftColRef,
-    topRightColRef,
-    leftTopRef,
-    leftBottomRef,
-    rightTopRef,
-    rightBottomRef,
-    bottomRef,
-    bottomRightRef,
-    attributionsRef,
-    drawerRef,
-    actionsRef
-  } = layoutRefs
+  const { bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef } = layoutRefs
 
   // --------------------------------
-  // 1. Calculate layout CSS vars (pure side effect, no dispatch)
-  // --------------------------------
-  const calculateLayout = () => {
-    const appContainer = appContainerRef.current
-    const main = mainRef.current
-    const top = topRef.current
-    const topLeftCol = topLeftColRef.current
-    const topRightCol = topRightColRef.current
-    const bottom = bottomRef.current
-    const attributions = attributionsRef.current
-
-    if ([main, top, bottom].some(r => !r)) {
-      return
-    }
-
-    const root = document.documentElement
-    const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
-
-    // === Top column width ===
-    appContainer.style.setProperty('--top-col-width', `${topColWidth(topLeftCol.offsetWidth, topRightCol.offsetWidth)}px`)
-
-    // === Left container offsets ===
-    const leftOffsetTop = topLeftCol.offsetHeight + top.offsetTop
-    const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap
-    appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
-    appContainer.style.setProperty('--left-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
-    appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
-
-    // === Right container offsets ===
-    // Mirrors the top formula (topRightCol.offsetHeight + top.offsetTop):
-    // bottomRight.offsetHeight is 0 when no buttons so the offset collapses to just
-    // the padding between the bottom of the bottom container and the bottom of main.
-    const bottomRightHeight = bottomRightRef?.current?.offsetHeight ?? 0
-    const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
-    const rightOffsetTop = topRightCol.offsetHeight + top.offsetTop
-    const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight
-    const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
-    const rightOffsetBottom = bottomContainerPad + (bottomRightHeight > 0 ? (bottomRightHeight + dividerGap) : attributions.offsetHeight)
-    appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-    appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom}px`)
-    appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
-
-    // === Sub-slot panel max-heights ===
-    appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)
-    appContainer.style.setProperty('--left-bottom-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftTopRef), dividerGap)}px`)
-    appContainer.style.setProperty('--right-top-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightBottomRef), dividerGap)}px`)
-    appContainer.style.setProperty('--right-bottom-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightTopRef), dividerGap)}px`)
-  }
-
-  // --------------------------------
-  // 2. Clear the evaluated flag when structural inputs change so the safe zone
+  // 1. Clear the evaluated flag when structural inputs change so the safe zone
   //    is not dispatched until useButtonStateEvaluator has completed a full
   //    pass with the new app/map state and set PLUGINS_EVALUATED.
   // --------------------------------
@@ -133,7 +125,7 @@ export function useLayoutMeasurements () {
   }, [breakpoint, mapSize, isMapReady, appVisible, isFullscreen])
 
   // --------------------------------
-  // 3. Once all plugin button props have been evaluated (arePluginsEvaluated),
+  // 2. Once all plugin button props have been evaluated (arePluginsEvaluated),
   //    recalculate layout and dispatch the safe zone inset.
   //    RAF required to ensure browser layout is committed before measuring.
   // --------------------------------
@@ -142,7 +134,7 @@ export function useLayoutMeasurements () {
       return
     }
     requestAnimationFrame(() => {
-      calculateLayout()
+      calculateLayout(layoutRefs)
       const safeZoneInset = getSafeZoneInset(layoutRefs)
       if (safeZoneInset) {
         dispatch({ type: 'SET_SAFE_ZONE_INSET', payload: { safeZoneInset } })
@@ -151,13 +143,13 @@ export function useLayoutMeasurements () {
   }, [arePluginsEvaluated])
 
   // --------------------------------
-  // 4. Recalculate CSS vars whenever observed elements resize (panels, banner,
+  // 3. Recalculate CSS vars whenever observed elements resize (panels, banner,
   //    actions buttons, etc.). Safe zone is intentionally not dispatched here —
-  //    that is Effect 3's responsibility.
+  //    that is Effect 2's responsibility.
   // --------------------------------
   useResizeObserver([bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef], () => {
     requestAnimationFrame(() => {
-      calculateLayout()
+      calculateLayout(layoutRefs)
     })
   })
 }

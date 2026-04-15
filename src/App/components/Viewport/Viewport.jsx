@@ -2,6 +2,7 @@ import React, { useRef, useEffect, useState } from 'react'
 import { EVENTS as events } from '../../../config/events.js'
 import { createPortal } from 'react-dom'
 import { useConfig } from '../../store/configContext.js'
+
 import { useApp } from '../../store/appContext.js'
 import { useMap } from '../../store/mapContext.js'
 import { MapController } from './MapController.jsx'
@@ -14,9 +15,10 @@ import { Markers } from '../Markers/Markers'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Viewport = ({ keyboardHintPortalRef }) => {
+export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText } = useConfig()
   const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset } = useApp()
+  const { mainRef } = layoutRefs
   const { mapSize } = useMap()
 
   const mapContainerRef = useRef(null)
@@ -49,18 +51,6 @@ export const Viewport = ({ keyboardHintPortalRef }) => {
     }
   }, [mode])
 
-  // Toggle external class based on keyboard hint
-  useEffect(() => {
-    const mainEl = layoutRefs.mainRef?.current
-    if (!mainEl) {
-      return undefined
-    }
-
-    mainEl.classList.toggle('im-o-app__main--keyboard-hint-visible', showHint)
-
-    return () => mainEl?.classList.remove('im-o-app__main--keyboard-hint-visible')
-  }, [showHint])
-
   return (
     <>
       <MapController mapContainerRef={mapContainerRef} />
@@ -74,14 +64,14 @@ export const Viewport = ({ keyboardHintPortalRef }) => {
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
       >
-        {showHint && keyboardHintPortalRef?.current && createPortal(
+        {showHint && mainRef?.current && createPortal(
           <div
             className='im-c-viewport__keyboard-hint'
             aria-hidden='true'
             ref={keyboardHintRef}
             dangerouslySetInnerHTML={{ __html: keyboardHintText }}
           />,
-          keyboardHintPortalRef.current
+          mainRef.current
         )}
         <div className='im-c-viewport__map-container' ref={mapContainerRef} />
         <div className='im-c-viewport__features' />

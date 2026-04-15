@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, fireEvent, cleanup } from '@testing-library/react'
+import { render, cleanup } from '@testing-library/react'
 import { Viewport } from './Viewport.jsx'
 import { useConfig } from '../../store/configContext.js'
 import { useApp } from '../../store/appContext.js'
@@ -23,15 +23,18 @@ jest.mock('../CrossHair/CrossHair', () => ({ CrossHair: jest.fn(() => <div data-
 jest.mock('../Markers/Markers', () => ({ Markers: jest.fn(() => <div data-testid='markers' />) }))
 
 describe('Viewport', () => {
-  let keyboardHintPortalRef
+  let viewportEl
+  let mainEl
   const mockMapProvider = { initMap: jest.fn(), updateMap: jest.fn(), clearHighlightedLabel: jest.fn() }
 
   beforeEach(() => {
     cleanup()
     jest.clearAllMocks()
 
-    keyboardHintPortalRef = { current: document.createElement('div') }
-    document.body.appendChild(keyboardHintPortalRef.current)
+    viewportEl = document.createElement('div')
+    mainEl = document.createElement('div')
+    document.body.appendChild(viewportEl)
+    document.body.appendChild(mainEl)
 
     // ---------------------------
     // Hook mocks
@@ -47,7 +50,7 @@ describe('Viewport', () => {
       interfaceType: 'desktop',
       mode: 'default',
       previousMode: 'default',
-      layoutRefs: { viewportRef: { current: null }, mainRef: { current: null }, safeZoneRef: { current: null } },
+      layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewportEl }, safeZoneRef: { current: null } },
       safeZoneInset: {}
     })
 
@@ -75,14 +78,17 @@ describe('Viewport', () => {
     useMapEvents.mockImplementation(() => {})
   })
 
-  afterEach(() => document.body.removeChild(keyboardHintPortalRef.current))
+  afterEach(() => {
+    viewportEl.remove()
+    mainEl.remove()
+  })
 
   const renderViewport = () => {
-    const { container, rerender, unmount } = render(<Viewport keyboardHintPortalRef={keyboardHintPortalRef} />)
+    const { container, rerender, unmount } = render(<Viewport />)
     const viewport = container.querySelector('.im-c-viewport')
     const mapContainer = container.querySelector('.im-c-viewport__map-container')
     const safeZone = container.querySelector('.im-c-viewport__safezone')
-    const keyboardHint = keyboardHintPortalRef.current.querySelector('.im-c-viewport__keyboard-hint')
+    const keyboardHint = mainEl.querySelector('.im-c-viewport__keyboard-hint')
     const crossHair = container.querySelector('[data-testid="cross-hair"]')
     const markers = container.querySelector('[data-testid="markers"]')
     return { viewport, mapContainer, safeZone, keyboardHint, crossHair, markers, rerender, unmount }
@@ -109,14 +115,6 @@ describe('Viewport', () => {
     expect(keyboardHint.innerHTML).toBe('Press arrow keys')
   })
 
-  it('handles focus and blur events updating keyboard hint visibility', () => {
-    const { viewport, keyboardHint } = renderViewport()
-    fireEvent.focus(viewport)
-    fireEvent.blur(viewport)
-    expect(keyboardHint).toBeInTheDocument()
-    expect(keyboardHint.innerHTML).toBe('Press arrow keys')
-  })
-
   it('attaches keyboard shortcuts', () => {
     renderViewport()
     expect(useKeyboardShortcuts).toHaveBeenCalled()
@@ -137,25 +135,10 @@ describe('Viewport', () => {
       interfaceType: 'desktop',
       mode: 'edit',
       previousMode: 'default',
-      layoutRefs: { viewportRef: { current: viewport }, mainRef: { current: null }, safeZoneRef: { current: null } },
+      layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewport }, safeZoneRef: { current: null } },
       safeZoneInset: {}
     })
-    rerender(<Viewport keyboardHintPortalRef={keyboardHintPortalRef} />)
+    rerender(<Viewport />)
     expect(focusMock).toHaveBeenCalled()
-  })
-
-  it('toggles main element class for keyboard hint and cleans up on unmount', () => {
-    const mainEl = document.createElement('div')
-    useApp.mockReturnValueOnce({
-      interfaceType: 'desktop',
-      mode: 'default',
-      previousMode: 'default',
-      layoutRefs: { viewportRef: { current: null }, mainRef: { current: mainEl }, safeZoneRef: { current: null } },
-      safeZoneInset: {}
-    })
-    const { unmount } = renderViewport()
-    expect(mainEl.classList.contains('im-o-app__main--keyboard-hint-visible')).toBe(true)
-    unmount()
-    expect(mainEl.classList.contains('im-o-app__main--keyboard-hint-visible')).toBe(false)
   })
 })

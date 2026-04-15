@@ -36,7 +36,7 @@ export const Layout = () => {
       style={{ backgroundColor: mapStyle?.backgroundColor || undefined, ...getMapThemeVars(mapStyle) }}
       ref={layoutRefs.appContainerRef}
     >
-      <Viewport keyboardHintPortalRef={layoutRefs.topRef} />
+      <Viewport />
       <div className={`im-o-app__overlay${isLayoutReady ? '' : ' im-o-app__overlay--not-ready'}`}>
         <div className='im-o-app__side' ref={layoutRefs.sideRef}>
           <SlotRenderer slot={layoutSlots.SIDE} />
