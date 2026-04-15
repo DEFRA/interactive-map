@@ -117,7 +117,7 @@ describe('InteractiveMap Core Functionality', () => {
   })
 
   it('open button click calls _handleButtonClick / loadApp', async () => {
-    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', manageHistoryState: true, mapProvider: mapProviderMock })
     const loadSpy = jest.spyOn(map, 'loadApp').mockResolvedValue()
     const pushStateSpy = jest.spyOn(history, 'pushState').mockImplementation(() => {})
     const fakeEvent = { currentTarget: { getAttribute: jest.fn().mockReturnValue('/?mv=map') } }
@@ -275,6 +275,7 @@ describe('InteractiveMap Core Functionality', () => {
       behaviour: 'buttonFirst',
       mapProvider: mapProviderMock,
       mapViewParamKey: 'mv',
+      manageHistoryState: true,
       preserveStateOnClose: false
     })
 
@@ -303,6 +304,7 @@ describe('InteractiveMap Core Functionality', () => {
       behaviour: 'buttonFirst',
       mapProvider: mapProviderMock,
       mapViewParamKey: 'mv',
+      manageHistoryState: true,
       preserveStateOnClose: true
     })
 
@@ -321,7 +323,7 @@ describe('InteractiveMap Core Functionality', () => {
   })
 
   it('_handleButtonClick calls showApp when map is hidden', async () => {
-    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', manageHistoryState: true, mapProvider: mapProviderMock })
     map._isHidden = true
     const showAppSpy = jest.spyOn(map, 'showApp').mockImplementation(() => {})
     const loadAppSpy = jest.spyOn(map, 'loadApp').mockResolvedValue()
@@ -337,6 +339,126 @@ describe('InteractiveMap Core Functionality', () => {
     showAppSpy.mockRestore()
     loadAppSpy.mockRestore()
     pushStateSpy.mockRestore()
+  })
+
+  it('_handleButtonClick skips pushState when manageHistoryState is false', async () => {
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', manageHistoryState: false, mapProvider: mapProviderMock })
+    expect(map.config.manageHistoryState).toBe(false)
+    const pushStateSpy = jest.spyOn(history, 'pushState').mockImplementation(() => {})
+    const fakeEvent = { currentTarget: { getAttribute: jest.fn().mockReturnValue('/?mv=map') } }
+
+    await openButtonCallback(fakeEvent)
+
+    expect(pushStateSpy).not.toHaveBeenCalled()
+    pushStateSpy.mockRestore()
+  })
+
+  it('_handleExitClick calls history.back() when history.state.isBack is true', () => {
+    const backSpy = jest.spyOn(history, 'back').mockImplementation(() => {})
+    Object.defineProperty(history, 'state', { value: { isBack: true }, writable: true, configurable: true })
+
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      mapProvider: mapProviderMock,
+      mapViewParamKey: 'mv',
+      manageHistoryState: true,
+      preserveStateOnClose: false
+    })
+    jest.spyOn(map, 'removeApp').mockImplementation(() => {})
+
+    map._handleExitClick()
+
+    expect(backSpy).toHaveBeenCalled()
+    Object.defineProperty(history, 'state', { value: null, writable: true, configurable: true })
+    backSpy.mockRestore()
+  })
+
+  it('_handleExitClick skips history when manageHistoryState is false', () => {
+    const backSpy = jest.spyOn(history, 'back').mockImplementation(() => {})
+    const replaceStateSpy = jest.spyOn(history, 'replaceState').mockImplementation(() => {})
+
+    const map = new InteractiveMap('map', {
+      behaviour: 'buttonFirst',
+      mapProvider: mapProviderMock,
+      mapViewParamKey: 'mv',
+      manageHistoryState: false,
+      preserveStateOnClose: false
+    })
+    jest.spyOn(map, 'removeApp').mockImplementation(() => {})
+
+    map._handleExitClick()
+
+    expect(backSpy).not.toHaveBeenCalled()
+    expect(replaceStateSpy).not.toHaveBeenCalled()
+    backSpy.mockRestore()
+    replaceStateSpy.mockRestore()
+  })
+
+  it('loadApp emits APP_OPENED with statePreserved: false', async () => {
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    await map.loadApp()
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:opened', { statePreserved: false })
+  })
+
+  it('removeApp emits APP_CLOSED with statePreserved: false', () => {
+    const map = new InteractiveMap('map', { mapProvider: mapProviderMock })
+    map._root = {}
+    map.unmount = jest.fn()
+    map.removeApp()
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:closed', { statePreserved: false })
+  })
+
+  it('hideApp emits APP_CLOSED with statePreserved: true', () => {
+    const map = new InteractiveMap('map', { mapProvider: mapProviderMock })
+    map.hideApp()
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:closed', { statePreserved: true })
+  })
+
+  it('showApp emits APP_OPENED with statePreserved: true', () => {
+    const map = new InteractiveMap('map', { mapProvider: mapProviderMock })
+    map._isHidden = true
+    map.showApp()
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:opened', { statePreserved: true })
+  })
+
+  it('open() shows hidden map', () => {
+    const map = new InteractiveMap('map', { mapProvider: mapProviderMock })
+    const showSpy = jest.spyOn(map, 'showApp').mockImplementation(() => {})
+    map._isHidden = true
+    map.open()
+    expect(showSpy).toHaveBeenCalled()
+    showSpy.mockRestore()
+  })
+
+  it('open() loads map when not yet initialised', () => {
+    const map = new InteractiveMap('map', { mapProvider: mapProviderMock })
+    const loadSpy = jest.spyOn(map, 'loadApp').mockResolvedValue()
+    map._root = null
+    map._isHidden = false
+    map.open()
+    expect(loadSpy).toHaveBeenCalled()
+    loadSpy.mockRestore()
+  })
+
+  it('open() is a no-op when already open', () => {
+    const map = new InteractiveMap('map', { mapProvider: mapProviderMock })
+    const loadSpy = jest.spyOn(map, 'loadApp').mockResolvedValue()
+    const showSpy = jest.spyOn(map, 'showApp').mockImplementation(() => {})
+    map._root = {}
+    map._isHidden = false
+    map.open()
+    expect(loadSpy).not.toHaveBeenCalled()
+    expect(showSpy).not.toHaveBeenCalled()
+    loadSpy.mockRestore()
+    showSpy.mockRestore()
+  })
+
+  it('close() delegates to _handleExitClick', () => {
+    const map = new InteractiveMap('map', { mapProvider: mapProviderMock })
+    const exitSpy = jest.spyOn(map, '_handleExitClick').mockImplementation(() => {})
+    map.close()
+    expect(exitSpy).toHaveBeenCalled()
+    exitSpy.mockRestore()
   })
 
   it('hideApp sets _isHidden and hides element', () => {

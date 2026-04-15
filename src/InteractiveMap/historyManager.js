@@ -58,6 +58,11 @@ function handlePopstate () {
   const viewId = getQueryParam(defaults.mapViewParamKey)
 
   for (const mapInstance of components.values()) {
+    // Skip instances where the SPA framework manages navigation
+    if (mapInstance.config.manageHistoryState === false) {
+      continue
+    }
+
     const shouldBeOpen = mapInstance.id === viewId
     const isHybridVisible = mapInstance.config.behaviour === 'hybrid' && !isHybridFullscreen(mapInstance.config)
     const isOpen = mapInstance.rootEl?.children.length
@@ -105,7 +110,7 @@ let initialized = false
  */
 function register (component) {
   if (!initialized) {
-    window.addEventListener('popstate', handlePopstate)
+    globalThis.addEventListener('popstate', handlePopstate)
     initialized = true
   }
 

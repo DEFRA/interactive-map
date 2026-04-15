@@ -69,6 +69,17 @@ describe('updateDOMState', () => {
     }
   })
 
+  it('buttonFirst with manageHistoryState false is always fullscreen regardless of URL', () => {
+    mapInstance.config.behaviour = 'buttonFirst'
+    mapInstance.config.manageHistoryState = false
+    queryString.getQueryParam.mockReturnValue(null) // no mv param in URL
+
+    updateDOMState(mapInstance)
+
+    expect(document.documentElement.classList.contains('im-is-fullscreen')).toBe(true)
+    expect(mapInstance.rootEl.style.height).toBe('100%')
+  })
+
   describe('hybrid behaviour', () => {
     beforeEach(() => {
       mapInstance.config.behaviour = 'hybrid'

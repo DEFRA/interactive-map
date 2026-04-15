@@ -14,11 +14,21 @@ function updatePageTitle ({ pageTitle, isFullscreen }) {
 }
 
 function getIsFullscreen (config) {
-  const { id, behaviour } = config
-  const hasViewParam = getQueryParam(defaults.mapViewParamKey) === id
+  const { id, behaviour, manageHistoryState } = config
 
-  return behaviour === 'mapOnly' ||
-         (hasViewParam && (behaviour === 'buttonFirst' || isHybridFullscreen(config)))
+  if (behaviour === 'mapOnly') {
+    return true
+  }
+
+  if (behaviour === 'buttonFirst') {
+    // When the SPA manages history, the app is always fullscreen when loaded
+    if (manageHistoryState === false) {
+      return true
+    }
+    return getQueryParam(defaults.mapViewParamKey) === id
+  }
+
+  return isHybridFullscreen(config) && getQueryParam(defaults.mapViewParamKey) === id
 }
 
 // -----------------------------------------------------------------------------

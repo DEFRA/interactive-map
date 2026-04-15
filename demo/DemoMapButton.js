@@ -1,6 +1,8 @@
 import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
 
+const CENTER = [-2.9631008, 54.432306]
+
 const MAP_STYLE = {
   url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
   attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
@@ -11,29 +13,29 @@ function MapInner () {
   const initialised = useRef(false)
 
   useEffect(() => {
-    if (initialised.current) {
-      return
-    }
-    initialised.current = true
+    if (!initialised.current) {
+      initialised.current = true
 
-    Promise.all([
-      import('../src/index.js'),
-      import('../providers/maplibre/src/index.js')
-    ]).then(([
-      { default: InteractiveMap },
-      { default: maplibreProvider }
-    ]) => {
-      // eslint-disable-next-line no-new
-      new InteractiveMap('demo-map-button', {
-        behaviour: 'buttonFirst',
-        mapProvider: maplibreProvider(),
-        mapStyle: MAP_STYLE,
-        center: [-2.9631008,54.432306],
-        zoom: 15,
-        enableZoomControls: true
+      Promise.all([
+        import('../src/index.js'),
+        import('../providers/maplibre/src/index.js')
+      ]).then(([
+        { default: InteractiveMap },
+        { default: maplibreProvider }
+      ]) => {
+        // eslint-disable-next-line no-new
+        new InteractiveMap('demo-map-button', {
+          behaviour: 'buttonFirst',
+          mapProvider: maplibreProvider(),
+          mapStyle: MAP_STYLE,
+          center: CENTER,
+          zoom: 15,
+          hasExitButton: true
+        })
       })
-    })
+    }
   }, [])
+
   return <div id='demo-map-button' className='app-no-prose app-example'></div>
 }
 

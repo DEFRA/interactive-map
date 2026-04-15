@@ -33,11 +33,10 @@ describe('mapStateSync utilities', () => {
   })
 
   describe('setMapStateInURL', () => {
-    it('preserves history state and filters params (Line 28)', () => {
+    it('writes center and zoom into the URL', () => {
       const mockHref = 'http://test.com/path?existing=true'
       setMapStateInURL('map1', { center: [10, 20], zoom: 5 }, mockHref)
 
-      // Verification of Line 28: First arg must be global history state
       expect(globalThis.history.replaceState).toHaveBeenCalledWith(
         globalThis.history.state,
         '',
@@ -45,21 +44,42 @@ describe('mapStateSync utilities', () => {
       )
     })
 
-    it('uses fallback localhost URL (Line 17)', () => {
+    it('replaces existing map params when already present in the URL', () => {
+      setMapStateInURL('map1', { center: [10, 20], zoom: 5 }, 'http://test.com?map1:center=1,2&map1:zoom=3')
+      const url = globalThis.history.replaceState.mock.calls[0][2]
+      expect(url).toContain('map1:center=10,20')
+      expect(url).toContain('map1:zoom=5')
+      expect(url).not.toContain('map1:center=1,2')
+    })
+
+    it('preserves unrelated existing params (e.g. mv)', () => {
+      setMapStateInURL('map1', { center: [10, 20], zoom: 5 }, 'http://test.com/path?mv=map1')
+      const url = globalThis.history.replaceState.mock.calls[0][2]
+      expect(url).toContain('mv=map1')
+      expect(url).toContain('map1:center=10,20')
+    })
+
+    it('uses fallback localhost URL when href is null', () => {
       setMapStateInURL('map1', { zoom: 10 }, null)
-      const lastCall = globalThis.history.replaceState.mock.calls[0][2]
-      expect(lastCall).toContain('http://localhost')
+      const url = globalThis.history.replaceState.mock.calls[0][2]
+      expect(url).toContain('http://localhost')
     })
 
-    it('handles state where zoom is nullish (Line 24)', () => {
+    it('omits zoom when zoom is null', () => {
       setMapStateInURL('map1', { center: [0, 0], zoom: null }, 'http://test.com')
-      const lastCall = globalThis.history.replaceState.mock.calls[0][2]
-      expect(lastCall).not.toContain('zoom')
+      const url = globalThis.history.replaceState.mock.calls[0][2]
+      expect(url).not.toContain('zoom')
     })
 
-    it('triggers the default href parameter', () => {
+    it('uses window.location.href when no href is provided', () => {
       setMapStateInURL('map1', { zoom: 10 })
       expect(globalThis.history.replaceState).toHaveBeenCalled()
+    })
+
+    it('produces a URL with no search string when state is empty and no existing params', () => {
+      setMapStateInURL('map1', {}, 'http://test.com/path')
+      const url = globalThis.history.replaceState.mock.calls[0][2]
+      expect(url).toBe('http://test.com/path')
     })
   })
 })

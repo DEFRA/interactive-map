@@ -23,28 +23,18 @@ describe('defaultAppConfig', () => {
 
   // --- EXIT BUTTON (Line 27 Coverage) ---
   it('covers all branches of exitBtn excludeWhen', () => {
-    const config = { hasExitButton: true, mapViewParamKey: 'view' }
-
     expect(exitBtn.excludeWhen({
-      appConfig: { ...config, hasExitButton: false },
+      appConfig: { hasExitButton: false },
       appState: { isFullscreen: true }
     })).toBe(true)
 
-    window.history.pushState({}, '', '?view=map')
     expect(exitBtn.excludeWhen({
-      appConfig: config,
+      appConfig: { hasExitButton: true },
       appState: { isFullscreen: false }
     })).toBe(true)
 
-    window.history.pushState({}, '', '?wrong=param')
     expect(exitBtn.excludeWhen({
-      appConfig: config,
-      appState: { isFullscreen: true }
-    })).toBe(true)
-
-    window.history.pushState({}, '', '?view=map')
-    expect(exitBtn.excludeWhen({
-      appConfig: config,
+      appConfig: { hasExitButton: true },
       appState: { isFullscreen: true }
     })).toBe(false)
   })

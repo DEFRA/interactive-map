@@ -591,7 +591,7 @@
  * @property {boolean} [enableFullscreen=false]
  * Whether a toggle fullscreen button is displayed.
  *
- * @property {boolean} [enableZoomControls=false]
+ * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed.
  *
  * @property {[number, number, number, number]} [extent]
@@ -660,6 +660,11 @@
  *
  * @property {PluginDescriptor[]} [plugins]
  * Plugins to load.
+ *
+ * @property {boolean} [manageHistoryState=true]
+ * Whether the library should manage browser history state (pushState/replaceState) when opening and closing the map.
+ * Set to `false` in SPA frameworks (e.g. React Router, Docusaurus) that intercept history API calls.
+ * When `false`, listen to `APP_OPENED` and `APP_CLOSED` events and manage navigation in your router instead.
  *
  * @property {boolean} [preserveStateOnClose=false]
  * Whether to preserve the map state when closed via back button or exit button.
