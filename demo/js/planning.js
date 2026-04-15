@@ -69,7 +69,6 @@ const interactiveMap = new InteractiveMap('map', {
 	containerHeight: '650px',
 	transformRequest: transformTileRequest,
 	enableFullscreen: false,
-	enableZoomControls: true,
 	hasExitButton: true,
 	plugins: [
 		mapStylesPlugin({

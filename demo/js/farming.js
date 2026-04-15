@@ -91,7 +91,6 @@ var interactiveMap = new InteractiveMap('map', {
 	containerHeight: '500px',
 	transformRequest: transformTileRequest,
 	// enableFullscreen: true,
-	enableZoomControls: true,
 	hasExitButton: true,
 	preserveStateOnClose: true,
 	// markers: [{

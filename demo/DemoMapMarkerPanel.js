@@ -40,7 +40,6 @@ function MapInner () {
         center: MARKER_COORDS,
         zoom: 15,
         containerHeight: '500px',
-        enableZoomControls: true,
         plugins: [interactPlugin]
       })
 

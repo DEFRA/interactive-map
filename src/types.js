@@ -591,7 +591,7 @@
  * @property {boolean} [enableFullscreen=false]
  * Whether a toggle fullscreen button is displayed.
  *
- * @property {boolean} [enableZoomControls=false]
+ * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed.
  *
  * @property {[number, number, number, number]} [extent]

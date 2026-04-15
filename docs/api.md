@@ -161,7 +161,7 @@ The button is only displayed when the map is `inline`.
 
 ### `enableZoomControls`
 **Type:** `boolean`
-**Default:** `false`
+**Default:** `true`
 
 Whether zoom control buttons are displayed.
 Zoom controls are not diplayed when the interface type is `touch`.
