@@ -378,6 +378,10 @@ export default class InteractiveMap {
   /**
    * Add a panel to the UI.
    *
+   * Focus is moved to the panel on open by default. Set `focus: false` in the
+   * config to suppress this — useful when adding panels on page load where
+   * stealing focus would be disruptive.
+   *
    * @param {string} id - Unique panel identifier.
    * @param {PanelDefinition} config - Panel configuration.
    */

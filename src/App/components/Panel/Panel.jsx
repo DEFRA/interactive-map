@@ -6,12 +6,12 @@ import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 import { Icon } from '../Icon/Icon'
 
-const computePanelState = (bpConfig, triggeringElement) => {
+const computePanelState = (bpConfig, triggeringElement, focus) => {
   const isAside = bpConfig.slot === 'side' && bpConfig.open && !bpConfig.modal
   const isDialog = !isAside && bpConfig.dismissible
   const isModal = bpConfig.modal === true
   const isDismissible = bpConfig.dismissible !== false
-  const shouldFocus = Boolean(isModal || triggeringElement)
+  const shouldFocus = focus === true || Boolean(isModal || triggeringElement)
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
   return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
 }
@@ -66,7 +66,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
   const bpConfig = panelConfig[breakpoint]
   const elementId = `${id}-panel-${stringToKebab(panelId)}`
 
-  const { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement)
+  const { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement, panelConfig.focus) // nosonar
 
   // For persistent panels, gate modal behaviour on open state
   const isModalActive = isModal && isOpen

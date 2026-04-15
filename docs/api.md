@@ -550,7 +550,7 @@ interactiveMap.addButton('my-menu', {
 
 ### `addPanel(id, config)`
 
-Add a panel to the UI at runtime.
+Add a panel to the UI at runtime. Focus is moved to the panel by default — set `focus: false` in the config to suppress this when adding panels on page load.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

@@ -104,6 +104,29 @@ describe('Panel', () => {
     })
   })
 
+  describe('focus behaviour', () => {
+    it('focuses panel on mount when focus: true', () => {
+      const { container } = renderPanel({ focus: true })
+      const panel = container.firstChild
+      expect(panel).toHaveAttribute('tabIndex', '-1')
+      expect(document.activeElement).toBe(panel)
+    })
+
+    it('does not focus panel on mount when focus: false and no triggering element or modal', () => {
+      const { container } = renderPanel({ focus: false })
+      const panel = container.firstChild
+      expect(panel).not.toHaveAttribute('tabIndex')
+      expect(document.activeElement).not.toBe(panel)
+    })
+
+    it('focuses panel on mount when modal even if focus: false', () => {
+      const { container } = renderPanel({ focus: false, desktop: { slot: 'overlay', dismissible: true, modal: true } })
+      const panel = container.firstChild
+      expect(panel).toHaveAttribute('tabIndex', '-1')
+      expect(document.activeElement).toBe(panel)
+    })
+  })
+
   describe('close functionality', () => {
     it('focuses triggeringElement on close for button slots', () => {
       const focusMock = jest.fn()
