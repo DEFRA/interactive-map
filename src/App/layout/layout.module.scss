@@ -439,14 +439,6 @@
   box-sizing: border-box;
 }
 
-// Hide containers when keyboard hint is visible
-.im-o-app__main--keyboard-hint-visible {
-  .im-o-app__top-col,
-  .im-o-app__right,
-  .im-o-app__right-bottom {
-    opacity: 0;
-  }
-}
 
 // Avoid refresh jump if layout clacs are not ready
 .im-o-app__overlay--not-ready {

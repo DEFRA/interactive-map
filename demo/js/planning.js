@@ -36,7 +36,7 @@ const interactPlugin = createInteractPlugin({
 		backgroundColor: { outdoor: '#0b0c0c', dark: '#ffffff' },
 		foregroundColor: { outdoor: '#ffff', dark: '#0b0c0c' }
 	},
-	// interactionModes: ['selectMarker'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
+	interactionModes: ['placeMarker'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
 	// multiSelect: true
 })
 

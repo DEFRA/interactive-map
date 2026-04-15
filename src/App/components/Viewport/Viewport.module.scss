@@ -31,8 +31,10 @@
 
 .im-c-viewport__keyboard-hint {
     position: absolute;
+    bottom: var(--keyboard-hint-bottom, var(--primary-gap));
     left: 50%;
     transform: translateX(-50%);
+    z-index: 1001;
     text-wrap: nowrap;
 
     color: var(--tooltip-foreground-color);
