@@ -103,7 +103,9 @@ export default class InteractiveMap {
   }
 
   _handleButtonClick (e) {
-    history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
+    if (this.config.manageHistoryState) {
+      history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
+    }
     if (this._isHidden) {
       this.showApp()
     } else {
@@ -132,11 +134,20 @@ export default class InteractiveMap {
       this.removeApp()
     }
 
-    const key = this.config.mapViewParamKey
-    const href = location.href
-    const newUrl = this._removeMapParamFromUrl(href, key)
+    if (!this.config.manageHistoryState) {
+      return
+    }
 
-    history.replaceState(history.state, '', newUrl)
+    // If this history entry was pushed by the map's open button, go back so the
+    // ?mv= entry is preserved as a forward entry (browser forward re-opens the map).
+    // Otherwise (direct URL / bookmark), just strip the param in place.
+    if (history.state?.isBack) {
+      history.back()
+    } else {
+      const key = this.config.mapViewParamKey
+      const newUrl = this._removeMapParamFromUrl(location.href, key)
+      history.replaceState(history.state, '', newUrl)
+    }
   }
 
   /**
@@ -190,6 +201,7 @@ export default class InteractiveMap {
       })
 
       updateDOMState(this)
+      this.eventBus.emit(events.APP_OPENED, { statePreserved: false })
     } catch (err) {
       renderError(this.rootEl, this.config.genericErrorText)
       console.error(err)
@@ -213,8 +225,9 @@ export default class InteractiveMap {
       this._openButton.focus()
     }
 
-    updateDOMState(this)
+    updateDOMState(this, { isFullscreen: false })
 
+    this.eventBus.emit(events.APP_CLOSED, { statePreserved: false })
     this.eventBus.emit(events.MAP_DESTROY, { mapId: this.id })
   }
 
@@ -243,10 +256,10 @@ export default class InteractiveMap {
     // Reset page title (remove prepended map title)
     const parts = document.title.split(': ')
     if (parts.length > 1) {
-      document.title = parts[parts.length - 1]
+      document.title = parts.at(-1)
     }
 
-    this.eventBus.emit(events.APP_HIDDEN)
+    this.eventBus.emit(events.APP_CLOSED, { statePreserved: true })
   }
 
   /**
@@ -265,7 +278,7 @@ export default class InteractiveMap {
 
     updateDOMState(this)
 
-    this.eventBus.emit(events.APP_VISIBLE)
+    this.eventBus.emit(events.APP_OPENED, { statePreserved: true })
   }
 
   /**
@@ -425,5 +438,31 @@ export default class InteractiveMap {
    */
   setView (opts) {
     this.eventBus.emit(events.MAP_SET_VIEW, opts)
+  }
+
+  /**
+   * Programmatically open the map.
+   *
+   * Equivalent to the user clicking the open button. If the map has been hidden (e.g. in hybrid mode),
+   * it will be shown; otherwise the app will be loaded for the first time.
+   */
+  open () {
+    if (this._isHidden) {
+      this.showApp()
+    } else if (this._root) {
+      // App is already open — no-op
+    } else {
+      this.loadApp()
+    }
+  }
+
+  /**
+   * Programmatically close the map.
+   *
+   * Triggers the same logic as the exit button. If `preserveStateOnClose` is true, the map is hidden
+   * but not destroyed; otherwise the app is removed entirely.
+   */
+  close () {
+    this._handleExitClick()
   }
 }

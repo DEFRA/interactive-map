@@ -141,6 +141,23 @@ describe('historyManager', () => {
     expect(window.matchMedia).toHaveBeenCalledWith('(max-width: 768px)')
   })
 
+  it('skips component when manageHistoryState is false', () => {
+    const managedComponent = {
+      id: 'managed',
+      config: { behaviour: 'buttonFirst', hybridWidth: null, maxMobileWidth: 640, manageHistoryState: false },
+      rootEl: document.createElement('div'),
+      loadApp: jest.fn(),
+      removeApp: jest.fn(),
+      _isHidden: false
+    }
+    historyManager.register(managedComponent)
+    queryString.getQueryParam.mockReturnValue('managed')
+
+    window.dispatchEvent(popstateEvent)
+
+    expect(managedComponent.loadApp).not.toHaveBeenCalled()
+  })
+
   it('unregisters component', () => {
     historyManager.register(component1)
     component1.rootEl.appendChild(document.createElement('div'))

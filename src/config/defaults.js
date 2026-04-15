@@ -24,6 +24,7 @@ const defaults = {
   mapLabel: 'Interactive map',
   mapProvider: null,
   mapSize: 'small',
+  manageHistoryState: true,
   mapViewParamKey: 'mv',
   maxMobileWidth: 640,
   minDesktopWidth: 835,

@@ -41,6 +41,32 @@ function closeMap (mapInstance) {
 }
 
 /**
+ * Syncs a single map instance against the current URL view parameter.
+ *
+ * @param {MapInstance} mapInstance
+ * @param {string|null} viewId - The current `mv` query param value.
+ * @private
+ */
+function syncMapInstance (mapInstance, viewId) {
+  if (mapInstance.config.manageHistoryState === false) {
+    return
+  }
+
+  const shouldBeOpen = mapInstance.id === viewId
+  const isHybridVisible = mapInstance.config.behaviour === 'hybrid' && !isHybridFullscreen(mapInstance.config)
+  const isOpen = mapInstance.rootEl?.children.length
+
+  if (shouldBeOpen && (!isOpen || mapInstance._isHidden)) {
+    openMap(mapInstance)
+    return
+  }
+
+  if (!shouldBeOpen && isOpen && !isHybridVisible) {
+    closeMap(mapInstance)
+  }
+}
+
+/**
  * Handles the `popstate` event triggered by browser back/forward navigation.
  *
  * - Determines which component should be open based on the `view` query parameter in the URL.
@@ -56,21 +82,7 @@ function closeMap (mapInstance) {
  */
 function handlePopstate () {
   const viewId = getQueryParam(defaults.mapViewParamKey)
-
-  for (const mapInstance of components.values()) {
-    const shouldBeOpen = mapInstance.id === viewId
-    const isHybridVisible = mapInstance.config.behaviour === 'hybrid' && !isHybridFullscreen(mapInstance.config)
-    const isOpen = mapInstance.rootEl?.children.length
-
-    if (shouldBeOpen && (!isOpen || mapInstance._isHidden)) {
-      openMap(mapInstance)
-      continue
-    }
-
-    if (!shouldBeOpen && isOpen && !isHybridVisible) {
-      closeMap(mapInstance)
-    }
-  }
+  components.forEach(mapInstance => syncMapInstance(mapInstance, viewId))
 }
 
 // -----------------------------------------------------------------------------
@@ -105,7 +117,7 @@ let initialized = false
  */
 function register (component) {
   if (!initialized) {
-    window.addEventListener('popstate', handlePopstate)
+    globalThis.addEventListener('popstate', handlePopstate)
     initialized = true
   }
 

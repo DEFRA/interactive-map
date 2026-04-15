@@ -56,15 +56,15 @@ describe('useInterfaceAPI', () => {
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'ADD_BUTTON', payload: { id: 'item2', config: { id: 'item2', label: 'Item 2', isMenuItem: true } } })
   })
 
-  it('dispatches TOGGLE_APP_VISIBLE true on app:visible', () => {
+  it('dispatches TOGGLE_APP_VISIBLE true on app:opened', () => {
     renderHook(() => useInterfaceAPI())
-    act(() => mockEventBus.emit('app:visible'))
+    act(() => mockEventBus.emit('app:opened'))
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_APP_VISIBLE', payload: true })
   })
 
-  it('dispatches TOGGLE_APP_VISIBLE false on app:hidden', () => {
+  it('dispatches TOGGLE_APP_VISIBLE false on app:closed', () => {
     renderHook(() => useInterfaceAPI())
-    act(() => mockEventBus.emit('app:hidden'))
+    act(() => mockEventBus.emit('app:closed'))
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'TOGGLE_APP_VISIBLE', payload: false })
   })
 
@@ -143,8 +143,8 @@ describe('useInterfaceAPI', () => {
   it('removes all event listeners on unmount', () => {
     const { unmount } = renderHook(() => useInterfaceAPI())
     unmount()
-    expect(mockEventBus.off).toHaveBeenCalledWith('app:visible', expect.any(Function))
-    expect(mockEventBus.off).toHaveBeenCalledWith('app:hidden', expect.any(Function))
+    expect(mockEventBus.off).toHaveBeenCalledWith('app:opened', expect.any(Function))
+    expect(mockEventBus.off).toHaveBeenCalledWith('app:closed', expect.any(Function))
     expect(mockEventBus.off).toHaveBeenCalledWith('app:addbutton', expect.any(Function))
     expect(mockEventBus.off).toHaveBeenCalledWith('app:togglebuttonstate', expect.any(Function))
     expect(mockEventBus.off).toHaveBeenCalledWith('app:addpanel', expect.any(Function))

@@ -62,32 +62,34 @@ export const EVENTS = {
   APP_READY: 'app:ready',
 
   /**
-   * Emitted when the map application becomes visible after being hidden.
+   * Emitted when the map application has opened and is visible.
    *
-   * This can occur in 'hybrid behaviour' responsive scenarios where the map is already initialized
-   * (e.g. initialized inline on desktop) but was hidden and then shown again
-   * (e.g. resizing to mobile and opening the map).
+   * Fired after initial load (`loadApp`) and when the app is shown again after being hidden (`showApp`).
+   * Subscribe to this event to react whenever the map becomes visible to the user.
    *
-   * @remarks
-   * - Only emitted when transitioning from hidden → visible.
-   * - Not fired on initial open.
-   * - The existing map state may be preserved depending on configuration.
+   * Payload: `{ statePreserved: boolean }` — `true` if the map state was preserved from a previous session.
+   *
+   * @example
+   * map.on(EVENTS.APP_OPENED, ({ statePreserved }) => {
+   *   console.log('Map opened, state preserved:', statePreserved)
+   * })
    */
-  APP_VISIBLE: 'app:visible',
+  APP_OPENED: 'app:opened',
 
   /**
-   * Emitted when the map application becomes hidden.
+   * Emitted when the map application has closed and is no longer visible.
    *
-   * This can occur in 'hybrid behaviour' responsive scenarios where the map was initialized inline
-   * (e.g. visible on desktop) but then becomes hidden
-   * (e.g. resizing to mobile or closing the map view).
+   * Fired when the app is hidden (`hideApp`) or removed (`removeApp`).
+   * Subscribe to this event to react whenever the map is closed.
    *
-   * @remarks
-   * - Only emitted when transitioning from visible → hidden.
-   * - Not fired on initial load if the map starts hidden.
-   * - The map state may be preserved depending on configuration.
+   * Payload: `{ statePreserved: boolean }` — `true` if the map state was preserved (i.e. can be restored).
+   *
+   * @example
+   * map.on(EVENTS.APP_CLOSED, ({ statePreserved }) => {
+   *   console.log('Map closed, state preserved:', statePreserved)
+   * })
    */
-  APP_HIDDEN: 'app:hidden',
+  APP_CLOSED: 'app:closed',
 
   /**
    * Emitted when a panel is opened.
@@ -201,9 +203,6 @@ export const EVENTS = {
    * Payload: { coords: [number, number], point: { x, y }, features: any[] }
    */
   MAP_CLICK: 'map:click',
-
-  /** Emitted when the user exits the map (e.g., via the close button). */
-  MAP_EXIT: 'map:exit',
 
   /** Emitted when the map is destroyed. Payload: { mapId: string } */
   MAP_DESTROY: 'map:destroy'

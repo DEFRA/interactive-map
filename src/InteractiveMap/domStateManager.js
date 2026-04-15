@@ -14,11 +14,21 @@ function updatePageTitle ({ pageTitle, isFullscreen }) {
 }
 
 function getIsFullscreen (config) {
-  const { id, behaviour } = config
-  const hasViewParam = getQueryParam(defaults.mapViewParamKey) === id
+  const { id, behaviour, manageHistoryState } = config
 
-  return behaviour === 'mapOnly' ||
-         (hasViewParam && (behaviour === 'buttonFirst' || isHybridFullscreen(config)))
+  if (behaviour === 'mapOnly') {
+    return true
+  }
+
+  if (behaviour === 'buttonFirst') {
+    // When the SPA manages history, the app is always fullscreen when loaded
+    if (manageHistoryState === false) {
+      return true
+    }
+    return getQueryParam(defaults.mapViewParamKey) === id
+  }
+
+  return isHybridFullscreen(config) && getQueryParam(defaults.mapViewParamKey) === id
 }
 
 // -----------------------------------------------------------------------------
@@ -36,12 +46,14 @@ function getIsFullscreen (config) {
  * @param {string} mapInstance.config.behaviour - Behaviour mode ("mapOnly", "buttonFirst", "hybrid").
  * @param {string|number} mapInstance.config.containerHeight - Height to use when not fullscreen.
  * @param {HTMLElement} mapInstance.rootEl - Root element of the app.
+ * @param {Object} [options]
+ * @param {boolean} [options.isFullscreen] - Override the computed fullscreen state.
  * @returns {void}
  */
-function updateDOMState (mapInstance) {
+function updateDOMState (mapInstance, { isFullscreen: isFullscreenOverride } = {}) {
   const { config, rootEl } = mapInstance
   const { pageTitle, behaviour, containerHeight } = config
-  const isFullscreen = getIsFullscreen(config)
+  const isFullscreen = isFullscreenOverride ?? getIsFullscreen(config)
 
   if (['mapOnly', 'buttonFirst', 'hybrid'].includes(behaviour)) {
     toggleInertElements({ containerEl: rootEl, isFullscreen })

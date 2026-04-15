@@ -661,6 +661,11 @@
  * @property {PluginDescriptor[]} [plugins]
  * Plugins to load.
  *
+ * @property {boolean} [manageHistoryState=true]
+ * Whether the library should manage browser history state (pushState/replaceState) when opening and closing the map.
+ * Set to `false` in SPA frameworks (e.g. React Router, Docusaurus) that intercept history API calls.
+ * When `false`, listen to `APP_OPENED` and `APP_CLOSED` events and manage navigation in your router instead.
+ *
  * @property {boolean} [preserveStateOnClose=false]
  * Whether to preserve the map state when closed via back button or exit button.
  * When true, the map is hidden but not destroyed, preserving markers, zoom, etc.

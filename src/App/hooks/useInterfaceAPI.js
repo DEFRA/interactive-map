@@ -54,16 +54,16 @@ export const useInterfaceAPI = () => {
       }
     }
 
-    const handleAppVisible = () => dispatchRef.current({ type: 'TOGGLE_APP_VISIBLE', payload: true })
-    const handleAppHidden = () => dispatchRef.current({ type: 'TOGGLE_APP_VISIBLE', payload: false })
+    const handleAppOpened = () => dispatchRef.current({ type: 'TOGGLE_APP_VISIBLE', payload: true })
+    const handleAppClosed = () => dispatchRef.current({ type: 'TOGGLE_APP_VISIBLE', payload: false })
     const handleAddPanel = ({ id, config }) => dispatchRef.current({ type: 'ADD_PANEL', payload: { id, config } })
     const handleRemovePanel = (id) => dispatchRef.current({ type: 'REMOVE_PANEL', payload: id })
     const handleShowPanel = (id) => dispatchRef.current({ type: 'OPEN_PANEL', payload: { panelId: id } })
     const handleHidePanel = (id) => dispatchRef.current({ type: 'CLOSE_PANEL', payload: id })
     const handleAddControl = ({ id, config }) => dispatchRef.current({ type: 'ADD_CONTROL', payload: { id, config } })
 
-    eventBus.on(events.APP_VISIBLE, handleAppVisible)
-    eventBus.on(events.APP_HIDDEN, handleAppHidden)
+    eventBus.on(events.APP_OPENED, handleAppOpened)
+    eventBus.on(events.APP_CLOSED, handleAppClosed)
     eventBus.on(events.APP_ADD_BUTTON, handleAddButton)
     eventBus.on(events.APP_TOGGLE_BUTTON_STATE, handleToggleButtonState)
     eventBus.on(events.APP_ADD_PANEL, handleAddPanel)
@@ -73,8 +73,8 @@ export const useInterfaceAPI = () => {
     eventBus.on(events.APP_ADD_CONTROL, handleAddControl)
 
     return () => {
-      eventBus.off(events.APP_VISIBLE, handleAppVisible)
-      eventBus.off(events.APP_HIDDEN, handleAppHidden)
+      eventBus.off(events.APP_OPENED, handleAppOpened)
+      eventBus.off(events.APP_CLOSED, handleAppClosed)
       eventBus.off(events.APP_ADD_BUTTON, handleAddButton)
       eventBus.off(events.APP_TOGGLE_BUTTON_STATE, handleToggleButtonState)
       eventBus.off(events.APP_ADD_PANEL, handleAddPanel)
