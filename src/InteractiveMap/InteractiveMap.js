@@ -225,7 +225,7 @@ export default class InteractiveMap {
       this._openButton.focus()
     }
 
-    updateDOMState(this)
+    updateDOMState(this, { isFullscreen: false })
 
     this.eventBus.emit(events.APP_CLOSED, { statePreserved: false })
     this.eventBus.emit(events.MAP_DESTROY, { mapId: this.id })

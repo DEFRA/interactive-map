@@ -69,6 +69,16 @@ describe('updateDOMState', () => {
     }
   })
 
+  it('isFullscreen override forces non-fullscreen even when URL param matches', () => {
+    mapInstance.config.behaviour = 'buttonFirst'
+    queryString.getQueryParam.mockReturnValue('map') // URL says fullscreen
+
+    updateDOMState(mapInstance, { isFullscreen: false }) // but override says no
+
+    expect(document.documentElement.classList.contains('im-is-fullscreen')).toBe(false)
+    expect(rootEl.style.height).toBe('auto')
+  })
+
   it('buttonFirst with manageHistoryState false is always fullscreen regardless of URL', () => {
     mapInstance.config.behaviour = 'buttonFirst'
     mapInstance.config.manageHistoryState = false

@@ -195,7 +195,7 @@ describe('InteractiveMap Core Functionality', () => {
     expect(map.unmount).toHaveBeenCalled()
     expect(mockButtonInstance.removeAttribute).toHaveBeenCalledWith('style')
     expect(mockButtonInstance.focus).toHaveBeenCalled()
-    expect(updateDOMState).toHaveBeenCalledWith(map)
+    expect(updateDOMState).toHaveBeenCalledWith(map, { isFullscreen: false })
   })
 
   it('skips unmount if _root is falsy or unmount is not a function', () => {

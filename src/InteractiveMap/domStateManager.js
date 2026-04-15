@@ -46,12 +46,14 @@ function getIsFullscreen (config) {
  * @param {string} mapInstance.config.behaviour - Behaviour mode ("mapOnly", "buttonFirst", "hybrid").
  * @param {string|number} mapInstance.config.containerHeight - Height to use when not fullscreen.
  * @param {HTMLElement} mapInstance.rootEl - Root element of the app.
+ * @param {Object} [options]
+ * @param {boolean} [options.isFullscreen] - Override the computed fullscreen state.
  * @returns {void}
  */
-function updateDOMState (mapInstance) {
+function updateDOMState (mapInstance, { isFullscreen: isFullscreenOverride } = {}) {
   const { config, rootEl } = mapInstance
   const { pageTitle, behaviour, containerHeight } = config
-  const isFullscreen = getIsFullscreen(config)
+  const isFullscreen = isFullscreenOverride ?? getIsFullscreen(config)
 
   if (['mapOnly', 'buttonFirst', 'hybrid'].includes(behaviour)) {
     toggleInertElements({ containerEl: rootEl, isFullscreen })
