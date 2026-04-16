@@ -50,6 +50,9 @@ Controls which interactions are active when the user clicks the map. Values can 
 - `'selectFeature'` — clicking the map attempts to match a feature from `layers`
 - `'placeMarker'` — if no feature is matched (or `selectFeature` is not active), places a location marker at the clicked coordinates
 
+> [!NOTE]
+> On touch and keyboard, a crosshair and "Select" action button are shown when interact is enabled. For touch users, this applies when `'placeMarker'` or `'selectFeature'` is included — modes where a precise point on the map needs to be chosen. When `'selectMarker'` is the only active mode, touch users tap markers directly and the crosshair is not shown.
+
 **Common combinations:**
 
 ```js
