@@ -49,6 +49,7 @@ function MapInner () {
         interactPlugin.selectMarker(MARKER_ID)
 
         map.addPanel(PANEL_ID, {
+          focus: false,
           label: 'Marker',
           html: '<p class="govuk-body">Information about the selected marker</p>',
           mobile: { slot: 'drawer', dismissible: true },

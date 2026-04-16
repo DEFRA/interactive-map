@@ -46,6 +46,22 @@ Desktop breakpoint configuration. See [Breakpoint Configuration](#breakpoint-con
 
 ---
 
+### `focus`
+**Type:** `boolean`
+**Default:** `true`
+
+Whether to move focus to the panel when it is added. Set to `false` when adding a panel on page load to avoid disrupting the user's current focus position.
+
+```js
+// Page load — no focus
+map.addPanel('info', { focus: false, desktop: { slot: 'left-top' } })
+
+// User-triggered — focus the panel (default)
+map.addPanel('info', { desktop: { slot: 'left-top' } })
+```
+
+---
+
 ### `render`
 **Type:** `ComponentType`
 

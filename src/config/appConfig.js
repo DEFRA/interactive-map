@@ -115,6 +115,7 @@ export const defaultButtonConfig = {
 // Used by addPanel
 export const defaultPanelConfig = {
   label: 'Panel',
+  focus: true,
   mobile: {
     slot: 'drawer',
     open: true,

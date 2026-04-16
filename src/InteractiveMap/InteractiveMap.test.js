@@ -619,7 +619,7 @@ describe('InteractiveMap Public API Methods', () => {
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:removepanel', 'panel1')
 
     // New assertions for coverage
-    expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', 'panel2')
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel2', focus: true })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:hidepanel', 'panel3')
   })
 
