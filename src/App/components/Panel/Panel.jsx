@@ -60,7 +60,7 @@ const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }
 // sonarjs/disable-next-line function-name
 export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, label, html, children, isOpen = true, rootRef }) => {
   const { id } = useConfig()
-  const { dispatch, breakpoint, layoutRefs } = useApp()
+  const { dispatch, breakpoint, layoutRefs, interfaceType } = useApp()
 
   const rootEl = document.getElementById(`${id}-im-app`)
   const bpConfig = panelConfig[breakpoint]
@@ -81,7 +81,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
   const panelRef = rootRef || internalPanelRef
 
   const handleClose = () => {
-    requestAnimationFrame(() => { (props?.triggeringElement || layoutRefs.viewportRef.current).focus?.() })
+    requestAnimationFrame(() => { (props?.triggeringElement || layoutRefs.viewportRef.current).focus?.({ preventScroll: interfaceType !== 'keyboard' }) })
     dispatch({ type: 'CLOSE_PANEL', payload: panelId })
   }
 
