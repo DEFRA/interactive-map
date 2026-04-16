@@ -1,7 +1,7 @@
 import useBaseUrl from '@docusaurus/useBaseUrl'
-import basicMapImg from '../assets/basic-map.jpg'
-import buttonFirstImg from '../assets/button-first.jpg'
-import makerPanelImg from '../assets/maker-panel.jpg'
+import basicMapImg from '../assets/images/basic-map.jpg'
+import buttonFirstImg from '../assets/images/button-first.jpg'
+import markerPanelImg from '../assets/images/marker-panel.jpg'
 
 export function ExampleCards() {
   const basicHref = useBaseUrl('/examples/basic-map')
@@ -23,7 +23,7 @@ export function ExampleCards() {
       <div className='govuk-grid-column-one-half'>
         <div className='app-example-card'>
           <img src={buttonFirstImg} alt='' />
-          <div className='app-example-card__body'>
+          <div className='app-example-card__body' style={{ 'border-top': '1px solid #f4f8fb'}}>
             <h2 className='govuk-heading-m'>
               <a href={buttonHref}>Button-triggered map</a>
             </h2>
@@ -32,8 +32,8 @@ export function ExampleCards() {
       </div>
       <div className='govuk-grid-column-one-half'>
         <div className='app-example-card'>
-          <img src={makerPanelImg} alt='' />
-          <div className='app-example-card__body' style={{ 'border-top': '1px solid #cecece'}}>
+          <img src={markerPanelImg} alt='' />
+          <div className='app-example-card__body' style={{ 'border-top': '1px solid #f4f8fb'}}>
             <h2 className='govuk-heading-m'>
               <a href={interactHref}>Add a marker with a panel</a>
             </h2>

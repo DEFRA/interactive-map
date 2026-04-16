@@ -2,7 +2,7 @@
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
-  staticDirectories: ['assets'],
+  staticDirectories: ['assets', 'docs/assets'],
   title: 'Defra Interactive Map',
   tagline: 'An accessibility-first interactive map component for government frontends',
   favicon: 'images/favicon.svg',
@@ -45,7 +45,7 @@ const config = {
       return {
         name: 'custom-css',
         getClientModules() {
-          return [require.resolve('./assets/css/docusaurus.css')];
+          return [require.resolve('./docs/assets/css/docusaurus.css')];
         },
       };
     },
