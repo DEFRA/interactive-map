@@ -10,7 +10,7 @@ The following plugins are available for use with InteractiveMap.
 
 ### [Interact](./plugins/interact.md)
 
-Select features or place markers on the map.
+Select map features, select markers, or place a location marker on the map.
 
 ### [Map Styles](./plugins/map-styles.md)
 

@@ -4,6 +4,7 @@ import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { attachEvents } from './events.js'
+import { isSelectMarkerOnly } from './utils/interactionModes.js'
 
 export const InteractInit = ({
   appState,
@@ -19,6 +20,7 @@ export const InteractInit = ({
   const { crossHair, mapStyle } = mapState
 
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(interfaceType)
+  const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
 
   // Core interaction logic (click > select/marker)
   const { handleInteraction } = useInteractionHandlers({
@@ -71,12 +73,12 @@ export const InteractInit = ({
 
   // Toggle target marker visibility
   useEffect(() => {
-    if (enabled && isTouchOrKeyboard) {
+    if (enabled && isTouchOrKeyboard && !(interfaceType === 'touch' && selectMarkerOnly)) {
       crossHair.fixAtCenter()
     } else {
       crossHair.hide()
     }
-  }, [enabled, interfaceType])
+  }, [enabled, interfaceType, interactionModes])
 
   useEffect(() => {
     if (!pluginState.enabled) {
