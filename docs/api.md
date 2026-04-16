@@ -47,8 +47,6 @@ Configuration object specifying map provider, map style, behaviour, and other se
 
 Colour scheme used by the application. Determines the colours of panels, buttons and controls.
 
-**Possible values**
-
 | Possible values |
 |:--|
 | **'light'** *(default)*
@@ -83,8 +81,6 @@ May be provided as:
 **Default:** `'buttonFirst'`
 
 Determines how and when the map is displayed.
-
-**Possible values**
 
 | Possible values |
 |:--|
@@ -232,8 +228,6 @@ A factory function that returns a map provider instance, e.g., `maplibreProvider
 **Default:** `'small'`
 
 Visual size of text and features in the map itself.
-
-**Possible values**
 
 | Possible values |
 |:--|
