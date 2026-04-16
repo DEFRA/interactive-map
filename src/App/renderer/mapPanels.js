@@ -46,7 +46,7 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
   })
   const allowedModalPanelId = modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null
 
-  return openPanelEntries.map(([panelId, { props }]) => {
+  return openPanelEntries.map(([panelId, { props, focusOnOpen }]) => {
     const config = panelConfig[panelId]
     if (!config) {
       return null
@@ -91,6 +91,7 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
           panelId={panelId}
           panelConfig={config}
           props={props}
+          focusOnOpen={focusOnOpen}
           WrappedChild={WrappedChild}
           label={evaluateProp(config.label, pluginId)}
           html={pluginId ? evaluateProp(config.html, pluginId) : config.html}

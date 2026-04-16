@@ -585,16 +585,20 @@ interactiveMap.removePanel('info-panel')
 
 ---
 
-### `showPanel(id)`
+### `showPanel(id, options?)`
 
-Show a panel.
+Show a panel. Focus is moved to the panel by default — set `focus: false` to suppress this, useful when showing a panel and you want focus to remain on the button.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `id` | `string` | Panel identifier to show |
+| `options.focus` | `boolean` | Whether to move focus to the panel. Default: `true` |
 
 ```js
 interactiveMap.showPanel('info-panel')
+
+// Keep focus on the triggering button
+interactiveMap.showPanel('info-panel', { focus: false })
 ```
 
 ---
@@ -710,6 +714,26 @@ Set the map center and zoom. Safe zone padding is automatically applied.
 
 ```js
 interactiveMap.setView({ center: [-0.1276, 51.5074], zoom: 12 })
+```
+
+---
+
+### `open()`
+
+Programmatically open the map. Equivalent to the user clicking the open button. If the map has been hidden (e.g. in hybrid mode), it will be shown; otherwise the app will be loaded for the first time.
+
+```js
+interactiveMap.open()
+```
+
+---
+
+### `close()`
+
+Programmatically close the map. Triggers the same logic as the exit button. If `preserveStateOnClose` is `true`, the map is hidden but not destroyed; otherwise the app is removed entirely.
+
+```js
+interactiveMap.close()
 ```
 
 ---

@@ -80,10 +80,16 @@ describe('useInterfaceAPI', () => {
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'REMOVE_PANEL', payload: 'panel1' })
   })
 
-  it('dispatches OPEN_PANEL on app:showpanel', () => {
+  it('dispatches OPEN_PANEL with focusOnOpen:true on app:showpanel by default', () => {
     renderHook(() => useInterfaceAPI())
-    act(() => mockEventBus.emit('app:showpanel', 'panel1'))
-    expect(mockDispatch).toHaveBeenCalledWith({ type: 'OPEN_PANEL', payload: { panelId: 'panel1' } })
+    act(() => mockEventBus.emit('app:showpanel', { id: 'panel1' }))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'OPEN_PANEL', payload: { panelId: 'panel1', focusOnOpen: true } })
+  })
+
+  it('dispatches OPEN_PANEL with focusOnOpen:false when focus:false', () => {
+    renderHook(() => useInterfaceAPI())
+    act(() => mockEventBus.emit('app:showpanel', { id: 'panel1', focus: false }))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'OPEN_PANEL', payload: { panelId: 'panel1', focusOnOpen: false } })
   })
 
   it('dispatches CLOSE_PANEL on app:hidepanel', () => {

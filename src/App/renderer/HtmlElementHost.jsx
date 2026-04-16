@@ -39,11 +39,14 @@ export const getSlotRef = (slot, layoutRefs) => {
  * (e.g. the banner slot swaps DOM nodes between mobile and desktop).
  */
 export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, breakpoint) => {
+  const layoutRefsRef = useRef(layoutRefs)
+  layoutRefsRef.current = layoutRefs
+
   useLayoutEffect(() => {
     const wrapper = wrapperRef.current
 
     if (isVisible) {
-      const slotRef = getSlotRef(targetSlot, layoutRefs)
+      const slotRef = getSlotRef(targetSlot, layoutRefsRef.current)
       if (slotRef?.current) {
         const backdrop = slotRef.current.querySelector(':scope > .im-o-app__modal-backdrop')
         if (backdrop) {
@@ -54,8 +57,8 @@ export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, 
         wrapper.style.display = ''
       }
     } else {
-      if (wrapper.parentElement === layoutRefs.modalRef?.current) {
-        layoutRefs.appContainerRef?.current?.appendChild(wrapper)
+      if (wrapper.parentElement === layoutRefsRef.current.modalRef?.current) {
+        layoutRefsRef.current.appContainerRef?.current?.appendChild(wrapper)
       }
       wrapper.style.display = 'none'
     }
@@ -63,7 +66,7 @@ export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, 
     return () => {
       wrapper.style.display = 'none'
     }
-  }, [isVisible, targetSlot, layoutRefs, breakpoint, wrapperRef])
+  }, [isVisible, targetSlot, breakpoint, wrapperRef])
 }
 
 /**
@@ -71,7 +74,7 @@ export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, 
  * The Panel component stays mounted for the lifetime of the registration.
  * DOM projection moves it between slots; CSS hides it when closed.
  */
-const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, allowedModalPanelId, appState }) => {
+const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen, allowedModalPanelId, appState }) => {
   const panelRootRef = useRef(null)
   const { breakpoint, mode, isFullscreen, layoutRefs } = appState
 
@@ -108,6 +111,7 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, allowedModal
       panelId={panelId}
       panelConfig={config}
       props={openPanelProps}
+      focusOnOpen={focusOnOpen}
       html={config.html}
       label={config.label}
       isOpen={isOpen}
@@ -186,6 +190,7 @@ export const HtmlElementHost = () => {
           config={config}
           isOpen={!!openPanels[panelId]}
           openPanelProps={openPanels[panelId]?.props}
+          focusOnOpen={openPanels[panelId]?.focusOnOpen}
           allowedModalPanelId={allowedModalPanelId}
           appState={appState}
         />

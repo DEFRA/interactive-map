@@ -6,12 +6,12 @@ import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 import { Icon } from '../Icon/Icon'
 
-const computePanelState = (bpConfig, triggeringElement, focus) => {
+const computePanelState = (bpConfig, triggeringElement, focus, focusOnOpen) => {
   const isAside = bpConfig.slot === 'side' && bpConfig.open && !bpConfig.modal
   const isDialog = !isAside && bpConfig.dismissible
   const isModal = bpConfig.modal === true
   const isDismissible = bpConfig.dismissible !== false
-  const shouldFocus = focus === true || Boolean(isModal || triggeringElement)
+  const shouldFocus = isModal || (focusOnOpen !== false && (focusOnOpen === true || focus === true || Boolean(triggeringElement)))
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
   return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
 }
@@ -58,7 +58,7 @@ const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, children, isOpen = true, rootRef }) => {
+export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, label, html, children, isOpen = true, rootRef }) => {
   const { id } = useConfig()
   const { dispatch, breakpoint, layoutRefs } = useApp()
 
@@ -66,7 +66,7 @@ export const Panel = ({ panelId, panelConfig, props, WrappedChild, label, html, 
   const bpConfig = panelConfig[breakpoint]
   const elementId = `${id}-panel-${stringToKebab(panelId)}`
 
-  const { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement, panelConfig.focus) // nosonar
+  const { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement, panelConfig.focus, focusOnOpen) // nosonar
 
   // For persistent panels, gate modal behaviour on open state
   const isModalActive = isModal && isOpen

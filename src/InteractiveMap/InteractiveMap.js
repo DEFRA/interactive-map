@@ -401,10 +401,15 @@ export default class InteractiveMap {
   /**
    * Show a panel.
    *
+   * Focus is moved to the panel by default. Set `focus: false` in options to
+   * suppress this — useful when showing a panel and you want focus to remain on the button.
+   *
    * @param {string} id - Panel identifier to show.
+   * @param {object} [options]
+   * @param {boolean} [options.focus=true] - Whether to move focus to the panel.
    */
-  showPanel (id) {
-    this.eventBus.emit(events.APP_SHOW_PANEL, id)
+  showPanel (id, { focus = true } = {}) {
+    this.eventBus.emit(events.APP_SHOW_PANEL, { id, focus })
   }
 
   /**

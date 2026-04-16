@@ -125,6 +125,20 @@ describe('Panel', () => {
       expect(panel).toHaveAttribute('tabIndex', '-1')
       expect(document.activeElement).toBe(panel)
     })
+
+    it('focuses panel when focusOnOpen is true regardless of panelConfig.focus', () => {
+      const { container } = renderPanel({ focus: false }, { focusOnOpen: true })
+      const panel = container.firstChild
+      expect(panel).toHaveAttribute('tabIndex', '-1')
+      expect(document.activeElement).toBe(panel)
+    })
+
+    it('does not focus panel when focusOnOpen is false even if panelConfig.focus is true', () => {
+      const { container } = renderPanel({ focus: true }, { focusOnOpen: false })
+      const panel = container.firstChild
+      expect(panel).not.toHaveAttribute('tabIndex')
+      expect(document.activeElement).not.toBe(panel)
+    })
   })
 
   describe('close functionality', () => {

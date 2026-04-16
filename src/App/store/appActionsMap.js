@@ -7,7 +7,7 @@ import { registerPanel as registerPanelFn, addPanel as addPanelFn, removePanel a
 import { registerControl as registerControlFn, addControl as addControlFn } from '../registry/controlRegistry.js'
 
 // Interal helper
-function buildOpenPanels (state, panelId, breakpoint, props) {
+function buildOpenPanels (state, panelId, breakpoint, props, focusOnOpen) {
   const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
   const bpConfig = panelConfig[panelId]?.[breakpoint]
   const isExclusiveNonModal = !!bpConfig.exclusive && !bpConfig.modal
@@ -23,7 +23,7 @@ function buildOpenPanels (state, panelId, breakpoint, props) {
   return {
     ...(isExclusiveNonModal ? {} : filteredPanels),
     ...(isModal ? state.openPanels : {}),
-    [panelId]: { props }
+    [panelId]: { props, ...(focusOnOpen && { focusOnOpen: true }) }
   }
 }
 
@@ -109,12 +109,12 @@ const setInterfaceType = (state, payload) => {
 }
 
 const openPanel = (state, payload) => {
-  const { panelId, props = {} } = payload
+  const { panelId, props = {}, focusOnOpen } = payload
 
   return {
     ...state,
     previousOpenPanels: state.openPanels,
-    openPanels: buildOpenPanels(state, panelId, state.breakpoint, props)
+    openPanels: buildOpenPanels(state, panelId, state.breakpoint, props, focusOnOpen)
   }
 }
 

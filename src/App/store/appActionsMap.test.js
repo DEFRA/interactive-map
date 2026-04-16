@@ -100,6 +100,16 @@ describe('actionsMap full coverage', () => {
     expect(result.openPanels.panel3?.props).toEqual({})
   })
 
+  test('OPEN_PANEL stores focusOnOpen when provided', () => {
+    const result = actionsMap.OPEN_PANEL(state, { panelId: 'panel2', focusOnOpen: true })
+    expect(result.openPanels.panel2?.focusOnOpen).toBe(true)
+  })
+
+  test('OPEN_PANEL omits focusOnOpen when not provided', () => {
+    const result = actionsMap.OPEN_PANEL(state, { panelId: 'panel2' })
+    expect(result.openPanels.panel2?.focusOnOpen).toBeUndefined()
+  })
+
   test('CLOSE_PANEL removes a panel', () => {
     const result = actionsMap.CLOSE_PANEL(state, 'panel1')
     expect(result.openPanels.panel1).toBeUndefined()
