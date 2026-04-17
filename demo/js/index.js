@@ -308,8 +308,6 @@ interactiveMap.on('map:ready', function (e) {
 	interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], {
 		symbol: 'square'
 	})
-	interactiveMap.fitToBounds({'type':'FeatureCollection','features':[{'type':'Feature','properties':{},'geometry':{'type':'Polygon','coordinates':[[[-3.1602897763798694,54.59961504445158],[-3.1309135674312074,54.59961504445158],[-3.1309135674312074,54.55823928153055],[-3.1602897763798694,54.55823928153055],[-3.1602897763798694,54.59961504445158]]]}}]})
-	// interactiveMap.fitToBounds({'type':'FeatureCollection','features':[{'type':'Feature','properties':{},'geometry':{'type':'Polygon','coordinates':[[[-2.4784841,54.5707673],[-2.4776693,54.5753891],[-2.4664371,54.5759625],[-2.4667863,54.5686418],[-2.4784841,54.5707673]]]}}]})
 })
 
 interactiveMap.on('datasets:ready', function () {
