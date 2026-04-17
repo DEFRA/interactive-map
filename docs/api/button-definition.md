@@ -81,8 +81,6 @@ The `order` property on each button's breakpoint config (e.g. `desktop.order`) c
 
 > If only one button declares a given group name, it is rendered as a standalone button and the group wrapper is not created.
 
-> **Note:** Passing a plain string (e.g. `group: 'zoom'`) is deprecated and will log a warning in development.
-
 ---
 
 ### `panelId`
@@ -94,9 +92,6 @@ Associated panel identifier. When set, clicking the button toggles the panel ope
 
 ### `menuItems`
 **Type:** `MenuItemDefinition[]`
-
-> [!WARNING]
-> **Experimental:** Popup menu positioning is currently only reliable when the button is centred in the action bar. Placement in other slots may produce incorrect positioning.
 
 Array of items to render in a popup menu when the button is clicked. When provided, the button acts as a menu trigger (`aria-haspopup`) rather than invoking `onClick` directly.
 
@@ -156,6 +151,8 @@ onClick: (event, context) => {
   console.log('Button clicked')
 }
 ```
+
+---
 
 ## Reactive Callbacks
 
@@ -222,11 +219,15 @@ expandedWhen: (context) => context.pluginState.isExpanded
 
 Each breakpoint (`mobile`, `tablet`, `desktop`) accepts the following properties:
 
+---
+
 ### `slot`
 **Type:** `string`
 **Required**
 
 The [slot](./slots.md) where the button should appear at this breakpoint. Slots are named regions in the UI layout.
+
+---
 
 ### `order`
 **Type:** `number`
@@ -234,6 +235,8 @@ The [slot](./slots.md) where the button should appear at this breakpoint. Slots 
 For **ungrouped buttons**, this is the button's position within its slot.
 
 For **grouped buttons**, this is the button's position *within its group*. The group's position within the slot is controlled by `group.order` instead. If omitted, buttons appear in their declaration order within the group.
+
+---
 
 ### `showLabel`
 **Type:** `boolean`
@@ -247,17 +250,23 @@ Whether to show the label. If `false`, a tooltip is generated from the label ins
 
 Each object in a button's `menuItems` array supports the following properties:
 
+---
+
 ### `id`
 **Type:** `string`
 **Required**
 
 Unique identifier for the menu item. Used to control item state via [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value).
 
+---
+
 ### `label`
 **Type:** `string`
 **Required**
 
 Display text for the item.
+
+---
 
 ### `onClick`
 **Type:** `function`
@@ -268,15 +277,21 @@ Click handler. Receives the native event as its only argument.
 onClick: (event) => console.log('Item clicked')
 ```
 
+---
+
 ### `iconId`
 **Type:** `string`
 
 Icon identifier from the icon registry.
 
+---
+
 ### `iconSvgContent`
 **Type:** `string`
 
 Raw SVG content for the item icon. The outer `<svg>` tag should be excluded.
+
+---
 
 ### `isPressed`
 **Type:** `boolean`
@@ -284,6 +299,8 @@ Raw SVG content for the item icon. The outer `<svg>` tag should be excluded.
 Initial checked state of the item. When set, the item renders as `menuitemcheckbox` with `aria-checked` reflecting the pressed state. Use [`toggleButtonState()`](../api.md#togglebuttonstateid-prop-value) with the item's `id` to update at runtime.
 
 Intended for host buttons added via `addButton()`. For plugin buttons, use `pressedWhen` instead.
+
+---
 
 ### `pressedWhen`
 **Type:** `function`

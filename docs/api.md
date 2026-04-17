@@ -27,17 +27,19 @@ Parameters:
 
 The `id` of a container element where the map will be rendered.
 
+---
+
 ### `options`
 **Type:** `Object`
 
 Configuration object specifying map provider, map style, behaviour, and other settings. See Options below.
 
+> [!NOTE]
+> In addition to the options below, any option supported by your map engine can be passed and will be forwarded to the provider constructor. See your map provider's documentation for available options (e.g., [MapLibre MapOptions](https://maplibre.org/maplibre-gl-js/docs/API/type-aliases/MapOptions/)).
+
 ---
 
 ## Options
-
-> [!NOTE]
-> In addition to the options below, any option supported by your map engine can be passed and will be forwarded to the provider constructor. See your map provider's documentation for available options (e.g., [MapLibre MapOptions](https://maplibre.org/maplibre-gl-js/docs/API/type-aliases/MapOptions/)).
 
 ---
 
@@ -74,6 +76,18 @@ May be provided as:
 - A single CSS colour value applied to all map styles
 - An object keyed by map style ID, where each value is a valid CSS colour
 
+```js
+// Single value applied to all map styles
+new InteractiveMap('map', {
+  backgroundColor: '#f5f5f0'
+})
+
+// Keyed by map style ID
+new InteractiveMap('map', {
+  backgroundColor: { outdoor: '#f5f5f0', dark: '#383F43' }
+})
+```
+
 ---
 
 ### `behaviour`
@@ -85,11 +99,11 @@ Determines how and when the map is displayed.
 | Possible values |
 |:--|
 | **'buttonFirst'** *(default)*
-Map is initially hidden and a button is displayed in its place. Selecting the button opens the map in fullscreen mode. The optional `pageTitle` property is appended to the page title. This behaviour minimises resources downloaded when not all users need a map. |
+Map is initially hidden and a button is displayed in its place. Selecting the button opens the map in fullscreen mode. The optional `pageTitle` property is appended to the page title. This provides a less intrusive experience for users who do not need or cannot use the map. It also minimises resources downloaded for services where the map is not central. |
 | **'inline'**
 The map is rendered inline with the body content and initially visible. |
 | **'hybrid'**
-A combination of button and inline behaviour, controlled by the optional `hybridWidth`. At smaller sizes a button is displayed; at larger sizes the map is rendered inline. When fullscreen, the optional `pageTitle` property is appended to the page title. |
+A combination of buttonFirst and inline behaviour, controlled by the optional `hybridWidth`. At smaller sizes a button is displayed; at larger sizes the map is rendered inline. When fullscreen, the optional `pageTitle` property is appended to the page title. |
 | **'mapOnly'**
 Renders the map fullscreen on all devices, using the existing page title. |
 
@@ -125,7 +139,7 @@ The button is only displayed when the `behaviour` is `hybrid` or `buttonFirst`.
 ### `center`
 **Type:** `[number, number]`
 
-Initial center [lng, lat] or [easting, northing] depending on the crs of the map provider.
+Initial centre [lng, lat] or [easting, northing] depending on the crs of the map provider.
 
 Passed directly to the underlying map engine.
 
@@ -135,7 +149,7 @@ Passed directly to the underlying map engine.
 **Type:** `string`
 **Default:** `'600px'`
 
-CSS height applied to the map container when the map is `inline`.
+CSS height applied to the map container. Only used when the map is rendered inline; ignored when displayed fullscreen.
 
 ---
 
@@ -151,7 +165,7 @@ Message displayed when the user's device or browser is not supported.
 **Default:** `false`
 
 Whether a toggle button is displayed to allow the map to enter fullscreen mode.
-The button is only displayed when the map is `inline`.
+The button is only displayed when the map is rendered inline.
 
 ---
 
@@ -160,7 +174,7 @@ The button is only displayed when the map is `inline`.
 **Default:** `true`
 
 Whether zoom control buttons are displayed.
-Zoom controls are not diplayed when the interface type is `touch`.
+Zoom controls are not displayed when the interface type is 'touch'.
 
 ---
 
@@ -185,7 +199,7 @@ Fallback error message shown when the map fails to load.
 **Default:** `false`
 
 Whether an exit button is displayed.
-The exit button is only displayed when the behavour is `buttonFirst` or `hybrid` and the map is `fullscreen`.
+The exit button is only displayed when the behaviour is `buttonFirst` or `hybrid` and the map is displayed fullscreen.
 
 ---
 
@@ -193,7 +207,7 @@ The exit button is only displayed when the behavour is `buttonFirst` or `hybrid`
 **Type:** `number | null`
 **Default:** `null`
 
-Optional viewport width breakpoint (in pixels) used by the `'hybrid'` behaviour.
+Optional viewport width breakpoint (in pixels) used by the `hybrid` behaviour.
 When not set, defaults to `maxMobileWidth`.
 
 ---
@@ -201,8 +215,10 @@ When not set, defaults to `maxMobileWidth`.
 ### `keyboardHintText`
 **Type:** `string`
 
-HTML string providing keyboard shortcut instructions for assistive technology users.
-The hint text is displayed as a popup label when the `viewport` has focus.
+HTML string shown as a tooltip on the viewport when it receives keyboard focus, prompting the user to open the keyboard shortcuts modal.
+
+> [!NOTE]
+> It is unlikely you will need to override this. If you do, keep the text short to avoid breaking the layout of the tooltip.
 
 ---
 
@@ -210,8 +226,13 @@ The hint text is displayed as a popup label when the `viewport` has focus.
 **Type:** `string`
 **Required**
 
-Accessible label describing the purpose of the map.
-This value is announced to screen readers.
+Accessible name for the map viewport, which has a role of `application`. This label is announced by screen readers when the viewport receives focus and should describe the purpose of the map.
+
+```js
+new InteractiveMap('map', {
+  mapLabel: 'Flood risk areas in England'
+})
+```
 
 ---
 
@@ -219,7 +240,13 @@ This value is announced to screen readers.
 **Type:** `function`
 **Required**
 
-A factory function that returns a map provider instance, e.g., `maplibreProvider()`.
+A function that returns a map provider — the abstraction layer that interfaces with the underlying map engine. It is called only when the map is opened so the provider code is not sent to the user unless needed.
+
+```js
+new InteractiveMap('map', {
+  mapProvider: maplibreProvider()
+})
+```
 
 ---
 
@@ -254,7 +281,7 @@ See [MapStyleConfig](./api/map-style-config.md) for full details.
 **Type:** `string`
 **Default:** `'mv'`
 
-URL query parameter key used to persist map visibility state.
+URL query parameter key used to persist map visibility state. Override if the default value clashes with an existing parameter on your page.
 
 ---
 
@@ -270,9 +297,9 @@ See [MarkerConfig](./api/marker-config.md) for full details.
 ### `symbolDefaults`
 **Type:** `Partial<SymbolDefaults>`
 
-App-wide defaults for symbol and marker appearance. These values apply across all markers and datasets unless a more specific value is set at the symbol or per-marker level. Any property omitted here falls back to the built-in default:
+App-wide defaults for symbol and marker appearance.
 
-| Property | Built-in default |
+| Property | Default |
 |---|---|
 | `symbol` | `'pin'` |
 | `backgroundColor` | `'#ca3535'` |
@@ -296,7 +323,7 @@ See [Symbol Config](./api/symbol-config.md) for the full property list.
 ### `maxExtent`
 **Type:** `[number, number, number, number]`
 
-Maximum viewable extent [west, south, east, north]. Passed directly to the map engine; implementation varies.
+Maximum viewable extent [west, south, east, north]. Passed directly to the underlying map engine; how it is enforced depends on the provider.
 
 ---
 
@@ -364,7 +391,7 @@ Smaller zoom increment used for fine-grained zoom adjustments.
 **Type:** `string`
 
 Supplementary text appended to the existing page title.
-Only used when the beahviour is `buttonFirst` or `hybrid` and the map is displayed in `fullscreen` mode.
+Only used when the behaviour is `buttonFirst` or `hybrid` and the map is displayed fullscreen.
 
 ---
 
@@ -379,7 +406,7 @@ Distance (in pixels) the map pans during standard pan interactions.
 ### `plugins`
 **Type:** `PluginDescriptor[]`
 
-Plugins to load.
+Optional extensions that add features such as datasets, search, or custom panels to the map.
 
 See [PluginDescriptor](./plugins/plugin-descriptor.md) for full details.
 
@@ -389,7 +416,7 @@ See [PluginDescriptor](./plugins/plugin-descriptor.md) for full details.
 **Type:** `boolean`  
 **Default:** `false`  
 
-Controls whether closing the map (via the browser back button or the exit map button when `hasExitButton` is `true` and the map is fullscreen) destroys the map instance or hides it while preserving its current state. Set to `true` to keep the map state intact, which is useful for implementations like a toggle map view list view pattern.
+Controls whether closing the map destroys the map instance or hides it while preserving its current state. When `true`, state is retained between open and close — for example in a map/list toggle, a user can interact with the map, switch to the list view, then reopen the map and pick up exactly where they left off.
 
 ---
 
@@ -399,22 +426,28 @@ Controls whether closing the map (via the browser back button or the exit map bu
 
 Whether map text labels can be selected and read aloud by assistive technologies.
 
-> [!WARNING]
-> **Experimental:** This is a development flag. It currently only works with MapLibre and specific styles. Do **not** enable in production unless fully tested.
+> [!CAUTION]
+> This is experimental. It currently only works with MapLibre and specific styles. Do **not** enable in production unless fully tested.
 
 ---
 
 ### `reverseGeocodeProvider`
 **Type:** `function | null`
 
-A factory function that returns a reverse geocode provider instance, e.g., `openNamesProvider()`.
+A function that returns a reverse geocode provider used to convert map coordinates to a place name, for example when announcing the current map position to screen reader users. Like the map provider, it is only called when the map is opened so the provider code is not sent to the user unless needed.
+
+```js
+new InteractiveMap('map', {
+  reverseGeocodeProvider: openNamesProvider()
+})
+```
 
 ---
 
 ### `transformRequest`
 **Type:** `function`
 
-Function to transform outgoing requests (e.g., to add authentication headers). Passed directly to MapLibre; other map engines may have their own equivalent. For ESRI SDK, this is handled in the EsriMapProvider configuration.
+Function to transform outgoing requests, for example to add authentication headers. This option is specific to MapLibre and is passed directly to the underlying MapLibre instance.
 
 ```js
 (url, resourceType) => { url, headers, credentials }
@@ -423,7 +456,7 @@ Function to transform outgoing requests (e.g., to add authentication headers). P
 See the [MapLibre documentation](https://maplibre.org/maplibre-gl-js/docs/API/type-aliases/RequestParameters/) for full details.
 
 > [!NOTE]
-> This function is synchronous. For asynchronous authentication flows such as OAuth, consider alternative approaches like overriding the fetch prototype. Further guidance to follow.
+> For ESRI SDK, request transformation is handled in the EsriMapProvider configuration rather than through this option.
 
 ---
 
@@ -482,7 +515,9 @@ Add a marker to the map.
 |-----------|------|-------------|
 | `id` | `string` | Unique marker identifier |
 | `coords` | `[number, number]` | Coordinates [lng, lat] or [easting, northing] depending on CRS |
-| `options` | [`MarkerOptions`](./api/marker-config.md#markeroptions) | Optional marker appearance options |
+| `options` | `MarkerOptions` | Optional marker appearance options |
+
+See [MarkerOptions](./api/marker-config.md#markeroptions) for configuration options.
 
 ```js
 interactiveMap.addMarker('home', [-0.1276, 51.5074], { backgroundColor: '#1d70b8' })
@@ -544,14 +579,14 @@ interactiveMap.addButton('my-menu', {
 
 ### `addPanel(id, config)`
 
-Add a panel to the UI at runtime. Focus is moved to the panel by default — set `focus: false` in the config to suppress this when adding panels on page load.
+Adds a new panel with content to the UI at runtime. Focus is moved to the panel by default — set `focus: false` in the config to suppress this when adding panels on page load.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `id` | `string` | Unique panel identifier |
 | `config` | `PanelDefinition` | Panel configuration |
 
-See [PanelDefinition](./api/panel-definition.md) for configuration options. When using this method, provide content via the `html` property.
+See [PanelDefinition](./api/panel-definition.md) for all configuration options.
 
 ```js
 interactiveMap.addPanel('info-panel', {
@@ -567,7 +602,7 @@ interactiveMap.addPanel('info-panel', {
 
 ### `removePanel(id)`
 
-Remove a panel from the UI.
+Removes a panel from the UI entirely. Use `hidePanel` instead if you want to show it again later.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -581,7 +616,7 @@ interactiveMap.removePanel('info-panel')
 
 ### `showPanel(id, options?)`
 
-Show a panel. Focus is moved to the panel by default — set `focus: false` to suppress this, useful when showing a panel and you want focus to remain on the button.
+Shows a panel that already exists but is hidden. Focus is moved to the panel by default — set `focus: false` to suppress this, useful when you want focus to remain on the triggering button.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -599,7 +634,7 @@ interactiveMap.showPanel('info-panel', { focus: false })
 
 ### `hidePanel(id)`
 
-Hide a panel.
+Hides a panel without removing it, preserving its content for when it is shown again.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -626,7 +661,7 @@ See [ControlDefinition](./api/control-definition.md) for configuration options.
 
 ### `setMode(mode)`
 
-Set the application mode.
+Programmatically set the application mode. See the [`mode`](#mode) option for more detail.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -640,7 +675,7 @@ interactiveMap.setMode('fullscreen')
 
 ### `toggleButtonState(id, prop, value)`
 
-Set or toggle a button state.
+Set or toggle a button state. Where applicable the corresponding ARIA attribute is updated — `aria-pressed`, `aria-disabled`, or `aria-expanded`.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
@@ -696,15 +731,15 @@ interactiveMap.fitToBounds({
 
 ---
 
-### `setView(opts)`
+### `setView(options)`
 
 Set the map center and zoom. Safe zone padding is automatically applied.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `opts` | `Object` | View options |
-| `opts.center` | `[number, number]` | Optional center [lng, lat] or [easting, northing] depending on CRS |
-| `opts.zoom` | `number` | Optional zoom level |
+| `options` | `Object` | View options |
+| `options.center` | `[number, number]` | Optional center [lng, lat] or [easting, northing] depending on CRS |
+| `options.zoom` | `number` | Optional zoom level |
 
 ```js
 interactiveMap.setView({ center: [-0.1276, 51.5074], zoom: 12 })
