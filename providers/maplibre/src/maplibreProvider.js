@@ -155,7 +155,7 @@ export default class MapLibreProvider {
     this.map.flyTo({
       center: center || this.getCenter(),
       zoom: zoom || this.getZoom(),
-      duration: DEFAULTS.animationDuration
+      duration: this.map.isStyleLoaded() ? DEFAULTS.animationDuration : 0
     })
   }
 
@@ -199,7 +199,8 @@ export default class MapLibreProvider {
    */
   fitToBounds (bounds) {
     const bbox = Array.isArray(bounds) ? bounds : getBboxFromGeoJSON(bounds)
-    this.map.fitBounds(bbox, { duration: DEFAULTS.animationDuration })
+    const duration = this.map.isStyleLoaded() ? DEFAULTS.animationDuration : 0
+    this.map.fitBounds(bbox, { duration })
   }
 
   /**
