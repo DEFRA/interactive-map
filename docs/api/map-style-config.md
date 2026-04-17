@@ -2,15 +2,6 @@
 
 Configuration for a map style (basemap appearance).
 
-## Colour schemes
-
-Two separate colour schemes can be set per style, because the map and the app UI can have different tonal backgrounds:
-
-- **`mapColorScheme`** — controls elements rendered *on top of the map*. Set to `'dark'` when the basemap is dark (e.g. night or aerial) so that overlays remain legible against it.
-- **`appColorScheme`** — controls the app UI chrome (panels, buttons, controls). Set to `'dark'` when the surrounding UI should use the dark theme to complement the basemap.
-
-These are independent. For example, an aerial basemap might use `mapColorScheme: 'dark'` (light overlays on dark imagery) while keeping `appColorScheme` unset (light panels).
-
 ## Properties
 
 ---
@@ -40,14 +31,14 @@ Display label for the style. Shown in style switcher UI.
 ### `appColorScheme`
 **Type:** `'light' | 'dark'`
 
-App UI colour scheme. Controls the theme applied to panels, buttons, and controls — independent of the map itself. See [Colour schemes](#colour-schemes) above.
+Colour scheme for the app UI chrome — panels, buttons, and controls. Set to `'dark'` when the surrounding UI should use the dark theme to complement the basemap. Independent of `mapColorScheme`; for example an aerial basemap might use `mapColorScheme: 'dark'` while keeping `appColorScheme` unset (light panels).
 
 ---
 
 ### `mapColorScheme`
 **Type:** `'light' | 'dark'`
 
-Map colour scheme. Sets the default values of `haloColor`, `selectedColor`, and `foregroundColor` when those are not explicitly provided, and signals to map overlay components which tonal range to use. See [Colour schemes](#colour-schemes) above.
+Colour scheme for elements rendered on top of the map. Sets the default values of `haloColor`, `selectedColor`, and `foregroundColor` when those are not explicitly provided. Set to `'dark'` when the basemap is dark (e.g. night or aerial) so that overlays remain legible against it.
 
 - `'light'` (default) — dark overlays (`#0b0c0c`) on a light basemap, white halo
 - `'dark'` — light overlays (`#ffffff`) on a dark or aerial basemap, dark halo

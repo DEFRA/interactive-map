@@ -32,8 +32,6 @@ This wrapper:
 * **Passes** configuration, plugins, and providers  
 * **Exposes** events and methods to the host application  
 
-> **Note:** Internally, the UI is implemented in React, but this is an implementation detail and not required knowledge for consumers. 
-
 ---
 
 ## 2. Core Component 

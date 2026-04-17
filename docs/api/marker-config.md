@@ -1,6 +1,6 @@
 # MarkerConfig
 
-Configuration for a map marker. Used in the `markers` option to define initial markers.
+A marker is a pin or symbol placed at a specific coordinate on the map, used to highlight a location. The properties below are used in the `markers` option to define initial markers. The `MarkerOptions` properties also apply to markers added at runtime via `addMarker()`.
 
 ## Properties
 
@@ -39,7 +39,7 @@ Controls the visual appearance of a marker. All properties are optional — unse
 **Type:** `string`
 **Default:** `'pin'`
 
-Symbol to use for this marker. Built-in values: `'pin'`, `'circle'`. Ignored when `symbolSvgContent` is set.
+Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`. For a custom one-off symbol, use `symbolSvgContent` instead.
 
 ---
 
@@ -49,6 +49,7 @@ Symbol to use for this marker. Built-in values: `'pin'`, `'circle'`. Ignored whe
 Inner SVG path content (no `<svg>` wrapper) to render instead of a registered symbol. Use `{{token}}` placeholders for colours. When set, `symbol` is ignored.
 
 ```js
+// Using built-in tokens with per-style colours
 markers.add('id', coords, {
   symbolSvgContent: `
     <path d="..." fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
@@ -59,9 +60,22 @@ markers.add('id', coords, {
   anchor: [0.5, 1],
   backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' }
 })
+
+// Using a custom token
+markers.add('id', coords, {
+  symbolSvgContent: `
+    <path d="..." fill="{{customColor}}"/>
+  `,
+  viewBox: '0 0 38 38',
+  anchor: [0.5, 0.5],
+  customColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+})
 ```
 
-`{{selectedColor}}` and `{{selectedWidth}}` are valid tokens — they are resolved when the marker is in its selected state. `selectedColor` comes from `MapStyleConfig.selectedColor`, falling back to the `mapColorScheme` scheme default (`#0b0c0c` light / `#ffffff` dark). It cannot be set per marker. `selectedWidth` follows the normal symbol cascade and can be set via constructor `symbolDefaults`.
+`{{selectedColor}}` and `{{selectedWidth}}` are required to render the selected ring around the marker when it is in its selected state.
+
+> [!NOTE]
+> `selectedColor` cannot be set per marker — it is controlled by `MapStyleConfig.selectedColor`.
 
 ---
 
@@ -88,6 +102,6 @@ anchor: [0.5, 0.5] // centre — circle or dot
 
 ### Colour and graphic properties
 
-`backgroundColor`, `foregroundColor`, `haloWidth`, `graphic`, `selectedWidth`, and any custom tokens are all supported. See [Symbol Config](./symbol-config.md) for the full property reference including style-keyed colour objects, built-in graphic names, and custom token substitution.
+`backgroundColor`, `foregroundColor`, `haloWidth`, `graphic`, `selectedWidth`, and any custom tokens are all supported.
 
-`haloColor` and `selectedColor` are basemap-level properties set on `MapStyleConfig` — they cannot be set per marker.
+See [Symbol Config](./symbol-config.md) for the full property reference.
