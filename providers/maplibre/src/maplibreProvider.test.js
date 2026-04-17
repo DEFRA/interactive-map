@@ -46,10 +46,12 @@ describe('MapLibreProvider', () => {
     map = {
       touchZoomRotate: { disableRotation: jest.fn() },
       on: jest.fn((e, fn) => { if (e === 'load') loadCallback = fn }),
+      once: jest.fn(),
       off: jest.fn(),
       remove: jest.fn(),
       setPadding: jest.fn(),
       fitBounds: jest.fn(),
+      isStyleLoaded: jest.fn(() => true),
       flyTo: jest.fn(),
       easeTo: jest.fn(),
       panBy: jest.fn(),
@@ -156,6 +158,16 @@ describe('MapLibreProvider', () => {
     expect(call.duration).toBe(400)
   })
 
+  test('setView uses duration 0 when style is not yet loaded', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.isStyleLoaded.mockReturnValue(false)
+
+    p.setView({ center: [1, 2], zoom: 8 })
+
+    expect(map.flyTo).toHaveBeenCalledWith({ center: [1, 2], zoom: 8, duration: 0 })
+  })
+
   test('zoomIn, zoomOut, panBy, fitToBounds, setPadding delegate to map', async () => {
     const p = makeProvider()
     await doInitMap(p)
@@ -169,6 +181,16 @@ describe('MapLibreProvider', () => {
     expect(map.fitBounds).toHaveBeenCalledWith([[0, 0], [1, 1]], { duration: 400 })
     p.setPadding({ top: 5 })
     expect(map.setPadding).toHaveBeenCalledWith({ top: 5 })
+  })
+
+  test('fitToBounds uses duration 0 when style is not yet loaded', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.isStyleLoaded.mockReturnValue(false)
+
+    p.fitToBounds([[0, 0], [1, 1]])
+
+    expect(map.fitBounds).toHaveBeenCalledWith([[0, 0], [1, 1]], { duration: 0 })
   })
 
   test('fitToBounds accepts GeoJSON: computes bbox via getBboxFromGeoJSON', async () => {
