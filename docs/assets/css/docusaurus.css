@@ -115,6 +115,83 @@
   flex: 1 0 auto;
 }
 
+/* GOV.UK tabs — enhanced styles for all devices; React manages active state.
+   Extra specificity via .app-prose-scope required to override the theme. */
+.govuk-tabs {
+  margin-top: 5px;
+  margin-bottom: 40px;
+  font-size: 1.1875rem;
+  line-height: 1.3157894737;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__list {
+  overflow: hidden;
+  margin: 0;
+  padding: 5px 0 0;
+  list-style: none;
+  border-bottom: 1px solid #b1b4b6;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__list-item {
+  position: relative;
+  float: left;
+  margin: 0 5px 0 0;
+  padding: 10px 20px;
+  background-color: #f3f2f1;
+  text-align: center;
+}
+
+.app-prose-scope .govuk-tabs__list-item::before {
+  content: none;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__list-item--selected {
+  margin-top: -5px;
+  padding: 14px 19px 15px;
+  border: 1px solid #b1b4b6;
+  border-bottom: 0;
+  background-color: #ffffff;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__tab {
+  display: inline-block;
+  margin-bottom: 0;
+  text-decoration: underline;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__tab:is(:link, :visited, :hover, :active) {
+  color: #0b0c0c;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__list-item--selected .govuk-tabs__tab {
+  text-decoration: none;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__tab::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__panel {
+  padding: 0;
+  border: 1px solid #b1b4b6;
+  border-top: 0;
+  margin-bottom: 0;
+}
+
+.app-prose-scope .govuk-tabs .govuk-tabs__panel > :last-child {
+  margin-bottom: 0;
+}
+
+.app-prose-scope .govuk-tabs__panel--hidden {
+  display: none;
+}
+
+.app-prose-scope .govuk-tabs .app-code-block__pre {
+  margin: 0;
+}
+
 /* Heading overides */
 .app-prose-scope *:not(.app-no-prose *) .govuk-heading-l {
     font-size: 2.25rem;
