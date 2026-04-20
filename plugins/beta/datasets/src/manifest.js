@@ -67,7 +67,7 @@ export const manifest = {
     panelId: 'datasetsLayers',
     iconId: 'layers',
     excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.some(l =>
-      l.toggleVisibility || l.sublayers?.some(r => r.toggleVisibility)
+      l.showInMenu || l.sublayers?.some(r => r.showInMenu)
     ),
     mobile: {
       slot: 'top-left',

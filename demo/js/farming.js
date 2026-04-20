@@ -51,7 +51,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		toggleVisibility: true,
+		showInMenu: true,
 		style: {
 			stroke: { outdoor: '#0000ff', dark: '#ffffff' },
 			strokeWidth: 2,

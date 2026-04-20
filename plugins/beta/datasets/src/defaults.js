@@ -2,7 +2,7 @@ const datasetDefaults = {
   minZoom: 6,
   maxZoom: 24,
   showInKey: false,
-  toggleVisibility: false,
+  showInMenu: false,
   visibility: 'visible',
   style: {
     stroke: '#d4351c',

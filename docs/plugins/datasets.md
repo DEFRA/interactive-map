@@ -18,7 +18,7 @@ const datasetsPlugin = createDatasetsPlugin({
       minZoom: 10,
       maxZoom: 24,
       showInKey: true,
-      toggleVisibility: true,
+      showInMenu: true,
       style: {
         stroke: '#d4351c',
         strokeWidth: 2,
@@ -232,7 +232,7 @@ When `true`, the dataset appears in the Key panel with its style symbol and labe
 
 ---
 
-### `toggleVisibility`
+### `showInMenu`
 
 **Type:** `boolean`
 **Default:** `false`
@@ -353,7 +353,7 @@ Sublayers inherit the parent dataset's style and only override what they specify
 | `filter` | `FilterExpression` | MapLibre filter expression to match features for this sublayer |
 | `style` | `Object` | Style overrides. Accepts the same properties as the dataset `style` object |
 | `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from dataset if not set |
-| `toggleVisibility` | `boolean` | Shows this sublayer in the Layers panel. **Default:** `false` |
+| `showInMenu` | `boolean` | Shows this sublayer in the Layers panel. **Default:** `false` |
 
 **Polygon/line example:**
 
@@ -363,7 +363,7 @@ sublayers: [
     id: 'active',
     label: 'Active parcels',
     filter: ['==', ['get', 'status'], 'active'],
-    toggleVisibility: true,
+    showInMenu: true,
     style: {
       stroke: '#00703c',
       fill: 'rgba(0,112,60,0.1)',
@@ -374,7 +374,7 @@ sublayers: [
     id: 'inactive',
     label: 'Inactive parcels',
     filter: ['==', ['get', 'status'], 'inactive'],
-    toggleVisibility: true,
+    showInMenu: true,
     style: {
       stroke: '#d4351c',
       fillPattern: 'diagonal-cross-hatch',
@@ -399,7 +399,7 @@ When the parent dataset has `symbol` set, each sublayer can override individual 
       label: 'Prehistoric sites',
       filter: ['==', ['get', 'type'], 'prehistoric'],
       showInKey: true,
-      toggleVisibility: true,
+      showInMenu: true,
       style: { symbolBackgroundColor: '#0f7a52' }
     },
     {
@@ -407,7 +407,7 @@ When the parent dataset has `symbol` set, each sublayer can override individual 
       label: 'Roman sites',
       filter: ['==', ['get', 'type'], 'roman'],
       showInKey: true,
-      toggleVisibility: true,
+      showInMenu: true,
       style: { symbolBackgroundColor: '#54319f' }
     },
     {
@@ -415,7 +415,7 @@ When the parent dataset has `symbol` set, each sublayer can override individual 
       label: 'Medieval sites',
       filter: ['==', ['get', 'type'], 'medieval'],
       showInKey: true,
-      toggleVisibility: true,
+      showInMenu: true,
       style: { symbolBackgroundColor: '#ca357c' }
     }
   ]
