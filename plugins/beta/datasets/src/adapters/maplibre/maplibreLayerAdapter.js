@@ -1,7 +1,7 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
-import { getPatternConfigs } from './patternImages.js'
+import { getPatternConfigs, hasPattern, getPatternImageId } from './patternImages.js'
 import { getSymbolConfigs, getSymbolImageId } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { scaleFactor } from '../../../../../../src/config/appConfig.js'
@@ -119,8 +119,11 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>}
    */
   async onSizeChange (datasets, mapStyle) {
-    await this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
     const pixelRatio = this._pixelRatio
+    await Promise.all([
+      this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry),
+      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), mapStyle.id, this._patternRegistry)
+    ])
     datasets.forEach(dataset => {
       getAllLayerIds(dataset).forEach(layerId => {
         if (!this._symbolLayerIds.has(layerId) || !this._map.getLayer(layerId)) { return }
@@ -129,13 +132,29 @@ export default class MaplibreLayerAdapter {
           this._map.setLayoutProperty(layerId, 'icon-image', imageId)
         }
       })
+      if (hasPattern(dataset)) {
+        const { fillLayerId } = getLayerIds(dataset)
+        if (this._map.getLayer(fillLayerId)) {
+          const imageId = getPatternImageId(dataset, mapStyle.id, this._patternRegistry, pixelRatio)
+          if (imageId) {
+            this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
+          }
+        }
+      }
       dataset.sublayers?.forEach(sublayer => {
-        const { symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
-        if (!this._map.getLayer(symbolLayerId)) { return }
         const merged = mergeSublayer(dataset, sublayer)
-        const imageId = getSymbolImageId(merged, mapStyle, this._symbolRegistry, false, pixelRatio)
-        if (imageId) {
-          this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
+        const { symbolLayerId, fillLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
+        if (this._map.getLayer(symbolLayerId)) {
+          const imageId = getSymbolImageId(merged, mapStyle, this._symbolRegistry, false, pixelRatio)
+          if (imageId) {
+            this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
+          }
+        }
+        if (hasPattern(merged) && this._map.getLayer(fillLayerId)) {
+          const imageId = getPatternImageId(merged, mapStyle.id, this._patternRegistry, pixelRatio)
+          if (imageId) {
+            this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
+          }
         }
       })
     })

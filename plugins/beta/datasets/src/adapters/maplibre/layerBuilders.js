@@ -29,14 +29,14 @@ export const addSource = (map, dataset, sourceId) => {
 
 // ─── Fill layer ───────────────────────────────────────────────────────────────
 
-export const addFillLayer = (map, config, layerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry }) => {
+export const addFillLayer = (map, config, layerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio = 1 }) => {
   if (!layerId || map.getLayer(layerId)) {
     return
   }
   if (!config.fill && !hasPattern(config)) {
     return
   }
-  const patternImageId = hasPattern(config) ? getPatternImageId(config, mapStyleId, patternRegistry) : null
+  const patternImageId = hasPattern(config) ? getPatternImageId(config, mapStyleId, patternRegistry, pixelRatio) : null
   const paint = patternImageId
     ? { 'fill-pattern': patternImageId, 'fill-opacity': config.opacity || 1 }
     : { 'fill-color': getValueForStyle(config.fill, mapStyleId), 'fill-opacity': config.opacity || 1 }
@@ -116,7 +116,7 @@ export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer,
     addSymbolLayer(map, merged, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
     return
   }
-  addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry })
+  addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
   addStrokeLayer(map, merged, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
 }
 
@@ -153,7 +153,7 @@ export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, pattern
     return sourceId
   }
 
-  addFillLayer(map, dataset, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry })
+  addFillLayer(map, dataset, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
   addStrokeLayer(map, dataset, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
   return sourceId
 }

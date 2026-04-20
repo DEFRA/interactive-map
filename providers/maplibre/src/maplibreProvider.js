@@ -333,7 +333,8 @@ export default class MapLibreProvider {
    * @returns {Promise<void>}
    */
   async registerPatterns (patternConfigs, mapStyleId, patternRegistry) {
-    return registerPatterns(this.map, patternConfigs, mapStyleId, patternRegistry)
+    const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
+    return registerPatterns(this.map, patternConfigs, mapStyleId, patternRegistry, pixelRatio)
   }
 
   // ==========================
