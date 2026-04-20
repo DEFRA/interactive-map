@@ -1,4 +1,5 @@
 import DemoMapButton from '../../demo/DemoMapButton.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
 
 # Button-triggered map
 
@@ -6,19 +7,47 @@ Trigger the map to show on button press, allowing users to access the map when n
 
 <DemoMapButton />
 
-```js
-import InteractiveMap from '@defra/interactive-map'
-import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 
-new InteractiveMap('my-map', {
-  behaviour: 'buttonFirst',
-  mapProvider: maplibreProvider(),
-  mapStyle: {
-    url: 'https://your-tile-url/style.json',
-    attribution: 'Your tile attribution'
+      new InteractiveMap('my-map', {
+        behaviour: 'buttonFirst',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-1.6, 53.1],
+        zoom: 6,
+        hasExitButton: true
+      })
+    `
   },
-  center: [-1.6, 53.1],
-  zoom: 6,
-  hasExitButton: true
-})
-```
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+
+      <script>
+      new defra.InteractiveMap('my-map', {
+        behaviour: 'buttonFirst',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-1.6, 53.1],
+        zoom: 6,
+        hasExitButton: true
+      })
+      </script>
+    `
+  }
+]} />
