@@ -79,9 +79,10 @@ const config = {
           href: '/getting-started',
           sidebar: [
             { text: 'Installation', href: '/getting-started#installation' },
+            { text: 'GOV.UK Prototype kit', href: '/getting-started#govuk-prototype-kit' },
+            { text: 'Manual setup', href: '/getting-started#manual-setup' },
             { text: 'Basic usage', href: '/getting-started#basic-usage' },
-            { text: 'Using plugins', href: '/getting-started#using-plugins' },
-            { text: 'GOV.UK Prototype kit', href: '/getting-started#govuk-prototype-kit-plugin' }
+            { text: 'Using plugins', href: '/getting-started#using-plugins' }
           ],
         },
         {
