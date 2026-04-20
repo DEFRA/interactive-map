@@ -70,7 +70,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		// showInKey: true,
-		// toggleVisibility: true,
+		// showInMenu: true,
 		// visibility: 'hidden',
 		style: {
 			stroke: { outdoor: '#0000ff', dark: '#ffffff' },

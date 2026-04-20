@@ -3,7 +3,7 @@ import { setDatasetVisibility } from '../api/setDatasetVisibility'
 
 const CHECKBOX_LABEL_CLASS = 'im-c-datasets-layers__item-label govuk-label govuk-checkboxes__label'
 
-const hasToggleableSublayers = (dataset) => dataset.sublayers?.some(sublayer => sublayer.toggleVisibility)
+const hasToggleableSublayers = (dataset) => dataset.sublayers?.some(sublayer => sublayer.showInMenu)
 
 /**
  * Collapse the filtered dataset list into ordered render items:
@@ -72,7 +72,7 @@ export const Layers = ({ pluginState }) => {
   }
 
   const visibleDatasets = (pluginState.datasets || [])
-    .filter(dataset => dataset.toggleVisibility || hasToggleableSublayers(dataset))
+    .filter(dataset => dataset.showInMenu || hasToggleableSublayers(dataset))
 
   const renderItems = buildRenderItems(visibleDatasets)
   const hasGroups = renderItems.some(item => item.type === 'sublayers' || item.type === 'group')
@@ -84,7 +84,7 @@ export const Layers = ({ pluginState }) => {
         if (item.type === 'sublayers') {
           const { dataset } = item
           const anySublayerChecked = dataset.sublayers
-            .filter(sublayer => sublayer.toggleVisibility)
+            .filter(sublayer => sublayer.showInMenu)
             .some(sublayer => dataset.sublayerVisibility?.[sublayer.id] !== 'hidden')
           const wrapperClass = `govuk-form-group im-c-datasets-layers-group${anySublayerChecked ? ' im-c-datasets-layers-group--items-checked' : ''}`
           return (
@@ -92,7 +92,7 @@ export const Layers = ({ pluginState }) => {
               <fieldset className='im-c-datasets-layers-group__fieldset'>
                 <legend className='im-c-datasets-layers-group__legend'>{dataset.label}</legend>
                 {dataset.sublayers
-                  .filter(sublayer => sublayer.toggleVisibility)
+                  .filter(sublayer => sublayer.showInMenu)
                   .map(sublayer => {
                     const sublayerVisible = dataset.sublayerVisibility?.[sublayer.id] !== 'hidden'
                     const inputId = `${dataset.id}-${sublayer.id}`

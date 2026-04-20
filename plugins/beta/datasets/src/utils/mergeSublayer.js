@@ -69,7 +69,7 @@ export const mergeSublayer = (dataset, sublayer) => {
     keySymbolShape: sublayerStyle.keySymbolShape ?? dataset.keySymbolShape,
     symbolDescription: getSymbolDescription(dataset, sublayerStyle),
     showInKey: sublayer.showInKey ?? dataset.showInKey,
-    toggleVisibility: sublayer.toggleVisibility ?? false,
+    showInMenu: sublayer.showInMenu ?? false,
     filter: combinedFilter,
     minZoom: dataset.minZoom,
     maxZoom: dataset.maxZoom,

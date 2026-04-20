@@ -95,12 +95,12 @@ const datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		toggleVisibility: true,
+		showInMenu: true,
 		sublayers: [{
 			id: '130-131',
 			label: 'Permanent grassland',
 			filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				stroke: { outdoor: '#00897B', dark: '#ffffff' },
 				fillPattern: 'diagonal-cross-hatch',
@@ -111,7 +111,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			id: '332',
 			label: 'Woodland',
 			filter: ['==', ['get', 'dominant_land_cover'], '332'],
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				stroke: { outdoor: '#2E7D32', dark: '#ffffff' },
 				fillPattern: 'dot',
@@ -122,7 +122,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			id: '110',
 			label: 'Arable',
 			filter: ['==', ['get', 'dominant_land_cover'], '110'],
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				stroke: { outdoor: '#6D4C41', dark: '#ffffff' },
 				fillPattern: 'horizontal-hatch',
@@ -133,7 +133,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			id: '379',
 			label: 'Farmyards',
 			filter: ['==', ['get', 'dominant_land_cover'], '379'],
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				stroke: { outdoor: '#6A1B9A', dark: '#ffffff' },
 				fillPattern: 'forward-diagonal-hatch',
@@ -144,7 +144,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			id: 'other',
 			label: 'Others',
 			filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['110', '130', '131', '332', '379']]]],
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				stroke: { outdoor: '#1565C0', dark: '#ffffff' },
 				fill: 'rgba(0,0,255,0.1)',
@@ -164,7 +164,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		toggleVisibility: true,
+		showInMenu: true,
 		style: {
 			stroke: { outdoor: '#1565C0', dark: '#ffffff'},
 			strokeWidth: 2,
@@ -178,7 +178,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		toggleVisibility: true,
+		showInMenu: true,
 		style: {
 			symbol: 'square',
 			symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
@@ -189,7 +189,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			id: 'prehistoric',
 			label: 'Prehistoric',
 			filter: ['in', ['get', 'category'], 'prehistoric'],
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				symbolBackgroundColor: '#00897B',
 			}
@@ -197,7 +197,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			id: 'roman',
 			label: 'Roman',
 			filter: ['in', ['get', 'category'], 'roman'],
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				symbolBackgroundColor: '#ca3535',
 			}
@@ -205,7 +205,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			id: 'medieval',
 			label: 'Medieval',
 			filter: ['in', ['get', 'category'], 'medieval'],
-			toggleVisibility: true,
+			showInMenu: true,
 			style: {
 				symbolBackgroundColor: '#1565C0',
 			}
@@ -219,7 +219,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		minZoom: 10,
 		maxZoom: 24,
 		showInKey: true,
-		toggleVisibility: true,
+		showInMenu: true,
 		// visibility: 'hidden',
 		style: {
 			stroke: '#b58840',
