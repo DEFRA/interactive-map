@@ -39,8 +39,8 @@ jest.mock('../utils/detectInterfaceType.js', () => ({
 }))
 jest.mock('../services/reverseGeocode.js', () => ({ createReverseGeocode: jest.fn() }))
 jest.mock('../services/eventBus.js', () => ({
-  createEventBus: jest.fn(() => ({ on: jest.fn(), off: jest.fn(), emit: jest.fn(), destroy: jest.fn() })),
-  default: { on: jest.fn(), off: jest.fn(), emit: jest.fn(), destroy: jest.fn() }
+  createEventBus: jest.fn(() => ({ on: jest.fn(), off: jest.fn(), emit: jest.fn(), emitWhenReady: jest.fn(), destroy: jest.fn() })),
+  default: { on: jest.fn(), off: jest.fn(), emit: jest.fn(), emitWhenReady: jest.fn(), destroy: jest.fn() }
 }))
 jest.mock('../App/initialiseApp.js', () => ({ initialiseApp: jest.fn() }))
 
@@ -635,12 +635,12 @@ describe('InteractiveMap Public API Methods', () => {
   it('fitToBounds emits MAP_FIT_TO_BOUNDS with bbox', () => {
     const bbox = [-0.489, 51.28, 0.236, 51.686]
     map.fitToBounds(bbox)
-    expect(map.eventBus.emit).toHaveBeenCalledWith('map:fittobounds', bbox)
+    expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:fittobounds', bbox)
   })
 
   it('setView emits MAP_SET_VIEW with opts', () => {
     const opts = { center: [-0.1276, 51.5074], zoom: 12 }
     map.setView(opts)
-    expect(map.eventBus.emit).toHaveBeenCalledWith('map:setview', opts)
+    expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:setview', opts)
   })
 })

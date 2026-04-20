@@ -437,7 +437,7 @@ export default class InteractiveMap {
    * @param {[number, number, number, number] | object} target - Bounds as [west, south, east, north] or [minX, minY, maxX, maxY] depending on the crs, or a GeoJSON Feature, FeatureCollection, or geometry.
    */
   fitToBounds (target) {
-    this.eventBus.emit(events.MAP_FIT_TO_BOUNDS, target)
+    this.eventBus.emitWhenReady(events.MAP_FIT_TO_BOUNDS, target)
   }
 
   /**
@@ -446,7 +446,7 @@ export default class InteractiveMap {
    * @param {{ center?: [number, number], zoom?: number }} opts - View options.
    */
   setView (opts) {
-    this.eventBus.emit(events.MAP_SET_VIEW, opts)
+    this.eventBus.emitWhenReady(events.MAP_SET_VIEW, opts)
   }
 
   /**

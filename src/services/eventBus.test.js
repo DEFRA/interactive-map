@@ -94,6 +94,76 @@ describe('EventBus singleton', () => {
   })
 })
 
+describe('emitWhenReady', () => {
+  beforeEach(() => {
+    eventBus.destroy()
+  })
+
+  it('fires immediately when listeners are already registered', () => {
+    const handler = jest.fn()
+    eventBus.on('ready', handler)
+
+    eventBus.emitWhenReady('ready', 'value')
+
+    expect(handler).toHaveBeenCalledWith('value')
+  })
+
+  it('queues the call and replays to the first subscriber when no listeners exist', () => {
+    const handler = jest.fn()
+
+    eventBus.emitWhenReady('ready', 'value')
+    expect(handler).not.toHaveBeenCalled()
+
+    eventBus.on('ready', handler)
+    expect(handler).toHaveBeenCalledWith('value')
+  })
+
+  it('clears the queue after replaying so subsequent subscribers do not receive it', () => {
+    const first = jest.fn()
+    const second = jest.fn()
+
+    eventBus.emitWhenReady('ready', 'value')
+    eventBus.on('ready', first)
+    eventBus.on('ready', second)
+
+    expect(first).toHaveBeenCalledWith('value')
+    expect(second).not.toHaveBeenCalled()
+  })
+
+  it('replaces a queued value if emitWhenReady is called again before a subscriber arrives', () => {
+    const handler = jest.fn()
+
+    eventBus.emitWhenReady('ready', 'first')
+    eventBus.emitWhenReady('ready', 'second')
+    eventBus.on('ready', handler)
+
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(handler).toHaveBeenCalledWith('second')
+  })
+
+  it('catches and logs errors thrown by a handler during queued replay', () => {
+    const error = new Error('boom')
+    const handler = jest.fn(() => { throw error })
+    jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    eventBus.emitWhenReady('ready', 'value')
+    eventBus.on('ready', handler)
+
+    expect(console.error).toHaveBeenCalledWith("Error in event handler for 'ready':", error)
+    console.error.mockRestore()
+  })
+
+  it('clears queued events on destroy', () => {
+    const handler = jest.fn()
+
+    eventBus.emitWhenReady('ready', 'value')
+    eventBus.destroy()
+    eventBus.on('ready', handler)
+
+    expect(handler).not.toHaveBeenCalled()
+  })
+})
+
 describe('createEventBus factory', () => {
   /**
    * Test to ensure coverage for the factory function (Line 50).
