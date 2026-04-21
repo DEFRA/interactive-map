@@ -100,6 +100,37 @@ anchor: [0.5, 0.5] // centre — circle or dot
 
 ---
 
+### `label`
+**Type:** `string`
+
+Plain-text label for this marker. Serves two purposes:
+
+1. **Accessible name** — always used as the `aria-label` on the marker SVG, even when no bubble is visible.
+2. **Visible bubble** — rendered as a tooltip-style label above the symbol when `showLabel` is `true`, or as a standalone label with a down-arrow when `symbol` is `null`.
+
+```js
+// Accessible name only — no visible bubble
+markers.add('id', coords, { label: 'Town Hall' })
+
+// Visible label bubble above the pin
+markers.add('id', coords, { label: 'Town Hall', showLabel: true })
+
+// Standalone label — no symbol, arrow points to the coordinate
+markers.add('id', coords, { label: 'Town Hall', symbol: null })
+```
+
+---
+
+### `showLabel`
+**Type:** `boolean`
+**Default:** `false`
+
+Whether to render a visible label bubble above the marker symbol. When `false`, `label` is still used as the accessible name of the marker.
+
+> Setting `symbol: null` creates a standalone label regardless of `showLabel` — the bubble is always visible in that case.
+
+---
+
 ### Colour and graphic properties
 
 `backgroundColor`, `foregroundColor`, `haloWidth`, `graphic`, `selectedWidth`, and any custom tokens are all supported.

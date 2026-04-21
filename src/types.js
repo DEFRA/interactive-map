@@ -434,6 +434,14 @@
  * import { graphics } from './config/symbolConfig.js'
  * markers.add('id', coords, { symbol: 'pin', graphic: graphics.cross })
  *
+ * @property {string} [label]
+ * Plain-text label for this marker. Used as the accessible name on the marker SVG, and rendered
+ * as a visible label bubble when `showLabel` is `true` or when `symbol` is `null` (standalone label).
+ *
+ * @property {boolean} [showLabel=false]
+ * Whether to render a visible label bubble above the marker symbol. Defaults to `false`.
+ * Set `symbol` to `null` instead to create a standalone label with no symbol.
+ *
  */
 
 /**

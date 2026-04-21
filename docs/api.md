@@ -525,6 +525,30 @@ interactiveMap.addMarker('home', [-0.1276, 51.5074], { backgroundColor: '#1d70b8
 
 ---
 
+### `updateMarker(id, options)`
+
+Update an existing marker's properties. No-op if the marker id is not found.
+
+Merges the provided options into the existing marker — unspecified properties are preserved. Pass `coords` inside `options` to move the marker to new coordinates.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Marker identifier to update |
+| `options` | `MarkerOptions & { coords?: [number, number] }` | Properties to merge into the marker |
+
+```js
+// Show the label bubble on an existing marker
+interactiveMap.updateMarker('home', { showLabel: true })
+
+// Move the marker to new coordinates
+interactiveMap.updateMarker('home', { coords: [-0.1276, 51.5074] })
+
+// Change colour and move simultaneously
+interactiveMap.updateMarker('home', { coords: [-0.1276, 51.5074], backgroundColor: '#d4351c' })
+```
+
+---
+
 ### `removeMarker(id)`
 
 Remove a marker from the map.

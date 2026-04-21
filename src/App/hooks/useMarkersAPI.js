@@ -50,11 +50,11 @@ const updateMarkerPositions = (items, markerRefs, mapProvider, mapSize, isMapRea
 }
 
 /**
- * Registers event bus listeners for adding and removing markers via
- * APP_ADD_MARKER and APP_REMOVE_MARKER events.
+ * Registers event bus listeners for adding, updating and removing markers via
+ * APP_ADD_MARKER, APP_UPDATE_MARKER and APP_REMOVE_MARKER events.
  *
  * @param {Object} eventBus - Application event bus
- * @param {Object} markers - Markers API object with `add` and `remove` methods
+ * @param {Object} markers - Markers API object with `add`, `update` and `remove` methods
  */
 const useMarkerEventListeners = (eventBus, markers) => {
   useEffect(() => {
@@ -67,6 +67,15 @@ const useMarkerEventListeners = (eventBus, markers) => {
     }
     eventBus.on(events.APP_ADD_MARKER, handleAddMarker)
 
+    const handleUpdateMarker = (payload = {}) => {
+      if (!payload?.id) {
+        return
+      }
+      const { id, options } = payload
+      markers.update(id, options)
+    }
+    eventBus.on(events.APP_UPDATE_MARKER, handleUpdateMarker)
+
     const handleRemoveMarker = (id) => {
       if (!id) {
         return
@@ -77,6 +86,7 @@ const useMarkerEventListeners = (eventBus, markers) => {
 
     return () => {
       eventBus.off(events.APP_ADD_MARKER, handleAddMarker)
+      eventBus.off(events.APP_UPDATE_MARKER, handleUpdateMarker)
       eventBus.off(events.APP_REMOVE_MARKER, handleRemoveMarker)
     }
   }, [])
@@ -84,8 +94,8 @@ const useMarkerEventListeners = (eventBus, markers) => {
 
 /**
  * Hook that provides the markers API and ref callback for positioning marker
- * elements on the map. Attaches `add`, `remove`, and `getMarker` methods to the
- * markers store object and keeps marker positions in sync with map render and
+ * elements on the map. Attaches `add`, `update`, `remove`, and `getMarker` methods
+ * to the markers store object and keeps marker positions in sync with map render and
  * resize events.
  *
  * @returns {{ markers: Object, markerRef: Function }}
@@ -109,6 +119,17 @@ export const useMarkers = () => {
     markers.add = (id, coords, options) => {
       const { x, y } = projectCoords(coords, mapProvider, mapSize, isMapReady)
       dispatch({ type: 'UPSERT_LOCATION_MARKER', payload: { id, coords, ...options, x, y, isVisible: true } })
+    }
+
+    markers.update = (id, options = {}) => {
+      const existing = markers.items.find(m => m.id === id)
+      if (!existing) {
+        return
+      }
+      const { coords, ...rest } = options
+      const resolvedCoords = coords ?? existing.coords
+      const { x, y } = projectCoords(resolvedCoords, mapProvider, mapSize, isMapReady)
+      dispatch({ type: 'UPSERT_LOCATION_MARKER', payload: { id, coords: resolvedCoords, ...rest, x, y } })
     }
 
     markers.remove = (id) => {

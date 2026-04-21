@@ -337,6 +337,18 @@ export default class InteractiveMap {
   }
 
   /**
+   * Update an existing marker's options without replacing it. No-op if the marker id is not found.
+   * Merges the provided options into the existing marker — unspecified properties are preserved.
+   * Pass `coords` inside options to move the marker to new coordinates.
+   *
+   * @param {string} id - Marker identifier to update.
+   * @param {MarkerOptions & { coords?: [number, number] }} [options] - Properties to merge into the marker.
+   */
+  updateMarker (id, options) {
+    this.eventBus.emit(events.APP_UPDATE_MARKER, { id, options })
+  }
+
+  /**
    * Remove a marker from the map.
    *
    * @param {string} id - Marker identifier to remove.
