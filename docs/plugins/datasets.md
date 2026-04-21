@@ -33,6 +33,40 @@ const interactiveMap = new InteractiveMap({
 })
 ```
 
+## UMD usage
+
+Copy the package files to your assets maintaining the folder structure, then load both script tags. Unlike other plugins, the datasets plugin requires a second file for the layer adapter.
+
+```html
+<script defer src="/your-assets-path/plugins/beta/datasets/dist/umd/index.js"></script>
+<script defer src="/your-assets-path/plugins/beta/datasets/adapters/maplibre/dist/umd/index.js"></script>
+```
+
+```js
+const datasetsPlugin = defra.datasetsPlugin({
+  layerAdapter: defra.datasetsMaplibreAdapter,
+  datasets: [
+    {
+      id: 'my-parcels',
+      label: 'My parcels',
+      geojson: 'https://example.com/api/parcels',
+      minZoom: 10,
+      maxZoom: 24,
+      showInKey: true,
+      showInMenu: true,
+      style: {
+        stroke: '#d4351c',
+        strokeWidth: 2,
+        fill: 'transparent'
+      }
+    }
+  ]
+})
+```
+
+> [!NOTE]
+> **GOV.UK Prototype Kit** — no manual copying needed. Replace `/your-assets-path` with `/plugin-assets/%40defra%2Finteractive-map`.
+
 ## Options
 
 Options are passed to the factory function when creating the plugin.
