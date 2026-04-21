@@ -304,7 +304,7 @@ interactiveMap.on('map:ready', function (e) {
 	// 	aspectRatio: 1
 	// })
 	interactPlugin.enable()
-	interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407])
+	interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407], { showLabel: true, label: 'My label' })
 	interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], {
 		symbol: 'square'
 	})

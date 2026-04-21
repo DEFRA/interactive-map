@@ -3,10 +3,68 @@
 // ===================================================
 
 // 1. Base styles
+
+// Wrapper for all markers — absolutely positioned at origin so marker children
+// position correctly and parentElement.getBoundingClientRect() matches the viewport origin
+.im-c-markers {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+}
+
 .im-c-marker {
   position: absolute;
   left: 0;
   top: 0;
   pointer-events: none;
+}
+
+// Wrapper used when a marker has an html label, or for standalone labels.
+// Takes the same absolute positioning as .im-c-marker.
+.im-c-marker-wrapper {
+  position: absolute;
+  left: 0;
+  top: 0;
+  pointer-events: none;
+}
+
+// SVG inside a wrapper — fills wrapper dimensions, no independent positioning
+.im-c-marker__svg {
+  display: block;
+  pointer-events: none;
+}
+
+// Label rendered above a marker symbol
+.im-c-marker__label {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  pointer-events: none;
+
+  color: var(--tooltip-foreground-color);
+  background-color: var(--tooltip-background-color);
+  border-radius: var(--tooltip-border-radius);
+  padding: var(--tooltip-padding);
+  font-size: var(--tooltip-font-size);
+  line-height: 1.2;
+}
+
+// Standalone label — no symbol, coordinate is where the arrow points.
+// Label body sits above (x, y); arrow points down to (x, y).
+.im-c-marker__label--standalone {
+  bottom: 0;
+}
+
+.im-c-marker__label--standalone::after {
+  content: '';
+  position: absolute;
+  top: calc(100% - 1px);
+  left: 50%;
+  transform: translateX(-50%);
+  border: calc(var(--tooltip-arrow-size) - 2px) solid transparent;
+  border-top-color: var(--tooltip-background-color);
 }
 

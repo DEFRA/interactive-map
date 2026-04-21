@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef } from 'react'
 import { isContiguousWithAny, canSplitFeatures, areAllContiguous } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
 import { scaleFactor } from '../../../../src/config/appConfig.js'
+import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
 
 /**
  * Returns the id of the first DOM marker whose visual bounds contain the given point.
@@ -15,10 +16,11 @@ import { scaleFactor } from '../../../../src/config/appConfig.js'
  * @param {number} scale - scaleFactor for the current mapSize (e.g. 1.5 for medium)
  * @returns {string|null}
  */
+
 const findMarkerAtPoint = (markers, point, scale) => {
   for (const marker of markers.items) {
     const el = markers.markerRefs?.get(marker.id)
-    if (!el) {
+    if (!el || isStandaloneLabel(marker)) {
       continue
     }
     const parent = el.parentElement
