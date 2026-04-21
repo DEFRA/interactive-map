@@ -256,6 +256,15 @@ const ALL_BUILDS = [
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-datasets-plugin' }
   },
   {
+    entryPath: './plugins/beta/datasets/src/adapters/maplibre/index.js',
+    outDir: 'plugins/beta/datasets/adapters/maplibre/dist/esm',
+    manualChunks: (id) => {
+      if (id.includes('maplibreLayerAdapter')) {
+        return 'im-datasets-ml-adapter'
+      }
+    }
+  },
+  {
     entryPath: './plugins/beta/map-styles/src/index.js',
     outDir: 'plugins/beta/map-styles/dist/esm',
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-map-styles-plugin' }
