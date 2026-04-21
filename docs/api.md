@@ -527,7 +527,7 @@ interactiveMap.addMarker('home', [-0.1276, 51.5074], { backgroundColor: '#1d70b8
 
 ### `updateMarker(id, options)`
 
-Update an existing marker's properties. No-op if the marker id is not found.
+Update an existing marker's properties. Wont do anything if the marker id is not found.
 
 Merges the provided options into the existing marker — unspecified properties are preserved. Pass `coords` inside `options` to move the marker to new coordinates.
 
