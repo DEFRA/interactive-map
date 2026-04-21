@@ -103,6 +103,23 @@ describe('getPatternImageId', () => {
     expect(idA).not.toBe(idB)
   })
 
+  test('floors effective ratio at PATTERN_MIN_PIXEL_RATIO so low-DPI ids match 2x', () => {
+    const dataset = { fillPattern: 'dot' }
+    const id1x = getPatternImageId(dataset, 'style-a', mockRegistry, 1)
+    const id2x = getPatternImageId(dataset, 'style-a', mockRegistry, 2)
+    expect(id1x).toBe(id2x)
+    expect(id1x).toMatch(/-2x$/)
+  })
+
+  test('produces different ids for pixelRatios above the floor', () => {
+    const dataset = { fillPattern: 'dot' }
+    const id2x = getPatternImageId(dataset, 'style-a', mockRegistry, 2)
+    const id3x = getPatternImageId(dataset, 'style-a', mockRegistry, 3)
+    expect(id2x).not.toBe(id3x)
+    expect(id2x).toMatch(/-2x$/)
+    expect(id3x).toMatch(/-3x$/)
+  })
+
   test('falls back to "black" foreground and "transparent" background when colours are absent', () => {
     const id = getPatternImageId({ fillPattern: 'dot' }, 'style-a', mockRegistry)
     const idExplicit = getPatternImageId(

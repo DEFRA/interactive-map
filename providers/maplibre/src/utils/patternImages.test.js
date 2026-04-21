@@ -45,19 +45,6 @@ describe('registerPatterns — registration', () => {
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
-  it('calls addImage with pixelRatio 2 for a named pattern', async () => {
-    const map = makeMap()
-    const registry = makePatternRegistry()
-    const config = { fillPattern: 'stripes' }
-    await registerPatterns(map, [config], OUTDOOR, registry)
-    expect(map.addImage).toHaveBeenCalledTimes(1)
-    expect(map.addImage).toHaveBeenCalledWith(
-      expect.stringMatching(/^pattern-[a-z0-9]+$/),
-      expect.any(Object),
-      { pixelRatio: 2 }
-    )
-  })
-
   it('calls addImage for an inline fillPatternSvgContent config', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
@@ -69,10 +56,11 @@ describe('registerPatterns — registration', () => {
   it('skips addImage when image is already registered', async () => {
     const registry = makePatternRegistry()
     const config = { fillPattern: 'stripes' }
+    const pixelRatio = 2
     const { getPatternImageId } = await import('../../../../src/utils/patternUtils.js')
-    const existingId = getPatternImageId(config, OUTDOOR, registry)
+    const existingId = getPatternImageId(config, OUTDOOR, registry, pixelRatio)
     const map = makeMap([existingId])
-    await registerPatterns(map, [config], OUTDOOR, registry)
+    await registerPatterns(map, [config], OUTDOOR, registry, pixelRatio)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
@@ -101,6 +89,48 @@ describe('registerPatterns — registration', () => {
     }
     await registerPatterns(map, [{ fillPattern: 'stripes' }, { fillPattern: 'dots' }], OUTDOOR, registry)
     expect(map.addImage).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('registerPatterns — pixel ratio', () => {
+  it('encodes effectiveRatio in the image ID and passes it to addImage', async () => {
+    const map = makeMap()
+    const registry = makePatternRegistry()
+    const config = { fillPattern: 'stripes' }
+    await registerPatterns(map, [config], OUTDOOR, registry, 2)
+    expect(map.addImage).toHaveBeenCalledTimes(1)
+    expect(map.addImage).toHaveBeenCalledWith(
+      expect.stringMatching(/^pattern-[a-z0-9]+-2x$/),
+      expect.any(Object),
+      { pixelRatio: 2 }
+    )
+  })
+
+  it('floors effectiveRatio at 2 so low-DPI patterns stay crisp', async () => {
+    const map = makeMap()
+    const registry = makePatternRegistry()
+    const config = { fillPattern: 'stripes' }
+    await registerPatterns(map, [config], OUTDOOR, registry, 1)
+    expect(map.addImage).toHaveBeenCalledWith(
+      expect.stringMatching(/-2x$/),
+      expect.any(Object),
+      { pixelRatio: 2 }
+    )
+  })
+
+  it('produces different image IDs for ratios above the floor', async () => {
+    const map1 = makeMap()
+    const map2 = makeMap()
+    const registry = makePatternRegistry()
+    const config = { fillPattern: 'stripes' }
+    const hiDpi = 3
+    await registerPatterns(map1, [config], OUTDOOR, registry, 2)
+    await registerPatterns(map2, [config], OUTDOOR, registry, hiDpi)
+    const [id2x] = map1.addImage.mock.calls[0]
+    const [id3x] = map2.addImage.mock.calls[0]
+    expect(id2x).not.toBe(id3x)
+    expect(id2x).toMatch(/-2x$/)
+    expect(id3x).toMatch(/-3x$/)
   })
 })
 
@@ -137,12 +167,13 @@ describe('registerPatterns — color resolution and caching', () => {
   it('uses cached ImageData on second call with identical config', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
-    const config = { fillPattern: 'stripes', fillPatternForegroundColor: '#unique1' }
-    await registerPatterns(map, [config], OUTDOOR, registry)
+    const config = { fillPattern: 'stripes', fillPatternForegroundColor: '#unique2' }
+    const pixelRatio = 2
+    await registerPatterns(map, [config], OUTDOOR, registry, pixelRatio)
     const { getPatternImageId } = await import('../../../../src/utils/patternUtils.js')
-    const imageId = getPatternImageId(config, OUTDOOR, registry)
+    const imageId = getPatternImageId(config, OUTDOOR, registry, pixelRatio)
     const map2 = makeMap([imageId])
-    await registerPatterns(map2, [config], OUTDOOR, registry)
+    await registerPatterns(map2, [config], OUTDOOR, registry, pixelRatio)
     expect(map2.addImage).not.toHaveBeenCalled()
   })
 })

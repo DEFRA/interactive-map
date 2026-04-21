@@ -280,13 +280,33 @@ describe('MapLibreProvider', () => {
     expect(registerSymbols).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 1) // (0 || 1) * 1
   })
 
-  test('registerPatterns delegates to utility with map instance', async () => {
+  test('registerPatterns delegates to utility with map instance and pixelRatio', async () => {
     const p = makeProvider()
     await doInitMap(p)
     const configs = [{ fillPattern: 'dot' }]
     const registry = {}
     await p.registerPatterns(configs, 'test', registry)
-    expect(registerPatterns).toHaveBeenCalledWith(map, configs, 'test', registry)
+    expect(registerPatterns).toHaveBeenCalledWith(map, configs, 'test', registry, 1) // getPixelRatio()=1, mapSize unset → 1*1
+  })
+
+  test('registerPatterns computes pixelRatio from getPixelRatio and mapSize scale factor', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(2)
+    p.mapSize = 'medium' // scaleFactor['medium'] = 1.5
+    const registry = {}
+    await p.registerPatterns([], 'test', registry)
+    expect(registerPatterns).toHaveBeenCalledWith(map, [], 'test', registry, 3) // 2 * 1.5
+  })
+
+  test('registerPatterns falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(0)
+    p.mapSize = 'small' // scaleFactor['small'] = 1
+    const registry = {}
+    await p.registerPatterns([], 'test', registry)
+    expect(registerPatterns).toHaveBeenCalledWith(map, [], 'test', registry, 1) // (0 || 1) * 1
   })
 
   describe('setHoverCursor', () => {
