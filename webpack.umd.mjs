@@ -140,7 +140,7 @@ const ALL_BUILDS = [
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },
   { entryPath: './plugins/beta/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/beta/datasets/dist/umd' },
-  { entryPath: './plugins/beta/datasets/src/adapters/maplibre/index.js', libraryPath: 'datasetsMaplibreAdapter', outDir: 'plugins/beta/datasets/adapters/maplibre/dist/umd' },
+  { entryPath: './plugins/beta/datasets/src/adapters/maplibre/index.umd.js', libraryPath: 'datasetsMaplibreAdapter', outDir: 'plugins/beta/datasets/adapters/maplibre/dist/umd' },
   { entryPath: './plugins/beta/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/beta/map-styles/dist/umd' },
   { entryPath: './plugins/beta/draw-ml/src/index.js', libraryPath: 'drawMLPlugin', outDir: 'plugins/beta/draw-ml/dist/umd' },
   { entryPath: './plugins/beta/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/beta/frame/dist/umd' }
