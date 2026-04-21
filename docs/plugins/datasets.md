@@ -35,11 +35,11 @@ const interactiveMap = new InteractiveMap({
 
 ## UMD usage
 
-Copy the package files to your assets maintaining the folder structure, then load both script tags. Unlike other plugins, the datasets plugin requires a second file for the layer adapter.
+Copy `plugins/beta/datasets/dist/umd/` to `/your-assets-path/plugins/datasets/` and `plugins/beta/datasets/adapters/maplibre/dist/umd/` to `/your-assets-path/plugins/datasets/adapters/maplibre/`, then load both script tags. Unlike other plugins, the datasets plugin requires a second file for the layer adapter.
 
 ```html
-<script defer src="/your-assets-path/plugins/beta/datasets/dist/umd/index.js"></script>
-<script defer src="/your-assets-path/plugins/beta/datasets/adapters/maplibre/dist/umd/index.js"></script>
+<script defer src="/your-assets-path/plugins/datasets/index.js"></script>
+<script defer src="/your-assets-path/plugins/datasets/adapters/maplibre/index.js"></script>
 ```
 
 ```js
@@ -65,7 +65,11 @@ const datasetsPlugin = defra.datasetsPlugin({
 ```
 
 > [!NOTE]
-> **GOV.UK Prototype Kit** — no manual copying needed. Replace `/your-assets-path` with `/plugin-assets/%40defra%2Finteractive-map`.
+> **GOV.UK Prototype Kit** — skip the copy step. Both files are served automatically. Use these paths instead:
+> ```html
+> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/index.js"></script>
+> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/adapters/maplibre/dist/umd/index.js"></script>
+> ```
 
 ## Options
 
