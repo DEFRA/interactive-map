@@ -10,11 +10,11 @@ import { EVENTS as events } from '../../config/events.js'
  * shared via a link.
  */
 export function useMapURLSync () {
-  const { id } = useConfig()
+  const { id, urlPosition } = useConfig()
   const { eventBus } = useService()
 
   useEffect(() => {
-    if (!id) {
+    if (!id || urlPosition !== 'sync') {
       return undefined
     }
 
@@ -27,5 +27,5 @@ export function useMapURLSync () {
 
     eventBus.on(events.MAP_STATE_UPDATED, handleStateUpdate)
     return () => eventBus.off(events.MAP_STATE_UPDATED, handleStateUpdate)
-  }, [id])
+  }, [id, urlPosition])
 }

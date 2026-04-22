@@ -303,12 +303,25 @@ See [MapStyleConfig](./api/map-style-config.md) for full details.
 
 ---
 
-### `mapViewParamKey`
+### `mapViewQueryParam`
 **Type:** `string`
 **Default:** `'mv'`
 
-URL query parameter key used to persist map visibility state. Override if the default value clashes with an existing parameter on your page.
+URL query parameter used to control fullscreen/hybrid/buttonFirst state. Override if the default value clashes with an existing parameter on your page.
 
+---
+
+### `urlPosition`
+**Type:** `'sync' | 'readOnly' | 'none'`
+**Default:** `'sync'`
+
+Controls how map center and zoom interact with the page URL.
+
+| Value | Behaviour |
+|---|---|
+| `'sync'` | Reads center/zoom from the URL on load and writes back on pan/zoom |
+| `'readOnly'` | Seeds the initial view from the URL but never writes back |
+| `'none'` | Ignores the URL entirely — use when you don't want the user's pan/zoom to be persisted or shared |
 ---
 
 ### `markers`

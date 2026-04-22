@@ -21,4 +21,23 @@ describe('mergeConfig', () => {
     const result = mergeConfig(userConfig)
     expect(result.theme).toBe('dark')
   })
+
+  it('maps deprecated mapViewParamKey to mapViewQueryParam', () => {
+    const result = mergeConfig({ mapViewParamKey: 'view' })
+    expect(result.mapViewQueryParam).toBe('view')
+  })
+
+  it('warns when deprecated mapViewParamKey is used', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    mergeConfig({ mapViewParamKey: 'view' })
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('mapViewParamKey is deprecated'))
+    warnSpy.mockRestore()
+  })
+
+  it('does not warn when mapViewParamKey is not used', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    mergeConfig({ mapViewQueryParam: 'view' })
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
 })

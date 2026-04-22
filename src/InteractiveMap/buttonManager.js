@@ -12,8 +12,6 @@
  * @returns {HTMLAnchorElement} The newly created button element.
  */
 
-import defaults from '../config/defaults.js'
-
 export function createButton (config, rootEl, handleClick) {
   const { id, buttonText, buttonClass } = config
 
@@ -33,7 +31,7 @@ export function createButton (config, rootEl, handleClick) {
 
   // Build URL keeping existing params
   const url = new URL(window.location.href)
-  url.searchParams.set(defaults.mapViewParamKey, id)
+  url.searchParams.set(config.mapViewQueryParam, id)
   button.setAttribute('href', url.toString())
 
   button.addEventListener('click', (e) => {

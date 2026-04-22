@@ -22,7 +22,7 @@ export const MapController = ({ mapContainerRef }) => {
   const isMapInitialized = useRef(false)
 
   // Determine initial map state based on URL, bounds, or center/zoom
-  const initialState = getInitialMapState({ id, center, zoom, bounds })
+  const initialState = getInitialMapState({ id, center, zoom, bounds, urlPosition: config.urlPosition })
 
   // Initialize map provider when props are available
   useEffect(() => {
