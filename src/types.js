@@ -263,6 +263,19 @@
  */
 
 /**
+ * Configuration options for the MapLibre provider.
+ *
+ * @typedef {Object} MaplibreProviderConfig
+ *
+ * @property {string} [workerUrl]
+ * URL to a separately hosted MapLibre worker file (`maplibre-gl-csp-worker.js`).
+ * Required when running under a Content Security Policy that blocks `blob:` worker
+ * URLs. The file ships with maplibre-gl and must be served from your own origin.
+ * When set, MapLibre loads the worker from this URL instead of generating an
+ * inline blob, so your CSP only needs `worker-src 'self'`.
+ */
+
+/**
  * Descriptor for lazy-loading a map provider.
  *
  * @typedef {Object} MapProviderDescriptor
@@ -629,8 +642,15 @@
  * @property {MapStyleConfig} [mapStyle]
  * Map style configuration.
  *
- * @property {string} [mapViewParamKey='mv']
- * URL query parameter key used to control map view state.
+ * @property {string} [mapViewQueryParam='mv']
+ * URL query parameter used to control fullscreen/hybrid/buttonFirst state.
+ * Override if the default value clashes with an existing parameter on your page.
+ *
+ * @property {'sync' | 'readOnly' | 'none'} [urlPosition='sync']
+ * Controls how map center and zoom interact with the page URL.
+ *   - `'sync'` — reads on load and writes on pan/zoom (default)
+ *   - `'readOnly'` — seeds the initial view from the URL but never writes back
+ *   - `'none'` — ignores the URL entirely; use when you don't want the user's pan/zoom to be persisted or shared
  *
  * @property {MarkerConfig[]} [markers]
  * Initial markers to display on the map.

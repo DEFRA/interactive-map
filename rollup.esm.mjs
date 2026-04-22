@@ -257,7 +257,7 @@ const ALL_BUILDS = [
   },
   {
     entryPath: './plugins/beta/datasets/src/adapters/maplibre/index.js',
-    outDir: 'plugins/beta/datasets/adapters/maplibre/dist/esm',
+    outDir: 'plugins/beta/datasets/dist/adapters/maplibre/esm',
     manualChunks: (id) => {
       if (id.includes('maplibreLayerAdapter')) {
         return 'im-datasets-ml-adapter'

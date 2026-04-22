@@ -6,7 +6,7 @@
  * when the datasets plugin initialises, keeping the initial bundle lean.
  *
  * @example
- * import { maplibreLayerAdapter } from './plugins/beta/datasets/adapters/maplibre'
+ * import { maplibreLayerAdapter } from '@defra/interactive-map/plugins/datasets/adapters/maplibre'
  *
  * datasetsPlugin({
  *   layerAdapter: maplibreLayerAdapter,

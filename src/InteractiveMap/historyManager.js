@@ -1,6 +1,5 @@
 import { getQueryParam } from '../utils/queryString.js'
 import { isHybridFullscreen } from '../utils/getIsFullscreen.js'
-import defaults from '../config/defaults.js'
 
 // -----------------------------------------------------------------------------
 // Internal helpers
@@ -81,8 +80,10 @@ function syncMapInstance (mapInstance, viewId) {
  * @returns {void}
  */
 function handlePopstate () {
-  const viewId = getQueryParam(defaults.mapViewParamKey)
-  components.forEach(mapInstance => syncMapInstance(mapInstance, viewId))
+  components.forEach(mapInstance => {
+    const viewId = getQueryParam(mapInstance.config.mapViewQueryParam)
+    syncMapInstance(mapInstance, viewId)
+  })
 }
 
 // -----------------------------------------------------------------------------

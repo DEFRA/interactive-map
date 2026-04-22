@@ -144,7 +144,7 @@ export default class InteractiveMap {
     if (history.state?.isBack) {
       history.back()
     } else {
-      const key = this.config.mapViewParamKey
+      const key = this.config.mapViewQueryParam
       const newUrl = this._removeMapParamFromUrl(location.href, key)
       history.replaceState(history.state, '', newUrl)
     }

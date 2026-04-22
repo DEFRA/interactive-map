@@ -248,6 +248,32 @@ new InteractiveMap('map', {
 })
 ```
 
+#### MapLibre provider options
+
+`maplibreProvider()` accepts an optional config object.
+
+##### `workerUrl`
+**Type:** `string`
+**Default:** `undefined`
+
+URL to a separately hosted MapLibre worker file (`maplibre-gl-csp-worker.js`). Required when running under a Content Security Policy that blocks `blob:` worker URLs — a common restriction on government and enterprise platforms.
+
+When set, MapLibre loads its rendering worker from this URL instead of generating an inline blob, so your CSP only needs `worker-src 'self'` rather than `worker-src blob:`.
+
+The worker file ships with maplibre-gl and must be served from your own origin (copy from `node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js`).
+
+**ESM:**
+
+```js
+maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
+```
+
+**UMD:**
+
+```js
+defra.maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
+```
+
 ---
 
 ### `mapSize`
@@ -277,12 +303,25 @@ See [MapStyleConfig](./api/map-style-config.md) for full details.
 
 ---
 
-### `mapViewParamKey`
+### `mapViewQueryParam`
 **Type:** `string`
 **Default:** `'mv'`
 
-URL query parameter key used to persist map visibility state. Override if the default value clashes with an existing parameter on your page.
+URL query parameter used to control fullscreen/hybrid/buttonFirst state. Override if the default value clashes with an existing parameter on your page.
 
+---
+
+### `urlPosition`
+**Type:** `'sync' | 'readOnly' | 'none'`
+**Default:** `'sync'`
+
+Controls how map center and zoom interact with the page URL.
+
+| Value | Behaviour |
+|---|---|
+| `'sync'` | Reads center/zoom from the URL on load and writes back on pan/zoom — enables bookmarking and sharing the current map view |
+| `'readOnly'` | Seeds the initial view from the URL but never writes back |
+| `'none'` | Ignores the URL entirely — use when you don't want the user's pan/zoom to be persisted or shared |
 ---
 
 ### `markers`

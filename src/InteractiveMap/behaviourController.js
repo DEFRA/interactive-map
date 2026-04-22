@@ -1,7 +1,6 @@
 import { getQueryParam } from '../utils/queryString.js'
 import { isHybridFullscreen } from '../utils/getIsFullscreen.js'
 import { updateDOMState } from './domStateManager.js'
-import defaults from '../config/defaults.js'
 
 // -----------------------------------------------------------------------------
 // Public API
@@ -18,7 +17,7 @@ import defaults from '../config/defaults.js'
  */
 function shouldLoadComponent (config) {
   const { id, behaviour } = config
-  const hasViewParam = getQueryParam(defaults.mapViewParamKey) === id
+  const hasViewParam = getQueryParam(config.mapViewQueryParam) === id
 
   return ['mapOnly', 'inline'].includes(behaviour) ||
     (behaviour === 'hybrid' && !isHybridFullscreen(config)) ||

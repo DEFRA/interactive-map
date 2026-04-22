@@ -2,7 +2,7 @@
 
 The datasets plugin renders GeoJSON and vector tile datasets on the map, with support for polygon, line, and symbol (point) layer types, sublayer style rules, layer visibility toggling, a key panel, and runtime style and data updates.
 
-## Usage
+## ESM usage
 
 ```js
 import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
@@ -33,6 +33,41 @@ const interactiveMap = new InteractiveMap({
 })
 ```
 
+## UMD usage
+
+Copy `plugins/beta/datasets/dist/umd/maplibre/` to `/your-assets-path/plugins/beta/datasets/umd/maplibre/`, then load the script tag. The MapLibre adapter is included — no `layerAdapter` config is needed.
+
+```html
+<script defer src="/your-assets-path/plugins/beta/datasets/umd/maplibre/index.js"></script>
+```
+
+```js
+const datasetsPlugin = defra.datasetsMaplibrePlugin({
+  datasets: [
+    {
+      id: 'my-parcels',
+      label: 'My parcels',
+      geojson: 'https://example.com/api/parcels',
+      minZoom: 10,
+      maxZoom: 24,
+      showInKey: true,
+      showInMenu: true,
+      style: {
+        stroke: '#d4351c',
+        strokeWidth: 2,
+        fill: 'transparent'
+      }
+    }
+  ]
+})
+```
+
+> [!NOTE]
+> **GOV.UK Prototype Kit** — skip the copy step. The file is served automatically. Use this path instead:
+> ```html
+> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/maplibre/index.js"></script>
+> ```
+
 ## Options
 
 Options are passed to the factory function when creating the plugin.
@@ -40,6 +75,9 @@ Options are passed to the factory function when creating the plugin.
 ---
 
 ### `layerAdapter`
+
+> [!NOTE]
+> UMD users using the `datasetsMaplibrePlugin` bundle do not need to set this — the MapLibre adapter is pre-configured.
 
 **Type:** `LayerAdapter`
 **Required**

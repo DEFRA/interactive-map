@@ -1,10 +1,16 @@
 import defaults from './defaults.js'
 
 export const mergeConfig = (userConfig = {}) => {
-  // Merge defaultConfig with userConfig
+  const { mapViewParamKey, ...restUser } = userConfig
+
   const config = {
     ...defaults,
-    ...userConfig
+    ...restUser
+  }
+
+  if (mapViewParamKey !== undefined) {
+    console.warn('[InteractiveMap] mapViewParamKey is deprecated — use mapViewQueryParam instead.')
+    config.mapViewQueryParam = mapViewParamKey
   }
 
   return config
