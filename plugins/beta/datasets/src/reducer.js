@@ -1,6 +1,7 @@
 import { applyDatasetDefaults } from './defaults.js'
 import { keyReducer } from './reducers/keyReducer.js'
 import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
+import { datasetsToMenu } from './reducers/datasetsToMenu.js'
 
 const initialState = {
   datasets: null,
@@ -25,9 +26,11 @@ const initSublayerVisibility = (dataset) => {
 
 const setDatasets = (state, payload) => {
   const { datasets, datasetDefaults } = payload
+  const menu = payload.menu || datasetsToMenu({ datasets })
   return {
     ...state,
-    datasets: datasets.map(dataset => initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults)))
+    datasets: datasets.map(dataset => initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults))),
+    menu
   }
 }
 
