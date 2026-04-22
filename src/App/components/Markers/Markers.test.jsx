@@ -46,7 +46,9 @@ const setup = ({ markers = [], mapSize = 'small', eventBus, symbolRegistry, mapS
   return { eb, sr, result: render(<Markers />) }
 }
 
-describe('Markers', () => {
+// ─── Markers — basic rendering ────────────────────────────────────────────────
+
+describe('Markers — basic rendering', () => {
   it('renders nothing when mapStyle is not set', () => {
     expect(setup({ mapStyle: null }).result.container.firstChild).toBeNull()
   })
@@ -69,6 +71,46 @@ describe('Markers', () => {
   ])('display is %s when isVisible=%s', (isVisible, display) => {
     const svg = setup({ markers: [makeMarker({ isVisible })] }).result.container.querySelector('svg')
     expect(svg).toHaveStyle({ display })
+  })
+})
+
+// ─── Markers — symbol and label rendering ─────────────────────────────────────
+
+describe('Markers — symbol and label rendering', () => {
+  it('renders a standalone label div for a marker with symbol: null (lines 44, 200)', () => {
+    const marker = makeMarker({ id: 'lbl', label: 'My label', symbol: null, symbolSvgContent: null })
+    const { result } = setup({ markers: [marker] })
+    const wrapper = result.container.querySelector('.im-c-marker-wrapper--label')
+    expect(wrapper).toBeTruthy()
+    expect(wrapper.querySelector('.im-c-marker__label--standalone').textContent).toBe('My label')
+    expect(result.container.querySelector('svg')).toBeNull()
+  })
+
+  it('renders a marker-with-label div when showLabel is true (lines 61, 206)', () => {
+    const marker = makeMarker({ label: 'Tooltip', showLabel: true })
+    const { result } = setup({ markers: [marker] })
+    const wrapper = result.container.querySelector('.im-c-marker-wrapper')
+    expect(wrapper).toBeTruthy()
+    expect(wrapper.querySelector('.im-c-marker__label').textContent).toBe('Tooltip')
+    expect(wrapper.querySelector('svg')).toBeTruthy()
+  })
+
+  it('standalone label respects isVisible: false (line 48 false branch)', () => {
+    const marker = makeMarker({ id: 'lbl', label: 'hidden', symbol: null, symbolSvgContent: null, isVisible: false })
+    const { result } = setup({ markers: [marker] })
+    expect(result.container.querySelector('.im-c-marker-wrapper--label')).toHaveStyle({ display: 'none' })
+  })
+
+  it('marker-with-label respects isVisible: false (line 70 false branch)', () => {
+    const marker = makeMarker({ label: 'Tooltip', showLabel: true, isVisible: false })
+    const { result } = setup({ markers: [marker] })
+    expect(result.container.querySelector('.im-c-marker-wrapper')).toHaveStyle({ display: 'none' })
+  })
+
+  it('renders an svg without label when showLabel is false or absent', () => {
+    const { result } = setup({ markers: [makeMarker({ label: 'hidden', showLabel: false })] })
+    expect(result.container.querySelector('svg')).toBeTruthy()
+    expect(result.container.querySelector('.im-c-marker__label')).toBeNull()
   })
 
   it('uses inline symbolSvgContent over the symbol registry', () => {
@@ -124,7 +166,11 @@ describe('Markers', () => {
     expect(setup({ markers: [makeMarker()], mapSize: 'medium' }).result.container.querySelector('svg'))
       .toHaveStyle({ marginLeft: '-28.5px', marginTop: '-57px' })
   })
+})
 
+// ─── Markers — selection ──────────────────────────────────────────────────────
+
+describe('Markers — selection', () => {
   it('adds selected class and calls resolveSelected when marker is selected', () => {
     const { eb, sr, result } = setup({ markers: [makeMarker()] })
     act(() => eb.emit('interact:selectionchange', { selectedMarkers: ['marker-1'] }))
@@ -158,89 +204,116 @@ describe('Markers', () => {
     expect(eb.off).toHaveBeenCalledWith('interact:selectionchange', expect.any(Function))
   })
 
-  describe('useMarkerCursor', () => {
-    let viewport
+  it('adds selected class to marker-with-label wrapper and svg when selected', () => {
+    const { eb, result } = setup({ markers: [makeMarker({ label: 'Test', showLabel: true })] })
+    act(() => eb.emit('interact:selectionchange', { selectedMarkers: ['marker-1'] }))
+    const wrapper = result.container.querySelector('.im-c-marker-wrapper')
+    expect(wrapper).toHaveClass('im-c-marker-wrapper--selected')
+    expect(wrapper.querySelector('svg')).toHaveClass('im-c-marker--selected')
+  })
+})
 
-    beforeEach(() => {
-      viewport = document.createElement('div')
-      viewport.className = 'im-c-viewport'
-      document.body.appendChild(viewport)
-    })
+// ─── Markers — useMarkerCursor ────────────────────────────────────────────────
 
-    afterEach(() => {
-      if (viewport.parentNode) document.body.removeChild(viewport)
-    })
+const CURSOR_INSIDE = { clientX: 20, clientY: 20 }
+const CURSOR_OUTSIDE = { clientX: 100, clientY: 100 }
+const HIT_BOUNDS = { left: 10, top: 10, right: 50, bottom: 50 }
+let cursorViewport
 
-    const activate = (eb) => act(() => eb.emit('interact:active', { active: true, interactionModes: ['selectMarker'] }))
-    const deactivate = (eb) => act(() => eb.emit('interact:active', { active: false, interactionModes: ['selectMarker'] }))
-    const fireMove = (clientX, clientY) => act(() => {
-      viewport.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX, clientY }))
-    })
+const activateCursor = (eb) => act(() => eb.emit('interact:active', { active: true, interactionModes: ['selectMarker'] }))
+const deactivateCursor = (eb) => act(() => eb.emit('interact:active', { active: false, interactionModes: ['selectMarker'] }))
+const fireMove = ({ clientX, clientY }) => act(() => {
+  cursorViewport.dispatchEvent(new MouseEvent('mousemove', { bubbles: true, clientX, clientY }))
+})
+const setupCursor = (markerBounds, markerOverrides = {}) => {
+  const eb = makeEventBus()
+  const markerRefs = new Map()
+  const marker = makeMarker(markerOverrides)
+  if (markerBounds) markerRefs.set(marker.id, { getBoundingClientRect: () => markerBounds })
+  useConfig.mockReturnValue({ id: 'test-app' })
+  useMap.mockReturnValue({ mapStyle: 'outdoor', mapSize: 'small' })
+  useService.mockReturnValue({ symbolRegistry: makeSymbolRegistry(), eventBus: eb })
+  useMarkers.mockReturnValue({ markers: { items: [marker], markerRefs }, markerRef: () => () => {} })
+  render(<Markers />)
+  return eb
+}
+const cursorBeforeEach = () => {
+  cursorViewport = document.createElement('div')
+  cursorViewport.className = 'im-c-viewport'
+  document.body.appendChild(cursorViewport)
+}
+const cursorAfterEach = () => { cursorViewport.remove() }
 
-    const setupCursor = (markerBounds) => {
-      const eb = makeEventBus()
-      const markerRefs = new Map()
-      if (markerBounds) markerRefs.set('marker-1', { getBoundingClientRect: () => markerBounds })
-      useConfig.mockReturnValue({ id: 'test-app' })
-      useMap.mockReturnValue({ mapStyle: 'outdoor', mapSize: 'small' })
-      useService.mockReturnValue({ symbolRegistry: makeSymbolRegistry(), eventBus: eb })
-      useMarkers.mockReturnValue({ markers: { items: [makeMarker()], markerRefs }, markerRef: () => () => {} })
-      render(<Markers />)
-      return eb
-    }
+describe('Markers — useMarkerCursor — inactive guards', () => {
+  beforeEach(cursorBeforeEach)
+  afterEach(cursorAfterEach)
 
-    it('does not track mousemove when interact is not active', () => {
-      setupCursor({ left: 0, top: 0, right: 50, bottom: 50 })
-      fireMove(20, 20)
-      expect(viewport.style.cursor).toBe('')
-    })
+  it('does not track mousemove when interact is not active', () => {
+    setupCursor(HIT_BOUNDS)
+    fireMove(CURSOR_INSIDE)
+    expect(cursorViewport.style.cursor).toBe('')
+  })
 
-    it('does not track mousemove when selectMarker is not in interactionModes', () => {
-      const eb = setupCursor({ left: 10, top: 10, right: 50, bottom: 50 })
-      act(() => eb.emit('interact:active', { active: true, interactionModes: ['selectFeature'] }))
-      fireMove(20, 20)
-      expect(viewport.style.cursor).toBe('')
-    })
+  it('does not track mousemove when selectMarker is not in interactionModes', () => {
+    const eb = setupCursor(HIT_BOUNDS)
+    act(() => eb.emit('interact:active', { active: true, interactionModes: ['selectFeature'] }))
+    fireMove(CURSOR_INSIDE)
+    expect(cursorViewport.style.cursor).toBe('')
+  })
 
-    it('does not track mousemove when interactionModes is absent from payload', () => {
-      const eb = setupCursor({ left: 10, top: 10, right: 50, bottom: 50 })
-      act(() => eb.emit('interact:active', { active: true }))
-      fireMove(20, 20)
-      expect(viewport.style.cursor).toBe('')
-    })
+  it('does not track mousemove when interactionModes is absent from payload', () => {
+    const eb = setupCursor(HIT_BOUNDS)
+    act(() => eb.emit('interact:active', { active: true }))
+    fireMove(CURSOR_INSIDE)
+    expect(cursorViewport.style.cursor).toBe('')
+  })
 
-    it('does not track mousemove when viewport element is absent', () => {
-      document.body.removeChild(viewport)
-      const eb = setupCursor({ left: 0, top: 0, right: 50, bottom: 50 })
-      activate(eb)
-      expect(viewport.style.cursor).toBe('')
-    })
+  it('does not track mousemove when viewport element is absent', () => {
+    cursorViewport.remove()
+    const eb = setupCursor(HIT_BOUNDS)
+    activateCursor(eb)
+    expect(cursorViewport.style.cursor).toBe('')
+  })
+})
 
-    it('sets cursor to pointer when mousemove lands inside a marker', () => {
-      const eb = setupCursor({ left: 10, top: 10, right: 50, bottom: 50 })
-      activate(eb)
-      fireMove(20, 20)
-      expect(viewport.style.cursor).toBe('pointer')
-    })
+describe('Markers — useMarkerCursor — cursor tracking', () => {
+  beforeEach(cursorBeforeEach)
+  afterEach(cursorAfterEach)
 
-    it.each([
-      ['outside all markers', 100, 100],
-      ['marker has no ref element', 20, 20]
-    ])('cursor stays empty when %s', (label, x, y) => {
-      const bounds = label.includes('no ref') ? null : { left: 10, top: 10, right: 50, bottom: 50 }
-      const eb = setupCursor(bounds)
-      activate(eb)
-      fireMove(x, y)
-      expect(viewport.style.cursor).toBe('')
-    })
+  it('sets cursor to pointer when mousemove lands inside a marker', () => {
+    const eb = setupCursor(HIT_BOUNDS)
+    activateCursor(eb)
+    fireMove(CURSOR_INSIDE)
+    expect(cursorViewport.style.cursor).toBe('pointer')
+  })
 
-    it('clears cursor and stops tracking when interact becomes inactive', () => {
-      const eb = setupCursor({ left: 10, top: 10, right: 50, bottom: 50 })
-      activate(eb)
-      fireMove(20, 20)
-      expect(viewport.style.cursor).toBe('pointer')
-      deactivate(eb)
-      expect(viewport.style.cursor).toBe('')
-    })
+  it('cursor stays empty when mousemove is outside all markers', () => {
+    const eb = setupCursor(HIT_BOUNDS)
+    activateCursor(eb)
+    fireMove(CURSOR_OUTSIDE)
+    expect(cursorViewport.style.cursor).toBe('')
+  })
+
+  it('cursor stays empty when marker has no ref element', () => {
+    const eb = setupCursor(null)
+    activateCursor(eb)
+    fireMove(CURSOR_INSIDE)
+    expect(cursorViewport.style.cursor).toBe('')
+  })
+
+  it('skips standalone label markers in the cursor hit test (line 141)', () => {
+    const eb = setupCursor(HIT_BOUNDS, { label: 'lbl', symbol: null, symbolSvgContent: null })
+    activateCursor(eb)
+    fireMove(CURSOR_INSIDE)
+    expect(cursorViewport.style.cursor).toBe('')
+  })
+
+  it('clears cursor and stops tracking when interact becomes inactive', () => {
+    const eb = setupCursor(HIT_BOUNDS)
+    activateCursor(eb)
+    fireMove(CURSOR_INSIDE)
+    expect(cursorViewport.style.cursor).toBe('pointer')
+    deactivateCursor(eb)
+    expect(cursorViewport.style.cursor).toBe('')
   })
 })

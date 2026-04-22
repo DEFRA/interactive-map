@@ -586,6 +586,7 @@ describe('InteractiveMap Public API Methods', () => {
     map.off('testEvent', cb)
     map.emit('customEvent', 123)
     map.addMarker('marker-1', coords, options)
+    map.updateMarker('marker-1', options)
     map.removeMarker('marker-1')
     map.setMode('test-mode')
 
@@ -593,6 +594,7 @@ describe('InteractiveMap Public API Methods', () => {
     expect(map.eventBus.off).toHaveBeenCalledWith('testEvent', cb)
     expect(map.eventBus.emit).toHaveBeenCalledWith('customEvent', 123)
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:addmarker', { id: 'marker-1', coords, options })
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:updatemarker', { id: 'marker-1', options })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:removemarker', 'marker-1')
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:setmode', 'test-mode')
   })

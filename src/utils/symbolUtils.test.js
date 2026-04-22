@@ -1,5 +1,6 @@
 import {
   hasSymbol,
+  isStandaloneLabel,
   getSymbolDef,
   getSymbolStyleColors,
   getSymbolViewBox,
@@ -27,6 +28,35 @@ describe('hasSymbol', () => {
 
   it('returns false when symbol is null', () => {
     expect(hasSymbol({ symbol: null })).toBe(false)
+  })
+})
+
+// ─── isStandaloneLabel ────────────────────────────────────────────────────────
+
+describe('isStandaloneLabel', () => {
+  it('returns false when marker has no label', () => {
+    expect(isStandaloneLabel({})).toBe(false)
+    expect(isStandaloneLabel({ symbol: null })).toBe(false)
+  })
+
+  it('returns false when marker has a truthy symbol string (line 28)', () => {
+    expect(isStandaloneLabel({ label: 'My label', symbol: 'pin' })).toBe(false)
+  })
+
+  it('returns false when marker has symbolSvgContent (line 28)', () => {
+    expect(isStandaloneLabel({ label: 'My label', symbolSvgContent: '<circle/>' })).toBe(false)
+  })
+
+  it('returns false when label is present but both symbol and symbolSvgContent are undefined (line 31)', () => {
+    expect(isStandaloneLabel({ label: 'My label' })).toBe(false)
+  })
+
+  it('returns true when label is present and symbol is explicitly null (line 31)', () => {
+    expect(isStandaloneLabel({ label: 'My label', symbol: null })).toBe(true)
+  })
+
+  it('returns true when label is present and symbolSvgContent is explicitly null (line 31)', () => {
+    expect(isStandaloneLabel({ label: 'My label', symbolSvgContent: null })).toBe(true)
   })
 })
 
