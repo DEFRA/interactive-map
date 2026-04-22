@@ -274,7 +274,7 @@ describe('InteractiveMap Core Functionality', () => {
     const map = new InteractiveMap('map', {
       behaviour: 'buttonFirst',
       mapProvider: mapProviderMock,
-      mapViewParamKey: 'mv',
+      mapViewQueryParam: 'mv',
       manageHistoryState: true,
       preserveStateOnClose: false
     })
@@ -303,7 +303,7 @@ describe('InteractiveMap Core Functionality', () => {
     const map = new InteractiveMap('map', {
       behaviour: 'buttonFirst',
       mapProvider: mapProviderMock,
-      mapViewParamKey: 'mv',
+      mapViewQueryParam: 'mv',
       manageHistoryState: true,
       preserveStateOnClose: true
     })
@@ -360,7 +360,7 @@ describe('InteractiveMap Core Functionality', () => {
     const map = new InteractiveMap('map', {
       behaviour: 'buttonFirst',
       mapProvider: mapProviderMock,
-      mapViewParamKey: 'mv',
+      mapViewQueryParam: 'mv',
       manageHistoryState: true,
       preserveStateOnClose: false
     })
@@ -380,7 +380,7 @@ describe('InteractiveMap Core Functionality', () => {
     const map = new InteractiveMap('map', {
       behaviour: 'buttonFirst',
       mapProvider: mapProviderMock,
-      mapViewParamKey: 'mv',
+      mapViewQueryParam: 'mv',
       manageHistoryState: false,
       preserveStateOnClose: false
     })

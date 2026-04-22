@@ -1,7 +1,6 @@
 import { getQueryParam } from '../utils/queryString.js'
 import { toggleInertElements } from '../utils/toggleInertElements.js'
 import { isHybridFullscreen } from '../utils/getIsFullscreen.js'
-import defaults from '../config/defaults.js'
 
 // -----------------------------------------------------------------------------
 // Internal (not exported)
@@ -25,10 +24,10 @@ function getIsFullscreen (config) {
     if (manageHistoryState === false) {
       return true
     }
-    return getQueryParam(defaults.mapViewParamKey) === id
+    return getQueryParam(config.mapViewQueryParam) === id
   }
 
-  return isHybridFullscreen(config) && getQueryParam(defaults.mapViewParamKey) === id
+  return isHybridFullscreen(config) && getQueryParam(config.mapViewQueryParam) === id
 }
 
 // -----------------------------------------------------------------------------

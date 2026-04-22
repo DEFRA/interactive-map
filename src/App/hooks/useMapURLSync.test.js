@@ -25,7 +25,7 @@ describe('useMapURLSync', () => {
   })
 
   it('registers map:stateupdated listener and cleans up', () => {
-    useConfig.mockReturnValue({ id: 'map123' })
+    useConfig.mockReturnValue({ id: 'map123', urlPosition: 'sync' })
 
     const { unmount } = renderHook(() => useMapURLSync())
     expect(mockEventBus.on).toHaveBeenCalledWith('map:stateupdated', expect.any(Function))
@@ -35,7 +35,7 @@ describe('useMapURLSync', () => {
   })
 
   it('calls setMapStateInURL on map:stateupdated', () => {
-    useConfig.mockReturnValue({ id: 'map123' })
+    useConfig.mockReturnValue({ id: 'map123', urlPosition: 'sync' })
 
     renderHook(() => useMapURLSync())
 
@@ -50,12 +50,29 @@ describe('useMapURLSync', () => {
   })
 
   it('does nothing if id is falsy', () => {
-    useConfig.mockReturnValue({ id: null })
+    useConfig.mockReturnValue({ id: null, urlPosition: 'sync' })
 
     const { unmount } = renderHook(() => useMapURLSync())
     expect(mockEventBus.on).not.toHaveBeenCalled()
     expect(mockEventBus.off).not.toHaveBeenCalled()
 
     unmount() // cleanup should not throw
+  })
+
+  it('does not register listener when urlPosition is none', () => {
+    useConfig.mockReturnValue({ id: 'map123', urlPosition: 'none' })
+
+    const { unmount } = renderHook(() => useMapURLSync())
+    expect(mockEventBus.on).not.toHaveBeenCalled()
+
+    unmount()
+    expect(mockEventBus.off).not.toHaveBeenCalled()
+  })
+
+  it('does not register listener when urlPosition is readOnly', () => {
+    useConfig.mockReturnValue({ id: 'map123', urlPosition: 'readOnly' })
+
+    renderHook(() => useMapURLSync())
+    expect(mockEventBus.on).not.toHaveBeenCalled()
   })
 })
