@@ -2,6 +2,7 @@
  * @typedef {import('../../../src/types.js').MapProviderDescriptor} MapProviderDescriptor
  * @typedef {import('../../../src/types.js').MapProviderLoadResult} MapProviderLoadResult
  * @typedef {import('../../../src/types.js').MapProviderConfig} MapProviderConfig
+ * @typedef {import('../../../src/types.js').MaplibreProviderConfig} MaplibreProviderConfig
  */
 
 import { getWebGL } from './utils/detectWebgl.js'
@@ -21,7 +22,7 @@ function supportsModernMaplibre () {
 /**
  * Creates a MapLibre provider descriptor for lazy-loading the map provider.
  *
- * @param {Partial<MapProviderConfig>} [config={}] - Optional provider configuration overrides.
+ * @param {MaplibreProviderConfig} [config={}] - Optional provider configuration overrides.
  * @returns {MapProviderDescriptor} The map provider descriptor.
  */
 export default function createMapLibreProvider (config = {}) {
@@ -37,6 +38,11 @@ export default function createMapLibreProvider (config = {}) {
     /** @returns {Promise<MapProviderLoadResult>} */
     load: async () => {
       const mapFramework = await import(/* webpackChunkName: "im-maplibre-framework" */ 'maplibre-gl')
+
+      if (config.workerUrl) {
+        mapFramework.workerUrl = config.workerUrl
+      }
+
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 
       /** @type {MapProviderConfig} */
