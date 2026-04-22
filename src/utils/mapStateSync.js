@@ -73,7 +73,7 @@ const setMapStateInURL = (id, state, currentHref = window.location.href) => {
  * @returns {{ center: [number, number], zoom: number } | { bounds: any }}
  */
 const getInitialMapState = ({ id, center, zoom, bounds, urlPosition = 'sync' }, search = window.location.search) => {
-  const savedState = urlPosition !== 'none' ? getMapStateFromURL(id, search) : null
+  const savedState = urlPosition === 'none' ? null : getMapStateFromURL(id, search)
   if (savedState) {
     return {
       center: savedState.center,

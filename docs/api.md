@@ -319,7 +319,7 @@ Controls how map center and zoom interact with the page URL.
 
 | Value | Behaviour |
 |---|---|
-| `'sync'` | Reads center/zoom from the URL on load and writes back on pan/zoom |
+| `'sync'` | Reads center/zoom from the URL on load and writes back on pan/zoom — enables bookmarking and sharing the current map view |
 | `'readOnly'` | Seeds the initial view from the URL but never writes back |
 | `'none'` | Ignores the URL entirely — use when you don't want the user's pan/zoom to be persisted or shared |
 ---
