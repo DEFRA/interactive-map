@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interactive Map – UMD sanity check</title>
+  <link rel="stylesheet" href="/assets/govuk-frontend.min.css">
+  <link rel="stylesheet" href="/node_modules/maplibre-gl/dist/maplibre-gl.css">
+  <link rel="stylesheet" href="/dist/css/index.css">
+  <link rel="stylesheet" href="/plugins/beta/datasets/dist/css/index.css">
+  <style>
+    body { padding: 20px; font-family: sans-serif; }
+  </style>
+</head>
+<body>
+  <h1>UMD sanity check – datasets maplibre plugin</h1>
+  <p>
+    Tests the combined datasets + maplibre adapter UMD bundle. Run
+    <code>npm run build:umd</code> before opening this page.
+  </p>
+  <div id="map"></div>
+
+  <!-- Core (bundles preact) -->
+  <script src="/dist/umd/index.js"></script>
+  <!-- MapLibre provider -->
+  <script src="/providers/maplibre/dist/umd/index.js"></script>
+  <!-- Combined datasets + maplibre adapter plugin -->
+  <script src="/plugins/beta/datasets/dist/umd/maplibre/index.js"></script>
+
+  <script src="/umd.js"></script>
+</body>
+</html>

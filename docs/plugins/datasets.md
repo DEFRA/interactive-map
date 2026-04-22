@@ -2,7 +2,7 @@
 
 The datasets plugin renders GeoJSON and vector tile datasets on the map, with support for polygon, line, and symbol (point) layer types, sublayer style rules, layer visibility toggling, a key panel, and runtime style and data updates.
 
-## Usage
+## ESM usage
 
 ```js
 import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
@@ -35,16 +35,14 @@ const interactiveMap = new InteractiveMap({
 
 ## UMD usage
 
-Copy `plugins/beta/datasets/dist/umd/` to `/your-assets-path/plugins/datasets/` and `plugins/beta/datasets/adapters/maplibre/dist/umd/` to `/your-assets-path/plugins/datasets/adapters/maplibre/`, then load both script tags. Unlike other plugins, the datasets plugin requires a second file for the layer adapter.
+Copy `plugins/beta/datasets/dist/umd/maplibre/` to `/your-assets-path/plugins/beta/datasets/umd/maplibre/`, then load the script tag. The MapLibre adapter is included — no `layerAdapter` config is needed.
 
 ```html
-<script defer src="/your-assets-path/plugins/datasets/index.js"></script>
-<script defer src="/your-assets-path/plugins/datasets/adapters/maplibre/index.js"></script>
+<script defer src="/your-assets-path/plugins/beta/datasets/umd/maplibre/index.js"></script>
 ```
 
 ```js
-const datasetsPlugin = defra.datasetsPlugin({
-  layerAdapter: defra.datasetsMaplibreAdapter,
+const datasetsPlugin = defra.datasetsMaplibrePlugin({
   datasets: [
     {
       id: 'my-parcels',
@@ -65,10 +63,9 @@ const datasetsPlugin = defra.datasetsPlugin({
 ```
 
 > [!NOTE]
-> **GOV.UK Prototype Kit** — skip the copy step. Both files are served automatically. Use these paths instead:
+> **GOV.UK Prototype Kit** — skip the copy step. The file is served automatically. Use this path instead:
 > ```html
-> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/index.js"></script>
-> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/adapters/maplibre/dist/umd/index.js"></script>
+> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/maplibre/index.js"></script>
 > ```
 
 ## Options
@@ -78,6 +75,9 @@ Options are passed to the factory function when creating the plugin.
 ---
 
 ### `layerAdapter`
+
+> [!NOTE]
+> UMD users using the `datasetsMaplibrePlugin` bundle do not need to set this — the MapLibre adapter is pre-configured.
 
 **Type:** `LayerAdapter`
 **Required**

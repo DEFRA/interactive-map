@@ -8,8 +8,12 @@ import RemoveFilesPlugin from 'remove-files-webpack-plugin'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = false, externalPreact = true) => {
-  const cssFolder = path.resolve(__dirname, outDir, '../css')
+const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = false, externalPreact = true, cssOutDir = null) => {
+  const outPath = path.resolve(__dirname, outDir)
+  const cssFolder = cssOutDir
+    ? path.resolve(__dirname, cssOutDir, 'css')
+    : path.resolve(outPath, '../css')
+  const cssRelative = path.relative(outPath, cssFolder)
 
   if (!fs.existsSync(cssFolder)) {
     fs.mkdirSync(cssFolder, { recursive: true })
@@ -21,7 +25,7 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
       before: { include: [cssFolder] }
     }),
     new MiniCssExtractPlugin({
-      filename: `../css/${entryName}.css`
+      filename: `${cssRelative}/${entryName}.css`
     }),
     new RemoveFilesPlugin({
       before: { include: [path.resolve(__dirname, outDir)] }
@@ -139,8 +143,7 @@ const ALL_BUILDS = [
   { entryPath: './plugins/beta/use-location/src/index.js', libraryPath: 'useLocationPlugin', outDir: 'plugins/beta/use-location/dist/umd' },
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },
-  { entryPath: './plugins/beta/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/beta/datasets/dist/umd' },
-  { entryPath: './plugins/beta/datasets/src/adapters/maplibre/index.umd.js', libraryPath: 'datasetsMaplibreAdapter', outDir: 'plugins/beta/datasets/adapters/maplibre/dist/umd' },
+  { entryPath: './plugins/beta/datasets/src/index.maplibre.umd.js', libraryPath: 'datasetsMaplibrePlugin', outDir: 'plugins/beta/datasets/dist/umd/maplibre', cssOutDir: 'plugins/beta/datasets/dist' },
   { entryPath: './plugins/beta/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/beta/map-styles/dist/umd' },
   { entryPath: './plugins/beta/draw-ml/src/index.js', libraryPath: 'drawMLPlugin', outDir: 'plugins/beta/draw-ml/dist/umd' },
   { entryPath: './plugins/beta/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/beta/frame/dist/umd' }
@@ -154,5 +157,5 @@ const buildsToRun = BUILD_TARGET
 
 // === Export final config ===
 export default buildsToRun.map(b =>
-  createUMDConfig('index', b.entryPath, b.libraryPath, b.outDir, b.isCore || false, b.externalPreact !== false)
+  createUMDConfig('index', b.entryPath, b.libraryPath, b.outDir, b.isCore || false, b.externalPreact !== false, b.cssOutDir || null)
 )

@@ -13,7 +13,6 @@
     "/providers/maplibre/dist",
     "/providers/beta/open-names/dist",
     "/plugins/beta/datasets/dist",
-    "/plugins/beta/datasets/adapters/maplibre/dist",
     "/plugins/interact/dist",
     "/plugins/beta/map-styles/dist",
     "/plugins/beta/scale-bar/dist",

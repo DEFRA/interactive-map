@@ -108,6 +108,10 @@ export default {
       {
         directory: path.join(__dirname, 'assets'),
         publicPath: '/assets' // Images served from here as used in both demo and prototype kit plugin
+      },
+      {
+        directory: __dirname,
+        watch: false // serve built dist files (e.g. dist/umd/) without watching for changes
       }
     ],
     compress: true,

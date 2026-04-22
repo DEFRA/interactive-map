@@ -41,12 +41,10 @@
       "require": "./plugins/interact/dist/umd/index.js"
     },
     "./plugins/datasets": {
-      "import": "./plugins/beta/datasets/dist/esm/index.js",
-      "require": "./plugins/beta/datasets/dist/umd/index.js"
+      "import": "./plugins/beta/datasets/dist/esm/index.js"
     },
     "./plugins/datasets/adapters/maplibre": {
-      "import": "./plugins/beta/datasets/adapters/maplibre/dist/esm/index.js",
-      "require": "./plugins/beta/datasets/adapters/maplibre/dist/umd/index.js"
+      "import": "./plugins/beta/datasets/dist/adapters/maplibre/esm/index.js"
     },
     "./plugins/map-styles": {
       "import": "./plugins/beta/map-styles/dist/esm/index.js",
