@@ -330,7 +330,6 @@ interactiveMap.on('interact:cancel', function (e) {
 })
 
 interactiveMap.on('interact:selectionchange', function (e) {
-	console.log(e)
 	const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
 	const singleFeature = e.selectedFeatures.length === 1
 	const anyFeature = e.selectedFeatures.length > 0

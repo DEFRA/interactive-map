@@ -56,14 +56,14 @@ const updateMarkerPositions = (items, markerRefs, mapProvider, mapSize, isMapRea
  * @param {Object} eventBus - Application event bus
  * @param {Object} markers - Markers API object with `add`, `update` and `remove` methods
  */
-const useMarkerEventListeners = (eventBus, markers) => {
+const useMarkerEventListeners = (eventBus, markersRef) => {
   useEffect(() => {
     const handleAddMarker = (payload = {}) => {
       if (!payload?.id || !payload?.coords) {
         return
       }
       const { id, coords, options } = payload
-      markers.add(id, coords, options)
+      markersRef.current.add(id, coords, options)
     }
     eventBus.on(events.APP_ADD_MARKER, handleAddMarker)
 
@@ -72,7 +72,7 @@ const useMarkerEventListeners = (eventBus, markers) => {
         return
       }
       const { id, options } = payload
-      markers.update(id, options)
+      markersRef.current.update(id, options)
     }
     eventBus.on(events.APP_UPDATE_MARKER, handleUpdateMarker)
 
@@ -80,7 +80,7 @@ const useMarkerEventListeners = (eventBus, markers) => {
       if (!id) {
         return
       }
-      markers.remove(id)
+      markersRef.current.remove(id)
     }
     eventBus.on(events.APP_REMOVE_MARKER, handleRemoveMarker)
 
@@ -105,6 +105,7 @@ export const useMarkers = () => {
   const { eventBus } = useService()
   const { markers, dispatch, mapSize, isMapReady } = useMap()
   const markerRefs = useRef(new Map())
+  const markersRef = useRef(markers)
 
   // Attach add, remove, and getMarker methods to the markers store object.
   // useLayoutEffect ensures these are assigned before paint so rapid clicks can't
@@ -114,6 +115,7 @@ export const useMarkers = () => {
       return
     }
 
+    markersRef.current = markers
     markers.markerRefs = markerRefs.current
 
     markers.add = (id, coords, options) => {
@@ -171,7 +173,7 @@ export const useMarkers = () => {
     updateMarkerPositions(markers.items, markerRefs.current, mapProvider, mapSize, isMapReady)
   }, [mapSize, markers.items, mapProvider, isMapReady])
 
-  useMarkerEventListeners(eventBus, markers)
+  useMarkerEventListeners(eventBus, markersRef)
 
   return { markers, markerRef }
 }

@@ -1,0 +1,89 @@
+import DemoMapToggleMarkerLabel from '../../demo/DemoMapToggleMarkerLabel.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
+
+# Toggle marker label on click
+
+Add a marker with a hidden label, then use the interact plugin to show the label when the marker is selected and hide it when the user clicks elsewhere.
+
+<DemoMapToggleMarkerLabel />
+
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+      import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+
+      const interactPlugin = createInteractPlugin({
+        deselectOnClickOutside: true
+      })
+
+      const map = new InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-2.96, 54.43],
+        zoom: 15,
+        containerHeight: '500px',
+        plugins: [interactPlugin]
+      })
+
+      map.on('map:ready', () => {
+        map.addMarker('my-marker', [-2.96, 54.43], {
+          label: 'My location',
+          showLabel: false
+        })
+        interactPlugin.enable()
+      })
+
+      map.on('interact:selectionchange', ({ selectedMarkers }) => {
+        map.updateMarker('my-marker', { showLabel: selectedMarkers.includes('my-marker') })
+      })
+    `
+  },
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script src="/your-assets-path/interact-plugin/index.js"></script>
+
+      <script>
+      const interactPlugin = defra.interactPlugin({
+        deselectOnClickOutside: true
+      })
+
+      const map = new defra.InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-2.96, 54.43],
+        zoom: 15,
+        containerHeight: '500px',
+        plugins: [interactPlugin]
+      })
+
+      map.on('map:ready', () => {
+        map.addMarker('my-marker', [-2.96, 54.43], {
+          label: 'My location',
+          showLabel: false
+        })
+        interactPlugin.enable()
+      })
+
+      map.on('interact:selectionchange', ({ selectedMarkers }) => {
+        map.updateMarker('my-marker', { showLabel: selectedMarkers.includes('my-marker') })
+      })
+      </script>
+    `
+  }
+]} />

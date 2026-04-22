@@ -2,11 +2,13 @@ import useBaseUrl from '@docusaurus/useBaseUrl'
 import basicMapImg from '../assets/images/basic-map.jpg'
 import buttonFirstImg from '../assets/images/button-first.jpg'
 import markerPanelImg from '../assets/images/marker-panel.jpg'
+import toggleMarkerLabelImg from '../assets/images/toggle-marker-label.jpg'
 
 export function ExampleCards() {
   const basicHref = useBaseUrl('/examples/basic-map')
   const buttonHref = useBaseUrl('/examples/button-map')
   const interactHref = useBaseUrl('/examples/add-marker-with-panel')
+  const toggleMarkerLabelHref = useBaseUrl('/examples/toggle-marker-label')
 
   return (
     <div className='govuk-grid-row'>
@@ -36,6 +38,16 @@ export function ExampleCards() {
           <div className='app-example-card__body'>
             <h2 className='govuk-heading-m'>
               <a href={interactHref}>Add a marker with a panel</a>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div className='govuk-grid-column-one-half'>
+        <div className='app-example-card'>
+          <img src={toggleMarkerLabelImg} alt='' />
+          <div className='app-example-card__body'>
+            <h2 className='govuk-heading-m'>
+              <a href={toggleMarkerLabelHref}>Toggle marker label on click</a>
             </h2>
           </div>
         </div>
