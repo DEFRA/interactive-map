@@ -34,7 +34,8 @@ export default {
       '<rootDir>/plugins/beta/scale-bar',
       '<rootDir>/plugins/beta/use-location',
       '<rootDir>/.docusaurus',
-      '<rootDir>/build/assets/js'
+      '<rootDir>/build/assets/js',
+      '/dist/'
     ],
     transformIgnorePatterns: []
   }]
