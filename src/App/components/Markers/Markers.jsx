@@ -23,7 +23,6 @@ const resolveViewBox = (marker, defaults, symbolDef) =>
 const resolveAnchor = (marker, defaults, symbolDef) =>
   marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
 
-
 const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected) => {
   const symbolDef = resolveSymbolDef(marker, defaults, symbolRegistry)
   const styleValues = Object.fromEntries(
