@@ -193,19 +193,45 @@ export const Markers = () => {
   const defaults = symbolRegistry.getDefaults()
 
   return (
-    <div className='im-c-markers'>
+    <>
       {markers.items.map(marker => {
-        if (isStandaloneLabel(marker)) {
-          return renderStandaloneLabel(marker, id, markerRef)
-        }
         const isSelected = selectedMarkers.includes(marker.id)
-        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected)
-        const showLabel = marker.showLabel ?? false
-        if (showLabel && marker.label) {
-          return renderMarkerWithLabel(marker, id, markerRef, isSelected, symbolProps)
+        if (isStandaloneLabel(marker)) {
+          return (
+            <li // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
+              key={marker.id}
+              id={`${id}-feature-${marker.id}`}
+              role='option' // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
+              aria-selected={false}
+            >
+              {renderStandaloneLabel(marker, id, markerRef)}
+            </li>
+          )
         }
-        return renderSvgMarker(marker, id, markerRef, isSelected, symbolProps)
+        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected)
+        if (marker.showLabel && marker.label) {
+          return (
+            <li // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
+              key={marker.id}
+              id={`${id}-feature-${marker.id}`}
+              role='option' // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
+              aria-selected={isSelected}
+            >
+              {renderMarkerWithLabel(marker, id, markerRef, isSelected, symbolProps)}
+            </li>
+          )
+        }
+        return (
+          <li // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
+            key={marker.id}
+            id={`${id}-feature-${marker.id}`}
+            role='option'
+            aria-selected={isSelected}
+          >
+            {renderSvgMarker(marker, id, markerRef, isSelected, symbolProps)}
+          </li>
+        )
       })}
-    </div>
+    </>
   )
 }

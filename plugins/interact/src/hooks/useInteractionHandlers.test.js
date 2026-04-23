@@ -32,6 +32,7 @@ const click = result =>
 
 const makeMarkerEl = (rect) => ({
   getBoundingClientRect: () => rect,
+  closest: () => ({ getBoundingClientRect: () => ({ left: 0, top: 0 }) }),
   parentElement: {
     getBoundingClientRect: () => ({ left: 0, top: 0 })
   }
@@ -127,10 +128,11 @@ describe('DOM marker hit detection', () => {
     )
   })
 
-  it('uses zero offset when marker element has no parentElement', () => {
-    // parentElement is null — fallback parentRect { left: 0, top: 0 } should be used
+  it('uses zero offset when marker element has no features container or parentElement', () => {
+    // closest and parentElement both null — fallback parentRect { left: 0, top: 0 } should be used
     const markerEl = {
       getBoundingClientRect: () => ({ left: 5, top: 15, right: 15, bottom: 25 }),
+      closest: () => null,
       parentElement: null
     }
     const markerRefs = new Map([['marker-1', markerEl]])
