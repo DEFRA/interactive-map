@@ -25,13 +25,13 @@ const initSublayerVisibility = (dataset) => {
 }
 
 const setDatasets = (state, payload) => {
-  const { datasets, datasetDefaults } = payload
-  const datasetsWithDefaults = datasets.map(dataset => initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults)))
+  const { datasets } = payload
+  const datasetsWithSublayerVisibility = datasets.map(initSublayerVisibility)
   const menu = payload.menu || datasetsToMenu({ datasets })
-  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetsWithDefaults })
+  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetsWithSublayerVisibility })
   return {
     ...state,
-    datasets: datasetsWithDefaults,
+    datasets: datasetsWithSublayerVisibility,
     mappedDatasets,
     orderedDatasets,
     menu

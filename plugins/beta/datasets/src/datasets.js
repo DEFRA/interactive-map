@@ -14,6 +14,7 @@ export const createDatasets = ({
   mapStyle,
   mapProvider,
   events,
+  dispatch,
   eventBus
 }) => {
   const { datasets } = pluginConfig
@@ -38,7 +39,7 @@ export const createDatasets = ({
       })
       dynamicSources.set(dataset.id, dynamicSource)
     })
-
+    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, datasetDefaults } })
     eventBus.emit('datasets:ready')
   })
 
