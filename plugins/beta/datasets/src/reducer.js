@@ -26,10 +26,14 @@ const initSublayerVisibility = (dataset) => {
 
 const setDatasets = (state, payload) => {
   const { datasets, datasetDefaults } = payload
+  const datasetsWithDefaults = datasets.map(dataset => initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults)))
   const menu = payload.menu || datasetsToMenu({ datasets })
+  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetsWithDefaults })
   return {
     ...state,
-    datasets: datasets.map(dataset => initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults))),
+    datasets: datasetsWithDefaults,
+    mappedDatasets,
+    orderedDatasets,
     menu
   }
 }
@@ -59,7 +63,8 @@ const setDatasetVisibility = (state, payload) => {
     ...state,
     datasets: state.datasets?.map(dataset =>
       dataset.id === id ? { ...dataset, visibility } : dataset
-    )
+    ),
+    mappedDatasets: { ...state.mappedDatasets, [id]: { ...state.mappedDatasets[id], visibility } }
   }
 }
 
@@ -112,8 +117,10 @@ const showFeatures = (state, payload) => {
 
 const setSublayerVisibility = (state, payload) => {
   const { datasetId, sublayerId, visibility } = payload
+  const id = `${datasetId}-${sublayerId}`
   return {
     ...state,
+    mappedDatasets: { ...state.mappedDatasets, [id]: { ...state.mappedDatasets[id], visibility } },
     datasets: state.datasets?.map(dataset => {
       if (dataset.id !== datasetId) {
         return dataset
