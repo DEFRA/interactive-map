@@ -252,6 +252,7 @@ const interactiveMap = new InteractiveMap('map', {
 	containerHeight: '650px',
 	transformRequest: transformTileRequest,
 	readMapText: true,
+	// urlPosition: 'none',
 	// enableFullscreen: true,
 	// hasExitButton: true,
 	// markers: [{

@@ -1,5 +1,4 @@
 import { createButton } from './buttonManager.js'
-import defaults from '../config/defaults.js'
 
 describe('createButton', () => {
   let rootEl, handleClick, button
@@ -19,11 +18,11 @@ describe('createButton', () => {
   })
 
   it('creates button with correct attributes and inserts before rootEl', () => {
-    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn' }
+    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn', mapViewQueryParam: 'mv' }
     button = createButton(config, rootEl, handleClick)
 
     const expectedHref = new URL(window.location.href)
-    expectedHref.searchParams.set(defaults.mapViewParamKey, 'map')
+    expectedHref.searchParams.set('mv', 'map')
 
     expect(button).toBeInstanceOf(HTMLAnchorElement)
     expect(button.getAttribute('href')).toBe(expectedHref.toString())
@@ -34,7 +33,7 @@ describe('createButton', () => {
   })
 
   it('prevents default and calls handleClick on click', () => {
-    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn' }
+    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn', mapViewQueryParam: 'mv' }
     button = createButton(config, rootEl, handleClick)
 
     const clickEvent = new MouseEvent('click', { bubbles: true, cancelable: true })
@@ -47,21 +46,30 @@ describe('createButton', () => {
   })
 
   it('builds href with map param and preserves existing query params', () => {
-    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn' }
+    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn', mapViewQueryParam: 'mv' }
     button = createButton(config, rootEl, handleClick)
 
     const url = new URL(button.getAttribute('href'))
     expect(url.searchParams.get('foo')).toBe('bar') // existing param preserved
-    expect(url.searchParams.get(defaults.mapViewParamKey)).toBe('map') // new param added
+    expect(url.searchParams.get('mv')).toBe('map') // new param added
   })
 
   it('sets correct href even when no existing query params', () => {
     window.history.replaceState({}, '', '/test') // no query
-    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn' }
+    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn', mapViewQueryParam: 'mv' }
     button = createButton(config, rootEl, handleClick)
 
     const url = new URL(button.getAttribute('href'))
     expect(url.pathname).toBe('/test')
-    expect(url.searchParams.get(defaults.mapViewParamKey)).toBe('map')
+    expect(url.searchParams.get('mv')).toBe('map')
+  })
+
+  it('uses a custom mapViewQueryParam in the button href', () => {
+    const config = { id: 'map', buttonText: 'View Map', buttonClass: 'custom-btn', mapViewQueryParam: 'view' }
+    button = createButton(config, rootEl, handleClick)
+
+    const url = new URL(button.getAttribute('href'))
+    expect(url.searchParams.get('view')).toBe('map')
+    expect(url.searchParams.has('mv')).toBe(false)
   })
 })

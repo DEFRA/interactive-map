@@ -72,8 +72,8 @@ const setMapStateInURL = (id, state, currentHref = window.location.href) => {
  * @param {string} [search] - URL search string. Defaults to `window.location.search`.
  * @returns {{ center: [number, number], zoom: number } | { bounds: any }}
  */
-const getInitialMapState = ({ id, center, zoom, bounds }, search = window.location.search) => {
-  const savedState = getMapStateFromURL(id, search)
+const getInitialMapState = ({ id, center, zoom, bounds, urlPosition = 'sync' }, search = window.location.search) => {
+  const savedState = urlPosition === 'none' ? null : getMapStateFromURL(id, search)
   if (savedState) {
     return {
       center: savedState.center,

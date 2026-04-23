@@ -30,6 +30,24 @@ describe('mapStateSync utilities', () => {
       const state = getInitialMapState({ id: 'map1', bounds }, '')
       expect(state.bounds).toEqual(bounds)
     })
+
+    it('ignores URL params when urlPosition is none', () => {
+      const state = getInitialMapState(
+        { id: 'map1', center: [1, 2], zoom: 3, urlPosition: 'none' },
+        '?map1:center=10,20&map1:zoom=5'
+      )
+      expect(state.center).toEqual([1, 2])
+      expect(state.zoom).toBe(3)
+    })
+
+    it('reads URL params when urlPosition is readOnly', () => {
+      const state = getInitialMapState(
+        { id: 'map1', center: [1, 2], zoom: 3, urlPosition: 'readOnly' },
+        '?map1:center=10,20&map1:zoom=5'
+      )
+      expect(state.center).toEqual([10, 20])
+      expect(state.zoom).toBe(5)
+    })
   })
 
   describe('setMapStateInURL', () => {
