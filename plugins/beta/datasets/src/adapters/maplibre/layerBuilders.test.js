@@ -1,7 +1,7 @@
 import { addSource, addFillLayer, addStrokeLayer, addSymbolLayer, addSublayerLayers, addDatasetLayers } from './layerBuilders'
 
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
-import { hasPattern, getPatternImageId } from './patternImages.js'
+import { hasPattern } from './patternImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, isDynamicSource } from './layerIds.js'
 import { hasSymbol, getSymbolDef, getSymbolAnchor, anchorToMaplibre, getSymbolImageId } from './symbolImages.js'
