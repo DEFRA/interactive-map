@@ -1,8 +1,14 @@
 import { createKeyboardActions } from './keyboardActions.js'
-import { reverseGeocode } from '../../services/reverseGeocode.js'
+import { reverseGeocode, hasReverseGeocode } from '../../services/reverseGeocode.js'
+import { logger } from '../../services/logger.js'
 
 jest.mock('../../services/reverseGeocode.js', () => ({
-  reverseGeocode: jest.fn()
+  reverseGeocode: jest.fn(),
+  hasReverseGeocode: jest.fn()
+}))
+
+jest.mock('../../services/logger.js', () => ({
+  logger: { warn: jest.fn() }
 }))
 
 describe('createKeyboardActions', () => {
@@ -54,6 +60,7 @@ describe('createKeyboardActions', () => {
     dispatch = jest.fn()
     containerRef = { current: {} }
     readMapText = true
+    hasReverseGeocode.mockReturnValue(true)
   })
 
   test('showKeyboardControls dispatches correct action', () => {
@@ -83,6 +90,14 @@ describe('createKeyboardActions', () => {
   ])('%s uses correct deltas', (method, event, expected) => {
     create()[method](event)
     expect(mapProvider[method]).toHaveBeenCalledWith(expected)
+  })
+
+  test('getInfo does nothing when reverseGeocode is not configured', async () => {
+    hasReverseGeocode.mockReturnValue(false)
+    await create().getInfo()
+    expect(reverseGeocode).not.toHaveBeenCalled()
+    expect(announce).not.toHaveBeenCalled()
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('reverseGeocode'))
   })
 
   test('getInfo performs reverse geocode, places marker, and announces', async () => {

@@ -1,5 +1,5 @@
 // reverseGeocode.test.js
-import { createReverseGeocode, reverseGeocode } from './reverseGeocode'
+import { createReverseGeocode, reverseGeocode, hasReverseGeocode } from './reverseGeocode'
 
 describe('reverseGeocode module', () => {
   beforeEach(() => {
@@ -9,6 +9,10 @@ describe('reverseGeocode module', () => {
 
   it('throws if reverseGeocodeFn is not initialised', () => {
     expect(() => reverseGeocode(10, [0, 0])).toThrow('ReverseGeocode not initialised')
+  })
+
+  it('hasReverseGeocode returns false before initialisation', () => {
+    expect(hasReverseGeocode()).toBe(false)
   })
 
   it('sets reverseGeocodeFn via createReverseGeocode and calls providerFn correctly', async () => {
@@ -42,6 +46,12 @@ describe('reverseGeocode module', () => {
     )
 
     expect(result).toBe('result')
+  })
+
+  it('hasReverseGeocode returns true after initialisation', () => {
+    const config = { url: 'x', transformRequest: jest.fn(), load: jest.fn().mockResolvedValue(jest.fn()) }
+    createReverseGeocode(config, 'EPSG:4326')
+    expect(hasReverseGeocode()).toBe(true)
   })
 
   it('supports multiple calls after initialisation', async () => {

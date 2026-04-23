@@ -1,4 +1,5 @@
 export default {
+  workerIdleMemoryLimit: '512MB',
   collectCoverage: true,
   coverageDirectory: 'coverage',
   cacheDirectory: '.jest-cache',
