@@ -669,3 +669,113 @@ describe('_getLayersUsingSource', () => {
     expect(adapter._getLayersUsingSource('source-ds')).toEqual(['ds-fill'])
   })
 })
+
+// ─── destroy: shared source not removed twice (line 71) ──────────────────────
+
+describe('destroy — shared source deduplication', () => {
+  it('removes a shared source only once when two datasets reference it (line 71)', () => {
+    const { adapter, map } = makeAdapter()
+    const ds1 = { id: 'ds1' }
+    const ds2 = { id: 'ds2' }
+    // Both datasets resolve to the same source
+    getSourceId.mockReturnValue('shared-source')
+    getAllLayerIds.mockReturnValue([])
+    map.getStyle.mockReturnValue({ layers: [] })
+    adapter.destroy([ds1, ds2])
+    expect(map.removeSource).toHaveBeenCalledTimes(1)
+    expect(map.removeSource).toHaveBeenCalledWith('shared-source')
+  })
+
+  it('does not remove source when map.getSource returns nothing (line 71)', () => {
+    const { adapter, map } = makeAdapter()
+    getAllLayerIds.mockReturnValue([])
+    map.getStyle.mockReturnValue({ layers: [] })
+    map.getSource.mockReturnValue(undefined)
+    adapter.destroy([dataset])
+    expect(map.removeSource).not.toHaveBeenCalled()
+  })
+})
+
+// ─── onSizeChange: null imageId guards (lines 131, 137-139, 149) ─────────────
+
+describe('onSizeChange — null imageId guards', () => {
+  it('does not call setLayoutProperty when getSymbolImageId returns null for a tracked symbol layer (line 131)', async () => {
+    const { adapter, map } = makeAdapter({ 'ds-fill': 'symbol' })
+    adapter._symbolLayerIds.add('ds-fill')
+    getSymbolImageId.mockReturnValue(null)
+    await adapter.onSizeChange([dataset], mapStyle)
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
+  })
+
+  it('does not enter fill-pattern block when the fill layer does not exist (line 137)', async () => {
+    const { adapter, map } = makeAdapter()
+    hasPattern.mockReturnValue(true)
+    getLayerIds.mockReturnValue({ fillLayerId: 'ds-fill', strokeLayerId: null, symbolLayerId: null })
+    map.getLayer.mockReturnValue(undefined)
+    await adapter.onSizeChange([dataset], mapStyle)
+    expect(map.setPaintProperty).not.toHaveBeenCalled()
+  })
+
+  it('does not call setPaintProperty when fill layer exists but getPatternImageId returns null (lines 138-139)', async () => {
+    const { adapter, map } = makeAdapter({ 'ds-fill': 'fill' })
+    hasPattern.mockReturnValue(true)
+    getLayerIds.mockReturnValue({ fillLayerId: 'ds-fill', strokeLayerId: null, symbolLayerId: null })
+    getPatternImageId.mockReturnValue(null)
+    await adapter.onSizeChange([dataset], mapStyle)
+    expect(map.setPaintProperty).not.toHaveBeenCalled()
+  })
+
+  it('does not call setLayoutProperty when sublayer symbol layer exists but getSymbolImageId returns null (line 149)', async () => {
+    const { adapter, map } = makeAdapter({ 'ds-sl-symbol': 'symbol' })
+    const ds = { ...dataset, sublayers: [{ id: 'sl' }] }
+    mergeSublayer.mockReturnValue({ symbol: 'marker' })
+    map.getLayer.mockImplementation((id) => id === 'ds-sl-symbol' ? { id, type: 'symbol' } : undefined)
+    getSymbolImageId.mockReturnValue(null)
+    await adapter.onSizeChange([ds], mapStyle)
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
+  })
+})
+
+// ─── setSublayerStyle: tiled dataset uses sourceLayer (line 314) ─────────────
+
+describe('setSublayerStyle — tiled dataset', () => {
+  it('passes the dataset sourceLayer to addSublayerLayers for a tiled dataset (line 314)', async () => {
+    const { adapter } = makeAdapter()
+    const tiledDataset = { ...dataset, tiles: ['https://tiles/{z}/{x}/{y}'], sourceLayer: 'buildings', sublayers: [{ id: 'sl' }] }
+    adapter._datasetSourceMap.set('ds', 'source-ds')
+    await adapter.setSublayerStyle(tiledDataset, 'sl', mapStyle)
+    expect(addSublayerLayers).toHaveBeenCalledWith(
+      adapter._map, tiledDataset, { id: 'sl' }, 'source-ds', 'buildings', expect.any(Object)
+    )
+  })
+})
+
+// ─── _applyFeatureFilter: combined dataset+sublayer filter (line 424) ─────────
+
+describe('_applyFeatureFilter — combined filter', () => {
+  it('combines dataset and sublayer filters with all when both are present (line 424)', () => {
+    const { adapter } = makeAdapter()
+    const ds = {
+      ...dataset,
+      filter: ['==', 'type', 'park'],
+      sublayers: [{ id: 'sl', filter: ['==', 'class', 'wood'] }]
+    }
+    adapter._applyFeatureFilter(ds, 'id', [])
+    expect(applyExclusionFilter).toHaveBeenCalledWith(
+      adapter._map, 'ds-sl', ['all', ['==', 'type', 'park'], ['==', 'class', 'wood']], 'id', []
+    )
+  })
+
+  it('uses only the sublayer filter when the dataset has no filter', () => {
+    const { adapter } = makeAdapter()
+    const ds = {
+      ...dataset,
+      filter: null,
+      sublayers: [{ id: 'sl', filter: ['==', 'class', 'road'] }]
+    }
+    adapter._applyFeatureFilter(ds, 'id', [])
+    expect(applyExclusionFilter).toHaveBeenCalledWith(
+      adapter._map, 'ds-sl', ['==', 'class', 'road'], 'id', []
+    )
+  })
+})
