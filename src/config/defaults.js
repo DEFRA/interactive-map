@@ -21,7 +21,7 @@ const defaults = {
   hasExitButton: false,
   hybridWidth: null, // Defaults to maxMobileWidth if not set
   keyboardHintText: '<span class="im-u-visually-hidden">Press </span><kbd>Alt</kbd> + <kbd>K</kbd> <span class="im-u-visually-hidden">to view </span>keyboard shortcuts',
-  mapLabel: 'Interactive map',
+  mapLabel: 'Interactive map application',
   mapProvider: null,
   mapSize: 'small',
   manageHistoryState: true,

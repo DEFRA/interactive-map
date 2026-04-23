@@ -6,6 +6,9 @@ import * as AppContext from '../../store/appContext' // import the module to moc
 // Simple child component to handle isHidden
 const TestChild = ({ isHidden, children, ...props }) => <div {...props}>{children}</div>
 
+const ACTIONS_SELECTOR = '.im-c-actions'
+const HIDDEN_CLASS = 'im-c-actions--hidden'
+
 describe('Actions component', () => {
   const mockUseApp = {
     openPanels: {},
@@ -53,8 +56,8 @@ describe('Actions component', () => {
         <TestChild isHidden data-testid='child2'>Child 2</TestChild>
       </Actions>
     )
-    const container = screen.getByTestId('child1').closest('.im-c-actions')
-    expect(container).toHaveClass('im-c-actions--hidden')
+    const container = screen.getByTestId('child1').closest(ACTIONS_SELECTOR)
+    expect(container).toHaveClass(HIDDEN_CLASS)
   })
 
   it('shows the container when at least one child is visible', () => {
@@ -64,7 +67,17 @@ describe('Actions component', () => {
         <TestChild isHidden data-testid='child2'>Child 2</TestChild>
       </Actions>
     )
-    const container = screen.getByTestId('child1').closest('.im-c-actions')
-    expect(container).not.toHaveClass('im-c-actions--hidden')
+    const container = screen.getByTestId('child1').closest(ACTIONS_SELECTOR)
+    expect(container).not.toHaveClass(HIDDEN_CLASS)
+  })
+
+  it('hides the container when all visible children have variant touch', () => {
+    render(
+      <Actions slot='actions'>
+        <TestChild isHidden={false} variant='touch' data-testid='child1'>Child 1</TestChild>
+      </Actions>
+    )
+    const container = screen.getByTestId('child1').closest(ACTIONS_SELECTOR)
+    expect(container).toHaveClass(HIDDEN_CLASS)
   })
 })

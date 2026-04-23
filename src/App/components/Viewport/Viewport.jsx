@@ -63,20 +63,20 @@ export const Viewport = () => {
         onFocus={handleFocus}
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
+        aria-describedby={`${id}-keyboard-hint`}
       >
-        {showHint && mainRef?.current && createPortal(
+        {mainRef?.current && createPortal(
           <div
-            className='im-c-viewport__keyboard-hint'
-            aria-hidden='true'
+            id={`${id}-keyboard-hint`}
+            className={`im-c-viewport__keyboard-hint${showHint ? '' : ' im-u-visually-hidden'}`}
             ref={keyboardHintRef}
             dangerouslySetInnerHTML={{ __html: keyboardHintText }}
           />,
           mainRef.current
         )}
-        <div className='im-c-viewport__map-container' ref={mapContainerRef} />
-        <div className='im-c-viewport__features' />
+        <div className='im-c-viewport__map-container' ref={mapContainerRef} aria-hidden='true' />
         <MapStatus />
-        <div className='im-c-viewport__safezone' style={safeZoneInset} ref={layoutRefs.safeZoneRef}>
+        <div className='im-c-viewport__safezone' style={safeZoneInset} ref={layoutRefs.safeZoneRef} aria-hidden='true'>
           <CrossHair />
         </div>
         <Markers />

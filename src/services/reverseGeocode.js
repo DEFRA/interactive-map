@@ -7,6 +7,10 @@ export function createReverseGeocode ({ url, transformRequest, load }, crs) {
   }
 }
 
+export function hasReverseGeocode () {
+  return reverseGeocodeFn !== null
+}
+
 export function reverseGeocode (zoom, coord) {
   if (!reverseGeocodeFn) {
     throw new Error('ReverseGeocode not initialised')
