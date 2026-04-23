@@ -3,8 +3,8 @@ import MaplibreLayerAdapter from './maplibreLayerAdapter'
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
-import { getPatternConfigs, hasPattern, getPatternImageId } from './patternImages.js'
-import { getSymbolConfigs, getSymbolImageId } from './symbolImages.js'
+import { hasPattern, getPatternImageId } from './patternImages.js'
+import { getSymbolImageId } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 
 // ─── Module mocks ─────────────────────────────────────────────────────────────
