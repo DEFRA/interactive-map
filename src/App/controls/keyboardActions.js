@@ -1,4 +1,5 @@
-import { reverseGeocode } from '../../services/reverseGeocode.js'
+import { reverseGeocode, hasReverseGeocode } from '../../services/reverseGeocode.js'
+import { logger } from '../../services/logger.js'
 
 export const createKeyboardActions = (mapProvider, announce, {
   containerRef,
@@ -36,6 +37,10 @@ export const createKeyboardActions = (mapProvider, announce, {
     zoomOut: (e) => mapProvider.zoomOut(getZoom(e.shiftKey)),
 
     getInfo: async (_e) => {
+      if (!hasReverseGeocode()) {
+        logger.warn('Alt+I pressed but reverseGeocode has not been configured')
+        return
+      }
       const coord = mapProvider.getCenter()
       const place = await reverseGeocode(mapProvider.getZoom(), coord)
       const area = mapProvider.getAreaDimensions?.()

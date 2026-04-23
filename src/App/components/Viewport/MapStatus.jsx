@@ -12,10 +12,6 @@ export const MapStatus = () => {
       ref={mapStatusRef}
       role='status'
       className='im-c-viewport__status'
-      aria-live='polite'
-      aria-atomic='true'
-      // aria-relevant="additions"
-      aria-label='Map updates'
     />
   )
 }
