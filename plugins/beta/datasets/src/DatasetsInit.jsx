@@ -30,11 +30,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
       return
     }
 
-    // Only initialise state if not already set
-    if (!pluginState.datasets) {
-      dispatch({ type: 'SET_DATASETS', payload: { datasets: pluginConfig.datasets, datasetDefaults } })
-    }
-
     const initDatasets = async () => {
       if (!pluginConfig.layerAdapter) {
         throw new Error('datasets plugin: no layerAdapter provided. Import and pass maplibreLayerAdapter or a custom adapter.')
@@ -52,6 +47,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         mapStyle: mapState.mapStyle,
         mapProvider,
         events: EVENTS,
+        dispatch,
         eventBus
       })
     }
