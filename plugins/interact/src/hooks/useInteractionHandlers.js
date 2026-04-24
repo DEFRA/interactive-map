@@ -8,7 +8,7 @@ import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
  * Returns the id of the first DOM marker whose visual bounds contain the given point.
  *
  * MAP_CLICK point is container-relative; getBoundingClientRect is viewport-relative.
- * We convert by subtracting the features container's top-left (.im-c-features has
+ * We convert by subtracting the markers container's top-left (.im-c-viewport__markers has
  * inset:0 over the same area as the map canvas, giving the correct offset).
  *
  * @param {Object} markers - markers object from mapState (has .items and .markerRefs)
@@ -23,7 +23,7 @@ const findMarkerAtPoint = (markers, point, scale) => {
     if (!el || isStandaloneLabel(marker)) {
       continue
     }
-    const container = el.closest('.im-c-features') || el.parentElement
+    const container = el.closest('.im-c-viewport__markers') || el.parentElement
     const parentRect = container ? container.getBoundingClientRect() : { left: 0, top: 0 }
     const { left, top, right, bottom } = el.getBoundingClientRect()
     const scaledX = point.x * scale

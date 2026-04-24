@@ -185,6 +185,16 @@ describe('Markers — selection', () => {
     expect(result.container.querySelector(SVG_SEL)).not.toHaveClass(SELECTED_CLASS)
   })
 
+  it('handles interact:active with selectMarker in interactionModes', () => {
+    const { eb } = setup()
+    expect(() => act(() => eb.emit(INTERACT_ACTIVE, { active: true, interactionModes: ['selectMarker'] }))).not.toThrow()
+  })
+
+  it('handles interact:active with no interactionModes (uses default [])', () => {
+    const { eb } = setup()
+    expect(() => act(() => eb.emit(INTERACT_ACTIVE, { active: true }))).not.toThrow()
+  })
+
   it('wires interact:active and interact:selectionchange on mount and removes them on unmount', () => {
     const { eb, result } = setup()
     expect(eb.on).toHaveBeenCalledWith(INTERACT_ACTIVE, expect.any(Function))

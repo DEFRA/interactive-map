@@ -12,6 +12,7 @@ import { useMapEvents } from '../../hooks/useMapEvents.js'
 import { MapStatus } from './MapStatus.jsx'
 import { CrossHair } from '../CrossHair/CrossHair'
 import { Features } from './Features'
+import { Markers } from '../Markers/Markers'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
@@ -82,6 +83,9 @@ export const Viewport = () => {
         <MapStatus />
         <div className='im-c-viewport__safezone' style={safeZoneInset} ref={layoutRefs.safeZoneRef} aria-hidden='true'>
           <CrossHair />
+        </div>
+        <div className='im-c-viewport__markers' aria-hidden='true'>
+          <Markers />
         </div>
       </div>
       <Features ref={featuresRef} activeFeatureId={activeFeatureId} />

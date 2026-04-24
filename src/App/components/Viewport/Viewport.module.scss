@@ -65,6 +65,12 @@
   z-index: 1;
 }
 
+.im-c-viewport__markers {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
 
 // 3. Modifiers
 
