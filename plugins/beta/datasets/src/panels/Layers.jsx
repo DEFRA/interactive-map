@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { setDatasetVisibility } from '../api/setDatasetVisibility'
 
 const CHECKBOX_LABEL_CLASS = 'im-c-datasets-layers__item-label govuk-label govuk-checkboxes__label'
@@ -70,6 +70,13 @@ export const Layers = ({ pluginState }) => {
       </div>
     )
   }
+  // TODO - remove this useEffect - it's useful while refactoring the state
+  useEffect(() => {
+    // console.log('menu:', pluginState.menu)
+    console.log('datasets:', pluginState.datasets)
+    console.log('mappedDatasets:', pluginState.mappedDatasets)
+    // console.log('orderedDatasets:', pluginState.orderedDatasets)
+  }, [pluginState.datasets, pluginState.mappedDatasets])
 
   const visibleDatasets = (pluginState.datasets || [])
     .filter(dataset => dataset.showInMenu || hasToggleableSublayers(dataset))
