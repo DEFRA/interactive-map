@@ -157,4 +157,3 @@ describe('label actions', () => {
     expect(announce).not.toHaveBeenCalled()
   })
 })
-
