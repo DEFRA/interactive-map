@@ -20,8 +20,6 @@ export const keyboardMappings = {
     'Alt+Enter': 'highlightLabelAtCenter',
     'Alt+i': 'getInfo',
     'Alt+I': 'getInfo',
-    'Alt+f': 'enterFeatures',
-    'Alt+F': 'enterFeatures',
     Escape: 'clearSelection'
   }
 }

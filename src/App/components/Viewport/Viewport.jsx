@@ -8,7 +8,6 @@ import { MapController } from './MapController.jsx'
 import { useKeyboardHint } from '../../hooks/useKeyboardHint.js'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js'
 import { useMapEvents } from '../../hooks/useMapEvents.js'
-import { useFeatureFocus } from '../../hooks/useFeatureFocus.js'
 import { MapStatus } from './MapStatus.jsx'
 import { CrossHair } from '../CrossHair/CrossHair'
 import { Features } from './Features'
@@ -23,18 +22,12 @@ export const Viewport = () => {
 
   const mapContainerRef = useRef(null)
   const keyboardHintRef = useRef(null)
-  const featuresRef = useRef(null)
 
   // Local state for keyboard hint visibility
   const [keyboardHintVisible, setKeyboardHintVisible] = useState(false)
 
-  const { activeFeatureId, enterFeatures } = useFeatureFocus({
-    viewportRef: layoutRefs.viewportRef,
-    featuresRef
-  })
-
   // Attach map keyboard controls
-  useKeyboardShortcuts(layoutRefs.viewportRef, { onEnterFeatures: enterFeatures })
+  useKeyboardShortcuts(layoutRefs.viewportRef)
 
   // Attach map events
   useMapEvents({
@@ -70,7 +63,6 @@ export const Viewport = () => {
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
         aria-describedby={`${id}-keyboard-hint`}
-        aria-controls={`${id}-features`}
       >
         {mainRef?.current && createPortal(
           <div
@@ -87,7 +79,7 @@ export const Viewport = () => {
           <CrossHair />
         </div>
       </div>
-      <Features ref={featuresRef} activeFeatureId={activeFeatureId} />
+      <Features />
     </>
   )
 }
