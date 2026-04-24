@@ -137,9 +137,14 @@ const setSublayerVisibility = (state, payload) => {
 }
 
 const setDatasetStyle = (state, payload) => {
-  const { datasetId, styleChanges } = payload
+  const { datasetId, styleChanges, mapStyle } = payload
+  const { layerAdapter } = state
+  const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges }
+  // TODO - handle this side effect better
+  layerAdapter?.setStyle(dataset, mapStyle)
   return {
     ...state,
+    mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset },
     datasets: state.datasets?.map(dataset =>
       dataset.id === datasetId ? { ...dataset, ...styleChanges } : dataset
     )
@@ -147,9 +152,17 @@ const setDatasetStyle = (state, payload) => {
 }
 
 const setSublayerStyle = (state, payload) => {
-  const { datasetId, sublayerId, styleChanges } = payload
+  const { datasetId, sublayerId, styleChanges, mapStyle } = payload
+  const { layerAdapter } = state
+  const id = `${datasetId}-${sublayerId}`
+  const dataset = state.mappedDatasets[datasetId]
+  const subLayer = { ...state.mappedDatasets[id], ...styleChanges }
+  // TODO - handle this side effect better
+  layerAdapter.setSublayerStyle(dataset, subLayer, mapStyle)
+  console.log('reducer setSublayerStyle completed')
   return {
     ...state,
+    mappedDatasets: { ...state.mappedDatasets, [id]: subLayer },
     datasets: state.datasets?.map(dataset => {
       if (dataset.id !== datasetId) {
         return dataset

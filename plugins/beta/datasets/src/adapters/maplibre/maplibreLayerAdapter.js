@@ -292,28 +292,42 @@ export default class MaplibreLayerAdapter {
    * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setSublayerStyle (dataset, sublayerId, mapStyle) {
+  async setSublayerStyle (dataset, sublayer, mapStyle) {
+    console.log('adapter setSublayerStyle started - dataset, sublayer:', dataset, sublayer)
     const mapStyleId = mapStyle.id
     const pixelRatio = this._pixelRatio
-    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayerId)
+    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.sublayerId)
     ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
       this._symbolLayerIds.delete(layerId)
     })
-    const sublayer = dataset.sublayers?.find(s => s.id === sublayerId)
-    if (!sublayer) {
-      return
-    }
+    // const legacySublayer = dataset.sublayers?.find(s => s.id === sublayer.sublayerId)
+    // if (!legacySublayer) {
+    //   console.log('mapLibreAdapter._patternRegistry.list()', this._patternRegistry.list())
+    //   console.log('mapLibreAdapter._symbolRegistry.list()', this._symbolRegistry.list())
+    //   console.log('adapter setSublayerStyle returning early - no legacySublayer')
+    //   return
+    // }
+    // Here we only need to registerPatterns
+    // if a new pattern or changed pattern.
+    // if its just a different foreground/background colour
+    // we can skip this step as the pattern id
+    // is the same and the registry will return the
+    //  same imageData which is coloured at render time
+    // based on the current style (see injectColors in patternImages.js).
     await Promise.all([
-      this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
-      this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
+      this._mapProvider.registerPatterns([sublayer.style], mapStyleId, this._patternRegistry),
+      // this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
+      // this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
+      this._mapProvider.registerSymbols([sublayer.style], mapStyle, this._symbolRegistry)
     ])
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
-    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry, pixelRatio })
+    addSublayerLayers(this._map, dataset, sublayer.sublayerId, sourceId, sourceLayer, { mapStyle, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry, pixelRatio })
     this._maintainSymbolOrdering(dataset)
+    console.log('adapter setSublayerStyle completed')
   }
 
   /**
