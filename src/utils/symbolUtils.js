@@ -14,6 +14,24 @@ const SYMBOL_STYLE_PROPS = new Set([
 export const hasSymbol = (dataset) => !!(dataset.symbol || dataset.symbolSvgContent)
 
 /**
+ * Returns true if a marker item should render as a standalone label with no symbol.
+ * Requires label content and at least one of symbol/symbolSvgContent to be explicitly null.
+ * Undefined values fall through to render-time default symbol resolution.
+ *
+ * @param {Object} marker
+ * @returns {boolean}
+ */
+export const isStandaloneLabel = (marker) => {
+  if (!marker.label) {
+    return false
+  }
+  if (marker.symbol || marker.symbolSvgContent) {
+    return false
+  }
+  return marker.symbol === null || marker.symbolSvgContent === null
+}
+
+/**
  * Resolves the symbolDef for a dataset's symbol config.
  *
  * dataset.symbol is a string symbol ID (e.g. 'pin').

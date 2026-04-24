@@ -36,7 +36,8 @@ const updateCrossHair = (state, payload) => {
 
 const upsertMarker = (state, payload) => {
   const map = new Map(state.markers.items.map(item => [item.id, item]))
-  map.set(payload.id, payload)
+  const existing = map.get(payload.id) || {}
+  map.set(payload.id, { ...existing, ...payload })
   const newItems = Array.from(map.values())
 
   return {

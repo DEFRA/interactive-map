@@ -11,7 +11,6 @@
 /// @include border-focus-base($offset: -1px, $border: panel, $box-shadow: panel);
 /// ```
 @mixin border-focus-base($type: null, $is-inset: null) {
-  position: relative;
   border: 0;
   
   // Border radius

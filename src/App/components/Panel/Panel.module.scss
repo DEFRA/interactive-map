@@ -10,6 +10,7 @@
         $is-inset: false,
         $type: panel
     );
+    position: relative;
 
     display: flex;
     flex-direction: column;

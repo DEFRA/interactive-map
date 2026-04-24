@@ -2,27 +2,29 @@ import { useCallback, useEffect, useRef } from 'react'
 import { isContiguousWithAny, canSplitFeatures, areAllContiguous } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
 import { scaleFactor } from '../../../../src/config/appConfig.js'
+import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
 
 /**
  * Returns the id of the first DOM marker whose visual bounds contain the given point.
  *
  * MAP_CLICK point is container-relative; getBoundingClientRect is viewport-relative.
- * We convert by subtracting the parent element's top-left (markers share a parent with
- * the map container, so parentElement.getBoundingClientRect() gives the offset).
+ * We convert by subtracting the features container's top-left (.im-c-features has
+ * inset:0 over the same area as the map canvas, giving the correct offset).
  *
  * @param {Object} markers - markers object from mapState (has .items and .markerRefs)
  * @param {{ x: number, y: number }} point - container-relative pixel coordinates
  * @param {number} scale - scaleFactor for the current mapSize (e.g. 1.5 for medium)
  * @returns {string|null}
  */
+
 const findMarkerAtPoint = (markers, point, scale) => {
   for (const marker of markers.items) {
     const el = markers.markerRefs?.get(marker.id)
-    if (!el) {
+    if (!el || isStandaloneLabel(marker)) {
       continue
     }
-    const parent = el.parentElement
-    const parentRect = parent ? parent.getBoundingClientRect() : { left: 0, top: 0 }
+    const container = el.closest('.im-c-features') || el.parentElement
+    const parentRect = container ? container.getBoundingClientRect() : { left: 0, top: 0 }
     const { left, top, right, bottom } = el.getBoundingClientRect()
     const scaledX = point.x * scale
     const scaledY = point.y * scale

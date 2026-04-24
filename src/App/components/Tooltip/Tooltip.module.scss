@@ -35,7 +35,7 @@
 
     padding: var(--tooltip-padding);
     font-size: var(--tooltip-font-size);
-    line-height: 1;
+    line-height: 1.2;
 
     @media (prefers-reduced-motion: no-preference) {
         transition: opacity var(--duration) ease, visibility var(--duration) ease;

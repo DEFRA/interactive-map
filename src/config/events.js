@@ -25,6 +25,8 @@ export const EVENTS = {
 
   /** @internal Add a marker. Payload: { id, coords, options } */
   APP_ADD_MARKER: 'app:addmarker',
+  /** @internal Update an existing marker's options. No-op if id not found. Payload: { id, options } */
+  APP_UPDATE_MARKER: 'app:updatemarker',
   /** @internal Remove a marker. Payload: id */
   APP_REMOVE_MARKER: 'app:removemarker',
   /** @internal Set application mode. Payload: mode */

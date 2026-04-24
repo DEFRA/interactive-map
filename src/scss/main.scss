@@ -27,6 +27,7 @@
 @use '../App/components/Logo/Logo.module';
 @use '../App/components/CrossHair/CrossHair.module';
 @use '../App/components/Markers/Markers.module';
+@use '../App/components/Viewport/Features.module';
 @use '../App/components/Actions/Actions.module';
 
 // Components that dont have a corresponding React Component
