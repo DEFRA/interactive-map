@@ -1,11 +1,15 @@
 import { useEffect, useRef, useState } from 'react'
 import { useMarkers } from '../../hooks/useMarkersAPI.js'
+import { useMarkerCursor } from '../../hooks/useMarkerCursor.js'
 import { useConfig } from '../../store/configContext.js'
 import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
-import { stringToKebab } from '../../../utils/stringToKebab.js'
 import { scaleFactor } from '../../../config/appConfig.js'
 import { isStandaloneLabel } from '../../../utils/symbolUtils.js'
+import MarkerItem from './MarkerItem.jsx'
+import LabelMarker from './LabelMarker.jsx'
+import SymbolLabelMarker from './SymbolLabelMarker.jsx'
+import SymbolMarker from './SymbolMarker.jsx'
 
 // Marker properties handled internally — excluded from style value resolution
 const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'selectedWidth', 'label', 'showLabel'])
@@ -37,123 +41,6 @@ const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize,
   const shapeId = marker.symbol || defaults.symbol
   const scale = scaleFactor[mapSize] ?? 1
   return { resolvedSvg, viewBox, anchor, shapeId, scaledWidth: svgWidth * scale, scaledHeight: svgHeight * scale }
-}
-
-const renderStandaloneLabel = (marker, mapId, markerRef) => (
-  <div
-    key={marker.id}
-    ref={markerRef(marker.id)}
-    id={`${mapId}-marker-${marker.id}`}
-    className='im-c-marker-wrapper im-c-marker-wrapper--label'
-    style={{ display: marker.isVisible ? 'block' : 'none' }}
-  >
-    <div
-      role='note'
-      className='im-c-marker__label im-c-marker__label--standalone'
-    >
-      {marker.label}
-    </div>
-  </div>
-)
-
-const renderMarkerWithLabel = (marker, mapId, markerRef, isSelected, { resolvedSvg, viewBox, anchor, shapeId, scaledWidth, scaledHeight }) => (
-  <div
-    key={marker.id}
-    ref={markerRef(marker.id)}
-    id={`${mapId}-marker-${marker.id}`}
-    className={[
-      'im-c-marker-wrapper',
-      `im-c-marker-wrapper--${stringToKebab(shapeId)}`,
-      isSelected && 'im-c-marker-wrapper--selected'
-    ].filter(Boolean).join(' ')}
-    style={{
-      display: marker.isVisible ? 'block' : 'none',
-      marginLeft: `${-anchor[0] * scaledWidth}px`,
-      marginTop: `${-anchor[1] * scaledHeight}px`,
-      width: `${scaledWidth}px`,
-      height: `${scaledHeight}px`
-    }}
-  >
-    <svg
-      className={[
-        'im-c-marker__svg',
-        `im-c-marker--${stringToKebab(shapeId)}`,
-        isSelected && 'im-c-marker--selected'
-      ].filter(Boolean).join(' ')}
-      width={scaledWidth}
-      height={scaledHeight}
-      viewBox={viewBox}
-      overflow='visible'
-      aria-hidden='true'
-    >
-      <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />
-    </svg>
-    <div role='note' className='im-c-marker__label'>
-      {marker.label}
-    </div>
-  </div>
-)
-
-const renderSvgMarker = (marker, mapId, markerRef, isSelected, { resolvedSvg, viewBox, anchor, shapeId, scaledWidth, scaledHeight }) => (
-  <svg // NOSONAR: role='img' with aria-label is the correct ARIA pattern for SVG icons; <img> is not appropriate here
-    key={marker.id}
-    ref={markerRef(marker.id)}
-    id={`${mapId}-marker-${marker.id}`}
-    className={[
-      'im-c-marker',
-      `im-c-marker--${stringToKebab(shapeId)}`,
-      isSelected && 'im-c-marker--selected'
-    ].filter(Boolean).join(' ')}
-    width={scaledWidth}
-    height={scaledHeight}
-    viewBox={viewBox}
-    overflow='visible'
-    role='img'
-    aria-label={marker.label || 'Map marker'}
-    style={{
-      display: marker.isVisible ? 'block' : 'none',
-      marginLeft: `${-anchor[0] * scaledWidth}px`,
-      marginTop: `${-anchor[1] * scaledHeight}px`
-    }}
-  >
-    <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />
-  </svg>
-)
-
-/**
- * When the interact plugin is active, watch mousemove to set cursor:pointer whenever
- * the mouse is over one of the marker elements (which are pointer-events:none).
- * Standalone labels are excluded — they are not selectable.
- */
-const useMarkerCursor = (markers, interactActive, viewportRef) => {
-  useEffect(() => {
-    if (!interactActive) {
-      return undefined
-    }
-    const viewport = viewportRef.current
-    if (!viewport) {
-      return undefined
-    }
-    const onMove = (e) => {
-      const hit = markers.items.some(marker => {
-        if (isStandaloneLabel(marker)) {
-          return false
-        }
-        const el = markers.markerRefs?.get(marker.id)
-        if (!el) {
-          return false
-        }
-        const { left, top, right, bottom } = el.getBoundingClientRect()
-        return e.clientX >= left && e.clientX <= right && e.clientY >= top && e.clientY <= bottom
-      })
-      viewport.style.cursor = hit ? 'pointer' : ''
-    }
-    viewport.addEventListener('mousemove', onMove)
-    return () => {
-      viewport.removeEventListener('mousemove', onMove)
-      viewport.style.cursor = ''
-    }
-  }, [markers, interactActive, viewportRef])
 }
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
@@ -196,40 +83,30 @@ export const Markers = () => {
     <>
       {markers.items.map(marker => {
         const isSelected = selectedMarkers.includes(marker.id)
+        const featureId = `${id}-feature-${marker.id}`
+
         if (isStandaloneLabel(marker)) {
           return (
-            <li // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
-              key={marker.id}
-              id={`${id}-feature-${marker.id}`}
-              role='option' // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
-              aria-selected={false}
-            >
-              {renderStandaloneLabel(marker, id, markerRef)}
-            </li>
+            <MarkerItem key={marker.id} id={featureId} isSelected={false}>
+              <LabelMarker marker={marker} mapId={id} markerRef={markerRef} />
+            </MarkerItem>
           )
         }
+
         const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected)
+
         if (marker.showLabel && marker.label) {
           return (
-            <li // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
-              key={marker.id}
-              id={`${id}-feature-${marker.id}`}
-              role='option' // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
-              aria-selected={isSelected}
-            >
-              {renderMarkerWithLabel(marker, id, markerRef, isSelected, symbolProps)}
-            </li>
+            <MarkerItem key={marker.id} id={featureId} isSelected={isSelected}>
+              <SymbolLabelMarker marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />
+            </MarkerItem>
           )
         }
+
         return (
-          <li // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
-            key={marker.id}
-            id={`${id}-feature-${marker.id}`}
-            role='option' // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
-            aria-selected={isSelected}
-          >
-            {renderSvgMarker(marker, id, markerRef, isSelected, symbolProps)}
-          </li>
+          <MarkerItem key={marker.id} id={featureId} isSelected={isSelected}>
+            <SymbolMarker marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />
+          </MarkerItem>
         )
       })}
     </>
