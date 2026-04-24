@@ -128,6 +128,20 @@ describe('getInfo', () => {
   })
 })
 
+describe('enterFeatures', () => {
+  test('calls onEnterFeatures when provided', () => {
+    const onEnterFeatures = jest.fn()
+    const { actions } = makeActions({ onEnterFeatures })
+    actions.enterFeatures()
+    expect(onEnterFeatures).toHaveBeenCalled()
+  })
+
+  test('does nothing when onEnterFeatures is not provided', () => {
+    const { actions } = makeActions()
+    expect(() => actions.enterFeatures()).not.toThrow()
+  })
+})
+
 describe('label actions', () => {
   test('highlightNextLabel announces returned label', () => {
     const { actions, mapProvider, announce } = makeActions()

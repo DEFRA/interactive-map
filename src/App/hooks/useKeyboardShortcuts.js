@@ -5,7 +5,7 @@ import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useService } from '../store/serviceContext.js'
 
-export function useKeyboardShortcuts (containerRef) {
+export function useKeyboardShortcuts (containerRef, { onEnterFeatures } = {}) { // NOSONAR: onEnterFeatures is captured in the useEffect closure below
   const { mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta, readMapText } = useConfig()
   const { interfaceType, dispatch } = useApp()
   const { announce } = useService()
@@ -23,7 +23,8 @@ export function useKeyboardShortcuts (containerRef) {
       nudgePanDelta,
       zoomDelta,
       nudgeZoomDelta,
-      readMapText
+      readMapText,
+      onEnterFeatures
     })
 
     const normalizeKey = (e) => {

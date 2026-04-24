@@ -1,4 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { useFeatureFocus } from '../../hooks/useFeatureFocus.js'
 import { EVENTS as events } from '../../../config/events.js'
 import { createPortal } from 'react-dom'
 import { useConfig } from '../../store/configContext.js'
@@ -22,12 +23,15 @@ export const Viewport = () => {
 
   const mapContainerRef = useRef(null)
   const keyboardHintRef = useRef(null)
+  const featuresRef = useRef(null)
 
   // Local state for keyboard hint visibility
   const [keyboardHintVisible, setKeyboardHintVisible] = useState(false)
 
+  const { activeFeatureId, enterFeatures } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef })
+
   // Attach map keyboard controls
-  useKeyboardShortcuts(layoutRefs.viewportRef)
+  useKeyboardShortcuts(layoutRefs.viewportRef, { onEnterFeatures: enterFeatures })
 
   // Attach map events
   useMapEvents({
@@ -63,6 +67,7 @@ export const Viewport = () => {
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
         aria-describedby={`${id}-keyboard-hint`}
+        aria-controls={`${id}-features`}
       >
         {mainRef?.current && createPortal(
           <div
@@ -79,7 +84,7 @@ export const Viewport = () => {
           <CrossHair />
         </div>
       </div>
-      <Features />
+      <Features ref={featuresRef} activeFeatureId={activeFeatureId} />
     </>
   )
 }
