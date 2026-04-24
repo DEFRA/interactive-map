@@ -225,7 +225,7 @@ export const Markers = () => {
           <li // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
             key={marker.id}
             id={`${id}-feature-${marker.id}`}
-            role='option'
+            role='option' // NOSONAR: role='option' is the correct ARIA pattern for listbox children; <option> is only valid inside <select>
             aria-selected={isSelected}
           >
             {renderSvgMarker(marker, id, markerRef, isSelected, symbolProps)}
