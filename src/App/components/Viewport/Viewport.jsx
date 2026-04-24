@@ -70,6 +70,7 @@ export const Viewport = () => {
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
         aria-describedby={`${id}-keyboard-hint`}
+        aria-controls={`${id}-features`}
       >
         {mainRef?.current && createPortal(
           <div
