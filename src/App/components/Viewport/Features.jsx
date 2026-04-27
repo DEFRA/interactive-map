@@ -3,12 +3,14 @@ import { useConfig } from '../../store/configContext.js'
 
 export const Features = forwardRef(({ activeFeatureId, items = [], onFocus }, ref) => {
   const { id } = useConfig()
+  const hasItems = items.length > 0
   return (
     <ul // NOSONAR: role='listbox' is correct for custom composite widget; native <select> cannot host SVG marker elements
       id={`${id}-features`}
       ref={ref}
       role='listbox' // NOSONAR
-      tabIndex='0'
+      tabIndex={hasItems ? '0' : '-1'}
+      aria-hidden={hasItems ? undefined : true}
       aria-label='Map features'
       aria-activedescendant={activeFeatureId || undefined}
       className='im-c-features'
