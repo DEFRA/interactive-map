@@ -92,6 +92,41 @@
  */
 
 /**
+ * Defines an item in a button's popup menu.
+ *
+ * @typedef {Object} MenuItemDefinition
+ *
+ * @property {string} id
+ * Unique item identifier. Used to control state via toggleButtonState().
+ *
+ * @property {string} label
+ * Display text for the item.
+ *
+ * @property {string} [iconId]
+ * Icon identifier from the icon registry.
+ *
+ * @property {string} [iconSvgContent]
+ * Raw SVG content for the item icon. The outer SVG tag should be excluded.
+ *
+ * @property {boolean} [isPressed]
+ * Initial checked state. When set, the item renders as menuitemcheckbox.
+ *
+ * @property {boolean} [keepFocus=false]
+ * When true, focus returns to the menu's trigger button after selection instead of
+ * moving to the panel (if panelId is set) or the map viewport.
+ *
+ * @property {(e: MouseEvent) => void} [onClick]
+ * Click handler. Receives the native event. Not called when panelId is set.
+ *
+ * @property {string} [panelId]
+ * Associated panel identifier. When set, selecting the item opens the panel and moves
+ * focus to it. onClick is not called.
+ *
+ * @property {(context: PluginContext) => boolean} [pressedWhen]
+ * Reactive callback to determine if the item should appear checked. Plugin buttons only.
+ */
+
+/**
  * Defines a button that can be rendered in the UI at various breakpoints.
  *
  * @typedef {Object} ButtonDefinition
@@ -133,11 +168,20 @@
  * @property {string | (() => string)} label
  * Accesible label. Text or a function returning the text. Used for the label or tooltip if 'showLabel' is false.
  *
+ * @property {MenuItemDefinition[]} [menuItems]
+ * Items for the button's popup menu. When provided, the button acts as a menu trigger.
+ *
  * @property {ButtonBreakpointConfig} mobile
  * Mobile breakpoint configuration.
  *
  * @property {(event: MouseEvent, context: PluginContext) => void} [onClick]
  * Click handler for the button.
+ *
+ * @property {boolean} [keepFocus=false]
+ * When true, focus remains on this button after activation instead of moving to the panel or viewport.
+ * Use for repeated incremental actions (e.g. zoom) where the user may activate the button
+ * multiple times. Toggle buttons (isPressed/pressedWhen) always keep focus regardless of this flag.
+ * When combined with panelId, the panel opens but focus stays on the button.
  *
  * @property {string} [panelId]
  * Associated panel identifier to toggle open when clicked.
@@ -464,6 +508,11 @@
  *
  * @property {PanelBreakpointConfig} desktop
  * Desktop breakpoint configuration.
+ *
+ * @property {boolean} [focus=true]
+ * Whether to move focus to the panel when it opens. Set to false to prevent the panel from
+ * receiving focus — useful for panels present on page load or panels that should not interrupt
+ * the user's current flow. Modal panels always receive focus regardless of this setting.
  *
  * @property {string} [html]
  * HTML content.

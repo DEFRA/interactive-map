@@ -52,10 +52,14 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
 function createButtonClickHandler (btn, appState, evaluateProp) {
   const [, config] = btn
   const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
+  const isToggle = config.isPressed !== undefined || !!config.pressedWhen
 
   return (e) => {
     if (typeof config.onClick === 'function') {
       config.onClick(e, evaluateProp(ctx => ctx, config.pluginId))
+      if (!isToggle && !config.keepFocus) {
+        requestAnimationFrame(() => appState.layoutRefs.viewportRef.current?.focus())
+      }
       return
     }
 
@@ -65,7 +69,7 @@ function createButtonClickHandler (btn, appState, evaluateProp) {
         type: isPanelOpen ? 'CLOSE_PANEL' : 'OPEN_PANEL',
         payload: isPanelOpen
           ? config.panelId
-          : { panelId: config.panelId, props: { triggeringElement } }
+          : { panelId: config.panelId, props: { triggeringElement }, ...(config.keepFocus && { focusOnOpen: false }) }
       })
     }
   }

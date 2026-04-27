@@ -23,7 +23,11 @@ const mockUseApp = {
   hiddenButtons: new Set(),
   disabledButtons: new Set(),
   pressedButtons: new Set(),
-  layoutRefs: { appContainerRef: { current: document.body } }
+  dispatch: jest.fn(),
+  layoutRefs: {
+    appContainerRef: { current: document.body },
+    viewportRef: { current: { focus: jest.fn() } }
+  }
 }
 jest.mock('../../store/appContext', () => ({
   useApp: jest.fn(() => mockUseApp)
@@ -148,6 +152,36 @@ describe('PopupMenu', () => {
     expect(mockSetIsOpen).toHaveBeenCalled()
   })
 
+  it('click on item with panelId dispatches OPEN_PANEL and closes menu', () => {
+    mockUseApp.buttonConfig = { item1: { panelId: 'myPanel' } }
+    renderMenu()
+    fireEvent.click(screen.getByText('Item 1'))
+    expect(mockUseApp.dispatch).toHaveBeenCalledWith({
+      type: 'OPEN_PANEL',
+      payload: { panelId: 'myPanel', props: { triggeringElement: mockUseApp.buttonRefs.current.instigator } }
+    })
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('click on item with panelId and keepFocus includes focusOnOpen: false in dispatch', () => {
+    mockUseApp.buttonConfig = { item1: { panelId: 'myPanel', keepFocus: true } }
+    renderMenu()
+    fireEvent.click(screen.getByText('Item 1'))
+    expect(mockUseApp.dispatch).toHaveBeenCalledWith({
+      type: 'OPEN_PANEL',
+      payload: { panelId: 'myPanel', props: { triggeringElement: mockUseApp.buttonRefs.current.instigator }, focusOnOpen: false }
+    })
+  })
+
+  it('click on item with keepFocus returns focus to instigator instead of viewport', () => {
+    const focusSpy = jest.fn()
+    mockUseApp.buttonRefs.current.instigator.focus = focusSpy
+    mockUseApp.buttonConfig = { item1: { keepFocus: true } }
+    renderMenu()
+    fireEvent.click(screen.getByText('Item 1'))
+    expect(focusSpy).toHaveBeenCalled()
+  })
+
   it('calls buttonConfig.onClick with evaluateProp if defined', () => {
     const mockOnClick = jest.fn()
     mockUseApp.buttonConfig = { item2: { onClick: mockOnClick } }
@@ -184,6 +218,47 @@ describe('PopupMenu', () => {
     fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
     expect(items[0].onClick).not.toHaveBeenCalled()
     expect(mockSetIsOpen).toHaveBeenCalled()
+  })
+
+  it('Enter on item with panelId dispatches OPEN_PANEL and closes menu', () => {
+    mockUseApp.buttonConfig = { item1: { panelId: 'myPanel' } }
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockUseApp.dispatch).toHaveBeenCalledWith({
+      type: 'OPEN_PANEL',
+      payload: { panelId: 'myPanel', props: { triggeringElement: mockUseApp.buttonRefs.current.instigator } }
+    })
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('Enter on item with panelId and keepFocus includes focusOnOpen: false in dispatch', () => {
+    mockUseApp.buttonConfig = { item1: { panelId: 'myPanel', keepFocus: true } }
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(mockUseApp.dispatch).toHaveBeenCalledWith({
+      type: 'OPEN_PANEL',
+      payload: { panelId: 'myPanel', props: { triggeringElement: mockUseApp.buttonRefs.current.instigator }, focusOnOpen: false }
+    })
+  })
+
+  it('Enter on item with keepFocus returns focus to instigator instead of viewport', () => {
+    const focusSpy = jest.fn()
+    mockUseApp.buttonRefs.current.instigator.focus = focusSpy
+    mockUseApp.buttonConfig = { item1: { keepFocus: true } }
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(focusSpy).toHaveBeenCalled()
+    expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+  })
+
+  it('Enter on regular item focuses viewport via requestAnimationFrame', () => {
+    const rafSpy = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 1 })
+    const focusSpy = jest.spyOn(mockUseApp.layoutRefs.viewportRef.current, 'focus')
+    renderMenu({ startIndex: 0 })
+    fireEvent.keyDown(screen.getByRole('menu'), { key: 'Enter' })
+    expect(focusSpy).toHaveBeenCalled()
+    rafSpy.mockRestore()
+    focusSpy.mockRestore()
   })
 
   it('does nothing if click is inside menu', () => {
@@ -386,6 +461,47 @@ describe('PopupMenu', () => {
       expect(items[0].onClick).not.toHaveBeenCalled()
       expect(items[1].onClick).not.toHaveBeenCalled()
       expect(mockSetIsOpen).not.toHaveBeenCalled()
+    })
+
+    it('Space on item with panelId dispatches OPEN_PANEL and closes menu', () => {
+      mockUseApp.buttonConfig = { item1: { panelId: 'myPanel' } }
+      renderMenu({ startIndex: 0 })
+      fireEvent.keyDown(screen.getByRole('menu'), { key: ' ' })
+      expect(mockUseApp.dispatch).toHaveBeenCalledWith({
+        type: 'OPEN_PANEL',
+        payload: { panelId: 'myPanel', props: { triggeringElement: mockUseApp.buttonRefs.current.instigator } }
+      })
+      expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+    })
+
+    it('Space on item with panelId and keepFocus includes focusOnOpen: false in dispatch', () => {
+      mockUseApp.buttonConfig = { item1: { panelId: 'myPanel', keepFocus: true } }
+      renderMenu({ startIndex: 0 })
+      fireEvent.keyDown(screen.getByRole('menu'), { key: ' ' })
+      expect(mockUseApp.dispatch).toHaveBeenCalledWith({
+        type: 'OPEN_PANEL',
+        payload: { panelId: 'myPanel', props: { triggeringElement: mockUseApp.buttonRefs.current.instigator }, focusOnOpen: false }
+      })
+    })
+
+    it('Space on item with keepFocus returns focus to instigator instead of viewport', () => {
+      const focusSpy = jest.fn()
+      mockUseApp.buttonRefs.current.instigator.focus = focusSpy
+      mockUseApp.buttonConfig = { item1: { keepFocus: true } }
+      renderMenu({ startIndex: 0 })
+      fireEvent.keyDown(screen.getByRole('menu'), { key: ' ' })
+      expect(focusSpy).toHaveBeenCalled()
+      expect(mockSetIsOpen).toHaveBeenCalledWith(false)
+    })
+
+    it('Space on regular item focuses viewport via requestAnimationFrame', () => {
+      const rafSpy = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 1 })
+      const focusSpy = jest.spyOn(mockUseApp.layoutRefs.viewportRef.current, 'focus')
+      renderMenu({ startIndex: 0 })
+      fireEvent.keyDown(screen.getByRole('menu'), { key: ' ' })
+      expect(focusSpy).toHaveBeenCalled()
+      rafSpy.mockRestore()
+      focusSpy.mockRestore()
     })
   })
 
