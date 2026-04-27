@@ -45,7 +45,7 @@ describe('rasteriseToImageData', () => {
     expect(getImageData).toHaveBeenCalledWith(0, 0, WIDTH, HEIGHT)
   })
 
-  it('sets img.src to a data URI rather than a blob URL', async () => {
+  it('sets img.src to a data URI', async () => {
     await rasteriseToImageData(SVG, WIDTH, HEIGHT)
     const src = imageInstances[0]._src
     expect(src).toMatch(/^data:image\/svg\+xml;charset=utf-8,/)
