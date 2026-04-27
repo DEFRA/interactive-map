@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
+import { EVENTS } from '../../config/events.js'
 
 const getNavigatedId = (id, key, items) => {
   if (!items.length) {
@@ -11,8 +12,20 @@ const getNavigatedId = (id, key, items) => {
   return idx === -1 ? items[items.length - 1].id : items[Math.max(idx - 1, 0)].id
 }
 
-export function useFeatureFocus ({ viewportRef, featuresRef, items = [] }) {
+export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus }) {
   const [activeFeatureId, setActiveFeatureId] = useState(null)
+  const activeFeatureIdRef = useRef(null)
+
+  useEffect(() => { activeFeatureIdRef.current = activeFeatureId }, [activeFeatureId])
+
+  useEffect(() => {
+    if (!eventBus) {
+      return undefined
+    }
+    const handle = ({ id }) => { setActiveFeatureId(id) }
+    eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handle)
+    return () => { eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handle) }
+  }, [eventBus])
 
   useEffect(() => {
     const listboxEl = featuresRef.current
@@ -24,10 +37,13 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [] }) {
       if (event.key === 'Escape') {
         event.preventDefault()
         setActiveFeatureId(null)
+        eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: null })
         viewportRef.current?.focus()
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault()
-        setActiveFeatureId(id => getNavigatedId(id, event.key, items))
+        const newId = getNavigatedId(activeFeatureIdRef.current, event.key, items)
+        setActiveFeatureId(newId)
+        eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: newId })
       } else {
         // No action
       }
@@ -35,11 +51,13 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [] }) {
 
     listboxEl.addEventListener('keydown', handleKeyDown)
     return () => { listboxEl.removeEventListener('keydown', handleKeyDown) }
-  }, [viewportRef, featuresRef, items])
+  }, [viewportRef, featuresRef, items, eventBus])
 
   const onFocus = () => {
     if (items.length) {
-      setActiveFeatureId(items[0].id)
+      const firstId = items[0].id
+      setActiveFeatureId(firstId)
+      eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: firstId })
     }
   }
 

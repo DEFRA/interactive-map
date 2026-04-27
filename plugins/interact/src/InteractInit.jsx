@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
+import { useMapItemList } from './hooks/useMapItemList.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { attachEvents } from './events.js'
@@ -21,6 +22,8 @@ export const InteractInit = ({
 
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(interfaceType)
   const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
+
+  useMapItemList({ mapState, pluginState, services, mapProvider })
 
   // Core interaction logic (click > select/marker)
   const { handleInteraction } = useInteractionHandlers({

@@ -10,9 +10,9 @@ export function useFeatureItems (eventBus) {
     const handle = ({ items: next = [] }) => {
       setItems(next)
     }
-    eventBus.on('features:setItems', handle)
+    eventBus.on('map:setfeatures', handle)
     return () => {
-      eventBus.off('features:setItems', handle)
+      eventBus.off('map:setfeatures', handle)
     }
   }, [eventBus])
 

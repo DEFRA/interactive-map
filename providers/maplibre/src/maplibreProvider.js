@@ -302,6 +302,14 @@ export default class MapLibreProvider {
     return queryFeatures(this.map, point, options)
   }
 
+  getVisibleFeatures (layerIds) {
+    const presentLayers = layerIds.filter(id => this.map.getLayer(id))
+    if (!presentLayers.length) {
+      return []
+    }
+    return this.map.queryRenderedFeatures(undefined, { layers: presentLayers })
+  }
+
   /**
    * Rasterise and register symbol images for the given pre-resolved symbol configs.
    * Delegates to the shared symbol image utility so any plugin's MapLibre adapter can

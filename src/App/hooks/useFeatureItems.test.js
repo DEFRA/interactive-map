@@ -27,17 +27,17 @@ describe('useFeatureItems — initial state', () => {
 // ─── useFeatureItems — event subscription ────────────────────────────────────
 
 describe('useFeatureItems — event subscription', () => {
-  it('subscribes to features:setItems on mount', () => {
+  it('subscribes to map:setfeatures on mount', () => {
     const eb = makeEventBus()
     renderHook(() => useFeatureItems(eb))
-    expect(eb.on).toHaveBeenCalledWith('features:setItems', expect.any(Function))
+    expect(eb.on).toHaveBeenCalledWith('map:setfeatures', expect.any(Function)) // NOSONAR
   })
 
   it('unsubscribes on unmount', () => {
     const eb = makeEventBus()
     const { unmount } = renderHook(() => useFeatureItems(eb))
     unmount()
-    expect(eb.off).toHaveBeenCalledWith('features:setItems', expect.any(Function))
+    expect(eb.off).toHaveBeenCalledWith('map:setfeatures', expect.any(Function)) // NOSONAR
   })
 
   it('does not subscribe when eventBus is undefined', () => {
@@ -50,26 +50,26 @@ describe('useFeatureItems — event subscription', () => {
 // ─── useFeatureItems — updates ────────────────────────────────────────────────
 
 describe('useFeatureItems — updates', () => {
-  it('updates items when features:setItems is emitted', () => {
+  it('updates items when map:setfeatures is emitted', () => {
     const eb = makeEventBus()
     const { result } = renderHook(() => useFeatureItems(eb))
     const items = [{ id: 'a', label: 'Feature A' }, { id: 'b', label: 'Feature B' }]
-    act(() => eb.emit('features:setItems', { items }))
+    act(() => eb.emit('map:setfeatures', { items })) // NOSONAR
     expect(result.current).toEqual(items)
   })
 
   it('clears items when emitted with an empty array', () => {
     const eb = makeEventBus()
     const { result } = renderHook(() => useFeatureItems(eb))
-    act(() => eb.emit('features:setItems', { items: [{ id: 'a', label: 'A' }] }))
-    act(() => eb.emit('features:setItems', { items: [] }))
+    act(() => eb.emit('map:setfeatures', { items: [{ id: 'a', label: 'A' }] })) // NOSONAR
+    act(() => eb.emit('map:setfeatures', { items: [] })) // NOSONAR
     expect(result.current).toEqual([])
   })
 
   it('defaults to empty array when items key is missing from payload', () => {
     const eb = makeEventBus()
     const { result } = renderHook(() => useFeatureItems(eb))
-    act(() => eb.emit('features:setItems', {}))
+    act(() => eb.emit('map:setfeatures', {})) // NOSONAR
     expect(result.current).toEqual([])
   })
 })

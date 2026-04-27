@@ -265,6 +265,10 @@
  * @property {(point: { x: number, y: number }) => any[]} getFeaturesAtPoint
  * Query rendered features at a screen pixel position (x from left edge, y from top edge of viewport).
  *
+ * @property {(layerIds: string[]) => any[]} getVisibleFeatures
+ * Return all GeoJSON features currently visible in the viewport on the given layers,
+ * respecting layer visibility and any active filters. Returns [] if unsupported.
+ *
  * @property {() => string} getAreaDimensions
  * Get the dimensions of the visible map area as a formatted string (e.g., '400m by 750m').
  *

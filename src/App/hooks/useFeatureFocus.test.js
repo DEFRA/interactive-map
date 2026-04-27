@@ -7,6 +7,18 @@ const ITEMS = [
   { id: 'c', label: 'Feature C' }
 ]
 
+const SET_ACTIVE = 'map:setactivefeature' // NOSONAR
+
+const makeEventBus = () => {
+  const listeners = {}
+  return {
+    on: jest.fn((e, fn) => { listeners[e] = fn }),
+    off: jest.fn(),
+    emit: jest.fn(),
+    trigger: (e, payload) => listeners[e]?.(payload)
+  }
+}
+
 const makeRefs = ({ viewportFocus } = {}) => ({
   viewportRef: { current: { focus: viewportFocus ?? jest.fn() } },
   featuresRef: { current: document.createElement('ul') }
@@ -196,5 +208,81 @@ describe('useFeatureFocus — ArrowUp navigation', () => {
     fireKey(el, 'ArrowUp')
     expect(result.current.activeFeatureId).toBe('a')
     unmount(); el.remove()
+  })
+})
+
+// ─── useFeatureFocus — eventBus integration ───────────────────────────────────
+
+describe('useFeatureFocus — eventBus: map:setactivefeature listener', () => {
+  it('subscribes to map:setactivefeature on mount and unsubscribes on unmount', () => {
+    const eb = makeEventBus()
+    const { unmount } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    expect(eb.on).toHaveBeenCalledWith(SET_ACTIVE, expect.any(Function))
+    unmount()
+    expect(eb.off).toHaveBeenCalledWith(SET_ACTIVE, expect.any(Function))
+  })
+
+  it('updates activeFeatureId when map:setactivefeature is received', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    act(() => eb.trigger(SET_ACTIVE, { id: 'a' }))
+    expect(result.current.activeFeatureId).toBe('a')
+  })
+
+  it('clears activeFeatureId when map:setactivefeature is received with null', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    act(() => eb.trigger(SET_ACTIVE, { id: 'a' }))
+    act(() => eb.trigger(SET_ACTIVE, { id: null }))
+    expect(result.current.activeFeatureId).toBeNull()
+  })
+})
+
+describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
+  const setupWithBus = () => {
+    const eb = makeEventBus()
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+    return { eb, el, result, unmount }
+  }
+
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('emits map:setactivefeature with first item id on onFocus', () => {
+    const { eb, result } = setupWithBus()
+    act(() => result.current.onFocus())
+    expect(eb.emit).toHaveBeenCalledWith(SET_ACTIVE, { id: 'a' })
+  })
+
+  it('emits map:setactivefeature with new id on ArrowDown', () => {
+    const { eb, result, el, unmount } = setupWithBus()
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    fireKey(el, 'ArrowDown')
+    expect(eb.emit).toHaveBeenCalledWith(SET_ACTIVE, { id: 'b' })
+    unmount()
+  })
+
+  it('emits map:setactivefeature with null on Escape', () => {
+    const { eb, result, el, unmount } = setupWithBus()
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    fireKey(el, 'Escape')
+    expect(eb.emit).toHaveBeenCalledWith(SET_ACTIVE, { id: null })
+    unmount()
+  })
+
+  it('does not emit when eventBus is not provided', () => {
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    expect(() => {
+      act(() => result.current.onFocus())
+      fireKey(el, 'ArrowDown')
+    }).not.toThrow()
+    unmount()
   })
 })

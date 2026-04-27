@@ -33,7 +33,7 @@ export const Viewport = () => {
   const [keyboardHintVisible, setKeyboardHintVisible] = useState(false)
 
   const featureItems = useFeatureItems(eventBus)
-  const { activeFeatureId, onFocus: onFeaturesFocus } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems })
+  const { activeFeatureId, onFocus: onFeaturesFocus } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus })
 
   // Attach map keyboard controls
   useKeyboardShortcuts(layoutRefs.viewportRef)
