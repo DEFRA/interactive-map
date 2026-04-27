@@ -1,9 +1,12 @@
 import React, { useRef, useEffect, useState } from 'react'
+import { useFeatureFocus } from '../../hooks/useFeatureFocus.js'
+import { useFeatureItems } from '../../hooks/useFeatureItems.js'
 import { EVENTS as events } from '../../../config/events.js'
 import { createPortal } from 'react-dom'
 import { useConfig } from '../../store/configContext.js'
 import { useApp } from '../../store/appContext.js'
 import { useMap } from '../../store/mapContext.js'
+import { useService } from '../../store/serviceContext.js'
 import { MapController } from './MapController.jsx'
 import { useKeyboardHint } from '../../hooks/useKeyboardHint.js'
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js'
@@ -11,6 +14,7 @@ import { useMapEvents } from '../../hooks/useMapEvents.js'
 import { MapStatus } from './MapStatus.jsx'
 import { CrossHair } from '../CrossHair/CrossHair'
 import { Features } from './Features'
+import { Markers } from '../Markers/Markers'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
@@ -19,12 +23,17 @@ export const Viewport = () => {
   const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset } = useApp()
   const { mainRef } = layoutRefs
   const { mapSize } = useMap()
+  const { eventBus } = useService()
 
   const mapContainerRef = useRef(null)
   const keyboardHintRef = useRef(null)
+  const featuresRef = useRef(null)
 
   // Local state for keyboard hint visibility
   const [keyboardHintVisible, setKeyboardHintVisible] = useState(false)
+
+  const featureItems = useFeatureItems(eventBus)
+  const { activeFeatureId, onFocus: onFeaturesFocus } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems })
 
   // Attach map keyboard controls
   useKeyboardShortcuts(layoutRefs.viewportRef)
@@ -63,6 +72,7 @@ export const Viewport = () => {
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
         aria-describedby={`${id}-keyboard-hint`}
+        aria-controls={`${id}-features`}
       >
         {mainRef?.current && createPortal(
           <div
@@ -78,8 +88,11 @@ export const Viewport = () => {
         <div className='im-c-viewport__safezone' style={safeZoneInset} ref={layoutRefs.safeZoneRef} aria-hidden='true'>
           <CrossHair />
         </div>
+        <div className='im-c-viewport__markers' aria-hidden='true'>
+          <Markers />
+        </div>
       </div>
-      <Features />
+      <Features ref={featuresRef} activeFeatureId={activeFeatureId} items={featureItems} onFocus={onFeaturesFocus} />
     </>
   )
 }

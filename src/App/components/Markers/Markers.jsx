@@ -6,7 +6,6 @@ import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { scaleFactor } from '../../../config/appConfig.js'
 import { isStandaloneLabel } from '../../../utils/symbolUtils.js'
-import MarkerItem from './MarkerItem.jsx'
 import LabelMarker from './LabelMarker.jsx'
 import SymbolLabelMarker from './SymbolLabelMarker.jsx'
 import SymbolMarker from './SymbolMarker.jsx'
@@ -83,31 +82,18 @@ export const Markers = () => {
     <>
       {markers.items.map(marker => {
         const isSelected = selectedMarkers.includes(marker.id)
-        const featureId = `${id}-feature-${marker.id}`
 
         if (isStandaloneLabel(marker)) {
-          return (
-            <MarkerItem key={marker.id} id={featureId} isSelected={false}>
-              <LabelMarker marker={marker} mapId={id} markerRef={markerRef} />
-            </MarkerItem>
-          )
+          return <LabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} />
         }
 
         const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected)
 
         if (marker.showLabel && marker.label) {
-          return (
-            <MarkerItem key={marker.id} id={featureId} isSelected={isSelected}>
-              <SymbolLabelMarker marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />
-            </MarkerItem>
-          )
+          return <SymbolLabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />
         }
 
-        return (
-          <MarkerItem key={marker.id} id={featureId} isSelected={isSelected}>
-            <SymbolMarker marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />
-          </MarkerItem>
-        )
+        return <SymbolMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />
       })}
     </>
   )
