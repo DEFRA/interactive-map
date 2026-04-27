@@ -90,6 +90,31 @@ Associated panel identifier. When set, clicking the button toggles the panel ope
 
 ---
 
+### `keepFocus`
+**Type:** `boolean`
+**Default:** `false`
+
+When `true`, focus remains on the button after activation rather than moving elsewhere.
+
+- For **action buttons** (with `onClick`): focus stays on the button instead of returning to the map viewport.
+- For **panel buttons** (with `panelId`): focus stays on the button instead of moving to the panel. The panel still opens.
+
+Useful for buttons the user may press repeatedly (e.g. zoom controls), or to keep focus on a visible trigger while a panel opens alongside it.
+
+Toggle buttons (`isPressed` / `pressedWhen`) always keep focus regardless of this flag.
+
+```js
+// Zoom — may be pressed repeatedly; keep focus on button
+{ id: 'zoomIn', keepFocus: true, onClick: () => map.zoomIn() }
+
+// Panel trigger — panel opens but focus stays on button
+{ id: 'layers', keepFocus: true, panelId: 'layerPanel' }
+```
+
+> To apply this behaviour for all buttons that open a given panel, set [`focus: false`](./panel-definition.md#focus) on the panel definition instead.
+
+---
+
 ### `menuItems`
 **Type:** `MenuItemDefinition[]`
 
@@ -310,3 +335,17 @@ Reactive callback to determine if the item should appear checked. When set, the 
 ```js
 pressedWhen: (context) => context.pluginState.selectedOption === 'opt-a'
 ```
+
+---
+
+### `panelId`
+**Type:** `string`
+
+Associated panel identifier. When set, selecting the item opens the panel and moves focus to it. The item's `onClick` is not called.
+
+---
+
+### `keepFocus`
+**Type:** `boolean`
+
+When `true`, focus returns to the menu's trigger button after the item is selected, rather than moving to the panel (if `panelId` is set) or the map viewport.

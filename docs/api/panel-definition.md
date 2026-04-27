@@ -50,15 +50,19 @@ Desktop breakpoint configuration. See [Breakpoint Configuration](#breakpoint-con
 **Type:** `boolean`
 **Default:** `true`
 
-Whether to move focus to the panel when it is added. Set to `false` when adding a panel on page load to avoid disrupting the user's current focus position.
+Whether to move focus to the panel when it opens. Set to `false` to prevent the panel from receiving focus — useful for panels present on page load, or informational panels that should not interrupt the user's current flow.
+
+Modal panels always receive focus regardless of this setting.
 
 ```js
-// Page load — no focus
+// Page load — panel visible immediately, no focus steal
 map.addPanel('info', { focus: false, desktop: { slot: 'left-top' } })
 
-// User-triggered — focus the panel (default)
+// User-triggered — focus moves to panel (default)
 map.addPanel('info', { desktop: { slot: 'left-top' } })
 ```
+
+> For per-button control, set [`keepFocus: true`](./button-definition.md#keepfocus) on the triggering button instead. This prevents focus from moving to the panel for that specific button while other buttons that open the same panel still behave normally.
 
 ---
 

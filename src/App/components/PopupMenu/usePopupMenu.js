@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
+import { useApp } from '../../store/appContext.js'
 
 /**
  * Computes the position and alignment style for the popup menu based on the
@@ -44,26 +45,88 @@ const getMenuStyle = (buttonRect) => {
  * The synthetic event is marked _fromKeyboardActivation so handleItemClick can
  * ignore it and avoid double-activation.
  *
- * @param {React.SyntheticEvent} e   - The triggering React event.
- * @param {object}               item - The item being activated.
- * @param {object}               ctx  - Dependencies: { buttonConfig, evaluateProp, pluginId, id }.
+ * @param {React.SyntheticEvent} event - The triggering React event.
+ * @param {object}               item  - The item being activated.
+ * @param {object}               ctx   - Dependencies: { buttonConfig, evaluateProp, pluginId, id }.
  */
-const activateItem = (e, item, { buttonConfig, evaluateProp, pluginId, id }) => {
+const activateItem = (event, item, { buttonConfig, evaluateProp, pluginId, id }) => {
   const menuItemConfig = buttonConfig[item.id]
   if (typeof menuItemConfig?.onClick === 'function') {
-    menuItemConfig.onClick(e, evaluateProp(ctx => ctx, pluginId))
+    menuItemConfig.onClick(event, evaluateProp(ctx => ctx, pluginId))
   } else if (typeof item.onClick === 'function') {
-    item.onClick(e.nativeEvent)
+    item.onClick(event.nativeEvent)
   } else {
     // No action
   }
-  if (e.nativeEvent instanceof KeyboardEvent) {
-    const el = document.getElementById(`${id}-${stringToKebab(item.id)}`)
-    if (el) {
+  if (event.nativeEvent instanceof KeyboardEvent) {
+    const menuItemEl = document.getElementById(`${id}-${stringToKebab(item.id)}`)
+    if (menuItemEl) {
       const click = new MouseEvent('click', { bubbles: true, cancelable: true })
       click._fromKeyboardActivation = true
-      el.dispatchEvent(click)
+      menuItemEl.dispatchEvent(click)
     }
+  }
+}
+
+const resolveInitialIndex = (startIndex, startPos, visibleIndices) => {
+  if (typeof startIndex === 'number') {
+    return startIndex
+  }
+  if (startPos === 'first') {
+    return visibleIndices[0] ?? -1
+  }
+  if (startPos === 'last') {
+    return visibleIndices[visibleIndices.length - 1] ?? -1
+  }
+  return -1
+}
+
+const resolveItemFocus = (item, buttonConfig) => ({
+  panelId: buttonConfig[item.id]?.panelId ?? item.panelId,
+  keepFocus: buttonConfig[item.id]?.keepFocus ?? item.keepFocus
+})
+
+const handleMenuEnter = (event, { items, index, disabledButtons, activateCtx, instigator, dispatch, viewportRef, setIsOpen }) => {
+  event.preventDefault()
+  const item = items[index]
+  if (item && !disabledButtons.has(item.id)) {
+    const { panelId, keepFocus } = resolveItemFocus(item, activateCtx.buttonConfig)
+    if (panelId) {
+      dispatch({ type: 'OPEN_PANEL', payload: { panelId, props: { triggeringElement: instigator }, ...(keepFocus && { focusOnOpen: false }) } })
+      setIsOpen(false)
+      return
+    }
+    activateItem(event, item, activateCtx)
+    if (keepFocus) {
+      instigator.focus()
+      setIsOpen(false)
+      return
+    }
+  }
+  requestAnimationFrame(() => viewportRef.current?.focus())
+  setIsOpen(false)
+}
+
+const handleMenuSpace = (event, { items, index, disabledButtons, activateCtx, instigator, dispatch, viewportRef, setIsOpen }) => {
+  event.preventDefault()
+  const item = items[index]
+  if (!item || disabledButtons.has(item.id)) {
+    return
+  }
+  const { panelId, keepFocus } = resolveItemFocus(item, activateCtx.buttonConfig)
+  if (panelId) {
+    dispatch({ type: 'OPEN_PANEL', payload: { panelId, props: { triggeringElement: instigator }, ...(keepFocus && { focusOnOpen: false }) } })
+    setIsOpen(false)
+    return
+  }
+  activateItem(event, item, activateCtx)
+  if (!(item.isPressed !== undefined || item.pressedWhen)) {
+    if (keepFocus) {
+      instigator.focus()
+    } else {
+      requestAnimationFrame(() => viewportRef.current?.focus())
+    }
+    setIsOpen(false)
   }
 }
 
@@ -72,93 +135,74 @@ const activateItem = (e, item, { buttonConfig, evaluateProp, pluginId, id }) => 
  * ArrowDown/Up (navigate visible items), Home/End (jump to ends),
  * Enter (activate and close), Space (activate; close only for non-checkbox items).
  *
- * @param {object}   p
- * @param {Array}    p.items           - All menu item descriptors.
- * @param {number[]} p.visibleIndices  - Indices of non-hidden items.
- * @param {number}   p.index           - Currently highlighted index.
- * @param {Function} p.setIndex        - State setter for highlighted index.
- * @param {Set}      p.disabledButtons - IDs of disabled items.
- * @param {object}   p.instigator      - DOM node of the trigger button.
- * @param {Function} p.setIsOpen       - Callback to close the menu.
- * @param {object}   p.activateCtx     - Context passed through to activateItem.
+ * @param {object}   params
+ * @param {Array}    params.items           - All menu item descriptors.
+ * @param {number[]} params.visibleIndices  - Indices of non-hidden items.
+ * @param {number}   params.index           - Currently highlighted index.
+ * @param {Function} params.setIndex        - State setter for highlighted index.
+ * @param {Set}      params.disabledButtons - IDs of disabled items.
+ * @param {object}   params.instigator      - DOM node of the trigger button.
+ * @param {Function} params.setIsOpen       - Callback to close the menu.
+ * @param {object}   params.activateCtx     - Context passed through to activateItem.
+ * @param {Function} params.dispatch        - App dispatch for OPEN_PANEL actions.
+ * @param {object}   params.viewportRef     - Ref to the map viewport element.
  * @returns {Function} onKeyDown handler for the menu element.
  */
-const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disabledButtons, instigator, setIsOpen, activateCtx }) => {
-  const closeAndFocus = (e, preventDefault = false) => {
-    if (preventDefault && e?.preventDefault) {
-      e.preventDefault()
+const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disabledButtons, instigator, setIsOpen, activateCtx, dispatch, viewportRef }) => {
+  const closeAndFocus = (event, preventDefault = false) => {
+    if (preventDefault && event?.preventDefault) {
+      event.preventDefault()
     }
     instigator.focus()
     setIsOpen(false)
   }
 
-  const navigateVisible = (e) => {
-    e.preventDefault()
-    const n = visibleIndices.length
-    if (n === 0) {
+  const navigateVisible = (event) => {
+    event.preventDefault()
+    const visibleCount = visibleIndices.length
+    if (visibleCount === 0) {
       return
     }
     const pos = visibleIndices.indexOf(index)
     let nextPos
-    if (e.key === 'ArrowDown') {
-      nextPos = pos === -1 ? 0 : (pos + 1) % n
+    if (event.key === 'ArrowDown') {
+      nextPos = pos === -1 ? 0 : (pos + 1) % visibleCount
     } else if (pos === -1) {
-      nextPos = n - 1
+      nextPos = visibleCount - 1
     } else {
-      nextPos = (pos - 1 + n) % n
+      nextPos = (pos - 1 + visibleCount) % visibleCount
     }
     setIndex(visibleIndices[nextPos])
   }
 
-  const handleEnter = (e) => {
-    e.preventDefault()
-    const item = items[index]
-    if (item && !disabledButtons.has(item.id)) {
-      activateItem(e, item, activateCtx)
-    }
-    instigator.focus()
-    setIsOpen(false)
-  }
+  const actionCtx = { items, index, disabledButtons, activateCtx, instigator, dispatch, viewportRef, setIsOpen }
 
-  const handleSpace = (e) => {
-    e.preventDefault()
-    const item = items[index]
-    if (!item || disabledButtons.has(item.id)) {
+  return (event) => {
+    if (['Escape', 'Esc'].includes(event.key)) {
+      closeAndFocus(event, true)
       return
     }
-    activateItem(e, item, activateCtx)
-    if (!(item.isPressed !== undefined || item.pressedWhen)) {
-      instigator.focus()
-      setIsOpen(false)
-    }
-  }
-
-  return (e) => {
-    if (['Escape', 'Esc'].includes(e.key)) {
-      closeAndFocus(e, true)
+    if (event.key === 'Tab') {
+      closeAndFocus(event)
       return
     }
-    if (e.key === 'Tab') {
-      closeAndFocus(e)
+    if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
+      navigateVisible(event)
       return
     }
-    if (['ArrowDown', 'ArrowUp'].includes(e.key)) {
-      navigateVisible(e)
-      return
-    }
-    if (e.key === 'Home' && visibleIndices.length) {
+    if (event.key === 'Home' && visibleIndices.length) {
       setIndex(visibleIndices[0])
       return
     }
-    if (e.key === 'End' && visibleIndices.length) {
+    if (event.key === 'End' && visibleIndices.length) {
       setIndex(visibleIndices[visibleIndices.length - 1])
       return
     }
-    if (e.key === 'Enter') {
-      handleEnter(e)
+    if (event.key === 'Enter') {
+      handleMenuEnter(event, actionCtx)
     }
-    if (e.key === ' ') {
-      handleSpace(e)
+    if (event.key === ' ') {
+      handleMenuSpace(event, actionCtx)
     }
   }
 }
@@ -174,7 +218,7 @@ const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disa
  * @param {object}   params.instigator       - DOM node of the button that opened the menu.
  * @param {string}   params.instigatorKey    - Key used to look up instigator in buttonRefs.
  * @param {object}   params.buttonRefs       - Ref map of all registered button DOM nodes.
- * @param {object}   params.buttonConfig     - Config map that may override item onClick handlers.
+ * @param {object}   params.buttonConfig     - Config map that may override item onClick, panelId, and keepFocus.
  * @param {Set}      params.disabledButtons  - IDs of currently disabled items.
  * @param {string}   params.pluginId         - Plugin context passed to evaluateProp.
  * @param {Function} params.evaluateProp     - Context evaluator from useEvaluateProp.
@@ -189,6 +233,9 @@ export const usePopupMenu = ({
   items, hiddenButtons, startIndex, startPos, instigator, instigatorKey,
   buttonRefs, buttonConfig, disabledButtons, pluginId, evaluateProp, id, menuRef, setIsOpen, buttonRect
 }) => {
+  const { dispatch, layoutRefs } = useApp()
+  const viewportRef = layoutRefs.viewportRef
+
   const visibleIndices = useMemo(() => {
     const visible = []
     items.forEach((item, idx) => {
@@ -199,38 +246,38 @@ export const usePopupMenu = ({
     return visible
   }, [items, hiddenButtons])
 
-  const [index, setIndex] = useState(() => {
-    if (typeof startIndex === 'number') {
-      return startIndex
-    }
-    if (startPos === 'first') {
-      return visibleIndices[0] ?? -1
-    }
-    if (startPos === 'last') {
-      return visibleIndices[visibleIndices.length - 1] ?? -1
-    }
-    return -1
-  })
+  const [index, setIndex] = useState(() => resolveInitialIndex(startIndex, startPos, visibleIndices))
 
   const activateCtx = { buttonConfig, evaluateProp, pluginId, id }
 
   const handleMenuKeyDown = createMenuKeyDownHandler({
-    items, visibleIndices, index, setIndex, disabledButtons, instigator, setIsOpen, activateCtx
+    items, visibleIndices, index, setIndex, disabledButtons, instigator, setIsOpen, activateCtx, dispatch, viewportRef
   })
 
-  const handleOutside = (e) => {
-    if (menuRef.current?.contains(e.target) || buttonRefs.current[instigatorKey]?.contains(e.target)) {
+  const handleOutside = (event) => {
+    if (menuRef.current?.contains(event.target) || buttonRefs.current[instigatorKey]?.contains(event.target)) {
       return
     }
     setIsOpen(false)
   }
 
-  const handleItemClick = (e, item) => {
-    if (e.nativeEvent._fromKeyboardActivation || disabledButtons.has(item.id)) {
+  const handleItemClick = (event, item) => {
+    if (event.nativeEvent._fromKeyboardActivation || disabledButtons.has(item.id)) {
+      return
+    }
+    const { panelId, keepFocus } = resolveItemFocus(item, buttonConfig)
+    if (panelId) {
+      dispatch({ type: 'OPEN_PANEL', payload: { panelId, props: { triggeringElement: instigator }, ...(keepFocus && { focusOnOpen: false }) } })
+      setIsOpen(false)
       return
     }
     setIsOpen(false)
-    activateItem(e, item, activateCtx)
+    activateItem(event, item, activateCtx)
+    if (keepFocus) {
+      instigator.focus()
+    } else {
+      viewportRef.current?.focus()
+    }
   }
 
   useEffect(() => {

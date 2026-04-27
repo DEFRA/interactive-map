@@ -38,7 +38,8 @@ describe('mapButtons module', () => {
       pressedButtons: new Set(),
       expandedButtons: new Set(),
       buttonConfig: {},
-      panelConfig: {}
+      panelConfig: {},
+      layoutRefs: { viewportRef: { current: { focus: jest.fn() } } }
     }
     appState.buttonConfig = ({})
     getPanelConfig.mockReturnValue({})
@@ -226,6 +227,41 @@ describe('mapButtons module', () => {
 
       // dispatch should NOT be called because panelId is missing
       expect(appState.dispatch).not.toHaveBeenCalled()
+    })
+
+    it('focuses viewport via requestAnimationFrame after onClick when not toggle and no keepFocus', () => {
+      const rafSpy = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 1 })
+      const viewportFocusSpy = jest.spyOn(appState.layoutRefs.viewportRef.current, 'focus')
+      const onClick = jest.fn()
+      render({ ...baseBtn, onClick }).props.onClick({})
+      expect(viewportFocusSpy).toHaveBeenCalled()
+      rafSpy.mockRestore()
+      viewportFocusSpy.mockRestore()
+    })
+
+    it('does not call requestAnimationFrame when keepFocus is true', () => {
+      const rafSpy = jest.spyOn(global, 'requestAnimationFrame')
+      const onClick = jest.fn()
+      render({ ...baseBtn, onClick, keepFocus: true }).props.onClick({})
+      expect(rafSpy).not.toHaveBeenCalled()
+      rafSpy.mockRestore()
+    })
+
+    it('does not call requestAnimationFrame when button is a toggle (pressedWhen set)', () => {
+      const rafSpy = jest.spyOn(global, 'requestAnimationFrame')
+      const onClick = jest.fn()
+      render({ ...baseBtn, onClick, pressedWhen: jest.fn() }).props.onClick({})
+      expect(rafSpy).not.toHaveBeenCalled()
+      rafSpy.mockRestore()
+    })
+
+    it('includes focusOnOpen: false in OPEN_PANEL payload when keepFocus is true', () => {
+      const mockButtonEl = document.createElement('button')
+      render({ ...baseBtn, panelId: 'p1', keepFocus: true }).props.onClick({ currentTarget: mockButtonEl })
+      expect(appState.dispatch).toHaveBeenCalledWith({
+        type: 'OPEN_PANEL',
+        payload: { panelId: 'p1', props: { triggeringElement: mockButtonEl }, focusOnOpen: false }
+      })
     })
   })
 

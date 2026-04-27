@@ -21,6 +21,7 @@ export const manifest = {
     group: { name: 'location', label: 'Location', order: 0 },
     label: 'Use your location',
     iconId: 'locateFixed',
+    keepFocus: true,
     hiddenWhen: () => !navigator.geolocation,
     mobile: buttonSlot,
     tablet: buttonSlot,

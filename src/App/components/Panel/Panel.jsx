@@ -11,7 +11,7 @@ const computePanelState = (bpConfig, triggeringElement, focus, focusOnOpen) => {
   const isDialog = !isAside && bpConfig.dismissible
   const isModal = bpConfig.modal === true
   const isDismissible = bpConfig.dismissible !== false
-  const shouldFocus = isModal || (focusOnOpen !== false && (focusOnOpen === true || focus === true || Boolean(triggeringElement)))
+  const shouldFocus = isModal || focusOnOpen === true || (focusOnOpen !== false && focus !== false && (focus === true || Boolean(triggeringElement)))
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
   return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
 }

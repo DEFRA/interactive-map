@@ -23,7 +23,7 @@ function buildOpenPanels (state, panelId, breakpoint, props, focusOnOpen) {
   return {
     ...(isExclusiveNonModal ? {} : filteredPanels),
     ...(isModal ? state.openPanels : {}),
-    [panelId]: { props, ...(focusOnOpen && { focusOnOpen: true }) }
+    [panelId]: { props, ...(focusOnOpen !== undefined && { focusOnOpen }) }
   }
 }
 
