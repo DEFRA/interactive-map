@@ -54,7 +54,7 @@ export const getPatternInnerContent = (dataset, patternRegistry) => {
 /**
  * Returns a deterministic image ID for a pattern + resolved colour + pixel ratio combination.
  *
- * @param {Object} style
+ * @param {Object} dataset
  * @param {string} mapStyleId
  * @param {Object} patternRegistry
  * @param {number} [pixelRatio=1]
@@ -63,13 +63,13 @@ export const getPatternInnerContent = (dataset, patternRegistry) => {
 // Minimum oversampling — keeps 16×16 physical pixels as the floor so patterns remain crisp.
 export const PATTERN_MIN_PIXEL_RATIO = 2
 
-export const getPatternImageId = (style, mapStyleId, patternRegistry, pixelRatio = 1) => {
-  const innerContent = getPatternInnerContent(style, patternRegistry)
+export const getPatternImageId = (dataset, mapStyleId, patternRegistry, pixelRatio = 1) => {
+  const innerContent = getPatternInnerContent(dataset, patternRegistry)
   if (!innerContent) {
     return null
   }
-  const fg = getValueForStyle(style.fillPatternForegroundColor, mapStyleId) || 'black'
-  const bg = getValueForStyle(style.fillPatternBackgroundColor, mapStyleId) || 'transparent'
+  const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
+  const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
   const effectiveRatio = Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
   return `pattern-${hashString(innerContent + fg + bg)}-${effectiveRatio}x`
 }
