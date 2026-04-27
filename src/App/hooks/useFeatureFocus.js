@@ -15,26 +15,26 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [] }) {
   const [activeFeatureId, setActiveFeatureId] = useState(null)
 
   useEffect(() => {
-    const el = featuresRef.current
-    if (!el) {
+    const listboxEl = featuresRef.current
+    if (!listboxEl) {
       return undefined
     }
 
-    const handleKeyDown = (e) => {
-      if (e.key === 'Escape') {
-        e.preventDefault()
+    const handleKeyDown = (event) => {
+      if (event.key === 'Escape') {
+        event.preventDefault()
         setActiveFeatureId(null)
         viewportRef.current?.focus()
-      } else if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
-        e.preventDefault()
-        setActiveFeatureId(id => getNavigatedId(id, e.key, items))
+      } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault()
+        setActiveFeatureId(id => getNavigatedId(id, event.key, items))
       } else {
         // No action
       }
     }
 
-    el.addEventListener('keydown', handleKeyDown)
-    return () => { el.removeEventListener('keydown', handleKeyDown) }
+    listboxEl.addEventListener('keydown', handleKeyDown)
+    return () => { listboxEl.removeEventListener('keydown', handleKeyDown) }
   }, [viewportRef, featuresRef, items])
 
   const onFocus = () => {
