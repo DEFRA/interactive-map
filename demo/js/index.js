@@ -315,24 +315,16 @@ interactiveMap.on('datasets:ready', function () {
 	// setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [55], { datasetId: 'land-covers', idProperty: null }), 2000)
 	// setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [55], { datasetId: 'land-covers', idProperty: null }), 4000)
 
-			// style: {
-			// 	stroke: { outdoor: '#00897B', dark: '#ffffff' },
-			// 	fillPattern: 'diagonal-cross-hatch',
-			// 	fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
-			// 	fillPatternBackgroundColor: 'transparent'
-			// }
-
-
 	setTimeout(() => datasetsPlugin.setStyle(
 		{ 
 			stroke: { outdoor: '#ff0000', dark: '#ffffff' }, 
-			fillPattern: 'diagonal-cross-hatch', 
+			fillPattern: 'horizontal-hatch', 
 			fillPatternForegroundColor:  { outdoor: '#ff0000', dark: '#ffffff' },
 			fillPatternBackgroundColor: 'transparent'
 		}, 
 		{ datasetId: 'land-covers', sublayerId: '130-131' }), 2000)
-	setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
-	setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ffff00' }, }, { datasetId: 'hedge-control' }), 1000)
+	// setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
+	// setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ffff00' }, }, { datasetId: 'hedge-control' }), 1000)
 })
 
 // Ref to the selected features
