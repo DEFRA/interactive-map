@@ -8,8 +8,7 @@ export const createKeyboardActions = (mapProvider, announce, {
   nudgePanDelta,
   zoomDelta,
   nudgeZoomDelta,
-  readMapText,
-  onEnterFeatures
+  readMapText
 }) => {
   const getPan = (shift) => (shift ? nudgePanDelta : panDelta)
   const getZoom = (shift) => (shift ? nudgeZoomDelta : zoomDelta)
@@ -65,10 +64,6 @@ export const createKeyboardActions = (mapProvider, announce, {
       announce(label, 'core')
     },
 
-    clearSelection: () => mapProvider?.clearHighlightedLabel?.(),
-
-    enterFeatures: () => {
-      if (onEnterFeatures) { onEnterFeatures() }
-    }
+    clearSelection: () => mapProvider?.clearHighlightedLabel?.()
   }
 }
