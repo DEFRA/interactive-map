@@ -230,18 +230,18 @@ describe('registerSymbols — null results and caching', () => {
     const uniqueRatio = 7
 
     const map1 = makeMap()
-    const blobCallsBefore = globalThis.URL.createObjectURL.mock.calls.length
+    const getContextCallsBefore = HTMLCanvasElement.prototype.getContext.mock.calls.length
     await registerSymbols(map1, [{ symbol: 'pin' }], mapStyle, symbolRegistry, uniqueRatio)
-    const blobCallsAfterFirst = globalThis.URL.createObjectURL.mock.calls.length
-    // Rasterisation ran — blob was created
-    expect(blobCallsAfterFirst).toBeGreaterThan(blobCallsBefore)
+    const getContextCallsAfterFirst = HTMLCanvasElement.prototype.getContext.mock.calls.length
+    // Rasterisation ran — canvas was used
+    expect(getContextCallsAfterFirst).toBeGreaterThan(getContextCallsBefore)
 
     // Second call with a fresh map (hasImage → false) but same ratio → cache hit
     const map2 = makeMap()
     await registerSymbols(map2, [{ symbol: 'pin' }], mapStyle, symbolRegistry, uniqueRatio)
-    const blobCallsAfterSecond = globalThis.URL.createObjectURL.mock.calls.length
-    // No new blob created — rasterisation was skipped via cache
-    expect(blobCallsAfterSecond).toBe(blobCallsAfterFirst)
+    const getContextCallsAfterSecond = HTMLCanvasElement.prototype.getContext.mock.calls.length
+    // No new canvas — rasterisation was skipped via cache
+    expect(getContextCallsAfterSecond).toBe(getContextCallsAfterFirst)
     // addImage still called because map2 has no pre-registered images
     expect(map2.addImage).toHaveBeenCalledTimes(2)
   })

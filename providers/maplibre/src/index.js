@@ -40,7 +40,7 @@ export default function createMapLibreProvider (config = {}) {
       const mapFramework = await import(/* webpackChunkName: "im-maplibre-framework" */ 'maplibre-gl')
 
       if (config.workerUrl) {
-        mapFramework.workerUrl = config.workerUrl
+        mapFramework.setWorkerUrl(config.workerUrl)
       }
 
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
