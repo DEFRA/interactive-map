@@ -47,7 +47,7 @@ export default class MaplibreLayerAdapter {
     const mapStyleId = mapStyle.id
     const pixelRatio = this._pixelRatio
     await Promise.all([
-      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
+      this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
@@ -92,7 +92,7 @@ export default class MaplibreLayerAdapter {
     const newStyleId = newMapStyle.id
     const pixelRatio = this._pixelRatio
     await Promise.all([
-      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), newStyleId, this._patternRegistry),
+      this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), newStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs(datasets), newMapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
@@ -122,7 +122,7 @@ export default class MaplibreLayerAdapter {
     const pixelRatio = this._pixelRatio
     await Promise.all([
       this._mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry),
-      this._mapProvider.registerPatterns(getPatternConfigs(datasets, this._patternRegistry), mapStyle.id, this._patternRegistry)
+      this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), mapStyle.id, this._patternRegistry)
     ])
     datasets.forEach(dataset => {
       getAllLayerIds(dataset).forEach(layerId => {
@@ -279,7 +279,7 @@ export default class MaplibreLayerAdapter {
       this._symbolLayerIds.delete(layerId)
     })
     await Promise.all([
-      this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
+      this._mapProvider.addPatternsToMap(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
     ])
     this._addLayers(dataset, mapStyle, pixelRatio)
@@ -307,7 +307,7 @@ export default class MaplibreLayerAdapter {
       return
     }
     await Promise.all([
-      this._mapProvider.registerPatterns(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
+      this._mapProvider.addPatternsToMap(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.registerSymbols(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
     ])
     const sourceId = this._datasetSourceMap.get(dataset.id)

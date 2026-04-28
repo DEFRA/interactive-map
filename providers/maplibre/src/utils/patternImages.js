@@ -57,7 +57,7 @@ const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio
  * @param {number} pixelRatio
  * @returns {Promise<void>}
  */
-export const registerPatterns = async (map, patternConfigs, mapStyleId, patternRegistry, pixelRatio) => {
+export const addPatternsToMap = async (map, patternConfigs, mapStyleId, patternRegistry, pixelRatio) => {
   if (!patternConfigs.length) {
     return
   }

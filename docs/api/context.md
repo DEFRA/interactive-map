@@ -46,7 +46,7 @@ const center = context.mapProvider.getCenter()
 context.mapProvider.setView({ zoom: 10 })
 ```
 
-#### `mapProvider.registerPatterns(patternConfigs, mapStyleId, patternRegistry)`
+#### `mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)`
 
 Rasterises and registers pattern fill images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
 
@@ -56,7 +56,7 @@ Rasterises and registers pattern fill images with the map engine. Plugin layer a
 
 ```js
 // In a plugin's MapLibre layer adapter
-await mapProvider.registerPatterns(getPatternConfigs(datasets, patternRegistry), mapStyleId, patternRegistry)
+await mapProvider.addPatternsToMap(getPatternConfigs(datasets, patternRegistry), mapStyleId, patternRegistry)
 ```
 
 ---

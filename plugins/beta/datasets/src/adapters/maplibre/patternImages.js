@@ -6,7 +6,7 @@ export { hasPattern, getPatternInnerContent, getPatternImageId, getKeyPatternPat
 
 /**
  * Returns a flat list of datasets and merged sublayers that require pattern images.
- * Handles sublayer merging so callers (e.g. mapProvider.registerPatterns) receive ready-to-use configs.
+ * Handles sublayer merging so callers (e.g. mapProvider.addPatternsToMap) receive ready-to-use configs.
  *
  * @param {Object[]} datasets
  * @param {Object} patternRegistry
