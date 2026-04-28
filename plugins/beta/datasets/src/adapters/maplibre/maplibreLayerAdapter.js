@@ -287,23 +287,22 @@ export default class MaplibreLayerAdapter {
    * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setSublayerStyle (dataset, sublayerId, mapStyle) {
+  async setSublayerStyle (dataset, sublayer, mapStyle) {
+    if (!sublayer) {
+      return
+    }
     const mapStyleId = mapStyle.id
     const pixelRatio = this._pixelRatio
-    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayerId)
+    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.sublayerId)
     ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
       this._symbolLayerIds.delete(layerId)
     })
-    const sublayer = dataset.sublayers?.find(s => s.id === sublayerId)
-    if (!sublayer) {
-      return
-    }
-    await Promise.all([
-      this._mapProvider.addPatternsToMap(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
-      this._mapProvider.addSymbolsToMap(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
+    await Promise.all([ // Add pattern and symbol images to the map before re-adding layers, so they're available for use in the new style.
+      this._mapProvider.addPatternsToMap([sublayer.style], mapStyleId, this._patternRegistry),
+      this._mapProvider.addSymbolsToMap([sublayer.style], mapStyle, this._symbolRegistry)
     ])
     const sourceId = this._datasetSourceMap.get(dataset.id)
     const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
