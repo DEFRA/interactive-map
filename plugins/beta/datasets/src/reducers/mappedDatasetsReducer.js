@@ -1,6 +1,9 @@
 const flattenSublayer = (parentId, sublayer) => {
   const id = `${parentId}-${sublayer.id}`
   const sublayerId = sublayer.id
+  if (sublayer.visibility !== 'hidden') {
+    sublayer.visibility = 'visible'
+  }
   return { ...sublayer, id, parentId, sublayerId }
 }
 
@@ -13,7 +16,6 @@ const reduceDatasets = (acc, dataset) => {
   if (flattenedSublayers?.length) {
     const sublayerIds = flattenedSublayers?.map(sublayer => sublayer.id)
     const sublayers = flattenedSublayers?.reduce(reduceDatasets, { orderedDatasets })
-    // orderedDatasets.push(...sublayerIds)
     acc[id].sublayerIds = sublayerIds
     delete acc[id].sublayers
     return { ...acc, ...sublayers, orderedDatasets }
