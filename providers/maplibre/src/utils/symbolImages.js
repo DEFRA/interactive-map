@@ -119,7 +119,7 @@ const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected,
  * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)
  * @returns {Promise<void>}
  */
-export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio = 2) => {
+export const addSymbolsToMap = async (map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio = 2) => {
   if (!symbolConfigs.length) {
     return
   }

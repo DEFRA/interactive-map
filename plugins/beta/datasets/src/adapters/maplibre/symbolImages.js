@@ -11,7 +11,7 @@ export { anchorToMaplibre, getSymbolImageId } from '../../../../../../providers/
 
 /**
  * Returns a flat list of datasets and merged sublayers that require symbol images.
- * Handles sublayer merging so callers (e.g. mapProvider.registerSymbols) receive ready-to-use configs.
+ * Handles sublayer merging so callers (e.g. mapProvider.addSymbolsToMap) receive ready-to-use configs.
  *
  * @param {Object[]} datasets
  * @returns {Object[]}

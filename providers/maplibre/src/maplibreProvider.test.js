@@ -4,7 +4,7 @@ import { attachAppEvents } from './appEvents.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
-import { registerSymbols } from './utils/symbolImages.js'
+import { addSymbolsToMap } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
 
@@ -35,7 +35,7 @@ jest.mock('./utils/labels.js', () => ({
 }))
 jest.mock('./utils/highlightFeatures.js', () => ({ updateHighlightedFeatures: jest.fn(() => []) }))
 jest.mock('./utils/queryFeatures.js', () => ({ queryFeatures: jest.fn(() => []) }))
-jest.mock('./utils/symbolImages.js', () => ({ registerSymbols: jest.fn(() => Promise.resolve()) }))
+jest.mock('./utils/symbolImages.js', () => ({ addSymbolsToMap: jest.fn(() => Promise.resolve()) }))
 jest.mock('./utils/patternImages.js', () => ({ addPatternsToMap: jest.fn(() => Promise.resolve()) }))
 
 describe('MapLibreProvider', () => {
@@ -250,34 +250,34 @@ describe('MapLibreProvider', () => {
     })
   })
 
-  test('registerSymbols delegates to utility with map instance', async () => {
+  test('addSymbolsToMap delegates to utility with map instance', async () => {
     const p = makeProvider()
     await doInitMap(p)
     const configs = [{ symbol: 'pin' }]
     const mapStyle = { id: 'test', selectedColor: '#0b0c0c' }
     const registry = {}
-    await p.registerSymbols(configs, mapStyle, registry)
-    expect(registerSymbols).toHaveBeenCalledWith(map, configs, mapStyle, registry, expect.any(Number))
+    await p.addSymbolsToMap(configs, mapStyle, registry)
+    expect(addSymbolsToMap).toHaveBeenCalledWith(map, configs, mapStyle, registry, expect.any(Number))
   })
 
-  test('registerSymbols computes pixelRatio from getPixelRatio and mapSize scale factor', async () => {
+  test('addSymbolsToMap computes pixelRatio from getPixelRatio and mapSize scale factor', async () => {
     const p = makeProvider()
     await doInitMap(p)
     map.getPixelRatio.mockReturnValue(2)
     p.mapSize = 'medium' // scaleFactor['medium'] = 1.5
     const registry = {}
-    await p.registerSymbols([], { id: 'test' }, registry)
-    expect(registerSymbols).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 3) // 2 * 1.5
+    await p.addSymbolsToMap([], { id: 'test' }, registry)
+    expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 3) // 2 * 1.5
   })
 
-  test('registerSymbols falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
+  test('addSymbolsToMap falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
     const p = makeProvider()
     await doInitMap(p)
     map.getPixelRatio.mockReturnValue(0)
     p.mapSize = 'small' // scaleFactor['small'] = 1
     const registry = {}
-    await p.registerSymbols([], { id: 'test' }, registry)
-    expect(registerSymbols).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 1) // (0 || 1) * 1
+    await p.addSymbolsToMap([], { id: 'test' }, registry)
+    expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, registry, 1) // (0 || 1) * 1
   })
 
   test('addPatternsToMap delegates to utility with map instance and pixelRatio', async () => {
