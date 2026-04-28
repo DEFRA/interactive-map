@@ -108,7 +108,7 @@ export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, vis
 export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
   const mapStyleId = mapStyle.id
   const merged = mergeSublayer(dataset, sublayer)
-  const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
+  const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.sublayerId ? sublayer.sublayerId : sublayer.id)
   const parentHidden = dataset.visibility === 'hidden'
   const sublayerHidden = dataset.sublayerVisibility?.[sublayer.id] === 'hidden'
   const visibility = (parentHidden || sublayerHidden) ? 'none' : 'visible'

@@ -156,10 +156,10 @@ const setSublayerStyle = (state, payload) => {
   const { layerAdapter } = state
   const id = `${datasetId}-${sublayerId}`
   const dataset = state.mappedDatasets[datasetId]
-  const subLayer = { ...state.mappedDatasets[id], ...styleChanges }
+  const style = { ...state.mappedDatasets[id].style, ...styleChanges }
+  const subLayer = { ...state.mappedDatasets[id], style }
   // TODO - handle this side effect better
   layerAdapter.setSublayerStyle(dataset, subLayer, mapStyle)
-  console.log('reducer setSublayerStyle completed')
   return {
     ...state,
     mappedDatasets: { ...state.mappedDatasets, [id]: subLayer },

@@ -365,7 +365,7 @@ describe('setSublayerStyle', () => {
   it('removes existing sublayer layers before re-adding', async () => {
     const { adapter, map } = makeAdapter({ 'ds-sl': 'fill', 'ds-sl-stroke': 'line', 'ds-sl-symbol': 'symbol' })
     adapter._datasetSourceMap.set('ds', 'source-ds')
-    const ds = { ...dataset, sublayers: [{ id: 'sl' }] }
+    const ds = { ...dataset, sublayers: [{ id: 'sl', sublayerId: 'sl' }] }
     await adapter.setSublayerStyle(ds, 'sl', mapStyle)
     expect(map.removeLayer).toHaveBeenCalledWith('ds-sl')
     expect(map.removeLayer).toHaveBeenCalledWith('ds-sl-stroke')
