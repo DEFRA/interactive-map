@@ -1,4 +1,4 @@
-import { registerPatterns } from './patternImages.js'
+import { addPatternsToMap } from './patternImages.js'
 
 const OUTDOOR = 'outdoor'
 
@@ -34,13 +34,13 @@ const makePatternRegistry = (id = 'stripes', content = SVG_CONTENT) => ({
   get: jest.fn((name) => name === id ? { svgContent: content } : undefined)
 })
 
-// ─── registerPatterns ─────────────────────────────────────────────────────────
+// ─── addPatternsToMap ─────────────────────────────────────────────────────────
 
-describe('registerPatterns — registration', () => {
+describe('addPatternsToMap — registration', () => {
   it('returns early and does not touch map for empty configs', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
-    await registerPatterns(map, [], OUTDOOR, registry)
+    await addPatternsToMap(map, [], OUTDOOR, registry)
     expect(map.hasImage).not.toHaveBeenCalled()
     expect(map.addImage).not.toHaveBeenCalled()
   })
@@ -49,7 +49,7 @@ describe('registerPatterns — registration', () => {
     const map = makeMap()
     const registry = makePatternRegistry()
     const config = { fillPatternSvgContent: SVG_CONTENT }
-    await registerPatterns(map, [config], OUTDOOR, registry)
+    await addPatternsToMap(map, [config], OUTDOOR, registry)
     expect(map.addImage).toHaveBeenCalledTimes(1)
   })
 
@@ -60,21 +60,21 @@ describe('registerPatterns — registration', () => {
     const { getPatternImageId } = await import('../../../../src/utils/patternUtils.js')
     const existingId = getPatternImageId(config, OUTDOOR, registry, pixelRatio)
     const map = makeMap([existingId])
-    await registerPatterns(map, [config], OUTDOOR, registry, pixelRatio)
+    await addPatternsToMap(map, [config], OUTDOOR, registry, pixelRatio)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
   it('skips config when pattern has no inner content', async () => {
     const map = makeMap()
     const emptyRegistry = { get: jest.fn(() => undefined) }
-    await registerPatterns(map, [{ fillPattern: 'unknown' }], OUTDOOR, emptyRegistry)
+    await addPatternsToMap(map, [{ fillPattern: 'unknown' }], OUTDOOR, emptyRegistry)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
   it('skips config when neither fillPattern nor fillPatternSvgContent is set', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
-    await registerPatterns(map, [{ fillColor: '#ff0000' }], OUTDOOR, registry)
+    await addPatternsToMap(map, [{ fillColor: '#ff0000' }], OUTDOOR, registry)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
@@ -87,17 +87,17 @@ describe('registerPatterns — registration', () => {
         return undefined
       })
     }
-    await registerPatterns(map, [{ fillPattern: 'stripes' }, { fillPattern: 'dots' }], OUTDOOR, registry)
+    await addPatternsToMap(map, [{ fillPattern: 'stripes' }, { fillPattern: 'dots' }], OUTDOOR, registry)
     expect(map.addImage).toHaveBeenCalledTimes(2)
   })
 })
 
-describe('registerPatterns — pixel ratio', () => {
+describe('addPatternsToMap — pixel ratio', () => {
   it('encodes effectiveRatio in the image ID and passes it to addImage', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
     const config = { fillPattern: 'stripes' }
-    await registerPatterns(map, [config], OUTDOOR, registry, 2)
+    await addPatternsToMap(map, [config], OUTDOOR, registry, 2)
     expect(map.addImage).toHaveBeenCalledTimes(1)
     expect(map.addImage).toHaveBeenCalledWith(
       expect.stringMatching(/^pattern-[a-z0-9]+-2x$/),
@@ -110,7 +110,7 @@ describe('registerPatterns — pixel ratio', () => {
     const map = makeMap()
     const registry = makePatternRegistry()
     const config = { fillPattern: 'stripes' }
-    await registerPatterns(map, [config], OUTDOOR, registry, 1)
+    await addPatternsToMap(map, [config], OUTDOOR, registry, 1)
     expect(map.addImage).toHaveBeenCalledWith(
       expect.stringMatching(/-2x$/),
       expect.any(Object),
@@ -124,8 +124,8 @@ describe('registerPatterns — pixel ratio', () => {
     const registry = makePatternRegistry()
     const config = { fillPattern: 'stripes' }
     const hiDpi = 3
-    await registerPatterns(map1, [config], OUTDOOR, registry, 2)
-    await registerPatterns(map2, [config], OUTDOOR, registry, hiDpi)
+    await addPatternsToMap(map1, [config], OUTDOOR, registry, 2)
+    await addPatternsToMap(map2, [config], OUTDOOR, registry, hiDpi)
     const [id2x] = map1.addImage.mock.calls[0]
     const [id3x] = map2.addImage.mock.calls[0]
     expect(id2x).not.toBe(id3x)
@@ -134,12 +134,12 @@ describe('registerPatterns — pixel ratio', () => {
   })
 })
 
-describe('registerPatterns — color resolution and caching', () => {
+describe('addPatternsToMap — color resolution and caching', () => {
   it('applies foreground and background colors when resolving the SVG', async () => {
     const map = makeMap()
     const registry = makePatternRegistry()
     const getContextSpy = HTMLCanvasElement.prototype.getContext
-    await registerPatterns(
+    await addPatternsToMap(
       map,
       [{ fillPattern: 'stripes', fillPatternForegroundColor: '#aabbcc', fillPatternBackgroundColor: '#112233' }],
       OUTDOOR,
@@ -156,9 +156,9 @@ describe('registerPatterns — color resolution and caching', () => {
       fillPattern: 'stripes',
       fillPatternForegroundColor: { outdoor: '#aabbcc', dark: '#112233' }
     }
-    await registerPatterns(map, [config], OUTDOOR, registry)
+    await addPatternsToMap(map, [config], OUTDOOR, registry)
     const map2 = makeMap()
-    await registerPatterns(map2, [config], 'dark', registry)
+    await addPatternsToMap(map2, [config], 'dark', registry)
     const [idOutdoor] = map.addImage.mock.calls[0]
     const [idDark] = map2.addImage.mock.calls[0]
     expect(idOutdoor).not.toBe(idDark)
@@ -169,18 +169,18 @@ describe('registerPatterns — color resolution and caching', () => {
     const registry = makePatternRegistry()
     const config = { fillPattern: 'stripes', fillPatternForegroundColor: '#unique2' }
     const pixelRatio = 2
-    await registerPatterns(map, [config], OUTDOOR, registry, pixelRatio)
+    await addPatternsToMap(map, [config], OUTDOOR, registry, pixelRatio)
     const { getPatternImageId } = await import('../../../../src/utils/patternUtils.js')
     const imageId = getPatternImageId(config, OUTDOOR, registry, pixelRatio)
     const map2 = makeMap([imageId])
-    await registerPatterns(map2, [config], OUTDOOR, registry, pixelRatio)
+    await addPatternsToMap(map2, [config], OUTDOOR, registry, pixelRatio)
     expect(map2.addImage).not.toHaveBeenCalled()
   })
 })
 
-describe('registerPatterns — null results', () => {
+describe('addPatternsToMap — null results', () => {
   it('does not call addImage when innerContent becomes unavailable inside rasterisePattern', async () => {
-    // registry.get returns content on the first call (for getPatternImageId in registerPatterns)
+    // registry.get returns content on the first call (for getPatternImageId in addPatternsToMap)
     // but undefined on the second call (for getPatternInnerContent inside rasterisePattern)
     const registry = {
       get: jest.fn()
@@ -188,13 +188,13 @@ describe('registerPatterns — null results', () => {
         .mockReturnValueOnce(undefined)
     }
     const map = makeMap()
-    await registerPatterns(map, [{ fillPattern: 'stripes' }], OUTDOOR, registry)
+    await addPatternsToMap(map, [{ fillPattern: 'stripes' }], OUTDOOR, registry)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
   it('does not call addImage when imageId becomes unavailable inside rasterisePattern', async () => {
     // Three consecutive calls to registry.get:
-    //   1. getPatternImageId in registerPatterns → returns content → imageId is truthy
+    //   1. getPatternImageId in addPatternsToMap → returns content → imageId is truthy
     //   2. getPatternInnerContent directly in rasterisePattern → returns content → passes innerContent guard
     //   3. getPatternInnerContent inside getPatternImageId in rasterisePattern → returns undefined
     //      → getPatternImageId returns null → hits the imageId null guard
@@ -205,7 +205,7 @@ describe('registerPatterns — null results', () => {
         .mockReturnValueOnce(undefined)
     }
     const map = makeMap()
-    await registerPatterns(map, [{ fillPattern: 'stripes' }], OUTDOOR, registry)
+    await addPatternsToMap(map, [{ fillPattern: 'stripes' }], OUTDOOR, registry)
     expect(map.addImage).not.toHaveBeenCalled()
   })
 })

@@ -113,21 +113,21 @@ const rasteriseSymbolImage = async (dataset, mapStyle, symbolRegistry, selected,
  * (see `getSymbolConfigs` in the datasets plugin adapter).
  *
  * @param {Object} map - MapLibre map instance
- * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers that have a symbol config
+ * @param {Object[]} styleArray - Flat list of datasets/merged-sublayers that have a symbol config
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} symbolRegistry
  * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)
  * @returns {Promise<void>}
  */
-export const registerSymbols = async (map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio = 2) => {
-  if (!symbolConfigs.length) {
+export const addSymbolsToMap = async (map, styleArray, mapStyle, symbolRegistry, pixelRatio = 2) => {
+  if (!styleArray.length) {
     return
   }
 
   // Reset the normal→selected image ID lookup so stale entries don't persist after a style change
   map._symbolImageMap = {}
 
-  await Promise.all(symbolConfigs.flatMap(config => {
+  await Promise.all(styleArray.flatMap(config => {
     const normalId = getSymbolImageId(config, mapStyle, symbolRegistry, false, pixelRatio)
     const selectedId = getSymbolImageId(config, mapStyle, symbolRegistry, true, pixelRatio)
     if (normalId && selectedId) {
