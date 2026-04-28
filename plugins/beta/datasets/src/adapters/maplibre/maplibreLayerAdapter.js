@@ -293,6 +293,9 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>}
    */
   async setSublayerStyle (dataset, sublayer, mapStyle) {
+    if (!sublayer) {
+      return
+    }
     const mapStyleId = mapStyle.id
     const pixelRatio = this._pixelRatio
     const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.sublayerId)

@@ -365,8 +365,8 @@ describe('setSublayerStyle', () => {
   it('removes existing sublayer layers before re-adding', async () => {
     const { adapter, map } = makeAdapter({ 'ds-sl': 'fill', 'ds-sl-stroke': 'line', 'ds-sl-symbol': 'symbol' })
     adapter._datasetSourceMap.set('ds', 'source-ds')
-    const ds = { ...dataset, sublayers: [{ id: 'sl', sublayerId: 'sl' }] }
-    await adapter.setSublayerStyle(ds, 'sl', mapStyle)
+    const sublayer = { id: 'ds-sl', sublayerId: 'sl' }
+    await adapter.setSublayerStyle(dataset, sublayer, mapStyle)
     expect(map.removeLayer).toHaveBeenCalledWith('ds-sl')
     expect(map.removeLayer).toHaveBeenCalledWith('ds-sl-stroke')
     expect(map.removeLayer).toHaveBeenCalledWith('ds-sl-symbol')
@@ -380,10 +380,9 @@ describe('setSublayerStyle', () => {
     expect(addSublayerLayers).toHaveBeenCalled()
   })
 
-  it('does nothing if sublayer is not found', async () => {
+  it('does nothing if sublayer does not exist', async () => {
     const { adapter } = makeAdapter()
-    const ds = { ...dataset, sublayers: [] }
-    await adapter.setSublayerStyle(ds, 'missing', mapStyle)
+    await adapter.setSublayerStyle(dataset, null, mapStyle)
     expect(addSublayerLayers).not.toHaveBeenCalled()
   })
 })
@@ -743,9 +742,10 @@ describe('setSublayerStyle — tiled dataset', () => {
     const { adapter } = makeAdapter()
     const tiledDataset = { ...dataset, tiles: ['https://tiles/{z}/{x}/{y}'], sourceLayer: 'buildings', sublayers: [{ id: 'sl' }] }
     adapter._datasetSourceMap.set('ds', 'source-ds')
-    await adapter.setSublayerStyle(tiledDataset, 'sl', mapStyle)
+    const sublayer = { id: 'ds-sl', sublayerId: 'sl' }
+    await adapter.setSublayerStyle(tiledDataset, sublayer, mapStyle)
     expect(addSublayerLayers).toHaveBeenCalledWith(
-      adapter._map, tiledDataset, { id: 'sl' }, 'source-ds', 'buildings', expect.any(Object)
+      adapter._map, tiledDataset, sublayer, 'source-ds', 'buildings', expect.any(Object)
     )
   })
 })
