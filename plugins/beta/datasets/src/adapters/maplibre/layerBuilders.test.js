@@ -386,7 +386,7 @@ describe('addSublayerLayers', () => {
     getSymbolDef.mockReturnValue({ id: 'marker' })
     getSymbolImageId.mockReturnValue('marker-img')
     const dataset = { id: 'ds', visibility: 'visible' }
-    const sublayer = { id: 'sl' }
+    const sublayer = { id: 'ds-sl', sublayerId: 'sl' }
     mergeSublayer.mockReturnValue({ symbol: 'marker' })
     addSublayerLayers(map, dataset, sublayer, 'source-id', undefined, { mapStyle, symbolRegistry, patternRegistry, pixelRatio: 1 })
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ type: 'symbol' }))
