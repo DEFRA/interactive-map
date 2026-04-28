@@ -220,7 +220,6 @@ const setSublayerOpacity = (state, payload) => {
 const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
 
 const actions = {
-  BUILD_MAPPED_DATASETS: mappedDatasetsReducer,
   BUILD_KEY_GROUPS: keyReducer,
   SET_DATASETS: setDatasets,
   ADD_DATASET: addDataset,
