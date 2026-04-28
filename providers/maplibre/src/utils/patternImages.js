@@ -51,19 +51,19 @@ const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio
  * (see `getPatternConfigs` in the datasets plugin adapter).
  *
  * @param {Object} map - MapLibre map instance
- * @param {Object[]} patternConfigs - Flat list of datasets/merged-sublayers with a pattern config
+ * @param {Object[]} styleArray - Flat list of datasets/merged-sublayers with a pattern config
  * @param {string} mapStyleId
  * @param {Object} patternRegistry
  * @param {number} pixelRatio
  * @returns {Promise<void>}
  */
-export const addPatternsToMap = async (map, patternConfigs, mapStyleId, patternRegistry, pixelRatio) => {
-  if (!patternConfigs.length) {
+export const addPatternsToMap = async (map, styleArray, mapStyleId, patternRegistry, pixelRatio) => {
+  if (!styleArray.length) {
     return
   }
 
   const effectiveRatio = Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
-  await Promise.all(patternConfigs.map(async (config) => {
+  await Promise.all(styleArray.map(async (config) => {
     const imageId = getPatternImageId(config, mapStyleId, patternRegistry, pixelRatio)
     if (!imageId || map.hasImage(imageId)) {
       return
