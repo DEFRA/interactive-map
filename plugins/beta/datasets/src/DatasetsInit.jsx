@@ -1,7 +1,6 @@
 // src/plugins/datasets/datasetsInit.jsx
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
-import { datasetDefaults } from './defaults.js'
 import { createDatasets } from './datasets.js'
 
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
@@ -56,7 +55,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   }, [isMapStyleReady, appState.mode])
 
   useEffect(() => {
-    // dispatch({ type: 'BUILD_MAPPED_DATASETS', payload: null })
     dispatch({ type: 'BUILD_KEY_GROUPS', payload: null })
   }, [pluginState.datasets])
 
