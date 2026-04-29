@@ -11,11 +11,13 @@ class LngLatBounds {
 
 const SYMBOL_IMAGE = 'symbol-abc123'
 const EMPTY_FILTER = ['==', 'id', '']
-const STALE_SYMBOL_LAYER = 'highlight-stale-symbol'
+const LINE_COLOR = 'line-color'
+const STALE_SYMBOL_LAYER = 'active-highlight-stale-symbol'
 const SEL_STALE_SYMBOL_LAYER = 'selected-highlight-stale-symbol'
+const EXPECTED_NEW_LAYER_COUNT = 3
 
 const makeMap = (overrides = {}) => ({
-  _highlightSources: new Set(),
+  _activehighlightSources: new Set(),
   _selectedhighlightSources: new Set(),
   getLayer: jest.fn(),
   addLayer: jest.fn(),
@@ -28,7 +30,7 @@ const makeMap = (overrides = {}) => ({
   ...overrides
 })
 
-// ─── Active (cursor) features — highlight-* layers ────────────────────────────
+// ─── Active (cursor) features — active-highlight-* layers ────────────────────
 
 describe('Highlighting Utils — active (cursor) fill and line', () => {
   let map
@@ -43,7 +45,7 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
   const ALL_BRANCHES_STYLES = { l1: { stroke: 'red', fill: 'blue' }, l2: { stroke: 'green' } }
 
   beforeEach(() => {
-    map = makeMap({ _highlightSources: new Set(['stale']) })
+    map = makeMap({ _activehighlightSources: new Set(['stale']) })
   })
 
   test('All branches', () => {
@@ -53,36 +55,55 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
       if (id.includes('stale')) { return {} }
       if (id === 'l1') { return { source: 's1', type: 'fill' } }
       if (id === 'l2') { return { source: 's2', type: 'line' } }
-      if (id === 'highlight-s2-fill') { return {} }
+      if (id === 'active-highlight-s2-fill') { return {} }
       return null
     })
 
     updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: ALL_BRANCHES_FEATURES, stylesMap: ALL_BRANCHES_STYLES })
 
-    expect(map.setFilter).toHaveBeenCalledWith('highlight-stale-fill', EMPTY_FILTER)
+    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-stale-fill', EMPTY_FILTER)
     expect(map.setFilter).toHaveBeenCalledWith(STALE_SYMBOL_LAYER, EMPTY_FILTER)
-    expect(map.setFilter).toHaveBeenCalledWith('highlight-s2-fill', EMPTY_FILTER)
-    expect(map.setFilter).toHaveBeenCalledWith('highlight-s2-line', expect.arrayContaining([['get', 'customId']]))
+    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-s2-fill', EMPTY_FILTER)
+    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-s2-line', expect.arrayContaining([['get', 'customId']]))
   })
 
-  test('null _highlightSources falls back to empty set; line geom skips absent fill layer', () => {
-    map._highlightSources = null
+  test('null _activehighlightSources falls back to empty set; line geom skips absent fill layer', () => {
+    map._activehighlightSources = null
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
     updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
-    expect(map.setFilter).not.toHaveBeenCalledWith('highlight-s1-fill', expect.anything())
+    expect(map.setFilter).not.toHaveBeenCalledWith('active-highlight-s1-fill', expect.anything())
   })
 
   test('persistent source skips cleanup; missing stale layers skip setFilter', () => {
-    map._highlightSources = new Set(['stale', 's1'])
+    map._activehighlightSources = new Set(['stale', 's1'])
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
     updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
     expect(map.setFilter).not.toHaveBeenCalledWith(expect.stringContaining('stale'), expect.anything())
   })
+
+  test('active features get selected-style overlay line on top', () => {
+    map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
+    const stylesMap = { l1: { stroke: 'yellow', selectionStroke: 'black', strokeWidth: 3, activeStrokeWidth: 9 } }
+    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap })
+
+    const activeColorCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'active-highlight-s1-line' && c[1] === LINE_COLOR)
+    expect(activeColorCall?.[2]).toBe('yellow')
+
+    const overlayColorCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'active-highlight-inner-s1-line' && c[1] === LINE_COLOR)
+    expect(overlayColorCall?.[2]).toBe('black')
+  })
+
+  test('overlay cleanup when active features cleared', () => {
+    map._activehighlightinnerSources = new Set(['stale'])
+    map.getLayer.mockImplementation(id => id === 'active-highlight-inner-stale-line' ? {} : null) // NOSONAR
+    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [], stylesMap: {} })
+    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-inner-stale-line', EMPTY_FILTER)
+  })
 })
 
-// ─── Selected (committed) features — selected-highlight-* layers ─────────────
+// ─── Selected features — selected-highlight-* layers ─────────────────────────
 
-describe('Highlighting Utils — selected (committed) fill and line', () => {
+describe('Highlighting Utils — selected fill and line', () => {
   let map
 
   const SELECTED_FEATURES = [
@@ -104,7 +125,7 @@ describe('Highlighting Utils — selected (committed) fill and line', () => {
     updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, selectedFeatures: SELECTED_FEATURES, stylesMap: STYLES })
     expect(map.setFilter).toHaveBeenCalledWith(SEL_STALE_SYMBOL_LAYER, EMPTY_FILTER)
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'selected-highlight-s1-line' }))
-    const linePaintCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'selected-highlight-s1-line' && c[1] === 'line-color')
+    const linePaintCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'selected-highlight-s1-line' && c[1] === LINE_COLOR)
     expect(linePaintCall).toBeTruthy()
     expect(linePaintCall[2]).toBe('#ffdd00')
   })
@@ -132,18 +153,19 @@ describe('Highlighting Utils — layer management', () => {
   let map
 
   beforeEach(() => {
-    map = makeMap({ _highlightSources: new Set(['stale']) })
+    map = makeMap({ _activehighlightSources: new Set(['stale']) })
   })
 
-  test('reuses existing highlight layer; new layer spreads sourceLayer', () => {
+  test('reuses existing active-highlight layer; new layers spread sourceLayer', () => {
     map.getLayer.mockImplementation(id => { // NOSONAR
       if (id === 'l1') { return { source: 's1', type: 'line' } }
       if (id === 'l2') { return { source: 's2', type: 'line', sourceLayer: 'tiles' } }
-      if (id === 'highlight-s1-line') { return {} }
+      if (id === 'active-highlight-s1-line') { return {} }
       return null
     })
     updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }, { featureId: 2, layerId: 'l2' }], stylesMap: { l1: { stroke: 'blue' }, l2: { stroke: 'green' } } })
-    expect(map.addLayer).toHaveBeenCalledTimes(1)
+    // active-highlight-s1-line reused; active-highlight-s2-line, active-highlight-inner-s1-line, active-highlight-inner-s2-line are new
+    expect(map.addLayer).toHaveBeenCalledTimes(3)
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ 'source-layer': 'tiles' }))
   })
 
@@ -156,7 +178,7 @@ describe('Highlighting Utils — layer management', () => {
 
 describe('Highlighting Utils — symbol layers (active cursor)', () => {
   const ACTIVE_IMAGE = 'symbol-act-abc123'
-  const HIGHLIGHT_LAYER = 'highlight-s1-symbol'
+  const HIGHLIGHT_LAYER = 'active-highlight-s1-symbol'
   const ICON_IMAGE = 'icon-image'
   const ICON_ANCHOR = 'icon-anchor'
   const POINT_FEATURE = { featureId: 1, layerId: 'l1', geometry: { type: 'Point' } }
@@ -228,7 +250,7 @@ describe('Highlighting Utils — symbol layers (active cursor)', () => {
   })
 
   test('cleans up stale symbol highlight layer', () => {
-    map._highlightSources = new Set(['stale'])
+    map._activehighlightSources = new Set(['stale'])
     map.getLayer.mockImplementation(id => id === STALE_SYMBOL_LAYER ? { type: 'symbol' } : null) // NOSONAR
     run([])
     expect(map.setFilter).toHaveBeenCalledWith(STALE_SYMBOL_LAYER, EMPTY_FILTER)

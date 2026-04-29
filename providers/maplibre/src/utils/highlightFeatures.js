@@ -1,5 +1,15 @@
 const ICON_IMAGE = 'icon-image'
 
+const ACTIVE_PREFIX = 'active-highlight'
+const ACTIVE_INNER_PREFIX = 'active-highlight-inner'
+const SELECTED_PREFIX = 'selected-highlight'
+
+// Inner and selected both use the selected colour/width (black, thin)
+const usesSelectedStyle = (prefix) => prefix === SELECTED_PREFIX || prefix === ACTIVE_INNER_PREFIX
+
+const getActiveImageId = (map, imageId) => map._activeSymbolImageMap?.[imageId] ?? null
+const getSelectedImageId = (map, imageId) => map._selectedSymbolImageMap?.[imageId] ?? null
+
 const groupFeaturesBySource = (map, selectedFeatures) => {
   const featuresBySource = {}
 
@@ -22,7 +32,7 @@ const groupFeaturesBySource = (map, selectedFeatures) => {
       }
     }
 
-    // Track whether any selected feature on this source is a polygon
+    // Track whether any feature on this source is a polygon
     if (geometry && (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')) {
       featuresBySource[sourceId].hasFillGeometry = true
       featuresBySource[sourceId].fillIds.add(featureId)
@@ -45,6 +55,12 @@ const cleanupStaleSources = (map, previousSources, currentSources, prefix) => {
       })
     }
   })
+}
+
+const clearPrefixSources = (map, prefix) => {
+  const key = `_${prefix.replaceAll('-', '')}Sources`
+  cleanupStaleSources(map, map[key] || new Set(), new Set(), prefix)
+  map[key] = new Set()
 }
 
 const applyHighlightLayer = (map, id, type, sourceId, srcLayer, paint, filter) => {
@@ -98,11 +114,6 @@ const calculateBounds = (LngLatBounds, renderedFeatures) => {
   return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
 }
 
-const getActiveImageId = (map, imageId) => map._activeSymbolImageMap?.[imageId] ?? null
-const getSelectedImageId = (map, imageId) => map._selectedSymbolImageMap?.[imageId] ?? null
-
-const SELECTED_PREFIX = 'selected-highlight'
-
 const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId) => {
   const imageId = map.getLayoutProperty(layerId, ICON_IMAGE)
   const symbolImageId = getSymbolImageId(map, imageId)
@@ -111,15 +122,17 @@ const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter
   }
 }
 
-const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId, isSelected) => {
+const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId) => {
   const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
   const baseLayer = map.getLayer(layerId)
   const srcLayer = baseLayer.sourceLayer
   const geom = hasFillGeometry ? 'fill' : baseLayer.type
   const base = `${prefix}-${sourceId}`
   const { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill } = stylesMap[layerId]
-  const lineColor = isSelected ? selectionStroke : stroke
-  const lineWidth = isSelected ? strokeWidth : activeStrokeWidth
+  const isSelected = prefix === SELECTED_PREFIX
+  const selectedStyle = usesSelectedStyle(prefix)
+  const lineColor = selectedStyle ? selectionStroke : stroke
+  const lineWidth = selectedStyle ? strokeWidth : activeStrokeWidth
   const idExpression = idProperty ? ['get', idProperty] : ['id']
   const filter = ['in', idExpression, ['literal', [...ids]]]
 
@@ -150,18 +163,18 @@ const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImage
   const currentSources = new Set(Object.keys(featuresBySource))
   const storageKey = `_${prefix.replaceAll('-', '')}Sources`
   const previousSources = map[storageKey] || new Set()
-  const isSelected = prefix === SELECTED_PREFIX
 
   cleanupStaleSources(map, previousSources, currentSources, prefix)
   map[storageKey] = currentSources
-  currentSources.forEach(sourceId => applySourceHighlight(map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId, isSelected))
+  currentSources.forEach(sourceId => applySourceHighlight(map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId))
 
   return featuresBySource
 }
 
 /**
  * Update highlighted features using pure filters.
- * activeFeatures (keyboard cursor) render with the active ring (yellow); selectedFeatures with the selected ring (black).
+ * activeFeatures (keyboard cursor) render with the active ring (yellow) plus a selected ring inner (black).
+ * selectedFeatures render with the selected ring (black) only.
  * Supports fill, line and symbol geometry, multi-source, cleanup, and bounds.
  */
 export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures, activeFeatures, stylesMap }) {
@@ -171,20 +184,21 @@ export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures
 
   // Active cursor features — rendered first so selected layers appear on top
   if (activeFeatures?.length) {
-    applyFeatureHighlights(map, activeFeatures, stylesMap, 'highlight', getActiveImageId)
+    applyFeatureHighlights(map, activeFeatures, stylesMap, ACTIVE_PREFIX, getActiveImageId)
+    // Black selected stroke on top of yellow active (mirrors resolveActive for symbols)
+    applyFeatureHighlights(map, activeFeatures, stylesMap, ACTIVE_INNER_PREFIX, getSelectedImageId)
   } else {
-    cleanupStaleSources(map, map._highlightSources || new Set(), new Set(), 'highlight')
-    map._highlightSources = new Set()
+    clearPrefixSources(map, ACTIVE_PREFIX)
+    clearPrefixSources(map, ACTIVE_INNER_PREFIX)
   }
 
-  // Committed selection features
-  const featuresBySource = selectedFeatures?.length
-    ? applyFeatureHighlights(map, selectedFeatures, stylesMap, SELECTED_PREFIX, getSelectedImageId)
-    : (() => {
-        cleanupStaleSources(map, map._selectedhighlightSources || new Set(), new Set(), SELECTED_PREFIX)
-        map._selectedhighlightSources = new Set()
-        return {}
-      })()
+  // Selection features
+  let featuresBySource = {}
+  if (selectedFeatures?.length) {
+    featuresBySource = applyFeatureHighlights(map, selectedFeatures, stylesMap, SELECTED_PREFIX, getSelectedImageId)
+  } else {
+    clearPrefixSources(map, SELECTED_PREFIX)
+  }
 
   // Bounds only from selected features
   const renderedFeatures = []

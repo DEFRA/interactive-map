@@ -35,23 +35,27 @@ const interactPlugin = createInteractPlugin({
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-110',
+		labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-130-131',
+		labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-332',
+		labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-379',
+		labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-other',
+		labelProperty: 'gid'
 		// idProperty: 'gid'
 	},
 	{
 		layerId: 'hedge-control',
-		labelProperty: 'id',
 		idProperty: 'id'
 	},
 	// {
