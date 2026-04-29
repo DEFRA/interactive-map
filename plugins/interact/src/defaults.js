@@ -4,6 +4,5 @@ export const DEFAULTS = {
   multiSelect: false,
   contiguous: false,
   deselectOnClickOutside: false,
-  marker: {},
-  selectedStrokeWidth: 3
+  marker: {}
 }

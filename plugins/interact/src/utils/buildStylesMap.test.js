@@ -1,11 +1,13 @@
 import { buildStylesMap } from './buildStylesMap.js'
-import { DEFAULTS } from '../defaults.js'
 import { THEME_COLORS } from '../../../../src/config/mapTheme.js'
+import { SELECTED_STROKE_WIDTH, ACTIVE_STROKE_WIDTH } from '../../../../src/config/symbolConfig.js'
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 
 jest.mock('../../../../src/utils/getValueForStyle.js', () => ({
   getValueForStyle: jest.fn((value) => value)
 }))
+
+const CUSTOM_STROKE_WIDTH = 5
 
 describe('buildStylesMap', () => {
   beforeEach(() => {
@@ -20,14 +22,15 @@ describe('buildStylesMap', () => {
 
   it('builds correct stylesMap with layer overrides', () => {
     const dataLayers = [
-      { layerId: 'custom1', activeStroke: 'yellow', selectedStroke: 'red', selectedFill: 'blue', selectedStrokeWidth: 5 }
+      { layerId: 'custom1', activeStroke: 'yellow', selectedStroke: 'red', selectedFill: 'blue', selectedStrokeWidth: CUSTOM_STROKE_WIDTH }
     ]
     const result = buildStylesMap(dataLayers, { id: 'default-style' })
     expect(result.custom1).toEqual({
       stroke: 'yellow',
       selectionStroke: 'red',
       fill: 'blue',
-      strokeWidth: 5
+      strokeWidth: CUSTOM_STROKE_WIDTH,
+      activeStrokeWidth: CUSTOM_STROKE_WIDTH + ACTIVE_STROKE_WIDTH
     })
   })
 
@@ -37,7 +40,7 @@ describe('buildStylesMap', () => {
     expect(result.layer1.stroke).toBe(THEME_COLORS.light.activeColor)
     expect(result.layer1.selectionStroke).toBe(THEME_COLORS.light.selectedColor)
     expect(result.layer1.fill).toBe('transparent')
-    expect(result.layer1.strokeWidth).toBe(DEFAULTS.selectedStrokeWidth)
+    expect(result.layer1.strokeWidth).toBe(SELECTED_STROKE_WIDTH)
   })
 
   it('uses mapStyle.activeColor and selectedColor when provided', () => {

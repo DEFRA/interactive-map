@@ -1,6 +1,6 @@
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 import { THEME_COLORS } from '../../../../src/config/mapTheme.js'
-import { DEFAULTS } from '../defaults.js'
+import { SELECTED_STROKE_WIDTH, ACTIVE_STROKE_WIDTH } from '../../../../src/config/symbolConfig.js'
 
 /**
  * Builds a map of layerId → resolved highlight style for the given data layers.
@@ -32,13 +32,15 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
     const activeStroke = layer.activeStroke || schemeActiveColor
     const selectionStroke = layer.selectedStroke || schemeSelectedColor
     const fill = layer.selectedFill || 'transparent'
-    const strokeWidth = layer.selectedStrokeWidth || DEFAULTS.selectedStrokeWidth
+    const strokeWidth = layer.selectedStrokeWidth || SELECTED_STROKE_WIDTH
+    const activeStrokeWidth = strokeWidth + ACTIVE_STROKE_WIDTH // ACTIVE_STROKE_WIDTH is the total overhang (extends SELECTED_STROKE_WIDTH each side)
 
     stylesMap[layer.layerId] = {
       stroke: getValueForStyle(activeStroke, mapStyle.id),
       selectionStroke: getValueForStyle(selectionStroke, mapStyle.id),
       fill: getValueForStyle(fill, mapStyle.id),
-      strokeWidth
+      strokeWidth,
+      activeStrokeWidth
     }
   })
 

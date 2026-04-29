@@ -6,7 +6,7 @@ Symbol properties control the appearance of markers and point dataset features. 
 
 Each property is optional. A value set directly on a marker or dataset layer takes priority over everything else. If a property is not set there, the value registered with the symbol is used. If the symbol has no value for that property, the app-wide `symbolDefaults` from the constructor applies. If none of those are set, the built-in fallback listed under each property below is used.
 
-`haloColor`, `selectedColor`, and `activeColor` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically. All three are always derived from the active map style and cannot be configured. Ring and halo stroke widths are hardcoded — use the exported `RING_WIDTH` and `HALO_WIDTH` constants from `symbolConfig.js` to keep your custom SVG consistent with the built-in symbols.
+`haloColor`, `selectedColor`, and `activeColor` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically. All three are derived from the active map style — configure them via `MapStyleConfig`, not per symbol or marker.
 
 ## Style-keyed colours
 
@@ -137,7 +137,7 @@ svg: `
 `
 ```
 
-- **Layer 1** — ring layer: `fill` is the committed-selection ring (`{{selectedColor}}`), `stroke` is the active/focus ring (`{{activeColor}}`). Both hidden in normal rendering. `paint-order="stroke fill"` ensures the stroke extends outward without clipping the fill.
+- **Layer 1** — ring layer: `fill` is the selected ring (`{{selectedColor}}`), `stroke` is the active ring (`{{activeColor}}`). Both hidden in normal rendering. `paint-order="stroke fill"` ensures the stroke extends outward without clipping the fill.
 - **Layer 2** — background shape with fixed halo stroke
 - **Layer 3** — foreground graphic (e.g. inner dot)
 

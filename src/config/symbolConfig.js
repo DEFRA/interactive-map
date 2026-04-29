@@ -10,11 +10,14 @@ export const symbolDefaults = {
   foregroundColor: '#ffffff'
 }
 
-/** Stroke width of the ring layer (selection + active rings) in SVG units */
-export const RING_WIDTH = 6
+/** Stroke width for the halo (background shape outline) in SVG units */
+export const HALO_STROKE_WIDTH = 2
 
-/** Stroke width of the halo (background shape outline) in SVG units */
-export const HALO_WIDTH = 2
+/** Stroke width for the selected state — symbol rings and feature highlight lines */
+export const SELECTED_STROKE_WIDTH = 3
+
+/** Stroke width for the active (keyboard cursor) state — double selected, extends 1× each side */
+export const ACTIVE_STROKE_WIDTH = SELECTED_STROKE_WIDTH * 2
 
 /**
  * Built-in graphic path data strings for use with the `graphic` token.

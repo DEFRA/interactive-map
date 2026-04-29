@@ -1,3 +1,5 @@
+const ICON_IMAGE = 'icon-image'
+
 const groupFeaturesBySource = (map, selectedFeatures) => {
   const featuresBySource = {}
 
@@ -70,13 +72,13 @@ const applySymbolHighlightLayer = (map, id, sourceId, srcLayer, originalLayerId,
       source: sourceId,
       ...(srcLayer && { 'source-layer': srcLayer }),
       layout: {
-        'icon-image': imageId,
+        [ICON_IMAGE]: imageId,
         'icon-anchor': map.getLayoutProperty(originalLayerId, 'icon-anchor') ?? 'center',
         'icon-allow-overlap': true
       }
     })
   }
-  map.setLayoutProperty(id, 'icon-image', imageId)
+  map.setLayoutProperty(id, ICON_IMAGE, imageId)
   map.setFilter(id, filter)
   map.moveLayer(id)
 }
@@ -101,50 +103,58 @@ const getSelectedImageId = (map, imageId) => map._selectedSymbolImageMap?.[image
 
 const SELECTED_PREFIX = 'selected-highlight'
 
+const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId) => {
+  const imageId = map.getLayoutProperty(layerId, ICON_IMAGE)
+  const symbolImageId = getSymbolImageId(map, imageId)
+  if (symbolImageId) {
+    applySymbolHighlightLayer(map, `${base}-symbol`, sourceId, srcLayer, layerId, symbolImageId, filter)
+  }
+}
+
+const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId, isSelected) => {
+  const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
+  const baseLayer = map.getLayer(layerId)
+  const srcLayer = baseLayer.sourceLayer
+  const geom = hasFillGeometry ? 'fill' : baseLayer.type
+  const base = `${prefix}-${sourceId}`
+  const { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill } = stylesMap[layerId]
+  const lineColor = isSelected ? selectionStroke : stroke
+  const lineWidth = isSelected ? strokeWidth : activeStrokeWidth
+  const idExpression = idProperty ? ['get', idProperty] : ['id']
+  const filter = ['in', idExpression, ['literal', [...ids]]]
+
+  if (geom === 'fill') {
+    if (isSelected) {
+      const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
+      // Only apply fill highlight to polygon features, not to any co-selected line features
+      applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
+    }
+    applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+  }
+
+  if (geom === 'line') {
+    if (map.getLayer(`${base}-fill`)) {
+      // Clear any fill highlight from a previous polygon on the same source
+      map.setFilter(`${base}-fill`, ['==', 'id', ''])
+    }
+    applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+  }
+
+  if (geom === 'symbol') {
+    applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+  }
+}
+
 const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImageId) => {
   const featuresBySource = groupFeaturesBySource(map, features)
   const currentSources = new Set(Object.keys(featuresBySource))
   const storageKey = `_${prefix.replaceAll('-', '')}Sources`
   const previousSources = map[storageKey] || new Set()
+  const isSelected = prefix === SELECTED_PREFIX
 
   cleanupStaleSources(map, previousSources, currentSources, prefix)
   map[storageKey] = currentSources
-
-  currentSources.forEach(sourceId => {
-    const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
-    const baseLayer = map.getLayer(layerId)
-    const srcLayer = baseLayer.sourceLayer
-    const geom = hasFillGeometry ? 'fill' : baseLayer.type
-    const base = `${prefix}-${sourceId}`
-    const { stroke, selectionStroke, strokeWidth, fill } = stylesMap[layerId]
-    const lineColor = prefix === SELECTED_PREFIX ? selectionStroke : stroke
-
-    const idExpression = idProperty ? ['get', idProperty] : ['id']
-    const filter = ['in', idExpression, ['literal', [...ids]]]
-
-    if (geom === 'fill') {
-      const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
-      // Only apply fill highlight to polygon features, not to any co-selected line features
-      applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
-      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': strokeWidth }, filter)
-    }
-
-    if (geom === 'line') {
-      // Clear any fill highlight from a previous polygon on the same source
-      if (map.getLayer(`${base}-fill`)) {
-        map.setFilter(`${base}-fill`, ['==', 'id', ''])
-      }
-      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': strokeWidth }, filter)
-    }
-
-    if (geom === 'symbol') {
-      const imageId = map.getLayoutProperty(layerId, 'icon-image')
-      const symbolImageId = getSymbolImageId(map, imageId)
-      if (symbolImageId) {
-        applySymbolHighlightLayer(map, `${base}-symbol`, sourceId, srcLayer, layerId, symbolImageId, filter)
-      }
-    }
-  })
+  currentSources.forEach(sourceId => applySourceHighlight(map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId, isSelected))
 
   return featuresBySource
 }
