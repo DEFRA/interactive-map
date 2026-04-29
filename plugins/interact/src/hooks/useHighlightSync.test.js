@@ -140,14 +140,6 @@ describe('useHighlightSync — guards', () => {
     expect(mockDeps.dispatch).not.toHaveBeenCalled()
   })
 
-  it('does nothing when selectedFeatures is null', () => {
-    mockDeps.selectedFeatures = null
-
-    render()
-
-    expect(mockDeps.mapProvider.updateHighlightedFeatures).not.toHaveBeenCalled()
-  })
-
   it('does nothing when mapStyle is null', () => {
     mockDeps.mapStyle = null
     mockDeps.selectedFeatures = [{ featureId: 'F1' }]

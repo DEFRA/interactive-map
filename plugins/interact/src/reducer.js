@@ -26,7 +26,8 @@ const disable = (state) => {
     enabled: false,
     selectedFeatures: [],
     selectedMarkers: [],
-    selectionBounds: null
+    selectionBounds: null,
+    listboxActiveItem: null
   }
 }
 

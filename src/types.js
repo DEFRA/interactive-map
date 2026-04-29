@@ -284,7 +284,7 @@
  * @property {(point: { x: number, y: number }) => [number, number]} screenToMap
  * Convert screen pixel position (x from left edge, y from top edge of viewport) to map coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider).
  *
- * @property {(selectedFeatures: any[], stylesMap: any) => any} [updateHighlightedFeatures]
+ * @property {(selectedFeatures: any[], activeFeatures: any[], stylesMap: any) => any} [updateHighlightedFeatures]
  * @experimental Update highlighted features on the map.
  *
  * @property {(direction: string) => any} [highlightNextLabel]

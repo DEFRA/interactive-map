@@ -6,12 +6,13 @@ The symbol registry is a service that manages reusable named symbols for map mar
 
 ## Built-in symbols
 
-Two symbols are registered by default:
+Three symbols are registered by default:
 
 | ID | Anchor | Description |
 |----|--------|-------------|
 | `'pin'` | `[0.5, 1]` | Teardrop pin — tip aligns with the coordinate |
 | `'circle'` | `[0.5, 0.5]` | Filled circle — centre aligns with the coordinate |
+| `'square'` | `[0.5, 0.5]` | Rounded square — centre aligns with the coordinate |
 
 Both use the standard `{{token}}` placeholders and respect the resolution order described in [Symbol Config](./symbol-config.md#how-values-are-resolved).
 

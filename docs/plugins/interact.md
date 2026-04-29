@@ -85,9 +85,11 @@ layers: [
 |----------|------|-------------|
 | `layerId` | `string` | **Required.** The map layer identifier to enable selection on |
 | `idProperty` | `string` | Property name used as the feature's unique identifier. If omitted, features are matched by index |
+| `labelProperty` | `string` | Property name used as the feature's display label in the keyboard-accessible listbox. **Required for features to appear in keyboard navigation** |
 | `selectedStroke` | `string` | Overrides the selection stroke colour for this layer. Defaults to `MapStyleConfig.selectedColor` |
 | `selectedFill` | `string` | Overrides the selection fill colour for this layer. Defaults to `transparent` |
 | `selectedStrokeWidth` | `number` | Overrides the selection stroke width for this layer. Defaults to `3` |
+| `activeStroke` | `string` | Overrides the keyboard cursor ring colour for this layer. Defaults to `MapStyleConfig.activeColor` |
 
 #### Finding layer IDs
 

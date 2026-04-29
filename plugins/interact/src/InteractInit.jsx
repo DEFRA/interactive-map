@@ -16,7 +16,7 @@ export const InteractInit = ({
   pluginState
 }) => {
   const { interfaceType } = appState
-  const { dispatch, enabled, selectedFeatures, selectionBounds, interactionModes, layers } = pluginState
+  const { dispatch, enabled, selectedFeatures, interactionModes, layers } = pluginState
   const { eventBus, closeApp } = services
   const { crossHair, mapStyle } = mapState
 
@@ -61,7 +61,6 @@ export const InteractInit = ({
     mapStyle,
     pluginState,
     selectedFeatures,
-    selectionBounds,
     dispatch,
     events: EVENTS,
     eventBus

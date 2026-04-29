@@ -34,7 +34,7 @@ export const useHighlightSync = ({
   }
 
   useEffect(() => {
-    if (!mapProvider || !selectedFeatures || !stylesMap) {
+    if (!mapProvider || !stylesMap) {
       return undefined // Explicit return to match the cleanup function return below
     }
 
