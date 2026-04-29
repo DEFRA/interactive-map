@@ -31,7 +31,25 @@ export const patternRegistry = {
    */
   list () {
     return [...patterns.values()]
+  },
+
+  /**
+   * Returns the raw (un-coloured) inner SVG content for a style's pattern.
+   * Precedence: inline fillPatternSvgContent → named fillPattern from registry.
+   *
+   * @param {Object} style
+   * @returns {string|null}
+   */
+  getPatternInnerContent (style) {
+    if (style.fillPatternSvgContent) {
+      return style.fillPatternSvgContent
+    }
+    if (style.fillPattern) {
+      return this.get(style.fillPattern)?.svgContent ?? null
+    }
+    return null
   }
+
 }
 
 // Seed built-in patterns

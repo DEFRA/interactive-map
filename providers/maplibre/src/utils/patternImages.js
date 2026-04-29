@@ -1,4 +1,4 @@
-import { getPatternInnerContent, getPatternImageId, injectColors, PATTERN_MIN_PIXEL_RATIO } from '../../../../src/utils/patternUtils.js'
+import { getPatternImageId, injectColors, PATTERN_MIN_PIXEL_RATIO } from '../../../../src/utils/patternUtils.js'
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 import { rasteriseToImageData } from './rasteriseToImageData.js'
 
@@ -16,7 +16,7 @@ const imageDataCache = new Map()
  * @returns {Promise<{ imageId: string, imageData: ImageData }|null>}
  */
 const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio) => {
-  const innerContent = getPatternInnerContent(dataset, patternRegistry)
+  const innerContent = patternRegistry.getPatternInnerContent(dataset)
   if (!innerContent) {
     return null
   }

@@ -34,24 +34,6 @@ export const injectColors = (content, foregroundColor, backgroundColor) =>
 export const hasPattern = (dataset) => !!(dataset.fillPattern || dataset.fillPatternSvgContent)
 
 /**
- * Returns the raw (un-coloured) inner SVG content for a dataset's pattern.
- * Precedence: inline fillPatternSvgContent → named fillPattern from registry.
- *
- * @param {Object} dataset
- * @param {Object} patternRegistry
- * @returns {string|null}
- */
-export const getPatternInnerContent = (dataset, patternRegistry) => {
-  if (dataset.fillPatternSvgContent) {
-    return dataset.fillPatternSvgContent
-  }
-  if (dataset.fillPattern) {
-    return patternRegistry?.get(dataset.fillPattern)?.svgContent ?? null
-  }
-  return null
-}
-
-/**
  * Returns a deterministic image ID for a pattern + resolved colour + pixel ratio combination.
  *
  * @param {Object} dataset
@@ -64,7 +46,7 @@ export const getPatternInnerContent = (dataset, patternRegistry) => {
 export const PATTERN_MIN_PIXEL_RATIO = 2
 
 export const getPatternImageId = (dataset, mapStyleId, patternRegistry, pixelRatio = 1) => {
-  const innerContent = getPatternInnerContent(dataset, patternRegistry)
+  const innerContent = patternRegistry.getPatternInnerContent(dataset)
   if (!innerContent) {
     return null
   }
@@ -85,7 +67,7 @@ export const getPatternImageId = (dataset, mapStyleId, patternRegistry, pixelRat
  * @returns {{ border: string, content: string }|null}
  */
 export const getKeyPatternPaths = (dataset, mapStyleId, patternRegistry) => {
-  const innerContent = getPatternInnerContent(dataset, patternRegistry)
+  const innerContent = patternRegistry.getPatternInnerContent(dataset)
   if (!innerContent) {
     return null
   }
