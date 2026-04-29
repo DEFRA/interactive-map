@@ -123,6 +123,19 @@ describe('useMapItemList — selectMarker mode', () => {
     container.remove()
   })
 
+  it('excludes markers whose element has no .im-c-viewport__markers ancestor', () => {
+    const el = document.createElement('div')
+    document.body.appendChild(el)
+    const markers = makeMarkers([{ id: 'm1', label: 'Orphan', symbol: 'pin', isVisible: true }])
+    markers.markerRefs.set('m1', el)
+
+    const { eb } = setup({ interactionModes: ['selectMarker'], markers })
+    act(() => eb.emit(MOVE_END, {}))
+
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    el.remove()
+  })
+
   it('excludes markers outside the viewport', () => {
     const { el, container } = makeMarkerEl({ inViewport: false })
     const markers = makeMarkers([{ id: 'm1', label: 'Offscreen', symbol: 'pin', isVisible: true }])
@@ -205,16 +218,45 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     })
   })
 
-  it('excludes features from layers with a label but no labelProperty', () => {
-    const features = [{ layer: { id: 'roads' }, properties: { road_id: '4' } }]
+  it('uses feature.id when idProperty is not present in feature properties', () => {
+    const features = [{ layer: { id: 'roads' }, id: 42, properties: { road_name: 'Oak Ave' } }]
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
+    act(() => eb.emit(MOVE_END, {}))
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: '42', label: 'Oak Ave' }], multiselectable: false
+    })
+  })
+
+  it('skips feature when both idProperty and feature.id are absent', () => {
+    const features = [{ layer: { id: 'roads' }, properties: { road_name: 'Lost Lane' } }]
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
+    act(() => eb.emit(MOVE_END, {}))
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+  })
+
+  it('falls back to stringId label when feature has no properties object', () => {
+    // Line 45: feature.properties is undefined → ?. short-circuits → ?? stringId used
+    const features = [{ layer: { id: 'roads' }, id: 99 }]
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
+    act(() => eb.emit(MOVE_END, {}))
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: '99', label: '99' }], multiselectable: false
+    })
+  })
+
+  it('deduplicates features with the same id', () => {
+    const features = [
+      { layer: { id: 'roads' }, properties: { road_id: '1', road_name: 'High Street' } },
+      { layer: { id: 'roads' }, properties: { road_id: '1', road_name: 'Duplicate' } }
+    ]
     const { eb } = setup({
       interactionModes: ['selectFeature'],
-      layers: [{ layerId: 'roads', label: 'Roads', idProperty: 'road_id' }],
+      layers: [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }],
       mapProvider: makeMapProvider(features)
     })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [], multiselectable: false
+      items: [{ id: '1', label: 'High Street' }], multiselectable: false
     })
   })
 })
@@ -366,6 +408,38 @@ describe('useMapItemList — map:setactivefeature listener', () => {
     act(() => eb.emit(SET_ACTIVE, { id: 'missing' })) // NOSONAR
     expect(dp).not.toHaveBeenCalled()
   })
+
+  it('skips features from unknown layers when searching by id', () => {
+    // Line 69: getFeatureId returns null for unknown layer → rawId != null is false
+    const layers = [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }]
+    const features = [{ layer: { id: 'unknown' }, properties: { some_id: '1' }, geometry: { type: 'Point' } }]
+    const { eb, dp } = setup({
+      interactionModes: ['selectFeature'],
+      layers,
+      mapProvider: makeMapProvider(features)
+    })
+    act(() => eb.emit(SET_ACTIVE, { id: '1' }))
+    expect(dp).not.toHaveBeenCalled()
+  })
+
+  it('does not search features when interactionModes excludes selectFeature', () => {
+    // Line 114: interactionModes.includes('selectFeature') → false → block skipped
+    const features = [{ layer: { id: 'roads' }, properties: { road_id: '1' }, geometry: { type: 'Point' } }]
+    const { eb, dp } = setup({
+      interactionModes: ['selectMarker'],
+      layers: [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }],
+      mapProvider: makeMapProvider(features)
+    })
+    act(() => eb.emit(SET_ACTIVE, { id: '1' }))
+    expect(dp).not.toHaveBeenCalled()
+  })
+
+  it('does not search features when layers is empty', () => {
+    // Line 114: layers.length > 0 → false → block skipped
+    const { eb, dp } = setup({ interactionModes: ['selectFeature'], layers: [] })
+    act(() => eb.emit(SET_ACTIVE, { id: '1' }))
+    expect(dp).not.toHaveBeenCalled()
+  })
 })
 
 // ─── useMapItemList — confirm: lifecycle and guards ──────────────────────
@@ -391,7 +465,7 @@ describe('useMapItemList — confirm: lifecycle and guards', () => {
     act(() => eb.emit(CONFIRM))
     dp.mockClear()
     act(() => eb.emit(CONFIRM))
-    expect(dp).toHaveBeenCalledWith({ type: 'SELECT_MARKER', payload: { markerId: 'm1', multiSelect: false } })
+    expect(dp).toHaveBeenCalledWith({ type: 'TOGGLE_SELECTED_MARKERS', payload: { markerId: 'm1', multiSelect: false } })
   })
 })
 

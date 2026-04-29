@@ -211,6 +211,23 @@ describe('symbolRegistry — resolveActive (keyboard cursor state)', () => {
   })
 })
 
+describe('symbolRegistry — resolveSelected (committed selection state)', () => {
+  const symbolDef = {
+    id: 'test-selected',
+    svg: '<path fill="{{selectedColor}}"/>'
+  }
+
+  it('returns empty string for null symbolDef', () => {
+    expect(symbolRegistry.resolveSelected(null, {}, mapStyle)).toBe('')
+  })
+
+  it('handles null styleColors — uses cascade defaults', () => {
+    const resolved = symbolRegistry.resolveSelected(symbolDef, null, mapStyle)
+    expect(typeof resolved).toBe('string')
+    expect(resolved.length).toBeGreaterThan(0)
+  })
+})
+
 describe('symbolRegistry — graphic token', () => {
   const graphicDef = {
     id: 'test-graphic',

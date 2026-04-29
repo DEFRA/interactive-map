@@ -12,7 +12,8 @@ describe('initialState', () => {
       selectedFeatures: [],
       selectedMarkers: [],
       selectionBounds: null,
-      closeOnAction: true
+      closeOnAction: true,
+      listboxActiveItem: null
     })
   })
 })
@@ -188,6 +189,20 @@ describe('CLEAR_SELECTED_FEATURES action', () => {
   })
 })
 
+describe('SET_LISTBOX_ACTIVE action', () => {
+  it('sets listboxActiveItem to the payload value', () => {
+    const payload = { featureId: 'f1', layerId: 'l1' }
+    const result = actions.SET_LISTBOX_ACTIVE(initialState, payload)
+    expect(result.listboxActiveItem).toEqual(payload)
+  })
+
+  it('sets listboxActiveItem to null when payload is null', () => {
+    const state = { ...initialState, listboxActiveItem: { featureId: 'f1' } }
+    const result = actions.SET_LISTBOX_ACTIVE(state, null)
+    expect(result.listboxActiveItem).toBeNull()
+  })
+})
+
 describe('SELECT_MARKER action', () => {
   it('adds a marker in single-select mode, clearing selectedFeatures', () => {
     const state = { ...initialState, selectedFeatures: [{ featureId: 'f1' }], selectedMarkers: [] }
@@ -235,7 +250,8 @@ describe('actions object', () => {
       'UPDATE_SELECTED_BOUNDS',
       'CLEAR_SELECTED_FEATURES',
       'SELECT_MARKER',
-      'UNSELECT_MARKER'
+      'UNSELECT_MARKER',
+      'SET_LISTBOX_ACTIVE'
     ])
     Object.values(actions).forEach(fn => expect(typeof fn).toBe('function'))
   })

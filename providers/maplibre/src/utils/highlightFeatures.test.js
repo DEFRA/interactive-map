@@ -14,7 +14,6 @@ const EMPTY_FILTER = ['==', 'id', '']
 const LINE_COLOR = 'line-color'
 const STALE_SYMBOL_LAYER = 'active-highlight-stale-symbol'
 const SEL_STALE_SYMBOL_LAYER = 'selected-highlight-stale-symbol'
-const EXPECTED_NEW_LAYER_COUNT = 3
 
 const makeMap = (overrides = {}) => ({
   _activehighlightSources: new Set(),
@@ -59,7 +58,7 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
       return null
     })
 
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: ALL_BRANCHES_FEATURES, stylesMap: ALL_BRANCHES_STYLES })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: ALL_BRANCHES_FEATURES, stylesMap: ALL_BRANCHES_STYLES })
 
     expect(map.setFilter).toHaveBeenCalledWith('active-highlight-stale-fill', EMPTY_FILTER)
     expect(map.setFilter).toHaveBeenCalledWith(STALE_SYMBOL_LAYER, EMPTY_FILTER)
@@ -70,21 +69,21 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
   test('null _activehighlightSources falls back to empty set; line geom skips absent fill layer', () => {
     map._activehighlightSources = null
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
     expect(map.setFilter).not.toHaveBeenCalledWith('active-highlight-s1-fill', expect.anything())
   })
 
   test('persistent source skips cleanup; missing stale layers skip setFilter', () => {
     map._activehighlightSources = new Set(['stale', 's1'])
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
     expect(map.setFilter).not.toHaveBeenCalledWith(expect.stringContaining('stale'), expect.anything())
   })
 
   test('active features get selected-style overlay line on top', () => {
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
     const stylesMap = { l1: { stroke: 'yellow', selectionStroke: 'black', strokeWidth: 3, activeStrokeWidth: 9 } }
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap })
 
     const activeColorCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'active-highlight-s1-line' && c[1] === LINE_COLOR)
     expect(activeColorCall?.[2]).toBe('yellow')
@@ -96,7 +95,7 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
   test('overlay cleanup when active features cleared', () => {
     map._activehighlightinnerSources = new Set(['stale'])
     map.getLayer.mockImplementation(id => id === 'active-highlight-inner-stale-line' ? {} : null) // NOSONAR
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [], stylesMap: {} })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [], stylesMap: {} })
     expect(map.setFilter).toHaveBeenCalledWith('active-highlight-inner-stale-line', EMPTY_FILTER)
   })
 })
@@ -122,12 +121,22 @@ describe('Highlighting Utils — selected fill and line', () => {
       if (id === 'l1') { return { source: 's1', type: 'fill' } }
       return null
     })
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, selectedFeatures: SELECTED_FEATURES, stylesMap: STYLES })
+    updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures: SELECTED_FEATURES, stylesMap: STYLES })
     expect(map.setFilter).toHaveBeenCalledWith(SEL_STALE_SYMBOL_LAYER, EMPTY_FILTER)
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'selected-highlight-s1-line' }))
     const linePaintCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'selected-highlight-s1-line' && c[1] === LINE_COLOR)
     expect(linePaintCall).toBeTruthy()
     expect(linePaintCall[2]).toBe('#ffdd00')
+  })
+
+  test('bounds matched using idProperty when set', () => {
+    const features = [{ featureId: 'parcel-1', layerId: 'l1', idProperty: 'parcelId', geometry: { type: 'Polygon' } }]
+    map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'fill' } : null) // NOSONAR
+    map.queryRenderedFeatures.mockReturnValue([
+      { properties: { parcelId: 'parcel-1' }, geometry: { coordinates: [[1, 2]] } }
+    ])
+    const bounds = updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures: features, stylesMap: STYLES })
+    expect(bounds).not.toBeNull()
   })
 
   test('bounds are calculated from selected features only', () => {
@@ -142,7 +151,7 @@ describe('Highlighting Utils — selected fill and line', () => {
       { id: 1, geometry: { coordinates: [coordMax, coordMax] } },
       { id: 2, geometry: { coordinates: [[0, 0], [coordMid, coordMid]] } }
     ])
-    const bounds = updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, selectedFeatures: features, stylesMap: STYLES })
+    const bounds = updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures: features, stylesMap: STYLES })
     expect(bounds).toEqual([0, 0, 10, 10])
   })
 })
@@ -163,14 +172,14 @@ describe('Highlighting Utils — layer management', () => {
       if (id === 'active-highlight-s1-line') { return {} }
       return null
     })
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }, { featureId: 2, layerId: 'l2' }], stylesMap: { l1: { stroke: 'blue' }, l2: { stroke: 'green' } } })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }, { featureId: 2, layerId: 'l2' }], stylesMap: { l1: { stroke: 'blue' }, l2: { stroke: 'green' } } })
     // active-highlight-s1-line reused; active-highlight-s2-line, active-highlight-inner-s1-line, active-highlight-inner-s2-line are new
     expect(map.addLayer).toHaveBeenCalledTimes(3)
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ 'source-layer': 'tiles' }))
   })
 
   test('returns null when no rendered features match', () => {
-    expect(updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, selectedFeatures: [], stylesMap: {} })).toBeNull()
+    expect(updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures: [], stylesMap: {} })).toBeNull()
   })
 })
 
@@ -193,7 +202,7 @@ describe('Highlighting Utils — symbol layers (active cursor)', () => {
   })
 
   const run = (activeFeatures = [POINT_FEATURE]) =>
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, activeFeatures, stylesMap: { l1: {} } })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures, stylesMap: { l1: {} } })
 
   test('creates symbol highlight layer with cursor image variant', () => {
     run()
@@ -273,7 +282,7 @@ describe('Highlighting Utils — symbol layers (committed selection)', () => {
   })
 
   const run = (selectedFeatures = [POINT_FEATURE]) =>
-    updateHighlightedFeatures({ LngLatBounds: LngLatBounds, map, selectedFeatures, stylesMap: { l1: {} } })
+    updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, stylesMap: { l1: {} } })
 
   test('creates selected-highlight symbol layer with selected image variant', () => {
     run()

@@ -40,10 +40,7 @@ const toFeatureItem = (feature, layerConfigMap, seenIds) => {
     return null
   }
   seenIds.add(stringId)
-  const layerLabel = config.label || config.layerId
-  const label = config.labelProperty
-    ? (feature.properties?.[config.labelProperty] ?? stringId)
-    : `${layerLabel} ${stringId}`
+  const label = feature.properties?.[config.labelProperty] ?? stringId
   return { id: stringId, label }
 }
 
