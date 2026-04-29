@@ -109,14 +109,6 @@ When `true`, clicking additional features adds them to the selection rather than
 
 ---
 
-### `contiguous`
-**Type:** `boolean`
-**Default:** `false`
-
-When `true`, only features that touch or overlap the existing selection can be added. Uses spatial intersection to determine contiguity. Works with polygons, lines, and points.
-
----
-
 ### `deselectOnClickOutside`
 **Type:** `boolean`
 **Default:** `false`
@@ -350,8 +342,7 @@ Emitted whenever the selected features or selected markers change.
   ],
   selectedMarkers: ['...'],  // array of selected marker IDs
   selectionBounds: [west, south, east, north] | null,
-  canMerge: boolean,  // true when all selected features are contiguous
-  canSplit: boolean   // true when exactly one Polygon or MultiPolygon is selected
+  contiguous: boolean  // true when 2+ features are selected and all form a single contiguous group
 }
 ```
 
