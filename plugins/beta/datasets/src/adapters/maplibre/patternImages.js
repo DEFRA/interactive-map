@@ -2,7 +2,7 @@
 import { hasPattern } from '../../../../../../src/utils/patternUtils.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 
-export { hasPattern, getPatternImageId, getKeyPatternPaths } from '../../../../../../src/utils/patternUtils.js'
+export { hasPattern } from '../../../../../../src/utils/patternUtils.js'
 
 /**
  * Returns a flat list of datasets and merged sublayers that require pattern images.

@@ -1,5 +1,5 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
-import { hasPattern, getPatternImageId } from './patternImages.js'
+import { hasPattern } from './patternImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, isDynamicSource, MAX_TILE_ZOOM } from './layerIds.js'
 import { hasSymbol, getSymbolDef, getSymbolAnchor, anchorToMaplibre, getSymbolImageId } from './symbolImages.js'
@@ -36,7 +36,7 @@ export const addFillLayer = (map, config, layerId, sourceId, sourceLayer, visibi
   if (!config.fill && !hasPattern(config)) {
     return
   }
-  const patternImageId = hasPattern(config) ? getPatternImageId(config, mapStyleId, patternRegistry, pixelRatio) : null
+  const patternImageId = hasPattern(config) ? patternRegistry.getPatternImageId(config, mapStyleId, pixelRatio) : null
   const paint = patternImageId
     ? { 'fill-pattern': patternImageId, 'fill-opacity': config.opacity || 1 }
     : { 'fill-color': getValueForStyle(config.fill, mapStyleId), 'fill-opacity': config.opacity || 1 }
