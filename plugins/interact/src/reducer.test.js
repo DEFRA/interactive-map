@@ -8,7 +8,6 @@ describe('initialState', () => {
       marker: null,
       interactionModes: null,
       multiSelect: false,
-      contiguous: false,
       deselectOnClickOutside: false,
       selectedFeatures: [],
       selectedMarkers: [],

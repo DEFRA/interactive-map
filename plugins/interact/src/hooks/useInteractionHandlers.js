@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { isContiguousWithAny, canSplitFeatures, areAllContiguous } from '../utils/spatial.js'
+import { areAllContiguous } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
 import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
@@ -59,8 +59,7 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
       selectedFeatures,
       selectedMarkers,
       selectionBounds,
-      canMerge: areAllContiguous(selectedFeatures),
-      canSplit: canSplitFeatures(selectedFeatures)
+      contiguous: areAllContiguous(selectedFeatures)
     })
 
     lastEmittedSelectionChange.current = { features: selectedFeatures, markers: selectedMarkers }
@@ -84,13 +83,12 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
  */
 export const useInteractionHandlers = ({ mapState, pluginState, services, mapProvider }) => {
   const { markers, mapSize } = mapState
-  const { dispatch, layers, interactionModes, multiSelect, contiguous, marker: markerOptions, tolerance, selectedFeatures, selectedMarkers, selectionBounds, deselectOnClickOutside } = pluginState
+  const { dispatch, layers, interactionModes, multiSelect, marker: markerOptions, tolerance, selectedFeatures, selectedMarkers, selectionBounds, deselectOnClickOutside } = pluginState
   const { eventBus } = services
   const layerConfigMap = buildLayerConfigMap(layers)
   const scale = scaleFactor[mapSize] ?? 1
   const processFeatureMatch = useCallback(({ feature, config }) => {
     markers.remove('location')
-    const isNewContiguous = contiguous && isContiguousWithAny(feature, selectedFeatures)
     const featureId = feature.properties?.[config.idProperty] ?? feature.id
     if (featureId == null) {
       return
@@ -103,11 +101,10 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
         layerId: config.layerId,
         idProperty: config.idProperty,
         properties: feature.properties,
-        geometry: feature.geometry,
-        replaceAll: contiguous && !isNewContiguous
+        geometry: feature.geometry
       }
     })
-  }, [markers, contiguous, selectedFeatures, dispatch, multiSelect])
+  }, [markers, dispatch, multiSelect])
 
   const processFallback = useCallback(({ coords }) => {
     const canPlace = interactionModes.includes('placeMarker')

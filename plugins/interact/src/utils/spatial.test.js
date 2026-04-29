@@ -1,4 +1,4 @@
-import { toTurfGeometry, isContiguousWithAny, canSplitFeatures, areAllContiguous } from './spatial.js'
+import { toTurfGeometry, isContiguousWithAny, areAllContiguous } from './spatial.js'
 import { polygon, multiPolygon, lineString, multiLineString, point, multiPoint } from '@turf/helpers'
 
 describe('toTurfGeometry', () => {
@@ -58,18 +58,6 @@ describe('isContiguousWithAny', () => {
 
   it('returns false when features array is empty', () => {
     expect(isContiguousWithAny(featureA, [])).toBe(false)
-  })
-})
-
-describe('canSplitFeatures', () => {
-  it.each([
-    [[{ geometry: { type: 'Polygon' } }], true],
-    [[{ geometry: { type: 'MultiPolygon' } }], true],
-    [[{ geometry: { type: 'LineString' } }], false],
-    [[], false],
-    [[{ geometry: { type: 'Polygon' } }, { geometry: { type: 'Polygon' } }], false]
-  ])('returns expected result for %j', (features, expected) => {
-    expect(canSplitFeatures(features)).toBe(expected)
   })
 })
 
