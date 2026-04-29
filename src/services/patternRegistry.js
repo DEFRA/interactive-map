@@ -35,6 +35,13 @@ export const patternRegistry = {
   },
 
   /**
+   * Clears all registered patterns (including built-ins). Mainly for testing purposes.
+   */
+  clear () {
+    patterns.clear()
+  },
+
+  /**
    * Returns the raw (un-coloured) inner SVG content for a style's pattern.
    * Precedence: inline fillPatternSvgContent → named fillPattern from registry.
    *
@@ -93,7 +100,6 @@ export const patternRegistry = {
     const effectiveRatio = Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
     return `pattern-${hashString(innerContent + fg + bg)}-${effectiveRatio}x`
   }
-
 }
 
 // Seed built-in patterns
