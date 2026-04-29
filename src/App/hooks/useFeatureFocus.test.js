@@ -8,6 +8,8 @@ const ITEMS = [
 ]
 
 const SET_ACTIVE = 'map:setactivefeature' // NOSONAR
+const SELECT = 'map:selectfeature'
+const SELECTION_CHANGE = 'interact:selectionchange'
 
 const makeEventBus = () => {
   const listeners = {}
@@ -25,7 +27,12 @@ const makeRefs = ({ viewportFocus } = {}) => ({
 })
 
 const fireKey = (el, key) => {
-  act(() => { el.dispatchEvent(new KeyboardEvent('keydown', { key, bubbles: true })) })
+  let event
+  act(() => {
+    event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+    el.dispatchEvent(event)
+  })
+  return event
 }
 
 // ─── useFeatureFocus — initial state ─────────────────────────────────────────
@@ -39,6 +46,11 @@ describe('useFeatureFocus — initial state', () => {
   it('exposes onFocus function', () => {
     const { result } = renderHook(() => useFeatureFocus(makeRefs()))
     expect(typeof result.current.onFocus).toBe('function')
+  })
+
+  it('exposes onBlur function', () => {
+    const { result } = renderHook(() => useFeatureFocus(makeRefs()))
+    expect(typeof result.current.onBlur).toBe('function')
   })
 })
 
@@ -55,6 +67,32 @@ describe('useFeatureFocus — onFocus', () => {
     const { result } = renderHook(() => useFeatureFocus(makeRefs()))
     act(() => result.current.onFocus())
     expect(result.current.activeFeatureId).toBeNull()
+  })
+})
+
+// ─── useFeatureFocus — onBlur ─────────────────────────────────────────────────
+
+describe('useFeatureFocus — onBlur', () => {
+  it('clears activeFeatureId when focus leaves the listbox', () => {
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    act(() => result.current.onFocus())
+    expect(result.current.activeFeatureId).toBe('a')
+    act(() => result.current.onBlur())
+    expect(result.current.activeFeatureId).toBeNull()
+  })
+
+  it('emits map:setactivefeature with null on blur', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    act(() => result.current.onBlur())
+    expect(eb.emit).toHaveBeenCalledWith(SET_ACTIVE, { id: null })
+  })
+
+  it('does not throw when eventBus is not provided', () => {
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    expect(() => act(() => result.current.onBlur())).not.toThrow()
   })
 })
 
@@ -100,7 +138,7 @@ describe('useFeatureFocus — unhandled keys', () => {
 // ─── useFeatureFocus — Escape key ────────────────────────────────────────────
 
 describe('useFeatureFocus — Escape key', () => {
-  it('clears activeFeatureId and focuses viewport', () => {
+  it('focuses the viewport on Escape (active state is cleared by the subsequent onBlur)', () => {
     const viewportFocus = jest.fn()
     const refs = makeRefs({ viewportFocus })
     const el = refs.featuresRef.current
@@ -108,7 +146,6 @@ describe('useFeatureFocus — Escape key', () => {
     const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'Escape')
-    expect(result.current.activeFeatureId).toBeNull()
     expect(viewportFocus).toHaveBeenCalled()
     el.remove()
   })
@@ -119,6 +156,18 @@ describe('useFeatureFocus — Escape key', () => {
     document.body.appendChild(el)
     renderHook(() => useFeatureFocus(refs))
     expect(() => fireKey(el, 'Escape')).not.toThrow()
+    el.remove()
+  })
+
+  it('stops propagation on Escape so the viewport keyboard handler does not also handle it', () => {
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).toHaveBeenCalled()
     el.remove()
   })
 })
@@ -169,6 +218,16 @@ describe('useFeatureFocus — ArrowDown navigation', () => {
     const { result, unmount } = renderHook(() => useFeatureFocus(refs))
     fireKey(el, 'ArrowDown')
     expect(result.current.activeFeatureId).toBeNull()
+    unmount(); el.remove()
+  })
+
+  it('stops propagation on ArrowDown so the viewport keyboard handler does not pan the map', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    const event = new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true, cancelable: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).toHaveBeenCalled()
     unmount(); el.remove()
   })
 })
@@ -238,16 +297,16 @@ describe('useFeatureFocus — eventBus: map:setactivefeature listener', () => {
   })
 })
 
-describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
-  const setupWithBus = () => {
-    const eb = makeEventBus()
-    const refs = makeRefs()
-    const el = refs.featuresRef.current
-    document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
-    return { eb, el, result, unmount }
-  }
+const setupWithBus = () => {
+  const eb = makeEventBus()
+  const refs = makeRefs()
+  const el = refs.featuresRef.current
+  document.body.appendChild(el)
+  const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+  return { eb, el, result, unmount }
+}
 
+describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('emits map:setactivefeature with first item id on onFocus', () => {
@@ -265,15 +324,6 @@ describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
     unmount()
   })
 
-  it('emits map:setactivefeature with null on Escape', () => {
-    const { eb, result, el, unmount } = setupWithBus()
-    act(() => result.current.onFocus())
-    eb.emit.mockClear()
-    fireKey(el, 'Escape')
-    expect(eb.emit).toHaveBeenCalledWith(SET_ACTIVE, { id: null })
-    unmount()
-  })
-
   it('does not emit when eventBus is not provided', () => {
     const refs = makeRefs()
     const el = refs.featuresRef.current
@@ -283,6 +333,105 @@ describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
       act(() => result.current.onFocus())
       fireKey(el, 'ArrowDown')
     }).not.toThrow()
+    unmount()
+  })
+})
+
+// ─── useFeatureFocus — interact:selectionchange listener ─────────────────────
+
+describe('useFeatureFocus — interact:selectionchange listener', () => {
+  it('subscribes to interact:selectionchange on mount and unsubscribes on unmount', () => {
+    const eb = makeEventBus()
+    const { unmount } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    expect(eb.on).toHaveBeenCalledWith(SELECTION_CHANGE, expect.any(Function))
+    unmount()
+    expect(eb.off).toHaveBeenCalledWith(SELECTION_CHANGE, expect.any(Function))
+  })
+
+  it('sets selectedIds from selected features', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 27665979, layerId: 'hedges' }] }))
+    expect(result.current.selectedIds).toEqual(['27665979'])
+  })
+
+  it('sets selectedIds from multiple selected features', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'f1', layerId: 'roads' }, { featureId: 'f2', layerId: 'roads' }] }))
+    expect(result.current.selectedIds).toEqual(['f1', 'f2'])
+  })
+
+  it('sets selectedIds from selected markers', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['m1', 'm2'] }))
+    expect(result.current.selectedIds).toEqual(['m1', 'm2'])
+  })
+
+  it('sets selectedIds from both features and markers when both are selected', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'f1', layerId: 'roads' }], selectedMarkers: ['m1'] }))
+    expect(result.current.selectedIds).toEqual(['f1', 'm1'])
+  })
+
+  it('clears selectedIds when selection becomes empty', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'f1', layerId: 'roads' }] }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [], selectedMarkers: [] }))
+    expect(result.current.selectedIds).toEqual([])
+  })
+
+  it('does not move activeFeatureId when selectionchange fires (cursor is keyboard-only)', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'a', layerId: 'roads' }] }))
+    expect(result.current.activeFeatureId).toBeNull()
+  })
+})
+
+// ─── useFeatureFocus — Enter and Space keys ───────────────────────────────────
+
+describe('useFeatureFocus — Enter and Space keys', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('emits map:selectfeature on Enter', () => {
+    const { eb, result, el, unmount } = setupWithBus()
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    fireKey(el, 'Enter')
+    expect(eb.emit).toHaveBeenCalledWith(SELECT)
+    unmount()
+  })
+
+  it('emits map:selectfeature on Space', () => {
+    const { eb, result, el, unmount } = setupWithBus()
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    fireKey(el, ' ')
+    expect(eb.emit).toHaveBeenCalledWith(SELECT)
+    unmount()
+  })
+
+  it('stops propagation on Enter', () => {
+    const { el, result, unmount } = setupWithBus()
+    act(() => result.current.onFocus())
+    const event = new KeyboardEvent('keydown', { key: 'Enter', bubbles: true, cancelable: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('stops propagation on Space', () => {
+    const { el, result, unmount } = setupWithBus()
+    act(() => result.current.onFocus())
+    const event = new KeyboardEvent('keydown', { key: ' ', bubbles: true, cancelable: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).toHaveBeenCalled()
     unmount()
   })
 })

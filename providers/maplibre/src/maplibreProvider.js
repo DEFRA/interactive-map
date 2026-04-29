@@ -223,9 +223,9 @@ export default class MapLibreProvider {
    * @param {any} stylesMap - Style configuration for highlighting.
    * @returns {any}
    */
-  updateHighlightedFeatures (selectedFeatures, stylesMap) {
+  updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {
     const { LngLatBounds } = this.maplibreModule
-    return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, stylesMap })
+    return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, activeFeatures, stylesMap })
   }
 
   // ==========================

@@ -33,7 +33,7 @@ Returns the merged app-wide defaults (hardcoded `symbolDefaults.js` + constructo
 
 ```js
 const defaults = services.symbolRegistry.getDefaults()
-// { symbol: 'pin', backgroundColor: '#ca3535', selectedColor: { outdoor: '#0b0c0c', dark: '#ffffff' }, ... }
+// { symbol: 'pin', backgroundColor: '#ca3535', foregroundColor: '#ffffff', ... }
 ```
 
 ---
@@ -46,19 +46,19 @@ Register a custom symbol. Once registered it can be referenced by ID via `Marker
 |----------|------|----------|-------------|
 | `id` | `string` | Yes | Unique symbol identifier |
 | `svg` | `string` | Yes | Inner SVG path content with `{{token}}` placeholders — see [SVG structure](./symbol-config.md#svg-structure) |
-| `viewBox` | `string` | Yes | SVG viewBox, e.g. `'0 0 38 38'` |
+| `viewBox` | `string` | Yes | SVG viewBox, e.g. `'0 0 44 44'` |
 | `anchor` | `[number, number]` | Yes | Normalised [x, y] anchor point |
-| *(token)* | `string \| Record<string, string>` | No | Default token value for this symbol, e.g. `backgroundColor: '#1d70b8'`. `selectedColor` and `selectedWidth` are ignored here — set them via constructor `symbolDefaults`. |
+| *(token)* | `string \| Record<string, string>` | No | Default token value for this symbol, e.g. `backgroundColor: '#1d70b8'`. `selectedColor` and `activeColor` are ignored here — they are always derived from the active map style. |
 
 ```js
 services.symbolRegistry.register({
   id: 'star',
-  viewBox: '0 0 38 38',
+  viewBox: '0 0 44 44',
   anchor: [0.5, 0.5],
   backgroundColor: '#1d70b8',
   svg: `
-    <path d="..." fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
-    <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
+    <path d="..." fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
+    <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
     <path d="..." fill="{{foregroundColor}}"/>
   `
 })
@@ -88,28 +88,42 @@ const symbols = services.symbolRegistry.list()
 
 ---
 
-### `resolve(symbolDef, styleColors, mapStyleId)`
+### `resolve(symbolDef, styleColors, mapStyle)`
 
-Resolves a symbol's SVG for **normal (unselected) rendering**. The `{{selectedColor}}` token is always replaced with an empty string — the selection ring is structurally present but invisible.
+Resolves a symbol's SVG for **normal (unselected, inactive) rendering**. Both `{{selectedColor}}` and `{{activeColor}}` are replaced with `'none'`, so neither ring is visible.
 
 ```js
 const svg = services.symbolRegistry.resolve(
   services.symbolRegistry.get('pin'),
   { backgroundColor: '#d4351c' },
-  'outdoor'
+  mapStyle
 )
 ```
 
 ---
 
-### `resolveSelected(symbolDef, styleColors, mapStyleId)`
+### `resolveActive(symbolDef, styleColors, mapStyle)`
 
-Resolves a symbol's SVG for **selected rendering**. The `{{selectedColor}}` token uses the cascade value. Use this when rendering the highlight layer for an interact or datasets selection.
+Resolves a symbol's SVG for **active (keyboard cursor) rendering**. Both `{{selectedColor}}` and `{{activeColor}}` are live — the committed ring and the focus ring are both visible simultaneously, so an active item always shows both rings regardless of whether it is also selected.
+
+```js
+const svg = services.symbolRegistry.resolveActive(
+  services.symbolRegistry.get('pin'),
+  { backgroundColor: '#d4351c' },
+  mapStyle
+)
+```
+
+---
+
+### `resolveSelected(symbolDef, styleColors, mapStyle)`
+
+Resolves a symbol's SVG for **committed-selection rendering**. `{{selectedColor}}` is live (the black committed ring is visible) but `{{activeColor}}` is forced to `'none'` — use this when an item is selected but not the current keyboard cursor.
 
 ```js
 const svg = services.symbolRegistry.resolveSelected(
   services.symbolRegistry.get('pin'),
   { backgroundColor: '#d4351c' },
-  'outdoor'
+  mapStyle
 )
 ```

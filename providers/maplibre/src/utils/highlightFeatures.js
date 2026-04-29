@@ -32,12 +32,11 @@ const groupFeaturesBySource = (map, selectedFeatures) => {
   return featuresBySource
 }
 
-const cleanupStaleSources = (map, previousSources, currentSources) => {
+const cleanupStaleSources = (map, previousSources, currentSources, prefix) => {
   previousSources.forEach(src => {
     if (!currentSources.has(src)) {
-      const base = `highlight-${src}`
-      const layers = [`${base}-fill`, `${base}-line`, `${base}-symbol`]
-      layers.forEach(id => {
+      const base = `${prefix}-${src}`
+      ;[`${base}-fill`, `${base}-line`, `${base}-symbol`].forEach(id => {
         if (map.getLayer(id)) {
           map.setFilter(id, ['==', 'id', ''])
         }
@@ -97,67 +96,89 @@ const calculateBounds = (LngLatBounds, renderedFeatures) => {
   return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
 }
 
-const getSelectedImageId = (map, imageId) => map._symbolImageMap?.[imageId] ?? null
+const getActiveImageId = (map, imageId) => map._activeSymbolImageMap?.[imageId] ?? null
+const getSelectedImageId = (map, imageId) => map._selectedSymbolImageMap?.[imageId] ?? null
 
-/**
- * Update highlighted features using pure filters.
- * Supports fill, line and symbol geometry, multi-source, cleanup, and bounds.
- */
-export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures, stylesMap }) {
-  if (!map) {
-    return null
-  }
+const SELECTED_PREFIX = 'selected-highlight'
 
-  const featuresBySource = groupFeaturesBySource(map, selectedFeatures)
-  const renderedFeatures = []
-
+const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImageId) => {
+  const featuresBySource = groupFeaturesBySource(map, features)
   const currentSources = new Set(Object.keys(featuresBySource))
-  const previousSources = map._highlightedSources || new Set()
+  const storageKey = `_${prefix.replaceAll('-', '')}Sources`
+  const previousSources = map[storageKey] || new Set()
 
-  cleanupStaleSources(map, previousSources, currentSources)
-  map._highlightedSources = currentSources
+  cleanupStaleSources(map, previousSources, currentSources, prefix)
+  map[storageKey] = currentSources
 
-  // Apply highlights for current sources
   currentSources.forEach(sourceId => {
     const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
     const baseLayer = map.getLayer(layerId)
     const srcLayer = baseLayer.sourceLayer
-
-    // Use the actual feature geometry to determine highlight type
     const geom = hasFillGeometry ? 'fill' : baseLayer.type
-    const base = `highlight-${sourceId}`
+    const base = `${prefix}-${sourceId}`
+    const { stroke, selectionStroke, strokeWidth, fill } = stylesMap[layerId]
+    const lineColor = prefix === SELECTED_PREFIX ? selectionStroke : stroke
 
     const idExpression = idProperty ? ['get', idProperty] : ['id']
     const filter = ['in', idExpression, ['literal', [...ids]]]
 
     if (geom === 'fill') {
-      const { stroke, strokeWidth, fill } = stylesMap[layerId]
       const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
-      const linePaint = { 'line-color': stroke, 'line-width': strokeWidth }
       // Only apply fill highlight to polygon features, not to any co-selected line features
       applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
-      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, linePaint, filter)
+      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': strokeWidth }, filter)
     }
 
     if (geom === 'line') {
-      const { stroke, strokeWidth } = stylesMap[layerId]
-      const linePaint = { 'line-color': stroke, 'line-width': strokeWidth }
-      // Clear any fill highlight from a previous polygon selection on the same source
+      // Clear any fill highlight from a previous polygon on the same source
       if (map.getLayer(`${base}-fill`)) {
         map.setFilter(`${base}-fill`, ['==', 'id', ''])
       }
-      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, linePaint, filter)
+      applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': strokeWidth }, filter)
     }
 
     if (geom === 'symbol') {
       const imageId = map.getLayoutProperty(layerId, 'icon-image')
-      const selectedImageId = getSelectedImageId(map, imageId)
-      if (selectedImageId) {
-        applySymbolHighlightLayer(map, `${base}-symbol`, sourceId, srcLayer, layerId, selectedImageId, filter)
+      const symbolImageId = getSymbolImageId(map, imageId)
+      if (symbolImageId) {
+        applySymbolHighlightLayer(map, `${base}-symbol`, sourceId, srcLayer, layerId, symbolImageId, filter)
       }
     }
+  })
 
-    // Bounds only from rendered tiles
+  return featuresBySource
+}
+
+/**
+ * Update highlighted features using pure filters.
+ * activeFeatures (keyboard cursor) render with the active ring (yellow); selectedFeatures with the selected ring (black).
+ * Supports fill, line and symbol geometry, multi-source, cleanup, and bounds.
+ */
+export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures, activeFeatures, stylesMap }) {
+  if (!map) {
+    return null
+  }
+
+  // Active cursor features — rendered first so selected layers appear on top
+  if (activeFeatures?.length) {
+    applyFeatureHighlights(map, activeFeatures, stylesMap, 'highlight', getActiveImageId)
+  } else {
+    cleanupStaleSources(map, map._highlightSources || new Set(), new Set(), 'highlight')
+    map._highlightSources = new Set()
+  }
+
+  // Committed selection features
+  const featuresBySource = selectedFeatures?.length
+    ? applyFeatureHighlights(map, selectedFeatures, stylesMap, SELECTED_PREFIX, getSelectedImageId)
+    : (() => {
+        cleanupStaleSources(map, map._selectedhighlightSources || new Set(), new Set(), SELECTED_PREFIX)
+        map._selectedhighlightSources = new Set()
+        return {}
+      })()
+
+  // Bounds only from selected features
+  const renderedFeatures = []
+  Object.entries(featuresBySource).forEach(([, { ids, idProperty, layerId }]) => {
     renderedFeatures.push(
       ...map
         .queryRenderedFeatures({ layers: [layerId] })

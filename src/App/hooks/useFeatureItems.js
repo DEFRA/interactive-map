@@ -2,13 +2,15 @@ import { useState, useEffect } from 'react'
 
 export function useFeatureItems (eventBus) {
   const [items, setItems] = useState([])
+  const [multiselectable, setMultiselectable] = useState(false)
 
   useEffect(() => {
     if (!eventBus) {
       return undefined
     }
-    const handle = ({ items: next = [] }) => {
+    const handle = ({ items: next = [], multiselectable: nextMultiselectable = false }) => {
       setItems(next)
+      setMultiselectable(nextMultiselectable)
     }
     eventBus.on('map:setfeatures', handle)
     return () => {
@@ -16,5 +18,5 @@ export function useFeatureItems (eventBus) {
     }
   }, [eventBus])
 
-  return items
+  return { items, multiselectable }
 }

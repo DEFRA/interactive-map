@@ -49,7 +49,7 @@ describe('attachMapEvents', () => {
   })
 
   test('registers listeners for all map events', () => {
-    ;['load', 'movestart', 'moveend', 'zoom', 'render', 'styledata', 'style.load', 'click'].forEach(e =>
+    ;['load', 'movestart', 'moveend', 'zoom', 'render', 'styledata', 'sourcedata', 'style.load', 'click'].forEach(e =>
       expect(map.on).toHaveBeenCalledWith(e, expect.any(Function))
     )
     expect(map.once).toHaveBeenCalledWith('idle', expect.any(Function))
@@ -99,6 +99,17 @@ describe('attachMapEvents', () => {
     )
   })
 
+  test('sourcedata emits MAP_DATA_CHANGE when source is loaded', () => {
+    handler('sourcedata')({ isSourceLoaded: true })
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_DATA_CHANGE, expect.any(Object))
+  })
+
+  test('sourcedata does not emit MAP_DATA_CHANGE while source is still loading', () => {
+    eventBus.emit.mockClear()
+    handler('sourcedata')({ isSourceLoaded: false })
+    expect(eventBus.emit).not.toHaveBeenCalled()
+  })
+
   test('click emits MAP_CLICK with point and coords', () => {
     handler('click')({ point: { x: 10, y: 20 }, lngLat: { lng: -1.5, lat: 52.3 } })
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_CLICK, {
@@ -117,8 +128,8 @@ describe('attachMapEvents', () => {
     expect(moveEndFn.cancel).toHaveBeenCalled()
     expect(moveFn.cancel).toHaveBeenCalled()
     expect(dataChangeFn.cancel).toHaveBeenCalled()
-    expect(map.off).toHaveBeenCalledTimes(8)
-    ;['load', 'movestart', 'moveend', 'zoom', 'render', 'styledata', 'style.load', 'click'].forEach(e =>
+    expect(map.off).toHaveBeenCalledTimes(9)
+    ;['load', 'movestart', 'moveend', 'zoom', 'render', 'styledata', 'sourcedata', 'style.load', 'click'].forEach(e =>
       expect(map.off).toHaveBeenCalledWith(e, expect.any(Function))
     )
   })

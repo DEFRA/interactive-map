@@ -4,18 +4,20 @@
  * used both by the symbol SVG renderer (JS canvas) and injected as
  * CSS custom properties onto the app container for CSS-rendered elements.
  *
- * Per-style overrides take precedence: set `haloColor`, `selectedColor`, or
+ * Per-style overrides take precedence: set `haloColor`, `selectedColor`, `activeColor`, or
  * `foregroundColor` directly on a `MapStyleConfig` to override these defaults.
  */
-export const SCHEME_COLORS = {
+export const THEME_COLORS = {
   light: {
     haloColor: '#ffffff',
     selectedColor: '#0b0c0c',
+    activeColor: '#ffdd00',
     foregroundColor: '#0b0c0c'
   },
   dark: {
     haloColor: '#0b0c0c',
     selectedColor: '#ffffff',
+    activeColor: '#ffdd00',
     foregroundColor: '#ffffff'
   }
 }
@@ -30,10 +32,11 @@ export const SCHEME_COLORS = {
  * @returns {{ haloColor: string, selectedColor: string, foregroundColor: string }}
  */
 export const resolveMapTheme = (mapStyle) => {
-  const scheme = SCHEME_COLORS[mapStyle?.mapColorScheme] ?? SCHEME_COLORS.light
+  const scheme = THEME_COLORS[mapStyle?.mapColorScheme] ?? THEME_COLORS.light
   return {
     haloColor: mapStyle?.haloColor ?? scheme.haloColor,
     selectedColor: mapStyle?.selectedColor ?? scheme.selectedColor,
+    activeColor: mapStyle?.activeColor ?? scheme.activeColor,
     foregroundColor: mapStyle?.foregroundColor ?? scheme.foregroundColor
   }
 }
@@ -47,10 +50,11 @@ export const resolveMapTheme = (mapStyle) => {
  * @returns {Object} CSS custom property object
  */
 export const getMapThemeVars = (mapStyle) => {
-  const { haloColor, selectedColor, foregroundColor } = resolveMapTheme(mapStyle)
+  const { haloColor, selectedColor, activeColor, foregroundColor } = resolveMapTheme(mapStyle)
   return {
     '--map-overlay-halo-color': haloColor,
     '--map-overlay-selected-color': selectedColor,
+    '--map-overlay-active-color': activeColor,
     '--map-overlay-foreground-color': foregroundColor
   }
 }

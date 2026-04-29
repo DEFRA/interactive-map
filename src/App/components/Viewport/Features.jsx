@@ -1,7 +1,7 @@
 import React, { forwardRef } from 'react'
 import { useConfig } from '../../store/configContext.js'
 
-export const Features = forwardRef(({ activeFeatureId, items = [], onFocus }, ref) => {
+export const Features = forwardRef(({ activeFeatureId, selectedIds = [], multiselectable = false, items = [], onFocus, onBlur }, ref) => {
   const { id } = useConfig()
   const hasItems = items.length > 0
   return (
@@ -12,14 +12,17 @@ export const Features = forwardRef(({ activeFeatureId, items = [], onFocus }, re
       tabIndex={hasItems ? '0' : '-1'}
       aria-hidden={hasItems ? undefined : true}
       aria-label='Map features'
-      aria-activedescendant={activeFeatureId || undefined}
+      aria-multiselectable={multiselectable || undefined}
+      aria-activedescendant={activeFeatureId ? `${id}-feature-${activeFeatureId}` : undefined}
       className='im-c-features'
       onFocus={onFocus}
+      onBlur={onBlur}
     >
       {items.map(item => (
         <li // NOSONAR: role='option' overrides implicit listitem; this is the correct ARIA listbox child pattern
           key={item.id} id={`${id}-feature-${item.id}`} role='option' // NOSONAR
-          aria-selected={activeFeatureId === item.id}
+          data-id={item.id}
+          aria-selected={selectedIds.includes(item.id)}
         >
           {item.label}
         </li>

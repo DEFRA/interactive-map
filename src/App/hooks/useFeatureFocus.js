@@ -14,17 +14,27 @@ const getNavigatedId = (id, key, items) => {
 
 export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus }) {
   const [activeFeatureId, setActiveFeatureId] = useState(null)
+  const [selectedIds, setSelectedIds] = useState([])
   const activeFeatureIdRef = useRef(null)
 
-  useEffect(() => { activeFeatureIdRef.current = activeFeatureId }, [activeFeatureId])
+  useEffect(() => {
+    activeFeatureIdRef.current = activeFeatureId
+  }, [activeFeatureId])
 
   useEffect(() => {
     if (!eventBus) {
       return undefined
     }
-    const handle = ({ id }) => { setActiveFeatureId(id) }
-    eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handle)
-    return () => { eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handle) }
+    const handleSetActive = ({ id }) => { setActiveFeatureId(id) }
+    const handleSelectionChange = ({ selectedFeatures = [], selectedMarkers = [] }) => {
+      setSelectedIds([...selectedFeatures.map(f => String(f.featureId)), ...selectedMarkers])
+    }
+    eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
+    eventBus.on('interact:selectionchange', handleSelectionChange)
+    return () => {
+      eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
+      eventBus.off('interact:selectionchange', handleSelectionChange)
+    }
   }, [eventBus])
 
   useEffect(() => {
@@ -36,14 +46,18 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault()
-        setActiveFeatureId(null)
-        eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: null })
+        event.stopPropagation()
         viewportRef.current?.focus()
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
         event.preventDefault()
+        event.stopPropagation()
         const newId = getNavigatedId(activeFeatureIdRef.current, event.key, items)
         setActiveFeatureId(newId)
         eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: newId })
+      } else if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        event.stopPropagation()
+        eventBus?.emit(EVENTS.MAP_SELECT_FEATURE)
       } else {
         // No action
       }
@@ -61,5 +75,10 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
     }
   }
 
-  return { activeFeatureId, onFocus }
+  const onBlur = () => {
+    setActiveFeatureId(null)
+    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: null })
+  }
+
+  return { activeFeatureId, selectedIds, onFocus, onBlur }
 }

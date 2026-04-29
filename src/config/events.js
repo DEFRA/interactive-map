@@ -127,6 +127,8 @@ export const EVENTS = {
   MAP_SET_FEATURES: 'map:setfeatures',
   /** @internal Set the active feature in the accessible features list. Payload: { id: string | null } */
   MAP_SET_ACTIVE_FEATURE: 'map:setactivefeature',
+  /** @internal Select the active listbox feature as the real selection (Enter key). Payload: none */
+  MAP_SELECT_FEATURE: 'map:selectfeature',
   /** @internal Set pixel ratio. Payload: pixelRatio */
   MAP_SET_PIXEL_RATIO: 'map:setpixelratio',
   /** @internal Fit the map to a bounding box. Payload: [west, south, east, north] */

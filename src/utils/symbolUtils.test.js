@@ -107,13 +107,11 @@ describe('getSymbolStyleColors', () => {
       symbol: 'pin',
       symbolBackgroundColor: '#ff0000',
       symbolForegroundColor: '#ffffff',
-      symbolHaloWidth: '2',
       symbolGraphic: 'cross'
     }
     expect(getSymbolStyleColors(dataset)).toEqual({
       backgroundColor: '#ff0000',
       foregroundColor: '#ffffff',
-      haloWidth: '2',
       graphic: 'cross'
     })
   })
