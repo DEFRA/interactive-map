@@ -4,10 +4,6 @@ import {
   hasPattern
 } from './patternUtils.js'
 
-const mockRegistry = {
-  get: (id) => id === 'dot' ? { id: 'dot', svgContent: '<path d="M4 4" fill="{{foregroundColor}}"/>' } : undefined
-}
-
 describe('hashString', () => {
   test('returns a non-empty string', () => {
     expect(typeof hashString('hello')).toBe('string')

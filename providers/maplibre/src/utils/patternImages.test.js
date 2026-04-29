@@ -163,19 +163,27 @@ describe('addPatternsToMap', () => {
 
   describe('addPatternsToMap — null results', () => {
     it('does not call addImage when innerContent becomes unavailable inside rasterisePattern', async () => {
-      const getPatternInnerContent = jest.spyOn(patternRegistry, 'getPatternInnerContent').mockReturnValueOnce(undefined)
+      const getPatternInnerContent = jest.spyOn(patternRegistry, 'getPatternInnerContent').mockReturnValue(undefined)
+      const getPatternImageId = jest.spyOn(patternRegistry, 'getPatternImageId').mockReturnValue('test-id')
+
       const map = makeMap()
       await addPatternsToMap(map, [{ fillPattern: 'stripes' }], OUTDOOR, patternRegistry)
       expect(map.addImage).not.toHaveBeenCalled()
+
+      getPatternImageId.mockRestore()
       getPatternInnerContent.mockRestore()
     })
 
     it('does not call addImage when imageId becomes unavailable inside rasterisePattern', async () => {
-      const getPatternImageId = jest.spyOn(patternRegistry, 'getPatternImageId').mockReturnValue(undefined)
+      const getPatternInnerContent = jest.spyOn(patternRegistry, 'getPatternInnerContent').mockReturnValue('CONTENT')
+      const getPatternImageId = jest.spyOn(patternRegistry, 'getPatternImageId')
+        .mockReturnValueOnce('test-id')
+        .mockReturnValueOnce(undefined)
       const map = makeMap()
       await addPatternsToMap(map, [{ fillPattern: 'stripes' }], OUTDOOR, patternRegistry)
       expect(map.addImage).not.toHaveBeenCalled()
       getPatternImageId.mockRestore()
+      getPatternInnerContent.mockRestore()
     })
   })
 })
