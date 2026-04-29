@@ -1,4 +1,4 @@
-import { getPatternInnerContent, getPatternImageId, injectColors, PATTERN_MIN_PIXEL_RATIO } from '../../../../src/utils/patternUtils.js'
+import { injectColors, PATTERN_MIN_PIXEL_RATIO } from '../../../../src/utils/patternUtils.js'
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 import { rasteriseToImageData } from './rasteriseToImageData.js'
 
@@ -16,12 +16,12 @@ const imageDataCache = new Map()
  * @returns {Promise<{ imageId: string, imageData: ImageData }|null>}
  */
 const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio) => {
-  const innerContent = getPatternInnerContent(dataset, patternRegistry)
+  const innerContent = patternRegistry.getPatternInnerContent(dataset)
   if (!innerContent) {
     return null
   }
 
-  const imageId = getPatternImageId(dataset, mapStyleId, patternRegistry, pixelRatio)
+  const imageId = patternRegistry.getPatternImageId(dataset, mapStyleId, pixelRatio)
   if (!imageId) {
     return null
   }
@@ -51,20 +51,20 @@ const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio
  * (see `getPatternConfigs` in the datasets plugin adapter).
  *
  * @param {Object} map - MapLibre map instance
- * @param {Object[]} patternConfigs - Flat list of datasets/merged-sublayers with a pattern config
+ * @param {Object[]} styleArray - Flat list of datasets/merged-sublayers with a pattern config
  * @param {string} mapStyleId
  * @param {Object} patternRegistry
  * @param {number} pixelRatio
  * @returns {Promise<void>}
  */
-export const registerPatterns = async (map, patternConfigs, mapStyleId, patternRegistry, pixelRatio) => {
-  if (!patternConfigs.length) {
+export const addPatternsToMap = async (map, styleArray, mapStyleId, patternRegistry, pixelRatio) => {
+  if (!styleArray.length) {
     return
   }
 
   const effectiveRatio = Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
-  await Promise.all(patternConfigs.map(async (config) => {
-    const imageId = getPatternImageId(config, mapStyleId, patternRegistry, pixelRatio)
+  await Promise.all(styleArray.map(async (config) => {
+    const imageId = patternRegistry.getPatternImageId(config, mapStyleId, pixelRatio)
     if (!imageId || map.hasImage(imageId)) {
       return
     }

@@ -46,7 +46,7 @@ const center = context.mapProvider.getCenter()
 context.mapProvider.setView({ zoom: 10 })
 ```
 
-#### `mapProvider.registerPatterns(patternConfigs, mapStyleId, patternRegistry)`
+#### `mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)`
 
 Rasterises and registers pattern fill images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
 
@@ -56,12 +56,12 @@ Rasterises and registers pattern fill images with the map engine. Plugin layer a
 
 ```js
 // In a plugin's MapLibre layer adapter
-await mapProvider.registerPatterns(getPatternConfigs(datasets, patternRegistry), mapStyleId, patternRegistry)
+await mapProvider.addPatternsToMap(getPatternConfigs(datasets, patternRegistry), mapStyleId, patternRegistry)
 ```
 
 ---
 
-#### `mapProvider.registerSymbols(symbolConfigs, mapStyleId, symbolRegistry)`
+#### `mapProvider.addSymbolsToMap(symbolConfigs, mapStyleId, symbolRegistry)`
 
 Rasterises and registers symbol images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
 
@@ -71,7 +71,7 @@ Rasterises and registers symbol images with the map engine. Plugin layer adapter
 
 ```js
 // In a plugin's MapLibre layer adapter
-await mapProvider.registerSymbols(getSymbolConfigs(datasets), mapStyleId, symbolRegistry)
+await mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), mapStyleId, symbolRegistry)
 ```
 
 ---

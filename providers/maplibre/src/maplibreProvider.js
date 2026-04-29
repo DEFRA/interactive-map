@@ -13,8 +13,8 @@ import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
-import { registerSymbols } from './utils/symbolImages.js'
-import { registerPatterns } from './utils/patternImages.js'
+import { addSymbolsToMap } from './utils/symbolImages.js'
+import { addPatternsToMap } from './utils/patternImages.js'
 
 /**
  * MapLibre GL JS implementation of the MapProvider interface.
@@ -324,9 +324,9 @@ export default class MapLibreProvider {
    * @param {Object} symbolRegistry
    * @returns {Promise<void>}
    */
-  async registerSymbols (symbolConfigs, mapStyle, symbolRegistry) {
+  async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry) {
     const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
-    return registerSymbols(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
+    return addSymbolsToMap(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
   }
 
   /**
@@ -340,9 +340,9 @@ export default class MapLibreProvider {
    * @param {Object} patternRegistry
    * @returns {Promise<void>}
    */
-  async registerPatterns (patternConfigs, mapStyleId, patternRegistry) {
+  async addPatternsToMap (patternConfigs, mapStyleId, patternRegistry) {
     const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
-    return registerPatterns(this.map, patternConfigs, mapStyleId, patternRegistry, pixelRatio)
+    return addPatternsToMap(this.map, patternConfigs, mapStyleId, patternRegistry, pixelRatio)
   }
 
   // ==========================

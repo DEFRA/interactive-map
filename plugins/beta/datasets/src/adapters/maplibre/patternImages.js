@@ -2,11 +2,11 @@
 import { hasPattern } from '../../../../../../src/utils/patternUtils.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 
-export { hasPattern, getPatternInnerContent, getPatternImageId, getKeyPatternPaths, injectColors } from '../../../../../../src/utils/patternUtils.js'
+export { hasPattern } from '../../../../../../src/utils/patternUtils.js'
 
 /**
  * Returns a flat list of datasets and merged sublayers that require pattern images.
- * Handles sublayer merging so callers (e.g. mapProvider.registerPatterns) receive ready-to-use configs.
+ * Handles sublayer merging so callers (e.g. mapProvider.addPatternsToMap) receive ready-to-use configs.
  *
  * @param {Object[]} datasets
  * @param {Object} patternRegistry

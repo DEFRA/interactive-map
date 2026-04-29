@@ -1,8 +1,9 @@
 import createMapLibreProvider from './index.js'
 import { getWebGL } from './utils/detectWebgl.js'
+import * as maplibreGl from 'maplibre-gl'
 
 jest.mock('./utils/detectWebgl.js', () => ({ getWebGL: jest.fn() }))
-jest.mock('maplibre-gl', () => ({ VERSION: '3.x' }))
+jest.mock('maplibre-gl', () => ({ VERSION: '3.x', setWorkerUrl: jest.fn() }))
 jest.mock('./maplibreProvider.js', () => ({ default: class MockProvider {} }))
 
 describe('createMapLibreProvider', () => {
@@ -11,7 +12,7 @@ describe('createMapLibreProvider', () => {
   })
 
   afterEach(() => {
-    jest.restoreAllMocks()
+    jest.clearAllMocks()
   })
 
   test('checkDeviceCapabilities: WebGL enabled, modern browser, no IE → isSupported true', () => {
@@ -75,21 +76,15 @@ describe('createMapLibreProvider', () => {
     expect(mapProviderConfig).toEqual({ crs: 'EPSG:4326' })
   })
 
-  test('load sets workerUrl on mapFramework when provided', async () => {
-    await jest.isolateModulesAsync(async () => {
-      const { default: createProvider } = await import('./index.js')
-      const { mapFramework } = await createProvider({ workerUrl: '/assets/maplibre-gl-csp-worker.js' }).load()
+  test('load calls setWorkerUrl on mapFramework when workerUrl is provided', async () => {
+    await createMapLibreProvider({ workerUrl: '/assets/maplibre-gl-csp-worker.js' }).load()
 
-      expect(mapFramework.workerUrl).toBe('/assets/maplibre-gl-csp-worker.js')
-    })
+    expect(maplibreGl.setWorkerUrl).toHaveBeenCalledWith('/assets/maplibre-gl-csp-worker.js')
   })
 
-  test('load does not set workerUrl on mapFramework when not provided', async () => {
-    await jest.isolateModulesAsync(async () => {
-      const { default: createProvider } = await import('./index.js')
-      const { mapFramework } = await createProvider().load()
+  test('load does not call setWorkerUrl on mapFramework when workerUrl is not provided', async () => {
+    await createMapLibreProvider().load()
 
-      expect(mapFramework.workerUrl).toBeUndefined()
-    })
+    expect(maplibreGl.setWorkerUrl).not.toHaveBeenCalled()
   })
 })

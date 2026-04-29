@@ -42,20 +42,6 @@ function isContiguousWithAny (feature, features) {
 }
 
 /**
- * Check if a single polygon/multipolygon feature can be split.
- *
- * @param {Array} features - Array of features
- * @returns {boolean} True if exactly one polygon or multipolygon feature
- */
-function canSplitFeatures (features) {
-  if (features.length !== 1) {
-    return false
-  }
-  const type = features[0].geometry?.type
-  return type === 'Polygon' || type === 'MultiPolygon'
-}
-
-/**
  * Check if all features form a single contiguous group (can be merged).
  * Uses flood-fill to find connected components.
  *
@@ -94,6 +80,5 @@ function areAllContiguous (features) {
 export {
   toTurfGeometry,
   isContiguousWithAny,
-  canSplitFeatures,
   areAllContiguous
 }
