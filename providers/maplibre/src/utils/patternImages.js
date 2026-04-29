@@ -1,4 +1,4 @@
-import { getPatternInnerContent, getPatternImageId, injectColors, PATTERN_MIN_PIXEL_RATIO } from '../../../../src/utils/patternUtils.js'
+import { injectColors, PATTERN_MIN_PIXEL_RATIO } from '../../../../src/utils/patternUtils.js'
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
 import { rasteriseToImageData } from './rasteriseToImageData.js'
 
@@ -16,12 +16,12 @@ const imageDataCache = new Map()
  * @returns {Promise<{ imageId: string, imageData: ImageData }|null>}
  */
 const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio) => {
-  const innerContent = getPatternInnerContent(dataset, patternRegistry)
+  const innerContent = patternRegistry.getPatternInnerContent(dataset)
   if (!innerContent) {
     return null
   }
 
-  const imageId = getPatternImageId(dataset, mapStyleId, patternRegistry, pixelRatio)
+  const imageId = patternRegistry.getPatternImageId(dataset, mapStyleId, pixelRatio)
   if (!imageId) {
     return null
   }
@@ -64,7 +64,7 @@ export const addPatternsToMap = async (map, styleArray, mapStyleId, patternRegis
 
   const effectiveRatio = Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
   await Promise.all(styleArray.map(async (config) => {
-    const imageId = getPatternImageId(config, mapStyleId, patternRegistry, pixelRatio)
+    const imageId = patternRegistry.getPatternImageId(config, mapStyleId, pixelRatio)
     if (!imageId || map.hasImage(imageId)) {
       return
     }

@@ -1,7 +1,7 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
-import { getPatternConfigs, hasPattern, getPatternImageId } from './patternImages.js'
+import { getPatternConfigs, hasPattern } from './patternImages.js'
 import { getSymbolConfigs, getSymbolImageId } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { scaleFactor } from '../../../../../../src/config/appConfig.js'
@@ -135,7 +135,7 @@ export default class MaplibreLayerAdapter {
       if (hasPattern(dataset)) {
         const { fillLayerId } = getLayerIds(dataset)
         if (this._map.getLayer(fillLayerId)) {
-          const imageId = getPatternImageId(dataset, mapStyle.id, this._patternRegistry, pixelRatio)
+          const imageId = this._patternRegistry.getPatternImageId(dataset, mapStyle.id, pixelRatio)
           if (imageId) {
             this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
           }
@@ -151,7 +151,7 @@ export default class MaplibreLayerAdapter {
           }
         }
         if (hasPattern(merged) && this._map.getLayer(fillLayerId)) {
-          const imageId = getPatternImageId(merged, mapStyle.id, this._patternRegistry, pixelRatio)
+          const imageId = this._patternRegistry.getPatternImageId(merged, mapStyle.id, pixelRatio)
           if (imageId) {
             this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
           }
