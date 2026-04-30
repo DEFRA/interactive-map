@@ -1,8 +1,7 @@
-import React, { useRef, useEffect, useState } from 'react'
+import React, { useRef, useEffect } from 'react'
 import { useFeatureFocus } from '../../hooks/useFeatureFocus.js'
 import { useFeatureItems } from '../../hooks/useFeatureItems.js'
 import { EVENTS as events } from '../../../config/events.js'
-import { createPortal } from 'react-dom'
 import { useConfig } from '../../store/configContext.js'
 import { useApp } from '../../store/appContext.js'
 import { useMap } from '../../store/mapContext.js'
@@ -21,35 +20,31 @@ import { Markers } from '../Markers/Markers'
 export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText } = useConfig()
   const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset } = useApp()
-  const { mainRef } = layoutRefs
   const { mapSize } = useMap()
-  const { eventBus } = useService()
+  const { eventBus, hint, hintManager } = useService()
 
   const mapContainerRef = useRef(null)
-  const keyboardHintRef = useRef(null)
   const featuresRef = useRef(null)
-
-  // Local state for keyboard hint visibility
-  const [keyboardHintVisible, setKeyboardHintVisible] = useState(false)
 
   const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
   const { activeFeatureId, selectedIds, onFocus: onFeaturesFocus, onBlur: onFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus })
 
-  // Attach map keyboard controls
   useKeyboardShortcuts(layoutRefs.viewportRef)
 
-  // Attach map events
   useMapEvents({
     [events.MAP_CLICK]: () => mapProvider?.clearHighlightedLabel?.()
   })
 
-  // Manage keyboard hint visibility using local state
-  const { showHint, handleFocus, handleBlur } = useKeyboardHint({
+  const { handleFocus, handleBlur } = useKeyboardHint({
     interfaceType,
     containerRef: layoutRefs.viewportRef,
-    keyboardHintRef,
-    keyboardHintVisible,
-    onViewportFocusChange: setKeyboardHintVisible // update local state only
+    onViewportFocusChange: (visible) => {
+      if (visible) {
+        hint(keyboardHintText, { duration: 0 })
+      } else {
+        hintManager.dismiss()
+      }
+    }
   })
 
   // Set focus on viewport on mode change
@@ -71,18 +66,9 @@ export const Viewport = () => {
         onFocus={handleFocus}
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
-        aria-describedby={`${id}-keyboard-hint`}
+        aria-describedby={`${id}-hints`}
         aria-controls={`${id}-features`}
       >
-        {mainRef?.current && createPortal(
-          <div
-            id={`${id}-keyboard-hint`}
-            className={`im-c-viewport__keyboard-hint${showHint ? '' : ' im-u-visually-hidden'}`}
-            ref={keyboardHintRef}
-            dangerouslySetInnerHTML={{ __html: keyboardHintText }}
-          />,
-          mainRef.current
-        )}
         <div className='im-c-viewport__map-container' ref={mapContainerRef} aria-hidden='true' />
         <MapStatus />
         <div className='im-c-viewport__safezone' style={safeZoneInset} ref={layoutRefs.safeZoneRef} aria-hidden='true'>

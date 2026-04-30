@@ -21,6 +21,9 @@ jest.mock('../components/Attributions/Attributions', () => ({
 jest.mock('../renderer/SlotRenderer', () => ({
   SlotRenderer: jest.fn(({ slot }) => <div data-testid={`slot-${slot.toLowerCase()}`} />)
 }))
+jest.mock('../components/KeyboardHints/KeyboardHints', () => ({
+  KeyboardHints: jest.fn(() => null)
+}))
 
 // Mock hooks
 jest.mock('../store/configContext', () => ({ useConfig: jest.fn() }))

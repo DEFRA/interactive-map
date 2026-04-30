@@ -36,9 +36,13 @@ function setupHookMocks (mainEl, viewportEl) {
     safeZoneInset: {}
   })
   useMap.mockReturnValue({ mapSize: 'medium', dispatch: jest.fn() })
-  useService.mockReturnValue({ announce: jest.fn(), eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() } })
+  useService.mockReturnValue({
+    announce: jest.fn(),
+    hint: jest.fn(),
+    hintManager: { dismiss: jest.fn() },
+    eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
+  })
   useKeyboardHint.mockImplementation(({ onViewportFocusChange }) => ({
-    showHint: true,
     handleFocus: () => onViewportFocusChange(true),
     handleBlur: () => onViewportFocusChange(false)
   }))
@@ -46,15 +50,14 @@ function setupHookMocks (mainEl, viewportEl) {
   useMapEvents.mockImplementation(() => {})
 }
 
-function renderViewport (mainEl) {
+function renderViewport () {
   const { container, rerender } = render(<Viewport />)
   const viewport = container.querySelector('.im-c-viewport')
   const mapContainer = container.querySelector('.im-c-viewport__map-container')
   const safeZone = container.querySelector('.im-c-viewport__safezone')
-  const keyboardHint = mainEl.querySelector('.im-c-viewport__keyboard-hint')
   const crossHair = container.querySelector('[data-testid="cross-hair"]')
   const markers = container.querySelector('[data-testid="markers"]')
-  return { viewport, mapContainer, safeZone, keyboardHint, crossHair, markers, rerender }
+  return { viewport, mapContainer, safeZone, crossHair, markers, rerender }
 }
 
 describe('Viewport rendering', () => {
@@ -76,7 +79,7 @@ describe('Viewport rendering', () => {
   })
 
   it('renders viewport, map container, safe zone, CrossHair, and Markers', () => {
-    const { viewport, mapContainer, safeZone, crossHair, markers } = renderViewport(mainEl)
+    const { viewport, mapContainer, safeZone, crossHair, markers } = renderViewport()
     expect(viewport).toBeInTheDocument()
     expect(mapContainer).toBeInTheDocument()
     expect(safeZone).toBeInTheDocument()
@@ -85,29 +88,30 @@ describe('Viewport rendering', () => {
   })
 
   it('renders viewport with correct id and class based on mapSize', () => {
-    const { viewport } = renderViewport(mainEl)
+    const { viewport } = renderViewport()
     expect(viewport.id).toBe('test-map-viewport')
     expect(viewport).toHaveClass('im-c-viewport--medium')
   })
 
-  it('renders keyboard hint when showHint is true', () => {
-    const { viewport, keyboardHint } = renderViewport(mainEl)
-    expect(keyboardHint).toBeInTheDocument()
-    expect(keyboardHint.innerHTML).toBe('Press arrow keys')
-    expect(keyboardHint.id).toBe('test-map-keyboard-hint')
-    expect(keyboardHint).not.toHaveClass('im-u-visually-hidden')
-    expect(viewport).toHaveAttribute('aria-describedby', 'test-map-keyboard-hint')
+  it('sets aria-describedby to the shared hints container id', () => {
+    const { viewport } = renderViewport()
+    expect(viewport).toHaveAttribute('aria-describedby', 'test-map-hints')
   })
 
-  it('applies visually-hidden class to keyboard hint when showHint is false', () => {
-    useKeyboardHint.mockImplementation(({ onViewportFocusChange }) => ({
-      showHint: false,
-      handleFocus: () => onViewportFocusChange(true),
-      handleBlur: () => onViewportFocusChange(false)
-    }))
-    const { keyboardHint } = renderViewport(mainEl)
-    expect(keyboardHint).toBeInTheDocument()
-    expect(keyboardHint).toHaveClass('im-u-visually-hidden')
+  it('calls hint() with keyboardHintText when viewport gains keyboard focus', () => {
+    const { hint } = useService()
+    renderViewport()
+    const { onViewportFocusChange } = useKeyboardHint.mock.calls[0][0]
+    onViewportFocusChange(true)
+    expect(hint).toHaveBeenCalledWith('Press arrow keys', { duration: 0 })
+  })
+
+  it('calls hintManager.dismiss() when viewport loses focus', () => {
+    const { hintManager } = useService()
+    renderViewport()
+    const { onViewportFocusChange } = useKeyboardHint.mock.calls[0][0]
+    onViewportFocusChange(false)
+    expect(hintManager.dismiss).toHaveBeenCalled()
   })
 })
 
@@ -130,7 +134,7 @@ describe('Viewport interactions', () => {
   })
 
   it('attaches keyboard shortcuts', () => {
-    renderViewport(mainEl)
+    renderViewport()
     expect(useKeyboardShortcuts).toHaveBeenCalled()
   })
 
@@ -138,12 +142,12 @@ describe('Viewport interactions', () => {
     const clearMock = jest.fn()
     useConfig.mockReturnValueOnce({ ...useConfig(), mapProvider: { ...mockMapProvider, clearHighlightedLabel: clearMock } })
     useMapEvents.mockImplementationOnce((handlers) => handlers['map:click']?.({}))
-    renderViewport(mainEl)
+    renderViewport()
     expect(clearMock).toHaveBeenCalled()
   })
 
   it('focuses viewport when mode changes', () => {
-    const { viewport, rerender } = renderViewport(mainEl)
+    const { viewport, rerender } = renderViewport()
     const focusMock = jest.spyOn(viewport, 'focus')
     useApp.mockReturnValueOnce({
       interfaceType: 'desktop',

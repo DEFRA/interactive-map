@@ -1,0 +1,30 @@
+// ===================================================
+// Component: KeyboardHints
+// ===================================================
+
+.im-c-keyboard-hints {
+  position: absolute;
+  bottom: var(--keyboard-hint-bottom, var(--primary-gap));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1001;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--divider-gap);
+}
+
+.im-c-keyboard-hints__hint {
+  text-wrap: nowrap;
+
+  color: var(--tooltip-foreground-color);
+  background-color: var(--tooltip-background-color);
+  border-radius: var(--tooltip-border-radius);
+  padding: var(--tooltip-padding);
+  font-size: var(--tooltip-font-size);
+  line-height: 1.2;
+}
+
+.im-c-keyboard-hints__hint kbd {
+  border: var(--kbd-tooltip-border);
+}

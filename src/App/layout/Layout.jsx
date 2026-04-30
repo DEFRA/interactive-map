@@ -10,6 +10,7 @@ import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
 import { SlotRenderer } from '../renderer/SlotRenderer'
 import { HtmlElementHost } from '../renderer/HtmlElementHost'
+import { KeyboardHints } from '../components/KeyboardHints/KeyboardHints.jsx'
 import { getMapThemeVars } from '../../config/mapTheme.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
@@ -110,6 +111,7 @@ export const Layout = () => {
           </div>
         </div>
       </div>
+      <KeyboardHints />
       <HtmlElementHost />
     </div>
   )
