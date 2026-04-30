@@ -13,7 +13,6 @@ import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
-import { addSymbolsToMap } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 
 /**

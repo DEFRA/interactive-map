@@ -175,7 +175,6 @@ export const symbolRegistry = {
  * @param {Object} map - MapLibre map instance
  * @param {Object[]} styleArray - Flat list of datasets/merged-sublayers that have a symbol config
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
- * @param {Object} symbolRegistry
  * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)
  * @returns {Promise<void>}
  */
@@ -215,8 +214,8 @@ export const symbolRegistry = {
     }
     const styleColors = getSymbolStyleColors(dataset)
     const resolvedContent = selected
-      ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
-      : symbolRegistry.resolve(symbolDef, styleColors, mapStyle)
+      ? this.resolveSelected(symbolDef, styleColors, mapStyle)
+      : this.resolve(symbolDef, styleColors, mapStyle)
 
     const imageId = `symbol-${selected ? 'sel-' : ''}${hashString(resolvedContent)}-${pixelRatio}x`
 
