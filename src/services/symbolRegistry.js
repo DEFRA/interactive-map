@@ -141,25 +141,25 @@ export const symbolRegistry = {
   // ─── Image IDs ────────────────────────────────────────────────────────────────
 
   /**
-   * Returns a deterministic image ID for a symbol in normal or selected state.
-   * Based on the hash of the fully resolved SVG content and the pixel ratio.
-   *
-   * @param {Object} dataset
-   * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
-   * @param {boolean} [selected=false]
-   * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor
-   * @returns {string|null}
-   */
-  getSymbolImageId (dataset, mapStyle, selected = false, pixelRatio = 2) {
+ * Returns a deterministic image ID for a symbol in normal or selected state.
+ * Based on the hash of the fully resolved SVG content and the pixel ratio.
+ *
+ * @param {Object} dataset
+ * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
+ * @param {boolean} [selected=false]
+ * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor
+ * @returns {string|null}
+ */
+  getSymbolImageId (dataset, mapStyle, active = false, pixelRatio = 2) {
     const symbolDef = this.getSymbolDef(dataset)
     if (!symbolDef) {
       return null
     }
     const styleColors = getSymbolStyleColors(dataset)
-    const resolved = selected
-      ? this.resolveSelected(symbolDef, styleColors, mapStyle)
+    const resolved = active
+      ? this.resolveActive(symbolDef, styleColors, mapStyle)
       : this.resolve(symbolDef, styleColors, mapStyle)
-    return `symbol-${selected ? 'sel-' : ''}${hashString(resolved)}-${pixelRatio}x`
+    return `symbol-${active ? 'act-' : ''}${hashString(resolved)}-${pixelRatio}x`
   },
 
   /**
@@ -182,9 +182,9 @@ export const symbolRegistry = {
   },
 
   /**
- * Register normal and selected symbol images for the given pre-resolved symbol configs.
+ * Register normal, active (both rings) and selected (black ring) symbol images.
  * Skips images that are already registered (safe to call on style change).
- * Updates `map._symbolImageMap` with normal→selected image ID pairs.
+ * Updates `map._activeSymbolImageMap` (normal→active) and `map._selectedSymbolImageMap` (normal→selected).
  *
  * Callers are responsible for resolving sublayers before calling this function
  * (see `getSymbolConfigs` in the datasets plugin adapter).
@@ -200,41 +200,65 @@ export const symbolRegistry = {
       return
     }
 
-    // Reset the normal→selected image ID lookup so stale entries don't persist after a style change
-    map._symbolImageMap = {}
+    map._activeSymbolImageMap = {}
+    map._selectedSymbolImageMap = {}
 
     await Promise.all(styleArray.flatMap(config => {
       const normalId = this.getSymbolImageId(config, mapStyle, false, pixelRatio)
-      const selectedId = this.getSymbolImageId(config, mapStyle, true, pixelRatio)
-      if (normalId && selectedId) {
-        map._symbolImageMap[normalId] = selectedId
+      const activeId = this.getSymbolImageId(config, mapStyle, true, pixelRatio)
+      if (normalId && activeId) {
+        map._activeSymbolImageMap[normalId] = activeId
       }
-      return [false, true].map(async (selected) => {
-        const imageId = selected ? selectedId : normalId
-        if (!imageId || map.hasImage(imageId)) {
+      return ['normal', 'active', 'selected'].map(async (variant) => {
+        const imageId = variant === 'active' ? activeId : normalId
+        if (variant !== 'selected' && (!imageId || map.hasImage(imageId))) {
           return
         }
-        const result = await this.rasteriseSymbolImage(config, mapStyle, selected, pixelRatio)
-        if (result && !map.hasImage(result.imageId)) {
-          map.addImage(result.imageId, result.imageData, { pixelRatio })
+        const result = await this.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
+        if (result) {
+          if (variant === 'selected' && normalId) {
+            map._selectedSymbolImageMap[normalId] = result.imageId
+          }
+          if (!map.hasImage(result.imageId)) {
+            map.addImage(result.imageId, result.imageData, { pixelRatio })
+          }
         }
       })
     }))
   },
 
-  // ─── Rasterisation ────────────────────────────────────────────────────────────
-
-  async rasteriseSymbolImage (dataset, mapStyle, selected, pixelRatio) {
+  /**
+ * Rasterise one variant of a symbol to ImageData for use as a MapLibre image.
+ * Results are cached by imageId so identical symbols are only rendered once.
+ *
+ * @param {Object} dataset - Dataset or marker config with symbol properties
+ * @param {Object} mapStyle - Current map style config
+ * @param {'normal'|'active'|'selected'} variant
+ *   - `'normal'`   — no rings (default display)
+ *   - `'active'`   — both rings (keyboard cursor, yellow + black)
+ *   - `'selected'` — selected ring only (black)
+ * @param {number} pixelRatio - Device pixel ratio × map size scale factor
+ * @returns {Promise<{imageId: string, imageData: ImageData}|null>}
+ */
+  async rasteriseSymbolImage (dataset, mapStyle, variant, pixelRatio) {
     const symbolDef = this.getSymbolDef(dataset)
     if (!symbolDef) {
       return null
     }
     const styleColors = getSymbolStyleColors(dataset)
-    const resolvedContent = selected
-      ? this.resolveSelected(symbolDef, styleColors, mapStyle)
-      : this.resolve(symbolDef, styleColors, mapStyle)
+    let resolvedContent, prefix
+    if (variant === 'active') {
+      resolvedContent = this.resolveActive(symbolDef, styleColors, mapStyle)
+      prefix = 'act-'
+    } else if (variant === 'selected') {
+      resolvedContent = this.resolveSelected(symbolDef, styleColors, mapStyle)
+      prefix = 'sel-'
+    } else {
+      resolvedContent = this.resolve(symbolDef, styleColors, mapStyle)
+      prefix = ''
+    }
 
-    const imageId = `symbol-${selected ? 'sel-' : ''}${hashString(resolvedContent)}-${pixelRatio}x`
+    const imageId = `symbol-${prefix}${hashString(resolvedContent)}-${pixelRatio}x`
 
     let imageData = imageDataCache.get(imageId)
     if (!imageData) {
