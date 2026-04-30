@@ -73,9 +73,8 @@ export const manifest = {
   }],
 
   keyboardShortcuts: [{
-    id: 'selectOrMark',
-    group: 'Select',
-    title: 'Select feature',
+    id: 'clickAtTarget',
+    title: 'Click at target',
     command: '<kbd>Enter</kbd></dd>'
   }],
 
