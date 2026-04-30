@@ -38,7 +38,7 @@ Colour scheme for the app UI chrome — panels, buttons, and controls. Set to `'
 ### `mapColorScheme`
 **Type:** `'light' | 'dark'`
 
-Colour scheme for elements rendered on top of the map. Sets the default values of `haloColor`, `selectedColor`, and `foregroundColor` when those are not explicitly provided. Set to `'dark'` when the basemap is dark (e.g. night or aerial) so that overlays remain legible against it.
+Colour scheme for elements rendered on top of the map. Sets the default values of `haloColor`, `selectedColor`, `activeColor`, and `foregroundColor` when those are not explicitly provided. Set to `'dark'` when the basemap is dark (e.g. night or aerial) so that overlays remain legible against it.
 
 - `'light'` (default) — dark overlays (`#0b0c0c`) on a light basemap, white halo
 - `'dark'` — light overlays (`#ffffff`) on a dark or aerial basemap, dark halo
@@ -92,9 +92,18 @@ Falls back to the `mapColorScheme` default when not set (`#ffffff` for light, `#
 ### `selectedColor`
 **Type:** `string`
 
-Theme colour for selected state — used by map overlay components to indicate a selected feature.
+Theme colour for committed selection — used by map overlay components to indicate a selected feature.
 
 Falls back to the `mapColorScheme` default when not set (`#0b0c0c` for light, `#ffffff` for dark). Injected as the `--map-overlay-selected-color` CSS custom property.
+
+---
+
+### `activeColor`
+**Type:** `string`
+
+Theme colour for the active (keyboard cursor) focus ring — shown on the item currently under the keyboard cursor, whether or not it is committed to the selection.
+
+Falls back to `#ffdd00` (GOV.UK yellow) for both light and dark schemes when not set.
 
 ---
 

@@ -1,15 +1,11 @@
 import { renderHook, act } from '@testing-library/react'
 import { useInteractionHandlers } from './useInteractionHandlers.js'
 import * as featureQueries from '../utils/featureQueries.js'
-import { isContiguousWithAny } from '../utils/spatial.js'
-
 /* ------------------------------------------------------------------ */
 /* Mocks                                                              */
 /* ------------------------------------------------------------------ */
 
 jest.mock('../utils/spatial.js', () => ({
-  isContiguousWithAny: jest.fn(),
-  canSplitFeatures: jest.fn(() => false),
   areAllContiguous: jest.fn(() => false)
 }))
 jest.mock('../utils/featureQueries.js', () => ({
@@ -48,7 +44,6 @@ const setup = (pluginOverrides = {}, markerItems = [], markerRefs = new Map()) =
       layers: [{ layerId: 'parcels', idProperty: 'parcelId' }],
       interactionModes: ['selectMarker', 'selectFeature'],
       multiSelect: false,
-      contiguous: false,
       marker: { symbol: 'pin', backgroundColor: 'red' },
       selectedFeatures: [],
       selectedMarkers: [],
@@ -258,58 +253,6 @@ it('passes multiSelect flag through to dispatch', () => {
 })
 
 /* ------------------------------------------------------------------ */
-/* Contiguous selection (FULL COVERAGE)                               */
-/* ------------------------------------------------------------------ */
-
-describe('contiguous selection', () => {
-  it('does NOT replace selection when feature is contiguous', () => {
-    isContiguousWithAny.mockReturnValue(true) // contiguous
-
-    const { result, deps } = setup({
-      contiguous: true,
-      selectedFeatures: [{ geometry: { type: 'Polygon' } }]
-    })
-
-    click(result)
-
-    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          replaceAll: false
-        })
-      })
-    )
-  })
-
-  it('replaces selection when feature is NOT contiguous', () => {
-    isContiguousWithAny.mockReturnValue(false) // disjoint
-
-    const { result, deps } = setup({
-      contiguous: true,
-      selectedFeatures: [{ geometry: { type: 'Polygon' } }]
-    })
-
-    click(result)
-
-    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
-      expect.objectContaining({
-        payload: expect.objectContaining({
-          replaceAll: true
-        })
-      })
-    )
-  })
-
-  it('does not compute contiguity when contiguous is false', () => {
-    const { result } = setup({ contiguous: false })
-
-    click(result)
-
-    expect(isContiguousWithAny).not.toHaveBeenCalled()
-  })
-})
-
-/* ------------------------------------------------------------------ */
 /* deselectOnClickOutside                                             */
 /* ------------------------------------------------------------------ */
 
@@ -384,6 +327,23 @@ it('does not check markers when selectMarker is not in interactionModes', () => 
 /* Selection change event                                             */
 /* ------------------------------------------------------------------ */
 
+it('does not emit selectionchange when features are selected but bounds not yet calculated', () => {
+  const deps = {
+    mapState: { markers: { add: jest.fn(), remove: jest.fn(), items: [], markerRefs: new Map() } },
+    pluginState: {
+      selectedFeatures: [{ featureId: 'F1' }],
+      selectedMarkers: [],
+      selectionBounds: null
+    },
+    services: { eventBus: { emit: jest.fn() } },
+    mapProvider: {}
+  }
+
+  renderHook(() => useInteractionHandlers(deps))
+
+  expect(deps.services.eventBus.emit).not.toHaveBeenCalled()
+})
+
 it('emits selectionchange once when bounds exist', () => {
   const deps = {
     mapState: { markers: { add: jest.fn(), remove: jest.fn(), items: [], markerRefs: new Map() } },
@@ -404,8 +364,7 @@ it('emits selectionchange once when bounds exist', () => {
       selectedFeatures: deps.pluginState.selectedFeatures,
       selectedMarkers: [],
       selectionBounds: deps.pluginState.selectionBounds,
-      canMerge: false,
-      canSplit: false
+      contiguous: false
     })
   )
 })

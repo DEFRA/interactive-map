@@ -6,7 +6,7 @@ Symbol properties control the appearance of markers and point dataset features. 
 
 Each property is optional. A value set directly on a marker or dataset layer takes priority over everything else. If a property is not set there, the value registered with the symbol is used. If the symbol has no value for that property, the app-wide `symbolDefaults` from the constructor applies. If none of those are set, the built-in fallback listed under each property below is used.
 
-`haloColor`, `selectedColor`, `haloWidth`, and `selectedWidth` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically. Note that `haloColor` and `selectedColor` are always derived from the active map style and cannot be configured.
+`haloColor`, `selectedColor`, and `activeColor` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically. All three are derived from the active map style — configure them via `MapStyleConfig`, not per symbol or marker.
 
 ## Style-keyed colours
 
@@ -37,11 +37,11 @@ Inner SVG path content (no `<svg>` wrapper) to render as the symbol. Use `{{toke
 ```js
 {
   symbolSvgContent: `
-    <path d="..." fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
-    <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
+    <path d="..." fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
+    <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
     <path d="..." fill="{{foregroundColor}}"/>
   `,
-  viewBox: '0 0 38 38',
+  viewBox: '0 0 44 44',
   anchor: [0.5, 1]
 }
 ```
@@ -52,7 +52,7 @@ See [SVG structure](#svg-structure) for the standard three-layer pattern.
 
 ### `viewBox`
 **Type:** `string`
-**Default:** registered symbol's viewBox, or `'0 0 38 38'`
+**Default:** registered symbol's viewBox, or `'0 0 44 44'`
 
 SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a different coordinate space.
 
@@ -84,22 +84,6 @@ Background fill colour of the symbol shape.
 **Default:** `'#ffffff'`
 
 Foreground fill colour — the inner graphic element (e.g. the dot inside a pin).
-
----
-
-### `haloWidth`
-**Type:** `number`
-**Default:** `1`
-
-Stroke width of the halo around the symbol background shape. Can be set in constructor `symbolDefaults`, at symbol registration, or per marker/dataset layer.
-
----
-
-### `selectedWidth`
-**Type:** `number`
-**Default:** `6`
-
-Stroke width of the selection ring shown when a marker is selected. Can be set in constructor `symbolDefaults` or per marker/dataset layer.
 
 ---
 
@@ -147,14 +131,14 @@ Symbols are defined as inner SVG path content (no `<svg>` wrapper) using `{{toke
 
 ```js
 svg: `
-  <path d="..." fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
-  <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
+  <path d="..." fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
+  <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
   <path d="..." fill="{{foregroundColor}}"/>
 `
 ```
 
-- **Layer 1** — selection ring (stroke only, fill none) — hidden in normal rendering, visible when selected
-- **Layer 2** — background shape with halo stroke
+- **Layer 1** — ring layer: `fill` is the selected ring (`{{selectedColor}}`), `stroke` is the active ring (`{{activeColor}}`). Both hidden in normal rendering. `paint-order="stroke fill"` ensures the stroke extends outward without clipping the fill.
+- **Layer 2** — background shape with fixed halo stroke
 - **Layer 3** — foreground graphic (e.g. inner dot)
 
-> `{{haloColor}}` and `{{selectedColor}}` are always injected from the active map style. They must be present in the SVG but cannot be configured.
+> `{{haloColor}}`, `{{selectedColor}}`, and `{{activeColor}}` are always injected from the active map style. They must be present in the SVG but cannot be configured per symbol or marker.

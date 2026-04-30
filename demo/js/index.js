@@ -26,44 +26,53 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
-const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: {category:'prehistoric'},geometry: {coordinates: [-2.4558622,54.5617135],type: 'Point'}},{type: 'Feature',properties: {category:'roman'},geometry: {coordinates: [-2.439823,54.5525437],type: 'Point'}},{type: 'Feature',properties: {category:'medieval'},geometry: {coordinates: [-2.4481939,54.5575261],type: 'Point'}}]}
+const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: { category:'prehistoric', name: 'Prehistoric feature' }, geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }},{ type: 'Feature', properties: { category: 'roman', name: 'Roman feature' }, geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }},{ type: 'Feature', properties: { category:'medieval', name: 'Medieval feature' }, geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} }]}
 
 const interactPlugin = createInteractPlugin({
 	layers: [{
 		layerId: 'historic-monuments-prehistoric-symbol',
+		// labelProperty: 'name'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-110',
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-130-131',
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-332',
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-379',
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-other',
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
-	},{
-		layerId: 'OS/TopographicArea_1/Agricultural Land',
-		idProperty: 'TOID'
-	},{
-		layerId: 'hedge-control',
-		idProperty: 'id'
-	},{
+	},
+	// {
+	// 	layerId: 'hedge-control',
+	// 	idProperty: 'id'
+	// },
+	// {
+	// 	layerId: 'OS/TopographicArea_1/Agricultural Land',
+	// 	idProperty: 'TOID'
+	// },
+	{
 		layerId: 'fill-inactive.cold',
-		idProperty: 'id'
+		// idProperty: 'id'
 	},{
 		layerId: 'stroke-inactive.cold',
-		idProperty: 'id'
-	}],
+		// idProperty: 'id'
+	}
+	],
 	debug: true,
-	interactionModes: ['selectMarker', 'placeMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
-	// multiSelect: true,
-	contiguous: true,
+	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
+	multiSelect: true,
 	deselectOnClickOutside: true
 })
 
@@ -305,10 +314,8 @@ interactiveMap.on('map:ready', function (e) {
 	// 	aspectRatio: 1
 	// })
 	interactPlugin.enable()
-	interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407], { showLabel: true, label: 'My label' })
-	interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], {
-		symbol: 'square'
-	})
+	interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407], { label: 'My label', showLabel: true })
+	interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], { label: 'Another marker', symbol: 'square' })
 })
 
 interactiveMap.on('datasets:ready', function () {

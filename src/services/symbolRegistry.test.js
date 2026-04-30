@@ -1,10 +1,12 @@
 import { symbolRegistry } from './symbolRegistry.js'
 import { symbolDefaults } from '../config/symbolConfig.js'
-import { SCHEME_COLORS } from '../config/mapTheme.js'
+import { THEME_COLORS } from '../config/mapTheme.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
 
 const STYLE_ID = 'test'
 const mapStyle = { id: STYLE_ID }
+const COLOR_OVERRIDE = '#ff0000'
+const FILL_OVERRIDE = `fill="${COLOR_OVERRIDE}"`
 
 beforeEach(() => {
   symbolRegistry.setDefaults({})
@@ -58,20 +60,20 @@ describe('symbolRegistry — setDefaults / getDefaults', () => {
   })
 
   it('constructor defaults override hardcoded defaults', () => {
-    symbolRegistry.setDefaults({ backgroundColor: '#ff0000', symbol: 'circle' })
+    symbolRegistry.setDefaults({ backgroundColor: COLOR_OVERRIDE, symbol: 'circle' })
     const defaults = symbolRegistry.getDefaults()
-    expect(defaults.backgroundColor).toBe('#ff0000')
+    expect(defaults.backgroundColor).toBe(COLOR_OVERRIDE)
     expect(defaults.symbol).toBe('circle')
   })
 
   it('constructor defaults do not affect unset properties', () => {
-    symbolRegistry.setDefaults({ backgroundColor: '#ff0000' })
+    symbolRegistry.setDefaults({ backgroundColor: COLOR_OVERRIDE })
     const defaults = symbolRegistry.getDefaults()
     expect(defaults.foregroundColor).toBe(symbolDefaults.foregroundColor)
   })
 
   it('setDefaults with null or undefined resets to hardcoded defaults', () => {
-    symbolRegistry.setDefaults({ backgroundColor: '#ff0000' })
+    symbolRegistry.setDefaults({ backgroundColor: COLOR_OVERRIDE })
     symbolRegistry.setDefaults(null)
     expect(symbolRegistry.getDefaults().backgroundColor).toBe(symbolDefaults.backgroundColor)
   })
@@ -81,24 +83,23 @@ describe('symbolRegistry — resolve', () => {
   const BACKGROUND_SVG = '<path fill="{{backgroundColor}}"/>'
   const symbolDef = {
     id: 'test',
-    svg: '<path fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/><path fill="{{foregroundColor}}" stroke="{{selectedColor}}"/>'
+    svg: '<path fill="{{backgroundColor}}" stroke="{{haloColor}}"/><path fill="{{foregroundColor}}" stroke="{{selectedColor}}"/><path stroke="{{activeColor}}"/>'
   }
 
   it('injects default token values when no overrides given', () => {
     const resolved = symbolRegistry.resolve(symbolDef, {}, mapStyle)
     expect(resolved).toContain(`fill="${getValueForStyle(symbolDefaults.backgroundColor, STYLE_ID)}"`)
     expect(resolved).toContain(`fill="${getValueForStyle(symbolDefaults.foregroundColor, STYLE_ID)}"`)
-    expect(resolved).toContain(`stroke-width="${symbolDefaults.haloWidth}"`)
   })
 
-  it('always produces empty selectedColor token — ring is hidden', () => {
+  it('always produces empty selectedColor and activeColor tokens — rings are hidden', () => {
     const resolved = symbolRegistry.resolve(symbolDef, {}, mapStyle)
-    expect(resolved).toContain('stroke=""')
+    expect(resolved).toContain('stroke="none"')
   })
 
   it('uses light scheme haloColor when mapStyle has no haloColor', () => {
     const resolved = symbolRegistry.resolve(symbolDef, {}, mapStyle)
-    expect(resolved).toContain(`stroke="${SCHEME_COLORS.light.haloColor}"`)
+    expect(resolved).toContain(`stroke="${THEME_COLORS.light.haloColor}"`)
   })
 
   it('uses mapStyle.haloColor when provided', () => {
@@ -107,8 +108,8 @@ describe('symbolRegistry — resolve', () => {
   })
 
   it('overrides default backgroundColor with a plain string', () => {
-    const resolved = symbolRegistry.resolve(symbolDef, { backgroundColor: '#ff0000' }, mapStyle)
-    expect(resolved).toContain('fill="#ff0000"')
+    const resolved = symbolRegistry.resolve(symbolDef, { backgroundColor: COLOR_OVERRIDE }, mapStyle)
+    expect(resolved).toContain(FILL_OVERRIDE)
   })
 
   it('overrides default with a style-keyed color', () => {
@@ -163,45 +164,67 @@ describe('symbolRegistry — resolve', () => {
   })
 })
 
-describe('symbolRegistry — resolveSelected', () => {
+describe('symbolRegistry — resolveActive (keyboard cursor state)', () => {
   const symbolDef = {
-    id: 'test-sel',
-    svg: '<path stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/><path fill="{{backgroundColor}}"/>'
+    id: 'test-active',
+    svg: '<path fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6"/><path fill="{{backgroundColor}}"/>'
   }
 
-  it('uses light scheme selectedColor when mapStyle has no selectedColor', () => {
-    const resolved = symbolRegistry.resolveSelected(symbolDef, {}, mapStyle)
-    expect(resolved).toContain(`stroke="${SCHEME_COLORS.light.selectedColor}"`)
+  it('renders selectedColor from scheme when mapStyle has no selectedColor', () => {
+    const resolved = symbolRegistry.resolveActive(symbolDef, {}, mapStyle)
+    expect(resolved).toContain(`fill="${THEME_COLORS.light.selectedColor}"`)
+  })
+
+  it('renders activeColor from scheme when mapStyle has no activeColor', () => {
+    const resolved = symbolRegistry.resolveActive(symbolDef, {}, mapStyle)
+    expect(resolved).toContain(`stroke="${THEME_COLORS.light.activeColor}"`)
   })
 
   it('uses mapStyle.selectedColor when provided', () => {
-    const resolved = symbolRegistry.resolveSelected(symbolDef, {}, { id: STYLE_ID, selectedColor: '#ff0000' })
-    expect(resolved).toContain('stroke="#ff0000"')
+    const resolved = symbolRegistry.resolveActive(symbolDef, {}, { id: STYLE_ID, selectedColor: COLOR_OVERRIDE })
+    expect(resolved).toContain(FILL_OVERRIDE)
   })
 
-  it('uses selectedWidth from symbolDefaults', () => {
-    const resolved = symbolRegistry.resolveSelected(symbolDef, {}, mapStyle)
-    expect(resolved).toContain(`stroke-width="${symbolDefaults.selectedWidth}"`)
+  it('uses mapStyle.activeColor when provided', () => {
+    const resolved = symbolRegistry.resolveActive(symbolDef, {}, { id: STYLE_ID, activeColor: '#00ff00' })
+    expect(resolved).toContain('stroke="#00ff00"')
   })
 
   it('handles null styleColors — uses cascade defaults', () => {
-    const resolved = symbolRegistry.resolveSelected(symbolDef, null, mapStyle)
-    expect(resolved).toContain(`stroke="${SCHEME_COLORS.light.selectedColor}"`)
+    const resolved = symbolRegistry.resolveActive(symbolDef, null, mapStyle)
+    expect(resolved).toContain(`fill="${THEME_COLORS.light.selectedColor}"`)
   })
+
+  it('returns empty string for null symbolDef', () => {
+    expect(symbolRegistry.resolveActive(null, {}, mapStyle)).toBe('')
+  })
+
+  it('symbol-level selectedColor is ignored — mapStyle wins', () => {
+    const defWithSelected = { ...symbolDef, selectedColor: '#00ff00' }
+    const resolved = symbolRegistry.resolveActive(defWithSelected, {}, { id: STYLE_ID, selectedColor: COLOR_OVERRIDE })
+    expect(resolved).toContain(FILL_OVERRIDE)
+  })
+
+  it('still resolves other tokens correctly', () => {
+    const resolved = symbolRegistry.resolveActive(symbolDef, { backgroundColor: '#d4351c' }, mapStyle)
+    expect(resolved).toContain('fill="#d4351c"')
+  })
+})
+
+describe('symbolRegistry — resolveSelected (committed selection state)', () => {
+  const symbolDef = {
+    id: 'test-selected',
+    svg: '<path fill="{{selectedColor}}"/>'
+  }
 
   it('returns empty string for null symbolDef', () => {
     expect(symbolRegistry.resolveSelected(null, {}, mapStyle)).toBe('')
   })
 
-  it('symbol-level selectedColor is ignored — mapStyle wins', () => {
-    const defWithSelected = { ...symbolDef, selectedColor: '#00ff00' }
-    const resolved = symbolRegistry.resolveSelected(defWithSelected, {}, { id: STYLE_ID, selectedColor: '#ff0000' })
-    expect(resolved).toContain('stroke="#ff0000"')
-  })
-
-  it('still resolves other tokens correctly', () => {
-    const resolved = symbolRegistry.resolveSelected(symbolDef, { backgroundColor: '#d4351c' }, mapStyle)
-    expect(resolved).toContain('fill="#d4351c"')
+  it('handles null styleColors — uses cascade defaults', () => {
+    const resolved = symbolRegistry.resolveSelected(symbolDef, null, mapStyle)
+    expect(typeof resolved).toBe('string')
+    expect(resolved.length).toBeGreaterThan(0)
   })
 })
 
@@ -257,6 +280,6 @@ describe('symbolRegistry — graphic token', () => {
     const pin = symbolRegistry.get('pin')
     const resolved = symbolRegistry.resolve(pin, {}, mapStyle)
     expect(resolved).toContain(`d="${pin.graphic}"`)
-    expect(resolved).toContain('translate(19, 16) scale(0.8) translate(-8, -8)')
+    expect(resolved).toContain('translate(22, 19) scale(0.8) translate(-8, -8)')
   })
 })

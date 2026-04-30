@@ -244,10 +244,28 @@ describe('MapLibreProvider', () => {
     await doInitMap(p)
     p.getFeaturesAtPoint({ x: 10, y: 20 }, { radius: 5 })
     expect(queryFeatures).toHaveBeenCalledWith(map, { x: 10, y: 20 }, { radius: 5 })
-    p.updateHighlightedFeatures(['feat'], { style: 1 })
+    p.updateHighlightedFeatures(['feat'], null, { style: 1 })
     expect(updateHighlightedFeatures).toHaveBeenCalledWith({
-      LngLatBounds: maplibreModule.LngLatBounds, map, selectedFeatures: ['feat'], stylesMap: { style: 1 }
+      LngLatBounds: maplibreModule.LngLatBounds, map, selectedFeatures: ['feat'], activeFeatures: null, stylesMap: { style: 1 }
     })
+  })
+
+  test('getVisibleFeatures returns empty array when no layers are present on the map', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getLayer.mockReturnValue(null)
+    expect(p.getVisibleFeatures(['l1', 'l2'])).toEqual([])
+    expect(map.queryRenderedFeatures).not.toHaveBeenCalled()
+  })
+
+  test('getVisibleFeatures queries only layers present on the map', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getLayer.mockImplementation(id => id === 'l1' ? {} : null) // NOSONAR
+    const features = [{ id: 'f1' }]
+    map.queryRenderedFeatures.mockReturnValue(features)
+    expect(p.getVisibleFeatures(['l1', 'l2'])).toEqual(features)
+    expect(map.queryRenderedFeatures).toHaveBeenCalledWith(undefined, { layers: ['l1'] })
   })
 
   test('addSymbolsToMap delegates to utility with map instance', async () => {

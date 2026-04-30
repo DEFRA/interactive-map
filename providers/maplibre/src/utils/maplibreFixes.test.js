@@ -16,6 +16,37 @@ describe('cleanCanvas', () => {
     expect(canvas.hasAttribute('aria-label')).toBe(false)
     expect(canvas.style.display).toBe('block')
   })
+
+  it('redirects focus back to the previously focused element when canvas receives focus', () => {
+    const canvas = document.createElement('canvas')
+    const map = { getCanvas: () => canvas }
+    const prev = document.createElement('button')
+    prev.focus = jest.fn()
+    document.body.appendChild(canvas)
+
+    cleanCanvas(map)
+
+    const event = new FocusEvent('focus', { relatedTarget: prev })
+    const blurSpy = jest.spyOn(canvas, 'blur')
+    canvas.dispatchEvent(event)
+
+    expect(blurSpy).toHaveBeenCalled()
+    expect(prev.focus).toHaveBeenCalled()
+  })
+
+  it('blurs canvas without restoring focus when there is no previous element', () => {
+    const canvas = document.createElement('canvas')
+    const map = { getCanvas: () => canvas }
+    document.body.appendChild(canvas)
+
+    cleanCanvas(map)
+
+    const event = new FocusEvent('focus', { relatedTarget: null })
+    const blurSpy = jest.spyOn(canvas, 'blur')
+    canvas.dispatchEvent(event)
+
+    expect(blurSpy).toHaveBeenCalled()
+  })
 })
 
 describe('applyPreventDefaultFix', () => {

@@ -265,6 +265,10 @@
  * @property {(point: { x: number, y: number }) => any[]} getFeaturesAtPoint
  * Query rendered features at a screen pixel position (x from left edge, y from top edge of viewport).
  *
+ * @property {(layerIds: string[]) => any[]} getVisibleFeatures
+ * Return all GeoJSON features currently visible in the viewport on the given layers,
+ * respecting layer visibility and any active filters. Returns [] if unsupported.
+ *
  * @property {() => string} getAreaDimensions
  * Get the dimensions of the visible map area as a formatted string (e.g., '400m by 750m').
  *
@@ -280,7 +284,7 @@
  * @property {(point: { x: number, y: number }) => [number, number]} screenToMap
  * Convert screen pixel position (x from left edge, y from top edge of viewport) to map coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider).
  *
- * @property {(selectedFeatures: any[], stylesMap: any) => any} [updateHighlightedFeatures]
+ * @property {(selectedFeatures: any[], activeFeatures: any[], stylesMap: any) => any} [updateHighlightedFeatures]
  * @experimental Update highlighted features on the map.
  *
  * @property {(direction: string) => any} [highlightNextLabel]
@@ -373,7 +377,7 @@
  * Alt text for logo.
  *
  * @property {'light' | 'dark'} [mapColorScheme]
- * Map colour scheme. Sets the default values of `haloColor`, `selectedColor`, and `foregroundColor`
+ * Map colour scheme. Sets the default values of `haloColor`, `selectedColor`, `activeColor`, and `foregroundColor`
  * when not explicitly provided, and signals to map overlay components which tonal range to use.
  * `'light'` (default): dark overlays on a light basemap. `'dark'`: light overlays on a dark or aerial basemap.
  *
@@ -386,9 +390,13 @@
  * Injected as the `--map-overlay-halo-color` CSS custom property.
  *
  * @property {string} [selectedColor]
- * Theme colour for selected state — used by map overlay components to indicate a selected feature.
+ * Theme colour for committed selection — used by map overlay components to indicate a selected feature.
  * Falls back to `#0b0c0c` (light) or `#ffffff` (dark).
  * Injected as the `--map-overlay-selected-color` CSS custom property.
+ *
+ * @property {string} [activeColor]
+ * Theme colour for the active (keyboard cursor) state — the focus ring shown when navigating features
+ * with the keyboard. Falls back to `#ffdd00` for both light and dark schemes.
  *
  * @property {string} [foregroundColor]
  * Foreground colour for elements rendered on top of the map (e.g. text or iconography in overlay components).
@@ -411,7 +419,7 @@
  * @property {string} [symbolSvgContent]
  * Default inner SVG path content. When set, overrides `symbol`.
  *
- * @property {string} [viewBox='0 0 38 38']
+ * @property {string} [viewBox='0 0 44 44']
  * Default SVG viewBox.
  *
  * @property {[number, number]} [anchor=[0.5, 0.5]]
@@ -423,15 +431,10 @@
  * @property {string | Record<string, string>} [foregroundColor='#ffffff']
  * Default foreground fill colour.
  *
- * @property {string} [haloWidth='1']
- * Default halo stroke width in SVG units.
- *
  * @property {string} [graphic]
  * Default SVG `d` attribute value for the foreground graphic path. Each built-in symbol sets
  * its own default (a small dot). Override to swap the graphic across all markers globally.
  *
- * @property {string} [selectedWidth='6']
- * Selection ring stroke width in SVG units. App-wide only — ignored at symbol registration and marker creation level.
  */
 
 /**
@@ -464,8 +467,8 @@
  * When set, `symbol` is ignored.
  *
  * @property {string} [viewBox]
- * SVG viewBox attribute for the symbol, e.g. `'0 0 38 38'`.
- * Defaults to the registered symbol's viewBox, or `'0 0 38 38'`.
+ * SVG viewBox attribute for the symbol, e.g. `'0 0 44 44'`.
+ * Defaults to the registered symbol's viewBox, or `'0 0 44 44'`.
  *
  * @property {[number, number]} [anchor]
  * Anchor point as a normalised [x, y] pair where [0, 0] is top-left and [1, 1] is bottom-right.
@@ -477,9 +480,6 @@
  *
  * @property {string | Record<string, string>} [foregroundColor]
  * Foreground fill colour of the symbol (e.g. the inner dot on a pin).
- *
- * @property {string} [haloWidth]
- * Stroke width of the halo in SVG units. Defaults to `'1'`.
  *
  * @property {string} [graphic]
  * SVG `d` attribute value for the foreground graphic path. Replaces the foreground shape of the

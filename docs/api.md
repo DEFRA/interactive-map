@@ -343,8 +343,6 @@ App-wide defaults for symbol and marker appearance.
 | `symbol` | `'pin'` |
 | `backgroundColor` | `'#ca3535'` |
 | `foregroundColor` | `'#ffffff'` |
-| `haloWidth` | `'1'` |
-| `selectedWidth` | `'6'` |
 
 ```js
 new InteractiveMap('map', {

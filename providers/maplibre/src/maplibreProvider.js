@@ -222,9 +222,9 @@ export default class MapLibreProvider {
    * @param {any} stylesMap - Style configuration for highlighting.
    * @returns {any}
    */
-  updateHighlightedFeatures (selectedFeatures, stylesMap) {
+  updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {
     const { LngLatBounds } = this.maplibreModule
-    return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, stylesMap })
+    return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, activeFeatures, stylesMap })
   }
 
   // ==========================
@@ -299,6 +299,14 @@ export default class MapLibreProvider {
    */
   getFeaturesAtPoint (point, options) {
     return queryFeatures(this.map, point, options)
+  }
+
+  getVisibleFeatures (layerIds) {
+    const presentLayers = layerIds.filter(id => this.map.getLayer(id))
+    if (!presentLayers.length) {
+      return []
+    }
+    return this.map.queryRenderedFeatures(undefined, { layers: presentLayers })
   }
 
   /**

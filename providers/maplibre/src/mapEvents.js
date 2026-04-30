@@ -51,7 +51,6 @@ export function attachMapEvents ({
 
   map.on('moveend', onMoveEnd)
   handlers.push(['moveend', onMoveEnd])
-  debouncers.push(onMoveEnd)
 
   // move (throttled)
   const onMove = throttle(() => {
@@ -60,21 +59,27 @@ export function attachMapEvents ({
 
   map.on('zoom', onMove)
   handlers.push(['zoom', onMove])
-  debouncers.push(onMove)
 
   // render
   const onRender = () => emitEvent(events.MAP_RENDER)
   map.on('render', onRender)
   handlers.push(['render', onRender])
 
-  // data change (debounced)
+  // data change (debounced) — styledata covers layer/visibility changes,
+  // sourcedata covers GeoJSON source mutations (e.g. draw plugin adding features)
   const onDataChange = debounce(() => {
     emitEvent(events.MAP_DATA_CHANGE, getMapState())
   }, DEBOUNCE_IDLE_TIME)
 
+  const onSourceData = (e) => {
+    if (e.isSourceLoaded) {
+      onDataChange()
+    }
+  }
+
   map.on('styledata', onDataChange)
-  handlers.push(['styledata', onDataChange])
-  debouncers.push(onDataChange)
+  map.on('sourcedata', onSourceData)
+  handlers.push(['styledata', onDataChange], ['sourcedata', onSourceData])
 
   // style change
   const onStyleChange = () => emitEvent(events.MAP_STYLE_CHANGE)
@@ -89,6 +94,7 @@ export function attachMapEvents ({
 
   map.on('click', onClick)
   handlers.push(['click', onClick])
+  debouncers.push(onMoveEnd, onMove, onDataChange)
 
   // Cleanup
   return {
