@@ -318,7 +318,7 @@ export default class MapLibreProvider {
    */
   async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry) {
     const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
-    return addSymbolsToMap(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
+    return symbolRegistry.addSymbolsToMap(this.map, symbolConfigs, mapStyle, pixelRatio)
   }
 
   /**

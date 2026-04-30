@@ -3,15 +3,6 @@ import { rasteriseToImageData } from './rasteriseToImageData.js'
 
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
-const HASH_BASE = 36
-
-const hashString = (str) => {
-  let hash = 0
-  for (const ch of str) {
-    hash = Math.trunc(((hash << 5) - hash) + ch.codePointAt(0))
-  }
-  return Math.abs(hash).toString(HASH_BASE)
-}
 
 // ─── MapLibre-specific anchor conversion ──────────────────────────────────────
 
@@ -46,31 +37,6 @@ export const anchorToMaplibre = ([ax, ay]) => {
   const x = xAnchor(ax)
   const y = yAnchor(ay)
   return (y + (x && y ? '-' : '') + x) || 'center'
-}
-
-// ─── Image IDs ────────────────────────────────────────────────────────────────
-
-/**
- * Returns a deterministic image ID for a symbol in normal or selected state.
- * Based on the hash of the fully resolved SVG content and the pixel ratio.
- *
- * @param {Object} dataset
- * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
- * @param {Object} symbolRegistry
- * @param {boolean} [selected=false]
- * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor
- * @returns {string|null}
- */
-export const getSymbolImageId = (dataset, mapStyle, symbolRegistry, selected = false, pixelRatio = 2) => {
-  const symbolDef = getSymbolDef(dataset, symbolRegistry)
-  if (!symbolDef) {
-    return null
-  }
-  const styleColors = getSymbolStyleColors(dataset)
-  const resolved = selected
-    ? symbolRegistry.resolveSelected(symbolDef, styleColors, mapStyle)
-    : symbolRegistry.resolve(symbolDef, styleColors, mapStyle)
-  return `symbol-${selected ? 'sel-' : ''}${hashString(resolved)}-${pixelRatio}x`
 }
 
 // ─── Rasterisation ────────────────────────────────────────────────────────────

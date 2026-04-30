@@ -2,7 +2,7 @@ import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
 import { getPatternConfigs, hasPattern } from './patternImages.js'
-import { getSymbolConfigs, getSymbolImageId } from './symbolImages.js'
+import { getSymbolConfigs } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { scaleFactor } from '../../../../../../src/config/appConfig.js'
 
@@ -127,7 +127,7 @@ export default class MaplibreLayerAdapter {
     datasets.forEach(dataset => {
       getAllLayerIds(dataset).forEach(layerId => {
         if (!this._symbolLayerIds.has(layerId) || !this._map.getLayer(layerId)) { return }
-        const imageId = getSymbolImageId(dataset, mapStyle, this._symbolRegistry, false, pixelRatio)
+        const imageId = this._symbolRegistry.getSymbolImageId(dataset, mapStyle, false, pixelRatio)
         if (imageId) {
           this._map.setLayoutProperty(layerId, 'icon-image', imageId)
         }
@@ -145,7 +145,7 @@ export default class MaplibreLayerAdapter {
         const merged = mergeSublayer(dataset, sublayer)
         const { symbolLayerId, fillLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
         if (this._map.getLayer(symbolLayerId)) {
-          const imageId = getSymbolImageId(merged, mapStyle, this._symbolRegistry, false, pixelRatio)
+          const imageId = this._symbolRegistry.getSymbolImageId(merged, mapStyle, false, pixelRatio)
           if (imageId) {
             this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
           }

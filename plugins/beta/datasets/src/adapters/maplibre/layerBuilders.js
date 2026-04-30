@@ -2,7 +2,7 @@ import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.j
 import { hasPattern } from './patternImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, isDynamicSource, MAX_TILE_ZOOM } from './layerIds.js'
-import { hasSymbol, getSymbolDef, getSymbolAnchor, anchorToMaplibre, getSymbolImageId } from './symbolImages.js'
+import { hasSymbol, getSymbolDef, getSymbolAnchor, anchorToMaplibre } from './symbolImages.js'
 
 // ─── Source ───────────────────────────────────────────────────────────────────
 
@@ -83,7 +83,7 @@ export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, vis
   if (!layerId || map.getLayer(layerId)) { return }
   const symbolDef = getSymbolDef(dataset, symbolRegistry)
   if (!symbolDef) { return }
-  const imageId = getSymbolImageId(dataset, mapStyle, symbolRegistry, false, pixelRatio)
+  const imageId = symbolRegistry.getSymbolImageId(dataset, mapStyle, false, pixelRatio)
   if (!imageId) { return }
   const anchor = getSymbolAnchor(dataset, symbolDef)
   map.addLayer({
