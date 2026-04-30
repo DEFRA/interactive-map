@@ -1,6 +1,18 @@
 import { useEffect, useMemo } from 'react'
 import { buildStylesMap } from '../utils/buildStylesMap.js'
 
+/**
+ * Keeps map highlight rendering in sync with the current selection and keyboard-active item.
+ *
+ * Calls mapProvider.updateHighlightedFeatures whenever selectedFeatures or listboxActiveItem
+ * changes, passing selected features (shown with the selection ring) and the active item
+ * (shown with the keyboard cursor ring) as separate arguments so the provider can style them
+ * differently. Also re-applies highlights after a map style reload, since highlight layers
+ * are removed when the base style changes.
+ *
+ * Dispatches UPDATE_SELECTED_BOUNDS with the bounding box returned by the provider so
+ * downstream consumers (e.g. interact:done) receive up-to-date bounds.
+ */
 export const useHighlightSync = ({
   mapProvider,
   mapStyle,

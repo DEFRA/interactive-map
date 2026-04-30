@@ -70,6 +70,11 @@ const findFeatureById = (features, layerConfigMap, targetId) => {
   return null
 }
 
+/**
+ * Rebuilds the keyboard-navigable item list whenever the map moves or data changes.
+ * Collects visible markers (by DOM visibility) and visible features (by viewport query),
+ * then emits MAP_SET_FEATURES so the listbox stays in sync with what the user can see.
+ */
 function useItemListSync ({ markers, interactionModes, layers, mapProvider, multiSelect, eventBus }) {
   useEffect(() => {
     const handleMoveEnd = () => {
@@ -91,9 +96,12 @@ function useItemListSync ({ markers, interactionModes, layers, mapProvider, mult
   }, [markers, interactionModes, layers, mapProvider, multiSelect, eventBus])
 }
 
-// Shows the selection ring without firing interact:selectionchange.
-// Marker rings are handled by Markers.jsx listening to map:setactivefeature directly.
-// Feature rings are handled by useHighlightSync reading listboxActiveItem from plugin state.
+/**
+ * Listens for MAP_SET_ACTIVE_FEATURE and resolves the active item to its full feature/marker data,
+ * storing it in both a ref (for synchronous access) and plugin state (for highlight rendering).
+ * Shows the keyboard cursor ring without firing interact:selectionchange — committing the item
+ * to the real selection only happens when the user presses Enter/Space.
+ */
 function useActiveItemHandler ({ markers, interactionModes, layers, mapProvider, eventBus, dispatch, listboxActiveItemRef }) {
   useEffect(() => {
     const handle = ({ id }) => {
@@ -130,7 +138,11 @@ function useActiveItemHandler ({ markers, interactionModes, layers, mapProvider,
   }, [markers, interactionModes, layers, mapProvider, eventBus, dispatch, listboxActiveItemRef])
 }
 
-// Promotes the listbox-active item to a real selection, firing interact:selectionchange.
+/**
+ * Handles MAP_SELECT_FEATURE (Enter/Space keypress) by promoting the currently active
+ * listbox item to a confirmed selection, dispatching TOGGLE_SELECTED_FEATURES or
+ * TOGGLE_SELECTED_MARKERS and triggering interact:selectionchange downstream.
+ */
 function useSelectItemHandler ({ eventBus, dispatch, listboxActiveItemRef, multiSelect }) {
   useEffect(() => {
     const handleConfirm = () => {
@@ -153,6 +165,16 @@ function useSelectItemHandler ({ eventBus, dispatch, listboxActiveItemRef, multi
   }, [eventBus, dispatch, listboxActiveItemRef, multiSelect])
 }
 
+/**
+ * Orchestrates the keyboard-accessible listbox for the interact plugin.
+ *
+ * Composes three concerns:
+ * - Item list sync — keeps the listbox populated with currently visible markers and features
+ * - Active item resolution — translates a listbox cursor position into full feature/marker data
+ * - Selection confirmation — commits the active item to the selection on Enter/Space
+ *
+ * @param {{ mapState: object, pluginState: object, services: object, mapProvider: object }} params
+ */
 export function useMapItemList ({ mapState, pluginState, services, mapProvider }) {
   const { markers } = mapState
   const { dispatch, interactionModes, layers, multiSelect } = pluginState

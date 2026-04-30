@@ -24,6 +24,11 @@ const resolveEntryId = (items, lastActiveId, selectedIds) => {
   return items[0].id
 }
 
+/**
+ * Keeps local selectedIds in sync with interact:selectionchange, and mirrors
+ * MAP_SET_ACTIVE_FEATURE back into React state so aria-activedescendant stays current.
+ * Also tracks the last non-null active id so it can be restored on re-focus.
+ */
 function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveFeatureId, setSelectedIds }) {
   useEffect(() => {
     if (!eventBus) {
@@ -47,6 +52,12 @@ function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveFeatureId, 
   }, [eventBus])
 }
 
+/**
+ * Revalidates aria-activedescendant when the item list changes while the listbox is focused.
+ * If the current active item is no longer in the list (e.g. panned off screen), picks a new one
+ * using ARIA priority order: first selected → last active position → first item.
+ * Reads eventBus and selectedIds via refs to avoid spurious re-runs on selection change.
+ */
 function useItemsRevalidation ({ items, eventBus, isFocusedRef, lastActiveIdRef, activeFeatureIdRef, selectedIdsRef, setActiveFeatureId }) {
   useEffect(() => {
     if (!isFocusedRef.current) {
@@ -67,6 +78,12 @@ function useItemsRevalidation ({ items, eventBus, isFocusedRef, lastActiveIdRef,
   }, [items]) // NOSONAR — eventBus/selectedIds consumed via refs to avoid spurious re-runs on selection change
 }
 
+/**
+ * Attaches a keydown listener to the listbox element for ARIA keyboard navigation:
+ * - ArrowUp/ArrowDown — move the active item, emitting MAP_SET_ACTIVE_FEATURE
+ * - Enter/Space — confirm selection, emitting MAP_SELECT_FEATURE
+ * - Escape — return focus to the map viewport
+ */
 function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId }) {
   useEffect(() => {
     const listboxEl = featuresRef.current
@@ -98,8 +115,11 @@ function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, act
   }, [viewportRef, featuresRef, items, eventBus])
 }
 
-// Any pointer interaction on the map (pan, zoom, click on feature or empty space) should
-// hand focus back to the viewport so the listbox focus ring is cleared.
+/**
+ * Clears listbox focus whenever the user interacts with the map via pointer (mouse or touch).
+ * Any pointerdown outside the listbox element moves focus to the viewport, removing the
+ * visible focus ring from the listbox without dropping focus to an unknown location.
+ */
 function useMapInteractionBlur ({ viewportRef, featuresRef, isFocusedRef }) {
   useEffect(() => {
     const el = viewportRef.current
@@ -116,14 +136,28 @@ function useMapInteractionBlur ({ viewportRef, featuresRef, isFocusedRef }) {
   }, [viewportRef, featuresRef])
 }
 
+/**
+ * Manages ARIA listbox focus state for the keyboard-accessible feature list.
+ *
+ * On focus, sets aria-activedescendant following ARIA priority order:
+ *   1. First selected item (if any)
+ *   2. Last active position (if still in the list)
+ *   3. First item (fallback)
+ *
+ * On blur, clears the active descendant. Revalidates automatically when the item list
+ * changes (e.g. after a map pan) so the active id never points to a stale item.
+ *
+ * @param {{ viewportRef: React.RefObject, featuresRef: React.RefObject, items: Array, eventBus: object }} params
+ * @returns {{ activeFeatureId: string|null, selectedIds: string[], onFocus: Function, onBlur: Function }}
+ */
 export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus }) {
   const [activeFeatureId, setActiveFeatureId] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
 
   const isFocusedRef = useRef(false)
-  const lastActiveIdRef = useRef(null) // preserved across blur; restores position on re-focus
+  const lastActiveIdRef = useRef(null)    // preserved across blur; restores position on re-focus
   const activeFeatureIdRef = useRef(null) // always-current for keydown closure
-  const selectedIdsRef = useRef([]) // always-current for items-change effect
+  const selectedIdsRef = useRef([])       // always-current for items-change effect
 
   useEffect(() => { activeFeatureIdRef.current = activeFeatureId }, [activeFeatureId])
   useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
