@@ -31,32 +31,32 @@ const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',propert
 const interactPlugin = createInteractPlugin({
 	layers: [{
 		layerId: 'historic-monuments-prehistoric-symbol',
-		labelProperty: 'name'
+		// labelProperty: 'name'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-110',
-		labelProperty: 'gid'
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-130-131',
-		labelProperty: 'gid'
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-332',
-		labelProperty: 'gid'
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-379',
-		labelProperty: 'gid'
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},{
 		layerId: 'land-covers-other',
-		labelProperty: 'gid'
+		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},
 	{
 		layerId: 'hedge-control',
-		idProperty: 'id'
+		// idProperty: 'id'
 	},
 	// {
 	// 	layerId: 'OS/TopographicArea_1/Agricultural Land',
@@ -64,10 +64,10 @@ const interactPlugin = createInteractPlugin({
 	// },
 	{
 		layerId: 'fill-inactive.cold',
-		idProperty: 'id'
+		// idProperty: 'id'
 	},{
 		layerId: 'stroke-inactive.cold',
-		idProperty: 'id'
+		// idProperty: 'id'
 	}
 	],
 	debug: true,

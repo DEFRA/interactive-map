@@ -57,7 +57,7 @@ describe('useFeatureFocus — initial state', () => {
 // ─── useFeatureFocus — onFocus ────────────────────────────────────────────────
 
 describe('useFeatureFocus — onFocus', () => {
-  it('sets activeFeatureId to first item when items are present', () => {
+  it('sets activeFeatureId to first item on first focus (no previous, no selected)', () => {
     const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
     act(() => result.current.onFocus())
     expect(result.current.activeFeatureId).toBe('a')
@@ -67,6 +67,61 @@ describe('useFeatureFocus — onFocus', () => {
     const { result } = renderHook(() => useFeatureFocus(makeRefs()))
     act(() => result.current.onFocus())
     expect(result.current.activeFeatureId).toBeNull()
+  })
+
+  it('sets active to first selected item (highest priority)', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'b', layerId: 'roads' }] }))
+    act(() => result.current.onFocus())
+    expect(result.current.activeFeatureId).toBe('b')
+  })
+
+  it('selected item takes priority over last active position', () => {
+    const eb = makeEventBus()
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+    act(() => result.current.onFocus())
+    fireKey(el, 'ArrowDown') // last active = 'b'
+    act(() => result.current.onBlur())
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'c', layerId: 'roads' }] }))
+    act(() => result.current.onFocus())
+    expect(result.current.activeFeatureId).toBe('c') // selected beats last-active
+    unmount(); el.remove()
+  })
+
+  it('restores last active position when nothing is selected', () => {
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    act(() => result.current.onFocus())
+    fireKey(el, 'ArrowDown') // last active = 'b'
+    act(() => result.current.onBlur())
+    act(() => result.current.onFocus())
+    expect(result.current.activeFeatureId).toBe('b')
+    unmount(); el.remove()
+  })
+
+  it('falls back to first item when previous active is no longer in the list', () => {
+    const eb = makeEventBus()
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, rerender, unmount } = renderHook(
+      ({ items }) => useFeatureFocus({ ...refs, items, eventBus: eb }),
+      { initialProps: { items: ITEMS } }
+    )
+    act(() => result.current.onFocus())
+    fireKey(el, 'ArrowDown') // active = 'b'
+    act(() => result.current.onBlur())
+    const NEW_ITEMS = [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }]
+    rerender({ items: NEW_ITEMS })
+    act(() => result.current.onFocus())
+    expect(result.current.activeFeatureId).toBe('x')
+    unmount(); el.remove()
   })
 })
 
@@ -432,6 +487,75 @@ describe('useFeatureFocus — Enter and Space keys', () => {
     const stopSpy = jest.spyOn(event, 'stopPropagation')
     act(() => el.dispatchEvent(event))
     expect(stopSpy).toHaveBeenCalled()
+    unmount()
+  })
+})
+
+// ─── useFeatureFocus — items change while focused ─────────────────────────────
+
+describe('useFeatureFocus — items change while focused', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  const setupRerender = (initialItems) => {
+    const eb = makeEventBus()
+    const refs = makeRefs()
+    document.body.appendChild(refs.featuresRef.current)
+    const { result, rerender, unmount } = renderHook(
+      ({ items }) => useFeatureFocus({ ...refs, items, eventBus: eb }),
+      { initialProps: { items: initialItems } }
+    )
+    return { eb, result, rerender, unmount }
+  }
+
+  it('keeps current active item when it is still in the updated list', () => {
+    const { result, rerender, unmount } = setupRerender(ITEMS)
+    act(() => result.current.onFocus()) // active = 'a'
+    act(() => { rerender({ items: [{ id: 'a', label: 'A updated' }, { id: 'd', label: 'D' }] }) })
+    expect(result.current.activeFeatureId).toBe('a')
+    unmount()
+  })
+
+  it('re-picks by priority when current active item leaves the list — first selected wins', () => {
+    const { eb, result, rerender, unmount } = setupRerender(ITEMS)
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'c', layerId: 'l' }] }))
+    act(() => result.current.onFocus()) // active = 'a' (first, no prev)
+    act(() => { rerender({ items: [{ id: 'c', label: 'C' }, { id: 'd', label: 'D' }] }) }) // 'a' gone
+    expect(result.current.activeFeatureId).toBe('c') // first selected
+    unmount()
+  })
+
+  it('re-picks first item when active leaves and no selected item is in the new list', () => {
+    const { result, rerender, unmount } = setupRerender(ITEMS)
+    act(() => result.current.onFocus()) // active = 'a'
+    act(() => { rerender({ items: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }] }) })
+    expect(result.current.activeFeatureId).toBe('x')
+    unmount()
+  })
+
+  it('does not change active item when the listbox is not focused', () => {
+    const { result, rerender, unmount } = setupRerender(ITEMS)
+    // never called onFocus — isFocusedRef stays false
+    act(() => { rerender({ items: [{ id: 'x', label: 'X' }] }) })
+    expect(result.current.activeFeatureId).toBeNull()
+    unmount()
+  })
+
+  it('emits map:setactivefeature with new id when re-pick occurs', () => {
+    const { eb, result, rerender, unmount } = setupRerender(ITEMS)
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    act(() => { rerender({ items: [{ id: 'x', label: 'X' }] }) }) // 'a' gone
+    expect(eb.emit).toHaveBeenCalledWith('map:setactivefeature', { id: 'x' })
+    unmount()
+  })
+
+  it('clears active and emits null when items list becomes empty while focused', () => {
+    const { eb, result, rerender, unmount } = setupRerender(ITEMS)
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    act(() => { rerender({ items: [] }) })
+    expect(result.current.activeFeatureId).toBeNull()
+    expect(eb.emit).toHaveBeenCalledWith('map:setactivefeature', { id: null })
     unmount()
   })
 })
