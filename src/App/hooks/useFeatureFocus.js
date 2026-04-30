@@ -24,18 +24,7 @@ const resolveEntryId = (items, lastActiveId, selectedIds) => {
   return items[0].id
 }
 
-export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus }) {
-  const [activeFeatureId, setActiveFeatureId] = useState(null)
-  const [selectedIds, setSelectedIds] = useState([])
-
-  const isFocusedRef = useRef(false)
-  const lastActiveIdRef = useRef(null) // preserved across blur; restores position on re-focus
-  const activeFeatureIdRef = useRef(null) // always-current for keydown closure
-  const selectedIdsRef = useRef([]) // always-current for items-change effect
-
-  useEffect(() => { activeFeatureIdRef.current = activeFeatureId }, [activeFeatureId])
-  useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
-
+function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveFeatureId, setSelectedIds }) {
   useEffect(() => {
     if (!eventBus) {
       return undefined
@@ -56,8 +45,9 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
       eventBus.off('interact:selectionchange', handleSelectionChange)
     }
   }, [eventBus])
+}
 
-  // When items change while focused, revalidate: keep current if still present, else re-pick
+function useItemsRevalidation ({ items, eventBus, isFocusedRef, lastActiveIdRef, activeFeatureIdRef, selectedIdsRef, setActiveFeatureId }) {
   useEffect(() => {
     if (!isFocusedRef.current) {
       return
@@ -75,13 +65,14 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
     setActiveFeatureId(nextId)
     eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: nextId })
   }, [items]) // NOSONAR — eventBus/selectedIds consumed via refs to avoid spurious re-runs on selection change
+}
 
+function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId }) {
   useEffect(() => {
     const listboxEl = featuresRef.current
     if (!listboxEl) {
       return undefined
     }
-
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault()
@@ -102,10 +93,45 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
         // No action
       }
     }
-
     listboxEl.addEventListener('keydown', handleKeyDown)
     return () => { listboxEl.removeEventListener('keydown', handleKeyDown) }
   }, [viewportRef, featuresRef, items, eventBus])
+}
+
+// Any pointer interaction on the map (pan, zoom, click on feature or empty space) should
+// hand focus back to the viewport so the listbox focus ring is cleared.
+function useMapInteractionBlur ({ viewportRef, featuresRef, isFocusedRef }) {
+  useEffect(() => {
+    const el = viewportRef.current
+    if (!el) {
+      return undefined
+    }
+    const handlePointerDown = (event) => {
+      if (isFocusedRef.current && !featuresRef.current?.contains(event.target)) {
+        viewportRef.current?.focus()
+      }
+    }
+    el.addEventListener('pointerdown', handlePointerDown)
+    return () => { el.removeEventListener('pointerdown', handlePointerDown) }
+  }, [viewportRef, featuresRef])
+}
+
+export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus }) {
+  const [activeFeatureId, setActiveFeatureId] = useState(null)
+  const [selectedIds, setSelectedIds] = useState([])
+
+  const isFocusedRef = useRef(false)
+  const lastActiveIdRef = useRef(null) // preserved across blur; restores position on re-focus
+  const activeFeatureIdRef = useRef(null) // always-current for keydown closure
+  const selectedIdsRef = useRef([]) // always-current for items-change effect
+
+  useEffect(() => { activeFeatureIdRef.current = activeFeatureId }, [activeFeatureId])
+  useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
+
+  useEventBusListeners({ eventBus, lastActiveIdRef, setActiveFeatureId, setSelectedIds })
+  useItemsRevalidation({ items, eventBus, isFocusedRef, lastActiveIdRef, activeFeatureIdRef, selectedIdsRef, setActiveFeatureId })
+  useKeyboardNavigation({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId })
+  useMapInteractionBlur({ viewportRef, featuresRef, isFocusedRef })
 
   const onFocus = () => {
     isFocusedRef.current = true

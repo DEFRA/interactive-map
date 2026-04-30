@@ -21,10 +21,14 @@ const makeEventBus = () => {
   }
 }
 
-const makeRefs = ({ viewportFocus } = {}) => ({
-  viewportRef: { current: { focus: viewportFocus ?? jest.fn() } },
-  featuresRef: { current: document.createElement('ul') }
-})
+const makeRefs = ({ viewportFocus } = {}) => {
+  const viewportEl = document.createElement('div')
+  viewportEl.focus = viewportFocus ?? jest.fn()
+  return {
+    viewportRef: { current: viewportEl },
+    featuresRef: { current: document.createElement('ul') }
+  }
+}
 
 const fireKey = (el, key) => {
   let event
@@ -155,7 +159,8 @@ describe('useFeatureFocus — onBlur', () => {
 
 describe('useFeatureFocus — keydown listener lifecycle', () => {
   it('does not attach listener when featuresRef.current is null', () => {
-    const refs = { viewportRef: { current: { focus: jest.fn() } }, featuresRef: { current: null } }
+    const refs = makeRefs()
+    refs.featuresRef = { current: null }
     const spy = jest.spyOn(document.body, 'addEventListener')
     renderHook(() => useFeatureFocus(refs))
     expect(spy).not.toHaveBeenCalledWith('keydown', expect.any(Function))
@@ -445,6 +450,57 @@ describe('useFeatureFocus — interact:selectionchange listener', () => {
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'a', layerId: 'roads' }] }))
     expect(result.current.activeFeatureId).toBeNull()
   })
+})
+
+// ─── useFeatureFocus — map interaction returns focus to viewport ──────────────
+
+describe('useFeatureFocus — map pointerdown returns focus to viewport', () => {
+  const pointerDown = (target) => act(() => {
+    target.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }))
+  })
+
+  it('focuses the viewport when pointer lands on the map while listbox is focused', () => {
+    const viewportFocus = jest.fn()
+    const refs = makeRefs({ viewportFocus })
+    document.body.appendChild(refs.viewportRef.current)
+    const mapCanvas = document.createElement('canvas')
+    refs.viewportRef.current.appendChild(mapCanvas)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    act(() => result.current.onFocus())
+    viewportFocus.mockClear()
+    pointerDown(mapCanvas)
+    expect(viewportFocus).toHaveBeenCalled()
+    unmount()
+  })
+
+  it('does not move focus when pointer lands inside the listbox', () => {
+    const viewportFocus = jest.fn()
+    const refs = makeRefs({ viewportFocus })
+    document.body.appendChild(refs.viewportRef.current)
+    refs.viewportRef.current.appendChild(refs.featuresRef.current)
+    const option = document.createElement('li')
+    refs.featuresRef.current.appendChild(option)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    act(() => result.current.onFocus())
+    viewportFocus.mockClear()
+    pointerDown(option)
+    expect(viewportFocus).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  it('does not move focus when pointer fires while listbox is not focused', () => {
+    const viewportFocus = jest.fn()
+    const refs = makeRefs({ viewportFocus })
+    document.body.appendChild(refs.viewportRef.current)
+    const mapCanvas = document.createElement('canvas')
+    refs.viewportRef.current.appendChild(mapCanvas)
+    const { unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    pointerDown(mapCanvas)
+    expect(viewportFocus).not.toHaveBeenCalled()
+    unmount()
+  })
+
+  afterEach(() => { document.body.innerHTML = '' })
 })
 
 // ─── useFeatureFocus — Enter and Space keys ───────────────────────────────────

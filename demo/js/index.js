@@ -54,10 +54,10 @@ const interactPlugin = createInteractPlugin({
 		// labelProperty: 'gid'
 		// idProperty: 'gid'
 	},
-	{
-		layerId: 'hedge-control',
-		// idProperty: 'id'
-	},
+	// {
+	// 	layerId: 'hedge-control',
+	// 	idProperty: 'id'
+	// },
 	// {
 	// 	layerId: 'OS/TopographicArea_1/Agricultural Land',
 	// 	idProperty: 'TOID'
@@ -71,7 +71,7 @@ const interactPlugin = createInteractPlugin({
 	}
 	],
 	debug: true,
-	interactionModes: ['selectMarker', 'placeMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
+	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
 	multiSelect: true,
 	deselectOnClickOutside: true
 })
