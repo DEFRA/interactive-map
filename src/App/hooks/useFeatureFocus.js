@@ -155,9 +155,9 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
   const [selectedIds, setSelectedIds] = useState([])
 
   const isFocusedRef = useRef(false)
-  const lastActiveIdRef = useRef(null)    // preserved across blur; restores position on re-focus
+  const lastActiveIdRef = useRef(null) // preserved across blur; restores position on re-focus
   const activeFeatureIdRef = useRef(null) // always-current for keydown closure
-  const selectedIdsRef = useRef([])       // always-current for items-change effect
+  const selectedIdsRef = useRef([]) // always-current for items-change effect
 
   useEffect(() => { activeFeatureIdRef.current = activeFeatureId }, [activeFeatureId])
   useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
