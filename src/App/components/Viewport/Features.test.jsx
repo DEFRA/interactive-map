@@ -8,6 +8,7 @@ jest.mock('../../store/configContext.js', () => ({ useConfig: jest.fn() }))
 const APP_ID = 'test-app'
 const LISTBOX = '[role="listbox"]' // NOSONAR
 const OPTION = '[role="option"]' // NOSONAR
+const ARIA_SELECTED = 'aria-selected'
 const ITEMS = [
   { id: 'f1', label: 'Feature One' },
   { id: 'f2', label: 'Feature Two' }
@@ -46,22 +47,22 @@ describe('Features — rendering', () => {
   it('sets aria-selected on items present in selectedIds', () => {
     const { container } = render(<Features items={ITEMS} selectedIds={['f1']} />)
     const options = container.querySelectorAll(OPTION)
-    expect(options[0]).toHaveAttribute('aria-selected', 'true')
-    expect(options[1]).toHaveAttribute('aria-selected', 'false')
+    expect(options[0]).toHaveAttribute(ARIA_SELECTED, 'true')
+    expect(options[1]).toHaveAttribute(ARIA_SELECTED, 'false')
   })
 
   it('sets aria-selected on multiple items when selectedIds has multiple entries', () => {
     const { container } = render(<Features items={ITEMS} selectedIds={['f1', 'f2']} />)
     const options = container.querySelectorAll(OPTION)
-    expect(options[0]).toHaveAttribute('aria-selected', 'true')
-    expect(options[1]).toHaveAttribute('aria-selected', 'true')
+    expect(options[0]).toHaveAttribute(ARIA_SELECTED, 'true')
+    expect(options[1]).toHaveAttribute(ARIA_SELECTED, 'true')
   })
 
   it('does not set aria-selected from activeFeatureId alone', () => {
     const { container } = render(<Features items={ITEMS} activeFeatureId='f1' />)
     const options = container.querySelectorAll(OPTION)
-    expect(options[0]).toHaveAttribute('aria-selected', 'false')
-    expect(options[1]).toHaveAttribute('aria-selected', 'false')
+    expect(options[0]).toHaveAttribute(ARIA_SELECTED, 'false')
+    expect(options[1]).toHaveAttribute(ARIA_SELECTED, 'false')
   })
 
   it('sets aria-activedescendant to the option element id when activeFeatureId is provided', () => {
@@ -96,6 +97,11 @@ describe('Features — rendering', () => {
     const ul = container.querySelector(LISTBOX) // NOSONAR
     expect(ul.getAttribute('tabIndex')).toBe('-1')
     expect(ul.getAttribute('aria-hidden')).toBe('true')
+  })
+
+  it('sets aria-describedby to the shared hints container id', () => {
+    const { container } = render(<Features />)
+    expect(container.querySelector(LISTBOX).getAttribute('aria-describedby')).toBe(`${APP_ID}-keyboard-desc`) // NOSONAR
   })
 })
 

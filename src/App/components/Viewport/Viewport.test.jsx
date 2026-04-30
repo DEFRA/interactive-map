@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, cleanup } from '@testing-library/react'
+import { render, cleanup, fireEvent } from '@testing-library/react'
 import { Viewport } from './Viewport.jsx'
 import { useConfig } from '../../store/configContext.js'
 import { useApp } from '../../store/appContext.js'
@@ -19,13 +19,15 @@ jest.mock('../../hooks/useMapEvents.js', () => ({ useMapEvents: jest.fn() }))
 jest.mock('../CrossHair/CrossHair', () => ({ CrossHair: jest.fn(() => <div data-testid='cross-hair' />) }))
 jest.mock('../Markers/Markers', () => ({ Markers: jest.fn(() => <div data-testid='markers' />) }))
 
+const KEYBOARD_HINT_TEXT = 'Test keyboad hint text'
+
 const mockMapProvider = { initMap: jest.fn(), updateMap: jest.fn(), clearHighlightedLabel: jest.fn() }
 
 function setupHookMocks (mainEl, viewportEl) {
   useConfig.mockReturnValue({
     id: 'test-map',
     mapLabel: 'Test Map',
-    keyboardHintText: 'Press arrow keys',
+    keyboardHintText: KEYBOARD_HINT_TEXT,
     mapProvider: mockMapProvider
   })
   useApp.mockReturnValue({
@@ -57,7 +59,7 @@ function renderViewport () {
   const safeZone = container.querySelector('.im-c-viewport__safezone')
   const crossHair = container.querySelector('[data-testid="cross-hair"]')
   const markers = container.querySelector('[data-testid="markers"]')
-  return { viewport, mapContainer, safeZone, crossHair, markers, rerender }
+  return { container, viewport, mapContainer, safeZone, crossHair, markers, rerender }
 }
 
 describe('Viewport rendering', () => {
@@ -95,7 +97,7 @@ describe('Viewport rendering', () => {
 
   it('sets aria-describedby to the shared hints container id', () => {
     const { viewport } = renderViewport()
-    expect(viewport).toHaveAttribute('aria-describedby', 'test-map-hints')
+    expect(viewport).toHaveAttribute('aria-describedby', 'test-map-keyboard-desc')
   })
 
   it('calls hint() with keyboardHintText when viewport gains keyboard focus', () => {
@@ -103,7 +105,7 @@ describe('Viewport rendering', () => {
     renderViewport()
     const { onViewportFocusChange } = useKeyboardHint.mock.calls[0][0]
     onViewportFocusChange(true)
-    expect(hint).toHaveBeenCalledWith('Press arrow keys', { duration: 0 })
+    expect(hint).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
   })
 
   it('calls hintManager.dismiss() when viewport loses focus', () => {
@@ -144,6 +146,20 @@ describe('Viewport interactions', () => {
     useMapEvents.mockImplementationOnce((handlers) => handlers['map:click']?.({}))
     renderViewport()
     expect(clearMock).toHaveBeenCalled()
+  })
+
+  it('calls hint() when the features listbox gains focus', () => {
+    const { hint } = useService()
+    const { container } = renderViewport()
+    fireEvent.focus(container.querySelector('[role="listbox"]'))
+    expect(hint).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
+  })
+
+  it('calls hintManager.dismiss() when the features listbox loses focus', () => {
+    const { hintManager } = useService()
+    const { container } = renderViewport()
+    fireEvent.blur(container.querySelector('[role="listbox"]'))
+    expect(hintManager.dismiss).toHaveBeenCalled()
   })
 
   it('focuses viewport when mode changes', () => {

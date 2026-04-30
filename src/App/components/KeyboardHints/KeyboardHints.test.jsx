@@ -23,7 +23,7 @@ const setup = ({ mainEl = document.createElement('div') } = {}) => {
       return () => {}
     })
   }
-  useConfig.mockReturnValue({ id: 'test-map' })
+  useConfig.mockReturnValue({ id: 'test-map', keyboardHintText: '<kbd>Alt</kbd> + <kbd>K</kbd>' })
   useService.mockReturnValue({ hintManager: mockHintManager })
   useApp.mockReturnValue({ layoutRefs: { mainRef: { current: mainEl } } })
   if (mainEl) document.body.appendChild(mainEl)
@@ -42,6 +42,14 @@ describe('KeyboardHints — rendering', () => {
     const mainEl = setup()
     render(<KeyboardHints />)
     expect(mainEl.querySelector(CONTAINER_ID)).toBeTruthy()
+  })
+
+  it('renders a persistent keyboard-desc span with the hint text', () => {
+    const mainEl = setup()
+    render(<KeyboardHints />)
+    const desc = mainEl.querySelector('#test-map-keyboard-desc')
+    expect(desc).toBeTruthy()
+    expect(desc.innerHTML).toBe('<kbd>Alt</kbd> + <kbd>K</kbd>')
   })
 
   it('renders no hint content when there is no active hint', () => {

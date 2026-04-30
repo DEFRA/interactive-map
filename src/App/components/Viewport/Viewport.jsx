@@ -27,7 +27,10 @@ export const Viewport = () => {
   const featuresRef = useRef(null)
 
   const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
-  const { activeFeatureId, selectedIds, onFocus: onFeaturesFocus, onBlur: onFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus })
+  const { activeFeatureId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus })
+
+  const onFeaturesFocus = () => { handleFeaturesFocus(); hint(keyboardHintText, { duration: 0 }) }
+  const onFeaturesBlur = () => { handleFeaturesBlur(); hintManager.dismiss() }
 
   useKeyboardShortcuts(layoutRefs.viewportRef)
 
@@ -66,7 +69,7 @@ export const Viewport = () => {
         onFocus={handleFocus}
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
-        aria-describedby={`${id}-hints`}
+        aria-describedby={`${id}-keyboard-desc`}
         aria-controls={`${id}-features`}
       >
         <div className='im-c-viewport__map-container' ref={mapContainerRef} aria-hidden='true' />

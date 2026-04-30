@@ -14,7 +14,7 @@ import { useApp } from '../../store/appContext.js'
  * so aria-describedby references remain valid even when no hint is showing.
  */
 export const KeyboardHints = () => {
-  const { id } = useConfig()
+  const { id, keyboardHintText } = useConfig()
   const { hintManager } = useService()
   const { layoutRefs } = useApp()
   const [activeHint, setActiveHint] = useState(null)
@@ -30,13 +30,20 @@ export const KeyboardHints = () => {
   }
 
   return createPortal(
-    <div id={`${id}-hints`} className='im-c-keyboard-hints'>
-      {activeHint && (
-        <div
-          className='im-c-keyboard-hints__hint'
-          dangerouslySetInnerHTML={{ __html: activeHint.html }}
-        />
-      )}
+    <div className='im-o-keyboard-hints'>
+      <div id={`${id}-hints`} className='im-c-keyboard-hints'>
+        {activeHint && (
+          <div
+            className='im-c-keyboard-hints__hint'
+            dangerouslySetInnerHTML={{ __html: activeHint.html }}
+          />
+        )}
+      </div>
+      <div
+        id={`${id}-keyboard-desc`}
+        className='im-u-visually-hidden'
+        dangerouslySetInnerHTML={{ __html: keyboardHintText }}
+      />
     </div>,
     layoutRefs.mainRef.current
   )
