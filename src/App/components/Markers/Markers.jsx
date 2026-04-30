@@ -6,12 +6,13 @@ import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { scaleFactor } from '../../../config/appConfig.js'
 import { isStandaloneLabel } from '../../../utils/symbolUtils.js'
+import { EVENTS } from '../../../config/events.js'
 import LabelMarker from './LabelMarker.jsx'
 import SymbolLabelMarker from './SymbolLabelMarker.jsx'
 import SymbolMarker from './SymbolMarker.jsx'
 
 // Marker properties handled internally — excluded from style value resolution
-const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'selectedWidth', 'label', 'showLabel'])
+const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'label', 'showLabel'])
 
 const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
   const svgContent = marker.symbolSvgContent || defaults.symbolSvgContent
@@ -21,19 +22,24 @@ const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
 }
 
 const resolveViewBox = (marker, defaults, symbolDef) =>
-  marker.viewBox || defaults.viewBox || symbolDef?.viewBox || '0 0 38 38'
+  marker.viewBox || defaults.viewBox || symbolDef?.viewBox || '0 0 44 44'
 
 const resolveAnchor = (marker, defaults, symbolDef) =>
   marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
 
-const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected) => {
+const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected, isActive) => {
   const symbolDef = resolveSymbolDef(marker, defaults, symbolRegistry)
   const styleValues = Object.fromEntries(
     Object.entries(marker).filter(([k]) => !INTERNAL_KEYS.has(k))
   )
-  const resolvedSvg = isSelected
-    ? symbolRegistry.resolveSelected(symbolDef, styleValues, mapStyle)
-    : symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
+  let resolvedSvg
+  if (isActive) {
+    resolvedSvg = symbolRegistry.resolveActive(symbolDef, styleValues, mapStyle)
+  } else if (isSelected) {
+    resolvedSvg = symbolRegistry.resolveSelected(symbolDef, styleValues, mapStyle)
+  } else {
+    resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
+  }
   const viewBox = resolveViewBox(marker, defaults, symbolDef)
   const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
   const anchor = resolveAnchor(marker, defaults, symbolDef)
@@ -52,16 +58,20 @@ export const Markers = () => {
 
   const [canSelectMarker, setCanSelectMarker] = useState(false)
   const [selectedMarkers, setSelectedMarkers] = useState([])
+  const [activeMarkerId, setActiveMarkerId] = useState(null)
   const viewportRef = useRef(null)
 
   useEffect(() => {
     const handleActive = ({ active, interactionModes = [] }) => setCanSelectMarker(active && interactionModes.includes('selectMarker'))
     const handleSelectionChange = ({ selectedMarkers: next = [] }) => setSelectedMarkers(next)
+    const handleSetActive = ({ id: markerId }) => setActiveMarkerId(markerId)
     eventBus.on('interact:active', handleActive)
     eventBus.on('interact:selectionchange', handleSelectionChange)
+    eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
     return () => {
       eventBus.off('interact:active', handleActive)
       eventBus.off('interact:selectionchange', handleSelectionChange)
+      eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
     }
   }, [eventBus])
 
@@ -82,12 +92,13 @@ export const Markers = () => {
     <>
       {markers.items.map(marker => {
         const isSelected = selectedMarkers.includes(marker.id)
+        const isActive = marker.id === activeMarkerId
 
         if (isStandaloneLabel(marker)) {
           return <LabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} />
         }
 
-        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected)
+        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected, isActive)
 
         if (marker.showLabel && marker.label) {
           return <SymbolLabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />

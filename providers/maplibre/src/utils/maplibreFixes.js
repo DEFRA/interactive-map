@@ -5,6 +5,16 @@ export function cleanCanvas (map) {
   canvas.setAttribute('tabindex', -1) // If removed altogether Chrome can add a focus-visible style
   canvas.removeAttribute('aria-label')
   canvas.style.display = 'block'
+  // The map container is aria-hidden, but MapLibre's canvas inside it can still
+  // receive focus, triggering: "Blocked aria-hidden on an element because its
+  // descendant retained focus." Immediately blurring and returning focus to
+  // relatedTarget prevents the canvas from holding focus inside an aria-hidden subtree.
+  canvas.addEventListener('focus', (event) => { // NOSONAR
+    canvas.blur()
+    if (event.relatedTarget) {
+      event.relatedTarget.focus()
+    }
+  })
 }
 
 // Fix touch preventDefault console error

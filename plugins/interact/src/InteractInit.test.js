@@ -4,11 +4,13 @@ import { InteractInit } from './InteractInit.jsx'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
+import { useMapItemList } from './hooks/useMapItemList.js'
 import { attachEvents } from './events.js'
 
 jest.mock('./hooks/useInteractionHandlers.js')
 jest.mock('./hooks/useHighlightSync.js')
 jest.mock('./hooks/useHoverCursor.js')
+jest.mock('./hooks/useMapItemList.js')
 jest.mock('./events.js')
 
 describe('InteractInit', () => {
@@ -23,6 +25,7 @@ describe('InteractInit', () => {
     useInteractionHandlers.mockReturnValue({ handleInteraction: handleInteractionMock })
     useHighlightSync.mockReturnValue(undefined)
     useHoverCursor.mockReturnValue(undefined)
+    useMapItemList.mockReturnValue(undefined)
     attachEvents.mockReturnValue(cleanupMock)
 
     props = {

@@ -3,6 +3,5 @@ export const DEFAULTS = {
   interactionModes: ['selectMarker'],
   multiSelect: false,
   deselectOnClickOutside: false,
-  marker: {},
-  selectedStrokeWidth: 3
+  marker: {}
 }

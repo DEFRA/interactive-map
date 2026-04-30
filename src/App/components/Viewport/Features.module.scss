@@ -15,4 +15,17 @@
   @include tools.border-focus-base(
     $is-inset: true
   );
+
+  &[data-focus-visible="true"][aria-activedescendant]::after {
+    opacity: 0;
+  }
+
+  [role="option"] {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
 }

@@ -182,6 +182,10 @@ export default class EsriProvider {
     return queryVectorTileFeatures(this.view, point)
   }
 
+  getVisibleFeatures (_layerIds) {
+    return []
+  }
+
   // ==========================
   // Spatial helpers
   // ==========================

@@ -52,11 +52,11 @@ Inner SVG path content (no `<svg>` wrapper) to render instead of a registered sy
 // Using built-in tokens with per-style colours
 markers.add('id', coords, {
   symbolSvgContent: `
-    <path d="..." fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
-    <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
+    <path d="..." fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
+    <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
     <path d="..." fill="{{foregroundColor}}"/>
   `,
-  viewBox: '0 0 38 38',
+  viewBox: '0 0 44 44',
   anchor: [0.5, 1],
   backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' }
 })
@@ -72,16 +72,16 @@ markers.add('id', coords, {
 })
 ```
 
-`{{selectedColor}}` and `{{selectedWidth}}` are required to render the selected ring around the marker when it is in its selected state.
+`{{selectedColor}}` and `{{activeColor}}` are required to render the selection and focus rings.
 
 > [!NOTE]
-> `selectedColor` cannot be set per marker — it is controlled by `MapStyleConfig.selectedColor`.
+> `selectedColor` and `activeColor` cannot be set per marker — they are controlled by `MapStyleConfig`.
 
 ---
 
 ### `viewBox`
 **Type:** `string`
-**Default:** registered symbol's viewBox, or `'0 0 38 38'`
+**Default:** registered symbol's viewBox, or `'0 0 44 44'`
 
 SVG `viewBox` attribute for the symbol. Use alongside `symbolSvgContent` when your paths use a different coordinate space.
 
@@ -133,6 +133,6 @@ Whether to render a visible label bubble above the marker symbol. When `false`, 
 
 ### Colour and graphic properties
 
-`backgroundColor`, `foregroundColor`, `haloWidth`, `graphic`, `selectedWidth`, and any custom tokens are all supported.
+`backgroundColor`, `foregroundColor`, `graphic`, and any custom tokens are all supported.
 
 See [Symbol Config](./symbol-config.md) for the full property reference.

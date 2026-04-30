@@ -8,7 +8,8 @@ const initialState = {
   selectedFeatures: [],
   selectedMarkers: [],
   selectionBounds: null,
-  closeOnAction: true // Done or Cancel
+  closeOnAction: true, // Done or Cancel
+  listboxActiveItem: null // { featureId, layerId, idProperty, geometry } | null — ring shown but no selectionchange
 }
 
 const enable = (state, payload) => {
@@ -25,7 +26,8 @@ const disable = (state) => {
     enabled: false,
     selectedFeatures: [],
     selectedMarkers: [],
-    selectionBounds: null
+    selectionBounds: null,
+    listboxActiveItem: null
   }
 }
 
@@ -106,6 +108,8 @@ const clearSelectedFeatures = (state) => {
   }
 }
 
+const setListboxActive = (state, payload) => ({ ...state, listboxActiveItem: payload ?? null })
+
 /**
  * Explicitly select a marker. Has no effect if already selected.
  * In single-select mode, clears selectedFeatures and replaces the selection.
@@ -147,7 +151,8 @@ const actions = {
   UPDATE_SELECTED_BOUNDS: updateSelectedBounds,
   CLEAR_SELECTED_FEATURES: clearSelectedFeatures,
   SELECT_MARKER: selectMarker,
-  UNSELECT_MARKER: unselectMarker
+  UNSELECT_MARKER: unselectMarker,
+  SET_LISTBOX_ACTIVE: setListboxActive
 }
 
 export {

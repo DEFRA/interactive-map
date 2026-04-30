@@ -1,6 +1,8 @@
 import { renderHook, act } from '@testing-library/react'
 import { useFeatureItems } from './useFeatureItems.js'
 
+const SET_FEATURES = 'map:setfeatures' // NOSONAR
+
 const makeEventBus = () => {
   const listeners = {}
   return {
@@ -13,31 +15,33 @@ const makeEventBus = () => {
 // ─── useFeatureItems — initial state ─────────────────────────────────────────
 
 describe('useFeatureItems — initial state', () => {
-  it('returns an empty array before any event is received', () => {
+  it('returns empty items and multiselectable false before any event', () => {
     const { result } = renderHook(() => useFeatureItems(makeEventBus()))
-    expect(result.current).toEqual([])
+    expect(result.current.items).toEqual([])
+    expect(result.current.multiselectable).toBe(false)
   })
 
-  it('returns an empty array when eventBus is undefined', () => {
+  it('returns empty items and multiselectable false when eventBus is undefined', () => {
     const { result } = renderHook(() => useFeatureItems(undefined))
-    expect(result.current).toEqual([])
+    expect(result.current.items).toEqual([])
+    expect(result.current.multiselectable).toBe(false)
   })
 })
 
 // ─── useFeatureItems — event subscription ────────────────────────────────────
 
 describe('useFeatureItems — event subscription', () => {
-  it('subscribes to features:setItems on mount', () => {
+  it('subscribes to map:setfeatures on mount', () => {
     const eb = makeEventBus()
     renderHook(() => useFeatureItems(eb))
-    expect(eb.on).toHaveBeenCalledWith('features:setItems', expect.any(Function))
+    expect(eb.on).toHaveBeenCalledWith(SET_FEATURES, expect.any(Function))
   })
 
   it('unsubscribes on unmount', () => {
     const eb = makeEventBus()
     const { unmount } = renderHook(() => useFeatureItems(eb))
     unmount()
-    expect(eb.off).toHaveBeenCalledWith('features:setItems', expect.any(Function))
+    expect(eb.off).toHaveBeenCalledWith(SET_FEATURES, expect.any(Function))
   })
 
   it('does not subscribe when eventBus is undefined', () => {
@@ -47,29 +51,47 @@ describe('useFeatureItems — event subscription', () => {
   })
 })
 
-// ─── useFeatureItems — updates ────────────────────────────────────────────────
+// ─── useFeatureItems — items updates ─────────────────────────────────────────
 
-describe('useFeatureItems — updates', () => {
-  it('updates items when features:setItems is emitted', () => {
+describe('useFeatureItems — items updates', () => {
+  it('updates items when map:setfeatures is emitted', () => {
     const eb = makeEventBus()
     const { result } = renderHook(() => useFeatureItems(eb))
     const items = [{ id: 'a', label: 'Feature A' }, { id: 'b', label: 'Feature B' }]
-    act(() => eb.emit('features:setItems', { items }))
-    expect(result.current).toEqual(items)
+    act(() => eb.emit(SET_FEATURES, { items }))
+    expect(result.current.items).toEqual(items)
   })
 
   it('clears items when emitted with an empty array', () => {
     const eb = makeEventBus()
     const { result } = renderHook(() => useFeatureItems(eb))
-    act(() => eb.emit('features:setItems', { items: [{ id: 'a', label: 'A' }] }))
-    act(() => eb.emit('features:setItems', { items: [] }))
-    expect(result.current).toEqual([])
+    act(() => eb.emit(SET_FEATURES, { items: [{ id: 'a', label: 'A' }] }))
+    act(() => eb.emit(SET_FEATURES, { items: [] }))
+    expect(result.current.items).toEqual([])
   })
 
-  it('defaults to empty array when items key is missing from payload', () => {
+  it('defaults items to empty array when items key is missing from payload', () => {
     const eb = makeEventBus()
     const { result } = renderHook(() => useFeatureItems(eb))
-    act(() => eb.emit('features:setItems', {}))
-    expect(result.current).toEqual([])
+    act(() => eb.emit(SET_FEATURES, {}))
+    expect(result.current.items).toEqual([])
+  })
+})
+
+// ─── useFeatureItems — multiselectable updates ───────────────────────────────
+
+describe('useFeatureItems — multiselectable updates', () => {
+  it('sets multiselectable true when emitted with multiselectable: true', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items: [], multiselectable: true }))
+    expect(result.current.multiselectable).toBe(true)
+  })
+
+  it('defaults multiselectable to false when not present in payload', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items: [] }))
+    expect(result.current.multiselectable).toBe(false)
   })
 })

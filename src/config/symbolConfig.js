@@ -7,10 +7,17 @@
 export const symbolDefaults = {
   symbol: 'pin',
   backgroundColor: '#ca3535',
-  foregroundColor: '#ffffff',
-  haloWidth: '1',
-  selectedWidth: '6'
+  foregroundColor: '#ffffff'
 }
+
+/** Stroke width for the halo (background shape outline) in SVG units */
+export const HALO_STROKE_WIDTH = 2
+
+/** Stroke width for the selected state — symbol rings and feature highlight lines */
+export const SELECTED_STROKE_WIDTH = 3
+
+/** Stroke width for the active (keyboard cursor) state — double selected, extends 1× each side */
+export const ACTIVE_STROKE_WIDTH = SELECTED_STROKE_WIDTH * 2
 
 /**
  * Built-in graphic path data strings for use with the `graphic` token.
@@ -46,35 +53,35 @@ export const graphics = {
 }
 
 // ─── Built-in symbol definitions ─────────────────────────────────────────────
-// Each symbol uses a 38×38 viewBox. SVG templates use {{token}} placeholders
+// Each symbol uses a 44×44 viewBox. SVG templates use {{token}} placeholders
 // resolved at render time by the symbolRegistry.
 
 export const pin = {
   id: 'pin',
-  viewBox: '0 0 38 38',
+  viewBox: '0 0 44 44',
   anchor: [0.5, 0.9], // NOSONAR
   graphic: graphics.dot,
-  svg: `<path d="M19 33.499c-5.318-5-12-9.509-12-16.998 0-6.583 5.417-12 12-12s12 5.417 12 12c0 7.489-6.682 11.998-12 16.998z" fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
-  <path d="M19 33.499c-5.318-5-12-9.509-12-16.998 0-6.583 5.417-12 12-12s12 5.417 12 12c0 7.489-6.682 11.998-12 16.998z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
-  <g transform="translate(19, 16) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
+  svg: `<path d="M22 40.999c-3.621 0-8.306-5.864-10.258-8.3C9.02 29.302 6 23.66 6 19.002a16.01 16.01 0 0 1 16-16 16.01 16.01 0 0 1 16 16c0 4.658-3.02 10.3-5.742 13.697-1.952 2.437-6.637 8.3-10.258 8.3z" fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
+  <path d="M22 7.001a12.01 12.01 0 0 1 12 12c0 7.623-10.377 17.998-12 17.998S10 26.624 10 19.001a12.01 12.01 0 0 1 12-12z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
+  <g transform="translate(22, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
 }
 
 export const circle = {
   id: 'circle',
-  viewBox: '0 0 38 38',
+  viewBox: '0 0 44 44',
   anchor: [0.5, 0.5],
   graphic: graphics.dot,
-  svg: `<path d="M19 7C12.376 7 7 12.376 7 19s5.376 12 12 12a12.01 12.01 0 0 0 12-12A12.01 12.01 0 0 0 19 7z" fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
-  <path d="M19 7C12.376 7 7 12.376 7 19s5.376 12 12 12a12.01 12.01 0 0 0 12-12A12.01 12.01 0 0 0 19 7z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
-  <g transform="translate(19, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
+  svg: `<circle cx="22" cy="22" r="16" fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
+  <circle cx="22" cy="22" r="12" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
+  <g transform="translate(22, 22) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
 }
 
 export const square = {
   id: 'square',
-  viewBox: '0 0 38 38',
+  viewBox: '0 0 44 44',
   anchor: [0.5, 0.5],
   graphic: graphics.dot,
-  svg: `<path d="M28 7a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3h18z" fill="none" stroke="{{selectedColor}}" stroke-width="{{selectedWidth}}"/>
-  <path d="M28 7a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H10a3 3 0 0 1-3-3V10a3 3 0 0 1 3-3h18z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="{{haloWidth}}"/>
-  <g transform="translate(19, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
+  svg: `<path d="M13 6h18c3.863 0 7 3.137 7 7v18c0 3.863-3.137 7-7 7H13c-3.863 0-7-3.137-7-7V13c0-3.863 3.137-7 7-7" fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
+  <path d="M13 34a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3h18a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H13z" fill-rule="nonzero" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
+  <g transform="translate(22, 22) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
 }

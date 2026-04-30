@@ -124,12 +124,12 @@ describe('Markers — symbol resolution', () => {
     expect(svg.getAttribute('height')).toBe('60')
   })
 
-  it("falls back to '0 0 38 38' viewBox when none is provided", () => {
+  it("falls back to '0 0 44 44' viewBox when none is provided", () => {
     const sr = makeSymbolRegistry({
       get: jest.fn(() => ({ svg: '<circle/>' })),
       getDefaults: jest.fn(() => ({ symbol: 'pin' }))
     })
-    expect(setup({ markers: [makeMarker()], symbolRegistry: sr }).result.container.querySelector(SVG_SEL).getAttribute('viewBox')).toBe('0 0 38 38')
+    expect(setup({ markers: [makeMarker()], symbolRegistry: sr }).result.container.querySelector(SVG_SEL).getAttribute('viewBox')).toBe('0 0 44 44')
   })
 
   it.each([
@@ -167,6 +167,15 @@ describe('Markers — selection', () => {
     expect(result.container.querySelector(SVG_SEL)).toHaveClass(SELECTED_CLASS)
     expect(sr.resolveSelected).toHaveBeenCalled()
     expect(sr.resolve).not.toHaveBeenCalledAfter?.(sr.resolveSelected)
+  })
+
+  it('calls resolveActive when the marker is the active listbox item', () => {
+    const SET_ACTIVE = 'map:setactivefeature'
+    const sr = makeSymbolRegistry({ resolveActive: jest.fn(() => '<circle class="active"/>') })
+    const { eb } = setup({ markers: [makeMarker()], symbolRegistry: sr })
+    act(() => eb.emit(SET_ACTIVE, { id: MARKER_ID }))
+    expect(sr.resolveActive).toHaveBeenCalled()
+    expect(sr.resolveSelected).not.toHaveBeenCalled()
   })
 
   it('uses resolve (not resolveSelected) for unselected markers', () => {

@@ -119,6 +119,11 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
   }, [interactionModes, dispatch, markers, markerOptions, eventBus, deselectOnClickOutside])
 
   const handleInteraction = useCallback(({ point, coords }) => {
+    const debugFeatures = pluginState?.debug ? getFeaturesAtPoint(mapProvider, point, { radius: tolerance }) : null
+    if (debugFeatures) {
+      console.log(`--- Features at ${coords} ---`, debugFeatures) // NOSONAR
+    }
+
     if (interactionModes.includes('selectMarker')) {
       const markerHit = findMarkerAtPoint(markers, point, scale)
       if (markerHit) {
@@ -128,10 +133,7 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
     }
 
     if (interactionModes.includes('selectFeature') && layers.length > 0) {
-      const allFeatures = getFeaturesAtPoint(mapProvider, point, { radius: tolerance })
-      if (pluginState?.debug) {
-        console.log(`--- Features at ${coords} ---`, allFeatures)
-      }
+      const allFeatures = debugFeatures ?? getFeaturesAtPoint(mapProvider, point, { radius: tolerance })
       const match = findMatchingFeature(allFeatures, layerConfigMap)
       if (match) {
         processFeatureMatch(match)

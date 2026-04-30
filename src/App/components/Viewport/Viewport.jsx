@@ -32,8 +32,8 @@ export const Viewport = () => {
   // Local state for keyboard hint visibility
   const [keyboardHintVisible, setKeyboardHintVisible] = useState(false)
 
-  const featureItems = useFeatureItems(eventBus)
-  const { activeFeatureId, onFocus: onFeaturesFocus } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems })
+  const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
+  const { activeFeatureId, selectedIds, onFocus: onFeaturesFocus, onBlur: onFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus })
 
   // Attach map keyboard controls
   useKeyboardShortcuts(layoutRefs.viewportRef)
@@ -92,7 +92,7 @@ export const Viewport = () => {
           <Markers />
         </div>
       </div>
-      <Features ref={featuresRef} activeFeatureId={activeFeatureId} items={featureItems} onFocus={onFeaturesFocus} />
+      <Features ref={featuresRef} activeFeatureId={activeFeatureId} selectedIds={selectedIds} multiselectable={multiselectable} items={featureItems} onFocus={onFeaturesFocus} onBlur={onFeaturesBlur} />
     </>
   )
 }
