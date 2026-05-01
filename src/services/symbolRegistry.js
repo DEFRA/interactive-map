@@ -90,6 +90,22 @@ export const symbolRegistry = {
   },
 
   /**
+   * Clears all registered symbols (including built-ins). Mainly for testing purposes.
+   */
+  clear () {
+    symbols.clear()
+  },
+
+  /**
+   * Clears all registered symbols (including built-ins). Mainly for testing purposes.
+   */
+  initialise () {
+    this.register(pin)
+    this.register(circle)
+    this.register(square)
+  },
+
+  /**
    * Resolve a symbol's SVG string for normal (unselected, inactive) rendering.
    * Both selectedColor and activeColor are set to 'none' — all rings hidden.
    *
@@ -168,15 +184,15 @@ export const symbolRegistry = {
    * dataset.symbol is a string symbol ID (e.g. 'pin').
    * dataset.symbolSvgContent is inline SVG content for a custom symbol.
    *
-   * @param {Object} dataset
+   * @param {Object} style
    * @returns {Object|undefined}
    */
-  getSymbolDef (dataset) {
-    if (dataset.symbolSvgContent) {
-      return { svg: dataset.symbolSvgContent }
+  getSymbolDef (style) {
+    if (style.symbolSvgContent) {
+      return { svg: style.symbolSvgContent }
     }
-    if (dataset.symbol) {
-      return this.get(dataset.symbol)
+    if (style.symbol) {
+      return this.get(style.symbol)
     }
     return undefined
   },
@@ -275,6 +291,4 @@ export const symbolRegistry = {
   }
 }
 
-symbolRegistry.register(pin)
-symbolRegistry.register(circle)
-symbolRegistry.register(square)
+symbolRegistry.initialise()

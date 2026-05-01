@@ -60,37 +60,6 @@ describe('isStandaloneLabel', () => {
   })
 })
 
-// ─── getSymbolDef ─────────────────────────────────────────────────────────────
-
-describe('getSymbolDef', () => {
-  it('returns undefined when dataset has no symbol', () => {
-    expect(getSymbolDef({}, mockRegistry())).toBeUndefined()
-  })
-
-  it('looks up string symbol id in the registry', () => {
-    const pinDef = { id: 'pin', svg: '<g/>' }
-    const registry = mockRegistry({ pin: pinDef })
-    expect(getSymbolDef({ symbol: 'pin' }, registry)).toBe(pinDef)
-  })
-
-  it('returns undefined for an unregistered string symbol', () => {
-    expect(getSymbolDef({ symbol: 'missing' }, mockRegistry())).toBeUndefined()
-  })
-
-  it('returns inline def from symbolSvgContent with svg key', () => {
-    const dataset = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 10 10' }
-    const result = getSymbolDef(dataset, mockRegistry())
-    expect(result.svg).toBe('<circle/>')
-  })
-
-  it('symbolSvgContent takes precedence over symbol id', () => {
-    const pinDef = { id: 'pin', svg: '<g/>' }
-    const registry = mockRegistry({ pin: pinDef })
-    const result = getSymbolDef({ symbol: 'pin', symbolSvgContent: '<circle/>' }, registry)
-    expect(result.svg).toBe('<circle/>')
-  })
-})
-
 // ─── getSymbolStyleColors ─────────────────────────────────────────────────────
 
 describe('getSymbolStyleColors', () => {

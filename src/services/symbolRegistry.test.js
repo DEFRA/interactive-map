@@ -1,5 +1,5 @@
 import { symbolRegistry } from './symbolRegistry.js'
-import { symbolDefaults } from '../config/symbolConfig.js'
+import { symbolDefaults, pin } from '../config/symbolConfig.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
 
@@ -9,6 +9,8 @@ const COLOR_OVERRIDE = '#ff0000'
 const FILL_OVERRIDE = `fill="${COLOR_OVERRIDE}"`
 
 beforeEach(() => {
+  symbolRegistry.clear()
+  symbolRegistry.initialise()
   symbolRegistry.setDefaults({})
 })
 
@@ -281,5 +283,32 @@ describe('symbolRegistry — graphic token', () => {
     const resolved = symbolRegistry.resolve(pin, {}, mapStyle)
     expect(resolved).toContain(`d="${pin.graphic}"`)
     expect(resolved).toContain('translate(22, 19) scale(0.8) translate(-8, -8)')
+  })
+})
+
+// ─── getSymbolDef ─────────────────────────────────────────────────────────────
+
+describe('getSymbolDef', () => {
+  it('returns undefined when dataset has no symbol', () => {
+    expect(symbolRegistry.getSymbolDef({})).toBeUndefined()
+  })
+
+  it('looks up string symbol id in the registry', () => {
+    expect(symbolRegistry.getSymbolDef({ symbol: 'pin' })).toBe(pin)
+  })
+
+  it('returns undefined for an unregistered string symbol', () => {
+    expect(symbolRegistry.getSymbolDef({ symbol: 'missing' })).toBeUndefined()
+  })
+
+  it('returns inline def from symbolSvgContent with svg key', () => {
+    const dataset = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 10 10' }
+    const result = symbolRegistry.getSymbolDef(dataset)
+    expect(result.svg).toBe('<circle/>')
+  })
+
+  it('symbolSvgContent takes precedence over symbol id', () => {
+    const result = symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSvgContent: '<circle/>' })
+    expect(result.svg).toBe('<circle/>')
   })
 })
