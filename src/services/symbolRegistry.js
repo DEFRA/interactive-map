@@ -160,18 +160,18 @@ export const symbolRegistry = {
  * Returns a deterministic image ID for a symbol in normal or selected state.
  * Based on the hash of the fully resolved SVG content and the pixel ratio.
  *
- * @param {Object} dataset
+ * @param {Object} style
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {boolean} [selected=false]
  * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor
  * @returns {string|null}
  */
-  getSymbolImageId (dataset, mapStyle, active = false, pixelRatio = 2) {
-    const symbolDef = this.getSymbolDef(dataset)
+  getSymbolImageId (style, mapStyle, active = false, pixelRatio = 2) {
+    const symbolDef = this.getSymbolDef(style)
     if (!symbolDef) {
       return null
     }
-    const styleColors = getSymbolStyleColors(dataset)
+    const styleColors = getSymbolStyleColors(style)
     const resolved = active
       ? this.resolveActive(symbolDef, styleColors, mapStyle)
       : this.resolve(symbolDef, styleColors, mapStyle)
@@ -179,10 +179,10 @@ export const symbolRegistry = {
   },
 
   /**
-   * Resolves the symbolDef for a dataset's symbol config.
+   * Resolves the symbolDef for a style's symbol config.
    *
-   * dataset.symbol is a string symbol ID (e.g. 'pin').
-   * dataset.symbolSvgContent is inline SVG content for a custom symbol.
+   * style.symbol is a string symbol ID (e.g. 'pin').
+   * style.symbolSvgContent is inline SVG content for a custom symbol.
    *
    * @param {Object} style
    * @returns {Object|undefined}
@@ -247,7 +247,7 @@ export const symbolRegistry = {
  * Rasterise one variant of a symbol to ImageData for use as a MapLibre image.
  * Results are cached by imageId so identical symbols are only rendered once.
  *
- * @param {Object} dataset - Dataset or marker config with symbol properties
+ * @param {Object} style - Dataset or marker config with symbol properties
  * @param {Object} mapStyle - Current map style config
  * @param {'normal'|'active'|'selected'} variant
  *   - `'normal'`   — no rings (default display)
@@ -256,12 +256,12 @@ export const symbolRegistry = {
  * @param {number} pixelRatio - Device pixel ratio × map size scale factor
  * @returns {Promise<{imageId: string, imageData: ImageData}|null>}
  */
-  async rasteriseSymbolImage (dataset, mapStyle, variant, pixelRatio) {
-    const symbolDef = this.getSymbolDef(dataset)
+  async rasteriseSymbolImage (style, mapStyle, variant, pixelRatio) {
+    const symbolDef = this.getSymbolDef(style)
     if (!symbolDef) {
       return null
     }
-    const styleColors = getSymbolStyleColors(dataset)
+    const styleColors = getSymbolStyleColors(style)
     let resolvedContent, prefix
     if (variant === 'active') {
       resolvedContent = this.resolveActive(symbolDef, styleColors, mapStyle)
@@ -278,7 +278,7 @@ export const symbolRegistry = {
 
     let imageData = imageDataCache.get(imageId)
     if (!imageData) {
-      const viewBox = getSymbolViewBox(dataset, symbolDef)
+      const viewBox = getSymbolViewBox(style, symbolDef)
       const [,, width, height] = viewBox.split(' ').map(Number)
       // Render at pixelRatio× to keep icons crisp at the current device DPI and map size.
       // MapLibre receives the matching pixelRatio so the image displays at its original logical size.
