@@ -26,7 +26,8 @@ const makeRefs = ({ viewportFocus } = {}) => {
   viewportEl.focus = viewportFocus ?? jest.fn()
   return {
     viewportRef: { current: viewportEl },
-    featuresRef: { current: document.createElement('ul') }
+    featuresRef: { current: document.createElement('ul') },
+    hintManager: { subscribe: jest.fn(() => jest.fn()), dismiss: jest.fn() }
   }
 }
 
@@ -198,7 +199,23 @@ describe('useFeatureFocus — unhandled keys', () => {
 // ─── useFeatureFocus — Escape key ────────────────────────────────────────────
 
 describe('useFeatureFocus — Escape key', () => {
-  it('focuses the viewport on Escape (active state is cleared by the subsequent onBlur)', () => {
+  it('dismisses hint on Escape when hint is visible', () => {
+    const refs = makeRefs()
+    refs.hintManager.subscribe.mockImplementation((fn) => {
+      fn({ html: 'test' })
+      return jest.fn()
+    })
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    act(() => result.current.onFocus())
+    fireKey(el, 'Escape')
+    expect(refs.hintManager.dismiss).toHaveBeenCalled()
+    expect(refs.viewportRef.current.focus).not.toHaveBeenCalled()
+    el.remove()
+  })
+
+  it('focuses the viewport on Escape when no hint is visible', () => {
     const viewportFocus = jest.fn()
     const refs = makeRefs({ viewportFocus })
     const el = refs.featuresRef.current
@@ -206,6 +223,7 @@ describe('useFeatureFocus — Escape key', () => {
     const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'Escape')
+    expect(refs.hintManager.dismiss).not.toHaveBeenCalled()
     expect(viewportFocus).toHaveBeenCalled()
     el.remove()
   })

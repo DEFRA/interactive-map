@@ -27,7 +27,7 @@ export const Viewport = () => {
   const featuresRef = useRef(null)
 
   const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
-  const { activeFeatureId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus })
+  const { activeFeatureId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus, hintManager })
 
   const onFeaturesFocus = () => { handleFeaturesFocus(); hint(keyboardHintText, { duration: 0 }) }
   const onFeaturesBlur = () => { handleFeaturesBlur(); hintManager.dismiss() }
