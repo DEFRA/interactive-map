@@ -8,6 +8,27 @@ const mapStyle = { id: STYLE_ID }
 const COLOR_OVERRIDE = '#ff0000'
 const FILL_OVERRIDE = `fill="${COLOR_OVERRIDE}"`
 
+beforeAll(() => {
+  globalThis.URL.createObjectURL = jest.fn(() => 'blob:mock')
+  globalThis.URL.revokeObjectURL = jest.fn()
+
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+    drawImage: jest.fn(),
+    getImageData: jest.fn((_x, _y, w, h) => ({ width: w, height: h }))
+  }))
+
+  globalThis.Image = class {
+    constructor (w, h) {
+      this.width = w
+      this.height = h
+      this._src = ''
+    }
+
+    get src () { return this._src }
+    set src (val) { this._src = val; this.onload?.() }
+  }
+})
+
 beforeEach(() => {
   symbolRegistry.clear()
   symbolRegistry.initialise()
@@ -310,5 +331,181 @@ describe('getSymbolDef', () => {
   it('symbolSvgContent takes precedence over symbol id', () => {
     const result = symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSvgContent: '<circle/>' })
     expect(result.svg).toBe('<circle/>')
+  })
+})
+
+// ─── getSymbolImageId ─────────────────────────────────────────────────────────
+
+describe('getSymbolImageId', () => {
+  it('returns null when dataset has no symbol', () => {
+    expect(symbolRegistry.getSymbolImageId({}, mapStyle)).toBeNull()
+  })
+
+  it('returns null for an unregistered symbol id', () => {
+    expect(symbolRegistry.getSymbolImageId({ symbol: 'does-not-exist' }, mapStyle)).toBeNull()
+  })
+
+  it('returns a string prefixed symbol- for normal state', () => {
+    const id = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    expect(typeof id).toBe('string')
+    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
+  })
+
+  it('returns a string prefixed symbol-act- for active state', () => {
+    const id = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true)
+    expect(typeof id).toBe('string')
+    expect(id).toMatch(/^symbol-act-[a-z0-9]+-\d+(\.\d+)?x$/)
+  })
+
+  it('normal and active ids differ for the same dataset', () => {
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true)
+    expect(normalId).not.toBe(activeId)
+  })
+
+  it('same dataset and style always produces the same id', () => {
+    const id1 = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    const id2 = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    expect(id1).toBe(id2)
+  })
+
+  it('different symbols produce different ids', () => {
+    const pinId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    const circleId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle)
+    expect(pinId).not.toBe(circleId)
+  })
+
+  it('different backgrounds produce different ids', () => {
+    const redId = symbolRegistry.getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#ff0000' }, mapStyle)
+    const blueId = symbolRegistry.getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#0000ff' }, mapStyle)
+    expect(redId).not.toBe(blueId)
+  })
+
+  it('resolves inline symbolSvgContent', () => {
+    const dataset = {
+      symbolSvgContent: '<circle cx="19" cy="19" r="12" fill="{{backgroundColor}}"/>',
+      symbolViewBox: '0 0 38 38',
+      symbolAnchor: [0.5, 0.5]
+    }
+    const id = symbolRegistry.getSymbolImageId(dataset, mapStyle)
+    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
+  })
+})
+
+describe('addSymbolsToMap', () => {
+  const makeMap = (existingIds = []) => ({
+    _activeSymbolImageMap: {},
+    _selectedSymbolImageMap: {},
+    hasImage: jest.fn((id) => existingIds.includes(id)),
+    addImage: jest.fn()
+  })
+
+  describe('registration', () => {
+    it('returns early and does not touch map for empty configs', async () => {
+      const map = makeMap()
+      await symbolRegistry.addSymbolsToMap(map, [], mapStyle)
+      expect(map.hasImage).not.toHaveBeenCalled()
+      expect(map.addImage).not.toHaveBeenCalled()
+    })
+
+    it('resets _activeSymbolImageMap and _selectedSymbolImageMap before processing', async () => {
+      const map = makeMap()
+      map._activeSymbolImageMap = { stale: 'entry' }
+      map._selectedSymbolImageMap = { stale: 'entry' }
+      await symbolRegistry.addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle)
+      expect(map._activeSymbolImageMap).not.toHaveProperty('stale')
+      expect(map._selectedSymbolImageMap).not.toHaveProperty('stale')
+    })
+
+    it('calls addImage for normal, active and selected variants', async () => {
+      const map = makeMap()
+      await symbolRegistry.addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle)
+      expect(map.addImage).toHaveBeenCalledTimes(3) // NOSONAR S109 — normal, active, selected
+      expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(Object), { pixelRatio: 2 })
+      expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-act-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(Object), { pixelRatio: 2 })
+      expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(Object), { pixelRatio: 2 })
+    })
+
+    it('populates _activeSymbolImageMap and _selectedSymbolImageMap with normal → variant id pairs', async () => {
+      const map = makeMap()
+      await symbolRegistry.addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle)
+      const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false)
+      const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true)
+      const selectedId = map._selectedSymbolImageMap[normalId]
+      expect(map._activeSymbolImageMap[normalId]).toBe(activeId)
+      expect(selectedId).toMatch(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/)
+    })
+
+    it('skips addImage when all three variant images are already registered', async () => {
+    // Run once to discover the selected image ID (not derivable without rasterising)
+      const setupMap = makeMap()
+      await symbolRegistry.addSymbolsToMap(setupMap, [{ symbol: 'circle' }], mapStyle)
+      const normalId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, false)
+      const activeId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, true)
+      const selectedId = setupMap._selectedSymbolImageMap[normalId]
+
+      const map = makeMap([normalId, activeId, selectedId])
+      await symbolRegistry.addSymbolsToMap(map, [{ symbol: 'circle' }], mapStyle)
+      expect(map.addImage).not.toHaveBeenCalled()
+    })
+
+    it('processes multiple configs independently', async () => {
+      const map = makeMap()
+      await symbolRegistry.addSymbolsToMap(map, [{ symbol: 'pin' }, { symbol: 'circle' }], mapStyle, symbolRegistry)
+      expect(map.addImage).toHaveBeenCalledTimes(6) // NOSONAR S109 — 2 configs × 3 variants each
+      expect(Object.keys(map._activeSymbolImageMap)).toHaveLength(2)
+      expect(Object.keys(map._selectedSymbolImageMap)).toHaveLength(2)
+    })
+  })
+
+  describe('null results and caching', () => {
+    it('does not call addImage when rasteriseSymbolImage returns null', async () => {
+    // getSymbolImageId (called twice — normal + active) needs a real symbolDef to produce imageIds,
+    // but rasteriseSymbolImage must get undefined from getSymbolDef so it returns null.
+    // The registry.get call order: [1] getSymbolImageId normal, [2] getSymbolImageId active,
+    // [3] rasteriseSymbolImage normal, [4] rasteriseSymbolImage active, [5] rasteriseSymbolImage selected.
+      const pinDef = symbolRegistry.get('pin')
+      const getSpy = jest.spyOn(symbolRegistry, 'get')
+        .mockReturnValueOnce(pinDef)
+        .mockReturnValueOnce(pinDef)
+        .mockReturnValueOnce(undefined)
+        .mockReturnValueOnce(undefined)
+        .mockReturnValueOnce(undefined)
+      const map = makeMap()
+      await symbolRegistry.addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle)
+      expect(map.addImage).not.toHaveBeenCalled()
+      getSpy.mockRestore()
+    })
+
+    it('skips config when symbolDef cannot be resolved', async () => {
+      const map = makeMap()
+      await symbolRegistry.addSymbolsToMap(map, [{ symbol: 'no-such-symbol' }], mapStyle)
+      expect(map.addImage).not.toHaveBeenCalled()
+      expect(map._activeSymbolImageMap).toEqual({})
+      expect(map._selectedSymbolImageMap).toEqual({})
+    })
+
+    it('reuses cached imageData when called again with the same pixelRatio', async () => {
+    // Use an unusual ratio so this test owns its cache entries
+      const uniqueRatio = 7
+      symbolRegistry.clear()
+      symbolRegistry.initialise()
+
+      const map1 = makeMap()
+      const getContextCallsBefore = HTMLCanvasElement.prototype.getContext.mock.calls.length
+      await symbolRegistry.addSymbolsToMap(map1, [{ symbol: 'pin' }], mapStyle, uniqueRatio)
+      const getContextCallsAfterFirst = HTMLCanvasElement.prototype.getContext.mock.calls.length
+      // Rasterisation ran — canvas was used
+      expect(getContextCallsAfterFirst).toBeGreaterThan(getContextCallsBefore)
+
+      // Second call with a fresh map (hasImage → false) but same ratio → cache hit
+      const map2 = makeMap()
+      await symbolRegistry.addSymbolsToMap(map2, [{ symbol: 'pin' }], mapStyle, uniqueRatio)
+      const getContextCallsAfterSecond = HTMLCanvasElement.prototype.getContext.mock.calls.length
+      // No new canvas — rasterisation was skipped via cache
+      expect(getContextCallsAfterSecond).toBe(getContextCallsAfterFirst)
+      // addImage still called because map2 has no pre-registered images
+      expect(map2.addImage).toHaveBeenCalledTimes(3) // NOSONAR S109 — normal, active, selected
+    })
   })
 })
