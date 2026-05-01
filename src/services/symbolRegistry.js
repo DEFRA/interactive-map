@@ -2,7 +2,7 @@ import { getValueForStyle } from '../utils/getValueForStyle.js'
 import { symbolDefaults, pin, circle, square, graphics } from '../config/symbolConfig.js'
 import { getSymbolStyleColors, getSymbolViewBox } from '../utils/symbolUtils.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
-import { rasteriseToImageData } from './rasteriseToImageData.js'
+import { rasteriseToImageData } from '../../providers/maplibre/src/utils/rasteriseToImageData.js'
 
 const symbols = new Map()
 // Module-level cache: imageId → ImageData. Avoids re-rasterising identical symbols.
