@@ -26,7 +26,24 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
-const pointData = {type: 'FeatureCollection',features: [{type: 'Feature',properties: { category:'prehistoric', name: 'Prehistoric feature' }, geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }},{ type: 'Feature', properties: { category: 'roman', name: 'Roman feature' }, geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }},{ type: 'Feature', properties: { category:'medieval', name: 'Medieval feature' }, geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} }]}
+const pointData = {
+	type: 'FeatureCollection',
+	features: [{
+		type: 'Feature',
+		properties:  { category:'prehistoric', name: 'Prehistoric feature' }, 
+		geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }
+	},
+	{ 
+		type: 'Feature', 
+		properties: { category: 'roman', name: 'Roman feature' }, 
+		geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }
+	},
+	{ 
+		type: 'Feature', 
+		properties: { category:'medieval', name: 'Medieval feature' }, 
+		geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} 
+	}]
+}
 
 const interactPlugin = createInteractPlugin({
 	layers: [{
@@ -257,7 +274,7 @@ const interactiveMap = new InteractiveMap('map', {
 	maxZoom: 20,
 	autoColorScheme: true,
 	// center: [-2.938769, 54.893806],
-	bounds: [-2.989707, 54.864555, -2.878635, 54.937635],
+	bounds: [-2.450804, 54.5599279, -2.403804, 54.6199279],
 	containerHeight: '650px',
 	transformRequest: transformTileRequest,
 	readMapText: true,

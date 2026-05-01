@@ -2,7 +2,7 @@
 import { hasSymbol } from '../../../../../../src/utils/symbolUtils.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 
-export { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox, getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
+export { hasSymbol, getSymbolStyleColors, getSymbolViewBox, getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
 
 // Re-export MapLibre-specific symbol utilities from the provider.
 // This is the single cross-boundary import in the adapter; in a separate-package
