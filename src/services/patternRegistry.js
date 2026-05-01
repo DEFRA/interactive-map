@@ -98,6 +98,7 @@ export const patternRegistry = {
     const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
     const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
     const effectiveRatio = pixelRatio * 2 // Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
+    // const effectiveRatio = Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
     return `pattern-${hashString(innerContent + fg + bg)}-${effectiveRatio}x`
   }
 }
