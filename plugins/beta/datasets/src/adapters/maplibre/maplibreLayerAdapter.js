@@ -364,7 +364,9 @@ export default class MaplibreLayerAdapter {
   // ─── Private ─────────────────────────────────────────────────────────────────
 
   get _pixelRatio () {
-    return this._mapProvider.map.getPixelRatio() * (scaleFactor[this._mapProvider.mapSize] || 1)
+    return this._mapProvider.map.getPixelRatio()
+    // const pixelRatio = this._mapProvider.map.getPixelRatio() * (scaleFactor[this._mapProvider.mapSize] || 1)
+    // return pixelRatio
   }
 
   _addLayers (dataset, mapStyle, pixelRatio) {

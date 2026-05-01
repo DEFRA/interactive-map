@@ -14,6 +14,7 @@ export function attachAppEvents ({
   }
 
   const handleSetPixelRatio = (pixelRatio) => {
+    console.log('Setting pixel ratio to', pixelRatio)
     map.setPixelRatio(pixelRatio)
   }
 
