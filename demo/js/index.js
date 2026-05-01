@@ -48,9 +48,11 @@ const pointData = {
 const interactPlugin = createInteractPlugin({
 	layers: [{
 		layerId: 'historic-monuments-prehistoric-symbol',
-		// labelProperty: 'name'
-		// idProperty: 'gid'
-	},{
+	}, {
+		layerId: 'historic-monuments-roman-symbol',
+	}, {
+		layerId: 'historic-monuments-medieval-symbol',
+	}, {
 		layerId: 'land-covers-110',
 		// labelProperty: 'gid'
 		// idProperty: 'gid'
