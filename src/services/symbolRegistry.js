@@ -198,52 +198,6 @@ export const symbolRegistry = {
   },
 
   /**
- * Register normal, active (both rings) and selected (black ring) symbol images.
- * Skips images that are already registered (safe to call on style change).
- * Updates `map._activeSymbolImageMap` (normal→active) and `map._selectedSymbolImageMap` (normal→selected).
- *
- * Callers are responsible for resolving sublayers before calling this function
- * (see `getSymbolConfigs` in the datasets plugin adapter).
- *
- * @param {Object} map - MapLibre map instance
- * @param {Object[]} styleArray - Flat list of datasets/merged-sublayers that have a symbol config
- * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
- * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)
- * @returns {Promise<void>}
- */
-  async addSymbolsToMap (map, styleArray, mapStyle, pixelRatio = 2) {
-    if (!styleArray.length) {
-      return
-    }
-
-    map._activeSymbolImageMap = {}
-    map._selectedSymbolImageMap = {}
-
-    await Promise.all(styleArray.flatMap(config => {
-      const normalId = this.getSymbolImageId(config, mapStyle, false, pixelRatio)
-      const activeId = this.getSymbolImageId(config, mapStyle, true, pixelRatio)
-      if (normalId && activeId) {
-        map._activeSymbolImageMap[normalId] = activeId
-      }
-      return ['normal', 'active', 'selected'].map(async (variant) => {
-        const imageId = variant === 'active' ? activeId : normalId
-        if (variant !== 'selected' && (!imageId || map.hasImage(imageId))) {
-          return
-        }
-        const result = await this.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
-        if (result) {
-          if (variant === 'selected' && normalId) {
-            map._selectedSymbolImageMap[normalId] = result.imageId
-          }
-          if (!map.hasImage(result.imageId)) {
-            map.addImage(result.imageId, result.imageData, { pixelRatio })
-          }
-        }
-      })
-    }))
-  },
-
-  /**
  * Rasterise one variant of a symbol to ImageData for use as a MapLibre image.
  * Results are cached by imageId so identical symbols are only rendered once.
  *

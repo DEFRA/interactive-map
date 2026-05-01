@@ -13,6 +13,7 @@ import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
+import { addSymbolsToMap } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 
 /**
@@ -325,7 +326,7 @@ export default class MapLibreProvider {
    */
   async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry) {
     const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
-    return symbolRegistry.addSymbolsToMap(this.map, symbolConfigs, mapStyle, pixelRatio)
+    return addSymbolsToMap(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
   }
 
   /**
