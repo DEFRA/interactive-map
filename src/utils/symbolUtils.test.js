@@ -1,15 +1,10 @@
 import {
   hasSymbol,
   isStandaloneLabel,
-  getSymbolDef,
   getSymbolStyleColors,
   getSymbolViewBox,
   getSymbolAnchor
 } from './symbolUtils.js'
-
-const mockRegistry = (defs = {}) => ({
-  get: jest.fn((id) => defs[id])
-})
 
 // ─── hasSymbol ────────────────────────────────────────────────────────────────
 
