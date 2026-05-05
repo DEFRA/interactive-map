@@ -15,9 +15,7 @@ export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => 
 
   const handleMapSizeClick = (newMapSize) => {
     eventBus.emit(EVENTS.MAP_SET_SIZE, newMapSize)
-    const newPixelRatio = window.devicePixelRatio * scaleFactor[newMapSize]
-    console.log('handleMapSizeClick newPixelRatio', newPixelRatio)
-    eventBus.emit(EVENTS.MAP_SET_PIXEL_RATIO, newPixelRatio)
+    eventBus.emit(EVENTS.MAP_SET_PIXEL_RATIO, window.devicePixelRatio * scaleFactor[newMapSize])
   }
 
   return (

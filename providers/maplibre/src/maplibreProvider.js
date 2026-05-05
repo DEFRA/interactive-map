@@ -341,8 +341,7 @@ export default class MapLibreProvider {
    * @returns {Promise<void>}
    */
   async addPatternsToMap (patternConfigs, mapStyleId, patternRegistry) {
-    // const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
-    const pixelRatio = this.map.getPixelRatio()
+    const pixelRatio = this.map.getPixelRatio() || 1
     return addPatternsToMap(this.map, patternConfigs, mapStyleId, patternRegistry, pixelRatio)
   }
 
