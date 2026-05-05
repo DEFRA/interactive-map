@@ -4,7 +4,6 @@
  */
 
 import { DEFAULTS, supportedShortcuts } from './defaults.js'
-import { scaleFactor } from '../../../src/config/appConfig.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
