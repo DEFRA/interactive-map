@@ -4,7 +4,6 @@ import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
 import { getPatternConfigs, hasPattern } from './patternImages.js'
 import { getSymbolConfigs } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
-import { scaleFactor } from '../../../../../../src/config/appConfig.js'
 
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
