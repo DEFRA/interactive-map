@@ -30,6 +30,19 @@
   }
 }
 
+/* Override prose-scope heading sizes to match pre-theme-downgrade for homepage sections. */
+@import 'govuk-frontend/dist/govuk/base';
+
+.govuk-template .app-prose-scope .app-section h2 {
+  @include govuk-font($size: 36, $weight: bold);
+  @include govuk-responsive-margin(6, 'bottom');
+}
+
+.govuk-template .app-prose-scope .app-section h3 {
+  @include govuk-font($size: 24, $weight: bold);
+  @include govuk-responsive-margin(4, 'bottom');
+}
+
 /* Hero image */
 .govuk-template--rebranded .app-masthead .govuk-grid-row {
   @media (min-width: 48.125em) {
