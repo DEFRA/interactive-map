@@ -1,5 +1,6 @@
 let lastInterfaceType = window.matchMedia('(pointer: coarse)').matches ? 'touch' : 'unknown'
 const interfaceTypeListeners = new Set()
+const interfaceTypeImmediateListeners = new Set()
 
 // -----------------------------------------------------------------------------
 // Internal (not exported)
@@ -20,9 +21,8 @@ function normalizePointerType (pointerType) {
 function notifyListeners (newType) {
   if (lastInterfaceType !== newType) {
     lastInterfaceType = newType
-    interfaceTypeListeners.forEach((listener) => {
-      listener(newType)
-    })
+    interfaceTypeImmediateListeners.forEach(listener => listener(newType))
+    interfaceTypeListeners.forEach(listener => listener(newType))
   }
 }
 
@@ -44,7 +44,18 @@ function createInterfaceDetector () {
 
   const handlePointer = event => {
     const type = normalizePointerType(event.pointerType)
-    setTimeout(() => notifyListeners(type), REACT_CLICK_DELAY)
+    if (type === lastInterfaceType) {
+      return
+    }
+    // Update synchronously so getInterfaceType() returns the new value immediately —
+    // this prevents focusin handlers from seeing the stale 'keyboard' type during a
+    // pointer-triggered focus move. Listeners (React state) are still notified async
+    // to avoid layout thrashing during the click event.
+    lastInterfaceType = type
+    interfaceTypeImmediateListeners.forEach(listener => listener(type))
+    setTimeout(() => {
+      interfaceTypeListeners.forEach(listener => listener(type))
+    }, REACT_CLICK_DELAY)
   }
 
   const handleKeyDown = e => {
@@ -81,8 +92,19 @@ function subscribeToInterfaceChanges (onInterfaceTypeChange) {
   }
 }
 
+// Fires synchronously within the same event cycle — use for direct DOM updates
+// that need to be in sync with the pointer event (no 150ms React delay).
+function subscribeToInterfaceChangesImmediate (onInterfaceTypeChange) {
+  interfaceTypeImmediateListeners.add(onInterfaceTypeChange)
+
+  return () => {
+    interfaceTypeImmediateListeners.delete(onInterfaceTypeChange)
+  }
+}
+
 export {
   createInterfaceDetector,
   getInterfaceType,
-  subscribeToInterfaceChanges
+  subscribeToInterfaceChanges,
+  subscribeToInterfaceChangesImmediate
 }

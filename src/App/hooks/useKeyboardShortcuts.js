@@ -7,13 +7,13 @@ import { useService } from '../store/serviceContext.js'
 
 export function useKeyboardShortcuts (containerRef) {
   const { mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta, readMapText } = useConfig()
-  const { interfaceType, dispatch, layoutRefs } = useApp()
+  const { dispatch, layoutRefs } = useApp()
   const { announce } = useService()
 
   useEffect(() => {
     const el = containerRef.current
     const appEl = layoutRefs.appContainerRef?.current
-    if (!el || !appEl || interfaceType !== 'keyboard') {
+    if (!el || !appEl) {
       return undefined
     }
 
@@ -72,7 +72,6 @@ export function useKeyboardShortcuts (containerRef) {
     }
   }, [
     containerRef,
-    interfaceType,
     mapProvider,
     panDelta,
     nudgePanDelta,

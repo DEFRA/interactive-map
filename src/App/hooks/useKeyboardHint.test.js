@@ -1,8 +1,12 @@
 import { renderHook, act } from '@testing-library/react'
 import { useKeyboardHint } from './useKeyboardHint'
+import { getInterfaceType } from '../../utils/detectInterfaceType.js'
+
+jest.mock('../../utils/detectInterfaceType.js', () => ({
+  getInterfaceType: jest.fn(() => 'keyboard')
+}))
 
 const defaultProps = (overrides = {}) => ({
-  interfaceType: 'keyboard',
   containerRef: { current: document.createElement('div') },
   onViewportFocusChange: jest.fn(),
   ...overrides
@@ -56,6 +60,8 @@ describe('useKeyboardHint — keydown listener', () => {
 // ─── handleFocus / handleBlur ─────────────────────────────────────────────────
 
 describe('useKeyboardHint — handleFocus / handleBlur', () => {
+  beforeEach(() => getInterfaceType.mockReturnValue('keyboard'))
+
   test('handleFocus calls onViewportFocusChange(true) for keyboard interface', () => {
     const props = defaultProps()
     const { result } = renderHook(() => useKeyboardHint(props))
@@ -64,7 +70,8 @@ describe('useKeyboardHint — handleFocus / handleBlur', () => {
   })
 
   test('handleFocus does not call onViewportFocusChange for non-keyboard interface', () => {
-    const props = defaultProps({ interfaceType: 'mouse' })
+    getInterfaceType.mockReturnValue('mouse')
+    const props = defaultProps()
     const { result } = renderHook(() => useKeyboardHint(props))
     act(() => result.current.handleFocus())
     expect(props.onViewportFocusChange).not.toHaveBeenCalled()

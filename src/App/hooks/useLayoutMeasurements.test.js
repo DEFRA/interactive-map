@@ -116,18 +116,18 @@ describe('useLayoutMeasurements', () => {
       { main: { offsetHeight: 500 }, bottom: { offsetTop: 350 }, actions: { offsetTop: 430, offsetHeight: 40 } },
       '150px' // baseBottom = 150 > actionsOffset (70) + dividerGap (8) = 78
     ]
-  ])('calculates --keyboard-hint-bottom for %s', (_, refOverrides, expected) => {
+  ])('calculates --hint-bottom for %s', (_, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--keyboard-hint-bottom', expected)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', expected)
   })
 
-  test('calculates --keyboard-hint-bottom when actionsRef.current is null', () => {
+  test('calculates --hint-bottom when actionsRef.current is null', () => {
     const { layoutRefs } = setup()
     layoutRefs.actionsRef.current = null
     renderHook(() => useLayoutMeasurements())
     // actionsHeight = 0, falls back to baseBottom = 500 - 400 - 0 = 100
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--keyboard-hint-bottom', '100px')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '100px')
   })
 
   test.each([

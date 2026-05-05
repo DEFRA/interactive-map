@@ -1,6 +1,6 @@
 import React from 'react'
 import { render, act } from '@testing-library/react'
-import { KeyboardHints } from './KeyboardHints.jsx'
+import { Hints } from './Hints.jsx'
 import { useConfig } from '../../store/configContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { useApp } from '../../store/appContext.js'
@@ -10,7 +10,7 @@ jest.mock('../../store/serviceContext.js', () => ({ useService: jest.fn() }))
 jest.mock('../../store/appContext.js', () => ({ useApp: jest.fn() }))
 
 const CONTAINER_ID = '#test-map-hints'
-const HINT_CLASS = '.im-c-keyboard-hints__hint'
+const HINT_CLASS = '.im-c-hints__hint'
 
 let capturedSubscriber
 let mockHints
@@ -37,16 +37,16 @@ afterEach(() => {
 
 // ─── rendering ───────────────────────────────────────────────────────────────
 
-describe('KeyboardHints — rendering', () => {
+describe('Hints — rendering', () => {
   it('renders the container into mainRef after mount', () => {
     const mainEl = setup()
-    render(<KeyboardHints />)
+    render(<Hints />)
     expect(mainEl.querySelector(CONTAINER_ID)).toBeTruthy()
   })
 
   it('renders a persistent keyboard-desc span with the hint text', () => {
     const mainEl = setup()
-    render(<KeyboardHints />)
+    render(<Hints />)
     const desc = mainEl.querySelector('#test-map-keyboard-desc')
     expect(desc).toBeTruthy()
     expect(desc.innerHTML).toBe('<kbd>Alt</kbd> + <kbd>K</kbd>')
@@ -54,13 +54,13 @@ describe('KeyboardHints — rendering', () => {
 
   it('renders no hint content when there is no active hint', () => {
     const mainEl = setup()
-    render(<KeyboardHints />)
+    render(<Hints />)
     expect(mainEl.querySelector(HINT_CLASS)).toBeNull()
   })
 
   it('renders hint content when subscriber fires with a hint', () => {
     const mainEl = setup()
-    render(<KeyboardHints />)
+    render(<Hints />)
     act(() => capturedSubscriber({ html: '<kbd>Enter</kbd> to select' }))
     const hint = mainEl.querySelector(HINT_CLASS)
     expect(hint).toBeTruthy()
@@ -69,7 +69,7 @@ describe('KeyboardHints — rendering', () => {
 
   it('removes hint content when subscriber fires with null', () => {
     const mainEl = setup()
-    render(<KeyboardHints />)
+    render(<Hints />)
     act(() => capturedSubscriber({ html: 'hello' }))
     act(() => capturedSubscriber(null))
     expect(mainEl.querySelector(HINT_CLASS)).toBeNull()
@@ -78,10 +78,10 @@ describe('KeyboardHints — rendering', () => {
 
 // ─── lifecycle ───────────────────────────────────────────────────────────────
 
-describe('KeyboardHints — lifecycle', () => {
+describe('Hints — lifecycle', () => {
   it('subscribes to hints on mount', () => {
     setup()
-    render(<KeyboardHints />)
+    render(<Hints />)
     expect(mockHints.subscribe).toHaveBeenCalled()
   })
 
@@ -90,7 +90,7 @@ describe('KeyboardHints — lifecycle', () => {
     setup()
     mockHints = { subscribe: jest.fn(() => unsub) }
     useService.mockReturnValue({ hints: mockHints })
-    const { unmount } = render(<KeyboardHints />)
+    const { unmount } = render(<Hints />)
     unmount()
     expect(unsub).toHaveBeenCalled()
   })
@@ -98,7 +98,7 @@ describe('KeyboardHints — lifecycle', () => {
   it('renders nothing when mainRef is null', () => {
     setup({ mainEl: null })
     useApp.mockReturnValue({ layoutRefs: { mainRef: { current: null } } })
-    const { container } = render(<KeyboardHints />)
+    const { container } = render(<Hints />)
     expect(container.innerHTML).toBe('')
   })
 })

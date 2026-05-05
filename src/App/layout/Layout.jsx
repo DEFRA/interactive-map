@@ -1,16 +1,17 @@
-import React from 'react'
+import React, { useEffect } from 'react'
 import { Viewport } from '../components/Viewport/Viewport'
 import { useConfig } from '../store/configContext'
 import { useApp } from '../store/appContext'
 import { useMap } from '../store/mapContext'
 import { useLayoutMeasurements } from '../hooks/useLayoutMeasurements'
 import { useFocusVisible } from '../hooks/useFocusVisible'
+import { subscribeToInterfaceChangesImmediate } from '../../utils/detectInterfaceType.js'
 import { Logo } from '../components/Logo/Logo'
 import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
 import { SlotRenderer } from '../renderer/SlotRenderer'
 import { HtmlElementHost } from '../renderer/HtmlElementHost'
-import { KeyboardHints } from '../components/KeyboardHints/KeyboardHints.jsx'
+import { Hints } from '../components/Hints/Hints.jsx'
 import { getMapThemeVars } from '../../config/mapTheme.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
@@ -22,6 +23,18 @@ export const Layout = () => {
 
   useLayoutMeasurements()
   useFocusVisible()
+
+  useEffect(() => {
+    const el = layoutRefs.appContainerRef.current
+    if (!el) {
+      return undefined
+    }
+    return subscribeToInterfaceChangesImmediate((type) => {
+      const interfaceTypes = ['keyboard', 'mouse', 'touch', 'unknown']
+      interfaceTypes.forEach(t => el.classList.remove(`im-o-app--${t}`))
+      el.classList.add(`im-o-app--${type}`)
+    })
+  }, [layoutRefs.appContainerRef])
 
   return (
     <div
@@ -111,7 +124,7 @@ export const Layout = () => {
           </div>
         </div>
       </div>
-      <KeyboardHints />
+      <Hints />
       <HtmlElementHost />
     </div>
   )

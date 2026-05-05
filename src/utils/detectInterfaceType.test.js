@@ -99,18 +99,21 @@ describe('Interface Detector Utility Module', () => {
 
     // --- Path 1a: pointerdown 'touch' ---
     triggerDomEvent('pointerdown', { pointerType: 'touch' })
+    expect(getInterfaceType()).toBe('touch') // synchronous update
+    expect(handler).not.toHaveBeenCalled()  // listener still pending
     jest.advanceTimersByTime(150)
-    expect(getInterfaceType()).toBe('touch')
     expect(handler).toHaveBeenCalledWith('touch')
     handler.mockClear()
 
     // --- Path 1b: pointerdown 'pen' ---
     triggerDomEvent('pointerdown', { pointerType: 'pen' })
     jest.advanceTimersByTime(150)
-    expect(handler).not.toHaveBeenCalled()
+    expect(handler).not.toHaveBeenCalled() // 'pen' normalises to 'touch' — no change
 
     // --- Path 1c: pointerdown 'mouse' ---
     triggerDomEvent('pointerdown', { pointerType: 'mouse' })
+    expect(getInterfaceType()).toBe('mouse') // synchronous update
+    expect(handler).not.toHaveBeenCalled()  // listener still pending
     jest.advanceTimersByTime(150)
     expect(getInterfaceType()).toBe('mouse')
     expect(handler).toHaveBeenCalledWith('mouse')
@@ -128,6 +131,10 @@ describe('Interface Detector Utility Module', () => {
     expect(getInterfaceType()).toBe('keyboard')
     expect(handler).toHaveBeenCalledWith('keyboard')
     handler.mockClear()
+
+    // Tab again when already keyboard — notifyListeners no-op branch
+    triggerDomEvent('keydown', { key: 'Tab' })
+    expect(handler).not.toHaveBeenCalled()
 
     // keydown with non-Tab
     triggerDomEvent('keydown', { key: 'a' })

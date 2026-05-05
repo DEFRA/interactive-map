@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useMapItemList } from './hooks/useMapItemList.js'
@@ -6,6 +6,7 @@ import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { attachEvents } from './events.js'
 import { isSelectMarkerOnly } from './utils/interactionModes.js'
+import { getInterfaceType, subscribeToInterfaceChangesImmediate } from '../../../src/utils/detectInterfaceType.js'
 
 function useListboxCapable ({ enabled, interactionModes, markers, layers, eventBus }) {
   useEffect(() => {
@@ -26,12 +27,10 @@ export const InteractInit = ({
   mapProvider,
   pluginState
 }) => {
-  const { interfaceType } = appState
   const { dispatch, enabled, selectedFeatures, interactionModes, layers } = pluginState
   const { eventBus, closeApp } = services
   const { crossHair, mapStyle, markers } = mapState
 
-  const isTouchOrKeyboard = ['touch', 'keyboard'].includes(interfaceType)
   const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
 
   useMapItemList({ mapState, pluginState, services, mapProvider })
@@ -86,14 +85,47 @@ export const InteractInit = ({
 
   useHoverCursor(mapProvider, enabled, interactionModes, layers)
 
-  // Toggle target marker visibility
-  useEffect(() => {
-    if (enabled && isTouchOrKeyboard && !(interfaceType === 'touch' && selectMarkerOnly)) {
-      crossHair.fixAtCenter()
+  const enabledRef = useRef(enabled)
+  enabledRef.current = enabled
+  const selectMarkerOnlyRef = useRef(selectMarkerOnly)
+  selectMarkerOnlyRef.current = selectMarkerOnly
+  const crossHairRef = useRef(crossHair)
+  crossHairRef.current = crossHair
+  const viewportFocusRef = useRef(false)
+
+  const updateCrossHair = useCallback(() => {
+    const type = getInterfaceType()
+    const isToK = ['touch', 'keyboard'].includes(type)
+    if (enabledRef.current && viewportFocusRef.current && isToK && !(type === 'touch' && selectMarkerOnlyRef.current)) {
+      crossHairRef.current.fixAtCenter()
     } else {
-      crossHair.hide()
+      crossHairRef.current.hide()
     }
-  }, [enabled, interfaceType, interactionModes])
+  }, [])
+
+  // Toggle target marker visibility on enabled/interactionModes changes
+  useEffect(() => {
+    updateCrossHair()
+  }, [enabled, interactionModes, updateCrossHair])
+
+  // Toggle target marker visibility immediately on interface type change (no 150ms React delay)
+  useEffect(() => {
+    return subscribeToInterfaceChangesImmediate(updateCrossHair)
+  }, [updateCrossHair])
+
+  // Toggle target marker visibility on viewport focus/blur
+  useEffect(() => {
+    const viewport = appState.layoutRefs?.viewportRef?.current
+    if (!viewport) { return undefined }
+    const handleFocus = () => { viewportFocusRef.current = true; updateCrossHair() }
+    const handleBlur = () => { viewportFocusRef.current = false; updateCrossHair() }
+    viewport.addEventListener('focus', handleFocus)
+    viewport.addEventListener('blur', handleBlur)
+    return () => {
+      viewport.removeEventListener('focus', handleFocus)
+      viewport.removeEventListener('blur', handleBlur)
+    }
+  }, [appState.layoutRefs, updateCrossHair])
 
   useEffect(() => {
     if (!pluginState.enabled) {

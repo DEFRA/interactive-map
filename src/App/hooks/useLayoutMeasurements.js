@@ -106,7 +106,7 @@ function calculateLayout (layoutRefs) {
   const actionsHeight = actionsEl?.offsetHeight ?? 0
   const baseBottom = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const actionsOffset = actionsHeight > 0 ? main.offsetHeight - actionsEl.offsetTop : 0
-  appContainer.style.setProperty('--keyboard-hint-bottom', `${Math.max(baseBottom, actionsOffset + dividerGap)}px`)
+  appContainer.style.setProperty('--hint-bottom', `${Math.max(baseBottom, actionsOffset + dividerGap)}px`)
 
   // === Sub-slot panel max-heights ===
   appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)

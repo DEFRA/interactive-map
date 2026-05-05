@@ -19,7 +19,7 @@ import { Markers } from '../Markers/Markers'
 // sonarjs/disable-next-line function-name
 export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText } = useConfig()
-  const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset, dispatch } = useApp()
+  const { mode, previousMode, layoutRefs, safeZoneInset, dispatch } = useApp()
   const { mapSize } = useMap()
   const { eventBus, hints } = useService()
 
@@ -45,7 +45,6 @@ export const Viewport = () => {
   })
 
   const { handleFocus, handleBlur } = useKeyboardHint({
-    interfaceType,
     containerRef: layoutRefs.viewportRef,
     onViewportFocusChange: (visible) => {
       if (visible) {

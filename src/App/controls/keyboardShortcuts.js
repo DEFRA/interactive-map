@@ -9,12 +9,6 @@ export const coreShortcuts = [
     enabled: true
   },
   {
-    id: 'selectControl',
-    title: 'Select a map control',
-    command: '<kbd>Tab</kbd> or <kbd>Shift</kbd> + <kbd>Tab</kbd>',
-    enabled: true
-  },
-  {
     id: 'moveLarge',
     title: 'Move in large steps',
     command: '<kbd>←</kbd>, <kbd>↑</kbd>, <kbd>→</kbd> or <kbd>↓</kbd>',

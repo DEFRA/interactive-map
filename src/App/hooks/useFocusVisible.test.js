@@ -1,8 +1,12 @@
 import { renderHook } from '@testing-library/react'
 import { useFocusVisible } from './useFocusVisible'
 import { useApp } from '../store/appContext.js'
+import { getInterfaceType } from '../../utils/detectInterfaceType.js'
 
 jest.mock('../store/appContext.js')
+jest.mock('../../utils/detectInterfaceType.js', () => ({
+  getInterfaceType: jest.fn(() => 'keyboard')
+}))
 
 describe('useFocusVisible', () => {
   let mockAppContainerRef, addEventListenerSpy, removeEventListenerSpy
@@ -13,8 +17,8 @@ describe('useFocusVisible', () => {
     addEventListenerSpy = jest.spyOn(document, 'addEventListener')
     removeEventListenerSpy = jest.spyOn(document, 'removeEventListener')
 
+    getInterfaceType.mockReturnValue('keyboard')
     useApp.mockReturnValue({
-      interfaceType: 'keyboard',
       layoutRefs: { appContainerRef: mockAppContainerRef }
     })
   })
@@ -26,7 +30,6 @@ describe('useFocusVisible', () => {
 
   it('returns early when no scope', () => {
     useApp.mockReturnValue({
-      interfaceType: 'keyboard',
       layoutRefs: { appContainerRef: { current: null } }
     })
 
@@ -58,10 +61,7 @@ describe('useFocusVisible', () => {
   })
 
   it('does not set focusVisible on focusin when not keyboard', () => {
-    useApp.mockReturnValue({
-      interfaceType: 'touch',
-      layoutRefs: { appContainerRef: mockAppContainerRef }
-    })
+    getInterfaceType.mockReturnValue('touch')
 
     renderHook(() => useFocusVisible())
 

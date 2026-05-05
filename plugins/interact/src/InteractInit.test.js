@@ -6,12 +6,17 @@ import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { useMapItemList } from './hooks/useMapItemList.js'
 import { attachEvents } from './events.js'
+import { getInterfaceType } from '../../../src/utils/detectInterfaceType.js'
 
 jest.mock('./hooks/useInteractionHandlers.js')
 jest.mock('./hooks/useHighlightSync.js')
 jest.mock('./hooks/useHoverCursor.js')
 jest.mock('./hooks/useMapItemList.js')
 jest.mock('./events.js')
+jest.mock('../../../src/utils/detectInterfaceType.js', () => ({
+  getInterfaceType: jest.fn(() => 'mouse'),
+  subscribeToInterfaceChangesImmediate: jest.fn(() => () => {})
+}))
 
 let props
 let handleInteractionMock
@@ -27,8 +32,10 @@ beforeEach(() => {
   useMapItemList.mockReturnValue(undefined)
   attachEvents.mockReturnValue(cleanupMock)
 
+  getInterfaceType.mockReturnValue('mouse')
+
   props = {
-    appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: null } } },
+    appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: document.createElement('div') } } },
     mapState: { crossHair: { fixAtCenter: jest.fn(), hide: jest.fn() }, mapStyle: {} },
     services: { eventBus: { emit: jest.fn() }, closeApp: jest.fn() },
     buttonConfig: {},
@@ -72,13 +79,23 @@ describe('InteractInit — hook delegation', () => {
 })
 
 describe('InteractInit — crossHair and event attachment', () => {
-  it('fixes or hides crossHair based on interfaceType and enabled', () => {
+  it('skips viewport focus listeners when viewportRef is null', () => {
+    props.appState.layoutRefs.viewportRef = { current: null }
     render(<InteractInit {...props} />)
+    expect(props.mapState.crossHair.hide).toHaveBeenCalled()
+  })
+
+  it('fixes or hides crossHair based on interfaceType and viewport focus', () => {
+    const viewport = props.appState.layoutRefs.viewportRef.current
+    render(<InteractInit {...props} />)
+
+    // No viewport focus yet — always hides
     expect(props.mapState.crossHair.hide).toHaveBeenCalled()
     expect(props.mapState.crossHair.fixAtCenter).not.toHaveBeenCalled()
 
-    props.appState.interfaceType = 'touch'
-    render(<InteractInit {...props} />)
+    // Focus viewport with touch interface — fixAtCenter
+    getInterfaceType.mockReturnValue('touch')
+    act(() => viewport.dispatchEvent(new FocusEvent('focus')))
     expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
   })
 
@@ -96,7 +113,7 @@ describe('InteractInit — crossHair and event attachment', () => {
     }))
 
     const { getAppState, getPluginState, handleInteraction } = attachEvents.mock.calls.at(-1)[0]
-    expect(getAppState()).toMatchObject(props.appState)
+    expect(getAppState()).toBe(props.appState)
     expect(getPluginState()).toMatchObject({ enabled: props.pluginState.enabled })
 
     handleInteraction({ point: {}, coords: [] })

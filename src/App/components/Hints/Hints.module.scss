@@ -2,9 +2,9 @@
 // Object: KeyboardHints (layout wrapper)
 // ===================================================
 
-.im-o-keyboard-hints {
+.im-o-hints {
   position: absolute;
-  bottom: var(--keyboard-hint-bottom, var(--primary-gap));
+  bottom: var(--hint-bottom, var(--primary-gap));
   left: 50%;
   transform: translateX(-50%);
   z-index: 1001;
@@ -14,14 +14,14 @@
 // Component: KeyboardHints
 // ===================================================
 
-.im-c-keyboard-hints {
+.im-c-hints {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: var(--divider-gap);
 }
 
-.im-c-keyboard-hints__hint {
+.im-c-hints__hint {
   text-wrap: nowrap;
 
   color: var(--tooltip-foreground-color);
@@ -32,6 +32,6 @@
   line-height: 1.2;
 }
 
-.im-c-keyboard-hints__hint kbd {
+.im-c-hints__hint kbd {
   border: var(--kbd-tooltip-border);
 }

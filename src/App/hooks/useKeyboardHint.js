@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
+import { getInterfaceType } from '../../utils/detectInterfaceType.js'
 
 export function useKeyboardHint ({
-  interfaceType,
   containerRef,
   onViewportFocusChange
 }) {
@@ -20,7 +20,7 @@ export function useKeyboardHint ({
   }, [containerRef, onViewportFocusChange])
 
   const handleFocus = () => {
-    if (interfaceType === 'keyboard') {
+    if (getInterfaceType() === 'keyboard') {
       onViewportFocusChange(true)
     }
   }

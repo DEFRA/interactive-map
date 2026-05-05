@@ -26,7 +26,7 @@ const setup = (overrides = {}) => {
     readMapText: jest.fn(),
     ...overrides.config
   })
-  useApp.mockReturnValue({ interfaceType: 'keyboard', dispatch: jest.fn(), layoutRefs: { appContainerRef }, ...overrides.app })
+  useApp.mockReturnValue({ dispatch: jest.fn(), layoutRefs: { appContainerRef }, ...overrides.app })
   useMap.mockReturnValue({ crossHair: { lat: 0, lng: 0 }, ...overrides.map })
   useService.mockReturnValue({ announce: jest.fn(), ...overrides.service })
 
@@ -41,14 +41,16 @@ const setup = (overrides = {}) => {
 describe('useKeyboardShortcuts', () => {
   beforeEach(jest.clearAllMocks)
 
-  test('early returns when no container or not keyboard interface', () => {
+  test('early returns when no container', () => {
     setup()
     renderHook(() => useKeyboardShortcuts({ current: null }))
     expect(createKeyboardActions).not.toHaveBeenCalled()
+  })
 
-    setup({ app: { interfaceType: 'mouse' } })
-    renderHook(() => useKeyboardShortcuts({ current: document.createElement('div') }))
-    expect(createKeyboardActions).not.toHaveBeenCalled()
+  test('registers shortcuts regardless of interface type', () => {
+    const { containerRef } = setup()
+    renderHook(() => useKeyboardShortcuts(containerRef))
+    expect(createKeyboardActions).toHaveBeenCalled()
   })
 
   test('creates actions with correct config', () => {
