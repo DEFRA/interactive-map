@@ -10,7 +10,6 @@ export const Key = ({ pluginConfig, mapState, pluginState, services }) => {
   }
   const { mapStyle } = mapState
   const { symbolRegistry, patternRegistry } = services
-  console.log('symbolRegistry.list()', symbolRegistry.list())
 
   const renderEntry = (key, config) => (
     <dl key={key} className='im-c-datasets-key__item'>
