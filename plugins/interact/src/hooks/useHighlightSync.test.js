@@ -7,16 +7,19 @@ jest.mock('../utils/buildStylesMap.js', () => ({
 }))
 
 const STYLE_CHANGE = 'map:stylechange'
+const DATA_CHANGE = 'map:datachange'
 
 let mockDeps
-let capturedEventHandler
+let capturedStyleChangeHandler
+let capturedDataChangeHandler
 
 const render = (overrides = {}) =>
   renderHook(() => useHighlightSync({ ...mockDeps, ...overrides }))
 
 beforeEach(() => {
   jest.clearAllMocks()
-  capturedEventHandler = null
+  capturedStyleChangeHandler = null
+  capturedDataChangeHandler = null
 
   mockDeps = {
     mapProvider: {
@@ -28,11 +31,16 @@ beforeEach(() => {
     },
     selectedFeatures: [],
     dispatch: jest.fn(),
-    events: { MAP_STYLE_CHANGE: STYLE_CHANGE },
+    events: { MAP_STYLE_CHANGE: STYLE_CHANGE, MAP_DATA_CHANGE: DATA_CHANGE },
     eventBus: {
       on: jest.fn((event, handler) => {
         if (event === STYLE_CHANGE) {
-          capturedEventHandler = handler
+          capturedStyleChangeHandler = handler
+        }
+      }),
+      once: jest.fn((event, handler) => {
+        if (event === DATA_CHANGE) {
+          capturedDataChangeHandler = handler
         }
       }),
       off: jest.fn()
@@ -107,13 +115,14 @@ describe('useHighlightSync — styles memoization', () => {
 // ─── useHighlightSync — style-change event ───────────────────────────────────
 
 describe('useHighlightSync — style-change event', () => {
-  it('refreshes highlights on MAP_STYLE_CHANGE', () => {
+  it('refreshes highlights after MAP_STYLE_CHANGE then MAP_DATA_CHANGE', () => {
     mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
 
     render()
     mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
 
-    act(() => capturedEventHandler())
+    act(() => capturedStyleChangeHandler())
+    act(() => capturedDataChangeHandler())
 
     expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalled()
   })

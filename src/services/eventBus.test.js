@@ -82,6 +82,17 @@ describe('EventBus singleton', () => {
     console.error.mockRestore()
   })
 
+  it('once fires the handler exactly once', () => {
+    const handler = jest.fn()
+    eventBus.once('single', handler)
+
+    eventBus.emit('single', 'a')
+    eventBus.emit('single', 'b')
+
+    expect(handler).toHaveBeenCalledTimes(1)
+    expect(handler).toHaveBeenCalledWith('a')
+  })
+
   it('destroys all events', () => {
     const handler = jest.fn()
     eventBus.on('destroyMe', handler)

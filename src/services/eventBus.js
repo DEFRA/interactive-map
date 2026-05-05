@@ -32,6 +32,21 @@ class EventBus {
   }
 
   /**
+   * Register a one-time handler that removes itself after the first call.
+   *
+   * @param {string} eventName
+   * @param {Function} handler
+   * @returns {this}
+   */
+  once (eventName, handler) {
+    const wrapper = (...args) => {
+      this.off(eventName, wrapper)
+      handler(...args)
+    }
+    return this.on(eventName, wrapper)
+  }
+
+  /**
    * Remove a handler for an event. Omit `handler` to remove all handlers.
    *
    * @param {string} eventName
