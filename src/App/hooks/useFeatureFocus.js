@@ -84,7 +84,7 @@ function useItemsRevalidation ({ items, eventBus, isFocusedRef, lastActiveIdRef,
  * - Enter/Space — confirm selection, emitting MAP_SELECT_FEATURE
  * - Escape — return focus to the map viewport
  */
-function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId, hintManager, currentHintRef }) {
+function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId, hints, currentHintRef }) {
   useEffect(() => {
     const listboxEl = featuresRef.current
     if (!listboxEl) {
@@ -95,7 +95,7 @@ function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, act
         event.preventDefault()
         event.stopPropagation()
         if (currentHintRef.current) {
-          hintManager.dismiss()
+          hints.dismiss()
         } else {
           viewportRef.current?.focus()
         }
@@ -154,7 +154,7 @@ function useMapInteractionBlur ({ viewportRef, featuresRef, isFocusedRef }) {
  * @param {{ viewportRef: React.RefObject, featuresRef: React.RefObject, items: Array, eventBus: object }} params
  * @returns {{ activeFeatureId: string|null, selectedIds: string[], onFocus: Function, onBlur: Function }}
  */
-export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus, hintManager }) {
+export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus, hints }) {
   const [activeFeatureId, setActiveFeatureId] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
 
@@ -165,17 +165,17 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
   const currentHintRef = useRef(null)
 
   useEffect(() => {
-    return hintManager.subscribe((hint) => {
+    return hints.subscribe((hint) => {
       currentHintRef.current = hint
     })
-  }, [hintManager])
+  }, [hints])
 
   useEffect(() => { activeFeatureIdRef.current = activeFeatureId }, [activeFeatureId])
   useEffect(() => { selectedIdsRef.current = selectedIds }, [selectedIds])
 
   useEventBusListeners({ eventBus, lastActiveIdRef, setActiveFeatureId, setSelectedIds })
   useItemsRevalidation({ items, eventBus, isFocusedRef, lastActiveIdRef, activeFeatureIdRef, selectedIdsRef, setActiveFeatureId })
-  useKeyboardNavigation({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId, hintManager, currentHintRef })
+  useKeyboardNavigation({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId, hints, currentHintRef })
   useMapInteractionBlur({ viewportRef, featuresRef, isFocusedRef })
 
   const onFocus = () => {

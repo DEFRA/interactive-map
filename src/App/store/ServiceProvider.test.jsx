@@ -11,9 +11,9 @@ jest.mock('../../services/announcer.js', () => ({
   createAnnouncer: jest.fn(() => jest.fn())
 }))
 
-const mockHint = jest.fn()
-jest.mock('../../services/hintManager.js', () => ({
-  createHintManager: jest.fn(() => ({ hint: mockHint, dismiss: jest.fn(), subscribe: jest.fn() }))
+const mockShow = jest.fn()
+jest.mock('../../services/hints.js', () => ({
+  createHints: jest.fn(() => ({ show: mockShow, dismiss: jest.fn(), subscribe: jest.fn() }))
 }))
 
 jest.mock('../../services/reverseGeocode.js', () => ({
@@ -62,10 +62,10 @@ describe('ServiceProvider', () => {
     expect(result.current).toBeTruthy()
   })
 
-  test('hint() delegates to hintManager.hint', () => {
+  test('hints.show() delegates to createHints show', () => {
     const { result } = renderHook(() => React.useContext(ServiceContext), { wrapper })
-    result.current.hint('<b>test</b>', { duration: 2000 })
-    expect(mockHint).toHaveBeenCalledWith('<b>test</b>', { duration: 2000 })
+    result.current.hints.show('<b>test</b>', { duration: 2000 })
+    expect(mockShow).toHaveBeenCalledWith('<b>test</b>', { duration: 2000 })
   })
 
   test('closeApp calls closeApp service with id and handleExitClick', () => {

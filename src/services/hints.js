@@ -1,13 +1,13 @@
 const stripHtml = (html) => html.replace(/<[^>]*>/g, '')
 
 /**
- * Creates the hint service. Manages a single active toast hint shown in the
- * KeyboardHints container. Calling hint() replaces any current hint and
+ * Creates the hints service. Manages a single active toast hint shown in the
+ * KeyboardHints container. Calling show() replaces any current hint and
  * restarts the dismiss timer. Internally calls announce() so screen readers
  * receive the message through the live region without callers needing to pair
  * the two calls manually.
  */
-export function createHintManager (announce) {
+export function createHints (announce) {
   const subscribers = new Set()
   let current = null
   let timer = null
@@ -27,7 +27,7 @@ export function createHintManager (announce) {
     notify()
   }
 
-  const hint = (html, options = {}) => {
+  const show = (html, options = {}) => {
     const { duration = 4000, announce: announceText } = options
     clearTimer()
     current = { html }
@@ -43,5 +43,5 @@ export function createHintManager (announce) {
     return () => subscribers.delete(fn)
   }
 
-  return { hint, dismiss, subscribe }
+  return { show, dismiss, subscribe }
 }

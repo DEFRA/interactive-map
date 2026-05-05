@@ -8,22 +8,22 @@ import { useApp } from '../../store/appContext.js'
  * Renders the active keyboard hint as a toast portaled into im-o-app__main.
  * Positioned above the actions bar using --keyboard-hint-bottom. All visual
  * hints pass through here; screen reader announcements are handled internally
- * by hintManager so callers only need services.hint().
+ * by the hints service so callers only need hints.show().
  *
  * The container element (id="${mapId}-hints") is always in the DOM after mount
  * so aria-describedby references remain valid even when no hint is showing.
  */
 export const KeyboardHints = () => {
   const { id, keyboardHintText } = useConfig()
-  const { hintManager } = useService()
+  const { hints } = useService()
   const { layoutRefs } = useApp()
   const [activeHint, setActiveHint] = useState(null)
   const [mounted, setMounted] = useState(false)
 
   useEffect(() => {
     setMounted(true)
-    return hintManager.subscribe(setActiveHint)
-  }, [hintManager])
+    return hints.subscribe(setActiveHint)
+  }, [hints])
 
   if (!mounted || !layoutRefs.mainRef?.current) {
     return null

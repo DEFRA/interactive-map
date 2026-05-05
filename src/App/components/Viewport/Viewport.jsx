@@ -21,16 +21,16 @@ export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText } = useConfig()
   const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset } = useApp()
   const { mapSize } = useMap()
-  const { eventBus, hint, hintManager } = useService()
+  const { eventBus, hints } = useService()
 
   const mapContainerRef = useRef(null)
   const featuresRef = useRef(null)
 
   const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
-  const { activeFeatureId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus, hintManager })
+  const { activeFeatureId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus, hints })
 
-  const onFeaturesFocus = () => { handleFeaturesFocus(); hint(keyboardHintText, { duration: 0 }) }
-  const onFeaturesBlur = () => { handleFeaturesBlur(); hintManager.dismiss() }
+  const onFeaturesFocus = () => { handleFeaturesFocus(); hints.show(keyboardHintText, { duration: 0 }) }
+  const onFeaturesBlur = () => { handleFeaturesBlur(); hints.dismiss() }
 
   useKeyboardShortcuts(layoutRefs.viewportRef)
 
@@ -43,9 +43,9 @@ export const Viewport = () => {
     containerRef: layoutRefs.viewportRef,
     onViewportFocusChange: (visible) => {
       if (visible) {
-        hint(keyboardHintText, { duration: 0 })
+        hints.show(keyboardHintText, { duration: 0 })
       } else {
-        hintManager.dismiss()
+        hints.dismiss()
       }
     }
   })

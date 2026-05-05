@@ -13,18 +13,18 @@ const CONTAINER_ID = '#test-map-hints'
 const HINT_CLASS = '.im-c-keyboard-hints__hint'
 
 let capturedSubscriber
-let mockHintManager
+let mockHints
 
 const setup = ({ mainEl = document.createElement('div') } = {}) => {
   capturedSubscriber = null
-  mockHintManager = {
+  mockHints = {
     subscribe: jest.fn((fn) => {
       capturedSubscriber = fn
       return () => {}
     })
   }
   useConfig.mockReturnValue({ id: 'test-map', keyboardHintText: '<kbd>Alt</kbd> + <kbd>K</kbd>' })
-  useService.mockReturnValue({ hintManager: mockHintManager })
+  useService.mockReturnValue({ hints: mockHints })
   useApp.mockReturnValue({ layoutRefs: { mainRef: { current: mainEl } } })
   if (mainEl) document.body.appendChild(mainEl)
   return mainEl
@@ -79,17 +79,17 @@ describe('KeyboardHints — rendering', () => {
 // ─── lifecycle ───────────────────────────────────────────────────────────────
 
 describe('KeyboardHints — lifecycle', () => {
-  it('subscribes to hintManager on mount', () => {
+  it('subscribes to hints on mount', () => {
     setup()
     render(<KeyboardHints />)
-    expect(mockHintManager.subscribe).toHaveBeenCalled()
+    expect(mockHints.subscribe).toHaveBeenCalled()
   })
 
   it('unsubscribes on unmount', () => {
     const unsub = jest.fn()
     setup()
-    mockHintManager = { subscribe: jest.fn(() => unsub) }
-    useService.mockReturnValue({ hintManager: mockHintManager })
+    mockHints = { subscribe: jest.fn(() => unsub) }
+    useService.mockReturnValue({ hints: mockHints })
     const { unmount } = render(<KeyboardHints />)
     unmount()
     expect(unsub).toHaveBeenCalled()

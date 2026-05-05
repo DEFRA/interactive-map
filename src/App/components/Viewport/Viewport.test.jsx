@@ -40,8 +40,7 @@ function setupHookMocks (mainEl, viewportEl) {
   useMap.mockReturnValue({ mapSize: 'medium', dispatch: jest.fn() })
   useService.mockReturnValue({
     announce: jest.fn(),
-    hint: jest.fn(),
-    hintManager: { dismiss: jest.fn() },
+    hints: { show: jest.fn(), dismiss: jest.fn(), subscribe: jest.fn(() => jest.fn()) },
     eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
   })
   useKeyboardHint.mockImplementation(({ onViewportFocusChange }) => ({
@@ -100,20 +99,20 @@ describe('Viewport rendering', () => {
     expect(viewport).toHaveAttribute('aria-describedby', 'test-map-keyboard-desc')
   })
 
-  it('calls hint() with keyboardHintText when viewport gains keyboard focus', () => {
-    const { hint } = useService()
+  it('calls hints.show() with keyboardHintText when viewport gains keyboard focus', () => {
+    const { hints } = useService()
     renderViewport()
     const { onViewportFocusChange } = useKeyboardHint.mock.calls[0][0]
     onViewportFocusChange(true)
-    expect(hint).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
+    expect(hints.show).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
   })
 
-  it('calls hintManager.dismiss() when viewport loses focus', () => {
-    const { hintManager } = useService()
+  it('calls hints.dismiss() when viewport loses focus', () => {
+    const { hints } = useService()
     renderViewport()
     const { onViewportFocusChange } = useKeyboardHint.mock.calls[0][0]
     onViewportFocusChange(false)
-    expect(hintManager.dismiss).toHaveBeenCalled()
+    expect(hints.dismiss).toHaveBeenCalled()
   })
 })
 
@@ -148,18 +147,18 @@ describe('Viewport interactions', () => {
     expect(clearMock).toHaveBeenCalled()
   })
 
-  it('calls hint() when the features listbox gains focus', () => {
-    const { hint } = useService()
+  it('calls hints.show() when the features listbox gains focus', () => {
+    const { hints } = useService()
     const { container } = renderViewport()
     fireEvent.focus(container.querySelector('[role="listbox"]'))
-    expect(hint).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
+    expect(hints.show).toHaveBeenCalledWith(KEYBOARD_HINT_TEXT, { duration: 0 })
   })
 
-  it('calls hintManager.dismiss() when the features listbox loses focus', () => {
-    const { hintManager } = useService()
+  it('calls hints.dismiss() when the features listbox loses focus', () => {
+    const { hints } = useService()
     const { container } = renderViewport()
     fireEvent.blur(container.querySelector('[role="listbox"]'))
-    expect(hintManager.dismiss).toHaveBeenCalled()
+    expect(hints.dismiss).toHaveBeenCalled()
   })
 
   it('focuses viewport when mode changes', () => {

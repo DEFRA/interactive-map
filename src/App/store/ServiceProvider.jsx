@@ -1,7 +1,7 @@
 // src/App/store/ServiceProvider.jsx
 import React, { createContext, useMemo, useRef } from 'react'
 import { createAnnouncer } from '../../services/announcer.js'
-import { createHintManager } from '../../services/hintManager.js'
+import { createHints } from '../../services/hints.js'
 import { reverseGeocode } from '../../services/reverseGeocode.js'
 import { useConfig } from '../store/configContext.js'
 import { closeApp } from '../../services/closeApp.js'
@@ -14,21 +14,20 @@ export const ServiceProvider = ({ eventBus, children }) => {
   const { id, handleExitClick, symbolDefaults: constructorSymbolDefaults } = useConfig()
   const mapStatusRef = useRef(null)
   const announce = useMemo(() => createAnnouncer(mapStatusRef), [])
-  const hintManager = useMemo(() => createHintManager(announce), [announce])
+  const hints = useMemo(() => createHints(announce), [announce])
 
   symbolRegistry.setDefaults(constructorSymbolDefaults || {})
 
   const services = useMemo(() => ({
     announce,
-    hint: (html, options) => hintManager.hint(html, options),
-    hintManager,
+    hints,
     reverseGeocode: (zoom, center) => reverseGeocode(zoom, center),
     eventBus,
     mapStatusRef,
     closeApp: () => closeApp(id, handleExitClick, eventBus),
     symbolRegistry,
     patternRegistry
-  }), [announce, hintManager])
+  }), [announce, hints])
 
   return (
     <ServiceContext.Provider value={services}>
