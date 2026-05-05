@@ -1,6 +1,6 @@
 import { BUILT_IN_PATTERNS } from '../config/patternConfig.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
-import { KEY_BORDER_PATH, PATTERN_MIN_PIXEL_RATIO, injectColors, hashString } from '../utils/patternUtils.js'
+import { KEY_BORDER_PATH, getEffectivePixelRatio, injectColors, hashString } from '../utils/patternUtils.js'
 const patterns = new Map()
 
 export const patternRegistry = {
@@ -97,7 +97,7 @@ export const patternRegistry = {
     }
     const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
     const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
-    const effectiveRatio = Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio)
+    const effectiveRatio = getEffectivePixelRatio(pixelRatio)
     return `pattern-${hashString(innerContent + fg + bg)}-${effectiveRatio}x`
   }
 }

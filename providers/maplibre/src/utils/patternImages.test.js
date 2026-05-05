@@ -55,7 +55,7 @@ describe('addPatternsToMap', () => {
 
     it('skips addImage when image is already registered', async () => {
       const style = { fillPattern: 'stripes' }
-      const pixelRatio = 2
+      const pixelRatio = 1
       const map = makeMap(['pattern-mpxwil-2x'])
       await addPatternsToMap(map, [style], OUTDOOR, patternRegistry, pixelRatio)
       expect(map.addImage).not.toHaveBeenCalled()
@@ -89,9 +89,9 @@ describe('addPatternsToMap', () => {
       await addPatternsToMap(map, [config], OUTDOOR, patternRegistry, 2)
       expect(map.addImage).toHaveBeenCalledTimes(1)
       expect(map.addImage).toHaveBeenCalledWith(
-        expect.stringMatching(/^pattern-[a-z0-9]+-2x$/),
+        expect.stringMatching(/^pattern-[a-z0-9]+-4x$/),
         expect.any(Object),
-        { pixelRatio: 2 }
+        { pixelRatio: 4 }
       )
     })
 
@@ -116,8 +116,8 @@ describe('addPatternsToMap', () => {
       const [id2x] = map1.addImage.mock.calls[0]
       const [id3x] = map2.addImage.mock.calls[0]
       expect(id2x).not.toBe(id3x)
-      expect(id2x).toMatch(/-2x$/)
-      expect(id3x).toMatch(/-3x$/)
+      expect(id2x).toMatch(/-4x$/)
+      expect(id3x).toMatch(/-6x$/)
     })
   })
 

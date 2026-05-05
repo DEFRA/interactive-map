@@ -8,7 +8,6 @@ import { addSymbolsToMap } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
 import { symbolRegistry } from '../../../src/services/symbolRegistry.js'
-// const addSymbolsToMapSpy = jest.spyOn(symbolRegistry, 'addSymbolsToMap').mockImplementation(() => Promise.resolve())
 
 jest.mock('./defaults.js', () => ({
   DEFAULTS: { animationDuration: 400, coordinatePrecision: 7 },
@@ -283,9 +282,9 @@ describe('MapLibreProvider', () => {
     const p = makeProvider()
     await doInitMap(p)
     map.getPixelRatio.mockReturnValue(2)
-    p.mapSize = 'medium' // scaleFactor['medium'] = 1.5
+    p.mapSize = 'medium'
     await p.addSymbolsToMap([], { id: 'test' }, symbolRegistry)
-    expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, symbolRegistry, 3)
+    expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, symbolRegistry, 2)
   })
 
   test('addSymbolsToMap falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
@@ -297,33 +296,24 @@ describe('MapLibreProvider', () => {
     expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, symbolRegistry, 1)
   })
 
-  test('addPatternsToMap delegates to utility with map instance and pixelRatio', async () => {
-    const p = makeProvider()
-    await doInitMap(p)
-    const configs = [{ fillPattern: 'dot' }]
-    const registry = {}
-    await p.addPatternsToMap(configs, 'test', registry)
-    expect(addPatternsToMap).toHaveBeenCalledWith(map, configs, 'test', registry, 1) // getPixelRatio()=1, mapSize unset → 1*1
-  })
-
-  test('addPatternsToMap computes pixelRatio from getPixelRatio and mapSize scale factor', async () => {
-    const p = makeProvider()
-    await doInitMap(p)
-    map.getPixelRatio.mockReturnValue(2)
-    p.mapSize = 'medium' // scaleFactor['medium'] = 1.5
-    const registry = {}
-    await p.addPatternsToMap([], 'test', registry)
-    expect(addPatternsToMap).toHaveBeenCalledWith(map, [], 'test', registry, 3) // 2 * 1.5
-  })
-
   test('addPatternsToMap falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
     const p = makeProvider()
     await doInitMap(p)
     map.getPixelRatio.mockReturnValue(0)
-    p.mapSize = 'small' // scaleFactor['small'] = 1
+    const configs = [{ fillPattern: 'dot' }]
+    const registry = {}
+    await p.addPatternsToMap(configs, 'test', registry)
+    expect(addPatternsToMap).toHaveBeenCalledWith(map, configs, 'test', registry, 1)
+  })
+
+  test('addPatternsToMap is called with pixelRatio from getPixelRatio', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(2)
+    p.mapSize = 'medium'
     const registry = {}
     await p.addPatternsToMap([], 'test', registry)
-    expect(addPatternsToMap).toHaveBeenCalledWith(map, [], 'test', registry, 1) // (0 || 1) * 1
+    expect(addPatternsToMap).toHaveBeenCalledWith(map, [], 'test', registry, 2)
   })
 
   describe('setHoverCursor', () => {
