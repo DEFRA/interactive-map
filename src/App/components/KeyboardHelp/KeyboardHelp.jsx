@@ -26,9 +26,6 @@ const buildGroupMap = (shortcuts) => shortcuts.reduce((acc, shortcut) => {
 }, {})
 
 const getDefaultTab = (groupEntries, context) => {
-  if (!groupEntries.length) {
-    return undefined
-  }
   const exactMatch = groupEntries.find(([, items]) =>
     items.some(s => (s.context ?? 'viewport') === context)
   )

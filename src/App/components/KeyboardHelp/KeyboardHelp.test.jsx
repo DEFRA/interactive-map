@@ -110,6 +110,15 @@ describe('KeyboardHelp — tabs', () => {
     expect(screen.getByRole('tab', { name: DEFAULT_GROUP })).toHaveAttribute('aria-selected', 'true')
   })
 
+  it('falls back to first tab when no exact or global-context match exists', () => {
+    getKeyboardShortcuts.mockReturnValue([
+      { id: 'a', group: 'Group A', context: 'listbox', title: 'A', command: '<kbd>A</kbd>' },
+      { id: 'b', group: 'Group B', context: 'listbox', title: 'B', command: '<kbd>B</kbd>' }
+    ])
+    render(<KeyboardHelp context='viewport' />)
+    expect(screen.getByRole('tab', { name: 'Group A' })).toHaveAttribute('aria-selected', 'true')
+  })
+
   it('shows only the active tab panel content', () => {
     getKeyboardShortcuts.mockReturnValue(allShortcuts)
     render(<KeyboardHelp context='viewport' />)

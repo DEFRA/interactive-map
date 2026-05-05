@@ -425,4 +425,17 @@ describe('actionsMap full coverage', () => {
       expect(res.openPanels).toHaveProperty('p1')
     })
   })
+
+  describe('SET_LISTBOX_ACTIVE', () => {
+    test('sets listboxIsActive to true when currently false', () => {
+      const res = actionsMap.SET_LISTBOX_ACTIVE({ ...state, listboxIsActive: false })
+      expect(res.listboxIsActive).toBe(true)
+    })
+
+    test('returns same state reference when listboxIsActive is already true', () => {
+      const activeState = { ...state, listboxIsActive: true }
+      const res = actionsMap.SET_LISTBOX_ACTIVE(activeState)
+      expect(res).toBe(activeState)
+    })
+  })
 })

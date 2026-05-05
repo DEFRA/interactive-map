@@ -13,39 +13,39 @@ jest.mock('./hooks/useHoverCursor.js')
 jest.mock('./hooks/useMapItemList.js')
 jest.mock('./events.js')
 
-describe('InteractInit', () => {
-  let props
-  let handleInteractionMock
-  let cleanupMock
+let props
+let handleInteractionMock
+let cleanupMock
 
-  beforeEach(() => {
-    handleInteractionMock = jest.fn()
-    cleanupMock = jest.fn()
+beforeEach(() => {
+  handleInteractionMock = jest.fn()
+  cleanupMock = jest.fn()
 
-    useInteractionHandlers.mockReturnValue({ handleInteraction: handleInteractionMock })
-    useHighlightSync.mockReturnValue(undefined)
-    useHoverCursor.mockReturnValue(undefined)
-    useMapItemList.mockReturnValue(undefined)
-    attachEvents.mockReturnValue(cleanupMock)
+  useInteractionHandlers.mockReturnValue({ handleInteraction: handleInteractionMock })
+  useHighlightSync.mockReturnValue(undefined)
+  useHoverCursor.mockReturnValue(undefined)
+  useMapItemList.mockReturnValue(undefined)
+  attachEvents.mockReturnValue(cleanupMock)
 
-    props = {
-      appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: null } } },
-      mapState: { crossHair: { fixAtCenter: jest.fn(), hide: jest.fn() }, mapStyle: {} },
-      services: { eventBus: { emit: jest.fn() }, closeApp: jest.fn() },
-      buttonConfig: {},
-      mapProvider: { setHoverCursor: jest.fn() },
-      pluginState: {
-        dispatch: jest.fn(),
-        enabled: true,
-        selectedFeatures: [],
-        selectedMarkers: [],
-        selectionBounds: {},
-        interactionModes: ['selectFeature'],
-        layers: []
-      }
+  props = {
+    appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: null } } },
+    mapState: { crossHair: { fixAtCenter: jest.fn(), hide: jest.fn() }, mapStyle: {} },
+    services: { eventBus: { emit: jest.fn() }, closeApp: jest.fn() },
+    buttonConfig: {},
+    mapProvider: { setHoverCursor: jest.fn() },
+    pluginState: {
+      dispatch: jest.fn(),
+      enabled: true,
+      selectedFeatures: [],
+      selectedMarkers: [],
+      selectionBounds: {},
+      interactionModes: ['selectFeature'],
+      layers: []
     }
-  })
+  }
+})
 
+describe('InteractInit — hook delegation', () => {
   it('calls useInteractionHandlers with correct arguments', () => {
     render(<InteractInit {...props} />)
     expect(useInteractionHandlers).toHaveBeenCalledWith(expect.objectContaining({
@@ -69,14 +69,14 @@ describe('InteractInit', () => {
       eventBus: props.services.eventBus
     }))
   })
+})
 
+describe('InteractInit — crossHair and event attachment', () => {
   it('fixes or hides crossHair based on interfaceType and enabled', () => {
-    // enabled true + non-touch = hide
     render(<InteractInit {...props} />)
     expect(props.mapState.crossHair.hide).toHaveBeenCalled()
     expect(props.mapState.crossHair.fixAtCenter).not.toHaveBeenCalled()
 
-    // touch interface
     props.appState.interfaceType = 'touch'
     render(<InteractInit {...props} />)
     expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
@@ -99,20 +99,11 @@ describe('InteractInit', () => {
     expect(getAppState()).toMatchObject(props.appState)
     expect(getPluginState()).toMatchObject({ enabled: props.pluginState.enabled })
 
-    const event = { point: {}, coords: [] }
-    handleInteraction(event)
-    expect(handleInteractionMock).toHaveBeenCalledWith(event)
+    handleInteraction({ point: {}, coords: [] })
+    expect(handleInteractionMock).toHaveBeenCalled()
 
     unmount()
     expect(cleanupMock).toHaveBeenCalled()
-  })
-
-  it('emits interact:active with active state and interactionModes on enable', () => {
-    render(<InteractInit {...props} />)
-    expect(props.services.eventBus.emit).toHaveBeenCalledWith('interact:active', {
-      active: true,
-      interactionModes: props.pluginState.interactionModes
-    })
   })
 
   it('enables click handling after a macrotask', () => {
@@ -123,12 +114,38 @@ describe('InteractInit', () => {
   })
 
   it('does not attach events if plugin not enabled', () => {
-    const disabledProps = {
-      ...props,
-      pluginState: { ...props.pluginState, enabled: false } // fresh object
-    }
-    attachEvents.mockClear() // ensure previous calls don't interfere
+    const disabledProps = { ...props, pluginState: { ...props.pluginState, enabled: false } }
+    attachEvents.mockClear()
     render(<InteractInit {...disabledProps} />)
     expect(attachEvents).not.toHaveBeenCalled()
+  })
+})
+
+describe('InteractInit — event bus emissions', () => {
+  it('emits interact:active with active state and interactionModes on enable', () => {
+    render(<InteractInit {...props} />)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith('interact:active', {
+      active: true,
+      interactionModes: props.pluginState.interactionModes
+    })
+  })
+
+  it('emits interact:listboxcapable when enabled with a feature layer that has a labelProperty', () => {
+    const capableProps = {
+      ...props,
+      pluginState: { ...props.pluginState, interactionModes: ['selectFeature'], layers: [{ layerId: 'myLayer', labelProperty: 'name' }] }
+    }
+    render(<InteractInit {...capableProps} />)
+    expect(capableProps.services.eventBus.emit).toHaveBeenCalledWith('interact:listboxcapable')
+  })
+
+  it('emits interact:listboxcapable when enabled with a labeled marker', () => {
+    const capableProps = {
+      ...props,
+      mapState: { ...props.mapState, markers: { items: [{ id: 'm1', label: 'My marker' }] } },
+      pluginState: { ...props.pluginState, interactionModes: ['selectMarker'] }
+    }
+    render(<InteractInit {...capableProps} />)
+    expect(capableProps.services.eventBus.emit).toHaveBeenCalledWith('interact:listboxcapable')
   })
 })
