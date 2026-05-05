@@ -9,6 +9,10 @@
   background-color: #f4f8fb;
 }
 
+.govuk-template__body.app-homepage #main-content {
+  background-color: #ffffff;
+}
+
 .app-section--features {
   background-color: #f4f8fb;
   border-bottom: 1px solid #8eb8dc;
@@ -103,17 +107,6 @@
   inset: 0;
 }
 
-/* Fix sticky footer: the theme gives flex: 1 0 auto to any govuk-width-container
-   that is a direct child of govuk-template__body-inner, but the phase banner div
-   also matches that selector and grows incorrectly on short pages. Move the
-   flex-grow to <main> instead so only the content area stretches. */
-.govuk-template--rebranded .govuk-template__body-inner > .govuk-width-container {
-  flex: none;
-}
-
-.govuk-template--rebranded .govuk-main-wrapper {
-  flex: 1 0 auto;
-}
 
 /* GOV.UK tabs — enhanced styles for all devices; React manages active state.
    Extra specificity via .app-prose-scope required to override the theme. */
