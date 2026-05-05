@@ -296,13 +296,14 @@ describe('MapLibreProvider', () => {
     expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, symbolRegistry, 1)
   })
 
-  test('addPatternsToMap delegates to utility with map instance and pixelRatio', async () => {
+  test('addPatternsToMap falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
     const p = makeProvider()
     await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(0)
     const configs = [{ fillPattern: 'dot' }]
     const registry = {}
     await p.addPatternsToMap(configs, 'test', registry)
-    expect(addPatternsToMap).toHaveBeenCalledWith(map, configs, 'test', registry, 1) // getPixelRatio()=1, mapSize unset → 1*1
+    expect(addPatternsToMap).toHaveBeenCalledWith(map, configs, 'test', registry, 1)
   })
 
   test('addPatternsToMap is called with pixelRatio from getPixelRatio', async () => {
