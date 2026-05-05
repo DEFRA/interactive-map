@@ -29,17 +29,15 @@ describe('keyboardShortcutRegistry', () => {
     expect(shortcuts).toContain(shortcut)
   })
 
-  test('registerKeyboardShortcut should ignore duplicate plugin shortcuts', () => {
+  test('registerKeyboardShortcut updates an existing shortcut when re-registered with the same id', () => {
     const shortcut = { id: 'duplicate', description: 'First' }
-    const duplicateShortcut = { id: 'duplicate', description: 'Second' }
-    // Register the first one
+    const updatedShortcut = { id: 'duplicate', description: 'Second' }
     registerKeyboardShortcut({ shortcut })
-    // Try to register a second shortcut with the same ID
-    registerKeyboardShortcut({ shortcut: duplicateShortcut })
+    registerKeyboardShortcut({ shortcut: updatedShortcut })
     const shortcuts = getKeyboardShortcuts()
-    // Only the first shortcut should exist
-    expect(shortcuts).toContain(shortcut)
-    expect(shortcuts).not.toContain(duplicateShortcut)
+    expect(shortcuts).toContain(updatedShortcut)
+    expect(shortcuts).not.toContain(shortcut)
+    expect(shortcuts.filter(s => s.id === 'duplicate')).toHaveLength(1)
   })
 
   test('setProviderSupportedShortcuts should filter core shortcuts', () => {

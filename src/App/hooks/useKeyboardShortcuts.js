@@ -7,12 +7,13 @@ import { useService } from '../store/serviceContext.js'
 
 export function useKeyboardShortcuts (containerRef) {
   const { mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta, readMapText } = useConfig()
-  const { interfaceType, dispatch } = useApp()
+  const { interfaceType, dispatch, layoutRefs } = useApp()
   const { announce } = useService()
 
   useEffect(() => {
     const el = containerRef.current
-    if (!el || interfaceType !== 'keyboard') {
+    const appEl = layoutRefs.appContainerRef?.current
+    if (!el || !appEl || interfaceType !== 'keyboard') {
       return undefined
     }
 
@@ -59,12 +60,15 @@ export function useKeyboardShortcuts (containerRef) {
     const handleKeyDown = handle('keydown')
     const handleKeyUp = handle('keyup')
 
+    // keydown (pan/zoom) stays on the viewport so arrows only fire when the map has focus.
+    // keyup (Alt+K and other global shortcuts) attaches to the app container so it fires
+    // from anywhere within the app, including the features listbox.
     el.addEventListener('keydown', handleKeyDown)
-    el.addEventListener('keyup', handleKeyUp)
+    appEl.addEventListener('keyup', handleKeyUp)
 
     return () => {
       el.removeEventListener('keydown', handleKeyDown)
-      el.removeEventListener('keyup', handleKeyUp)
+      appEl.removeEventListener('keyup', handleKeyUp)
     }
   }, [
     containerRef,

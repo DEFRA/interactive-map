@@ -10,8 +10,12 @@ const pluginShortcutIds = new Set()
 let providerSupportedIds = new Set()
 
 export const registerKeyboardShortcut = ({ shortcut }) => {
-  // Only add if we haven't seen this ID before
-  if (!pluginShortcutIds.has(shortcut.id)) {
+  if (pluginShortcutIds.has(shortcut.id)) {
+    const index = pluginShortcutHelp.findIndex(s => s.id === shortcut.id)
+    if (index !== -1) {
+      pluginShortcutHelp[index] = shortcut
+    }
+  } else {
     pluginShortcutIds.add(shortcut.id)
     pluginShortcutHelp.push(shortcut)
   }

@@ -10,6 +10,8 @@ import { unselectFeature } from './api/unselectFeature.js'
 import { selectMarker } from './api/selectMarker.js'
 import { unselectMarker } from './api/unselectMarker.js'
 
+const SELECT_FEATURES_GROUP = 'Select features'
+
 export const manifest = {
   InitComponent: InteractInit,
 
@@ -72,11 +74,41 @@ export const manifest = {
     }
   }],
 
-  keyboardShortcuts: [{
-    id: 'clickAtTarget',
-    title: 'Click at target',
-    command: '<kbd>Enter</kbd></dd>'
-  }],
+  keyboardShortcuts: [
+    {
+      id: 'clickAtTarget',
+      title: 'Click at target',
+      command: '<kbd>Enter</kbd>'
+    },
+    {
+      id: 'selectFeatures',
+      group: SELECT_FEATURES_GROUP,
+      context: 'listbox',
+      title: 'Select features',
+      command: '<kbd>Tab</kbd>'
+    },
+    {
+      id: 'navigateFeatures',
+      group: SELECT_FEATURES_GROUP,
+      context: 'listbox',
+      title: 'Navigate features',
+      command: '<kbd>↑</kbd> or <kbd>↓</kbd>'
+    },
+    {
+      id: 'selectFeature',
+      group: SELECT_FEATURES_GROUP,
+      context: 'listbox',
+      title: 'Select a feature',
+      command: '<kbd>Enter</kbd> or <kbd>Space</kbd>'
+    },
+    {
+      id: 'dismissHintOrReturn',
+      group: SELECT_FEATURES_GROUP,
+      context: 'listbox',
+      title: 'Dismiss hint / return to map',
+      command: '<kbd>Escape</kbd>'
+    }
+  ],
 
   icons: [{
     id: 'select',

@@ -14,12 +14,13 @@ export const createKeyboardActions = (mapProvider, announce, {
   const getZoom = (shift) => (shift ? nudgeZoomDelta : zoomDelta)
 
   return {
-    showKeyboardControls: () => {
+    showKeyboardControls: (e) => {
+      const context = e.target === containerRef.current ? 'viewport' : 'listbox'
       dispatch({
         type: 'OPEN_PANEL',
         payload: {
           panelId: 'keyboardHelp',
-          props: { triggeringElement: containerRef.current }
+          props: { triggeringElement: e.target, context }
         }
       })
     },

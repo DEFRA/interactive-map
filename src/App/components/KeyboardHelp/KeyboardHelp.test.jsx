@@ -1,9 +1,10 @@
 // src/components/KeyboardHelp.test.jsx
 import React from 'react'
-import { render, screen, within } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { KeyboardHelp } from './KeyboardHelp'
 import { getKeyboardShortcuts } from '../../registry/keyboardShortcutRegistry.js'
 import { useConfig } from '../../store/configContext'
+import { useApp } from '../../store/appContext.js'
 
 jest.mock('../../registry/keyboardShortcutRegistry.js', () => ({
   getKeyboardShortcuts: jest.fn()
@@ -13,51 +14,150 @@ jest.mock('../../store/configContext', () => ({
   useConfig: jest.fn()
 }))
 
-describe('KeyboardHelp', () => {
-  beforeEach(() => {
-    useConfig.mockReturnValue({})
-  })
+jest.mock('../../store/appContext.js', () => ({
+  useApp: jest.fn()
+}))
 
-  afterEach(() => {
-    jest.clearAllMocks()
-  })
+jest.mock('../../hooks/useResizeObserver.js', () => ({ useResizeObserver: jest.fn() }))
 
-  it('renders grouped keyboard shortcuts correctly', () => {
-    getKeyboardShortcuts.mockReturnValue([
-      { id: '1', group: 'Navigation', title: 'Go Home', command: '<kbd>H</kbd>' },
-      { id: '2', group: 'Navigation', title: 'Search', command: '<kbd>/</kbd>' },
-      { id: '3', group: 'Editing', title: 'Copy', command: '<kbd>Ctrl+C</kbd>' }
-    ])
+const SELECT_FEATURES_GROUP = 'Select features'
+const DEFAULT_GROUP = 'Navigate'
 
+// Ungrouped — mirrors real core shortcuts (no group, plain context)
+const VIEWPORT_SHORTCUTS = [
+  { id: '1', context: 'viewport', title: 'Move', command: '<kbd>↑</kbd>' },
+  { id: '2', context: 'viewport', title: 'Zoom', command: '<kbd>+</kbd>' }
+]
+
+const LISTBOX_SHORTCUTS = [
+  { id: '3', group: SELECT_FEATURES_GROUP, context: 'listbox', title: 'Navigate', command: '<kbd>↓</kbd>' },
+  { id: '4', group: SELECT_FEATURES_GROUP, context: 'listbox', title: 'Select', command: '<kbd>Enter</kbd>' }
+]
+
+const GLOBAL_SHORTCUTS = [
+  { id: '5', context: 'global', title: 'Help', command: '<kbd>Alt</kbd>' }
+]
+
+beforeEach(() => {
+  useConfig.mockReturnValue({})
+  useApp.mockReturnValue({ listboxIsActive: false })
+})
+
+afterEach(() => {
+  jest.clearAllMocks()
+})
+
+// ─── flat list (single group) ─────────────────────────────────────────────────
+
+describe('KeyboardHelp — flat list', () => {
+  it('renders a flat list with no tabs when all shortcuts share one group', () => {
+    getKeyboardShortcuts.mockReturnValue(VIEWPORT_SHORTCUTS)
     render(<KeyboardHelp />)
-
-    // outer container
-    const container = document.querySelector('.im-c-keyboard-help')
-    expect(container).toBeInTheDocument()
-
-    // Navigation group contains its shortcuts
-    const navGroup = screen.getByText('Go Home').closest('.im-c-keyboard-help__group')
-    expect(navGroup).toBeInTheDocument()
-    expect(within(navGroup).getByText('Search')).toBeInTheDocument()
-    expect(within(navGroup).getByText('Go Home')).toBeInTheDocument()
-
-    // Editing group contains its shortcut
-    const editGroup = screen.getByText('Copy').closest('.im-c-keyboard-help__group')
-    expect(editGroup).toBeInTheDocument()
-
-    // command HTML is injected
-    expect(screen.getByText('H')).toBeInTheDocument()
-    expect(screen.getByText('/')).toBeInTheDocument()
-    expect(screen.getByText('Ctrl+C')).toBeInTheDocument()
+    expect(document.querySelector('.im-c-keyboard-help')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+    expect(screen.getByText('Move')).toBeInTheDocument()
+    expect(screen.getByText('Zoom')).toBeInTheDocument()
   })
 
-  it('renders nothing if there are no shortcuts', () => {
+  it('renders a flat list with no tabs when there are no shortcuts', () => {
     getKeyboardShortcuts.mockReturnValue([])
-
     render(<KeyboardHelp />)
+    expect(document.querySelector('.im-c-keyboard-help')).toBeInTheDocument()
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+  })
 
-    const container = document.querySelector('.im-c-keyboard-help')
-    expect(container).toBeInTheDocument()
-    expect(container.querySelectorAll('.im-c-keyboard-help__group')).toHaveLength(0)
+  it('renders command HTML', () => {
+    getKeyboardShortcuts.mockReturnValue(VIEWPORT_SHORTCUTS)
+    render(<KeyboardHelp />)
+    expect(screen.getByText('↑')).toBeInTheDocument()
+  })
+})
+
+// ─── tab UI (multiple groups) ─────────────────────────────────────────────────
+
+describe('KeyboardHelp — tabs', () => {
+  const allShortcuts = [...GLOBAL_SHORTCUTS, ...VIEWPORT_SHORTCUTS, ...LISTBOX_SHORTCUTS]
+
+  beforeEach(() => {
+    useApp.mockReturnValue({ listboxIsActive: true })
+  })
+
+  it('renders a tab for each group when listboxIsActive is true', () => {
+    getKeyboardShortcuts.mockReturnValue(allShortcuts)
+    render(<KeyboardHelp />)
+    expect(screen.getByRole('tablist')).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: DEFAULT_GROUP })).toBeInTheDocument()
+    expect(screen.getByRole('tab', { name: SELECT_FEATURES_GROUP })).toBeInTheDocument()
+  })
+
+  it('defaults to first viewport-context tab when context is viewport', () => {
+    getKeyboardShortcuts.mockReturnValue(allShortcuts)
+    render(<KeyboardHelp context='viewport' />)
+    expect(screen.getByRole('tab', { name: DEFAULT_GROUP })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Move')).toBeInTheDocument()
+  })
+
+  it('defaults to first listbox-context tab when context is listbox', () => {
+    getKeyboardShortcuts.mockReturnValue(allShortcuts)
+    render(<KeyboardHelp context='listbox' />)
+    expect(screen.getByRole('tab', { name: SELECT_FEATURES_GROUP })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Select')).toBeInTheDocument()
+  })
+
+  it('falls back to first global-context tab when no exact match exists', () => {
+    getKeyboardShortcuts.mockReturnValue([...GLOBAL_SHORTCUTS, ...LISTBOX_SHORTCUTS])
+    render(<KeyboardHelp context='viewport' />)
+    expect(screen.getByRole('tab', { name: DEFAULT_GROUP })).toHaveAttribute('aria-selected', 'true')
+  })
+
+  it('shows only the active tab panel content', () => {
+    getKeyboardShortcuts.mockReturnValue(allShortcuts)
+    render(<KeyboardHelp context='viewport' />)
+    expect(screen.getByText('Move')).toBeInTheDocument()
+    expect(screen.queryByText('Select')).not.toBeInTheDocument()
+  })
+
+  it('switches tab and content on click', () => {
+    getKeyboardShortcuts.mockReturnValue(allShortcuts)
+    render(<KeyboardHelp context='viewport' />)
+    fireEvent.click(screen.getByRole('tab', { name: SELECT_FEATURES_GROUP }))
+    expect(screen.getByRole('tab', { name: SELECT_FEATURES_GROUP })).toHaveAttribute('aria-selected', 'true')
+    expect(screen.getByText('Select')).toBeInTheDocument()
+    expect(screen.queryByText('Move')).not.toBeInTheDocument()
+  })
+
+  it('ungrouped shortcuts default to Navigate group', () => {
+    getKeyboardShortcuts.mockReturnValue([
+      { id: 'x', title: 'No group', command: '<kbd>X</kbd>' },
+      ...LISTBOX_SHORTCUTS
+    ])
+    render(<KeyboardHelp />)
+    fireEvent.click(screen.getByRole('tab', { name: DEFAULT_GROUP }))
+    expect(screen.getByText('No group')).toBeInTheDocument()
+  })
+})
+
+// ─── listboxIsActive filtering ────────────────────────────────────────────────
+
+describe('KeyboardHelp — listboxIsActive filtering', () => {
+  const allShortcuts = [...GLOBAL_SHORTCUTS, ...VIEWPORT_SHORTCUTS, ...LISTBOX_SHORTCUTS]
+
+  it('hides the Select features tab when listboxIsActive is false', () => {
+    getKeyboardShortcuts.mockReturnValue(allShortcuts)
+    render(<KeyboardHelp />)
+    expect(screen.queryByRole('tab', { name: SELECT_FEATURES_GROUP })).not.toBeInTheDocument()
+  })
+
+  it('still shows ungrouped shortcuts when listboxIsActive is false', () => {
+    getKeyboardShortcuts.mockReturnValue(allShortcuts)
+    render(<KeyboardHelp />)
+    expect(screen.getByText('Move')).toBeInTheDocument()
+  })
+
+  it('renders as a flat list when only ungrouped shortcuts remain after filtering', () => {
+    getKeyboardShortcuts.mockReturnValue([...VIEWPORT_SHORTCUTS, ...LISTBOX_SHORTCUTS])
+    render(<KeyboardHelp />)
+    expect(screen.queryByRole('tablist')).not.toBeInTheDocument()
+    expect(screen.getByText('Move')).toBeInTheDocument()
   })
 })

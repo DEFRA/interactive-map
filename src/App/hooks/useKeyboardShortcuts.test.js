@@ -15,6 +15,7 @@ jest.mock('../store/mapContext.js')
 jest.mock('../store/serviceContext.js')
 
 const setup = (overrides = {}) => {
+  const appContainerRef = { current: document.createElement('div') }
   useConfig.mockReturnValue({
     mapProvider: 'google',
     reverseGeocode: { showMarker: true },
@@ -25,7 +26,7 @@ const setup = (overrides = {}) => {
     readMapText: jest.fn(),
     ...overrides.config
   })
-  useApp.mockReturnValue({ interfaceType: 'keyboard', dispatch: jest.fn(), ...overrides.app })
+  useApp.mockReturnValue({ interfaceType: 'keyboard', dispatch: jest.fn(), layoutRefs: { appContainerRef }, ...overrides.app })
   useMap.mockReturnValue({ crossHair: { lat: 0, lng: 0 }, ...overrides.map })
   useService.mockReturnValue({ announce: jest.fn(), ...overrides.service })
 
@@ -34,7 +35,7 @@ const setup = (overrides = {}) => {
   keyboardMappings.keydown = overrides.keydown || {}
   keyboardMappings.keyup = overrides.keyup || {}
 
-  return { containerRef: { current: document.createElement('div') }, actions }
+  return { containerRef: { current: document.createElement('div') }, appContainerRef, actions }
 }
 
 describe('useKeyboardShortcuts', () => {
@@ -121,7 +122,7 @@ describe('useKeyboardShortcuts', () => {
   })
 
   test('handles Alt+key combinations and keyup events', () => {
-    const { containerRef, actions } = setup({
+    const { containerRef, appContainerRef, actions } = setup({
       keydown: { 'Alt+S': 'search' },
       keyup: { ArrowUp: 'stopPan' },
       actions: { search: jest.fn(), stopPan: jest.fn() }
@@ -131,7 +132,7 @@ describe('useKeyboardShortcuts', () => {
     containerRef.current.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyS', key: 's', altKey: true }))
     expect(actions.search).toHaveBeenCalled()
 
-    containerRef.current.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp' }))
+    appContainerRef.current.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp' }))
     expect(actions.stopPan).toHaveBeenCalled()
   })
 
@@ -156,11 +157,12 @@ describe('useKeyboardShortcuts', () => {
   })
 
   test('cleanup removes event listeners', () => {
-    const { containerRef } = setup()
-    const spy = jest.spyOn(containerRef.current, 'removeEventListener')
+    const { containerRef, appContainerRef } = setup()
+    const viewportSpy = jest.spyOn(containerRef.current, 'removeEventListener')
+    const appSpy = jest.spyOn(appContainerRef.current, 'removeEventListener')
     const { unmount } = renderHook(() => useKeyboardShortcuts(containerRef))
     unmount()
-    expect(spy).toHaveBeenCalledWith('keydown', expect.any(Function))
-    expect(spy).toHaveBeenCalledWith('keyup', expect.any(Function))
+    expect(viewportSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
+    expect(appSpy).toHaveBeenCalledWith('keyup', expect.any(Function))
   })
 })

@@ -7,6 +7,17 @@ import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { attachEvents } from './events.js'
 import { isSelectMarkerOnly } from './utils/interactionModes.js'
 
+function useListboxCapable ({ enabled, interactionModes, markers, layers, eventBus }) {
+  useEffect(() => {
+    if (!enabled) { return }
+    const hasLabeledMarkers = interactionModes?.includes('selectMarker') && markers.items.some(m => m.label)
+    const hasFeatureLayers = interactionModes?.includes('selectFeature') && layers.some(l => l.labelProperty)
+    if (hasLabeledMarkers || hasFeatureLayers) {
+      eventBus.emit('interact:listboxcapable')
+    }
+  }, [enabled, interactionModes, markers, layers, eventBus])
+}
+
 export const InteractInit = ({
   appState,
   mapState,
@@ -18,7 +29,7 @@ export const InteractInit = ({
   const { interfaceType } = appState
   const { dispatch, enabled, selectedFeatures, interactionModes, layers } = pluginState
   const { eventBus, closeApp } = services
-  const { crossHair, mapStyle } = mapState
+  const { crossHair, mapStyle, markers } = mapState
 
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(interfaceType)
   const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
@@ -70,6 +81,8 @@ export const InteractInit = ({
   useEffect(() => {
     eventBus.emit('interact:active', { active: enabled, interactionModes })
   }, [enabled, interactionModes])
+
+  useListboxCapable({ enabled, interactionModes, markers, layers, eventBus })
 
   useHoverCursor(mapProvider, enabled, interactionModes, layers)
 

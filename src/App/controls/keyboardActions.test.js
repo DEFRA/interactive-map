@@ -33,7 +33,8 @@ const makeActions = (overrides = {}) => {
   const mapProvider = makeMapProvider()
   const announce = jest.fn()
   const dispatch = jest.fn()
-  const containerRef = { current: {} }
+  const containerEl = document.createElement('div')
+  const containerRef = { current: containerEl }
   const actions = createKeyboardActions(mapProvider, announce, {
     containerRef,
     dispatch,
@@ -46,6 +47,20 @@ const makeActions = (overrides = {}) => {
   })
   return { actions, mapProvider, announce, dispatch, containerRef }
 }
+
+const addListbox = ({ ariaHidden = false } = {}) => {
+  const el = document.createElement('div')
+  el.setAttribute('role', 'listbox')
+  if (ariaHidden) {
+    el.setAttribute('aria-hidden', 'true')
+  }
+  document.body.appendChild(el)
+  return el
+}
+
+afterEach(() => {
+  document.body.querySelectorAll('[role="listbox"]').forEach(el => el.remove())
+})
 
 beforeAll(() => {
   Object.defineProperty(window, 'matchMedia', { // NOSONAR: window required for broader browser support
@@ -65,12 +80,22 @@ beforeEach(() => {
 })
 
 describe('navigation actions', () => {
-  test('showKeyboardControls dispatches correct action', () => {
+  test('showKeyboardControls uses viewport context when target is the container', () => {
     const { actions, dispatch, containerRef } = makeActions()
-    actions.showKeyboardControls()
+    actions.showKeyboardControls({ target: containerRef.current })
     expect(dispatch).toHaveBeenCalledWith({
       type: 'OPEN_PANEL',
-      payload: { panelId: 'keyboardHelp', props: { triggeringElement: containerRef.current } }
+      payload: { panelId: 'keyboardHelp', props: { triggeringElement: containerRef.current, context: 'viewport' } }
+    })
+  })
+
+  test('showKeyboardControls uses listbox context when target is not the container', () => {
+    const { actions, dispatch } = makeActions()
+    const target = document.createElement('div')
+    actions.showKeyboardControls({ target })
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'OPEN_PANEL',
+      payload: { panelId: 'keyboardHelp', props: { triggeringElement: target, context: 'listbox' } }
     })
   })
 

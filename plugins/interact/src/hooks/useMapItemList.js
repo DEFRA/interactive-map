@@ -79,14 +79,15 @@ function useItemListSync ({ markers, interactionModes, layers, mapProvider, mult
   useEffect(() => {
     const handleMoveEnd = () => {
       const items = []
-      if (interactionModes.includes('selectMarker')) {
+      if (interactionModes?.includes('selectMarker')) {
         items.push(...collectVisibleMarkers(markers))
       }
-      if (interactionModes.includes('selectFeature') && layers.length > 0) {
+      if (interactionModes?.includes('selectFeature') && layers.length > 0) {
         items.push(...collectVisibleFeatures(mapProvider, layers))
       }
       eventBus.emit(EVENTS.MAP_SET_FEATURES, { items, multiselectable: multiSelect })
     }
+    handleMoveEnd()
     eventBus.on(EVENTS.MAP_MOVE_END, handleMoveEnd)
     eventBus.on(EVENTS.MAP_DATA_CHANGE, handleMoveEnd)
     return () => {
@@ -116,7 +117,7 @@ function useActiveItemHandler ({ markers, interactionModes, layers, mapProvider,
         dispatch({ type: 'SET_LISTBOX_ACTIVE', payload: null })
         return
       }
-      if (interactionModes.includes('selectFeature') && layers.length > 0) {
+      if (interactionModes?.includes('selectFeature') && layers.length > 0) {
         const layerIds = layers.map(layer => layer.layerId)
         const layerConfigMap = buildLayerConfigMap(layers)
         const features = mapProvider.getVisibleFeatures(layerIds)

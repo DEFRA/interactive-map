@@ -4,11 +4,11 @@ export function constrainKeyboardFocus (containerEl, e) {
   }
 
   const selectors = [
-    'a[href]:not([disabled])',
-    'button:not([disabled])',
-    'textarea:not([disabled])',
-    'input:not([disabled])',
-    'select:not([disabled])',
+    'a[href]:not([disabled]):not([tabindex="-1"])',
+    'button:not([disabled]):not([tabindex="-1"])',
+    'textarea:not([disabled]):not([tabindex="-1"])',
+    'input:not([disabled]):not([tabindex="-1"])',
+    'select:not([disabled]):not([tabindex="-1"])',
     '*[tabindex="0"]:not([disabled])'
   ]
   let focusableEls = Array.from(containerEl.querySelectorAll(selectors.join(',')))

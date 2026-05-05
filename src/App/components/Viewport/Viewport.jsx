@@ -19,7 +19,7 @@ import { Markers } from '../Markers/Markers'
 // sonarjs/disable-next-line function-name
 export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText } = useConfig()
-  const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset } = useApp()
+  const { interfaceType, mode, previousMode, layoutRefs, safeZoneInset, dispatch } = useApp()
   const { mapSize } = useMap()
   const { eventBus, hints } = useService()
 
@@ -28,6 +28,12 @@ export const Viewport = () => {
 
   const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
   const { activeFeatureId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus, hints })
+
+  useEffect(() => {
+    const handler = () => dispatch({ type: 'SET_LISTBOX_ACTIVE' })
+    eventBus.on('interact:listboxcapable', handler)
+    return () => eventBus.off('interact:listboxcapable', handler)
+  }, [eventBus])
 
   const onFeaturesFocus = () => { handleFeaturesFocus(); hints.show(keyboardHintText, { duration: 0 }) }
   const onFeaturesBlur = () => { handleFeaturesBlur(); hints.dismiss() }

@@ -35,7 +35,8 @@ function setupHookMocks (mainEl, viewportEl) {
     mode: 'default',
     previousMode: 'default',
     layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewportEl }, safeZoneRef: { current: null } },
-    safeZoneInset: {}
+    safeZoneInset: {},
+    dispatch: jest.fn()
   })
   useMap.mockReturnValue({ mapSize: 'medium', dispatch: jest.fn() })
   useService.mockReturnValue({
@@ -137,6 +138,15 @@ describe('Viewport interactions', () => {
   it('attaches keyboard shortcuts', () => {
     renderViewport()
     expect(useKeyboardShortcuts).toHaveBeenCalled()
+  })
+
+  it('dispatches SET_LISTBOX_ACTIVE when interact:listboxcapable fires', () => {
+    renderViewport()
+    const { eventBus } = useService()
+    const [, handler] = eventBus.on.mock.calls.find(([event]) => event === 'interact:listboxcapable')
+    handler()
+    const { dispatch } = useApp()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_LISTBOX_ACTIVE' })
   })
 
   it('calls mapProvider.clearHighlightedLabel on map:click', () => {

@@ -47,6 +47,7 @@ export const initialState = (config) => {
     hasExclusiveControl: false,
     openPanels,
     previousOpenPanels: {},
+    listboxIsActive: false,
     syncMapPadding: true,
     pluginRegistry,
     buttonRegistry,
