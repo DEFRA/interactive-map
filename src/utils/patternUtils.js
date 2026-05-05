@@ -1,8 +1,10 @@
 // Border path rendered behind the pattern content in Key panel symbols (20×20 coordinate space).
 export const KEY_BORDER_PATH = '<path d="M19 2.862v14.275c0 1.028-.835 1.862-1.862 1.862H2.863c-1.028 0-1.862-.835-1.862-1.862V2.862C1.001 1.834 1.836 1 2.863 1h14.275C18.166 1 19 1.835 19 2.862z" fill="{{backgroundColor}}" stroke="{{foregroundColor}}" stroke-width="2"/>'
 // Minimum oversampling — keeps 16×16 physical pixels as the floor so patterns remain crisp.
+const PATTERN_MIN_PIXEL_RATIO = 2
 
-export const getEffectivePixelRatio = (pixelRatio) => pixelRatio * 2
+export const getEffectivePixelRatio = (pixelRatio) => Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio * 2)
+
 export const hashString = (str) => {
   let hash = 0
   for (const ch of str) {
