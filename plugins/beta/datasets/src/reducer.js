@@ -4,6 +4,15 @@ import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
 import { datasetsToMenu } from './reducers/datasetsToMenu.js'
 
 const initialState = {
+  globals: {
+    visible: true,
+    opacity: 1,
+    // overrideDatasetOpacity:
+    // 'local': dataset opacity is used instead if set;
+    // 'global': local opacity is ignored
+    // 'multiply': local opacity is multiplied by global opacity
+    overrideDatasetOpacity: 'global'
+  },
   datasets: null,
   key: {
     items: [],
@@ -72,6 +81,7 @@ const setGlobalVisibility = (state, payload) => {
   const { visibility } = payload
   return {
     ...state,
+    globals: { ...state.globals, visible: visibility !== 'hidden' },
     datasets: state.datasets?.map(dataset => ({ ...dataset, visibility }))
   }
 }
@@ -193,6 +203,7 @@ const setGlobalOpacity = (state, payload) => {
   const { opacity } = payload
   return {
     ...state,
+    globals: { ...state.globals, opacity },
     datasets: state.datasets?.map(dataset => ({ ...dataset, opacity }))
   }
 }
