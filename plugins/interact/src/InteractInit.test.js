@@ -35,7 +35,7 @@ beforeEach(() => {
   getInterfaceType.mockReturnValue('mouse')
 
   props = {
-    appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: document.createElement('div') } } },
+    appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: document.createElement('div') }, appContainerRef: { current: document.createElement('div') } } },
     mapState: { crossHair: { fixAtCenter: jest.fn(), hide: jest.fn() }, mapStyle: {} },
     services: { eventBus: { emit: jest.fn() }, closeApp: jest.fn() },
     buttonConfig: {},
@@ -79,24 +79,32 @@ describe('InteractInit — hook delegation', () => {
 })
 
 describe('InteractInit — crossHair and event attachment', () => {
-  it('skips viewport focus listeners when viewportRef is null', () => {
-    props.appState.layoutRefs.viewportRef = { current: null }
+  it('skips listbox focus listeners when appContainerRef is null', () => {
+    props.appState.layoutRefs.appContainerRef = { current: null }
     render(<InteractInit {...props} />)
     expect(props.mapState.crossHair.hide).toHaveBeenCalled()
   })
 
-  it('fixes or hides crossHair based on interfaceType and viewport focus', () => {
-    const viewport = props.appState.layoutRefs.viewportRef.current
+  it('shows crossHair on touch/keyboard and hides when listbox has focus', () => {
+    const container = props.appState.layoutRefs.appContainerRef.current
+    getInterfaceType.mockReturnValue('touch')
     render(<InteractInit {...props} />)
 
-    // No viewport focus yet — always hides
-    expect(props.mapState.crossHair.hide).toHaveBeenCalled()
-    expect(props.mapState.crossHair.fixAtCenter).not.toHaveBeenCalled()
-
-    // Focus viewport with touch interface — fixAtCenter
-    getInterfaceType.mockReturnValue('touch')
-    act(() => viewport.dispatchEvent(new FocusEvent('focus')))
+    // Touch interface — fixAtCenter without requiring viewport focus
     expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
+
+    // Focus moves into listbox — hide
+    const listboxEl = document.createElement('div')
+    listboxEl.setAttribute('role', 'listbox')
+    container.appendChild(listboxEl)
+    act(() => listboxEl.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
+    expect(props.mapState.crossHair.hide).toHaveBeenCalled()
+
+    // Focus moves back out of listbox — show again
+    const otherEl = document.createElement('div')
+    container.appendChild(otherEl)
+    act(() => otherEl.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
+    expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalledTimes(2)
   })
 
   it('attaches events and returns cleanup', () => {

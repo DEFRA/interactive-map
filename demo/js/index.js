@@ -71,7 +71,7 @@ const interactPlugin = createInteractPlugin({
 	}
 	],
 	debug: true,
-	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
+	interactionModes: ['selectMarker', 'selectFeature', 'placeMarker'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
 	multiSelect: true,
 	deselectOnClickOutside: true
 })

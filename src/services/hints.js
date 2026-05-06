@@ -2,7 +2,7 @@ const stripHtml = (html) => html.replace(/<[^>]*>/g, '')
 
 /**
  * Creates the hints service. Manages a single active toast hint shown in the
- * KeyboardHints container. Calling show() replaces any current hint and
+ * Hints container. Calling show() replaces any current hint and
  * restarts the dismiss timer. Internally calls announce() so screen readers
  * receive the message through the live region without callers needing to pair
  * the two calls manually.

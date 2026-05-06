@@ -91,12 +91,12 @@ export const InteractInit = ({
   selectMarkerOnlyRef.current = selectMarkerOnly
   const crossHairRef = useRef(crossHair)
   crossHairRef.current = crossHair
-  const viewportFocusRef = useRef(false)
+  const listboxFocusRef = useRef(false)
 
   const updateCrossHair = useCallback(() => {
     const type = getInterfaceType()
     const isToK = ['touch', 'keyboard'].includes(type)
-    if (enabledRef.current && viewportFocusRef.current && isToK && !(type === 'touch' && selectMarkerOnlyRef.current)) {
+    if (enabledRef.current && !listboxFocusRef.current && isToK && !(type === 'touch' && selectMarkerOnlyRef.current)) {
       crossHairRef.current.fixAtCenter()
     } else {
       crossHairRef.current.hide()
@@ -113,18 +113,19 @@ export const InteractInit = ({
     return subscribeToInterfaceChangesImmediate(updateCrossHair)
   }, [updateCrossHair])
 
-  // Toggle target marker visibility on viewport focus/blur
+  // Hide crosshair when listbox has focus
   useEffect(() => {
-    const viewport = appState.layoutRefs?.viewportRef?.current
-    if (!viewport) { return undefined }
-    const handleFocus = () => { viewportFocusRef.current = true; updateCrossHair() }
-    const handleBlur = () => { viewportFocusRef.current = false; updateCrossHair() }
-    viewport.addEventListener('focus', handleFocus)
-    viewport.addEventListener('blur', handleBlur)
-    return () => {
-      viewport.removeEventListener('focus', handleFocus)
-      viewport.removeEventListener('blur', handleBlur)
+    const container = appState.layoutRefs?.appContainerRef?.current
+    if (!container) { return undefined }
+    const handleFocusIn = (e) => {
+      const inListbox = !!e.target.closest('[role="listbox"], [role="option"]')
+      if (listboxFocusRef.current !== inListbox) {
+        listboxFocusRef.current = inListbox
+        updateCrossHair()
+      }
     }
+    container.addEventListener('focusin', handleFocusIn)
+    return () => { container.removeEventListener('focusin', handleFocusIn) }
   }, [appState.layoutRefs, updateCrossHair])
 
   useEffect(() => {
