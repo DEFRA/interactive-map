@@ -101,6 +101,36 @@ describe('useLayoutMeasurements', () => {
   })
 
   test.each([
+    [
+      'no actions (height 0) — uses base gap',
+      { main: { offsetHeight: 500 }, bottom: { offsetTop: 400 }, actions: { offsetTop: 450, offsetHeight: 0 } },
+      '100px' // baseBottom = 500 - 400 - 0 = 100
+    ],
+    [
+      'actions floating above base gap (tablet/desktop) — uses actionsOffset + dividerGap',
+      { main: { offsetHeight: 500 }, bottom: { offsetTop: 440, offsetHeight: 20 }, actions: { offsetTop: 408, offsetHeight: 60 } },
+      '100px' // actionsOffset = 500 - 408 = 92, 92 + 8 = 100 > baseBottom (40)
+    ],
+    [
+      'base gap already larger than actionsOffset (mobile in-flow) — base gap wins',
+      { main: { offsetHeight: 500 }, bottom: { offsetTop: 350 }, actions: { offsetTop: 430, offsetHeight: 40 } },
+      '150px' // baseBottom = 150 > actionsOffset (70) + dividerGap (8) = 78
+    ]
+  ])('calculates --hint-bottom for %s', (_, refOverrides, expected) => {
+    const { layoutRefs } = setup({ refs: refOverrides })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', expected)
+  })
+
+  test('calculates --hint-bottom when actionsRef.current is null', () => {
+    const { layoutRefs } = setup()
+    layoutRefs.actionsRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    // actionsHeight = 0, falls back to baseBottom = 500 - 400 - 0 = 100
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '100px')
+  })
+
+  test.each([
     [{ offsetWidth: 250 }, { offsetWidth: 200 }, '250px'],
     [{ offsetWidth: 0 }, { offsetWidth: 200 }, '200px'],
     [{ offsetWidth: 0 }, { offsetWidth: 0 }, '0px']

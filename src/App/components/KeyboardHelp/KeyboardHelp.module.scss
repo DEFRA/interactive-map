@@ -2,6 +2,8 @@
 // Component: KeyboardHelp
 // ===================================================
 
+@use '../../../scss/tools/index' as tools;
+
 // 1. Base styles
 
 // 2. Elements
@@ -15,6 +17,10 @@
     padding: 10px 0;
     width: 100%;
     border-top: 1px solid var(--content-border-color);
+
+    &:last-child {
+        padding-bottom: 0;
+    }
 }
 
 .im-c-keyboard-help__group:last-child .im-c-keyboard-help__item:last-child {
@@ -39,4 +45,8 @@
 .im-o-app--mobile .im-c-keyboard-help__description {
     display: block;
     margin-top: 5px;
+}
+
+.im-c-tabs__panel .im-c-keyboard-help__item:first-child {
+    border-top: 0;
 }

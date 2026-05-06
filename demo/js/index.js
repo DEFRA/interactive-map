@@ -90,7 +90,7 @@ const interactPlugin = createInteractPlugin({
 	}
 	],
 	debug: true,
-	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
+	interactionModes: ['selectMarker', 'selectFeature', 'placeMarker'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
 	multiSelect: true,
 	deselectOnClickOutside: true
 })
@@ -270,7 +270,7 @@ const interactiveMap = new InteractiveMap('map', {
 	}),
 	// maxMobileWidth: 700,
 	// minDesktopWidth: 960,
-	mapLabel: 'Map showing Carlisle',
+	mapLabel: 'Map showing field parcels and land use',
 	// zoom: 14,
 	minZoom: 6,
 	maxZoom: 20,
@@ -279,7 +279,7 @@ const interactiveMap = new InteractiveMap('map', {
 	bounds: [-2.450804, 54.5599279, -2.403804, 54.6199279],
 	containerHeight: '650px',
 	transformRequest: transformTileRequest,
-	readMapText: true,
+	// readMapText: true,
 	// urlPosition: 'none',
 	// enableFullscreen: true,
 	// hasExitButton: true,

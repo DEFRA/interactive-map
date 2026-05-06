@@ -17,6 +17,7 @@
 
 // Components: specific UI components. Using 'CSS in Component' pattern
 @use '../App/components/KeyboardHelp/KeyboardHelp.module';
+@use '../App/components/Tabs/Tabs.module';
 @use '../App/components/MapButton/MapButton.module';
 @use '../App/components/Panel/Panel.module';
 @use '../App/components/Icon/Icon.module';
@@ -25,6 +26,7 @@
 @use '../App/components/PopupMenu/PopupMenu.module';
 @use '../App/components/Attributions/Attributions.module';
 @use '../App/components/Logo/Logo.module';
+@use '../App/components/Hints/Hints.module';
 @use '../App/components/CrossHair/CrossHair.module';
 @use '../App/components/Markers/Markers.module';
 @use '../App/components/Viewport/Features.module';

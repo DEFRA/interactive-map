@@ -1,7 +1,5 @@
 import createPlugin from './index.js'
 
-jest.mock('./interact.scss', () => ({}))
-
 describe('createPlugin', () => {
   it('returns plugin with fixed id and load function', () => {
     const plugin = createPlugin({ foo: 'bar' })

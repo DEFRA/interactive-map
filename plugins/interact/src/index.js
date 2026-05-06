@@ -1,6 +1,4 @@
 // /plugins/interact/index.js
-import './interact.scss'
-
 export default function createPlugin (options = {}) {
   return {
     ...options,

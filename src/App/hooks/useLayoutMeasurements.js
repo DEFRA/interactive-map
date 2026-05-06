@@ -55,7 +55,7 @@ function calculateLayout (layoutRefs) {
   const {
     appContainerRef, mainRef, topRef, topLeftColRef, topRightColRef,
     bottomRef, attributionsRef, bottomRightRef, leftTopRef, leftBottomRef,
-    rightTopRef, rightBottomRef
+    rightTopRef, rightBottomRef, actionsRef
   } = layoutRefs
 
   const appContainer = appContainerRef.current
@@ -98,9 +98,15 @@ function calculateLayout (layoutRefs) {
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
   // === Keyboard hint bottom offset ===
-  // Distance from the bottom of im-o-app__bottom to the bottom of im-o-app__main.
-  // Used to position the hint above the bottom bar (and above drawers on mobile).
-  appContainer.style.setProperty('--keyboard-hint-bottom', `${main.offsetHeight - bottom.offsetTop - bottom.offsetHeight}px`)
+  // On mobile the actions bar is in-flow so baseBottom already accounts for it.
+  // On tablet/desktop the actions bar is position:absolute (not in flow), so baseBottom
+  // only sees the bottom padding. actionsOffset measures the gap from the actions bar's
+  // top edge to the bottom of main, ensuring the hint always clears the floating bar.
+  const actionsEl = actionsRef?.current
+  const actionsHeight = actionsEl?.offsetHeight ?? 0
+  const baseBottom = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
+  const actionsOffset = actionsHeight > 0 ? main.offsetHeight - actionsEl.offsetTop : 0
+  appContainer.style.setProperty('--hint-bottom', `${Math.max(baseBottom, actionsOffset + dividerGap)}px`)
 
   // === Sub-slot panel max-heights ===
   appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)

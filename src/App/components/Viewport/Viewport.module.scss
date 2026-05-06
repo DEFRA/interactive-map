@@ -29,26 +29,6 @@
 
 // 2. Elements
 
-.im-c-viewport__keyboard-hint {
-    position: absolute;
-    bottom: var(--keyboard-hint-bottom, var(--primary-gap));
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 1001;
-    text-wrap: nowrap;
-
-    color: var(--tooltip-foreground-color);
-    background-color: var(--tooltip-background-color);
-    border-radius: var(--tooltip-border-radius);
-    padding: var(--tooltip-padding);
-    font-size: var(--tooltip-font-size);
-    line-height: 1.2;
-}
-
-.im-c-viewport__keyboard-hint kbd {
-    border: var(--kbd-tooltip-border);
-}
-
 .im-c-viewport__map-container > *:first-child {
     overflow: visible;
     transform-origin: top left;

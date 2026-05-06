@@ -84,6 +84,30 @@ describe('useMapItemList — lifecycle', () => {
   })
 })
 
+// ─── useMapItemList — initial population ─────────────────────────────────
+
+describe('useMapItemList — initial population', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('emits visible markers immediately on mount without waiting for moveend', () => {
+    const { el, container } = makeMarkerEl({ inViewport: true })
+    const markers = makeMarkers([{ id: 'm1', label: MARKER_LABEL, symbol: 'pin', isVisible: true }])
+    markers.markerRefs.set('m1', el)
+
+    const { eb } = setup({ interactionModes: ['selectMarker'], markers })
+
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: 'm1', label: MARKER_LABEL }], multiselectable: false
+    })
+    container.remove()
+  })
+
+  it('emits empty items immediately when no markers are in viewport', () => {
+    const { eb } = setup({ interactionModes: ['selectMarker'] })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+  })
+})
+
 // ─── useMapItemList — datachange trigger ─────────────────────────────────
 
 describe('useMapItemList — datachange trigger', () => {

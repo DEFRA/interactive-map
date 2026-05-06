@@ -201,7 +201,7 @@ interactPlugin.disable()
 
 ### `clear()`
 
-Clear all selected features and markers, and remove the location marker.
+Clear all selected features and markers.
 
 ```js
 interactPlugin.clear()

@@ -12,6 +12,7 @@ export const Features = forwardRef(({ activeFeatureId, selectedIds = [], multise
       tabIndex={hasItems ? '0' : '-1'}
       aria-hidden={hasItems ? undefined : true}
       aria-label='Map features'
+      aria-describedby={`${id}-keyboard-desc`}
       aria-multiselectable={multiselectable || undefined}
       aria-activedescendant={activeFeatureId ? `${id}-feature-${activeFeatureId}` : undefined}
       className='im-c-features'

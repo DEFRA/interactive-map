@@ -1,0 +1,57 @@
+@use '../../../scss/tools/index' as tools;
+
+// ===================================================
+// Component: Tabs
+// ===================================================
+
+.im-c-tabs__list {
+    position: relative;
+    display: flex;
+    flex-wrap: wrap;
+    padding: 0;
+    margin: 0;
+    border-bottom: 1px solid var(--app-border-color);
+    z-index: 1;
+}
+
+.im-c-tabs__tab {
+    position: relative;
+    appearance: none;
+    background: var(--button-hover-color);
+    border: 1px solid transparent;
+    border-bottom: none;
+    padding: 7.5px 15px;
+    margin: 5px 5px 5px 0;
+    cursor: pointer;
+    color: var(--foreground-color);
+    font-size: inherit;
+    font-weight: normal;
+    outline: 3px solid transparent;
+
+    &[aria-selected='true'] {
+        background: var(--background-color);
+        border-color: var(--app-border-color);
+        border-bottom-color: var(--background-color);
+        margin-top: 0;
+        margin-bottom: -1px;
+    }
+
+    &:focus .im-c-tabs__label {
+        @include tools.link-focus;
+    }
+}
+
+.im-c-tabs__tab:not([aria-selected='true']) {
+    &:hover {
+        background-color: var(--content-border-color);
+    }
+
+    .im-c-tabs__label {
+        text-decoration: underline;
+        text-underline-offset: 3px;
+    }
+
+    &:hover .im-c-tabs__label {
+        text-decoration-thickness: 3px;
+    }
+}

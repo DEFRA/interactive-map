@@ -1,136 +1,86 @@
 import { renderHook, act } from '@testing-library/react'
 import { useKeyboardHint } from './useKeyboardHint'
+import { getInterfaceType } from '../../utils/detectInterfaceType.js'
 
-const createRefs = () => ({
-  containerRef: { current: document.createElement('div') },
-  keyboardHintRef: { current: document.createElement('div') }
-})
+jest.mock('../../utils/detectInterfaceType.js', () => ({
+  getInterfaceType: jest.fn(() => 'keyboard')
+}))
 
 const defaultProps = (overrides = {}) => ({
-  interfaceType: 'keyboard',
-  keyboardHintVisible: true,
+  containerRef: { current: document.createElement('div') },
   onViewportFocusChange: jest.fn(),
-  ...createRefs(),
   ...overrides
 })
 
-describe('useKeyboardHint', () => {
-  test('returns handlers and showHint', () => {
-    const { result } = renderHook(() => useKeyboardHint(defaultProps()))
+// ─── return shape ─────────────────────────────────────────────────────────────
 
-    expect(result.current.showHint).toBe(true)
+describe('useKeyboardHint — return shape', () => {
+  test('returns focus and blur handlers', () => {
+    const { result } = renderHook(() => useKeyboardHint(defaultProps()))
     expect(typeof result.current.handleFocus).toBe('function')
     expect(typeof result.current.handleBlur).toBe('function')
   })
+})
 
-  test('useEffect early-returns when showHint = false', () => {
-    const props = defaultProps({ keyboardHintVisible: false })
-    const spy = jest.spyOn(props.containerRef.current, 'addEventListener')
+// ─── keydown listener ────────────────────────────────────────────────────────
 
-    renderHook(() => useKeyboardHint(props))
-
-    expect(spy).not.toHaveBeenCalled()
-    spy.mockRestore()
-  })
-
-  test('keydown Escape and Tab trigger onViewportFocusChange(false)', () => {
+describe('useKeyboardHint — keydown listener', () => {
+  test('Escape calls onViewportFocusChange(false)', () => {
     const props = defaultProps()
-
     renderHook(() => useKeyboardHint(props))
-
-    const keys = ['Escape', 'Tab']
-    keys.forEach(key => {
-      act(() => {
-        props.containerRef.current.dispatchEvent(
-          new KeyboardEvent('keydown', { key })
-        )
-      })
+    act(() => {
+      props.containerRef.current.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
     })
-
-    expect(props.onViewportFocusChange).toHaveBeenCalledTimes(2)
     expect(props.onViewportFocusChange).toHaveBeenCalledWith(false)
   })
 
-  test('keydown with other keys does NOT trigger onViewportFocusChange', () => {
+  test('non-Escape keydown does not call onViewportFocusChange', () => {
     const props = defaultProps()
-
     renderHook(() => useKeyboardHint(props))
-
-    const keys = ['Enter', 'a']
-    keys.forEach(key => {
-      act(() => {
-        props.containerRef.current.dispatchEvent(
-          new KeyboardEvent('keydown', { key })
-        )
-      })
+    act(() => {
+      props.containerRef.current.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter' }))
     })
-
     expect(props.onViewportFocusChange).not.toHaveBeenCalled()
   })
 
-  test('mousedown inside container but outside hint triggers false', () => {
-    const props = defaultProps()
-    const child = document.createElement('div')
-    props.containerRef.current.appendChild(child)
-
-    renderHook(() => useKeyboardHint(props))
-
-    act(() => {
-      child.dispatchEvent(new MouseEvent('mousedown', { bubbles: true }))
-    })
-
-    expect(props.onViewportFocusChange).toHaveBeenCalledWith(false)
+  test('does nothing when containerRef.current is null', () => {
+    const props = defaultProps({ containerRef: { current: null } })
+    expect(() => renderHook(() => useKeyboardHint(props))).not.toThrow()
   })
 
-  test('mousedown inside keyboardHintRef does NOT trigger change', () => {
-    const props = defaultProps()
-    props.containerRef.current.appendChild(props.keyboardHintRef.current)
-
-    renderHook(() => useKeyboardHint(props))
-
-    act(() => {
-      props.keyboardHintRef.current.dispatchEvent(
-        new MouseEvent('mousedown', { bubbles: true })
-      )
-    })
-
-    expect(props.onViewportFocusChange).not.toHaveBeenCalled()
-  })
-
-  test('cleanup removes event listeners', () => {
+  test('cleanup removes keydown listener on unmount', () => {
     const props = defaultProps()
     const spy = jest.spyOn(props.containerRef.current, 'removeEventListener')
-
     const { unmount } = renderHook(() => useKeyboardHint(props))
-
     unmount()
-    expect(spy).toHaveBeenCalled()
+    expect(spy).toHaveBeenCalledWith('keydown', expect.any(Function))
   })
+})
 
-  test('handleFocus triggers true only for keyboard interface', () => {
+// ─── handleFocus / handleBlur ─────────────────────────────────────────────────
+
+describe('useKeyboardHint — handleFocus / handleBlur', () => {
+  beforeEach(() => getInterfaceType.mockReturnValue('keyboard'))
+
+  test('handleFocus calls onViewportFocusChange(true) for keyboard interface', () => {
     const props = defaultProps()
     const { result } = renderHook(() => useKeyboardHint(props))
-
     act(() => result.current.handleFocus())
-
     expect(props.onViewportFocusChange).toHaveBeenCalledWith(true)
   })
 
-  test('handleFocus does not trigger if interfaceType is not keyboard', () => {
-    const props = defaultProps({ interfaceType: 'mouse' })
+  test('handleFocus does not call onViewportFocusChange for non-keyboard interface', () => {
+    getInterfaceType.mockReturnValue('mouse')
+    const props = defaultProps()
     const { result } = renderHook(() => useKeyboardHint(props))
-
     act(() => result.current.handleFocus())
-
     expect(props.onViewportFocusChange).not.toHaveBeenCalled()
   })
 
-  test('handleBlur always triggers false', () => {
+  test('handleBlur always calls onViewportFocusChange(false)', () => {
     const props = defaultProps({ interfaceType: 'mouse' })
     const { result } = renderHook(() => useKeyboardHint(props))
-
     act(() => result.current.handleBlur())
-
     expect(props.onViewportFocusChange).toHaveBeenCalledWith(false)
   })
 })

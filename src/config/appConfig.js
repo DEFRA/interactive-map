@@ -80,7 +80,7 @@ export const defaultAppConfig = {
       ...keyboardBasePanelSlots,
       width: '500px'
     },
-    render: () => <KeyboardHelp />
+    render: (props) => <KeyboardHelp context={props?.context} />
   }],
 
   icons: [{

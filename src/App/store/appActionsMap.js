@@ -158,6 +158,9 @@ const setPluginsEvaluated = (state) =>
 const clearPluginsEvaluated = (state) =>
   state.arePluginsEvaluated ? { ...state, arePluginsEvaluated: false } : state
 
+const setListboxActive = (state) =>
+  state.listboxIsActive ? state : { ...state, listboxIsActive: true }
+
 const setSafeZoneInset = (state, { safeZoneInset, syncMapPadding = true }) => {
   return shallowEqual(state.safeZoneInset, safeZoneInset)
     ? state
@@ -373,6 +376,7 @@ export const actionsMap = {
   SET_MODE: setMode,
   PLUGINS_EVALUATED: setPluginsEvaluated,
   CLEAR_PLUGINS_EVALUATED: clearPluginsEvaluated,
+  SET_LISTBOX_ACTIVE: setListboxActive,
   SET_SAFE_ZONE_INSET: setSafeZoneInset,
   REVERT_MODE: revertMode,
   OPEN_PANEL: openPanel,
