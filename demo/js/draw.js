@@ -34,7 +34,7 @@ const interactPlugin = createInteractPlugin({
 		layerId: 'stroke-inactive.cold',
 		idProperty: 'id'
 	}],
-	debug: true,
+	// debug: true,
 	interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
 	multiSelect: true,
 	contiguous: true,
@@ -241,6 +241,10 @@ interactiveMap.on('draw:ready', function () {
 interactiveMap.on('draw:started', function (e) {
 	console.log('draw:started')
 	interactPlugin.disable()
+})
+
+interactiveMap.on('draw:editstart', function (e) {
+	console.log('draw:editstart', e)
 })
 
 interactiveMap.on('draw:created', function (e) {
