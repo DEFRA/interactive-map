@@ -1,4 +1,4 @@
-const stripHtml = (html) => html.replace(/<[^>]*>/g, '')
+const stripHtml = (html) => html.replace(/<[^<>]*>/g, '')
 
 /**
  * Creates the hints service. Manages a single active toast hint shown in the
