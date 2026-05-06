@@ -6,18 +6,23 @@ import { getSnapInstance } from '../utils/snapHelpers.js'
  * @param {string} featureId - ID of the feature to edit
  * @param {object} options - Options including snapLayers
  */
-export const editFeature = ({ appState, appConfig, mapState, pluginConfig, pluginState, mapProvider }, featureId, options = {}) => {
+export const editFeature = ({ appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
   const { draw, map } = mapProvider
+  const { eventBus } = services
 
   if (!draw) {
-    return
+    return false
   }
 
   // Guard: feature must exist in draw before doing anything
-  if (!draw.get(featureId)) {
-    return
+  const existingFeature = draw.get(featureId)
+  if (!existingFeature) {
+    return false
   }
+
+  const editModeMap = { LineString: 'edit_line', Polygon: 'edit_polygon' }
+  eventBus.emit('draw:editstart', { mode: editModeMap[existingFeature.geometry.type] })
 
   // Determin snapLayers from pluginConfig or runtime config
   let snapLayers = null

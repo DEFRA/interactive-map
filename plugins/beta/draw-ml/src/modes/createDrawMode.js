@@ -110,6 +110,11 @@ export const createDrawMode = (ParentMode, config) => {
         if (coords.length > 0) {
           coords[coords.length - 1] = [e.lngLat.lng, e.lngLat.lat]
         }
+        // For polygon: prevent duplicate-coordinate clicks from reaching ParentMode, which
+        // would trigger a changeMode chain and cause a runtime error on coords.length access
+        if (!finishOnInvalidClick && !validateClick(getFeature(state))) {
+          return
+        }
       }
       const coordsBefore = getCoords(getFeature(state)).length
       ParentMode.onClick.call(this, state, e)
@@ -154,15 +159,18 @@ export const createDrawMode = (ParentMode, config) => {
         this._simulateMouse('click', ParentMode.onClick, state)
       }
 
-      // Push undo if a vertex was added
-      if (getCoords(getFeature(state)).length > coordsBefore) {
+      // Push undo and update count if a vertex was added
+      const newCoords = getCoords(getFeature(state))
+      if (newCoords.length > coordsBefore) {
         this.pushDrawUndo(state)
+        this.dispatchVertexChange(newCoords)
       }
     },
 
     dispatchVertexChange (coords) {
+      // Subtract 1 to exclude the rubber-band vertex that mapbox-gl-draw always appends
       this.map.fire('draw.vertexchange', {
-        numVertecies: coords.length
+        numVertecies: Math.max(0, coords.length - 1)
       })
     },
 
