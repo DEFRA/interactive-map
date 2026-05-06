@@ -2,7 +2,6 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { Tabs } from './Tabs'
 
-
 const TAB_A = { name: 'Alpha', content: <p>Alpha content</p> }
 const TAB_B = { name: 'Beta', content: <p>Beta content</p> }
 const TAB_C = { name: 'Gamma', content: <p>Gamma content</p> }

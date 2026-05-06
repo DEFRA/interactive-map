@@ -48,16 +48,6 @@ const makeActions = (overrides = {}) => {
   return { actions, mapProvider, announce, dispatch, containerRef }
 }
 
-const addListbox = ({ ariaHidden = false } = {}) => {
-  const el = document.createElement('div')
-  el.setAttribute('role', 'listbox')
-  if (ariaHidden) {
-    el.setAttribute('aria-hidden', 'true')
-  }
-  document.body.appendChild(el)
-  return el
-}
-
 afterEach(() => {
   document.body.querySelectorAll('[role="listbox"]').forEach(el => el.remove())
 })

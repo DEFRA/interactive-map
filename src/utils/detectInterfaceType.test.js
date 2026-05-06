@@ -101,7 +101,7 @@ describe('Interface Detector Utility Module', () => {
     // --- Path 1a: pointerdown 'touch' ---
     triggerDomEvent('pointerdown', { pointerType: 'touch' })
     expect(getInterfaceType()).toBe('touch') // synchronous update
-    expect(handler).not.toHaveBeenCalled()  // listener still pending
+    expect(handler).not.toHaveBeenCalled() // listener still pending
     jest.advanceTimersByTime(150)
     expect(handler).toHaveBeenCalledWith('touch')
     handler.mockClear()
@@ -114,7 +114,7 @@ describe('Interface Detector Utility Module', () => {
     // --- Path 1c: pointerdown 'mouse' ---
     triggerDomEvent('pointerdown', { pointerType: 'mouse' })
     expect(getInterfaceType()).toBe('mouse') // synchronous update
-    expect(handler).not.toHaveBeenCalled()  // listener still pending
+    expect(handler).not.toHaveBeenCalled() // listener still pending
     jest.advanceTimersByTime(150)
     expect(getInterfaceType()).toBe('mouse')
     expect(handler).toHaveBeenCalledWith('mouse')

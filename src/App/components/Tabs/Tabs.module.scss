@@ -37,7 +37,7 @@
     }
 
     &:focus .im-c-tabs__label {
-        @include tools.link-focus();
+        @include tools.link-focus;
     }
 }
 
