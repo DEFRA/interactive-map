@@ -1,5 +1,5 @@
 import { symbolRegistry } from './symbolRegistry.js'
-import { symbolDefaults } from '../config/symbolConfig.js'
+import { symbolDefaults, pin } from '../config/symbolConfig.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
 
@@ -9,6 +9,8 @@ const COLOR_OVERRIDE = '#ff0000'
 const FILL_OVERRIDE = `fill="${COLOR_OVERRIDE}"`
 
 beforeEach(() => {
+  symbolRegistry.clear()
+  symbolRegistry.initialise()
   symbolRegistry.setDefaults({})
 })
 
@@ -281,5 +283,90 @@ describe('symbolRegistry — graphic token', () => {
     const resolved = symbolRegistry.resolve(pin, {}, mapStyle)
     expect(resolved).toContain(`d="${pin.graphic}"`)
     expect(resolved).toContain('translate(22, 19) scale(0.8) translate(-8, -8)')
+  })
+})
+
+// ─── getSymbolDef ─────────────────────────────────────────────────────────────
+
+describe('getSymbolDef', () => {
+  it('returns undefined when dataset has no symbol', () => {
+    expect(symbolRegistry.getSymbolDef({})).toBeUndefined()
+  })
+
+  it('looks up string symbol id in the registry', () => {
+    expect(symbolRegistry.getSymbolDef({ symbol: 'pin' })).toBe(pin)
+  })
+
+  it('returns undefined for an unregistered string symbol', () => {
+    expect(symbolRegistry.getSymbolDef({ symbol: 'missing' })).toBeUndefined()
+  })
+
+  it('returns inline def from symbolSvgContent with svg key', () => {
+    const dataset = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 10 10' }
+    const result = symbolRegistry.getSymbolDef(dataset)
+    expect(result.svg).toBe('<circle/>')
+  })
+
+  it('symbolSvgContent takes precedence over symbol id', () => {
+    const result = symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSvgContent: '<circle/>' })
+    expect(result.svg).toBe('<circle/>')
+  })
+})
+
+// ─── getSymbolImageId ─────────────────────────────────────────────────────────
+
+describe('getSymbolImageId', () => {
+  it('returns null when dataset has no symbol', () => {
+    expect(symbolRegistry.getSymbolImageId({}, mapStyle)).toBeNull()
+  })
+
+  it('returns null for an unregistered symbol id', () => {
+    expect(symbolRegistry.getSymbolImageId({ symbol: 'does-not-exist' }, mapStyle)).toBeNull()
+  })
+
+  it('returns a string prefixed symbol- for normal state', () => {
+    const id = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    expect(typeof id).toBe('string')
+    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
+  })
+
+  it('returns a string prefixed symbol-act- for active state', () => {
+    const id = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true)
+    expect(typeof id).toBe('string')
+    expect(id).toMatch(/^symbol-act-[a-z0-9]+-\d+(\.\d+)?x$/)
+  })
+
+  it('normal and active ids differ for the same dataset', () => {
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true)
+    expect(normalId).not.toBe(activeId)
+  })
+
+  it('same dataset and style always produces the same id', () => {
+    const id1 = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    const id2 = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    expect(id1).toBe(id2)
+  })
+
+  it('different symbols produce different ids', () => {
+    const pinId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle)
+    const circleId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle)
+    expect(pinId).not.toBe(circleId)
+  })
+
+  it('different backgrounds produce different ids', () => {
+    const redId = symbolRegistry.getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#ff0000' }, mapStyle)
+    const blueId = symbolRegistry.getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#0000ff' }, mapStyle)
+    expect(redId).not.toBe(blueId)
+  })
+
+  it('resolves inline symbolSvgContent', () => {
+    const dataset = {
+      symbolSvgContent: '<circle cx="19" cy="19" r="12" fill="{{backgroundColor}}"/>',
+      symbolViewBox: '0 0 38 38',
+      symbolAnchor: [0.5, 0.5]
+    }
+    const id = symbolRegistry.getSymbolImageId(dataset, mapStyle)
+    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
   })
 })

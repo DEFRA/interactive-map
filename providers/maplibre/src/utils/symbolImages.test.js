@@ -1,8 +1,5 @@
-import { anchorToMaplibre, getSymbolImageId, addSymbolsToMap } from './symbolImages.js'
+import { anchorToMaplibre, addSymbolsToMap } from './symbolImages.js'
 import { symbolRegistry } from '../../../../src/services/symbolRegistry.js'
-
-const STYLE_ID = 'test'
-const mapStyle = { id: STYLE_ID }
 
 beforeAll(() => {
   globalThis.URL.createObjectURL = jest.fn(() => 'blob:mock')
@@ -87,64 +84,6 @@ describe('anchorToMaplibre', () => {
   })
 })
 
-// ─── getSymbolImageId ─────────────────────────────────────────────────────────
-
-describe('getSymbolImageId', () => {
-  it('returns null when dataset has no symbol', () => {
-    expect(getSymbolImageId({}, mapStyle, symbolRegistry)).toBeNull()
-  })
-
-  it('returns null for an unregistered symbol id', () => {
-    expect(getSymbolImageId({ symbol: 'does-not-exist' }, mapStyle, symbolRegistry)).toBeNull()
-  })
-
-  it('returns a string prefixed symbol- for normal state', () => {
-    const id = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
-    expect(typeof id).toBe('string')
-    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
-  })
-
-  it('returns a string prefixed symbol-act- for active state', () => {
-    const id = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, true)
-    expect(typeof id).toBe('string')
-    expect(id).toMatch(/^symbol-act-[a-z0-9]+-\d+(\.\d+)?x$/)
-  })
-
-  it('normal and active ids differ for the same dataset', () => {
-    const normalId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, false)
-    const activeId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, true)
-    expect(normalId).not.toBe(activeId)
-  })
-
-  it('same dataset and style always produces the same id', () => {
-    const id1 = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
-    const id2 = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
-    expect(id1).toBe(id2)
-  })
-
-  it('different symbols produce different ids', () => {
-    const pinId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry)
-    const circleId = getSymbolImageId({ symbol: 'circle' }, mapStyle, symbolRegistry)
-    expect(pinId).not.toBe(circleId)
-  })
-
-  it('different backgrounds produce different ids', () => {
-    const redId = getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#ff0000' }, mapStyle, symbolRegistry)
-    const blueId = getSymbolImageId({ symbol: 'pin', symbolBackgroundColor: '#0000ff' }, mapStyle, symbolRegistry)
-    expect(redId).not.toBe(blueId)
-  })
-
-  it('resolves inline symbolSvgContent', () => {
-    const dataset = {
-      symbolSvgContent: '<circle cx="19" cy="19" r="12" fill="{{backgroundColor}}"/>',
-      symbolViewBox: '0 0 38 38',
-      symbolAnchor: [0.5, 0.5]
-    }
-    const id = getSymbolImageId(dataset, mapStyle, symbolRegistry)
-    expect(id).toMatch(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/)
-  })
-})
-
 // ─── addSymbolsToMap ──────────────────────────────────────────────────────────
 
 const makeMap = (existingIds = []) => ({
@@ -153,6 +92,8 @@ const makeMap = (existingIds = []) => ({
   hasImage: jest.fn((id) => existingIds.includes(id)),
   addImage: jest.fn()
 })
+const STYLE_ID = 'test'
+const mapStyle = { id: STYLE_ID }
 
 describe('addSymbolsToMap — registration', () => {
   it('returns early and does not touch map for empty configs', async () => {
@@ -183,8 +124,8 @@ describe('addSymbolsToMap — registration', () => {
   it('populates _activeSymbolImageMap and _selectedSymbolImageMap with normal → variant id pairs', async () => {
     const map = makeMap()
     await addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
-    const normalId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, false)
-    const activeId = getSymbolImageId({ symbol: 'pin' }, mapStyle, symbolRegistry, true)
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true)
     const selectedId = map._selectedSymbolImageMap[normalId]
     expect(map._activeSymbolImageMap[normalId]).toBe(activeId)
     expect(selectedId).toMatch(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/)
@@ -194,8 +135,8 @@ describe('addSymbolsToMap — registration', () => {
     // Run once to discover the selected image ID (not derivable without rasterising)
     const setupMap = makeMap()
     await addSymbolsToMap(setupMap, [{ symbol: 'circle' }], mapStyle, symbolRegistry)
-    const normalId = getSymbolImageId({ symbol: 'circle' }, mapStyle, symbolRegistry, false)
-    const activeId = getSymbolImageId({ symbol: 'circle' }, mapStyle, symbolRegistry, true)
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, false)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, true)
     const selectedId = setupMap._selectedSymbolImageMap[normalId]
 
     const map = makeMap([normalId, activeId, selectedId])

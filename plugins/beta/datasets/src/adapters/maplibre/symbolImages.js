@@ -2,12 +2,12 @@
 import { hasSymbol } from '../../../../../../src/utils/symbolUtils.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 
-export { hasSymbol, getSymbolDef, getSymbolStyleColors, getSymbolViewBox, getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
+export { hasSymbol, getSymbolStyleColors, getSymbolViewBox, getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
 
 // Re-export MapLibre-specific symbol utilities from the provider.
 // This is the single cross-boundary import in the adapter; in a separate-package
 // setup this would be: '@interactive-map/maplibre-provider/utils/symbolImages'
-export { anchorToMaplibre, getSymbolImageId } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
+export { anchorToMaplibre } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
 
 /**
  * Returns a flat list of datasets and merged sublayers that require symbol images.

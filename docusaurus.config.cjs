@@ -45,7 +45,7 @@ const config = {
       return {
         name: 'custom-css',
         getClientModules() {
-          return [require.resolve('./docs/assets/css/docusaurus.css')];
+          return [require.resolve('./docs/assets/css/docusaurus.scss')];
         },
       };
     },

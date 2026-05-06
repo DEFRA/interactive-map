@@ -4,7 +4,6 @@
  */
 
 import { DEFAULTS, supportedShortcuts } from './defaults.js'
-import { scaleFactor } from '../../../src/config/appConfig.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents } from './appEvents.js'
@@ -325,7 +324,7 @@ export default class MapLibreProvider {
    * @returns {Promise<void>}
    */
   async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry) {
-    const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
+    const pixelRatio = this.map.getPixelRatio() || 1
     return addSymbolsToMap(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
   }
 
@@ -341,7 +340,7 @@ export default class MapLibreProvider {
    * @returns {Promise<void>}
    */
   async addPatternsToMap (patternConfigs, mapStyleId, patternRegistry) {
-    const pixelRatio = (this.map.getPixelRatio() || 1) * (scaleFactor[this.mapSize] || 1)
+    const pixelRatio = this.map.getPixelRatio() || 1
     return addPatternsToMap(this.map, patternConfigs, mapStyleId, patternRegistry, pixelRatio)
   }
 

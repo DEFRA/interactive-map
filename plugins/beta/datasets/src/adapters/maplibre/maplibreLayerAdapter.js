@@ -2,9 +2,8 @@ import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
 import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
 import { getPatternConfigs, hasPattern } from './patternImages.js'
-import { getSymbolConfigs, getSymbolImageId } from './symbolImages.js'
+import { getSymbolConfigs } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
-import { scaleFactor } from '../../../../../../src/config/appConfig.js'
 
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
@@ -45,13 +44,12 @@ export default class MaplibreLayerAdapter {
    */
   async init (datasets, mapStyle) {
     const mapStyleId = mapStyle.id
-    const pixelRatio = this._pixelRatio
     await Promise.all([
       this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
-    datasets.forEach(dataset => this._addLayers(dataset, mapStyle, pixelRatio))
+    datasets.forEach(dataset => this._addLayers(dataset, mapStyle))
     await new Promise(resolve => this._map.once('idle', resolve))
   }
 
@@ -90,13 +88,12 @@ export default class MaplibreLayerAdapter {
     await new Promise(resolve => this._map.once('idle', resolve))
 
     const newStyleId = newMapStyle.id
-    const pixelRatio = this._pixelRatio
     await Promise.all([
       this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), newStyleId, this._patternRegistry),
       this._mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), newMapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
-    datasets.forEach(dataset => this._addLayers(dataset, newMapStyle, pixelRatio))
+    datasets.forEach(dataset => this._addLayers(dataset, newMapStyle))
 
     // Re-push cached data for dynamic sources
     dynamicSources.forEach(source => source.reapply())
@@ -119,7 +116,6 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>}
    */
   async onSizeChange (datasets, mapStyle) {
-    const pixelRatio = this._pixelRatio
     await Promise.all([
       this._mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry),
       this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), mapStyle.id, this._patternRegistry)
@@ -127,7 +123,7 @@ export default class MaplibreLayerAdapter {
     datasets.forEach(dataset => {
       getAllLayerIds(dataset).forEach(layerId => {
         if (!this._symbolLayerIds.has(layerId) || !this._map.getLayer(layerId)) { return }
-        const imageId = getSymbolImageId(dataset, mapStyle, this._symbolRegistry, false, pixelRatio)
+        const imageId = this._symbolRegistry.getSymbolImageId(dataset, mapStyle, false, this._pixelRatio)
         if (imageId) {
           this._map.setLayoutProperty(layerId, 'icon-image', imageId)
         }
@@ -135,7 +131,7 @@ export default class MaplibreLayerAdapter {
       if (hasPattern(dataset)) {
         const { fillLayerId } = getLayerIds(dataset)
         if (this._map.getLayer(fillLayerId)) {
-          const imageId = this._patternRegistry.getPatternImageId(dataset, mapStyle.id, pixelRatio)
+          const imageId = this._patternRegistry.getPatternImageId(dataset, mapStyle.id, this._pixelRatio)
           if (imageId) {
             this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
           }
@@ -145,13 +141,13 @@ export default class MaplibreLayerAdapter {
         const merged = mergeSublayer(dataset, sublayer)
         const { symbolLayerId, fillLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
         if (this._map.getLayer(symbolLayerId)) {
-          const imageId = getSymbolImageId(merged, mapStyle, this._symbolRegistry, false, pixelRatio)
+          const imageId = this._symbolRegistry.getSymbolImageId(merged, mapStyle, false, this._pixelRatio)
           if (imageId) {
             this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
           }
         }
         if (hasPattern(merged) && this._map.getLayer(fillLayerId)) {
-          const imageId = this._patternRegistry.getPatternImageId(merged, mapStyle.id, pixelRatio)
+          const imageId = this._patternRegistry.getPatternImageId(merged, mapStyle.id, this._pixelRatio)
           if (imageId) {
             this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
           }
@@ -168,7 +164,7 @@ export default class MaplibreLayerAdapter {
    * @param {Object} mapStyle
    */
   addDataset (dataset, mapStyle) {
-    this._addLayers(dataset, mapStyle, this._pixelRatio)
+    this._addLayers(dataset, mapStyle)
   }
 
   /**
@@ -271,7 +267,6 @@ export default class MaplibreLayerAdapter {
    */
   async setStyle (dataset, mapStyle) {
     const mapStyleId = mapStyle.id
-    const pixelRatio = this._pixelRatio
     getAllLayerIds(dataset).forEach(layerId => {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
@@ -282,7 +277,7 @@ export default class MaplibreLayerAdapter {
       this._mapProvider.addPatternsToMap(getPatternConfigs([dataset], this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.addSymbolsToMap(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
     ])
-    this._addLayers(dataset, mapStyle, pixelRatio)
+    this._addLayers(dataset, mapStyle)
   }
 
   /**
@@ -364,11 +359,11 @@ export default class MaplibreLayerAdapter {
   // ─── Private ─────────────────────────────────────────────────────────────────
 
   get _pixelRatio () {
-    return this._mapProvider.map.getPixelRatio() * (scaleFactor[this._mapProvider.mapSize] || 1)
+    return this._mapProvider.map.getPixelRatio()
   }
 
-  _addLayers (dataset, mapStyle, pixelRatio) {
-    const sourceId = addDatasetLayers(this._map, dataset, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
+  _addLayers (dataset, mapStyle) {
+    const sourceId = addDatasetLayers(this._map, dataset, mapStyle, this._symbolRegistry, this._patternRegistry, this._pixelRatio)
     this._datasetSourceMap.set(dataset.id, sourceId)
     this._maintainSymbolOrdering(dataset)
   }

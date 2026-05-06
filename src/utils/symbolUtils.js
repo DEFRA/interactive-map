@@ -32,26 +32,6 @@ export const isStandaloneLabel = (marker) => {
 }
 
 /**
- * Resolves the symbolDef for a dataset's symbol config.
- *
- * dataset.symbol is a string symbol ID (e.g. 'pin').
- * dataset.symbolSvgContent is inline SVG content for a custom symbol.
- *
- * @param {Object} dataset
- * @param {Object} symbolRegistry
- * @returns {Object|undefined}
- */
-export const getSymbolDef = (dataset, symbolRegistry) => {
-  if (dataset.symbolSvgContent) {
-    return { svg: dataset.symbolSvgContent }
-  }
-  if (dataset.symbol) {
-    return symbolRegistry.get(dataset.symbol)
-  }
-  return undefined
-}
-
-/**
  * Extracts token overrides from a dataset's flat symbol style props.
  * Strips the 'symbol' prefix to produce internal token names (e.g. symbolBackgroundColor → backgroundColor).
  * Returns an empty object when no symbol is configured.

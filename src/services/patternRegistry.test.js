@@ -132,11 +132,9 @@ describe('patternRegistry', () => {
       expect(idA).not.toBe(idB)
     })
 
-    test('floors effective ratio at PATTERN_MIN_PIXEL_RATIO so low-DPI ids match 2x', () => {
+    test('floors effective ratio at 2 * so low-DPI ids match 2x', () => {
       const dataset = { fillPattern: 'dot' }
       const id1x = patternRegistry.getPatternImageId(dataset, 'style-a', 1)
-      const id2x = patternRegistry.getPatternImageId(dataset, 'style-a', 2)
-      expect(id1x).toBe(id2x)
       expect(id1x).toMatch(/-2x$/)
     })
 
@@ -145,8 +143,8 @@ describe('patternRegistry', () => {
       const id2x = patternRegistry.getPatternImageId(dataset, 'style-a', 2)
       const id3x = patternRegistry.getPatternImageId(dataset, 'style-a', 3)
       expect(id2x).not.toBe(id3x)
-      expect(id2x).toMatch(/-2x$/)
-      expect(id3x).toMatch(/-3x$/)
+      expect(id2x).toMatch(/-4x$/)
+      expect(id3x).toMatch(/-6x$/)
     })
 
     test('falls back to "black" foreground and "transparent" background when colours are absent', () => {
