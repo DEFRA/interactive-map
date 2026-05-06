@@ -54,7 +54,7 @@ const triggerDomEvent = (event, payload) => {
 
 // --- TEST SUITE ---
 describe('Interface Detector Utility Module', () => {
-  let createInterfaceDetector, getInterfaceType, subscribeToInterfaceChanges
+  let createInterfaceDetector, getInterfaceType, subscribeToInterfaceChanges, subscribeToInterfaceChangesImmediate
   let cleanup
 
   beforeEach(async () => {
@@ -72,6 +72,7 @@ describe('Interface Detector Utility Module', () => {
     createInterfaceDetector = importedModule.createInterfaceDetector
     getInterfaceType = importedModule.getInterfaceType
     subscribeToInterfaceChanges = importedModule.subscribeToInterfaceChanges
+    subscribeToInterfaceChangesImmediate = importedModule.subscribeToInterfaceChangesImmediate
 
     Object.keys(eventListeners).forEach(key => delete eventListeners[key])
     Object.keys(mediaListeners).forEach(key => delete mediaListeners[key])
@@ -157,6 +158,24 @@ describe('Interface Detector Utility Module', () => {
     // Verify events no longer fire after cleanup
     triggerDomEvent('keydown', { key: 'Tab' })
     expect(handler).not.toHaveBeenCalled()
+  })
+
+  it('subscribeToInterfaceChangesImmediate fires synchronously and unsubscribes', () => {
+    const handler = jest.fn()
+    const unsubscribe = subscribeToInterfaceChangesImmediate(handler)
+    cleanup = createInterfaceDetector()
+
+    triggerDomEvent('pointerdown', { pointerType: 'touch' })
+    expect(handler).toHaveBeenCalledWith('touch') // fires before timer advance
+
+    // Tab keydown goes through notifyListeners — exercises immediate forEach callback
+    triggerDomEvent('keydown', { key: 'Tab' })
+    expect(handler).toHaveBeenCalledWith('keyboard')
+    expect(handler).toHaveBeenCalledTimes(2)
+
+    unsubscribe()
+    triggerDomEvent('pointerdown', { pointerType: 'mouse' })
+    expect(handler).toHaveBeenCalledTimes(2) // no longer called after unsubscribe
   })
 
   it('should return "touch" when matchMedia initially matches coarse pointer', async () => {

@@ -100,6 +100,13 @@ describe('InteractInit — crossHair and event attachment', () => {
     act(() => listboxEl.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
     expect(props.mapState.crossHair.hide).toHaveBeenCalled()
 
+    // Second focusin still inside listbox — no-op (state unchanged)
+    const listboxEl2 = document.createElement('div')
+    listboxEl2.setAttribute('role', 'listbox')
+    container.appendChild(listboxEl2)
+    act(() => listboxEl2.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
+    expect(props.mapState.crossHair.hide).toHaveBeenCalledTimes(1)
+
     // Focus moves back out of listbox — show again
     const otherEl = document.createElement('div')
     container.appendChild(otherEl)
