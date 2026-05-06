@@ -22,7 +22,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
   }
 
   const editModeMap = { LineString: 'edit_line', Polygon: 'edit_polygon' }
-  eventBus.emit('edit:started', { mode: editModeMap[existingFeature.geometry.type] })
+  eventBus.emit('draw:editstart', { mode: editModeMap[existingFeature.geometry.type] })
 
   // Determin snapLayers from pluginConfig or runtime config
   let snapLayers = null

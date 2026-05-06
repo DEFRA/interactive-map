@@ -243,8 +243,8 @@ interactiveMap.on('draw:started', function (e) {
 	interactPlugin.disable()
 })
 
-interactiveMap.on('edit:started', function (e) {
-	console.log('edit:started', e)
+interactiveMap.on('draw:editstart', function (e) {
+	console.log('draw:editstart', e)
 })
 
 interactiveMap.on('draw:created', function (e) {
