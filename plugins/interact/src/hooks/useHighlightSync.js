@@ -53,12 +53,18 @@ export const useHighlightSync = ({
     updateHighlightedFeatures()
 
     // Re-apply after style reload — highlight layers are removed when style reloads.
-    // MAP_DATA_CHANGE is NOT used here because addLayer/moveLayer fire styledata,
-    // which would create an infinite update loop via MAP_DATA_CHANGE.
-    eventBus.on(events.MAP_STYLE_CHANGE, updateHighlightedFeatures)
+    // MAP_STYLE_CHANGE fires as soon as the new style is ready, before any plugin has
+    // re-added its layers, so we register a one-time MAP_DATA_CHANGE listener instead.
+    // MAP_DATA_CHANGE is debounced and fires once all layer additions from every plugin
+    // have settled, giving us a single well-timed trigger. Using once() avoids the
+    // infinite loop a permanent listener would cause (layer moves re-trigger MAP_DATA_CHANGE).
+    const handleStyleChange = () => {
+      eventBus.once(events.MAP_DATA_CHANGE, updateHighlightedFeatures)
+    }
+    eventBus.on(events.MAP_STYLE_CHANGE, handleStyleChange)
 
     return () => {
-      eventBus.off(events.MAP_STYLE_CHANGE, updateHighlightedFeatures)
+      eventBus.off(events.MAP_STYLE_CHANGE, handleStyleChange)
     }
   }, [selectedFeatures, listboxActiveItem, mapProvider, stylesMap, eventBus])
 }
