@@ -1,3 +1,5 @@
+import { applyDatasetDefaultsWithoutFlattening } from '../defaults.js'
+
 const flattenSublayer = (parentId, sublayer) => {
   const id = `${parentId}-${sublayer.id}`
   const sublayerId = sublayer.id
@@ -9,7 +11,7 @@ const flattenSublayer = (parentId, sublayer) => {
 
 const reduceDatasets = (acc, dataset) => {
   const { id } = dataset
-  acc[id] = { ...dataset }
+  acc[id] = applyDatasetDefaultsWithoutFlattening(dataset)
   const { orderedDatasets } = acc
   orderedDatasets.push(id)
   const flattenedSublayers = dataset.sublayers?.map((sublayer) => flattenSublayer(id, sublayer))

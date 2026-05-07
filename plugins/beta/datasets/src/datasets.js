@@ -39,7 +39,8 @@ export const createDatasets = ({
       })
       dynamicSources.set(dataset.id, dynamicSource)
     })
-    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets } })
+    // TODO - apply dynamic source defaults here, and include in mappedDatasets
+    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, pluginConfigDatasets: datasets } })
     eventBus.emit('datasets:ready')
   })
 

@@ -34,10 +34,12 @@ const initSublayerVisibility = (dataset) => {
 }
 
 const setDatasets = (state, payload) => {
-  const { datasets } = payload
+  const { datasets, pluginConfigDatasets } = payload
+  console.log('pluginConfigDatasets', pluginConfigDatasets)
+  console.log('Setting datasets', datasets)
   const datasetsWithSublayerVisibility = datasets.map(initSublayerVisibility)
   const menu = payload.menu || datasetsToMenu({ datasets })
-  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetsWithSublayerVisibility })
+  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: pluginConfigDatasets })
   return {
     ...state,
     datasets: datasetsWithSublayerVisibility,
