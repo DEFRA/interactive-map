@@ -4,15 +4,20 @@ import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.j
 import { hasPattern } from './patternImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, isDynamicSource } from './layerIds.js'
-import { hasSymbol, getSymbolDef, getSymbolAnchor, anchorToMaplibre, getSymbolImageId } from './symbolImages.js'
+import { hasSymbol, getSymbolAnchor, anchorToMaplibre } from './symbolImages.js'
+import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
+import { patternRegistry } from '../../../../../../src/services/patternRegistry.js'
+
+const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
+const getSymbolImageId = jest.spyOn(symbolRegistry, 'getSymbolImageId')
+jest.spyOn(patternRegistry, 'getPatternImageId').mockReturnValue('pattern-img-id')
 
 jest.mock('../../../../../../src/utils/getValueForStyle.js', () => ({
   getValueForStyle: jest.fn((value) => value)
 }))
 
 jest.mock('./patternImages.js', () => ({
-  hasPattern: jest.fn(() => false),
-  getPatternImageId: jest.fn(() => 'pattern-img-id')
+  hasPattern: jest.fn(() => false)
 }))
 
 jest.mock('../../utils/mergeSublayer.js', () => ({
@@ -29,10 +34,8 @@ jest.mock('./layerIds.js', () => ({
 
 jest.mock('./symbolImages.js', () => ({
   hasSymbol: jest.fn(() => false),
-  getSymbolDef: jest.fn(() => null),
   getSymbolAnchor: jest.fn(() => 'bottom'),
-  anchorToMaplibre: jest.fn((a) => a),
-  getSymbolImageId: jest.fn(() => null)
+  anchorToMaplibre: jest.fn((a) => a)
 }))
 
 const makeMap = ({ hasSource = false, hasLayer = false } = {}) => ({
@@ -118,7 +121,7 @@ describe('addSource', () => {
 // ─── addFillLayer ─────────────────────────────────────────────────────────────
 
 describe('addFillLayer', () => {
-  const opts = { mapStyleId: 'default', patternRegistry: {} }
+  const opts = { mapStyleId: 'default', patternRegistry }
 
   it('does not add a layer when layerId is falsy', () => {
     const map = makeMap()
@@ -263,7 +266,7 @@ describe('addStrokeLayer', () => {
 // ─── addSymbolLayer ───────────────────────────────────────────────────────────
 
 describe('addSymbolLayer', () => {
-  const opts = { mapStyle: { id: 'default' }, symbolRegistry: {}, pixelRatio: 1 }
+  const opts = { mapStyle: { id: 'default' }, symbolRegistry, pixelRatio: 1 }
 
   it('does not add a layer when layerId is falsy', () => {
     const map = makeMap()
@@ -341,8 +344,6 @@ describe('addSymbolLayer', () => {
 
 describe('addSublayerLayers', () => {
   const mapStyle = { id: 'default' }
-  const symbolRegistry = {}
-  const patternRegistry = {}
 
   it('merges the sublayer into the dataset before building layers', () => {
     const map = makeMap()
@@ -449,7 +450,7 @@ describe('addDatasetLayers', () => {
     getSymbolDef.mockReturnValue({ id: 'marker' })
     getSymbolImageId.mockReturnValue('marker-img')
     const dataset = { id: 'ds', symbol: 'marker', visibility: 'visible' }
-    addDatasetLayers(map, dataset, mapStyle, {}, undefined, 1)
+    addDatasetLayers(map, dataset, mapStyle, symbolRegistry, undefined, 1)
     const types = map.addLayer.mock.calls.map(([l]) => l.type)
     expect(types).toContain('symbol')
     expect(types).not.toContain('fill')

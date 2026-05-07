@@ -354,7 +354,7 @@ interactiveMap.on('datasets:ready', function () {
 	// 		fillPatternBackgroundColor: 'transparent'
 	// 	},
 	// 	{ datasetId: 'land-covers', sublayerId: '130-131' }), 2000)
-	setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 1000)
+	// setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 1000)
 	// setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 5000)
 	// setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
 	// setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ffff00' }, }, { datasetId: 'hedge-control' }), 1000)
