@@ -2,6 +2,7 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { createDatasets } from './datasets.js'
+import { datasetRegistry } from './registry/datasetRegistry.js'
 
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
@@ -57,6 +58,10 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useEffect(() => {
     dispatch({ type: 'BUILD_KEY_GROUPS', payload: null })
   }, [pluginState.datasets])
+
+  const datasetsRef = useRef(pluginState.mappedDatasets)
+  datasetsRef.current = pluginState.mappedDatasets
+  useEffect(() => datasetRegistry.attach(datasetsRef.current), [pluginState.mappedDatasets])
 
   // Cleanup only on unmount
   useEffect(() => {

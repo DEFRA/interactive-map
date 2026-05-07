@@ -39,7 +39,7 @@ export const createDatasets = ({
       })
       dynamicSources.set(dataset.id, dynamicSource)
     })
-    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, datasetDefaults } })
+    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets } })
     eventBus.emit('datasets:ready')
   })
 
