@@ -76,7 +76,8 @@ describe('addPatternsToMap', () => {
 
     it('processes multiple configs in parallel', async () => {
       const map = makeMap()
-      patternRegistry.register('dots', SVG_CONTENT)
+      patternRegistry.register('dots', "fillPatternForegroundColor: '#aabbcc', fillPatternBackgroundColor: '#112233'")
+      console.log('patternRegistry.list', patternRegistry.list())
       await addPatternsToMap(map, [{ fillPattern: 'stripes' }, { fillPattern: 'dots' }], OUTDOOR, patternRegistry)
       expect(map.addImage).toHaveBeenCalledTimes(2)
     })
