@@ -256,9 +256,10 @@ describe('useModalPanelBehaviour', () => {
     })
 
     it('handles null focus targets gracefully', () => {
+      refs.panel.current.focus = jest.fn()
       render(<TestComponent />)
       dispatchFocusIn(null)
-      expect(true).toBe(true)
+      expect(refs.panel.current.focus).not.toHaveBeenCalled()
     })
   })
 

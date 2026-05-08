@@ -54,7 +54,10 @@ describe('useAttachEvents', () => {
   it('enables click handling after a macrotask', () => {
     jest.useFakeTimers()
     renderHook(() => useAttachEvents(props))
+    const { clickReadyRef } = attachEvents.mock.calls[0][0]
+    expect(clickReadyRef.current).toBe(false)
     act(() => jest.runAllTimers())
+    expect(clickReadyRef.current).toBe(true)
     jest.useRealTimers()
   })
 

@@ -201,7 +201,6 @@ describe('useLayoutMeasurements', () => {
     const { dispatch } = setup({ app: { arePluginsEvaluated: false } })
     renderHook(() => useLayoutMeasurements())
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_SAFE_ZONE_INSET' }))
-    expect(layoutRefs => layoutRefs).toBeDefined() // no layout calculation
   })
 
   test('re-dispatches safe zone when arePluginsEvaluated becomes true', () => {

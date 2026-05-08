@@ -24,21 +24,19 @@ describe('createAnnouncer', () => {
 
   it('does nothing if mapStatusRef.current is null', () => {
     const announceWithNull = createAnnouncer({ current: null })
-    announceWithNull('Hello')
-    jest.advanceTimersByTime(1000)
-    expect(true).toBe(true) // just confirm no throw
+    expect(() => {
+      announceWithNull('Hello')
+      jest.advanceTimersByTime(1000)
+    }).not.toThrow()
   })
 
   it('returns early if mapStatusRef.current becomes null during setTimeout', () => {
     announce('Test message', 'plugin')
     expect(mapStatusRef.current.textContent).toBe('') // cleared immediately
 
-    // Set current to null before setTimeout fires
     mapStatusRef.current = null
 
-    jest.advanceTimersByTime(100)
-    // Should not throw, just return early
-    expect(true).toBe(true)
+    expect(() => jest.advanceTimersByTime(100)).not.toThrow()
   })
 
   it('sets textContent for a plugin message immediately', () => {
