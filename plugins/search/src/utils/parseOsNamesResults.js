@@ -2,7 +2,7 @@
 import OsGridRef from 'geodesy/osgridref.js'
 
 const POINT_BUFFER = 500
-const MAX_RESULTS = 8
+const DEFAULT_MAX_RESULTS = 8
 
 const isPostcode = (value) => {
   value = value.replace(/\s/g, '')
@@ -100,7 +100,7 @@ const label = (query, { NAME1, COUNTY_UNITARY, DISTRICT_BOROUGH, POSTCODE_DISTRI
   }
 }
 
-const parseOsNamesResults = (json, query, regions, crs) => {
+const parseOsNamesResults = (json, query, regions, crs, maxSuggestions = DEFAULT_MAX_RESULTS) => {
   if (!json || json.error || json.header?.totalresults === 0) {
     return []
   }
@@ -108,7 +108,7 @@ const parseOsNamesResults = (json, query, regions, crs) => {
   results = removeTenuousResults(results, query)
   results = removeDuplicates(results)
   results = removeRegions(results, regions)
-  results = results.slice(0, MAX_RESULTS)
+  results = results.slice(0, maxSuggestions)
 
   return results.map(l => ({
     id: l.GAZETTEER_ENTRY.ID,

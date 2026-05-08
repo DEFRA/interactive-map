@@ -299,3 +299,20 @@ describe('Highlighting Utils — symbol layers (committed selection)', () => {
     expect(map.addLayer).not.toHaveBeenCalled()
   })
 })
+
+describe('Highlighting Utils — missing style entry', () => {
+  test('skips highlight when feature layerId has no entry in stylesMap', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
+      stylesMap: {}
+    })
+
+    expect(map.addLayer).not.toHaveBeenCalled()
+    expect(map.setFilter).not.toHaveBeenCalled()
+  })
+})

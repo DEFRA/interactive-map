@@ -72,7 +72,7 @@ describe('createInputHandlers', () => {
 
     expect(dispatch).toHaveBeenCalledWith({
       type: 'UPDATE_SUGGESTIONS',
-      payload: []
+      payload: { results: [], hasError: false }
     })
 
     expect(dispatch).toHaveBeenCalledWith({

@@ -63,7 +63,7 @@ describe('createFormHandlers', () => {
     handlers.handleCloseClick(null, buttonRef)
 
     expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_EXPANDED', payload: false })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'UPDATE_SUGGESTIONS', payload: [] })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALUE', payload: '' })
     expect(markers.remove).toHaveBeenCalledWith('search')
 

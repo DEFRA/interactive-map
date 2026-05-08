@@ -10,7 +10,7 @@ import { attachEvents } from './events/index.js'
 export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
   const { id } = appConfig
   const { interfaceType } = appState
-  const { expanded: defaultExpanded, customDatasets, osNamesURL, regions } = pluginConfig
+  const { expanded: defaultExpanded, customDatasets, osNamesURL, regions, maxSuggestions } = pluginConfig
   const { dispatch, isExpanded, areSuggestionsVisible, suggestions } = pluginState
   const showLabel = appState?.controlConfig?.search?.[appState?.breakpoint].showLabel || false
   const closeIcon = iconRegistry.close
@@ -25,6 +25,7 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
     customDatasets,
     osNamesURL,
     regions,
+    maxSuggestions,
     crs: mapProvider.crs
   })
 

@@ -1,6 +1,6 @@
 // src/plugins/search/events/fetchSuggestions.js
 
-export const sanitiseQuery = (value) => value.replace(/[^a-zA-Z0-9\s\-.,]/g, '').trim()
+export const sanitiseQuery = (value) => value.replaceAll(/[^a-zA-Z0-9\s\-.,]/g, '').trim()
 
 const toRequest = ({ url, options }) => new Request(url, options)
 
@@ -32,14 +32,14 @@ const fetchDatasetResults = async (ds, request, query) => {
 
     if (!response.ok) {
       console.error(`Fetch error for ${ds.label || 'dataset'}: ${response.status}`)
-      return null
+      return { error: true }
     }
 
     const json = await response.json()
     return ds.parseResults(json, query)
   } catch (err) {
     console.error(`Network error for ${ds.label || 'dataset'}:`, err)
-    return null
+    return { error: true }
   }
 }
 
@@ -53,23 +53,24 @@ export const fetchSuggestions = async (value, datasets, dispatch, transformReque
   })
 
   let finalResults = []
+  let hasError = false
 
   for (const ds of activeDatasets) {
     const request = await getRequestConfig(ds, sanitisedValue, transformRequest)
     const results = await fetchDatasetResults(ds, request, sanitisedValue)
 
-    // Check if we have results to add
-    if (results?.length) {
+    if (results?.error) {
+      hasError = true
+    } else if (results?.length) {
       finalResults = [...finalResults, ...results]
+    }
 
-      // Only one control-flow statement allowed: the break for exclusivity
-      if (ds.exclusive) {
-        break
-      }
+    if (ds.exclusive && finalResults.length) {
+      break
     }
   }
 
-  dispatch({ type: 'UPDATE_SUGGESTIONS', payload: finalResults })
+  dispatch({ type: 'UPDATE_SUGGESTIONS', payload: { results: finalResults, hasError } })
 
   return {
     results: finalResults,

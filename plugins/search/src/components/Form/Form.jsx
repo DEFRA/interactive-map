@@ -2,9 +2,12 @@
 import { useEffect } from 'react'
 import { Suggestions } from '../Suggestions/Suggestions'
 
-const getResultMessage = (count) => {
+const getResultMessage = (count, hasSearchError, searchErrorMessage, noResultsMessage) => {
+  if (hasSearchError) {
+    return searchErrorMessage
+  }
   if (count === 0) {
-    return 'No results available'
+    return noResultsMessage
   }
   const plural = count === 1 ? 'result' : 'results'
   return `${count} ${plural} available`
@@ -25,7 +28,8 @@ export const Form = ({
   services,
   children // For SearchClose
 }) => {
-  const { areSuggestionsVisible, hasFetchedSuggestions, suggestions = [] } = pluginState
+  const { areSuggestionsVisible, hasFetchedSuggestions, hasSearchError, suggestions = [] } = pluginState
+  const { noResultsMessage, searchErrorMessage } = pluginConfig
 
   // Announce when a fetch has completed (hasFetchedSuggestions flips to true),
   // not when the input is merely focused/clicked (SHOW_SUGGESTIONS resets it to false).
@@ -33,7 +37,7 @@ export const Form = ({
     if (!areSuggestionsVisible || !hasFetchedSuggestions) {
       return
     }
-    services.announce(getResultMessage(suggestions.length))
+    services.announce(getResultMessage(suggestions.length, hasSearchError, searchErrorMessage, noResultsMessage))
   }, [suggestions, hasFetchedSuggestions])
 
   const classNames = [
@@ -42,7 +46,7 @@ export const Form = ({
     'im-c-panel'
   ].filter(Boolean).join(' ')
 
-  const showNoResults = areSuggestionsVisible && hasFetchedSuggestions && !suggestions.length
+  const showStatus = areSuggestionsVisible && hasFetchedSuggestions && (hasSearchError || !suggestions.length)
 
   return (
     <form
@@ -89,9 +93,9 @@ export const Form = ({
         {/* Close button passed as child */}
         {children}
       </div>
-      {showNoResults && (
+      {showStatus && (
         <div className='im-c-search__status' aria-hidden='true'>
-          No results available
+          {hasSearchError ? searchErrorMessage : noResultsMessage}
         </div>
       )}
       <Suggestions

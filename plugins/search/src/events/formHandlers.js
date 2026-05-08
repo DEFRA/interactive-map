@@ -23,7 +23,7 @@ export const createFormHandlers = ({
 
     handleCloseClick (_e, buttonRef) {
       dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
-      dispatch({ type: 'UPDATE_SUGGESTIONS', payload: [] })
+      dispatch({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })
       dispatch({ type: 'SET_VALUE', payload: '' })
       setTimeout(() => buttonRef.current.focus(), 0)
       markers.remove('search')

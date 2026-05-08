@@ -19,7 +19,7 @@ export const createInputHandlers = ({ dispatch, debouncedFetchSuggestions }) => 
 
     if (value.length < DEFAULTS.minSearchLength) {
       debouncedFetchSuggestions.cancel()
-      dispatch({ type: 'UPDATE_SUGGESTIONS', payload: [] })
+      dispatch({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })
       dispatch({ type: 'HIDE_SUGGESTIONS' })
       return
     }

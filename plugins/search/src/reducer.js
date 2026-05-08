@@ -5,6 +5,7 @@ const initialState = {
   suggestions: [],
   areSuggestionsVisible: false,
   hasFetchedSuggestions: false,
+  hasSearchError: false,
   selectedIndex: -1
 }
 
@@ -13,7 +14,8 @@ const toggleExpanded = (state, payload) => {
     ...state,
     isExpanded: payload,
     areSuggestionsVisible: payload,
-    hasFetchedSuggestions: false
+    hasFetchedSuggestions: false,
+    hasSearchError: false
   }
 }
 
@@ -44,8 +46,9 @@ const setValue = (state, payload) => {
 const updateSuggestions = (state, payload) => {
   return {
     ...state,
-    suggestions: payload,
-    hasFetchedSuggestions: true
+    suggestions: payload.results,
+    hasFetchedSuggestions: true,
+    hasSearchError: payload.hasError
   }
 }
 
@@ -53,7 +56,8 @@ const showSuggestions = (state) => {
   return {
     ...state,
     areSuggestionsVisible: true,
-    hasFetchedSuggestions: false
+    hasFetchedSuggestions: false,
+    hasSearchError: false
   }
 }
 
@@ -61,7 +65,8 @@ const hideSuggestions = (state) => {
   return {
     ...state,
     areSuggestionsVisible: false,
-    hasFetchedSuggestions: false
+    hasFetchedSuggestions: false,
+    hasSearchError: false
   }
 }
 

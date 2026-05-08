@@ -116,6 +116,20 @@ CSS width of the search input on tablet and desktop. For example `'300px'`.
 
 ---
 
+### `placeholder`
+**Type:** `string`
+**Default:** `'Search'`
+
+Placeholder text shown in the search input when it is empty.
+
+```js
+searchPlugin({
+  placeholder: 'Search for a location'
+})
+```
+
+---
+
 ### `expanded`
 **Type:** `boolean`
 **Default:** `false`
@@ -124,6 +138,62 @@ Controls whether the search input is always visible or hidden behind an open but
 
 - **Mobile** — by default the search is hidden and requires a button tap to open. When `expanded: true`, it moves to the banner slot and is shown inline at the top of the map at all times.
 - **Tablet and desktop** — the search always sits in the `top-left` slot regardless of this setting, but setting `expanded: true` removes the open button so the input is immediately visible without interaction.
+
+---
+
+### `minSearchLength`
+**Type:** `number`
+**Default:** `3`
+
+Minimum number of characters the user must type before a search is triggered.
+
+```js
+searchPlugin({
+  minSearchLength: 4
+})
+```
+
+---
+
+### `maxSuggestions`
+**Type:** `number`
+**Default:** `8`
+
+Maximum number of suggestions shown in the autocomplete list. Applies to OS Names results; custom datasets control their own result counts via `parseResults`.
+
+```js
+searchPlugin({
+  maxSuggestions: 5
+})
+```
+
+---
+
+### `noResultsMessage`
+**Type:** `string`
+**Default:** `'No results available'`
+
+Message shown below the search input when a query returns no results.
+
+```js
+searchPlugin({
+  noResultsMessage: 'No matching locations found'
+})
+```
+
+---
+
+### `searchErrorMessage`
+**Type:** `string`
+**Default:** `'Sorry, there was a problem with search'`
+
+Message shown below the search input when one or more datasets returns an error response. Shown in place of `noResultsMessage` when an error occurs.
+
+```js
+searchPlugin({
+  searchErrorMessage: 'Search is temporarily unavailable'
+})
+```
 
 ---
 

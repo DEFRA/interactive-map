@@ -128,7 +128,9 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
   const srcLayer = baseLayer.sourceLayer
   const geom = hasFillGeometry ? 'fill' : baseLayer.type
   const base = `${prefix}-${sourceId}`
-  const { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill } = stylesMap[layerId]
+  const style = stylesMap[layerId]
+  if (!style) { return }
+  const { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill } = style
   const isSelected = prefix === SELECTED_PREFIX
   const selectedStyle = usesSelectedStyle(prefix)
   const lineColor = selectedStyle ? selectionStroke : stroke
