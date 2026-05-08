@@ -63,6 +63,8 @@ export const fetchSuggestions = async (value, datasets, dispatch, transformReque
       hasError = true
     } else if (results?.length) {
       finalResults = [...finalResults, ...results]
+    } else {
+      // No action
     }
 
     if (ds.exclusive && finalResults.length) {

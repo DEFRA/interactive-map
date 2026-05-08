@@ -122,6 +122,15 @@ const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter
   }
 }
 
+const applyFillGeomHighlight = (map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter }) => {
+  if (isSelected) {
+    const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
+    // Only apply fill highlight to polygon features, not to any co-selected line features
+    applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
+  }
+  applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+}
+
 const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId) => {
   const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
   const baseLayer = map.getLayer(layerId)
@@ -129,7 +138,11 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
   const geom = hasFillGeometry ? 'fill' : baseLayer.type
   const base = `${prefix}-${sourceId}`
   const style = stylesMap[layerId]
-  if (!style) { return }
+
+  if (!style) {
+    return
+  }
+
   const { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill } = style
   const isSelected = prefix === SELECTED_PREFIX
   const selectedStyle = usesSelectedStyle(prefix)
@@ -139,12 +152,7 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
   const filter = ['in', idExpression, ['literal', [...ids]]]
 
   if (geom === 'fill') {
-    if (isSelected) {
-      const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
-      // Only apply fill highlight to polygon features, not to any co-selected line features
-      applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
-    }
-    applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+    applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
   }
 
   if (geom === 'line') {
