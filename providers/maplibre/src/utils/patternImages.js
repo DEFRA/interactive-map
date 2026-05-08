@@ -68,7 +68,7 @@ export const addPatternsToMap = async (map, styleArray, mapStyleId, patternRegis
       imagesToAdd[imageId] = async () => {
         const result = await rasterisePattern(style, mapStyleId, patternRegistry, pixelRatio)
         if (result) {
-          return map.addImage(result.imageId, result.imageData, { pixelRatio: effectiveRatio })
+          map.addImage(result.imageId, result.imageData, { pixelRatio: effectiveRatio })
         }
       }
     }
