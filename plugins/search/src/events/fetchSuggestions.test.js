@@ -43,7 +43,7 @@ describe('fetchSuggestions', () => {
     expect(result.results).toEqual(['a', 'b'])
     expect(dispatch).toHaveBeenCalledWith({
       type: 'UPDATE_SUGGESTIONS',
-      payload: ['a', 'b']
+      payload: { results: ['a', 'b'], hasError: false }
     })
   })
 
@@ -160,6 +160,19 @@ describe('fetchSuggestions', () => {
 
     expect(result.results).toEqual([])
     expect(console.error).toHaveBeenCalled()
+  })
+
+  test('dataset returning empty results does not set hasError', async () => {
+    global.fetch.mockResolvedValueOnce({ ok: true, json: async () => ({}) })
+
+    const datasets = [{ urlTemplate: '/api?q={query}', parseResults: () => [] }]
+    const result = await fetchSuggestions('test', datasets, dispatch)
+
+    expect(result.results).toEqual([])
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'UPDATE_SUGGESTIONS',
+      payload: { results: [], hasError: false }
+    })
   })
 
   test('stops processing when exclusive dataset returns results', async () => {

@@ -54,7 +54,7 @@ describe('createDatasets', () => {
     const query = 'test query'
 
     const result = datasets[0].parseResults(json, query)
-    expect(parseMock).toHaveBeenCalledWith(json, query, ['england', 'scotland', 'wales'], crs)
+    expect(parseMock).toHaveBeenCalledWith(json, query, ['england', 'scotland', 'wales'], crs, undefined)
     expect(result).toBe('parsed')
     parseMock.mockRestore()
   })

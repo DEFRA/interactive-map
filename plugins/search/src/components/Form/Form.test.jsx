@@ -32,7 +32,9 @@ describe('Form', () => {
     },
     pluginConfig: {
       expanded: false,
-      width: '400px'
+      width: '400px',
+      noResultsMessage: 'No results available',
+      searchErrorMessage: 'Sorry, there was a problem with search'
     },
     appState: {
       breakpoint: 'desktop',
@@ -250,6 +252,26 @@ describe('Form', () => {
         />
       )
       expect(baseProps.services.announce).not.toHaveBeenCalled()
+    })
+
+    it('shows the error message when hasSearchError is true', () => {
+      render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, ...searchedState, suggestions: [], hasSearchError: true }}
+        />
+      )
+      expect(screen.getByText('Sorry, there was a problem with search')).toBeInTheDocument()
+    })
+
+    it('announces the error message when hasSearchError is true', () => {
+      render(
+        <Form
+          {...baseProps}
+          pluginState={{ ...baseProps.pluginState, ...searchedState, suggestions: [], hasSearchError: true }}
+        />
+      )
+      expect(baseProps.services.announce).toHaveBeenCalledWith('Sorry, there was a problem with search')
     })
   })
 })

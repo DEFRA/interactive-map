@@ -52,9 +52,10 @@ describe('search state actions', () => {
   it('UPDATE_SUGGESTIONS updates the suggestions array and sets hasFetchedSuggestions', () => {
     const state = { ...initialState }
     const suggestions = [{ id: 1 }, { id: 2 }]
-    const newState = actions.UPDATE_SUGGESTIONS(state, suggestions)
+    const newState = actions.UPDATE_SUGGESTIONS(state, { results: suggestions, hasError: false })
     expect(newState.suggestions).toEqual(suggestions)
     expect(newState.hasFetchedSuggestions).toBe(true)
+    expect(newState.hasSearchError).toBe(false)
   })
 
   it('SHOW_SUGGESTIONS sets areSuggestionsVisible to true and resets hasFetchedSuggestions', () => {
