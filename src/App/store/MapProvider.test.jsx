@@ -186,9 +186,14 @@ describe('MapProvider', () => {
   })
 
   test('handles dispatch actions correctly', () => {
+    let contextValue
+    const Child = () => {
+      contextValue = React.useContext(MapContext)
+      return null
+    }
     render(
       <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>
-        <div>Child</div>
+        <Child />
       </MapProvider>
     )
 
@@ -197,5 +202,7 @@ describe('MapProvider', () => {
       capturedHandlers['map:setstyle']({ id: 'style2' })
       capturedHandlers['map:setsize']('400x400')
     })
+
+    expect(contextValue.isMapReady).toBe(true)
   })
 })

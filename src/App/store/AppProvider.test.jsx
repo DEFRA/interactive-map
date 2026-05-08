@@ -82,6 +82,9 @@ describe('AppProvider', () => {
       breakpointCb('sm')
       interfaceCb('mobile')
     })
+
+    expect(mockBreakpointDetector.subscribe).toHaveBeenCalledWith(expect.any(Function))
+    expect(detectInterface.subscribeToInterfaceChanges).toHaveBeenCalledWith(expect.any(Function))
   })
 
   test('handles eventBus setmode and revertmode', () => {
@@ -94,6 +97,8 @@ describe('AppProvider', () => {
       mockOptions.eventBus.off('app:setmode', capturedSetMode)
       mockOptions.eventBus.off('app:revertmode', capturedRevertMode)
     })
+    expect(mockOptions.eventBus.on).toHaveBeenCalledWith('app:setmode', capturedSetMode)
+    expect(mockOptions.eventBus.on).toHaveBeenCalledWith('app:revertmode', capturedRevertMode)
   })
 
   test('provides state, dispatch, and layoutRefs via context', () => {

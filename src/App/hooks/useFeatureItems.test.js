@@ -47,6 +47,7 @@ describe('useFeatureItems — event subscription', () => {
   it('does not subscribe when eventBus is undefined', () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
     renderHook(() => useFeatureItems(undefined))
+    expect(spy).not.toHaveBeenCalled()
     spy.mockRestore()
   })
 })

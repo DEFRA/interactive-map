@@ -117,6 +117,7 @@ describe('useMarkers — markerRef and positioning', () => {
     act(() => result.current.markerRef('m1')(ctx.mockElement))
     const renderCallback = ctx.mockEventBus.on.mock.calls.find(call => call[0] === 'map:render')?.[1]
     if (renderCallback) act(() => renderCallback())
+    expect(ctx.mockElement.style.transform).toBeUndefined()
   })
 
   it('updates positions on mapSize change', () => {
