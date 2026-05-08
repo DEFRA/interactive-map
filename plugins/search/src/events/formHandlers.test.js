@@ -122,7 +122,7 @@ describe('createFormHandlers', () => {
     expect(updateMap).not.toHaveBeenCalled()
   })
 
-  test('handleSubmit fetches suggestions and updates map (keyboard)', async () => {
+  test('handleSubmit fetches suggestions and updates map', async () => {
     fetchSuggestions.mockResolvedValueOnce({
       sanitisedValue: 'rome',
       results: [
@@ -132,7 +132,7 @@ describe('createFormHandlers', () => {
 
     await handlers.handleSubmit(
       { preventDefault: jest.fn() },
-      { interfaceType: 'keyboard' },
+      {},
       {
         suggestions: [],
         selectedIndex: -1,

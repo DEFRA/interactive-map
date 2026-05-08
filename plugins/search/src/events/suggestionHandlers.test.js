@@ -9,6 +9,7 @@ jest.mock('../utils/updateMap.js')
 describe('createSuggestionHandlers', () => {
   let dispatch
   let services
+  let viewportRef
   let handlers
 
   beforeEach(() => {
@@ -19,13 +20,16 @@ describe('createSuggestionHandlers', () => {
       announce: jest.fn()
     }
 
+    viewportRef = { current: { focus: jest.fn() } }
+
     handlers = createSuggestionHandlers({
       dispatch,
       services,
       mapProvider: 'map',
       markers: 'markers',
       showMarker: true,
-      markerOptions: { backgroundColor: 'blue' }
+      markerOptions: { backgroundColor: 'blue' },
+      viewportRef
     })
 
     jest.clearAllMocks()
@@ -41,6 +45,7 @@ describe('createSuggestionHandlers', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALUE', payload: 'Paris' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'HIDE_SUGGESTIONS' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SELECTED', payload: -1 })
+    expect(viewportRef.current.focus).toHaveBeenCalled()
     expect(updateMap).toHaveBeenCalledWith(expect.objectContaining({ bounds: 'b', point: 'p' }))
     expect(services.eventBus.emit).toHaveBeenCalledWith(
       'search:match',
@@ -55,6 +60,7 @@ describe('createSuggestionHandlers', () => {
 
     expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_EXPANDED', payload: false })
     expect(services.eventBus.emit).toHaveBeenCalledWith('search:close')
+    expect(viewportRef.current.focus).toHaveBeenCalled()
   })
 
   // ---------- ArrowDown ----------

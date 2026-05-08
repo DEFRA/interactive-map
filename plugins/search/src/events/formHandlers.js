@@ -60,9 +60,7 @@ export const createFormHandlers = ({
       }
 
       if (newSuggestions.length) {
-        if (appState.interfaceType === 'keyboard') {
-          viewportRef.current?.focus()
-        }
+        viewportRef.current?.focus()
         if (appState.breakpoint === 'mobile') {
           dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
           services.eventBus.emit('search:close')
