@@ -61,14 +61,19 @@ export const addPatternsToMap = async (map, styleArray, mapStyleId, patternRegis
   }
 
   const effectiveRatio = getEffectivePixelRatio(pixelRatio)
-  await Promise.all(styleArray.map(async (config) => {
-    const imageId = patternRegistry.getPatternImageId(config, mapStyleId, pixelRatio)
-    if (!imageId || map.hasImage(imageId)) {
-      return
+  // Build a unique set of imagesToAdd callbacks to avoid redundant rasterisation and map.addImage calls
+  const addImages = styleArray.reduce((imagesToAdd, style) => {
+    const imageId = patternRegistry.getPatternImageId(style, mapStyleId, pixelRatio)
+    if (imageId && !imagesToAdd[imageId] && !map.hasImage(imageId)) {
+      imagesToAdd[imageId] = async () => {
+        const result = await rasterisePattern(style, mapStyleId, patternRegistry, pixelRatio)
+        if (result) {
+          return map.addImage(result.imageId, result.imageData, { pixelRatio: effectiveRatio })
+        }
+      }
     }
-    const result = await rasterisePattern(config, mapStyleId, patternRegistry, pixelRatio)
-    if (result) {
-      map.addImage(result.imageId, result.imageData, { pixelRatio: effectiveRatio })
-    }
-  }))
+    return imagesToAdd
+  }, {})
+  // Execute the unique set of addImage callbacks in parallel
+  await Promise.all(Object.values(addImages).map(addImage => addImage()))
 }
