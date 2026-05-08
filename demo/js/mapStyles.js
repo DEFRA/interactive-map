@@ -101,8 +101,45 @@ const vtsMapStyles27700 = [{
 	attribution: 'Test'
 }]
 
+const OS_LOGO = '/assets/images/os-logo.svg'
+const OS_LOGO_ALT = 'Ordnance Survey logo'
+const OS_ATTRIBUTION = `Contains OS data ${String.fromCodePoint(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`
+
+const mapsRasterStyles27700 = [{
+	id: 'outdoor',
+	label: 'Outdoor',
+	url: process.env.MAPS_OUTDOOR_URL,
+	logo: OS_LOGO,
+	logoAltText: OS_LOGO_ALT,
+	attribution: OS_ATTRIBUTION,
+	backgroundColor: '#f5f5f0',
+	appColorScheme: 'light',
+	mapColorScheme: 'light'
+}, {
+	id: 'road',
+	label: 'Road',
+	url: process.env.MAPS_ROAD_URL,
+	logo: OS_LOGO,
+	logoAltText: OS_LOGO_ALT,
+	attribution: OS_ATTRIBUTION,
+	backgroundColor: '#ffffff',
+	appColorScheme: 'light',
+	mapColorScheme: 'light'
+}, {
+	id: 'light',
+	label: 'Light',
+	url: process.env.MAPS_LIGHT_URL,
+	logo: OS_LOGO,
+	logoAltText: OS_LOGO_ALT,
+	attribution: OS_ATTRIBUTION,
+	backgroundColor: '#f0f0f0',
+	appColorScheme: 'light',
+	mapColorScheme: 'light'
+}]
+
 export {
 	openMapStyles,
 	vtsMapStyles3857,
-	vtsMapStyles27700
+	vtsMapStyles27700,
+	mapsRasterStyles27700
 }
