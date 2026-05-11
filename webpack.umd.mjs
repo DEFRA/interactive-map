@@ -137,6 +137,7 @@ const ALL_BUILDS = [
   // Providers
   { entryPath: './providers/maplibre/src/index.js', libraryPath: 'maplibreProvider', outDir: 'providers/maplibre/dist/umd' },
   { entryPath: './providers/beta/open-names/src/index.js', libraryPath: 'openNamesProvider', outDir: 'providers/beta/open-names/dist/umd' },
+  { entryPath: './providers/beta/openlayers/src/index.js', libraryPath: 'openLayersProvider', outDir: 'providers/beta/openlayers/dist/umd' },
 
   // Plugins
   { entryPath: './plugins/beta/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/beta/scale-bar/dist/umd' },

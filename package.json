@@ -25,7 +25,8 @@
       "import": "./providers/beta/esri/dist/esm/index.js"
     },
     "./providers/openlayers": {
-      "import": "./providers/beta/openlayers/dist/esm/index.js"
+      "import": "./providers/beta/openlayers/dist/esm/index.js",
+      "require": "./providers/beta/openlayers/dist/umd/index.js"
     },
     "./plugins/scale-bar": {
       "import": "./plugins/beta/scale-bar/dist/esm/index.js",
