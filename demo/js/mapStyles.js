@@ -108,7 +108,7 @@ const OS_ATTRIBUTION = `Contains OS data ${String.fromCodePoint(169)} Crown copy
 const mapsRasterStyles27700 = [{
 	id: 'outdoor',
 	label: 'Outdoor',
-	url: process.env.MAPS_OUTDOOR_URL,
+	url: `${process.env.MAPS_OUTDOOR_URL}?key=${process.env.OS_CLIENT_ID}`,
 	thumbnail: '/assets/images/outdoor-raster-thumb.jpg',
 	logo: OS_LOGO,
 	logoAltText: OS_LOGO_ALT,
@@ -119,7 +119,7 @@ const mapsRasterStyles27700 = [{
 }, {
 	id: 'road',
 	label: 'Road',
-	url: process.env.MAPS_ROAD_URL,
+	url: `${process.env.MAPS_ROAD_URL}?key=${process.env.OS_CLIENT_ID}`,
 	thumbnail: '/assets/images/road-raster-thumb.jpg',
 	logo: OS_LOGO,
 	logoAltText: OS_LOGO_ALT,
@@ -130,7 +130,7 @@ const mapsRasterStyles27700 = [{
 }, {
 	id: 'light',
 	label: 'Light',
-	url: process.env.MAPS_LIGHT_URL,
+	url: `${process.env.MAPS_LIGHT_URL}?key=${process.env.OS_CLIENT_ID}`,
 	thumbnail: '/assets/images/light-raster-thumb.jpg',
 	logo: OS_LOGO,
 	logoAltText: OS_LOGO_ALT,

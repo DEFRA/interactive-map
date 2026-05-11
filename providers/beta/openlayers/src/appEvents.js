@@ -1,27 +1,30 @@
 import XYZ from 'ol/source/XYZ.js'
 import TileGrid from 'ol/tilegrid/TileGrid.js'
+import TileState from 'ol/TileState.js'
 import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from './defaults.js'
 
-function createTileSource (url, apiKey) {
+const createTileLoadFunction = (transformRequest) => (tile, src) => {
+  const result = transformRequest(src, 'Tile') || {}
+  const url = result.url || src
+  const headers = result.headers || {}
+  fetch(url, { headers })
+    .then(r => r.blob())
+    .then(blob => { tile.getImage().src = URL.createObjectURL(blob) })
+    .catch(() => tile.setState(TileState.ERROR))
+}
+
+export function createTileSource (url, transformRequest) {
   return new XYZ({
     projection: 'EPSG:27700',
-    url: `${url}?key=${apiKey}`,
-    tileGrid: new TileGrid({
-      resolutions: TILE_GRID_RESOLUTIONS,
-      origin: TILE_GRID_ORIGIN,
-      tileSize: TILE_SIZE
-    })
+    url,
+    tileGrid: new TileGrid({ resolutions: TILE_GRID_RESOLUTIONS, origin: TILE_GRID_ORIGIN, tileSize: TILE_SIZE }),
+    tileLoadFunction: transformRequest ? createTileLoadFunction(transformRequest) : undefined
   })
 }
 
-export function attachAppEvents ({
-  tileLayer,
-  apiKey,
-  events,
-  eventBus
-}) {
+export function attachAppEvents ({ tileLayer, transformRequest, events, eventBus }) {
   const handleSetMapStyle = (mapStyle) => {
-    const source = createTileSource(mapStyle.url, apiKey)
+    const source = createTileSource(mapStyle.url, transformRequest)
     tileLayer.setSource(source)
     eventBus.emit(events.MAP_STYLE_CHANGE, { mapStyleId: mapStyle.id })
   }

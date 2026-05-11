@@ -18,9 +18,7 @@ const interactPlugin = createInteractPlugin({
 
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'hybrid',
-  mapProvider: openLayersProvider({
-    apiKey: process.env.OS_CLIENT_ID
-  }),
+  mapProvider: openLayersProvider(),
   reverseGeocodeProvider: openNamesProvider({
     url: process.env.OS_NEAREST_URL,
     transformRequest: transformGeocodeRequest
