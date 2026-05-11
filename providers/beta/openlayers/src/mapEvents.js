@@ -17,7 +17,7 @@ function attachLoadEvents ({ source, map, emit, eventBus, events, on }) {
   map.once('rendercomplete', () => emit(events.MAP_FIRST_IDLE))
 }
 
-function attachMoveEvents ({ view, emit, eventBus, events, on, debouncers }) {
+function attachMoveEvents ({ map, view, emit, eventBus, events, on, debouncers }) {
   let moving = false
 
   const emitMoveEnd = debounce(() => {
@@ -33,8 +33,15 @@ function attachMoveEvents ({ view, emit, eventBus, events, on, debouncers }) {
       moving = true
       eventBus.emit(events.MAP_MOVE_START)
     }
-    emitMove()
     emitMoveEnd()
+  })
+
+  // Drive MAP_MOVE from postrender so resolution reads the actual animated value each frame,
+  // matching MapLibre/ESRI smooth scale bar behaviour
+  on(map, 'postrender', () => {
+    if (moving) {
+      emitMove()
+    }
   })
 }
 
@@ -103,7 +110,7 @@ export function attachMapEvents ({
   }
 
   attachLoadEvents({ source, map, emit, eventBus, events, on })
-  attachMoveEvents({ view: map.getView(), emit, eventBus, events, on, debouncers })
+  attachMoveEvents({ map, view: map.getView(), emit, eventBus, events, on, debouncers })
   attachClickEvents({ map, eventBus, events, on })
 
   on(map, 'postrender', () => eventBus.emit(events.MAP_RENDER))
