@@ -1,4 +1,4 @@
-import { TILE_GRID_RESOLUTIONS, ESRI_LOD_RESOLUTIONS, ESRI_DEFAULT_MIN_ZOOM, ESRI_DEFAULT_MAX_ZOOM } from '../defaults.js'
+import { TILE_GRID_RESOLUTIONS, WORLD_LOD_RESOLUTIONS, WORLD_DEFAULT_MIN_ZOOM, WORLD_DEFAULT_MAX_ZOOM } from '../defaults.js'
 
 export const ZOOM_ALIGNMENT = {
   UK: 'uk',
@@ -13,9 +13,9 @@ export const ZOOM_ALIGNMENT = {
 export function getViewResolutionConfig (zoomAlignment) {
   if (zoomAlignment === ZOOM_ALIGNMENT.WORLD) {
     return {
-      resolutions: ESRI_LOD_RESOLUTIONS,
-      defaultMinZoom: ESRI_DEFAULT_MIN_ZOOM,
-      maxZoom: ESRI_DEFAULT_MAX_ZOOM
+      resolutions: WORLD_LOD_RESOLUTIONS,
+      defaultMinZoom: WORLD_DEFAULT_MIN_ZOOM,
+      maxZoom: WORLD_DEFAULT_MAX_ZOOM
     }
   }
   return {
