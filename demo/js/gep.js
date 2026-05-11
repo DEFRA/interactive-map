@@ -15,9 +15,8 @@ import { addFieldParcelsLayer, renderLayersHTML, addLayerChangeHandler } from '.
 import { renderKeyHTML } from './gep/key.js'
 
 const interactPlugin = createInteractPlugin({
-  interactionModes: ['selectMarker', 'placeMarker'],
-  multiSelect: false,
-  deselectOnClickOutside: true
+  interactionModes: ['placeMarker'],
+  multiSelect: false
 })
 
 const interactiveMap = new InteractiveMap('map', {
@@ -90,6 +89,17 @@ interactiveMap.on('map:ready', function (e) {
   addFieldParcelsLayer(e.map)
   addLayerChangeHandler()
   interactPlugin.enable()
+})
+
+interactiveMap.on('interact:markerchange', function (e) {
+  interactiveMap.addPanel('info', {
+    label: 'Location',
+    html: '<p>Some info</p>',
+    visibleGeometry: { type: 'Feature', geometry: { type: 'Point', coordinates: e.coords } },
+    mobile: { slot: 'drawer', open: true },
+    tablet: { slot: 'left-top', width: '260px', open: true },
+    desktop: { slot: 'left-top', width: '280px', open: true }
+  })
 })
 
 interactiveMap.on('map:firstidle', function (e) {
