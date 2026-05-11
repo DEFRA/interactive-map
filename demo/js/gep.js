@@ -8,6 +8,13 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
+import createInteractPlugin from '/plugins/interact/src/index.js'
+
+const interactPlugin = createInteractPlugin({
+  interactionModes: ['selectMarker', 'placeMarker'],
+  multiSelect: false,
+  deselectOnClickOutside: true
+})
 
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'hybrid',
@@ -24,7 +31,6 @@ const interactiveMap = new InteractiveMap('map', {
   minZoom: 0,
   maxZoom: 13,
   containerHeight: '650px',
-  mapStyle: mapsRasterStyles27700[0],
   plugins: [
     mapStylesPlugin({
       mapStyles: mapsRasterStyles27700
@@ -37,12 +43,14 @@ const interactiveMap = new InteractiveMap('map', {
       osNamesURL: process.env.OS_NAMES_URL,
       width: '300px',
       showMarker: true
-    })
+    }),
+    interactPlugin
   ]
 })
 
 interactiveMap.on('map:ready', function () {
   console.log('OpenLayers map ready')
+  interactPlugin.enable()
 })
 
 interactiveMap.on('map:firstidle', function (e) {

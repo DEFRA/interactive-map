@@ -225,7 +225,13 @@ export default class OpenLayersProvider {
   }
 
   mapToScreen (coords) {
+    if (!this.map) {
+      return { x: 0, y: 0 }
+    }
     const pixel = this.map.getPixelFromCoordinate(coords)
+    if (!pixel) {
+      return { x: 0, y: 0 }
+    }
     return { x: pixel[0], y: pixel[1] }
   }
 
