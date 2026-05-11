@@ -1,6 +1,6 @@
 import { debounce } from '../../../../src/utils/debounce.js'
 import { throttle } from '../../../../src/utils/throttle.js'
-import { TILE_GRID_RESOLUTIONS, ZOOM_TOLERANCE } from './defaults.js'
+import { ZOOM_TOLERANCE } from './defaults.js'
 
 const DEBOUNCE_IDLE_TIME = 500
 const MOVE_THROTTLE_TIME = 10
@@ -81,19 +81,22 @@ export function attachMapEvents ({
   const listeners = []
   const debouncers = []
 
+  const view = map.getView()
+  const viewMinZoom = view.getMinZoom()
+  const viewMaxZoom = view.getMaxZoom()
+
   const getMapState = () => {
     if (destroyed) {
       return null
     }
     const zoom = getZoom()
-    const maxZoom = TILE_GRID_RESOLUTIONS.length - 1
     return {
       center: getCenter(),
       bounds: getBounds(),
       resolution: getResolution(),
       zoom,
-      isAtMaxZoom: zoom + ZOOM_TOLERANCE >= maxZoom,
-      isAtMinZoom: zoom - ZOOM_TOLERANCE <= 0
+      isAtMaxZoom: zoom + ZOOM_TOLERANCE >= viewMaxZoom,
+      isAtMinZoom: zoom - ZOOM_TOLERANCE <= viewMinZoom
     }
   }
 

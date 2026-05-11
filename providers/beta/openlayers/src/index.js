@@ -1,4 +1,4 @@
-export default function createOpenLayersProvider (config = {}) {
+export default function createOpenLayersProvider ({ zoomAlignment } = {}) {
   return {
     checkDeviceCapabilities: () => ({
       isSupported: !!document.createElement('canvas').getContext,
@@ -8,7 +8,7 @@ export default function createOpenLayersProvider (config = {}) {
       const MapProvider = (await import(/* webpackChunkName: "im-openlayers-provider" */ './openlayersProvider.js')).default
 
       const mapProviderConfig = {
-        ...config,
+        zoomAlignment,
         crs: 'EPSG:27700'
       }
 

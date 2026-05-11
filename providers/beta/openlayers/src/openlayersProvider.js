@@ -4,13 +4,13 @@ import TileLayer from 'ol/layer/Tile.js'
 import { defaults as defaultInteractions } from 'ol/interaction/defaults.js'
 import proj4 from 'proj4'
 import { register } from 'ol/proj/proj4.js'
-import { supportedShortcuts, TILE_GRID_RESOLUTIONS, DEFAULTS } from './defaults.js'
+import { supportedShortcuts, DEFAULTS } from './defaults.js'
+import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createTileSource } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 
 const CRS = 'EPSG:27700'
-const MAX_ZOOM = TILE_GRID_RESOLUTIONS.length - 1
 
 // OL view padding is [top, right, bottom, left]; app passes { top, right, bottom, left }
 const toPaddingArray = (padding) => {
@@ -45,13 +45,15 @@ export default class OpenLayersProvider {
     const source = createTileSource(mapStyle.url, transformRequest)
     const tileLayer = new TileLayer({ source })
 
+    const viewResolutions = getViewResolutionConfig(this.zoomAlignment ?? ZOOM_ALIGNMENT.UK)
+
     const view = new View({
       projection: CRS,
       center,
-      zoom: zoom ?? 4,
-      minZoom: minZoom ?? 0,
-      maxZoom: maxZoom ?? MAX_ZOOM,
-      resolutions: TILE_GRID_RESOLUTIONS,
+      zoom: zoom ?? viewResolutions.defaultMinZoom,
+      minZoom: Math.max(minZoom ?? viewResolutions.defaultMinZoom, viewResolutions.defaultMinZoom),
+      maxZoom: maxZoom ?? viewResolutions.maxZoom,
+      resolutions: viewResolutions.resolutions,
       constrainResolution: false,
       padding: toPaddingArray(padding)
     })

@@ -18,16 +18,18 @@ const interactPlugin = createInteractPlugin({
 
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'hybrid',
-  mapProvider: openLayersProvider(),
+  mapProvider: openLayersProvider({
+    zoomAlignment: 'world'
+  }),
   reverseGeocodeProvider: openNamesProvider({
     url: process.env.OS_NEAREST_URL,
     transformRequest: transformGeocodeRequest
   }),
   mapLabel: 'OS Maps raster map (OpenLayers, EPSG:27700)',
   center: [337297, 503695], // Lake District, Windermere — EPSG:27700 eastings/northings
-  zoom: 5,
-  minZoom: 0,
-  maxZoom: 13,
+  zoom: 12,
+  minZoom: 6,
+  maxZoom: 20,
   containerHeight: '650px',
   plugins: [
     mapStylesPlugin({

@@ -14,10 +14,21 @@ const createTileLoadFunction = (transformRequest) => (tile, src) => {
 }
 
 export function createTileSource (url, transformRequest) {
+  const tileGrid = new TileGrid({
+    resolutions: TILE_GRID_RESOLUTIONS,
+    origin: TILE_GRID_ORIGIN,
+    tileSize: TILE_SIZE
+  })
+
+  const tileUrlFunction = ([z, x, y]) => url
+    .replace('{z}', z)
+    .replace('{x}', x)
+    .replace('{y}', y)
+
   return new XYZ({
     projection: 'EPSG:27700',
-    url,
-    tileGrid: new TileGrid({ resolutions: TILE_GRID_RESOLUTIONS, origin: TILE_GRID_ORIGIN, tileSize: TILE_SIZE }),
+    tileGrid,
+    tileUrlFunction,
     tileLoadFunction: transformRequest ? createTileLoadFunction(transformRequest) : undefined
   })
 }
