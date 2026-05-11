@@ -1,4 +1,9 @@
 // Mock-prefixed variables are allowed in jest.mock factories by babel-plugin-jest-hoist
+import OpenLayersProvider from './openlayersProvider.js'
+import { attachMapEvents } from './mapEvents.js'
+import { attachAppEvents, createTileSource } from './appEvents.js'
+import { getExtentFromGeoJSON, isGeometryObscured } from './utils/spatial.js'
+
 const mockAnimate = jest.fn()
 const mockGetCenter = jest.fn(() => [400000.126, 300000.455])
 const mockGetZoom = jest.fn(() => 7)
@@ -61,11 +66,6 @@ jest.mock('./utils/spatial.js', () => ({
   getPaddedExtent: jest.fn(() => [0, 0, 800, 600]),
   isGeometryObscured: jest.fn(() => false)
 }))
-
-import OpenLayersProvider from './openlayersProvider.js'
-import { attachMapEvents } from './mapEvents.js'
-import { attachAppEvents, createTileSource } from './appEvents.js'
-import { getExtentFromGeoJSON, isGeometryObscured } from './utils/spatial.js'
 
 const events = {
   MAP_READY: 'map:ready',

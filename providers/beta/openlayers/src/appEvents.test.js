@@ -1,14 +1,14 @@
+import XYZ from 'ol/source/XYZ.js'
+import TileGrid from 'ol/tilegrid/TileGrid.js'
+import { createTileSource, attachAppEvents } from './appEvents.js'
+import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from './defaults.js'
+
 const mockTileGridInstance = {}
 const mockSourceInstance = {}
 
 jest.mock('ol/source/XYZ.js', () => ({ __esModule: true, default: jest.fn(() => mockSourceInstance) }))
 jest.mock('ol/tilegrid/TileGrid.js', () => ({ __esModule: true, default: jest.fn(() => mockTileGridInstance) }))
 jest.mock('ol/TileState.js', () => ({ __esModule: true, default: { ERROR: 'error' } }))
-
-import XYZ from 'ol/source/XYZ.js'
-import TileGrid from 'ol/tilegrid/TileGrid.js'
-import { createTileSource, attachAppEvents } from './appEvents.js'
-import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from './defaults.js'
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0))
 

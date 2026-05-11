@@ -1,4 +1,6 @@
 // Non-passthrough debounce: captures fn without calling it so tests can control when it fires
+import { attachMapEvents } from './mapEvents.js'
+
 const mockDebounceFns = []
 
 jest.mock('../../../../src/utils/debounce.js', () => ({
@@ -16,8 +18,6 @@ jest.mock('../../../../src/utils/throttle.js', () => ({
   __esModule: true,
   throttle: (fn) => jest.fn(fn)
 }))
-
-import { attachMapEvents } from './mapEvents.js'
 
 const events = {
   MAP_LOADED: 'map:loaded',
@@ -103,14 +103,14 @@ describe('attachMapEvents — move events', () => {
   it('emits MAP_MOVE_END (with state) when debounced callback fires', () => {
     const { view, eventBus } = setup()
     view.trigger('change')
-    mockDebounceFns[0].fn()  // emitMoveEnd's inner callback
+    mockDebounceFns[0].fn() // emitMoveEnd's inner callback
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.any(Object))
   })
 
   it('resets moving flag after MAP_MOVE_END so MAP_MOVE_START can fire again', () => {
     const { view, eventBus } = setup()
     view.trigger('change')
-    mockDebounceFns[0].fn()  // resets moving = false
+    mockDebounceFns[0].fn() // resets moving = false
     eventBus.emit.mockClear()
     view.trigger('change')
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_START)
@@ -118,7 +118,7 @@ describe('attachMapEvents — move events', () => {
 
   it('emits MAP_MOVE on postrender when moving', () => {
     const { view, map, eventBus } = setup()
-    view.trigger('change')  // sets moving = true (debounce wrapper does not reset it)
+    view.trigger('change') // sets moving = true (debounce wrapper does not reset it)
     map.trigger('postrender')
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE, expect.any(Object))
   })
@@ -167,7 +167,7 @@ describe('attachMapEvents — render and data events', () => {
   it('emits MAP_DATA_CHANGE (with state) when debounced tileloadend callback fires', () => {
     const { source, eventBus } = setup()
     source.trigger('tileloadend')
-    mockDebounceFns[1].fn()  // emitDataChange's inner callback
+    mockDebounceFns[1].fn() // emitDataChange's inner callback
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_DATA_CHANGE, expect.any(Object))
   })
 })
@@ -191,7 +191,7 @@ describe('attachMapEvents — remove', () => {
   it('prevents state-bearing events from emitting after destroy', () => {
     const { eventBus, handles } = setup()
     handles.remove()
-    mockDebounceFns[0].fn()  // emitMoveEnd fires after destroy → getMapState returns null
+    mockDebounceFns[0].fn() // emitMoveEnd fires after destroy → getMapState returns null
     expect(eventBus.emit).not.toHaveBeenCalledWith(events.MAP_MOVE_END, expect.anything())
   })
 })
