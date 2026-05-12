@@ -9,7 +9,7 @@ export class MapLibreDataset extends Dataset {
 
   get layerIds () {
     if (this.hasSublayers) {
-      return this.sublayers.flatMap(sublayer => sublayer.layerIds)
+      return this.sublayers.flatMap(sublayer => sublayer.layerIds).filter(Boolean)
     }
 
     if (this.hasSymbol) {
