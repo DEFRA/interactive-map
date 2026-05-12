@@ -151,7 +151,8 @@ const setSublayerVisibility = (state, payload) => {
 const setDatasetStyle = (state, payload) => {
   const { datasetId, styleChanges, mapStyle } = payload
   const { layerAdapter } = state
-  const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges }
+  const style = { ...state.mappedDatasets[datasetId].style, ...styleChanges }
+  const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges, style }
   // TODO - handle this side effect better
   layerAdapter?.setStyle(dataset, mapStyle)
   return {

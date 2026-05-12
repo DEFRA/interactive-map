@@ -267,7 +267,9 @@ export default class MaplibreLayerAdapter {
    */
   async setStyle (dataset, mapStyle) {
     const mapStyleId = mapStyle.id
-    getAllLayerIds(dataset).forEach(layerId => {
+    const layerIds = getAllLayerIds(dataset)
+    console.log('layerIds', layerIds)
+    layerIds.forEach(layerId => {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)
       }
