@@ -11,7 +11,7 @@
 import InteractiveMap from '../../src/index.js'
 import { openMapStyles, vtsMapStyles3857 } from './mapStyles.js'
 import { parcelSearch, gridRefSearchETRS89 } from './searchCustomDatasets.js'
-import { transformGeocodeRequest, transformTileRequest, transformDataRequest } from './auth.js'
+import { transformGeocodeRequest, transformVtsRequest3857, transformDataRequest } from './auth.js'
 // Providers
 import maplibreProvider from '/providers/maplibre/src/index.js'
 import openNamesProvider from '/providers/beta/open-names/src/index.js'
@@ -283,7 +283,7 @@ const interactiveMap = new InteractiveMap('map', {
 	// center: [-2.938769, 54.893806],
 	bounds: [-2.450804, 54.5599279, -2.403804, 54.6199279],
 	containerHeight: '650px',
-	transformRequest: transformTileRequest,
+	transformRequest: transformVtsRequest3857,
 	// readMapText: true,
 	// urlPosition: 'none',
 	// enableFullscreen: true,

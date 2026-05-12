@@ -1,6 +1,6 @@
 import InteractiveMap from '../../src/index.js'
 import { vtsMapStyles27700 } from './mapStyles.js'
-import { transformGeocodeRequest, transformVtsRequest } from './auth.js'
+import { transformGeocodeRequest, transformVtsRequest27700 } from './auth.js'
 import '/plugins/beta/datasets/src/datasets.scss' // in a separate repo: import '@defra/interactive-map/plugins/datasets/css'
 // Providers
 import openLayersProvider from '/providers/beta/openlayers/src/index.js'
@@ -28,7 +28,7 @@ const interactiveMap = new InteractiveMap('map', {
     url: process.env.OS_NEAREST_URL,
     transformRequest: transformGeocodeRequest
   }),
-  transformRequest: transformVtsRequest,
+  transformRequest: transformVtsRequest27700,
   mapLabel: 'OS Vector Tile map (OpenLayers, EPSG:27700)',
   center: [368500, 520200], // Appleby-in-Westmorland — EPSG:27700
   zoom: 12,

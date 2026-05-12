@@ -21,7 +21,7 @@ import createFramePlugin from '/plugins/beta/frame/src/index.js'
 // Demo utils
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { gridRefSearchOSGB36 } from './searchCustomDatasets.js'
-import { transformGeocodeRequest, transformTileRequest, setupEsriConfig } from './auth.js'
+import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
 import { renderMenuHTML, hideMenu, addMenuClickHandlers, toggleButtonState } from './planning/menu.js'
 import { renderKeyHTML, toggleKeyItemVisibility, updateKeyColours } from './planning/key.js'
 import { getGeometryShape, getQueryParam } from './planning/utils.js'
@@ -67,7 +67,7 @@ const interactiveMap = new InteractiveMap('map', {
 	// center: [337672, 504580],
 	extent: [337047, 503795, 338120, 505281],
 	containerHeight: '650px',
-	transformRequest: transformTileRequest,
+	transformRequest: transformVtsRequest3857,
 	enableFullscreen: false,
 	hasExitButton: true,
 	plugins: [
