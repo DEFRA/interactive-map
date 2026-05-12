@@ -24,6 +24,10 @@
     "./providers/esri": {
       "import": "./providers/beta/esri/dist/esm/index.js"
     },
+    "./providers/openlayers": {
+      "import": "./providers/beta/openlayers/dist/esm/index.js",
+      "require": "./providers/beta/openlayers/dist/umd/index.js"
+    },
     "./plugins/scale-bar": {
       "import": "./plugins/beta/scale-bar/dist/esm/index.js",
       "require": "./plugins/beta/scale-bar/dist/umd/index.js"
@@ -116,15 +120,25 @@
     ]
   },
   "peerDependencies": {
-    "@arcgis/core": "^5.0.9"
+    "@arcgis/core": "^5.0.9",
+    "ol": "^10.9.0",
+    "proj4": "^2.20.8"
   },
   "peerDependenciesMeta": {
     "@arcgis/core": {
+      "optional": true
+    },
+    "ol": {
+      "optional": true
+    },
+    "proj4": {
       "optional": true
     }
   },
   "devDependencies": {
     "@arcgis/core": "^5.0.9",
+    "ol": "^10.9.0",
+    "proj4": "^2.20.8",
     "@babel/core": "^7.28.0",
     "@babel/plugin-transform-runtime": "^7.29.0",
     "@babel/preset-env": "^7.28.0",

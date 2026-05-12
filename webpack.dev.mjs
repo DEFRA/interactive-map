@@ -20,7 +20,8 @@ export default {
     index: path.join(__dirname, 'demo/js/index.js'),
     draw: path.join(__dirname, 'demo/js/draw.js'),
     farming: path.join(__dirname, 'demo/js/farming.js'),
-    planning: path.join(__dirname, 'demo/js/planning.js')
+    planning: path.join(__dirname, 'demo/js/planning.js'),
+    gep: path.join(__dirname, 'demo/js/gep.js')
   },
   output: {
     path: path.resolve(__dirname, 'public'),
@@ -70,6 +71,10 @@ export default {
         VTS_BLACK_AND_WHITE_URL_27700: JSON.stringify(process.env.VTS_BLACK_AND_WHITE_URL_27700),
         // Aerial photography
         AERIAL_URL: JSON.stringify(process.env.AERIAL_URL),
+        // OS Maps API (27700 raster)
+        MAPS_OUTDOOR_URL: JSON.stringify(process.env.MAPS_OUTDOOR_URL),
+        MAPS_ROAD_URL: JSON.stringify(process.env.MAPS_ROAD_URL),
+        MAPS_LIGHT_URL: JSON.stringify(process.env.MAPS_LIGHT_URL),
         // OS Auth
         OS_CLIENT_ID: JSON.stringify(process.env.OS_CLIENT_ID),
         OS_CLIENT_SECRET: JSON.stringify(process.env.OS_CLIENT_SECRET),

@@ -1,0 +1,1 @@
+export const DIAGONAL_CROSS_HATCH = '<path d="M0 8.707V7.293L7.293 0h1.414L16 7.293v1.414L8.707 16H7.293L0 8.707zM.707 8L8 15.293 15.293 8 8 .707.707 8z" fill="{{foregroundColor}}"/>'

@@ -82,7 +82,7 @@ const PREACT_EXTERNALS = [
 // dependency so it auto-installs for consumers and is resolved transparently.
 const BABEL_RUNTIME_EXTERNAL = /@babel\/runtime/
 
-const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null) => {
+const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, extraExternals = []) => {
   const esmDir = path.resolve(__dirname, outDir)
   // Use the parent dir as output.dir so CSS can be emitted to css/index.css
   // (a sibling subdir) without Rollup 4's ban on ".." in emitted file names.
@@ -108,7 +108,8 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null)
           // instance from their own node_modules rather than a 1 MB copy bundled
           // into the provider.  (UMD keeps it bundled — no bundler available there.)
           'maplibre-gl',
-          /^@arcgis\/core/
+          /^@arcgis\/core/,
+          ...extraExternals
         ],
 
     plugins: [
@@ -228,6 +229,16 @@ const ALL_BUILDS = [
     outDir: 'providers/beta/esri/dist/esm',
     manualChunks: (id) => { if (id.includes('/esriProvider')) return 'im-esri-provider' }
   },
+  {
+    entryPath: './providers/beta/openlayers/src/index.js',
+    outDir: 'providers/beta/openlayers/dist/esm',
+    extraExternals: [/^ol\//, 'proj4'],
+    manualChunks: (id) => {
+      if (id.includes('/openlayersProvider')) {
+        return 'im-openlayers-provider'
+      }
+    }
+  },
 
   // Plugins — each lazy-loads ./manifest.js; manualChunks names that split chunk
   {
@@ -293,5 +304,5 @@ const buildsToRun = BUILD_TARGET
   : ALL_BUILDS
 
 export default buildsToRun.map(b =>
-  createESMConfig(b.entryPath, b.outDir, b.isCore || false, b.manualChunks || null)
+  createESMConfig(b.entryPath, b.outDir, b.isCore || false, b.manualChunks || null, b.extraExternals || [])
 )
