@@ -15,7 +15,7 @@ const transformGeocodeRequest = (request) => {
   return request
 }
 
-const transformTileRequest = (url, resourceType) => {
+const transformVtsRequest3857 = (url, resourceType) => {
   let headers = {}
 
   // OS Vector Tile API
@@ -101,9 +101,21 @@ const transformDataRequest = (url, { bbox, zoom }) => {
   }
 }
 
+const transformVtsRequest27700 = (url, resourceType) => {
+  if (url.startsWith('https://api.os.uk')) {
+    const requestUrl = new URL(url)
+    if (!requestUrl.searchParams.has('key')) {
+      requestUrl.searchParams.append('key', process.env.OS_CLIENT_ID)
+    }
+    return { url: requestUrl.toString(), headers: {} }
+  }
+  return { url, headers: {} }
+}
+
 export {
   transformGeocodeRequest,
-  transformTileRequest,
+  transformVtsRequest3857,
+  transformVtsRequest27700,
   transformDataRequest,
   setupEsriConfig
 }

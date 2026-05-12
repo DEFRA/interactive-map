@@ -7,7 +7,7 @@ import { register } from 'ol/proj/proj4.js'
 import { supportedShortcuts, DEFAULTS } from './defaults.js'
 import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
-import { attachAppEvents, createTileSource } from './appEvents.js'
+import { attachAppEvents, createTileSource, createVectorTileLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 
 const CRS = 'EPSG:27700'
@@ -31,19 +31,26 @@ export default class OpenLayersProvider {
     this.eventBus = eventBus
     this.capabilities = {
       supportedShortcuts,
-      supportsMapSizes: false
+      supportsMapSizes: true
     }
     Object.assign(this, mapProviderConfig)
   }
 
   async initMap (config) {
-    const { container, padding, mapStyle, mapSize, center, zoom, bounds, minZoom, maxZoom, transformRequest } = config
+    const { container, padding, mapStyle, mapSize, center, zoom, bounds, minZoom, maxZoom, transformRequest, pixelRatio } = config
     this.mapStyleId = mapStyle?.id
     this.mapSize = mapSize
     const { events, eventBus } = this
 
-    const source = createTileSource(mapStyle.url, transformRequest)
-    const tileLayer = new TileLayer({ source })
+    let tileLayer, source
+    if (mapStyle.type === 'raster') {
+      source = createTileSource(mapStyle.url, transformRequest)
+      tileLayer = new TileLayer({ source })
+    } else {
+      const vectorTile = await createVectorTileLayer(mapStyle.url, transformRequest)
+      tileLayer = vectorTile.layer
+      source = vectorTile.source
+    }
 
     const viewResolutions = getViewResolutionConfig(this.zoomAlignment ?? ZOOM_ALIGNMENT.UK)
 
@@ -63,7 +70,8 @@ export default class OpenLayersProvider {
       layers: [tileLayer],
       view,
       controls: [],
-      interactions: defaultInteractions({ doubleClickZoom: false })
+      interactions: defaultInteractions({ doubleClickZoom: false }),
+      pixelRatio
     })
 
     if (bounds) {
@@ -84,10 +92,13 @@ export default class OpenLayersProvider {
     })
 
     this.appEventHandles = attachAppEvents({
-      tileLayer,
+      mapProvider: this,
+      layer: tileLayer,
+      layerType: mapStyle.type === 'raster' ? 'raster' : 'vector',
       transformRequest,
       events,
-      eventBus
+      eventBus,
+      map
     }) || []
 
     this.map = map

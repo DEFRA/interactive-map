@@ -1,140 +1,117 @@
-import XYZ from 'ol/source/XYZ.js'
-import TileGrid from 'ol/tilegrid/TileGrid.js'
-import { createTileSource, attachAppEvents } from './appEvents.js'
-import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from './defaults.js'
+import { attachAppEvents } from './appEvents.js'
 
-const mockTileGridInstance = {}
+import { createTileSource, createVectorTileLayer } from './utils/tileLayers.js'
+
 const mockSourceInstance = {}
+const mockVectorTileLayerInstance = {}
 
-jest.mock('ol/source/XYZ.js', () => ({ __esModule: true, default: jest.fn(() => mockSourceInstance) }))
-jest.mock('ol/tilegrid/TileGrid.js', () => ({ __esModule: true, default: jest.fn(() => mockTileGridInstance) }))
-jest.mock('ol/TileState.js', () => ({ __esModule: true, default: { ERROR: 'error' } }))
+jest.mock('./utils/tileLayers.js', () => ({
+  __esModule: true,
+  createTileSource: jest.fn(() => mockSourceInstance),
+  createVectorTileLayer: jest.fn(async () => ({ layer: mockVectorTileLayerInstance, source: {} }))
+}))
 
-const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0))
+const events = {
+  MAP_SET_STYLE: 'map:setstyle',
+  MAP_STYLE_CHANGE: 'map:stylechange',
+  MAP_SET_PIXEL_RATIO: 'map:setpixelratio',
+  MAP_SIZE_CHANGE: 'map:sizechange'
+}
 
-describe('createTileSource', () => {
-  beforeEach(() => jest.clearAllMocks())
+function makeMap () {
+  return { getLayers: jest.fn(() => ({ setAt: jest.fn() })), setPixelRatio: jest.fn() }
+}
 
-  it('creates TileGrid with correct OS tile grid config', () => {
-    createTileSource('https://tiles.example.com/{z}/{x}/{y}', null)
-    expect(TileGrid).toHaveBeenCalledWith({
-      resolutions: TILE_GRID_RESOLUTIONS,
-      origin: TILE_GRID_ORIGIN,
-      tileSize: TILE_SIZE
-    })
-  })
-
-  it('creates XYZ source with EPSG:27700 projection', () => {
-    createTileSource('https://tiles.example.com/{z}/{x}/{y}', null)
-    expect(XYZ).toHaveBeenCalledWith(expect.objectContaining({ projection: 'EPSG:27700' }))
-  })
-
-  it('tileUrlFunction substitutes z, x, y into url template', () => {
-    createTileSource('https://tiles.example.com/{z}/{x}/{y}', null)
-    const { tileUrlFunction } = XYZ.mock.calls[0][0]
-    expect(tileUrlFunction([7, 3, 5])).toBe('https://tiles.example.com/7/3/5')
-  })
-
-  it('does not set tileLoadFunction when transformRequest is null', () => {
-    createTileSource('https://tiles.example.com/{z}/{x}/{y}', null)
-    const { tileLoadFunction } = XYZ.mock.calls[0][0]
-    expect(tileLoadFunction).toBeUndefined()
-  })
-
-  it('sets tileLoadFunction when transformRequest is provided', () => {
-    createTileSource('https://tiles.example.com/{z}/{x}/{y}', jest.fn())
-    const { tileLoadFunction } = XYZ.mock.calls[0][0]
-    expect(typeof tileLoadFunction).toBe('function')
-  })
-})
-
-describe('tileLoadFunction (via transformRequest)', () => {
-  const url = 'https://tiles.example.com/7/3/5'
-  const mockImg = { src: null }
-  const mockTile = { getImage: () => mockImg, setState: jest.fn() }
-
-  beforeEach(() => {
-    jest.clearAllMocks()
-    mockImg.src = null
-    global.URL.createObjectURL = jest.fn(() => 'blob:test')
-    global.fetch = jest.fn().mockResolvedValue({
-      blob: () => Promise.resolve(new Blob())
-    })
-  })
-
-  function getTileLoadFn (transformRequest) {
-    createTileSource('https://tiles.example.com/{z}/{x}/{y}', transformRequest)
-    return XYZ.mock.calls[0][0].tileLoadFunction
-  }
-
-  it('calls transformRequest with src and "Tile" resource type', async () => {
-    const transformRequest = jest.fn(() => null)
-    const fn = getTileLoadFn(transformRequest)
-    fn(mockTile, url)
-    expect(transformRequest).toHaveBeenCalledWith(url, 'Tile')
-  })
-
-  it('uses url and headers from transformRequest result', async () => {
-    const transformRequest = jest.fn(() => ({ url: 'https://proxied.example.com/tile', headers: { Authorization: 'Bearer abc' } }))
-    const fn = getTileLoadFn(transformRequest)
-    fn(mockTile, url)
-    await flushPromises()
-    expect(fetch).toHaveBeenCalledWith('https://proxied.example.com/tile', { headers: { Authorization: 'Bearer abc' } })
-  })
-
-  it('falls back to original src and empty headers when transformRequest returns null', async () => {
-    const fn = getTileLoadFn(() => null)
-    fn(mockTile, url)
-    await flushPromises()
-    expect(fetch).toHaveBeenCalledWith(url, { headers: {} })
-  })
-
-  it('sets tile image src via createObjectURL on success', async () => {
-    const fn = getTileLoadFn(() => null)
-    fn(mockTile, url)
-    await flushPromises()
-    expect(mockImg.src).toBe('blob:test')
-  })
-
-  it('sets tile state to ERROR on fetch failure', async () => {
-    global.fetch = jest.fn().mockRejectedValue(new Error('network error'))
-    const fn = getTileLoadFn(() => null)
-    fn(mockTile, url)
-    await flushPromises()
-    expect(mockTile.setState).toHaveBeenCalledWith('error')
-  })
-})
+function makeProvider () {
+  return { mapSize: 'small' }
+}
 
 describe('attachAppEvents', () => {
-  const events = {
-    MAP_SET_STYLE: 'map:setstyle',
-    MAP_STYLE_CHANGE: 'map:stylechange'
-  }
+  describe('raster', () => {
+    function makeSetup () {
+      jest.clearAllMocks()
+      const layer = { setSource: jest.fn() }
+      const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
+      const mapProvider = makeProvider()
+      const handles = attachAppEvents({ mapProvider, layer, layerType: 'raster', transformRequest: null, events, eventBus, map: makeMap() })
+      const handlerFor = (event) => eventBus.on.mock.calls.find(c => c[0] === event)[1]
+      return { layer, eventBus, handles, handlerFor, mapProvider }
+    }
 
-  function makeSetup () {
-    jest.clearAllMocks()
-    const tileLayer = { setSource: jest.fn() }
-    const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
-    const handles = attachAppEvents({ tileLayer, transformRequest: null, events, eventBus })
-    const styleHandler = eventBus.on.mock.calls[0][1]
-    return { tileLayer, eventBus, handles, styleHandler }
-  }
+    it('subscribes to MAP_SET_STYLE on the event bus', () => {
+      const { eventBus } = makeSetup()
+      expect(eventBus.on).toHaveBeenCalledWith(events.MAP_SET_STYLE, expect.any(Function))
+    })
 
-  it('subscribes to MAP_SET_STYLE on the event bus', () => {
-    const { eventBus } = makeSetup()
-    expect(eventBus.on).toHaveBeenCalledWith(events.MAP_SET_STYLE, expect.any(Function))
+    it('on MAP_SET_STYLE: creates a tile source and sets it on the layer', async () => {
+      const { layer, handlerFor } = makeSetup()
+      await handlerFor(events.MAP_SET_STYLE)({ url: 'https://new.tiles.com/{z}/{x}/{y}', id: 'newStyle' })
+      expect(createTileSource).toHaveBeenCalledWith('https://new.tiles.com/{z}/{x}/{y}', null)
+      expect(layer.setSource).toHaveBeenCalledWith(mockSourceInstance)
+    })
+
+    it('on MAP_SET_STYLE: emits MAP_STYLE_CHANGE with the new style id', async () => {
+      const { eventBus, handlerFor } = makeSetup()
+      await handlerFor(events.MAP_SET_STYLE)({ url: 'https://new.tiles.com/{z}/{x}/{y}', id: 'newStyle' })
+      expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_STYLE_CHANGE, { mapStyleId: 'newStyle' })
+    })
+
+    it('remove() unsubscribes all handlers', () => {
+      const { eventBus, handles, handlerFor } = makeSetup()
+      handles.remove()
+      expect(eventBus.off).toHaveBeenCalledWith(events.MAP_SET_STYLE, handlerFor(events.MAP_SET_STYLE))
+      expect(eventBus.off).toHaveBeenCalledWith(events.MAP_SET_PIXEL_RATIO, handlerFor(events.MAP_SET_PIXEL_RATIO))
+      expect(eventBus.off).toHaveBeenCalledWith(events.MAP_SIZE_CHANGE, handlerFor(events.MAP_SIZE_CHANGE))
+    })
   })
 
-  it('on MAP_SET_STYLE: updates tile layer source and emits MAP_STYLE_CHANGE', () => {
-    const { tileLayer, eventBus, styleHandler } = makeSetup()
-    styleHandler({ url: 'https://new.tiles.com/{z}/{x}/{y}', id: 'newStyle' })
-    expect(tileLayer.setSource).toHaveBeenCalledWith(mockSourceInstance)
-    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_STYLE_CHANGE, { mapStyleId: 'newStyle' })
+  describe('vector', () => {
+    function makeSetup () {
+      jest.clearAllMocks()
+      const setAt = jest.fn()
+      const map = { getLayers: jest.fn(() => ({ setAt })), setPixelRatio: jest.fn() }
+      const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
+      const mapProvider = makeProvider()
+      const handles = attachAppEvents({ mapProvider, layer: {}, layerType: 'vector', transformRequest: null, events, eventBus, map })
+      const handlerFor = (event) => eventBus.on.mock.calls.find(c => c[0] === event)[1]
+      return { map, setAt, eventBus, handles, handlerFor, mapProvider }
+    }
+
+    it('on MAP_SET_STYLE: creates a vector tile layer and places it at index 0', async () => {
+      const { setAt, handlerFor } = makeSetup()
+      await handlerFor(events.MAP_SET_STYLE)({ url: 'https://example.com/styles', id: 'newVts' })
+      expect(createVectorTileLayer).toHaveBeenCalledWith('https://example.com/styles', null)
+      expect(setAt).toHaveBeenCalledWith(0, mockVectorTileLayerInstance)
+    })
+
+    it('on MAP_SET_STYLE: emits MAP_STYLE_CHANGE with the new style id', async () => {
+      const { eventBus, handlerFor } = makeSetup()
+      await handlerFor(events.MAP_SET_STYLE)({ url: 'https://example.com/styles', id: 'newVts' })
+      expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_STYLE_CHANGE, { mapStyleId: 'newVts' })
+    })
   })
 
-  it('remove() unsubscribes from MAP_SET_STYLE', () => {
-    const { eventBus, handles, styleHandler } = makeSetup()
-    handles.remove()
-    expect(eventBus.off).toHaveBeenCalledWith(events.MAP_SET_STYLE, styleHandler)
+  describe('pixel ratio and map size', () => {
+    function makeSetup () {
+      jest.clearAllMocks()
+      const map = makeMap()
+      const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
+      const mapProvider = makeProvider()
+      attachAppEvents({ mapProvider, layer: {}, layerType: 'vector', transformRequest: null, events, eventBus, map })
+      const handlerFor = (event) => eventBus.on.mock.calls.find(c => c[0] === event)[1]
+      return { map, mapProvider, handlerFor }
+    }
+
+    it('on MAP_SET_PIXEL_RATIO: calls map.setPixelRatio with the new ratio', () => {
+      const { map, handlerFor } = makeSetup()
+      handlerFor(events.MAP_SET_PIXEL_RATIO)(3)
+      expect(map.setPixelRatio).toHaveBeenCalledWith(3)
+    })
+
+    it('on MAP_SIZE_CHANGE: updates mapProvider.mapSize', () => {
+      const { mapProvider, handlerFor } = makeSetup()
+      handlerFor(events.MAP_SIZE_CHANGE)({ mapSize: 'large' })
+      expect(mapProvider.mapSize).toBe('large')
+    })
   })
 })
