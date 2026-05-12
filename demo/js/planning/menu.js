@@ -332,6 +332,11 @@ function renderMenuHTML(feature) {
   return html
 }
 
+function renderDatasetsHTML() {
+  addDatasetChangeHandler()
+  return renderDatasets()
+}
+
 /* -------------------------------
    Public API
 -------------------------------- */
@@ -340,5 +345,6 @@ export {
   addMenuClickHandlers,
   toggleButtonState,
   renderMenuHTML,
+  renderDatasetsHTML,
   hideMenu
 }
