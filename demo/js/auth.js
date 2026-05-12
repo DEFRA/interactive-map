@@ -117,5 +117,6 @@ export {
   transformVtsRequest3857,
   transformVtsRequest27700,
   transformDataRequest,
-  setupEsriConfig
+  setupEsriConfig,
+  getEsriToken
 }
