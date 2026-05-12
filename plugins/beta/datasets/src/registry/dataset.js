@@ -6,6 +6,8 @@ export class Dataset {
     this._datasetDefinition = dataset
   }
 
+  get id () { return this._datasetDefinition.id }
+
   get isSublayer () {
     return Boolean(this._datasetDefinition.parentId)
   }
@@ -16,7 +18,7 @@ export class Dataset {
 
   get sublayers () {
     if (this._datasetDefinition.sublayerIds) {
-      return this._datasetDefinition.sublayerIds.map(id => new Dataset(datasetRegistry.getDataset(id)))
+      return this._datasetDefinition.sublayerIds.map(id => datasetRegistry.getDataset(id))
     }
     return undefined
   }

@@ -1,51 +1,67 @@
 import { MapLibreDataset } from './mapLibreDataset.js'
+import { datasetRegistry } from '../../../registry/datasetRegistry.js'
+import { datasets } from '../../../reducers/__data__/demoDatasets.js'
+import { mappedDatasetsReducer } from '../../../reducers/mappedDatasetsReducer.js'
 
-describe('mapLibreDataset', () => {
+describe('MapLibreDataset', () => {
+  let mappedDatasets
+
+  beforeEach(() => {
+    const result = mappedDatasetsReducer({ datasets })
+    mappedDatasets = result.mappedDatasets
+    datasetRegistry.attach(mappedDatasets)
+  })
+
   describe('layerIds', () => {
-    it('returns symbolLayerId = dataset.id and nulls for fill/stroke when dataset has a symbol', () => {
-      const dataset = new MapLibreDataset({ id: 'ds', style: { stroke: '#ff0000', fill: 'transparent' } })
+    it('returns [id] when dataset has a symbol', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: { symbol: 'square' } })
       expect(dataset.layerIds).toEqual(['ds'])
     })
 
-    // it('returns fillLayerId = dataset.id when dataset has a fill', () => {
-    //   const result = getLayerIds({ id: 'ds', fill: 'blue' })
-    //   expect(result.fillLayerId).toBe('ds')
-    // })
+    it('returns [id, id-stroke] when dataset has both fill and stroke', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: { fill: 'blue', stroke: '#ff0000' } })
+      expect(dataset.layerIds).toEqual(['ds', 'ds-stroke'])
+    })
 
-    // it('returns fillLayerId = null when fill is transparent', () => {
-    //   const result = getLayerIds({ id: 'ds', fill: 'transparent' })
-    //   expect(result.fillLayerId).toBeNull()
-    // })
+    it('returns [id] when dataset has only fill', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: { fill: 'blue' } })
+      expect(dataset.layerIds).toEqual(['ds'])
+    })
 
-    // it('returns fillLayerId = null when fill is absent', () => {
-    //   const result = getLayerIds({ id: 'ds', stroke: 'red' })
-    //   expect(result.fillLayerId).toBeNull()
-    // })
+    it('returns [id] when dataset has only stroke', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: { stroke: '#ff0000' } })
+      expect(dataset.layerIds).toEqual(['ds'])
+    })
 
-    // it('returns fillLayerId = dataset.id when dataset has a pattern', () => {
-    //   hasPattern.mockReturnValue(true)
-    //   const result = getLayerIds({ id: 'ds', fillPattern: 'dots' })
-    //   expect(result.fillLayerId).toBe('ds')
-    // })
+    it('returns [id] when dataset has a fillPattern but no stroke', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: { fillPattern: 'dots' } })
+      expect(dataset.layerIds).toEqual(['ds'])
+    })
 
-    // it('returns strokeLayerId = <id>-stroke when both fill and stroke are present', () => {
-    //   const result = getLayerIds({ id: 'ds', fill: 'blue', stroke: 'red' })
-    //   expect(result.strokeLayerId).toBe('ds-stroke')
-    // })
+    it('returns [id, id-stroke] when dataset has fillPattern and stroke', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: { fillPattern: 'dots', stroke: '#ff0000' } })
+      expect(dataset.layerIds).toEqual(['ds', 'ds-stroke'])
+    })
 
-    // it('returns strokeLayerId = dataset.id when only stroke is present (no fill)', () => {
-    //   const result = getLayerIds({ id: 'ds', stroke: 'red' })
-    //   expect(result.strokeLayerId).toBe('ds')
-    // })
+    it('returns null when fill is transparent and there is no stroke, symbol, or pattern', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: { fill: 'transparent' } })
+      expect(dataset.layerIds).toBeNull()
+    })
 
-    // it('returns strokeLayerId = null when stroke is absent', () => {
-    //   const result = getLayerIds({ id: 'ds', fill: 'blue' })
-    //   expect(result.strokeLayerId).toBeNull()
-    // })
+    it('returns null when dataset has no fill, stroke, symbol, or pattern', () => {
+      const dataset = new MapLibreDataset({ id: 'ds', style: {} })
+      expect(dataset.layerIds).toBeNull()
+    })
 
-    // it('returns all nulls when neither fill, stroke, pattern nor symbol are set', () => {
-    //   const result = getLayerIds({ id: 'ds' })
-    //   expect(result).toEqual({ fillLayerId: null, strokeLayerId: null, symbolLayerId: null })
-    // })
+    it('returns the combined layerIds from all sublayers', () => {
+      jest.spyOn(datasetRegistry, 'getDataset').mockImplementation(id => new MapLibreDataset(mappedDatasets[id]))
+      const dataset = new MapLibreDataset(mappedDatasets['historic-monuments'])
+      // Each sublayer inherits symbol: 'square' from the parent style → layerIds = [id]
+      expect(dataset.layerIds).toEqual([
+        'historic-monuments-prehistoric',
+        'historic-monuments-roman',
+        'historic-monuments-medieval'
+      ])
+    })
   })
 })
