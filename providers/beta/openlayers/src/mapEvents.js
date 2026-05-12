@@ -118,10 +118,6 @@ export function attachMapEvents ({
 
   on(map, 'postrender', () => eventBus.emit(events.MAP_RENDER))
 
-  // After a zoom animation settles, force a re-render so vector tiles
-  // are never left displayed at the wrong scale
-  on(map, 'moveend', () => source.changed())
-
   const emitDataChange = debounce(() => emit(events.MAP_DATA_CHANGE), DEBOUNCE_IDLE_TIME)
   debouncers.push(emitDataChange)
   on(source, 'tileloadend', emitDataChange)

@@ -98,8 +98,10 @@ describe('isGeometryObscured', () => {
   const point = { type: 'Feature', geometry: { type: 'Point', coordinates: [-1, 51] } }
   const panel = { left: 0, top: 0, right: 100, bottom: 100 }
 
-  const makeMap = (pixelFn) => ({
-    getTargetElement: () => ({ getBoundingClientRect: () => ({ left: 0, top: 0 }) }),
+  const containerRect = { left: 0, top: 0, width: 1000, height: 1000 }
+  const makeMap = (pixelFn, viewportRect = containerRect) => ({
+    getTargetElement: () => ({ getBoundingClientRect: () => containerRect }),
+    getViewport: () => ({ getBoundingClientRect: () => viewportRect }),
     getPixelFromCoordinate: pixelFn
   })
 

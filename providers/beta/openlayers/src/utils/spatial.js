@@ -99,10 +99,19 @@ const getPaddedExtent = (map) => {
 
 /**
  * Returns true if the geometry's screen bounding box overlaps the given panel rectangle.
- * GeoJSON coords are expected in WGS84; they are transformed to EPSG:27700 for screen projection.
+ * getPixelFromCoordinate returns layout-space pixels (unscaled canvas), so we convert them
+ * to screen space using the ratio between the viewport's visual size and the canvas size.
+ * This accounts for the CSS scale transform applied on medium/large mapSize.
  */
 const isGeometryObscured = (geojson, panelRect, map) => {
   const containerRect = map.getTargetElement().getBoundingClientRect()
+  if (!containerRect.width || !containerRect.height) {
+    return false
+  }
+  const viewportRect = map.getViewport().getBoundingClientRect()
+  const scaleX = viewportRect.width / containerRect.width
+  const scaleY = viewportRect.height / containerRect.height
+
   const [west, south, east, north] = getBboxFromGeoJSON(geojson)
 
   const corners = [[west, south], [west, north], [east, south], [east, north]].map(coord => {
@@ -113,21 +122,16 @@ const isGeometryObscured = (geojson, panelRect, map) => {
     return false
   }
 
-  const screenMinX = Math.min(...corners.map(c => c[0]))
-  const screenMaxX = Math.max(...corners.map(c => c[0]))
-  const screenMinY = Math.min(...corners.map(c => c[1]))
-  const screenMaxY = Math.max(...corners.map(c => c[1]))
-
-  const panelLeft = panelRect.left - containerRect.left
-  const panelTop = panelRect.top - containerRect.top
-  const panelRight = panelRect.right - containerRect.left
-  const panelBottom = panelRect.bottom - containerRect.top
+  const screenMinX = containerRect.left + Math.min(...corners.map(c => c[0])) * scaleX
+  const screenMaxX = containerRect.left + Math.max(...corners.map(c => c[0])) * scaleX
+  const screenMinY = containerRect.top + Math.min(...corners.map(c => c[1])) * scaleY
+  const screenMaxY = containerRect.top + Math.max(...corners.map(c => c[1])) * scaleY
 
   return (
-    screenMinX < panelRight &&
-    screenMaxX > panelLeft &&
-    screenMinY < panelBottom &&
-    screenMaxY > panelTop
+    screenMinX < panelRect.right &&
+    screenMaxX > panelRect.left &&
+    screenMinY < panelRect.bottom &&
+    screenMaxY > panelRect.top
   )
 }
 
