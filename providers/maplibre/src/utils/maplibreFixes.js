@@ -12,7 +12,7 @@ export function cleanCanvas (map) {
   canvas.addEventListener('focus', (event) => { // NOSONAR
     canvas.blur()
     if (event.relatedTarget) {
-      event.relatedTarget.focus()
+      event.relatedTarget.focus({ preventScroll: true })
     }
   })
 }

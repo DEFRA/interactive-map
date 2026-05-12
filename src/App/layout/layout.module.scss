@@ -350,6 +350,7 @@
   .im-c-panel--side {
     width: 100%;
     max-width: 80%;
+    bottom: 0;
 
     @include tools.border-focus-base(
       $is-inset: true,
