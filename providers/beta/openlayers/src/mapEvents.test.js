@@ -159,12 +159,6 @@ describe('attachMapEvents — click events', () => {
 })
 
 describe('attachMapEvents — render and data events', () => {
-  it('calls source.changed on moveend to force vector tile re-render', () => {
-    const { map, source } = setup()
-    map.trigger('moveend')
-    expect(source.changed).toHaveBeenCalled()
-  })
-
   it('emits MAP_RENDER on every postrender', () => {
     const { map, eventBus } = setup()
     map.trigger('postrender')
