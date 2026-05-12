@@ -159,7 +159,7 @@ export default class OpenLayersProvider {
 
   fitToBounds (bounds) {
     const extent = Array.isArray(bounds) ? bounds : getExtentFromGeoJSON(bounds)
-    this.view.fit(extent, { size: this.map.getSize(), duration: DEFAULTS.animationDuration })
+    this.view.fit(extent, { duration: DEFAULTS.animationDuration })
   }
 
   setPadding (padding) {

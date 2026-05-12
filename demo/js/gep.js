@@ -72,8 +72,8 @@ interactiveMap.on('app:ready', function () {
     label: 'Layers',
     html: renderLayersHTML(),
     mobile: { slot: 'drawer', modal: true, open: false },
-    tablet: { slot: 'side', width: '260px', open: true },
-    desktop: { slot: 'side', width: '280px', open: true }
+    tablet: { slot: 'side', width: '260px', open: false },
+    desktop: { slot: 'side', width: '280px', open: false }
   })
   interactiveMap.addPanel('key', {
     label: 'Key',
