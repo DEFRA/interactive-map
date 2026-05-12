@@ -4,6 +4,7 @@ import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
 import { getPatternConfigs, hasPattern } from './patternImages.js'
 import { getSymbolConfigs } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
+import { MapLibreDataset } from './datasets/mapLibreDataset.js'
 
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
@@ -32,6 +33,10 @@ export default class MaplibreLayerAdapter {
     this._datasetSourceMap = new Map()
     // Tracks all active symbol-type layer IDs so non-symbol layers can be kept below them
     this._symbolLayerIds = new Set()
+  }
+
+  static createDataset (datasetDefinition) {
+    return new MapLibreDataset(datasetDefinition)
   }
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────

@@ -50,6 +50,10 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         dispatch,
         eventBus
       })
+      if (LayerAdapter.createDataset) {
+        console.log('LayerAdapter.createDataset', LayerAdapter.createDataset)
+        datasetRegistry.attachCreateDataset(LayerAdapter.createDataset)
+      }
     }
 
     initDatasets()

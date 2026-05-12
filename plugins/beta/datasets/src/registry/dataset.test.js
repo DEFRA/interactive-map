@@ -1,11 +1,11 @@
 import { Dataset } from './dataset.js'
 import { datasetRegistry } from './datasetRegistry.js'
-import { datasets } from '../reducers/__data__/demoDatasets.js'
+import { datasets as datasetDefinitions } from '../reducers/__data__/demoDatasets.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 
 describe('Dataset class', () => {
   beforeEach(() => {
-    const { mappedDatasets } = mappedDatasetsReducer({ datasets })
+    const { mappedDatasets } = mappedDatasetsReducer({ datasets: datasetDefinitions })
     datasetRegistry.attach(mappedDatasets)
   })
 

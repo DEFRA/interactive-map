@@ -1,5 +1,6 @@
 import { datasetRegistry } from './datasetRegistry.js'
 import { hasCustomVisualStyle } from '../defaults.js'
+
 export class Dataset {
   constructor (dataset) {
     this._datasetDefinition = dataset
