@@ -1,5 +1,5 @@
 import turfBbox from '@turf/bbox'
-import { transform, transformExtent } from 'ol/proj.js'
+import { transformExtent } from 'ol/proj.js'
 
 // In EPSG:27700 coordinates are projected meters — distances are Pythagorean, no geodesy needed
 
@@ -105,9 +105,8 @@ const isGeometryObscured = (geojson, panelRect, map) => {
   const containerRect = map.getTargetElement().getBoundingClientRect()
   const [west, south, east, north] = getBboxFromGeoJSON(geojson)
 
-  const corners = [[west, south], [west, north], [east, south], [east, north]].map(wgs84Coord => {
-    const coord27700 = transform(wgs84Coord, 'EPSG:4326', 'EPSG:27700')
-    return map.getPixelFromCoordinate(coord27700)
+  const corners = [[west, south], [west, north], [east, south], [east, north]].map(coord => {
+    return map.getPixelFromCoordinate(coord)
   }).filter(Boolean)
 
   if (!corners.length) {
