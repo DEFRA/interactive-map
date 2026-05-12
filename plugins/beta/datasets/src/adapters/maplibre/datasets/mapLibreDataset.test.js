@@ -4,12 +4,10 @@ import { datasets } from '../../../reducers/__data__/demoDatasets.js'
 import { mappedDatasetsReducer } from '../../../reducers/mappedDatasetsReducer.js'
 
 describe('MapLibreDataset', () => {
-  let mappedDatasets
-
   beforeEach(() => {
-    const result = mappedDatasetsReducer({ datasets })
-    mappedDatasets = result.mappedDatasets
+    const { mappedDatasets } = mappedDatasetsReducer({ datasets })
     datasetRegistry.attach(mappedDatasets)
+    datasetRegistry.attachCreateDataset(def => new MapLibreDataset(def))
   })
 
   describe('layerIds', () => {
@@ -54,8 +52,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns the combined layerIds from all sublayers', () => {
-      jest.spyOn(datasetRegistry, 'getDataset').mockImplementation(id => new MapLibreDataset(mappedDatasets[id]))
-      const dataset = new MapLibreDataset(mappedDatasets['historic-monuments'])
+      const dataset = datasetRegistry.getDataset('historic-monuments')
       // Each sublayer inherits symbol: 'square' from the parent style → layerIds = [id]
       expect(dataset.layerIds).toEqual([
         'historic-monuments-prehistoric',
