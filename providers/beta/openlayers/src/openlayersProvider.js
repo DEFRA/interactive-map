@@ -31,13 +31,13 @@ export default class OpenLayersProvider {
     this.eventBus = eventBus
     this.capabilities = {
       supportedShortcuts,
-      supportsMapSizes: false
+      supportsMapSizes: true
     }
     Object.assign(this, mapProviderConfig)
   }
 
   async initMap (config) {
-    const { container, padding, mapStyle, mapSize, center, zoom, bounds, minZoom, maxZoom, transformRequest } = config
+    const { container, padding, mapStyle, mapSize, center, zoom, bounds, minZoom, maxZoom, transformRequest, pixelRatio } = config
     this.mapStyleId = mapStyle?.id
     this.mapSize = mapSize
     const { events, eventBus } = this
@@ -70,7 +70,8 @@ export default class OpenLayersProvider {
       layers: [tileLayer],
       view,
       controls: [],
-      interactions: defaultInteractions({ doubleClickZoom: false })
+      interactions: defaultInteractions({ doubleClickZoom: false }),
+      pixelRatio
     })
 
     if (bounds) {
@@ -91,6 +92,7 @@ export default class OpenLayersProvider {
     })
 
     this.appEventHandles = attachAppEvents({
+      mapProvider: this,
       layer: tileLayer,
       layerType: mapStyle.type === 'raster' ? 'raster' : 'vector',
       transformRequest,

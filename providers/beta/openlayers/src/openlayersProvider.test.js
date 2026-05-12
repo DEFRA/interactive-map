@@ -108,9 +108,9 @@ describe('OpenLayersProvider', () => {
       expect(provider.eventBus).toBe(eventBus)
     })
 
-    it('sets capabilities with supportsMapSizes false and supportedShortcuts array', () => {
+    it('sets capabilities with supportsMapSizes true and supportedShortcuts array', () => {
       const { provider } = makeProvider()
-      expect(provider.capabilities.supportsMapSizes).toBe(false)
+      expect(provider.capabilities.supportsMapSizes).toBe(true)
       expect(Array.isArray(provider.capabilities.supportedShortcuts)).toBe(true)
     })
 
@@ -189,6 +189,19 @@ describe('OpenLayersProvider', () => {
       expect(attachAppEvents).toHaveBeenCalledWith(expect.objectContaining({
         layerType: 'raster'
       }))
+    })
+
+    it('passes pixelRatio to OlMap constructor', async () => {
+      const OlMap = require('ol/Map.js').default
+      const { provider } = makeProvider()
+      await provider.initMap({ ...defaultInitConfig, pixelRatio: 2 })
+      expect(OlMap).toHaveBeenCalledWith(expect.objectContaining({ pixelRatio: 2 }))
+    })
+
+    it('passes mapProvider to attachAppEvents', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(attachAppEvents).toHaveBeenCalledWith(expect.objectContaining({ mapProvider: provider }))
     })
   })
 
