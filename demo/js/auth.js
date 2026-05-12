@@ -101,9 +101,21 @@ const transformDataRequest = (url, { bbox, zoom }) => {
   }
 }
 
+const transformVtsRequest = (url, resourceType) => {
+  if (url.startsWith('https://api.os.uk')) {
+    const requestUrl = new URL(url)
+    if (!requestUrl.searchParams.has('key')) {
+      requestUrl.searchParams.append('key', process.env.OS_CLIENT_ID)
+    }
+    return { url: requestUrl.toString(), headers: {} }
+  }
+  return { url, headers: {} }
+}
+
 export {
   transformGeocodeRequest,
   transformTileRequest,
+  transformVtsRequest,
   transformDataRequest,
   setupEsriConfig
 }
