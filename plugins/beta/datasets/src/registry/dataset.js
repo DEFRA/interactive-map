@@ -19,6 +19,8 @@ export class Dataset {
   get filter () { return this._datasetDefinition.filter }
   get minZoom () { return this._datasetDefinition.minZoom }
   get maxZoom () { return this._datasetDefinition.maxZoom }
+  get idProperty () { return this._datasetDefinition.idProperty }
+  get transformRequest () { return this._datasetDefinition.transformRequest }
 
   get isSublayer () {
     return Boolean(this._datasetDefinition.parentId)

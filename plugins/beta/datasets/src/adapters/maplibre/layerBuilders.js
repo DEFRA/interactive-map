@@ -1,31 +1,30 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 import { hasPattern } from './patternImages.js'
-import { mergeSublayer } from '../../utils/mergeSublayer.js'
-import { getSourceId, getLayerIds, getSublayerLayerIds, isDynamicSource, MAX_TILE_ZOOM } from './layerIds.js'
+import { getLayerIds } from './layerIds.js'
 import { hasSymbol, getSymbolAnchor, anchorToMaplibre } from './symbolImages.js'
 
 // ─── Source ───────────────────────────────────────────────────────────────────
 
-export const addSource = (map, dataset, sourceId) => {
-  if (map.getSource(sourceId)) {
-    return
-  }
-  if (dataset.tiles) {
-    map.addSource(sourceId, {
-      type: 'vector',
-      tiles: dataset.tiles,
-      minzoom: dataset.minZoom || 0,
-      maxzoom: dataset.maxZoom || MAX_TILE_ZOOM
-    })
-    return
-  }
-  if (dataset.geojson) {
-    const initialData = isDynamicSource(dataset)
-      ? { type: 'FeatureCollection', features: [] }
-      : dataset.geojson
-    map.addSource(sourceId, { type: 'geojson', data: initialData, generateId: true })
-  }
-}
+// export const addSource = (map, dataset, sourceId) => {
+//   if (map.getSource(sourceId)) {
+//     return
+//   }
+//   if (dataset.tiles) {
+//     map.addSource(sourceId, {
+//       type: 'vector',
+//       tiles: dataset.tiles,
+//       minzoom: dataset.minZoom || 0,
+//       maxzoom: dataset.maxZoom || MAX_TILE_ZOOM
+//     })
+//     return
+//   }
+//   if (dataset.geojson) {
+//     const initialData = isDynamicSource(dataset)
+//       ? { type: 'FeatureCollection', features: [] }
+//       : dataset.geojson
+//     map.addSource(sourceId, { type: 'geojson', data: initialData, generateId: true })
+//   }
+// }
 
 // ─── Fill layer ───────────────────────────────────────────────────────────────
 
@@ -133,8 +132,12 @@ export const addSublayerLayers = (map, sublayer, sourceId, sourceLayer, { mapSty
  */
 export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
   const mapStyleId = mapStyle.id
-  const sourceId = getSourceId(dataset)
-  addSource(map, dataset, sourceId)
+  // const sourceId = getSourceId(dataset)
+  // addSource(map, dataset, sourceId)
+  const { sourceId, source } = dataset
+  if (source && !map.getSource(sourceId)) {
+    map.addSource(sourceId, source)
+  }
 
   const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
 
@@ -148,17 +151,15 @@ export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, pattern
   if (dataset.isSublayer) {
     return undefined
   }
-  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds({ id: dataset.id, ...dataset.style })
-  console.log('Adding dataset layers for', dataset.id, { fillLayerId, strokeLayerId, symbolLayerId })
   const visibility = dataset.visibility === 'hidden' ? 'none' : 'visible'
 
-  if (hasSymbol(dataset) && symbolRegistry) {
-    addSymbolLayer(map, dataset, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
+  if (dataset.hasSymbol && symbolRegistry) {
+    addSymbolLayer(map, dataset, dataset.symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
     return sourceId
   }
 
   const config = { minZoom: dataset.minZoom, maxZoom: dataset.maxZoom, filter: dataset.filter, ...dataset.style }
-  addFillLayer(map, config, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
-  addStrokeLayer(map, config, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
+  addFillLayer(map, config, dataset.fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
+  addStrokeLayer(map, config, dataset.strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
   return sourceId
 }

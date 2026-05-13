@@ -59,9 +59,7 @@ export default class MaplibreLayerAdapter {
     }, { patternConfigs: [], symbolConfigs: [] })
     console.log({ patternConfigs, symbolConfigs })
     await Promise.all([
-      // this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
       this._mapProvider.addPatternsToMap(patternConfigs, mapStyleId, this._patternRegistry),
-      // this._mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
       this._mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()

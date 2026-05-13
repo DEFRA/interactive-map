@@ -49,12 +49,12 @@ describe('MapLibreDataset', () => {
 
     it('returns null when fill is transparent and there is no stroke, symbol, or pattern', () => {
       const dataset = datasetRegistry.getDataset('ds-transparent-fill')
-      expect(dataset.layerIds).toBeNull()
+      expect(dataset.layerIds).toEqual([])
     })
 
     it('returns null when dataset has no fill, stroke, symbol, or pattern', () => {
       const dataset = datasetRegistry.getDataset('ds-no-style')
-      expect(dataset.layerIds).toBeNull()
+      expect(dataset.layerIds).toEqual([])
     })
 
     it('returns the combined layerIds from all sublayers (historic-monuments)', () => {
