@@ -30,7 +30,12 @@ Allows the OpenLayers provider to support raster, standard vector tile, and OGC 
 **Type:** `string`
 **Required**
 
-URL for the style. For the default vector tile path and `'ogc-vt'`, this should be a URL that returns a Mapbox GL style document (Mapbox Style Specification). For `'raster'`, this should be an XYZ tile URL template with `{x}`, `{y}`, `{z}` placeholders.
+URL that returns a Mapbox GL style document (Mapbox Style Specification).
+
+> [!NOTE]
+> The **OpenLayers provider** supports two additional URL forms via the `type` property:
+> - `'ogc-vt'` — URL that returns a Mapbox GL style document for an OGC API - Tiles source.
+> - `'raster'` — XYZ tile URL template with `{x}`, `{y}`, `{z}` placeholders.
 
 ---
 
