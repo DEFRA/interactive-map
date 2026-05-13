@@ -138,3 +138,15 @@
   padding-top: 15px;
   padding-bottom: 10px;
 }
+
+// ===================================================
+// OpenLayers: map layer compositing (planning-ol.js only)
+// ===================================================
+
+// OL VectorTileLayers with the same className share one container <div>.
+// opacity < 1 on that div creates an isolated CSS compositing context so all
+// data layer fills blend together before the 0.75 is applied once — equivalent
+// to ESRI's GroupLayer compositing. Has no effect on the ESRI demo.
+.flood-data-layer {
+  opacity: 0.75;
+}

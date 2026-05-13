@@ -7,7 +7,7 @@ import { register } from 'ol/proj/proj4.js'
 import { supportedShortcuts, DEFAULTS } from './defaults.js'
 import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
-import { attachAppEvents, createTileSource, createVectorTileLayer } from './appEvents.js'
+import { attachAppEvents, createTileSource, createVectorTileLayer, createOGCVectorTileLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 
 const CRS = 'EPSG:27700'
@@ -46,6 +46,10 @@ export default class OpenLayersProvider {
     if (mapStyle.type === 'raster') {
       source = createTileSource(mapStyle.url, transformRequest)
       tileLayer = new TileLayer({ source })
+    } else if (mapStyle.type === 'ogc-vt') {
+      const vectorTile = await createOGCVectorTileLayer(mapStyle.url, transformRequest)
+      tileLayer = vectorTile.layer
+      source = vectorTile.source
     } else {
       const vectorTile = await createVectorTileLayer(mapStyle.url, transformRequest)
       tileLayer = vectorTile.layer
@@ -94,7 +98,7 @@ export default class OpenLayersProvider {
     this.appEventHandles = attachAppEvents({
       mapProvider: this,
       layer: tileLayer,
-      layerType: mapStyle.type === 'raster' ? 'raster' : 'vector',
+      layerType: mapStyle.type ?? 'vector',
       transformRequest,
       events,
       eventBus,

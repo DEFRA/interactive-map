@@ -1,11 +1,14 @@
 import XYZ from 'ol/source/XYZ.js'
 import VectorTileSource from 'ol/source/VectorTile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
+import OGCVectorTile from 'ol/source/OGCVectorTile.js'
 import MVT from 'ol/format/MVT.js'
 import TileGrid from 'ol/tilegrid/TileGrid.js'
 import TileState from 'ol/TileState.js'
 import { stylefunction } from 'ol-mapbox-style'
 import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.js'
+
+const CRS = 'EPSG:27700'
 
 export function fetchWithTransform (url, resourceType, transformRequest) {
   const result = transformRequest ? (transformRequest(url, resourceType) || {}) : {}
@@ -35,10 +38,31 @@ export function createTileSource (url, transformRequest) {
     .replace('{y}', y)
 
   return new XYZ({
-    projection: 'EPSG:27700',
+    projection: CRS,
     tileGrid,
     tileUrlFunction,
     tileLoadFunction: transformRequest ? createTileLoadFunction(transformRequest) : undefined
+  })
+}
+
+// Insert extension before any query string to match Mapbox GL sprite convention
+function resolveSprite (spriteBase, transformRequest) {
+  const queryIdx = spriteBase.indexOf('?')
+  const [spritePath, spriteQuery] = queryIdx >= 0 ? [spriteBase.slice(0, queryIdx), spriteBase.slice(queryIdx)] : [spriteBase, '']
+  const jsonUrl = `${spritePath}.json${spriteQuery}`
+  const pngUrl = `${spritePath}.png${spriteQuery}`
+  return { jsonUrl, pngUrl, fetch: () => fetchWithTransform(jsonUrl, 'SpriteJSON', transformRequest).then(r => r.json()) }
+}
+
+// The OS VTS styles are designed to work with the limited ArcGIS/ESRI SDK, which does not support
+// icon-color for sprite tinting. OS works around this by setting icon-color alpha to 0 (a no-op
+// in the ESRI renderer) so the sprite renders as-is. ol-mapbox-style interprets the colour
+// literally though, making icons invisible. Fix by setting alpha to 1 (opaque tint).
+function fixIconOpacity (styleJson) {
+  styleJson.layers.forEach(styleLayer => {
+    if (styleLayer.paint?.['icon-color']) {
+      styleLayer.paint['icon-color'] = styleLayer.paint['icon-color'].replace(',0)', ',1)')
+    }
   })
 }
 
@@ -55,21 +79,10 @@ export async function createVectorTileLayer (url, transformRequest) {
   const tileSize = serviceJson.tileInfo.rows
   const tileUrl = serviceJson.tiles[0]
 
-  // Insert extension before any query string to match Mapbox GL sprite convention
-  const spriteBase = styleJson.sprite
-  const queryIdx = spriteBase.indexOf('?')
-  const [spritePath, spriteQuery] = queryIdx >= 0 ? [spriteBase.slice(0, queryIdx), spriteBase.slice(queryIdx)] : [spriteBase, '']
-  const spritesJsonUrl = `${spritePath}.json${spriteQuery}`
-  const spritesPngUrl = `${spritePath}.png${spriteQuery}`
+  const sprite = resolveSprite(styleJson.sprite, transformRequest)
+  const spritesJson = await sprite.fetch()
 
-  const spritesJson = await fetchWithTransform(spritesJsonUrl, 'SpriteJSON', transformRequest).then(r => r.json())
-
-  // OS style JSON uses zero opacity for icon colours — fix before applying the style
-  styleJson.layers.forEach(styleLayer => {
-    if (styleLayer.paint?.['icon-color']) {
-      styleLayer.paint['icon-color'] = styleLayer.paint['icon-color'].replace(',0)', ',1)')
-    }
-  })
+  fixIconOpacity(styleJson)
 
   const tileGrid = new TileGrid({ extent, origin, resolutions, tileSize })
 
@@ -77,12 +90,44 @@ export async function createVectorTileLayer (url, transformRequest) {
   const source = new VectorTileSource({
     format: new MVT(),
     url: tileUrl,
-    projection: 'EPSG:27700',
+    projection: CRS,
     tileGrid
   })
   const layer = new VectorTileLayer({ source, declutter: true, renderMode: 'vector' })
 
-  stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, spritesPngUrl)
+  stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
+
+  return { layer, source }
+}
+
+export async function createOGCVectorTileLayer (url, transformRequest) {
+  const styleJson = await fetchWithTransform(url, 'Style', transformRequest).then(r => r.json())
+
+  const sourceId = Object.keys(styleJson.sources)[0]
+  const tilesUrl = styleJson.sources[sourceId].url
+
+  // Fetch tileset descriptor to get the tile matrix set URL (includes API key), in parallel with sprites
+  const sprite = resolveSprite(styleJson.sprite, transformRequest)
+  const tilesetJson = await fetchWithTransform(tilesUrl, 'Source', transformRequest).then(r => r.json())
+  const tmsLink = tilesetJson.links?.find(l => l.rel === 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme')
+  const [tmsJson, spritesJson] = await Promise.all([
+    fetchWithTransform(tmsLink.href, 'Source', transformRequest).then(r => r.json()),
+    sprite.fetch()
+  ])
+
+  const resolutions = tmsJson.tileMatrices.map(m => m.cellSize)
+  const origin = tmsJson.tileMatrices[0].pointOfOrigin
+  const tileSize = [tmsJson.tileMatrices[0].tileHeight, tmsJson.tileMatrices[0].tileWidth]
+
+  // OS NGD returns tiles as 'application/octet-stream' rather than the standard MVT media type
+  const format = new MVT()
+  format.supportedMediaTypes.push('application/octet-stream')
+
+  const tileGrid = new TileGrid({ resolutions, origin, tileSize })
+  const source = new OGCVectorTile({ url: tilesUrl, format, tileGrid, projection: CRS })
+  const layer = new VectorTileLayer({ source, declutter: true, renderMode: 'vector' })
+
+  stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 
   return { layer, source }
 }

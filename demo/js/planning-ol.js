@@ -9,7 +9,7 @@ import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 // Demo utils
-import { vtsMapStyles27700 } from './mapStyles.js'
+import { vtsMapStyles27700, ngdMapStyles27700 } from './mapStyles.js'
 import { gridRefSearchOSGB36 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformVtsRequest27700 } from './auth.js'
 import { renderDatasetsHTML, hideMenu } from './planning/menu.js'
@@ -47,7 +47,7 @@ const interactiveMap = new InteractiveMap('map', {
   hasExitButton: true,
   plugins: [
     mapStylesPlugin({
-      mapStyles: vtsMapStyles27700,
+      mapStyles: ngdMapStyles27700,
       manifest: {
         buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false } }],
         panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: true } }]

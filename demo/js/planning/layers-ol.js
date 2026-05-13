@@ -2,7 +2,6 @@ import TileGrid from 'ol/tilegrid/TileGrid.js'
 import VectorTileSource from 'ol/source/VectorTile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import MVT from 'ol/format/MVT.js'
-import LayerGroup from 'ol/layer/Group.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorSource from 'ol/source/Vector.js'
 import GeoJSON from 'ol/format/GeoJSON.js'
@@ -224,7 +223,7 @@ async function createArcGISVTL (serviceUrl, token) {
     tileGrid
   })
 
-  const layer = new VectorTileLayer({ source, renderMode: 'vector' })
+  const layer = new VectorTileLayer({ source, renderMode: 'hybrid', className: 'flood-data-layer' })
   stylefunction(layer, styleJson, sourceId, resolutions)
 
   return { layer, styleJson, sourceId, resolutions }
@@ -240,9 +239,9 @@ async function addVectorTileLayers (mapProvider, datasetQueryParam) {
   const map = mapProvider.map
   const token = await getEsriToken()
 
-  await Promise.all(
-    Object.entries(vectorTileLayersConfig).map(async ([_groupKey, layersConfig]) => {
-      const layers = await Promise.all(
+  const allLayers = (await Promise.all(
+    Object.entries(vectorTileLayersConfig).map(([_groupKey, layersConfig]) =>
+      Promise.all(
         layersConfig.map(async (layerConfig) => {
           const serviceUrl = `${VTS_ORG}/${layerConfig.name}${layerConfig.version}/VectorTileServer`
           const data = await createArcGISVTL(serviceUrl, token)
@@ -251,9 +250,10 @@ async function addVectorTileLayers (mapProvider, datasetQueryParam) {
           return data.layer
         })
       )
-      map.addLayer(new LayerGroup({ opacity: 0.75, layers }))
-    })
-  )
+    )
+  )).flat()
+
+  allLayers.forEach(layer => map.addLayer(layer))
 
   setLayerVisibility()
 }

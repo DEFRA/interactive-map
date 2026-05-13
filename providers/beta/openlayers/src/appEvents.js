@@ -1,15 +1,18 @@
-import { createTileSource, createVectorTileLayer } from './utils/tileLayers.js'
+import { createTileSource, createVectorTileLayer, createOGCVectorTileLayer } from './utils/tileLayers.js'
 
-export { createTileSource, createVectorTileLayer }
+export { createTileSource, createVectorTileLayer, createOGCVectorTileLayer }
 
 export function attachAppEvents ({ mapProvider, layer, layerType, transformRequest, events, eventBus, map }) {
   const handleSetMapStyle = async (mapStyle) => {
-    if (layerType === 'vector') {
-      const { layer: newLayer } = await createVectorTileLayer(mapStyle.url, transformRequest)
-      map.getLayers().setAt(0, newLayer)
-    } else {
+    if (layerType === 'raster') {
       const source = createTileSource(mapStyle.url, transformRequest)
       layer.setSource(source)
+    } else if (mapStyle.type === 'ogc-vt') {
+      const { layer: newLayer } = await createOGCVectorTileLayer(mapStyle.url, transformRequest)
+      map.getLayers().setAt(0, newLayer)
+    } else {
+      const { layer: newLayer } = await createVectorTileLayer(mapStyle.url, transformRequest)
+      map.getLayers().setAt(0, newLayer)
     }
     eventBus.emit(events.MAP_STYLE_CHANGE, { mapStyleId: mapStyle.id })
   }

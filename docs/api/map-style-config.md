@@ -13,11 +13,24 @@ Unique identifier for the style. Used to reference the style programmatically.
 
 ---
 
+### `type`
+**Type:** `'raster' | 'ogc-vt'`
+
+> [!NOTE]
+> This property is only relevant when using the **OpenLayers provider**. The ESRI and MapLibre providers always use the standard Mapbox GL vector tile format and ignore this property.
+
+Allows the OpenLayers provider to support raster, standard vector tile, and OGC API - Tiles basemaps from a single style switcher. Omit (or leave undefined) for the default Mapbox GL vector tile path.
+
+- `'raster'` — XYZ raster tile source. `url` should be a tile URL template with `{x}`, `{y}`, `{z}` placeholders.
+- `'ogc-vt'` — OGC API - Tiles vector tile source. `url` should point to an OGC style endpoint that returns a Mapbox GL style document.
+
+---
+
 ### `url`
 **Type:** `string`
 **Required**
 
-URL to the style.json (Mapbox Style Specification).
+URL for the style. For the default vector tile path and `'ogc-vt'`, this should be a URL that returns a Mapbox GL style document (Mapbox Style Specification). For `'raster'`, this should be an XYZ tile URL template with `{x}`, `{y}`, `{z}` placeholders.
 
 ---
 

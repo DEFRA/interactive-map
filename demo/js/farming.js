@@ -99,7 +99,7 @@ var interactiveMap = new InteractiveMap('map', {
 	// 	color: { outdoor: '#ff0000', dark: '#00ff00' }
 	// }],
 	mapStyle: {
-		url: process.env.OUTDOOR_URL,
+		url: process.env.OZS_OUTDOOR_URL,
 		logo: '/assets/images/os-logo.svg',
 		logoAltText: 'Ordnance survey logo',
 		attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
