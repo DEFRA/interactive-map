@@ -34,12 +34,11 @@ const initSublayerVisibility = (dataset) => {
 }
 
 const setDatasets = (state, payload) => {
-  const { datasets, pluginConfigDatasets } = payload
-  console.log('pluginConfigDatasets', pluginConfigDatasets)
-  console.log('Setting datasets', datasets)
+  const { datasets, mappedDatasets, orderedDatasets } = payload
+  // console.log('Setting datasets', datasets, mappedDatasets)
   const datasetsWithSublayerVisibility = datasets.map(initSublayerVisibility)
   const menu = payload.menu || datasetsToMenu({ datasets })
-  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: pluginConfigDatasets })
+  // const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: pluginConfigDatasets })
   return {
     ...state,
     datasets: datasetsWithSublayerVisibility,
@@ -154,7 +153,7 @@ const setDatasetStyle = (state, payload) => {
   const style = { ...state.mappedDatasets[datasetId].style, ...styleChanges }
   const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges, style }
   // TODO - handle this side effect better
-  layerAdapter?.setStyle(dataset, mapStyle)
+  layerAdapter?.setStyle(datasetId, mapStyle)
   return {
     ...state,
     mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset },

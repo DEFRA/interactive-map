@@ -5,6 +5,7 @@ import { getPatternConfigs, hasPattern } from './patternImages.js'
 import { getSymbolConfigs } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
 import { MapLibreDataset } from './datasets/mapLibreDataset.js'
+import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
@@ -48,13 +49,29 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
   async init (datasets, mapStyle) {
+    console.log('datasets', Object.keys(datasets))
     const mapStyleId = mapStyle.id
+    const { patternConfigs, symbolConfigs } = Object.keys(datasets).reduce((acc, datasetId) => {
+      const dataset = datasetRegistry.getDataset(datasetId)
+      acc.patternConfigs.push(...dataset.patternConfigs)
+      acc.symbolConfigs.push(...dataset.symbolConfigs)
+      return acc
+    }, { patternConfigs: [], symbolConfigs: [] })
+    console.log({ patternConfigs, symbolConfigs })
     await Promise.all([
-      this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
-      this._mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
+      // this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), mapStyleId, this._patternRegistry),
+      this._mapProvider.addPatternsToMap(patternConfigs, mapStyleId, this._patternRegistry),
+      // this._mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), mapStyle, this._symbolRegistry)
+      this._mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
-    datasets.forEach(dataset => this._addLayers(dataset, mapStyle))
+    Object.keys(datasets).forEach(datasetId => {
+      const dataset = datasetRegistry.getDataset(datasetId)
+      if (!dataset.isSublayer) {
+        console.log('Adding dataset layers for', datasetId)
+        this._addLayers(dataset, mapStyle)
+      }
+    })
     await new Promise(resolve => this._map.once('idle', resolve))
   }
 
@@ -270,10 +287,10 @@ export default class MaplibreLayerAdapter {
    * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setStyle (dataset, mapStyle) {
+  async setStyle (datasetId, mapStyle) {
     const mapStyleId = mapStyle.id
-    const layerIds = getAllLayerIds(dataset)
-    console.log('layerIds', layerIds)
+    const dataset = datasetRegistry.getDataset(datasetId)
+    const layerIds = dataset.layerIds
     layerIds.forEach(layerId => {
       if (this._map.getLayer(layerId)) {
         this._map.removeLayer(layerId)

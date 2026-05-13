@@ -1,5 +1,6 @@
 import { datasetRegistry } from './datasetRegistry.js'
 import { hasCustomVisualStyle } from '../defaults.js'
+import { hasPattern } from '../../../../../src/utils/patternUtils.js'
 
 export class Dataset {
   constructor (dataset) {
@@ -7,6 +8,17 @@ export class Dataset {
   }
 
   get id () { return this._datasetDefinition.id }
+  get hasSymbol () { return Boolean(this.style?.symbol) }
+  get hasPattern () { return hasPattern(this.style) }
+  get hasFill () { return this.hasPattern || (this.style?.fill && this.style?.fill !== 'transparent') }
+  get hasStroke () { return Boolean(this.style?.stroke) }
+  get tiles () { return this._datasetDefinition.tiles }
+  get geojson () { return this._datasetDefinition.geojson }
+  get sourceLayer () { return this._datasetDefinition.sourceLayer }
+  get visibility () { return this._datasetDefinition.visibility || 'visible' }
+  get filter () { return this._datasetDefinition.filter }
+  get minZoom () { return this._datasetDefinition.minZoom }
+  get maxZoom () { return this._datasetDefinition.maxZoom }
 
   get isSublayer () {
     return Boolean(this._datasetDefinition.parentId)
@@ -50,5 +62,21 @@ export class Dataset {
       return undefined
     }
     return this.parent?.symbolDescription
+  }
+
+  get patternConfigs () {
+    const stylePatterns = this.hasPattern ? [this.style] : []
+    if (this.hasSublayers) {
+      return [...stylePatterns, ...this.sublayers.flatMap(sublayer => sublayer.patternConfigs)]
+    }
+    return stylePatterns
+  }
+
+  get symbolConfigs () {
+    const styleSymbols = this.hasSymbol ? [this.style] : []
+    if (this.hasSublayers) {
+      return [...styleSymbols, ...this.sublayers.flatMap(sublayer => sublayer.symbolConfigs)]
+    }
+    return styleSymbols
   }
 }

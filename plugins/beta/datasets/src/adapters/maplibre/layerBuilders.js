@@ -105,14 +105,14 @@ export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, vis
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addSublayerLayers = (map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
+export const addSublayerLayers = (map, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
   const mapStyleId = mapStyle.id
-  const merged = mergeSublayer(dataset, sublayer)
-  const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.sublayerId ? sublayer.sublayerId : sublayer.id)
-  const parentHidden = dataset.visibility === 'hidden'
-  const sublayerHidden = dataset.sublayerVisibility?.[sublayer.id] === 'hidden'
+  const merged = { id: sublayer.id, minZoom: sublayer.minZoom, maxZoom: sublayer.maxZoom, filter: sublayer.filter, ...sublayer.style }
+  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds({ id: sublayer.id, ...sublayer.style })
+  const parentHidden = false // TODO - fix visibility dataset.visibility === 'hidden'
+  const sublayerHidden = sublayer.visibility === 'hidden'
   const visibility = (parentHidden || sublayerHidden) ? 'none' : 'visible'
-  if (hasSymbol(merged) && symbolRegistry) {
+  if (sublayer.hasSymbol && symbolRegistry) {
     addSymbolLayer(map, merged, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
     return
   }
@@ -140,12 +140,16 @@ export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, pattern
 
   if (dataset.sublayers?.length) {
     dataset.sublayers.forEach(sublayer => {
-      addSublayerLayers(map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio })
+      addSublayerLayers(map, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio })
     })
     return sourceId
   }
 
-  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds(dataset)
+  if (dataset.isSublayer) {
+    return undefined
+  }
+  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds({ id: dataset.id, ...dataset.style })
+  console.log('Adding dataset layers for', dataset.id, { fillLayerId, strokeLayerId, symbolLayerId })
   const visibility = dataset.visibility === 'hidden' ? 'none' : 'visible'
 
   if (hasSymbol(dataset) && symbolRegistry) {
@@ -153,7 +157,8 @@ export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, pattern
     return sourceId
   }
 
-  addFillLayer(map, dataset, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
-  addStrokeLayer(map, dataset, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
+  const config = { minZoom: dataset.minZoom, maxZoom: dataset.maxZoom, filter: dataset.filter, ...dataset.style }
+  addFillLayer(map, config, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
+  addStrokeLayer(map, config, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
   return sourceId
 }
