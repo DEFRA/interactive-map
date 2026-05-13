@@ -19,7 +19,7 @@ Unique identifier for the style. Used to reference the style programmatically.
 > [!NOTE]
 > This property is only relevant when using the **OpenLayers provider**. The ESRI and MapLibre providers always use the standard Mapbox GL vector tile format and ignore this property.
 
-Allows the OpenLayers provider to support raster, standard vector tile, and OGC API - Tiles basemaps from a single style switcher. Omit (or leave undefined) for the default Mapbox GL vector tile path.
+Allows the OpenLayers provider to support raster, standard vector tile, and OGC API - Tiles basemaps. When omitted, OpenLayers uses the standard Mapbox GL vector tile path — the same format ESRI and MapLibre always use.
 
 - `'raster'` — XYZ raster tile source. `url` should be a tile URL template with `{x}`, `{y}`, `{z}` placeholders.
 - `'ogc-vt'` — OGC API - Tiles vector tile source. `url` should point to an OGC style endpoint that returns a Mapbox GL style document.
@@ -32,17 +32,36 @@ Allows the OpenLayers provider to support raster, standard vector tile, and OGC 
 
 URL that returns a Mapbox GL style document (Mapbox Style Specification).
 
+```js
+// OS Vector Tile API — Outdoor (EPSG:27700)
+{
+  url: 'https://raw.githubusercontent.com/OrdnanceSurvey/OS-Vector-Tile-API-Stylesheets/main/OS_VTS_27700_Outdoor.json'
+}
+```
+
 > [!NOTE]
-> The **OpenLayers provider** supports two additional URL forms via the `type` property:
-> - `'ogc-vt'` — URL that returns a Mapbox GL style document for an OGC API - Tiles source.
-> - `'raster'` — XYZ tile URL template with `{x}`, `{y}`, `{z}` placeholders.
+> The **OpenLayers provider** supports two additional URL forms via the `type` property.
+>
+> ```js
+> // type 'ogc-vt' — OS NGD OGC API - Tiles, Outdoor (EPSG:27700)
+> {
+>   type: 'ogc-vt',
+>   url: 'https://api.os.uk/maps/vector/ngd/ota/v1/collections/ngd-base/styles/27700?key=YOUR_API_KEY'
+> }
+>
+> // type 'raster' — OS Maps API, Raster Outdoor (EPSG:27700)
+> {
+>   type: 'raster',
+>   url: 'https://api.os.uk/maps/raster/v1/zxy/Outdoor_27700/{z}/{x}/{y}.png?key=YOUR_API_KEY'
+> }
+> ```
 
 ---
 
 ### `label`
 **Type:** `string`
 
-Display label for the style. Shown in style switcher UI.
+Display label for the style.
 
 ---
 
