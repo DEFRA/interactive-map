@@ -58,10 +58,10 @@ export default {
     new webpack.DefinePlugin({
       'process.env': {
         // OS Open Zoomstack
-        OUTDOOR_URL: JSON.stringify(process.env.OUTDOOR_URL),
-        NIGHT_URL: JSON.stringify(process.env.NIGHT_URL),
-        DEUTERANOPIA_URL: JSON.stringify(process.env.DEUTERANOPIA_URL),
-        TRITANOPIA_URL: JSON.stringify(process.env.TRITANOPIA_URL),
+        OZS_OUTDOOR_URL: JSON.stringify(process.env.OZS_OUTDOOR_URL),
+        OZS_NIGHT_URL: JSON.stringify(process.env.OZS_NIGHT_URL),
+        OZS_DEUTERANOPIA_URL: JSON.stringify(process.env.OZS_DEUTERANOPIA_URL),
+        OZS_TRITANOPIA_URL: JSON.stringify(process.env.OZS_TRITANOPIA_URL),
         // OS Vector Tile API (3857)
         VTS_OUTDOOR_URL: JSON.stringify(process.env.VTS_OUTDOOR_URL),
         VTS_DARK_URL: JSON.stringify(process.env.VTS_DARK_URL),
@@ -70,6 +70,9 @@ export default {
         VTS_OUTDOOR_URL_27700: JSON.stringify(process.env.VTS_OUTDOOR_URL_27700),
         VTS_DARK_URL_27700: JSON.stringify(process.env.VTS_DARK_URL_27700),
         VTS_BLACK_AND_WHITE_URL_27700: JSON.stringify(process.env.VTS_BLACK_AND_WHITE_URL_27700),
+        // OS NGD Tiles API (OGC, 27700)
+        NGD_OUTDOOR_URL_27700: JSON.stringify(process.env.NGD_OUTDOOR_URL_27700),
+        NGD_BLACK_AND_WHITE_URL_27700: JSON.stringify(process.env.NGD_BLACK_AND_WHITE_URL_27700),
         // Aerial photography
         AERIAL_URL: JSON.stringify(process.env.AERIAL_URL),
         // OS Maps API (27700 raster)
