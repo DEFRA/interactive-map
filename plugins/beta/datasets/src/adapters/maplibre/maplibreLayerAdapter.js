@@ -288,7 +288,7 @@ export default class MaplibreLayerAdapter {
 
   /**
    * Update a dataset's style and re-render all its layers.
-   * @param {Object} dataset - Updated dataset (style changes already merged in)
+   * @param {string} datasetId - Updated dataset (style changes already merged in)
    * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
@@ -302,32 +302,19 @@ export default class MaplibreLayerAdapter {
 
   /**
    * Update a single sublayer's style and re-render its layers.
-   * @param {Object} dataset - Updated dataset (sublayer style changes already merged in)
-   * @param {string} sublayerId
+   * @param {string} datasetId
    * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setSublayerStyle (dataset, sublayer, mapStyle) {
-    if (!sublayer) {
-      return
-    }
-    const mapStyleId = mapStyle.id
+  async setSublayerStyle (datasetId, mapStyle) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
+    await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
+    const sourceId = this._datasetSourceMap.get(registryDataset.parentId)
+    const sourceLayer = registryDataset.parent.tiles?.length ? registryDataset.parent.sourceLayer : undefined
     const pixelRatio = this._pixelRatio
-    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.sublayerId)
-    ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
-      if (this._map.getLayer(layerId)) {
-        this._map.removeLayer(layerId)
-      }
-      this._symbolLayerIds.delete(layerId)
-    })
-    await Promise.all([ // Add pattern and symbol images to the map before re-adding layers, so they're available for use in the new style.
-      this._mapProvider.addPatternsToMap([sublayer.style], mapStyleId, this._patternRegistry),
-      this._mapProvider.addSymbolsToMap([sublayer.style], mapStyle, this._symbolRegistry)
-    ])
-    const sourceId = this._datasetSourceMap.get(dataset.id)
-    const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
-    addSublayerLayers(this._map, dataset, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry, pixelRatio })
-    this._maintainSymbolOrdering(dataset)
+    addSublayerLayers(this._map, registryDataset, sourceId, sourceLayer, { mapStyle, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry, pixelRatio })
+    this._maintainSymbolOrdering(registryDataset.parent)
   }
 
   /**

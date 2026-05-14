@@ -21,6 +21,7 @@ export class Dataset {
   get maxZoom () { return this._datasetDefinition.maxZoom }
   get idProperty () { return this._datasetDefinition.idProperty }
   get transformRequest () { return this._datasetDefinition.transformRequest }
+  get parentId () { return this._datasetDefinition.parentId }
 
   get isSublayer () {
     return Boolean(this._datasetDefinition.parentId)
@@ -39,7 +40,7 @@ export class Dataset {
 
   get parent () {
     if (this._datasetDefinition.parentId) {
-      return new Dataset(datasetRegistry.getDataset(this._datasetDefinition.parentId))
+      return datasetRegistry.getDataset(this._datasetDefinition.parentId)
     }
     return undefined
   }

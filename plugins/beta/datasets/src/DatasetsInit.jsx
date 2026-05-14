@@ -82,6 +82,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   datasetsRef.current = pluginState.mappedDatasets
   useEffect(() => datasetRegistry.attach(datasetsRef.current), [pluginState.mappedDatasets])
   useLayerAdapterActions('setStyle', dispatch, pluginState, [pluginState.layerAdapterActions.setStyle])
+  useLayerAdapterActions('setSublayerStyle', dispatch, pluginState, [pluginState.layerAdapterActions.setSublayerStyle])
 
   // Cleanup only on unmount
   useEffect(() => {

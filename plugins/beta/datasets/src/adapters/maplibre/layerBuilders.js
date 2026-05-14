@@ -1,7 +1,7 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 import { hasPattern } from './patternImages.js'
 import { getLayerIds } from './layerIds.js'
-import { hasSymbol, getSymbolAnchor, anchorToMaplibre } from './symbolImages.js'
+import { getSymbolAnchor, anchorToMaplibre } from './symbolImages.js'
 
 // ─── Source ───────────────────────────────────────────────────────────────────
 
@@ -123,43 +123,41 @@ export const addSublayerLayers = (map, sublayer, sourceId, sourceLayer, { mapSty
  * Add all layers (and source if needed) for a dataset.
  * Returns the sourceId so the caller can track the datasetId → sourceId mapping.
  * @param {Object} map - MapLibre map instance
- * @param {Object} dataset
+ * @param {Object} registryDataset
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} [symbolRegistry]
  * @param {Object} [patternRegistry]
  * @param {number} [pixelRatio] - Device pixel ratio × map size scale factor
  * @returns {string} sourceId
  */
-export const addDatasetLayers = (map, dataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
+export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
   const mapStyleId = mapStyle.id
-  // const sourceId = getSourceId(dataset)
-  // addSource(map, dataset, sourceId)
-  const { sourceId, source } = dataset
+  const { sourceId, source } = registryDataset
   if (source && !map.getSource(sourceId)) {
     map.addSource(sourceId, source)
   }
 
-  const sourceLayer = dataset.tiles?.length ? dataset.sourceLayer : undefined
+  const sourceLayer = registryDataset.tiles?.length ? registryDataset.sourceLayer : undefined
 
-  if (dataset.sublayers?.length) {
-    dataset.sublayers.forEach(sublayer => {
+  if (registryDataset.sublayers?.length) {
+    registryDataset.sublayers.forEach(sublayer => {
       addSublayerLayers(map, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio })
     })
     return sourceId
   }
 
-  if (dataset.isSublayer) {
+  if (registryDataset.isSublayer) {
     return undefined
   }
-  const visibility = dataset.visibility === 'hidden' ? 'none' : 'visible'
+  const visibility = registryDataset.visibility === 'hidden' ? 'none' : 'visible'
 
-  if (dataset.hasSymbol && symbolRegistry) {
-    addSymbolLayer(map, dataset, dataset.symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
+  if (registryDataset.hasSymbol && symbolRegistry) {
+    addSymbolLayer(map, registryDataset, registryDataset.symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
     return sourceId
   }
 
-  const config = { minZoom: dataset.minZoom, maxZoom: dataset.maxZoom, filter: dataset.filter, ...dataset.style }
-  addFillLayer(map, config, dataset.fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
-  addStrokeLayer(map, config, dataset.strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
+  const config = { minZoom: registryDataset.minZoom, maxZoom: registryDataset.maxZoom, filter: registryDataset.filter, ...registryDataset.style }
+  addFillLayer(map, config, registryDataset.fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
+  addStrokeLayer(map, config, registryDataset.strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
   return sourceId
 }
