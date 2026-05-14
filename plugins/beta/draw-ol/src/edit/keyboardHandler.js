@@ -9,11 +9,15 @@ const STEP_PX = 5
 /**
  * Keyboard handler for edit mode.
  *
- * Space     — select nearest vertex to safe-zone center
- * Alt+Arrow — navigate vertices / midpoints spatially
- * Arrow     — nudge selected vertex (Shift = fine, plain = coarse)
- * Delete    — delete selected vertex
- * Ctrl/Cmd+Z — undo
+ * Space       — select nearest vertex or midpoint to crosshair (only when nothing selected)
+ * Alt+Arrow   — navigate to next vertex/midpoint in that direction (requires selection)
+ * Arrow       — move selected vertex; if midpoint selected, inserts it as a vertex and moves it
+ * Shift+Arrow — same but fine nudge (1px vs 5px)
+ * Delete      — delete selected vertex (no-op on midpoints)
+ * Ctrl/Cmd+Z  — undo
+ *
+ * Midpoints remain midpoints until moved — navigating to a midpoint (Space/Alt+Arrow) does not
+ * convert it. Only pressing a plain/Shift arrow converts it.
  *
  * @param {{ map, container, getState, setState, onVertexMoved, onInserted, onDeleted, onUndo }}
  * @returns {{ destroy }}
@@ -22,7 +26,6 @@ export const createKeyboardHandler = ({
   map, container, getState, setState,
   onVertexMoved, onInserted, onDeleted, onUndo
 }) => {
-  // Accumulate keyboard nudge moves for a single undo entry
   let keyMoveStart = null
   let keyMoveIndex = null
 
@@ -69,24 +72,39 @@ export const createKeyboardHandler = ({
     const { selectedVertexIndex, selectedVertexType, vertecies, midpoints, olFeature } = getState()
     if (!olFeature) return
 
+    const step = e.shiftKey ? NUDGE_PX : STEP_PX
+    const offsets = { ArrowUp: [0, -step], ArrowDown: [0, step], ArrowLeft: [-step, 0], ArrowRight: [step, 0] }
+    const [dx, dy] = offsets[e.key]
+
     if (selectedVertexType === 'midpoint') {
-      // Nudge on midpoint = insert vertex at midpoint, then move it
-      const localIdx = selectedVertexIndex - vertecies.length
+      // Insert the midpoint as a vertex, then immediately move it in the pressed direction.
+      // This matches the ML behaviour: midpoints stay as midpoints until actually moved.
       const result = insertAtMidpoint(olFeature, midpoints, selectedVertexIndex, vertecies.length)
       if (!result) return
-      onInserted({ insertedIndex: result.insertedIndex })
-      setState({ selectedVertexIndex: result.insertedIndex, selectedVertexType: 'vertex' })
+      onInserted({ insertedIndex: result.insertedIndex }) // pushes insert_vertex undo + syncGeom
+
+      // After syncGeom in onInserted, state.vertecies is updated with the new vertex
+      const updatedVertecies = getState().vertecies
+      const insertedCoord = updatedVertecies[result.insertedIndex]
+      if (!insertedCoord) return
+
+      // keyMoveStart at the midpoint position so keyup undo restores there
+      keyMoveStart = [...insertedCoord]
+      keyMoveIndex = result.insertedIndex
+
+      const movedCoord = nudgeCoord(map, insertedCoord, dx, dy)
+      moveVertex(olFeature, result.insertedIndex, movedCoord)
+      setState({
+        selectedVertexIndex: result.insertedIndex,
+        selectedVertexType: 'vertex',
+        vertecies: updatedVertecies.map((c, i) => i === result.insertedIndex ? movedCoord : c)
+      })
       return
     }
 
     if (selectedVertexIndex < 0 || !vertecies[selectedVertexIndex]) return
 
-    const step = e.shiftKey ? NUDGE_PX : STEP_PX
-    const offsets = { ArrowUp: [0, -step], ArrowDown: [0, step], ArrowLeft: [-step, 0], ArrowRight: [step, 0] }
-    const [dx, dy] = offsets[e.key]
-
     const current = vertecies[selectedVertexIndex]
-
     if (!keyMoveStart) {
       keyMoveStart = [...current]
       keyMoveIndex = selectedVertexIndex
@@ -98,7 +116,7 @@ export const createKeyboardHandler = ({
   }
 
   const onKeydown = (e) => {
-    if (document.activeElement !== container) return
+    if (!container.contains(document.activeElement)) return
 
     if (e.key === ' ' && getState().selectedVertexIndex < 0) {
       e.preventDefault()
@@ -106,7 +124,7 @@ export const createKeyboardHandler = ({
       return
     }
 
-    if (e.altKey && ARROW_KEYS.has(e.key) && getState().selectedVertexIndex >= 0) {
+    if (e.altKey && ARROW_KEYS.has(e.key)) {
       e.preventDefault()
       e.stopPropagation()
       navigateTo(e.key)
@@ -130,9 +148,8 @@ export const createKeyboardHandler = ({
   }
 
   const onKeyup = (e) => {
-    if (document.activeElement !== container) return
+    if (!container.contains(document.activeElement)) return
 
-    // Commit accumulated keyboard nudge as single undo entry
     if (ARROW_KEYS.has(e.key) && keyMoveStart && keyMoveIndex != null) {
       onVertexMoved({ vertexIndex: keyMoveIndex, previousCoord: keyMoveStart })
       keyMoveStart = null

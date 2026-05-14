@@ -1,6 +1,11 @@
 import { coordToPixel, pixelToCoord } from '../utils/olCoords.js'
 import { createTouchTarget, showTouchTarget, hideTouchTarget, isOnTouchTarget } from '../utils/touchTarget.js'
 import { moveVertex } from './vertexOps.js'
+import { findNearest } from './vertexHitTest.js'
+
+const TAP_MOVE_THRESHOLD = 10   // px — movement beyond this is a drag, not a tap
+const TAP_TIME_THRESHOLD = 400  // ms
+const TOUCH_TOLERANCE = 24      // px — larger hit area for touch vs pointer
 
 /**
  * Touch vertex drag handler for edit mode.
@@ -8,11 +13,12 @@ import { moveVertex } from './vertexOps.js'
  * Shows an SVG offset target below the finger when a vertex is selected in
  * touch mode, allowing accurate repositioning without finger occlusion.
  * Drag moves the vertex directly (bypasses OL Modify).
+ * Tap on a vertex or midpoint selects it via the onTap callback.
  *
- * @param {{ map, container, olFeature, getState, setState, onVertexMoved }}
- * @returns {{ onTap, updateTargetPosition, hide, destroy }}
+ * @param {{ map, container, olFeature, getState, setState, onVertexMoved, onTap }}
+ * @returns {{ updateTargetPosition, hide, destroy }}
  */
-export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved }) => {
+export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved, onTap }) => {
   const targetEl = createTouchTarget(container)
 
   // Per-drag state
@@ -20,6 +26,7 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
   let dragStartIndex = null     // vertex index being dragged
   let vertexTouchDelta = null   // offset from touch point to vertex pixel
   let targetTouchDelta = null   // offset from touch point to target element
+  let tapStart = null           // { x, y, time, onTarget } — for tap detection
 
   // --- Target positioning ---
 
@@ -36,19 +43,24 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
   // --- Touch event handlers ---
 
   const onTouchstart = (e) => {
-    if (!isOnTouchTarget(e.target)) return
+    const touch = e.touches[0]
+    const onTarget = isOnTouchTarget(e.target)
+    tapStart = { x: touch.clientX, y: touch.clientY, time: Date.now(), onTarget }
+
+    if (!onTarget) return
+
     const { selectedVertexIndex, vertecies } = getState()
     const vertex = vertecies[selectedVertexIndex]
     if (!vertex) return
 
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
+    const t = { x: touch.clientX, y: touch.clientY }
     const vertexPx = coordToPixel(map, vertex)
-    const style = window.getComputedStyle(targetEl)
+    const style = getComputedStyle(targetEl)
 
     dragStartCoord = [...vertex]
     dragStartIndex = selectedVertexIndex
-    vertexTouchDelta = { x: touch.x - vertexPx.x, y: touch.y - vertexPx.y }
-    targetTouchDelta = { x: touch.x - parseFloat(style.left), y: touch.y - parseFloat(style.top) }
+    vertexTouchDelta = { x: t.x - vertexPx.x, y: t.y - vertexPx.y }
+    targetTouchDelta = { x: t.x - Number.parseFloat(style.left), y: t.y - Number.parseFloat(style.top) }
 
     e.preventDefault()
   }
@@ -60,18 +72,39 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
     const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
     const newVertexPx = { x: touch.x - vertexTouchDelta.x, y: touch.y - vertexTouchDelta.y }
     const newCoord = pixelToCoord(map, newVertexPx)
-    const olFeature = getState().olFeature
+    const { olFeature, vertecies } = getState()
     if (!olFeature) return
 
     moveVertex(olFeature, dragStartIndex, newCoord)
-    setState({ vertecies: getState().vertecies.map((c, i) => i === dragStartIndex ? newCoord : c) })
+    setState({ vertecies: vertecies.map((c, i) => i === dragStartIndex ? newCoord : c) })
     showTouchTarget(targetEl, { x: touch.x - targetTouchDelta.x, y: touch.y - targetTouchDelta.y })
   }
 
   const onTouchend = (e) => {
-    if (dragStartIndex == null) return
+    const wasDragging = dragStartIndex != null
 
-    const olFeature = getState().olFeature
+    if (!wasDragging) {
+      if (tapStart && !tapStart.onTarget && e.changedTouches.length > 0) {
+        const t = e.changedTouches[0]
+        const dx = t.clientX - tapStart.x
+        const dy = t.clientY - tapStart.y
+        const dt = Date.now() - tapStart.time
+
+        if (Math.sqrt(dx * dx + dy * dy) < TAP_MOVE_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
+          const rect = map.getViewport().getBoundingClientRect()
+          const pixel = { x: t.clientX - rect.left, y: t.clientY - rect.top }
+          const { vertecies, midpoints } = getState()
+          const hit = findNearest(map, vertecies, midpoints, pixel, TOUCH_TOLERANCE)
+          onTap?.(hit)
+          e.preventDefault()
+        }
+      }
+      tapStart = null
+      return
+    }
+
+    tapStart = null
+
     const { vertecies } = getState()
     const finalCoord = vertecies[dragStartIndex]
 

@@ -32,7 +32,7 @@ const interactiveMap = new InteractiveMap('map', {
 	containerHeight: '650px',
 	transformRequest: transformVtsRequest27700,
 	enableZoomControls: true,
-	readMapText: true,
+	// readMapText: true,
 	plugins: [
 		mapStylesPlugin({
 			mapStyles: ngdMapStyles27700
@@ -115,23 +115,23 @@ interactiveMap.on('datasets:ready', function () {
 let selectedFeatureIds = []
 
 interactiveMap.on('draw:ready', function () {
-	// drawPlugin.addFeature({
-	// 	id: 'test1234',
-	// 	type: 'Feature',
-	// 	geometry: {'type':'Polygon','coordinates':[[[337612,504612],[337592,504595],[337575,504583],[337570,504582],[337560,504582],[337554,504590],[337559,504596],[337568,504604],[337572,504610],[337582,504611],[337585,504610],[337602,504612],[337603,504607],[337605,504605],[337609,504605],[337612,504612]],[[337598,504609],[337587,504605],[337577,504605],[337572,504607],[337573,504610],[337575,504613],[337580,504613],[337586,504612],[337593,504613],[337597,504611],[337598,504609]]]},
-	// 	stroke: 'rgba(0,112,60,1)',
-	// 	fill: 'rgba(0,112,60,0.2)',
-	// 	strokeWidth: 2
-	// })
-	// drawPlugin.editFeature('test1234')
+	drawPlugin.addFeature({
+		id: 'test1234',
+		type: 'Feature',
+		geometry: {'type':'Polygon','coordinates':[[[337612,504612],[337592,504595],[337575,504583],[337570,504582],[337560,504582],[337554,504590],[337559,504596],[337568,504604],[337572,504610],[337582,504611],[337585,504610],[337602,504612],[337603,504607],[337605,504605],[337609,504605],[337612,504612]],[[337598,504609],[337587,504605],[337577,504605],[337572,504607],[337573,504610],[337575,504613],[337580,504613],[337586,504612],[337593,504613],[337597,504611],[337598,504609]]]},
+		stroke: 'rgba(0,112,60,1)',
+		fill: 'rgba(0,112,60,0.2)',
+		strokeWidth: 2
+	})
+	drawPlugin.editFeature('test1234')
 })
 
 interactiveMap.on('draw:started', function (e) {
-	console.log('draw:started')
+	interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
 })
 
 interactiveMap.on('draw:editstart', function (e) {
-	console.log('draw:editstart', e)
+	interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
 })
 
 interactiveMap.on('draw:created', function (e) {

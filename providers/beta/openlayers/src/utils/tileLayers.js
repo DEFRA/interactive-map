@@ -93,7 +93,7 @@ export async function createVectorTileLayer (url, transformRequest) {
     projection: CRS,
     tileGrid
   })
-  const layer = new VectorTileLayer({ source, declutter: true })
+  const layer = new VectorTileLayer({ source, declutter: true, renderMode: 'vector' })
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 
@@ -125,7 +125,7 @@ export async function createOGCVectorTileLayer (url, transformRequest) {
 
   const tileGrid = new TileGrid({ resolutions, origin, tileSize })
   const source = new OGCVectorTile({ url: tilesUrl, format, tileGrid, projection: CRS })
-  const layer = new VectorTileLayer({ source, declutter: true })
+  const layer = new VectorTileLayer({ source, declutter: true, renderMode: 'vector' })
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 

@@ -45,16 +45,17 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
   drawInteraction.on('drawend', onDrawEnd)
   drawInteraction.on('drawabort', onDrawEnd)
 
-  // Get map reference when drawInteraction is added
+  // Get map reference — drawInteraction is already added to map before createDrawInput is called
   const getMap = () => {
     if (!map) {
-      // drawInteraction is added to map in DrawMode; extract it
       map = drawInteraction.getMap()
     }
     return map
   }
 
-  // --- Update sketch feature with current center (rubberbanding) ---
+  const olMap = drawInteraction.getMap()
+
+  // --- Update sketch feature rubber band to current map centre ---
   const updateSketchRubberbanding = () => {
     if (!sketchFeature) return
 
@@ -64,24 +65,30 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
 
     const centerCoord = mapProvider.getCenter()
 
-    // For LineString, update the last (rubber-band) coordinate
     if (geom.getType() === 'LineString') {
       const updated = [...coords]
       updated[updated.length - 1] = centerCoord
       geom.setCoordinates(updated)
-    }
-    // For Polygon, update the last coordinate in the current ring
-    else if (geom.getType() === 'Polygon') {
+    } else if (geom.getType() === 'Polygon') {
       const updated = coords.map((ring, ringIdx) => {
-        if (ringIdx === 0) { // Only update first ring (exterior)
-          const ringUpdated = [...ring]
-          ringUpdated[ringUpdated.length - 1] = centerCoord
-          return ringUpdated
-        }
-        return ring
+        if (ringIdx !== 0) return ring
+        const ringUpdated = [...ring]
+        ringUpdated[ringUpdated.length - 1] = centerCoord
+        return ringUpdated
       })
       geom.setCoordinates(updated)
     }
+  }
+
+  // change:center fires on each animation frame as OL updates the view centre,
+  // keeping the rubber band in sync during keyboard pan.
+  const onCenterChange = () => {
+    if (interfaceType === 'pointer') return
+    updateSketchRubberbanding()
+  }
+
+  if (olMap) {
+    olMap.getView().on('change:center', onCenterChange)
   }
 
   // --- Check if close enough to first vertex to close shape ---
@@ -213,8 +220,8 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
     interfaceType = 'touch'
   }
 
-  // Update rubberbanding line as user moves around in keyboard/touch modes
   const onPointerMove = () => {
+    if (interfaceType === 'pointer') { return }
     updateSketchRubberbanding()
   }
 
@@ -230,6 +237,9 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
     destroy () {
       if (pendingVertexUpdate) {
         clearTimeout(pendingVertexUpdate)
+      }
+      if (olMap) {
+        olMap.getView().un('change:center', onCenterChange)
       }
       window.removeEventListener('keydown', onKeydown)
       window.removeEventListener('click', onButtonClick)
