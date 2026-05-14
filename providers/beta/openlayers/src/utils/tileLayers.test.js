@@ -201,9 +201,9 @@ describe('createVectorTileLayer', () => {
     expect(tileLoadFunction).toBeUndefined()
   })
 
-  it('creates VectorTileLayer with source, declutter true, and vector renderMode', async () => {
+  it('creates VectorTileLayer with source and declutter true', async () => {
     await createVectorTileLayer(styleUrl, null)
-    expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockVectorTileSourceInstance, declutter: true, renderMode: 'vector' })
+    expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockVectorTileSourceInstance, declutter: true })
   })
 
   it('applies stylefunction with layer, styleJson, sourceId, resolutions, spritesJson, spritesPngUrl', async () => {
