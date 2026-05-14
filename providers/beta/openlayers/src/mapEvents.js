@@ -82,8 +82,6 @@ export function attachMapEvents ({
   const debouncers = []
 
   const view = map.getView()
-  const viewMinZoom = view.getMinZoom()
-  const viewMaxZoom = view.getMaxZoom()
 
   const getMapState = () => {
     if (destroyed) {
@@ -95,8 +93,8 @@ export function attachMapEvents ({
       bounds: getBounds(),
       resolution: getResolution(),
       zoom,
-      isAtMaxZoom: zoom + ZOOM_TOLERANCE >= viewMaxZoom,
-      isAtMinZoom: zoom - ZOOM_TOLERANCE <= viewMinZoom
+      isAtMaxZoom: zoom + ZOOM_TOLERANCE >= view.getMaxZoom(),
+      isAtMinZoom: zoom - ZOOM_TOLERANCE <= view.getMinZoom()
     }
   }
 
