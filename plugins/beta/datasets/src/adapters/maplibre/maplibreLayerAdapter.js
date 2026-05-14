@@ -285,7 +285,6 @@ export default class MaplibreLayerAdapter {
   async setStyle (datasetId, mapStyle) {
     const mapStyleId = mapStyle.id
     const dataset = datasetRegistry.getDataset(datasetId)
-    console.log('Updating style for dataset', datasetId)
     const layerIds = dataset.layerIds
     layerIds.forEach(layerId => {
       if (this._map.getLayer(layerId)) {

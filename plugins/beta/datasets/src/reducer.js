@@ -154,7 +154,6 @@ const setDatasetStyle = (state, payload) => {
   const { datasetId, styleChanges, mapStyle } = payload
   const style = { ...state.mappedDatasets[datasetId].style, ...styleChanges }
   const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges, style }
-  console.log('Setting dataset style', datasetId, styleChanges)
   const setStyle = [...state.layerAdapterActions.setStyle, [datasetId, mapStyle]]
   return {
     ...state,
