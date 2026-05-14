@@ -49,7 +49,6 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
   async init (datasets, mapStyle) {
-    console.log('datasets', Object.keys(datasets))
     const mapStyleId = mapStyle.id
     const { patternConfigs, symbolConfigs } = Object.keys(datasets).reduce((acc, datasetId) => {
       const dataset = datasetRegistry.getDataset(datasetId)
@@ -57,7 +56,6 @@ export default class MaplibreLayerAdapter {
       acc.symbolConfigs.push(...dataset.symbolConfigs)
       return acc
     }, { patternConfigs: [], symbolConfigs: [] })
-    console.log({ patternConfigs, symbolConfigs })
     await Promise.all([
       this._mapProvider.addPatternsToMap(patternConfigs, mapStyleId, this._patternRegistry),
       this._mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, this._symbolRegistry)
@@ -66,7 +64,6 @@ export default class MaplibreLayerAdapter {
     Object.keys(datasets).forEach(datasetId => {
       const dataset = datasetRegistry.getDataset(datasetId)
       if (!dataset.isSublayer) {
-        console.log('Adding dataset layers for', datasetId)
         this._addLayers(dataset, mapStyle)
       }
     })
@@ -288,6 +285,7 @@ export default class MaplibreLayerAdapter {
   async setStyle (datasetId, mapStyle) {
     const mapStyleId = mapStyle.id
     const dataset = datasetRegistry.getDataset(datasetId)
+    console.log('Updating style for dataset', datasetId)
     const layerIds = dataset.layerIds
     layerIds.forEach(layerId => {
       if (this._map.getLayer(layerId)) {
@@ -300,6 +298,7 @@ export default class MaplibreLayerAdapter {
       this._mapProvider.addSymbolsToMap(getSymbolConfigs([dataset]), mapStyle, this._symbolRegistry)
     ])
     this._addLayers(dataset, mapStyle)
+    console.log('Finished updating style for dataset', datasetId)
   }
 
   /**

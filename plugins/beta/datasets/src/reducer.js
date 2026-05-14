@@ -1,6 +1,5 @@
 import { applyDatasetDefaults } from './defaults.js'
 import { keyReducer } from './reducers/keyReducer.js'
-import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
 import { datasetsToMenu } from './reducers/datasetsToMenu.js'
 
 const initialState = {
@@ -19,7 +18,10 @@ const initialState = {
     hasGroups: false
   },
   hiddenFeatures: {}, // { [layerId]: { idProperty: string, ids: string[] } }
-  layerAdapter: null
+  layerAdapter: null,
+  layerAdapterActions: {
+    setStyle: []
+  }
 }
 
 const initSublayerVisibility = (dataset) => {
@@ -146,16 +148,17 @@ const setSublayerVisibility = (state, payload) => {
     })
   }
 }
+const setLayerAdapterActions = (state, payload) => ({ ...state, layerAdapterActions: { ...state.layerAdapterActions, ...payload } })
 
 const setDatasetStyle = (state, payload) => {
   const { datasetId, styleChanges, mapStyle } = payload
-  const { layerAdapter } = state
   const style = { ...state.mappedDatasets[datasetId].style, ...styleChanges }
   const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges, style }
-  // TODO - handle this side effect better
-  layerAdapter?.setStyle(datasetId, mapStyle)
+  console.log('Setting dataset style', datasetId, styleChanges)
+  const setStyle = [...state.layerAdapterActions.setStyle, [datasetId, mapStyle]]
   return {
     ...state,
+    layerAdapterActions: { ...state.layerAdapterActions, setStyle },
     mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset },
     datasets: state.datasets?.map(dataset =>
       dataset.id === datasetId ? { ...dataset, ...styleChanges } : dataset
@@ -247,7 +250,8 @@ const actions = {
   SET_SUBLAYER_OPACITY: setSublayerOpacity,
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
-  SET_LAYER_ADAPTER: setLayerAdapter
+  SET_LAYER_ADAPTER: setLayerAdapter,
+  SET_LAYER_ADAPTER_ACTIONS: setLayerAdapterActions
 }
 
 export {

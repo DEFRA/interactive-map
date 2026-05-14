@@ -4,6 +4,16 @@ import { EVENTS } from '../../../../src/config/events.js'
 import { createDatasets } from './datasets.js'
 import { datasetRegistry } from './registry/datasetRegistry.js'
 
+const useLayerAdapterActions = (dispatch, pluginState, methodName) =>
+  () => {
+    const methodParameters = pluginState.layerAdapterActions?.[methodName] || []
+    const method = pluginState.layerAdapter?.[methodName]
+    if (methodParameters.length) {
+      methodParameters.forEach((parameters) => method.bind(pluginState.layerAdapter)(...parameters))
+    }
+    return () => methodParameters.length && dispatch({ type: 'SET_LAYER_ADAPTER_ACTIONS', payload: { [methodName]: [] } })
+  }
+
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
@@ -65,6 +75,17 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   const datasetsRef = useRef(pluginState.mappedDatasets)
   datasetsRef.current = pluginState.mappedDatasets
   useEffect(() => datasetRegistry.attach(datasetsRef.current), [pluginState.mappedDatasets])
+  useEffect(useLayerAdapterActions(dispatch, pluginState, 'setStyle'), [pluginState.layerAdapterActions.setStyle])
+  // useEffect(() => {
+  //   const { setStyle } = pluginState.layerAdapterActions
+  //   if (setStyle.length) {
+  //     console.log('setStyle', setStyle)
+  //     setStyle.forEach((setStyleParams) => {
+  //       pluginState.layerAdapter?.setStyle(...setStyleParams)
+  //     })
+  //     dispatch({ type: 'SET_LAYER_ADAPTER_ACTIONS', payload: { setStyle: [] } })
+  //   }
+  // }, [pluginState.layerAdapterActions.setStyle])
 
   // Cleanup only on unmount
   useEffect(() => {
