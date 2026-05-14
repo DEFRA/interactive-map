@@ -19,7 +19,12 @@ const actions = {
   SET_SELECTED_VERTEX_INDEX: (state, payload) => ({
     ...state,
     selectedVertexIndex: payload.index,
-    numVertecies: payload.numVertecies
+    numVertecies: payload.numVertecies !== undefined ? payload.numVertecies : state.numVertecies
+  }),
+
+  SET_VERTEX_COUNT: (state, payload) => ({
+    ...state,
+    numVertecies: payload
   }),
 
   SET_UNDO_STACK_LENGTH: (state, payload) => ({

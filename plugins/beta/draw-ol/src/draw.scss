@@ -1,0 +1,17 @@
+// Draw plugin styles for OpenLayers
+
+.im-draw-touch-target {
+  color: #3b82f6;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Accessibility: focus visible on buttons
+.im-draw-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}

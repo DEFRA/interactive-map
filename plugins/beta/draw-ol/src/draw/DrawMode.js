@@ -1,7 +1,6 @@
 import Draw from 'ol/interaction/Draw.js'
 import { createSketchStyle } from '../core/styles.js'
 import { createDrawInput } from './drawInput.js'
-import { getCoords } from '../utils/geometryHelpers.js'
 
 /**
  * Draw mode — handles draw_polygon and draw_line.
@@ -34,22 +33,49 @@ export const createDrawMode = ({ map, manager, options }) => {
 
   // Track vertex count for the Done button enabled state
   let sketchFeature = null
+  let pendingVertexUpdate = null
 
   const updateVertexCount = () => {
     if (!sketchFeature) return
     const geom = sketchFeature.getGeometry()
-    const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
-    // OL always keeps a trailing rubber-band coordinate; subtract 1
-    const numVertecies = Math.max(0, coords.length - 1)
+    const rawCoords = geom.getCoordinates()
+
+    let numVertecies = 0
+
+    if (geometryType === 'Polygon' && rawCoords.length > 0) {
+      // For Polygon, OL stores rings as [[x1,y1], [x2,y2], ..., [x1,y1], rubber-band]
+      // Subtract 2: 1 for closing vertex + 1 for rubber-band
+      const exteriorRing = rawCoords[0]
+      numVertecies = Math.max(0, exteriorRing.length - 2)
+    } else if (geometryType === 'LineString') {
+      // For LineString, subtract 1 for rubber-band coordinate
+      numVertecies = Math.max(0, rawCoords.length - 1)
+    }
+
     manager.emit('vertexchange', { numVertecies })
+  }
+
+  const onGeometryChange = () => {
+    // Debounce geometry changes to avoid intermediate states
+    if (pendingVertexUpdate) {
+      clearTimeout(pendingVertexUpdate)
+    }
+    pendingVertexUpdate = setTimeout(() => {
+      updateVertexCount()
+      pendingVertexUpdate = null
+    }, 5)
   }
 
   drawInteraction.on('drawstart', (e) => {
     sketchFeature = e.feature
-    sketchFeature.getGeometry().on('change', updateVertexCount)
+    sketchFeature.getGeometry().on('change', onGeometryChange)
   })
 
   drawInteraction.on('drawend', (e) => {
+    if (pendingVertexUpdate) {
+      clearTimeout(pendingVertexUpdate)
+      pendingVertexUpdate = null
+    }
     const olFeature = e.feature
     olFeature.setId(String(featureId))
     olFeature.setProperties(properties)
@@ -60,6 +86,10 @@ export const createDrawMode = ({ map, manager, options }) => {
   })
 
   drawInteraction.on('drawabort', () => {
+    if (pendingVertexUpdate) {
+      clearTimeout(pendingVertexUpdate)
+      pendingVertexUpdate = null
+    }
     manager.emit('cancel')
   })
 
@@ -70,9 +100,19 @@ export const createDrawMode = ({ map, manager, options }) => {
       // Validate minimum points before finishing
       if (sketchFeature) {
         const geom = sketchFeature.getGeometry()
-        const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
-        const min = geometryType === 'Polygon' ? 4 : 3 // +1 for rubber band
-        if (coords.length < min) return
+        const rawCoords = geom.getCoordinates()
+        let numVertecies = 0
+
+        if (geometryType === 'Polygon' && rawCoords.length > 0) {
+          const exteriorRing = rawCoords[0]
+          numVertecies = Math.max(0, exteriorRing.length - 2)
+        } else if (geometryType === 'LineString') {
+          numVertecies = Math.max(0, rawCoords.length - 1)
+        }
+
+        // Need at least 3 vertices for Polygon, 2 for LineString
+        const minVertices = geometryType === 'Polygon' ? 3 : 2
+        if (numVertecies < minVertices) return
       }
       drawInteraction.finishDrawing()
     },

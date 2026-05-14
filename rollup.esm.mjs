@@ -291,6 +291,12 @@ const ALL_BUILDS = [
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-es-plugin' }
   },
   {
+    entryPath: './plugins/beta/draw-ol/src/index.js',
+    outDir: 'plugins/beta/draw-ol/dist/esm',
+    extraExternals: [/^ol\//],
+    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-ol-plugin' }
+  },
+  {
     entryPath: './plugins/beta/frame/src/index.js',
     outDir: 'plugins/beta/frame/dist/esm',
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-frame-plugin' }
