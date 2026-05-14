@@ -173,6 +173,32 @@ describe('attachMapEvents — render and data events', () => {
   })
 })
 
+describe('attachMapEvents — dynamic zoom bounds', () => {
+  it('isAtMaxZoom is updated in emitted event when view max zoom changes', () => {
+    const { view, eventBus } = setup()
+    view.trigger('change')
+    mockDebounceFns[0].fn()
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMaxZoom: false }))
+
+    eventBus.emit.mockClear()
+    view.getMaxZoom.mockReturnValue(7)
+    mockDebounceFns[0].fn()
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMaxZoom: true }))
+  })
+
+  it('isAtMinZoom is updated in emitted event when view min zoom changes', () => {
+    const { view, eventBus } = setup()
+    view.trigger('change')
+    mockDebounceFns[0].fn()
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMinZoom: false }))
+
+    eventBus.emit.mockClear()
+    view.getMinZoom.mockReturnValue(7)
+    mockDebounceFns[0].fn()
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMinZoom: true }))
+  })
+})
+
 describe('attachMapEvents — remove', () => {
   it('calls cancel on all debouncers', () => {
     const { handles } = setup()
