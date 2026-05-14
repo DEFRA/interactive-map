@@ -44,16 +44,16 @@ export default class MaplibreLayerAdapter {
 
   /**
    * Initialise all datasets: register patterns, add layers, then wait for idle.
-   * @param {Object[]} datasets
+   * @param {Object[]} mappedDatasets
    * @param {Object} mapStyle
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
-  async init (datasets, mapStyle) {
+  async init (mappedDatasets, mapStyle) {
     const mapStyleId = mapStyle.id
-    const { patternConfigs, symbolConfigs } = Object.keys(datasets).reduce((acc, datasetId) => {
-      const dataset = datasetRegistry.getDataset(datasetId)
-      acc.patternConfigs.push(...dataset.patternConfigs)
-      acc.symbolConfigs.push(...dataset.symbolConfigs)
+    const { patternConfigs, symbolConfigs } = Object.keys(mappedDatasets).reduce((acc, datasetId) => {
+      const registryDataset = datasetRegistry.getDataset(datasetId)
+      acc.patternConfigs.push(...registryDataset.patternConfigs)
+      acc.symbolConfigs.push(...registryDataset.symbolConfigs)
       return acc
     }, { patternConfigs: [], symbolConfigs: [] })
     await Promise.all([
@@ -61,13 +61,23 @@ export default class MaplibreLayerAdapter {
       this._mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, this._symbolRegistry)
     ])
     this._symbolLayerIds.clear()
-    Object.keys(datasets).forEach(datasetId => {
-      const registryDataset = datasetRegistry.getDataset(datasetId)
-      if (!registryDataset.isSublayer) {
-        this._addLayers(registryDataset, mapStyle)
-      }
-    })
+    datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset, mapStyle))
     await new Promise(resolve => this._map.once('idle', resolve))
+  }
+
+  removeLayer (layerId) {
+    if (this._map.getLayer(layerId)) {
+      this._map.removeLayer(layerId)
+    }
+    this._symbolLayerIds.delete(layerId)
+  }
+
+  async addPatternsAndSymbolsToMap (patterns, symbols, mapStyle) {
+    const mapStyleId = mapStyle.id
+    return Promise.all([
+      this._mapProvider.addPatternsToMap(patterns, mapStyleId, this._patternRegistry),
+      this._mapProvider.addSymbolsToMap(symbols, mapStyle, this._symbolRegistry)
+    ])
   }
 
   /**
@@ -283,19 +293,9 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>}
    */
   async setStyle (datasetId, mapStyle) {
-    const mapStyleId = mapStyle.id
     const registryDataset = datasetRegistry.getDataset(datasetId)
-    const layerIds = registryDataset.layerIds
-    layerIds.forEach(layerId => {
-      if (this._map.getLayer(layerId)) {
-        this._map.removeLayer(layerId)
-      }
-      this._symbolLayerIds.delete(layerId)
-    })
-    await Promise.all([
-      this._mapProvider.addPatternsToMap(getPatternConfigs([registryDataset], this._patternRegistry), mapStyleId, this._patternRegistry),
-      this._mapProvider.addSymbolsToMap(getSymbolConfigs([registryDataset]), mapStyle, this._symbolRegistry)
-    ])
+    registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
+    await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
     this._addLayers(registryDataset, mapStyle)
     console.log('Finished updating style for dataset', datasetId)
   }
