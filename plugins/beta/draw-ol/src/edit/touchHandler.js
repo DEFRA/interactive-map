@@ -53,14 +53,14 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
     const vertex = vertecies[selectedVertexIndex]
     if (!vertex) return
 
-    const t = { x: touch.clientX, y: touch.clientY }
+    const tOl = map.getEventPixel({ clientX: touch.clientX, clientY: touch.clientY })
     const vertexPx = coordToPixel(map, vertex)
     const style = getComputedStyle(targetEl)
 
     dragStartCoord = [...vertex]
     dragStartIndex = selectedVertexIndex
-    vertexTouchDelta = { x: t.x - vertexPx.x, y: t.y - vertexPx.y }
-    targetTouchDelta = { x: t.x - Number.parseFloat(style.left), y: t.y - Number.parseFloat(style.top) }
+    vertexTouchDelta = { x: tOl[0] - vertexPx.x, y: tOl[1] - vertexPx.y }
+    targetTouchDelta = { x: tOl[0] - Number.parseFloat(style.left), y: tOl[1] - Number.parseFloat(style.top) }
 
     e.preventDefault()
   }
@@ -69,15 +69,15 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
     if (!isOnTouchTarget(e.target) || dragStartIndex == null) return
     e.preventDefault()
 
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const newVertexPx = { x: touch.x - vertexTouchDelta.x, y: touch.y - vertexTouchDelta.y }
+    const tOl = map.getEventPixel({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY })
+    const newVertexPx = { x: tOl[0] - vertexTouchDelta.x, y: tOl[1] - vertexTouchDelta.y }
     const newCoord = pixelToCoord(map, newVertexPx)
     const { olFeature, vertecies } = getState()
     if (!olFeature) return
 
     moveVertex(olFeature, dragStartIndex, newCoord)
     setState({ vertecies: vertecies.map((c, i) => i === dragStartIndex ? newCoord : c) })
-    showTouchTarget(targetEl, { x: touch.x - targetTouchDelta.x, y: touch.y - targetTouchDelta.y })
+    showTouchTarget(targetEl, { x: tOl[0] - targetTouchDelta.x, y: tOl[1] - targetTouchDelta.y })
   }
 
   const onTouchend = (e) => {
@@ -91,8 +91,8 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
         const dt = Date.now() - tapStart.time
 
         if (Math.sqrt(dx * dx + dy * dy) < TAP_MOVE_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
-          const rect = map.getViewport().getBoundingClientRect()
-          const pixel = { x: t.clientX - rect.left, y: t.clientY - rect.top }
+          const tOl = map.getEventPixel({ clientX: t.clientX, clientY: t.clientY })
+          const pixel = { x: tOl[0], y: tOl[1] }
           const { vertecies, midpoints } = getState()
           const hit = findNearest(map, vertecies, midpoints, pixel, TOUCH_TOLERANCE)
           onTap?.(hit)

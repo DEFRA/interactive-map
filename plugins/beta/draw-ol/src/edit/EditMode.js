@@ -255,6 +255,15 @@ export const createEditMode = ({ map, manager, options }) => {
     if (state.interfaceType === 'touch') { touchHandler.updateTargetPosition() }
   }
 
+  // Reposition the touch target after OL re-renders with the new size.
+  // change:size fires before the render, so we wait for postrender to get
+  // correct pixel coords from getPixelFromCoordinate.
+  const onMapSizeChange = () => {
+    if (state.interfaceType !== 'touch' || state.selectedVertexIndex < 0) return
+    map.once('postrender', () => touchHandler.updateTargetPosition())
+  }
+  map.on('change:size', onMapSizeChange)
+
   // --- Keyboard handler ---
   const keyboardHandler = createKeyboardHandler({
     map,
@@ -305,6 +314,7 @@ export const createEditMode = ({ map, manager, options }) => {
       container.removeEventListener('pointermove', onPointerMove)
       container.removeEventListener('click', onContainerClick)
       window.removeEventListener('click', onButtonClick)
+      map.un('change:size', onMapSizeChange)
       map.removeInteraction(modifyInteraction)
       midpointLayer.remove()
       vertexLayer.remove()
