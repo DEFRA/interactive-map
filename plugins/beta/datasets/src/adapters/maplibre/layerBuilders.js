@@ -78,41 +78,43 @@ export const addStrokeLayer = (map, config, layerId, sourceId, sourceLayer, visi
 
 // ─── Symbol layer ─────────────────────────────────────────────────────────────
 
-export const addSymbolLayer = (map, dataset, layerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio }) => {
-  if (!layerId || map.getLayer(layerId)) { return }
-  const symbolDef = symbolRegistry.getSymbolDef(dataset)
+export const addSymbolLayer = (map, registryDataset, deleteSymbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio }) => {
+  const { symbolLayerId } = registryDataset
+  if (!symbolLayerId || map.getLayer(symbolLayerId)) { return }
+  const symbolDef = symbolRegistry.getSymbolDef(registryDataset.style)
   if (!symbolDef) { return }
-  const imageId = symbolRegistry.getSymbolImageId(dataset, mapStyle, false, pixelRatio)
+  const imageId = symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, pixelRatio)
   if (!imageId) { return }
-  const anchor = getSymbolAnchor(dataset, symbolDef)
-  map.addLayer({
-    id: layerId,
-    type: 'symbol',
-    source: sourceId,
-    'source-layer': sourceLayer,
-    minzoom: dataset.minZoom,
-    maxzoom: dataset.maxZoom,
-    layout: {
-      visibility,
-      'icon-image': imageId,
-      'icon-anchor': anchorToMaplibre(anchor),
-      'icon-allow-overlap': true
-    },
-    ...(dataset.filter ? { filter: dataset.filter } : {})
-  })
+  const anchor = getSymbolAnchor(registryDataset.style, symbolDef)
+  map.addLayer(registryDataset.getSymbolSource(imageId, anchor, symbolDef))
+  // map.addLayer({
+  //   id: symbolLayerId,
+  //   type: 'symbol',
+  //   source: sourceId,
+  //   'source-layer': sourceLayer,
+  //   minzoom: registryDataset.minZoom,
+  //   maxzoom: registryDataset.maxZoom,
+  //   layout: {
+  //     visibility,
+  //     'icon-image': imageId,
+  //     'icon-anchor': anchorToMaplibre(anchor),
+  //     'icon-allow-overlap': true
+  //   },
+  //   ...(registryDataset.filter ? { filter: registryDataset.filter } : {})
+  // })
 }
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addSublayerLayers = (map, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
+export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
   const mapStyleId = mapStyle.id
-  const merged = { id: sublayer.id, minZoom: sublayer.minZoom, maxZoom: sublayer.maxZoom, filter: sublayer.filter, ...sublayer.style }
-  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds({ id: sublayer.id, ...sublayer.style })
+  const merged = { id: registryDataset.id, minZoom: registryDataset.minZoom, maxZoom: registryDataset.maxZoom, filter: registryDataset.filter, ...registryDataset.style }
+  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds({ id: registryDataset.id, ...registryDataset.style })
   const parentHidden = false // TODO - fix visibility dataset.visibility === 'hidden'
-  const sublayerHidden = sublayer.visibility === 'hidden'
+  const sublayerHidden = registryDataset.visibility === 'hidden'
   const visibility = (parentHidden || sublayerHidden) ? 'none' : 'visible'
-  if (sublayer.hasSymbol && symbolRegistry) {
-    addSymbolLayer(map, merged, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
+  if (registryDataset.hasSymbol && symbolRegistry) {
+    addSymbolLayer(map, registryDataset, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
     return
   }
   addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
@@ -132,12 +134,10 @@ export const addSublayerLayers = (map, sublayer, sourceId, sourceLayer, { mapSty
  */
 export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
   const mapStyleId = mapStyle.id
-  const { sourceId, source } = registryDataset
+  const { sourceId, source, sourceLayer } = registryDataset
   if (source && !map.getSource(sourceId)) {
     map.addSource(sourceId, source)
   }
-
-  const sourceLayer = registryDataset.tiles?.length ? registryDataset.sourceLayer : undefined
 
   if (registryDataset.sublayers?.length) {
     registryDataset.sublayers.forEach(sublayer => {

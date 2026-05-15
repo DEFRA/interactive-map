@@ -14,14 +14,31 @@ export class Dataset {
   get hasStroke () { return Boolean(this.style?.stroke) }
   get tiles () { return this._datasetDefinition.tiles }
   get geojson () { return this._datasetDefinition.geojson }
-  get sourceLayer () { return this._datasetDefinition.sourceLayer }
   get visibility () { return this._datasetDefinition.visibility || 'visible' }
-  get filter () { return this._datasetDefinition.filter }
-  get minZoom () { return this._datasetDefinition.minZoom }
-  get maxZoom () { return this._datasetDefinition.maxZoom }
   get idProperty () { return this._datasetDefinition.idProperty }
   get transformRequest () { return this._datasetDefinition.transformRequest }
   get parentId () { return this._datasetDefinition.parentId }
+
+  get minZoom () { return this._datasetDefinition.minZoom || this.parent?.minZoom }
+  get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
+  get filter () { return this._datasetDefinition.filter || this.parent?.filter }
+
+  get symbolAnchor () {
+    if (this.style?.symbolAnchor) {
+      return this.style.symbolAnchor
+    }
+    return this.parent?.symbolAnchor
+  }
+
+  get sourceLayer () {
+    if (this.isSublayer) {
+      return this.parent.sourceLayer
+    }
+    if (this.tiles) {
+      return this._datasetDefinition.sourceLayer
+    }
+    return undefined
+  }
 
   get isSublayer () {
     return Boolean(this._datasetDefinition.parentId)
