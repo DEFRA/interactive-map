@@ -66,7 +66,7 @@ function fixIconOpacity (styleJson) {
   })
 }
 
-export async function createVectorTileLayer (url, transformRequest) {
+export async function createVectorTileLayer (url, transformRequest, { renderMode } = {}) {
   const styleJson = await fetchWithTransform(url, 'Style', transformRequest).then(r => r.json())
 
   const sourceId = Object.keys(styleJson.sources)[0]
@@ -93,14 +93,14 @@ export async function createVectorTileLayer (url, transformRequest) {
     projection: CRS,
     tileGrid
   })
-  const layer = new VectorTileLayer({ source, declutter: true, renderMode: 'vector' })
+  const layer = new VectorTileLayer({ source, declutter: true, ...(renderMode && { renderMode }) })
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 
   return { layer, source }
 }
 
-export async function createOGCVectorTileLayer (url, transformRequest) {
+export async function createOGCVectorTileLayer (url, transformRequest, { renderMode } = {}) {
   const styleJson = await fetchWithTransform(url, 'Style', transformRequest).then(r => r.json())
 
   const sourceId = Object.keys(styleJson.sources)[0]
@@ -125,7 +125,7 @@ export async function createOGCVectorTileLayer (url, transformRequest) {
 
   const tileGrid = new TileGrid({ resolutions, origin, tileSize })
   const source = new OGCVectorTile({ url: tilesUrl, format, tileGrid, projection: CRS })
-  const layer = new VectorTileLayer({ source, declutter: true, renderMode: 'vector' })
+  const layer = new VectorTileLayer({ source, declutter: true, ...(renderMode && { renderMode }) })
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 

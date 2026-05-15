@@ -125,7 +125,7 @@ describe('OpenLayersProvider', () => {
     it('creates vector tile layer, OL objects, and emits MAP_READY by default', async () => {
       const { provider, eventBus } = makeProvider()
       await provider.initMap(defaultInitConfig)
-      expect(createVectorTileLayer).toHaveBeenCalledWith(defaultInitConfig.mapStyle.url, null)
+      expect(createVectorTileLayer).toHaveBeenCalledWith(defaultInitConfig.mapStyle.url, null, defaultInitConfig.mapStyle)
       expect(attachMapEvents).toHaveBeenCalled()
       expect(attachAppEvents).toHaveBeenCalled()
       expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_READY, expect.objectContaining({
