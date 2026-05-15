@@ -245,7 +245,7 @@ describe('createVectorTileLayer', () => {
       url: url + '&auth=1',
       headers: { Authorization: 'Bearer token' }
     }))
-    
+
     global.fetch = jest.fn().mockImplementation(url => {
       if (url.includes('caps.json')) { return Promise.resolve({ json: () => Promise.resolve(mockServiceJson) }) }
       if (url.includes('.json')) { return Promise.resolve({ json: () => Promise.resolve(mockSpritesJson) }) }

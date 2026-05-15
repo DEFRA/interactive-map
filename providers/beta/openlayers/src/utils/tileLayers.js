@@ -68,7 +68,7 @@ function fixIconOpacity (styleJson) {
 
 // OpenLayers has the option of converting vector tile layers to raster (hybrid)
 // this can fix some tile and feature rendering glytches but comes with the downside of less crisp rendering
-function resolveRenderMode(mapStyle) {
+function resolveRenderMode (mapStyle) {
   const mode = mapStyle?.renderMode?.toLowerCase()
   return mode === 'hybrid' ? 'hybrid' : 'vector'
 }
