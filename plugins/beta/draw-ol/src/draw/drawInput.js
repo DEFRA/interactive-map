@@ -25,16 +25,48 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
   let sketchFeature = null
   let pendingVertexUpdate = null
   let lastPlacedCoord = null
+  let sketchGeom = null
+  let lastStableVertexCount = 0
+
+  // Detects when OL places a vertex via mouse click (stable coord count increases).
+  // Always tracks lastStableVertexCount so switching input modes mid-draw doesn't
+  // cause a spurious "new vertex" detection. Only updates lastPlacedCoord for pointer mode.
+  const onSketchGeomChange = () => {
+    if (!sketchFeature) return
+    const geom = sketchFeature.getGeometry()
+    const rawCoords = geom.getCoordinates()
+    let stableCount = 0
+    let newVertexCoord = null
+    if (geom.getType() === 'Polygon' && rawCoords.length > 0) {
+      stableCount = Math.max(0, rawCoords[0].length - 2)
+      if (stableCount > lastStableVertexCount) newVertexCoord = rawCoords[0][stableCount - 1]
+    } else if (geom.getType() === 'LineString') {
+      stableCount = Math.max(0, rawCoords.length - 1)
+      if (stableCount > lastStableVertexCount) newVertexCoord = rawCoords[stableCount - 1]
+    }
+    if (stableCount > lastStableVertexCount) {
+      lastStableVertexCount = stableCount
+      if (interfaceType === 'pointer' && newVertexCoord) lastPlacedCoord = newVertexCoord
+    }
+  }
 
   // Track sketch feature from draw events
   const onDrawStart = (e) => {
     sketchFeature = e.feature
     lastPlacedCoord = null
+    lastStableVertexCount = 0
+    sketchGeom = e.feature.getGeometry()
+    sketchGeom.on('change', onSketchGeomChange)
   }
 
   const onDrawEnd = () => {
+    if (sketchGeom) {
+      sketchGeom.un('change', onSketchGeomChange)
+      sketchGeom = null
+    }
     sketchFeature = null
     lastPlacedCoord = null
+    lastStableVertexCount = 0
     if (pendingVertexUpdate) {
       clearTimeout(pendingVertexUpdate)
       pendingVertexUpdate = null
@@ -88,13 +120,6 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
       geom.setCoordinates(updated)
     }
 
-    // OL's Draw interaction keeps a separate sketchPoint_ feature (the dot at the rubber-band
-    // tip). It only updates via pointer events, so during keyboard pan it stays frozen at the
-    // last mouse position. Move it to match the polygon/line rubber-band endpoint.
-    const sketchPoint = drawInteraction.sketchPoint_
-    if (sketchPoint) {
-      sketchPoint.getGeometry().setCoordinates(center)
-    }
   }
 
   // OL's view.animate() calls applyTargetState_() each rAF → fires change:center with the
@@ -185,6 +210,14 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
     }
 
     drawInteraction.appendCoordinates([coord])
+
+    // Move the confirmation dot to the placed vertex; OL only updates it via pointer events
+    // so during keyboard/touch it stays frozen unless we move it explicitly here.
+    const sketchPoint = drawInteraction.sketchPoint_
+    if (sketchPoint) {
+      sketchPoint.getGeometry().setCoordinates(coord)
+    }
+
     lastPlacedCoord = coord
 
     // Cancel any pending update and schedule a new one
@@ -247,7 +280,13 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
         interfaceType = 'pointer'
         crossHair?.hide()
       }
-      return // OL's Draw interaction handles mouse rubber-banding natively
+      // OL moves sketchPoint_ to the cursor on every pointermove; re-anchor it to the last
+      // placed vertex so the dot only moves when a vertex is actually placed.
+      if (lastPlacedCoord && sketchFeature) {
+        const sp = drawInteraction.sketchPoint_
+        if (sp) sp.getGeometry().setCoordinates(lastPlacedCoord)
+      }
+      return
     }
     if (interfaceType === 'pointer') { return }
     updateSketchRubberbanding()
