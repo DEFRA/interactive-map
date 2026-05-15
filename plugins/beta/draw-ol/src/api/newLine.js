@@ -6,7 +6,7 @@
  * @param {object} options - { snapLayers, stroke, fill, strokeWidth, properties }
  */
 export const newLine = (
-  { appState, appConfig, pluginConfig, pluginState, mapProvider, services },
+  { appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services },
   featureId,
   options = {}
 ) => {
@@ -38,6 +38,7 @@ export const newLine = (
     geometryType: 'LineString',
     properties,
     mapProvider,
+    crossHair: mapState.crossHair,
     ...modeOptions
   })
 

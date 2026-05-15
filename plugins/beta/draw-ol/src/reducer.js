@@ -8,7 +8,11 @@ const initialState = {
 }
 
 const actions = {
-  SET_MODE: (state, payload) => ({ ...state, mode: payload }),
+  SET_MODE: (state, payload) => ({
+    ...state,
+    mode: payload,
+    numVertecies: ['draw_polygon', 'draw_line'].includes(payload) ? 0 : state.numVertecies
+  }),
 
   SET_FEATURE: (state, payload) => ({
     ...state,

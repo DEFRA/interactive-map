@@ -18,7 +18,8 @@ export const createDrawMode = ({ map, manager, options }) => {
     container,
     interfaceType,
     addVertexButtonId,
-    mapProvider
+    mapProvider,
+    crossHair
   } = options
 
   const drawInteraction = new Draw({
@@ -93,7 +94,7 @@ export const createDrawMode = ({ map, manager, options }) => {
     manager.emit('cancel')
   })
 
-  const input = createDrawInput({ drawInteraction, manager, options: { container, interfaceType, addVertexButtonId, mapProvider } })
+  const input = createDrawInput({ drawInteraction, manager, options: { container, interfaceType, addVertexButtonId, mapProvider, crossHair } })
 
   return {
     done () {

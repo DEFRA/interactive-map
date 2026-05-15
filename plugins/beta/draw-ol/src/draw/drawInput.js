@@ -7,19 +7,19 @@
  */
 
 import { coordToPixel, pixelDist } from '../utils/olCoords.js'
-import { getCoords } from '../utils/geometryHelpers.js'
 
 const SNAP_TOLERANCE = 12 // pixels
+const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 
 /**
  * @param {object} params
  * @param {import('ol/interaction/Draw').default} params.drawInteraction
  * @param {import('../core/OLDrawManager').OLDrawManager} params.manager
- * @param {object} params.options - { container, interfaceType, addVertexButtonId, mapProvider }
+ * @param {object} params.options - { container, interfaceType, addVertexButtonId, mapProvider, crossHair }
  * @returns {{ destroy: () => void }}
  */
 export const createDrawInput = ({ drawInteraction, manager, options }) => {
-  const { container, addVertexButtonId, mapProvider } = options
+  const { container, addVertexButtonId, mapProvider, crossHair } = options
   let interfaceType = options.interfaceType
   let map = null
   let sketchFeature = null
@@ -55,52 +55,60 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
 
   const olMap = drawInteraction.getMap()
 
+  // OL's CanvasVectorLayerRenderer skips re-rendering when viewHints[ANIMATING] > 0 and
+  // updateWhileAnimating is false (the default). Without this, geometry updates in precompose
+  // are ignored during keyboard pan animation — the overlay uses a cached render.
+  const overlayLayer = typeof drawInteraction.getOverlay === 'function' ? drawInteraction.getOverlay() : null
+  if (overlayLayer) {
+    overlayLayer.updateWhileAnimating_ = true
+  }
+
   // --- Update sketch feature rubber band to current map centre ---
-  const updateSketchRubberbanding = () => {
+  // Accepts an optional pre-computed coord; falls back to mapProvider.getCenter() otherwise.
+  const updateSketchRubberbanding = (centerCoord) => {
     if (!sketchFeature) return
 
     const geom = sketchFeature.getGeometry()
     const coords = geom.getCoordinates()
     if (coords.length === 0) return
 
-    const centerCoord = mapProvider.getCenter()
+    const center = centerCoord ?? mapProvider.getCenter()
 
     if (geom.getType() === 'LineString') {
       const updated = [...coords]
-      updated[updated.length - 1] = centerCoord
+      updated[updated.length - 1] = center
       geom.setCoordinates(updated)
     } else if (geom.getType() === 'Polygon') {
       const updated = coords.map((ring, ringIdx) => {
         if (ringIdx !== 0) return ring
         const ringUpdated = [...ring]
-        ringUpdated[ringUpdated.length - 1] = centerCoord
+        ringUpdated[ringUpdated.length - 1] = center
         return ringUpdated
       })
       geom.setCoordinates(updated)
     }
+
+    // OL's Draw interaction keeps a separate sketchPoint_ feature (the dot at the rubber-band
+    // tip). It only updates via pointer events, so during keyboard pan it stays frozen at the
+    // last mouse position. Move it to match the polygon/line rubber-band endpoint.
+    const sketchPoint = drawInteraction.sketchPoint_
+    if (sketchPoint) {
+      sketchPoint.getGeometry().setCoordinates(center)
+    }
   }
 
-  // change:center fires on each animation frame as OL updates the view centre,
-  // keeping the rubber band in sync during keyboard pan.
+  // OL's view.animate() calls applyTargetState_() each rAF → fires change:center with the
+  // interpolated center each frame. mapProvider.getCenter() returns the raw (non-padding-
+  // adjusted) center, which is what renders at the safezone/crosshair CSS position.
+  // Using frameState.viewState.center would give the padding-adjusted center, which renders
+  // at the container's 50%/50% — offset from the crosshair when OL view padding is set.
   const onCenterChange = () => {
-    if (interfaceType === 'pointer') return
+    if (interfaceType === 'pointer') { return }
     updateSketchRubberbanding()
   }
 
   if (olMap) {
     olMap.getView().on('change:center', onCenterChange)
-  }
-
-  // --- Check if close enough to first vertex to close shape ---
-  const isCloseToFirstVertex = (map, currentCoord, sketchCoords, geometryType) => {
-    if (geometryType !== 'Polygon' || sketchCoords.length < 4) return false
-
-    const firstCoord = sketchCoords[0]
-    const currentPixel = coordToPixel(map, currentCoord)
-    const firstPixel = coordToPixel(map, firstCoord)
-
-    if (!currentPixel || !firstPixel) return false
-    return pixelDist(currentPixel, firstPixel) < SNAP_TOLERANCE
   }
 
   // --- Update vertex count display after appending coordinates ---
@@ -116,12 +124,10 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
       // We need to subtract: 1 for closing vertex + 1 for rubber-band = 2 total
       const exteriorRing = rawCoords[0]
       numVertecies = Math.max(0, exteriorRing.length - 2)
-      console.log('Polygon vertex count:', { ringLength: exteriorRing.length, numVertecies, ring: exteriorRing })
     } else if (geom.getType() === 'LineString') {
       // For LineString, OL stores coords with trailing rubber-band: [v1, v2, ..., vN, rubber]
       // Subtract 1 for the rubber-band coordinate
       numVertecies = Math.max(0, rawCoords.length - 1)
-      console.log('LineString vertex count:', { coordsLength: rawCoords.length, numVertecies })
     }
 
     manager.emit('vertexchange', { numVertecies })
@@ -194,10 +200,21 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
 
   // --- Event handlers ---
   const onKeydown = (e) => {
-    if (document.activeElement !== container) return
+    if (document.activeElement !== container) { return }
+    if (ARROW_KEYS.has(e.key)) {
+      if (interfaceType !== 'keyboard') {
+        interfaceType = 'keyboard'
+        crossHair?.fixAtCenter()
+        updateSketchRubberbanding()
+      }
+      return
+    }
     if (e.key === 'Enter') {
       e.preventDefault()
-      interfaceType = 'keyboard'
+      if (interfaceType !== 'keyboard') {
+        interfaceType = 'keyboard'
+        crossHair?.fixAtCenter()
+      }
       placeVertex()
     }
   }
@@ -209,18 +226,29 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
     }
   }
 
-  // Track interface type so DrawMode can show/hide crosshair correctly
   const onPointerdown = (e) => {
-    if (e.pointerType !== 'touch') {
+    if (e.pointerType !== 'touch' && interfaceType !== 'pointer') {
       interfaceType = 'pointer'
+      crossHair?.hide()
     }
   }
 
   const onTouchstart = () => {
-    interfaceType = 'touch'
+    if (interfaceType !== 'touch') {
+      interfaceType = 'touch'
+      crossHair?.fixAtCenter()
+      updateSketchRubberbanding()
+    }
   }
 
-  const onPointerMove = () => {
+  const onPointerMove = (e) => {
+    if (e.pointerType === 'mouse') {
+      if (interfaceType !== 'pointer') {
+        interfaceType = 'pointer'
+        crossHair?.hide()
+      }
+      return // OL's Draw interaction handles mouse rubber-banding natively
+    }
     if (interfaceType === 'pointer') { return }
     updateSketchRubberbanding()
   }
