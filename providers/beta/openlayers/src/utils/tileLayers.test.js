@@ -206,6 +206,11 @@ describe('createVectorTileLayer', () => {
     expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockVectorTileSourceInstance, declutter: true })
   })
 
+  it('passes renderMode to VectorTileLayer when provided', async () => {
+    await createVectorTileLayer(styleUrl, null, { renderMode: 'vector' })
+    expect(VectorTileLayer).toHaveBeenCalledWith(expect.objectContaining({ renderMode: 'vector' }))
+  })
+
   it('applies stylefunction with layer, styleJson, sourceId, resolutions, spritesJson, spritesPngUrl', async () => {
     await createVectorTileLayer(styleUrl, null)
     expect(stylefunction).toHaveBeenCalledWith(

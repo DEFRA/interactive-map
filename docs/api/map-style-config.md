@@ -26,6 +26,36 @@ Allows the OpenLayers provider to support raster, standard vector tile, and OGC 
 
 ---
 
+### `renderMode`
+**Type:** `'hybrid' | 'vector'`
+
+> [!NOTE]
+> This property is only relevant when using the **OpenLayers provider** with vector tile styles (standard or `'ogc-vt'`). It is ignored for raster styles and by other providers.
+
+Sets the render mode on the OpenLayers `VectorTileLayer`. When omitted, OpenLayers defaults to `'hybrid'`.
+
+- `'hybrid'` (default) — polygon and line elements are rendered as images, so pixels are scaled during zoom animations. Point symbols and texts are accurately rendered as vectors and can stay upright on rotated views, but get lifted above all polygon and line elements.
+- `'vector'` — everything is rendered as vectors and the original render order is maintained. Use this mode for improved performance and visual experience on vector tile layers with not too many rendered features (e.g. for highlighting a subset of features of another layer with the same source).
+
+```js
+// Standard vector tile
+{
+  id: 'outdoor',
+  url: 'https://raw.githubusercontent.com/OrdnanceSurvey/OS-Vector-Tile-API-Stylesheets/main/OS_VTS_27700_Outdoor.json',
+  renderMode: 'vector'
+}
+
+// OGC vector tile
+{
+  id: 'outdoor-ngd',
+  type: 'ogc-vt',
+  url: 'https://api.os.uk/maps/vector/ngd/ota/v1/collections/ngd-base/styles/27700?key=YOUR_API_KEY',
+  renderMode: 'vector'
+}
+```
+
+---
+
 ### `url`
 **Type:** `string`
 **Required**

@@ -79,8 +79,9 @@ describe('attachAppEvents', () => {
 
     it('on MAP_SET_STYLE: creates a vector tile layer and places it at index 0', async () => {
       const { setAt, handlerFor } = makeSetup()
-      await handlerFor(events.MAP_SET_STYLE)({ url: 'https://example.com/styles', id: 'newVts' })
-      expect(createVectorTileLayer).toHaveBeenCalledWith('https://example.com/styles', null)
+      const mapStyle = { url: 'https://example.com/styles', id: 'newVts' }
+      await handlerFor(events.MAP_SET_STYLE)(mapStyle)
+      expect(createVectorTileLayer).toHaveBeenCalledWith(mapStyle.url, null, mapStyle)
       expect(setAt).toHaveBeenCalledWith(0, mockVectorTileLayerInstance)
     })
 
