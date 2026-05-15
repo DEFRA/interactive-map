@@ -66,8 +66,15 @@ function fixIconOpacity (styleJson) {
   })
 }
 
-export async function createVectorTileLayer (url, transformRequest) {
-  const styleJson = await fetchWithTransform(url, 'Style', transformRequest).then(r => r.json())
+// OpenLayers has the option of converting vector tile layers to raster (hybrid)
+// this can fix some tile and feature rendering glytches but comes with the downside of less crisp rendering
+function resolveRenderMode(mapStyle) {
+  const mode = mapStyle?.renderMode?.toLowerCase()
+  return mode === 'hybrid' ? 'hybrid' : 'vector'
+}
+
+export async function createVectorTileLayer (mapStyle, transformRequest) {
+  const styleJson = await fetchWithTransform(mapStyle.url, 'Style', transformRequest).then(r => r.json())
 
   const sourceId = Object.keys(styleJson.sources)[0]
   const capabilitiesUrl = styleJson.sources[sourceId].url
@@ -93,15 +100,15 @@ export async function createVectorTileLayer (url, transformRequest) {
     projection: CRS,
     tileGrid
   })
-  const layer = new VectorTileLayer({ source, declutter: true })
+  const layer = new VectorTileLayer({ source, declutter: true, renderMode: resolveRenderMode(mapStyle) })
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 
   return { layer, source }
 }
 
-export async function createOGCVectorTileLayer (url, transformRequest) {
-  const styleJson = await fetchWithTransform(url, 'Style', transformRequest).then(r => r.json())
+export async function createOGCVectorTileLayer (mapStyle, transformRequest) {
+  const styleJson = await fetchWithTransform(mapStyle.url, 'Style', transformRequest).then(r => r.json())
 
   const sourceId = Object.keys(styleJson.sources)[0]
   const tilesUrl = styleJson.sources[sourceId].url
@@ -125,7 +132,7 @@ export async function createOGCVectorTileLayer (url, transformRequest) {
 
   const tileGrid = new TileGrid({ resolutions, origin, tileSize })
   const source = new OGCVectorTile({ url: tilesUrl, format, tileGrid, projection: CRS })
-  const layer = new VectorTileLayer({ source, declutter: true })
+  const layer = new VectorTileLayer({ source, declutter: true, renderMode: resolveRenderMode(mapStyle) })
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 

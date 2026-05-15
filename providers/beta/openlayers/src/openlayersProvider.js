@@ -47,11 +47,11 @@ export default class OpenLayersProvider {
       source = createTileSource(mapStyle.url, transformRequest)
       tileLayer = new TileLayer({ source })
     } else if (mapStyle.type === 'ogc-vt') {
-      const vectorTile = await createOGCVectorTileLayer(mapStyle.url, transformRequest)
+      const vectorTile = await createOGCVectorTileLayer(mapStyle, transformRequest)
       tileLayer = vectorTile.layer
       source = vectorTile.source
     } else {
-      const vectorTile = await createVectorTileLayer(mapStyle.url, transformRequest)
+      const vectorTile = await createVectorTileLayer(mapStyle, transformRequest)
       tileLayer = vectorTile.layer
       source = vectorTile.source
     }

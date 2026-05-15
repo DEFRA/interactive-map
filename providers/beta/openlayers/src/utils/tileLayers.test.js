@@ -155,22 +155,22 @@ describe('createVectorTileLayer', () => {
   })
 
   it('fetches style JSON from url', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     expect(fetch).toHaveBeenCalledWith(styleUrl, { headers: {} })
   })
 
   it('fetches capabilities from first source url in style JSON', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     expect(fetch).toHaveBeenCalledWith('https://example.com/caps.json', { headers: {} })
   })
 
   it('fetches sprite JSON from sprite base + .json', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     expect(fetch).toHaveBeenCalledWith('https://example.com/sprites/sprite.json', { headers: {} })
   })
 
   it('creates TileGrid from capabilities tileInfo', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     expect(TileGrid).toHaveBeenCalledWith({
       extent: [-238375, 0, 700000, 1300000],
       origin: [-238375, 1376256],
@@ -180,13 +180,13 @@ describe('createVectorTileLayer', () => {
   })
 
   it('slices capabilities lods to max 16 resolutions', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     const { resolutions } = TileGrid.mock.calls[0][0]
     expect(resolutions.length).toBe(16)
   })
 
   it('creates VectorTileSource with MVT format and 27700 projection', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     expect(VectorTileSource).toHaveBeenCalledWith(expect.objectContaining({
       format: mockMVTInstance,
       url: 'https://example.com/tiles/{z}/{x}/{y}.pbf',
@@ -196,18 +196,23 @@ describe('createVectorTileLayer', () => {
   })
 
   it('does not set tileLoadFunction on VectorTileSource', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     const { tileLoadFunction } = VectorTileSource.mock.calls[0][0]
     expect(tileLoadFunction).toBeUndefined()
   })
 
   it('creates VectorTileLayer with source and declutter true', async () => {
-    await createVectorTileLayer(styleUrl, null)
-    expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockVectorTileSourceInstance, declutter: true })
+    await createVectorTileLayer({ url: styleUrl }, null)
+    expect(VectorTileLayer).toHaveBeenCalledWith(
+      expect.objectContaining({
+        source: mockVectorTileSourceInstance,
+        declutter: true
+      })
+    )
   })
 
   it('applies stylefunction with layer, styleJson, sourceId, resolutions, spritesJson, spritesPngUrl', async () => {
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     expect(stylefunction).toHaveBeenCalledWith(
       mockVectorTileLayerInstance,
       mockStyleJson,
@@ -219,7 +224,7 @@ describe('createVectorTileLayer', () => {
   })
 
   it('returns the constructed layer and source', async () => {
-    const result = await createVectorTileLayer(styleUrl, null)
+    const result = await createVectorTileLayer({ url: styleUrl }, null)
     expect(result.layer).toBe(mockVectorTileLayerInstance)
     expect(result.source).toBe(mockVectorTileSourceInstance)
   })
@@ -227,7 +232,7 @@ describe('createVectorTileLayer', () => {
   it('inserts sprite extension before query string when sprite URL has one', async () => {
     const styleWithQuery = { ...mockStyleJson, sprite: 'https://example.com/sprites/sprite?key=abc123' }
     global.fetch = makeVectorFetchMock(styleWithQuery)
-    await createVectorTileLayer(styleUrl, null)
+    await createVectorTileLayer({ url: styleUrl }, null)
     expect(fetch).toHaveBeenCalledWith('https://example.com/sprites/sprite.json?key=abc123', { headers: {} })
     expect(stylefunction).toHaveBeenCalledWith(
       expect.anything(), expect.anything(), expect.anything(), expect.anything(), expect.anything(),
@@ -240,12 +245,16 @@ describe('createVectorTileLayer', () => {
       url: url + '&auth=1',
       headers: { Authorization: 'Bearer token' }
     }))
+    
     global.fetch = jest.fn().mockImplementation(url => {
       if (url.includes('caps.json')) { return Promise.resolve({ json: () => Promise.resolve(mockServiceJson) }) }
       if (url.includes('.json')) { return Promise.resolve({ json: () => Promise.resolve(mockSpritesJson) }) }
       return Promise.resolve({ json: () => Promise.resolve(mockStyleJson) })
     })
-    await createVectorTileLayer(styleUrl, transformRequest)
+
+    // FIX: Wrap styleUrl inside an object to match expected mapStyle shape
+    await createVectorTileLayer({ url: styleUrl }, transformRequest)
+
     expect(fetch).toHaveBeenCalledWith(styleUrl + '&auth=1', { headers: { Authorization: 'Bearer token' } })
   })
 })

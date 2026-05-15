@@ -8,10 +8,10 @@ export function attachAppEvents ({ mapProvider, layer, layerType, transformReque
       const source = createTileSource(mapStyle.url, transformRequest)
       layer.setSource(source)
     } else if (mapStyle.type === 'ogc-vt') {
-      const { layer: newLayer } = await createOGCVectorTileLayer(mapStyle.url, transformRequest)
+      const { layer: newLayer } = await createOGCVectorTileLayer(mapStyle, transformRequest)
       map.getLayers().setAt(0, newLayer)
     } else {
-      const { layer: newLayer } = await createVectorTileLayer(mapStyle.url, transformRequest)
+      const { layer: newLayer } = await createVectorTileLayer(mapStyle, transformRequest)
       map.getLayers().setAt(0, newLayer)
     }
     eventBus.emit(events.MAP_STYLE_CHANGE, { mapStyleId: mapStyle.id })

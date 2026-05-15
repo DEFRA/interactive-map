@@ -8,7 +8,8 @@ const mockVectorTileLayerInstance = {}
 jest.mock('./utils/tileLayers.js', () => ({
   __esModule: true,
   createTileSource: jest.fn(() => mockSourceInstance),
-  createVectorTileLayer: jest.fn(async () => ({ layer: mockVectorTileLayerInstance, source: {} }))
+  createVectorTileLayer: jest.fn(async () => ({ layer: mockVectorTileLayerInstance, source: {} })),
+  createOGCVectorTileLayer: jest.fn(async () => ({ layer: mockVectorTileLayerInstance, source: {} }))
 }))
 
 const events = {
@@ -80,7 +81,7 @@ describe('attachAppEvents', () => {
     it('on MAP_SET_STYLE: creates a vector tile layer and places it at index 0', async () => {
       const { setAt, handlerFor } = makeSetup()
       await handlerFor(events.MAP_SET_STYLE)({ url: 'https://example.com/styles', id: 'newVts' })
-      expect(createVectorTileLayer).toHaveBeenCalledWith('https://example.com/styles', null)
+      expect(createVectorTileLayer).toHaveBeenCalledWith({ url: 'https://example.com/styles', id: 'newVts' }, null)
       expect(setAt).toHaveBeenCalledWith(0, mockVectorTileLayerInstance)
     })
 
