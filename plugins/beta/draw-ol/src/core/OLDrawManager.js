@@ -85,6 +85,10 @@ export class OLDrawManager {
     this._modeInstance?.deleteVertex()
   }
 
+  setInterfaceType (type) {
+    this._modeInstance?.setInterfaceType?.(type)
+  }
+
   // --- Feature store delegation ---
 
   get (id) { return this.store.get(id) }

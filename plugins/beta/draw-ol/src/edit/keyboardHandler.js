@@ -24,7 +24,8 @@ const STEP_PX = 5
  */
 export const createKeyboardHandler = ({
   map, container, getState, setState,
-  onVertexMoved, onInserted, onDeleted, onUndo
+  onVertexMoved, onInserted, onDeleted, onUndo,
+  onKeyboardActive
 }) => {
   let keyMoveStart = null
   let keyMoveIndex = null
@@ -117,6 +118,7 @@ export const createKeyboardHandler = ({
 
   const onKeydown = (e) => {
     if (!container.contains(document.activeElement)) return
+    onKeyboardActive?.()
 
     if (e.key === ' ' && getState().selectedVertexIndex < 0) {
       e.preventDefault()

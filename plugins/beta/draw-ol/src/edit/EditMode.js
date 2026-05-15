@@ -97,8 +97,11 @@ export const createEditMode = ({ map, manager, options }) => {
     features: collection,
     style: () => [],  // vertex circles rendered by vertexLayer instead
     pixelTolerance: 12,
-    // Only activate when clicking on a vertex or midpoint circle, not anywhere on a segment
+    // Only activate when clicking on a vertex or midpoint circle, not anywhere on a segment.
+    // Touch drags are handled by touchHandler; returning false here lets them pass through to
+    // DragPan (touchHandler uses preventDefault on the offset target to stop unwanted panning).
     condition: (mapBrowserEvent) => {
+      if (state.interfaceType === 'touch') return false
       const olPixel = map.getEventPixel(mapBrowserEvent.originalEvent)
       return findNearest(map, state.vertecies, state.midpoints, { x: olPixel[0], y: olPixel[1] }) !== null
     }
@@ -145,11 +148,9 @@ export const createEditMode = ({ map, manager, options }) => {
   const onPointerdown = (e) => {
     if (e.pointerType === 'touch') {
       state.interfaceType = 'touch'
-      modifyInteraction.setActive(false)
       return
     }
     state.interfaceType = 'pointer'
-    modifyInteraction.setActive(true)
 
     const olPixel = map.getEventPixel(e)
     const pixel = { x: olPixel[0], y: olPixel[1] }
@@ -174,7 +175,17 @@ export const createEditMode = ({ map, manager, options }) => {
     }
   }
 
+  // Switch to pointer mode and hide the touch target as soon as the mouse moves.
+  const onPointerMove = (e) => {
+    if (e.pointerType !== 'mouse') return
+    if (state.interfaceType === 'pointer') return
+    state.interfaceType = 'pointer'
+    touchHandler.hide()
+  }
+
   container.addEventListener('pointerdown', onPointerdown)
+  container.addEventListener('pointerenter', onPointerMove)
+  container.addEventListener('pointermove', onPointerMove)
   container.addEventListener('click', onContainerClick)
 
   // --- Button click (delete vertex) ---
@@ -259,10 +270,21 @@ export const createEditMode = ({ map, manager, options }) => {
       syncGeom()
     },
     onDeleted: doDeleteVertex,
-    onUndo: doUndo
+    onUndo: doUndo,
+    onKeyboardActive () {
+      if (state.interfaceType === 'keyboard') return
+      state.interfaceType = 'keyboard'
+      touchHandler.hide()
+    }
   })
 
   return {
+    setInterfaceType (type) {
+      if (type === state.interfaceType) return
+      state.interfaceType = type
+      if (type !== 'touch') touchHandler.hide()
+    },
+
     done () {
       manager.emit('editfinish', store.toGeoJSON(olFeature))
     },
@@ -279,6 +301,8 @@ export const createEditMode = ({ map, manager, options }) => {
       olFeature.setStyle(originalFeatureStyle)
       olFeature.getGeometry().un('change', onGeometryChange)
       container.removeEventListener('pointerdown', onPointerdown)
+      container.removeEventListener('pointerenter', onPointerMove)
+      container.removeEventListener('pointermove', onPointerMove)
       container.removeEventListener('click', onContainerClick)
       window.removeEventListener('click', onButtonClick)
       map.removeInteraction(modifyInteraction)

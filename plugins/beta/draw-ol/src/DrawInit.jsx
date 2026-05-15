@@ -33,6 +33,13 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     }
   }, [pluginState.mode, appState.interfaceType])
 
+  // Keep edit mode in sync with the global interface type so the touch
+  // offset target hides immediately when the user switches to mouse/keyboard.
+  useEffect(() => {
+    if (pluginState.mode !== 'edit_vertex' || !mapProvider.draw) return
+    mapProvider.draw.setInterfaceType(appState.interfaceType)
+  }, [appState.interfaceType, pluginState.mode])
+
   // Re-attach events when state changes
   useEffect(() => {
     if (!mapProvider.draw) return
