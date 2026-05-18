@@ -272,7 +272,7 @@ export const createEditMode = ({ map, manager, options }) => {
     if (!result) {
       return
     }
-    undoStack.push({ type: 'delete_vertex', ...result })
+    undoStack.push({ type: 'delete_vertex', vertexIndex: result.deletedIndex, deletedCoord: result.deletedCoord })
     syncGeom()
     setState({ selectedVertexIndex: -1, selectedVertexType: null })
   }
