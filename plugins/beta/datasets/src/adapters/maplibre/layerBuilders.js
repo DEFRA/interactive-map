@@ -78,7 +78,7 @@ export const addStrokeLayer = (map, config, layerId, sourceId, sourceLayer, visi
 
 // ─── Symbol layer ─────────────────────────────────────────────────────────────
 
-export const addSymbolLayer = (map, registryDataset, deleteSymbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio }) => {
+export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, pixelRatio) => {
   const { symbolLayerId } = registryDataset
   if (!symbolLayerId || map.getLayer(symbolLayerId)) { return }
   const symbolDef = symbolRegistry.getSymbolDef(registryDataset.style)
@@ -87,21 +87,6 @@ export const addSymbolLayer = (map, registryDataset, deleteSymbolLayerId, source
   if (!imageId) { return }
   const anchor = getSymbolAnchor(registryDataset.style, symbolDef)
   map.addLayer(registryDataset.getSymbolSource(imageId, anchor, symbolDef))
-  // map.addLayer({
-  //   id: symbolLayerId,
-  //   type: 'symbol',
-  //   source: sourceId,
-  //   'source-layer': sourceLayer,
-  //   minzoom: registryDataset.minZoom,
-  //   maxzoom: registryDataset.maxZoom,
-  //   layout: {
-  //     visibility,
-  //     'icon-image': imageId,
-  //     'icon-anchor': anchorToMaplibre(anchor),
-  //     'icon-allow-overlap': true
-  //   },
-  //   ...(registryDataset.filter ? { filter: registryDataset.filter } : {})
-  // })
 }
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
@@ -109,12 +94,12 @@ export const addSymbolLayer = (map, registryDataset, deleteSymbolLayerId, source
 export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
   const mapStyleId = mapStyle.id
   const merged = { id: registryDataset.id, minZoom: registryDataset.minZoom, maxZoom: registryDataset.maxZoom, filter: registryDataset.filter, ...registryDataset.style }
-  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds({ id: registryDataset.id, ...registryDataset.style })
+  const { fillLayerId, strokeLayerId } = getLayerIds({ id: registryDataset.id, ...registryDataset.style })
   const parentHidden = false // TODO - fix visibility dataset.visibility === 'hidden'
   const sublayerHidden = registryDataset.visibility === 'hidden'
   const visibility = (parentHidden || sublayerHidden) ? 'none' : 'visible'
   if (registryDataset.hasSymbol && symbolRegistry) {
-    addSymbolLayer(map, registryDataset, symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
+    addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
     return
   }
   addFillLayer(map, merged, fillLayerId, sourceId, sourceLayer, visibility, { mapStyleId, patternRegistry, pixelRatio })
@@ -152,7 +137,7 @@ export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry,
   const visibility = registryDataset.visibility === 'hidden' ? 'none' : 'visible'
 
   if (registryDataset.hasSymbol && symbolRegistry) {
-    addSymbolLayer(map, registryDataset, registryDataset.symbolLayerId, sourceId, sourceLayer, visibility, { mapStyle, symbolRegistry, pixelRatio })
+    addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
     return sourceId
   }
 
