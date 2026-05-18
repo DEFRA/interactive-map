@@ -7,7 +7,7 @@ const TAP_MOVE_THRESHOLD = 10
 const TAP_TIME_THRESHOLD = 400
 const TOUCH_TOLERANCE = 24
 
-const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap }) => {
+const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap }) => {
   let dragStartCoord = null
   let dragStartIndex = null
   let vertexTouchDelta = null
@@ -37,7 +37,9 @@ const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState,
     if (!isOnTouchTarget(e.target) || dragStartIndex == null) { return }
     e.preventDefault()
     const tOl = map.getEventPixel({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY })
-    const newCoord = pixelToCoord(map, { x: tOl[0] - vertexTouchDelta.x, y: tOl[1] - vertexTouchDelta.y })
+    const rawCoord = pixelToCoord(map, { x: tOl[0] - vertexTouchDelta.x, y: tOl[1] - vertexTouchDelta.y })
+    const newCoord = snap ? snap.apply(rawCoord) : rawCoord
+    snap?.hideIndicator()
     const { olFeature, vertecies } = getState()
     if (!olFeature) { return }
     moveVertex(olFeature, dragStartIndex, newCoord)
@@ -66,6 +68,7 @@ const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState,
     if (vertecies[dragStartIndex] && dragStartCoord) {
       onVertexMoved({ vertexIndex: dragStartIndex, previousCoord: dragStartCoord })
     }
+    snap?.hideIndicator()
     dragStartCoord = null; dragStartIndex = null; vertexTouchDelta = null; targetTouchDelta = null
     e.preventDefault()
   }
@@ -92,7 +95,7 @@ const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState,
  * @param {{ map, container, getState, setState, onVertexMoved, onTap, colors }} options
  * @returns {{ updateTargetPosition, updateColors, hide, destroy }}
  */
-export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved, onTap, colors }) => {
+export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved, onTap, colors, snap }) => {
   const targetEl = createTouchTarget(container)
   applyTouchTargetColors(targetEl, colors)
 
@@ -116,7 +119,7 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
     })
   }
 
-  const touchEvents = wireTouchEvents({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap })
+  const touchEvents = wireTouchEvents({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap })
 
   const updateTargetPosition = () => {
     const { selectedVertexIndex, vertecies, interfaceType } = getState()

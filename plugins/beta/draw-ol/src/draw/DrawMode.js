@@ -1,67 +1,6 @@
 import Draw from 'ol/interaction/Draw.js'
 import { createDrawInput } from './drawInput.js'
-
-const DEBOUNCE_MS = 5
-const MIN_POLYGON_VERTICES = 3
-const MIN_LINE_VERTICES = 2
-
-const countSketchVertices = (geometryType, rawCoords) => {
-  if (geometryType === 'Polygon' && rawCoords.length > 0) {
-    return Math.max(0, rawCoords[0].length - 2)
-  } else if (geometryType === 'LineString') {
-    return Math.max(0, rawCoords.length - 1)
-  } else {
-    return 0
-  }
-}
-
-const wireDrawEvents = ({ drawInteraction, geometryType, featureId, properties, manager }) => {
-  let sketchFeature = null
-  let pendingVertexUpdate = null
-
-  const clearPending = () => {
-    if (pendingVertexUpdate) {
-      clearTimeout(pendingVertexUpdate)
-      pendingVertexUpdate = null
-    }
-  }
-
-  const updateVertexCount = () => {
-    if (!sketchFeature) {
-      return
-    }
-    const rawCoords = sketchFeature.getGeometry().getCoordinates()
-    manager.emit('vertexchange', { numVertecies: countSketchVertices(geometryType, rawCoords) })
-  }
-
-  drawInteraction.on('drawstart', (e) => {
-    sketchFeature = e.feature
-    sketchFeature.getGeometry().on('change', () => {
-      clearPending()
-      pendingVertexUpdate = setTimeout(() => { updateVertexCount(); pendingVertexUpdate = null }, DEBOUNCE_MS)
-    })
-  })
-
-  drawInteraction.on('drawend', (e) => {
-    clearPending()
-    const olFeature = e.feature
-    olFeature.setId(String(featureId))
-    olFeature.setProperties(properties)
-    manager.store.source.addFeature(olFeature)
-    manager.emit('create', manager.store.toGeoJSON(olFeature))
-  })
-
-  drawInteraction.on('drawabort', () => {
-    clearPending()
-    manager.emit('cancel')
-  })
-
-  return {
-    getSketchFeature: () => sketchFeature,
-    updateVertexCount,
-    clear () { sketchFeature = null }
-  }
-}
+import { getCoords } from '../utils/geometryHelpers.js'
 
 /**
  * Draw mode — handles draw_polygon and draw_line.
@@ -72,33 +11,92 @@ const wireDrawEvents = ({ drawInteraction, geometryType, featureId, properties, 
  * @returns {{ done, cancel, undo, destroy }}
  */
 export const createDrawMode = ({ map, manager, options }) => {
-  const { geometryType, featureId, properties = {}, container, interfaceType, addVertexButtonId, mapProvider, crossHair } = options
+  const {
+    geometryType, // 'Polygon' | 'LineString'
+    featureId,
+    properties = {},
+    container,
+    interfaceType,
+    addVertexButtonId,
+    mapProvider,
+    snap
+  } = options
 
   const drawInteraction = new Draw({
     type: geometryType,
     style: manager.styles.createSketchStyle(),
     stopClick: true,
+    // minPoints defaults: 3 for Polygon, 2 for LineString — OL handles this
+    // snapTolerance: how close to first point to auto-close polygon
     snapTolerance: 12
   })
   map.addInteraction(drawInteraction)
 
-  const handlers = wireDrawEvents({ drawInteraction, geometryType, featureId, properties, manager })
-  const input = createDrawInput({ drawInteraction, manager, options: { container, interfaceType, addVertexButtonId, mapProvider, crossHair } })
+  // Track vertex count for the Done button enabled state
+  let sketchFeature = null
+
+  const updateVertexCount = () => {
+    if (!sketchFeature) {
+      return
+    }
+    const geom = sketchFeature.getGeometry()
+    const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
+    // OL always keeps a trailing rubber-band coordinate; subtract 1
+    const numVertecies = Math.max(0, coords.length - 1)
+    manager.emit('vertexchange', { numVertecies })
+  }
+
+  drawInteraction.on('drawstart', (e) => {
+    sketchFeature = e.feature
+    sketchFeature.getGeometry().on('change', updateVertexCount)
+  })
+
+  drawInteraction.on('drawend', (e) => {
+    const olFeature = e.feature
+    olFeature.setId(String(featureId))
+    olFeature.setProperties(properties)
+    manager.store.source.addFeature(olFeature)
+    const geojson = manager.store.toGeoJSON(olFeature)
+    manager.emit('create', geojson)
+    // Mode switches to disabled in events.js after receiving 'create'
+  })
+
+  drawInteraction.on('drawabort', () => {
+    manager.emit('cancel')
+  })
+
+  const input = createDrawInput({ drawInteraction, manager, options: { container, interfaceType, addVertexButtonId, mapProvider, snap, onUndo: () => {
+    drawInteraction.removeLastPoint()
+    updateVertexCount()
+  } } })
 
   return {
     done () {
-      const sketch = handlers.getSketchFeature()
-      if (sketch) {
-        const numVertecies = countSketchVertices(geometryType, sketch.getGeometry().getCoordinates())
-        const minVertices = geometryType === 'Polygon' ? MIN_POLYGON_VERTICES : MIN_LINE_VERTICES
-        if (numVertecies < minVertices) {
+      // Validate minimum points before finishing
+      if (sketchFeature) {
+        const geom = sketchFeature.getGeometry()
+        const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
+        const min = geometryType === 'Polygon' ? 4 : 3 // +1 for rubber band
+        if (coords.length < min) {
           return
         }
       }
       drawInteraction.finishDrawing()
     },
-    cancel () { drawInteraction.abortDrawing() },
-    undo () { drawInteraction.removeLastPoint(); handlers.updateVertexCount() },
-    destroy () { input.destroy(); map.removeInteraction(drawInteraction); handlers.clear() }
+
+    cancel () {
+      drawInteraction.abortDrawing()
+    },
+
+    undo () {
+      drawInteraction.removeLastPoint()
+      updateVertexCount()
+    },
+
+    destroy () {
+      input.destroy()
+      map.removeInteraction(drawInteraction)
+      sketchFeature = null
+    }
   }
 }

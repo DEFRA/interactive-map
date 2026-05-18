@@ -3,7 +3,7 @@
  * Mirrors draw-ml/events.js structure but uses manager.on/off instead of map.on/off.
  */
 export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus }) {
-  const { drawDone, drawCancel, drawUndo, drawDeletePoint } = buttonConfig
+  const { drawDone, drawCancel, drawUndo, drawDeletePoint, drawSnap } = buttonConfig
   const { draw } = mapProvider
   const { dispatch, feature, tempFeature } = pluginState
 
@@ -39,6 +39,12 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
     draw.deleteVertex()
   }
 
+  const handleSnap = () => {
+    const newSnapState = !pluginState.snap
+    dispatch({ type: 'TOGGLE_SNAP' })
+    draw.snap?.setActive(newSnapState)
+  }
+
   // --- Manager event handlers ---
 
   const onCreate = (geojsonFeature) => {
@@ -63,7 +69,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
   }
 
   const onVertexChange = (e) => {
-    dispatch({ type: 'SET_VERTEX_COUNT', payload: e.numVertecies })
+    dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertecies: e.numVertecies } })
   }
 
   const onUndoChange = (length) => {
@@ -80,6 +86,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
   drawCancel.onClick = handleCancel
   drawUndo.onClick = handleUndo
   if (drawDeletePoint) drawDeletePoint.onClick = handleDeleteVertex
+  if (drawSnap) drawSnap.onClick = handleSnap
 
   draw.on('create', onCreate)
   draw.on('editfinish', onEditFinish)
@@ -94,6 +101,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
     drawCancel.onClick = null
     drawUndo.onClick = null
     if (drawDeletePoint) drawDeletePoint.onClick = null
+    if (drawSnap) drawSnap.onClick = null
 
     draw.off('create', onCreate)
     draw.off('editfinish', onEditFinish)

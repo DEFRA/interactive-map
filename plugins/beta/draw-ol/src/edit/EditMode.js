@@ -23,7 +23,7 @@ import { getCoords, getMidpoints } from '../utils/geometryHelpers.js'
  * @returns {{ done, cancel, undo, deleteVertex: fn, destroy }}
  */
 export const createEditMode = ({ map, manager, options }) => {
-  const { featureId, container, interfaceType, deleteVertexButtonId } = options
+  const { featureId, container, interfaceType, deleteVertexButtonId, snap } = options
   const { store, undoStack } = manager
 
   const olFeature = store.getOL(featureId)
@@ -298,6 +298,7 @@ export const createEditMode = ({ map, manager, options }) => {
     getState,
     setState,
     colors: manager.colors,
+    snap,
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
@@ -348,6 +349,7 @@ export const createEditMode = ({ map, manager, options }) => {
     map,
     getState,
     setState,
+    snap,
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()

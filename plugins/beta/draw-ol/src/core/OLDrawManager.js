@@ -3,6 +3,7 @@ import { createFeatureStore } from './featureStore.js'
 import { createUndoStack } from './undoStack.js'
 import { createStyles } from './styles.js'
 import { resolveColors } from '../utils/resolveColors.js'
+import { createSnapManager } from '../snap/snapManager.js'
 
 /**
  * Mode machine for the OL draw plugin.
@@ -27,6 +28,7 @@ export class OLDrawManager {
 
     this.colors = resolveColors(null, pluginConfig)
     this.styles = createStyles(this.colors)
+    this.snap = createSnapManager(map, pluginConfig.snapLayers ?? null)
 
     this._layer = new VectorLayer({
       source: this.store.source,
@@ -70,15 +72,20 @@ export class OLDrawManager {
     this._modeInstance = null
     this._mode = modeName
 
+    const modeOptions = { ...options, snap: this.snap }
+
     if (modeName === 'draw_polygon' || modeName === 'draw_line') {
       const { createDrawMode } = await import('../draw/DrawMode.js')
-      this._modeInstance = createDrawMode({ map: this._map, manager: this, options })
+      this._modeInstance = createDrawMode({ map: this._map, manager: this, options: modeOptions })
     } else if (modeName === 'edit_vertex') {
       const { createEditMode } = await import('../edit/EditMode.js')
-      this._modeInstance = createEditMode({ map: this._map, manager: this, options })
+      this._modeInstance = createEditMode({ map: this._map, manager: this, options: modeOptions })
     } else {
       // disabled — no mode instance needed
     }
+    // Reattach snap interaction after mode's interactions are added so it
+    // processes pointermove first (OL: last-added interaction = first to handle events).
+    this.snap?.reattach()
   }
 
   getMode () {
@@ -120,6 +127,8 @@ export class OLDrawManager {
   remove () {
     this._modeInstance?.destroy()
     this._modeInstance = null
+    this.snap?.destroy()
+    this.snap = null
     this.store.clear()
     this._map.removeLayer(this._layer)
     this._listeners.clear()

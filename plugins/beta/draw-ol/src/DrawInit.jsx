@@ -19,6 +19,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     const { remove } = createOLDraw({ mapProvider, events: EVENTS, eventBus, pluginConfig, mapStyle: mapState.mapStyle })
 
     pluginState.dispatch({ type: 'SET_MODE', payload: null })
+    pluginState.dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: pluginConfig.snapLayers?.length > 0 })
     eventBus.emit('draw:ready')
 
     return () => remove()

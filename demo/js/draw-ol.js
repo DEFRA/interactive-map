@@ -25,7 +25,7 @@ const interactiveMap = new InteractiveMap('map', {
 	}),
 	mapLabel: 'Map showing Carlisle (OpenLayers)',
 	minZoom: 6,
-	maxZoom: 20,
+	maxZoom: 22,
 	autoColorScheme: true,
 	center: [337584, 504538],
 	zoom: 14,

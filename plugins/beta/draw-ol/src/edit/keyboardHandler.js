@@ -1,6 +1,7 @@
 import { coordToPixel, nudgeCoord } from '../utils/olCoords.js'
 import { spatialNavigate } from '../utils/spatial.js'
 import { moveVertex, insertAtMidpoint } from './vertexOps.js'
+import { SNAP_RADIUS_PX } from '../snap/snapEngine.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const NUDGE_PX = 1
@@ -25,7 +26,7 @@ const STEP_PX = 5
 export const createKeyboardHandler = ({
   map, getState, setState,
   onVertexMoved, onInserted, onDeleted, onUndo,
-  onKeyboardActive
+  onKeyboardActive, snap
 }) => {
   let keyMoveStart = null
   let keyMoveIndex = null
@@ -93,7 +94,8 @@ export const createKeyboardHandler = ({
       keyMoveStart = [...insertedCoord]
       keyMoveIndex = result.insertedIndex
 
-      const movedCoord = nudgeCoord(map, insertedCoord, dx, dy)
+      const nudgedCoord = nudgeCoord(map, insertedCoord, dx, dy)
+      const movedCoord = snap ? snap.apply(nudgedCoord) : nudgedCoord
       moveVertex(olFeature, result.insertedIndex, movedCoord)
       setState({
         selectedVertexIndex: result.insertedIndex,
@@ -111,7 +113,24 @@ export const createKeyboardHandler = ({
       keyMoveIndex = selectedVertexIndex
     }
 
-    const newCoord = nudgeCoord(map, current, dx, dy)
+    const nudgedCoord = nudgeCoord(map, current, dx, dy)
+    let newCoord = snap ? snap.apply(nudgedCoord) : nudgedCoord
+    snap?.hideIndicator()
+
+    // Escape if snap is preventing sufficient progress in the intended direction.
+    // Covers vertex-stuck (newCoord === current) and edge-hugging (vertex slides
+    // along edge instead of moving away from it).
+    if (snap) {
+      const nudgeVec = [nudgedCoord[0] - current[0], nudgedCoord[1] - current[1]]
+      const actualVec = [newCoord[0] - current[0], newCoord[1] - current[1]]
+      const nudgeLenSq = nudgeVec[0] ** 2 + nudgeVec[1] ** 2
+      const dot = actualVec[0] * nudgeVec[0] + actualVec[1] * nudgeVec[1]
+      if (nudgeLenSq > 0 && dot / nudgeLenSq < 0.5) {
+        const escape = SNAP_RADIUS_PX + 1
+        newCoord = nudgeCoord(map, current, dx !== 0 ? Math.sign(dx) * escape : 0, dy !== 0 ? Math.sign(dy) * escape : 0)
+      }
+    }
+
     moveVertex(olFeature, selectedVertexIndex, newCoord)
     setState({ vertecies: vertecies.map((c, i) => i === selectedVertexIndex ? newCoord : c) })
   }
@@ -167,6 +186,7 @@ export const createKeyboardHandler = ({
     if (isTextInput()) { return }
 
     if (ARROW_KEYS.has(e.key) && keyMoveStart && keyMoveIndex != null) {
+      snap?.hideIndicator()
       onVertexMoved({ vertexIndex: keyMoveIndex, previousCoord: keyMoveStart })
       keyMoveStart = null
       keyMoveIndex = null

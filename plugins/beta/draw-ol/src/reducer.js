@@ -4,15 +4,13 @@ const initialState = {
   tempFeature: null,
   selectedVertexIndex: -1,
   numVertecies: null,
-  undoStackLength: 0
+  undoStackLength: 0,
+  snap: false,
+  hasSnapLayers: false
 }
 
 const actions = {
-  SET_MODE: (state, payload) => ({
-    ...state,
-    mode: payload,
-    numVertecies: ['draw_polygon', 'draw_line'].includes(payload) ? 0 : state.numVertecies
-  }),
+  SET_MODE: (state, payload) => ({ ...state, mode: payload }),
 
   SET_FEATURE: (state, payload) => ({
     ...state,
@@ -23,18 +21,17 @@ const actions = {
   SET_SELECTED_VERTEX_INDEX: (state, payload) => ({
     ...state,
     selectedVertexIndex: payload.index,
-    numVertecies: payload.numVertecies !== undefined ? payload.numVertecies : state.numVertecies
-  }),
-
-  SET_VERTEX_COUNT: (state, payload) => ({
-    ...state,
-    numVertecies: payload
+    numVertecies: payload.numVertecies
   }),
 
   SET_UNDO_STACK_LENGTH: (state, payload) => ({
     ...state,
     undoStackLength: payload
-  })
+  }),
+
+  TOGGLE_SNAP: (state) => ({ ...state, snap: !state.snap }),
+
+  SET_HAS_SNAP_LAYERS: (state, payload) => ({ ...state, hasSnapLayers: !!payload })
 }
 
 export { initialState, actions }
