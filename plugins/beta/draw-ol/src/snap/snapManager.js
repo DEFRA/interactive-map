@@ -16,13 +16,13 @@ import { createSnapEngine, SNAP_RADIUS_PX } from './snapEngine.js'
 import { createSnapIndicator } from './snapIndicator.js'
 import { createSnapInteraction } from './snapInteraction.js'
 
-export const createSnapManager = (map, snapLayers) => {
+export const createSnapManager = (map, snapLayers, colors) => {
   if (!snapLayers?.length) {
     return null
   }
 
   const engine = createSnapEngine(map, snapLayers)
-  const indicator = createSnapIndicator(map)
+  const indicator = createSnapIndicator(map, colors)
   const interaction = createSnapInteraction(engine, indicator)
 
   map.addInteraction(interaction)
@@ -68,6 +68,10 @@ export const createSnapManager = (map, snapLayers) => {
     reattach () {
       map.removeInteraction(interaction)
       map.addInteraction(interaction)
+    },
+
+    updateColors (newColors) {
+      indicator.updateColors(newColors)
     },
 
     destroy () {

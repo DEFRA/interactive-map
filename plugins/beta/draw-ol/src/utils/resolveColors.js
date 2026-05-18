@@ -24,13 +24,17 @@ export const resolveColors = (mapStyle, pluginConfig = {}) => {
   const r = (key) => resolveVariant(pluginConfig[key] ?? DEFAULTS[key], scheme, styleId)
 
   return {
-    primary: r('primary'),
-    halo: r('halo'),
-    background: r('background'),
-    stroke: r('stroke'),
+    editStroke: r('editStroke'),
+    editVertex: r('editVertex'),
+    editMidpoint: r('editMidpoint'),
+    editActive: r('editActive'),
+    editHalo: r('editHalo'),
+    shapeStroke: r('shapeStroke'),
     strokeWidth: pluginConfig.strokeWidth ?? DEFAULTS.strokeWidth,
-    fill: r('fill'),
+    shapeFill: r('shapeFill'),
     sketchFill: r('sketchFill'),
+    snapVertex: r('snapVertex'),
+    snapEdge: r('snapEdge'),
     mapStyleId: styleId
   }
 }

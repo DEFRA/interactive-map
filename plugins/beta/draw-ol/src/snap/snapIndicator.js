@@ -2,8 +2,8 @@
  * Snap indicator — a single OL VectorLayer that shows a circle at the active
  * snap candidate position.
  *
- * Vertex snap → orange semi-transparent circle
- * Edge snap   → blue semi-transparent circle
+ * Vertex snap → orange semi-transparent circle (snapVertex color)
+ * Edge snap   → blue semi-transparent circle (snapEdge color)
  *
  * Uses Style.renderer (single canvas call) so the circle renders correctly
  * at fractional CSS scale factors.
@@ -16,8 +16,6 @@ import Point from 'ol/geom/Point.js'
 import { Style } from 'ol/style.js'
 
 const RADIUS_PX = 10
-const VERTEX_COLOR = 'rgba(230, 120, 0, 0.55)'
-const EDGE_COLOR = 'rgba(0, 100, 220, 0.55)'
 
 const makeRenderer = (color) => (coords, state) => {
   const ctx = state.context
@@ -28,16 +26,17 @@ const makeRenderer = (color) => (coords, state) => {
   ctx.fill()
 }
 
-const STYLES = {
-  vertex: new Style({ renderer: makeRenderer(VERTEX_COLOR) }),
-  edge: new Style({ renderer: makeRenderer(EDGE_COLOR) })
-}
+const makeStyles = (colors) => ({
+  vertex: new Style({ renderer: makeRenderer(colors.snapVertex) }),
+  edge: new Style({ renderer: makeRenderer(colors.snapEdge) })
+})
 
-export const createSnapIndicator = (map) => {
+export const createSnapIndicator = (map, colors) => {
+  let styles = makeStyles(colors)
   const source = new VectorSource()
   const layer = new VectorLayer({
     source,
-    style: (f) => STYLES[f.get('snapType')] ?? null,
+    style: (f) => styles[f.get('snapType')] ?? null,
     zIndex: 200,
     updateWhileAnimating: true,
     updateWhileInteracting: true
@@ -55,7 +54,7 @@ export const createSnapIndicator = (map) => {
         source.changed()
       } else {
         source.addFeature(feature)
-        showing = true        
+        showing = true
       }
     },
 
@@ -65,6 +64,11 @@ export const createSnapIndicator = (map) => {
       }
       source.clear()
       showing = false
+    },
+
+    updateColors (newColors) {
+      styles = makeStyles(newColors)
+      if (showing) source.changed()
     },
 
     remove () {

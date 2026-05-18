@@ -8,14 +8,14 @@ const selectedMidpointRadii = { outer: 9, mid: 6, inner: 4 }
 
 // Custom renderer draws all arcs at the same (cx,cy) so concentric rings never
 // drift at fractional CSS scales (e.g. 1.5×) the way separate drawImage calls can.
-const makeRingRenderer = ({ outer, mid, inner }, colors) => (pixelCoordinates, state) => {
+const makeRingRenderer = ({ outer, mid, inner }, colors, innerKey) => (pixelCoordinates, state) => {
   const ctx = state.context
   const pr = state.pixelRatio
   const [cx, cy] = /** @type {number[]} */ (pixelCoordinates)
   ctx.save()
-  ctx.beginPath(); ctx.arc(cx, cy, outer * pr, 0, Math.PI * 2); ctx.fillStyle = colors.halo; ctx.fill()
-  ctx.beginPath(); ctx.arc(cx, cy, mid   * pr, 0, Math.PI * 2); ctx.fillStyle = colors.background; ctx.fill()
-  ctx.beginPath(); ctx.arc(cx, cy, inner * pr, 0, Math.PI * 2); ctx.fillStyle = colors.primary; ctx.fill()
+  ctx.beginPath(); ctx.arc(cx, cy, outer * pr, 0, Math.PI * 2); ctx.fillStyle = colors.editActive; ctx.fill()
+  ctx.beginPath(); ctx.arc(cx, cy, mid   * pr, 0, Math.PI * 2); ctx.fillStyle = colors.editHalo; ctx.fill()
+  ctx.beginPath(); ctx.arc(cx, cy, inner * pr, 0, Math.PI * 2); ctx.fillStyle = colors[innerKey]; ctx.fill()
   ctx.restore()
 }
 
@@ -32,35 +32,35 @@ export const createStyles = (colors) => {
   const vertexStyle = new Style({
     image: new CircleStyle({
       radius: 6,
-      fill: new Fill({ color: colors.primary })
+      fill: new Fill({ color: colors.editVertex })
     })
   })
 
-  const selectedVertexStyle = new Style({ renderer: makeRingRenderer(selectedVertexRadii, colors) })
+  const selectedVertexStyle = new Style({ renderer: makeRingRenderer(selectedVertexRadii, colors, 'editVertex') })
 
   const midpointStyle = new Style({
     image: new CircleStyle({
       radius: 4,
-      fill: new Fill({ color: colors.primary })
+      fill: new Fill({ color: colors.editMidpoint })
     })
   })
 
-  const selectedMidpointStyle = new Style({ renderer: makeRingRenderer(selectedMidpointRadii, colors) })
+  const selectedMidpointStyle = new Style({ renderer: makeRingRenderer(selectedMidpointRadii, colors, 'editMidpoint') })
 
   const editFeatureStyle = new Style({
-    stroke: new Stroke({ color: colors.primary, width: 2 }),
-    fill: new Fill({ color: colors.fill })
+    stroke: new Stroke({ color: colors.editStroke, width: 2 }),
+    fill: new Fill({ color: colors.shapeFill })
   })
 
   const sketchLineStyle = new Style({
-    stroke: new Stroke({ color: colors.primary, width: 2 }),
+    stroke: new Stroke({ color: colors.editStroke, width: 2 }),
     fill: new Fill({ color: colors.sketchFill })
   })
 
   const sketchPointStyle = new Style({
     image: new CircleStyle({
       radius: 5,
-      fill: new Fill({ color: colors.primary })
+      fill: new Fill({ color: colors.editVertex })
     })
   })
 
@@ -70,8 +70,8 @@ export const createStyles = (colors) => {
   const createFeatureStyle = () => (feature) => {
     const p = feature.getProperties()
     const id = colors.mapStyleId
-    const stroke = (id && p[`stroke${capitalize(id)}`]) || p.stroke || colors.stroke
-    const fill = (id && p[`fill${capitalize(id)}`]) || p.fill || colors.fill
+    const stroke = (id && p[`stroke${capitalize(id)}`]) || p.stroke || colors.shapeStroke
+    const fill = (id && p[`fill${capitalize(id)}`]) || p.fill || colors.shapeFill
     const strokeWidth = p.strokeWidth || colors.strokeWidth
     return [new Style({
       stroke: new Stroke({ color: stroke, width: strokeWidth }),

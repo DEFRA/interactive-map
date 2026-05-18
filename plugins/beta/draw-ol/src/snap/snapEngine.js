@@ -30,18 +30,13 @@ export const createSnapEngine = (map, snapLayers = []) => {
     }
   }
 
-  // Lazily collected — VectorTileLayers are stable after map setup
-  let cachedVTLayers = null
+  // Collected on each query — VectorTileLayers are replaced when the map style changes
   const getVTLayers = () => {
-    if (!cachedVTLayers) {
-      cachedVTLayers = []
-      map.getLayers().forEach(l => {
-        if (l instanceof VectorTileLayer) {
-          cachedVTLayers.push(l)
-        }
-      })
-    }
-    return cachedVTLayers
+    const layers = []
+    map.getLayers().forEach(l => {
+      if (l instanceof VectorTileLayer) layers.push(l)
+    })
+    return layers
   }
 
   /**

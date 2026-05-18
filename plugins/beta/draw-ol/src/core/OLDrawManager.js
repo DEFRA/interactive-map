@@ -28,7 +28,7 @@ export class OLDrawManager {
 
     this.colors = resolveColors(null, pluginConfig)
     this.styles = createStyles(this.colors)
-    this.snap = createSnapManager(map, pluginConfig.snapLayers ?? null)
+    this.snap = createSnapManager(map, pluginConfig.snapLayers ?? null, this.colors)
 
     this._layer = new VectorLayer({
       source: this.store.source,
@@ -45,6 +45,7 @@ export class OLDrawManager {
     this.styles = createStyles(this.colors)
     this._layer.setStyle(this.styles.createFeatureStyle())
     this.store.source.changed()
+    this.snap?.updateColors(this.colors)
     this.emit('styleschanged', this.styles)
   }
 

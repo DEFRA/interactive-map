@@ -184,7 +184,7 @@ export function initMapLibreSnap (map, draw, snapOptions = {}) {
   } = snapOptions
 
   // Apply global patches to MapboxSnap prototype
-  applyMapboxSnapPatches({ ...DEFAULTS.snapColors, ...colors })
+  applyMapboxSnapPatches({ vertex: DEFAULTS.snapVertex, midpoint: DEFAULTS.snapMidpoint, edge: DEFAULTS.snapEdge, ...colors })
 
   // Clean up old snap instance's source and layer
   function cleanupOldSnap () {

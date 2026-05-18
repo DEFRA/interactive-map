@@ -31,9 +31,9 @@ export const applyTouchTargetColors = (el, colors) => {
   if (!el) {
     return
   }
-  el.style.setProperty('--draw-halo', colors.halo)
-  el.style.setProperty('--draw-bg', colors.background)
-  el.style.setProperty('--draw-primary', colors.primary)
+  el.style.setProperty('--draw-halo', colors.editActive)
+  el.style.setProperty('--draw-bg', colors.editHalo)
+  el.style.setProperty('--draw-primary', colors.editVertex)
 }
 
 export const showTouchTarget = (el, pixel) => {
