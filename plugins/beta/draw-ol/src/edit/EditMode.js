@@ -1,5 +1,9 @@
 import Modify from 'ol/interaction/Modify.js'
 import Collection from 'ol/Collection.js'
+import VectorSource from 'ol/source/Vector.js'
+import VectorLayer from 'ol/layer/Vector.js'
+import Feature from 'ol/Feature.js'
+import Point from 'ol/geom/Point.js'
 import { createMidpointLayer } from './midpointLayer.js'
 import { createVertexLayer } from './vertexLayer.js'
 import { createTouchHandler } from './touchHandler.js'
@@ -8,7 +12,7 @@ import { findNearest } from './vertexHitTest.js'
 import { deleteVertex, insertAtMidpoint } from './vertexOps.js'
 import { applyUndo } from './undoOps.js'
 import { getCoords, getMidpoints } from '../utils/geometryHelpers.js'
-import { editFeatureStyle } from '../core/styles.js'
+import { editFeatureStyle, selectedVertexStyle, selectedMidpointStyle } from '../core/styles.js'
 
 /**
  * Edit vertex mode — handles edit_vertex.
@@ -46,13 +50,8 @@ export const createEditMode = ({ map, manager, options }) => {
   const setState = (updates) => {
     Object.assign(state, updates)
     if (updates.selectedVertexIndex !== undefined) {
-      vertexLayer.setSelected(state.selectedVertexIndex)
-      midpointLayer.setSelected(
-        state.selectedVertexType === 'midpoint'
-          ? state.selectedVertexIndex - state.vertecies.length
-          : -1
-      )
-      if (state.selectedVertexIndex < 0) onDeselect?.()
+      if (state.selectedVertexIndex < 0) { onDeselect?.() }
+      updateActiveLayer()
       manager.emit('vertexselection', {
         index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
         numVertecies: state.vertecies.length
@@ -66,6 +65,7 @@ export const createEditMode = ({ map, manager, options }) => {
       midpointLayer.update(plainGeom)
       vertexLayer.update(plainGeom)
       state.midpoints = midpointLayer.getCoords()
+      updateActiveLayer()
       onUpdate?.()
       map.render()
     }
@@ -79,6 +79,7 @@ export const createEditMode = ({ map, manager, options }) => {
     state.midpoints = getMidpoints(plainGeom)
     midpointLayer.update(plainGeom)
     vertexLayer.update(plainGeom)
+    updateActiveLayer()
   }
 
   const syncGeom = () => {
@@ -142,6 +143,32 @@ export const createEditMode = ({ map, manager, options }) => {
   // --- Vertex + midpoint layers (always-visible handles) ---
   const midpointLayer = createMidpointLayer(map)
   const vertexLayer = createVertexLayer(map)
+
+  // --- Active selection overlay — always on top of vertex and midpoint layers ---
+  const activeSource = new VectorSource()
+  const activeLayer = new VectorLayer({ source: activeSource, zIndex: 103 })
+  map.addLayer(activeLayer)
+
+  const updateActiveLayer = () => {
+    activeSource.clear()
+    const { selectedVertexIndex, selectedVertexType, vertecies, midpoints } = state
+    if (selectedVertexIndex < 0) { return }
+    let coord, style
+    if (selectedVertexType === 'vertex') {
+      coord = vertecies[selectedVertexIndex]
+      style = selectedVertexStyle
+    } else if (selectedVertexType === 'midpoint') {
+      coord = midpoints[selectedVertexIndex - vertecies.length]
+      style = selectedMidpointStyle
+    } else {
+      return
+    }
+    if (!coord) { return }
+    const f = new Feature({ geometry: new Point(coord) })
+    f.setStyle(style)
+    activeSource.addFeature(f)
+  }
+
   syncGeom() // initial populate
 
   // --- Pointer hit detection ---
@@ -267,7 +294,6 @@ export const createEditMode = ({ map, manager, options }) => {
   // --- Keyboard handler ---
   const keyboardHandler = createKeyboardHandler({
     map,
-    container,
     getState,
     setState,
     onVertexMoved ({ vertexIndex, previousCoord }) {
@@ -284,6 +310,7 @@ export const createEditMode = ({ map, manager, options }) => {
       if (state.interfaceType === 'keyboard') return
       state.interfaceType = 'keyboard'
       touchHandler.hide()
+      container.focus({ preventScroll: true })
     }
   })
 
@@ -316,6 +343,8 @@ export const createEditMode = ({ map, manager, options }) => {
       window.removeEventListener('click', onButtonClick)
       map.un('change:size', onMapSizeChange)
       map.removeInteraction(modifyInteraction)
+      activeSource.clear()
+      map.removeLayer(activeLayer)
       midpointLayer.remove()
       vertexLayer.remove()
       touchHandler.destroy()

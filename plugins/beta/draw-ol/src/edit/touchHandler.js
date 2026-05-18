@@ -64,8 +64,8 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
   // Reposition on every render — keeps target anchored during pinch-zoom and pan.
   // Skipped during drag since touchmove handles position directly.
   const onPostrender = () => {
-    const { selectedVertexIndex } = getState()
-    if (selectedVertexIndex >= 0 && dragStartIndex == null) { updateTargetPosition() }
+    const { selectedVertexIndex, interfaceType } = getState()
+    if (selectedVertexIndex >= 0 && dragStartIndex == null && interfaceType === 'touch') { updateTargetPosition() }
   }
   map.on('postrender', onPostrender)
 
@@ -115,7 +115,7 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
         const dx = t.clientX - tapStart.x
         const dy = t.clientY - tapStart.y
         const dt = Date.now() - tapStart.time
-        if (Math.sqrt(dx * dx + dy * dy) < TAP_MOVE_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
+        if (Math.hypot(dx, dy) < TAP_MOVE_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
           const tOl = map.getEventPixel({ clientX: t.clientX, clientY: t.clientY })
           const tapState = getState()
           const hit = findNearest(map, tapState.vertecies, tapState.midpoints, { x: tOl[0], y: tOl[1] }, TOUCH_TOLERANCE)

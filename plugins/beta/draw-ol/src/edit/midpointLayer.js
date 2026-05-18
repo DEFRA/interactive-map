@@ -3,28 +3,20 @@ import VectorLayer from 'ol/layer/Vector.js'
 import Feature from 'ol/Feature.js'
 import Point from 'ol/geom/Point.js'
 import { getMidpoints } from '../utils/geometryHelpers.js'
-import { midpointStyle, selectedMidpointStyle } from '../core/styles.js'
+import { midpointStyle } from '../core/styles.js'
 
 /**
  * Manages a dedicated overlay layer for midpoint handles in edit mode.
  * Midpoints are always visible (unlike OL Modify's native midpoints which
- * only appear when the pointer is near a segment).
+ * only appear when the pointer is near a segment). The selected midpoint is
+ * rendered by the separate active-selection layer in EditMode (zIndex 103).
  */
 export const createMidpointLayer = (map) => {
-  let selectedIndex = -1
   const source = new VectorSource()
-  const layer = new VectorLayer({
-    source,
-    style: (feature) => feature.get('midpointIndex') === selectedIndex ? selectedMidpointStyle : [midpointStyle],
-    zIndex: 101
-  })
+  const layer = new VectorLayer({ source, style: () => [midpointStyle], zIndex: 101 })
   map.addLayer(layer)
 
   return {
-    /**
-     * Recompute and render midpoints from a geometry object.
-     * @param {{ type: string, coordinates: any }} geom - plain GeoJSON geometry
-     */
     update (geom) {
       source.clear()
       const midpoints = getMidpoints(geom)
@@ -36,20 +28,10 @@ export const createMidpointLayer = (map) => {
       source.addFeatures(features)
     },
 
-    /** Current midpoint coordinates in order. */
-    setSelected (index) {
-      selectedIndex = index
-      source.changed()
-    },
-
     getCoords () {
       return source.getFeatures()
         .sort((a, b) => a.get('midpointIndex') - b.get('midpointIndex'))
         .map(f => f.getGeometry().getCoordinates())
-    },
-
-    clear () {
-      source.clear()
     },
 
     remove () {

@@ -3,22 +3,17 @@ import VectorLayer from 'ol/layer/Vector.js'
 import Feature from 'ol/Feature.js'
 import Point from 'ol/geom/Point.js'
 import { getCoords } from '../utils/geometryHelpers.js'
-import { vertexStyle, selectedVertexStyle } from '../core/styles.js'
+import { vertexStyle } from '../core/styles.js'
 
 /**
  * Always-visible vertex handle layer for edit mode.
  * OL Modify's built-in vertex handles only appear on hover; this layer
- * keeps circles visible at all times and highlights the selected vertex.
+ * keeps circles visible at all times. The selected vertex is rendered by
+ * the separate active-selection layer in EditMode (zIndex 103).
  */
 export const createVertexLayer = (map) => {
-  let selectedIndex = -1
   const source = new VectorSource()
-
-  const layer = new VectorLayer({
-    source,
-    style: (feature) => feature.get('vertexIndex') === selectedIndex ? selectedVertexStyle : [vertexStyle],
-    zIndex: 102
-  })
+  const layer = new VectorLayer({ source, style: () => [vertexStyle], zIndex: 102 })
   map.addLayer(layer)
 
   return {
@@ -29,11 +24,6 @@ export const createVertexLayer = (map) => {
         f.set('vertexIndex', i)
         source.addFeature(f)
       })
-    },
-
-    setSelected (index) {
-      selectedIndex = index
-      source.changed()
     },
 
     remove () {

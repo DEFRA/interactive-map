@@ -21,10 +21,11 @@ export const vertexStyle = new Style({
   })
 })
 
-// Selected vertex: primary circle + 2px white ring + 3px black outer ring (painted bottom to top)
+// Selected vertex: primary core r=6, white gap r=6-8, black outer ring r=8-11.
+// Two styles instead of three: fill+stroke share one canvas arc so all ring edges
+// are drawn in a single call, avoiding sub-pixel drift at fractional CSS scales (e.g. 1.5×).
 export const selectedVertexStyle = [
-  new Style({ image: new CircleStyle({ radius: 11, fill: new Fill({ color: COLOR.black }) }) }),
-  new Style({ image: new CircleStyle({ radius: 8, fill: new Fill({ color: COLOR.white }) }) }),
+  new Style({ image: new CircleStyle({ radius: 9.5, fill: new Fill({ color: COLOR.white }), stroke: new Stroke({ color: COLOR.black, width: 3 }) }) }),
   new Style({ image: new CircleStyle({ radius: 6, fill: new Fill({ color: COLOR.primary }) }) })
 ]
 
@@ -36,10 +37,10 @@ export const midpointStyle = new Style({
   })
 })
 
-// Selected midpoint: primary circle + 2px white ring + 3px black outer ring (painted bottom to top)
+// Selected midpoint: primary core r=4, white gap r=4-6, black outer ring r=6-9.
+// Same two-style pattern as selectedVertexStyle.
 export const selectedMidpointStyle = [
-  new Style({ image: new CircleStyle({ radius: 9, fill: new Fill({ color: COLOR.black }) }) }),
-  new Style({ image: new CircleStyle({ radius: 6, fill: new Fill({ color: COLOR.white }) }) }),
+  new Style({ image: new CircleStyle({ radius: 7.5, fill: new Fill({ color: COLOR.white }), stroke: new Stroke({ color: COLOR.black, width: 3 }) }) }),
   new Style({ image: new CircleStyle({ radius: 4, fill: new Fill({ color: COLOR.primary }) }) })
 ]
 

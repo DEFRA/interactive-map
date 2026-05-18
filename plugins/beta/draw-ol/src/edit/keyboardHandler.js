@@ -23,7 +23,7 @@ const STEP_PX = 5
  * @returns {{ destroy }}
  */
 export const createKeyboardHandler = ({
-  map, container, getState, setState,
+  map, getState, setState,
   onVertexMoved, onInserted, onDeleted, onUndo,
   onKeyboardActive
 }) => {
@@ -116,8 +116,22 @@ export const createKeyboardHandler = ({
     setState({ vertecies: vertecies.map((c, i) => i === selectedVertexIndex ? newCoord : c) })
   }
 
+  const isTextInput = () => {
+    const el = document.activeElement
+    return el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable
+  }
+
   const onKeydown = (e) => {
-    if (!container.contains(document.activeElement)) return
+    if (isTextInput()) { return }
+
+    if (e.key === 'Escape' && getState().selectedVertexIndex >= 0) {
+      e.preventDefault()
+      keyMoveStart = null
+      keyMoveIndex = null
+      setState({ selectedVertexIndex: -1, selectedVertexType: null })
+      return
+    }
+
     onKeyboardActive?.()
 
     if (e.key === ' ' && getState().selectedVertexIndex < 0) {
@@ -150,7 +164,7 @@ export const createKeyboardHandler = ({
   }
 
   const onKeyup = (e) => {
-    if (!container.contains(document.activeElement)) return
+    if (isTextInput()) { return }
 
     if (ARROW_KEYS.has(e.key) && keyMoveStart && keyMoveIndex != null) {
       onVertexMoved({ vertexIndex: keyMoveIndex, previousCoord: keyMoveStart })
