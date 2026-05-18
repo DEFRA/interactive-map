@@ -7,11 +7,11 @@ export const DEFAULTS = {
   splitInvalid: { light: 'rgba(29,112,184,1)', dark: 'rgba(29,112,184,1)' },
   splitValid: { light: 'rgba(29,112,184,1)', dark: 'rgba(29,112,184,1)' },
   shapeStroke: 'rgba(212,53,28,1)',
-  strokeWidth: 2,
   shapeFill: 'rgba(212,53,28,0.1)',
-  snapLayers: [],
+  strokeWidth: 2,
   snapVertex: 'rgba(212,53,28,1)',
   snapMidpoint: 'rgba(40,161,151,1)',
   snapEdge: 'rgba(29,112,184,1)',
-  snapRadius: 10
+  snapRadius: 10,
+  snapLayers: []
 }
