@@ -1,3 +1,5 @@
+import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
+
 /**
  * Programmatically start drawing a new line.
  *
@@ -6,7 +8,7 @@
  * @param {object} options - { snapLayers, stroke, fill, strokeWidth, properties }
  */
 export const newLine = (
-  { appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services },
+  { appState, appConfig, mapState, pluginState, mapProvider, services },
   featureId,
   options = {}
 ) => {
@@ -14,20 +16,16 @@ export const newLine = (
   const { draw } = mapProvider
   const { eventBus } = services
 
-  if (!draw) return
+  if (!draw) {
+    return
+  }
 
   eventBus.emit('draw:started', { mode: 'draw_line' })
 
-  // Snap layers (for later when snap is implemented)
-  const snapLayers = options.snapLayers ?? pluginConfig.snapLayers ?? null
-
-  // Extract style properties and merge with custom properties
   const { stroke, fill, strokeWidth, properties: customProperties, ...modeOptions } = options
   const properties = {
     ...customProperties,
-    ...(stroke && { stroke }),
-    ...(fill && { fill }),
-    ...(strokeWidth && { strokeWidth })
+    ...flattenStyleProperties({ stroke, fill, strokeWidth })
   }
 
   draw.changeMode('draw_line', {

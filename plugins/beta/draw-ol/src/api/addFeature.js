@@ -1,3 +1,5 @@
+import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
+
 /**
  * Add a pre-drawn feature (GeoJSON) to the draw layer.
  * The feature will be stored and available for editing.
@@ -9,17 +11,16 @@ export const addFeature = ({ mapProvider, services }, feature) => {
   const { draw } = mapProvider
   const { eventBus } = services
 
-  if (!draw) return
+  if (!draw) {
+    return
+  }
 
-  // Extract style properties from top level
   const { stroke, fill, strokeWidth, properties, ...featureRest } = feature
   const flatFeature = {
     ...featureRest,
     properties: {
       ...properties,
-      ...(stroke && { stroke }),
-      ...(fill && { fill }),
-      ...(strokeWidth && { strokeWidth })
+      ...flattenStyleProperties({ stroke, fill, strokeWidth })
     }
   }
 

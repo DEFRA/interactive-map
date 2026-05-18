@@ -6,6 +6,7 @@ import { DrawLineMode } from './modes/drawLineMode.js'
 import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from './undoStack.js'
+import { applyTouchVertexColors } from './modes/editVertex/touchHandlers.js'
 
 /**
  * Creates and manages a MapLibre/Mapbox Draw control instance configured for polygon editing.
@@ -90,6 +91,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
 
   // We need a reference to this
   mapProvider.draw = draw
+  map._drawCurrentMapStyle = mapStyle
   // Initialize snap as disabled (matches initialState.snap = false)
   mapProvider.snapEnabled = false
   // Initialize undo stack (also stored on map for mode access)
@@ -107,8 +109,11 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
 
   // --- Update colour scheme ---
   const handleSetMapStyle = (e) => {
+    map._drawCurrentMapStyle = e
     map.once('idle', () => {
       updateDrawStyles(map, e)
+      const svg = map._drawEditContainer?.querySelector('[data-touch-vertex-target]')
+      applyTouchVertexColors(svg, e)
     })
   }
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)

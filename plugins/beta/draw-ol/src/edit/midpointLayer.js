@@ -3,7 +3,6 @@ import VectorLayer from 'ol/layer/Vector.js'
 import Feature from 'ol/Feature.js'
 import Point from 'ol/geom/Point.js'
 import { getMidpoints } from '../utils/geometryHelpers.js'
-import { midpointStyle } from '../core/styles.js'
 
 /**
  * Manages a dedicated overlay layer for midpoint handles in edit mode.
@@ -11,12 +10,13 @@ import { midpointStyle } from '../core/styles.js'
  * only appear when the pointer is near a segment). The selected midpoint is
  * rendered by the separate active-selection layer in EditMode (zIndex 103).
  */
-export const createMidpointLayer = (map) => {
+export const createMidpointLayer = (map, midpointStyle) => {
+  let currentStyle = midpointStyle
   let selectedIndex = -1
   const source = new VectorSource()
   const layer = new VectorLayer({
     source,
-    style: (feature) => feature.get('midpointIndex') === selectedIndex ? null : [midpointStyle],
+    style: (feature) => feature.get('midpointIndex') === selectedIndex ? null : [currentStyle],
     zIndex: 101
   })
   map.addLayer(layer)
@@ -35,6 +35,11 @@ export const createMidpointLayer = (map) => {
 
     setSelected (index) {
       selectedIndex = index
+      source.changed()
+    },
+
+    updateStyle (newMidpointStyle) {
+      currentStyle = newMidpointStyle
       source.changed()
     },
 

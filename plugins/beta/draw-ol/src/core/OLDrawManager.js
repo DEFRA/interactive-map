@@ -1,7 +1,8 @@
 import VectorLayer from 'ol/layer/Vector.js'
 import { createFeatureStore } from './featureStore.js'
 import { createUndoStack } from './undoStack.js'
-import { createFeatureStyle } from './styles.js'
+import { createStyles } from './styles.js'
+import { resolveColors } from '../utils/resolveColors.js'
 
 /**
  * Mode machine for the OL draw plugin.
@@ -14,8 +15,9 @@ import { createFeatureStyle } from './styles.js'
  * listening to the manager's internal events.
  */
 export class OLDrawManager {
-  constructor (map) {
+  constructor (map, pluginConfig = {}) {
     this._map = map
+    this._pluginConfig = pluginConfig
     this._mode = 'disabled'
     this._modeInstance = null
     this._listeners = new Map()
@@ -23,18 +25,33 @@ export class OLDrawManager {
     this.store = createFeatureStore()
     this.undoStack = createUndoStack((length) => this.emit('undochange', length))
 
+    this.colors = resolveColors(null, pluginConfig)
+    this.styles = createStyles(this.colors)
+
     this._layer = new VectorLayer({
       source: this.store.source,
-      style: createFeatureStyle(),
+      style: this.styles.createFeatureStyle(),
       zIndex: 100
     })
     map.addLayer(this._layer)
   }
 
+  // --- Color / style updates ---
+
+  setMapStyle (mapStyle) {
+    this.colors = resolveColors(mapStyle, this._pluginConfig)
+    this.styles = createStyles(this.colors)
+    this._layer.setStyle(this.styles.createFeatureStyle())
+    this.store.source.changed()
+    this.emit('styleschanged', this.styles)
+  }
+
   // --- Internal event bus ---
 
   on (type, handler) {
-    if (!this._listeners.has(type)) this._listeners.set(type, new Set())
+    if (!this._listeners.has(type)) {
+      this._listeners.set(type, new Set())
+    }
     this._listeners.get(type).add(handler)
   }
 
@@ -59,6 +76,8 @@ export class OLDrawManager {
     } else if (modeName === 'edit_vertex') {
       const { createEditMode } = await import('../edit/EditMode.js')
       this._modeInstance = createEditMode({ map: this._map, manager: this, options })
+    } else {
+      // disabled — no mode instance needed
     }
   }
 

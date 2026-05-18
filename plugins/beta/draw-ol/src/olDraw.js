@@ -2,25 +2,35 @@ import { OLDrawManager } from './core/OLDrawManager.js'
 
 /**
  * Creates the OLDrawManager, attaches it to mapProvider, and wires
- * any app-level events (e.g. MAP_SET_SIZE for scale-aware touch targets).
+ * app-level events (MAP_SET_SIZE for scale-aware touch targets,
+ * MAP_SET_STYLE for dynamic color updates).
  *
  * @returns {{ remove: () => void }}
  */
-export const createOLDraw = ({ mapProvider, events, eventBus }) => {
+export const createOLDraw = ({ mapProvider, events, eventBus, pluginConfig = {}, mapStyle = null }) => {
   const { map } = mapProvider
-  const manager = new OLDrawManager(map)
+  const manager = new OLDrawManager(map, pluginConfig)
+
+  if (mapStyle) {
+    manager.setMapStyle(mapStyle)
+  }
 
   mapProvider.draw = manager
 
   const handleSetMapSize = (size) => {
-    // Scale factor informs touch target pixel offsets
     mapProvider.drawScale = { small: 1, medium: 1.5, large: 2 }[size] ?? 1
   }
   eventBus.on(events.MAP_SET_SIZE, handleSetMapSize)
 
+  const handleSetMapStyle = (newMapStyle) => {
+    manager.setMapStyle(newMapStyle)
+  }
+  eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)
+
   return {
     remove () {
       eventBus.off(events.MAP_SET_SIZE, handleSetMapSize)
+      eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)
       manager.remove()
       mapProvider.draw = null
     }

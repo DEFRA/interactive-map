@@ -12,7 +12,6 @@ import { findNearest } from './vertexHitTest.js'
 import { deleteVertex, insertAtMidpoint } from './vertexOps.js'
 import { applyUndo } from './undoOps.js'
 import { getCoords, getMidpoints } from '../utils/geometryHelpers.js'
-import { editFeatureStyle, selectedVertexStyle, selectedMidpointStyle } from '../core/styles.js'
 
 /**
  * Edit vertex mode — handles edit_vertex.
@@ -28,10 +27,12 @@ export const createEditMode = ({ map, manager, options }) => {
   const { store, undoStack } = manager
 
   const olFeature = store.getOL(featureId)
-  if (!olFeature) return null
+  if (!olFeature) {
+    return null
+  }
 
   const originalFeatureStyle = olFeature.getStyle()
-  olFeature.setStyle(editFeatureStyle)
+  olFeature.setStyle(manager.styles.editFeatureStyle)
 
   // Mutable state shared across sub-handlers
   const state = {
@@ -54,7 +55,9 @@ export const createEditMode = ({ map, manager, options }) => {
       midpointLayer.setSelected(
         state.selectedVertexType === 'midpoint' ? state.selectedVertexIndex - state.vertecies.length : -1
       )
-      if (state.selectedVertexIndex < 0) { onDeselect?.() }
+      if (state.selectedVertexIndex < 0) {
+        onDeselect?.()
+      }
       updateActiveLayer()
       manager.emit('vertexselection', {
         index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
@@ -98,6 +101,13 @@ export const createEditMode = ({ map, manager, options }) => {
 
   // --- OL Modify (handles pointer vertex drag + midpoint insertion natively) ---
   const collection = new Collection([olFeature])
+  const modifyCondition = (mapBrowserEvent) => {
+    if (state.interfaceType === 'touch') {
+      return false
+    }
+    const olPixel = map.getEventPixel(mapBrowserEvent.originalEvent)
+    return findNearest(map, state.vertecies, state.midpoints, { x: olPixel[0], y: olPixel[1] }) !== null
+  }
   const modifyInteraction = new Modify({
     features: collection,
     style: () => [],  // vertex circles rendered by vertexLayer instead
@@ -105,11 +115,7 @@ export const createEditMode = ({ map, manager, options }) => {
     // Only activate when clicking on a vertex or midpoint circle, not anywhere on a segment.
     // Touch drags are handled by touchHandler; returning false here lets them pass through to
     // DragPan (touchHandler uses preventDefault on the offset target to stop unwanted panning).
-    condition: (mapBrowserEvent) => {
-      if (state.interfaceType === 'touch') return false
-      const olPixel = map.getEventPixel(mapBrowserEvent.originalEvent)
-      return findNearest(map, state.vertecies, state.midpoints, { x: olPixel[0], y: olPixel[1] }) !== null
-    }
+    condition: modifyCondition
   })
   map.addInteraction(modifyInteraction)
 
@@ -117,15 +123,21 @@ export const createEditMode = ({ map, manager, options }) => {
   let modifyStartCoords = null
 
   modifyInteraction.on('modifystart', () => {
-    if (state.interfaceType === 'touch') return
+    if (state.interfaceType === 'touch') {
+      return
+    }
     modifyStartCoords = state.vertecies.map(c => [...c])
   })
 
   modifyInteraction.on('modifyend', () => {
-    if (state.interfaceType === 'touch') return
+    if (state.interfaceType === 'touch') {
+      return
+    }
     const prevCoords = modifyStartCoords
     syncGeom()
-    if (!prevCoords) return
+    if (!prevCoords) {
+      return
+    }
 
     const newCoords = state.vertecies
     if (newCoords.length > prevCoords.length) {
@@ -140,13 +152,15 @@ export const createEditMode = ({ map, manager, options }) => {
         undoStack.push({ type: 'move_vertex', vertexIndex: movedIdx, previousCoord: prevCoords[movedIdx] })
         setState({ selectedVertexIndex: movedIdx, selectedVertexType: 'vertex' })
       }
+    } else {
+      // no change in vertex count (shouldn't happen, but satisfies linter)
     }
     modifyStartCoords = null
   })
 
   // --- Vertex + midpoint layers (always-visible handles) ---
-  const midpointLayer = createMidpointLayer(map)
-  const vertexLayer = createVertexLayer(map)
+  const midpointLayer = createMidpointLayer(map, manager.styles.midpointStyle)
+  const vertexLayer = createVertexLayer(map, manager.styles.vertexStyle)
 
   // --- Active selection overlay — always on top of vertex and midpoint layers ---
   const activeSource = new VectorSource()
@@ -156,24 +170,38 @@ export const createEditMode = ({ map, manager, options }) => {
   const updateActiveLayer = () => {
     activeSource.clear()
     const { selectedVertexIndex, selectedVertexType, vertecies, midpoints } = state
-    if (selectedVertexIndex < 0) { return }
+    if (selectedVertexIndex < 0) {
+      return
+    }
     let coord, style
     if (selectedVertexType === 'vertex') {
       coord = vertecies[selectedVertexIndex]
-      style = selectedVertexStyle
+      style = manager.styles.selectedVertexStyle
     } else if (selectedVertexType === 'midpoint') {
       coord = midpoints[selectedVertexIndex - vertecies.length]
-      style = selectedMidpointStyle
+      style = manager.styles.selectedMidpointStyle
     } else {
       return
     }
-    if (!coord) { return }
+    if (!coord) {
+      return
+    }
     const f = new Feature({ geometry: new Point(coord) })
     f.setStyle(style)
     activeSource.addFeature(f)
   }
 
   syncGeom() // initial populate
+
+  // --- Style hot-swap when map style changes ---
+  const onStylesChanged = (styles) => {
+    olFeature.setStyle(styles.editFeatureStyle)
+    vertexLayer.updateStyle(styles.vertexStyle)
+    midpointLayer.updateStyle(styles.midpointStyle)
+    updateActiveLayer()
+    touchHandler.updateColors(manager.colors)
+  }
+  manager.on('styleschanged', onStylesChanged)
 
   // --- Pointer hit detection ---
   const onPointerdown = (e) => {
@@ -194,7 +222,9 @@ export const createEditMode = ({ map, manager, options }) => {
 
   // click fires after OL Modify finishes, so state.vertecies reflects any insertions/moves
   const onContainerClick = (e) => {
-    if (state.interfaceType === 'touch') { return }
+    if (state.interfaceType === 'touch') {
+      return
+    }
     const olPixel = map.getEventPixel(e)
     const pixel = { x: olPixel[0], y: olPixel[1] }
     const hit = findNearest(map, state.vertecies, state.midpoints, pixel)
@@ -209,8 +239,12 @@ export const createEditMode = ({ map, manager, options }) => {
 
   // Switch to pointer mode and hide the touch target as soon as the mouse moves.
   const onPointerMove = (e) => {
-    if (e.pointerType !== 'mouse') return
-    if (state.interfaceType === 'pointer') return
+    if (e.pointerType !== 'mouse') {
+      return
+    }
+    if (state.interfaceType === 'pointer') {
+      return
+    }
     state.interfaceType = 'pointer'
     touchHandler.hide()
   }
@@ -226,14 +260,18 @@ export const createEditMode = ({ map, manager, options }) => {
       doDeleteVertex()
     }
   }
-  window.addEventListener('click', onButtonClick)
+  globalThis.addEventListener('click', onButtonClick)
 
   // --- Operations ---
 
   const doDeleteVertex = () => {
-    if (state.selectedVertexType !== 'vertex' || state.selectedVertexIndex < 0) return
+    if (state.selectedVertexType !== 'vertex' || state.selectedVertexIndex < 0) {
+      return
+    }
     const result = deleteVertex(olFeature, state.selectedVertexIndex)
-    if (!result) return
+    if (!result) {
+      return
+    }
     undoStack.push({ type: 'delete_vertex', ...result })
     syncGeom()
     setState({ selectedVertexIndex: -1, selectedVertexType: null })
@@ -241,7 +279,9 @@ export const createEditMode = ({ map, manager, options }) => {
 
   const doUndo = () => {
     const op = undoStack.pop()
-    if (!op) return
+    if (!op) {
+      return
+    }
     const newIndex = applyUndo(olFeature, op)
     syncGeom()
     setState({
@@ -257,6 +297,7 @@ export const createEditMode = ({ map, manager, options }) => {
     container,
     getState,
     setState,
+    colors: manager.colors,
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
@@ -274,7 +315,9 @@ export const createEditMode = ({ map, manager, options }) => {
       }
       if (hit.type === 'midpoint') {
         const result = insertAtMidpoint(olFeature, state.midpoints, hit.index, state.vertecies.length)
-        if (!result) { return }
+        if (!result) {
+          return
+        }
         undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
         syncGeom()
         setState({ selectedVertexIndex: result.insertedIndex, selectedVertexType: 'vertex' })
@@ -284,14 +327,18 @@ export const createEditMode = ({ map, manager, options }) => {
   })
   onDeselect = () => touchHandler.hide()
   onUpdate = () => {
-    if (state.interfaceType === 'touch') { touchHandler.updateTargetPosition() }
+    if (state.interfaceType === 'touch') {
+      touchHandler.updateTargetPosition()
+    }
   }
 
   // Reposition the touch target after OL re-renders with the new size.
   // change:size fires before the render, so we wait for postrender to get
   // correct pixel coords from getPixelFromCoordinate.
   const onMapSizeChange = () => {
-    if (state.interfaceType !== 'touch' || state.selectedVertexIndex < 0) return
+    if (state.interfaceType !== 'touch' || state.selectedVertexIndex < 0) {
+      return
+    }
     map.once('postrender', () => touchHandler.updateTargetPosition())
   }
   map.on('change:size', onMapSizeChange)
@@ -312,7 +359,9 @@ export const createEditMode = ({ map, manager, options }) => {
     onDeleted: doDeleteVertex,
     onUndo: doUndo,
     onKeyboardActive () {
-      if (state.interfaceType === 'keyboard') return
+      if (state.interfaceType === 'keyboard') {
+        return
+      }
       state.interfaceType = 'keyboard'
       touchHandler.hide()
       container.focus({ preventScroll: true })
@@ -321,7 +370,9 @@ export const createEditMode = ({ map, manager, options }) => {
 
   return {
     setInterfaceType (type) {
-      if (type === state.interfaceType) return
+      if (type === state.interfaceType) {
+        return
+      }
       state.interfaceType = type
       if (type === 'touch') {
         touchHandler.updateTargetPosition()
@@ -345,11 +396,12 @@ export const createEditMode = ({ map, manager, options }) => {
     destroy () {
       olFeature.setStyle(originalFeatureStyle)
       olFeature.getGeometry().un('change', onGeometryChange)
+      manager.off('styleschanged', onStylesChanged)
       container.removeEventListener('pointerdown', onPointerdown)
       container.removeEventListener('pointerenter', onPointerMove)
       container.removeEventListener('pointermove', onPointerMove)
       container.removeEventListener('click', onContainerClick)
-      window.removeEventListener('click', onButtonClick)
+      globalThis.removeEventListener('click', onButtonClick)
       map.un('change:size', onMapSizeChange)
       map.removeInteraction(modifyInteraction)
       activeSource.clear()
