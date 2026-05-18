@@ -97,4 +97,18 @@ export class MapLibreDataset extends Dataset {
       ...(this.filter ? { filter: this.filter } : {})
     }
   }
+
+  getFillSource (paint) {
+    return {
+      id: this.fillLayerId,
+      type: 'fill',
+      source: this.sourceId,
+      'source-layer': this.sourceLayer,
+      minzoom: this.minZoom,
+      maxzoom: this.maxZoom,
+      layout: { visibility: this.visibility === 'hidden' ? 'none' : 'visible' },
+      paint,
+      ...(this.filter ? { filter: this.filter } : {})
+    }
+  }
 }

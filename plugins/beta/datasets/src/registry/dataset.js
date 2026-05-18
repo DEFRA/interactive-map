@@ -14,7 +14,7 @@ export class Dataset {
   get hasStroke () { return Boolean(this.style?.stroke) }
   get tiles () { return this._datasetDefinition.tiles }
   get geojson () { return this._datasetDefinition.geojson }
-  get visibility () { return this._datasetDefinition.visibility || 'visible' }
+  get visibility () { return this._datasetDefinition.visibility || this.parent?.visibility || 'visible' }
   get idProperty () { return this._datasetDefinition.idProperty }
   get transformRequest () { return this._datasetDefinition.transformRequest }
   get parentId () { return this._datasetDefinition.parentId }
