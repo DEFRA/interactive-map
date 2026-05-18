@@ -50,6 +50,10 @@ export const createEditMode = ({ map, manager, options }) => {
   const setState = (updates) => {
     Object.assign(state, updates)
     if (updates.selectedVertexIndex !== undefined) {
+      vertexLayer.setSelected(state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1)
+      midpointLayer.setSelected(
+        state.selectedVertexType === 'midpoint' ? state.selectedVertexIndex - state.vertecies.length : -1
+      )
       if (state.selectedVertexIndex < 0) { onDeselect?.() }
       updateActiveLayer()
       manager.emit('vertexselection', {
@@ -175,6 +179,7 @@ export const createEditMode = ({ map, manager, options }) => {
   const onPointerdown = (e) => {
     if (e.pointerType === 'touch') {
       state.interfaceType = 'touch'
+      touchHandler.updateTargetPosition()
       return
     }
     state.interfaceType = 'pointer'
@@ -318,7 +323,11 @@ export const createEditMode = ({ map, manager, options }) => {
     setInterfaceType (type) {
       if (type === state.interfaceType) return
       state.interfaceType = type
-      if (type !== 'touch') touchHandler.hide()
+      if (type === 'touch') {
+        touchHandler.updateTargetPosition()
+      } else {
+        touchHandler.hide()
+      }
     },
 
     done () {

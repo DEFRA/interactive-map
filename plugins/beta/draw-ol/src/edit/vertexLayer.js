@@ -12,8 +12,13 @@ import { vertexStyle } from '../core/styles.js'
  * the separate active-selection layer in EditMode (zIndex 103).
  */
 export const createVertexLayer = (map) => {
+  let selectedIndex = -1
   const source = new VectorSource()
-  const layer = new VectorLayer({ source, style: () => [vertexStyle], zIndex: 102 })
+  const layer = new VectorLayer({
+    source,
+    style: (feature) => feature.get('vertexIndex') === selectedIndex ? null : [vertexStyle],
+    zIndex: 102
+  })
   map.addLayer(layer)
 
   return {
@@ -24,6 +29,11 @@ export const createVertexLayer = (map) => {
         f.set('vertexIndex', i)
         source.addFeature(f)
       })
+    },
+
+    setSelected (index) {
+      selectedIndex = index
+      source.changed()
     },
 
     remove () {

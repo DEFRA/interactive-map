@@ -12,8 +12,13 @@ import { midpointStyle } from '../core/styles.js'
  * rendered by the separate active-selection layer in EditMode (zIndex 103).
  */
 export const createMidpointLayer = (map) => {
+  let selectedIndex = -1
   const source = new VectorSource()
-  const layer = new VectorLayer({ source, style: () => [midpointStyle], zIndex: 101 })
+  const layer = new VectorLayer({
+    source,
+    style: (feature) => feature.get('midpointIndex') === selectedIndex ? null : [midpointStyle],
+    zIndex: 101
+  })
   map.addLayer(layer)
 
   return {
@@ -26,6 +31,11 @@ export const createMidpointLayer = (map) => {
         return f
       })
       source.addFeatures(features)
+    },
+
+    setSelected (index) {
+      selectedIndex = index
+      source.changed()
     },
 
     getCoords () {

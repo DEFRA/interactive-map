@@ -21,13 +21,23 @@ export const vertexStyle = new Style({
   })
 })
 
-// Selected vertex: primary core r=6, white gap r=6-8, black outer ring r=8-11.
-// Two styles instead of three: fill+stroke share one canvas arc so all ring edges
-// are drawn in a single call, avoiding sub-pixel drift at fractional CSS scales (e.g. 1.5×).
-export const selectedVertexStyle = [
-  new Style({ image: new CircleStyle({ radius: 9.5, fill: new Fill({ color: COLOR.white }), stroke: new Stroke({ color: COLOR.black, width: 3 }) }) }),
-  new Style({ image: new CircleStyle({ radius: 6, fill: new Fill({ color: COLOR.primary }) }) })
-]
+// Custom renderer draws all arcs at the same (cx,cy) so concentric rings never
+// drift at fractional CSS scales (e.g. 1.5×) the way separate drawImage calls can.
+const selectedVertexRadii = { outer: 11, mid: 8, inner: 6 }
+const selectedMidpointRadii = { outer: 9, mid: 6, inner: 4 }
+
+const makeRingRenderer = ({ outer, mid, inner }) => (pixelCoordinates, state) => {
+  const ctx = state.context
+  const pr = state.pixelRatio
+  const [cx, cy] = /** @type {number[]} */ (pixelCoordinates)
+  ctx.save()
+  ctx.beginPath(); ctx.arc(cx, cy, outer * pr, 0, Math.PI * 2); ctx.fillStyle = COLOR.black; ctx.fill()
+  ctx.beginPath(); ctx.arc(cx, cy, mid   * pr, 0, Math.PI * 2); ctx.fillStyle = COLOR.white; ctx.fill()
+  ctx.beginPath(); ctx.arc(cx, cy, inner * pr, 0, Math.PI * 2); ctx.fillStyle = COLOR.primary; ctx.fill()
+  ctx.restore()
+}
+
+export const selectedVertexStyle = new Style({ renderer: makeRingRenderer(selectedVertexRadii) })
 
 // Midpoint: solid filled circle, r=4
 export const midpointStyle = new Style({
@@ -37,12 +47,7 @@ export const midpointStyle = new Style({
   })
 })
 
-// Selected midpoint: primary core r=4, white gap r=4-6, black outer ring r=6-9.
-// Same two-style pattern as selectedVertexStyle.
-export const selectedMidpointStyle = [
-  new Style({ image: new CircleStyle({ radius: 7.5, fill: new Fill({ color: COLOR.white }), stroke: new Stroke({ color: COLOR.black, width: 3 }) }) }),
-  new Style({ image: new CircleStyle({ radius: 4, fill: new Fill({ color: COLOR.primary }) }) })
-]
+export const selectedMidpointStyle = new Style({ renderer: makeRingRenderer(selectedMidpointRadii) })
 
 // Style applied directly to the OL feature while in edit mode, overriding its stored colours
 export const editFeatureStyle = new Style({

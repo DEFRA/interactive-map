@@ -53,8 +53,8 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
   syncCssTx()
 
   const updateTargetPosition = () => {
-    const { selectedVertexIndex, vertecies } = getState()
-    if (selectedVertexIndex < 0 || !vertecies[selectedVertexIndex]) {
+    const { selectedVertexIndex, vertecies, interfaceType } = getState()
+    if (selectedVertexIndex < 0 || !vertecies[selectedVertexIndex] || interfaceType !== 'touch') {
       hideTouchTarget(targetEl)
       return
     }
