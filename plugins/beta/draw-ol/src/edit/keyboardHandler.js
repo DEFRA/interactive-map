@@ -135,13 +135,18 @@ export const createKeyboardHandler = ({
     setState({ vertecies: vertecies.map((c, i) => i === selectedVertexIndex ? newCoord : c) })
   }
 
-  const isTextInput = () => {
+  const appViewport = map.getViewport().closest('[role="application"]') ?? map.getViewport()
+
+  const isInteractiveElementFocused = () => {
     const el = document.activeElement
-    return el?.tagName === 'INPUT' || el?.tagName === 'TEXTAREA' || el?.isContentEditable
+    if (!el || el === document.body) return false
+    if (appViewport.contains(el)) return false
+    const tag = el.tagName
+    return tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'BUTTON' || tag === 'SELECT' || tag === 'A' || el.isContentEditable || el.hasAttribute('tabindex')
   }
 
   const onKeydown = (e) => {
-    if (isTextInput()) { return }
+    if (isInteractiveElementFocused()) { return }
 
     if (e.key === 'Escape' && getState().selectedVertexIndex >= 0) {
       e.preventDefault()
@@ -183,7 +188,7 @@ export const createKeyboardHandler = ({
   }
 
   const onKeyup = (e) => {
-    if (isTextInput()) { return }
+    if (isInteractiveElementFocused()) { return }
 
     if (ARROW_KEYS.has(e.key) && keyMoveStart && keyMoveIndex != null) {
       snap?.hideIndicator()

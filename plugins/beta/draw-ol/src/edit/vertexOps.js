@@ -26,6 +26,9 @@ export const deleteVertex = (olFeature, selectedIndex) => {
   const deletedCoord = [...coords[selectedIndex]]
   const ring = getModifiableCoords(geojsonGeom, segment.path)
   ring.splice(result.localIdx, 1)
+  if (segment.closed) {
+    ring[ring.length - 1] = [...ring[0]]
+  }
 
   geom.setCoordinates(geojsonGeom.coordinates)
   return { deletedIndex: selectedIndex, deletedCoord }
@@ -81,5 +84,8 @@ export const moveVertex = (olFeature, index, newCoord) => {
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring[result.localIdx] = [...newCoord]
+  if (result.segment.closed && result.localIdx === 0) {
+    ring[ring.length - 1] = [...newCoord]
+  }
   geom.setCoordinates(geojsonGeom.coordinates)
 }

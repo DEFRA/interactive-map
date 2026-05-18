@@ -20,6 +20,9 @@ export const undoMoveVertex = (olFeature, op) => {
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring[result.localIdx] = [...previousCoord]
+  if (result.segment.closed && result.localIdx === 0) {
+    ring[ring.length - 1] = [...previousCoord]
+  }
   geom.setCoordinates(geojsonGeom.coordinates)
   return vertexIndex
 }
@@ -34,6 +37,9 @@ export const undoInsertVertex = (olFeature, op) => {
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring.splice(result.localIdx, 1)
+  if (result.segment.closed) {
+    ring[ring.length - 1] = [...ring[0]]
+  }
   geom.setCoordinates(geojsonGeom.coordinates)
   return -1
 }
@@ -58,6 +64,9 @@ export const undoDeleteVertex = (olFeature, op) => {
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring.splice(result.localIdx, 0, [...deletedCoord])
+  if (result.segment.closed) {
+    ring[ring.length - 1] = [...ring[0]]
+  }
   geom.setCoordinates(geojsonGeom.coordinates)
   return vertexIndex
 }

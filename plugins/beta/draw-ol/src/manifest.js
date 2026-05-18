@@ -66,21 +66,23 @@ export const manifest = {
         iconId: 'undo',
         hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
         enableWhen: ({ pluginState }) => {
-          if (['draw_polygon', 'draw_line'].includes(pluginState.mode)) return pluginState.numVertecies > 0
+          if (['draw_polygon', 'draw_line'].includes(pluginState.mode)) {
+            return pluginState.numVertecies > 0
+          }
           return pluginState.undoStackLength > 0
         }
+       }, {
+        id: 'drawSnap',
+        label: 'Snap to feature',
+        iconId: 'magnet',
+        hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
+        pressedWhen: ({ pluginState }) => !!pluginState.snap
       }, {
         id: 'drawDeletePoint',
         label: 'Delete point',
         iconId: 'trash',
         enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > 2,
         hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex'
-      }, {
-        id: 'drawSnap',
-        label: 'Snap to feature',
-        iconId: 'magnet',
-        hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
-        pressedWhen: ({ pluginState }) => !!pluginState.snap
       }],
       mobile: { slot: 'bottom-right' },
       tablet: { slot: 'top-middle' },

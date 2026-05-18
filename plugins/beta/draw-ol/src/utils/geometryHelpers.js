@@ -8,9 +8,9 @@ export const getCoords = (geom) => {
   if (!geom?.coordinates) return []
   switch (geom.type) {
     case 'LineString': return geom.coordinates
-    case 'Polygon': return geom.coordinates.flat(1)
+    case 'Polygon': return geom.coordinates.flatMap(ring => ring.slice(0, -1))
     case 'MultiLineString': return geom.coordinates.flat(1)
-    case 'MultiPolygon': return geom.coordinates.flat(2)
+    case 'MultiPolygon': return geom.coordinates.flatMap(poly => poly.flatMap(ring => ring.slice(0, -1)))
     default: return []
   }
 }
@@ -30,8 +30,9 @@ export const getRingSegments = (geom) => {
       break
     case 'Polygon':
       geom.coordinates.forEach((ring, i) => {
-        segments.push({ start, length: ring.length, path: [i], closed: true })
-        start += ring.length
+        const len = ring.length - 1
+        segments.push({ start, length: len, path: [i], closed: true })
+        start += len
       })
       break
     case 'MultiLineString':
@@ -43,8 +44,9 @@ export const getRingSegments = (geom) => {
     case 'MultiPolygon':
       geom.coordinates.forEach((polygon, pi) => {
         polygon.forEach((ring, ri) => {
-          segments.push({ start, length: ring.length, path: [pi, ri], closed: true })
-          start += ring.length
+          const len = ring.length - 1
+          segments.push({ start, length: len, path: [pi, ri], closed: true })
+          start += len
         })
       })
       break
