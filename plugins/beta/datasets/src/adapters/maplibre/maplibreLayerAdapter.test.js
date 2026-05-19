@@ -2,7 +2,7 @@ import MaplibreLayerAdapter from './maplibreLayerAdapter'
 
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
-import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
+import { addDatasetLayers } from './layerBuilders.js'
 import { hasPattern, getPatternImageId } from './patternImages.js'
 import { getSymbolImageId } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
@@ -27,8 +27,7 @@ jest.mock('./layerIds.js', () => ({
 }))
 
 jest.mock('./layerBuilders.js', () => ({
-  addDatasetLayers: jest.fn(() => 'source-ds'),
-  addSublayerLayers: jest.fn()
+  addDatasetLayers: jest.fn(() => 'source-ds')
 }))
 
 jest.mock('./patternImages.js', () => ({
@@ -232,75 +231,6 @@ describe('removeDataset', () => {
     adapter._datasetSourceMap.set('ds', 'source-ds')
     adapter.removeDataset(dataset, [])
     expect(adapter._datasetSourceMap.has('ds')).toBe(false)
-  })
-})
-
-// ─── showDataset / hideDataset ────────────────────────────────────────────────
-
-describe('showDataset', () => {
-  it('sets visibility to visible on all matching layers', () => {
-    const { adapter, map } = makeAdapter()
-    map.getStyle.mockReturnValue({
-      layers: [{ id: 'ds', type: 'fill' }, { id: 'ds-stroke', type: 'line' }]
-    })
-    adapter.showDataset('ds')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds', 'visibility', 'visible')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds-stroke', 'visibility', 'visible')
-  })
-
-  it('does nothing when map style has no layers', () => {
-    const { adapter, map } = makeAdapter()
-    map.getStyle.mockReturnValue(null)
-    expect(() => adapter.showDataset('ds')).not.toThrow()
-    expect(map.setLayoutProperty).not.toHaveBeenCalled()
-  })
-})
-
-describe('hideDataset', () => {
-  it('sets visibility to none on all matching layers', () => {
-    const { adapter, map } = makeAdapter()
-    map.getStyle.mockReturnValue({
-      layers: [{ id: 'ds', type: 'fill' }, { id: 'ds-stroke', type: 'line' }]
-    })
-    adapter.hideDataset('ds')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds', 'visibility', 'none')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds-stroke', 'visibility', 'none')
-  })
-
-  it('does not affect layers belonging to a different dataset', () => {
-    const { adapter, map } = makeAdapter()
-    map.getStyle.mockReturnValue({
-      layers: [{ id: 'other', type: 'fill' }, { id: 'other-stroke', type: 'line' }]
-    })
-    adapter.hideDataset('ds')
-    expect(map.setLayoutProperty).not.toHaveBeenCalled()
-  })
-})
-
-// ─── showSublayer / hideSublayer ──────────────────────────────────────────────
-
-describe('showSublayer', () => {
-  it('sets visibility to visible for all three sublayer layer ids that exist', () => {
-    const { adapter, map } = makeAdapter({ 'ds-sl': 'fill', 'ds-sl-stroke': 'line', 'ds-sl-symbol': 'symbol' })
-    adapter.showSublayer('ds', 'sl')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds-sl', 'visibility', 'visible')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds-sl-stroke', 'visibility', 'visible')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds-sl-symbol', 'visibility', 'visible')
-  })
-
-  it('skips layer ids that do not exist on the map', () => {
-    const { adapter, map } = makeAdapter({ 'ds-sl': 'fill' })
-    adapter.showSublayer('ds', 'sl')
-    expect(map.setLayoutProperty).toHaveBeenCalledTimes(1)
-  })
-})
-
-describe('hideSublayer', () => {
-  it('sets visibility to none for all three sublayer layer ids that exist', () => {
-    const { adapter, map } = makeAdapter({ 'ds-sl': 'fill', 'ds-sl-stroke': 'line' })
-    adapter.hideSublayer('ds', 'sl')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds-sl', 'visibility', 'none')
-    expect(map.setLayoutProperty).toHaveBeenCalledWith('ds-sl-stroke', 'visibility', 'none')
   })
 })
 

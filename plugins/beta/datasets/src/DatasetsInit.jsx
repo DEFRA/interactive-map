@@ -8,7 +8,6 @@ const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies)
   useEffect(() => {
     const methodParameters = pluginState.layerAdapterActions?.[methodName] || []
     const method = pluginState.layerAdapter?.[methodName]
-    console.log('useEffect:', ...methodParameters.map((params) => `${params[0]},`))
     if (method && methodParameters.length) {
       methodParameters.forEach((parameters) => {
         console.log(`calling ${methodName} with ${parameters[0]}`)
@@ -82,6 +81,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   datasetsRef.current = pluginState.mappedDatasets
   useEffect(() => datasetRegistry.attach(datasetsRef.current), [pluginState.mappedDatasets])
   useLayerAdapterActions('setStyle', dispatch, pluginState, [pluginState.layerAdapterActions.setStyle])
+  useLayerAdapterActions('setDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.setDatasetVisibility])
 
   // Cleanup only on unmount
   useEffect(() => {
