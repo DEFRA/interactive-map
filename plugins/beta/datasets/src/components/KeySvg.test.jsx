@@ -1,12 +1,15 @@
 import { render } from '@testing-library/react'
 import { KeySvg } from './KeySvg'
 
-import { hasSymbol, getSymbolDef } from '../../../../../src/utils/symbolUtils.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 import { hasPattern } from '../../../../../src/utils/patternUtils.js'
+import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+// import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
+
+const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
 
 jest.mock('../../../../../src/utils/symbolUtils.js', () => ({
-  hasSymbol: jest.fn(() => false),
-  getSymbolDef: jest.fn(() => null)
+  hasSymbol: jest.fn(() => false)
 }))
 
 jest.mock('../../../../../src/utils/patternUtils.js', () => ({
@@ -30,7 +33,7 @@ jest.mock('./KeySvgRect.jsx', () => ({
 }))
 
 const baseProps = {
-  symbolRegistry: {},
+  symbolRegistry,
   mapStyle: { id: 'default' }
 }
 
