@@ -23,6 +23,13 @@ export class Dataset {
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
   get filter () { return this._datasetDefinition.filter || this.parent?.filter }
 
+  get visible () {
+    if (this.isSublayer) {
+      return this._datasetDefinition.visible && (this.parent?.visible)
+    }
+    return this._datasetDefinition.visible
+  }
+
   get symbolAnchor () {
     if (this.style?.symbolAnchor) {
       return this.style.symbolAnchor
@@ -48,9 +55,14 @@ export class Dataset {
     return this._datasetDefinition.sublayerIds?.length > 0
   }
 
+  get sublayerIds () {
+    return this._datasetDefinition.sublayerIds
+  }
+
   get sublayers () {
-    if (this._datasetDefinition.sublayerIds) {
-      return this._datasetDefinition.sublayerIds.map(id => datasetRegistry.getDataset(id))
+    const { sublayerIds } = this
+    if (sublayerIds) {
+      return sublayerIds.map(id => datasetRegistry.getDataset(id))
     }
     return undefined
   }
