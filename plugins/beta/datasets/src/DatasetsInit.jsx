@@ -2,6 +2,23 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { createDatasets } from './datasets.js'
+import { datasetRegistry } from './registry/datasetRegistry.js'
+
+const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies) =>
+  useEffect(() => {
+    const methodParameters = pluginState.layerAdapterActions?.[methodName] || []
+    const method = pluginState.layerAdapter?.[methodName]
+    console.log('useEffect:', ...methodParameters.map((params) => `${params[0]},`))
+    if (method && methodParameters.length) {
+      methodParameters.forEach((parameters) => {
+        console.log(`calling ${methodName} with ${parameters[0]}`)
+        method.bind(pluginState.layerAdapter)(...parameters)
+      })
+      if (methodParameters.length) {
+        dispatch({ type: 'SET_LAYER_ADAPTER_ACTIONS', payload: { [methodName]: [] } })
+      }
+    }
+  }, [...dependencies])
 
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
@@ -49,6 +66,9 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         dispatch,
         eventBus
       })
+      if (LayerAdapter.createDataset) {
+        datasetRegistry.attachCreateDataset(LayerAdapter.createDataset)
+      }
     }
 
     initDatasets()
@@ -57,6 +77,11 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useEffect(() => {
     dispatch({ type: 'BUILD_KEY_GROUPS', payload: null })
   }, [pluginState.datasets])
+
+  const datasetsRef = useRef(pluginState.mappedDatasets)
+  datasetsRef.current = pluginState.mappedDatasets
+  useEffect(() => datasetRegistry.attach(datasetsRef.current), [pluginState.mappedDatasets])
+  useLayerAdapterActions('setStyle', dispatch, pluginState, [pluginState.layerAdapterActions.setStyle])
 
   // Cleanup only on unmount
   useEffect(() => {
