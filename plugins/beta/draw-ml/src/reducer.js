@@ -11,10 +11,13 @@ const initialState = {
   undoStackLength: 0
 }
 
+const DRAW_MODES = new Set(['draw_polygon', 'draw_line'])
+
 const setMode = (state, payload) => {
   return {
     ...state,
-    mode: payload
+    mode: payload,
+    numVertecies: DRAW_MODES.has(payload) ? 0 : state.numVertecies
   }
 }
 
