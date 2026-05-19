@@ -312,7 +312,7 @@ export default class MaplibreLayerAdapter {
     registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
     await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
     const pixelRatio = this._pixelRatio
-    addSublayerLayers(this._map, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
+    addDatasetLayers(this._map, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
     this._maintainSymbolOrdering(registryDataset.parent)
   }
 
@@ -383,6 +383,7 @@ export default class MaplibreLayerAdapter {
   }
 
   _maintainSymbolOrdering (registryDataset) {
+    registryDataset = registryDataset.isSublayer ? registryDataset.parent : registryDataset
     const layerIds = registryDataset.layerIds.filter(id => id && this._map.getLayer(id))
     layerIds.forEach(id => {
       if (this._map.getLayer(id)?.type === 'symbol') {

@@ -71,13 +71,6 @@ export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, p
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addSublayerLayers = (map, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
-  const mapStyleId = mapStyle.id
-  addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
-  addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
-  addStrokeLayer(map, registryDataset, mapStyleId)
-}
-
 /**
  * Add all layers (and source if needed) for a dataset.
  * Returns the sourceId so the caller can track the datasetId → sourceId mapping.
@@ -94,10 +87,14 @@ export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry,
   if (source && !map.getSource(sourceId)) {
     map.addSource(sourceId, source)
   }
+  const mapStyleId = mapStyle.id
+  addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
+  addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
+  addStrokeLayer(map, registryDataset, mapStyleId)
 
   if (registryDataset.sublayers?.length) {
     registryDataset.sublayers.forEach(sublayer => {
-      addSublayerLayers(map, sublayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio)
+      addDatasetLayers(map, sublayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio)
     })
     return sourceId
   }
@@ -105,10 +102,5 @@ export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry,
   if (registryDataset.isSublayer) {
     return undefined
   }
-
-  const mapStyleId = mapStyle.id
-  addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
-  addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
-  addStrokeLayer(map, registryDataset, mapStyleId)
   return sourceId
 }

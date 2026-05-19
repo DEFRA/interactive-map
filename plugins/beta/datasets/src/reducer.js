@@ -20,8 +20,7 @@ const initialState = {
   hiddenFeatures: {}, // { [layerId]: { idProperty: string, ids: string[] } }
   layerAdapter: null,
   layerAdapterActions: {
-    setStyle: [],
-    setSublayerStyle: []
+    setStyle: []
   }
 }
 
@@ -166,32 +165,6 @@ const setDatasetStyle = (state, payload) => {
   }
 }
 
-const setSublayerStyle = (state, payload) => {
-  const { datasetId, sublayerId, styleChanges, mapStyle } = payload
-  const id = `${datasetId}-${sublayerId}`
-  const style = { ...state.mappedDatasets[id].style, ...styleChanges }
-  const subLayer = { ...state.mappedDatasets[id], style }
-  const setSublayerStyle = [...state.layerAdapterActions.setSublayerStyle, [id, mapStyle]]
-  return {
-    ...state,
-    mappedDatasets: { ...state.mappedDatasets, [id]: subLayer },
-    layerAdapterActions: { ...state.layerAdapterActions, setSublayerStyle },
-    datasets: state.datasets?.map(dataset => {
-      if (dataset.id !== datasetId) {
-        return dataset
-      }
-      return {
-        ...dataset,
-        sublayers: dataset.sublayers?.map(sublayer =>
-          sublayer.id === sublayerId
-            ? { ...sublayer, style: { ...sublayer.style, ...styleChanges } }
-            : sublayer
-        )
-      }
-    })
-  }
-}
-
 const setOpacity = (state, payload) => {
   const { datasetId, opacity } = payload
   return {
@@ -242,7 +215,6 @@ const actions = {
   SET_GLOBAL_VISIBILITY: setGlobalVisibility,
   SET_SUBLAYER_VISIBILITY: setSublayerVisibility,
   SET_DATASET_STYLE: setDatasetStyle,
-  SET_SUBLAYER_STYLE: setSublayerStyle,
   SET_OPACITY: setOpacity,
   SET_GLOBAL_OPACITY: setGlobalOpacity,
   SET_SUBLAYER_OPACITY: setSublayerOpacity,
