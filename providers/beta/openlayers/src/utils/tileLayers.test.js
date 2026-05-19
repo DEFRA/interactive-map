@@ -2,7 +2,7 @@ import XYZ from 'ol/source/XYZ.js'
 import TileGrid from 'ol/tilegrid/TileGrid.js'
 import VectorTileSource from 'ol/source/VectorTile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
-import { stylefunction } from 'ol-mapbox-style'
+import { stylefunction, recordStyleLayer } from 'ol-mapbox-style'
 import { createTileSource, createVectorTileLayer } from './tileLayers.js'
 import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.js'
 
@@ -18,7 +18,7 @@ jest.mock('ol/TileState.js', () => ({ __esModule: true, default: { ERROR: 'error
 jest.mock('ol/source/VectorTile.js', () => ({ __esModule: true, default: jest.fn(() => mockVectorTileSourceInstance) }))
 jest.mock('ol/layer/VectorTile.js', () => ({ __esModule: true, default: jest.fn(() => mockVectorTileLayerInstance) }))
 jest.mock('ol/format/MVT.js', () => ({ __esModule: true, default: jest.fn(() => mockMVTInstance) }))
-jest.mock('ol-mapbox-style', () => ({ __esModule: true, stylefunction: jest.fn() }))
+jest.mock('ol-mapbox-style', () => ({ __esModule: true, stylefunction: jest.fn(), recordStyleLayer: jest.fn() }))
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0))
 
