@@ -221,50 +221,6 @@ export default class MaplibreLayerAdapter {
     this._datasetSourceMap.delete(dataset.id)
   }
 
-  /**
-   * Make a dataset's layers visible.
-   * @param {string} datasetId
-   */
-  showDataset (datasetId) {
-    this._setDatasetVisibility(datasetId, 'visible')
-  }
-
-  /**
-   * Hide a dataset's layers.
-   * @param {string} datasetId
-   */
-  hideDataset (datasetId) {
-    this._setDatasetVisibility(datasetId, 'none')
-  }
-
-  /**
-   * Make a single sublayer's layers visible.
-   * @param {string} datasetId
-   * @param {string} sublayerId
-   */
-  showSublayer (datasetId, sublayerId) {
-    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(datasetId, sublayerId)
-    ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
-      if (this._map.getLayer(layerId)) {
-        this._map.setLayoutProperty(layerId, 'visibility', 'visible')
-      }
-    })
-  }
-
-  /**
-   * Hide a single sublayer's layers.
-   * @param {string} datasetId
-   * @param {string} sublayerId
-   */
-  hideSublayer (datasetId, sublayerId) {
-    const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(datasetId, sublayerId)
-    ;[fillLayerId, strokeLayerId, symbolLayerId].forEach(layerId => {
-      if (this._map.getLayer(layerId)) {
-        this._map.setLayoutProperty(layerId, 'visibility', 'none')
-      }
-    })
-  }
-
   // ─── Feature operations ─────────────────────────────────────────────────────
 
   /**
@@ -388,19 +344,27 @@ export default class MaplibreLayerAdapter {
     })
   }
 
-  _setDatasetVisibility (datasetId, visibility) {
+  setDatasetVisibility (datasetId) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
     const style = this._map.getStyle()
     if (!style?.layers) {
       return
     }
     // Covers base fill layer (datasetId) and all suffixed layers
     // (-stroke, -${sublayerId}, -${sublayerId}-stroke) without needing the dataset object.
-    style.layers
-      .filter(layer =>
-        layer.id === datasetId ||
-        layer.id.startsWith(`${datasetId}-`)
-      )
-      .forEach(layer => this._map.setLayoutProperty(layer.id, 'visibility', visibility))
+    if (registryDataset.hasSublayers) {
+      const { sublayerIds } = registryDataset
+      sublayerIds.forEach(sublayerId => { this.setDatasetVisibility(sublayerId) })
+    } else {
+      const { visible } = registryDataset
+      const datasetId = registryDataset.id
+      style.layers.filter(layer =>
+        layer.id === datasetId || layer.id.startsWith(`${datasetId}-`)
+      ).forEach(layer => {
+        const visibility = visible ? 'visible' : 'none'
+        this._map.setLayoutProperty(layer.id, 'visibility', visibility)
+      })
+    }
   }
 
   _applyFeatureFilter (dataset, idProperty, excludeIds) {

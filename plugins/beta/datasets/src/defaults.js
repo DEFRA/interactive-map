@@ -3,7 +3,7 @@ const datasetDefaults = {
   maxZoom: 24,
   showInKey: false,
   showInMenu: false,
-  visibility: 'visible',
+  visible: true,
   style: {
     stroke: '#d4351c',
     strokeWidth: 2,
@@ -49,6 +49,10 @@ const applyDatasetDefaults = (dataset, defaults) => {
 }
 
 const applyDatasetDefaultsWithoutFlattening = (dataset) => {
+  // Allow for existing configs that use visibility instead of visible, but default to visible if neither is set
+  if (dataset.visible !== true && dataset.visible !== false) {
+    dataset.visible = dataset.visibility !== 'hidden'
+  }
   const datasetWithDefaults = { ...datasetDefaults, ...dataset, style: { ...datasetDefaults.style, ...dataset.style } }
 
   const style = dataset.style || {}

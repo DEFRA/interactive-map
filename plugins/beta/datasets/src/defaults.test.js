@@ -7,7 +7,7 @@ describe('datasetDefaults', () => {
       maxZoom: 24,
       showInKey: false,
       showInMenu: false,
-      visibility: 'visible'
+      visible: true
     })
   })
 
