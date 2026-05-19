@@ -9,9 +9,9 @@ export class Dataset {
 
   get id () { return this._datasetDefinition.id }
   get hasSymbol () { return Boolean(this.style?.symbol) }
-  get hasPattern () { return hasPattern(this.style) }
-  get hasFill () { return this.hasPattern || (this.style?.fill && this.style?.fill !== 'transparent') }
-  get hasStroke () { return Boolean(this.style?.stroke) }
+  get hasPattern () { return !this.hasSymbol && hasPattern(this.style) }
+  get hasFill () { return !this.hasSymbol && (this.hasPattern || (this.style?.fill && this.style?.fill !== 'transparent')) }
+  get hasStroke () { return !this.hasSymbol && Boolean(this.style?.stroke) }
   get tiles () { return this._datasetDefinition.tiles }
   get geojson () { return this._datasetDefinition.geojson }
   get visibility () { return this._datasetDefinition.visibility || this.parent?.visibility || 'visible' }

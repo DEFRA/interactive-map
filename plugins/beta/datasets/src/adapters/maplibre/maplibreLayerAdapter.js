@@ -32,6 +32,7 @@ export default class MaplibreLayerAdapter {
     this._patternRegistry = patternRegistry
     // datasetId → sourceId, used by setData to update the correct source
     this._datasetSourceMap = new Map()
+    window._datasetSourceMap = this._datasetSourceMap // Expose for debugging
     // Tracks all active symbol-type layer IDs so non-symbol layers can be kept below them
     this._symbolLayerIds = new Set()
   }
@@ -313,7 +314,7 @@ export default class MaplibreLayerAdapter {
     const sourceId = this._datasetSourceMap.get(registryDataset.parentId)
     const sourceLayer = registryDataset.sourceLayer
     const pixelRatio = this._pixelRatio
-    addSublayerLayers(this._map, registryDataset, sourceId, sourceLayer, { mapStyle, symbolRegistry: this._symbolRegistry, patternRegistry: this._patternRegistry, pixelRatio })
+    addSublayerLayers(this._map, registryDataset, sourceId, sourceLayer, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
     this._maintainSymbolOrdering(registryDataset.parent)
   }
 

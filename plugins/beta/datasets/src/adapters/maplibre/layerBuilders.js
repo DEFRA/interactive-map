@@ -1,5 +1,4 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
-import { getLayerIds } from './layerIds.js'
 import { getSymbolAnchor } from './symbolImages.js'
 
 // ─── Source ───────────────────────────────────────────────────────────────────
@@ -53,7 +52,8 @@ export const addStrokeLayer = (map, registryDataset, mapStyleId) => {
     'line-opacity': registryDataset.opacity || 1,
     ...(registryDataset.style.strokeDashArray ? { 'line-dasharray': registryDataset.style.strokeDashArray } : {})
   }
-  map.addLayer(registryDataset.getStrokeSource(paint))
+  const strokeSource = registryDataset.getStrokeSource(paint)
+  map.addLayer(strokeSource)
 }
 
 // ─── Symbol layer ─────────────────────────────────────────────────────────────
@@ -71,7 +71,7 @@ export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, p
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
+export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
   const mapStyleId = mapStyle.id
   addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
   addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
@@ -84,13 +84,12 @@ export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, {
  * @param {Object} map - MapLibre map instance
  * @param {Object} registryDataset
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
- * @param {Object} [symbolRegistry]
- * @param {Object} [patternRegistry]
- * @param {number} [pixelRatio] - Device pixel ratio × map size scale factor
+ * @param {Object} symbolRegistry
+ * @param {Object} patternRegistry
+ * @param {number} pixelRatio - Device pixel ratio × map size scale factor
  * @returns {string} sourceId
  */
 export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
-  const mapStyleId = mapStyle.id
   const { sourceId, source, sourceLayer } = registryDataset
   if (source && !map.getSource(sourceId)) {
     map.addSource(sourceId, source)
@@ -98,7 +97,7 @@ export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry,
 
   if (registryDataset.sublayers?.length) {
     registryDataset.sublayers.forEach(sublayer => {
-      addSublayerLayers(map, sublayer, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio })
+      addSublayerLayers(map, sublayer, sourceId, sourceLayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio)
     })
     return sourceId
   }
@@ -107,6 +106,7 @@ export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry,
     return undefined
   }
 
+  const mapStyleId = mapStyle.id
   addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
   addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
   addStrokeLayer(map, registryDataset, mapStyleId)
