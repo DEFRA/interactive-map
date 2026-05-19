@@ -1,29 +1,6 @@
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 import { getSymbolAnchor } from './symbolImages.js'
 
-// ─── Source ───────────────────────────────────────────────────────────────────
-
-// export const addSource = (map, dataset, sourceId) => {
-//   if (map.getSource(sourceId)) {
-//     return
-//   }
-//   if (dataset.tiles) {
-//     map.addSource(sourceId, {
-//       type: 'vector',
-//       tiles: dataset.tiles,
-//       minzoom: dataset.minZoom || 0,
-//       maxzoom: dataset.maxZoom || MAX_TILE_ZOOM
-//     })
-//     return
-//   }
-//   if (dataset.geojson) {
-//     const initialData = isDynamicSource(dataset)
-//       ? { type: 'FeatureCollection', features: [] }
-//       : dataset.geojson
-//     map.addSource(sourceId, { type: 'geojson', data: initialData, generateId: true })
-//   }
-// }
-
 // ─── Fill layer ───────────────────────────────────────────────────────────────
 
 export const addFillLayer = (map, registryDataset, mapStyleId, patternRegistry, pixelRatio = 1) => {
