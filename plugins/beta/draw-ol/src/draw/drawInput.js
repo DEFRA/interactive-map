@@ -25,9 +25,19 @@ export const createDrawInput = ({ drawInteraction, options }) => {
 
   // Track the current sketch feature via draw events (OL 10 has no public getSketchFeature())
   let sketchFeature = null
-  drawInteraction.on('drawstart', (e) => { sketchFeature = e.feature })
-  drawInteraction.on('drawend', () => { sketchFeature = null })
-  drawInteraction.on('drawabort', () => { sketchFeature = null })
+  let lastPlacedCoord = null
+  drawInteraction.on('drawstart', (e) => {
+    sketchFeature = e.feature
+    lastPlacedCoord = null
+  })
+  drawInteraction.on('drawend', () => {
+    sketchFeature = null
+    lastPlacedCoord = null
+  })
+  drawInteraction.on('drawabort', () => {
+    sketchFeature = null
+    lastPlacedCoord = null
+  })
 
   // Get map reference — drawInteraction is already added to map before createDrawInput is called
   const getMap = () => {
@@ -120,6 +130,13 @@ export const createDrawInput = ({ drawInteraction, options }) => {
         sketchCoords = rawCoords[0] || []
       }
 
+      // Same position placed twice without moving → finish/close
+      if (lastPlacedCoord && lastPlacedCoord[0] === coord[0] && lastPlacedCoord[1] === coord[1]) {
+        drawInteraction.finishDrawing()
+        lastPlacedCoord = null
+        return
+      }
+
       // Check if close to first vertex (for polygon closure)
       if (isCloseToFirstVertex(getMap(), coord, sketchCoords, geom.getType())) {
         drawInteraction.finishDrawing()
@@ -128,6 +145,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     }
 
     drawInteraction.appendCoordinates([coord])
+    lastPlacedCoord = coord
   }
 
   // --- Event handlers ---
@@ -161,6 +179,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
   const onPointerdown = (e) => {
     if (e.pointerType !== 'touch') {
       interfaceType = 'pointer'
+      lastPlacedCoord = null
     }
   }
 
