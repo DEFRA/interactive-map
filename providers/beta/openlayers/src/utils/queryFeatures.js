@@ -20,6 +20,9 @@ const getVtFeatureId = (feature) => {
 }
 
 export const queryFeatures = (map, point, options = {}) => {
+  if (!point) {
+    return []
+  }
   const { radius = 10 } = options
   const pixel = [point.x, point.y]
   const results = []

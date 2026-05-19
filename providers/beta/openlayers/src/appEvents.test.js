@@ -23,7 +23,7 @@ function makeMap () {
 }
 
 function makeProvider () {
-  return { mapSize: 'small' }
+  return { mapSize: 'small', reapplyHighlights: jest.fn() }
 }
 
 describe('attachAppEvents', () => {
