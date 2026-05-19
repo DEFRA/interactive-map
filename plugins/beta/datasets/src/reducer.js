@@ -20,7 +20,8 @@ const initialState = {
   hiddenFeatures: {}, // { [layerId]: { idProperty: string, ids: string[] } }
   layerAdapter: null,
   layerAdapterActions: {
-    setStyle: []
+    setStyle: [],
+    setDatasetVisibility: []
   }
 }
 
@@ -70,13 +71,15 @@ const removeDataset = (state, payload) => {
 }
 
 const setDatasetVisibility = (state, payload) => {
-  const { id, visibility } = payload
+  const { datasetId, visible } = payload
+  const setDatasetVisibility = [...state.layerAdapterActions.setDatasetVisibility, [datasetId, visible]]
   return {
     ...state,
+    layerAdapterActions: { ...state.layerAdapterActions, setDatasetVisibility },
     datasets: state.datasets?.map(dataset =>
-      dataset.id === id ? { ...dataset, visibility } : dataset
+      dataset.id === datasetId ? { ...dataset, visible } : dataset
     ),
-    mappedDatasets: { ...state.mappedDatasets, [id]: { ...state.mappedDatasets[id], visibility } }
+    mappedDatasets: { ...state.mappedDatasets, [datasetId]: { ...state.mappedDatasets[datasetId], visible } }
   }
 }
 
@@ -128,26 +131,6 @@ const showFeatures = (state, payload) => {
   }
 }
 
-const setSublayerVisibility = (state, payload) => {
-  const { datasetId, sublayerId, visibility } = payload
-  const id = `${datasetId}-${sublayerId}`
-  return {
-    ...state,
-    mappedDatasets: { ...state.mappedDatasets, [id]: { ...state.mappedDatasets[id], visibility } },
-    datasets: state.datasets?.map(dataset => {
-      if (dataset.id !== datasetId) {
-        return dataset
-      }
-      return {
-        ...dataset,
-        sublayerVisibility: {
-          ...dataset.sublayerVisibility,
-          [sublayerId]: visibility
-        }
-      }
-    })
-  }
-}
 const setLayerAdapterActions = (state, payload) => ({ ...state, layerAdapterActions: { ...state.layerAdapterActions, ...payload } })
 
 const setDatasetStyle = (state, payload) => {
@@ -213,7 +196,6 @@ const actions = {
   REMOVE_DATASET: removeDataset,
   SET_DATASET_VISIBILITY: setDatasetVisibility,
   SET_GLOBAL_VISIBILITY: setGlobalVisibility,
-  SET_SUBLAYER_VISIBILITY: setSublayerVisibility,
   SET_DATASET_STYLE: setDatasetStyle,
   SET_OPACITY: setOpacity,
   SET_GLOBAL_OPACITY: setGlobalOpacity,
