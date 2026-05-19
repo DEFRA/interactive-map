@@ -40,7 +40,9 @@ export const createDrawInput = ({ drawInteraction, options }) => {
   // Listen to view centre changes for keyboard/touch rubberbanding.
   // pointermove alone won't fire when arrow keys pan the map.
   const onCenterChange = () => {
-    updateSketchRubberbanding()
+    if (interfaceType !== 'pointer') {
+      updateSketchRubberbanding()
+    }
   }
 
   const olMap = drawInteraction.getMap()
