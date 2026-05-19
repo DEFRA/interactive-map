@@ -1,7 +1,8 @@
 import { createDynamicSource } from './fetch/createDynamicSource.js'
 // NOSONAR: applyDatasetDefaults and datasetDefaults are used in processedDatasets.map
 import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
-
+import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
+import { datasetRegistry } from './registry/datasetRegistry.js'
 const isDynamicSource = (dataset) =>
   typeof dataset.geojson === 'string' &&
   !!dataset.idProperty &&
@@ -26,7 +27,9 @@ export const createDatasets = ({
 
   // Initialise all datasets via the adapter, then set up dynamic sources
   const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))
-  adapter.init(processedDatasets, mapStyle).then(() => {
+  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets })
+  datasetRegistry.attach(mappedDatasets)
+  adapter.init(mappedDatasets, mapStyle).then(() => {
     processedDatasets.forEach(dataset => {
       if (!isDynamicSource(dataset)) {
         return
@@ -39,7 +42,8 @@ export const createDatasets = ({
       })
       dynamicSources.set(dataset.id, dynamicSource)
     })
-    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, datasetDefaults } })
+    // TODO - apply dynamic source defaults here, and include in mappedDatasets
+    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, mappedDatasets, orderedDatasets } })
     eventBus.emit('datasets:ready')
   })
 
