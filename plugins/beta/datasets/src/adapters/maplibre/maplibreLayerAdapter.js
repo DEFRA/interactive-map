@@ -1,6 +1,6 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
 import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
-import { addDatasetLayers, addSublayerLayers } from './layerBuilders.js'
+import { addDatasetLayers } from './layerBuilders.js'
 import { getPatternConfigs, hasPattern } from './patternImages.js'
 import { getSymbolConfigs } from './symbolImages.js'
 import { mergeSublayer } from '../../utils/mergeSublayer.js'
@@ -299,21 +299,6 @@ export default class MaplibreLayerAdapter {
     await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
     this._addLayers(registryDataset, mapStyle)
     console.log('Finished updating style for dataset', datasetId)
-  }
-
-  /**
-   * Update a single sublayer's style and re-render its layers.
-   * @param {string} datasetId
-   * @param {Object} mapStyle
-   * @returns {Promise<void>}
-   */
-  async setSublayerStyle (datasetId, mapStyle) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
-    registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
-    await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
-    const pixelRatio = this._pixelRatio
-    addDatasetLayers(this._map, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
-    this._maintainSymbolOrdering(registryDataset.parent)
   }
 
   /**
