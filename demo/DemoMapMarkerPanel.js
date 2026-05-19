@@ -51,7 +51,7 @@ function MapInner () {
         map.addPanel(PANEL_ID, {
           focus: false,
           label: 'Marker',
-          html: '<p class="govuk-body">Information about the selected marker</p>',
+          html: '<p class="govuk-body govuk-!-margin-bottom-0">Information about the selected marker</p>',
           mobile: { slot: 'drawer', dismissible: true },
           tablet: { slot: 'left-top', dismissible: true, width: '280px' },
           desktop: { slot: 'left-top', dismissible: true, width: '280px' }
