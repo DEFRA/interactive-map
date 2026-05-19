@@ -1,15 +1,11 @@
 import { render } from '@testing-library/react'
 import { KeySvgPattern } from './KeySvgPattern'
+import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
 
-import { getKeyPatternPaths } from '../../../../../src/utils/patternUtils.js'
-
-jest.mock('../../../../../src/utils/patternUtils.js', () => ({
-  getKeyPatternPaths: jest.fn(() => ({ border: '<rect/>', content: '<path/>' }))
-}))
-
+const getKeyPatternPaths = jest.spyOn(patternRegistry, 'getKeyPatternPaths')
 const defaultProps = {
   fillPattern: 'dots',
-  patternRegistry: { id: 'registry' },
+  patternRegistry,
   mapStyle: { id: 'default' }
 }
 
@@ -25,7 +21,7 @@ describe('KeySvgPattern', () => {
 
   it('calls getKeyPatternPaths with props, the mapStyle id, and the patternRegistry', () => {
     render(<KeySvgPattern {...defaultProps} />)
-    expect(getKeyPatternPaths).toHaveBeenCalledWith(defaultProps, 'default', defaultProps.patternRegistry)
+    expect(getKeyPatternPaths).toHaveBeenCalledWith(defaultProps, 'default')
   })
 
   it('renders two g elements for border and content', () => {

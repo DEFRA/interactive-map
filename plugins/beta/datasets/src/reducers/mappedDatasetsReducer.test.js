@@ -1,4 +1,5 @@
 import { mappedDatasetsReducer } from './mappedDatasetsReducer'
+import { datasetDefaults } from '../defaults.js'
 
 describe('mappedDatasetsReducer', () => {
   it('handles empty datasets', () => {
@@ -19,7 +20,7 @@ describe('mappedDatasetsReducer', () => {
     }
     const result = mappedDatasetsReducer(state)
     expect(result.mappedDatasets).toEqual({
-      roads: { id: 'roads', label: 'Roads', minZoom: 10 }
+      roads: { ...datasetDefaults, id: 'roads', label: 'Roads', minZoom: 10 }
     })
     expect(result.orderedDatasets).toEqual(['roads'])
   })
