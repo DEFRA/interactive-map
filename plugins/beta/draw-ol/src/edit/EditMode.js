@@ -282,13 +282,18 @@ export const createEditMode = ({ map, manager, options }) => {
     if (!op) {
       return
     }
-    const newIndex = applyUndo(olFeature, op)
+    const previousIndex = state.selectedVertexIndex
+    const restoredIndex = applyUndo(olFeature, op)
     syncGeom()
+    // Only re-select if a vertex was already active — undo must not create a new selection
+    const newIndex = previousIndex >= 0 ? restoredIndex : -1
     setState({
       selectedVertexIndex: newIndex,
       selectedVertexType: newIndex >= 0 ? 'vertex' : null
     })
-    onUpdate?.()
+    if (previousIndex >= 0 && newIndex >= 0) {
+      onUpdate?.()
+    }
   }
 
   // --- Touch handler ---
@@ -302,6 +307,7 @@ export const createEditMode = ({ map, manager, options }) => {
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
+      setState({ selectedVertexIndex: vertexIndex, selectedVertexType: 'vertex' })
       touchHandler.updateTargetPosition()
     },
     onTap (hit) {
@@ -353,6 +359,7 @@ export const createEditMode = ({ map, manager, options }) => {
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
+      setState({ selectedVertexIndex: vertexIndex, selectedVertexType: 'vertex' })
     },
     onInserted ({ insertedIndex }) {
       undoStack.push({ type: 'insert_vertex', vertexIndex: insertedIndex })
