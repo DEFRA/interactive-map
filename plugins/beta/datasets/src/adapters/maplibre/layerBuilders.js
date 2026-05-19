@@ -71,7 +71,7 @@ export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, p
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
 
-export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
+export const addSublayerLayers = (map, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
   const mapStyleId = mapStyle.id
   addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
   addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
@@ -90,14 +90,14 @@ export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, m
  * @returns {string} sourceId
  */
 export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
-  const { sourceId, source, sourceLayer } = registryDataset
+  const { sourceId, source } = registryDataset
   if (source && !map.getSource(sourceId)) {
     map.addSource(sourceId, source)
   }
 
   if (registryDataset.sublayers?.length) {
     registryDataset.sublayers.forEach(sublayer => {
-      addSublayerLayers(map, sublayer, sourceId, sourceLayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio)
+      addSublayerLayers(map, sublayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio)
     })
     return sourceId
   }

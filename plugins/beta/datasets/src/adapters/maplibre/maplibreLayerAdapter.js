@@ -311,10 +311,8 @@ export default class MaplibreLayerAdapter {
     const registryDataset = datasetRegistry.getDataset(datasetId)
     registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
     await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
-    const sourceId = this._datasetSourceMap.get(registryDataset.parentId)
-    const sourceLayer = registryDataset.sourceLayer
     const pixelRatio = this._pixelRatio
-    addSublayerLayers(this._map, registryDataset, sourceId, sourceLayer, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
+    addSublayerLayers(this._map, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, pixelRatio)
     this._maintainSymbolOrdering(registryDataset.parent)
   }
 
