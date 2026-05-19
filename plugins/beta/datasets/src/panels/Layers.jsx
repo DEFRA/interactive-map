@@ -78,6 +78,10 @@ export const Layers = ({ pluginState }) => {
     // console.log('orderedDatasets:', pluginState.orderedDatasets)
   }, [pluginState.datasets, pluginState.mappedDatasets])
 
+  useEffect(() => {
+    console.log('globals:', pluginState.globals)
+  }, [pluginState.globals])
+
   const visibleDatasets = (pluginState.datasets || [])
     .filter(dataset => dataset.showInMenu || hasToggleableSublayers(dataset))
 
