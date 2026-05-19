@@ -111,4 +111,18 @@ export class MapLibreDataset extends Dataset {
       ...(this.filter ? { filter: this.filter } : {})
     }
   }
+
+  getStrokeSource (paint) {
+    return {
+      id: this.strokeLayerId,
+      type: 'line',
+      source: this.sourceId,
+      'source-layer': this.sourceLayer,
+      minzoom: this.minZoom,
+      maxzoom: this.maxZoom,
+      layout: { visibility: this.visibility === 'hidden' ? 'none' : 'visible' },
+      paint,
+      ...(this.filter ? { filter: this.filter } : {})
+    }
+  }
 }

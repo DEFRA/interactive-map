@@ -36,40 +36,31 @@ export const addFillLayer = (map, registryDataset, mapStyleId, patternRegistry, 
   const paint = patternImageId
     ? { 'fill-pattern': patternImageId, 'fill-opacity': registryDataset.opacity || 1 }
     : { 'fill-color': getValueForStyle(registryDataset.style.fill, mapStyleId), 'fill-opacity': registryDataset.opacity || 1 }
-  const fillSource = registryDataset.getFillSource(paint)
-  map.addLayer(fillSource)
+  map.addLayer(registryDataset.getFillSource(paint))
 }
 
 // ─── Stroke layer ─────────────────────────────────────────────────────────────
 
-export const addStrokeLayer = (map, config, layerId, sourceId, sourceLayer, visibility, mapStyleId) => {
-  if (!layerId || !config.stroke || map.getLayer(layerId)) {
+export const addStrokeLayer = (map, registryDataset, mapStyleId) => {
+  const { hasStroke, strokeLayerId } = registryDataset
+
+  if (!hasStroke || map.getLayer(strokeLayerId)) {
     return
   }
-  return
-  map.addLayer({
-    id: layerId,
-    type: 'line',
-    source: sourceId,
-    'source-layer': sourceLayer,
-    minzoom: config.minZoom,
-    maxzoom: config.maxZoom,
-    layout: { visibility },
-    paint: {
-      'line-color': getValueForStyle(config.stroke, mapStyleId),
-      'line-width': config.strokeWidth || 1,
-      'line-opacity': config.opacity || 1,
-      ...(config.strokeDashArray ? { 'line-dasharray': config.strokeDashArray } : {})
-    },
-    ...(config.filter ? { filter: config.filter } : {})
-  })
+  const paint = {
+    'line-color': getValueForStyle(registryDataset.style.stroke, mapStyleId),
+    'line-width': registryDataset.style.strokeWidth || 1,
+    'line-opacity': registryDataset.opacity || 1,
+    ...(registryDataset.style.strokeDashArray ? { 'line-dasharray': registryDataset.style.strokeDashArray } : {})
+  }
+  map.addLayer(registryDataset.getStrokeSource(paint))
 }
 
 // ─── Symbol layer ─────────────────────────────────────────────────────────────
 
 export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, pixelRatio) => {
-  const { symbolLayerId } = registryDataset
-  if (!symbolLayerId || map.getLayer(symbolLayerId)) { return }
+  const { hasSymbol, symbolLayerId } = registryDataset
+  if (!hasSymbol || !symbolRegistry || !symbolLayerId || map.getLayer(symbolLayerId)) { return }
   const symbolDef = symbolRegistry.getSymbolDef(registryDataset.style)
   if (!symbolDef) { return }
   const imageId = symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, pixelRatio)
@@ -82,17 +73,9 @@ export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, p
 
 export const addSublayerLayers = (map, registryDataset, sourceId, sourceLayer, { mapStyle, symbolRegistry, patternRegistry, pixelRatio }) => {
   const mapStyleId = mapStyle.id
-  const merged = { id: registryDataset.id, minZoom: registryDataset.minZoom, maxZoom: registryDataset.maxZoom, filter: registryDataset.filter, ...registryDataset.style }
-  const { strokeLayerId } = getLayerIds({ id: registryDataset.id, ...registryDataset.style })
-  const parentHidden = false // TODO - fix visibility dataset.visibility === 'hidden'
-  const sublayerHidden = registryDataset.visibility === 'hidden'
-  const visibility = (parentHidden || sublayerHidden) ? 'none' : 'visible'
-  if (registryDataset.hasSymbol && symbolRegistry) {
-    addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
-    return
-  }
+  addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
   addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
-  addStrokeLayer(map, merged, strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
+  addStrokeLayer(map, registryDataset, mapStyleId)
 }
 
 /**
@@ -123,15 +106,9 @@ export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry,
   if (registryDataset.isSublayer) {
     return undefined
   }
-  const visibility = registryDataset.visibility === 'hidden' ? 'none' : 'visible'
 
-  if (registryDataset.hasSymbol && symbolRegistry) {
-    addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
-    return sourceId
-  }
-
-  const config = { minZoom: registryDataset.minZoom, maxZoom: registryDataset.maxZoom, filter: registryDataset.filter, ...registryDataset.style }
+  addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
   addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
-  addStrokeLayer(map, config, registryDataset.strokeLayerId, sourceId, sourceLayer, visibility, mapStyleId)
+  addStrokeLayer(map, registryDataset, mapStyleId)
   return sourceId
 }
