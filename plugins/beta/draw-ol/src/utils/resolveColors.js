@@ -32,7 +32,6 @@ export const resolveColors = (mapStyle, pluginConfig = {}) => {
     shapeStroke: r('shapeStroke'),
     strokeWidth: pluginConfig.strokeWidth ?? DEFAULTS.strokeWidth,
     shapeFill: r('shapeFill'),
-    sketchFill: r('sketchFill'),
     snapVertex: r('snapVertex'),
     snapEdge: r('snapEdge'),
     mapStyleId: styleId

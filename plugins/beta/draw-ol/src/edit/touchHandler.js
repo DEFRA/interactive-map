@@ -127,7 +127,9 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
       hideTouchTarget(targetEl)
       return
     }
-    showTouchTarget(targetEl, olToCSS(coordToPixel(map, vertecies[selectedVertexIndex])))
+    const px = coordToPixel(map, vertecies[selectedVertexIndex])
+    if (!px) { hideTouchTarget(targetEl); return }
+    showTouchTarget(targetEl, olToCSS(px))
   }
 
   // Reposition on every render — keeps target anchored during pinch-zoom and pan.

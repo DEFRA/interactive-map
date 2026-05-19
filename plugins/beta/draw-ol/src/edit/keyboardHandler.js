@@ -1,7 +1,6 @@
 import { coordToPixel, nudgeCoord } from '../utils/olCoords.js'
 import { spatialNavigate } from '../utils/spatial.js'
 import { moveVertex, insertAtMidpoint } from './vertexOps.js'
-import { SNAP_RADIUS_PX } from '../snap/snapEngine.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const NUDGE_PX = 1
@@ -126,8 +125,8 @@ export const createKeyboardHandler = ({
       const nudgeLenSq = nudgeVec[0] ** 2 + nudgeVec[1] ** 2
       const dot = actualVec[0] * nudgeVec[0] + actualVec[1] * nudgeVec[1]
       if (nudgeLenSq > 0 && dot / nudgeLenSq < 0.5) {
-        const escape = SNAP_RADIUS_PX + 1
-        newCoord = nudgeCoord(map, current, dx !== 0 ? Math.sign(dx) * escape : 0, dy !== 0 ? Math.sign(dy) * escape : 0)
+        const escapePx = snap.snapRadius + 1
+        newCoord = nudgeCoord(map, current, dx === 0 ? 0 : Math.sign(dx) * escapePx, dy === 0 ? 0 : Math.sign(dy) * escapePx)
       }
     }
 

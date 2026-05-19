@@ -13,11 +13,10 @@
  */
 
 import Interaction from 'ol/interaction/Interaction.js'
-import { SNAP_RADIUS_PX } from './snapEngine.js'
 
 const SNAP_EVENTS = new Set(['pointermove', 'pointerdrag', 'pointerdown', 'pointerup', 'singleclick', 'click'])
 
-export const createSnapInteraction = (engine, indicator) => {
+export const createSnapInteraction = (engine, indicator, snapRadius) => {
   const interaction = new Interaction({
     handleEvent (mapBrowserEvent) {
       if (!interaction.getActive()) {
@@ -35,7 +34,7 @@ export const createSnapInteraction = (engine, indicator) => {
         return true
       }
 
-      const result = engine.query(mapBrowserEvent.coordinate, SNAP_RADIUS_PX)
+      const result = engine.query(mapBrowserEvent.coordinate, snapRadius)
       if (result) {
         mapBrowserEvent.coordinate = result.coord.slice()
       }

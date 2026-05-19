@@ -12,18 +12,18 @@
  *   snap.destroy()        — full cleanup
  */
 
-import { createSnapEngine, SNAP_RADIUS_PX } from './snapEngine.js'
+import { createSnapEngine } from './snapEngine.js'
 import { createSnapIndicator } from './snapIndicator.js'
 import { createSnapInteraction } from './snapInteraction.js'
 
-export const createSnapManager = (map, snapLayers, colors) => {
+export const createSnapManager = (map, snapLayers, colors, snapRadius) => {
   if (!snapLayers?.length) {
     return null
   }
 
   const engine = createSnapEngine(map, snapLayers)
   const indicator = createSnapIndicator(map, colors)
-  const interaction = createSnapInteraction(engine, indicator)
+  const interaction = createSnapInteraction(engine, indicator, snapRadius)
 
   map.addInteraction(interaction)
   interaction.setActive(false) // matches reducer initial state: snap: false
@@ -36,9 +36,11 @@ export const createSnapManager = (map, snapLayers, colors) => {
      * coordinate, or the original coordinate when no snap candidate is found.
      * Returns original coord unchanged when snap is disabled.
      */
+    snapRadius,
+
     apply (coord) {
-      if (!active) return coord
-      const result = engine.query(coord, SNAP_RADIUS_PX)
+      if (!active) { return coord }
+      const result = engine.query(coord, snapRadius)
       if (result) {
         indicator.show(result.coord, result.type)
         return result.coord
