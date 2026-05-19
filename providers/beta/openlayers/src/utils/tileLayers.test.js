@@ -18,7 +18,7 @@ jest.mock('ol/TileState.js', () => ({ __esModule: true, default: { ERROR: 'error
 jest.mock('ol/source/VectorTile.js', () => ({ __esModule: true, default: jest.fn(() => mockVectorTileSourceInstance) }))
 jest.mock('ol/layer/VectorTile.js', () => ({ __esModule: true, default: jest.fn(() => mockVectorTileLayerInstance) }))
 jest.mock('ol/format/MVT.js', () => ({ __esModule: true, default: jest.fn(() => mockMVTInstance) }))
-jest.mock('ol-mapbox-style', () => ({ __esModule: true, stylefunction: jest.fn() }))
+jest.mock('ol-mapbox-style', () => ({ __esModule: true, stylefunction: jest.fn(), recordStyleLayer: jest.fn() }))
 
 const flushPromises = () => new Promise(resolve => setTimeout(resolve, 0))
 

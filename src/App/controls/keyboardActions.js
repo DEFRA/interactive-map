@@ -50,7 +50,7 @@ export const createKeyboardActions = (mapProvider, announce, {
     },
 
     highlightNextLabel: (e) => {
-      if (!readMapText && mapProvider.highlightNextLabel) {
+      if (!readMapText || !mapProvider.highlightNextLabel) {
         return
       }
       const label = mapProvider.highlightNextLabel(e.key)
@@ -58,7 +58,7 @@ export const createKeyboardActions = (mapProvider, announce, {
     },
 
     highlightLabelAtCenter: () => {
-      if (!readMapText && mapProvider.highlightNextLabel) {
+      if (!readMapText || !mapProvider.highlightLabelAtCenter) {
         return
       }
       const label = mapProvider.highlightLabelAtCenter()

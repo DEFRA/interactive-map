@@ -63,6 +63,7 @@ export const EditVertexMode = {
       }
       this._ctx.store.render()
     }
+    this.map._drawEditContainer = options.container
     this.addTouchVertexTarget(state)
 
     // Clear any snap indicator when entering edit mode
@@ -441,6 +442,7 @@ export const EditVertexMode = {
   },
 
   onStop (state) {
+    this.map._drawEditContainer = null
     const h = this.handlers
     state.container.removeEventListener('pointerdown', h.pointerdown)
     state.container.removeEventListener('pointermove', h.pointermove)

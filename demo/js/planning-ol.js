@@ -47,7 +47,7 @@ const interactiveMap = new InteractiveMap('map', {
   hasExitButton: true,
   plugins: [
     mapStylesPlugin({
-      mapStyles: ngdMapStyles27700,
+      mapStyles: vtsMapStyles27700, // ngdMapStyles27700,
       manifest: {
         buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false } }],
         panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: true } }]
