@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { areAllContiguous } from '../utils/spatial.js'
+import { areAllContiguous, isContiguousWithAny } from '../utils/spatial.js'
 import { getFeaturesAtPoint, findMatchingFeature, buildLayerConfigMap } from '../utils/featureQueries.js'
 import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
@@ -16,7 +16,6 @@ import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
  * @param {number} scale - scaleFactor for the current mapSize (e.g. 1.5 for medium)
  * @returns {string|null}
  */
-
 const findMarkerAtPoint = (markers, point, scale) => {
   for (const marker of markers.items) {
     const el = markers.markerRefs?.get(marker.id)
@@ -42,13 +41,11 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
   const lastEmittedSelectionChange = useRef(null)
 
   useEffect(() => {
-    // Skip if features exist but bounds not yet calculated
     const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
     if (awaitingBounds) {
       return
     }
 
-    // Skip if selection was already empty and remains empty
     const prev = lastEmittedSelectionChange.current
     const wasEmpty = prev === null || (prev.features.length === 0 && prev.markers.length === 0)
     if (wasEmpty && selectedFeatures.length === 0 && selectedMarkers.length === 0) {
@@ -64,6 +61,95 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
 
     lastEmittedSelectionChange.current = { features: selectedFeatures, markers: selectedMarkers }
   }, [selectedFeatures, selectedMarkers, selectionBounds])
+}
+
+// Expands a feature record to all its loaded tile fragments, falling back to stored geometry.
+const expandFragments = (f, mapProvider) => {
+  const frags = mapProvider.getFeatureFragments?.(f.layerId, f.featureId, f.idProperty) ?? []
+  if (frags.length > 0) {
+    return frags
+  }
+  return f.geometry ? [f.geometry] : []
+}
+
+// Flood-fill from features[0]; returns trimmed array if the set splits, null if still connected.
+const trimToContiguousGroup = (features, mapProvider) => {
+  const expanded = features.map(f => expandFragments(f, mapProvider))
+  const connected = new Set([0])
+  let changed = true
+  while (changed) {
+    changed = false
+    for (let i = 1; i < features.length; i++) {
+      if (connected.has(i)) {
+        continue
+      }
+      const connectedGeoms = [...connected].flatMap(idx => expanded[idx])
+      if (expanded[i].some(geom => isContiguousWithAny(geom, connectedGeoms))) {
+        connected.add(i)
+        changed = true
+      }
+    }
+  }
+  if (connected.size === features.length) {
+    return null
+  }
+  return [...connected].map(idx => features[idx])
+}
+
+const buildTogglePayload = (featureId, multiSelect, config, feature) => ({
+  featureId,
+  multiSelect,
+  layerId: config.layerId,
+  idProperty: config.idProperty,
+  properties: feature.properties,
+  geometry: feature.geometry
+})
+
+// Handles contiguous enforcement for a click. Returns true when it dispatches itself.
+const resolveContiguousDispatch = ({ featureId, feature, config, selectedFeatures, mapProvider, dispatch, multiSelect }) => {
+  if (!selectedFeatures.length) {
+    return false
+  }
+
+  const existingIndex = selectedFeatures.findIndex(
+    f => f.featureId === featureId && f.layerId === config.layerId
+  )
+
+  if (existingIndex !== -1) {
+    // Deselect: trim to first connected group if the removal splits the selection.
+    if (selectedFeatures.length < 3) {
+      return false
+    }
+    const remaining = selectedFeatures.filter((_, i) => i !== existingIndex)
+    const trimmed = trimToContiguousGroup(remaining, mapProvider)
+    if (!trimmed) {
+      return false
+    }
+    dispatch({ type: 'SET_SELECTED_FEATURES', payload: trimmed })
+    return true
+  }
+
+  // Add: replace selection if the new feature doesn't touch any existing feature.
+  const newGeoms = expandFragments(
+    { layerId: config.layerId, featureId, idProperty: config.idProperty, geometry: feature.geometry },
+    mapProvider
+  )
+  const expandedSelected = selectedFeatures
+    .filter(f => f.geometry?.type)
+    .flatMap(f => expandFragments(f, mapProvider))
+
+  if (!newGeoms.length || !expandedSelected.length) {
+    return false
+  }
+  if (newGeoms.some(geom => isContiguousWithAny(geom, expandedSelected))) {
+    return false
+  }
+
+  dispatch({
+    type: 'TOGGLE_SELECTED_FEATURES',
+    payload: { ...buildTogglePayload(featureId, multiSelect, config, feature), replaceAll: true }
+  })
+  return true
 }
 
 /**
@@ -83,28 +169,31 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
  */
 export const useInteractionHandlers = ({ mapState, pluginState, services, mapProvider }) => {
   const { markers, mapSize } = mapState
-  const { dispatch, layers, interactionModes, multiSelect, marker: markerOptions, tolerance, selectedFeatures, selectedMarkers, selectionBounds, deselectOnClickOutside } = pluginState
+  const {
+    dispatch, layers, interactionModes, multiSelect, contiguous,
+    marker: markerOptions, tolerance, selectedFeatures, selectedMarkers,
+    selectionBounds, deselectOnClickOutside
+  } = pluginState
   const { eventBus } = services
   const layerConfigMap = buildLayerConfigMap(layers)
   const scale = scaleFactor[mapSize] ?? 1
+
   const processFeatureMatch = useCallback(({ feature, config }) => {
     markers.remove('location')
     const featureId = feature.properties?.[config.idProperty] ?? feature.id
     if (featureId == null) {
       return
     }
-    dispatch({
-      type: 'TOGGLE_SELECTED_FEATURES',
-      payload: {
-        featureId,
-        multiSelect,
-        layerId: config.layerId,
-        idProperty: config.idProperty,
-        properties: feature.properties,
-        geometry: feature.geometry
+    if (contiguous && multiSelect) {
+      const handled = resolveContiguousDispatch(
+        { featureId, feature, config, selectedFeatures, mapProvider, dispatch, multiSelect }
+      )
+      if (handled) {
+        return
       }
-    })
-  }, [markers, dispatch, multiSelect])
+    }
+    dispatch({ type: 'TOGGLE_SELECTED_FEATURES', payload: buildTogglePayload(featureId, multiSelect, config, feature) })
+  }, [markers, dispatch, multiSelect, contiguous, selectedFeatures, mapProvider])
 
   const processFallback = useCallback(({ coords }) => {
     const canPlace = interactionModes.includes('placeMarker')
@@ -156,6 +245,7 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
     processFallback,
     scale
   ])
+
   useSelectionChangeEmitter(eventBus, selectedFeatures, selectedMarkers, selectionBounds)
   return { handleInteraction }
 }

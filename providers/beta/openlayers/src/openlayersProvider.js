@@ -11,6 +11,7 @@ import { attachAppEvents, createTileSource, createVectorTileLayer, createOGCVect
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
+import { collectTileFragments } from './utils/vtTileFragments.js'
 
 const CRS = 'EPSG:27700'
 
@@ -206,6 +207,10 @@ export default class OpenLayersProvider {
 
   getFeaturesAtPoint (point, options) {
     return queryFeatures(this.map, point, options)
+  }
+
+  getFeatureFragments (layerId, featureId, idProperty) {
+    return collectTileFragments(this.map, layerId, featureId, idProperty)
   }
 
   getVisibleFeatures (_layerIds) {

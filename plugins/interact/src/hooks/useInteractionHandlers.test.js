@@ -1,12 +1,14 @@
 import { renderHook, act } from '@testing-library/react'
 import { useInteractionHandlers } from './useInteractionHandlers.js'
 import * as featureQueries from '../utils/featureQueries.js'
+import * as spatial from '../utils/spatial.js'
 /* ------------------------------------------------------------------ */
 /* Mocks                                                              */
 /* ------------------------------------------------------------------ */
 
 jest.mock('../utils/spatial.js', () => ({
-  areAllContiguous: jest.fn(() => false)
+  areAllContiguous: jest.fn(() => false),
+  isContiguousWithAny: jest.fn(() => true)
 }))
 jest.mock('../utils/featureQueries.js', () => ({
   getFeaturesAtPoint: jest.fn(),
@@ -53,7 +55,7 @@ const setup = (pluginOverrides = {}, markerItems = [], markerRefs = new Map()) =
     services: {
       eventBus: { emit: jest.fn() }
     },
-    mapProvider: {}
+    mapProvider: { getFeatureFragments: jest.fn(() => []) }
   }
 
   const utils = renderHook(() => useInteractionHandlers(deps))
@@ -74,6 +76,7 @@ beforeEach(() => {
     feature: baseFeature,
     config: { layerId: 'parcels', idProperty: 'parcelId' }
   })
+  spatial.isContiguousWithAny.mockReturnValue(true)
 })
 
 /* ------------------------------------------------------------------ */
@@ -336,7 +339,7 @@ it('does not emit selectionchange when features are selected but bounds not yet 
       selectionBounds: null
     },
     services: { eventBus: { emit: jest.fn() } },
-    mapProvider: {}
+    mapProvider: { getFeatureFragments: jest.fn(() => []) }
   }
 
   renderHook(() => useInteractionHandlers(deps))
@@ -353,7 +356,7 @@ it('emits selectionchange once when bounds exist', () => {
       selectionBounds: { sw: [0, 0], ne: [1, 1] }
     },
     services: { eventBus: { emit: jest.fn() } },
-    mapProvider: {}
+    mapProvider: { getFeatureFragments: jest.fn(() => []) }
   }
 
   renderHook(() => useInteractionHandlers(deps))
@@ -378,7 +381,7 @@ it('skips emission when selection remains empty after being cleared', () => {
       mapState: { markers: { items: [], markerRefs: new Map() } },
       pluginState: { selectedFeatures: features, selectedMarkers: [], selectionBounds: { b: 1 } },
       services: { eventBus },
-      mapProvider: {}
+      mapProvider: { getFeatureFragments: jest.fn(() => []) }
     }),
     { initialProps: { features: [{ id: 'f1' }] } }
   )
@@ -417,4 +420,234 @@ it('logs features when debug mode is enabled', () => {
   )
 
   logSpy.mockRestore()
+})
+
+/* ------------------------------------------------------------------ */
+/* contiguous enforcement                                             */
+/* ------------------------------------------------------------------ */
+
+describe('contiguous enforcement', () => {
+  const existingFeature = {
+    featureId: 'P0',
+    layerId: 'parcels',
+    geometry: { type: 'Polygon', coordinates: [] }
+  }
+
+  it('allows first selection when no features already selected', () => {
+    spatial.isContiguousWithAny.mockReturnValue(false)
+    const { result, deps } = setup({ contiguous: true, multiSelect: true, selectedFeatures: [] })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+
+  it('allows adding a contiguous feature', () => {
+    spatial.isContiguousWithAny.mockReturnValue(true)
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: true,
+      selectedFeatures: [existingFeature]
+    })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+
+  it('replaces selection when clicking a non-contiguous feature', () => {
+    spatial.isContiguousWithAny.mockReturnValue(false)
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: true,
+      selectedFeatures: [existingFeature]
+    })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'TOGGLE_SELECTED_FEATURES',
+        payload: expect.objectContaining({ replaceAll: true })
+      })
+    )
+  })
+
+  it('allows deselecting an already-selected feature regardless of contiguity', () => {
+    spatial.isContiguousWithAny.mockReturnValue(false)
+    const alreadySelected = { featureId: 'P1', layerId: 'parcels', geometry: { type: 'Polygon', coordinates: [] } }
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: true,
+      selectedFeatures: [alreadySelected]
+    })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+
+  it('does not enforce contiguous when contiguous is false', () => {
+    spatial.isContiguousWithAny.mockReturnValue(false)
+    const { result, deps } = setup({
+      contiguous: false,
+      multiSelect: true,
+      selectedFeatures: [existingFeature]
+    })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+
+  it('does not enforce contiguous in single-select mode', () => {
+    spatial.isContiguousWithAny.mockReturnValue(false)
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: false,
+      selectedFeatures: [existingFeature]
+    })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+
+  it('falls through to normal toggle when selected features have no usable geometry', () => {
+    // expandedSelected ends up empty — neither replace nor block should trigger
+    const noGeomFeature = { featureId: 'P0', layerId: 'parcels' }
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: true,
+      selectedFeatures: [noGeomFeature]
+    })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        type: 'TOGGLE_SELECTED_FEATURES',
+        payload: expect.not.objectContaining({ replaceAll: true })
+      })
+    )
+  })
+
+  it('uses tile fragments from provider when available', () => {
+    const frag = { type: 'Polygon', coordinates: [] }
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: true,
+      selectedFeatures: [existingFeature]
+    })
+    deps.mapProvider.getFeatureFragments.mockReturnValue([frag])
+
+    click(result)
+
+    expect(deps.mapProvider.getFeatureFragments).toHaveBeenCalled()
+  })
+
+  it('falls back to stored geometry when provider has no getFeatureFragments', () => {
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: true,
+      selectedFeatures: [existingFeature]
+    })
+    deps.mapProvider.getFeatureFragments = undefined
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalled()
+  })
+
+  it('falls through to normal toggle when clicked feature has no geometry', () => {
+    featureQueries.findMatchingFeature.mockReturnValue({
+      feature: { properties: { parcelId: 'P1' }, geometry: null, layer: { id: 'parcels' } },
+      config: { layerId: 'parcels', idProperty: 'parcelId' }
+    })
+    const { result, deps } = setup({
+      contiguous: true,
+      multiSelect: true,
+      selectedFeatures: [existingFeature]
+    })
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+    )
+  })
+
+  describe('deselect splits selection', () => {
+    const featureA = { featureId: 'P0', layerId: 'parcels', geometry: { type: 'Polygon', coordinates: [] } }
+    const featureB = { featureId: 'P1', layerId: 'parcels', geometry: { type: 'Polygon', coordinates: [] } }
+    const featureC = { featureId: 'P2', layerId: 'parcels', geometry: { type: 'Polygon', coordinates: [] } }
+
+    it('trims to first contiguous group when deselecting the bridge feature', () => {
+      // A-B-C selected; deselect B (baseFeature returns P1); A and C are not contiguous
+      spatial.isContiguousWithAny.mockReturnValue(false)
+      const { result, deps } = setup({
+        contiguous: true,
+        multiSelect: true,
+        selectedFeatures: [featureA, featureB, featureC]
+      })
+
+      click(result) // clicks P1 = featureB
+
+      expect(deps.pluginState.dispatch).toHaveBeenCalledWith({
+        type: 'SET_SELECTED_FEATURES',
+        payload: [featureA]
+      })
+    })
+
+    it('uses normal toggle when deselecting an end feature leaves a contiguous set', () => {
+      // A-B-C selected; deselect C (override mock to return P2); A and B are still contiguous
+      featureQueries.findMatchingFeature.mockReturnValue({
+        feature: { properties: { parcelId: 'P2' }, geometry: { type: 'Polygon' }, layer: { id: 'parcels' } },
+        config: { layerId: 'parcels', idProperty: 'parcelId' }
+      })
+      // isContiguousWithAny defaults to true — A and B are contiguous
+      const { result, deps } = setup({
+        contiguous: true,
+        multiSelect: true,
+        selectedFeatures: [featureA, featureB, featureC]
+      })
+
+      click(result) // clicks P2 = featureC
+
+      expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+      )
+      expect(deps.pluginState.dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'SET_SELECTED_FEATURES' })
+      )
+    })
+
+    it('does not check for split when fewer than 3 features selected', () => {
+      spatial.isContiguousWithAny.mockReturnValue(false)
+      const { result, deps } = setup({
+        contiguous: true,
+        multiSelect: true,
+        selectedFeatures: [featureA, featureB] // only 2 — deselect goes straight to normal toggle
+      })
+
+      click(result) // clicks P1 = featureB
+
+      expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'TOGGLE_SELECTED_FEATURES' })
+      )
+      expect(deps.pluginState.dispatch).not.toHaveBeenCalledWith(
+        expect.objectContaining({ type: 'SET_SELECTED_FEATURES' })
+      )
+    })
+  })
 })
