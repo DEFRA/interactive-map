@@ -48,4 +48,15 @@ const applyDatasetDefaults = (dataset, defaults) => {
   return { ...topLevelDefaults, ...topLevel, ...mergedStyle }
 }
 
-export { datasetDefaults, hasCustomVisualStyle, applyDatasetDefaults }
+const applyDatasetDefaultsWithoutFlattening = (dataset) => {
+  const datasetWithDefaults = { ...datasetDefaults, ...dataset, style: { ...datasetDefaults.style, ...dataset.style } }
+
+  const style = dataset.style || {}
+  if (!('symbolDescription' in style) && hasCustomVisualStyle(style)) {
+    delete datasetWithDefaults.style.symbolDescription
+  }
+  STYLE_PROPS.forEach(prop => delete datasetWithDefaults[prop])
+  return datasetWithDefaults
+}
+
+export { datasetDefaults, hasCustomVisualStyle, applyDatasetDefaults, applyDatasetDefaultsWithoutFlattening }

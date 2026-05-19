@@ -41,6 +41,13 @@ export const patternRegistry = {
     patterns.clear()
   },
 
+  initialise () {
+    // Seed built-in patterns
+    Object.entries(BUILT_IN_PATTERNS).forEach(([id, svgContent]) => {
+      this.register(id, svgContent)
+    })
+  },
+
   /**
    * Returns the raw (un-coloured) inner SVG content for a style's pattern.
    * Precedence: inline fillPatternSvgContent → named fillPattern from registry.
@@ -102,7 +109,4 @@ export const patternRegistry = {
   }
 }
 
-// Seed built-in patterns
-Object.entries(BUILT_IN_PATTERNS).forEach(([id, svgContent]) => {
-  patternRegistry.register(id, svgContent)
-})
+patternRegistry.initialise() // Seed built-in patterns
