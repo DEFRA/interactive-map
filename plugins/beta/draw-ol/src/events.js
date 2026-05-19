@@ -69,7 +69,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
   }
 
   const onVertexChange = (e) => {
-    dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertecies: e.numVertecies } })
+    dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } })
   }
 
   const onUndoChange = (length) => {

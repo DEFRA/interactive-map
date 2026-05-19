@@ -22,12 +22,22 @@ const closestPointOnSegment = (p, a, b) => {
   return [a[0] + t * dx, a[1] + t * dy]
 }
 
+const bestOf = (current, candidate) => better(current, candidate) ? candidate : current
+
 const better = (a, b) => {
-  if (!a) return !!b
-  if (!b) return false
+  if (!a) {
+    return !!b
+  }
+  if (!b) {
+    return false
+  }
   // Vertex always beats edge — only compare distance within the same type
-  if (a.type === 'edge' && b.type === 'vertex') return true
-  if (a.type === 'vertex' && b.type === 'edge') return false
+  if (a.type === 'edge' && b.type === 'vertex') {
+    return true
+  }
+  if (a.type === 'vertex' && b.type === 'edge') {
+    return false
+  }
   return b.distSq < a.distSq
 }
 
@@ -45,10 +55,7 @@ const testCoords = (coords, query, toleranceSq, isClosedRing) => {
     const v = coords[i]
     const dSq = dist2(query, v)
     if (dSq <= toleranceSq) {
-      const candidate = { type: 'vertex', coord: [v[0], v[1]], distSq: dSq }
-      if (better(best, candidate)) {
-        best = candidate
-      }
+      best = bestOf(best, { type: 'vertex', coord: [v[0], v[1]], distSq: dSq })
     }
   }
 
@@ -58,10 +65,7 @@ const testCoords = (coords, query, toleranceSq, isClosedRing) => {
     const pt = closestPointOnSegment(query, a, b)
     const dSq = dist2(query, pt)
     if (dSq <= toleranceSq) {
-      const candidate = { type: 'edge', coord: pt, distSq: dSq }
-      if (better(best, candidate)) {
-        best = candidate
-      }
+      best = bestOf(best, { type: 'edge', coord: pt, distSq: dSq })
     }
   }
 
@@ -75,23 +79,8 @@ const testCoords = (coords, query, toleranceSq, isClosedRing) => {
  * isClosedRing: VTile polygon rings — first coord is NOT duplicated at end (unlike OL Vector)
  *   so treat all coords as unique vertices and add a closing edge back to first
  */
-const testFlatCoords = (flat, start, end, query, toleranceSq, isClosedRing) => {
+const getBestEdge = (flat, start, numPairs, edgeCount, query, toleranceSq) => {
   let best = null
-  const numPairs = (end - start) / 2
-  const edgeCount = isClosedRing ? numPairs : numPairs - 1
-
-  for (let i = 0; i < numPairs; i++) {
-    const xi = start + i * 2
-    const v = [flat[xi], flat[xi + 1]]
-    const dSq = dist2(query, v)
-    if (dSq <= toleranceSq) {
-      const candidate = { type: 'vertex', coord: v, distSq: dSq }
-      if (better(best, candidate)) {
-        best = candidate
-      }
-    }
-  }
-
   for (let i = 0; i < edgeCount; i++) {
     const ai = start + i * 2
     const bi = start + ((i + 1) % numPairs) * 2
@@ -100,14 +89,66 @@ const testFlatCoords = (flat, start, end, query, toleranceSq, isClosedRing) => {
     const pt = closestPointOnSegment(query, a, b)
     const dSq = dist2(query, pt)
     if (dSq <= toleranceSq) {
-      const candidate = { type: 'edge', coord: pt, distSq: dSq }
-      if (better(best, candidate)) {
-        best = candidate
-      }
+      best = bestOf(best, { type: 'edge', coord: pt, distSq: dSq })
     }
   }
-
   return best
+}
+
+const getBestPair = (flat, start, numPairs, edgeCount, query, toleranceSq) => {
+  let best = null
+  for (let i = 0; i < numPairs; i++) {
+    const xi = start + i * 2
+    const v = [flat[xi], flat[xi + 1]]
+    const dSq = dist2(query, v)
+    if (dSq <= toleranceSq) {
+      best = bestOf(best, { type: 'vertex', coord: v, distSq: dSq })
+    }
+  }
+  return bestOf(best, getBestEdge(flat, start, numPairs, edgeCount, query, toleranceSq))
+}
+
+const testFlatCoords = (flat, start, end, query, toleranceSq, isClosedRing) => {
+  const numPairs = (end - start) / 2
+  const edgeCount = isClosedRing ? numPairs : numPairs - 1
+  return getBestPair(flat, start, numPairs, edgeCount, query, toleranceSq)
+}
+
+const olGeomHandlers = {
+  Point (geom, query, toleranceSq) {
+    const c = geom.getCoordinates()
+    const dSq = dist2(query, c)
+    return dSq <= toleranceSq ? { type: 'vertex', coord: [c[0], c[1]], distSq: dSq } : null
+  },
+  LineString (geom, query, toleranceSq) {
+    return testCoords(geom.getCoordinates(), query, toleranceSq, false)
+  },
+  LinearRing (geom, query, toleranceSq) {
+    return testCoords(geom.getCoordinates(), query, toleranceSq, true)
+  },
+  Polygon (geom, query, toleranceSq) {
+    let best = null
+    for (const ring of geom.getCoordinates()) {
+      best = bestOf(best, testCoords(ring, query, toleranceSq, true))
+    }
+    return best
+  },
+  MultiLineString (geom, query, toleranceSq) {
+    let best = null
+    for (const line of geom.getCoordinates()) {
+      best = bestOf(best, testCoords(line, query, toleranceSq, false))
+    }
+    return best
+  },
+  MultiPolygon (geom, query, toleranceSq) {
+    let best = null
+    for (const polygon of geom.getCoordinates()) {
+      for (const ring of polygon) {
+        best = bestOf(best, testCoords(ring, query, toleranceSq, true))
+      }
+    }
+    return best
+  }
 }
 
 /**
@@ -121,42 +162,8 @@ export const testOLFeature = (feature, query, toleranceSq) => {
   if (!geom) {
     return null
   }
-  const type = geom.getType()
-  let best = null
-
-  const update = (r) => {
-    if (better(best, r)) {
-      best = r
-    }
-  }
-
-  if (type === 'Point') {
-    const c = geom.getCoordinates()
-    const dSq = dist2(query, c)
-    if (dSq <= toleranceSq) {
-      update({ type: 'vertex', coord: [c[0], c[1]], distSq: dSq })
-    }
-  } else if (type === 'LineString' || type === 'LinearRing') {
-    update(testCoords(geom.getCoordinates(), query, toleranceSq, type === 'LinearRing'))
-  } else if (type === 'Polygon') {
-    for (const ring of geom.getCoordinates()) {
-      update(testCoords(ring, query, toleranceSq, true))
-    }
-  } else if (type === 'MultiLineString') {
-    for (const line of geom.getCoordinates()) {
-      update(testCoords(line, query, toleranceSq, false))
-    }
-  } else if (type === 'MultiPolygon') {
-    for (const polygon of geom.getCoordinates()) {
-      for (const ring of polygon) {
-        update(testCoords(ring, query, toleranceSq, true))
-      }
-    }
-  } else {
-    // No action
-  }
-
-  return best
+  const handler = olGeomHandlers[geom.getType()]
+  return handler ? handler(geom, query, toleranceSq) : null
 }
 
 /**
@@ -170,25 +177,19 @@ export const testRenderFeature = (feature, query, toleranceSq) => {
   const flat = feature.getFlatCoordinates()
   let best = null
 
-  const update = (r) => {
-    if (better(best, r)) {
-      best = r
-    }
-  }
-
   if (type === 'Point') {
     const dSq = dist2(query, flat)
     if (dSq <= toleranceSq) {
-      update({ type: 'vertex', coord: [flat[0], flat[1]], distSq: dSq })
+      best = bestOf(best, { type: 'vertex', coord: [flat[0], flat[1]], distSq: dSq })
     }
   } else if (type === 'LineString') {
-    update(testFlatCoords(flat, 0, flat.length, query, toleranceSq, false))
+    best = bestOf(best, testFlatCoords(flat, 0, flat.length, query, toleranceSq, false))
   } else if (type === 'Polygon' || type === 'MultiLineString') {
     const ends = feature.getEnds()
     let start = 0
     const isClosedRing = type === 'Polygon'
     for (const end of ends) {
-      update(testFlatCoords(flat, start, end, query, toleranceSq, isClosedRing))
+      best = bestOf(best, testFlatCoords(flat, start, end, query, toleranceSq, isClosedRing))
       start = end
     }
   } else {

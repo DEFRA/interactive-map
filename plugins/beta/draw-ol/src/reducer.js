@@ -3,7 +3,7 @@ const initialState = {
   feature: null,
   tempFeature: null,
   selectedVertexIndex: -1,
-  numVertecies: null,
+  numVertices: null,
   undoStackLength: 0,
   snap: false,
   hasSnapLayers: false
@@ -21,7 +21,7 @@ const actions = {
   SET_SELECTED_VERTEX_INDEX: (state, payload) => ({
     ...state,
     selectedVertexIndex: payload.index,
-    numVertecies: payload.numVertecies
+    numVertices: payload.numVertices
   }),
 
   SET_UNDO_STACK_LENGTH: (state, payload) => ({

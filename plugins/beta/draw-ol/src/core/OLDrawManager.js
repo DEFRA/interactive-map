@@ -119,10 +119,21 @@ export class OLDrawManager {
 
   // --- Feature store delegation ---
 
-  get (id) { return this.store.get(id) }
-  add (geojsonFeature) { return this.store.add(geojsonFeature) }
-  delete (id) { return this.store.remove(id) }
-  deleteAll () { return this.store.clear() }
+  get (id) {
+    return this.store.get(id)
+  }
+
+  add (geojsonFeature) {
+    return this.store.add(geojsonFeature)
+  }
+
+  delete (id) {
+    return this.store.remove(id)
+  }
+
+  deleteAll () {
+    return this.store.clear()
+  }
 
   // --- Cleanup ---
 

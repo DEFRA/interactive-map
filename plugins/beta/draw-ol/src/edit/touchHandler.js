@@ -18,10 +18,14 @@ const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState,
     const touch = e.touches[0]
     const onTarget = isOnTouchTarget(e.target)
     tapStart = { x: touch.clientX, y: touch.clientY, time: Date.now(), onTarget }
-    if (!onTarget) { return }
-    const { selectedVertexIndex, vertecies } = getState()
-    const vertex = vertecies[selectedVertexIndex]
-    if (!vertex) { return }
+    if (!onTarget) {
+      return
+    }
+    const { selectedVertexIndex, vertices } = getState()
+    const vertex = vertices[selectedVertexIndex]
+    if (!vertex) {
+      return
+    }
     const tOl = map.getEventPixel({ clientX: touch.clientX, clientY: touch.clientY })
     const vertexPx = coordToPixel(map, vertex)
     const style = getComputedStyle(targetEl)
@@ -34,16 +38,20 @@ const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState,
   }
 
   const onTouchmove = (e) => {
-    if (!isOnTouchTarget(e.target) || dragStartIndex == null) { return }
+    if (!isOnTouchTarget(e.target) || dragStartIndex == null) {
+      return
+    }
     e.preventDefault()
     const tOl = map.getEventPixel({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY })
     const rawCoord = pixelToCoord(map, { x: tOl[0] - vertexTouchDelta.x, y: tOl[1] - vertexTouchDelta.y })
     const newCoord = snap ? snap.apply(rawCoord) : rawCoord
     snap?.hideIndicator()
-    const { olFeature, vertecies } = getState()
-    if (!olFeature) { return }
+    const { olFeature, vertices } = getState()
+    if (!olFeature) {
+      return
+    }
     moveVertex(olFeature, dragStartIndex, newCoord)
-    setState({ vertecies: vertecies.map((c, i) => i === dragStartIndex ? newCoord : c) })
+    setState({ vertices: vertices.map((c, i) => i === dragStartIndex ? newCoord : c) })
     showTouchTarget(targetEl, olToCSS({ x: tOl[0] - targetTouchDelta.x, y: tOl[1] - targetTouchDelta.y }))
   }
 
@@ -56,7 +64,7 @@ const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState,
         if (Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) < TAP_MOVE_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
           const tOl = map.getEventPixel({ clientX: t.clientX, clientY: t.clientY })
           const tapState = getState()
-          onTap?.(findNearest(map, tapState.vertecies, tapState.midpoints, { x: tOl[0], y: tOl[1] }, TOUCH_TOLERANCE))
+          onTap?.(findNearest(map, tapState.vertices, tapState.midpoints, { x: tOl[0], y: tOl[1] }, TOUCH_TOLERANCE))
           e.preventDefault()
         }
       }
@@ -64,8 +72,8 @@ const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState,
       return
     }
     tapStart = null
-    const { vertecies } = getState()
-    if (vertecies[dragStartIndex] && dragStartCoord) {
+    const { vertices } = getState()
+    if (vertices[dragStartIndex] && dragStartCoord) {
       onVertexMoved({ vertexIndex: dragStartIndex, previousCoord: dragStartCoord })
     }
     snap?.hideIndicator()
@@ -122,13 +130,16 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
   const touchEvents = wireTouchEvents({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap })
 
   const updateTargetPosition = () => {
-    const { selectedVertexIndex, vertecies, interfaceType } = getState()
-    if (selectedVertexIndex < 0 || !vertecies[selectedVertexIndex] || interfaceType !== 'touch') {
+    const { selectedVertexIndex, vertices, interfaceType } = getState()
+    if (selectedVertexIndex < 0 || !vertices[selectedVertexIndex] || interfaceType !== 'touch') {
       hideTouchTarget(targetEl)
       return
     }
-    const px = coordToPixel(map, vertecies[selectedVertexIndex])
-    if (!px) { hideTouchTarget(targetEl); return }
+    const px = coordToPixel(map, vertices[selectedVertexIndex])
+    if (!px) {
+      hideTouchTarget(targetEl)
+      return
+    }
     showTouchTarget(targetEl, olToCSS(px))
   }
 

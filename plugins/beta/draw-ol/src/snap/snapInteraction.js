@@ -44,6 +44,8 @@ export const createSnapInteraction = (engine, indicator, snapRadius) => {
         result ? indicator.show(result.coord, result.type) : indicator.hide()
       } else if (type === 'pointerdrag') {
         indicator.hide()
+      } else {
+        // No action
       }
 
       return true

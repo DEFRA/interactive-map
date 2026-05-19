@@ -17,10 +17,17 @@ export const createFeatureStore = () => {
     /** The underlying VectorSource, passed to OL interactions and layers. */
     source,
 
+    /** Get the raw OL Feature by ID, or null. */
+    getOL (id) {
+      return source.getFeatureById(String(id)) ?? null
+    },
+
     /** Add or replace a GeoJSON feature. Returns the OL Feature. */
     add (geojsonFeature) {
-      const existing = source.getFeatureById(geojsonFeature.id)
-      if (existing) source.removeFeature(existing)
+      const existing = this.getOL(geojsonFeature.id)
+      if (existing) {
+        source.removeFeature(existing)
+      }
       const olFeature = format.readFeature(geojsonFeature)
       source.addFeature(olFeature)
       return olFeature
@@ -28,19 +35,16 @@ export const createFeatureStore = () => {
 
     /** Get a GeoJSON feature by ID, or null. */
     get (id) {
-      const feature = source.getFeatureById(String(id))
+      const feature = this.getOL(id)
       return feature ? format.writeFeatureObject(feature) : null
-    },
-
-    /** Get the raw OL Feature by ID, or null. */
-    getOL (id) {
-      return source.getFeatureById(String(id)) ?? null
     },
 
     /** Remove a feature by ID. */
     remove (id) {
-      const feature = source.getFeatureById(String(id))
-      if (feature) source.removeFeature(feature)
+      const feature = this.getOL(id)
+      if (feature) {
+        source.removeFeature(feature)
+      }
     },
 
     /** Remove all features. */

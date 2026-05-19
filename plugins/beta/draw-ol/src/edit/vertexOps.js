@@ -17,11 +17,15 @@ export const deleteVertex = (olFeature, selectedIndex) => {
   const coords = getCoords(geojsonGeom)
   const segments = getRingSegments(geojsonGeom)
   const result = getSegmentForIndex(segments, selectedIndex)
-  if (!result) return null
+  if (!result) {
+    return null
+  }
 
   const { segment } = result
   const minVertices = segment.closed ? 3 : 2
-  if (segment.length <= minVertices) return null
+  if (segment.length <= minVertices) {
+    return null
+  }
 
   const deletedCoord = [...coords[selectedIndex]]
   const ring = getModifiableCoords(geojsonGeom, segment.path)
@@ -41,13 +45,15 @@ export const deleteVertex = (olFeature, selectedIndex) => {
  * @param {number[][]} midpoints - current midpoint array (from midpointLayer)
  * @param {number} midpointFlatIndex - flat index (vertexCount + midpointOffset)
  * @param {number} vertexCount - number of actual vertices
- * @param {number[][]} vertecies - current vertex array
+ * @param {number[][]} vertices - current vertex array
  * @returns {{ insertedIndex: number } | null}
  */
 export const insertAtMidpoint = (olFeature, midpoints, midpointFlatIndex, vertexCount) => {
   const midpointLocalIdx = midpointFlatIndex - vertexCount
   const midCoord = midpoints[midpointLocalIdx]
-  if (!midCoord) return null
+  if (!midCoord) {
+    return null
+  }
 
   const geom = olFeature.getGeometry()
   const geojsonGeom = { type: geom.getType(), coordinates: geom.getCoordinates() }
@@ -80,7 +86,9 @@ export const moveVertex = (olFeature, index, newCoord) => {
   const geojsonGeom = { type: geom.getType(), coordinates: geom.getCoordinates() }
   const segments = getRingSegments(geojsonGeom)
   const result = getSegmentForIndex(segments, index)
-  if (!result) return
+  if (!result) {
+    return
+  }
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring[result.localIdx] = [...newCoord]

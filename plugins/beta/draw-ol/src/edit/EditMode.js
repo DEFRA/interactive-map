@@ -39,21 +39,21 @@ export const createEditMode = ({ map, manager, options }) => {
     olFeature,
     selectedVertexIndex: -1,
     selectedVertexType: null,
-    vertecies: [],
+    vertices: [],
     midpoints: [],
     interfaceType: interfaceType ?? 'pointer'
   }
 
   const getState = () => state
-  let onDeselect = null  // set after touchHandler is created; hides offset target on any deselect
-  let onUpdate = null   // set after touchHandler is created; repositions offset target when vertex coords change
+  let onDeselect = null // set after touchHandler is created; hides offset target on any deselect
+  let onUpdate = null // set after touchHandler is created; repositions offset target when vertex coords change
 
   const setState = (updates) => {
     Object.assign(state, updates)
     if (updates.selectedVertexIndex !== undefined) {
       vertexLayer.setSelected(state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1)
       midpointLayer.setSelected(
-        state.selectedVertexType === 'midpoint' ? state.selectedVertexIndex - state.vertecies.length : -1
+        state.selectedVertexType === 'midpoint' ? state.selectedVertexIndex - state.vertices.length : -1
       )
       if (state.selectedVertexIndex < 0) {
         onDeselect?.()
@@ -61,10 +61,10 @@ export const createEditMode = ({ map, manager, options }) => {
       updateActiveLayer()
       manager.emit('vertexselection', {
         index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
-        numVertecies: state.vertecies.length
+        numVertices: state.vertices.length
       })
     }
-    if (updates.vertecies !== undefined) {
+    if (updates.vertices !== undefined) {
       const plainGeom = {
         type: olFeature.getGeometry().getType(),
         coordinates: olFeature.getGeometry().getCoordinates()
@@ -82,7 +82,7 @@ export const createEditMode = ({ map, manager, options }) => {
   const updateLayersFromGeom = () => {
     const geom = olFeature.getGeometry()
     const plainGeom = { type: geom.getType(), coordinates: geom.getCoordinates() }
-    state.vertecies = getCoords(plainGeom)
+    state.vertices = getCoords(plainGeom)
     state.midpoints = getMidpoints(plainGeom)
     midpointLayer.update(plainGeom)
     vertexLayer.update(plainGeom)
@@ -91,7 +91,7 @@ export const createEditMode = ({ map, manager, options }) => {
 
   const syncGeom = () => {
     updateLayersFromGeom()
-    manager.emit('vertexchange', { numVertecies: state.vertecies.length })
+    manager.emit('vertexchange', { numVertices: state.vertices.length })
     manager.emit('update', store.toGeoJSON(olFeature))
   }
 
@@ -106,11 +106,11 @@ export const createEditMode = ({ map, manager, options }) => {
       return false
     }
     const olPixel = map.getEventPixel(mapBrowserEvent.originalEvent)
-    return findNearest(map, state.vertecies, state.midpoints, { x: olPixel[0], y: olPixel[1] }) !== null
+    return findNearest(map, state.vertices, state.midpoints, { x: olPixel[0], y: olPixel[1] }) !== null
   }
   const modifyInteraction = new Modify({
     features: collection,
-    style: () => [],  // vertex circles rendered by vertexLayer instead
+    style: () => [], // vertex circles rendered by vertexLayer instead
     pixelTolerance: 12,
     // Only activate when clicking on a vertex or midpoint circle, not anywhere on a segment.
     // Touch drags are handled by touchHandler; returning false here lets them pass through to
@@ -126,7 +126,7 @@ export const createEditMode = ({ map, manager, options }) => {
     if (state.interfaceType === 'touch') {
       return
     }
-    modifyStartCoords = state.vertecies.map(c => [...c])
+    modifyStartCoords = state.vertices.map(c => [...c])
   })
 
   modifyInteraction.on('modifyend', () => {
@@ -139,7 +139,7 @@ export const createEditMode = ({ map, manager, options }) => {
       return
     }
 
-    const newCoords = state.vertecies
+    const newCoords = state.vertices
     if (newCoords.length > prevCoords.length) {
       // Midpoint drag inserted a vertex — find it and select it
       const insertedIdx = newCoords.findIndex((c, i) => !prevCoords[i] || c[0] !== prevCoords[i][0])
@@ -169,16 +169,16 @@ export const createEditMode = ({ map, manager, options }) => {
 
   const updateActiveLayer = () => {
     activeSource.clear()
-    const { selectedVertexIndex, selectedVertexType, vertecies, midpoints } = state
+    const { selectedVertexIndex, selectedVertexType, vertices, midpoints } = state
     if (selectedVertexIndex < 0) {
       return
     }
     let coord, style
     if (selectedVertexType === 'vertex') {
-      coord = vertecies[selectedVertexIndex]
+      coord = vertices[selectedVertexIndex]
       style = manager.styles.selectedVertexStyle
     } else if (selectedVertexType === 'midpoint') {
-      coord = midpoints[selectedVertexIndex - vertecies.length]
+      coord = midpoints[selectedVertexIndex - vertices.length]
       style = manager.styles.selectedMidpointStyle
     } else {
       return
@@ -214,20 +214,20 @@ export const createEditMode = ({ map, manager, options }) => {
 
     const olPixel = map.getEventPixel(e)
     const pixel = { x: olPixel[0], y: olPixel[1] }
-    const hit = findNearest(map, state.vertecies, state.midpoints, pixel)
+    const hit = findNearest(map, state.vertices, state.midpoints, pixel)
     if (hit?.type === 'vertex') {
       setState({ selectedVertexIndex: hit.index, selectedVertexType: 'vertex' })
     }
   }
 
-  // click fires after OL Modify finishes, so state.vertecies reflects any insertions/moves
+  // click fires after OL Modify finishes, so state.vertices reflects any insertions/moves
   const onContainerClick = (e) => {
     if (state.interfaceType === 'touch') {
       return
     }
     const olPixel = map.getEventPixel(e)
     const pixel = { x: olPixel[0], y: olPixel[1] }
-    const hit = findNearest(map, state.vertecies, state.midpoints, pixel)
+    const hit = findNearest(map, state.vertices, state.midpoints, pixel)
     if (hit?.type === 'vertex') {
       setState({ selectedVertexIndex: hit.index, selectedVertexType: 'vertex' })
     } else if (hit?.type === 'midpoint') {
@@ -315,7 +315,7 @@ export const createEditMode = ({ map, manager, options }) => {
         return
       }
       if (hit.type === 'midpoint') {
-        const result = insertAtMidpoint(olFeature, state.midpoints, hit.index, state.vertecies.length)
+        const result = insertAtMidpoint(olFeature, state.midpoints, hit.index, state.vertices.length)
         if (!result) {
           return
         }

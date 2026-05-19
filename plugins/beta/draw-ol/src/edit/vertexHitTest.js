@@ -6,18 +6,20 @@ const PIXEL_TOLERANCE = 12
  * Find the nearest vertex to a screen pixel within tolerance.
  *
  * @param {import('ol/Map').default} map
- * @param {number[][]} vertecies - flat coordinate array [[e,n], ...]
+ * @param {number[][]} vertices - flat coordinate array [[e,n], ...]
  * @param {{ x: number, y: number }} pixel
  * @param {number} [tolerance]
  * @returns {{ index: number, type: 'vertex' } | null}
  */
-export const findNearestVertex = (map, vertecies, pixel, tolerance = PIXEL_TOLERANCE) => {
+export const findNearestVertex = (map, vertices, pixel, tolerance = PIXEL_TOLERANCE) => {
   let bestIdx = -1
   let bestDist = tolerance
 
-  vertecies.forEach((coord, i) => {
+  vertices.forEach((coord, i) => {
     const px = coordToPixel(map, coord)
-    if (!px) return
+    if (!px) {
+      return
+    }
     const d = pixelDist(px, pixel)
     if (d < bestDist) {
       bestDist = d
@@ -44,7 +46,9 @@ export const findNearestMidpoint = (map, midpoints, pixel, vertexCount, toleranc
 
   midpoints.forEach((coord, i) => {
     const px = coordToPixel(map, coord)
-    if (!px) return
+    if (!px) {
+      return
+    }
     const d = pixelDist(px, pixel)
     if (d < bestDist) {
       bestDist = d
@@ -62,7 +66,7 @@ export const findNearestMidpoint = (map, midpoints, pixel, vertexCount, toleranc
  * @param {number} [tolerance]
  * @returns {{ index: number, type: 'vertex'|'midpoint' } | null}
  */
-export const findNearest = (map, vertecies, midpoints, pixel, tolerance = PIXEL_TOLERANCE) => {
-  return findNearestVertex(map, vertecies, pixel, tolerance) ??
-    findNearestMidpoint(map, midpoints, pixel, vertecies.length, tolerance)
+export const findNearest = (map, vertices, midpoints, pixel, tolerance = PIXEL_TOLERANCE) => {
+  return findNearestVertex(map, vertices, pixel, tolerance) ??
+    findNearestMidpoint(map, midpoints, pixel, vertices.length, tolerance)
 }

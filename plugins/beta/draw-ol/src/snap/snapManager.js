@@ -39,7 +39,9 @@ export const createSnapManager = (map, snapLayers, colors, snapRadius) => {
     snapRadius,
 
     apply (coord) {
-      if (!active) { return coord }
+      if (!active) {
+        return coord
+      }
       const result = engine.query(coord, snapRadius)
       if (result) {
         indicator.show(result.coord, result.type)
@@ -67,6 +69,10 @@ export const createSnapManager = (map, snapLayers, colors, snapRadius) => {
      * Call after each changeMode() so the interaction always runs before
      * the newly added Draw or Modify interaction.
      */
+    setSnapLayers (layers) {
+      engine.setLayers(layers === null || layers === undefined ? (snapLayers ?? []) : layers)
+    },
+
     reattach () {
       map.removeInteraction(interaction)
       map.addInteraction(interaction)

@@ -6,11 +6,11 @@ import MVT from 'ol/format/MVT.js'
 import TileGrid from 'ol/tilegrid/TileGrid.js'
 import TileState from 'ol/TileState.js'
 import { stylefunction, recordStyleLayer } from 'ol-mapbox-style'
+import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.js'
 
 // Enable style-layer name recording so feature.get('mapbox-layer').id returns the
 // style layer name — required for snap layer filtering by style layer name.
 recordStyleLayer(true)
-import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.js'
 
 const CRS = 'EPSG:27700'
 

@@ -43,10 +43,10 @@ export const manifest = {
       hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
       enableWhen: ({ pluginState }) => {
         if (pluginState.mode === 'draw_polygon') {
-          return pluginState.numVertecies >= 3 // NOSONAR
+          return pluginState.numVertices >= 3 // NOSONAR
         }
         if (pluginState.mode === 'draw_line') {
-          return pluginState.numVertecies >= 2 // NOSONAR
+          return pluginState.numVertices >= 2 // NOSONAR
         }
         if (pluginState.mode === 'edit_vertex') {
           return true
@@ -67,11 +67,11 @@ export const manifest = {
         hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
         enableWhen: ({ pluginState }) => {
           if (['draw_polygon', 'draw_line'].includes(pluginState.mode)) {
-            return pluginState.numVertecies > 0
+            return pluginState.numVertices > 0
           }
           return pluginState.undoStackLength > 0
         }
-       }, {
+      }, {
         id: 'drawSnap',
         label: 'Snap to feature',
         iconId: 'magnet',
@@ -81,7 +81,7 @@ export const manifest = {
         id: 'drawDeletePoint',
         label: 'Delete point',
         iconId: 'trash',
-        enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertecies > 2,
+        enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertices > 2,
         hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex'
       }],
       mobile: { slot: 'bottom-right' },

@@ -7,7 +7,7 @@
  * @returns {boolean} true if edit mode entered, false if feature not found
  */
 export const editFeature = (
-  { appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services },
+  { appState, appConfig, pluginConfig, pluginState, mapProvider, services },
   featureId,
   options = {}
 ) => {
@@ -15,17 +15,23 @@ export const editFeature = (
   const { draw } = mapProvider
   const { eventBus } = services
 
-  if (!draw) return false
+  if (!draw) {
+    return false
+  }
 
-  // Feature must exist before entering edit mode
   const existingFeature = draw.get(featureId)
-  if (!existingFeature) return false
+  if (!existingFeature) {
+    return false
+  }
 
-  const mode = existingFeature.geometry.type === 'LineString' ? 'edit_line' : 'edit_polygon'
   eventBus.emit('draw:editstart', { mode: 'edit_vertex' })
 
-  // Snap layers (for later when snap is implemented)
-  const snapLayers = options.snapLayers ?? pluginConfig.snapLayers ?? null
+  const snapLayers = options.snapLayers === undefined
+    ? (pluginConfig.snapLayers ?? null)
+    : options.snapLayers
+
+  draw.snap?.setSnapLayers(snapLayers)
+  dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
   draw.changeMode('edit_vertex', {
     container: appState.layoutRefs.viewportRef.current,
@@ -34,7 +40,6 @@ export const editFeature = (
     featureId
   })
 
-  // Store the feature for cancel/restore
   dispatch({
     type: 'SET_FEATURE',
     payload: { feature: existingFeature, tempFeature: existingFeature }

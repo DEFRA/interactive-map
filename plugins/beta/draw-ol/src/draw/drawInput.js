@@ -7,7 +7,6 @@
  */
 
 import { coordToPixel, pixelDist } from '../utils/olCoords.js'
-import { getCoords } from '../utils/geometryHelpers.js'
 
 const SNAP_TOLERANCE = 12 // pixels
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
@@ -19,7 +18,7 @@ const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
  * @param {object} params.options - { container, interfaceType, addVertexButtonId, mapProvider, snap }
  * @returns {{ destroy: () => void }}
  */
-export const createDrawInput = ({ drawInteraction, manager, options }) => {
+export const createDrawInput = ({ drawInteraction, options }) => {
   const { container, addVertexButtonId, mapProvider, snap, onUndo } = options
   let interfaceType = options.interfaceType
   let map = null
@@ -52,11 +51,15 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
 
   // --- Update sketch feature with current center (rubberbanding) ---
   const updateSketchRubberbanding = () => {
-    if (!sketchFeature) return
+    if (!sketchFeature) {
+      return
+    }
 
     const geom = sketchFeature.getGeometry()
     const coords = geom.getCoordinates()
-    if (coords.length === 0) return
+    if (coords.length === 0) {
+      return
+    }
 
     const raw = mapProvider.getCenter()
     const centerCoord = (interfaceType !== 'pointer' && snap) ? snap.apply(raw) : raw
@@ -66,9 +69,8 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
       const updated = [...coords]
       updated[updated.length - 1] = centerCoord
       geom.setCoordinates(updated)
-    }
-    // For Polygon, update the last coordinate in the current ring
-    else if (geom.getType() === 'Polygon') {
+    } else if (geom.getType() === 'Polygon') {
+      // For Polygon, update the last coordinate in the current ring
       const updated = coords.map((ring, ringIdx) => {
         if (ringIdx === 0) { // Only update first ring (exterior)
           const ringUpdated = [...ring]
@@ -78,24 +80,29 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
         return ring
       })
       geom.setCoordinates(updated)
+    } else {
+      // No action
     }
   }
 
   // --- Check if close enough to first vertex to close shape ---
   const isCloseToFirstVertex = (map, currentCoord, sketchCoords, geometryType) => {
-    if (geometryType !== 'Polygon' || sketchCoords.length < 4) return false
+    if (geometryType !== 'Polygon' || sketchCoords.length < 4) {
+      return false
+    }
 
     const firstCoord = sketchCoords[0]
     const currentPixel = coordToPixel(map, currentCoord)
     const firstPixel = coordToPixel(map, firstCoord)
 
-    if (!currentPixel || !firstPixel) return false
+    if (!currentPixel || !firstPixel) {
+      return false
+    }
     return pixelDist(currentPixel, firstPixel) < SNAP_TOLERANCE
   }
 
   // --- Place a vertex at the current map center (crosshair position) ---
   const placeVertex = () => {
-    const map = getMap()
     const raw = mapProvider.getCenter()
     const coord = (interfaceType !== 'pointer' && snap) ? snap.apply(raw) : raw
     snap?.hideIndicator()
@@ -112,7 +119,7 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
       }
 
       // Check if close to first vertex (for polygon closure)
-      if (isCloseToFirstVertex(map, coord, sketchCoords, geom.getType())) {
+      if (isCloseToFirstVertex(getMap(), coord, sketchCoords, geom.getType())) {
         drawInteraction.finishDrawing()
         return
       }
@@ -123,8 +130,13 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
 
   // --- Event handlers ---
   const onKeydown = (e) => {
-    if (!container.contains(document.activeElement)) { return }
-    if (ARROW_KEYS.has(e.key)) { interfaceType = 'keyboard'; return }
+    if (!container.contains(document.activeElement)) {
+      return
+    }
+    if (ARROW_KEYS.has(e.key)) {
+      interfaceType = 'keyboard'
+      return
+    }
     if (e.key === 'Enter') {
       e.preventDefault()
       interfaceType = 'keyboard'
@@ -155,7 +167,9 @@ export const createDrawInput = ({ drawInteraction, manager, options }) => {
   }
 
   const onPointerMove = () => {
-    if (interfaceType === 'pointer') { return }
+    if (interfaceType === 'pointer') {
+      return
+    }
     updateSketchRubberbanding()
   }
 

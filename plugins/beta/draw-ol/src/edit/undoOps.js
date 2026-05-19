@@ -16,7 +16,9 @@ export const undoMoveVertex = (olFeature, op) => {
   const geojsonGeom = { type: geom.getType(), coordinates: geom.getCoordinates() }
   const segments = getRingSegments(geojsonGeom)
   const result = getSegmentForIndex(segments, vertexIndex)
-  if (!result) return -1
+  if (!result) {
+    return -1
+  }
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring[result.localIdx] = [...previousCoord]
@@ -33,7 +35,9 @@ export const undoInsertVertex = (olFeature, op) => {
   const geojsonGeom = { type: geom.getType(), coordinates: geom.getCoordinates() }
   const segments = getRingSegments(geojsonGeom)
   const result = getSegmentForIndex(segments, vertexIndex)
-  if (!result) return -1
+  if (!result) {
+    return -1
+  }
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring.splice(result.localIdx, 1)
@@ -60,7 +64,9 @@ export const undoDeleteVertex = (olFeature, op) => {
       }
     }
   }
-  if (!result) return -1
+  if (!result) {
+    return -1
+  }
 
   const ring = getModifiableCoords(geojsonGeom, result.segment.path)
   ring.splice(result.localIdx, 0, [...deletedCoord])
@@ -77,9 +83,13 @@ export const undoDeleteVertex = (olFeature, op) => {
  */
 export const applyUndo = (olFeature, op) => {
   switch (op.type) {
-    case 'move_vertex': return undoMoveVertex(olFeature, op)
-    case 'insert_vertex': return undoInsertVertex(olFeature, op)
-    case 'delete_vertex': return undoDeleteVertex(olFeature, op)
-    default: return -1
+    case 'move_vertex':
+      return undoMoveVertex(olFeature, op)
+    case 'insert_vertex':
+      return undoInsertVertex(olFeature, op)
+    case 'delete_vertex':
+      return undoDeleteVertex(olFeature, op)
+    default:
+      return -1
   }
 }

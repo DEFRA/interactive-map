@@ -6,6 +6,13 @@ import CircleStyle from 'ol/style/Circle.js'
 const selectedVertexRadii = { outer: 11, mid: 8, inner: 6 }
 const selectedMidpointRadii = { outer: 9, mid: 6, inner: 4 }
 
+const fillArc = (ctx, cx, cy, radius, fillStyle) => {
+  ctx.beginPath()
+  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+  ctx.fillStyle = fillStyle
+  ctx.fill()
+}
+
 // Custom renderer draws all arcs at the same (cx,cy) so concentric rings never
 // drift at fractional CSS scales (e.g. 1.5×) the way separate drawImage calls can.
 const makeRingRenderer = ({ outer, mid, inner }, colors, innerKey) => (pixelCoordinates, state) => {
@@ -13,9 +20,9 @@ const makeRingRenderer = ({ outer, mid, inner }, colors, innerKey) => (pixelCoor
   const pr = state.pixelRatio
   const [cx, cy] = /** @type {number[]} */ (pixelCoordinates)
   ctx.save()
-  ctx.beginPath(); ctx.arc(cx, cy, outer * pr, 0, Math.PI * 2); ctx.fillStyle = colors.editActive; ctx.fill()
-  ctx.beginPath(); ctx.arc(cx, cy, mid   * pr, 0, Math.PI * 2); ctx.fillStyle = colors.editHalo; ctx.fill()
-  ctx.beginPath(); ctx.arc(cx, cy, inner * pr, 0, Math.PI * 2); ctx.fillStyle = colors[innerKey]; ctx.fill()
+  fillArc(ctx, cx, cy, outer * pr, colors.editActive)
+  fillArc(ctx, cx, cy, mid * pr, colors.editHalo)
+  fillArc(ctx, cx, cy, inner * pr, colors[innerKey])
   ctx.restore()
 }
 

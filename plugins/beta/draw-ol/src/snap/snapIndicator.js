@@ -68,7 +68,9 @@ export const createSnapIndicator = (map, colors) => {
 
     updateColors (newColors) {
       styles = makeStyles(newColors)
-      if (showing) source.changed()
+      if (showing) {
+        source.changed()
+      }
     },
 
     remove () {

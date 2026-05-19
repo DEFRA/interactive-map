@@ -42,8 +42,8 @@ export const createDrawMode = ({ map, manager, options }) => {
     const geom = sketchFeature.getGeometry()
     const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
     // OL always keeps a trailing rubber-band coordinate; subtract 1
-    const numVertecies = Math.max(0, coords.length - 1)
-    manager.emit('vertexchange', { numVertecies })
+    const numVertices = Math.max(0, coords.length - 1)
+    manager.emit('vertexchange', { numVertices })
   }
 
   drawInteraction.on('drawstart', (e) => {
@@ -65,10 +65,21 @@ export const createDrawMode = ({ map, manager, options }) => {
     manager.emit('cancel')
   })
 
-  const input = createDrawInput({ drawInteraction, manager, options: { container, interfaceType, addVertexButtonId, mapProvider, snap, onUndo: () => {
-    drawInteraction.removeLastPoint()
-    updateVertexCount()
-  } } })
+  const input = createDrawInput({
+    drawInteraction,
+    manager,
+    options: {
+      container,
+      interfaceType,
+      addVertexButtonId,
+      mapProvider,
+      snap,
+      onUndo: () => {
+        drawInteraction.removeLastPoint()
+        updateVertexCount()
+      }
+    }
+  })
 
   return {
     done () {
