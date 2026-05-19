@@ -9,10 +9,11 @@ import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createTileSource, createVectorTileLayer, createOGCVectorTileLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
+import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
+import { queryFeatures } from './utils/queryFeatures.js'
 
 const CRS = 'EPSG:27700'
 
-// OL view padding is [top, right, bottom, left]; app passes { top, right, bottom, left }
 const toPaddingArray = (padding) => {
   if (!padding) {
     return undefined
@@ -203,13 +204,25 @@ export default class OpenLayersProvider {
     return extent.map(n => Math.round(n * 100) / 100)
   }
 
-  getFeaturesAtPoint (_point, _options) {
-    // Raster tiles have no queryable features
-    return []
+  getFeaturesAtPoint (point, options) {
+    return queryFeatures(this.map, point, options)
   }
 
   getVisibleFeatures (_layerIds) {
     return []
+  }
+
+  updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {
+    this._lastHighlightArgs = { selectedFeatures, activeFeatures, stylesMap }
+    return updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap)
+  }
+
+  reapplyHighlights () {
+    if (!this._lastHighlightArgs) {
+      return
+    }
+    const { selectedFeatures, activeFeatures, stylesMap } = this._lastHighlightArgs
+    updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap)
   }
 
   // ==========================

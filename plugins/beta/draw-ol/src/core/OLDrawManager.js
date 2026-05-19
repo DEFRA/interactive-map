@@ -36,6 +36,7 @@ export class OLDrawManager {
       style: this.styles.createFeatureStyle(),
       zIndex: 100
     })
+    this._layer.set('layerId', 'draw')
     map.addLayer(this._layer)
   }
 
