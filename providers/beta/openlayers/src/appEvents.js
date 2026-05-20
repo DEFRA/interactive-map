@@ -1,19 +1,12 @@
-import { createTileSource, createVectorTileLayer, createOGCVectorTileLayer } from './utils/tileLayers.js'
+import { createTileSource, createVectorTileLayer, createOGCVectorTileLayer, createMapStyleLayer } from './utils/tileLayers.js'
 
-export { createTileSource, createVectorTileLayer, createOGCVectorTileLayer }
+export { createTileSource, createVectorTileLayer, createOGCVectorTileLayer, createMapStyleLayer }
 
-export function attachAppEvents ({ mapProvider, layer, layerType, transformRequest, events, eventBus, map }) {
+export function attachAppEvents ({ mapProvider, transformRequest, events, eventBus, map, onBaseSourceChange }) {
   const handleSetMapStyle = async (mapStyle) => {
-    if (layerType === 'raster') {
-      const source = createTileSource(mapStyle.url, transformRequest)
-      layer.setSource(source)
-    } else if (mapStyle.type === 'ogc-vt') {
-      const { layer: newLayer } = await createOGCVectorTileLayer(mapStyle.url, transformRequest, mapStyle)
-      map.getLayers().setAt(0, newLayer)
-    } else {
-      const { layer: newLayer } = await createVectorTileLayer(mapStyle.url, transformRequest, mapStyle)
-      map.getLayers().setAt(0, newLayer)
-    }
+    const { layer, source } = await createMapStyleLayer(mapStyle, transformRequest)
+    map.getLayers().setAt(0, layer)
+    onBaseSourceChange(source)
     eventBus.emit(events.MAP_STYLE_CHANGE, { mapStyleId: mapStyle.id })
     // MAP_DATA_CHANGE is driven by the original source's tileloadend and won't fire
     // for the new source, so re-apply highlights directly on the new layer.

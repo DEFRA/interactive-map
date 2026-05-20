@@ -1,7 +1,7 @@
 // Mock-prefixed variables are allowed in jest.mock factories by babel-plugin-jest-hoist
 import OpenLayersProvider from './openlayersProvider.js'
 import { attachMapEvents } from './mapEvents.js'
-import { attachAppEvents, createTileSource, createVectorTileLayer } from './appEvents.js'
+import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getExtentFromGeoJSON, isGeometryObscured } from './utils/spatial.js'
 
 const mockAnimate = jest.fn()
@@ -35,14 +35,13 @@ const mockMapInstance = {
 }
 
 const mockSource = {}
-const mockTileLayer = { setSource: jest.fn() }
 const mockVectorTileLayer = {}
 const mockMapEventHandlesRemove = jest.fn()
+const mockSetSource = jest.fn()
 const mockAppEventHandlesRemove = jest.fn()
 
 jest.mock('ol/Map.js', () => ({ __esModule: true, default: jest.fn(() => mockMapInstance) }))
 jest.mock('ol/View.js', () => ({ __esModule: true, default: jest.fn(() => mockViewInstance) }))
-jest.mock('ol/layer/Tile.js', () => ({ __esModule: true, default: jest.fn(() => mockTileLayer) }))
 jest.mock('ol/interaction/defaults.js', () => ({ __esModule: true, defaults: jest.fn(() => []) }))
 jest.mock('proj4', () => {
   const fn = jest.fn()
@@ -52,12 +51,11 @@ jest.mock('proj4', () => {
 jest.mock('ol/proj/proj4.js', () => ({ __esModule: true, register: jest.fn() }))
 jest.mock('./mapEvents.js', () => ({
   __esModule: true,
-  attachMapEvents: jest.fn(() => ({ remove: mockMapEventHandlesRemove }))
+  attachMapEvents: jest.fn(() => ({ remove: mockMapEventHandlesRemove, setSource: mockSetSource }))
 }))
 jest.mock('./appEvents.js', () => ({
   __esModule: true,
-  createTileSource: jest.fn(() => mockSource),
-  createVectorTileLayer: jest.fn(async () => ({ layer: mockVectorTileLayer, source: mockSource })),
+  createMapStyleLayer: jest.fn(async () => ({ layer: mockVectorTileLayer, source: mockSource })),
   attachAppEvents: jest.fn(() => ({ remove: mockAppEventHandlesRemove }))
 }))
 jest.mock('./utils/spatial.js', () => ({
@@ -125,7 +123,7 @@ describe('OpenLayersProvider', () => {
     it('creates vector tile layer, OL objects, and emits MAP_READY by default', async () => {
       const { provider, eventBus } = makeProvider()
       await provider.initMap(defaultInitConfig)
-      expect(createVectorTileLayer).toHaveBeenCalledWith(defaultInitConfig.mapStyle.url, null, defaultInitConfig.mapStyle)
+      expect(createMapStyleLayer).toHaveBeenCalledWith(defaultInitConfig.mapStyle, null)
       expect(attachMapEvents).toHaveBeenCalled()
       expect(attachAppEvents).toHaveBeenCalled()
       expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_READY, expect.objectContaining({
@@ -151,43 +149,29 @@ describe('OpenLayersProvider', () => {
       expect(mockMapOnce).not.toHaveBeenCalled()
     })
 
-    it('calls createVectorTileLayer and skips createTileSource when mapStyle has no type', async () => {
+    it('creates the initial layer from the map style', async () => {
       const { provider } = makeProvider()
       await provider.initMap(defaultInitConfig)
-      expect(createVectorTileLayer).toHaveBeenCalled()
-      expect(createTileSource).not.toHaveBeenCalled()
+      expect(createMapStyleLayer).toHaveBeenCalledWith(defaultInitConfig.mapStyle, null)
     })
 
-    it('calls createTileSource and skips createVectorTileLayer when mapStyle.type is "raster"', async () => {
+    it('creates the initial layer from raster map styles', async () => {
       const { provider, eventBus } = makeProvider()
       const rasterConfig = {
         ...defaultInitConfig,
         mapStyle: { id: 'myStyle', url: 'https://tiles.example.com/{z}/{x}/{y}', type: 'raster' }
       }
       await provider.initMap(rasterConfig)
-      expect(createTileSource).toHaveBeenCalledWith('https://tiles.example.com/{z}/{x}/{y}', null)
-      expect(createVectorTileLayer).not.toHaveBeenCalled()
+      expect(createMapStyleLayer).toHaveBeenCalledWith(rasterConfig.mapStyle, null)
       expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_READY, expect.objectContaining({ mapStyleId: 'myStyle' }))
     })
 
-    it('passes layerType "vector" and map to attachAppEvents by default', async () => {
+    it('passes map and source change handler to attachAppEvents', async () => {
       const { provider } = makeProvider()
       await provider.initMap(defaultInitConfig)
       expect(attachAppEvents).toHaveBeenCalledWith(expect.objectContaining({
-        layerType: 'vector',
-        map: mockMapInstance
-      }))
-    })
-
-    it('passes layerType "raster" to attachAppEvents when mapStyle.type is "raster"', async () => {
-      const { provider } = makeProvider()
-      const rasterConfig = {
-        ...defaultInitConfig,
-        mapStyle: { id: 'myStyle', url: 'https://tiles.example.com/{z}/{x}/{y}', type: 'raster' }
-      }
-      await provider.initMap(rasterConfig)
-      expect(attachAppEvents).toHaveBeenCalledWith(expect.objectContaining({
-        layerType: 'raster'
+        map: mockMapInstance,
+        onBaseSourceChange: mockSetSource
       }))
     })
 
@@ -218,8 +202,6 @@ describe('OpenLayersProvider', () => {
       expect(mockMapSetTarget).toHaveBeenCalledWith(null)
       expect(provider.map).toBeNull()
       expect(provider.view).toBeNull()
-      expect(provider.tileLayer).toBeNull()
-      expect(provider.source).toBeNull()
     })
 
     it('does not throw when called before initMap', () => {

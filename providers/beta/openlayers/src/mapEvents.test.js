@@ -35,7 +35,9 @@ function makeTarget () {
   return {
     on: jest.fn((type, handler) => { (handlers[type] = handlers[type] || []).push(handler) }),
     once: jest.fn((type, handler) => { (handlers[type] = handlers[type] || []).push(handler) }),
-    un: jest.fn(),
+    un: jest.fn((type, handler) => {
+      handlers[type] = (handlers[type] || []).filter(h => h !== handler)
+    }),
     trigger: (type, event = {}) => (handlers[type] || []).forEach(h => h(event))
   }
 }
@@ -104,14 +106,14 @@ describe('attachMapEvents — move events', () => {
   it('emits MAP_MOVE_END (with state) when debounced callback fires', () => {
     const { view, eventBus } = setup()
     view.trigger('change')
-    mockDebounceFns[0].fn() // emitMoveEnd's inner callback
+    mockDebounceFns[1].fn() // emitMoveEnd's inner callback
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.any(Object))
   })
 
   it('resets moving flag after MAP_MOVE_END so MAP_MOVE_START can fire again', () => {
     const { view, eventBus } = setup()
     view.trigger('change')
-    mockDebounceFns[0].fn() // resets moving = false
+    mockDebounceFns[1].fn() // resets moving = false
     eventBus.emit.mockClear()
     view.trigger('change')
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_START)
@@ -168,8 +170,21 @@ describe('attachMapEvents — render and data events', () => {
   it('emits MAP_DATA_CHANGE (with state) when debounced tileloadend callback fires', () => {
     const { source, eventBus } = setup()
     source.trigger('tileloadend')
-    mockDebounceFns[1].fn() // emitDataChange's inner callback
+    mockDebounceFns[0].fn() // emitDataChange's inner callback
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_DATA_CHANGE, expect.any(Object))
+  })
+
+  it('moves source listeners when source changes', () => {
+    const { source, handles, eventBus } = setup()
+    const newSource = makeTarget()
+
+    handles.setSource(newSource)
+
+    source.trigger('tileloadend')
+    expect(eventBus.emit).not.toHaveBeenCalledWith(events.MAP_LOADED)
+
+    newSource.trigger('tileloadend')
+    expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_LOADED)
   })
 })
 
@@ -177,24 +192,24 @@ describe('attachMapEvents — dynamic zoom bounds', () => {
   it('isAtMaxZoom is updated in emitted event when view max zoom changes', () => {
     const { view, eventBus } = setup()
     view.trigger('change')
-    mockDebounceFns[0].fn()
+    mockDebounceFns[1].fn()
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMaxZoom: false }))
 
     eventBus.emit.mockClear()
     view.getMaxZoom.mockReturnValue(7)
-    mockDebounceFns[0].fn()
+    mockDebounceFns[1].fn()
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMaxZoom: true }))
   })
 
   it('isAtMinZoom is updated in emitted event when view min zoom changes', () => {
     const { view, eventBus } = setup()
     view.trigger('change')
-    mockDebounceFns[0].fn()
+    mockDebounceFns[1].fn()
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMinZoom: false }))
 
     eventBus.emit.mockClear()
     view.getMinZoom.mockReturnValue(7)
-    mockDebounceFns[0].fn()
+    mockDebounceFns[1].fn()
     expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_MOVE_END, expect.objectContaining({ isAtMinZoom: true }))
   })
 })
@@ -203,8 +218,8 @@ describe('attachMapEvents — remove', () => {
   it('calls cancel on all debouncers', () => {
     const { handles } = setup()
     handles.remove()
-    expect(mockDebounceFns[0].wrapper.cancel).toHaveBeenCalled()
     expect(mockDebounceFns[1].wrapper.cancel).toHaveBeenCalled()
+    expect(mockDebounceFns[0].wrapper.cancel).toHaveBeenCalled()
   })
 
   it('calls un on all registered event targets', () => {
@@ -215,10 +230,28 @@ describe('attachMapEvents — remove', () => {
     expect(source.un).toHaveBeenCalled()
   })
 
+  it('unbinds source listeners when source changes', () => {
+    const { source, handles } = setup()
+    handles.setSource(makeTarget())
+    expect(source.un).toHaveBeenCalledWith('tileloadend', expect.any(Function))
+  })
+
+  it('does not bind a new source after remove', () => {
+    const { eventBus, handles } = setup()
+    const newSource = makeTarget()
+
+    handles.remove()
+    handles.setSource(newSource)
+    newSource.trigger('tileloadend')
+
+    expect(newSource.on).not.toHaveBeenCalled()
+    expect(eventBus.emit).not.toHaveBeenCalledWith(events.MAP_LOADED)
+  })
+
   it('prevents state-bearing events from emitting after destroy', () => {
     const { eventBus, handles } = setup()
     handles.remove()
-    mockDebounceFns[0].fn() // emitMoveEnd fires after destroy → getMapState returns null
+    mockDebounceFns[1].fn() // emitMoveEnd fires after destroy → getMapState returns null
     expect(eventBus.emit).not.toHaveBeenCalledWith(events.MAP_MOVE_END, expect.anything())
   })
 })
