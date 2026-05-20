@@ -37,6 +37,7 @@ var datasetsPlugin = createDatasetsPlugin({
 		id: 'field-parcels',
 		label: 'Field parcels',
 		geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+		idProperty: 'id',
 		transformRequest: transformDataRequest,
 		maxFeatures: 50000,
 		// filter: [

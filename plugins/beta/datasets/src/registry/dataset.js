@@ -8,13 +8,13 @@ export class Dataset {
   }
 
   get id () { return this._datasetDefinition.id }
+  get label () { return this._datasetDefinition.label }
   get hasSymbol () { return !this.hasSublayers && Boolean(this.style?.symbol) }
   get hasPattern () { return !this.hasSublayers && !this.hasSymbol && hasPattern(this.style) }
   get hasFill () { return !this.hasSublayers && !this.hasSymbol && (this.hasPattern || (this.style?.fill && this.style?.fill !== 'transparent')) }
   get hasStroke () { return !this.hasSublayers && !this.hasSymbol && Boolean(this.style?.stroke) }
   get tiles () { return this._datasetDefinition.tiles }
   get geojson () { return this._datasetDefinition.geojson }
-  get visibility () { return this._datasetDefinition.visibility || this.parent?.visibility || 'visible' }
   get idProperty () { return this._datasetDefinition.idProperty }
   get transformRequest () { return this._datasetDefinition.transformRequest }
   get parentId () { return this._datasetDefinition.parentId }
@@ -22,6 +22,10 @@ export class Dataset {
   get minZoom () { return this._datasetDefinition.minZoom || this.parent?.minZoom }
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
   get filter () { return this._datasetDefinition.filter || this.parent?.filter }
+  get showInKey () { return this._datasetDefinition.showInKey || this.parent?.showInKey || false }
+  get groupLabel () { return this._datasetDefinition.groupLabel }
+
+  get visibility () { return this.visible ? 'visible' : 'none' }
 
   get visible () {
     if (this.isSublayer) {
