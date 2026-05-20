@@ -138,7 +138,7 @@ const resolveContiguousDispatch = ({ featureId, feature, config, selectedFeature
 
   if (existingIndex !== -1) {
     // Deselect: trim to first connected group if the removal splits the selection.
-    if (selectedFeatures.length < 3) {
+    if (selectedFeatures.length < 3) { // NOSONAR
       return false
     }
     const remaining = selectedFeatures.filter((_, i) => i !== existingIndex)
