@@ -356,12 +356,11 @@ export default class MaplibreLayerAdapter {
       const { sublayerIds } = registryDataset
       sublayerIds.forEach(sublayerId => { this.setDatasetVisibility(sublayerId) })
     } else {
-      const { visible } = registryDataset
+      const { visibility } = registryDataset
       const datasetId = registryDataset.id
       style.layers.filter(layer =>
         layer.id === datasetId || layer.id.startsWith(`${datasetId}-`)
       ).forEach(layer => {
-        const visibility = visible ? 'visible' : 'none'
         this._map.setLayoutProperty(layer.id, 'visibility', visibility)
       })
     }

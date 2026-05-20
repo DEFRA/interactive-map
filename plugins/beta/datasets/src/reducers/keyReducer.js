@@ -4,7 +4,7 @@ export const keyReducer = (state) => {
   const items = []
   let hasGroups = false
   datasets.forEach(dataset => {
-    if (!dataset.showInKey || dataset.visibility === 'hidden') {
+    if (!dataset.showInKey && dataset.visible) {
       return
     }
     if (dataset.sublayers?.length) {

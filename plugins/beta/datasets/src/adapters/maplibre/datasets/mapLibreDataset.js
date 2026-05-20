@@ -89,7 +89,7 @@ export class MapLibreDataset extends Dataset {
       minzoom: this.minZoom,
       maxzoom: this.maxZoom,
       layout: {
-        visibility: this.visibility === 'hidden' ? 'none' : 'visible',
+        visibility: this.visibility,
         'icon-image': imageId,
         'icon-anchor': anchorToMaplibre(anchor || symbolDef?.anchor || [0.5, 0.5]),
         'icon-allow-overlap': true
@@ -106,7 +106,7 @@ export class MapLibreDataset extends Dataset {
       'source-layer': this.sourceLayer,
       minzoom: this.minZoom,
       maxzoom: this.maxZoom,
-      layout: { visibility: this.visibility === 'hidden' ? 'none' : 'visible' },
+      layout: { visibility: this.visibility },
       paint,
       ...(this.filter ? { filter: this.filter } : {})
     }
@@ -120,7 +120,7 @@ export class MapLibreDataset extends Dataset {
       'source-layer': this.sourceLayer,
       minzoom: this.minZoom,
       maxzoom: this.maxZoom,
-      layout: { visibility: this.visibility === 'hidden' ? 'none' : 'visible' },
+      layout: { visibility: this.visibility },
       paint,
       ...(this.filter ? { filter: this.filter } : {})
     }
