@@ -63,8 +63,19 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
   }, [selectedFeatures, selectedMarkers, selectionBounds])
 }
 
-// Flood-fill from features[0]; returns trimmed array if the set splits, null if still connected.
-// Relies on f.geometry already being enriched at selection time.
+/**
+ * Given a set of selected features, returns the largest contiguous sub-group
+ * that stays connected to features[0]. Used when deselecting a feature that
+ * may act as a bridge between two otherwise disconnected parts of the selection.
+ *
+ * Uses flood-fill: starts from features[0] and repeatedly adds any feature that
+ * touches the growing connected set, until no more can be added.
+ *
+ * @param {Array} features - Current selection minus the feature being deselected.
+ *   Each feature must have an enriched `geometry` (set by the provider at selection time).
+ * @returns {Array|null} The connected sub-group anchored at features[0],
+ *   or null if all features are already contiguous (no trimming needed).
+ */
 const trimToContiguousGroup = (features) => {
   const connected = new Set([0])
   let changed = true
@@ -96,8 +107,26 @@ const buildTogglePayload = (featureId, multiSelect, config, feature) => ({
   geometry: feature.geometry
 })
 
-// Handles contiguous enforcement for a click. Returns true when it dispatches itself.
-// feature.geometry must already be enriched by the provider before calling.
+/**
+ * Enforces the contiguous selection constraint when a feature is clicked.
+ * Intercepts the click and dispatches its own action when needed, returning
+ * true so the caller knows not to dispatch again.
+ *
+ * Two cases are handled:
+ *  - Deselecting a feature: if removing it would split the remaining selection
+ *    into disconnected parts, the selection is trimmed to the group that stays
+ *    connected to the first selected feature, rather than allowing a split.
+ *  - Adding a feature: if the new feature does not touch any already-selected
+ *    feature, the entire existing selection is replaced rather than extended,
+ *    keeping the selection contiguous.
+ *
+ * Returns false (no-op) when the click is a straightforward toggle that does
+ * not violate contiguity, leaving the caller to dispatch normally.
+ *
+ * @param {{ featureId, feature, config, selectedFeatures, dispatch, multiSelect }} params
+ *   feature.geometry must already be enriched by the provider before calling.
+ * @returns {boolean} True if this function dispatched; false if the caller should.
+ */
 const resolveContiguousDispatch = ({ featureId, feature, config, selectedFeatures, dispatch, multiSelect }) => {
   if (!selectedFeatures.length) {
     return false

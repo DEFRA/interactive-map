@@ -25,7 +25,7 @@ const interactPlugin = createInteractPlugin({
 	multiSelect: true,
 	contiguous: true,
 	deselectOnClickOutside: true,
-	debug: true
+	// debug: true
 })
 
 const drawPlugin = createDrawPlugin({
