@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import { KeySvgPattern } from './KeySvgPattern'
-import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
+import { patternRegistry } from '../../../../../../src/services/patternRegistry.js'
 
 const getKeyPatternPaths = jest.spyOn(patternRegistry, 'getKeyPatternPaths')
 const defaultProps = {

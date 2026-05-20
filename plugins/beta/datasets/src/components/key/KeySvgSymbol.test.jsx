@@ -1,7 +1,7 @@
 import { render } from '@testing-library/react'
 import { KeySvgSymbol } from './KeySvgSymbol'
 
-import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
+import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../../src/utils/symbolUtils.js'
 
 jest.mock('../../../../../src/utils/symbolUtils.js', () => ({
   getSymbolStyleColors: jest.fn(() => ({ foreground: '#000', background: '#fff' })),

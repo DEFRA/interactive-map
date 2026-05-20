@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react'
 import { KeySvg } from './KeySvg'
 
-import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
-import { hasPattern } from '../../../../../src/utils/patternUtils.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { hasSymbol } from '../../../../../../src/utils/symbolUtils.js'
+import { hasPattern } from '../../../../../../src/utils/patternUtils.js'
+import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
 // import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
 
 const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
