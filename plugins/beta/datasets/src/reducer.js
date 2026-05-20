@@ -1,5 +1,4 @@
 import { applyDatasetDefaults } from './defaults.js'
-import { keyReducer } from './reducers/keyReducer.js'
 import { datasetsToMenu } from './reducers/datasetsToMenu.js'
 
 const initialState = {
@@ -38,10 +37,8 @@ const initSublayerVisibility = (dataset) => {
 
 const setDatasets = (state, payload) => {
   const { datasets, mappedDatasets, orderedDatasets } = payload
-  // console.log('Setting datasets', datasets, mappedDatasets)
   const datasetsWithSublayerVisibility = datasets.map(initSublayerVisibility)
   const menu = payload.menu || datasetsToMenu({ datasets })
-  // const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: pluginConfigDatasets })
   return {
     ...state,
     datasets: datasetsWithSublayerVisibility,
@@ -190,7 +187,6 @@ const setSublayerOpacity = (state, payload) => {
 const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
 
 const actions = {
-  BUILD_KEY_GROUPS: keyReducer,
   SET_DATASETS: setDatasets,
   ADD_DATASET: addDataset,
   REMOVE_DATASET: removeDataset,

@@ -73,10 +73,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     initDatasets()
   }, [isMapStyleReady, appState.mode])
 
-  useEffect(() => {
-    dispatch({ type: 'BUILD_KEY_GROUPS', payload: null })
-  }, [pluginState.datasets])
-
   const datasetsRef = useRef(pluginState.mappedDatasets)
   const orderedDatasetsRef = useRef(pluginState.orderedDatasets)
   datasetsRef.current = pluginState.mappedDatasets
