@@ -12,6 +12,10 @@ import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExte
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { collectTileFragments } from './utils/vtTileFragments.js'
+import { setupHoverCursor } from './utils/hoverCursor.js'
+import { applyOpenLayersFixes } from './utils/openLayersFixes.js'
+
+applyOpenLayersFixes()
 
 const CRS = 'EPSG:27700'
 
@@ -129,6 +133,10 @@ export default class OpenLayersProvider {
     this.appEventHandles = null
 
     if (this.map) {
+      if (this._onHoverMove) {
+        this.map.un('pointermove', this._onHoverMove)
+        this._onHoverMove = null
+      }
       this.map.setTarget(null)
       this.map = null
     }
@@ -211,6 +219,13 @@ export default class OpenLayersProvider {
 
   getFeatureFragments (layerId, featureId, idProperty) {
     return collectTileFragments(this.map, layerId, featureId, idProperty)
+  }
+
+  setHoverCursor (layerIds) {
+    if (!this.map) {
+      return
+    }
+    this._onHoverMove = setupHoverCursor(this.map, layerIds, this._onHoverMove)
   }
 
   getVisibleFeatures (_layerIds) {
