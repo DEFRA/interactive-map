@@ -3,7 +3,7 @@ import { KeySvgSymbol } from './KeySvgSymbol'
 
 import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../../src/utils/symbolUtils.js'
 
-jest.mock('../../../../../src/utils/symbolUtils.js', () => ({
+jest.mock('../../../../../../src/utils/symbolUtils.js', () => ({
   getSymbolStyleColors: jest.fn(() => ({ foreground: '#000', background: '#fff' })),
   getSymbolViewBox: jest.fn(() => '0 0 38 38')
 }))
@@ -12,9 +12,13 @@ const mockResolve = jest.fn(() => '<path d="M0 0"/>')
 
 const defaultProps = {
   symbolDef: { id: 'marker' },
+  registryDataset: {
+    style: {
+      stroke: '#000000'
+    }
+  },
   symbolRegistry: { resolve: mockResolve },
-  mapStyle: { id: 'default' },
-  stroke: '#000000'
+  mapStyle: { id: 'default' }
 }
 
 beforeEach(() => {
@@ -41,12 +45,12 @@ describe('KeySvgSymbol', () => {
 
   it('calls getSymbolStyleColors with the dataset props', () => {
     render(<KeySvgSymbol {...defaultProps} />)
-    expect(getSymbolStyleColors).toHaveBeenCalledWith(defaultProps)
+    expect(getSymbolStyleColors).toHaveBeenCalledWith(defaultProps.registryDataset.style)
   })
 
   it('calls getSymbolViewBox with the dataset props and symbolDef', () => {
     render(<KeySvgSymbol {...defaultProps} />)
-    expect(getSymbolViewBox).toHaveBeenCalledWith(defaultProps, defaultProps.symbolDef)
+    expect(getSymbolViewBox).toHaveBeenCalledWith(defaultProps.registryDataset.style, defaultProps.symbolDef)
   })
 
   it('sets the viewBox from getSymbolViewBox', () => {

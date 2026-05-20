@@ -3,13 +3,17 @@ import { KeySvgLine } from './KeySvgLine'
 
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle'
 
-jest.mock('../../../../../src/utils/getValueForStyle', () => ({
+jest.mock('../../../../../../src/utils/getValueForStyle', () => ({
   getValueForStyle: jest.fn((value) => value)
 }))
 
 const defaultProps = {
-  stroke: '#ff0000',
-  strokeWidth: 2,
+  registryDataset: {
+    style: {
+      stroke: '#ff0000',
+      strokeWidth: 2
+    }
+  },
   mapStyle: { id: 'default' }
 }
 
