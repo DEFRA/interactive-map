@@ -27,11 +27,13 @@ export const datasets = [
     maxZoom: 24,
     showInKey: true,
     showInMenu: true,
+    visible: true,
     sublayers: [{
       id: '130-131',
       label: 'Permanent grassland',
       filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
       showInMenu: true,
+      visible: true,
       style: {
         stroke: { outdoor: '#00897B', dark: '#ffffff' },
         fillPattern: 'diagonal-cross-hatch',
@@ -43,6 +45,7 @@ export const datasets = [
       label: 'Woodland',
       filter: ['==', ['get', 'dominant_land_cover'], '332'],
       showInMenu: true,
+      visible: true,
       style: {
         stroke: { outdoor: '#2E7D32', dark: '#ffffff' },
         fillPattern: 'dot',
@@ -54,6 +57,7 @@ export const datasets = [
       label: 'Arable',
       filter: ['==', ['get', 'dominant_land_cover'], '110'],
       showInMenu: true,
+      visible: true,
       style: {
         stroke: { outdoor: '#6D4C41', dark: '#ffffff' },
         fillPattern: 'horizontal-hatch',
@@ -64,6 +68,7 @@ export const datasets = [
       id: '379',
       label: 'Farmyards',
       visibility: 'hidden',
+      visible: false,
       filter: ['==', ['get', 'dominant_land_cover'], '379'],
       showInMenu: true,
       style: {
@@ -77,6 +82,7 @@ export const datasets = [
       label: 'Others',
       filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['110', '130', '131', '332', '379']]]],
       showInMenu: true,
+      visible: true,
       style: {
         stroke: { outdoor: '#1565C0', dark: '#ffffff' },
         fill: 'rgba(0,0,255,0.1)',
@@ -97,6 +103,7 @@ export const datasets = [
     maxZoom: 24,
     showInKey: true,
     showInMenu: true,
+    visible: true,
     style: {
       stroke: { outdoor: '#1565C0', dark: '#ffffff' },
       strokeWidth: 2,
@@ -111,6 +118,7 @@ export const datasets = [
     maxZoom: 24,
     showInKey: true,
     showInMenu: true,
+    visible: true,
     style: {
       symbol: 'square',
       symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
@@ -120,6 +128,7 @@ export const datasets = [
       label: 'Prehistoric',
       filter: ['in', ['get', 'category'], 'prehistoric'],
       showInMenu: true,
+      visible: true,
       style: {
         symbolBackgroundColor: '#00897B'
       }
@@ -128,6 +137,7 @@ export const datasets = [
       label: 'Roman',
       filter: ['in', ['get', 'category'], 'roman'],
       showInMenu: true,
+      visible: true,
       style: {
         symbolBackgroundColor: '#ca3535'
       }
@@ -136,6 +146,7 @@ export const datasets = [
       label: 'Medieval',
       filter: ['in', ['get', 'category'], 'medieval'],
       showInMenu: true,
+      visible: true,
       style: {
         symbolBackgroundColor: '#1565C0'
       }
@@ -151,6 +162,7 @@ export const datasets = [
     showInKey: true,
     showInMenu: true,
     visibility: 'hidden',
+    visible: false,
     style: {
       stroke: '#b58840',
       fill: 'transparent',

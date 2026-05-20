@@ -1,10 +1,14 @@
 import { render } from '@testing-library/react'
 import { KeySvgPattern } from './KeySvgPattern'
-import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
+import { patternRegistry } from '../../../../../../src/services/patternRegistry.js'
 
 const getKeyPatternPaths = jest.spyOn(patternRegistry, 'getKeyPatternPaths')
 const defaultProps = {
-  fillPattern: 'dots',
+  registryDataset: {
+    style: {
+      fillPattern: 'dots'
+    }
+  },
   patternRegistry,
   mapStyle: { id: 'default' }
 }
@@ -21,7 +25,7 @@ describe('KeySvgPattern', () => {
 
   it('calls getKeyPatternPaths with props, the mapStyle id, and the patternRegistry', () => {
     render(<KeySvgPattern {...defaultProps} />)
-    expect(getKeyPatternPaths).toHaveBeenCalledWith(defaultProps, 'default')
+    expect(getKeyPatternPaths).toHaveBeenCalledWith(defaultProps.registryDataset.style, 'default')
   })
 
   it('renders two g elements for border and content', () => {
