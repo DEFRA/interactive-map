@@ -55,7 +55,7 @@ const setup = (pluginOverrides = {}, markerItems = [], markerRefs = new Map()) =
     services: {
       eventBus: { emit: jest.fn() }
     },
-    mapProvider: { getFeatureFragments: jest.fn(() => []) }
+    mapProvider: { getFeatureGeometry: jest.fn(() => null) }
   }
 
   const utils = renderHook(() => useInteractionHandlers(deps))
@@ -339,7 +339,7 @@ it('does not emit selectionchange when features are selected but bounds not yet 
       selectionBounds: null
     },
     services: { eventBus: { emit: jest.fn() } },
-    mapProvider: { getFeatureFragments: jest.fn(() => []) }
+    mapProvider: { getFeatureGeometry: jest.fn(() => null) }
   }
 
   renderHook(() => useInteractionHandlers(deps))
@@ -356,7 +356,7 @@ it('emits selectionchange once when bounds exist', () => {
       selectionBounds: { sw: [0, 0], ne: [1, 1] }
     },
     services: { eventBus: { emit: jest.fn() } },
-    mapProvider: { getFeatureFragments: jest.fn(() => []) }
+    mapProvider: { getFeatureGeometry: jest.fn(() => null) }
   }
 
   renderHook(() => useInteractionHandlers(deps))
@@ -381,7 +381,7 @@ it('skips emission when selection remains empty after being cleared', () => {
       mapState: { markers: { items: [], markerRefs: new Map() } },
       pluginState: { selectedFeatures: features, selectedMarkers: [], selectionBounds: { b: 1 } },
       services: { eventBus },
-      mapProvider: { getFeatureFragments: jest.fn(() => []) }
+      mapProvider: { getFeatureGeometry: jest.fn(() => null) }
     }),
     { initialProps: { features: [{ id: 'f1' }] } }
   )
@@ -524,7 +524,6 @@ describe('contiguous enforcement', () => {
   })
 
   it('falls through to normal toggle when selected features have no usable geometry', () => {
-    // expandedSelected ends up empty — neither replace nor block should trigger
     const noGeomFeature = { featureId: 'P0', layerId: 'parcels' }
     const { result, deps } = setup({
       contiguous: true,
@@ -542,31 +541,44 @@ describe('contiguous enforcement', () => {
     )
   })
 
-  it('uses tile fragments from provider when available', () => {
-    const frag = { type: 'Polygon', coordinates: [] }
-    const { result, deps } = setup({
-      contiguous: true,
-      multiSelect: true,
-      selectedFeatures: [existingFeature]
-    })
-    deps.mapProvider.getFeatureFragments.mockReturnValue([frag])
+  it('uses the geometry returned by the provider as the dispatched geometry', () => {
+    const enriched = { type: 'MultiPolygon', coordinates: [[[[0, 0], [1, 0], [1, 1], [0, 0]]]] }
+    const { result, deps } = setup({ contiguous: false, multiSelect: true, selectedFeatures: [] })
+    deps.mapProvider.getFeatureGeometry.mockReturnValue(enriched)
 
     click(result)
 
-    expect(deps.mapProvider.getFeatureFragments).toHaveBeenCalled()
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ geometry: enriched })
+      })
+    )
   })
 
-  it('falls back to stored geometry when provider has no getFeatureFragments', () => {
-    const { result, deps } = setup({
-      contiguous: true,
-      multiSelect: true,
-      selectedFeatures: [existingFeature]
-    })
-    deps.mapProvider.getFeatureFragments = undefined
+  it('uses stored geometry when provider returns null', () => {
+    const { result, deps } = setup({ contiguous: false, multiSelect: true, selectedFeatures: [] })
+    deps.mapProvider.getFeatureGeometry.mockReturnValue(null)
 
     click(result)
 
-    expect(deps.pluginState.dispatch).toHaveBeenCalled()
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ geometry: baseFeature.geometry })
+      })
+    )
+  })
+
+  it('uses stored geometry when provider has no getFeatureGeometry', () => {
+    const { result, deps } = setup({ contiguous: false, multiSelect: true, selectedFeatures: [] })
+    deps.mapProvider.getFeatureGeometry = undefined
+
+    click(result)
+
+    expect(deps.pluginState.dispatch).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payload: expect.objectContaining({ geometry: baseFeature.geometry })
+      })
+    )
   })
 
   it('falls through to normal toggle when clicked feature has no geometry', () => {

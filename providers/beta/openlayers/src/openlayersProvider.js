@@ -217,8 +217,12 @@ export default class OpenLayersProvider {
     return queryFeatures(this.map, point, options)
   }
 
-  getFeatureFragments (layerId, featureId, idProperty) {
-    return collectTileFragments(this.map, layerId, featureId, idProperty)
+  getFeatureGeometry (layerId, featureId, idProperty) {
+    const fragments = collectTileFragments(this.map, layerId, featureId, idProperty)
+    if (fragments.length === 0) { return null }
+    if (fragments.length === 1) { return fragments[0] }
+    const coords = fragments.flatMap(g => g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates])
+    return { type: 'MultiPolygon', coordinates: coords }
   }
 
   setHoverCursor (layerIds) {
