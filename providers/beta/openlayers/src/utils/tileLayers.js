@@ -1,5 +1,6 @@
 import XYZ from 'ol/source/XYZ.js'
 import VectorTileSource from 'ol/source/VectorTile.js'
+import TileLayer from 'ol/layer/Tile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import OGCVectorTile from 'ol/source/OGCVectorTile.js'
 import MVT from 'ol/format/MVT.js'
@@ -47,6 +48,19 @@ export function createTileSource (url, transformRequest) {
     tileUrlFunction,
     tileLoadFunction: transformRequest ? createTileLoadFunction(transformRequest) : undefined
   })
+}
+
+export async function createMapStyleLayer (mapStyle, transformRequest) {
+  if (mapStyle.type === 'raster') {
+    const source = createTileSource(mapStyle.url, transformRequest)
+    return { layer: new TileLayer({ source }), source }
+  }
+
+  if (mapStyle.type === 'ogc-vt') {
+    return createOGCVectorTileLayer(mapStyle.url, transformRequest, mapStyle)
+  }
+
+  return createVectorTileLayer(mapStyle.url, transformRequest, mapStyle)
 }
 
 // Insert extension before any query string to match Mapbox GL sprite convention

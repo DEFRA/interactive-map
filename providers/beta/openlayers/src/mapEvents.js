@@ -6,17 +6,6 @@ const DEBOUNCE_IDLE_TIME = 500
 const MOVE_THROTTLE_TIME = 10
 const DRAG_TOLERANCE = 6
 
-function attachLoadEvents ({ source, map, emit, eventBus, events, on }) {
-  let loadedEmitted = false
-  on(source, 'tileloadend', () => {
-    if (!loadedEmitted) {
-      loadedEmitted = true
-      eventBus.emit(events.MAP_LOADED)
-    }
-  })
-  map.once('rendercomplete', () => emit(events.MAP_FIRST_IDLE))
-}
-
 function attachMoveEvents ({ map, view, emit, eventBus, events, on, debouncers }) {
   let moving = false
 
@@ -79,6 +68,7 @@ export function attachMapEvents ({
 }) {
   let destroyed = false
   const listeners = []
+  let sourceListeners = []
   const debouncers = []
 
   const view = map.getView()
@@ -110,21 +100,47 @@ export function attachMapEvents ({
     listeners.push([target, type, handler])
   }
 
-  attachLoadEvents({ source, map, emit, eventBus, events, on })
+  const onSource = (target, type, handler) => {
+    target.on(type, handler)
+    sourceListeners.push([target, type, handler])
+  }
+
+  let loadedEmitted = false
+  const emitLoaded = () => {
+    if (!loadedEmitted) {
+      loadedEmitted = true
+      eventBus.emit(events.MAP_LOADED)
+    }
+  }
+
+  const emitDataChange = debounce(() => emit(events.MAP_DATA_CHANGE), DEBOUNCE_IDLE_TIME)
+  debouncers.push(emitDataChange)
+
+  const setSource = (newSource) => {
+    if (destroyed) {
+      return
+    }
+
+    sourceListeners.forEach(([target, type, handler]) => target.un(type, handler))
+    sourceListeners = []
+    onSource(newSource, 'tileloadend', emitLoaded)
+    onSource(newSource, 'tileloadend', emitDataChange)
+  }
+
   attachMoveEvents({ map, view: map.getView(), emit, eventBus, events, on, debouncers })
+  setSource(source)
+  map.once('rendercomplete', () => emit(events.MAP_FIRST_IDLE))
   attachClickEvents({ map, eventBus, events, on })
 
   on(map, 'postrender', () => eventBus.emit(events.MAP_RENDER))
 
-  const emitDataChange = debounce(() => emit(events.MAP_DATA_CHANGE), DEBOUNCE_IDLE_TIME)
-  debouncers.push(emitDataChange)
-  on(source, 'tileloadend', emitDataChange)
-
   return {
+    setSource,
     remove () {
       destroyed = true
       debouncers.forEach(d => d.cancel())
       listeners.forEach(([target, type, handler]) => target.un(type, handler))
+      sourceListeners.forEach(([target, type, handler]) => target.un(type, handler))
     }
   }
 }

@@ -1,21 +1,26 @@
 import XYZ from 'ol/source/XYZ.js'
 import TileGrid from 'ol/tilegrid/TileGrid.js'
+import TileLayer from 'ol/layer/Tile.js'
 import VectorTileSource from 'ol/source/VectorTile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import { stylefunction } from 'ol-mapbox-style'
-import { createTileSource, createVectorTileLayer } from './tileLayers.js'
+import { createTileSource, createMapStyleLayer, createVectorTileLayer } from './tileLayers.js'
 import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.js'
 
 const mockTileGridInstance = {}
 const mockSourceInstance = {}
+const mockTileLayerInstance = {}
 const mockVectorTileSourceInstance = {}
+const mockOGCVectorTileSourceInstance = { supportedMediaTypes: [] }
 const mockVectorTileLayerInstance = {}
-const mockMVTInstance = {}
+const mockMVTInstance = { supportedMediaTypes: [] }
 
 jest.mock('ol/source/XYZ.js', () => ({ __esModule: true, default: jest.fn(() => mockSourceInstance) }))
+jest.mock('ol/layer/Tile.js', () => ({ __esModule: true, default: jest.fn(() => mockTileLayerInstance) }))
 jest.mock('ol/tilegrid/TileGrid.js', () => ({ __esModule: true, default: jest.fn(() => mockTileGridInstance) }))
 jest.mock('ol/TileState.js', () => ({ __esModule: true, default: { ERROR: 'error' } }))
 jest.mock('ol/source/VectorTile.js', () => ({ __esModule: true, default: jest.fn(() => mockVectorTileSourceInstance) }))
+jest.mock('ol/source/OGCVectorTile.js', () => ({ __esModule: true, default: jest.fn(() => mockOGCVectorTileSourceInstance) }))
 jest.mock('ol/layer/VectorTile.js', () => ({ __esModule: true, default: jest.fn(() => mockVectorTileLayerInstance) }))
 jest.mock('ol/format/MVT.js', () => ({ __esModule: true, default: jest.fn(() => mockMVTInstance) }))
 jest.mock('ol-mapbox-style', () => ({ __esModule: true, stylefunction: jest.fn(), recordStyleLayer: jest.fn() }))
@@ -40,6 +45,38 @@ const mockServiceJson = {
 }
 
 const mockSpritesJson = { myIcon: { x: 0, y: 0, width: 16, height: 16, pixelRatio: 1 } }
+
+const mockOGCStyleJson = {
+  sources: { ngd: { url: 'https://example.com/ogc/tiles' } },
+  sprite: 'https://example.com/sprites/sprite',
+  layers: []
+}
+
+const mockTilesetJson = {
+  links: [{ rel: 'http://www.opengis.net/def/rel/ogc/1.0/tiling-scheme', href: 'https://example.com/ogc/tms' }]
+}
+
+const mockTMSJson = {
+  tileMatrices: [
+    { cellSize: 896, pointOfOrigin: [-238375, 1376256], tileHeight: 256, tileWidth: 256 },
+    { cellSize: 448, pointOfOrigin: [-238375, 1376256], tileHeight: 256, tileWidth: 256 }
+  ]
+}
+
+function makeOGCFetchMock (styleJson = mockOGCStyleJson) {
+  return jest.fn().mockImplementation(url => {
+    if (url === 'https://example.com/ogc/tiles') {
+      return Promise.resolve({ json: () => Promise.resolve(mockTilesetJson) })
+    }
+    if (url === 'https://example.com/ogc/tms') {
+      return Promise.resolve({ json: () => Promise.resolve(mockTMSJson) })
+    }
+    if (url.endsWith('.json') || url.includes('.json?')) {
+      return Promise.resolve({ json: () => Promise.resolve(mockSpritesJson) })
+    }
+    return Promise.resolve({ json: () => Promise.resolve(styleJson) })
+  })
+}
 
 function makeVectorFetchMock (styleJson = mockStyleJson) {
   return jest.fn().mockImplementation(url => {
@@ -143,6 +180,40 @@ describe('tileLoadFunction (via transformRequest)', () => {
     fn(mockTile, url)
     await flushPromises()
     expect(mockTile.setState).toHaveBeenCalledWith('error')
+  })
+})
+
+describe('createMapStyleLayer', () => {
+  const styleUrl = 'https://example.com/styles'
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    global.fetch = makeVectorFetchMock()
+  })
+
+  it('creates a raster tile layer and source when mapStyle.type is raster', async () => {
+    const result = await createMapStyleLayer({ url: 'https://tiles.example.com/{z}/{x}/{y}', type: 'raster' }, null)
+    expect(TileLayer).toHaveBeenCalledWith({ source: mockSourceInstance })
+    expect(result).toEqual({ layer: mockTileLayerInstance, source: mockSourceInstance })
+  })
+
+  it('creates an OGC vector tile layer and source when mapStyle.type is ogc-vt', async () => {
+    global.fetch = makeOGCFetchMock()
+    const result = await createMapStyleLayer({ url: 'https://example.com/ogc-styles', type: 'ogc-vt' }, null)
+    expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockOGCVectorTileSourceInstance, declutter: true })
+    expect(result).toEqual({ layer: mockVectorTileLayerInstance, source: mockOGCVectorTileSourceInstance })
+  })
+
+  it('creates a vector tile layer and source when mapStyle.type is vector', async () => {
+    const result = await createMapStyleLayer({ url: styleUrl, type: 'vector' }, null)
+    expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockVectorTileSourceInstance, declutter: true })
+    expect(result).toEqual({ layer: mockVectorTileLayerInstance, source: mockVectorTileSourceInstance })
+  })
+
+  it('creates a vector tile layer and source when mapStyle.type is missing', async () => {
+    const result = await createMapStyleLayer({ url: styleUrl }, null)
+    expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockVectorTileSourceInstance, declutter: true })
+    expect(result).toEqual({ layer: mockVectorTileLayerInstance, source: mockVectorTileSourceInstance })
   })
 })
 
