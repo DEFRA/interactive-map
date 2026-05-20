@@ -50,7 +50,7 @@ export const Layers = ({ pluginState }) => {
   }
 
   const renderDatasetItem = (dataset) => {
-    const itemClass = `im-c-datasets-layers__item govuk-checkboxes govuk-checkboxes--small${dataset.visibility === 'hidden' ? '' : ' im-c-datasets-layers__item--checked'}`
+    const itemClass = `im-c-datasets-layers__item govuk-checkboxes govuk-checkboxes--small${dataset.visible ? '' : ' im-c-datasets-layers__item--checked'}`
     return (
       <div key={dataset.id} className={itemClass} data-module='govuk-checkboxes'>
         <div className='govuk-checkboxes__item'>
@@ -60,7 +60,7 @@ export const Layers = ({ pluginState }) => {
             name='layers'
             type='checkbox'
             value={dataset.id}
-            checked={dataset.visibility !== 'hidden'}
+            checked={dataset.visible}
             onChange={handleDatasetChange}
           />
           <label className={CHECKBOX_LABEL_CLASS} htmlFor={dataset.id}>
@@ -72,10 +72,10 @@ export const Layers = ({ pluginState }) => {
   }
   // TODO - remove this useEffect - it's useful while refactoring the state
   useEffect(() => {
-    // console.log('menu:', pluginState.menu)
+    console.log('menu:', pluginState.menu)
     console.log('datasets:', pluginState.datasets)
     console.log('mappedDatasets:', pluginState.mappedDatasets)
-    // console.log('orderedDatasets:', pluginState.orderedDatasets)
+    console.log('orderedDatasets:', pluginState.orderedDatasets)
   }, [pluginState.datasets, pluginState.mappedDatasets])
 
   useEffect(() => {
@@ -133,7 +133,7 @@ export const Layers = ({ pluginState }) => {
         }
 
         if (item.type === 'group') {
-          const anyDatasetChecked = item.datasets.some(d => d.visibility !== 'hidden')
+          const anyDatasetChecked = item.datasets.some(d => d.visible)
           const wrapperClass = `govuk-form-group im-c-datasets-layers-group${anyDatasetChecked ? ' im-c-datasets-layers-group--items-checked' : ''}`
           return (
             <div key={item.groupLabel} className={wrapperClass}>

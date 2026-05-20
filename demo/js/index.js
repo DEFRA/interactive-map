@@ -125,6 +125,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		showInKey: true,
 		showInMenu: true,
 		style: {
+			symbolDescription: 'Land cover',
 			fillPattern: 'horizontal-hatch',
 			fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
 			fillPatternBackgroundColor: 'transparent'
@@ -190,7 +191,7 @@ const datasetsPlugin = createDatasetsPlugin({
 	{
 		id: 'existing-fields',
 		label: 'Existing fields',
-		// groupLabel: 'Test group',
+		groupLabel: 'Test group',
 		filter: ['all',['==', ['get', 'sbi'], '106223377'],['==', ['get', 'is_dominant_land_cover'], true]],
 		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
 		sourceLayer: 'field_parcels_filtered',
@@ -204,7 +205,8 @@ const datasetsPlugin = createDatasetsPlugin({
 			fill: 'rgba(21,101,192,0.1)',
 			symbolDescription: { outdoor: 'blue outline', dark: 'white outline' }
 		}
-	},{
+	},
+	{
 		id: 'historic-monuments',
 		label: 'Historic monuments',
 		geojson: pointData,
@@ -215,6 +217,7 @@ const datasetsPlugin = createDatasetsPlugin({
 		style: {
 			symbol: 'square',
 			symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
+			symbolAnchor: [0.1, 0.1],
 			// symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
 			// symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
 		},
@@ -224,6 +227,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			filter: ['in', ['get', 'category'], 'prehistoric'],
 			showInMenu: true,
 			style: {
+				symbolAnchor: [0.5, 0.5],
 				symbolBackgroundColor: '#00897B',
 			}
 		},{
@@ -232,6 +236,7 @@ const datasetsPlugin = createDatasetsPlugin({
 			filter: ['in', ['get', 'category'], 'roman'],
 			showInMenu: true,
 			style: {
+				// symbolAnchor: [0.1, 0.1],
 				symbolBackgroundColor: '#ca3535',
 			}
 		},{
@@ -240,13 +245,15 @@ const datasetsPlugin = createDatasetsPlugin({
 			filter: ['in', ['get', 'category'], 'medieval'],
 			showInMenu: true,
 			style: {
+				// symbolAnchor: [0.9, 0.9],
 				symbolBackgroundColor: '#1565C0',
 			}
 		}]
-	},{
+	},
+	{
 		id: 'hedge-control',
 		label: 'Hedge control',
-		// groupLabel: 'Test group',
+		groupLabel: 'Test group',
 		tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
 		sourceLayer: 'hedge_control',
 		minZoom: 10,
@@ -261,7 +268,8 @@ const datasetsPlugin = createDatasetsPlugin({
 			symbolDescription: { outdoor: 'blue outline' },
 			keySymbolShape: 'line',
 		}
-	}]
+	}
+]
 })
 
 const interactiveMap = new InteractiveMap('map', {
@@ -346,18 +354,26 @@ interactiveMap.on('datasets:ready', function () {
 	// setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [55], { datasetId: 'land-covers', idProperty: null }), 2000)
 	// setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [55], { datasetId: 'land-covers', idProperty: null }), 4000)
 
-	// setTimeout(() => datasetsPlugin.setStyle(
-	// 	{
-	// 		stroke: { outdoor: '#ff0000', dark: '#ffffff' },
-	// 		fillPattern: 'horizontal-hatch',
-	// 		fillPatternForegroundColor:  { outdoor: '#ff0000', dark: '#ffffff' },
-	// 		fillPatternBackgroundColor: 'transparent'
-	// 	},
-	// 	{ datasetId: 'land-covers', sublayerId: '130-131' }), 2000)
+	setTimeout(() => datasetsPlugin.setStyle({
+		stroke: { outdoor: '#ff0000', dark: '#ffffff' },
+    fillPattern: 'horizontal-hatch',
+    fillPatternForegroundColor:  { outdoor: '#ff0000', dark: '#ffffff' },
+    fillPatternBackgroundColor: 'transparent'
+	}, { datasetId: 'land-covers', sublayerId: '130-131' }), 1000)
+
+	// Hide all landcovers
+	setTimeout(() => datasetsPlugin.setDatasetVisibility(false, { datasetId: 'land-covers' }), 2000)
+	// Specifically hide landcovers-130-131
+	setTimeout(() => datasetsPlugin.setDatasetVisibility(false, { datasetId: 'land-covers', sublayerId: '130-131' }), 3000)
+	// Show landcovers - expect landcovers-130-131 to remain hidden
+	setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'land-covers' }), 4000)
+	// now reshow show landcovers-130-131
+	setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'land-covers', sublayerId: '130-131' }), 5000)
+
 	// setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 1000)
 	// setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 5000)
 	// setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
-	// setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ffff00' }, }, { datasetId: 'hedge-control' }), 1000)
+	// setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ffff00' }, }, { datasetId: 'hedge-control' }), 2000)
 })
 
 // Ref to the selected features

@@ -1,20 +1,10 @@
 import { render } from '@testing-library/react'
 import { KeySvg } from './KeySvg'
 
-import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
-import { hasPattern } from '../../../../../src/utils/patternUtils.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
-// import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
+import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
+import { patternRegistry } from '../../../../../../src/services/patternRegistry.js'
 
 const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
-
-jest.mock('../../../../../src/utils/symbolUtils.js', () => ({
-  hasSymbol: jest.fn(() => false)
-}))
-
-jest.mock('../../../../../src/utils/patternUtils.js', () => ({
-  hasPattern: jest.fn(() => false)
-}))
 
 jest.mock('./KeySvgPattern.jsx', () => ({
   KeySvgPattern: () => <svg data-testid='key-svg-pattern' />
@@ -32,33 +22,37 @@ jest.mock('./KeySvgRect.jsx', () => ({
   KeySvgRect: () => <svg data-testid='key-svg-rect' />
 }))
 
+const baseRegistryDataset = {
+  hasSymbol: false,
+  hasPattern: false,
+  style: {}
+}
+
 const baseProps = {
   symbolRegistry,
-  mapStyle: { id: 'default' }
+  patternRegistry,
+  mapStyle: { id: 'default' },
+  registryDataset: baseRegistryDataset
 }
 
 beforeEach(() => {
-  hasSymbol.mockReturnValue(false)
   getSymbolDef.mockReturnValue(null)
-  hasPattern.mockReturnValue(false)
 })
 
 describe('KeySvg', () => {
   it('renders KeySvgSymbol when a symbolDef is resolved', () => {
-    hasSymbol.mockReturnValue(true)
     getSymbolDef.mockReturnValue({ id: 'marker' })
-    const { getByTestId } = render(<KeySvg {...baseProps} symbol='marker' />)
+    const { getByTestId } = render(<KeySvg {...baseProps} registryDataset={{ ...baseRegistryDataset, hasSymbol: true }} />)
     expect(getByTestId('key-svg-symbol')).toBeTruthy()
   })
 
   it('renders KeySvgPattern when hasPattern is true and no symbol', () => {
-    hasPattern.mockReturnValue(true)
-    const { getByTestId } = render(<KeySvg {...baseProps} fillPattern='dots' />)
+    const { getByTestId } = render(<KeySvg {...baseProps} registryDataset={{ ...baseRegistryDataset, hasPattern: true }} />)
     expect(getByTestId('key-svg-pattern')).toBeTruthy()
   })
 
   it('renders KeySvgLine when keySymbolShape is line and no symbol or pattern', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keySymbolShape='line' />)
+    const { getByTestId } = render(<KeySvg {...baseProps} registryDataset={{ ...baseRegistryDataset, style: { keySymbolShape: 'line' } }} />)
     expect(getByTestId('key-svg-line')).toBeTruthy()
   })
 
@@ -68,30 +62,26 @@ describe('KeySvg', () => {
   })
 
   it('prefers symbol over pattern when both are present', () => {
-    hasSymbol.mockReturnValue(true)
     getSymbolDef.mockReturnValue({ id: 'marker' })
-    hasPattern.mockReturnValue(true)
-    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} symbol='marker' fillPattern='dots' />)
+    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} registryDataset={{ ...baseRegistryDataset, hasSymbol: true, hasPattern: true }} />)
     expect(getByTestId('key-svg-symbol')).toBeTruthy()
     expect(queryByTestId('key-svg-pattern')).toBeNull()
   })
 
   it('prefers pattern over line when both conditions are met', () => {
-    hasPattern.mockReturnValue(true)
-    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} fillPattern='dots' keySymbolShape='line' />)
+    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} registryDataset={{ ...baseRegistryDataset, hasPattern: true, style: { keySymbolShape: 'line' } }} />)
     expect(getByTestId('key-svg-pattern')).toBeTruthy()
     expect(queryByTestId('key-svg-line')).toBeNull()
   })
 
   it('renders KeySvgRect when keySymbolShape is not line and no symbol or pattern', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keySymbolShape='polygon' />)
+    const { getByTestId } = render(<KeySvg {...baseProps} registryDataset={{ ...baseRegistryDataset, style: { keySymbolShape: 'polygon' } }} />)
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
 
   it('does not render KeySvgSymbol when hasSymbol is true but getSymbolDef returns null', () => {
-    hasSymbol.mockReturnValue(true)
     getSymbolDef.mockReturnValue(null)
-    const { getByTestId } = render(<KeySvg {...baseProps} symbol='unknown' />)
+    const { getByTestId } = render(<KeySvg {...baseProps} registryDataset={{ ...baseRegistryDataset, hasSymbol: true }} />)
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
 })
