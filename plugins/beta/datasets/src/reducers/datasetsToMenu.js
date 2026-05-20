@@ -14,7 +14,7 @@ export const datasetsToMenu = (state) => {
             .map(sublayer => ({
               id: sublayer.id,
               label: sublayer.label,
-              checked: sublayer.visibility !== 'hidden'
+              checked: sublayer.visible
             }))
         }
       }
@@ -24,7 +24,7 @@ export const datasetsToMenu = (state) => {
         items: [{
           id: dataset.id,
           label: dataset.label,
-          checked: dataset.visibility !== 'hidden'
+          checked: dataset.visible
         }]
       }
     })

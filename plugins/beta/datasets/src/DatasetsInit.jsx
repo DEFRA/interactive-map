@@ -73,13 +73,13 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     initDatasets()
   }, [isMapStyleReady, appState.mode])
 
-  useEffect(() => {
-    dispatch({ type: 'BUILD_KEY_GROUPS', payload: null })
-  }, [pluginState.datasets])
-
   const datasetsRef = useRef(pluginState.mappedDatasets)
+  const orderedDatasetsRef = useRef(pluginState.orderedDatasets)
   datasetsRef.current = pluginState.mappedDatasets
-  useEffect(() => datasetRegistry.attach(datasetsRef.current), [pluginState.mappedDatasets])
+  orderedDatasetsRef.current = pluginState.orderedDatasets
+  useEffect(() => {
+    datasetRegistry.attach(datasetsRef.current, pluginState.orderedDatasets)
+  }, [pluginState.mappedDatasets, pluginState.orderedDatasets])
   useLayerAdapterActions('setStyle', dispatch, pluginState, [pluginState.layerAdapterActions.setStyle])
   useLayerAdapterActions('setDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.setDatasetVisibility])
 
