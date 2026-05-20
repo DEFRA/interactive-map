@@ -1,14 +1,13 @@
 import { attachAppEvents } from './appEvents.js'
 
-import { createTileSource, createVectorTileLayer } from './utils/tileLayers.js'
+import { createMapStyleLayer } from './utils/tileLayers.js'
 
+const mockLayerInstance = {}
 const mockSourceInstance = {}
-const mockVectorTileLayerInstance = {}
 
 jest.mock('./utils/tileLayers.js', () => ({
   __esModule: true,
-  createTileSource: jest.fn(() => mockSourceInstance),
-  createVectorTileLayer: jest.fn(async () => ({ layer: mockVectorTileLayerInstance, source: {} }))
+  createMapStyleLayer: jest.fn(async () => ({ layer: mockLayerInstance, source: mockSourceInstance }))
 }))
 
 const events = {
@@ -30,12 +29,14 @@ describe('attachAppEvents', () => {
   describe('raster', () => {
     function makeSetup () {
       jest.clearAllMocks()
-      const layer = { setSource: jest.fn() }
+      const setAt = jest.fn()
+      const map = { getLayers: jest.fn(() => ({ setAt })), setPixelRatio: jest.fn() }
+      const onBaseSourceChange = jest.fn()
       const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
       const mapProvider = makeProvider()
-      const handles = attachAppEvents({ mapProvider, layer, layerType: 'raster', transformRequest: null, events, eventBus, map: makeMap() })
+      const handles = attachAppEvents({ mapProvider, transformRequest: null, events, eventBus, map, onBaseSourceChange })
       const handlerFor = (event) => eventBus.on.mock.calls.find(c => c[0] === event)[1]
-      return { layer, eventBus, handles, handlerFor, mapProvider }
+      return { map, setAt, onBaseSourceChange, eventBus, handles, handlerFor, mapProvider }
     }
 
     it('subscribes to MAP_SET_STYLE on the event bus', () => {
@@ -43,11 +44,18 @@ describe('attachAppEvents', () => {
       expect(eventBus.on).toHaveBeenCalledWith(events.MAP_SET_STYLE, expect.any(Function))
     })
 
-    it('on MAP_SET_STYLE: creates a tile source and sets it on the layer', async () => {
-      const { layer, handlerFor } = makeSetup()
-      await handlerFor(events.MAP_SET_STYLE)({ url: 'https://new.tiles.com/{z}/{x}/{y}', id: 'newStyle' })
-      expect(createTileSource).toHaveBeenCalledWith('https://new.tiles.com/{z}/{x}/{y}', null)
-      expect(layer.setSource).toHaveBeenCalledWith(mockSourceInstance)
+    it('on MAP_SET_STYLE: creates a map style layer and places it at index 0', async () => {
+      const { setAt, handlerFor } = makeSetup()
+      const mapStyle = { url: 'https://new.tiles.com/{z}/{x}/{y}', id: 'newStyle', type: 'raster' }
+      await handlerFor(events.MAP_SET_STYLE)(mapStyle)
+      expect(createMapStyleLayer).toHaveBeenCalledWith(mapStyle, null)
+      expect(setAt).toHaveBeenCalledWith(0, mockLayerInstance)
+    })
+
+    it('on MAP_SET_STYLE: updates the base source for map events', async () => {
+      const { onBaseSourceChange, handlerFor } = makeSetup()
+      await handlerFor(events.MAP_SET_STYLE)({ url: 'https://new.tiles.com/{z}/{x}/{y}', id: 'newStyle', type: 'raster' })
+      expect(onBaseSourceChange).toHaveBeenCalledWith(mockSourceInstance)
     })
 
     it('on MAP_SET_STYLE: emits MAP_STYLE_CHANGE with the new style id', async () => {
@@ -72,7 +80,7 @@ describe('attachAppEvents', () => {
       const map = { getLayers: jest.fn(() => ({ setAt })), setPixelRatio: jest.fn() }
       const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
       const mapProvider = makeProvider()
-      const handles = attachAppEvents({ mapProvider, layer: {}, layerType: 'vector', transformRequest: null, events, eventBus, map })
+      const handles = attachAppEvents({ mapProvider, transformRequest: null, events, eventBus, map, onBaseSourceChange: jest.fn() })
       const handlerFor = (event) => eventBus.on.mock.calls.find(c => c[0] === event)[1]
       return { map, setAt, eventBus, handles, handlerFor, mapProvider }
     }
@@ -81,8 +89,8 @@ describe('attachAppEvents', () => {
       const { setAt, handlerFor } = makeSetup()
       const mapStyle = { url: 'https://example.com/styles', id: 'newVts' }
       await handlerFor(events.MAP_SET_STYLE)(mapStyle)
-      expect(createVectorTileLayer).toHaveBeenCalledWith(mapStyle.url, null, mapStyle)
-      expect(setAt).toHaveBeenCalledWith(0, mockVectorTileLayerInstance)
+      expect(createMapStyleLayer).toHaveBeenCalledWith(mapStyle, null)
+      expect(setAt).toHaveBeenCalledWith(0, mockLayerInstance)
     })
 
     it('on MAP_SET_STYLE: emits MAP_STYLE_CHANGE with the new style id', async () => {
@@ -98,7 +106,7 @@ describe('attachAppEvents', () => {
       const map = makeMap()
       const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
       const mapProvider = makeProvider()
-      attachAppEvents({ mapProvider, layer: {}, layerType: 'vector', transformRequest: null, events, eventBus, map })
+      attachAppEvents({ mapProvider, transformRequest: null, events, eventBus, map, onBaseSourceChange: jest.fn() })
       const handlerFor = (event) => eventBus.on.mock.calls.find(c => c[0] === event)[1]
       return { map, mapProvider, handlerFor }
     }

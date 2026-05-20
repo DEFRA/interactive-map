@@ -1,13 +1,12 @@
 import OlMap from 'ol/Map.js'
 import View from 'ol/View.js'
-import TileLayer from 'ol/layer/Tile.js'
 import { defaults as defaultInteractions } from 'ol/interaction/defaults.js'
 import proj4 from 'proj4'
 import { register } from 'ol/proj/proj4.js'
 import { supportedShortcuts, DEFAULTS } from './defaults.js'
 import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
-import { attachAppEvents, createTileSource, createVectorTileLayer, createOGCVectorTileLayer } from './appEvents.js'
+import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 
 const CRS = 'EPSG:27700'
@@ -42,19 +41,7 @@ export default class OpenLayersProvider {
     this.mapSize = mapSize
     const { events, eventBus } = this
 
-    let tileLayer, source
-    if (mapStyle.type === 'raster') {
-      source = createTileSource(mapStyle.url, transformRequest)
-      tileLayer = new TileLayer({ source })
-    } else if (mapStyle.type === 'ogc-vt') {
-      const vectorTile = await createOGCVectorTileLayer(mapStyle.url, transformRequest, mapStyle)
-      tileLayer = vectorTile.layer
-      source = vectorTile.source
-    } else {
-      const vectorTile = await createVectorTileLayer(mapStyle.url, transformRequest, mapStyle)
-      tileLayer = vectorTile.layer
-      source = vectorTile.source
-    }
+    const { layer: tileLayer, source } = await createMapStyleLayer(mapStyle, transformRequest)
 
     const viewResolutions = getViewResolutionConfig(this.zoomAlignment ?? ZOOM_ALIGNMENT.UK)
 
@@ -97,18 +84,15 @@ export default class OpenLayersProvider {
 
     this.appEventHandles = attachAppEvents({
       mapProvider: this,
-      layer: tileLayer,
-      layerType: mapStyle.type ?? 'vector',
       transformRequest,
       events,
       eventBus,
-      map
+      map,
+      onBaseSourceChange: this.mapEventHandles.setSource
     }) || []
 
     this.map = map
     this.view = view
-    this.tileLayer = tileLayer
-    this.source = source
 
     // MAP_READY is synchronous — OL map is immediately interactive after construction
     eventBus.emit(events.MAP_READY, {
@@ -132,8 +116,6 @@ export default class OpenLayersProvider {
     }
 
     this.view = null
-    this.tileLayer = null
-    this.source = null
   }
 
   // ==========================
