@@ -9,8 +9,27 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDrawPlugin from '/plugins/beta/draw-ol/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
+import createInteractPlugin from '/plugins/interact/src/index.js'
+
+const interactPlugin = createInteractPlugin({
+	// layers: [{
+	// 	layerId: 'OS/NGD/lnd_fts_land/Arable Or Grazing Land'
+	// }],
+	layers: [{
+		layerId: 'draw'
+	},{
+		layerId: 'OS/TopographicArea_1/Agricultural Land',
+		idProperty: 'TOID'
+	}],
+	interactionModes: ['selectMarker', 'selectFeature'],
+	multiSelect: true,
+	contiguous: true,
+	deselectOnClickOutside: true,
+	// debug: true
+})
 
 const drawPlugin = createDrawPlugin({
+	// snapLayers: ['OS/NGD/lnd_fts_land/Arable Or Grazing Land']
 	snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline']
 })
 
@@ -43,6 +62,7 @@ const interactiveMap = new InteractiveMap('map', {
 			width: '300px',
 			showMarker: false,
 		}),
+		interactPlugin,
 		drawPlugin
 	]
 })
@@ -52,6 +72,7 @@ interactiveMap.on('app:ready', function (e) {
 })
 
 interactiveMap.on('map:ready', function (e) {
+	interactPlugin.enable()
 	interactiveMap.addButton('geometryActions', {
 		label: 'Draw tools',
 		mobile: { slot: 'bottom-right', order: 3 },
@@ -90,6 +111,7 @@ interactiveMap.on('map:ready', function (e) {
 					return
 				}
 				interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+				interactPlugin.disable()
 			}
 		},{
 			id: 'deleteFeature',
@@ -99,6 +121,7 @@ interactiveMap.on('map:ready', function (e) {
 			onClick: function (e) {
 				interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
 				drawPlugin.deleteFeature(selectedFeatureIds)
+				interactPlugin.clear()
 				interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
 				interactiveMap.toggleButtonState('drawLine', 'disabled', false)
 				interactiveMap.toggleButtonState('editFeature', 'disabled', true)
@@ -108,35 +131,34 @@ interactiveMap.on('map:ready', function (e) {
 	})
 })
 
-interactiveMap.on('datasets:ready', function () {
-	// datasets ready
-})
-
 let selectedFeatureIds = []
 
 interactiveMap.on('draw:ready', function () {
-	drawPlugin.addFeature({
-		id: 'test1234',
-		type: 'Feature',
-		geometry: {'type':'Polygon','coordinates':[[[337612,504612],[337592,504595],[337575,504583],[337570,504582],[337560,504582],[337554,504590],[337559,504596],[337568,504604],[337572,504610],[337582,504611],[337585,504610],[337602,504612],[337603,504607],[337605,504605],[337609,504605],[337612,504612]],[[337598,504609],[337587,504605],[337577,504605],[337572,504607],[337573,504610],[337575,504613],[337580,504613],[337586,504612],[337593,504613],[337597,504611],[337598,504609]]]},
-		stroke: 'rgba(0,112,60,1)',
-		fill: 'rgba(0,112,60,0.2)',
-		strokeWidth: 2
-	})
-	drawPlugin.editFeature('test1234')
+	// drawPlugin.addFeature({
+	// 	id: 'test1234',
+	// 	type: 'Feature',
+	// 	geometry: {'type':'Polygon','coordinates':[[[337612,504612],[337592,504595],[337575,504583],[337570,504582],[337560,504582],[337554,504590],[337559,504596],[337568,504604],[337572,504610],[337582,504611],[337585,504610],[337602,504612],[337603,504607],[337605,504605],[337609,504605],[337612,504612]],[[337598,504609],[337587,504605],[337577,504605],[337572,504607],[337573,504610],[337575,504613],[337580,504613],[337586,504612],[337593,504613],[337597,504611],[337598,504609]]]},
+	// 	stroke: 'rgba(0,112,60,1)',
+	// 	fill: 'rgba(0,112,60,0.2)',
+	// 	strokeWidth: 2
+	// })
+	// drawPlugin.editFeature('test1234')
 })
 
 interactiveMap.on('draw:started', function (e) {
 	interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+	interactPlugin.disable()
 })
 
 interactiveMap.on('draw:editstart', function (e) {
 	interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+	interactPlugin.disable()
 })
 
 interactiveMap.on('draw:created', function (e) {
 	console.log('draw:created', e)
 	interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+	interactPlugin.enable()
 })
 
 interactiveMap.on('draw:updated', function (e) {
@@ -146,9 +168,36 @@ interactiveMap.on('draw:updated', function (e) {
 interactiveMap.on('draw:edited', function (e) {
 	console.log('draw:edited', e)
 	interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+	interactPlugin.enable()
 })
 
 interactiveMap.on('draw:cancelled', function (e) {
 	console.log('draw:cancelled', e)
 	interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+	interactPlugin.enable()
+})
+
+interactiveMap.on('interact:done', function (e) {
+	console.log('interact:done', e)
+})
+
+interactiveMap.on('interact:cancel', function (e) {
+	console.log('interact:cancel', e)
+	interactPlugin.enable()
+})
+
+interactiveMap.on('interact:selectionchange', function (e) {
+	const singleFeature = e.selectedFeatures.length === 1
+	const anyFeature = e.selectedFeatures.length > 0
+	const isDrawFeature = singleFeature && e.selectedFeatures[0].layerId === 'draw'
+	const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return f.layerId === 'draw' })
+	selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
+	interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
+	interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
+	interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
+	interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
+})
+
+interactiveMap.on('interact:markerchange', function (e) {
+	// console.log('interact:markerchange', e)
 })

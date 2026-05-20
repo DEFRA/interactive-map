@@ -306,10 +306,6 @@ describe('OpenLayersProvider', () => {
       expect(provider.getBounds()).toEqual([1.13, 2.46, 3.99, 4])
     })
 
-    it('getFeaturesAtPoint returns empty array', () => {
-      expect(provider.getFeaturesAtPoint()).toEqual([])
-    })
-
     it('getVisibleFeatures returns empty array', () => {
       expect(provider.getVisibleFeatures()).toEqual([])
     })

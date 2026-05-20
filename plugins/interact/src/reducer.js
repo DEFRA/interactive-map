@@ -143,6 +143,12 @@ const unselectMarker = (state, { markerId }) => {
   }
 }
 
+const setSelectedFeatures = (state, features) => ({
+  ...state,
+  selectedFeatures: features,
+  selectionBounds: null
+})
+
 const actions = {
   ENABLE: enable,
   DISABLE: disable,
@@ -150,6 +156,7 @@ const actions = {
   TOGGLE_SELECTED_MARKERS: toggleSelectedMarkers,
   UPDATE_SELECTED_BOUNDS: updateSelectedBounds,
   CLEAR_SELECTED_FEATURES: clearSelectedFeatures,
+  SET_SELECTED_FEATURES: setSelectedFeatures,
   SELECT_MARKER: selectMarker,
   UNSELECT_MARKER: unselectMarker,
   SET_LISTBOX_ACTIVE: setListboxActive

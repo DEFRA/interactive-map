@@ -8,10 +8,16 @@ import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
+import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
+import { queryFeatures } from './utils/queryFeatures.js'
+import { collectTileFragments } from './utils/vtTileFragments.js'
+import { setupHoverCursor } from './utils/hoverCursor.js'
+import { applyOpenLayersFixes } from './utils/openLayersFixes.js'
+
+applyOpenLayersFixes()
 
 const CRS = 'EPSG:27700'
 
-// OL view padding is [top, right, bottom, left]; app passes { top, right, bottom, left }
 const toPaddingArray = (padding) => {
   if (!padding) {
     return undefined
@@ -111,6 +117,10 @@ export default class OpenLayersProvider {
     this.appEventHandles = null
 
     if (this.map) {
+      if (this._onHoverMove) {
+        this.map.un('pointermove', this._onHoverMove)
+        this._onHoverMove = null
+      }
       this.map.setTarget(null)
       this.map = null
     }
@@ -185,13 +195,40 @@ export default class OpenLayersProvider {
     return extent.map(n => Math.round(n * 100) / 100)
   }
 
-  getFeaturesAtPoint (_point, _options) {
-    // Raster tiles have no queryable features
-    return []
+  getFeaturesAtPoint (point, options) {
+    return queryFeatures(this.map, point, options)
+  }
+
+  getFeatureGeometry (layerId, featureId, idProperty) {
+    const fragments = collectTileFragments(this.map, layerId, featureId, idProperty)
+    if (fragments.length === 0) { return null }
+    if (fragments.length === 1) { return fragments[0] }
+    const coords = fragments.flatMap(g => g.type === 'MultiPolygon' ? g.coordinates : [g.coordinates])
+    return { type: 'MultiPolygon', coordinates: coords }
+  }
+
+  setHoverCursor (layerIds) {
+    if (!this.map) {
+      return
+    }
+    this._onHoverMove = setupHoverCursor(this.map, layerIds, this._onHoverMove)
   }
 
   getVisibleFeatures (_layerIds) {
     return []
+  }
+
+  updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {
+    this._lastHighlightArgs = { selectedFeatures, activeFeatures, stylesMap }
+    return updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap)
+  }
+
+  reapplyHighlights () {
+    if (!this._lastHighlightArgs) {
+      return
+    }
+    const { selectedFeatures, activeFeatures, stylesMap } = this._lastHighlightArgs
+    updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap)
   }
 
   // ==========================

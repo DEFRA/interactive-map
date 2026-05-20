@@ -240,6 +240,21 @@ describe('UNSELECT_MARKER action', () => {
   })
 })
 
+describe('SET_SELECTED_FEATURES action', () => {
+  it('replaces selectedFeatures and clears bounds', () => {
+    const state = {
+      ...initialState,
+      selectedFeatures: [{ featureId: 'A' }, { featureId: 'B' }, { featureId: 'C' }],
+      selectionBounds: [0, 0, 1, 1]
+    }
+    const trimmed = [{ featureId: 'A' }]
+    const result = actions.SET_SELECTED_FEATURES(state, trimmed)
+    expect(result.selectedFeatures).toEqual(trimmed)
+    expect(result.selectionBounds).toBeNull()
+    expect(result).not.toBe(state)
+  })
+})
+
 describe('actions object', () => {
   it('exports all action handlers as functions', () => {
     expect(Object.keys(actions)).toEqual([
@@ -249,6 +264,7 @@ describe('actions object', () => {
       'TOGGLE_SELECTED_MARKERS',
       'UPDATE_SELECTED_BOUNDS',
       'CLEAR_SELECTED_FEATURES',
+      'SET_SELECTED_FEATURES',
       'SELECT_MARKER',
       'UNSELECT_MARKER',
       'SET_LISTBOX_ACTIVE'

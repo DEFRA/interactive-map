@@ -8,6 +8,9 @@ export function attachAppEvents ({ mapProvider, transformRequest, events, eventB
     map.getLayers().setAt(0, layer)
     onBaseSourceChange(source)
     eventBus.emit(events.MAP_STYLE_CHANGE, { mapStyleId: mapStyle.id })
+    // MAP_DATA_CHANGE is driven by the original source's tileloadend and won't fire
+    // for the new source, so re-apply highlights directly on the new layer.
+    mapProvider.reapplyHighlights()
   }
 
   const handleSetPixelRatio = (pixelRatio) => {
