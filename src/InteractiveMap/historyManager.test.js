@@ -168,4 +168,15 @@ describe('historyManager', () => {
 
     expect(component1.loadApp).not.toHaveBeenCalled()
   })
+
+  it('removes popstate listener and resets initialized when last component is unregistered', () => {
+    const removeListenerSpy = jest.spyOn(window, 'removeEventListener')
+    jest.isolateModules(() => {
+      const freshManager = require('./historyManager.js').default
+      freshManager.register(component1)
+      freshManager.unregister(component1)
+      expect(removeListenerSpy).toHaveBeenCalledWith('popstate', expect.any(Function))
+    })
+    removeListenerSpy.mockRestore()
+  })
 })
