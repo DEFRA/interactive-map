@@ -111,21 +111,21 @@ export default class MaplibreLayerAdapter {
    * @param {Map} dynamicSources - datasetId → dynamic source instance
    * @returns {Promise<void>}
    */
-  async onStyleChange (datasets, newMapStyle, hiddenFeatures, dynamicSources) {
+  async onMapStyleChange (datasets, newMapStyle, hiddenFeatures, dynamicSources) {
     // MapLibre wipes all sources/layers on style change — must wait for idle first
     await new Promise(resolve => this._map.once('idle', resolve))
 
-    const newStyleId = newMapStyle.id
-    await Promise.all([
-      this._mapProvider.addPatternsToMap(getPatternConfigs(datasets, this._patternRegistry), newStyleId, this._patternRegistry),
-      this._mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), newMapStyle, this._symbolRegistry)
-    ])
+    const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
+    await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs, newMapStyle)
     this._symbolLayerIds.clear()
-    datasets.forEach(dataset => this._addLayers(dataset, newMapStyle))
 
+    datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset, newMapStyle))
+
+    // TODO: check dynamicSources still work
     // Re-push cached data for dynamic sources
     dynamicSources.forEach(source => source.reapply())
 
+    // TODO: check hiddenFeatures still work
     // Reapply hidden feature filters
     Object.entries(hiddenFeatures).forEach(([datasetId, { idProperty, ids }]) => {
       const dataset = datasets.find(d => d.id === datasetId)

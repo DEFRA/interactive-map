@@ -24,6 +24,15 @@ const datasetRegistry = {
       .filter(def => !def.parentId)
       .map(def => this.getDataset(def.id))
   },
+  getPatternAndSymbolConfigs () {
+    return this.topLevelDatasets().reduce((acc, dataset) => {
+      return {
+        ...acc,
+        patternConfigs: [...acc.patternConfigs, ...dataset.patternConfigs],
+        symbolConfigs: [...acc.symbolConfigs, ...dataset.symbolConfigs]
+      }
+    }, { patternConfigs: [], symbolConfigs: [] })
+  },
   _lastKeyItems: {},
   keyItems () {
     if (this.datasets === this._lastKeyItemsDatasets) {
