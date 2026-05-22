@@ -274,19 +274,6 @@ export default class MaplibreLayerAdapter {
   }
 
   /**
-   * Set opacity for a single sublayer's fill and stroke layers.
-   * Uses setPaintProperty directly — safe to call on every slider tick.
-   * @param {string} datasetId
-   * @param {string} sublayerId
-   * @param {number} opacity
-   */
-  setSublayerOpacity (datasetId, sublayerId, opacity) {
-    const { fillLayerId, strokeLayerId } = getSublayerLayerIds(datasetId, sublayerId)
-    this._setPaintOpacity(fillLayerId, opacity)
-    this._setPaintOpacity(strokeLayerId, opacity)
-  }
-
-  /**
    * Update the GeoJSON data for a dataset's source.
    * @param {string} datasetId
    * @param {Object} geojson - GeoJSON FeatureCollection
