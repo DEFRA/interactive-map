@@ -1,14 +1,10 @@
 import { Dataset } from './dataset.js'
 import { datasetRegistry } from './datasetRegistry.js'
-import { datasets as datasetDefinitions } from '../reducers/__data__/demoDatasets.js'
-import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
+// Use the mock datasetRegistry with the demo datasets attached before each test
+// so we can test Dataset methods that depend on parent/sublayer relationships and styles
+jest.mock('./datasetRegistry.js')
 
 describe('Dataset class', () => {
-  beforeEach(() => {
-    const { mappedDatasets } = mappedDatasetsReducer({ datasets: datasetDefinitions })
-    datasetRegistry.attach(mappedDatasets)
-  })
-
   describe('isSublayer', () => {
     it('returns false for a top-level dataset', () => {
       const dataset = datasetRegistry.getDataset('land-covers')
