@@ -20,7 +20,8 @@ const initialState = {
   layerAdapter: null,
   layerAdapterActions: {
     setStyle: [],
-    setDatasetVisibility: []
+    setDatasetVisibility: [],
+    setOpacity: []
   }
 }
 
@@ -147,8 +148,13 @@ const setDatasetStyle = (state, payload) => {
 
 const setOpacity = (state, payload) => {
   const { datasetId, opacity } = payload
+  const style = { ...state.mappedDatasets[datasetId].style, opacity }
+  const dataset = { ...state.mappedDatasets[datasetId], style }
+  const setOpacity = [...state.layerAdapterActions.setOpacity, [datasetId, opacity]]
   return {
     ...state,
+    layerAdapterActions: { ...state.layerAdapterActions, setOpacity },
+    mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset },
     datasets: state.datasets?.map(dataset =>
       dataset.id === datasetId ? { ...dataset, opacity } : dataset
     )
@@ -164,26 +170,6 @@ const setGlobalOpacity = (state, payload) => {
   }
 }
 
-const setSublayerOpacity = (state, payload) => {
-  const { datasetId, sublayerId, opacity } = payload
-  return {
-    ...state,
-    datasets: state.datasets?.map(dataset => {
-      if (dataset.id !== datasetId) {
-        return dataset
-      }
-      return {
-        ...dataset,
-        sublayers: dataset.sublayers?.map(sublayer =>
-          sublayer.id === sublayerId
-            ? { ...sublayer, style: { ...sublayer.style, opacity } }
-            : sublayer
-        )
-      }
-    })
-  }
-}
-
 const setLayerAdapter = (state, payload) => ({ ...state, layerAdapter: payload })
 
 const actions = {
@@ -195,7 +181,6 @@ const actions = {
   SET_DATASET_STYLE: setDatasetStyle,
   SET_OPACITY: setOpacity,
   SET_GLOBAL_OPACITY: setGlobalOpacity,
-  SET_SUBLAYER_OPACITY: setSublayerOpacity,
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
   SET_LAYER_ADAPTER: setLayerAdapter,
