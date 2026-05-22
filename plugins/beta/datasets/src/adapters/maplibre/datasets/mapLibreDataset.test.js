@@ -1,19 +1,18 @@
 import { MapLibreDataset } from './mapLibreDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
-import { datasets } from '../../../reducers/__data__/demoDatasets.js'
-import { mappedDatasetsReducer } from '../../../reducers/mappedDatasetsReducer.js'
+// Use the mock datasetRegistry with the demo datasets attached before each test
+// so we can test Dataset methods that depend on parent/sublayer relationships and styles
+jest.mock('../../../registry/datasetRegistry.js')
 
 describe('MapLibreDataset', () => {
-  beforeAll(() => {
-    const { mappedDatasets } = mappedDatasetsReducer({ datasets })
-    datasetRegistry.attach({
-      ...mappedDatasets,
+  beforeEach(() => {
+    datasetRegistry.attachCreateDataset(def => new MapLibreDataset(def))
+    datasetRegistry.mockExtend({
       'ds-fill-only': { id: 'ds-fill-only', style: { fill: 'blue' } },
       'ds-pattern-only': { id: 'ds-pattern-only', style: { fillPattern: 'dots' } },
       'ds-transparent-fill': { id: 'ds-transparent-fill', style: { fill: 'transparent' } },
       'ds-no-style': { id: 'ds-no-style', style: {} }
     })
-    datasetRegistry.attachCreateDataset(def => new MapLibreDataset(def))
   })
 
   describe('layerIds', () => {

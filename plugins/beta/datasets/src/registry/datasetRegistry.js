@@ -10,7 +10,7 @@ const datasetRegistry = {
   attachCreateDataset (createDataset) { this.createDataset = createDataset },
   createDataset: (datasetDefinition) => createDataset(datasetDefinition),
   // getDataset retrieves a dataset by id, creating a new Dataset instance that wraps the definition
-  getDataset (id) { return this.createDataset(this.datasets[id]) },
+  getDataset (id) { return this.datasets[id] ? this.createDataset(this.datasets[id]) : undefined },
   forEach (callback) {
     this._orderedDatasets.forEach((datasetId) => callback(this.getDataset(datasetId)))
   },
