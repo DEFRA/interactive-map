@@ -10,8 +10,8 @@ export const addFillLayer = (map, registryDataset, mapStyleId, patternRegistry, 
   }
   const patternImageId = patternRegistry.getPatternImageId(registryDataset.style, mapStyleId, pixelRatio)
   const paint = patternImageId
-    ? { 'fill-pattern': patternImageId, 'fill-opacity': registryDataset.opacity || 1 }
-    : { 'fill-color': getValueForStyle(registryDataset.style.fill, mapStyleId), 'fill-opacity': registryDataset.opacity || 1 }
+    ? { 'fill-pattern': patternImageId, 'fill-opacity': registryDataset.opacity }
+    : { 'fill-color': getValueForStyle(registryDataset.style.fill, mapStyleId), 'fill-opacity': registryDataset.opacity }
   map.addLayer(registryDataset.getFillSource(paint))
 }
 
@@ -26,7 +26,7 @@ export const addStrokeLayer = (map, registryDataset, mapStyleId) => {
   const paint = {
     'line-color': getValueForStyle(registryDataset.style.stroke, mapStyleId),
     'line-width': registryDataset.style.strokeWidth || 1,
-    'line-opacity': registryDataset.opacity || 1,
+    'line-opacity': registryDataset.opacity,
     ...(registryDataset.style.strokeDashArray ? { 'line-dasharray': registryDataset.style.strokeDashArray } : {})
   }
   const strokeSource = registryDataset.getStrokeSource(paint)

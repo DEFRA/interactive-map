@@ -24,6 +24,9 @@ export class Dataset {
   get filter () { return this._datasetDefinition.filter || this.parent?.filter }
   get showInKey () { return this._datasetDefinition.showInKey || this.parent?.showInKey || false }
   get groupLabel () { return this._datasetDefinition.groupLabel }
+  get opacity () {
+    return this.style.opacity === undefined ? 1 : this.style.opacity
+  }
 
   get visibility () { return this.visible ? 'visible' : 'none' }
 

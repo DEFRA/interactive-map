@@ -82,6 +82,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   }, [pluginState.mappedDatasets, pluginState.orderedDatasets])
   useLayerAdapterActions('setStyle', dispatch, pluginState, [pluginState.layerAdapterActions.setStyle])
   useLayerAdapterActions('setDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.setDatasetVisibility])
+  useLayerAdapterActions('setOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.setOpacity])
 
   // Cleanup only on unmount
   useEffect(() => {
