@@ -15,7 +15,6 @@ const pointData = {
     geometry: { coordinates: [-2.4481939, 54.5575261], type: 'Point' }
   }]
 }
-
 export const datasets = [
   {
     id: 'land-covers',
@@ -172,43 +171,74 @@ export const datasets = [
     }
   }]
 
-export const expectedMenuConfig = [
+export const expectedDatasetsMenuConfig = [
   {
     id: 'land-covers',
-    label: 'Land covers',
+    groupLabel: 'Land covers',
     visibleWhen: true,
     type: 'checkbox',
     items: [
-      { id: '130-131', label: 'Permanent grassland', checked: true },
-      { id: '332', label: 'Woodland', checked: true },
-      { id: '110', label: 'Arable', checked: true },
-      { id: '379', label: 'Farmyards', checked: false },
-      { id: 'other', label: 'Others', checked: true }
+      { id: 'land-covers-130-131', label: 'Permanent grassland' },
+      { id: 'land-covers-332', label: 'Woodland' },
+      { id: 'land-covers-110', label: 'Arable' },
+      { id: 'land-covers-379', label: 'Farmyards' },
+      { id: 'land-covers-other', label: 'Others' }
     ]
   },
   {
-    type: 'divider',
     visibleWhen: true,
+    type: 'checkbox',
     items: [
-      { id: 'existing-fields', label: 'Existing fields', checked: true }
+      { id: 'existing-fields', label: 'Existing fields' }
     ]
   },
   {
     id: 'historic-monuments',
-    label: 'Historic monuments',
+    groupLabel: 'Historic monuments',
     visibleWhen: true,
     type: 'checkbox',
     items: [
-      { id: 'prehistoric', label: 'Prehistoric', checked: true },
-      { id: 'roman', label: 'Roman', checked: true },
-      { id: 'medieval', label: 'Medieval', checked: true }
+      { id: 'historic-monuments-prehistoric', label: 'Prehistoric' },
+      { id: 'historic-monuments-roman', label: 'Roman' },
+      { id: 'historic-monuments-medieval', label: 'Medieval' }
     ]
   },
   {
-    type: 'divider',
     visibleWhen: true,
+    type: 'checkbox',
     items: [
-      { id: 'hedge-control', label: 'Hedge control', checked: false }
+      { id: 'hedge-control', label: 'Hedge control' }
     ]
   }
+]
+
+const landCovers = datasets[0]
+const existingFields = datasets[1]
+const historicMonuments = datasets[2]
+const hedgeControl = datasets[3]
+const landCoversMenuItem = expectedDatasetsMenuConfig[0]
+const existingFieldsMenuItem = expectedDatasetsMenuConfig[1]
+const historicMonumentsMenuItem = expectedDatasetsMenuConfig[2]
+const hedgeControlMenuItem = expectedDatasetsMenuConfig[3]
+
+export const datasetsWithGroups = [
+  { ...landCovers },
+  { ...existingFields, groupLabel: 'Test group' },
+  { ...historicMonuments },
+  { ...hedgeControl, groupLabel: 'Test group' }
+]
+
+export const expectedDatasetsMenuConfigWithGroups = [
+  { ...landCoversMenuItem },
+  {
+    visibleWhen: true,
+    type: 'checkbox',
+    groupLabel: 'Test group',
+    id: 'Test group',
+    items: [
+      ...existingFieldsMenuItem.items,
+      ...hedgeControlMenuItem.items
+    ]
+  },
+  { ...historicMonumentsMenuItem }
 ]
