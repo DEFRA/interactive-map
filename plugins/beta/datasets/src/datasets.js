@@ -56,7 +56,7 @@ export const createDatasets = ({
   }
 
   const onSizeChange = () => {
-    adapter.onSizeChange(getDatasets(), currentMapStyle)
+    adapter.onSizeChange(currentMapStyle)
   }
 
   eventBus.on(events.MAP_SET_STYLE, onSetMapStyle)
