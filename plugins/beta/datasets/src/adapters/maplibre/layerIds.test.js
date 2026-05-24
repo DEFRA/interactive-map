@@ -4,7 +4,6 @@ import {
   getSourceId,
   getLayerIds,
   getSublayerLayerIds,
-  getAllLayerIds,
   MAX_TILE_ZOOM
 } from './layerIds'
 
@@ -202,49 +201,5 @@ describe('getSublayerLayerIds', () => {
       strokeLayerId: 'ds-sl-stroke',
       symbolLayerId: 'ds-sl-symbol'
     })
-  })
-})
-
-// ─── getAllLayerIds ───────────────────────────────────────────────────────────
-
-describe('getAllLayerIds', () => {
-  it('returns all sublayer layer ids when sublayers are present', () => {
-    const dataset = {
-      id: 'ds',
-      sublayers: [
-        { id: 'sl1' },
-        { id: 'sl2' }
-      ]
-    }
-    const ids = getAllLayerIds(dataset)
-    expect(ids).toEqual([
-      'ds-sl1-stroke', 'ds-sl1', 'ds-sl1-symbol',
-      'ds-sl2-stroke', 'ds-sl2', 'ds-sl2-symbol'
-    ])
-  })
-
-  it('returns fill and stroke ids for a dataset with fill and stroke', () => {
-    const dataset = { id: 'ds', fill: 'blue', stroke: 'red' }
-    const ids = getAllLayerIds(dataset)
-    expect(ids).toContain('ds')
-    expect(ids).toContain('ds-stroke')
-  })
-
-  it('returns only the symbol id for a symbol dataset', () => {
-    const dataset = { id: 'ds', symbol: 'marker' }
-    const ids = getAllLayerIds(dataset)
-    expect(ids).toEqual(['ds'])
-  })
-
-  it('filters out null ids when dataset has neither fill, stroke, nor symbol', () => {
-    const dataset = { id: 'ds' }
-    const ids = getAllLayerIds(dataset)
-    expect(ids).toEqual([])
-  })
-
-  it('handles an empty sublayers array by falling through to direct layer ids', () => {
-    const dataset = { id: 'ds', sublayers: [], fill: 'blue' }
-    const ids = getAllLayerIds(dataset)
-    expect(ids).toContain('ds')
   })
 })
