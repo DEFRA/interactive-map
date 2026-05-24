@@ -1,5 +1,5 @@
 import { applyExclusionFilter } from '../../utils/filters.js'
-import { getSourceId, getLayerIds, getSublayerLayerIds, getAllLayerIds } from './layerIds.js'
+import { getSourceId, getLayerIds, getSublayerLayerIds } from './layerIds.js'
 import { addDatasetLayers } from './layerBuilders.js'
 import { MapLibreDataset } from './datasets/mapLibreDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
@@ -166,26 +166,27 @@ export default class MaplibreLayerAdapter {
    * Remove a dataset's layers and source from the map.
    * Shared sources (same tiles URL or geojson URL used by multiple datasets) are
    * only removed when no other remaining dataset references them.
-   * @param {Object} dataset
-   * @param {Object[]} allDatasets - Full current dataset list, for shared-source check.
+   * @param {string} datasetId
    */
-  removeDataset (dataset, allDatasets) {
-    const sourceId = getSourceId(dataset)
+  removeDataset (datasetId) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    if (!registryDataset) {
+      return
+    }
+    const { sourceId, layerIds } = registryDataset
+    // Remove all layers for this dataset (including sublayers, which share the same source)
+    layerIds.forEach(layerId => this.removeLayer(layerId))
 
-    getAllLayerIds(dataset).forEach(layerId => {
-      if (this._map.getLayer(layerId)) {
-        this._map.removeLayer(layerId)
-      }
-      this._symbolLayerIds.delete(layerId)
-    })
-
-    const sourceIsShared = allDatasets.some(d => d.id !== dataset.id && getSourceId(d) === sourceId)
+    // Remove source if no other dataset is using it
+    const sourceIsShared = datasetRegistry.topLevelDatasets()
+      .filter(dataset => dataset.id !== datasetId && dataset.sourceId === sourceId)
+      .length > 0
 
     if (!sourceIsShared && this._map.getSource(sourceId)) {
       this._map.removeSource(sourceId)
     }
 
-    this._datasetSourceMap.delete(dataset.id)
+    this._datasetSourceMap.delete(datasetId)
   }
 
   // ─── Feature operations ─────────────────────────────────────────────────────
