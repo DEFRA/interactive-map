@@ -62,14 +62,3 @@ export const getSublayerLayerIds = (datasetId, sublayerId) => ({
   strokeLayerId: `${datasetId}-${sublayerId}-stroke`,
   symbolLayerId: `${datasetId}-${sublayerId}-symbol`
 })
-
-export const getAllLayerIds = (dataset) => {
-  if (dataset.sublayers?.length) {
-    return dataset.sublayers.flatMap(sublayer => {
-      const { fillLayerId, strokeLayerId, symbolLayerId } = getSublayerLayerIds(dataset.id, sublayer.id)
-      return [strokeLayerId, fillLayerId, symbolLayerId]
-    })
-  }
-  const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds(dataset)
-  return [strokeLayerId, fillLayerId, symbolLayerId].filter(Boolean)
-}

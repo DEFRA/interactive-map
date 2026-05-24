@@ -60,11 +60,31 @@ const addDataset = (state, payload) => {
   }
 }
 
+const removeDatasetsFromMenu = (menu, datasetsToRemove) => {
+  return menu.reduce((newMenu, menuGroup) => {
+    const filteredItems = menuGroup.items.filter(item => !datasetsToRemove.includes(item.id))
+    if (filteredItems.length) {
+      newMenu.push({ ...menuGroup, items: filteredItems })
+    }
+    return newMenu
+  }, [])
+}
+
 const removeDataset = (state, payload) => {
   const { id } = payload
+  const mappedDatasets = { ...state.mappedDatasets }
+  const datasetsToRemove = [id, ...(mappedDatasets[id]?.sublayerIds || [])]
+  datasetsToRemove.forEach((datasetId) => delete mappedDatasets[datasetId])
+  // Remove from orderedDatasets
+  const orderedDatasets = state.orderedDatasets.filter(datasetId => !datasetsToRemove.includes(datasetId))
+  // Remove from menu, and remove any menu groups that are left with no items
+  const menu = removeDatasetsFromMenu(state.menu, datasetsToRemove)
   return {
     ...state,
-    datasets: state.datasets?.filter(dataset => dataset.id !== id) || []
+    datasets: state.datasets?.filter(dataset => dataset.id !== id) || [],
+    mappedDatasets,
+    orderedDatasets,
+    menu
   }
 }
 
