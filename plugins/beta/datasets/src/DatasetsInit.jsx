@@ -84,6 +84,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useLayerAdapterActions('setDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.setDatasetVisibility])
   useLayerAdapterActions('setOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.setOpacity])
   useLayerAdapterActions('addDataset', dispatch, pluginState, [pluginState.layerAdapterActions.addDataset])
+  useLayerAdapterActions('applyFeatureFilter', dispatch, pluginState, [pluginState.layerAdapterActions.applyFeatureFilter])
 
   // Cleanup only on unmount
   useEffect(() => {
