@@ -155,11 +155,13 @@ export default class MaplibreLayerAdapter {
 
   /**
    * Add a single dataset's source and layers to the map.
-   * @param {Object} dataset
+   * @param {string} datasetId
    * @param {Object} mapStyle
    */
-  addDataset (dataset, mapStyle) {
-    this._addLayers(dataset, mapStyle)
+  async addDataset (datasetId, mapStyle) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
+    this._addLayers(registryDataset, mapStyle)
   }
 
   /**

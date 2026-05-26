@@ -1,5 +1,5 @@
-import { applyDatasetDefaults } from './defaults.js'
-import { datasetsToMenu } from './reducers/datasetsToMenu.js'
+import { datasetsToMenu, addDatasetToMenu } from './reducers/datasetsToMenu.js'
+import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
 
 const initialState = {
   globals: {
@@ -21,28 +21,17 @@ const initialState = {
   layerAdapterActions: {
     setStyle: [],
     setDatasetVisibility: [],
-    setOpacity: []
+    setOpacity: [],
+    addDataset: []
   }
-}
-
-const initSublayerVisibility = (dataset) => {
-  if (!dataset.sublayers?.length) {
-    return dataset
-  }
-  const sublayerVisibility = {}
-  dataset.sublayers.forEach(sublayer => {
-    sublayerVisibility[sublayer.id] = 'visible'
-  })
-  return { ...dataset, sublayerVisibility }
 }
 
 const setDatasets = (state, payload) => {
   const { datasets, mappedDatasets, orderedDatasets } = payload
-  const datasetsWithSublayerVisibility = datasets.map(initSublayerVisibility)
   const menu = payload.menu || datasetsToMenu({ datasets })
   return {
     ...state,
-    datasets: datasetsWithSublayerVisibility,
+    datasets,
     mappedDatasets,
     orderedDatasets,
     menu
@@ -50,12 +39,19 @@ const setDatasets = (state, payload) => {
 }
 
 const addDataset = (state, payload) => {
-  const { dataset, datasetDefaults } = payload
+  const { dataset, mapStyle } = payload
+  const { mappedDatasets: newDatasets, orderedDatasets: newOrderedDatasets } = mappedDatasetsReducer({ datasets: [dataset] })
+  const menu = addDatasetToMenu(state, dataset)
+  const addDataset = [...state.layerAdapterActions.addDataset, [dataset.id, mapStyle]]
+
   return {
     ...state,
+    mappedDatasets: { ...state.mappedDatasets, ...newDatasets },
+    orderedDatasets: [...state.orderedDatasets, ...newOrderedDatasets],
+    menu,
+    layerAdapterActions: { ...state.layerAdapterActions, addDataset },
     datasets: [
-      ...(state.datasets || []),
-      initSublayerVisibility(applyDatasetDefaults(dataset, datasetDefaults))
+      ...(state.datasets || [])
     ]
   }
 }
