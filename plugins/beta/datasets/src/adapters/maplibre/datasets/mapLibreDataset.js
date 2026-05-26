@@ -50,6 +50,24 @@ export class MapLibreDataset extends Dataset {
     return [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
   }
 
+  get layersWithFilters () {
+    const response = []
+    if (this.hasHiddenFeatures) {
+      const layerIds = [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
+      const { filter } = this
+      response.push({ layerIds, filter })
+    }
+
+    if (this.hasSublayers) {
+      this.sublayers.forEach((sublayer) => {
+        if (sublayer.hasHiddenFeatures) {
+          response.push(sublayer.layersWithFilters[0])
+        }
+      })
+    }
+    return response
+  }
+
   get sourceId () {
     if (this.isSublayer) { return this.parent.sourceId }
     if (this.tiles) {
