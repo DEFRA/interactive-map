@@ -52,3 +52,16 @@ export const datasetsToMenu = (state) => {
   })
   return menu
 }
+
+export const addDatasetToMenu = (state, dataset) => {
+  const menu = [...state.menu]
+  const datasetMenuEntry = datasetsToMenu({ datasets: [dataset] })
+  // For each entry in the new dataset menu, either add it to an existing group or add it as a new entry
+  const existingGroup = menu.find(entry => entry.groupLabel === datasetMenuEntry[0].groupLabel)
+  if (existingGroup) {
+    existingGroup.items.push(...datasetMenuEntry[0].items)
+  } else {
+    menu.push(...datasetMenuEntry)
+  }
+  return menu
+}
