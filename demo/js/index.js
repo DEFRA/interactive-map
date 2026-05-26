@@ -276,7 +276,7 @@ const datasetsPlugin = createDatasetsPlugin({
 	layerAdapter: maplibreLayerAdapter,
 	// Example: Dynamic bbox-based fetching (uncomment to test)
 	datasets: [
-		landCoversDataset,
+		// landCoversDataset,
 		existingFieldsDataset,
 		historicMonumentsDataset,
 		hedgeControlDataset
@@ -405,7 +405,8 @@ const testSetStyle = () => {
 
 const testRemoveAndAddDataset = () => {
 	setTimeout(() => datasetsPlugin.removeDataset('historic-monuments'), 2000)
-	// setTimeout(() => datasetsPlugin.addDataset('historic-monuments'), 4000)
+	setTimeout(() => datasetsPlugin.addDataset(landCoversDataset), 3000)
+	setTimeout(() => datasetsPlugin.addDataset({ ...historicMonumentsDataset, label: 'New historic monuments' }), 4000)
 }
 
 interactiveMap.on('datasets:ready', function () {
