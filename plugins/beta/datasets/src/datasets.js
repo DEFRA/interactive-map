@@ -23,7 +23,6 @@ export const createDatasets = ({
   const dynamicSources = new Map()
 
   const getDatasets = () => pluginStateRef.current.datasets || datasets
-  const getHiddenFeatures = () => pluginStateRef.current.hiddenFeatures || {}
 
   // Initialise all datasets via the adapter, then set up dynamic sources
   const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))
@@ -52,7 +51,7 @@ export const createDatasets = ({
   // Handle basemap style changes — delegate entirely to the adapter
   const onSetMapStyle = (newMapStyle) => {
     currentMapStyle = newMapStyle
-    adapter.onMapStyleChange(getDatasets(), newMapStyle, getHiddenFeatures(), dynamicSources)
+    adapter.onMapStyleChange(newMapStyle, dynamicSources)
   }
 
   const onSizeChange = () => {

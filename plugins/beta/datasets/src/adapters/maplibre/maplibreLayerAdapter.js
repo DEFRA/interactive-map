@@ -1,5 +1,4 @@
-import { applyExclusionFilter } from '../../utils/filters.js'
-import { getSourceId, getLayerIds, getSublayerLayerIds } from './layerIds.js'
+import { getSourceId } from './layerIds.js'
 import { addDatasetLayers } from './layerBuilders.js'
 import { MapLibreDataset } from './datasets/mapLibreDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
@@ -94,13 +93,11 @@ export default class MaplibreLayerAdapter {
   /**
    * Re-register patterns and re-add all layers after a basemap style change,
    * then reapply cached dynamic source data and hidden-feature filters.
-   * @param {Object[]} datasets
    * @param {Object} newMapStyle
-   * @param {Object} hiddenFeatures - pluginState.hiddenFeatures
    * @param {Map} dynamicSources - datasetId → dynamic source instance
    * @returns {Promise<void>}
    */
-  async onMapStyleChange (datasets, newMapStyle, hiddenFeatures, dynamicSources) {
+  async onMapStyleChange (newMapStyle, dynamicSources) {
     // MapLibre wipes all sources/layers on style change — must wait for idle first
     await new Promise(resolve => this._map.once('idle', resolve))
 
@@ -108,21 +105,14 @@ export default class MaplibreLayerAdapter {
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs, newMapStyle)
     this._symbolLayerIds.clear()
 
-    datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset, newMapStyle))
+    datasetRegistry.forEachDataset(registryDataset => {
+      this._addLayers(registryDataset, newMapStyle)
+      this._applyFeatureFilter(registryDataset)
+    })
 
     // TODO: check dynamicSources still work
     // Re-push cached data for dynamic sources
     dynamicSources.forEach(source => source.reapply())
-
-    // TODO: check hiddenFeatures still work
-    // Reapply hidden feature filters
-    Object.entries(hiddenFeatures).forEach(([datasetId, { idProperty, ids }]) => {
-      const dataset = datasets.find(d => d.id === datasetId)
-      if (!dataset) {
-        return
-      }
-      this._applyFeatureFilter(dataset, idProperty, ids)
-    })
   }
 
   /**
@@ -194,23 +184,16 @@ export default class MaplibreLayerAdapter {
   // ─── Feature operations ─────────────────────────────────────────────────────
 
   /**
-   * Show previously hidden features by updating the layer exclusion filter.
-   * @param {Object} dataset
-   * @param {string} idProperty
-   * @param {Array} remainingHiddenIds - IDs that should remain hidden after this call.
+   * Show/Hide features by updating the layer exclusion filter.
+   * @param {string} datasetId
    */
-  showFeatures (dataset, idProperty, remainingHiddenIds) {
-    this._applyFeatureFilter(dataset, idProperty, remainingHiddenIds)
-  }
+  applyFeatureFilter (datasetId) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    if (!registryDataset) {
+      return
+    }
 
-  /**
-   * Hide features by updating the layer exclusion filter.
-   * @param {Object} dataset
-   * @param {string} idProperty
-   * @param {Array} allHiddenIds - Full set of IDs to hide (existing + new).
-   */
-  hideFeatures (dataset, idProperty, allHiddenIds) {
-    this._applyFeatureFilter(dataset, idProperty, allHiddenIds)
+    this._applyFeatureFilter(registryDataset)
   }
 
   /**
@@ -323,23 +306,14 @@ export default class MaplibreLayerAdapter {
     }
   }
 
-  _applyFeatureFilter (dataset, idProperty, excludeIds) {
-    if (dataset.sublayers?.length) {
-      dataset.sublayers.forEach(sublayer => {
-        const { fillLayerId: subFillId, strokeLayerId: subStrokeId } = getSublayerLayerIds(dataset.id, sublayer.id)
-        const sublayerFilter = dataset.filter && sublayer.filter
-          ? ['all', dataset.filter, sublayer.filter]
-          : (sublayer.filter || dataset.filter || null)
-        applyExclusionFilter(this._map, subFillId, sublayerFilter, idProperty, excludeIds)
-        applyExclusionFilter(this._map, subStrokeId, sublayerFilter, idProperty, excludeIds)
+  _applyFeatureFilter (registryDataset) {
+    const { layersWithFilters } = registryDataset
+    layersWithFilters.forEach(({ layerIds, filter }) => {
+      layerIds.forEach(layerId => {
+        if (this._map.getLayer(layerId)) {
+          this._map.setFilter(layerId, filter)
+        }
       })
-      return
-    }
-    const { fillLayerId, strokeLayerId, symbolLayerId } = getLayerIds(dataset)
-    const originalFilter = dataset.filter || null
-    const layerIds = [fillLayerId, strokeLayerId, symbolLayerId].filter(Boolean)
-    layerIds.forEach(layerId => {
-      applyExclusionFilter(this._map, layerId, originalFilter, idProperty, excludeIds)
     })
   }
 
