@@ -16,13 +16,13 @@ const initialState = {
     items: [],
     hasGroups: false
   },
-  hiddenFeatures: {}, // { [layerId]: { idProperty: string, ids: string[] } }
   layerAdapter: null,
   layerAdapterActions: {
     setStyle: [],
     setDatasetVisibility: [],
     setOpacity: [],
-    addDataset: []
+    addDataset: [],
+    applyFeatureFilter: []
   }
 }
 
@@ -107,41 +107,32 @@ const setGlobalVisibility = (state, payload) => {
 }
 
 const hideFeatures = (state, payload) => {
-  const { layerId, idProperty, featureIds } = payload
-  const existing = state.hiddenFeatures[layerId]
-  const existingIds = existing?.ids || []
+  const { datasetId, featureIds } = payload
+  const mappedDataset = { ...state.mappedDatasets[datasetId] }
+  const existingIds = mappedDataset.hiddenFeatures || []
   const newIds = [...new Set([...existingIds, ...featureIds])]
+  mappedDataset.hiddenFeatures = newIds
+  const applyFeatureFilter = [...state.layerAdapterActions.applyFeatureFilter, [datasetId]]
 
   return {
     ...state,
-    hiddenFeatures: {
-      ...state.hiddenFeatures,
-      [layerId]: { idProperty, ids: newIds }
-    }
+    layerAdapterActions: { ...state.layerAdapterActions, applyFeatureFilter },
+    mappedDatasets: { ...state.mappedDatasets, [datasetId]: mappedDataset }
   }
 }
 
 const showFeatures = (state, payload) => {
-  const { layerId, featureIds } = payload
-  const existing = state.hiddenFeatures[layerId]
-  if (!existing) {
-    return state
-  }
-
-  const newIds = existing.ids.filter(id => !featureIds.includes(id))
-
-  if (newIds.length === 0) {
-    const rest = { ...state.hiddenFeatures }
-    delete rest[layerId]
-    return { ...state, hiddenFeatures: rest }
-  }
+  const { datasetId, featureIds } = payload
+  const mappedDataset = { ...state.mappedDatasets[datasetId] }
+  const existingIds = mappedDataset.hiddenFeatures || []
+  const newIds = existingIds.filter(id => !featureIds.includes(id))
+  mappedDataset.hiddenFeatures = newIds.length ? newIds : [-1] // If no features are hidden, set to -1 to force a filter update
+  const applyFeatureFilter = [...state.layerAdapterActions.applyFeatureFilter, [datasetId]]
 
   return {
     ...state,
-    hiddenFeatures: {
-      ...state.hiddenFeatures,
-      [layerId]: { ...existing, ids: newIds }
-    }
+    layerAdapterActions: { ...state.layerAdapterActions, applyFeatureFilter },
+    mappedDatasets: { ...state.mappedDatasets, [datasetId]: mappedDataset }
   }
 }
 

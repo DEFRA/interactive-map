@@ -101,6 +101,7 @@ const landCoversDataset = 	{
 	id: 'land-covers',
 	label: 'Land covers',
 	geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+	// filter: ["!",["in",["to-string",["id"]],["literal",["12"]]]],
 	// filter: [
 	// 	'all',
 	// 	['!=', ['get', 'sbi'], '106223377'],
@@ -276,7 +277,7 @@ const datasetsPlugin = createDatasetsPlugin({
 	layerAdapter: maplibreLayerAdapter,
 	// Example: Dynamic bbox-based fetching (uncomment to test)
 	datasets: [
-		// landCoversDataset,
+		landCoversDataset,
 		existingFieldsDataset,
 		historicMonumentsDataset,
 		hedgeControlDataset
@@ -381,8 +382,8 @@ const testGlobalVisibility = () => {
 }
 
 const testFeatureVisibility = () => {
-	setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [55], { datasetId: 'land-covers', idProperty: null }), 2000)
-	setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [55], { datasetId: 'land-covers', idProperty: null }), 4000)
+	setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [12, 28, 19, 6], { datasetId: 'land-covers', idProperty: null }), 2000)
+	setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [12, 28], { datasetId: 'land-covers', idProperty: null }), 4000)
 }
 
 const testOpacity = () => {
@@ -410,12 +411,12 @@ const testRemoveAndAddDataset = () => {
 }
 
 interactiveMap.on('datasets:ready', function () {
-	// testFeatureVisibility()
+	testFeatureVisibility()
 	// testOpacity()
 	// testSetStyle()
 	// testVisibility()
 	// testGlobalVisibility()
-	testRemoveAndAddDataset()
+	// testRemoveAndAddDataset()
 })
 
 // Ref to the selected features
