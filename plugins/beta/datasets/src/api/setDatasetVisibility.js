@@ -1,11 +1,12 @@
-export const setDatasetVisibility = ({ pluginState }, visible, { datasetId, sublayerId }) => {
-  datasetId = sublayerId ? `${datasetId}-${sublayerId}` : datasetId
+export const setDatasetVisibility = ({ pluginState: { dispatch } }, visible, ids = {}) => {
+  const { datasetId: datasetToUpdate, sublayerId } = ids
+  const datasetId = sublayerId ? `${datasetToUpdate}-${sublayerId}` : datasetToUpdate
 
   if (datasetId) {
-    pluginState.dispatch({ type: 'SET_DATASET_VISIBILITY', payload: { datasetId, visible } })
+    dispatch({ type: 'SET_DATASET_VISIBILITY', payload: { datasetId, visible } })
     return
   }
 
   // Global
-  pluginState.dispatch({ type: 'SET_GLOBAL_VISIBILITY', payload: { visible } })
+  dispatch({ type: 'SET_GLOBAL_VISIBILITY', payload: { visible } })
 }
