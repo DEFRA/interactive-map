@@ -164,7 +164,7 @@ export default class MaplibreLayerAdapter {
 
     // Remove source if no other dataset is using it
     const sourceIsShared = datasetRegistry.topLevelDatasets()
-      .filter(dataset => dataset.id !== datasetId && dataset.sourceId === sourceId)
+      .filter(registryDataset => registryDataset.id !== datasetId && registryDataset.sourceId === sourceId)
       .length > 0
 
     if (!sourceIsShared && this._map.getSource(sourceId)) {
@@ -200,7 +200,6 @@ export default class MaplibreLayerAdapter {
     registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
     await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
     this._addLayers(registryDataset, mapStyle)
-    console.log('Finished updating style for dataset', datasetId)
   }
 
   /**

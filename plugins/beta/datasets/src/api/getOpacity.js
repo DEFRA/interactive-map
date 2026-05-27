@@ -1,17 +1,17 @@
-export const getOpacity = ({ pluginState }, options) => {
-  const { datasetId, sublayerId } = options || {}
+import { logger } from '../../../../../src/services/logger.js'
+import { datasetRegistry } from '../registry/datasetRegistry.js'
 
-  if (sublayerId) {
-    const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-    const sublayer = dataset?.sublayers?.find(s => s.id === sublayerId)
-    return sublayer?.style?.opacity ?? null
+export const getOpacity = ({ pluginState: { globals } }, options = {}) => {
+  const { datasetId, sublayerId } = options
+  const fullId = sublayerId ? `${datasetId}-${sublayerId}` : datasetId
+  if (fullId) {
+    const registryDataset = datasetRegistry.getDataset(fullId)
+    if (!registryDataset) {
+      logger.warn(`getOpacity: Dataset with id ${fullId} not found`)
+      return null
+    }
+    return registryDataset.opacity ?? null
   }
-
-  if (datasetId) {
-    const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-    return dataset?.opacity ?? null
-  }
-
-  // Global — return first dataset's opacity
-  return pluginState.datasets?.[0]?.opacity ?? null
+  // Global
+  return globals.opacity ?? null
 }
