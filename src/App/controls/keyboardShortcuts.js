@@ -1,10 +1,11 @@
 // src/controls/keyboardShortcuts.js
+import { altKeyHtml } from '../../utils/platform.js'
 
 export const coreShortcuts = [
   {
     id: 'showKeyboardHelp',
     title: 'Show keyboard help',
-    command: '<kbd>Alt</kbd> + <kbd>K</kbd>',
+    command: `${altKeyHtml} + <kbd>K</kbd>`,
     context: 'global',
     enabled: true
   },
@@ -35,14 +36,14 @@ export const coreShortcuts = [
   {
     id: 'highlightLabelAtCenter',
     title: 'Highlight label at centre',
-    command: '<kbd>Alt</kbd> + <kbd>Enter</kbd>',
+    command: `${altKeyHtml} + <kbd>Enter</kbd>`,
     enabled: false,
     requiredConfig: ['readMapText']
   },
   {
     id: 'highlightNextLabel',
     title: 'Highlight nearby label',
-    command: '<kbd>Alt</kbd> + <kbd>→</kbd>, <kbd>←</kbd>, <kbd>↑</kbd> or <kbd>↓</kbd>',
+    command: `${altKeyHtml} + <kbd>→</kbd>, <kbd>←</kbd>, <kbd>↑</kbd> or <kbd>↓</kbd>`,
     enabled: false,
     requiredConfig: ['readMapText']
   }
