@@ -1,4 +1,3 @@
-import { getSourceId } from './layerIds.js'
 import { addDatasetLayers } from './layerBuilders.js'
 import { MapLibreDataset } from './datasets/mapLibreDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
@@ -41,11 +40,10 @@ export default class MaplibreLayerAdapter {
 
   /**
    * Initialise all datasets: register patterns, add layers, then wait for idle.
-   * @param {Object[]} mappedDatasets
    * @param {Object} mapStyle
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
-  async init (mappedDatasets, mapStyle) {
+  async init (mapStyle) {
     const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs, mapStyle)
 
@@ -71,17 +69,12 @@ export default class MaplibreLayerAdapter {
 
   /**
    * Remove all layers and sources for the given datasets.
-   * @param {Object[]} datasets
    */
-  destroy (datasets) {
+  destroy () {
     const removedSourceIds = new Set()
-    datasets.forEach(dataset => {
-      const sourceId = getSourceId(dataset)
-      this._getLayersUsingSource(sourceId).forEach(layerId => {
-        if (this._map.getLayer(layerId)) {
-          this._map.removeLayer(layerId)
-        }
-      })
+    datasetRegistry.forEachDataset(registryDataset => {
+      const sourceId = registryDataset.sourceId
+      this._getLayersUsingSource(sourceId).forEach(layerId => this.removeLayer(layerId))
       if (!removedSourceIds.has(sourceId) && this._map.getSource(sourceId)) {
         this._map.removeSource(sourceId)
         removedSourceIds.add(sourceId)

@@ -3,10 +3,6 @@ import { createDynamicSource } from './fetch/createDynamicSource.js'
 import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
 import { datasetRegistry } from './registry/datasetRegistry.js'
-const isDynamicSource = (dataset) =>
-  typeof dataset.geojson === 'string' &&
-  !!dataset.idProperty &&
-  typeof dataset.transformRequest === 'function'
 
 export const createDatasets = ({
   adapter,
@@ -22,24 +18,22 @@ export const createDatasets = ({
 
   const dynamicSources = new Map()
 
-  const getDatasets = () => pluginStateRef.current.datasets || datasets
-
   // Initialise all datasets via the adapter, then set up dynamic sources
   const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))
   const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets })
   datasetRegistry.attach(mappedDatasets)
-  adapter.init(mappedDatasets, mapStyle).then(() => {
-    processedDatasets.forEach(dataset => {
-      if (!isDynamicSource(dataset)) {
+  adapter.init(mapStyle).then(() => {
+    datasetRegistry.forEachDataset(registryDataset => {
+      if (!registryDataset.hasDynamicSource) {
         return
       }
 
       const dynamicSource = createDynamicSource({
-        dataset,
+        dataset: registryDataset,
         map: mapProvider.map,
         onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
       })
-      dynamicSources.set(dataset.id, dynamicSource)
+      dynamicSources.set(registryDataset.id, dynamicSource)
     })
     // TODO - apply dynamic source defaults here, and include in mappedDatasets
     dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, mappedDatasets, orderedDatasets } })
@@ -69,7 +63,7 @@ export const createDatasets = ({
       // Clean up dynamic sources
       dynamicSources.forEach(source => source.destroy())
       dynamicSources.clear()
-      adapter.destroy(getDatasets())
+      adapter.destroy()
     },
 
     /**
