@@ -137,6 +137,17 @@ const landCoversDataset = 	{
 			fillPatternBackgroundColor: 'transparent'
 		}
 	},{
+		id: 'permanent-grassland-2',
+		label: 'Permanent grassland 2',
+		filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
+		showInMenu: true,
+		style: {
+			stroke: { outdoor: '#00897B', dark: '#ffffff' },
+			fillPattern: 'diagonal-cross-hatch',
+			fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
+			fillPatternBackgroundColor: 'transparent'
+		}
+	},{
 		id: '332',
 		label: 'Woodland',
 		filter: ['==', ['get', 'dominant_land_cover'], '332'],
@@ -382,8 +393,11 @@ const testGlobalVisibility = () => {
 }
 
 const testFeatureVisibility = () => {
-	setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [12, 28, 19, 6], { datasetId: 'land-covers', idProperty: null }), 2000)
-	setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [12, 28], { datasetId: 'land-covers', idProperty: null }), 4000)
+	// 29 and 16
+	// setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [12, 28, 19, 6], { datasetId: 'land-covers', idProperty: null }), 2000)
+	// setTimeout(() => datasetsPlugin.setFeatureVisibility(true, [12, 28], { datasetId: 'land-covers', idProperty: null }), 4000)
+	setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [29], { datasetId: 'land-covers-130-131', idProperty: null }), 2000)
+	setTimeout(() => datasetsPlugin.setFeatureVisibility(false, [16], { datasetId: 'land-covers-permanent-grassland-2', idProperty: null }), 2000)
 }
 
 const testOpacity = () => {
@@ -406,17 +420,30 @@ const testSetStyle = () => {
 
 const testRemoveAndAddDataset = () => {
 	setTimeout(() => datasetsPlugin.removeDataset('historic-monuments'), 2000)
-	setTimeout(() => datasetsPlugin.addDataset(landCoversDataset), 3000)
+	// setTimeout(() => datasetsPlugin.addDataset(landCoversDataset), 3000)
 	setTimeout(() => datasetsPlugin.addDataset({ ...historicMonumentsDataset, label: 'New historic monuments' }), 4000)
 }
 
+const testInvalidApiCalls = () => {
+	setTimeout(() => {
+		datasetsPlugin.setDatasetVisibility(false, { datasetId: 'non-existent-dataset' }) // Should log an error about dataset not found
+		datasetsPlugin.setOpacity(0.5, { datasetId: 'non-existent-dataset' }) // Should log an error about dataset not found
+		datasetsPlugin.addDataset(landCoversDataset) // Adding a dataset with an existing id - should log an error and ignore
+		datasetsPlugin.removeDataset('historic-monuments-non-existent') // Should log an error about dataset not found
+		datasetsPlugin.setFeatureVisibility(false, [29], { datasetId: 'invalid-id' })
+		datasetsPlugin.setFeatureVisibility(true, [29], { datasetId: 'also-invalid-id' })
+		datasetsPlugin.setStyle({ fillPattern: 'horizontal-hatch' }, { datasetId: 'land-covers', sublayerId: 'invalid-sublayer' }) // Should log an error about dataset not found
+	}, 300)
+}
+
 interactiveMap.on('datasets:ready', function () {
+	testInvalidApiCalls()
 	testFeatureVisibility()
-	// testOpacity()
-	// testSetStyle()
-	// testVisibility()
-	// testGlobalVisibility()
-	// testRemoveAndAddDataset()
+	testOpacity()
+	testSetStyle()
+	testVisibility()
+	testGlobalVisibility()
+	testRemoveAndAddDataset()
 })
 
 // Ref to the selected features
