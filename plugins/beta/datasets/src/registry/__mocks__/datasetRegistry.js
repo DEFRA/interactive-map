@@ -10,7 +10,6 @@ const { mappedDatasets } = mappedDatasetsReducer({ datasets: datasetDefinitions 
 // we can import that config from demoDatasets.js (or roll our own)
 // and attach it in the specific test
 beforeEach(() => {
-  console.log('Attaching demo datasets to datasetRegistry mock')
   datasetRegistry.attach(mappedDatasets)
 })
 
