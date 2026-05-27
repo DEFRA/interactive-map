@@ -18,7 +18,6 @@ export class Dataset {
   get idProperty () { return this._datasetDefinition.idProperty }
   get transformRequest () { return this._datasetDefinition.transformRequest }
   get parentId () { return this._datasetDefinition.parentId }
-
   get minZoom () { return this._datasetDefinition.minZoom || this.parent?.minZoom }
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
   get showInKey () { return this._datasetDefinition.showInKey || this.parent?.showInKey || false }
@@ -28,6 +27,10 @@ export class Dataset {
   }
 
   get visibility () { return this.visible ? 'visible' : 'none' }
+  get hasDynamicSource () {
+    return typeof this.geojson === 'string' && !!this.idProperty && typeof this.transformRequest === 'function'
+  }
+
   get hiddenFeatures () { return this._datasetDefinition.hiddenFeatures }
   get hasHiddenFeatures () { return Boolean(this.hiddenFeatures?.length > 0 || this.parent?.hasHiddenFeatures) }
   get hiddenFeaturesIdExpression () {
