@@ -65,3 +65,13 @@ export const addDatasetToMenu = (state, dataset) => {
   }
   return menu
 }
+
+export const removeDatasetsFromMenu = (menu, datasetsToRemove) => {
+  return menu.reduce((newMenu, menuGroup) => {
+    const filteredItems = menuGroup.items.filter(item => !datasetsToRemove.includes(item.id))
+    if (filteredItems.length) {
+      newMenu.push({ ...menuGroup, items: filteredItems })
+    }
+    return newMenu
+  }, [])
+}

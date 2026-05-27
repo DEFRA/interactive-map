@@ -1,8 +1,4 @@
-export const setFeatureVisibility = ({ pluginState }, visible, featureIds, { datasetId } = {}) => {
-  const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-  if (!dataset) {
-    return
-  }
+export const setFeatureVisibility = ({ pluginState: { dispatch } }, visible, featureIds, { datasetId } = {}) => {
   const type = visible ? 'SHOW_FEATURES' : 'HIDE_FEATURES'
-  pluginState.dispatch({ type, payload: { datasetId, featureIds } })
+  dispatch({ type, payload: { datasetId, featureIds } })
 }

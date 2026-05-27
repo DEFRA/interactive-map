@@ -1,5 +1,6 @@
-import { datasetsToMenu, addDatasetToMenu } from './reducers/datasetsToMenu.js'
+import { datasetsToMenu, addDatasetToMenu, removeDatasetsFromMenu } from './reducers/datasetsToMenu.js'
 import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
+import { logger } from '../../../../src/services/logger.js'
 
 const initialState = {
   globals: {
@@ -26,6 +27,14 @@ const initialState = {
   }
 }
 
+const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') => {
+  if (!state.mappedDatasets[datasetId]) {
+    logger.error(`${prefix}: Dataset with id '${datasetId}' ${suffix}`)
+    return false
+  }
+  return true
+}
+
 const setDatasets = (state, payload) => {
   const { datasets, mappedDatasets, orderedDatasets } = payload
   const menu = payload.menu || datasetsToMenu({ datasets })
@@ -40,6 +49,10 @@ const setDatasets = (state, payload) => {
 
 const addDataset = (state, payload) => {
   const { dataset, mapStyle } = payload
+  if (state.mappedDatasets[dataset.id]) {
+    logger.error(`addDataset: Dataset with id '${dataset.id}' already exists`)
+    return state
+  }
   const { mappedDatasets: newDatasets, orderedDatasets: newOrderedDatasets } = mappedDatasetsReducer({ datasets: [dataset] })
   const menu = addDatasetToMenu(state, dataset)
   const addDataset = [...state.layerAdapterActions.addDataset, [dataset.id, mapStyle]]
@@ -56,36 +69,31 @@ const addDataset = (state, payload) => {
   }
 }
 
-const removeDatasetsFromMenu = (menu, datasetsToRemove) => {
-  return menu.reduce((newMenu, menuGroup) => {
-    const filteredItems = menuGroup.items.filter(item => !datasetsToRemove.includes(item.id))
-    if (filteredItems.length) {
-      newMenu.push({ ...menuGroup, items: filteredItems })
-    }
-    return newMenu
-  }, [])
-}
-
 const removeDataset = (state, payload) => {
   const { id } = payload
+  if (!validateDatasetExists(state, id, 'removeDataset')) {
+    return state
+  }
   const mappedDatasets = { ...state.mappedDatasets }
   const datasetsToRemove = [id, ...(mappedDatasets[id]?.sublayerIds || [])]
   datasetsToRemove.forEach((datasetId) => delete mappedDatasets[datasetId])
   // Remove from orderedDatasets
   const orderedDatasets = state.orderedDatasets.filter(datasetId => !datasetsToRemove.includes(datasetId))
   // Remove from menu, and remove any menu groups that are left with no items
-  const menu = removeDatasetsFromMenu(state.menu, datasetsToRemove)
   return {
     ...state,
     datasets: state.datasets?.filter(dataset => dataset.id !== id) || [],
     mappedDatasets,
     orderedDatasets,
-    menu
+    menu: removeDatasetsFromMenu(state.menu, datasetsToRemove)
   }
 }
 
 const setDatasetVisibility = (state, payload) => {
   const { datasetId, visible } = payload
+  if (!validateDatasetExists(state, datasetId, 'setDatasetVisibility')) {
+    return state
+  }
   const setDatasetVisibility = [...state.layerAdapterActions.setDatasetVisibility, [datasetId, visible]]
   return {
     ...state,
@@ -108,6 +116,9 @@ const setGlobalVisibility = (state, payload) => {
 
 const hideFeatures = (state, payload) => {
   const { datasetId, featureIds } = payload
+  if (!validateDatasetExists(state, datasetId, 'setFeatureVisibility - hideFeatures')) {
+    return state
+  }
   const mappedDataset = { ...state.mappedDatasets[datasetId] }
   const existingIds = mappedDataset.hiddenFeatures || []
   const newIds = [...new Set([...existingIds, ...featureIds])]
@@ -123,6 +134,9 @@ const hideFeatures = (state, payload) => {
 
 const showFeatures = (state, payload) => {
   const { datasetId, featureIds } = payload
+  if (!validateDatasetExists(state, datasetId, 'setFeatureVisibility - showFeatures')) {
+    return state
+  }
   const mappedDataset = { ...state.mappedDatasets[datasetId] }
   const existingIds = mappedDataset.hiddenFeatures || []
   const newIds = existingIds.filter(id => !featureIds.includes(id))
@@ -140,6 +154,9 @@ const setLayerAdapterActions = (state, payload) => ({ ...state, layerAdapterActi
 
 const setDatasetStyle = (state, payload) => {
   const { datasetId, styleChanges, mapStyle } = payload
+  if (!validateDatasetExists(state, datasetId, 'setDatasetStyle')) {
+    return state
+  }
   const style = { ...state.mappedDatasets[datasetId].style, ...styleChanges }
   const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges, style }
   const setStyle = [...state.layerAdapterActions.setStyle, [datasetId, mapStyle]]
@@ -155,6 +172,9 @@ const setDatasetStyle = (state, payload) => {
 
 const setOpacity = (state, payload) => {
   const { datasetId, opacity } = payload
+  if (!validateDatasetExists(state, datasetId, 'setOpacity')) {
+    return state
+  }
   const style = { ...state.mappedDatasets[datasetId].style, opacity }
   const dataset = { ...state.mappedDatasets[datasetId], style }
   const setOpacity = [...state.layerAdapterActions.setOpacity, [datasetId, opacity]]
