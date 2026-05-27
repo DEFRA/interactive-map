@@ -51,6 +51,8 @@ function syncMapInstance (mapInstance, viewId) {
     return
   }
 
+  mapInstance._isClosingViaBack = false
+
   const shouldBeOpen = mapInstance.id === viewId
   const isHybridVisible = mapInstance.config.behaviour === 'hybrid' && !isHybridFullscreen(mapInstance.config)
   const isOpen = mapInstance.rootEl?.children.length
@@ -134,6 +136,11 @@ function register (component) {
  */
 function unregister (component) {
   components.delete(component.id)
+
+  if (components.size === 0) {
+    globalThis.removeEventListener('popstate', handlePopstate)
+    initialized = false
+  }
 }
 
 // -----------------------------------------------------------------------------

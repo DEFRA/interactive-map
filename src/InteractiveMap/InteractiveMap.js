@@ -38,6 +38,8 @@ export default class InteractiveMap {
   _interfaceDetectorCleanup = null
   _hybridBehaviourCleanup = null
   _isHidden = false // tracks if map is hidden but preserved (hybrid mode)
+  _isClosingViaBack = false // prevents double history.back() while popstate is pending
+  _isLoading = false // prevents concurrent loadApp() calls
 
   /**
    * Create a new InteractiveMap instance.
@@ -103,12 +105,17 @@ export default class InteractiveMap {
   }
 
   _handleButtonClick (e) {
-    if (this.config.manageHistoryState) {
-      history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
-    }
     if (this._isHidden) {
+      if (this.config.manageHistoryState) {
+        history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
+      }
       this.showApp()
+    } else if (this._root) {
+      // app already open — no-op, no push
     } else {
+      if (this.config.manageHistoryState) {
+        history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
+      }
       this.loadApp()
     }
   }
@@ -128,22 +135,35 @@ export default class InteractiveMap {
   }
 
   _handleExitClick () {
-    if (this.config.preserveStateOnClose) {
-      this.hideApp()
-    } else {
-      this.removeApp()
-    }
-
     if (!this.config.manageHistoryState) {
+      if (this.config.preserveStateOnClose) {
+        this.hideApp()
+      } else {
+        this.removeApp()
+      }
       return
     }
 
     // If this history entry was pushed by the map's open button, go back so the
     // ?mv= entry is preserved as a forward entry (browser forward re-opens the map).
-    // Otherwise (direct URL / bookmark), just strip the param in place.
+    // Don't close synchronously here — let the popstate handler (syncMapInstance →
+    // closeMap) do it. This prevents a race where the button becomes clickable before
+    // history.back() resolves, which would push a ghost ?mv= entry into history.
     if (history.state?.isBack) {
+      if (this._isClosingViaBack) {
+        return
+      }
+      this._isClosingViaBack = true
       history.back()
+      // Safety net: clear flag if popstate never fires (e.g. nothing to go back to)
+      setTimeout(() => { this._isClosingViaBack = false }, 1000)
     } else {
+      // Direct URL / bookmark: no popstate coming, so close immediately.
+      if (this.config.preserveStateOnClose) {
+        this.hideApp()
+      } else {
+        this.removeApp()
+      }
       const key = this.config.mapViewQueryParam
       const newUrl = this._removeMapParamFromUrl(location.href, key)
       history.replaceState(history.state, '', newUrl)
@@ -157,6 +177,11 @@ export default class InteractiveMap {
    * @returns {Promise<void>}
    */
   async loadApp () {
+    if (this._root || this._isLoading) {
+      return
+    }
+    this._isLoading = true
+
     if (this._openButton) {
       this._openButton.style.display = 'none'
     }
@@ -203,9 +228,12 @@ export default class InteractiveMap {
       updateDOMState(this)
       this.eventBus.emit(events.APP_OPENED, { statePreserved: false })
     } catch (err) {
+      this._openButton?.removeAttribute('style')
       renderError(this.rootEl, this.config.genericErrorText)
       console.error(err)
       throw err
+    } finally {
+      this._isLoading = false
     }
   }
 

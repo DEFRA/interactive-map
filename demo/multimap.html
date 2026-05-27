@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Multi-map browser history demo</title>
+        <link href="/assets/govuk-frontend.min.css" rel="stylesheet" media="all">
+        <link href="./index.css" rel="stylesheet" media="all">
+    </head>
+    <body style="padding: 20px">
+        <script>document.body.classList.add('im-is-loading')</script>
+        <h1>Multi-map browser history demo</h1>
+        <p>Three independent maps in <code>buttonFirst</code> mode. Each map button pushes a history entry (<code>?mv=&lt;id&gt;</code>); browser Back should close the map and restore the button.</p>
+
+        <h2>London</h2>
+        <div id="map-london"></div>
+
+        <h2>Manchester</h2>
+        <div id="map-manchester"></div>
+
+        <h2>Edinburgh</h2>
+        <div id="map-edinburgh"></div>
+
+        <script src="./multimap.js"></script>
+    </body>
+</html>

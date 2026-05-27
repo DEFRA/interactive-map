@@ -23,7 +23,8 @@ export default {
     farming: path.join(__dirname, 'demo/js/farming.js'),
     planning: path.join(__dirname, 'demo/js/planning.js'),
     'planning-ol': path.join(__dirname, 'demo/js/planning-ol.js'),
-    gep: path.join(__dirname, 'demo/js/gep.js')
+    gep: path.join(__dirname, 'demo/js/gep.js'),
+    multimap: path.join(__dirname, 'demo/js/multimap.js')
   },
   output: {
     path: path.resolve(__dirname, 'public'),
