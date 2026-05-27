@@ -10,7 +10,6 @@ const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies)
     const method = pluginState.layerAdapter?.[methodName]
     if (method && methodParameters.length) {
       methodParameters.forEach((parameters) => {
-        console.log(`calling ${methodName} with ${parameters[0]}`)
         method.bind(pluginState.layerAdapter)(...parameters)
       })
       if (methodParameters.length) {

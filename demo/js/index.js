@@ -45,6 +45,28 @@ const pointData = {
 	}]
 }
 
+const adjustedPointData = {
+	type: 'FeatureCollection',
+	features: [{
+		type: 'Feature',
+		properties:  { category:'prehistoric', name: 'Prehistoric feature' }, 
+		geometry: { coordinates: [-2.4758622,54.5617135], type: 'Point' }
+	},
+	{ 
+		type: 'Feature', 
+		properties: { category: 'roman', name: 'Roman feature' }, 
+		geometry: { coordinates: [-2.449823,54.5525437], type: 'Point' }
+	},
+	{ 
+		type: 'Feature', 
+		properties: { category:'medieval', name: 'Medieval feature' }, 
+		geometry: { coordinates: [-2.4981939,54.5575261], type: 'Point'} 
+	}]
+}
+
+
+
+
 const interactPlugin = createInteractPlugin({
 	layers: [{
 		layerId: 'historic-monuments-prehistoric',
@@ -405,8 +427,8 @@ const testOpacity = () => {
 	setTimeout(() => datasetsPlugin.setOpacity(0, { datasetId: 'land-covers' }), 500)
 	setTimeout(() => datasetsPlugin.setOpacity(0.8, { datasetId: 'land-covers', sublayerId: '130-131' }), 1000)
 	setTimeout(() => datasetsPlugin.setOpacity(0.3, { datasetId: 'land-covers', sublayerId: '130-131' }), 1500)
-	setTimeout(() => datasetsPlugin.setOpacity(1, { datasetId: 'land-covers' }), 2000)
-	setTimeout(() => datasetsPlugin.setOpacity(1, { datasetId: 'land-covers', sublayerId: '130-131' }), 4000)
+	setTimeout(() => datasetsPlugin.setOpacity(0.97, { datasetId: 'land-covers' }), 2000)
+	// setTimeout(() => datasetsPlugin.setOpacity(1, { datasetId: 'land-covers', sublayerId: '130-131' }), 4000)
 }
 
 const testSetStyle = () => {
@@ -424,6 +446,17 @@ const testRemoveAndAddDataset = () => {
 	setTimeout(() => datasetsPlugin.addDataset({ ...historicMonumentsDataset, label: 'New historic monuments' }), 4000)
 }
 
+const testGetters = () => {
+	setTimeout(() => {
+		console.log('Global Opacity', datasetsPlugin.getOpacity())
+		console.log('Land Covers Opacity', datasetsPlugin.getOpacity({ datasetId: 'land-covers' }))
+		console.log('Land Covers-130-131 Opacity', datasetsPlugin.getOpacity({ datasetId: 'land-covers', sublayerId: '130-131' }))
+		console.log('Style without datasetId', datasetsPlugin.getStyle())
+		console.log('Land Covers Opacity', datasetsPlugin.getStyle({ datasetId: 'land-covers' }))
+		console.log('Land Covers-130-131 Opacity', datasetsPlugin.getStyle({ datasetId: 'land-covers', sublayerId: '130-131' }))
+	}, 5000)
+}
+
 const testInvalidApiCalls = () => {
 	setTimeout(() => {
 		datasetsPlugin.setDatasetVisibility(false, { datasetId: 'non-existent-dataset' }) // Should log an error about dataset not found
@@ -436,14 +469,42 @@ const testInvalidApiCalls = () => {
 	}, 300)
 }
 
+const testSetData = () => {
+	// Should cause the historic monuments to creep across the map as the coordinates are updated every 500ms
+	const newData = {...pointData}
+	const features = [...newData.features]
+	const feature1 = features[0]
+	const feature2 = features[1]
+	const feature3 = features[2]
+	let counter = 0
+	const increment = 0.001
+	// Update coordinates of features to simulate change in data
+	const updateCoordinates = () => {
+		feature1.geometry.coordinates[0] += increment
+		feature1.geometry.coordinates[1] += increment
+		feature2.geometry.coordinates[0] -= increment
+		feature2.geometry.coordinates[1] -= increment
+		feature3.geometry.coordinates[0] += increment
+		feature3.geometry.coordinates[1] -= increment
+		counter++
+		if (counter < 10) {
+			setTimeout(updateCoordinates, 500)
+		}
+		datasetsPlugin.setData(newData, { datasetId: 'historic-monuments' })
+	}
+  setTimeout(updateCoordinates, 1000)
+}
+
 interactiveMap.on('datasets:ready', function () {
-	testInvalidApiCalls()
-	testFeatureVisibility()
-	testOpacity()
-	testSetStyle()
-	testVisibility()
-	testGlobalVisibility()
-	testRemoveAndAddDataset()
+  testGetters()
+  testInvalidApiCalls()
+  testFeatureVisibility()
+  testOpacity()
+  testSetStyle()
+  testVisibility()
+  testGlobalVisibility()
+  testRemoveAndAddDataset()
+  testSetData()
 })
 
 // Ref to the selected features
