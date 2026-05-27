@@ -1,3 +1,3 @@
-export const addDataset = ({ pluginState, mapState }, dataset) => {
-  pluginState.dispatch({ type: 'ADD_DATASET', payload: { dataset, mapStyle: mapState.mapStyle } })
+export const addDataset = ({ pluginState: { dispatch }, mapState }, dataset) => {
+  dispatch({ type: 'ADD_DATASET', payload: { dataset, mapStyle: mapState.mapStyle } })
 }
