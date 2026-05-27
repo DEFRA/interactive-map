@@ -7,12 +7,11 @@ const initialState = {
     visible: true,
     opacity: 1,
     // overrideDatasetOpacity:
-    // 'local': dataset opacity is used instead if set;
-    // 'global': local opacity is ignored
-    // 'multiply': local opacity is multiplied by global opacity
+    // 'local': registryDataset opacity is used instead if set;
+    // 'global': registryDataset opacity is ignored
+    // 'multiply': registryDataset opacity is multiplied by global opacity
     overrideDatasetOpacity: 'global'
   },
-  datasets: null,
   key: {
     items: [],
     hasGroups: false
@@ -40,7 +39,6 @@ const setDatasets = (state, payload) => {
   const menu = payload.menu || datasetsToMenu({ datasets })
   return {
     ...state,
-    datasets,
     mappedDatasets,
     orderedDatasets,
     menu
@@ -62,10 +60,7 @@ const addDataset = (state, payload) => {
     mappedDatasets: { ...state.mappedDatasets, ...newDatasets },
     orderedDatasets: [...state.orderedDatasets, ...newOrderedDatasets],
     menu,
-    layerAdapterActions: { ...state.layerAdapterActions, addDataset },
-    datasets: [
-      ...(state.datasets || [])
-    ]
+    layerAdapterActions: { ...state.layerAdapterActions, addDataset }
   }
 }
 
@@ -82,7 +77,6 @@ const removeDataset = (state, payload) => {
   // Remove from menu, and remove any menu groups that are left with no items
   return {
     ...state,
-    datasets: state.datasets?.filter(dataset => dataset.id !== id) || [],
     mappedDatasets,
     orderedDatasets,
     menu: removeDatasetsFromMenu(state.menu, datasetsToRemove)
@@ -98,9 +92,6 @@ const setDatasetVisibility = (state, payload) => {
   return {
     ...state,
     layerAdapterActions: { ...state.layerAdapterActions, setDatasetVisibility },
-    datasets: state.datasets?.map(dataset =>
-      dataset.id === datasetId ? { ...dataset, visible } : dataset
-    ),
     mappedDatasets: { ...state.mappedDatasets, [datasetId]: { ...state.mappedDatasets[datasetId], visible } }
   }
 }
@@ -109,8 +100,7 @@ const setGlobalVisibility = (state, payload) => {
   const { visibility } = payload
   return {
     ...state,
-    globals: { ...state.globals, visible: visibility !== 'hidden' },
-    datasets: state.datasets?.map(dataset => ({ ...dataset, visibility }))
+    globals: { ...state.globals, visible: visibility !== 'hidden' }
   }
 }
 
@@ -163,10 +153,7 @@ const setDatasetStyle = (state, payload) => {
   return {
     ...state,
     layerAdapterActions: { ...state.layerAdapterActions, setStyle },
-    mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset },
-    datasets: state.datasets?.map(dataset =>
-      dataset.id === datasetId ? { ...dataset, ...styleChanges } : dataset
-    )
+    mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset }
   }
 }
 
@@ -181,10 +168,7 @@ const setOpacity = (state, payload) => {
   return {
     ...state,
     layerAdapterActions: { ...state.layerAdapterActions, setOpacity },
-    mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset },
-    datasets: state.datasets?.map(dataset =>
-      dataset.id === datasetId ? { ...dataset, opacity } : dataset
-    )
+    mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset }
   }
 }
 
@@ -192,8 +176,7 @@ const setGlobalOpacity = (state, payload) => {
   const { opacity } = payload
   return {
     ...state,
-    globals: { ...state.globals, opacity },
-    datasets: state.datasets?.map(dataset => ({ ...dataset, opacity }))
+    globals: { ...state.globals, opacity }
   }
 }
 
