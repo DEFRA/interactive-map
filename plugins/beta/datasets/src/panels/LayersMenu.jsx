@@ -1,9 +1,9 @@
 import React from 'react'
 import { setDatasetVisibility } from '../api/setDatasetVisibility'
-import { DatasetMenuCheckbox } from '../components/menu/DatasetMenuCheckbox.jsx'
-import { DatasetMenuGroupWrapper } from '../components/menu/DatasetMenuGroupWrapper.jsx'
+import { LayersMenuCheckbox } from '../components/menu/LayersMenuCheckbox.jsx'
+import { LayersMenuGroupWrapper } from '../components/menu/LayersMenuGroupWrapper.jsx'
 
-export const DatasetMenu = ({ pluginState }) => {
+export const LayersMenu = ({ pluginState }) => {
   const { menu = [] } = pluginState
   const handleDatasetChange = (e) => {
     const { value, checked } = e.target
@@ -16,17 +16,17 @@ export const DatasetMenu = ({ pluginState }) => {
     <div className={containerClass}>
       {// Each menuGroup
         menu.map(menuGroup =>
-          <DatasetMenuGroupWrapper key={menuGroup.id} menuGroup={menuGroup}>
+          <LayersMenuGroupWrapper key={menuGroup.id} menuGroup={menuGroup}>
             {// Each menuGroupItem
               menuGroup.items.map(menuGroupItem =>
-                <DatasetMenuCheckbox
+                <LayersMenuCheckbox
                   key={menuGroupItem.id}
                   menuGroupItem={menuGroupItem}
                   onChange={handleDatasetChange}
                 />
               )
             }
-          </DatasetMenuGroupWrapper>)
+          </LayersMenuGroupWrapper>)
       }
     </div>
   )
