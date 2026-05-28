@@ -114,7 +114,7 @@ export default class MaplibreLayerAdapter {
    * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async onSizeChange (mapStyle) {
+  async onMapSizeChange (mapStyle) {
     const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs, mapStyle)
 
