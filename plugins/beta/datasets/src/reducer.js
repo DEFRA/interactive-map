@@ -19,7 +19,7 @@ const initialState = {
   layerAdapter: null,
   layerAdapterActions: {
     setStyle: [],
-    setDatasetVisibility: [],
+    applyDatasetVisibility: [],
     setOpacity: [],
     addDataset: [],
     applyFeatureFilter: []
@@ -88,10 +88,10 @@ const setDatasetVisibility = (state, payload) => {
   if (!validateDatasetExists(state, datasetId, 'setDatasetVisibility')) {
     return state
   }
-  const setDatasetVisibility = [...state.layerAdapterActions.setDatasetVisibility, [datasetId, visible]]
+  const applyDatasetVisibility = [...state.layerAdapterActions.applyDatasetVisibility, [datasetId, visible]]
   return {
     ...state,
-    layerAdapterActions: { ...state.layerAdapterActions, setDatasetVisibility },
+    layerAdapterActions: { ...state.layerAdapterActions, applyDatasetVisibility },
     mappedDatasets: { ...state.mappedDatasets, [datasetId]: { ...state.mappedDatasets[datasetId], visible } }
   }
 }
