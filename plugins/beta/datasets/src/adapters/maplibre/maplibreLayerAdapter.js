@@ -299,7 +299,7 @@ export default class MaplibreLayerAdapter {
   }
 
   _applyFeatureFilter (registryDataset) {
-    const { layersWithFilters } = registryDataset
+    const layersWithFilters = registryDataset.getLayersWithFilters()
     layersWithFilters.forEach(({ layerIds, filter }) => {
       layerIds.forEach(layerId => {
         if (this._map.getLayer(layerId)) {
