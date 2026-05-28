@@ -26,41 +26,15 @@ export class Dataset {
     return this.style.opacity === undefined ? 1 : this.style.opacity
   }
 
-  get visibility () { return this.visible ? 'visible' : 'none' }
   get hasDynamicSource () {
     return typeof this.geojson === 'string' && !!this.idProperty && typeof this.transformRequest === 'function'
   }
 
   get hiddenFeatures () { return this._datasetDefinition.hiddenFeatures }
   get hasHiddenFeatures () { return Boolean(this.hiddenFeatures?.length > 0 || this.parent?.hasHiddenFeatures) }
-  get hiddenFeaturesIdExpression () {
-    return this.idProperty ? ['to-string', ['get', this.idProperty]] : ['to-string', ['id']]
-  }
-
-  get hiddenFeaturesFilter () {
-    const hiddenFeatures = this.hiddenFeatures?.filter(id => id !== -1)
-    if (hiddenFeatures?.length) {
-      return ['!', ['in', this.hiddenFeaturesIdExpression, ['literal', hiddenFeatures.map(String)]]]
-    }
-    return null
-  }
 
   get filter () {
-    const filter = ['all']
-    if (this.parent?.filter) {
-      filter.push(this.parent.filter)
-    }
-    if (this._datasetDefinition.filter) {
-      filter.push(this._datasetDefinition.filter)
-    }
-    const hiddenFeaturesFilter = this.hiddenFeaturesFilter
-    if (hiddenFeaturesFilter) {
-      filter.push(hiddenFeaturesFilter)
-    }
-    if (filter.length === 1) {
-      return null
-    }
-    return filter.length > 2 ? filter : filter[1]
+    return null // TODO - implement filter construction for esri and openLayers adapters
   }
 
   get visible () {
