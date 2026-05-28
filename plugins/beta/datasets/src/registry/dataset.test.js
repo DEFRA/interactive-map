@@ -158,4 +158,216 @@ describe('Dataset class', () => {
       expect(dataset.symbolDescription).toBeUndefined()
     })
   })
+
+  describe('label', () => {
+    it('returns the dataset label', () => {
+      const dataset = new Dataset({ label: 'My dataset' })
+      expect(dataset.label).toBe('My dataset')
+    })
+
+    it('returns undefined when no label is set', () => {
+      const dataset = new Dataset({})
+      expect(dataset.label).toBeUndefined()
+    })
+  })
+
+  describe('showInKey', () => {
+    it('returns true when showInKey is set on the dataset', () => {
+      const dataset = new Dataset({ showInKey: true })
+      expect(dataset.showInKey).toBe(true)
+    })
+
+    it('returns false when showInKey is not set and there is no parent', () => {
+      const dataset = new Dataset({})
+      expect(dataset.showInKey).toBe(false)
+    })
+
+    it('inherits showInKey from the parent when not set on the sublayer', () => {
+      const parentDef = { id: 'parent', showInKey: true, style: {} }
+      const childDef = { id: 'child', parentId: 'parent', style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).showInKey).toBe(true)
+    })
+
+    it('returns false when neither the sublayer nor the parent has showInKey set', () => {
+      const parentDef = { id: 'parent', style: {} }
+      const childDef = { id: 'child', parentId: 'parent', style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).showInKey).toBe(false)
+    })
+  })
+
+  describe('tiles, geojson, idProperty, transformRequest, parentId', () => {
+    it('returns tiles from the definition', () => {
+      const tiles = ['https://example.com/{z}/{x}/{y}']
+      const dataset = new Dataset({ tiles })
+      expect(dataset.tiles).toBe(tiles)
+    })
+
+    it('returns geojson from the definition', () => {
+      const geojson = { type: 'FeatureCollection', features: [] }
+      const dataset = new Dataset({ geojson })
+      expect(dataset.geojson).toBe(geojson)
+    })
+
+    it('returns idProperty from the definition', () => {
+      const dataset = new Dataset({ idProperty: 'gid' })
+      expect(dataset.idProperty).toBe('gid')
+    })
+
+    it('returns transformRequest from the definition', () => {
+      const fn = () => {}
+      const dataset = new Dataset({ transformRequest: fn })
+      expect(dataset.transformRequest).toBe(fn)
+    })
+
+    it('returns parentId from the definition', () => {
+      const dataset = new Dataset({ parentId: 'parent' })
+      expect(dataset.parentId).toBe('parent')
+    })
+  })
+
+  describe('minZoom / maxZoom', () => {
+    it('returns minZoom from the definition', () => {
+      const dataset = new Dataset({ minZoom: 8 })
+      expect(dataset.minZoom).toBe(8)
+    })
+
+    it('falls back to the parent minZoom when not set on the sublayer', () => {
+      const parentDef = { id: 'parent', minZoom: 10, style: {} }
+      const childDef = { id: 'child', parentId: 'parent', style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).minZoom).toBe(10)
+    })
+
+    it('returns maxZoom from the definition', () => {
+      const dataset = new Dataset({ maxZoom: 20 })
+      expect(dataset.maxZoom).toBe(20)
+    })
+
+    it('falls back to the parent maxZoom when not set on the sublayer', () => {
+      const parentDef = { id: 'parent', maxZoom: 22, style: {} }
+      const childDef = { id: 'child', parentId: 'parent', style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).maxZoom).toBe(22)
+    })
+  })
+
+  describe('opacity', () => {
+    it('returns 1 when no opacity is set in style', () => {
+      const dataset = new Dataset({ style: { stroke: '#ff0000' } })
+      expect(dataset.opacity).toBe(1)
+    })
+
+    it('returns the opacity value from style', () => {
+      const dataset = new Dataset({ style: { opacity: 0.5 } })
+      expect(dataset.opacity).toBe(0.5)
+    })
+
+    it('returns 0 when opacity is explicitly set to 0', () => {
+      const dataset = new Dataset({ style: { opacity: 0 } })
+      expect(dataset.opacity).toBe(0)
+    })
+  })
+
+  describe('hasDynamicSource', () => {
+    it('returns true when geojson is a string, idProperty is set, and transformRequest is a function', () => {
+      const dataset = new Dataset({ geojson: 'https://example.com/data', idProperty: 'id', transformRequest: () => {} })
+      expect(dataset.hasDynamicSource).toBe(true)
+    })
+
+    it('returns false when geojson is an object (not a string)', () => {
+      const dataset = new Dataset({ geojson: { type: 'FeatureCollection', features: [] }, idProperty: 'id', transformRequest: () => {} })
+      expect(dataset.hasDynamicSource).toBe(false)
+    })
+
+    it('returns false when idProperty is not set', () => {
+      const dataset = new Dataset({ geojson: 'https://example.com/data', transformRequest: () => {} })
+      expect(dataset.hasDynamicSource).toBe(false)
+    })
+
+    it('returns false when transformRequest is not a function', () => {
+      const dataset = new Dataset({ geojson: 'https://example.com/data', idProperty: 'id' })
+      expect(dataset.hasDynamicSource).toBe(false)
+    })
+  })
+
+  describe('hiddenFeatures / hasHiddenFeatures', () => {
+    it('returns hiddenFeatures from the definition', () => {
+      const dataset = new Dataset({ hiddenFeatures: [1, 2] })
+      expect(dataset.hiddenFeatures).toEqual([1, 2])
+    })
+
+    it('returns undefined when hiddenFeatures is not set', () => {
+      const dataset = new Dataset({})
+      expect(dataset.hiddenFeatures).toBeUndefined()
+    })
+
+    it('returns true from hasHiddenFeatures when hiddenFeatures is a non-empty array', () => {
+      const dataset = new Dataset({ hiddenFeatures: [42] })
+      expect(dataset.hasHiddenFeatures).toBe(true)
+    })
+
+    it('returns false from hasHiddenFeatures when hiddenFeatures is empty', () => {
+      const dataset = new Dataset({ hiddenFeatures: [] })
+      expect(dataset.hasHiddenFeatures).toBe(false)
+    })
+
+    it('returns false from hasHiddenFeatures when hiddenFeatures is not set', () => {
+      const dataset = new Dataset({})
+      expect(dataset.hasHiddenFeatures).toBe(false)
+    })
+
+    it('returns true from hasHiddenFeatures when the parent has hidden features', () => {
+      const parentDef = { id: 'parent', hiddenFeatures: [7], style: {} }
+      const childDef = { id: 'child', parentId: 'parent', style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).hasHiddenFeatures).toBe(true)
+    })
+  })
+
+  describe('filter', () => {
+    it('returns null', () => {
+      const dataset = new Dataset({ filter: ['==', ['get', 'type'], 'foo'] })
+      expect(dataset.filter).toBeNull()
+    })
+  })
+
+  describe('symbolAnchor', () => {
+    it('returns symbolAnchor from its own style', () => {
+      const dataset = new Dataset({ style: { symbolAnchor: [0.5, 1] } })
+      expect(dataset.symbolAnchor).toEqual([0.5, 1])
+    })
+
+    it('returns undefined when no symbolAnchor is set and there is no parent', () => {
+      const dataset = new Dataset({ style: {} })
+      expect(dataset.symbolAnchor).toBeUndefined()
+    })
+
+    it('inherits symbolAnchor from the parent when not set on the sublayer', () => {
+      const parentDef = { id: 'parent', style: { symbolAnchor: [0.1, 0.9] } }
+      const childDef = { id: 'child', parentId: 'parent', style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).symbolAnchor).toEqual([0.1, 0.9])
+    })
+  })
+
+  describe('sourceLayer', () => {
+    it('returns the sourceLayer from a tile-based top-level dataset', () => {
+      const dataset = new Dataset({ tiles: ['https://example.com/{z}/{x}/{y}'], sourceLayer: 'my_layer' })
+      expect(dataset.sourceLayer).toBe('my_layer')
+    })
+
+    it('returns undefined for a geojson dataset with no tiles', () => {
+      const dataset = new Dataset({ geojson: { type: 'FeatureCollection', features: [] } })
+      expect(dataset.sourceLayer).toBeUndefined()
+    })
+
+    it("returns the parent's sourceLayer for a sublayer", () => {
+      const parentDef = { id: 'parent', tiles: ['https://example.com/{z}/{x}/{y}'], sourceLayer: 'parent_layer', style: {} }
+      const childDef = { id: 'child', parentId: 'parent', style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).sourceLayer).toBe('parent_layer')
+    })
+  })
 })
