@@ -19,12 +19,10 @@ describe('MapLibreDataset', () => {
       // shared: no special properties — used by layerIds, sourceId, source, visibility,
       //   _hiddenFeaturesIdExpression, _hiddenFeaturesFilter, and filter tests
       'ds-bare': { id: 'ds-bare', style: {} },
-      // isDynamicSource (false cases)
-      'ds-geojson-obj': { id: 'ds-geojson-obj', geojson: { type: 'FeatureCollection', features: [] }, idProperty: 'id', transformRequest: () => {}, style: {} },
+      // isDynamicSource (false cases) — 'object geojson' case uses historic-monuments from demo data
       'ds-no-id-prop': { id: 'ds-no-id-prop', geojson: 'https://example.com/data', transformRequest: () => {}, style: {} },
       'ds-no-transform': { id: 'ds-no-transform', geojson: 'https://example.com/data', idProperty: 'id', style: {} },
-      // visibility
-      'ds-hidden': { id: 'ds-hidden', visible: false, style: {} },
+      // visibility 'none' case uses hedge-control from demo data
       // getLayersWithFilters
       'ds-with-hidden': { id: 'ds-with-hidden', hiddenFeatures: [42], style: { stroke: '#ff0000', fill: 'blue' } },
       // sourceId / source
@@ -34,13 +32,7 @@ describe('MapLibreDataset', () => {
       'ds-static-url': { id: 'ds-static-url', geojson: 'https://example.com/static.geojson', style: {} },
       // shared: tiles with no zoom — used by source minzoom and maxzoom fallback tests
       'ds-tiles-no-zoom': { id: 'ds-tiles-no-zoom', tiles: ['https://example.com/{z}/{x}/{y}'], style: {} },
-      // getSymbolSource — ds-sym-filter also used in filter describe
-      'ds-sym-no-filter': { id: 'ds-sym-no-filter', style: { symbol: 'circle' } },
-      'ds-sym-filter': { id: 'ds-sym-filter', filter: ['==', ['get', 'type'], 'foo'], style: { symbol: 'circle' } },
-      // getFillSource
-      'ds-fill-filter': { id: 'ds-fill-filter', filter: ['==', ['get', 'cat'], 'a'], style: { fill: 'blue' } },
-      // getStrokeSource
-      'ds-stroke-filter': { id: 'ds-stroke-filter', filter: ['==', ['get', 'type'], 'b'], style: { stroke: '#ff0000' } },
+      // getSymbolSource/getFillSource/getStrokeSource 'has filter' tests use historic-monuments-prehistoric and existing-fields from demo data
       // _hiddenFeaturesIdExpression: ds-dynamic reused (has idProperty: 'gid')
       // _hiddenFeaturesFilter — ds-hf-123 also reused in filter describe
       'ds-hf-123': { id: 'ds-hf-123', hiddenFeatures: [1, 2, 3], style: {} },
@@ -120,7 +112,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns false when geojson is an object', () => {
-      expect(datasetRegistry.getDataset('ds-geojson-obj').isDynamicSource).toBe(false)
+      expect(datasetRegistry.getDataset('historic-monuments').isDynamicSource).toBe(false)
     })
 
     it('returns false when idProperty is missing', () => {
@@ -138,7 +130,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns "none" when visible is false', () => {
-      expect(datasetRegistry.getDataset('ds-hidden').visibility).toBe('none')
+      expect(datasetRegistry.getDataset('hedge-control').visibility).toBe('none')
     })
   })
 
@@ -289,12 +281,12 @@ describe('MapLibreDataset', () => {
     })
 
     it('does not include a filter property when filter is null', () => {
-      const result = datasetRegistry.getDataset('ds-sym-no-filter').getSymbolSource('icon', null, null)
+      const result = datasetRegistry.getDataset('historic-monuments').getSymbolSource('icon', null, null)
       expect(result).not.toHaveProperty('filter')
     })
 
     it('includes a filter property when the dataset has a filter', () => {
-      const result = datasetRegistry.getDataset('ds-sym-filter').getSymbolSource('icon', null, null)
+      const result = datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', null, null)
       expect(result).toHaveProperty('filter')
     })
   })
@@ -318,7 +310,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('includes a filter property when the dataset has a filter', () => {
-      const result = datasetRegistry.getDataset('ds-fill-filter').getFillSource({})
+      const result = datasetRegistry.getDataset('existing-fields').getFillSource({})
       expect(result).toHaveProperty('filter')
     })
   })
@@ -342,7 +334,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('includes a filter property when the dataset has a filter', () => {
-      const result = datasetRegistry.getDataset('ds-stroke-filter').getStrokeSource({})
+      const result = datasetRegistry.getDataset('existing-fields').getStrokeSource({})
       expect(result).toHaveProperty('filter')
     })
   })
@@ -390,7 +382,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns the own filter directly when it is the only filter', () => {
-      expect(datasetRegistry.getDataset('ds-sym-filter').filter).toEqual(['==', ['get', 'type'], 'foo'])
+      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').filter).toEqual(['in', ['get', 'category'], 'prehistoric'])
     })
 
     it('returns ["all", parentFilter, ownFilter] when both parent and own filter are present', () => {
