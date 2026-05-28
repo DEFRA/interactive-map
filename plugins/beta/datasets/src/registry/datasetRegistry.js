@@ -43,7 +43,7 @@ const datasetRegistry = {
     const seenGroups = new Set()
     let hasGroups = false
     this.forEachDataset((dataset) => {
-      if (!dataset.showInKey && dataset.visible) {
+      if (!(dataset.showInKey && dataset.visible)) {
         return
       }
       if (dataset.hasSublayers) {
