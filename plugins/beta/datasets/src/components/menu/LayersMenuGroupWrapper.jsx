@@ -1,4 +1,4 @@
-export const DatasetMenuGroupWrapper = ({ menuGroup, children }) => {
+export const LayersMenuGroupWrapper = ({ menuGroup, children }) => {
   if (!menuGroup.groupLabel) {
     return <>{children}</>
   }

@@ -1,7 +1,7 @@
 // /plugins/datasets/manifest.js
 import { initialState, actions } from './reducer.js'
 import { DatasetsInit } from './DatasetsInit.jsx'
-import { DatasetMenu } from './panels/DatasetMenu.jsx'
+import { LayersMenu } from './panels/LayersMenu.jsx'
 import { Key } from './panels/Key.jsx'
 import { addDataset } from './api/addDataset.js'
 import { removeDataset } from './api/removeDataset.js'
@@ -42,7 +42,7 @@ export const manifest = {
       exclusive: true,
       width: '280px'
     },
-    render: DatasetMenu
+    render: LayersMenu
   }, {
     id: 'datasetsKey',
     label: 'Key',
