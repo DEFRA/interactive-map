@@ -48,17 +48,17 @@ export const createDatasets = ({
     adapter.onMapStyleChange(newMapStyle, dynamicSources)
   }
 
-  const onSizeChange = () => {
-    adapter.onSizeChange(currentMapStyle)
+  const onMapSizeChange = () => {
+    adapter.onMapSizeChange(currentMapStyle)
   }
 
   eventBus.on(events.MAP_SET_STYLE, onSetMapStyle)
-  eventBus.on(events.MAP_SIZE_CHANGE, onSizeChange)
+  eventBus.on(events.MAP_SIZE_CHANGE, onMapSizeChange)
 
   return {
     remove () {
       eventBus.off(events.MAP_SET_STYLE, onSetMapStyle)
-      eventBus.off(events.MAP_SIZE_CHANGE, onSizeChange)
+      eventBus.off(events.MAP_SIZE_CHANGE, onMapSizeChange)
 
       // Clean up dynamic sources
       dynamicSources.forEach(source => source.destroy())
