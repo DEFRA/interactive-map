@@ -195,7 +195,7 @@ export default class MaplibreLayerAdapter {
    * @param {Object} mapStyle
    * @returns {Promise<void>}
    */
-  async setStyle (datasetId, mapStyle) {
+  async applyStyle (datasetId, mapStyle) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
     registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
     await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)

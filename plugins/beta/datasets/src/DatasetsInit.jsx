@@ -79,7 +79,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useEffect(() => {
     datasetRegistry.attach(datasetsRef.current, pluginState.orderedDatasets)
   }, [pluginState.mappedDatasets, pluginState.orderedDatasets])
-  useLayerAdapterActions('setStyle', dispatch, pluginState, [pluginState.layerAdapterActions.setStyle])
+  useLayerAdapterActions('applyStyle', dispatch, pluginState, [pluginState.layerAdapterActions.applyStyle])
   useLayerAdapterActions('applyDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.applyDatasetVisibility])
   useLayerAdapterActions('setOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.setOpacity])
   useLayerAdapterActions('addDataset', dispatch, pluginState, [pluginState.layerAdapterActions.addDataset])
