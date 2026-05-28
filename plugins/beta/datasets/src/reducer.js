@@ -18,7 +18,7 @@ const initialState = {
   },
   layerAdapter: null,
   layerAdapterActions: {
-    setStyle: [],
+    applyStyle: [],
     applyDatasetVisibility: [],
     setOpacity: [],
     addDataset: [],
@@ -149,10 +149,10 @@ const setDatasetStyle = (state, payload) => {
   }
   const style = { ...state.mappedDatasets[datasetId].style, ...styleChanges }
   const dataset = { ...state.mappedDatasets[datasetId], ...styleChanges, style }
-  const setStyle = [...state.layerAdapterActions.setStyle, [datasetId, mapStyle]]
+  const applyStyle = [...state.layerAdapterActions.applyStyle, [datasetId, mapStyle]]
   return {
     ...state,
-    layerAdapterActions: { ...state.layerAdapterActions, setStyle },
+    layerAdapterActions: { ...state.layerAdapterActions, applyStyle },
     mappedDatasets: { ...state.mappedDatasets, [datasetId]: dataset }
   }
 }
