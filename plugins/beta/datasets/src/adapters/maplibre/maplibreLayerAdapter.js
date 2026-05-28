@@ -276,7 +276,7 @@ export default class MaplibreLayerAdapter {
     })
   }
 
-  setDatasetVisibility (datasetId) {
+  applyDatasetVisibility (datasetId) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
     const style = this._map.getStyle()
     if (!style?.layers) {
@@ -286,7 +286,7 @@ export default class MaplibreLayerAdapter {
     // (-stroke, -${sublayerId}, -${sublayerId}-stroke) without needing the dataset object.
     if (registryDataset.hasSublayers) {
       const { sublayerIds } = registryDataset
-      sublayerIds.forEach(sublayerId => { this.setDatasetVisibility(sublayerId) })
+      sublayerIds.forEach(sublayerId => { this.applyDatasetVisibility(sublayerId) })
     } else {
       const { visibility } = registryDataset
       const datasetId = registryDataset.id
