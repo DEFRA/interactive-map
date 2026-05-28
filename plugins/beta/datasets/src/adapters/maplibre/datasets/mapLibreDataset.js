@@ -7,6 +7,8 @@ export class MapLibreDataset extends Dataset {
     return typeof this.geojson === 'string' && !!this.idProperty && typeof this.transformRequest === 'function'
   }
 
+  get visibility () { return this.visible ? 'visible' : 'none' }
+
   get fillLayerId () {
     if (this.hasSublayers) {
       return null
@@ -142,5 +144,35 @@ export class MapLibreDataset extends Dataset {
       paint,
       ...(this.filter ? { filter: this.filter } : {})
     }
+  }
+
+  get _hiddenFeaturesIdExpression () {
+    return this.idProperty ? ['to-string', ['get', this.idProperty]] : ['to-string', ['id']]
+  }
+
+  get _hiddenFeaturesFilter () {
+    const hiddenFeatures = this.hiddenFeatures?.filter(id => id !== -1)
+    if (hiddenFeatures?.length) {
+      return ['!', ['in', this._hiddenFeaturesIdExpression, ['literal', hiddenFeatures.map(String)]]]
+    }
+    return null
+  }
+
+  get filter () {
+    const filter = ['all']
+    if (this.parent?.filter) {
+      filter.push(this.parent.filter)
+    }
+    if (this._datasetDefinition.filter) {
+      filter.push(this._datasetDefinition.filter)
+    }
+    const hiddenFeaturesFilter = this._hiddenFeaturesFilter
+    if (hiddenFeaturesFilter) {
+      filter.push(hiddenFeaturesFilter)
+    }
+    if (filter.length === 1) {
+      return null
+    }
+    return filter.length > 2 ? filter : filter[1]
   }
 }
