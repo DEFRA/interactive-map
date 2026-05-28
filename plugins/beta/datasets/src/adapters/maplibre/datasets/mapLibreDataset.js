@@ -50,7 +50,7 @@ export class MapLibreDataset extends Dataset {
     return [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
   }
 
-  get layersWithFilters () {
+  getLayersWithFilters () {
     const response = []
     if (this.hasHiddenFeatures) {
       const layerIds = [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
@@ -61,7 +61,7 @@ export class MapLibreDataset extends Dataset {
     if (this.hasSublayers) {
       this.sublayers.forEach((sublayer) => {
         if (sublayer.hasHiddenFeatures) {
-          response.push(sublayer.layersWithFilters[0])
+          response.push(sublayer.getLayersWithFilters()[0])
         }
       })
     }
