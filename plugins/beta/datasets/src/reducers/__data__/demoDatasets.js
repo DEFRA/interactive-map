@@ -225,7 +225,7 @@ export const datasetsWithGroups = [
   { ...landCovers },
   { ...existingFields, groupLabel: 'Test group' },
   { ...historicMonuments },
-  { ...hedgeControl, groupLabel: 'Test group' }
+  { ...hedgeControl, groupLabel: 'Test group', visible: true }
 ]
 
 export const expectedDatasetsMenuConfigWithGroups = [
