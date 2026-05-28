@@ -411,7 +411,7 @@ const testGlobalVisibility = () => {
   setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 1000)
   setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 5000)
   setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
-  setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#ffff00' }, }, { datasetId: 'hedge-control' }), 2000)
+  setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#0000ff' }, }, { datasetId: 'hedge-control' }), 2000)
 }
 
 const testFeatureVisibility = () => {
