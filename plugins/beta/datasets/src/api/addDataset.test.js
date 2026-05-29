@@ -13,17 +13,4 @@ describe('addDataset', () => {
       payload: { dataset, mapStyle: mapState.mapStyle }
     })
   })
-
-  // it('passes mapState.mapStyle directly as part of the payload', () => {
-  //   const dispatch = jest.fn()
-  //   const mapStyle = { version: 8, sources: {}, layers: [{ id: 'base' }] }
-  //   const dataset = { id: 'roads' }
-
-  //   addDataset({ pluginState: { dispatch }, mapState: { mapStyle } }, dataset)
-
-  //   expect(dispatch).toHaveBeenCalledWith({
-  //     type: 'ADD_DATASET',
-  //     payload: { dataset, mapStyle }
-  //   })
-  // })
 })
