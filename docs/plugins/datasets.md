@@ -134,7 +134,7 @@ Unique identifier for the dataset. Used in all API method calls.
 
 **Type:** `string`
 
-Human-readable name shown in the Layers panel and Key panel.
+Human-readable name shown in the LayersMenu panel and Key panel.
 
 ---
 
@@ -275,7 +275,7 @@ When `true`, the dataset appears in the Key panel with its style symbol and labe
 **Type:** `boolean`
 **Default:** `false`
 
-When `true`, the dataset appears in the Layers panel and can be toggled on and off by the user.
+When `true`, the dataset appears in the LayersMenu panel and can be toggled on and off by the user.
 
 ---
 
@@ -283,7 +283,7 @@ When `true`, the dataset appears in the Layers panel and can be toggled on and o
 
 **Type:** `string`
 
-Groups this dataset with others sharing the same `groupLabel` in the Layers panel, rendering them as a single collapsible group.
+Groups this dataset with others sharing the same `groupLabel` in the LayersMenu panel, rendering them as a single collapsible group.
 
 ---
 
@@ -387,11 +387,11 @@ Sublayers inherit the parent dataset's style and only override what they specify
 | Property | Type | Description |
 |----------|------|-------------|
 | `id` | `string` | **Required.** Unique identifier within the dataset |
-| `label` | `string` | Human-readable name shown in the Layers and Key panels |
+| `label` | `string` | Human-readable name shown in the LayersMenu and Key panels |
 | `filter` | `FilterExpression` | MapLibre filter expression to match features for this sublayer |
 | `style` | `Object` | Style overrides. Accepts the same properties as the dataset `style` object |
 | `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from dataset if not set |
-| `showInMenu` | `boolean` | Shows this sublayer in the Layers panel. **Default:** `false` |
+| `showInMenu` | `boolean` | Shows this sublayer in the LayersMenu panel. **Default:** `false` |
 
 **Polygon/line example:**
 
