@@ -1,6 +1,6 @@
 import { Dataset } from '../../../registry/dataset.js'
 import { MAX_TILE_ZOOM, hashString } from '../layerIds.js'
-import { anchorToMaplibre } from '../symbolImages.js'
+import { anchorToMaplibre } from '../../../../../../../providers/maplibre/src/utils/symbolImages.js'
 
 export class MapLibreDataset extends Dataset {
   get isDynamicSource () {
