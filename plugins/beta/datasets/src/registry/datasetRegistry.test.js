@@ -1,14 +1,12 @@
 import { Dataset } from './dataset.js'
 import { datasetRegistry } from './datasetRegistry.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
-import { datasets as datasetDefinitions, datasetsWithGroups } from '../reducers/__data__/demoDatasets.js'
+import { datasetsWithGroups } from '../reducers/__data__/demoDatasets.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test.
 // Dataset must be imported before datasetRegistry so that dataset.js is cached before
 // the mock initialization triggers requireActual, avoiding a circular re-entry that
 // would leave datasetRegistry undefined inside the mock.
 jest.mock('./datasetRegistry.js')
-
-const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetDefinitions })
 
 describe('datasetRegistry', () => {
   describe('getDataset', () => {
@@ -34,14 +32,10 @@ describe('datasetRegistry', () => {
   })
 
   describe('forEach', () => {
-    beforeEach(() => {
-      datasetRegistry.attach(mappedDatasets, orderedDatasets)
-    })
-
     it('calls the callback once per dataset in orderedDatasets order', () => {
       const ids = []
       datasetRegistry.forEach(dataset => ids.push(dataset.id))
-      expect(ids).toEqual(orderedDatasets)
+      expect(ids).toEqual(datasetRegistry._orderedDatasets)
     })
 
     it('passes Dataset instances to the callback', () => {
