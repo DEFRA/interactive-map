@@ -1,6 +1,3 @@
-// MapLibreDataset must be imported before datasetRegistry to pre-warm the module cache,
-// preventing a circular re-entry in the mock that would leave datasetRegistry undefined.
-// eslint-disable-next-line no-unused-vars
 import { MapLibreDataset } from './mapLibreDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { MAX_TILE_ZOOM } from '../layerIds.js'
