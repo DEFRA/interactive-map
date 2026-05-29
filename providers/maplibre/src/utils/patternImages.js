@@ -45,11 +45,9 @@ const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio
 /**
  * Register pattern images for the given pre-resolved pattern configs.
  * Skips images that are already registered (safe to call on style change).
- * Callers are responsible for sublayer merging before passing configs here
- * (see `getPatternConfigs` in the datasets plugin adapter).
  *
  * @param {Object} map - MapLibre map instance
- * @param {Object[]} styleArray - Flat list of datasets/merged-sublayers with a pattern config
+ * @param {Object[]} styleArray - an array of pattern style configs
  * @param {string} mapStyleId
  * @param {Object} patternRegistry
  * @param {number} pixelRatio
