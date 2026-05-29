@@ -20,6 +20,7 @@ export const datasets = [
     id: 'land-covers',
     label: 'Land covers',
     geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+    hiddenFeatures: [42],
     query: {},
     maxFeatures: 50000, // Optional: evict distant features when exceeded
     minZoom: 10,
@@ -96,7 +97,7 @@ export const datasets = [
     label: 'Existing fields',
     // groupLabel: 'Test group',
     filter: ['all', ['==', ['get', 'sbi'], '106223377'], ['==', ['get', 'is_dominant_land_cover'], true]],
-    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+    tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}',
     sourceLayer: 'field_parcels_filtered',
     minZoom: 10,
     maxZoom: 24,
@@ -169,7 +170,8 @@ export const datasets = [
       symbolDescription: { outdoor: 'blue outline' },
       keySymbolShape: 'line'
     }
-  }]
+  }
+]
 
 export const expectedDatasetsMenuConfig = [
   {
