@@ -93,7 +93,7 @@ export class Dataset {
     if (parentStyle) {
       return { ...parentStyle, ...this._datasetDefinition.style, symbolDescription: this.symbolDescription }
     }
-    return this._datasetDefinition.style
+    return this._datasetDefinition.style || {}
   }
 
   get hasCustomVisualStyle () {
