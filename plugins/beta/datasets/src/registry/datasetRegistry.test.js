@@ -9,6 +9,9 @@ import { datasetsWithGroups } from '../reducers/__data__/demoDatasets.js'
 jest.mock('./datasetRegistry.js')
 
 describe('datasetRegistry', () => {
+  beforeEach(() => {
+    jest.clearAllMocks()
+  })
   describe('getDataset', () => {
     it('returns a Dataset instance for a known id', () => {
       const dataset = datasetRegistry.getDataset('land-covers')
@@ -201,11 +204,11 @@ describe('datasetRegistry', () => {
     let originalCreateDataset
 
     beforeEach(() => {
-      originalCreateDataset = datasetRegistry.createDataset
+      originalCreateDataset = datasetRegistry._createDataset
     })
 
     afterEach(() => {
-      datasetRegistry.createDataset = originalCreateDataset
+      datasetRegistry._createDataset = originalCreateDataset
     })
 
     it('overrides the factory used by getDataset', () => {
@@ -220,6 +223,35 @@ describe('datasetRegistry', () => {
       datasetRegistry.attachCreateDataset(() => sentinel)
       const result = datasetRegistry.getDataset('land-covers')
       expect(result).toBe(sentinel)
+    })
+  })
+
+  describe('avoid recreating Dataset instances', () => {
+    // Because the registryDataset instances are pure and immutable wrappers
+    // around the dataset definition, we can return the same registryDataset
+    // instances as long as the definitions are the same.
+    // Avoiding unnecessary re-calculation of registryDataset instance members
+    // like patternConfigs and symbolConfigs which are derived from the definition.
+    const createDatasetSpy = jest.spyOn(datasetRegistry, '_createDataset')
+    it('returns the same Dataset instance for the same dataset definition', () => {
+      const landCovers1 = datasetRegistry.getDataset('land-covers')
+      const landCovers2 = datasetRegistry.getDataset('land-covers')
+      expect(createDatasetSpy).toHaveBeenCalledTimes(1)
+      expect(landCovers1).toBe(landCovers2)
+    })
+
+    it('removes cached Dataset instances when new datasets definition are attached', () => {
+      const landCovers1 = datasetRegistry.getDataset('land-covers') // createDatasetSpy called once
+      const landCovers1Definition = landCovers1._datasetDefinition
+      const landCovers2Definition = { id: 'land-covers', style: {} }
+      // attach new definitions but with a different land-covers definition
+      datasetRegistry.attach({ ...datasetRegistry.datasets, 'land-covers': landCovers2Definition })
+
+      const landCovers2 = datasetRegistry.getDataset('land-covers') // createDatasetSpy called again due to new definition
+      expect(landCovers1).not.toBe(landCovers2) // should be different as the definition has changed
+      expect(createDatasetSpy).toHaveBeenCalledTimes(2)
+      expect(datasetRegistry._definitionCache.getByDefinition(landCovers2Definition)).toBe(landCovers2)
+      expect(datasetRegistry._definitionCache.getByDefinition(landCovers1Definition)).toBeUndefined()
     })
   })
 })

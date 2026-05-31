@@ -1,29 +1,68 @@
 import { createDataset } from './createDataset.js'
 
+class DatasetDefinitionCache {
+  constructor () {
+    this.idToDefinitionMap = new Map()
+    this.definitionToInstanceMap = new Map()
+  }
+
+  add (registryDataset) {
+    // Remove any existing cached instance for this dataset id
+    const existingDefinition = this.idToDefinitionMap.get(registryDataset.id)
+    this.definitionToInstanceMap.delete(existingDefinition)
+    // and cache the new instance
+    this.idToDefinitionMap.set(registryDataset.id, registryDataset._datasetDefinition)
+    this.definitionToInstanceMap.set(registryDataset._datasetDefinition, registryDataset)
+  }
+
+  getByDefinition (datasetDefinition) {
+    return this.definitionToInstanceMap.get(datasetDefinition)
+  }
+}
+
 const datasetRegistry = {
   attach (datasetsRef, orderedDatasetsRef) {
     this._datasets = datasetsRef
     this._orderedDatasets = orderedDatasetsRef
+    this._definitionCache = new DatasetDefinitionCache()
   },
+
   // createDataset defaults to a generic dataset factory function, but can be overridden by calling
   // attachCreateDataset, which allows the layer adapter to provide its own createDataset function,
-  attachCreateDataset (createDataset) { this.createDataset = createDataset },
-  createDataset: (datasetDefinition) => createDataset(datasetDefinition),
+  attachCreateDataset (createDataset) { this._createDataset = createDataset },
+  _createDataset: (datasetDefinition) => createDataset(datasetDefinition),
+
   // getDataset retrieves a dataset by id, creating a new Dataset instance that wraps the definition
-  getDataset (id) { return this.datasets[id] ? this.createDataset(this.datasets[id]) : undefined },
+  getDataset (id) {
+    const definition = this.datasets[id]
+    if (!definition) {
+      return undefined
+    }
+    const cachedDefinition = this._definitionCache.getByDefinition(definition)
+    if (cachedDefinition) {
+      return cachedDefinition
+    }
+    const registryDataset = this._createDataset(definition)
+    this._definitionCache.add(registryDataset)
+    return registryDataset
+  },
+
   forEach (callback) {
     this._orderedDatasets.forEach((datasetId) => callback(this.getDataset(datasetId)))
   },
+
   forEachDataset (callback) {
     Object.values(this.datasets)
       .filter(def => !def.parentId) // Only top-level datasets
       .forEach((dataset) => callback(this.getDataset(dataset.id)))
   },
+
   topLevelDatasets () {
     return Object.values(this.datasets)
       .filter(def => !def.parentId)
       .map(def => this.getDataset(def.id))
   },
+
   getPatternAndSymbolConfigs () {
     return this.topLevelDatasets().reduce((acc, dataset) => {
       return {
@@ -33,6 +72,7 @@ const datasetRegistry = {
       }
     }, { patternConfigs: [], symbolConfigs: [] })
   },
+
   _lastKeyItems: {},
   keyItems () {
     if (this.datasets === this._lastKeyItemsDatasets) {
