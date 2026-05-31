@@ -21,6 +21,9 @@ export const createDatasets = ({
   // Initialise all datasets via the adapter, then set up dynamic sources
   const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))
   const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets })
+  if (adapter.createDataset) {
+    datasetRegistry.attachCreateDataset(adapter.createDataset)
+  }
   datasetRegistry.attach(mappedDatasets)
   adapter.init(mapStyle).then(() => {
     datasetRegistry.forEachDataset(registryDataset => {
