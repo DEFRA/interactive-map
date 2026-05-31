@@ -32,7 +32,7 @@ export default class MaplibreLayerAdapter {
     this._symbolLayerIds = new Set()
   }
 
-  static createDataset (datasetDefinition) {
+  createDataset (datasetDefinition) {
     return new MapLibreDataset(datasetDefinition)
   }
 

@@ -64,9 +64,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         dispatch,
         eventBus
       })
-      if (LayerAdapter.createDataset) {
-        datasetRegistry.attachCreateDataset(LayerAdapter.createDataset)
-      }
     }
 
     initDatasets()
