@@ -3,6 +3,7 @@ import { createPortal } from 'react-dom'
 import { useConfig } from '../../store/configContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { useApp } from '../../store/appContext.js'
+import { htmlToPlainText } from '../../../utils/htmlToPlainText.js'
 
 /**
  * Renders the active keyboard hint as a toast portaled into im-o-app__main.
@@ -44,7 +45,7 @@ export const Hints = () => {
       <div
         id={`${id}-keyboard-desc`}
         className='im-u-visually-hidden'
-        dangerouslySetInnerHTML={{ __html: keyboardHintText }}
+        dangerouslySetInnerHTML={{ __html: htmlToPlainText(keyboardHintText) }}
       />
     </div>,
     layoutRefs.mainRef.current
