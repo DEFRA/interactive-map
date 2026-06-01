@@ -48,10 +48,8 @@ describe('crypto.randomUUID', () => {
   })
 
   test('does not overwrite existing crypto.randomUUID', () => {
-    const fake = jest.fn(() => 'fake')
-    Object.defineProperty(crypto, 'randomUUID', { value: fake, configurable: true, writable: true })
     load()
-    expect(crypto.randomUUID).toBe(fake)
+    expect(crypto.randomUUID).toBe(originalCryptoUUID)
   })
 })
 
@@ -67,18 +65,17 @@ describe('Object.hasOwn', () => {
   })
 
   test('does not overwrite existing Object.hasOwn', () => {
-    const fake = jest.fn()
-    Object.hasOwn = fake
     load()
-    expect(Object.hasOwn).toBe(fake)
+    expect(Object.hasOwn).toBe(originalHasOwn)
   })
 })
 
 // ─── AbortSignal.throwIfAborted ───────────────────────────────────────────────
 
 describe('AbortSignal.throwIfAborted', () => {
+  beforeEach(() => { delete signalProto.throwIfAborted })
+
   test('throws AbortError when aborted', () => {
-    delete signalProto.throwIfAborted
     load()
     const ac = new AbortController()
     ac.abort()
@@ -86,13 +83,11 @@ describe('AbortSignal.throwIfAborted', () => {
   })
 
   test('does nothing when not aborted', () => {
-    delete signalProto.throwIfAborted
     load()
     expect(() => new AbortController().signal.throwIfAborted()).not.toThrow()
   })
 
   test('wraps URL.createObjectURL for JS blobs', async () => {
-    delete signalProto.throwIfAborted
     const mockCreate = jest.fn(() => 'blob:mock')
     URL.createObjectURL = mockCreate
     load()
@@ -104,7 +99,6 @@ describe('AbortSignal.throwIfAborted', () => {
   })
 
   test('does not wrap URL.createObjectURL for non-JS blobs', () => {
-    delete signalProto.throwIfAborted
     const mockCreate = jest.fn(() => 'blob:mock')
     URL.createObjectURL = mockCreate
     load()
@@ -118,6 +112,8 @@ describe('AbortSignal.throwIfAborted', () => {
 // ─── Worker constructor (string workerUrl) ────────────────────────────────────
 
 describe('Worker constructor (string workerUrl)', () => {
+  beforeEach(() => { delete Object.hasOwn })
+
   const setupWorkerMock = () => {
     const MockWorker = jest.fn()
     MockWorker.prototype = {}
@@ -126,13 +122,13 @@ describe('Worker constructor (string workerUrl)', () => {
   }
 
   test('wraps Worker with string URL to inject polyfill via importScripts', async () => {
-    delete Object.hasOwn
     const MockWorker = setupWorkerMock()
     const mockCreate = jest.fn(() => 'blob:injected')
     URL.createObjectURL = mockCreate
     load()
 
-    expect(new Worker('/worker.js')).toBeDefined()
+    // eslint-disable-next-line no-new
+    new Worker('/worker.js') // NOSONAR
     const text = await readBlobText(mockCreate.mock.calls[0][0])
     expect(text).toContain('Object.hasOwn')
     expect(text).toContain('importScripts("/worker.js")')
@@ -140,19 +136,18 @@ describe('Worker constructor (string workerUrl)', () => {
   })
 
   test('passes blob URLs through without wrapping', () => {
-    delete Object.hasOwn
     const MockWorker = setupWorkerMock()
     const mockCreate = jest.fn(() => 'blob:new')
     URL.createObjectURL = mockCreate
     load()
 
-    expect(new Worker('blob:http://localhost/existing')).toBeDefined()
+    // eslint-disable-next-line no-new
+    new Worker('blob:http://localhost/existing') // NOSONAR
     expect(mockCreate).not.toHaveBeenCalled()
     expect(MockWorker).toHaveBeenCalledWith('blob:http://localhost/existing', undefined)
   })
 
   test('preserves the Worker prototype', () => {
-    delete Object.hasOwn
     const MockWorker = setupWorkerMock()
     const mockProto = { foo: 'bar' }
     MockWorker.prototype = mockProto
