@@ -11,7 +11,14 @@ jest.mock('./datasetRegistry.js')
 describe('datasetRegistry', () => {
   beforeEach(() => {
     jest.clearAllMocks()
+    datasetRegistry._invalidateCache()
   })
+  describe('attach', () => {
+    it("doesn't throw when no datasets are attached", () => {
+      expect(() => datasetRegistry.attach(undefined)).not.toThrow()
+    })
+  })
+
   describe('getDataset', () => {
     it('returns a Dataset instance for a known id', () => {
       const dataset = datasetRegistry.getDataset('land-covers')
@@ -233,25 +240,96 @@ describe('datasetRegistry', () => {
     // Avoiding unnecessary re-calculation of registryDataset instance members
     // like patternConfigs and symbolConfigs which are derived from the definition.
     const createDatasetSpy = jest.spyOn(datasetRegistry, '_createDataset')
+
+    it("doesn't throw invalidating before caching anything", () => {
+      expect(() => {
+        datasetRegistry.attach({
+          ...datasetRegistry.datasets,
+          'land-covers-130-131': { id: 'land-covers-130-131', style: { stroke: '#00ff00' } }
+        })
+      }).not.toThrow()
+    })
+
+    it("doesn't throw if a sublayer without a valid parent is attached", () => {
+      expect(() => {
+        datasetRegistry.attach({
+          ...datasetRegistry.datasets,
+          'no-parent': { id: 'no-parent', parentId: 'no-exists', style: {} }
+
+        })
+        datasetRegistry.getDataset('no-parent')
+        datasetRegistry.attach({
+          ...datasetRegistry.datasets,
+          'no-parent': { id: 'no-parent', parentId: 'no-exists', style: {} }
+        })
+      }).not.toThrow()
+    })
+
     it('returns the same Dataset instance for the same dataset definition', () => {
-      const landCovers1 = datasetRegistry.getDataset('land-covers')
-      const landCovers2 = datasetRegistry.getDataset('land-covers')
+      expect(datasetRegistry.getDataset('land-covers'))
+        .toBe(datasetRegistry.getDataset('land-covers'))
       expect(createDatasetSpy).toHaveBeenCalledTimes(1)
-      expect(landCovers1).toBe(landCovers2)
     })
 
     it('removes cached Dataset instances when new datasets definition are attached', () => {
       const landCovers1 = datasetRegistry.getDataset('land-covers') // createDatasetSpy called once
       const landCovers1Definition = landCovers1._datasetDefinition
-      const landCovers2Definition = { id: 'land-covers', style: {} }
-      // attach new definitions but with a different land-covers definition
-      datasetRegistry.attach({ ...datasetRegistry.datasets, 'land-covers': landCovers2Definition })
+      // attach new definitions, with a different land-covers definition
+      datasetRegistry.attach({ ...datasetRegistry.datasets, 'land-covers': { id: 'land-covers', style: {} } })
 
-      const landCovers2 = datasetRegistry.getDataset('land-covers') // createDatasetSpy called again due to new definition
-      expect(landCovers1).not.toBe(landCovers2) // should be different as the definition has changed
+      expect(datasetRegistry.getDataset('land-covers')).not.toBe(landCovers1) // should be different as the definition has changed
       expect(createDatasetSpy).toHaveBeenCalledTimes(2)
-      expect(datasetRegistry._definitionCache.getByDefinition(landCovers2Definition)).toBe(landCovers2)
+      // ensure the old definition is no longer cached - which could cause a memory leak
       expect(datasetRegistry._definitionCache.getByDefinition(landCovers1Definition)).toBeUndefined()
+    })
+
+    it('should invalidate the cache of sublayers(children) when a parent dataset definition is updated', () => {
+      const landCovers = datasetRegistry.getDataset('land-covers')
+      const landCoversSublayer = datasetRegistry.getDataset('land-covers-130-131')
+      expect(createDatasetSpy).toHaveBeenCalledTimes(2)
+      const landCoversDefinition = landCovers._datasetDefinition
+
+      // Update the parent dataset definition, which should invalidate both the parent and sublayer cache entries
+      const newLandCoversDefinition = { ...landCoversDefinition, style: { stroke: '#00ff00' } }
+      datasetRegistry.attach({ ...datasetRegistry.datasets, 'land-covers': newLandCoversDefinition })
+
+      expect(datasetRegistry.getDataset('land-covers')).not.toBe(landCovers)
+      expect(datasetRegistry.getDataset('land-covers-130-131')).not.toBe(landCoversSublayer)
+      expect(createDatasetSpy).toHaveBeenCalledTimes(4)
+    })
+
+    it('should invalidate the cache of the parent and siblings when a sublayers dataset definition is updated', () => {
+      const landCovers = datasetRegistry.getDataset('land-covers')
+      const landCoversSublayer130 = datasetRegistry.getDataset('land-covers-130-131')
+      const landCoversSublayer332 = datasetRegistry.getDataset('land-covers-332')
+      expect(createDatasetSpy).toHaveBeenCalledTimes(3)
+      const sublayerDefinition = landCoversSublayer130._datasetDefinition
+
+      // Update the parent dataset definition, which should invalidate both the parent and sublayer cache entries
+      const newSublayerDefinition = { ...sublayerDefinition, style: { stroke: '#00ff00' } }
+      datasetRegistry.attach({ ...datasetRegistry.datasets, 'land-covers-130-131': newSublayerDefinition })
+
+      expect(datasetRegistry.getDataset('land-covers')).not.toBe(landCovers)
+      expect(datasetRegistry.getDataset('land-covers-130-131')).not.toBe(landCoversSublayer130)
+      expect(datasetRegistry.getDataset('land-covers-332')).not.toBe(landCoversSublayer332)
+
+      expect(createDatasetSpy).toHaveBeenCalledTimes(6)
+    })
+
+    it('should not invalidate the cache of different datasets when a definition is updated', () => {
+      const landCovers = datasetRegistry.getDataset('land-covers')
+      const existingFields = datasetRegistry.getDataset('existing-fields')
+      expect(createDatasetSpy).toHaveBeenCalledTimes(2)
+      const existingFieldsDefinition = existingFields._datasetDefinition
+
+      // Update existing-fields, which should not invalidate land-covers
+      const newExistingFieldsDefinition = { id: 'existing-fields', style: {} }
+      datasetRegistry.attach({ ...datasetRegistry.datasets, 'existing-fields': newExistingFieldsDefinition })
+
+      expect(datasetRegistry.getDataset('land-covers')).toBe(landCovers)
+      expect(datasetRegistry.getDataset('existing-fields')).not.toBe(existingFields)
+      expect(createDatasetSpy).toHaveBeenCalledTimes(3) // should have been called one more time
+      expect(datasetRegistry._definitionCache.getByDefinition(existingFieldsDefinition)).toBeUndefined() // old definition should no longer be cached
     })
   })
 })
