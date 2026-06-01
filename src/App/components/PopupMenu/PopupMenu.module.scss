@@ -12,6 +12,12 @@
     $type: button
   );
 
+  // The container holds DOM focus for aria-activedescendant, but the visual
+  // focus indicator lives on the --selected item, so suppress the ring here.
+  &[data-focus-visible="true"]::after {
+    opacity: 0;
+  }
+
   background-color: var(--background-color);
   position: fixed;
   z-index: 9999;
