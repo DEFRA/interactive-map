@@ -11,8 +11,7 @@ export const keyboardMappings = {
   },
 
   keyup: {
-    'Alt+k': 'showKeyboardControls',
-    'Alt+K': 'showKeyboardControls',
+    '?': 'showKeyboardControls',
     'Alt+ArrowRight': 'highlightNextLabel',
     'Alt+ArrowLeft': 'highlightNextLabel',
     'Alt+ArrowUp': 'highlightNextLabel',
