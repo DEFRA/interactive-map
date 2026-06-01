@@ -1,127 +1,158 @@
-describe('Polyfills', () => {
-  const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/
+const originalCryptoUUID = crypto.randomUUID
+const originalCreateObjectURL = URL.createObjectURL
+const originalHasOwn = Object.hasOwn
+const originalWorker = globalThis.Worker
+const signalProto = Object.getPrototypeOf(new AbortController().signal)
+const originalThrowIfAborted = signalProto.throwIfAborted
 
-  const originalCryptoUUID = crypto.randomUUID
-  const originalCreateObjectURL = URL.createObjectURL
-  const signalProto = Object.getPrototypeOf(new AbortController().signal)
-  const originalThrowIfAborted = signalProto.throwIfAborted
+beforeEach(() => { jest.resetModules() })
 
-  beforeEach(() => {
-    jest.resetModules()
+afterEach(() => {
+  Object.defineProperty(crypto, 'randomUUID', { value: originalCryptoUUID, configurable: true, writable: true })
+  URL.createObjectURL = originalCreateObjectURL
+  Object.hasOwn = originalHasOwn
+  globalThis.Worker = originalWorker
+  if (originalThrowIfAborted) {
+    signalProto.throwIfAborted = originalThrowIfAborted
+  } else {
+    delete signalProto.throwIfAborted
+  }
+})
+
+const load = () => jest.isolateModules(() => require('./polyfills.js'))
+
+const readBlobText = (blob) => new Promise((resolve) => {
+  const reader = new FileReader()
+  reader.onload = () => resolve(reader.result)
+  reader.readAsText(blob) // NOSONAR: Blob#text() is not available in this jsdom version
+})
+
+// ─── crypto.randomUUID ───────────────────────────────────────────────────────
+
+describe('crypto.randomUUID', () => {
+  const nullifyUUID = () => Object.defineProperty(crypto, 'randomUUID', { value: null, configurable: true, writable: true })
+
+  test('polyfills crypto.randomUUID when missing', () => {
+    nullifyUUID()
+    load()
+    expect(typeof crypto.randomUUID).toBe('function')
+    expect(crypto.randomUUID()).toMatch(UUID_RE)
   })
 
-  afterEach(() => {
-    Object.defineProperty(crypto, 'randomUUID', {
-      value: originalCryptoUUID,
-      configurable: true,
-      writable: true
-    })
-
-    URL.createObjectURL = originalCreateObjectURL
-
-    if (originalThrowIfAborted) {
-      signalProto.throwIfAborted = originalThrowIfAborted
-    } else {
-      delete signalProto.throwIfAborted
-    }
+  test('generates unique UUIDs', () => {
+    nullifyUUID()
+    load()
+    const ids = new Set(Array.from({ length: 100 }, () => crypto.randomUUID()))
+    expect(ids.size).toBe(100)
   })
 
-  const load = () => jest.isolateModules(() => require('./polyfills.js'))
+  test('does not overwrite existing crypto.randomUUID', () => {
+    load()
+    expect(crypto.randomUUID).toBe(originalCryptoUUID)
+  })
+})
 
-  // Helper to read Blob text in environments without blob.text()
-  const readBlobText = (blob) => new Promise((resolve) => {
-    const reader = new FileReader()
-    reader.onload = () => resolve(reader.result)
-    reader.readAsText(blob)
+// ─── Object.hasOwn ───────────────────────────────────────────────────────────
+
+describe('Object.hasOwn', () => {
+  test('polyfills Object.hasOwn when missing', () => {
+    delete Object.hasOwn
+    load()
+    expect(typeof Object.hasOwn).toBe('function')
+    expect(Object.hasOwn({ a: 1 }, 'a')).toBe(true)
+    expect(Object.hasOwn({ a: 1 }, 'b')).toBe(false)
   })
 
-  describe('crypto.randomUUID', () => {
-    test('polyfills crypto.randomUUID when missing (Lines 3-8)', () => {
-      Object.defineProperty(crypto, 'randomUUID', {
-        value: undefined,
-        configurable: true,
-        writable: true
-      })
+  test('does not overwrite existing Object.hasOwn', () => {
+    load()
+    expect(Object.hasOwn).toBe(originalHasOwn)
+  })
+})
 
-      load()
+// ─── AbortSignal.throwIfAborted ───────────────────────────────────────────────
 
-      expect(typeof crypto.randomUUID).toBe('function')
-      expect(crypto.randomUUID()).toMatch(UUID_RE)
-    })
+describe('AbortSignal.throwIfAborted', () => {
+  beforeEach(() => { delete signalProto.throwIfAborted })
 
-    test('crypto.randomUUID generates unique UUIDs', () => {
-      Object.defineProperty(crypto, 'randomUUID', {
-        value: undefined,
-        configurable: true,
-        writable: true
-      })
-      load()
-      const ids = new Set(Array.from({ length: 100 }, () => crypto.randomUUID()))
-      expect(ids.size).toBe(100)
-    })
-
-    test('does not overwrite existing crypto.randomUUID', () => {
-      const fake = jest.fn(() => 'fake')
-      Object.defineProperty(crypto, 'randomUUID', {
-        value: fake,
-        configurable: true,
-        writable: true
-      })
-      load()
-      expect(crypto.randomUUID).toBe(fake)
-    })
+  test('throws AbortError when aborted', () => {
+    load()
+    const ac = new AbortController()
+    ac.abort()
+    expect(() => ac.signal.throwIfAborted()).toThrow('The operation was aborted.')
   })
 
-  describe('AbortSignal.throwIfAborted', () => {
-    test('throws AbortError when aborted (True branch)', () => {
-      delete signalProto.throwIfAborted
-      load()
-      const ac = new AbortController()
-      ac.abort()
-      expect(() => ac.signal.throwIfAborted()).toThrow('The operation was aborted.')
-    })
+  test('does nothing when not aborted', () => {
+    load()
+    expect(() => new AbortController().signal.throwIfAborted()).not.toThrow()
+  })
 
-    test('does nothing when not aborted (False branch)', () => {
-      delete signalProto.throwIfAborted
-      load()
-      const ac = new AbortController()
-      // This call should execute line 20, see that aborted is false, and return undefined
-      expect(() => ac.signal.throwIfAborted()).not.toThrow()
-    })
+  test('wraps URL.createObjectURL for JS blobs', async () => {
+    const mockCreate = jest.fn(() => 'blob:mock')
+    URL.createObjectURL = mockCreate
+    load()
 
-    test('wraps URL.createObjectURL for JS blobs', async () => {
-      delete signalProto.throwIfAborted
+    URL.createObjectURL(new Blob(['console.log(1)'], { type: 'text/javascript' }))
+    const text = await readBlobText(mockCreate.mock.calls[0][0])
+    expect(text).toContain('throwIfAborted')
+    expect(text).toContain('console.log(1)')
+  })
 
-      const mockCreate = jest.fn(() => 'blob:mock')
-      URL.createObjectURL = mockCreate
+  test('does not wrap URL.createObjectURL for non-JS blobs', () => {
+    const mockCreate = jest.fn(() => 'blob:mock')
+    URL.createObjectURL = mockCreate
+    load()
 
-      load()
+    const blob = new Blob(['{}'], { type: 'application/json' })
+    URL.createObjectURL(blob)
+    expect(mockCreate).toHaveBeenCalledWith(blob)
+  })
+})
 
-      const content = 'console.log(1)'
-      const blob = new Blob([content], { type: 'text/javascript' })
-      const result = URL.createObjectURL(blob)
+// ─── Worker constructor (string workerUrl) ────────────────────────────────────
 
-      expect(result).toBe('blob:mock')
-      expect(mockCreate).toHaveBeenCalled()
+describe('Worker constructor (string workerUrl)', () => {
+  beforeEach(() => { delete Object.hasOwn })
 
-      const passedBlob = mockCreate.mock.calls[0][0]
-      const text = await readBlobText(passedBlob)
+  const setupWorkerMock = () => {
+    const MockWorker = jest.fn()
+    MockWorker.prototype = {}
+    globalThis.Worker = MockWorker
+    return MockWorker
+  }
 
-      expect(text).toContain('throwIfAborted')
-      expect(text).toContain(content)
-    })
+  test('wraps Worker with string URL to inject polyfill via importScripts', async () => {
+    const MockWorker = setupWorkerMock()
+    const mockCreate = jest.fn(() => 'blob:injected')
+    URL.createObjectURL = mockCreate
+    load()
 
-    test('does not wrap URL.createObjectURL for non-JS blobs', () => {
-      delete signalProto.throwIfAborted
-      const mockCreate = jest.fn(() => 'blob:mock')
-      URL.createObjectURL = mockCreate
+    // eslint-disable-next-line no-new
+    new Worker('/worker.js') // NOSONAR
+    const text = await readBlobText(mockCreate.mock.calls[0][0])
+    expect(text).toContain('Object.hasOwn')
+    expect(text).toContain('importScripts("/worker.js")')
+    expect(MockWorker).toHaveBeenCalledWith('blob:injected', undefined)
+  })
 
-      load()
+  test('passes blob URLs through without wrapping', () => {
+    const MockWorker = setupWorkerMock()
+    const mockCreate = jest.fn(() => 'blob:new')
+    URL.createObjectURL = mockCreate
+    load()
 
-      const blob = new Blob(['{}'], { type: 'application/json' })
-      URL.createObjectURL(blob)
+    // eslint-disable-next-line no-new
+    new Worker('blob:http://localhost/existing') // NOSONAR
+    expect(mockCreate).not.toHaveBeenCalled()
+    expect(MockWorker).toHaveBeenCalledWith('blob:http://localhost/existing', undefined)
+  })
 
-      expect(mockCreate).toHaveBeenCalledWith(blob)
-    })
+  test('preserves the Worker prototype', () => {
+    const MockWorker = setupWorkerMock()
+    const mockProto = { foo: 'bar' }
+    MockWorker.prototype = mockProto
+    load()
+
+    expect(Worker.prototype).toBe(mockProto)
   })
 })

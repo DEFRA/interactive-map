@@ -21,8 +21,8 @@ export function getTooltipPosition (triggerEl, containerEl) {
 
   // Step 1: Find the actual smallest space
   const entries = Object.entries(space)
-  const sorted = entries.toSorted(([, a], [, b]) => a - b)
-  const [leastSide, leastValue] = sorted[0]
+  entries.sort(([, a], [, b]) => a - b)
+  const [leastSide, leastValue] = entries[0]
 
   // Step 2: Prefer horizontal if it's close in smallness
   if ((leastSide === 'top' || leastSide === 'bottom')) {
