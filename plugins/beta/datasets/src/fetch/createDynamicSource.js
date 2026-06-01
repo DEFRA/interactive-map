@@ -14,8 +14,8 @@ const EVICTION_THRESHOLD = 1.2 // Trigger eviction at 120% of maxFeatures
  * @param {Function} options.onUpdate - Callback when source data should be updated
  * @returns {Object} { destroy, clear, refresh }
  */
-export const createDynamicSource = ({ registryDataset, map, onUpdate }) => {
-  const { geojson: baseUrl, idProperty, transformRequest, maxFeatures, minZoom = 0 } = registryDataset
+export const createDynamicSource = ({ dynamicGeoJSON, map, onUpdate }) => {
+  const { url: baseUrl, idProperty, transformRequest, maxFeatures, minZoom = 0 } = dynamicGeoJSON
 
   // Feature cache: id → { feature, bbox, lastSeenAt }
   const features = new Map()
@@ -61,10 +61,8 @@ export const createDynamicSource = ({ registryDataset, map, onUpdate }) => {
 
     for (const [id, data] of features) {
       if (bboxIntersects(data.bbox, currentBbox)) {
-        console.log(`Feature ${id} is in view, keeping it.`)
         inView.push(id)
       } else {
-        console.log(`Feature ${id} is out of view, marking for eviction.`)
         outOfView.push({ id, lastSeenAt: data.lastSeenAt })
       }
     }
@@ -146,12 +144,12 @@ export const createDynamicSource = ({ registryDataset, map, onUpdate }) => {
       }
 
       // Update map source
-      onUpdate(registryDataset.id, toFeatureCollection())
+      onUpdate(dynamicGeoJSON.id, toFeatureCollection())
     } catch (error) {
       if (error.name === 'AbortError') {
         return
       }
-      console.error(`Failed to fetch dynamic GeoJSON for ${registryDataset.id}:`, error)
+      console.error(`Failed to fetch dynamic GeoJSON for ${dynamicGeoJSON.id}:`, error)
     }
   }
 
@@ -186,7 +184,7 @@ export const createDynamicSource = ({ registryDataset, map, onUpdate }) => {
     clear () {
       features.clear()
       fetchedBbox = null
-      onUpdate(registryDataset.id, { type: 'FeatureCollection', features: [] })
+      onUpdate(dynamicGeoJSON.id, { type: 'FeatureCollection', features: [] })
     },
 
     /**
@@ -210,7 +208,7 @@ export const createDynamicSource = ({ registryDataset, map, onUpdate }) => {
      */
     reapply () {
       if (features.size > 0) {
-        onUpdate(registryDataset.id, toFeatureCollection())
+        onUpdate(dynamicGeoJSON.id, toFeatureCollection())
       }
     }
   }
