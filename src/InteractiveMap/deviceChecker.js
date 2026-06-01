@@ -1,5 +1,6 @@
 import { renderError } from './renderError.js'
 import { removeLoadingState } from './domStateManager.js'
+import { logger } from '../services/logger.js'
 
 /**
  * Checks if the current device is supported by the map provider.
@@ -18,14 +19,14 @@ export function checkDeviceSupport (rootEl, config) {
   const device = mapProvider?.checkDeviceCapabilities()
 
   if (!mapProvider) {
-    console.log('No map provider')
+    logger.warn('No map provider')
     return false
   }
 
   if (!device?.isSupported) {
     renderError(rootEl, deviceNotSupportedText)
     removeLoadingState()
-    console.log(device?.error)
+    logger.warn(device?.error)
     return false
   }
   return true
