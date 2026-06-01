@@ -7,12 +7,28 @@ class DatasetDefinitionCache {
   }
 
   add (registryDataset) {
-    // Remove any existing cached instance for this dataset id
-    const existingDefinition = this.idToDefinitionMap.get(registryDataset.id)
-    this.definitionToInstanceMap.delete(existingDefinition)
-    // and cache the new instance
     this.idToDefinitionMap.set(registryDataset.id, registryDataset._datasetDefinition)
     this.definitionToInstanceMap.set(registryDataset._datasetDefinition, registryDataset)
+  }
+
+  invalidateDataset (registryDataset) {
+    const existingDefinition = this.idToDefinitionMap.get(registryDataset.id)
+    const allIds = [existingDefinition.id, ...(existingDefinition?.sublayerIds || [])]
+    allIds.forEach(id => {
+      const existingDefinition = this.idToDefinitionMap.get(id)
+      this.definitionToInstanceMap.delete(existingDefinition)
+      this.idToDefinitionMap.delete(id)
+    })
+  }
+
+  invalidateChangedDatasets (newDatasets) {
+    newDatasets.forEach((datasetDefinition) => {
+      const existingDefinition = this.idToDefinitionMap.get(datasetDefinition.id)
+      if (existingDefinition && existingDefinition !== datasetDefinition) {
+        const instance = this.definitionToInstanceMap.get(existingDefinition)
+        this.invalidateDataset(instance.isSublayer && instance.parent ? instance.parent : instance)
+      }
+    })
   }
 
   getByDefinition (datasetDefinition) {
@@ -24,9 +40,19 @@ const datasetRegistry = {
   attach (datasetsRef, orderedDatasetsRef) {
     this._datasets = datasetsRef
     this._orderedDatasets = orderedDatasetsRef
+    this._invalidateChangedDatasets()
+  },
+  _definitionCache: new DatasetDefinitionCache(),
+  _invalidateCache () { // used in tests to clear the cache between runs
     this._definitionCache = new DatasetDefinitionCache()
   },
-
+  _invalidateChangedDatasets () { // used in tests to clear the cache between runs
+    if (this._datasets) {
+      this._definitionCache.invalidateChangedDatasets(Object.values(this._datasets))
+    } else {
+      this._invalidateCache()
+    }
+  },
   // createDataset defaults to a generic dataset factory function, but can be overridden by calling
   // attachCreateDataset, which allows the layer adapter to provide its own createDataset function,
   attachCreateDataset (createDataset) { this._createDataset = createDataset },
@@ -44,6 +70,10 @@ const datasetRegistry = {
     }
     const registryDataset = this._createDataset(definition)
     this._definitionCache.add(registryDataset)
+    if (registryDataset.isSublayer) {
+      // Ensure the parent dataset is also cached
+      this.getDataset(registryDataset.parentId)
+    }
     return registryDataset
   },
 
