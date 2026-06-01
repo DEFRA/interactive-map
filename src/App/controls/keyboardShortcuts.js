@@ -1,11 +1,12 @@
 // src/controls/keyboardShortcuts.js
-import { altKeyHtml } from '../../utils/platform.js'
+const isMac = /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform)
+const altKeyHtml = isMac ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 
 export const coreShortcuts = [
   {
     id: 'showKeyboardHelp',
     title: 'Show keyboard help',
-    command: `${altKeyHtml} + <kbd>K</kbd>`,
+    command: '<kbd>Shift</kbd> + <kbd>?</kbd>',
     context: 'global',
     enabled: true
   },

@@ -6,8 +6,6 @@
  *
  * @type {Partial<import('../types.js').InteractiveMapConfig>}
  */
-import { altKeyHtml } from '../utils/platform.js'
-
 const defaults = {
   appColorScheme: 'light',
   autoColorScheme: false,
@@ -22,7 +20,7 @@ const defaults = {
   genericErrorText: 'There was a problem loading the map. Please try again later.',
   hasExitButton: false,
   hybridWidth: null, // Defaults to maxMobileWidth if not set
-  keyboardHintText: `<span class="im-u-visually-hidden">Press </span>${altKeyHtml} + <kbd>K</kbd> <span class="im-u-visually-hidden">to view </span>keyboard shortcuts`,
+  keyboardHintText: '<span class="im-u-visually-hidden">Press </span><kbd>Shift</kbd> + <kbd>?</kbd> <span class="im-u-visually-hidden">to view </span>keyboard shortcuts',
   mapLabel: 'Interactive map application',
   mapProvider: null,
   mapSize: 'small',
