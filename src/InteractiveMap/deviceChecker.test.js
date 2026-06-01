@@ -1,21 +1,18 @@
 import { checkDeviceSupport } from './deviceChecker.js'
 import { renderError } from './renderError.js'
 import { removeLoadingState } from './domStateManager.js'
+import { logger } from '../services/logger.js'
 
 jest.mock('./renderError.js')
 jest.mock('./domStateManager.js')
+jest.mock('../services/logger.js', () => ({ logger: { warn: jest.fn() } }))
 
 describe('checkDeviceSupport', () => {
-  let rootEl, config, consoleLogSpy
+  let rootEl, config
 
   beforeEach(() => {
     rootEl = document.createElement('div')
-    consoleLogSpy = jest.spyOn(console, 'log').mockImplementation()
     jest.clearAllMocks()
-  })
-
-  afterEach(() => {
-    consoleLogSpy.mockRestore()
   })
 
   it('returns true when device is supported', () => {
@@ -29,7 +26,7 @@ describe('checkDeviceSupport', () => {
     expect(checkDeviceSupport(rootEl, config)).toBe(true)
     expect(renderError).not.toHaveBeenCalled()
     expect(removeLoadingState).not.toHaveBeenCalled()
-    expect(console.log).not.toHaveBeenCalled()
+    expect(logger.warn).not.toHaveBeenCalled()
   })
 
   it('returns false and shows error when device is not supported', () => {
@@ -46,7 +43,7 @@ describe('checkDeviceSupport', () => {
     expect(checkDeviceSupport(rootEl, config)).toBe(false)
     expect(renderError).toHaveBeenCalledWith(rootEl, 'Device not supported')
     expect(removeLoadingState).toHaveBeenCalled()
-    expect(console.log).toHaveBeenCalledWith('WebGL not available')
+    expect(logger.warn).toHaveBeenCalledWith('WebGL not available')
   })
 
   it('logs "No map provider" and returns false if mapProvider is missing', () => {
@@ -56,7 +53,7 @@ describe('checkDeviceSupport', () => {
     }
 
     expect(checkDeviceSupport(rootEl, config)).toBe(false)
-    expect(console.log).toHaveBeenCalledWith('No map provider')
+    expect(logger.warn).toHaveBeenCalledWith('No map provider')
     expect(renderError).not.toHaveBeenCalled()
     expect(removeLoadingState).not.toHaveBeenCalled()
   })
@@ -72,6 +69,6 @@ describe('checkDeviceSupport', () => {
     expect(checkDeviceSupport(rootEl, config)).toBe(false)
     expect(renderError).toHaveBeenCalledWith(rootEl, 'Device not supported')
     expect(removeLoadingState).toHaveBeenCalled()
-    expect(console.log).toHaveBeenCalledWith(undefined)
+    expect(logger.warn).toHaveBeenCalledWith(undefined)
   })
 })
