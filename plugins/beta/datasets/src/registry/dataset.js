@@ -30,6 +30,10 @@ export class Dataset {
     return typeof this.geojson === 'string' && !!this.idProperty && typeof this.transformRequest === 'function'
   }
 
+  get maxFeatures () {
+    return this._datasetDefinition.maxFeatures || this.parent?.maxFeatures
+  }
+
   get hiddenFeatures () { return this._datasetDefinition.hiddenFeatures }
   get hasHiddenFeatures () { return Boolean(this.hiddenFeatures?.length > 0 || this.parent?.hasHiddenFeatures) }
 

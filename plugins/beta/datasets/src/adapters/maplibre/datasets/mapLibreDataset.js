@@ -3,7 +3,7 @@ import { MAX_TILE_ZOOM, hashString } from '../layerIds.js'
 import { anchorToMaplibre } from '../../../../../../../providers/maplibre/src/utils/symbolImages.js'
 
 export class MapLibreDataset extends Dataset {
-  get isDynamicSource () {
+  get hasDynamicSource () {
     return typeof this.geojson === 'string' && !!this.idProperty && typeof this.transformRequest === 'function'
   }
 
@@ -77,7 +77,7 @@ export class MapLibreDataset extends Dataset {
       return `tiles-${hashString(tilesKey)}`
     }
     if (this.geojson) {
-      if (this.isDynamicSource) { return `geojson-dynamic-${this.id}` }
+      if (this.hasDynamicSource) { return `geojson-dynamic-${this.id}` }
       if (typeof this.geojson === 'string') { return `geojson-${hashString(this.geojson)}` }
       return `geojson-${this.id}`
     }
@@ -94,7 +94,7 @@ export class MapLibreDataset extends Dataset {
       }
     }
     if (this.geojson) {
-      const data = this.isDynamicSource ? { type: 'FeatureCollection', features: [] } : this.geojson
+      const data = this.hasDynamicSource ? { type: 'FeatureCollection', features: [] } : this.geojson
       return { type: 'geojson', data, generateId: true }
     }
     return null

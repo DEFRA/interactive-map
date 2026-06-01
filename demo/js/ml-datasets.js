@@ -110,7 +110,15 @@ const framePlugin = createFramePlugin({ aspectRatio: 1.5 })
 const landCoversDataset = {
   id: 'land-covers',
   label: 'Land covers',
+  dynamicSource: {
+    idProperty: 'id',  // Enables dynamic fetching + deduplication
+    geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+    transformRequest: transformDataRequest,  // Builds URL with bbox
+    maxFeatures: 50000,  // Optional: evict distant features when exceeded
+  },
   geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+  idProperty: 'id',  // Enables dynamic fetching + deduplication
+  maxFeatures: 30,  // Optional: evict distant features when exceeded
   // filter: ["!",["in",["to-string",["id"]],["literal",["12"]]]],
   // filter: [
   // 	'all',
@@ -124,7 +132,6 @@ const landCoversDataset = {
   // filter: ['get', ['propertyName', 'warning']],
   query: {},
   transformRequest: transformDataRequest,  // Builds URL with bbox
-  maxFeatures: 50000,  // Optional: evict distant features when exceeded
   minZoom: 10,
   maxZoom: 24,
   showInKey: true,

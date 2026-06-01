@@ -32,7 +32,7 @@ export const createDatasets = ({
       }
 
       const dynamicSource = createDynamicSource({
-        dataset: registryDataset,
+        registryDataset,
         map: mapProvider.map,
         onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
       })

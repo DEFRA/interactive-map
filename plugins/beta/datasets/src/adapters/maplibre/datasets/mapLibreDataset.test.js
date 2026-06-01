@@ -18,7 +18,7 @@ describe('MapLibreDataset', () => {
       'ds-bare': { id: 'ds-bare' },
       'ds-no-id-prop': { id: 'ds-no-id-prop', geojson: 'https://example.com/data', transformRequest: () => {} },
       'ds-no-transform': { id: 'ds-no-transform', geojson: 'https://example.com/data', idProperty: 'id' },
-      // shared: dynamic geojson — used by isDynamicSource, sourceId, and source tests
+      // shared: dynamic geojson — used by hasDynamicSource, sourceId, and source tests
       'ds-dynamic': { id: 'ds-dynamic', geojson: 'https://example.com/data', idProperty: 'gid', transformRequest: () => {} },
       'ds-static-url': { id: 'ds-static-url', geojson: 'https://example.com/static.geojson' },
       // shared: tiles with no zoom — used by source minzoom and maxzoom fallback tests
@@ -97,21 +97,21 @@ describe('MapLibreDataset', () => {
     })
   })
 
-  describe('isDynamicSource', () => {
+  describe('hasDynamicSource', () => {
     it('returns true when geojson is a string, idProperty is set, and transformRequest is a function', () => {
-      expect(datasetRegistry.getDataset('ds-dynamic').isDynamicSource).toBe(true)
+      expect(datasetRegistry.getDataset('ds-dynamic').hasDynamicSource).toBe(true)
     })
 
     it('returns false when geojson is an object', () => {
-      expect(datasetRegistry.getDataset('historic-monuments').isDynamicSource).toBe(false)
+      expect(datasetRegistry.getDataset('historic-monuments').hasDynamicSource).toBe(false)
     })
 
     it('returns false when idProperty is missing', () => {
-      expect(datasetRegistry.getDataset('ds-no-id-prop').isDynamicSource).toBe(false)
+      expect(datasetRegistry.getDataset('ds-no-id-prop').hasDynamicSource).toBe(false)
     })
 
     it('returns false when transformRequest is not a function', () => {
-      expect(datasetRegistry.getDataset('ds-no-transform').isDynamicSource).toBe(false)
+      expect(datasetRegistry.getDataset('ds-no-transform').hasDynamicSource).toBe(false)
     })
   })
 
