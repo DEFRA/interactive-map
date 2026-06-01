@@ -3,10 +3,6 @@ import { MAX_TILE_ZOOM, hashString } from '../layerIds.js'
 import { anchorToMaplibre } from '../../../../../../../providers/maplibre/src/utils/symbolImages.js'
 
 export class MapLibreDataset extends Dataset {
-  get hasDynamicSource () {
-    return typeof this.geojson === 'string' && !!this.idProperty && typeof this.transformRequest === 'function'
-  }
-
   get visibility () { return this.visible ? 'visible' : 'none' }
 
   get fillLayerId () {
@@ -72,12 +68,12 @@ export class MapLibreDataset extends Dataset {
 
   get sourceId () {
     if (this.isSublayer) { return this.parent.sourceId }
+    if (this.hasDynamicGeoJSON) { return this.dynamicGeoJSON.sourceId }
     if (this.tiles) {
       const tilesKey = Array.isArray(this.tiles) ? this.tiles.join(',') : this.tiles
       return `tiles-${hashString(tilesKey)}`
     }
     if (this.geojson) {
-      if (this.hasDynamicSource) { return `geojson-dynamic-${this.id}` }
       if (typeof this.geojson === 'string') { return `geojson-${hashString(this.geojson)}` }
       return `geojson-${this.id}`
     }
@@ -85,6 +81,9 @@ export class MapLibreDataset extends Dataset {
   }
 
   get source () {
+    if (this.hasDynamicGeoJSON) {
+      return this.dynamicGeoJSON.source
+    }
     if (this.tiles) {
       return {
         type: 'vector',
@@ -94,8 +93,7 @@ export class MapLibreDataset extends Dataset {
       }
     }
     if (this.geojson) {
-      const data = this.hasDynamicSource ? { type: 'FeatureCollection', features: [] } : this.geojson
-      return { type: 'geojson', data, generateId: true }
+      return { type: 'geojson', data: this.geojson, generateId: true }
     }
     return null
   }
@@ -147,7 +145,7 @@ export class MapLibreDataset extends Dataset {
   }
 
   get _hiddenFeaturesIdExpression () {
-    return this.idProperty ? ['to-string', ['get', this.idProperty]] : ['to-string', ['id']]
+    return this.hasDynamicGeoJSON ? this.dynamicGeoJSON.hiddenFeaturesIdExpression : ['to-string', ['id']]
   }
 
   get _hiddenFeaturesFilter () {

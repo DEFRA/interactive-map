@@ -18,13 +18,10 @@ describe('MapLibreDataset', () => {
       'ds-bare': { id: 'ds-bare' },
       'ds-no-id-prop': { id: 'ds-no-id-prop', geojson: 'https://example.com/data', transformRequest: () => {} },
       'ds-no-transform': { id: 'ds-no-transform', geojson: 'https://example.com/data', idProperty: 'id' },
-      // shared: dynamic geojson — used by hasDynamicSource, sourceId, and source tests
-      'ds-dynamic': { id: 'ds-dynamic', geojson: 'https://example.com/data', idProperty: 'gid', transformRequest: () => {} },
       'ds-static-url': { id: 'ds-static-url', geojson: 'https://example.com/static.geojson' },
       // shared: tiles with no zoom — used by source minzoom and maxzoom fallback tests
       'ds-tiles-no-zoom': { id: 'ds-tiles-no-zoom', tiles: ['https://example.com/{z}/{x}/{y}'] },
       // getSymbolSource/getFillSource/getStrokeSource 'has filter' tests use historic-monuments-prehistoric and existing-fields from demo data
-      // _hiddenFeaturesIdExpression: ds-dynamic reused (has idProperty: 'gid')
       // _hiddenFeaturesFilter — ds-hf-123 also reused in filter describe
       'ds-hf-123': { id: 'ds-hf-123', hiddenFeatures: [1, 2, 3] },
       'ds-hf-neg1': { id: 'ds-hf-neg1', hiddenFeatures: [-1, 5] },
@@ -97,24 +94,6 @@ describe('MapLibreDataset', () => {
     })
   })
 
-  describe('hasDynamicSource', () => {
-    it('returns true when geojson is a string, idProperty is set, and transformRequest is a function', () => {
-      expect(datasetRegistry.getDataset('ds-dynamic').hasDynamicSource).toBe(true)
-    })
-
-    it('returns false when geojson is an object', () => {
-      expect(datasetRegistry.getDataset('historic-monuments').hasDynamicSource).toBe(false)
-    })
-
-    it('returns false when idProperty is missing', () => {
-      expect(datasetRegistry.getDataset('ds-no-id-prop').hasDynamicSource).toBe(false)
-    })
-
-    it('returns false when transformRequest is not a function', () => {
-      expect(datasetRegistry.getDataset('ds-no-transform').hasDynamicSource).toBe(false)
-    })
-  })
-
   describe('visibility', () => {
     it('returns "visible" when visible is true', () => {
       expect(datasetRegistry.getDataset('existing-fields').visibility).toBe('visible')
@@ -154,7 +133,7 @@ describe('MapLibreDataset', () => {
       expect(result).toEqual([{
         layerIds: ['land-covers-130-131', 'land-covers-130-131-stroke'],
         filter: ['all',
-          ['!', ['in', ['to-string', ['id']], ['literal', ['42']]]],
+          ['!', ['in', ['to-string', ['get', 'id']], ['literal', ['42']]]],
           ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]]]
       }])
     })
@@ -192,7 +171,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns geojson-dynamic-{id} for a dynamic geojson source', () => {
-      expect(datasetRegistry.getDataset('ds-dynamic').sourceId).toBe('geojson-dynamic-ds-dynamic')
+      expect(datasetRegistry.getDataset('land-covers').sourceId).toBe('geojson-dynamic-land-covers')
     })
 
     it('returns geojson-{hash} for a static string geojson url', () => {
@@ -229,7 +208,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns a geojson source with empty FeatureCollection for a dynamic geojson source', () => {
-      expect(datasetRegistry.getDataset('ds-dynamic').source).toEqual({
+      expect(datasetRegistry.getDataset('land-covers').source).toEqual({
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
         generateId: true
@@ -370,7 +349,7 @@ describe('MapLibreDataset', () => {
 
   describe('_hiddenFeaturesIdExpression', () => {
     it('uses get(idProperty) when idProperty is set', () => {
-      expect(datasetRegistry.getDataset('ds-dynamic')._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'gid']])
+      expect(datasetRegistry.getDataset('land-covers')._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'id']])
     })
 
     it('uses the feature id when idProperty is not set', () => {

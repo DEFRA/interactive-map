@@ -2,6 +2,24 @@ import { datasetRegistry } from './datasetRegistry.js'
 import { hasCustomVisualStyle } from '../defaults.js'
 import { hasPattern } from '../../../../../src/utils/patternUtils.js'
 
+class DynamicGeoJson {
+  constructor (dynamicGeoJSONDefinition) {
+    this.id = dynamicGeoJSONDefinition.id
+    this.url = dynamicGeoJSONDefinition.url
+    this.transformRequest = dynamicGeoJSONDefinition.transformRequest
+    this.maxFeatures = dynamicGeoJSONDefinition.maxFeatures
+    this.minZoom = dynamicGeoJSONDefinition.minZoom
+    this.idProperty = dynamicGeoJSONDefinition.idProperty
+    this.hiddenFeaturesIdExpression = ['to-string', ['get', this.idProperty]]
+    this.sourceId = `geojson-dynamic-${this.id}`
+    this.source = {
+      type: 'geojson',
+      data: { type: 'FeatureCollection', features: [] },
+      generateId: true
+    }
+  }
+}
+
 export class Dataset {
   constructor (dataset) {
     this._datasetDefinition = dataset
@@ -16,7 +34,8 @@ export class Dataset {
   get tiles () { return this._datasetDefinition.tiles }
   get geojson () { return this._datasetDefinition.geojson }
   get idProperty () { return this._datasetDefinition.idProperty }
-  get transformRequest () { return this._datasetDefinition.transformRequest }
+  // TODO - handle transformRequest for non-dynamicGeoJSON as well (e.g. to add auth headers) --- IGNORE ---
+  // get transformRequest () { return this._datasetDefinition.transformRequest }
   get parentId () { return this._datasetDefinition.parentId }
   get minZoom () { return this._datasetDefinition.minZoom || this.parent?.minZoom }
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
@@ -26,12 +45,16 @@ export class Dataset {
     return this.style.opacity === undefined ? 1 : this.style.opacity
   }
 
-  get hasDynamicSource () {
-    return typeof this.geojson === 'string' && !!this.idProperty && typeof this.transformRequest === 'function'
+  get hasDynamicGeoJSON () {
+    return Boolean(this._datasetDefinition.dynamicGeoJSON)
   }
 
-  get maxFeatures () {
-    return this._datasetDefinition.maxFeatures || this.parent?.maxFeatures
+  get dynamicGeoJSON () {
+    return new DynamicGeoJson({
+      ...this._datasetDefinition.dynamicGeoJSON,
+      id: this.id,
+      minZoom: this.minZoom
+    })
   }
 
   get hiddenFeatures () { return this._datasetDefinition.hiddenFeatures }
