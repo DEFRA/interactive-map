@@ -49,7 +49,7 @@ describe('Hints — rendering', () => {
     render(<Hints />)
     const desc = mainEl.querySelector('#test-map-keyboard-desc')
     expect(desc).toBeTruthy()
-    expect(desc.innerHTML).toBe('<kbd>Shift</kbd> + <kbd>?</kbd>')
+    expect(desc.innerHTML).toBe('Shift + ?')
   })
 
   it('renders no hint content when there is no active hint', () => {
