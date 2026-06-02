@@ -1,4 +1,4 @@
-import { clearSnapState, getSnapInstance } from './utils/snapHelpers.js'
+import { clearSnapState, clearSnapIndicator, getSnapInstance } from './utils/snapHelpers.js'
 
 export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus }) {
   const { drawDone, drawAddPoint, drawUndo, drawDeletePoint, drawSnap, drawCancel } = buttonConfig
@@ -101,6 +101,15 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
     }
   }
 
+  // --- Ensure snap indicator is hidden whenever not in a drawing mode
+  const DRAWING_MODES = ['draw_polygon', 'draw_line']
+  const handleModeChange = (e) => {
+    if (!DRAWING_MODES.includes(e.mode)) {
+      const snap = getSnapInstance(map)
+      clearSnapIndicator(snap, map)
+    }
+  }
+
   // --- Map style update
   const handleStyleData = () => {
     const layers = map.getStyle().layers || []
@@ -148,6 +157,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
   map.on('styledata', handleStyleData)
   map.on('draw.cancel', handleCancel)
   map.on('draw.create', onCreate)
+  map.on('draw.modechange', handleModeChange)
   map.on('draw.editfinish', onEditFinish)
   map.on('draw.update', handleUpdate)
   map.on('draw.vertexselection', onVertexSelection)
@@ -166,6 +176,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
     map.off('draw.create', onCreate)
     map.off('draw.editfinish', onEditFinish)
     map.off('draw.update', handleUpdate)
+    map.off('draw.modechange', handleModeChange)
     map.off('draw.vertexselection', onVertexSelection)
     map.off('draw.vertexchange', onVertexChange)
     map.off('draw.undochange', onUndoChange)

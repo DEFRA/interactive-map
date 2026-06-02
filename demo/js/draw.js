@@ -85,7 +85,7 @@ const datasetsPlugin = createDatasetsPlugin({
 })
 
 const interactiveMap = new InteractiveMap('map', {
-	behaviour: 'hybrid',
+	behaviour: 'mapOnly',
 	mapProvider: maplibreProvider(),
 	reverseGeocodeProvider: openNamesProvider({
 		url: process.env.OS_NEAREST_URL,
@@ -102,7 +102,7 @@ const interactiveMap = new InteractiveMap('map', {
 	autoColorScheme: true,
 	// center: [-2.938769, 54.893806],
 	bounds: [-2.989707, 54.864555, -2.878635, 54.937635],
-	containerHeight: '650px',
+	containerHeight: '600px',
 	transformRequest: transformVtsRequest3857,
 	enableZoomControls: true,
 	readMapText: true,
