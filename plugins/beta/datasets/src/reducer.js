@@ -6,11 +6,10 @@ const initialState = {
   globals: {
     visible: true,
     opacity: 1,
-    // overrideDatasetOpacity:
+    opacityMode: 'local'
     // 'local': registryDataset opacity is used instead if set;
     // 'global': registryDataset opacity is ignored
-    // 'multiply': registryDataset opacity is multiplied by global opacity
-    overrideDatasetOpacity: 'global'
+    // 'multiply': registryDataset opacity is multiplied by parent opacity and global opacity
   },
   key: {
     items: [],

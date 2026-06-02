@@ -300,7 +300,7 @@ const hedgeControlDataset = {
 const datasetsPlugin = createDatasetsPlugin({
   layerAdapter: maplibreLayerAdapter,
   globals: {
-    overrideDatasetOpacity: 'local', // 'local', 'global'or 'multiply
+    opacityMode: 'global', // 'local', 'global' or 'multiply
     opacity: 0.75,
     visible: true
   },
@@ -372,6 +372,9 @@ const testVisibility = () => {
   setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'land-covers' }), 4000)
   // now reshow show landcovers-130-131
   setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'land-covers', sublayerId: '130-131' }), 5000)
+
+  // TODO
+  // setTimeout(() => datasetsPlugin.setDatasetVisibility(false, { rememberOriginalValues: false  }), 5000)
 }
 
 const testGlobalVisibility = () => {
@@ -396,6 +399,9 @@ const testOpacity = () => {
   setTimeout(() => datasetsPlugin.setOpacity(0.3, { datasetId: 'land-covers', sublayerId: '130-131' }), 1500)
   setTimeout(() => datasetsPlugin.setOpacity(0.97, { datasetId: 'land-covers' }), 2000)
   // setTimeout(() => datasetsPlugin.setOpacity(1, { datasetId: 'land-covers', sublayerId: '130-131' }), 4000)
+
+  // TODO:
+  // setTimeout(() => datasetsPlugin.setGlobal({ opacityMode: 'multiply' }), 2000)
 }
 
 const testSetStyle = () => {

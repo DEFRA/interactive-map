@@ -6,7 +6,7 @@ import { attachGlobalState } from './globalDataset.js'
 jest.mock('./datasetRegistry.js')
 
 const globalState = {
-  overrideDatasetOpacity: 'local',
+  opacityMode: 'local',
   opacity: 1,
   visible: true
 }
@@ -287,7 +287,7 @@ describe('Dataset class', () => {
       })
     })
 
-    describe('with overrideDatasetOpacity set to "local"', () => {
+    describe('with opacityMode set to "local"', () => {
       it('returns global opacity when no opacity', () => {
         expect(datasetRegistry.getDataset('noOpacity').opacity).toBe(1)
       })
@@ -309,11 +309,11 @@ describe('Dataset class', () => {
       })
     })
 
-    describe('with overrideDatasetOpacity set to "multiply"', () => {
+    describe('with opacityMode set to "multiply"', () => {
       beforeEach(() => {
         attachGlobalState({
           ...globalState,
-          overrideDatasetOpacity: 'multiply',
+          opacityMode: 'multiply',
           opacity: 0.75
         })
       })
@@ -341,11 +341,11 @@ describe('Dataset class', () => {
       })
     })
 
-    describe('with overrideDatasetOpacity set to "global"', () => {
+    describe('with opacityMode set to "global"', () => {
       beforeEach(() => {
         attachGlobalState({
           ...globalState,
-          overrideDatasetOpacity: 'global',
+          opacityMode: 'global',
           opacity: 0.6
         })
       })
