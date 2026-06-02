@@ -122,6 +122,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
   // --- Draw completion handlers (create / edit)
   const handleDrawCompletion = (eventName) => (e) => {
     const newFeature = e.features[0]
+    disableSnap()
     resetDrawModeAndFeature()
     setTimeout(() => draw.changeMode('disabled'), 0)
     eventBus.emit(eventName, newFeature)
