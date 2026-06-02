@@ -27,12 +27,12 @@ export const createDatasets = ({
   datasetRegistry.attach(mappedDatasets)
   adapter.init(mapStyle).then(() => {
     datasetRegistry.forEachDataset(registryDataset => {
-      if (!registryDataset.hasDynamicSource) {
+      if (!registryDataset.hasDynamicGeoJSON) {
         return
       }
-
+      const { dynamicGeoJSON } = registryDataset
       const dynamicSource = createDynamicSource({
-        dataset: registryDataset,
+        dynamicGeoJSON,
         map: mapProvider.map,
         onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
       })
