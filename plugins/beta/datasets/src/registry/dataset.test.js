@@ -264,6 +264,11 @@ describe('Dataset class', () => {
       id: 'noOpacityChild',
       parentId: 'noOpacity'
     }
+    const opacityChild4 = {
+      id: 'opacityChild4',
+      parentId: 'noOpacity',
+      style: { opacity: 0.4 }
+    }
     const zeroOpacity = {
       id: 'zeroOpacity',
       style: { opacity: 0 }
@@ -277,13 +282,19 @@ describe('Dataset class', () => {
       parentId: 'opacity8',
       style: { opacity: 0.4 }
     }
+    const opacity8ChildNoOpacity = {
+      id: 'opacity8ChildNoOpacity',
+      parentId: 'opacity8'
+    }
     beforeEach(() => {
       datasetRegistry.attach({
         zeroOpacity,
         noOpacity,
         noOpacityChild,
         opacity8,
-        opacity8Child
+        opacity8Child,
+        opacity8ChildNoOpacity,
+        opacityChild4
       })
     })
 
@@ -296,8 +307,16 @@ describe('Dataset class', () => {
         expect(datasetRegistry.getDataset('noOpacityChild').opacity).toBe(1)
       })
 
+      it('returns the specified opacity when opacity is set in child only', () => {
+        expect(datasetRegistry.getDataset('opacityChild4').opacity).toBe(0.4)
+      })
+
       it('returns the specified opacity for a topLevel Dataset', () => {
         expect(datasetRegistry.getDataset('opacity8').opacity).toBe(0.8)
+      })
+
+      it('returns the specified opacity when opacity is set in parent only', () => {
+        expect(datasetRegistry.getDataset('opacity8ChildNoOpacity').opacity).toBe(0.8)
       })
 
       it('returns the specified opacity for a child Dataset', () => {
@@ -324,6 +343,10 @@ describe('Dataset class', () => {
 
       it('returns global opacity when no opacity is set in child or parent', () => {
         expect(datasetRegistry.getDataset('noOpacityChild').opacity).toBe(0.75)
+      })
+
+      it('returns the multiplied opacity when opacity is set in child only', () => {
+        expect(datasetRegistry.getDataset('opacityChild4').opacity).toBe(0.3)
       })
 
       it('returns the multiplied opacity for a topLevel Dataset', () => {

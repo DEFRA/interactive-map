@@ -104,7 +104,16 @@ export class Dataset {
   get style () {
     const parentStyle = this.parent?.style
     if (parentStyle) {
-      return { ...parentStyle, ...this._datasetDefinition.style, symbolDescription: this.symbolDescription }
+      // Here - we must set the merge styles opacity to undefined before the specific child opacity
+      // so that we can correctly calculate opacity in the Dataset.opacity getter
+      // - otherwise if opacity mode multiply is set,
+      // any child with a parent opacity only would be multiplied by itself
+      return {
+        ...parentStyle,
+        opacity: undefined,
+        ...this._datasetDefinition.style,
+        symbolDescription: this.symbolDescription
+      }
     }
     return this._datasetDefinition.style || {}
   }

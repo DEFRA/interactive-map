@@ -8,8 +8,12 @@ export const attachGlobalState = (globalStateRef) => {
 window.getGlobalState = () => Object.freeze(globalState)
 
 const calculateLocalOpacity = (opacityValue, parentOpacityValue) => {
+  console.log('Calculating local opacity with', { opacityValue, parentOpacityValue, globalOpacity: globalState.opacity })
   if (opacityValue === undefined) {
-    return parentOpacityValue === undefined ? globalState.opacity : parentOpacityValue
+    if (parentOpacityValue === undefined) {
+      return globalState.opacity
+    }
+    return parentOpacityValue
   }
   return opacityValue
 }
