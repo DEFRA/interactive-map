@@ -2,6 +2,7 @@ import { datasetRegistry } from './datasetRegistry.js'
 import { hasCustomVisualStyle } from '../defaults.js'
 import { hasPattern } from '../../../../../src/utils/patternUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
+import { calculateOpacity } from './globalDataset.js'
 
 export class Dataset {
   constructor (dataset) {
@@ -25,7 +26,9 @@ export class Dataset {
   get showInKey () { return this._datasetDefinition.showInKey || this.parent?.showInKey || false }
   get groupLabel () { return this._datasetDefinition.groupLabel }
   get opacity () {
-    return this.style.opacity === undefined ? 1 : this.style.opacity
+    const myOpacity = this.style?.opacity
+    const parentOpacity = this.parent?.style?.opacity
+    return calculateOpacity(myOpacity, parentOpacity)
   }
 
   get hasDynamicGeoJSON () {
