@@ -21,7 +21,7 @@ const multiplyOpacities = (opacityValue, parentOpacityValue) => {
 }
 
 export const calculateOpacity = (opacityValue, parentOpacityValue) => {
-  switch (globalState.overrideDatasetOpacity) {
+  switch (globalState.opacityMode) {
     case 'global':
       return globalState.opacity
     case 'multiply':
