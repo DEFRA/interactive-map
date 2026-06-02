@@ -300,7 +300,7 @@ const hedgeControlDataset = {
 const datasetsPlugin = createDatasetsPlugin({
   layerAdapter: maplibreLayerAdapter,
   globals: {
-    opacityMode: 'global', // 'local', 'global' or 'multiply
+    opacityMode: 'global', // 'dataset', 'global' or 'multiply
     opacity: 0.75,
     visible: true
   },

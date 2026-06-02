@@ -14,10 +14,8 @@ const calculateLocalOpacity = (opacityValue, parentOpacityValue) => {
   return opacityValue
 }
 
-const multiplyOpacities = (opacityValue, parentOpacityValue) => {
-  const local = opacityValue === undefined ? 1 : opacityValue
-  const parent = parentOpacityValue === undefined ? 1 : parentOpacityValue
-  return Math.round((local * parent * globalState.opacity + Number.EPSILON) * 100) / 100
+const multiplyOpacities = (opacityValue = 1, parentOpacityValue = 1) => {
+  return Math.round((opacityValue * parentOpacityValue * globalState.opacity + Number.EPSILON) * 100) / 100
 }
 
 export const calculateOpacity = (opacityValue, parentOpacityValue) => {
@@ -26,7 +24,7 @@ export const calculateOpacity = (opacityValue, parentOpacityValue) => {
       return globalState.opacity
     case 'multiply':
       return multiplyOpacities(opacityValue, parentOpacityValue)
-    case 'local':
+    case 'dataset':
     default:
       return calculateLocalOpacity(opacityValue, parentOpacityValue)
   }
