@@ -19,7 +19,12 @@ export const datasets = [
   {
     id: 'land-covers',
     label: 'Land covers',
-    geojson: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // 106200212
+    dynamicGeoJSON: {
+      idProperty: 'id', // required - the ID that identifies individual features
+      url: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // required
+      transformRequest: (url) => url + 'TRANSFORMED', // Required
+      maxFeatures: 50000 // Optional: evict distant features when exceeded
+    },
     hiddenFeatures: [42],
     query: {},
     maxFeatures: 50000, // Optional: evict distant features when exceeded

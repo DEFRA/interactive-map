@@ -197,7 +197,7 @@ describe('Dataset class', () => {
     })
   })
 
-  describe('tiles, geojson, idProperty, transformRequest, parentId', () => {
+  describe('tiles, geojson, idProperty, parentId', () => {
     it('returns tiles from the definition', () => {
       const tiles = ['https://example.com/{z}/{x}/{y}']
       const dataset = new Dataset({ tiles })
@@ -213,12 +213,6 @@ describe('Dataset class', () => {
     it('returns idProperty from the definition', () => {
       const dataset = new Dataset({ idProperty: 'gid' })
       expect(dataset.idProperty).toBe('gid')
-    })
-
-    it('returns transformRequest from the definition', () => {
-      const fn = () => {}
-      const dataset = new Dataset({ transformRequest: fn })
-      expect(dataset.transformRequest).toBe(fn)
     })
 
     it('returns parentId from the definition', () => {
@@ -270,25 +264,13 @@ describe('Dataset class', () => {
     })
   })
 
-  describe('hasDynamicSource', () => {
-    it('returns true when geojson is a string, idProperty is set, and transformRequest is a function', () => {
-      const dataset = new Dataset({ geojson: 'https://example.com/data', idProperty: 'id', transformRequest: () => {} })
-      expect(dataset.hasDynamicSource).toBe(true)
+  describe('hasDynamicGeoJSON', () => {
+    it('returns true when definition has a dynamicGeoJSON object', () => {
+      expect(datasetRegistry.getDataset('land-covers').hasDynamicGeoJSON).toBe(true)
     })
 
-    it('returns false when geojson is an object (not a string)', () => {
-      const dataset = new Dataset({ geojson: { type: 'FeatureCollection', features: [] }, idProperty: 'id', transformRequest: () => {} })
-      expect(dataset.hasDynamicSource).toBe(false)
-    })
-
-    it('returns false when idProperty is not set', () => {
-      const dataset = new Dataset({ geojson: 'https://example.com/data', transformRequest: () => {} })
-      expect(dataset.hasDynamicSource).toBe(false)
-    })
-
-    it('returns false when transformRequest is not a function', () => {
-      const dataset = new Dataset({ geojson: 'https://example.com/data', idProperty: 'id' })
-      expect(dataset.hasDynamicSource).toBe(false)
+    it('returns false  when definition does not have a dynamicGeoJSON object', () => {
+      expect(datasetRegistry.getDataset('historic-monuments').hasDynamicGeoJSON).toBe(false)
     })
   })
 

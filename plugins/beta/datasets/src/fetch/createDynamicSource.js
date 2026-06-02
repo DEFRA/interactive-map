@@ -8,14 +8,14 @@ const EVICTION_THRESHOLD = 1.2 // Trigger eviction at 120% of maxFeatures
 /**
  * Create a dynamic GeoJSON source that fetches data based on viewport
  * @param {Object} options
- * @param {Object} options.dataset - Dataset configuration
+ * @param {Object} options.registryDataset - registryDataset instance
  * @param {Object} options.map - Map instance
  * @param {string} options.sourceId - Source ID for the map
  * @param {Function} options.onUpdate - Callback when source data should be updated
  * @returns {Object} { destroy, clear, refresh }
  */
-export const createDynamicSource = ({ dataset, map, onUpdate }) => {
-  const { geojson: baseUrl, idProperty, transformRequest, maxFeatures, minZoom = 0 } = dataset
+export const createDynamicSource = ({ dynamicGeoJSON, map, onUpdate }) => {
+  const { url: baseUrl, idProperty, transformRequest, maxFeatures, minZoom = 0 } = dynamicGeoJSON
 
   // Feature cache: id → { feature, bbox, lastSeenAt }
   const features = new Map()
@@ -112,7 +112,7 @@ export const createDynamicSource = ({ dataset, map, onUpdate }) => {
     currentController = new AbortController()
 
     try {
-      const context = { bbox: currentBbox, zoom, dataset }
+      const context = { bbox: currentBbox, zoom }
       const data = await fetchGeoJSON(baseUrl, context, transformRequest, currentController.signal)
 
       const now = Date.now()
@@ -144,12 +144,12 @@ export const createDynamicSource = ({ dataset, map, onUpdate }) => {
       }
 
       // Update map source
-      onUpdate(dataset.id, toFeatureCollection())
+      onUpdate(dynamicGeoJSON.id, toFeatureCollection())
     } catch (error) {
       if (error.name === 'AbortError') {
         return
       }
-      console.error(`Failed to fetch dynamic GeoJSON for ${dataset.id}:`, error)
+      console.error(`Failed to fetch dynamic GeoJSON for ${dynamicGeoJSON.id}:`, error)
     }
   }
 
@@ -184,7 +184,7 @@ export const createDynamicSource = ({ dataset, map, onUpdate }) => {
     clear () {
       features.clear()
       fetchedBbox = null
-      onUpdate(dataset.id, { type: 'FeatureCollection', features: [] })
+      onUpdate(dynamicGeoJSON.id, { type: 'FeatureCollection', features: [] })
     },
 
     /**
@@ -208,7 +208,7 @@ export const createDynamicSource = ({ dataset, map, onUpdate }) => {
      */
     reapply () {
       if (features.size > 0) {
-        onUpdate(dataset.id, toFeatureCollection())
+        onUpdate(dynamicGeoJSON.id, toFeatureCollection())
       }
     }
   }
