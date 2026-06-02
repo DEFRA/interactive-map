@@ -15,8 +15,11 @@ export const createDatasets = ({
   eventBus
 }) => {
   const { datasets } = pluginConfig
-
   const dynamicSources = new Map()
+
+  if (pluginConfig.globals) {
+    dispatch({ type: 'INITIALISE_GLOBAL_STATE', payload: pluginConfig.globals })
+  }
 
   // Initialise all datasets via the adapter, then set up dynamic sources
   const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))

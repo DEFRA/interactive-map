@@ -1,10 +1,19 @@
 import { Dataset } from './dataset.js'
 import { datasetRegistry } from './datasetRegistry.js'
+import { attachGlobalState } from './globalDataset.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('./datasetRegistry.js')
 
+const globalState = {
+  overrideDatasetOpacity: 'local',
+  opacity: 1,
+  visible: true
+}
 describe('Dataset class', () => {
+  beforeEach(() => {
+    attachGlobalState(globalState)
+  })
   describe('isSublayer', () => {
     it('returns false for a top-level dataset', () => {
       const dataset = datasetRegistry.getDataset('land-covers')
@@ -248,19 +257,118 @@ describe('Dataset class', () => {
   })
 
   describe('opacity', () => {
-    it('returns 1 when no opacity is set in style', () => {
-      const dataset = new Dataset({ style: { stroke: '#ff0000' } })
-      expect(dataset.opacity).toBe(1)
+    const noOpacity = {
+      id: 'noOpacity'
+    }
+    const noOpacityChild = {
+      id: 'noOpacityChild',
+      parentId: 'noOpacity'
+    }
+    const zeroOpacity = {
+      id: 'zeroOpacity',
+      style: { opacity: 0 }
+    }
+    const opacity8 = {
+      id: 'opacity8',
+      style: { opacity: 0.8 }
+    }
+    const opacity8Child = {
+      id: 'opacity8Child',
+      parentId: 'opacity8',
+      style: { opacity: 0.4 }
+    }
+    beforeEach(() => {
+      datasetRegistry.attach({
+        zeroOpacity,
+        noOpacity,
+        noOpacityChild,
+        opacity8,
+        opacity8Child
+      })
     })
 
-    it('returns the opacity value from style', () => {
-      const dataset = new Dataset({ style: { opacity: 0.5 } })
-      expect(dataset.opacity).toBe(0.5)
+    describe('with overrideDatasetOpacity set to "local"', () => {
+      it('returns global opacity when no opacity', () => {
+        expect(datasetRegistry.getDataset('noOpacity').opacity).toBe(1)
+      })
+
+      it('returns global opacity when no opacity is set in child or parent', () => {
+        expect(datasetRegistry.getDataset('noOpacityChild').opacity).toBe(1)
+      })
+
+      it('returns the specified opacity for a topLevel Dataset', () => {
+        expect(datasetRegistry.getDataset('opacity8').opacity).toBe(0.8)
+      })
+
+      it('returns the specified opacity for a child Dataset', () => {
+        expect(datasetRegistry.getDataset('opacity8Child').opacity).toBe(0.4)
+      })
+
+      it('returns 0 when opacity is explicitly set to 0', () => {
+        expect(datasetRegistry.getDataset('zeroOpacity').opacity).toBe(0)
+      })
     })
 
-    it('returns 0 when opacity is explicitly set to 0', () => {
-      const dataset = new Dataset({ style: { opacity: 0 } })
-      expect(dataset.opacity).toBe(0)
+    describe('with overrideDatasetOpacity set to "multiply"', () => {
+      beforeEach(() => {
+        attachGlobalState({
+          ...globalState,
+          overrideDatasetOpacity: 'multiply',
+          opacity: 0.75
+        })
+      })
+
+      it('returns global opacity when no opacity', () => {
+        expect(datasetRegistry.getDataset('noOpacity').opacity).toBe(0.75)
+      })
+
+      it('returns global opacity when no opacity is set in child or parent', () => {
+        expect(datasetRegistry.getDataset('noOpacityChild').opacity).toBe(0.75)
+      })
+
+      it('returns the multiplied opacity for a topLevel Dataset', () => {
+        // 0.8 (dataset opacity) * 0.75 (global opacity)
+        expect(datasetRegistry.getDataset('opacity8').opacity).toBe(0.6)
+      })
+
+      it('returns the multiplied opacity for a child Dataset', () => {
+        // 0.4 (dataset opacity) * 0.75 (global opacity) * 0.8 (parent dataset opacity)
+        expect(datasetRegistry.getDataset('opacity8Child').opacity).toBe(0.24)
+      })
+
+      it('returns 0 when opacity is explicitly set to 0', () => {
+        expect(datasetRegistry.getDataset('zeroOpacity').opacity).toBe(0)
+      })
+    })
+
+    describe('with overrideDatasetOpacity set to "global"', () => {
+      beforeEach(() => {
+        attachGlobalState({
+          ...globalState,
+          overrideDatasetOpacity: 'global',
+          opacity: 0.6
+        })
+      })
+
+      it('returns the global opacity when no opacity', () => {
+        expect(datasetRegistry.getDataset('noOpacity').opacity).toBe(0.6)
+      })
+
+      it('returns the global opacity when no opacity is set in child or parent', () => {
+        expect(datasetRegistry.getDataset('noOpacityChild').opacity).toBe(0.6)
+      })
+
+      it('returns the global opacity for a topLevel Dataset', () => {
+        expect(datasetRegistry.getDataset('opacity8').opacity).toBe(0.6)
+      })
+
+      it('returns the global opacity for a child Dataset', () => {
+        expect(datasetRegistry.getDataset('opacity8Child').opacity).toBe(0.6)
+      })
+
+      it('returns global opacity when opacity is explicitly set to 0', () => {
+        expect(datasetRegistry.getDataset('zeroOpacity').opacity).toBe(0.6)
+      })
     })
   })
 

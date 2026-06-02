@@ -3,6 +3,7 @@ import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { createDatasets } from './datasets.js'
 import { datasetRegistry } from './registry/datasetRegistry.js'
+import { attachGlobalState } from './registry/globalDataset.js'
 
 const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies) =>
   useEffect(() => {
@@ -76,6 +77,11 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useEffect(() => {
     datasetRegistry.attach(datasetsRef.current, pluginState.orderedDatasets)
   }, [pluginState.mappedDatasets, pluginState.orderedDatasets])
+
+  useEffect(() => {
+    attachGlobalState(pluginState.globals)
+  }, [pluginState.globals])
+
   useLayerAdapterActions('applyStyle', dispatch, pluginState, [pluginState.layerAdapterActions.applyStyle])
   useLayerAdapterActions('applyDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.applyDatasetVisibility])
   useLayerAdapterActions('setOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.setOpacity])

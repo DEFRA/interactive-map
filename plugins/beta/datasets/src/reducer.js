@@ -34,6 +34,13 @@ const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') =
   return true
 }
 
+const initialiseGlobalState = (state, payload) => {
+  return {
+    ...state,
+    globals: { ...state.globals, ...payload }
+  }
+}
+
 const setDatasets = (state, payload) => {
   const { datasets, mappedDatasets, orderedDatasets } = payload
   const menu = payload.menu || datasetsToMenu({ datasets })
@@ -194,7 +201,8 @@ const actions = {
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
   SET_LAYER_ADAPTER: setLayerAdapter,
-  SET_LAYER_ADAPTER_ACTIONS: setLayerAdapterActions
+  SET_LAYER_ADAPTER_ACTIONS: setLayerAdapterActions,
+  INITIALISE_GLOBAL_STATE: initialiseGlobalState
 }
 
 export {

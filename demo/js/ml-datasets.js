@@ -299,7 +299,11 @@ const hedgeControlDataset = {
 
 const datasetsPlugin = createDatasetsPlugin({
   layerAdapter: maplibreLayerAdapter,
-  // Example: Dynamic bbox-based fetching (uncomment to test)
+  globals: {
+    overrideDatasetOpacity: 'local', // 'local', 'global'or 'multiply
+    opacity: 0.75,
+    visible: true
+  },
   datasets: [
     landCoversDataset,
     existingFieldsDataset,
@@ -372,9 +376,9 @@ const testVisibility = () => {
 
 const testGlobalVisibility = () => {
   setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 1000)
-  setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 5000)
-  setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
-  setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#0000ff' }, }, { datasetId: 'hedge-control' }), 2000)
+  setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 2000)
+  // setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
+  // setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#0000ff' }, }, { datasetId: 'hedge-control' }), 2000)
 }
 
 const testFeatureVisibility = () => {
@@ -459,15 +463,15 @@ const testSetData = () => {
 }
 
 interactiveMap.on('datasets:ready', function () {
-  testGetters()
-  testInvalidApiCalls()
-  testFeatureVisibility()
+  // testGetters()
+  // testInvalidApiCalls()
+  // testFeatureVisibility()
   testOpacity()
-  testSetStyle()
-  testVisibility()
-  testGlobalVisibility()
-  testRemoveAndAddDataset()
-  testSetData()
+  // testSetStyle()
+  // testVisibility()
+  // testGlobalVisibility()
+  // testRemoveAndAddDataset()
+  // testSetData()
 })
 
 // Ref to the selected features
