@@ -6,7 +6,7 @@ import { attachGlobalState } from './globalDataset.js'
 jest.mock('./datasetRegistry.js')
 
 const globalState = {
-  opacityMode: 'local',
+  opacityMode: 'dataset',
   opacity: 1,
   visible: true
 }
@@ -287,7 +287,7 @@ describe('Dataset class', () => {
       })
     })
 
-    describe('with opacityMode set to "local"', () => {
+    describe('with opacityMode set to "dataset"', () => {
       it('returns global opacity when no opacity', () => {
         expect(datasetRegistry.getDataset('noOpacity').opacity).toBe(1)
       })
