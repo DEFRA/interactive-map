@@ -206,16 +206,15 @@ export default class MaplibreLayerAdapter {
    * Set opacity for all layers belonging to a dataset.
    * Uses setPaintProperty directly — safe to call on every slider tick.
    * @param {string} datasetId
-   * @param {number} opacity
    */
-  setOpacity (datasetId, opacity) {
-    const style = this._map.getStyle()
-    if (!style?.layers) {
+  applyDatasetOpacity (datasetId) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    if (!registryDataset) {
       return
     }
-    style.layers
-      .filter(layer => layer.id === datasetId || layer.id.startsWith(`${datasetId}-`))
-      .forEach(layer => this._setPaintOpacity(layer.id, opacity))
+    registryDataset.getLayersWithOpacity().forEach(({ layerIds, opacity }) => {
+      layerIds.forEach(layerId => this._setPaintOpacity(layerId, opacity))
+    })
   }
 
   /**
