@@ -154,6 +154,7 @@ const landCoversDataset = {
     label: 'Permanent grassland 2',
     filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
     showInMenu: true,
+    visible: false,
     style: {
       stroke: { outdoor: '#00897B', dark: '#ffffff' },
       fillPattern: 'diagonal-cross-hatch',
@@ -300,7 +301,7 @@ const hedgeControlDataset = {
 const datasetsPlugin = createDatasetsPlugin({
   layerAdapter: maplibreLayerAdapter,
   globals: {
-    opacityMode: 'dataset', // 'dataset', 'global' or 'multiply
+    opacityMode: 'multiply', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,
     visible: true
   },
@@ -393,13 +394,15 @@ const testFeatureVisibility = () => {
 }
 
 const testSetOpacity = () => {
-  setTimeout(() => datasetsPlugin.setOpacity(0.5, { datasetId: 'land-covers', sublayerId: '130-131' }), 500)
-  setTimeout(() => datasetsPlugin.setOpacity(0, { datasetId: 'land-covers' }), 500)
-  setTimeout(() => datasetsPlugin.setOpacity(0.8, { datasetId: 'land-covers', sublayerId: '130-131' }), 1000)
-  setTimeout(() => datasetsPlugin.setOpacity(0.3, { datasetId: 'land-covers', sublayerId: '130-131' }), 1500)
-  setTimeout(() => datasetsPlugin.setOpacity(0.97, { datasetId: 'land-covers' }), 2000)
-  setTimeout(() => datasetsPlugin.setOpacity(1, { datasetId: 'land-covers', sublayerId: '130-131' }), 4000)
+  setTimeout(() => datasetsPlugin.setOpacity(0.8, { datasetId: 'land-covers' }), 500)
+  setTimeout(() => datasetsPlugin.setOpacity(0.2, { datasetId: 'land-covers', sublayerId: '130-131' }), 2000)
+  // setTimeout(() => datasetsPlugin.setOpacity(0.8, { datasetId: 'land-covers', sublayerId: '130-131' }), 2000)
+  // setTimeout(() => datasetsPlugin.setOpacity(0.3, { datasetId: 'land-covers', sublayerId: '130-131' }), 2500)
+  setTimeout(() => datasetsPlugin.setOpacity(0.97, { datasetId: 'land-covers' }), 4000)
+  // setTimeout(() => datasetsPlugin.setOpacity(1, { datasetId: 'land-covers', sublayerId: '130-131' }), 6000)
 
+  setTimeout(() => datasetsPlugin.setOpacity(0), 8000)
+  setTimeout(() => datasetsPlugin.setOpacity(1), 10000)
   // TODO:
   // setTimeout(() => datasetsPlugin.setGlobal({ opacityMode: 'multiply' }), 2000)
 }

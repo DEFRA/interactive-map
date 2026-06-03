@@ -203,18 +203,32 @@ export default class MaplibreLayerAdapter {
   }
 
   /**
-   * Set opacity for all layers belonging to a dataset.
-   * Uses setPaintProperty directly — safe to call on every slider tick.
+   * Apply opacity for all layers with datasetId
    * @param {string} datasetId
    */
   applyDatasetOpacity (datasetId) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
-    if (!registryDataset) {
-      return
+    if (registryDataset) {
+      this._applyRegistryDatasetOpacity(registryDataset)
     }
+  }
+
+  /**
+   * Apply opacity for all layers belonging to a registryDataset.
+   * Uses setPaintProperty directly — safe to call on every slider tick.
+   * @param {Object} registryDataset
+   */
+  _applyRegistryDatasetOpacity (registryDataset) {
     registryDataset.getLayersWithOpacity().forEach(({ layerIds, opacity }) => {
       layerIds.forEach(layerId => this._setPaintOpacity(layerId, opacity))
     })
+  }
+
+  /**
+   * Apply opacity for all layers
+   */
+  applyGlobalOpacity () {
+    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetOpacity(registryDataset))
   }
 
   /**
