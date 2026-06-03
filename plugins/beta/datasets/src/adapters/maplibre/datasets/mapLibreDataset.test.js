@@ -104,6 +104,37 @@ describe('MapLibreDataset', () => {
     })
   })
 
+  describe('getLayersWithOpacity', () => {
+    it('returns layerIds and opacity for a sublayer with no sublayers', () => {
+      const dataset = datasetRegistry.getDataset('existing-fields')
+      expect(dataset.getLayersWithOpacity()).toEqual([{ layerIds: ['existing-fields', 'existing-fields-stroke'], opacity: 1 }])
+    })
+
+    it('returns layerIds and opacity for a sublayer', () => {
+      const dataset = datasetRegistry.getDataset('land-covers-130-131')
+      const result = dataset.getLayersWithOpacity()
+      expect(result).toEqual([{ layerIds: ['land-covers-130-131', 'land-covers-130-131-stroke'], opacity: 1 }])
+    })
+
+    it('returns layerIds and opacity for a sublayer with sublayers with specific opacity', () => {
+      const parentDef = { id: 'parent-ds', sublayerIds: ['parent-ds-sub'] }
+      const subDef = { id: 'parent-ds-sub', parentId: 'parent-ds', style: { stroke: '#ff0000', fill: '#00ff00', opacity: 0.75 } }
+      datasetRegistry.attach({ 'parent-ds': parentDef, 'parent-ds-sub': subDef })
+      const dataset = datasetRegistry.getDataset('parent-ds')
+      const result = dataset.getLayersWithOpacity()
+      expect(result).toEqual([{ layerIds: ['parent-ds-sub', 'parent-ds-sub-stroke'], opacity: 0.75 }])
+    })
+
+    it('returns layerIds and opacity for all sublayers', () => {
+      const dataset = datasetRegistry.getDataset('historic-monuments')
+      expect(dataset.getLayersWithOpacity()).toEqual([
+        { layerIds: ['historic-monuments-prehistoric'], opacity: 1 },
+        { layerIds: ['historic-monuments-roman'], opacity: 1 },
+        { layerIds: ['historic-monuments-medieval'], opacity: 1 }
+      ])
+    })
+  })
+
   describe('fillLayerId, strokeLayerId, symbolLayerId — hasSublayers returns null', () => {
     it('fillLayerId returns null for a dataset with sublayers', () => {
       const dataset = datasetRegistry.getDataset('land-covers')
@@ -129,8 +160,7 @@ describe('MapLibreDataset', () => {
 
     it('returns an entry with layerIds and filter when the dataset has hidden features', () => {
       const dataset = datasetRegistry.getDataset('land-covers-130-131')
-      const result = dataset.getLayersWithFilters()
-      expect(result).toEqual([{
+      expect(dataset.getLayersWithFilters()).toEqual([{
         layerIds: ['land-covers-130-131', 'land-covers-130-131-stroke'],
         filter: ['all',
           ['!', ['in', ['to-string', ['get', 'id']], ['literal', ['42']]]],
@@ -140,12 +170,13 @@ describe('MapLibreDataset', () => {
 
     it('includes sublayer entries when a sublayer has hidden features', () => {
       const parentDef = { id: 'parent-ds', sublayerIds: ['parent-ds-sub'] }
-      const subDef = { id: 'parent-ds-sub', parentId: 'parent-ds', hiddenFeatures: [7], style: { stroke: '#ff0000' } }
+      const subDef = { id: 'parent-ds-sub', parentId: 'parent-ds', hiddenFeatures: [7], style: { stroke: '#ff0000', fill: '#00ff00' } }
       datasetRegistry.attach({ 'parent-ds': parentDef, 'parent-ds-sub': subDef })
       const dataset = datasetRegistry.getDataset('parent-ds')
-      const result = dataset.getLayersWithFilters()
-      expect(result).toHaveLength(1)
-      expect(result[0].layerIds).toContain('parent-ds-sub')
+      expect(dataset.getLayersWithFilters()).toEqual([{
+        layerIds: ['parent-ds-sub', 'parent-ds-sub-stroke'],
+        filter: ['!', ['in', ['to-string', ['id']], ['literal', ['7']]]]
+      }])
     })
 
     it('returns an empty array when sublayers exist but none have hidden features', () => {

@@ -48,22 +48,32 @@ export class MapLibreDataset extends Dataset {
     return [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
   }
 
-  getLayersWithFilters () {
+  getLayersWithValue (valueName, condition = false) {
     const response = []
-    if (this.hasHiddenFeatures) {
+    if (condition === false || this[condition]) {
       const layerIds = [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
-      const { filter } = this
-      response.push({ layerIds, filter })
+      if (layerIds.length) {
+        const value = this[valueName]
+        response.push({ layerIds, [valueName]: value })
+      }
     }
 
     if (this.hasSublayers) {
       this.sublayers.forEach((sublayer) => {
-        if (sublayer.hasHiddenFeatures) {
-          response.push(sublayer.getLayersWithFilters()[0])
+        if (condition === false || sublayer[condition]) {
+          response.push(sublayer.getLayersWithValue(valueName)[0])
         }
       })
     }
     return response
+  }
+
+  getLayersWithOpacity () {
+    return this.getLayersWithValue('opacity')
+  }
+
+  getLayersWithFilters () {
+    return this.getLayersWithValue('filter', 'hasHiddenFeatures')
   }
 
   get sourceId () {

@@ -11,9 +11,6 @@ const globalState = {
   visible: true
 }
 describe('Dataset class', () => {
-  beforeEach(() => {
-    attachGlobalState(globalState)
-  })
   describe('isSublayer', () => {
     it('returns false for a top-level dataset', () => {
       const dataset = datasetRegistry.getDataset('land-covers')
