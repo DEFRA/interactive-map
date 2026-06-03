@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { attachEvents } from '../events.js'
 
-export function useAttachEvents ({ pluginState, appState, mapState, buttonConfig, eventBus, handleInteraction, closeApp }) {
+export function useAttachEvents ({ pluginState, appState, mapState, buttonConfig, eventBus, handleInteraction }) {
   // Refs updated synchronously each render — keeps callbacks fresh without re-attaching events
   const handleInteractionRef = useRef(handleInteraction)
   handleInteractionRef.current = handleInteraction
@@ -37,10 +37,9 @@ export function useAttachEvents ({ pluginState, appState, mapState, buttonConfig
       events: EVENTS,
       eventBus,
       handleInteraction: (event) => handleInteractionRef.current(event),
-      clickReadyRef,
-      closeApp
+      clickReadyRef
     })
 
     return cleanupEvents
-  }, [pluginState.enabled, buttonConfig, eventBus, closeApp])
+  }, [pluginState.enabled, buttonConfig, eventBus])
 }

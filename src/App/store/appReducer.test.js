@@ -70,6 +70,43 @@ describe('initialState', () => {
     expect(result.prefersReducedMotion).toBe(false)
   })
 
+  test('pre-disables journeyContinue when hasBackAndContinue is true', () => {
+    mockMedia()
+    mockPanels({})
+    mockFullscreen(false)
+
+    const config = {
+      behaviour: 'buttonFirst',
+      initialBreakpoint: 'md',
+      initialInterfaceType: 'desktop',
+      appColorScheme: 'light',
+      autoColorScheme: false,
+      hasBackAndContinue: true,
+      ...createMockRegistries()
+    }
+
+    const result = initialState(config)
+    expect(result.disabledButtons.has('journeyContinue')).toBe(true)
+  })
+
+  test('does not pre-disable journeyContinue when hasBackAndContinue is false', () => {
+    mockMedia()
+    mockPanels({})
+    mockFullscreen(false)
+
+    const config = {
+      behaviour: 'buttonFirst',
+      initialBreakpoint: 'md',
+      initialInterfaceType: 'desktop',
+      appColorScheme: 'light',
+      autoColorScheme: false,
+      ...createMockRegistries()
+    }
+
+    const result = initialState(config)
+    expect(result.disabledButtons.has('journeyContinue')).toBe(false)
+  })
+
   test('defaults mode to null when missing', () => {
     mockMedia({ prefersReducedMotion: false })
     mockPanels({})

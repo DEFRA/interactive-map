@@ -177,14 +177,6 @@ interactiveMap.on('draw:cancelled', function (e) {
 	interactPlugin.enable()
 })
 
-interactiveMap.on('interact:done', function (e) {
-	console.log('interact:done', e)
-})
-
-interactiveMap.on('interact:cancel', function (e) {
-	console.log('interact:cancel', e)
-	interactPlugin.enable()
-})
 
 interactiveMap.on('interact:selectionchange', function (e) {
 	const singleFeature = e.selectedFeatures.length === 1

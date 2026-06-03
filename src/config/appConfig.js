@@ -17,9 +17,34 @@ const exitButtonSlots = {
   showLabel: false
 }
 
+const journeyBackSlots = { slot: 'actions', showLabel: true }
+const journeyContinueSlots = { slot: 'actions', showLabel: true, order: 10 }
+
 // Default app buttons, panels and icons
 export const defaultAppConfig = {
   buttons: [{
+    id: 'journeyBack',
+    label: 'Back',
+    variant: 'tertiary',
+    onClick: (_e, { appConfig, services }) =>
+      appConfig.behaviour === 'mapOnly' ? globalThis.history.back() : services.closeApp(),
+    excludeWhen: ({ appConfig, appState }) =>
+      !appConfig.hasBackAndContinue ||
+      !appState.isFullscreen ||
+      (appConfig.behaviour === 'mapOnly' && globalThis.history.length <= 1),
+    mobile: journeyBackSlots,
+    tablet: journeyBackSlots,
+    desktop: journeyBackSlots
+  }, {
+    id: 'journeyContinue',
+    label: 'Continue',
+    variant: 'primary',
+    onClick: (_e, { services }) => services.eventBus.emit('app:continue'),
+    excludeWhen: ({ appConfig, appState }) => !appConfig.hasBackAndContinue || !appState.isFullscreen,
+    mobile: journeyContinueSlots,
+    tablet: journeyContinueSlots,
+    desktop: journeyContinueSlots
+  }, {
     id: 'exit',
     label: 'Exit',
     iconId: 'close',

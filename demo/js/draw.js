@@ -108,6 +108,7 @@ const interactiveMap = new InteractiveMap('map', {
 	readMapText: true,
 	// enableFullscreen: true,
 	// hasExitButton: true,
+	hasBackAndContinue: true,
 	// markers: [{
 	// 	id: 'location',
 	// 	coords: [-2.9592267, 54.9045977],
@@ -145,6 +146,7 @@ const interactiveMap = new InteractiveMap('map', {
 interactiveMap.on('app:ready', function (e) {
 	// console.log('app:ready')
 })
+
 
 interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
@@ -269,14 +271,6 @@ interactiveMap.on('draw:cancelled', function (e) {
 	interactPlugin.enable()
 })
 
-interactiveMap.on('interact:done', function (e) {
-	console.log('interact:done', e)
-})
-
-interactiveMap.on('interact:cancel', function (e) {
-	console.log('interact:cancel', e)
-	interactPlugin.enable()
-})
 
 interactiveMap.on('interact:selectionchange', function (e) {
 	const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
@@ -289,6 +283,7 @@ interactiveMap.on('interact:selectionchange', function (e) {
 	interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
 	interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
 	interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
+	interactiveMap.setContinueEnabled(e.selectedFeatures.length > 0)
 })
 
 interactiveMap.on('interact:markerchange', function (e) {
@@ -310,4 +305,8 @@ interactiveMap.on('search:match', function (e) {
 // Hide selected feature
 interactiveMap.on('search:clear', function (e) {
 	// console.log('Search clear')
+})
+
+interactiveMap.on('app:continue', function () {
+	console.log('app:continue')
 })

@@ -351,14 +351,6 @@ interactiveMap.on('datasets:ready', function () {
 // Ref to the selected features
 let selectedFeatureIds = []
 
-interactiveMap.on('interact:done', function (e) {
-	console.log('interact:done', e)
-})
-
-interactiveMap.on('interact:cancel', function (e) {
-	console.log('interact:cancel', e)
-	interactPlugin.enable()
-})
 
 interactiveMap.on('interact:selectionchange', function (e) {
 	const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']

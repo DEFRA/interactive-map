@@ -21,7 +21,6 @@ beforeEach(() => {
     mapState: { mapStyle: {} },
     buttonConfig: {},
     eventBus: { emit: jest.fn() },
-    closeApp: jest.fn(),
     handleInteraction: handleInteractionMock
   }
 })
@@ -36,8 +35,7 @@ describe('useAttachEvents', () => {
       mapState: props.mapState,
       buttonConfig: props.buttonConfig,
       events: EVENTS,
-      eventBus: props.eventBus,
-      closeApp: props.closeApp
+      eventBus: props.eventBus
     }))
 
     const { getAppState, getPluginState, handleInteraction } = attachEvents.mock.calls.at(-1)[0]

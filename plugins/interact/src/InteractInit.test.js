@@ -29,7 +29,7 @@ beforeEach(() => {
   props = {
     appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: document.createElement('div') }, appContainerRef: { current: document.createElement('div') } } },
     mapState: { crossHair: { fixAtCenter: jest.fn(), hide: jest.fn() }, mapStyle: {} },
-    services: { eventBus: { emit: jest.fn() }, closeApp: jest.fn() },
+    services: { eventBus: { emit: jest.fn() } },
     buttonConfig: {},
     mapProvider: { setHoverCursor: jest.fn() },
     pluginState: {

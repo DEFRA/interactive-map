@@ -28,7 +28,7 @@ export const InteractInit = ({
   pluginState
 }) => {
   const { dispatch, enabled, selectedFeatures, interactionModes, layers } = pluginState
-  const { eventBus, closeApp } = services
+  const { eventBus } = services
   const { crossHair, mapStyle, markers } = mapState
 
   const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
@@ -66,7 +66,7 @@ export const InteractInit = ({
 
   useCrossHairVisibility({ crossHair, enabled, selectMarkerOnly, appState })
 
-  useAttachEvents({ pluginState, appState, mapState, buttonConfig, eventBus, handleInteraction, closeApp })
+  useAttachEvents({ pluginState, appState, mapState, buttonConfig, eventBus, handleInteraction })
 
   return null
 }

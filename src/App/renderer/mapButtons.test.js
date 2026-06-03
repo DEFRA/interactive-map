@@ -1,7 +1,9 @@
 import React from 'react'
-import { mapButtons, getMatchingButtons, renderButton, resolveGroupName, resolveGroupLabel, resolveGroupOrder } from './mapButtons.js'
+import { mapButtons, getMatchingButtons, applySlotExclusivity, renderButton, resolveGroupName, resolveGroupLabel, resolveGroupOrder } from './mapButtons.js'
+import { logger } from '../../services/logger.js'
 import { getPanelConfig } from '../registry/panelRegistry.js'
 
+jest.mock('../../services/logger.js', () => ({ logger: { warn: jest.fn() } }))
 jest.mock('../registry/buttonRegistry.js')
 jest.mock('../registry/panelRegistry.js')
 jest.mock('../components/MapButton/MapButton.jsx', () => ({
@@ -348,6 +350,49 @@ describe('mapButtons module', () => {
     it('falls back to order 0 when order is not specified in breakpoint config', () => {
       appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header' } } })
       expect(map()[0].order).toBe(0)
+    })
+
+    it('filters to exclusive plugin when one plugin has a visible exclusiveSlot button', () => {
+      appState.buttonConfig = {
+        drawCancel: { ...baseBtn, pluginId: 'draw', exclusiveSlot: true },
+        journeyBack: { ...baseBtn }
+      }
+      const matching = [['drawCancel', appState.buttonConfig.drawCancel], ['journeyBack', appState.buttonConfig.journeyBack]]
+      const result = applySlotExclusivity(matching, appState)
+      expect(result).toHaveLength(1)
+      expect(result[0][0]).toBe('drawCancel')
+    })
+
+    it('returns all buttons when no exclusiveSlot buttons are visible', () => {
+      appState.buttonConfig = {
+        drawCancel: { ...baseBtn, pluginId: 'draw', exclusiveSlot: true },
+        journeyBack: { ...baseBtn }
+      }
+      appState.hiddenButtons = new Set(['drawCancel'])
+      const matching = [['drawCancel', appState.buttonConfig.drawCancel], ['journeyBack', appState.buttonConfig.journeyBack]]
+      const result = applySlotExclusivity(matching, appState)
+      expect(result).toHaveLength(2)
+    })
+
+    it('returns all buttons when no buttons have exclusiveSlot', () => {
+      const matching = [['b1', { ...baseBtn }], ['b2', { ...baseBtn }]]
+      expect(applySlotExclusivity(matching, appState)).toHaveLength(2)
+    })
+
+    it('ignores exclusiveSlot on buttons without a pluginId', () => {
+      const matching = [['hostBtn', { ...baseBtn, exclusiveSlot: true }]]
+      expect(applySlotExclusivity(matching, appState)).toHaveLength(1)
+    })
+
+    it('warns and returns all when multiple plugins claim exclusivity', () => {
+      const matching = [
+        ['drawCancel', { ...baseBtn, pluginId: 'draw', exclusiveSlot: true }],
+        ['otherBtn', { ...baseBtn, pluginId: 'other', exclusiveSlot: true }]
+      ]
+      const result = applySlotExclusivity(matching, appState)
+      expect(result).toHaveLength(2)
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('draw'))
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('other'))
     })
 
     it('excludes menu items from slot rendering even when they have a matching slot', () => {
