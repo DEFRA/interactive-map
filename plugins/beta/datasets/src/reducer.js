@@ -20,6 +20,7 @@ const initialState = {
     applyStyle: [],
     applyDatasetVisibility: [],
     applyDatasetOpacity: [],
+    applyGlobalOpacity: [],
     addDataset: [],
     applyFeatureFilter: []
   }
@@ -180,8 +181,10 @@ const setOpacity = (state, payload) => {
 
 const setGlobalOpacity = (state, payload) => {
   const { opacity } = payload
+  const applyGlobalOpacity = [...state.layerAdapterActions.applyDatasetOpacity, []]
   return {
     ...state,
+    layerAdapterActions: { ...state.layerAdapterActions, applyGlobalOpacity },
     globals: { ...state.globals, opacity }
   }
 }

@@ -85,6 +85,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useLayerAdapterActions('applyStyle', dispatch, pluginState, [pluginState.layerAdapterActions.applyStyle])
   useLayerAdapterActions('applyDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.applyDatasetVisibility])
   useLayerAdapterActions('applyDatasetOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.applyDatasetOpacity])
+  useLayerAdapterActions('applyGlobalOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.applyGlobalOpacity])
   useLayerAdapterActions('addDataset', dispatch, pluginState, [pluginState.layerAdapterActions.addDataset])
   useLayerAdapterActions('applyFeatureFilter', dispatch, pluginState, [pluginState.layerAdapterActions.applyFeatureFilter])
 
