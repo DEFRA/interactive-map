@@ -12,6 +12,7 @@ import { getStyle } from './api/getStyle.js'
 import { setOpacity } from './api/setOpacity.js'
 import { getOpacity } from './api/getOpacity.js'
 import { setData } from './api/setData.js'
+import { setGlobals } from './api/setGlobals.js'
 
 export const manifest = {
   InitComponent: DatasetsInit,
@@ -118,6 +119,7 @@ export const manifest = {
     getStyle,
     setOpacity,
     getOpacity,
-    setData
+    setData,
+    setGlobals
   }
 }

@@ -18,7 +18,7 @@ export const createDatasets = ({
   const dynamicSources = new Map()
 
   if (pluginConfig.globals) {
-    dispatch({ type: 'INITIALISE_GLOBAL_STATE', payload: pluginConfig.globals })
+    dispatch({ type: 'SET_GLOBAL_STATE', payload: pluginConfig.globals })
   }
 
   // Initialise all datasets via the adapter, then set up dynamic sources

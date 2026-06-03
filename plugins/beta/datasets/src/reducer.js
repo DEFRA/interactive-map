@@ -34,9 +34,13 @@ const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') =
   return true
 }
 
-const initialiseGlobalState = (state, payload) => {
+const setGlobalState = (state, payload) => {
+  // For now we only have opacityMode, but if we add more global state
+  // properties we may not require applyGlobalOpacity to be triggered here.
+  const applyGlobalOpacity = [...state.layerAdapterActions.applyGlobalOpacity, []]
   return {
     ...state,
+    layerAdapterActions: { ...state.layerAdapterActions, applyGlobalOpacity },
     globals: { ...state.globals, ...payload }
   }
 }
@@ -181,7 +185,7 @@ const setOpacity = (state, payload) => {
 
 const setGlobalOpacity = (state, payload) => {
   const { opacity } = payload
-  const applyGlobalOpacity = [...state.layerAdapterActions.applyDatasetOpacity, []]
+  const applyGlobalOpacity = [...state.layerAdapterActions.applyGlobalOpacity, []]
   return {
     ...state,
     layerAdapterActions: { ...state.layerAdapterActions, applyGlobalOpacity },
@@ -204,7 +208,7 @@ const actions = {
   SHOW_FEATURES: showFeatures,
   SET_LAYER_ADAPTER: setLayerAdapter,
   SET_LAYER_ADAPTER_ACTIONS: setLayerAdapterActions,
-  INITIALISE_GLOBAL_STATE: initialiseGlobalState
+  SET_GLOBAL_STATE: setGlobalState
 }
 
 export {

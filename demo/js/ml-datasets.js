@@ -301,7 +301,7 @@ const hedgeControlDataset = {
 const datasetsPlugin = createDatasetsPlugin({
   layerAdapter: maplibreLayerAdapter,
   globals: {
-    opacityMode: 'multiply', // 'dataset', 'global' or 'multiply'
+    opacityMode: 'dataset', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,
     visible: true
   },
@@ -396,15 +396,12 @@ const testFeatureVisibility = () => {
 const testSetOpacity = () => {
   setTimeout(() => datasetsPlugin.setOpacity(0.8, { datasetId: 'land-covers' }), 500)
   setTimeout(() => datasetsPlugin.setOpacity(0.2, { datasetId: 'land-covers', sublayerId: '130-131' }), 2000)
-  // setTimeout(() => datasetsPlugin.setOpacity(0.8, { datasetId: 'land-covers', sublayerId: '130-131' }), 2000)
-  // setTimeout(() => datasetsPlugin.setOpacity(0.3, { datasetId: 'land-covers', sublayerId: '130-131' }), 2500)
   setTimeout(() => datasetsPlugin.setOpacity(0.97, { datasetId: 'land-covers' }), 4000)
-  // setTimeout(() => datasetsPlugin.setOpacity(1, { datasetId: 'land-covers', sublayerId: '130-131' }), 6000)
-
-  setTimeout(() => datasetsPlugin.setOpacity(0), 8000)
-  setTimeout(() => datasetsPlugin.setOpacity(1), 10000)
-  // TODO:
-  // setTimeout(() => datasetsPlugin.setGlobal({ opacityMode: 'multiply' }), 2000)
+  setTimeout(() => datasetsPlugin.setOpacity(0), 6000)
+  setTimeout(() => datasetsPlugin.setGlobals({ opacityMode: 'global' }), 7000)
+  setTimeout(() => datasetsPlugin.setOpacity(0.8), 7500)
+  setTimeout(() => datasetsPlugin.setGlobals({ opacityMode: 'dataset' }), 8000)
+  setTimeout(() => datasetsPlugin.setGlobals({ opacityMode: 'multiply' }), 9000)
 }
 
 const testSetStyle = () => {
