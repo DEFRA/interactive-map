@@ -306,7 +306,11 @@ export default class MaplibreLayerAdapter {
    */
   _applyRegistryDatasetVisibility (registryDataset) {
     registryDataset.getLayersWithVisibility().forEach(({ layerIds, visibility }) => {
-      layerIds.forEach(layerId => this._map.setLayoutProperty(layerId, 'visibility', visibility))
+      layerIds.forEach(layerId => {
+        if (this._map.getLayer(layerId)) {
+          this._map.setLayoutProperty(layerId, 'visibility', visibility)
+        }
+      })
     })
   }
 
