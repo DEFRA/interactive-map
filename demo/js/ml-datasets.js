@@ -380,7 +380,7 @@ const testVisibility = () => {
 
 const testGlobalVisibility = () => {
   setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 1000)
-  setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 2000)
+  // setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 10000)
   // setTimeout(() => datasetsPlugin.setDatasetVisibility(true, { datasetId: 'hedge-control' }), 500)
   // setTimeout(() => datasetsPlugin.setStyle({ stroke: { outdoor: '#0000ff' }, }, { datasetId: 'hedge-control' }), 2000)
 }
@@ -472,10 +472,10 @@ interactiveMap.on('datasets:ready', function () {
   // testGetters()
   // testInvalidApiCalls()
   // testFeatureVisibility()
-  testSetOpacity()
+  // testSetOpacity()
   // testSetStyle()
   // testVisibility()
-  // testGlobalVisibility()
+  testGlobalVisibility()
   // testRemoveAndAddDataset()
   // testSetData()
 })

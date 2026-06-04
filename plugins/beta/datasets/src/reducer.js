@@ -19,6 +19,7 @@ const initialState = {
   layerAdapterActions: {
     applyStyle: [],
     applyDatasetVisibility: [],
+    applyGlobalVisibility: [],
     applyDatasetOpacity: [],
     applyGlobalOpacity: [],
     addDataset: [],
@@ -108,10 +109,12 @@ const setDatasetVisibility = (state, payload) => {
 }
 
 const setGlobalVisibility = (state, payload) => {
-  const { visibility } = payload
+  const { visible } = payload
+  const applyGlobalVisibility = [...state.layerAdapterActions.applyGlobalVisibility, [visible]]
   return {
     ...state,
-    globals: { ...state.globals, visible: visibility !== 'hidden' }
+    layerAdapterActions: { ...state.layerAdapterActions, applyGlobalVisibility },
+    globals: { ...state.globals, visible }
   }
 }
 

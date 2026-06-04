@@ -289,26 +289,32 @@ export default class MaplibreLayerAdapter {
     })
   }
 
+  /**
+   * Apply visibility for all layers with datasetId
+   * @param {string} datasetId
+   */
   applyDatasetVisibility (datasetId) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
-    const style = this._map.getStyle()
-    if (!style?.layers) {
-      return
+    if (registryDataset) {
+      this._applyRegistryDatasetVisibility(registryDataset)
     }
-    // Covers base fill layer (datasetId) and all suffixed layers
-    // (-stroke, -${sublayerId}, -${sublayerId}-stroke) without needing the dataset object.
-    if (registryDataset.hasSublayers) {
-      const { sublayerIds } = registryDataset
-      sublayerIds.forEach(sublayerId => { this.applyDatasetVisibility(sublayerId) })
-    } else {
-      const { visibility } = registryDataset
-      const datasetId = registryDataset.id
-      style.layers.filter(layer =>
-        layer.id === datasetId || layer.id.startsWith(`${datasetId}-`)
-      ).forEach(layer => {
-        this._map.setLayoutProperty(layer.id, 'visibility', visibility)
-      })
-    }
+  }
+
+  /**
+   * Apply visibility for all layers belonging to a registryDataset.
+   * @param {Object} registryDataset
+   */
+  _applyRegistryDatasetVisibility (registryDataset) {
+    registryDataset.getLayersWithVisibility().forEach(({ layerIds, visibility }) => {
+      layerIds.forEach(layerId => this._map.setLayoutProperty(layerId, 'visibility', visibility))
+    })
+  }
+
+  /**
+   * Apply visibility for all layers
+   */
+  applyGlobalVisibility () {
+    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
   }
 
   _applyFeatureFilter (registryDataset) {

@@ -2,7 +2,7 @@ import { datasetRegistry } from './datasetRegistry.js'
 import { hasCustomVisualStyle } from '../defaults.js'
 import { hasPattern } from '../../../../../src/utils/patternUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
-import { calculateOpacity } from './globalDataset.js'
+import { calculateOpacity, getGlobalVisibility } from './globalDataset.js'
 
 export class Dataset {
   constructor (dataset) {
@@ -25,6 +25,7 @@ export class Dataset {
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
   get showInKey () { return this._datasetDefinition.showInKey || this.parent?.showInKey || false }
   get groupLabel () { return this._datasetDefinition.groupLabel }
+
   get opacity () {
     const myOpacity = this.style?.opacity
     const parentOpacity = this.parent?.style?.opacity
@@ -54,7 +55,7 @@ export class Dataset {
     if (this.isSublayer) {
       return this._datasetDefinition.visible && (this.parent?.visible)
     }
-    return this._datasetDefinition.visible
+    return this._datasetDefinition.visible && getGlobalVisibility()
   }
 
   get symbolAnchor () {

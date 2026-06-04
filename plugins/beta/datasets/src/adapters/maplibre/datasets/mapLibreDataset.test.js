@@ -104,6 +104,20 @@ describe('MapLibreDataset', () => {
     })
   })
 
+  describe('getLayersWithVisibility', () => {
+    it('returns layerIds and visibility for a layer with sublayers', () => {
+      const registryDataset = datasetRegistry.getDataset('land-covers')
+      const layersWithVisibility = registryDataset.getLayersWithVisibility()
+      expect(layersWithVisibility).toEqual([
+        { layerIds: ['land-covers-130-131', 'land-covers-130-131-stroke'], visibility: 'visible' },
+        { layerIds: ['land-covers-332', 'land-covers-332-stroke'], visibility: 'visible' },
+        { layerIds: ['land-covers-110', 'land-covers-110-stroke'], visibility: 'visible' },
+        { layerIds: ['land-covers-379', 'land-covers-379-stroke'], visibility: 'none' },
+        { layerIds: ['land-covers-other', 'land-covers-other-stroke'], visibility: 'visible' }
+      ])
+    })
+  })
+
   describe('getLayersWithOpacity', () => {
     it('returns layerIds and opacity for a sublayer with no sublayers', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')

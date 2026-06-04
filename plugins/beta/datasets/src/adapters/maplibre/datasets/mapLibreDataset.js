@@ -68,6 +68,10 @@ export class MapLibreDataset extends Dataset {
     return response
   }
 
+  getLayersWithVisibility () {
+    return this.getLayersWithValue('visibility')
+  }
+
   getLayersWithOpacity () {
     return this.getLayersWithValue('opacity')
   }

@@ -32,3 +32,5 @@ export const calculateOpacity = (opacityValue, parentOpacityValue) => {
       return calculateLocalOpacity(opacityValue, parentOpacityValue)
   }
 }
+
+export const getGlobalVisibility = () => globalState.visible
