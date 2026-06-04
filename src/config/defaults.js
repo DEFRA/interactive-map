@@ -19,6 +19,7 @@ const defaults = {
   enableZoomControls: true,
   genericErrorText: 'There was a problem loading the map. Please try again later.',
   hasExitButton: false,
+  backAndContinue: null,
   hybridWidth: null, // Defaults to maxMobileWidth if not set
   keyboardHintText: '<span class="im-u-visually-hidden">Press </span><kbd>Shift</kbd> + <kbd>?</kbd> <span class="im-u-visually-hidden">to view </span>keyboard shortcuts',
   mapLabel: 'Interactive map application',

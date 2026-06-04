@@ -116,6 +116,22 @@ function resolveGroupOrder (group) {
   return group.order ?? 0
 }
 
+function applySlotExclusivity (matching, appState) {
+  const exclusivePluginIds = new Set()
+  for (const [id, config] of matching) {
+    if (config.exclusiveSlot && !appState.hiddenButtons.has(id) && config.pluginId) {
+      exclusivePluginIds.add(config.pluginId)
+    }
+  }
+  if (exclusivePluginIds.size === 0) { return matching }
+  if (exclusivePluginIds.size > 1) {
+    logger.warn(`Slot exclusivity conflict: plugins [${[...exclusivePluginIds].join(', ')}] are both claiming exclusive slot ownership. Showing all buttons.`)
+    return matching
+  }
+  const [exclusivePluginId] = exclusivePluginIds
+  return matching.filter(([_, config]) => config.pluginId === exclusivePluginId)
+}
+
 function renderButton ({ btn, appState, appConfig, evaluateProp }) {
   const [buttonId, config] = btn
   const bpConfig = config[appState.breakpoint] ?? {}
@@ -148,7 +164,8 @@ function renderButton ({ btn, appState, appConfig, evaluateProp }) {
 function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
   const { buttonConfig, breakpoint } = appState
 
-  const matching = getMatchingButtons({ appState, appConfig, buttonConfig, slot, evaluateProp })
+  const raw = getMatchingButtons({ appState, appConfig, buttonConfig, slot, evaluateProp })
+  const matching = applySlotExclusivity(raw, appState)
 
   if (!matching.length) {
     return []
@@ -243,6 +260,7 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
 export {
   mapButtons,
   getMatchingButtons,
+  applySlotExclusivity,
   renderButton,
   resolveGroupName,
   resolveGroupLabel,

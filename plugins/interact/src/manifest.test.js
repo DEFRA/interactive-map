@@ -18,7 +18,9 @@ describe('manifest', () => {
 
   it('defines buttons with correct ids', () => {
     const ids = manifest.buttons.map(b => b.id)
-    expect(ids).toEqual(expect.arrayContaining(['selectDone', 'selectAtTarget', 'selectCancel']))
+    expect(ids).toEqual(expect.arrayContaining(['selectAtTarget']))
+    expect(ids).not.toContain('selectDone')
+    expect(ids).not.toContain('selectCancel')
   })
 
   it('buttons have slots and showLabel', () => {
@@ -33,54 +35,12 @@ describe('manifest', () => {
   })
 
   it('button logic functions cover all branches', () => {
-    const done = manifest.buttons.find(b => b.id === 'selectDone')
     const atTarget = manifest.buttons.find(b => b.id === 'selectAtTarget')
-    const cancel = manifest.buttons.find(b => b.id === 'selectCancel')
-
-    // selectDone.excludeWhen
-    expect(done.excludeWhen({ appState: { isFullscreen: false }, pluginState: { enabled: true } })).toBe(true)
-    expect(done.excludeWhen({ appState: { isFullscreen: true }, pluginState: { enabled: true } })).toBe(false)
-
-    // selectDone.enableWhen
-    expect(done.enableWhen({
-      mapState: { markers: { items: [{ id: 'location' }] } },
-      pluginState: { selectionBounds: null }
-    })).toBe(true)
-    expect(done.enableWhen({
-      mapState: { markers: { items: [] } },
-      pluginState: { selectionBounds: null }
-    })).toBe(false)
-    expect(done.enableWhen({
-      mapState: { markers: { items: [] } },
-      pluginState: { selectionBounds: { sw: [0, 0], ne: [1, 1] } }
-    })).toBe(true)
 
     // selectAtTarget.hiddenWhen
     expect(atTarget.hiddenWhen({ appState: { interfaceType: 'pointer' }, pluginState: { enabled: true } })).toBe(true)
     expect(atTarget.hiddenWhen({ appState: { interfaceType: 'touch' }, pluginState: { enabled: true } })).toBe(false)
     expect(atTarget.hiddenWhen({ appState: { interfaceType: 'touch' }, pluginState: { enabled: false } })).toBe(true)
-
-    // selectCancel.hiddenWhen
-    expect(cancel.hiddenWhen({
-      appConfig: { behaviour: 'always' },
-      appState: { isFullscreen: true },
-      pluginState: { enabled: true }
-    })).toBe(true)
-    expect(cancel.hiddenWhen({
-      appConfig: { behaviour: 'hybrid' },
-      appState: { isFullscreen: true },
-      pluginState: { enabled: true }
-    })).toBe(false)
-    expect(cancel.hiddenWhen({
-      appConfig: { behaviour: 'hybrid' },
-      appState: { isFullscreen: false },
-      pluginState: { enabled: true }
-    })).toBe(true)
-    expect(cancel.hiddenWhen({
-      appConfig: { behaviour: 'hybrid' },
-      appState: { isFullscreen: true },
-      pluginState: { enabled: false }
-    })).toBe(true)
   })
 
   it('keyboardShortcuts array exists', () => {

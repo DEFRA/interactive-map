@@ -2,11 +2,10 @@ import { attachEvents } from './events.js'
 
 const MOCK_POINT = { x: 1, y: 2 }
 const MOCK_COORDS = [1, 2]
-const INTERACT_DONE = 'interact:done'
 
 const createParams = () => {
   const appState = { layoutRefs: { viewportRef: { current: document.body } }, disabledButtons: new Set() }
-  const pluginState = { dispatch: jest.fn(), selectionBounds: null, selectedFeatures: [], selectedMarkers: [], closeOnAction: true, multiSelect: false }
+  const pluginState = { dispatch: jest.fn(), selectionBounds: null, selectedFeatures: [], selectedMarkers: [], multiSelect: false }
   const clickReadyRef = { current: false }
   return {
     appState,
@@ -18,11 +17,10 @@ const createParams = () => {
       markers: { remove: jest.fn(), getMarker: jest.fn(() => null) },
       crossHair: { getDetail: jest.fn(() => ({ point: { x: 0, y: 0 }, coords: [0, 0] })) }
     },
-    buttonConfig: { selectDone: {}, selectAtTarget: {}, selectCancel: {} },
+    buttonConfig: { selectAtTarget: {} },
     events: { MAP_CLICK: 'map:click' },
     eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
-    handleInteraction: jest.fn(),
-    closeApp: jest.fn()
+    handleInteraction: jest.fn()
   }
 }
 
@@ -109,102 +107,6 @@ describe('attachEvents — click handling', () => {
   })
 })
 
-describe('attachEvents — button actions', () => {
-  let cleanup = null
-
-  beforeEach(() => { jest.useFakeTimers() })
-  afterEach(() => { cleanup?.(); jest.useRealTimers() })
-
-  it('selectDone emits correct payload and respects closeOnAction', () => {
-    const params = createParams()
-    cleanup = attachEvents(params)
-
-    params.mapState.markers.getMarker.mockReturnValue({ coords: MOCK_COORDS })
-    params.buttonConfig.selectDone.onClick()
-    expect(params.closeApp).toHaveBeenCalled()
-
-    params.closeApp.mockClear()
-    params.pluginState.closeOnAction = false
-    params.buttonConfig.selectDone.onClick()
-    expect(params.closeApp).not.toHaveBeenCalled()
-  })
-
-  it('selectDone emits selectedFeatures and selectionBounds when no marker', () => {
-    const params = createParams()
-    cleanup = attachEvents(params)
-
-    params.pluginState.selectedFeatures = [{ id: 'f1' }]
-    params.pluginState.selectionBounds = { sw: [0, 0], ne: [1, 1] }
-    params.buttonConfig.selectDone.onClick()
-
-    expect(params.eventBus.emit).toHaveBeenCalledWith(INTERACT_DONE, {
-      selectedFeatures: [{ id: 'f1' }],
-      selectionBounds: { sw: [0, 0], ne: [1, 1] }
-    })
-  })
-
-  it('selectDone includes selectedMarkers in payload when present', () => {
-    const params = createParams()
-    cleanup = attachEvents(params)
-
-    params.pluginState.selectedMarkers = ['m1', 'm2']
-    params.buttonConfig.selectDone.onClick()
-
-    expect(params.eventBus.emit).toHaveBeenCalledWith(INTERACT_DONE,
-      expect.objectContaining({ selectedMarkers: ['m1', 'm2'] })
-    )
-  })
-
-  it('selectDone omits selectedMarkers from payload when empty', () => {
-    const params = createParams()
-    cleanup = attachEvents(params)
-
-    params.buttonConfig.selectDone.onClick()
-
-    const payload = params.eventBus.emit.mock.calls.find(c => c[0] === INTERACT_DONE)[1]
-    expect(payload).not.toHaveProperty('selectedMarkers')
-  })
-
-  it('does not emit or closeApp if selectDone button is disabled', () => {
-    const params = createParams()
-    cleanup = attachEvents(params)
-
-    params.appState.disabledButtons.add('selectDone')
-    params.buttonConfig.selectDone.onClick()
-
-    expect(params.eventBus.emit).not.toHaveBeenCalled()
-    expect(params.closeApp).not.toHaveBeenCalled()
-  })
-
-  it('selectCancel emits cancel and respects closeOnAction', () => {
-    const params = createParams()
-    cleanup = attachEvents(params)
-
-    params.buttonConfig.selectCancel.onClick()
-    expect(params.closeApp).toHaveBeenCalled()
-
-    cleanup()
-    const params2 = createParams()
-    cleanup = attachEvents(params2)
-    params2.pluginState.closeOnAction = false
-    params2.buttonConfig.selectCancel.onClick()
-    expect(params2.closeApp).not.toHaveBeenCalled()
-  })
-
-  it('respects default closeOnAction when value is nullish', () => {
-    const params = createParams()
-    params.pluginState.closeOnAction = null
-    cleanup = attachEvents(params)
-
-    params.buttonConfig.selectDone.onClick()
-    expect(params.closeApp).toHaveBeenCalledTimes(1)
-
-    params.closeApp.mockClear()
-    params.buttonConfig.selectCancel.onClick()
-    expect(params.closeApp).toHaveBeenCalledTimes(1)
-  })
-})
-
 describe('attachEvents — programmatic selection', () => {
   let cleanup = null
 
@@ -232,7 +134,7 @@ describe('attachEvents — cleanup', () => {
     const params = createParams()
     const cleanup = attachEvents(params)
     cleanup()
-    Object.values(params.buttonConfig).forEach(btn => expect(btn.onClick).toBeNull())
+    expect(params.buttonConfig.selectAtTarget.onClick).toBeNull()
     jest.useRealTimers()
   })
 })

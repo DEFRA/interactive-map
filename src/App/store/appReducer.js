@@ -40,7 +40,7 @@ export const initialState = (config) => {
     mode: mode || null,
     previousMode: null,
     safeZoneInset: null,
-    disabledButtons: new Set(),
+    disabledButtons: config.backAndContinue?.continueLabel ? new Set(['journeyContinue']) : new Set(),
     hiddenButtons: new Set(),
     pressedButtons: new Set(),
     expandedButtons: new Set(),

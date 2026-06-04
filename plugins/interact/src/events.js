@@ -1,10 +1,3 @@
-const buildDonePayload = (coords, selectedFeatures, selectedMarkers, selectionBounds) => ({
-  ...(coords && { coords }),
-  ...(!coords && selectedFeatures && { selectedFeatures }),
-  ...(!coords && selectedMarkers?.length && { selectedMarkers }),
-  ...(!coords && selectionBounds && { selectionBounds })
-})
-
 // Helper for feature toggling logic
 const createFeatureHandler = (mapState, getPluginState) => (args, addToExisting) => {
   const pluginState = getPluginState()
@@ -39,30 +32,14 @@ export function attachEvents ({
   events,
   eventBus,
   handleInteraction,
-  clickReadyRef,
-  closeApp
+  clickReadyRef
 }) {
-  const { selectDone, selectAtTarget, selectCancel } = buttonConfig
+  const { selectAtTarget } = buttonConfig
 
   const handleSelectAtTarget = () => handleInteraction(mapState.crossHair.getDetail())
   const handleMapClick = (mapEvent) => { if (clickReadyRef.current) { handleInteraction(mapEvent) } }
 
   const { handleKeydown, handleKeyup } = createKeyboardHandlers(getAppState().layoutRefs.viewportRef, handleSelectAtTarget)
-
-  const handleSelectDone = () => {
-    const pluginState = getPluginState()
-    const marker = mapState.markers.getMarker('location')
-    const { coords } = marker || {}
-    const { selectionBounds, selectedFeatures, selectedMarkers } = pluginState
-    if (getAppState().disabledButtons.has('selectDone')) { return }
-    eventBus.emit('interact:done', buildDonePayload(coords, selectedFeatures, selectedMarkers, selectionBounds))
-    if (pluginState.closeOnAction ?? true) { closeApp() }
-  }
-
-  const handleSelectCancel = () => {
-    eventBus.emit('interact:cancel')
-    if (getPluginState().closeOnAction ?? true) { closeApp() }
-  }
 
   const toggleFeature = createFeatureHandler(mapState, getPluginState)
   const handleSelect = (args) => toggleFeature(args, true)
@@ -74,13 +51,9 @@ export function attachEvents ({
   eventBus.on('interact:selectFeature', handleSelect)
   eventBus.on('interact:unselectFeature', handleUnselect)
   selectAtTarget.onClick = handleSelectAtTarget
-  selectDone.onClick = handleSelectDone
-  selectCancel.onClick = handleSelectCancel
 
   return () => {
-    selectDone.onClick = null
     selectAtTarget.onClick = null
-    selectCancel.onClick = null
     document.removeEventListener('keydown', handleKeydown)
     document.removeEventListener('keyup', handleKeyup)
     eventBus.off(events.MAP_CLICK, handleMapClick)

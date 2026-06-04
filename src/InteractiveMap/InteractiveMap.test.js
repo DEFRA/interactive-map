@@ -563,6 +563,14 @@ describe('InteractiveMap — Public API Methods', () => {
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:togglebuttonstate', { id: 'btn-1', prop: 'disabled', value: true })
   })
 
+  it('setContinueEnabled enables and disables the journey continue button', () => {
+    map.setContinueEnabled(true)
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:togglebuttonstate', { id: 'journeyContinue', prop: 'disabled', value: false })
+
+    map.setContinueEnabled(false)
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:togglebuttonstate', { id: 'journeyContinue', prop: 'disabled', value: true })
+  })
+
   it('fitToBounds and setView emit correct events', () => {
     const bbox = [-0.489, 51.28, 0.236, 51.686]
     const center = [-0.1276, 51.5074]

@@ -190,3 +190,14 @@
 }
 
 // 5. Responsive tweaks
+
+.im-o-app--tablet, .im-o-app--desktop {
+    .im-c-map-button--journey-back,
+    .im-c-map-button--journey-continue,
+    .im-c-map-button--select-at-target,
+    .im-c-map-button--draw-cancel,
+    .im-c-map-button--draw-done,
+    .im-c-map-button--draw-add-point {
+        min-width: var(--action-button-min-width);
+    }
+}

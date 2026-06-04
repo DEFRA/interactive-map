@@ -15,6 +15,8 @@ describe('defaultAppConfig', () => {
   const buttons = defaultAppConfig.buttons
   const fullscreenBtn = buttons.find(b => b.id === 'fullscreen')
   const exitBtn = buttons.find(b => b.id === 'exit')
+  const journeyBackBtn = buttons.find(b => b.id === 'journeyBack')
+  const journeyContinueBtn = buttons.find(b => b.id === 'journeyContinue')
   const zoomInBtn = buttons.find(b => b.id === 'zoomIn')
   const zoomOutBtn = buttons.find(b => b.id === 'zoomOut')
 
@@ -47,6 +49,54 @@ describe('defaultAppConfig', () => {
     const servicesMock = { closeApp: jest.fn() }
     exitBtn.onClick({}, { services: servicesMock })
     expect(servicesMock.closeApp).toHaveBeenCalled()
+  })
+
+  // --- JOURNEY BACK BUTTON ---
+  it('covers all branches of journeyBack excludeWhen', () => {
+    const base = { appConfig: { backAndContinue: { backLabel: 'Back' }, behaviour: 'buttonFirst' }, appState: { isFullscreen: true } }
+    expect(journeyBackBtn.excludeWhen({ appConfig: { backAndContinue: null, behaviour: 'buttonFirst' }, appState: { isFullscreen: true } })).toBe(true)
+    expect(journeyBackBtn.excludeWhen({ appConfig: { backAndContinue: { backLabel: 'Back' }, behaviour: 'buttonFirst' }, appState: { isFullscreen: false } })).toBe(true)
+    expect(journeyBackBtn.excludeWhen({ appConfig: { backAndContinue: { backLabel: 'Back' }, behaviour: 'mapOnly' }, appState: { isFullscreen: true } })).toBe(globalThis.history.length <= 1)
+    expect(journeyBackBtn.excludeWhen(base)).toBe(false)
+  })
+
+  it('journeyBack onClick calls history.back for mapOnly and closeApp otherwise', () => {
+    const historySpy = jest.spyOn(globalThis.history, 'back').mockImplementation(() => {})
+    const servicesMock = { closeApp: jest.fn() }
+
+    journeyBackBtn.onClick({}, { appConfig: { behaviour: 'mapOnly' }, services: servicesMock })
+    expect(historySpy).toHaveBeenCalled()
+    expect(servicesMock.closeApp).not.toHaveBeenCalled()
+
+    journeyBackBtn.onClick({}, { appConfig: { behaviour: 'buttonFirst' }, services: servicesMock })
+    expect(servicesMock.closeApp).toHaveBeenCalled()
+
+    historySpy.mockRestore()
+  })
+
+  // --- JOURNEY CONTINUE BUTTON ---
+  it('covers all branches of journeyContinue excludeWhen', () => {
+    expect(journeyContinueBtn.excludeWhen({ appConfig: { backAndContinue: null }, appState: { isFullscreen: true } })).toBe(true)
+    expect(journeyContinueBtn.excludeWhen({ appConfig: { backAndContinue: { continueLabel: 'Continue' } }, appState: { isFullscreen: false } })).toBe(true)
+    expect(journeyContinueBtn.excludeWhen({ appConfig: { backAndContinue: { continueLabel: 'Continue' } }, appState: { isFullscreen: true } })).toBe(false)
+  })
+
+  it('journeyBack label returns backLabel from config', () => {
+    expect(journeyBackBtn.label({ appConfig: { backAndContinue: { backLabel: 'Back' } } })).toBe('Back')
+    expect(journeyBackBtn.label({ appConfig: { backAndContinue: null } })).toBeUndefined()
+  })
+
+  it('journeyContinue label returns continueLabel from config', () => {
+    expect(journeyContinueBtn.label({ appConfig: { backAndContinue: { continueLabel: 'Continue' } } })).toBe('Continue')
+    expect(journeyContinueBtn.label({ appConfig: { backAndContinue: null } })).toBeUndefined()
+  })
+
+  it('journeyContinue onClick emits app:continue with pluginStates and mapState', () => {
+    const eventBusMock = { emit: jest.fn() }
+    const pluginStates = { interact: { selectedFeatures: [] } }
+    const mapState = { zoom: 12, center: [-1.5, 53.0] }
+    journeyContinueBtn.onClick({}, { services: { eventBus: eventBusMock }, pluginStates, mapState })
+    expect(eventBusMock.emit).toHaveBeenCalledWith('app:continue', { pluginStates, mapState })
   })
 
   // --- FULLSCREEN BUTTON (Line 39 Coverage) ---

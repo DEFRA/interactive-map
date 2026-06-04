@@ -43,6 +43,7 @@
 
     // Action bar (Needs to fit evently if tools are in right hand column)
     --action-bar-max-width: calc(100% - (var(--button-size) * 2) - (var(--primary-gap) * 4));
+    --action-button-min-width: 120px;
 
     // Attributions
     --attributions-padding: 2px 5px;

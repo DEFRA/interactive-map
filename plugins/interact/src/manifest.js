@@ -21,23 +21,6 @@ export const manifest = {
   },
 
   buttons: [{
-    id: 'selectCancel',
-    label: 'Back',
-    variant: 'tertiary',
-    hiddenWhen: ({ appConfig, appState, pluginState }) => !pluginState.enabled || !(['hybrid', 'buttonFirst'].includes(appConfig.behaviour) && appState.isFullscreen),
-    mobile: {
-      slot: 'actions',
-      showLabel: true
-    },
-    tablet: {
-      slot: 'actions',
-      showLabel: true
-    },
-    desktop: {
-      slot: 'actions',
-      showLabel: true
-    }
-  }, {
     id: 'selectAtTarget',
     label: 'Select',
     variant: 'primary',
@@ -53,24 +36,6 @@ export const manifest = {
     },
     desktop: {
       slot: 'actions'
-    }
-  }, {
-    id: 'selectDone',
-    label: 'Continue',
-    variant: 'primary',
-    excludeWhen: ({ appState, pluginState }) => !pluginState.enabled || !appState.isFullscreen,
-    enableWhen: ({ mapState, pluginState }) => !!mapState.markers.items.some(m => m.id === 'location') || !!pluginState.selectionBounds,
-    mobile: {
-      slot: 'actions',
-      showLabel: true
-    },
-    tablet: {
-      slot: 'actions',
-      showLabel: true
-    },
-    desktop: {
-      slot: 'actions',
-      showLabel: true
     }
   }],
 

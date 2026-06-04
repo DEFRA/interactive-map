@@ -153,13 +153,6 @@ interactiveMap.on('draw:ready', function () {
 	// drawPlugin.editFeature('test1234')
 })
 
-interactiveMap.on('interact:done', function (e) {
-	console.log('interact:done', e)
-})
-
-interactiveMap.on('interact:cancel', function (e) {
-	console.log('interact:cancel', e)
-})
 
 interactiveMap.on('interact:selectionchange', function (e) {
 	console.log('interact:selectionchange', e)

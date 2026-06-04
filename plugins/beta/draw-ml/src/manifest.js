@@ -27,18 +27,21 @@ export const manifest = {
     id: 'drawCancel',
     label: 'Cancel',
     variant: 'tertiary',
+    exclusiveSlot: true,
     hiddenWhen: ({ pluginState }) => !pluginState.mode,
     ...createButtonSlots(true)
   }, {
     id: 'drawAddPoint',
     label: 'Add point',
     variant: 'primary',
+    exclusiveSlot: true,
     hiddenWhen: ({ appState, pluginState }) => !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
     ...createButtonSlots(true)
   }, {
     id: 'drawDone',
     label: 'Done',
     variant: 'primary',
+    exclusiveSlot: true,
     hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
     enableWhen: ({ pluginState }) => pluginState.numVertecies >= (pluginState.mode === 'draw_polygon' ? 3 : 2),
     ...createButtonSlots(true)

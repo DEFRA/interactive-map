@@ -85,7 +85,7 @@ const datasetsPlugin = createDatasetsPlugin({
 })
 
 const interactiveMap = new InteractiveMap('map', {
-	behaviour: 'mapOnly',
+	behaviour: 'hybrid',
 	mapProvider: maplibreProvider(),
 	reverseGeocodeProvider: openNamesProvider({
 		url: process.env.OS_NEAREST_URL,
@@ -108,6 +108,11 @@ const interactiveMap = new InteractiveMap('map', {
 	readMapText: true,
 	// enableFullscreen: true,
 	// hasExitButton: true,
+	backAndContinue: {
+		backLabel: 'Back',
+		continueLabel: 'Continue',
+		continueEnabledWhen: ({ pluginStates }) => pluginStates.interact?.selectedFeatures.length > 0
+	},
 	// markers: [{
 	// 	id: 'location',
 	// 	coords: [-2.9592267, 54.9045977],
@@ -145,6 +150,7 @@ const interactiveMap = new InteractiveMap('map', {
 interactiveMap.on('app:ready', function (e) {
 	// console.log('app:ready')
 })
+
 
 interactiveMap.on('map:ready', function (e) {
 	// framePlugin.addFrame('test', {
@@ -269,14 +275,6 @@ interactiveMap.on('draw:cancelled', function (e) {
 	interactPlugin.enable()
 })
 
-interactiveMap.on('interact:done', function (e) {
-	console.log('interact:done', e)
-})
-
-interactiveMap.on('interact:cancel', function (e) {
-	console.log('interact:cancel', e)
-	interactPlugin.enable()
-})
 
 interactiveMap.on('interact:selectionchange', function (e) {
 	const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
@@ -310,4 +308,9 @@ interactiveMap.on('search:match', function (e) {
 // Hide selected feature
 interactiveMap.on('search:clear', function (e) {
 	// console.log('Search clear')
+})
+
+interactiveMap.on('app:continue', function (payload) {
+	console.log('app:continue')
+	console.log(payload)
 })

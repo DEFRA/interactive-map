@@ -416,6 +416,16 @@ export default class InteractiveMap {
   }
 
   /**
+   * Enable or disable the journey continue button.
+   * Only has effect when backAndContinue is configured.
+   *
+   * @param {boolean} enabled
+   */
+  setContinueEnabled (enabled) {
+    this.toggleButtonState('journeyContinue', 'disabled', !enabled)
+  }
+
+  /**
    * Add a panel to the UI.
    *
    * Focus is moved to the panel on open by default. Set `focus: false` in the

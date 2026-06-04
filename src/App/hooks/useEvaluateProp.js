@@ -23,25 +23,25 @@ export function useEvaluateProp () {
     iconRegistry: getIconRegistry()
   }
 
-  function evaluateProp (prop, pluginId) {
-    let pluginConfig
-    let pluginState
+  function buildPluginContext (pluginId) {
+    if (!pluginId) { return { pluginStates: pluginContext?.state ?? {} } }
 
-    if (pluginId) {
-      const pluginEntry = appConfig.pluginRegistry.registeredPlugins.find(p => p.id === pluginId)
-      pluginConfig = pluginEntry
-        ? {
-            pluginId: pluginEntry.id,
-            ...pluginEntry.config
-          }
-        : {}
-      // Only include this plugin's state + dispatch
+    const pluginEntry = appConfig.pluginRegistry.registeredPlugins.find(p => p.id === pluginId)
+    const pluginConfig = pluginEntry ? { pluginId: pluginEntry.id, ...pluginEntry.config } : {}
+
+    // Only include isolated plugin state when the plugin has registered a reducer.
+    // Framework entries like 'appConfig' have no reducer so their buttons get pluginStates instead.
+    if (Object.hasOwn(pluginContext?.state ?? {}, pluginId)) {
       const stateForPlugin = pluginContext?.state?.[pluginId] ?? {}
-      pluginState = { ...stateForPlugin, dispatch: pluginContext?.dispatch }
+      const pluginState = { ...stateForPlugin, dispatch: pluginContext?.dispatch }
+      return { pluginConfig, pluginState }
     }
 
-    const fullContext = { ...ctx, pluginConfig, pluginState }
+    return { pluginConfig, pluginStates: pluginContext?.state ?? {} }
+  }
 
+  function evaluateProp (prop, pluginId) {
+    const fullContext = { ...ctx, ...buildPluginContext(pluginId) }
     return typeof prop === 'function' ? prop(fullContext) : prop
   }
 
