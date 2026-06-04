@@ -92,7 +92,8 @@ const config = {
             { text: 'Basic map', href: '/examples/basic-map' },
             { text: 'Button-triggered map', href: '/examples/button-map' },
             { text: 'Add a marker with a panel', href: '/examples/add-marker-with-panel' },
-            { text: 'Toggle marker label on click', href: '/examples/toggle-marker-label' },
+            { text: 'Toggle marker label', href: '/examples/toggle-marker-label' },
+            { text: 'Add a search control', href: '/examples/search-control' },
           ],
         },
         {

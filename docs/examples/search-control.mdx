@@ -1,0 +1,135 @@
+import DemoMapSearchNominatim from '../../demo/DemoMapSearchNominatim.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
+
+# Search with Nominatim
+
+Add a search control backed by [Nominatim](https://nominatim.openstreetmap.org/) — the free OpenStreetMap geocoding service — using a custom dataset.
+
+<DemoMapSearchNominatim />
+
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+      import createSearchPlugin from '@defra/interactive-map/plugins/search'
+
+      const markQuery = (text, query) => {
+        const escaped = query.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&')
+        return text.replace(new RegExp(\`(\${escaped})\`, 'i'), '<mark>$1</mark>')
+      }
+
+      const nominatimDataset = {
+        name: 'nominatim',
+        buildRequest: (query) => {
+          const params = new URLSearchParams({
+            q: query,
+            format: 'json',
+            limit: '8',
+            countrycodes: 'gb'
+          })
+          return new Request(\`https://nominatim.openstreetmap.org/search?\${params}\`, {
+            headers: { 'Accept-Language': 'en' }
+          })
+        },
+        parseResults: (json, query) => {
+          if (!Array.isArray(json)) return []
+          const results = json.map(item => {
+            // Nominatim boundingbox order: [min_lat, max_lat, min_lon, max_lon]
+            const [minLat, maxLat, minLon, maxLon] = item.boundingbox.map(Number)
+            return {
+              id: String(item.place_id),
+              text: item.display_name,
+              marked: markQuery(item.display_name, query),
+              point: [Number(item.lon), Number(item.lat)],
+              bounds: [minLon, minLat, maxLon, maxLat],
+              type: 'nominatim'
+            }
+          })
+          return Array.from(new Map(results.map(r => [r.text, r])).values())
+        }
+      }
+
+      const searchPlugin = createSearchPlugin({
+        customDatasets: [nominatimDataset]
+      })
+
+      new InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-1.6, 53.1],
+        zoom: 6,
+        containerHeight: '500px',
+        plugins: [searchPlugin]
+      })
+    `
+  },
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script src="/your-assets-path/search-plugin/index.js"></script>
+
+      <script>
+      const markQuery = (text, query) => {
+        const escaped = query.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&')
+        return text.replace(new RegExp(\`(\${escaped})\`, 'i'), '<mark>$1</mark>')
+      }
+
+      const nominatimDataset = {
+        name: 'nominatim',
+        buildRequest: (query) => {
+          const params = new URLSearchParams({
+            q: query,
+            format: 'json',
+            limit: '8',
+            countrycodes: 'gb'
+          })
+          return new Request(\`https://nominatim.openstreetmap.org/search?\${params}\`, {
+            headers: { 'Accept-Language': 'en' }
+          })
+        },
+        parseResults: (json, query) => {
+          if (!Array.isArray(json)) return []
+          return json.map(item => {
+            const [minLat, maxLat, minLon, maxLon] = item.boundingbox.map(Number)
+            return {
+              id: String(item.place_id),
+              text: item.display_name,
+              marked: markQuery(item.display_name, query),
+              point: [Number(item.lon), Number(item.lat)],
+              bounds: [minLon, minLat, maxLon, maxLat],
+              type: 'nominatim'
+            }
+          })
+        }
+      }
+
+      const searchPlugin = defra.searchPlugin({
+        customDatasets: [nominatimDataset]
+      })
+
+      new defra.InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-1.6, 53.1],
+        zoom: 6,
+        containerHeight: '500px',
+        plugins: [searchPlugin]
+      })
+      </script>
+    `
+  }
+]} />
