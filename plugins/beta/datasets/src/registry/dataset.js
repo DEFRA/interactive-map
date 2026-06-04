@@ -51,6 +51,27 @@ export class Dataset {
     return null // TODO - implement filter construction for esri and openLayers adapters
   }
 
+  // Returns true if either the parent (if it has one) or global visibility is hidden , otherwise returns true.
+  // This is used to determine whether to show a tooltip
+  // TODO: also work out how to convey datasets hidden by zoom filter.
+  get isHiddenByInheritance () {
+    if (this.isSublayer) {
+      return !this.parent?.visible
+    }
+    return !getGlobalVisibility()
+  }
+
+  // Returns true if this dataset is visible based on its own visibility setting,
+  // even if globalVisibility is false or its parent is not visible.
+  // This is used to determine whether the dataset is rendered as checked when
+  // disabled in the layers menu.
+  get isLocallyVisible () {
+    if (this.isVisible) {
+      return true
+    }
+    return this._datasetDefinition.visible
+  }
+
   get visible () {
     if (this.isSublayer) {
       return this._datasetDefinition.visible && (this.parent?.visible)

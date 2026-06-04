@@ -79,3 +79,7 @@
 .im-c-datasets-layers-group:first-child .im-c-datasets-layers-group__legend {
   padding-top: 0;
 }
+
+.im-c-datasets-layers .govuk-checkboxes__input[aria-disabled="true"] + .govuk-checkboxes__label {
+  opacity: 0.5;
+}
