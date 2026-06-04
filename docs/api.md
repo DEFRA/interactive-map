@@ -753,7 +753,8 @@ See [ControlDefinition](./api/control-definition.md) for configuration options.
 
 Enable or disable the Continue button added by [`backAndContinue`](#backandcontinue). Use this for imperative control — for example, enabling Continue after an async operation or in response to an external event. For reactive state-derived conditions, prefer the `continueEnabledWhen` function in `backAndContinue` instead.
 
-> **Note:** If `continueEnabledWhen` is configured alongside `setContinueEnabled`, the function will override the imperative call on the next state change.
+> [!NOTE]
+> If `continueEnabledWhen` is configured alongside `setContinueEnabled`, the function will override the imperative call on the next state change.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
