@@ -66,6 +66,34 @@ Whether to automatically determine the colour scheme based on the user's system 
 
 ---
 
+### `backAndContinue`
+**Type:** `BackAndContinueConfig | null`
+**Default:** `null`
+
+Shows Back and/or Continue navigation buttons in the actions bar when the map is fullscreen. Intended for multi-step journey flows where the map is one step a user must complete before proceeding.
+
+Provide `backLabel` to render a Back button; provide `continueLabel` to render a Continue button. Both are optional — include either or both.
+
+The Continue button always starts **disabled**. Enable it either declaratively via the `continueEnabledWhen` function or imperatively via [`setContinueEnabled()`](#setcontinueenabledenabled).
+
+```js
+new InteractiveMap('map', {
+  behaviour: 'mapOnly',
+  backAndContinue: {
+    backLabel: 'Back',
+    continueLabel: 'Continue',
+    // Enable Continue once the user has selected at least one feature
+    continueEnabledWhen: ({ pluginStates }) =>
+      pluginStates.interact?.selectedFeatures.length > 0
+  }
+})
+```
+
+> [!NOTE]
+> In `mapOnly` behaviour the Back button is hidden when there is no browser history to go back to (direct link / bookmark). In `buttonFirst` or `hybrid` behaviour the Back button navigates back in browser history if the map was opened via the button, or collapses the map if arrived via a direct link or bookmark.
+
+---
+
 ### `backgroundColor`
 **Type:** `string | Object<string, string>`
 **Default:** `var(--background-color)`
@@ -311,49 +339,12 @@ URL query parameter used to control fullscreen/hybrid/buttonFirst state. Overrid
 
 ---
 
-### `urlPosition`
-**Type:** `'sync' | 'readOnly' | 'none'`
-**Default:** `'sync'`
-
-Controls how map center and zoom interact with the page URL.
-
-| Value | Behaviour |
-|---|---|
-| `'sync'` | Reads center/zoom from the URL on load and writes back on pan/zoom — enables bookmarking and sharing the current map view |
-| `'readOnly'` | Seeds the initial view from the URL but never writes back |
-| `'none'` | Ignores the URL entirely — use when you don't want the user's pan/zoom to be persisted or shared |
----
-
 ### `markers`
 **Type:** `MarkerConfig[]`
 
 Initial markers to display on the map.
 
 See [MarkerConfig](./api/marker-config.md) for full details.
-
----
-
-### `symbolDefaults`
-**Type:** `Partial<SymbolDefaults>`
-
-App-wide defaults for symbol and marker appearance.
-
-| Property | Default |
-|---|---|
-| `symbol` | `'pin'` |
-| `backgroundColor` | `'#ca3535'` |
-| `foregroundColor` | `'#ffffff'` |
-
-```js
-new InteractiveMap('map', {
-  symbolDefaults: {
-    symbol: 'circle',
-    backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
-  }
-})
-```
-
-See [Symbol Config](./api/symbol-config.md) for the full property list.
 
 ---
 
@@ -481,6 +472,30 @@ new InteractiveMap('map', {
 
 ---
 
+### `symbolDefaults`
+**Type:** `Partial<SymbolDefaults>`
+
+App-wide defaults for symbol and marker appearance.
+
+| Property | Default |
+|---|---|
+| `symbol` | `'pin'` |
+| `backgroundColor` | `'#ca3535'` |
+| `foregroundColor` | `'#ffffff'` |
+
+```js
+new InteractiveMap('map', {
+  symbolDefaults: {
+    symbol: 'circle',
+    backgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+  }
+})
+```
+
+See [Symbol Config](./api/symbol-config.md) for the full property list.
+
+---
+
 ### `transformRequest`
 **Type:** `function`
 
@@ -494,6 +509,20 @@ See the [MapLibre documentation](https://maplibre.org/maplibre-gl-js/docs/API/ty
 
 > [!NOTE]
 > For ESRI SDK, request transformation is handled in the EsriMapProvider configuration rather than through this option.
+
+---
+
+### `urlPosition`
+**Type:** `'sync' | 'readOnly' | 'none'`
+**Default:** `'sync'`
+
+Controls how map center and zoom interact with the page URL.
+
+| Value | Behaviour |
+|---|---|
+| `'sync'` | Reads center/zoom from the URL on load and writes back on pan/zoom — enables bookmarking and sharing the current map view |
+| `'readOnly'` | Seeds the initial view from the URL but never writes back |
+| `'none'` | Ignores the URL entirely — use when you don't want the user's pan/zoom to be persisted or shared |
 
 ---
 
@@ -720,6 +749,30 @@ See [ControlDefinition](./api/control-definition.md) for configuration options.
 
 ---
 
+### `setContinueEnabled(enabled)`
+
+Enable or disable the Continue button added by [`backAndContinue`](#backandcontinue). Use this for imperative control — for example, enabling Continue after an async operation or in response to an external event. For reactive state-derived conditions, prefer the `continueEnabledWhen` function in `backAndContinue` instead.
+
+> **Note:** If `continueEnabledWhen` is configured alongside `setContinueEnabled`, the function will override the imperative call on the next state change.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `enabled` | `boolean` | `true` to enable the Continue button, `false` to disable it |
+
+```js
+// Enable Continue after a draw operation completes
+interactiveMap.on('draw:merged', () => {
+  interactiveMap.setContinueEnabled(true)
+})
+
+// Disable it again if the merge is undone
+interactiveMap.on('draw:unmerged', () => {
+  interactiveMap.setContinueEnabled(false)
+})
+```
+
+---
+
 ### `setMode(mode)`
 
 Programmatically set the application mode. See the [`mode`](#mode) option for more detail.
@@ -855,6 +908,26 @@ Emitted when the app is ready—layout and padding have been calculated and the 
 ```js
 interactiveMap.on('app:ready', () => {
   console.log('App is ready')
+})
+```
+
+---
+
+### `app:continue`
+
+Emitted when the user clicks the Continue button added by [`backAndContinue`](#backandcontinue). Includes a snapshot of all plugin states and the current map state at the moment Continue was clicked.
+
+**Payload:**
+
+| Property | Type | Description |
+|---|---|---|
+| `pluginStates` | `object` | All plugin states keyed by plugin ID (e.g. `pluginStates.interact.selectedFeatures`) |
+| `mapState` | `object` | Current map state including `zoom`, `center`, `bounds` and other map properties |
+
+```js
+interactiveMap.on('app:continue', ({ pluginStates, mapState }) => {
+  const selectedFeatures = pluginStates.interact?.selectedFeatures ?? []
+  console.log('User continued with', selectedFeatures.length, 'features at zoom', mapState.zoom)
 })
 ```
 
