@@ -70,7 +70,7 @@ describe('initialState', () => {
     expect(result.prefersReducedMotion).toBe(false)
   })
 
-  test('pre-disables journeyContinue when hasBackAndContinue is true', () => {
+  test('pre-disables journeyContinue when backAndContinue has a continueLabel', () => {
     mockMedia()
     mockPanels({})
     mockFullscreen(false)
@@ -81,7 +81,7 @@ describe('initialState', () => {
       initialInterfaceType: 'desktop',
       appColorScheme: 'light',
       autoColorScheme: false,
-      hasBackAndContinue: true,
+      backAndContinue: { continueLabel: 'Continue' },
       ...createMockRegistries()
     }
 
@@ -89,7 +89,7 @@ describe('initialState', () => {
     expect(result.disabledButtons.has('journeyContinue')).toBe(true)
   })
 
-  test('does not pre-disable journeyContinue when hasBackAndContinue is false', () => {
+  test('does not pre-disable journeyContinue when backAndContinue is null', () => {
     mockMedia()
     mockPanels({})
     mockFullscreen(false)

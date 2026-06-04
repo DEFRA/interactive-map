@@ -53,10 +53,10 @@ describe('defaultAppConfig', () => {
 
   // --- JOURNEY BACK BUTTON ---
   it('covers all branches of journeyBack excludeWhen', () => {
-    const base = { appConfig: { hasBackAndContinue: true, behaviour: 'buttonFirst' }, appState: { isFullscreen: true } }
-    expect(journeyBackBtn.excludeWhen({ appConfig: { hasBackAndContinue: false, behaviour: 'buttonFirst' }, appState: { isFullscreen: true } })).toBe(true)
-    expect(journeyBackBtn.excludeWhen({ appConfig: { hasBackAndContinue: true, behaviour: 'buttonFirst' }, appState: { isFullscreen: false } })).toBe(true)
-    expect(journeyBackBtn.excludeWhen({ appConfig: { hasBackAndContinue: true, behaviour: 'mapOnly' }, appState: { isFullscreen: true } })).toBe(globalThis.history.length <= 1)
+    const base = { appConfig: { backAndContinue: { backLabel: 'Back' }, behaviour: 'buttonFirst' }, appState: { isFullscreen: true } }
+    expect(journeyBackBtn.excludeWhen({ appConfig: { backAndContinue: null, behaviour: 'buttonFirst' }, appState: { isFullscreen: true } })).toBe(true)
+    expect(journeyBackBtn.excludeWhen({ appConfig: { backAndContinue: { backLabel: 'Back' }, behaviour: 'buttonFirst' }, appState: { isFullscreen: false } })).toBe(true)
+    expect(journeyBackBtn.excludeWhen({ appConfig: { backAndContinue: { backLabel: 'Back' }, behaviour: 'mapOnly' }, appState: { isFullscreen: true } })).toBe(globalThis.history.length <= 1)
     expect(journeyBackBtn.excludeWhen(base)).toBe(false)
   })
 
@@ -76,9 +76,19 @@ describe('defaultAppConfig', () => {
 
   // --- JOURNEY CONTINUE BUTTON ---
   it('covers all branches of journeyContinue excludeWhen', () => {
-    expect(journeyContinueBtn.excludeWhen({ appConfig: { hasBackAndContinue: false }, appState: { isFullscreen: true } })).toBe(true)
-    expect(journeyContinueBtn.excludeWhen({ appConfig: { hasBackAndContinue: true }, appState: { isFullscreen: false } })).toBe(true)
-    expect(journeyContinueBtn.excludeWhen({ appConfig: { hasBackAndContinue: true }, appState: { isFullscreen: true } })).toBe(false)
+    expect(journeyContinueBtn.excludeWhen({ appConfig: { backAndContinue: null }, appState: { isFullscreen: true } })).toBe(true)
+    expect(journeyContinueBtn.excludeWhen({ appConfig: { backAndContinue: { continueLabel: 'Continue' } }, appState: { isFullscreen: false } })).toBe(true)
+    expect(journeyContinueBtn.excludeWhen({ appConfig: { backAndContinue: { continueLabel: 'Continue' } }, appState: { isFullscreen: true } })).toBe(false)
+  })
+
+  it('journeyBack label returns backLabel from config', () => {
+    expect(journeyBackBtn.label({ appConfig: { backAndContinue: { backLabel: 'Back' } } })).toBe('Back')
+    expect(journeyBackBtn.label({ appConfig: { backAndContinue: null } })).toBeUndefined()
+  })
+
+  it('journeyContinue label returns continueLabel from config', () => {
+    expect(journeyContinueBtn.label({ appConfig: { backAndContinue: { continueLabel: 'Continue' } } })).toBe('Continue')
+    expect(journeyContinueBtn.label({ appConfig: { backAndContinue: null } })).toBeUndefined()
   })
 
   it('journeyContinue onClick emits app:continue', () => {

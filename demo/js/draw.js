@@ -108,7 +108,7 @@ const interactiveMap = new InteractiveMap('map', {
 	readMapText: true,
 	// enableFullscreen: true,
 	// hasExitButton: true,
-	hasBackAndContinue: true,
+	backAndContinue: { backLabel: 'Back', continueLabel: 'Continue' },
 	// markers: [{
 	// 	id: 'location',
 	// 	coords: [-2.9592267, 54.9045977],

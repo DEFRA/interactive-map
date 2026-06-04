@@ -24,12 +24,12 @@ const journeyContinueSlots = { slot: 'actions', showLabel: true, order: 10 }
 export const defaultAppConfig = {
   buttons: [{
     id: 'journeyBack',
-    label: 'Back',
+    label: ({ appConfig }) => appConfig.backAndContinue?.backLabel,
     variant: 'tertiary',
     onClick: (_e, { appConfig, services }) =>
       appConfig.behaviour === 'mapOnly' ? globalThis.history.back() : services.closeApp(),
     excludeWhen: ({ appConfig, appState }) =>
-      !appConfig.hasBackAndContinue ||
+      !appConfig.backAndContinue?.backLabel ||
       !appState.isFullscreen ||
       (appConfig.behaviour === 'mapOnly' && globalThis.history.length <= 1),
     mobile: journeyBackSlots,
@@ -37,10 +37,10 @@ export const defaultAppConfig = {
     desktop: journeyBackSlots
   }, {
     id: 'journeyContinue',
-    label: 'Continue',
+    label: ({ appConfig }) => appConfig.backAndContinue?.continueLabel,
     variant: 'primary',
     onClick: (_e, { services }) => services.eventBus.emit('app:continue'),
-    excludeWhen: ({ appConfig, appState }) => !appConfig.hasBackAndContinue || !appState.isFullscreen,
+    excludeWhen: ({ appConfig, appState }) => !appConfig.backAndContinue?.continueLabel || !appState.isFullscreen,
     mobile: journeyContinueSlots,
     tablet: journeyContinueSlots,
     desktop: journeyContinueSlots
