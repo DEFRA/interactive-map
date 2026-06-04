@@ -6,10 +6,8 @@ The datasets plugin renders GeoJSON and vector tile datasets on the map, with su
 
 ```js
 import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
-import { maplibreLayerAdapter } from '@defra/interactive-map/plugins/datasets/adapters/maplibre'
 
 const datasetsPlugin = createDatasetsPlugin({
-  layerAdapter: maplibreLayerAdapter,
   datasets: [
     {
       id: 'my-parcels',
@@ -71,22 +69,6 @@ const datasetsPlugin = defra.datasetsMaplibrePlugin({
 ## Options
 
 Options are passed to the factory function when creating the plugin.
-
----
-
-### `layerAdapter`
-
-> [!NOTE]
-> UMD users using the `datasetsMaplibrePlugin` bundle do not need to set this — the MapLibre adapter is pre-configured.
-
-**Type:** `LayerAdapter`
-**Required**
-
-The map provider adapter responsible for rendering datasets. Import `maplibreLayerAdapter` for MapLibre GL JS, or supply a custom adapter.
-
-```js
-import { maplibreLayerAdapter } from '@defra/interactive-map/plugins/datasets/adapters/maplibre'
-```
 
 ---
 
