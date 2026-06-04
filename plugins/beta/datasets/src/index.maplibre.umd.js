@@ -14,6 +14,7 @@ import createDatasetsPlugin from './index.js'
  * const plugin = defra.datasetsMaplibrePlugin({ datasets: [...] })
  */
 export default function createDatasetsMaplibrePlugin (options = {}) {
+  // TODO - TEST The UMD build
   return createDatasetsPlugin({
     ...options,
     layerAdapter: {

@@ -9,7 +9,6 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
-import { maplibreLayerAdapter } from '/plugins/beta/datasets/src/adapters/maplibre/index.js'
 import createDrawPlugin from '/plugins/beta/draw-ml/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
@@ -46,8 +45,6 @@ const drawPlugin = createDrawPlugin({
 })
 
 const datasetsPlugin = createDatasetsPlugin({
-	layerAdapter: maplibreLayerAdapter,
-	
 	// Example: Dynamic bbox-based fetching (uncomment to test)
 	datasets: [{
 		id: 'field-parcels',

@@ -4,16 +4,14 @@ import { EVENTS } from '../../../../src/config/events.js'
 import { createDatasets } from './datasets.js'
 import { datasetRegistry } from './registry/datasetRegistry.js'
 import { attachGlobalState } from './registry/globalDataset.js'
-import { loadLayerAdapter } from './initialise/loadLayerAdapter.js'
+import { loadLayerAdapter, layerAdapter } from './initialise/loadLayerAdapter.js'
 
 const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies) =>
   useEffect(() => {
     const methodParameters = pluginState.layerAdapterActions?.[methodName] || []
-    const method = pluginState.layerAdapter?.[methodName]
+    const method = layerAdapter[methodName]
     if (method && methodParameters.length) {
-      methodParameters.forEach((parameters) => {
-        method.bind(pluginState.layerAdapter)(...parameters)
-      })
+      methodParameters.forEach((parameters) => method(...parameters))
       if (methodParameters.length) {
         dispatch({ type: 'SET_LAYER_ADAPTER_ACTIONS', payload: { [methodName]: [] } })
       }
@@ -48,8 +46,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
 
     const initDatasets = async () => {
       const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
-
-      dispatch({ type: 'SET_LAYER_ADAPTER', payload: adapter })
 
       datasetsInstanceRef.current = createDatasets({
         adapter,
@@ -93,7 +89,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
         datasetsInstanceRef.current.remove()
         datasetsInstanceRef.current = null
       }
-      dispatch({ type: 'SET_LAYER_ADAPTER', payload: null })
     }
   }, [])
 

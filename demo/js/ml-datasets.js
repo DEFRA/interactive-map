@@ -8,7 +8,6 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
-import { maplibreLayerAdapter } from '/plugins/beta/datasets/src/adapters/maplibre/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
@@ -299,7 +298,6 @@ const hedgeControlDataset = {
 }
 
 const datasetsPlugin = createDatasetsPlugin({
-  layerAdapter: maplibreLayerAdapter,
   globals: {
     opacityMode: 'dataset', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,

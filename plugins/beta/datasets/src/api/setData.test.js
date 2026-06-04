@@ -1,6 +1,13 @@
 import { setData } from './setData.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
+import { layerAdapter } from '../initialise/loadLayerAdapter.js'
+
+jest.mock('../initialise/loadLayerAdapter.js', () => ({
+  layerAdapter: {
+    setData: jest.fn()
+  }
+}))
 
 jest.mock('../registry/datasetRegistry.js', () => ({
   datasetRegistry: { getDataset: jest.fn() }
@@ -11,7 +18,6 @@ jest.mock('../../../../../src/services/logger.js', () => ({
 }))
 
 describe('setData', () => {
-  const layerAdapter = { setData: jest.fn() }
   const geojson = { type: 'FeatureCollection', features: [] }
   beforeEach(() => {
     jest.clearAllMocks()

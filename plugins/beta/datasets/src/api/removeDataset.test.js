@@ -1,8 +1,14 @@
 import { removeDataset } from './removeDataset.js'
+import { layerAdapter } from '../initialise/loadLayerAdapter.js'
+
+jest.mock('../initialise/loadLayerAdapter.js', () => ({
+  layerAdapter: {
+    removeDataset: jest.fn()
+  }
+}))
 
 describe('removeDataset', () => {
   const dispatch = jest.fn()
-  const layerAdapter = { removeDataset: jest.fn() }
   it('calls layerAdapter.removeDataset with the datasetId', () => {
     removeDataset({ pluginState: { layerAdapter, dispatch } }, 'my-dataset')
 
