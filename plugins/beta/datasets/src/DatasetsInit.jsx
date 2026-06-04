@@ -4,6 +4,7 @@ import { EVENTS } from '../../../../src/config/events.js'
 import { createDatasets } from './datasets.js'
 import { datasetRegistry } from './registry/datasetRegistry.js'
 import { attachGlobalState } from './registry/globalDataset.js'
+import { loadLayerAdapter } from './initialise/loadLayerAdapter.js'
 
 const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies) =>
   useEffect(() => {
@@ -46,12 +47,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     }
 
     const initDatasets = async () => {
-      if (!pluginConfig.layerAdapter) {
-        throw new Error('datasets plugin: no layerAdapter provided. Import and pass maplibreLayerAdapter or a custom adapter.')
-      }
-
-      const { default: LayerAdapter } = await pluginConfig.layerAdapter.load()
-      const adapter = new LayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+      const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
 
       dispatch({ type: 'SET_LAYER_ADAPTER', payload: adapter })
 

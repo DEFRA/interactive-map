@@ -40,6 +40,10 @@ export default class MapLibreProvider {
     Object.assign(this, mapProviderConfig)
   }
 
+  get name () {
+    return 'MapLibreProvider'
+  }
+
   /**
    * Initialize the map.
    *

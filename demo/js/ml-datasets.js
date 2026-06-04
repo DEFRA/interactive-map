@@ -469,15 +469,15 @@ const testSetData = () => {
 }
 
 interactiveMap.on('datasets:ready', function () {
-  // testGetters()
-  // testInvalidApiCalls()
-  // testFeatureVisibility()
-  // testSetOpacity()
-  // testSetStyle()
-  // testVisibility()
-  testGlobalVisibility()
-  // testRemoveAndAddDataset()
-  // testSetData()
+  testGetters()
+  testInvalidApiCalls()
+  testFeatureVisibility()
+  testSetOpacity()
+  testSetStyle()
+  testVisibility()
+  // testGlobalVisibility()
+  testRemoveAndAddDataset()
+  testSetData()
 })
 
 // Ref to the selected features
