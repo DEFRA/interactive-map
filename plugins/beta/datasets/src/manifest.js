@@ -1,6 +1,6 @@
 // /plugins/datasets/manifest.js
 import { initialState, actions } from './reducer.js'
-import { DatasetsInit } from './DatasetsInit.jsx'
+import { DatasetsInit } from './initialise/DatasetsInit.jsx'
 import { LayersMenu } from './panels/LayersMenu.jsx'
 import { Key } from './panels/Key.jsx'
 import { addDataset } from './api/addDataset.js'

@@ -1,8 +1,8 @@
-import { createDynamicSource } from './fetch/createDynamicSource.js'
+import { createDynamicSource } from '../fetch/createDynamicSource.js'
 // NOSONAR: applyDatasetDefaults and datasetDefaults are used in processedDatasets.map
 import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
-import { mappedDatasetsReducer } from './reducers/mappedDatasetsReducer.js'
-import { datasetRegistry } from './registry/datasetRegistry.js'
+import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
+import { datasetRegistry } from '../registry/datasetRegistry.js'
 
 export const createDatasets = ({
   adapter,

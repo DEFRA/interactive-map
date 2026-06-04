@@ -1,10 +1,10 @@
 // src/plugins/datasets/datasetsInit.jsx
 import { useEffect, useRef } from 'react'
-import { EVENTS } from '../../../../src/config/events.js'
+import { EVENTS } from '../../../../../src/config/events.js'
 import { createDatasets } from './datasets.js'
-import { datasetRegistry } from './registry/datasetRegistry.js'
-import { attachGlobalState } from './registry/globalDataset.js'
-import { loadLayerAdapter, layerAdapter } from './initialise/loadLayerAdapter.js'
+import { datasetRegistry } from '../registry/datasetRegistry.js'
+import { attachGlobalState } from '../registry/globalDataset.js'
+import { loadLayerAdapter, layerAdapter } from './loadLayerAdapter.js'
 
 const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies) =>
   useEffect(() => {

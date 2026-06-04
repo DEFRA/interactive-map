@@ -1,4 +1,4 @@
-import { applyDatasetDefaultsWithoutFlattening } from '../defaults.js'
+import { applyDatasetDefaultsWithoutFlattening } from '../initialise/defaults.js'
 
 const flattenSublayer = (parentId, sublayer) => {
   const id = `${parentId}-${sublayer.id}`
