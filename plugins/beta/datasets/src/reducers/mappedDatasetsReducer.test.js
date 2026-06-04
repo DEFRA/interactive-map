@@ -1,5 +1,5 @@
 import { mappedDatasetsReducer } from './mappedDatasetsReducer'
-import { datasetDefaults } from '../defaults.js'
+import { datasetDefaults } from '../initialise/defaults.js'
 
 describe('mappedDatasetsReducer', () => {
   it('handles empty datasets', () => {

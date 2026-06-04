@@ -1,8 +1,8 @@
 import React from 'react'
-import { EmptyKey } from '../components/key/EmptyKey.jsx'
-import { KeyItem } from '../components/key/KeyItem.jsx'
-import { KeyGroupItem } from '../components/key/KeyGroupItem.jsx'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
+import { EmptyKey } from './EmptyKey.jsx'
+import { KeyItem } from './KeyItem.jsx'
+import { KeyGroupItem } from './KeyGroupItem.jsx'
+import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 export const Key = ({
   pluginConfig: { noKeyItemText },
