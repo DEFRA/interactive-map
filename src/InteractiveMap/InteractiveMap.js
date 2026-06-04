@@ -417,7 +417,7 @@ export default class InteractiveMap {
 
   /**
    * Enable or disable the journey continue button.
-   * Only has effect when hasBackAndContinue is true.
+   * Only has effect when backAndContinue is configured.
    *
    * @param {boolean} enabled
    */

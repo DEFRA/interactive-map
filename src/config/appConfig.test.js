@@ -91,10 +91,12 @@ describe('defaultAppConfig', () => {
     expect(journeyContinueBtn.label({ appConfig: { backAndContinue: null } })).toBeUndefined()
   })
 
-  it('journeyContinue onClick emits app:continue', () => {
+  it('journeyContinue onClick emits app:continue with pluginStates and mapState', () => {
     const eventBusMock = { emit: jest.fn() }
-    journeyContinueBtn.onClick({}, { services: { eventBus: eventBusMock } })
-    expect(eventBusMock.emit).toHaveBeenCalledWith('app:continue')
+    const pluginStates = { interact: { selectedFeatures: [] } }
+    const mapState = { zoom: 12, center: [-1.5, 53.0] }
+    journeyContinueBtn.onClick({}, { services: { eventBus: eventBusMock }, pluginStates, mapState })
+    expect(eventBusMock.emit).toHaveBeenCalledWith('app:continue', { pluginStates, mapState })
   })
 
   // --- FULLSCREEN BUTTON (Line 39 Coverage) ---

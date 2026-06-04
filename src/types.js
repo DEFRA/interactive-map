@@ -680,6 +680,13 @@
  * @property {string} [genericErrorText]
  * Fallback error message shown when the map fails to load.
  *
+ * @property {{ backLabel?: string, continueLabel?: string, continueEnabledWhen?: function }} [backAndContinue=null]
+ * When set, shows Back and/or Continue buttons in the actions bar when the map is fullscreen.
+ * Omit `backLabel` to suppress the Back button; omit `continueLabel` to suppress the Continue button.
+ * `continueEnabledWhen({ pluginStates, mapState })` is a reactive predicate that controls the enabled
+ * state of the Continue button — use this instead of `setContinueEnabled()` for declarative control.
+ * In `mapOnly` behaviour the Back button is hidden when there is no browser history to go back to.
+ *
  * @property {boolean} [hasExitButton=false]
  * Whether an exit map button is displayed when the app is fullscreen.
  *

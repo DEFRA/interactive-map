@@ -7,6 +7,7 @@ import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
 import { useEvaluateProp } from '../hooks/useEvaluateProp.js'
 import { useButtonStateEvaluator } from '../hooks/useButtonStateEvaluator.js'
+import { useContinueEnabledEvaluator } from '../hooks/useContinueEnabledEvaluator.js'
 
 // Create a component for each plugin to handle its hooks properly
 const PluginInit = ({ plugin, mode }) => {
@@ -55,6 +56,7 @@ export const PluginInits = () => {
   // Evaluate reactive button states globally
   const evaluateProp = useEvaluateProp()
   useButtonStateEvaluator(evaluateProp)
+  useContinueEnabledEvaluator()
 
   return (
     <>

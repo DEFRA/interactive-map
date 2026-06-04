@@ -39,7 +39,7 @@ export const defaultAppConfig = {
     id: 'journeyContinue',
     label: ({ appConfig }) => appConfig.backAndContinue?.continueLabel,
     variant: 'primary',
-    onClick: (_e, { services }) => services.eventBus.emit('app:continue'),
+    onClick: (_e, { services, pluginStates, mapState }) => services.eventBus.emit('app:continue', { pluginStates, mapState }),
     excludeWhen: ({ appConfig, appState }) => !appConfig.backAndContinue?.continueLabel || !appState.isFullscreen,
     mobile: journeyContinueSlots,
     tablet: journeyContinueSlots,

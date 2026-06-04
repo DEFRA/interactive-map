@@ -85,7 +85,7 @@ const datasetsPlugin = createDatasetsPlugin({
 })
 
 const interactiveMap = new InteractiveMap('map', {
-	behaviour: 'mapOnly',
+	behaviour: 'hybrid',
 	mapProvider: maplibreProvider(),
 	reverseGeocodeProvider: openNamesProvider({
 		url: process.env.OS_NEAREST_URL,
@@ -108,7 +108,11 @@ const interactiveMap = new InteractiveMap('map', {
 	readMapText: true,
 	// enableFullscreen: true,
 	// hasExitButton: true,
-	backAndContinue: { backLabel: 'Back', continueLabel: 'Continue' },
+	backAndContinue: {
+		backLabel: 'Back',
+		continueLabel: 'Continue',
+		continueEnabledWhen: ({ pluginStates }) => pluginStates.interact?.selectedFeatures.length > 0
+	},
 	// markers: [{
 	// 	id: 'location',
 	// 	coords: [-2.9592267, 54.9045977],
@@ -283,7 +287,6 @@ interactiveMap.on('interact:selectionchange', function (e) {
 	interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
 	interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
 	interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
-	interactiveMap.setContinueEnabled(e.selectedFeatures.length > 0)
 })
 
 interactiveMap.on('interact:markerchange', function (e) {
@@ -307,6 +310,7 @@ interactiveMap.on('search:clear', function (e) {
 	// console.log('Search clear')
 })
 
-interactiveMap.on('app:continue', function () {
+interactiveMap.on('app:continue', function (payload) {
 	console.log('app:continue')
+	console.log(payload)
 })
