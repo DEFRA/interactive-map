@@ -1,6 +1,6 @@
 // Components: specific UI components. Using 'CSS in Component' pattern
-@use './components/key/Key.module';
-@use './components/menu/Layers.module';
+@use './components/Key/Key.module';
+@use './components/LayersMenu/Layers.module';
 
 .im-c-datasets {
     display: block;

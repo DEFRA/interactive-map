@@ -1,8 +1,8 @@
 // /plugins/datasets/manifest.js
 import { initialState, actions } from './reducer.js'
 import { DatasetsInit } from './initialise/DatasetsInit.jsx'
-import { LayersMenu } from './components/menu/LayersMenu.jsx'
-import { Key } from './components/key/Key.jsx'
+import { LayersMenu } from './components/LayersMenu/LayersMenu.jsx'
+import { Key } from './components/Key/Key.jsx'
 import { addDataset } from './api/addDataset.js'
 import { removeDataset } from './api/removeDataset.js'
 import { setDatasetVisibility } from './api/setDatasetVisibility.js'
