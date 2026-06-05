@@ -1,6 +1,6 @@
 import { logger } from '../../../../../src/services/logger.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { layerAdapter } from '../initialise/loadLayerAdapter.js'
+import { layerAdapter } from '../adapters/loadLayerAdapter.js'
 
 export const setData = ({ pluginState }, geojson, { datasetId }) => {
   const registryDataset = datasetRegistry.getDataset(datasetId)

@@ -1,7 +1,7 @@
 const importLayerAdapter = async (mapProvider) => {
   switch (mapProvider.name) {
     case 'MapLibreProvider': {
-      const { default: LayerAdapter } = await import(/* webpackChunkName: "im-datasets-ml-adapter" */ '../adapters/maplibre/maplibreLayerAdapter.js')
+      const { default: LayerAdapter } = await import(/* webpackChunkName: "im-datasets-ml-adapter" */ './maplibre/maplibreLayerAdapter.js')
       return LayerAdapter
     }
     // TODO: add cases for EsriProvider, OpenLayersProvider and potentially LeafletProvider

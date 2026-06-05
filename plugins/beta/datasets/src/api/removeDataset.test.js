@@ -1,7 +1,7 @@
 import { removeDataset } from './removeDataset.js'
-import { layerAdapter } from '../initialise/loadLayerAdapter.js'
+import { layerAdapter } from '../adapters/loadLayerAdapter.js'
 
-jest.mock('../initialise/loadLayerAdapter.js', () => ({
+jest.mock('../adapters/loadLayerAdapter.js', () => ({
   layerAdapter: {
     removeDataset: jest.fn()
   }

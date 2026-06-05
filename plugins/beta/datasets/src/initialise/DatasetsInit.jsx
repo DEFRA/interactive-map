@@ -4,7 +4,7 @@ import { EVENTS } from '../../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
-import { loadLayerAdapter, layerAdapter } from './loadLayerAdapter.js'
+import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState

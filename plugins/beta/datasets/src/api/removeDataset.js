@@ -1,4 +1,4 @@
-import { layerAdapter } from '../initialise/loadLayerAdapter.js'
+import { layerAdapter } from '../adapters/loadLayerAdapter.js'
 
 export const removeDataset = ({ pluginState: { dispatch } }, datasetId) => {
   // Here we need to remove the dataset from the adapter before removing it from state,

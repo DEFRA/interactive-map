@@ -1,9 +1,9 @@
 import { setData } from './setData.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
-import { layerAdapter } from '../initialise/loadLayerAdapter.js'
+import { layerAdapter } from '../adapters/loadLayerAdapter.js'
 
-jest.mock('../initialise/loadLayerAdapter.js', () => ({
+jest.mock('../adapters/loadLayerAdapter.js', () => ({
   layerAdapter: {
     setData: jest.fn()
   }
