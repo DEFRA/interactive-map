@@ -1,5 +1,5 @@
 import { Dataset } from '../../../registry/dataset.js'
-import { hashString } from '../layerIds.js'
+import { hashString } from '../../../../../../../src/utils/patternUtils.js'
 import { anchorToMaplibre } from '../../../../../../../providers/maplibre/src/utils/symbolImages.js'
 const MAX_TILE_ZOOM = 22
 
