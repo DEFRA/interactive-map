@@ -1,4 +1,4 @@
-import { svgProps, SVG_SIZE, SVG_CENTER } from '../svgProperties.js'
+import { svgProps, SVG_SIZE, SVG_CENTER } from './svgProperties.js'
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 
 export const KeySvgLine = ({ mapStyle, registryDataset }) => {

@@ -1,7 +1,7 @@
 // src/plugins/datasets/datasetsInit.jsx
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../../src/config/events.js'
-import { createDatasets } from './datasets.js'
+import { initialiseDatasets } from './initialiseDatasets.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from './loadLayerAdapter.js'
@@ -34,7 +34,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     const initDatasets = async () => {
       const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
 
-      datasetsInstanceRef.current = createDatasets({
+      datasetsInstanceRef.current = initialiseDatasets({
         adapter,
         pluginConfig,
         pluginStateRef,

@@ -4,7 +4,7 @@ import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 
-export const createDatasets = ({
+export const initialiseDatasets = ({
   adapter,
   pluginConfig,
   pluginStateRef,

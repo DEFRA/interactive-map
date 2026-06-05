@@ -1,5 +1,5 @@
 import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../../src/utils/symbolUtils.js'
-import { svgSymbolProps } from '../svgProperties.js'
+import { svgSymbolProps } from './svgProperties.js'
 
 export const KeySvgSymbol = ({ symbolRegistry, registryDataset, mapStyle, symbolDef }) => {
   const { style } = registryDataset
