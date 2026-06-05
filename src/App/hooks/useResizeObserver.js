@@ -13,6 +13,8 @@ export function useResizeObserver (targetRefs, callback) {
     }
 
     const observer = new window.ResizeObserver(entries => {
+      let hasChanges = false
+
       for (const entry of entries) {
         const { width, height } = entry.contentRect
         const prev = prevSizes.current.get(entry.target) || {}
@@ -22,8 +24,15 @@ export function useResizeObserver (targetRefs, callback) {
         }
 
         prevSizes.current.set(entry.target, { width, height })
+        hasChanges = true
+      }
 
-        callback(entry)
+      if (hasChanges) {
+        // Batch all entries into a single RAF — prevents multiple simultaneous
+        // resize events (e.g. panel open) from queueing separate callbacks and
+        // causing a ResizeObserver loop under synchronous renderers like preact.
+        cancelAnimationFrame(frameRef.current)
+        frameRef.current = requestAnimationFrame(() => callback())
       }
     })
 
