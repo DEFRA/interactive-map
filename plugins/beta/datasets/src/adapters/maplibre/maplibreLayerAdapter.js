@@ -1,5 +1,5 @@
 import { addDatasetLayers } from './layerBuilders.js'
-import { MapLibreDataset } from './datasets/mapLibreDataset.js'
+import { MapLibreDataset } from './registry/mapLibreDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 /**
