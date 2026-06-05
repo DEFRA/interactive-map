@@ -138,7 +138,8 @@ describe('initialiseDatasets', () => {
     })
 
     it('does not create dynamic sources for datasets without dynamicGeoJSON', async () => {
-      datasetRegistry.forEachDataset.mockImplementation(cb => cb({ id: 'roads', hasDynamicGeoJSON: false }))
+      const nonDynamicDataset = { id: 'roads', hasDynamicGeoJSON: false }
+      datasetRegistry.forEachDataset.mockImplementation(cb => cb(nonDynamicDataset))
 
       const args = makeArgs()
       initialiseDatasets(args)
@@ -192,8 +193,9 @@ describe('returned API', () => {
   it('remove() destroys all dynamic sources', async () => {
     const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
     createDynamicSource.mockReturnValue(mockSource)
+    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
     datasetRegistry.forEachDataset.mockImplementation(cb =>
-      cb({ id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } })
+      cb(mockDataset)
     )
 
     const args = makeArgs()
@@ -207,8 +209,9 @@ describe('returned API', () => {
   it('refreshDataset() calls refresh on the matching dynamic source', async () => {
     const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
     createDynamicSource.mockReturnValue(mockSource)
+    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
     datasetRegistry.forEachDataset.mockImplementation(cb =>
-      cb({ id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } })
+      cb(mockDataset)
     )
 
     const args = makeArgs()
@@ -222,8 +225,9 @@ describe('returned API', () => {
   it('clearDatasetCache() calls clear on the matching dynamic source', async () => {
     const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
     createDynamicSource.mockReturnValue(mockSource)
+    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
     datasetRegistry.forEachDataset.mockImplementation(cb =>
-      cb({ id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } })
+      cb(mockDataset)
     )
 
     const args = makeArgs()
@@ -237,8 +241,9 @@ describe('returned API', () => {
   it('getFeatureCount() returns the count from the matching dynamic source', async () => {
     const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn().mockReturnValue(42) }
     createDynamicSource.mockReturnValue(mockSource)
+    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } }
     datasetRegistry.forEachDataset.mockImplementation(cb =>
-      cb({ id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: { url: 'http://x.com', idProperty: 'id' } })
+      cb(mockDataset)
     )
 
     const args = makeArgs()
