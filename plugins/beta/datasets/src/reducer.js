@@ -27,9 +27,9 @@ const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') =
 }
 
 let actionId = 0
-const addAction = (methodName, methodParameters, state) => {
+const addAction = (method, parameters, state) => {
   actionId = state.actionsArray.length ? actionId + 1 : 0
-  return { ...state, actionsArray: [...state.actionsArray, { methodName, methodParameters, actionId }] }
+  return { ...state, actionsArray: [...state.actionsArray, { method, parameters, actionId }] }
 }
 
 const setGlobalState = (state, payload) => {

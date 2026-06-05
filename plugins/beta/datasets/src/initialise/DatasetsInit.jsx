@@ -9,7 +9,6 @@ import { loadLayerAdapter, layerAdapter } from './loadLayerAdapter.js'
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
-
   const isMapStyleReady = !!mapProvider.map?.getStyle()
 
   // Keep a ref to the latest pluginState so event handlers can access current data
@@ -50,27 +49,16 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     initDatasets()
   }, [isMapStyleReady, appState.mode])
 
-  const datasetsRef = useRef(pluginState.mappedDatasets)
-  const orderedDatasetsRef = useRef(pluginState.orderedDatasets)
-  datasetsRef.current = pluginState.mappedDatasets
-  orderedDatasetsRef.current = pluginState.orderedDatasets
-  useEffect(() => {
-    datasetRegistry.attach(datasetsRef.current, pluginState.orderedDatasets)
-  }, [pluginState.mappedDatasets, pluginState.orderedDatasets])
+  useEffect(() => datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets),
+    [pluginState.mappedDatasets, pluginState.orderedDatasets])
 
-  useEffect(() => {
-    attachGlobalState(pluginState.globals)
-  }, [pluginState.globals])
+  useEffect(() => attachGlobalState(pluginState.globals), [pluginState.globals])
 
+  // Call layerAdapter methods that are queued from state updates
   useEffect(() => {
     const { actionsArray } = pluginState
-    if (!actionsArray.length) {
-      return
-    }
-    actionsArray
-      .forEach(({ methodName, methodParameters, actionId }) => {
-        layerAdapter[methodName](...methodParameters)
-      })
+    if (!actionsArray.length) { return }
+    actionsArray.forEach(({ method, parameters }) => layerAdapter[method](...parameters))
     dispatch({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actionsArray })
   }, [pluginState.actionsArray])
 
