@@ -1,6 +1,5 @@
 import { MapLibreDataset } from './mapLibreDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
-import { MAX_TILE_ZOOM } from '../layerIds.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('../../../registry/datasetRegistry.js')
@@ -243,12 +242,12 @@ describe('MapLibreDataset', () => {
       })
     })
 
-    it('falls back to 0/MAX_TILE_ZOOM for minzoom/maxzoom when zoom is not set', () => {
+    it('falls back to 0/22 for minzoom/maxzoom when zoom is not set', () => {
       expect(datasetRegistry.getDataset('ds-tiles-no-zoom').source).toEqual({
         type: 'vector',
         tiles: ['https://example.com/{z}/{x}/{y}'],
         minzoom: 0,
-        maxzoom: MAX_TILE_ZOOM
+        maxzoom: 22
       })
     })
 

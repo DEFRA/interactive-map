@@ -1,25 +1,4 @@
-import {
-  hashString,
-  MAX_TILE_ZOOM
-} from './layerIds'
-
-import { hasPattern } from '../../../../../../src/utils/patternUtils.js'
-
-jest.mock('../../../../../../src/utils/patternUtils.js', () => ({
-  hasPattern: jest.fn(() => false)
-}))
-
-beforeEach(() => {
-  hasPattern.mockReturnValue(false)
-})
-
-// ─── MAX_TILE_ZOOM ────────────────────────────────────────────────────────────
-
-describe('MAX_TILE_ZOOM', () => {
-  it('is 22', () => {
-    expect(MAX_TILE_ZOOM).toBe(22)
-  })
-})
+import { hashString } from './layerIds'
 
 // ─── hashString ───────────────────────────────────────────────────────────────
 

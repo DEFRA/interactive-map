@@ -1,6 +1,7 @@
 import { Dataset } from '../../../registry/dataset.js'
-import { MAX_TILE_ZOOM, hashString } from '../layerIds.js'
+import { hashString } from '../layerIds.js'
 import { anchorToMaplibre } from '../../../../../../../providers/maplibre/src/utils/symbolImages.js'
+const MAX_TILE_ZOOM = 22
 
 export class MapLibreDataset extends Dataset {
   get visibility () { return this.visible ? 'visible' : 'none' }
