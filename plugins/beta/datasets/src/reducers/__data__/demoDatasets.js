@@ -195,6 +195,7 @@ export const expectedDatasetsMenuConfig = [
   {
     visibleWhen: true,
     type: 'checkbox',
+    id: 'existing-fields',
     items: [
       { id: 'existing-fields', label: 'Existing fields' }
     ]
@@ -213,6 +214,7 @@ export const expectedDatasetsMenuConfig = [
   {
     visibleWhen: true,
     type: 'checkbox',
+    id: 'hedge-control',
     items: [
       { id: 'hedge-control', label: 'Hedge control' }
     ]

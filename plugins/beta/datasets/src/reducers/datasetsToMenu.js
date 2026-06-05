@@ -41,6 +41,7 @@ export const datasetsToMenu = (state) => {
       menu.push({
         visibleWhen: true,
         type: 'checkbox',
+        id: dataset.id,
         items: [
           {
             id: dataset.id,
