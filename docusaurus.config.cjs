@@ -94,6 +94,7 @@ const config = {
             { text: 'Add a marker with a panel', href: '/examples/add-marker-with-panel' },
             { text: 'Toggle marker label', href: '/examples/toggle-marker-label' },
             { text: 'Add a search control', href: '/examples/search-control' },
+            { text: 'Select a feature', href: '/examples/select-feature' },
           ],
         },
         {

@@ -1,9 +1,9 @@
 import DemoMapSelectBuilding from '../../demo/DemoMapSelectBuilding.js'
 import CodeTabs from '../../demo/js/codeTabs.js'
 
-# Select a building from the map
+# Select a feature
 
-Use the interact plugin to let users click a building on the map background and see its properties in a panel. Selecting another building replaces the current selection; clicking outside clears it.
+Use the interact plugin to add feature selection to your map. This example adds the ability to select a building from the OS Open Zoomstack `Buildings 3D` layer and display its properties in a panel. Selecting another building replaces the current selection; clicking outside clears it.
 
 :::note
 The layer ID used here (`buildings 3D`) is specific to the OS Open Zoomstack outdoor style. For other tile styles, set `debug: true` in the plugin options, open the browser console, and click the map to see which layer IDs are available at that point.
