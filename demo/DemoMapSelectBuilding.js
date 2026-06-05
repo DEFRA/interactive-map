@@ -42,7 +42,8 @@ function MapInner () {
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
         center: CENTER,
-        zoom: 17,
+        zoom: 14.5,
+        maxZoom: 14.5,
         containerHeight: '500px',
         plugins: [interactPlugin]
       })
