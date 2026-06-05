@@ -15,15 +15,7 @@ const initialState = {
     items: [],
     hasGroups: false
   },
-  layerAdapterActions: {
-    applyStyle: [],
-    applyDatasetVisibility: [],
-    applyGlobalVisibility: [],
-    applyDatasetOpacity: [],
-    applyGlobalOpacity: [],
-    addDataset: [],
-    applyFeatureFilter: []
-  }
+  actionsArray: []
 }
 
 const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') => {
@@ -34,9 +26,10 @@ const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') =
   return true
 }
 
-const addAction = (actionName, parameters, state) => {
-  const action = [...state.layerAdapterActions[actionName], parameters]
-  return { ...state, layerAdapterActions: { ...state.layerAdapterActions, [actionName]: action } }
+let actionId = 0
+const addAction = (methodName, methodParameters, state) => {
+  actionId = state.actionsArray.length ? actionId + 1 : 0
+  return { ...state, actionsArray: [...state.actionsArray, { methodName, methodParameters, actionId }] }
 }
 
 const setGlobalState = (state, payload) => {
@@ -148,7 +141,13 @@ const showFeatures = (state, payload) => {
   })
 }
 
-const setLayerAdapterActions = (state, payload) => ({ ...state, layerAdapterActions: { ...state.layerAdapterActions, ...payload } })
+const removeAdapterActions = (state, completedActions) => {
+  if (!completedActions?.length) { return state }
+  return {
+    ...state,
+    actionsArray: state.actionsArray.filter((current) => !completedActions.includes(current))
+  }
+}
 
 const setDatasetStyle = (state, payload) => {
   const { datasetId, styleChanges, mapStyle } = payload
@@ -197,7 +196,7 @@ const actions = {
   SET_GLOBAL_OPACITY: setGlobalOpacity,
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
-  SET_LAYER_ADAPTER_ACTIONS: setLayerAdapterActions,
+  REMOVE_ADAPTER_ACTIONS: removeAdapterActions,
   SET_GLOBAL_STATE: setGlobalState
 }
 

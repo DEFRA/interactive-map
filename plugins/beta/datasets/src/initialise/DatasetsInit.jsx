@@ -6,18 +6,6 @@ import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from './loadLayerAdapter.js'
 
-const useLayerAdapterActions = (methodName, dispatch, pluginState, dependencies) =>
-  useEffect(() => {
-    const methodParameters = pluginState.layerAdapterActions?.[methodName] || []
-    const method = layerAdapter[methodName]
-    if (method && methodParameters.length) {
-      methodParameters.forEach((parameters) => method(...parameters))
-      if (methodParameters.length) {
-        dispatch({ type: 'SET_LAYER_ADAPTER_ACTIONS', payload: { [methodName]: [] } })
-      }
-    }
-  }, [...dependencies])
-
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
@@ -74,13 +62,17 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     attachGlobalState(pluginState.globals)
   }, [pluginState.globals])
 
-  useLayerAdapterActions('applyStyle', dispatch, pluginState, [pluginState.layerAdapterActions.applyStyle])
-  useLayerAdapterActions('applyDatasetVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.applyDatasetVisibility])
-  useLayerAdapterActions('applyGlobalVisibility', dispatch, pluginState, [pluginState.layerAdapterActions.applyGlobalVisibility])
-  useLayerAdapterActions('applyDatasetOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.applyDatasetOpacity])
-  useLayerAdapterActions('applyGlobalOpacity', dispatch, pluginState, [pluginState.layerAdapterActions.applyGlobalOpacity])
-  useLayerAdapterActions('addDataset', dispatch, pluginState, [pluginState.layerAdapterActions.addDataset])
-  useLayerAdapterActions('applyFeatureFilter', dispatch, pluginState, [pluginState.layerAdapterActions.applyFeatureFilter])
+  useEffect(() => {
+    const { actionsArray } = pluginState
+    if (!actionsArray.length) {
+      return
+    }
+    actionsArray
+      .forEach(({ methodName, methodParameters, actionId }) => {
+        layerAdapter[methodName](...methodParameters)
+      })
+    dispatch({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actionsArray })
+  }, [pluginState.actionsArray])
 
   // Cleanup only on unmount
   useEffect(() => {
