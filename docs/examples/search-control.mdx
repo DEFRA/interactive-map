@@ -1,9 +1,13 @@
 import DemoMapSearchNominatim from '../../demo/DemoMapSearchNominatim.js'
 import CodeTabs from '../../demo/js/codeTabs.js'
 
-# Search with Nominatim
+# Add a search control
 
-Add a search control backed by [Nominatim](https://nominatim.openstreetmap.org/) — the free OpenStreetMap geocoding service — using a custom dataset.
+Add a search control using the built-in OS Names API integration.
+
+:::note
+The live demo below uses Nominatim (no API key required) — the code example uses OS Names, so results may differ slightly. Embedding the key in the URL is the simplest approach for prototyping; for production, `transformRequest` can be used to inject auth headers, or you may need to route requests through your own server-side proxy.
+:::
 
 <DemoMapSearchNominatim />
 
@@ -16,44 +20,8 @@ Add a search control backed by [Nominatim](https://nominatim.openstreetmap.org/)
       import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createSearchPlugin from '@defra/interactive-map/plugins/search'
 
-      const markQuery = (text, query) => {
-        const escaped = query.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&')
-        return text.replace(new RegExp(\`(\${escaped})\`, 'i'), '<mark>$1</mark>')
-      }
-
-      const nominatimDataset = {
-        name: 'nominatim',
-        buildRequest: (query) => {
-          const params = new URLSearchParams({
-            q: query,
-            format: 'json',
-            limit: '8',
-            countrycodes: 'gb'
-          })
-          return new Request(\`https://nominatim.openstreetmap.org/search?\${params}\`, {
-            headers: { 'Accept-Language': 'en' }
-          })
-        },
-        parseResults: (json, query) => {
-          if (!Array.isArray(json)) return []
-          const results = json.map(item => {
-            // Nominatim boundingbox order: [min_lat, max_lat, min_lon, max_lon]
-            const [minLat, maxLat, minLon, maxLon] = item.boundingbox.map(Number)
-            return {
-              id: String(item.place_id),
-              text: item.display_name,
-              marked: markQuery(item.display_name, query),
-              point: [Number(item.lon), Number(item.lat)],
-              bounds: [minLon, minLat, maxLon, maxLat],
-              type: 'nominatim'
-            }
-          })
-          return Array.from(new Map(results.map(r => [r.text, r])).values())
-        }
-      }
-
       const searchPlugin = createSearchPlugin({
-        customDatasets: [nominatimDataset]
+        osNamesURL: 'https://api.os.uk/search/names/v1/find?query={query}&key=YOUR_API_KEY'
       })
 
       new InteractiveMap('my-map', {
@@ -79,42 +47,8 @@ Add a search control backed by [Nominatim](https://nominatim.openstreetmap.org/)
       <script src="/your-assets-path/search-plugin/index.js"></script>
 
       <script>
-      const markQuery = (text, query) => {
-        const escaped = query.replace(/[.*+?^\${}()|[\\]\\\\]/g, '\\\\$&')
-        return text.replace(new RegExp(\`(\${escaped})\`, 'i'), '<mark>$1</mark>')
-      }
-
-      const nominatimDataset = {
-        name: 'nominatim',
-        buildRequest: (query) => {
-          const params = new URLSearchParams({
-            q: query,
-            format: 'json',
-            limit: '8',
-            countrycodes: 'gb'
-          })
-          return new Request(\`https://nominatim.openstreetmap.org/search?\${params}\`, {
-            headers: { 'Accept-Language': 'en' }
-          })
-        },
-        parseResults: (json, query) => {
-          if (!Array.isArray(json)) return []
-          return json.map(item => {
-            const [minLat, maxLat, minLon, maxLon] = item.boundingbox.map(Number)
-            return {
-              id: String(item.place_id),
-              text: item.display_name,
-              marked: markQuery(item.display_name, query),
-              point: [Number(item.lon), Number(item.lat)],
-              bounds: [minLon, minLat, maxLon, maxLat],
-              type: 'nominatim'
-            }
-          })
-        }
-      }
-
       const searchPlugin = defra.searchPlugin({
-        customDatasets: [nominatimDataset]
+        osNamesURL: 'https://api.os.uk/search/names/v1/find?query={query}&key=YOUR_API_KEY'
       })
 
       new defra.InteractiveMap('my-map', {

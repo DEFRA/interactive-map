@@ -12,6 +12,8 @@ const markQuery = (text, query) => {
   return text.replace(new RegExp(`(${escaped})`, 'i'), '<mark>$1</mark>')
 }
 
+const SETTLEMENT_TYPES = new Set(['city', 'town', 'village', 'hamlet', 'suburb', 'quarter', 'neighbourhood', 'municipality', 'borough', 'district', 'county'])
+
 const nominatimDataset = {
   name: 'nominatim',
   buildRequest: (query) => {
@@ -29,7 +31,7 @@ const nominatimDataset = {
     if (!Array.isArray(json)) {
       return []
     }
-    const results = json.map(item => {
+    const results = json.filter(item => SETTLEMENT_TYPES.has(item.addresstype)).map(item => {
       // Nominatim boundingbox: [min_lat, max_lat, min_lon, max_lon]
       const [minLat, maxLat, minLon, maxLon] = item.boundingbox.map(Number)
       return {
@@ -37,8 +39,7 @@ const nominatimDataset = {
         text: item.display_name,
         marked: markQuery(item.display_name, query),
         point: [Number(item.lon), Number(item.lat)],
-        bounds: [minLon, minLat, maxLon, maxLat],
-        type: 'nominatim'
+        bounds: [minLon, minLat, maxLon, maxLat]
       }
     })
     return Array.from(new Map(results.map(r => [r.text, r])).values())

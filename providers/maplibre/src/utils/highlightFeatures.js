@@ -64,7 +64,8 @@ const clearPrefixSources = (map, prefix) => {
 }
 
 const applyHighlightLayer = (map, id, type, sourceId, srcLayer, paint, filter) => {
-  if (!map.getLayer(id)) {
+  const existed = !!map.getLayer(id)
+  if (!existed) {
     map.addLayer({
       id,
       type,
@@ -124,11 +125,26 @@ const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter
 
 const applyFillGeomHighlight = (map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter }) => {
   if (isSelected) {
-    const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
+    const fillIdsArray = []
+    fillIds.forEach(id => fillIdsArray.push(id))
+    const fillFilter = ['in', idExpression, ['literal', fillIdsArray]]
     // Only apply fill highlight to polygon features, not to any co-selected line features
     applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
   }
   applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+}
+
+const applyFillExtrusionHighlight = (map, base, layerId, { ids, lineColor, lineWidth, idExpression }) => {
+  // forEach bypasses broken Set iterator polyfill in the Docusaurus/core-js environment
+  const newIds = []
+  ids.forEach(id => newIds.push(id))
+
+  const filter = ['in', idExpression, ['literal', newIds]]
+  const { source, sourceLayer } = map.getLayer(layerId)
+
+  // A line layer moved to the top of the stack renders above the fill-extrusion 3D pass.
+  // fill-extrusion has no outline/stroke property, so this is the only way to show a stroke.
+  applyHighlightLayer(map, `${base}-line`, 'line', source, sourceLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
 }
 
 const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId) => {
@@ -149,7 +165,14 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
   const lineColor = selectedStyle ? selectionStroke : stroke
   const lineWidth = selectedStyle ? strokeWidth : activeStrokeWidth
   const idExpression = idProperty ? ['get', idProperty] : ['id']
-  const filter = ['in', idExpression, ['literal', [...ids]]]
+  const idsArray = []
+  ids.forEach(id => idsArray.push(id))
+  const filter = ['in', idExpression, ['literal', idsArray]]
+
+  if (baseLayer.type === 'fill-extrusion') {
+    applyFillExtrusionHighlight(map, base, layerId, { ids, lineColor, lineWidth, idExpression })
+    return
+  }
 
   if (geom === 'fill') {
     applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
@@ -191,7 +214,6 @@ export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures
   if (!map) {
     return null
   }
-
   // Active cursor features — rendered first so selected layers appear on top
   if (activeFeatures?.length) {
     applyFeatureHighlights(map, activeFeatures, stylesMap, ACTIVE_PREFIX, getActiveImageId)
