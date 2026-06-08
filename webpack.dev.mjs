@@ -24,7 +24,7 @@ export default {
     planning: path.join(__dirname, 'demo/js/planning.js'),
     'planning-ol': path.join(__dirname, 'demo/js/planning-ol.js'),
     gep: path.join(__dirname, 'demo/js/gep.js'),
-    'ml-datasets': path.join(__dirname, 'demo/js/ml-datasets.js'),
+    esm: path.join(__dirname, 'demo/js/esm.js'),
     multimap: path.join(__dirname, 'demo/js/multimap.js')
   },
   output: {
@@ -35,6 +35,14 @@ export default {
   resolve: {
     extensions: ['.tsx', '.ts', '.jsx', '.js'],
     alias: {
+      // Redirect react imports to preact/compat so the dev build is consistent
+      // with the ESM dist, which externalises preact and aliases react at build time.
+      // Without this, the ESM dist chunks run on preact while the rest of the app
+      // runs on React — two incompatible reconcilers sharing one component tree.
+      react: path.resolve(__dirname, 'node_modules/preact/compat'),
+      'react-dom/client': path.resolve(__dirname, 'node_modules/preact/compat/client'),
+      'react-dom': path.resolve(__dirname, 'node_modules/preact/compat'),
+      'react/jsx-runtime': path.resolve(__dirname, 'node_modules/preact/jsx-runtime'),
       // Force these to resolve from root node_modules, preventing nested copies
       // inside geojson-rbush and mapbox-gl-snap from being bundled separately.
       '@turf/meta': path.resolve(__dirname, 'node_modules/@turf/meta'),
