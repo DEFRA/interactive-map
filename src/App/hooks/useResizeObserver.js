@@ -32,9 +32,9 @@ export function useResizeObserver (targetRefs, callback) {
         // resize events (e.g. panel open) from queueing separate callbacks and
         // causing a ResizeObserver loop under synchronous renderers like preact.
         cancelAnimationFrame(frameRef.current)
-        frameRef.current = requestAnimationFrame(() =>
-          changedEntries.forEach(entry => callback(entry))
-        )
+        frameRef.current = requestAnimationFrame(() => {
+          for (const entry of changedEntries) { callback(entry) }
+        })
       }
     })
 
