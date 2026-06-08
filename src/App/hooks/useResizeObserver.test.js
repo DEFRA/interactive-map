@@ -26,6 +26,7 @@ describe('useResizeObserver', () => {
       this.trigger = (entries) => cb(entries) // helper to simulate resize
     })
 
+    jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 0 })
     jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(() => {})
   })
 
