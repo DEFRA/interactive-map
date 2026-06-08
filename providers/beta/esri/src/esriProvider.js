@@ -29,6 +29,10 @@ export default class EsriProvider {
     this.appEventHandles = []
   }
 
+  get name () {
+    return 'EsriProvider'
+  }
+
   async initMap (config) {
     const { container, padding, mapStyle, mapSize, maxExtent } = config
     this.mapStyleId = mapStyle?.id

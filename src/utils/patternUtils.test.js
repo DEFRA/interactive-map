@@ -14,8 +14,17 @@ describe('hashString', () => {
     expect(hashString('hello')).toBe(hashString('hello'))
   })
 
+  it('returns the same hash for the same input', () => {
+    expect(hashString('https://tiles.example.com/{z}/{x}/{y}'))
+      .toBe(hashString('https://tiles.example.com/{z}/{x}/{y}'))
+  })
+
   test('produces different values for different inputs', () => {
     expect(hashString('a')).not.toBe(hashString('b'))
+  })
+
+  it('handles an empty string without throwing', () => {
+    expect(() => hashString('')).not.toThrow()
   })
 })
 

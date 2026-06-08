@@ -19,7 +19,6 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
-import { maplibreLayerAdapter } from '/plugins/beta/datasets/src/adapters/maplibre/index.js'
 // import createDrawPlugin from '/plugins/beta/draw-ml/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
@@ -47,11 +46,11 @@ const pointData = {
 
 const interactPlugin = createInteractPlugin({
 	layers: [{
-		layerId: 'historic-monuments-prehistoric-symbol',
+		layerId: 'historic-monuments-prehistoric',
 	}, {
-		layerId: 'historic-monuments-roman-symbol',
+		layerId: 'historic-monuments-roman',
 	}, {
-		layerId: 'historic-monuments-medieval-symbol',
+		layerId: 'historic-monuments-medieval',
 	}, {
 		layerId: 'land-covers-110',
 		// labelProperty: 'gid'
@@ -100,7 +99,6 @@ const framePlugin = createFramePlugin({
 })
 
 const datasetsPlugin = createDatasetsPlugin({
-	layerAdapter: maplibreLayerAdapter,
 	// Example: Dynamic bbox-based fetching (uncomment to test)
 	datasets: [
 	{

@@ -264,15 +264,9 @@ const ALL_BUILDS = [
   {
     entryPath: './plugins/beta/datasets/src/index.js',
     outDir: 'plugins/beta/datasets/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-datasets-plugin' }
-  },
-  {
-    entryPath: './plugins/beta/datasets/src/adapters/maplibre/index.js',
-    outDir: 'plugins/beta/datasets/dist/adapters/maplibre/esm',
     manualChunks: (id) => {
-      if (id.includes('maplibreLayerAdapter')) {
-        return 'im-datasets-ml-adapter'
-      }
+      if (id.includes('/manifest')) return 'im-datasets-plugin'
+      if (id.includes('maplibreLayerAdapter')) return 'im-datasets-ml-adapter'
     }
   },
   {

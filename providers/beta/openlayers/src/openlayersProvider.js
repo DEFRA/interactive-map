@@ -41,6 +41,10 @@ export default class OpenLayersProvider {
     Object.assign(this, mapProviderConfig)
   }
 
+  get name () {
+    return 'OpenLayersProvider'
+  }
+
   async initMap (config) {
     const { container, padding, mapStyle, mapSize, center, zoom, bounds, minZoom, maxZoom, transformRequest, pixelRatio } = config
     this.mapStyleId = mapStyle?.id

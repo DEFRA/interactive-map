@@ -1,4 +1,4 @@
-const datasetsPlugin = defra.datasetsMaplibrePlugin({
+const datasetsPlugin = defra.datasetsPlugin({
   datasets: [
     {
       id: 'demo-areas',
@@ -46,5 +46,5 @@ const interactiveMap = new defra.InteractiveMap('map', {
 })
 
 interactiveMap.on('map:ready', function () {
-  console.log('map:ready — combined datasets maplibre plugin loaded successfully')
+  console.log('map:ready — datasets plugin (MapLibre bundle) loaded successfully')
 })

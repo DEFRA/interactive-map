@@ -50,13 +50,13 @@ context.mapProvider.setView({ zoom: 10 })
 
 Rasterises and registers pattern fill images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
 
-- `patternConfigs` — flat array of dataset/sublayer configs that have a `fillPattern` or `fillPatternSvgContent` property (sublayer merging is the caller's responsibility)
+- `patternConfigs` — flat array of style configs that have a `fillPattern` or `fillPatternSvgContent` property
 - `mapStyleId` — current map style ID
 - `patternRegistry` — the core pattern registry instance
 
 ```js
 // In a plugin's MapLibre layer adapter
-await mapProvider.addPatternsToMap(getPatternConfigs(datasets, patternRegistry), mapStyleId, patternRegistry)
+await mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)
 ```
 
 ---
@@ -65,13 +65,13 @@ await mapProvider.addPatternsToMap(getPatternConfigs(datasets, patternRegistry),
 
 Rasterises and registers symbol images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
 
-- `symbolConfigs` — flat array of dataset/sublayer configs that have a `symbol` property (sublayer merging is the caller's responsibility — use `getSymbolConfigs` from the datasets adapter or equivalent)
+- `symbolConfigs` — flat array of style configs that have a `symbol` property
 - `mapStyleId` — current map style ID, used to resolve style-variant token values
 - `symbolRegistry` — the core symbol registry instance
 
 ```js
 // In a plugin's MapLibre layer adapter
-await mapProvider.addSymbolsToMap(getSymbolConfigs(datasets), mapStyleId, symbolRegistry)
+await mapProvider.addSymbolsToMap(symbolConfigs, mapStyleId, symbolRegistry)
 ```
 
 ---

@@ -154,8 +154,6 @@ export function useLayoutMeasurements () {
   //    that is Effect 2's responsibility.
   // --------------------------------
   useResizeObserver([bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef], () => {
-    requestAnimationFrame(() => {
-      calculateLayout(layoutRefs)
-    })
+    calculateLayout(layoutRefs)
   })
 }

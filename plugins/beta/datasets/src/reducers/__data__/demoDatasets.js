@@ -1,0 +1,253 @@
+const pointData = {
+  type: 'FeatureCollection',
+  features: [{
+    type: 'Feature',
+    properties: { category: 'prehistoric' },
+    geometry: { coordinates: [-2.4558622, 54.5617135], type: 'Point' }
+  }, {
+    type: 'Feature',
+    properties: { category: 'roman' },
+    geometry: { coordinates: [-2.439823, 54.5525437], type: 'Point' }
+  },
+  {
+    type: 'Feature',
+    properties: { category: 'medieval' },
+    geometry: { coordinates: [-2.4481939, 54.5575261], type: 'Point' }
+  }]
+}
+export const datasets = [
+  {
+    id: 'land-covers',
+    label: 'Land covers',
+    dynamicGeoJSON: {
+      idProperty: 'id', // required - the ID that identifies individual features
+      url: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // required
+      transformRequest: (url) => url + 'TRANSFORMED', // Required
+      maxFeatures: 50000 // Optional: evict distant features when exceeded
+    },
+    hiddenFeatures: [42],
+    query: {},
+    maxFeatures: 50000, // Optional: evict distant features when exceeded
+    minZoom: 10,
+    maxZoom: 24,
+    showInKey: true,
+    showInMenu: true,
+    visible: true,
+    sublayers: [{
+      id: '130-131',
+      label: 'Permanent grassland',
+      filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
+      showInMenu: true,
+      visible: true,
+      style: {
+        stroke: { outdoor: '#00897B', dark: '#ffffff' },
+        fillPattern: 'diagonal-cross-hatch',
+        fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
+        fillPatternBackgroundColor: 'transparent'
+      }
+    }, {
+      id: '332',
+      label: 'Woodland',
+      filter: ['==', ['get', 'dominant_land_cover'], '332'],
+      showInMenu: true,
+      visible: true,
+      style: {
+        stroke: { outdoor: '#2E7D32', dark: '#ffffff' },
+        fillPattern: 'dot',
+        fillPatternForegroundColor: { outdoor: '#2E7D32', dark: '#ffffff' },
+        fillPatternBackgroundColor: 'transparent'
+      }
+    }, {
+      id: '110',
+      label: 'Arable',
+      filter: ['==', ['get', 'dominant_land_cover'], '110'],
+      showInMenu: true,
+      visible: true,
+      style: {
+        stroke: { outdoor: '#6D4C41', dark: '#ffffff' },
+        fillPattern: 'horizontal-hatch',
+        fillPatternForegroundColor: { outdoor: '#6D4C41', dark: '#ffffff' },
+        fillPatternBackgroundColor: 'transparent'
+      }
+    }, {
+      id: '379',
+      label: 'Farmyards',
+      visibility: 'hidden',
+      visible: false,
+      filter: ['==', ['get', 'dominant_land_cover'], '379'],
+      showInMenu: true,
+      style: {
+        stroke: { outdoor: '#6A1B9A', dark: '#ffffff' },
+        fillPattern: 'forward-diagonal-hatch',
+        fillPatternForegroundColor: { outdoor: '#6A1B9A', dark: '#ffffff' },
+        fillPatternBackgroundColor: 'transparent'
+      }
+    }, {
+      id: 'other',
+      label: 'Others',
+      filter: ['!', ['in', ['get', 'dominant_land_cover'], ['literal', ['110', '130', '131', '332', '379']]]],
+      showInMenu: true,
+      visible: true,
+      style: {
+        stroke: { outdoor: '#1565C0', dark: '#ffffff' },
+        fill: 'rgba(0,0,255,0.1)',
+        fillPattern: 'vertical-hatch',
+        fillPatternForegroundColor: { outdoor: '#1565C0', dark: '#ffffff' }
+        // fillPatternBackgroundColor: 'transparent'
+      }
+    }]
+  },
+  {
+    id: 'existing-fields',
+    label: 'Existing fields',
+    // groupLabel: 'Test group',
+    filter: ['all', ['==', ['get', 'sbi'], '106223377'], ['==', ['get', 'is_dominant_land_cover'], true]],
+    tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}',
+    sourceLayer: 'field_parcels_filtered',
+    minZoom: 10,
+    maxZoom: 24,
+    showInKey: true,
+    showInMenu: true,
+    visible: true,
+    style: {
+      stroke: { outdoor: '#1565C0', dark: '#ffffff' },
+      strokeWidth: 2,
+      fill: 'rgba(21,101,192,0.1)',
+      symbolDescription: { outdoor: 'blue outline', dark: 'white outline' }
+    }
+  }, {
+    id: 'historic-monuments',
+    label: 'Historic monuments',
+    geojson: pointData,
+    minZoom: 10,
+    maxZoom: 24,
+    showInKey: true,
+    showInMenu: true,
+    visible: true,
+    style: {
+      symbol: 'square',
+      symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
+    },
+    sublayers: [{
+      id: 'prehistoric',
+      label: 'Prehistoric',
+      filter: ['in', ['get', 'category'], 'prehistoric'],
+      showInMenu: true,
+      visible: true,
+      style: {
+        symbolBackgroundColor: '#00897B'
+      }
+    }, {
+      id: 'roman',
+      label: 'Roman',
+      filter: ['in', ['get', 'category'], 'roman'],
+      showInMenu: true,
+      visible: true,
+      style: {
+        symbolBackgroundColor: '#ca3535'
+      }
+    }, {
+      id: 'medieval',
+      label: 'Medieval',
+      filter: ['in', ['get', 'category'], 'medieval'],
+      showInMenu: true,
+      visible: true,
+      style: {
+        symbolBackgroundColor: '#1565C0'
+      }
+    }]
+  }, {
+    id: 'hedge-control',
+    label: 'Hedge control',
+    // groupLabel: 'Test group',
+    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+    sourceLayer: 'hedge_control',
+    minZoom: 10,
+    maxZoom: 24,
+    showInKey: true,
+    showInMenu: true,
+    visibility: 'hidden',
+    visible: false,
+    style: {
+      stroke: '#b58840',
+      fill: 'transparent',
+      strokeWidth: 4,
+      symbolDescription: { outdoor: 'blue outline' },
+      keySymbolShape: 'line'
+    }
+  }
+]
+
+export const expectedDatasetsMenuConfig = [
+  {
+    id: 'land-covers',
+    groupLabel: 'Land covers',
+    visibleWhen: true,
+    type: 'checkbox',
+    items: [
+      { id: 'land-covers-130-131', label: 'Permanent grassland' },
+      { id: 'land-covers-332', label: 'Woodland' },
+      { id: 'land-covers-110', label: 'Arable' },
+      { id: 'land-covers-379', label: 'Farmyards' },
+      { id: 'land-covers-other', label: 'Others' }
+    ]
+  },
+  {
+    visibleWhen: true,
+    type: 'checkbox',
+    id: 'existing-fields',
+    items: [
+      { id: 'existing-fields', label: 'Existing fields' }
+    ]
+  },
+  {
+    id: 'historic-monuments',
+    groupLabel: 'Historic monuments',
+    visibleWhen: true,
+    type: 'checkbox',
+    items: [
+      { id: 'historic-monuments-prehistoric', label: 'Prehistoric' },
+      { id: 'historic-monuments-roman', label: 'Roman' },
+      { id: 'historic-monuments-medieval', label: 'Medieval' }
+    ]
+  },
+  {
+    visibleWhen: true,
+    type: 'checkbox',
+    id: 'hedge-control',
+    items: [
+      { id: 'hedge-control', label: 'Hedge control' }
+    ]
+  }
+]
+
+const landCovers = datasets[0]
+const existingFields = datasets[1]
+const historicMonuments = datasets[2]
+const hedgeControl = datasets[3]
+const landCoversMenuItem = expectedDatasetsMenuConfig[0]
+const existingFieldsMenuItem = expectedDatasetsMenuConfig[1]
+const historicMonumentsMenuItem = expectedDatasetsMenuConfig[2]
+const hedgeControlMenuItem = expectedDatasetsMenuConfig[3]
+
+export const datasetsWithGroups = [
+  { ...landCovers },
+  { ...existingFields, groupLabel: 'Test group' },
+  { ...historicMonuments },
+  { ...hedgeControl, groupLabel: 'Test group', visible: true }
+]
+
+export const expectedDatasetsMenuConfigWithGroups = [
+  { ...landCoversMenuItem },
+  {
+    visibleWhen: true,
+    type: 'checkbox',
+    groupLabel: 'Test group',
+    id: 'Test group',
+    items: [
+      ...existingFieldsMenuItem.items,
+      ...hedgeControlMenuItem.items
+    ]
+  },
+  { ...historicMonumentsMenuItem }
+]
