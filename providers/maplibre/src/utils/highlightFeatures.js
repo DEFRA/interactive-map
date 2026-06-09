@@ -147,7 +147,7 @@ const applyFillExtrusionHighlight = (map, base, layerId, { ids, lineColor, lineW
   applyHighlightLayer(map, `${base}-line`, 'line', source, sourceLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
 }
 
-const applyGeometryHighlight = (geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter }, getSymbolImageId) => {
+const applyGeometryHighlight = (geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter, getSymbolImageId }) => {
   if (geom === 'fill') {
     applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
     return
@@ -197,7 +197,7 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
     return
   }
 
-  applyGeometryHighlight(geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter }, getSymbolImageId)
+  applyGeometryHighlight(geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter, getSymbolImageId })
 }
 
 const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImageId) => {
