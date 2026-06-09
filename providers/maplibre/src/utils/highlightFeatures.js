@@ -147,38 +147,30 @@ const applyFillExtrusionHighlight = (map, base, layerId, { ids, lineColor, lineW
   applyHighlightLayer(map, `${base}-line`, 'line', source, sourceLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
 }
 
-const applyGeometryHighlight = (geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter, getSymbolImageId }) => {
-  if (geom === 'fill') {
-    applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
-    return
-  }
+const applyFillHighlight = (map, base, sourceId, srcLayer, isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter) => {
+  applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
+}
 
-  if (geom === 'line') {
-    if (map.getLayer(`${base}-fill`)) {
-      map.setFilter(`${base}-fill`, ['==', 'id', ''])
-    }
-    applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
-    return
+const applyLineHighlight = (map, base, sourceId, srcLayer, lineColor, lineWidth, filter) => {
+  if (map.getLayer(`${base}-fill`)) {
+    map.setFilter(`${base}-fill`, ['==', 'id', ''])
   }
+  applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+}
 
-  if (geom === 'symbol') {
-    applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
-  }
+const applySymbolHighlight = (map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId) => {
+  applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
 }
 
 const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId) => {
   const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
   const baseLayer = map.getLayer(layerId)
 
-  if (!baseLayer) {
+  if (!baseLayer || !stylesMap[layerId]) {
     return
   }
 
   const style = stylesMap[layerId]
-  if (!style) {
-    return
-  }
-
   const srcLayer = baseLayer.sourceLayer
   const geom = hasFillGeometry ? 'fill' : baseLayer.type
   const base = `${prefix}-${sourceId}`
@@ -188,8 +180,7 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
   const lineColor = selectedStyle ? selectionStroke : stroke
   const lineWidth = selectedStyle ? strokeWidth : activeStrokeWidth
   const idExpression = idProperty ? ['get', idProperty] : ['id']
-  const idsArray = []
-  ids.forEach(id => idsArray.push(id))
+  const idsArray = Array.from(ids)
   const filter = ['in', idExpression, ['literal', idsArray]]
 
   if (baseLayer.type === 'fill-extrusion') {
@@ -197,7 +188,19 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
     return
   }
 
-  applyGeometryHighlight(geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter, getSymbolImageId })
+  switch (geom) {
+    case 'fill':
+      applyFillHighlight(map, base, sourceId, srcLayer, isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter)
+      break
+    case 'line':
+      applyLineHighlight(map, base, sourceId, srcLayer, lineColor, lineWidth, filter)
+      break
+    case 'symbol':
+      applySymbolHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+      break
+    default:
+      break
+  }
 }
 
 const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImageId) => {
