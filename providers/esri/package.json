@@ -1,0 +1,26 @@
+{
+  "name": "@defra/interactive-map-provider-esri",
+  "version": "0.0.0-development",
+  "description": "ArcGIS/ESRI provider for @defra/interactive-map",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map",
+    "directory": "providers/esri"
+  },
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js"
+    },
+    "./css": "./dist/css/index.css"
+  },
+  "type": "module",
+  "files": ["dist"],
+  "sideEffects": ["**/*.css"],
+  "publishConfig": { "tag": "beta" },
+  "peerDependencies": {
+    "@defra/interactive-map": "*",
+    "@arcgis/core": "^5.0.9"
+  },
+  "license": ""
+}
