@@ -1,0 +1,263 @@
+import DemoMapDraw from '../../demo/DemoMapDraw.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
+
+# Draw tools
+
+Draw, edit, select and delete polygons and lines using the draw and interact plugins. A single "Draw tools" menu button groups all drawing actions together. The menu items update their enabled state based on whether a drawn feature is selected.
+
+:::note
+The draw plugin (`draw-ml`) is currently in beta.
+:::
+
+<DemoMapDraw />
+
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+      import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+      import createDrawPlugin from '@defra/interactive-map/plugins/draw-ml'
+
+      const DRAW_LAYERS = ['fill-inactive.cold', 'stroke-inactive.cold']
+
+      const interactPlugin = createInteractPlugin({
+        layers: [
+          { layerId: 'fill-inactive.cold', idProperty: 'id' },
+          { layerId: 'stroke-inactive.cold', idProperty: 'id' }
+        ],
+        interactionModes: ['selectFeature'],
+        multiSelect: true,
+        deselectOnClickOutside: true
+      })
+
+      const drawPlugin = createDrawPlugin()
+
+      const interactiveMap = new InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-0.1276, 51.5074],
+        zoom: 12,
+        containerHeight: '516px',
+        plugins: [interactPlugin, drawPlugin]
+      })
+
+      let selectedFeatureIds = []
+
+      interactiveMap.on('map:ready', () => {
+        interactPlugin.enable()
+
+        interactiveMap.addButton('drawTools', {
+          label: 'Draw tools',
+          mobile: { slot: 'bottom-right' },
+          tablet: { slot: 'top-middle' },
+          desktop: { slot: 'top-middle' },
+          menuItems: [
+            {
+              id: 'drawPolygon',
+              label: 'Draw polygon',
+              onClick: () => {
+                interactiveMap.toggleButtonState('drawTools', 'hidden', true)
+                drawPlugin.newPolygon(crypto.randomUUID())
+              }
+            },
+            {
+              id: 'drawLine',
+              label: 'Draw line',
+              onClick: () => {
+                interactiveMap.toggleButtonState('drawTools', 'hidden', true)
+                drawPlugin.newLine(crypto.randomUUID())
+              }
+            },
+            {
+              id: 'editFeature',
+              label: 'Edit feature',
+              isDisabled: true,
+              onClick: () => {
+                if (!drawPlugin.editFeature(selectedFeatureIds[0])) return
+                interactiveMap.toggleButtonState('drawTools', 'hidden', true)
+                interactPlugin.disable()
+              }
+            },
+            {
+              id: 'deleteFeature',
+              label: 'Delete feature',
+              isDisabled: true,
+              onClick: () => {
+                drawPlugin.deleteFeature(selectedFeatureIds)
+                interactPlugin.clear()
+                interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+                interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
+                interactiveMap.toggleButtonState('drawLine', 'disabled', false)
+                interactiveMap.toggleButtonState('editFeature', 'disabled', true)
+                interactiveMap.toggleButtonState('deleteFeature', 'disabled', true)
+              }
+            }
+          ]
+        })
+      })
+
+      interactiveMap.on('draw:started', () => {
+        interactPlugin.disable()
+      })
+
+      interactiveMap.on('draw:created', () => {
+        interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+        interactPlugin.enable()
+      })
+
+      interactiveMap.on('draw:edited', () => {
+        interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+        interactPlugin.enable()
+      })
+
+      interactiveMap.on('draw:cancelled', () => {
+        interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+        interactPlugin.enable()
+      })
+
+      interactiveMap.on('interact:selectionchange', (e) => {
+        const singleFeature = e.selectedFeatures.length === 1
+        const anyFeature = e.selectedFeatures.length > 0
+        const isDrawFeature = singleFeature && DRAW_LAYERS.includes(e.selectedFeatures[0].layerId)
+        const allDrawFeatures = anyFeature && e.selectedFeatures.every(f => DRAW_LAYERS.includes(f.layerId))
+        selectedFeatureIds = e.selectedFeatures.map(f => f.featureId)
+        interactiveMap.toggleButtonState('drawPolygon', 'disabled', singleFeature)
+        interactiveMap.toggleButtonState('drawLine', 'disabled', singleFeature)
+        interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
+        interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
+      })
+    `
+  },
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script src="/your-assets-path/interact-plugin/index.js"></script>
+      <script src="/your-assets-path/draw-ml-plugin/index.js"></script>
+
+      <script>
+      const DRAW_LAYERS = ['fill-inactive.cold', 'stroke-inactive.cold']
+
+      const interactPlugin = defra.interactPlugin({
+        layers: [
+          { layerId: 'fill-inactive.cold', idProperty: 'id' },
+          { layerId: 'stroke-inactive.cold', idProperty: 'id' }
+        ],
+        interactionModes: ['selectFeature'],
+        multiSelect: true,
+        deselectOnClickOutside: true
+      })
+
+      const drawPlugin = defra.drawMLPlugin()
+
+      const interactiveMap = new defra.InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-0.1276, 51.5074],
+        zoom: 12,
+        containerHeight: '516px',
+        plugins: [interactPlugin, drawPlugin]
+      })
+
+      let selectedFeatureIds = []
+
+      interactiveMap.on('map:ready', function () {
+        interactPlugin.enable()
+
+        interactiveMap.addButton('drawTools', {
+          label: 'Draw tools',
+          mobile: { slot: 'bottom-right' },
+          tablet: { slot: 'top-middle' },
+          desktop: { slot: 'top-middle' },
+          menuItems: [
+            {
+              id: 'drawPolygon',
+              label: 'Draw polygon',
+              onClick: function () {
+                interactiveMap.toggleButtonState('drawTools', 'hidden', true)
+                drawPlugin.newPolygon(crypto.randomUUID())
+              }
+            },
+            {
+              id: 'drawLine',
+              label: 'Draw line',
+              onClick: function () {
+                interactiveMap.toggleButtonState('drawTools', 'hidden', true)
+                drawPlugin.newLine(crypto.randomUUID())
+              }
+            },
+            {
+              id: 'editFeature',
+              label: 'Edit feature',
+              isDisabled: true,
+              onClick: function () {
+                if (!drawPlugin.editFeature(selectedFeatureIds[0])) return
+                interactiveMap.toggleButtonState('drawTools', 'hidden', true)
+                interactPlugin.disable()
+              }
+            },
+            {
+              id: 'deleteFeature',
+              label: 'Delete feature',
+              isDisabled: true,
+              onClick: function () {
+                drawPlugin.deleteFeature(selectedFeatureIds)
+                interactPlugin.clear()
+                interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+                interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
+                interactiveMap.toggleButtonState('drawLine', 'disabled', false)
+                interactiveMap.toggleButtonState('editFeature', 'disabled', true)
+                interactiveMap.toggleButtonState('deleteFeature', 'disabled', true)
+              }
+            }
+          ]
+        })
+      })
+
+      interactiveMap.on('draw:started', function () {
+        interactPlugin.disable()
+      })
+
+      interactiveMap.on('draw:created', function () {
+        interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+        interactPlugin.enable()
+      })
+
+      interactiveMap.on('draw:edited', function () {
+        interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+        interactPlugin.enable()
+      })
+
+      interactiveMap.on('draw:cancelled', function () {
+        interactiveMap.toggleButtonState('drawTools', 'hidden', false)
+        interactPlugin.enable()
+      })
+
+      interactiveMap.on('interact:selectionchange', function (e) {
+        var singleFeature = e.selectedFeatures.length === 1
+        var anyFeature = e.selectedFeatures.length > 0
+        var isDrawFeature = singleFeature && DRAW_LAYERS.includes(e.selectedFeatures[0].layerId)
+        var allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return DRAW_LAYERS.includes(f.layerId) })
+        selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
+        interactiveMap.toggleButtonState('drawPolygon', 'disabled', singleFeature)
+        interactiveMap.toggleButtonState('drawLine', 'disabled', singleFeature)
+        interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
+        interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
+      })
+      </script>
+    `
+  }
+]} />

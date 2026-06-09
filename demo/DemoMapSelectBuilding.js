@@ -7,9 +7,8 @@ const MAP_STYLE = {
   backgroundColor: '#f5f5f0'
 }
 
-const MARKER_COORDS = [-2.9631008, 54.432306]
-const MARKER_ID = 'my-marker'
-const PANEL_ID = 'marker-info'
+const CENTER = [-1.5491, 53.8008]
+const PANEL_ID = 'building-info'
 
 function MapInner () {
   const initialised = useRef(false)
@@ -30,36 +29,45 @@ function MapInner () {
       { default: createInteractPlugin }
     ]) => {
       const interactPlugin = createInteractPlugin({
-        deselectOnClickOutside: true
+        interactionModes: ['selectFeature'],
+        deselectOnClickOutside: true,
+        debug: true,
+        layers: [
+          { layerId: 'buildings 3D', idProperty: 'uuid' }
+        ]
       })
 
-      const map = new InteractiveMap('demo-map-marker-panel', {
+      const map = new InteractiveMap('demo-map-select-building', {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
-        center: MARKER_COORDS,
-        zoom: 15,
+        center: CENTER,
+        zoom: 14.5,
+        maxZoom: 14.5,
         containerHeight: '516px',
         plugins: [interactPlugin]
       })
 
       map.on('map:ready', () => {
-        map.addMarker(MARKER_ID, MARKER_COORDS)
         interactPlugin.enable()
-        interactPlugin.selectMarker(MARKER_ID)
 
         map.addPanel(PANEL_ID, {
           focus: false,
-          label: 'Marker',
-          html: '<p class="govuk-body govuk-!-margin-bottom-0">Information about the selected marker</p>',
-          mobile: { slot: 'drawer', dismissible: true },
-          tablet: { slot: 'left-top', dismissible: true, width: '280px' },
-          desktop: { slot: 'left-top', dismissible: true, width: '280px' }
+          label: 'Selected building',
+          html: '<div id="building-info-content"></div>',
+          mobile: { slot: 'drawer', dismissible: true, open: false },
+          tablet: { slot: 'left-top', dismissible: true, width: '300px', open: false },
+          desktop: { slot: 'left-top', dismissible: true, width: '300px', open: false }
         })
       })
 
-      map.on('interact:selectionchange', ({ selectedMarkers }) => {
-        if (selectedMarkers.length > 0) {
+      map.on('interact:selectionchange', ({ selectedFeatures }) => {
+        if (selectedFeatures.length > 0) {
+          let html = ''
+          for (const [k, v] of Object.entries(selectedFeatures[0].properties)) {
+            html += `<p class="govuk-body govuk-!-margin-bottom-1"><strong>${k}:</strong> ${v}</p>`
+          }
+          document.getElementById('building-info-content').innerHTML = html
           map.showPanel(PANEL_ID)
         } else {
           map.hidePanel(PANEL_ID)
@@ -68,17 +76,16 @@ function MapInner () {
 
       map.on('app:panelclosed', ({ panelId }) => {
         if (panelId === PANEL_ID) {
-          interactPlugin.unselectMarker(MARKER_ID)
+          interactPlugin.clear()
         }
       })
-
     })
   }, [])
 
-  return <div id='demo-map-marker-panel' className='app-no-prose app-example'></div>
+  return <div id='demo-map-select-building' className='app-no-prose app-example'></div>
 }
 
-export default function DemoMapMarkerPanel () {
+export default function DemoMapSelectBuilding () {
   return (
     <BrowserOnly
       fallback={<div className='govuk-inset-text'>The map requires JavaScript to be enabled.</div>}

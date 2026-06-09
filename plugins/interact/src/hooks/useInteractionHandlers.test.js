@@ -423,18 +423,37 @@ it('skips emission when selection remains empty after being cleared', () => {
 /* ------------------------------------------------------------------ */
 
 it('logs features when debug mode is enabled', () => {
+  const groupSpy = jest.spyOn(console, 'groupCollapsed').mockImplementation(() => {})
   const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+  const groupEndSpy = jest.spyOn(console, 'groupEnd').mockImplementation(() => {})
 
   const { result } = setup({ debug: true })
 
   click(result)
 
-  expect(logSpy).toHaveBeenCalledWith(
-    expect.stringContaining('--- Features at'),
-    expect.any(Array)
-  )
+  expect(groupSpy).toHaveBeenCalledWith(expect.stringContaining('[interact] click ('))
+  expect(groupSpy).toHaveBeenCalledWith(expect.stringContaining('1 feature'))
+  expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ layer: 'parcels' }))
+  expect(groupEndSpy).toHaveBeenCalled()
 
+  groupSpy.mockRestore()
   logSpy.mockRestore()
+  groupEndSpy.mockRestore()
+})
+
+it('uses plural label when multiple features are found', () => {
+  const groupSpy = jest.spyOn(console, 'groupCollapsed').mockImplementation(() => {})
+  jest.spyOn(console, 'log').mockImplementation(() => {})
+  jest.spyOn(console, 'groupEnd').mockImplementation(() => {})
+
+  featureQueries.getFeaturesAtPoint.mockReturnValue([baseFeature, baseFeature])
+
+  const { result } = setup({ debug: true })
+  click(result)
+
+  expect(groupSpy).toHaveBeenCalledWith(expect.stringContaining('2 features'))
+
+  jest.restoreAllMocks()
 })
 
 /* ------------------------------------------------------------------ */
