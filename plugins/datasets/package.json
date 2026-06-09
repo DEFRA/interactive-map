@@ -1,18 +1,19 @@
 {
-  "name": "@defra/interactive-map-plugin-frame",
+  "name": "@defra/interactive-map-plugin-datasets",
   "version": "0.0.0-development",
-  "description": "Frame plugin for @defra/interactive-map",
+  "description": "Datasets plugin for @defra/interactive-map",
   "repository": {
     "type": "git",
     "url": "https://github.com/DEFRA/interactive-map",
-    "directory": "plugins/frame"
+    "directory": "plugins/datasets"
   },
-  "main": "dist/umd/index.js",
   "module": "dist/esm/index.js",
   "exports": {
     ".": {
-      "import": "./dist/esm/index.js",
-      "require": "./dist/umd/index.js"
+      "import": "./dist/esm/index.js"
+    },
+    "./adapters/maplibre": {
+      "import": "./dist/adapters/maplibre/esm/index.js"
     },
     "./css": "./dist/css/index.css"
   },

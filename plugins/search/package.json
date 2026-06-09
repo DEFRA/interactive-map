@@ -1,11 +1,11 @@
 {
-  "name": "@defra/interactive-map-plugin-frame",
+  "name": "@defra/interactive-map-plugin-search",
   "version": "0.0.0-development",
-  "description": "Frame plugin for @defra/interactive-map",
+  "description": "Search plugin for @defra/interactive-map",
   "repository": {
     "type": "git",
     "url": "https://github.com/DEFRA/interactive-map",
-    "directory": "plugins/frame"
+    "directory": "plugins/search"
   },
   "main": "dist/umd/index.js",
   "module": "dist/esm/index.js",
@@ -19,7 +19,6 @@
   "type": "module",
   "files": ["dist"],
   "sideEffects": ["**/*.css"],
-  "publishConfig": { "tag": "beta" },
   "peerDependencies": {
     "@defra/interactive-map": "*"
   },
