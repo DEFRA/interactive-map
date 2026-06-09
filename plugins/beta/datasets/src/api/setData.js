@@ -1,10 +1,16 @@
 import { logger } from '../../../../../src/services/logger.js'
+import { datasetRegistry } from '../registry/datasetRegistry.js'
+import { layerAdapter } from '../adapters/loadLayerAdapter.js'
 
 export const setData = ({ pluginState }, geojson, { datasetId }) => {
-  const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-  if (dataset?.tiles) {
+  const registryDataset = datasetRegistry.getDataset(datasetId)
+  if (!registryDataset) {
+    logger.warn(`setData: Dataset with id ${datasetId} not found`)
+    return
+  }
+  if (registryDataset?.tiles) {
     logger.warn(`setData called on vector tile dataset "${datasetId}" — has no effect`)
     return
   }
-  pluginState.layerAdapter?.setData(datasetId, geojson)
+  layerAdapter.setData(datasetId, geojson)
 }

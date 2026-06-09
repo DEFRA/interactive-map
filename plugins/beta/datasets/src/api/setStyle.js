@@ -1,22 +1,6 @@
-export const setStyle = ({ pluginState, mapState }, style, { datasetId, sublayerId } = {}) => {
-  const dataset = pluginState.datasets?.find(d => d.id === datasetId)
-  if (!dataset) {
-    return
-  }
-
-  if (sublayerId) {
-    pluginState.dispatch({ type: 'SET_SUBLAYER_STYLE', payload: { datasetId, sublayerId, styleChanges: style } })
-    const updatedSublayerDataset = {
-      ...dataset,
-      sublayers: dataset.sublayers?.map(sublayer =>
-        sublayer.id === sublayerId ? { ...sublayer, style: { ...sublayer.style, ...style } } : sublayer
-      )
-    }
-    pluginState.layerAdapter?.setSublayerStyle(updatedSublayerDataset, sublayerId, mapState.mapStyle)
-    return
-  }
-
-  pluginState.dispatch({ type: 'SET_DATASET_STYLE', payload: { datasetId, styleChanges: style } })
-  const updatedDataset = { ...dataset, ...style }
-  pluginState.layerAdapter?.setStyle(updatedDataset, mapState.mapStyle)
+export const setStyle = ({ pluginState: { dispatch }, mapState }, styleChanges, { datasetId, sublayerId } = {}) => {
+  datasetId = sublayerId ? `${datasetId}-${sublayerId}` : datasetId
+  const mapStyle = mapState.mapStyle
+  const payload = { datasetId, styleChanges, mapStyle }
+  dispatch({ type: 'SET_DATASET_STYLE', payload })
 }

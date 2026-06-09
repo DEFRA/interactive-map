@@ -41,11 +41,8 @@ export const anchorToMaplibre = ([ax, ay]) => {
  * Skips images that are already registered (safe to call on style change).
  * Updates `map._activeSymbolImageMap` (normal→active) and `map._selectedSymbolImageMap` (normal→selected).
  *
- * Callers are responsible for resolving sublayers before calling this function
- * (see `getSymbolConfigs` in the datasets plugin adapter).
- *
  * @param {Object} map - MapLibre map instance
- * @param {Object[]} styleArray - Flat list of datasets/merged-sublayers that have a symbol config
+ * @param {Object[]} styleArray - an array of symbol configs
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} symbolRegistry
  * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)

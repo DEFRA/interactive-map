@@ -86,6 +86,11 @@ describe('MapLibreProvider', () => {
     ...extra
   })
 
+  test('it should have a name getter', () => {
+    const p = makeProvider()
+    expect(p.name).toBe('MapLibreProvider')
+  })
+
   test('constructor spreads mapProviderConfig and sets capabilities', () => {
     const p = makeProvider({ mapProviderConfig: { crs: 'EPSG:4326', tileSize: 512 } })
     expect(p.crs).toBe('EPSG:4326')

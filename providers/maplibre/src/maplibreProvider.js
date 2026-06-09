@@ -40,6 +40,10 @@ export default class MapLibreProvider {
     Object.assign(this, mapProviderConfig)
   }
 
+  get name () {
+    return 'MapLibreProvider'
+  }
+
   /**
    * Initialize the map.
    *
@@ -317,8 +321,7 @@ export default class MapLibreProvider {
    * The pixel ratio is computed as device pixel ratio × map size scale factor so symbols
    * are rasterised at the correct resolution for the current device DPI and map size.
    *
-   * @param {Object[]} symbolConfigs - Flat list of datasets/merged-sublayers with a symbol config.
-   *   Callers are responsible for sublayer merging before passing configs here.
+   * @param {Object[]} symbolConfigs - an array of symbol configs
    * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
    * @param {Object} symbolRegistry
    * @returns {Promise<void>}
@@ -333,8 +336,7 @@ export default class MapLibreProvider {
    * Delegates to the shared pattern image utility so any plugin's MapLibre adapter can
    * register patterns without importing provider internals directly.
    *
-   * @param {Object[]} patternConfigs - Flat list of datasets/merged-sublayers with a pattern config.
-   *   Callers are responsible for sublayer merging before passing configs here.
+   * @param {Object[]} patternConfigs - an array of pattern configs
    * @param {string} mapStyleId
    * @param {Object} patternRegistry
    * @returns {Promise<void>}

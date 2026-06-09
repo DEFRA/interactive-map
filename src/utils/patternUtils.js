@@ -8,8 +8,7 @@ export const getEffectivePixelRatio = (pixelRatio) => Math.max(PATTERN_MIN_PIXEL
 export const hashString = (str) => {
   let hash = 0
   for (const ch of str) {
-    hash = ((hash << 5) - hash) + ch.codePointAt(0)
-    hash = hash & hash
+    hash = Math.trunc(((hash << 5) - hash) + ch.codePointAt(0))
   }
   return Math.abs(hash).toString(36) // NOSONAR: base36 encoding for compact alphanumeric hash string
 }

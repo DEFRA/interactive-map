@@ -6,10 +6,8 @@ The datasets plugin renders GeoJSON and vector tile datasets on the map, with su
 
 ```js
 import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
-import { maplibreLayerAdapter } from '@defra/interactive-map/plugins/datasets/adapters/maplibre'
 
 const datasetsPlugin = createDatasetsPlugin({
-  layerAdapter: maplibreLayerAdapter,
   datasets: [
     {
       id: 'my-parcels',
@@ -35,14 +33,14 @@ const interactiveMap = new InteractiveMap({
 
 ## UMD usage
 
-Copy `plugins/beta/datasets/dist/umd/maplibre/` to `/your-assets-path/plugins/beta/datasets/umd/maplibre/`, then load the script tag. The MapLibre adapter is included — no `layerAdapter` config is needed.
+Copy the entire `plugins/beta/datasets/dist/umd/` directory to `/your-assets-path/plugins/beta/datasets/umd/`. The plugin uses dynamic imports, so all files in the directory must be served from the same location. Then add the script tag:
 
 ```html
-<script defer src="/your-assets-path/plugins/beta/datasets/umd/maplibre/index.js"></script>
+<script defer src="/your-assets-path/plugins/beta/datasets/umd/index.js"></script>
 ```
 
 ```js
-const datasetsPlugin = defra.datasetsMaplibrePlugin({
+const datasetsPlugin = defra.datasetsPlugin({
   datasets: [
     {
       id: 'my-parcels',
@@ -60,33 +58,22 @@ const datasetsPlugin = defra.datasetsMaplibrePlugin({
     }
   ]
 })
+
+const interactiveMap = new defra.InteractiveMap('map', {
+  mapProvider: defra.maplibreProvider(),
+  plugins: [datasetsPlugin]
+})
 ```
 
 > [!NOTE]
-> **GOV.UK Prototype Kit** — skip the copy step. The file is served automatically. Use this path instead:
+> **GOV.UK Prototype Kit** — skip the copy step. All files are served automatically. Use this path instead:
 > ```html
-> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/maplibre/index.js"></script>
+> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/index.js"></script>
 > ```
 
 ## Options
 
 Options are passed to the factory function when creating the plugin.
-
----
-
-### `layerAdapter`
-
-> [!NOTE]
-> UMD users using the `datasetsMaplibrePlugin` bundle do not need to set this — the MapLibre adapter is pre-configured.
-
-**Type:** `LayerAdapter`
-**Required**
-
-The map provider adapter responsible for rendering datasets. Import `maplibreLayerAdapter` for MapLibre GL JS, or supply a custom adapter.
-
-```js
-import { maplibreLayerAdapter } from '@defra/interactive-map/plugins/datasets/adapters/maplibre'
-```
 
 ---
 
@@ -134,7 +121,7 @@ Unique identifier for the dataset. Used in all API method calls.
 
 **Type:** `string`
 
-Human-readable name shown in the Layers panel and Key panel.
+Human-readable name shown in the LayersMenu panel and Key panel.
 
 ---
 
@@ -275,7 +262,7 @@ When `true`, the dataset appears in the Key panel with its style symbol and labe
 **Type:** `boolean`
 **Default:** `false`
 
-When `true`, the dataset appears in the Layers panel and can be toggled on and off by the user.
+When `true`, the dataset appears in the LayersMenu panel and can be toggled on and off by the user.
 
 ---
 
@@ -283,7 +270,7 @@ When `true`, the dataset appears in the Layers panel and can be toggled on and o
 
 **Type:** `string`
 
-Groups this dataset with others sharing the same `groupLabel` in the Layers panel, rendering them as a single collapsible group.
+Groups this dataset with others sharing the same `groupLabel` in the LayersMenu panel, rendering them as a single collapsible group.
 
 ---
 
@@ -387,11 +374,11 @@ Sublayers inherit the parent dataset's style and only override what they specify
 | Property | Type | Description |
 |----------|------|-------------|
 | `id` | `string` | **Required.** Unique identifier within the dataset |
-| `label` | `string` | Human-readable name shown in the Layers and Key panels |
+| `label` | `string` | Human-readable name shown in the LayersMenu and Key panels |
 | `filter` | `FilterExpression` | MapLibre filter expression to match features for this sublayer |
 | `style` | `Object` | Style overrides. Accepts the same properties as the dataset `style` object |
 | `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from dataset if not set |
-| `showInMenu` | `boolean` | Shows this sublayer in the Layers panel. **Default:** `false` |
+| `showInMenu` | `boolean` | Shows this sublayer in the LayersMenu panel. **Default:** `false` |
 
 **Polygon/line example:**
 

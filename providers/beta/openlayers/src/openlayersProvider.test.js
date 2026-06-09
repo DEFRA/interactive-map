@@ -117,6 +117,11 @@ describe('OpenLayersProvider', () => {
       expect(provider.zoomAlignment).toBe('world')
       expect(provider.customProp).toBe('hello')
     })
+
+    test('it should have a name getter', () => {
+      const { provider } = makeProvider()
+      expect(provider.name).toBe('OpenLayersProvider')
+    })
   })
 
   describe('initMap', () => {
