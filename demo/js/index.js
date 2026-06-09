@@ -317,8 +317,8 @@ const interactiveMap = new InteractiveMap('map', {
 			osNamesURL: process.env.OS_NAMES_URL,
 			customDatasets: [parcelSearch, gridRefSearchETRS89],
 			width: '300px',
-			showMarker: true
-			// expanded: true
+			showMarker: true,
+			showLabel: true
 		}),
 		// useLocationPlugin(),
 		interactPlugin,

@@ -96,6 +96,7 @@ const config = {
             { text: 'Add a search control', href: '/examples/search-control' },
             { text: 'Select a feature', href: '/examples/select-feature' },
             { text: 'Style switcher', href: '/examples/style-switcher' },
+            { text: 'Draw tools', href: '/examples/draw' },
           ],
         },
         {

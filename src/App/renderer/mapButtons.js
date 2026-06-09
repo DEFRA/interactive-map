@@ -117,18 +117,20 @@ function resolveGroupOrder (group) {
 }
 
 function applySlotExclusivity (matching, appState) {
-  const exclusivePluginIds = new Set()
+  let exclusivePluginId = null
+
   for (const [id, config] of matching) {
     if (config.exclusiveSlot && !appState.hiddenButtons.has(id) && config.pluginId) {
-      exclusivePluginIds.add(config.pluginId)
+      if (exclusivePluginId !== null && exclusivePluginId !== config.pluginId) {
+        logger.warn(`Slot exclusivity conflict: plugins [${exclusivePluginId}, ${config.pluginId}] are both claiming exclusive slot ownership. Showing all buttons.`)
+        return matching
+      }
+      exclusivePluginId = config.pluginId
     }
   }
-  if (exclusivePluginIds.size === 0) { return matching }
-  if (exclusivePluginIds.size > 1) {
-    logger.warn(`Slot exclusivity conflict: plugins [${[...exclusivePluginIds].join(', ')}] are both claiming exclusive slot ownership. Showing all buttons.`)
-    return matching
-  }
-  const [exclusivePluginId] = exclusivePluginIds
+
+  if (exclusivePluginId === null) { return matching }
+
   return matching.filter(([_, config]) => config.pluginId === exclusivePluginId)
 }
 
