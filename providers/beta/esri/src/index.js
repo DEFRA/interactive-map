@@ -27,16 +27,11 @@ export default function createEsriProvider (config = {}) {
         crs: 'EPSG:27700'
       }
 
-      try {
-        const MapProvider = (await import(/* webpackChunkName: "im-esri-provider" */ './esriProvider.js')).default
+      const MapProvider = (await import(/* webpackChunkName: "im-esri-provider" */ './esriProvider.js')).default
 
-        return {
-          MapProvider,
-          mapProviderConfig
-        }
-      } catch (error) {
-        console.error('Failed to load map provider', error)
-        throw error
+      return {
+        MapProvider,
+        mapProviderConfig
       }
     }
   }
