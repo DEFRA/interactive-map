@@ -1,0 +1,135 @@
+import DemoMapStyleSwitcher from '../../demo/DemoMapStyleSwitcher.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
+
+# Style switcher
+
+Switch between basemap styles using the map styles plugin. The plugin accepts any vector tile style — in production you would typically use the [OS Vector Tile API](https://osdatahub.os.uk/docs/vts/overview) or [OS NGD Tiles API](https://osdatahub.os.uk/docs/ngd/overview).
+
+:::note
+The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an API key. This is only suitable for the demo — it is not intended for production use.
+:::
+
+<DemoMapStyleSwitcher />
+
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+      import createMapStylesPlugin from '@defra/interactive-map/plugins/map-styles'
+
+      const attribution = 'Contains OS data © Crown copyright and database rights 2025'
+
+      const mapStyles = [
+        {
+          id: 'outdoor',
+          label: 'Outdoor',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
+          thumbnail: '/path/to/outdoor-thumbnail.jpg',
+          attribution,
+          backgroundColor: '#f5f5f0'
+        },
+        {
+          id: 'night',
+          label: 'Night',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-night/style.json',
+          thumbnail: '/path/to/night-thumbnail.jpg',
+          attribution,
+          mapColorScheme: 'dark',
+          appColorScheme: 'dark'
+        },
+        {
+          id: 'deuteranopia',
+          label: 'Deuteranopia',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-deuteranopia/style.json',
+          thumbnail: '/path/to/deuteranopia-thumbnail.jpg',
+          attribution,
+          backgroundColor: '#f5f5f0'
+        },
+        {
+          id: 'tritanopia',
+          label: 'Tritanopia',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-tritanopia/style.json',
+          thumbnail: '/path/to/tritanopia-thumbnail.jpg',
+          attribution,
+          backgroundColor: '#f5f5f0'
+        }
+      ]
+
+      const mapStylesPlugin = createMapStylesPlugin({ mapStyles })
+
+      new InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: mapStyles[0],
+        center: [-0.1276, 51.5074],
+        zoom: 12,
+        containerHeight: '500px',
+        plugins: [mapStylesPlugin]
+      })
+    `
+  },
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script src="/your-assets-path/map-styles-plugin/index.js"></script>
+
+      <script>
+      const attribution = 'Contains OS data © Crown copyright and database rights 2025'
+
+      const mapStyles = [
+        {
+          id: 'outdoor',
+          label: 'Outdoor',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
+          thumbnail: '/path/to/outdoor-thumbnail.jpg',
+          attribution,
+          backgroundColor: '#f5f5f0'
+        },
+        {
+          id: 'night',
+          label: 'Night',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-night/style.json',
+          thumbnail: '/path/to/night-thumbnail.jpg',
+          attribution,
+          mapColorScheme: 'dark',
+          appColorScheme: 'dark'
+        },
+        {
+          id: 'deuteranopia',
+          label: 'Deuteranopia',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-deuteranopia/style.json',
+          thumbnail: '/path/to/deuteranopia-thumbnail.jpg',
+          attribution,
+          backgroundColor: '#f5f5f0'
+        },
+        {
+          id: 'tritanopia',
+          label: 'Tritanopia',
+          url: 'https://labs.os.uk/tiles/styles/open-zoomstack-tritanopia/style.json',
+          thumbnail: '/path/to/tritanopia-thumbnail.jpg',
+          attribution,
+          backgroundColor: '#f5f5f0'
+        }
+      ]
+
+      const mapStylesPlugin = defra.mapStylesPlugin({ mapStyles })
+
+      new defra.InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: mapStyles[0],
+        center: [-0.1276, 51.5074],
+        zoom: 12,
+        containerHeight: '500px',
+        plugins: [mapStylesPlugin]
+      })
+      </script>
+    `
+  }
+]} />

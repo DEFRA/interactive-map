@@ -120,6 +120,16 @@
   inset: 0;
 }
 
+/* Two columns at tablet */
+@media (min-width: 641px) and (max-width: 1019px) {
+  .app-example-cards .govuk-grid-column-one-third {
+    width: 50%;
+  }
+
+  .app-example-cards .govuk-grid-column-one-third:nth-child(odd) {
+    clear: left;
+  }
+}
 
 /* GOV.UK tabs — enhanced styles for all devices; React manages active state.
    Extra specificity via .app-prose-scope required to override the theme. */

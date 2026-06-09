@@ -4,6 +4,8 @@ import buttonFirstImg from '../assets/images/button-first.jpg'
 import markerPanelImg from '../assets/images/marker-panel.jpg'
 import toggleMarkerLabelImg from '../assets/images/toggle-marker-label.jpg'
 import searchImg from '../assets/images/search.jpg'
+import selectFeatureImg from '../assets/images/select-feature.jpg'
+import styleSwitcherImg from '../assets/images/style-switcher.jpg'
 
 export function ExampleCards() {
   const basicHref = useBaseUrl('/examples/basic-map')
@@ -12,9 +14,10 @@ export function ExampleCards() {
   const toggleMarkerLabelHref = useBaseUrl('/examples/toggle-marker-label')
   const searchControlHref = useBaseUrl('/examples/search-control')
   const selectFeatureHref = useBaseUrl('/examples/select-feature')
+  const styleSwitcherHref = useBaseUrl('/examples/style-switcher')
 
   return (
-    <div className='govuk-grid-row'>
+    <div className='govuk-grid-row app-example-cards'>
       <div className='govuk-grid-column-one-third'>
         <div className='app-example-card'>
           <img src={basicMapImg} alt='' />
@@ -67,9 +70,20 @@ export function ExampleCards() {
       </div>
       <div className='govuk-grid-column-one-third'>
         <div className='app-example-card'>
+          <img src={selectFeatureImg} alt='' />
           <div className='app-example-card__body'>
             <h2 className='govuk-heading-s'>
               <a href={selectFeatureHref}>Select a feature</a>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div className='govuk-grid-column-one-third'>
+        <div className='app-example-card'>
+          <img src={styleSwitcherImg} alt='' />
+          <div className='app-example-card__body'>
+            <h2 className='govuk-heading-s'>
+              <a href={styleSwitcherHref}>Style switcher</a>
             </h2>
           </div>
         </div>
