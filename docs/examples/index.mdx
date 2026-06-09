@@ -6,6 +6,7 @@ import toggleMarkerLabelImg from '../assets/images/toggle-marker-label.jpg'
 import searchImg from '../assets/images/search.jpg'
 import selectFeatureImg from '../assets/images/select-feature.jpg'
 import styleSwitcherImg from '../assets/images/style-switcher.jpg'
+import drawImg from '../assets/images/draw.jpg'
 
 export function ExampleCards() {
   const basicHref = useBaseUrl('/examples/basic-map')
@@ -91,6 +92,7 @@ export function ExampleCards() {
       </div>
       <div className='govuk-grid-column-one-third'>
         <div className='app-example-card'>
+          <img src={drawImg} alt='' />
           <div className='app-example-card__body'>
             <h2 className='govuk-heading-s'>
               <a href={drawHref}>Draw tools</a>

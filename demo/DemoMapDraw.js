@@ -49,13 +49,14 @@ function MapInner () {
       })
 
       const interactiveMap = new InteractiveMap('demo-map-draw', {
-        behaviour: 'inline',
+        behaviour: 'hybrid',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
         center: [-0.1276, 51.5074],
         zoom: 12,
         containerHeight: '500px',
-        plugins: [interactPlugin, drawPlugin]
+        plugins: [interactPlugin, drawPlugin],
+        hasExitButton: true
       })
 
       let selectedFeatureIds = []
@@ -156,7 +157,7 @@ function MapInner () {
     })
   }, [])
 
-  return <div id='demo-map-draw' className='app-no-prose app-example'></div>
+  return <div className='app-no-prose app-example'><div id='demo-map-draw'></div></div>
 }
 
 export default function DemoMapDraw () {
