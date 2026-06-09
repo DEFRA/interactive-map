@@ -1,9 +1,9 @@
 import DemoMapStyleSwitcher from '../../demo/DemoMapStyleSwitcher.js'
 import CodeTabs from '../../demo/js/codeTabs.js'
 
-# Style switcher
+# Change map style
 
-Switch between basemap styles using the map styles plugin. The plugin accepts any vector tile style — in production you would typically use the [OS Vector Tile API](https://osdatahub.os.uk/docs/vts/overview) or [OS NGD Tiles API](https://osdatahub.os.uk/docs/ngd/overview).
+Provide alternative basemaps using the map styles plugin to support different use cases — such as dark or high contrast styles for accessibility needs, or aerial views for specific mapping tasks. You can also scale the map to enlarge text and features for users with visual impairment. The plugin accepts any vector tile style — in production you would typically use the [OS Vector Tile API](https://osdatahub.os.uk/docs/vts/overview) or [OS NGD Tiles API](https://osdatahub.os.uk/docs/ngd/overview).
 
 :::note
 The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an API key. This is only suitable for the demo — it is not intended for production use.
@@ -66,7 +66,7 @@ The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an
         mapStyle: mapStyles[0],
         center: [-0.1276, 51.5074],
         zoom: 12,
-        containerHeight: '500px',
+        containerHeight: '516px',
         plugins: [mapStylesPlugin]
       })
     `
@@ -126,7 +126,7 @@ The live demo uses OS Open Zoomstack tiles from OS Labs, which do not require an
         mapStyle: mapStyles[0],
         center: [-0.1276, 51.5074],
         zoom: 12,
-        containerHeight: '500px',
+        containerHeight: '516px',
         plugins: [mapStylesPlugin]
       })
       </script>

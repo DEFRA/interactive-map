@@ -39,7 +39,7 @@ function MapInner () {
         mapStyle: MAP_STYLE,
         center: MARKER_COORDS,
         zoom: 15,
-        containerHeight: '500px',
+        containerHeight: '516px',
         plugins: [interactPlugin]
       })
 

@@ -72,7 +72,7 @@ function MapInner () {
         mapStyle: MAP_STYLES[0],
         center: [-0.1276, 51.5074],
         zoom: 12,
-        containerHeight: '500px',
+        containerHeight: '516px',
         plugins: [mapStylesPlugin]
       })
     })

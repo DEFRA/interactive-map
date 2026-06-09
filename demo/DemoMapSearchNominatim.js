@@ -74,7 +74,7 @@ function MapInner () {
         mapStyle: MAP_STYLE,
         center: [-1.6, 53.1],
         zoom: 6,
-        containerHeight: '500px',
+        containerHeight: '516px',
         plugins: [searchPlugin]
       })
     })

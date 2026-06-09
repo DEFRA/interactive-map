@@ -54,7 +54,7 @@ function MapInner () {
         mapStyle: MAP_STYLE,
         center: [-0.1276, 51.5074],
         zoom: 12,
-        containerHeight: '500px',
+        containerHeight: '516px',
         plugins: [interactPlugin, drawPlugin],
         hasExitButton: true
       })

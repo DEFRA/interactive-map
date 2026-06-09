@@ -44,7 +44,7 @@ function MapInner () {
         center: CENTER,
         zoom: 14.5,
         maxZoom: 14.5,
-        containerHeight: '500px',
+        containerHeight: '516px',
         plugins: [interactPlugin]
       })
 
