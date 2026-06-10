@@ -1,4 +1,6 @@
-import createVertex from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
+import MapboxDraw from '@mapbox/mapbox-gl-draw'
+
+const { createVertex } = MapboxDraw.lib
 
 import {
   getSnapInstance,

@@ -1,4 +1,6 @@
-import DirectSelect from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
+import MapboxDraw from '@mapbox/mapbox-gl-draw'
+
+const DirectSelect = MapboxDraw.modes.direct_select
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState

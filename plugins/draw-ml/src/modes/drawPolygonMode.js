@@ -1,4 +1,6 @@
-import DrawPolygon from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/draw_polygon.js'
+import MapboxDraw from '@mapbox/mapbox-gl-draw'
+
+const DrawPolygon = MapboxDraw.modes.draw_polygon
 import { isValidClick } from '../utils/spatial.js'
 import { createDrawMode } from './createDrawMode.js'
 
