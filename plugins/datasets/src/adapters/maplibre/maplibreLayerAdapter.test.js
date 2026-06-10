@@ -1,8 +1,8 @@
 import MaplibreLayerAdapter from './maplibreLayerAdapter.js'
 import { MapLibreDataset } from './registry/mapLibreDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
-import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { patternRegistry } from '../../../../../../src/services/patternRegistry.js'
+import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
 
 jest.mock('../../registry/datasetRegistry.js')
 

@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { EVENTS } from '../../../../src/config/events.js'
+import { EVENTS } from '../../../src/config/events.js'
 import { createSketchViewModel } from './sketchViewModel.js'
 import { attachEvents } from './events.js'
 

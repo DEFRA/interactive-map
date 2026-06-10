@@ -1,6 +1,6 @@
 import { datasetRegistry } from './datasetRegistry.js'
 import { hasCustomVisualStyle } from '../initialise/defaults.js'
-import { hasPattern } from '../../../../../src/utils/patternUtils.js'
+import { hasPattern } from '../../../../src/utils/patternUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
 import { calculateOpacity, getGlobalVisibility } from './globalDataset.js'
 

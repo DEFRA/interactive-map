@@ -1,6 +1,6 @@
 import { Dataset } from '../../../registry/dataset.js'
-import { hashString } from '../../../../../../../src/utils/patternUtils.js'
-import { anchorToMaplibre } from '../../../../../../../providers/maplibre/src/utils/symbolImages.js'
+import { hashString } from '../../../../../../src/utils/patternUtils.js'
+import { anchorToMaplibre } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
 const MAX_TILE_ZOOM = 22
 
 export class MapLibreDataset extends Dataset {

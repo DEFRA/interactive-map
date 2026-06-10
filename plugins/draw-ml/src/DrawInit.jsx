@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { EVENTS } from '../../../../src/config/events.js'
+import { EVENTS } from '../../../src/config/events.js'
 import { attachEvents } from './events.js'
 import { createMapboxDraw } from './mapboxDraw.js'
 

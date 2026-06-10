@@ -3,7 +3,7 @@ import { attachMapEvents } from './mapEvents.js'
 
 const mockDebounceFns = []
 
-jest.mock('../../../../src/utils/debounce.js', () => ({
+jest.mock('../../../src/utils/debounce.js', () => ({
   __esModule: true,
   debounce: (fn) => {
     const wrapper = jest.fn()
@@ -14,7 +14,7 @@ jest.mock('../../../../src/utils/debounce.js', () => ({
 }))
 
 // Passthrough throttle: calls fn immediately (no cancel needed, not added to debouncers)
-jest.mock('../../../../src/utils/throttle.js', () => ({
+jest.mock('../../../src/utils/throttle.js', () => ({
   __esModule: true,
   throttle: (fn) => jest.fn(fn)
 }))

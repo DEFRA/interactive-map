@@ -1,6 +1,6 @@
 // src/plugins/mapStyles/MapStylesInit.jsx
 import { useEffect } from 'react'
-import { EVENTS } from '../../../../src/config/events.js'
+import { EVENTS } from '../../../src/config/events.js'
 
 export function MapStylesInit ({ pluginConfig, services }) {
   const { eventBus } = services

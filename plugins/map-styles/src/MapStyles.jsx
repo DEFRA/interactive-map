@@ -1,7 +1,7 @@
 import React from 'react'
-import { EVENTS } from '../../../../src/config/events.js'
+import { EVENTS } from '../../../src/config/events.js'
 import { textSizeSvgPath } from './config.js'
-import { scaleFactor } from '../../../../src/config/appConfig.js'
+import { scaleFactor } from '../../../src/config/appConfig.js'
 
 export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => {
   const { mapStyle: currentMapStyle, mapSize: currentMapSize } = mapState

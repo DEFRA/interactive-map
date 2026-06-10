@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react'
 import { KeySvgLine } from './KeySvgLine'
 
-import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle'
+import { getValueForStyle } from '../../../../../src/utils/getValueForStyle'
 
-jest.mock('../../../../../../src/utils/getValueForStyle', () => ({
+jest.mock('../../../../../src/utils/getValueForStyle', () => ({
   getValueForStyle: jest.fn((value) => value)
 }))
 

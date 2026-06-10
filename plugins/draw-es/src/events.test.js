@@ -1,5 +1,5 @@
 import { attachEvents } from './events.js'
-import { EVENTS as events } from '../../../../src/config/events.js'
+import { EVENTS as events } from '../../../src/config/events.js'
 
 import * as graphicJs from './graphic.js'
 jest.mock('./graphic.js')

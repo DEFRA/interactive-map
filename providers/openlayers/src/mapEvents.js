@@ -1,5 +1,5 @@
-import { debounce } from '../../../../src/utils/debounce.js'
-import { throttle } from '../../../../src/utils/throttle.js'
+import { debounce } from '../../../src/utils/debounce.js'
+import { throttle } from '../../../src/utils/throttle.js'
 import { ZOOM_TOLERANCE } from './defaults.js'
 
 const DEBOUNCE_IDLE_TIME = 500

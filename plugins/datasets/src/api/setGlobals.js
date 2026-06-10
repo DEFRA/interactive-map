@@ -1,4 +1,4 @@
-import { logger } from '../../../../../src/services/logger.js'
+import { logger } from '../../../../src/services/logger.js'
 export const setGlobals = ({ pluginState: { dispatch } }, values) => {
   const { opacityMode } = values
   const payload = {}

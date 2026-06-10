@@ -1,5 +1,5 @@
-import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
-import { getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
+import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
+import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
 
 // ─── Fill layer ───────────────────────────────────────────────────────────────
 
