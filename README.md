@@ -14,10 +14,10 @@ See [examples of InteractiveMap](https://google.co.uk).
 
 See [getting started](./docs/getting-started.md) developer guide.
 
-**⚠️ This project is currently in beta and is not yet stable. Documentation and support are not yet available.**
+**⚠️ This project is currently in beta and is not yet stable.**
 
 <p align="center">
-  <img src="docs/assets/images/screens-white.jpg" alt="Screenshots of map component">
+  <img src="docs/assets/images/screenshot.jpg" alt="Screenshot of map component">
 </p>
 
 ## Documentation
