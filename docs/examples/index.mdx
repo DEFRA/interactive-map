@@ -17,6 +17,7 @@ export function ExampleCards() {
   const selectFeatureHref = useBaseUrl('/examples/select-feature')
   const styleSwitcherHref = useBaseUrl('/examples/style-switcher')
   const drawHref = useBaseUrl('/examples/draw')
+  const placeMarkerHref = useBaseUrl('/examples/place-marker')
 
   return (
     <div className='govuk-grid-row app-example-cards'>
@@ -96,6 +97,16 @@ export function ExampleCards() {
           <div className='app-example-card__body'>
             <h2 className='govuk-heading-s'>
               <a href={drawHref}>Draw tools</a>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div className='govuk-grid-column-one-third'>
+        <div className='app-example-card'>
+          <img src={markerPanelImg} alt='' />
+          <div className='app-example-card__body'>
+            <h2 className='govuk-heading-s'>
+              <a href={placeMarkerHref}>Place a marker to continue</a>
             </h2>
           </div>
         </div>

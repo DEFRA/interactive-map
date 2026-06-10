@@ -225,8 +225,8 @@ export default class InteractiveMap {
         }
       })
 
-      updateDOMState(this)
-      this.eventBus.emit(events.APP_OPENED, { statePreserved: false })
+      const { isFullscreen } = updateDOMState(this)
+      this.eventBus.emit(events.APP_OPENED, { statePreserved: false, isFullscreen })
     } catch (err) {
       this._openButton?.removeAttribute('style')
       renderError(this.rootEl, this.config.genericErrorText)
@@ -304,9 +304,9 @@ export default class InteractiveMap {
       this._openButton.style.display = 'none'
     }
 
-    updateDOMState(this)
+    const { isFullscreen } = updateDOMState(this)
 
-    this.eventBus.emit(events.APP_OPENED, { statePreserved: true })
+    this.eventBus.emit(events.APP_OPENED, { statePreserved: true, isFullscreen })
   }
 
   /**

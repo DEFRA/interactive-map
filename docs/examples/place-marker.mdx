@@ -1,0 +1,151 @@
+import DemoMapPlaceMarker from '../../demo/DemoMapPlaceMarker.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
+
+# Place a marker to continue
+
+Use the interact plugin's `placeMarker` mode to let users drop a location pin on the map before continuing a journey.
+
+Two patterns work together in this example:
+
+- **Hybrid behaviour with built-in back and continue** — on mobile the map opens fullscreen and the `backAndContinue` option renders Back and Continue buttons inside the map. The Continue button is enabled declaratively via `continueEnabledWhen` once a marker has been placed.
+- **External Continue button for inline** — when the map is inline (tablet/desktop), a Continue button sits outside the map container. It uses `app:opened`, `app:closed`, and `app:fullscreenchange` to show and hide in sync with the map's display mode, and `interact:markerchange` to enable once a marker is placed.
+
+<DemoMapPlaceMarker />
+
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+      import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+
+      const interactPlugin = createInteractPlugin({
+        interactionModes: ['placeMarker']
+      })
+
+      const map = new InteractiveMap('my-map', {
+        behaviour: 'hybrid',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-0.1276, 51.5074],
+        zoom: 12,
+        containerHeight: '516px',
+        plugins: [interactPlugin],
+        // Back and Continue buttons shown inside the map when fullscreen (mobile)
+        backAndContinue: {
+          backLabel: 'Back',
+          continueLabel: 'Continue',
+          continueEnabledWhen: ({ mapState }) =>
+            mapState.markers.items.some(m => m.id === 'location')
+        }
+      })
+
+      map.on('map:ready', () => {
+        interactPlugin.enable()
+      })
+
+      // Fired when the built-in Continue button is clicked (mobile/fullscreen)
+      map.on('app:continue', ({ mapState }) => {
+        const marker = mapState.markers.items.find(m => m.id === 'location')
+        // navigate to next step with marker.coords
+      })
+
+      // --- External Continue button for inline (tablet/desktop) ---
+
+      const continueBtn = document.getElementById('continue-btn')
+      const externalButtons = document.getElementById('external-buttons')
+
+      // Show/hide external buttons based on whether the map is inline or fullscreen.
+      // app:opened fires on first load and when the map is shown after being hidden.
+      // app:fullscreenchange fires when the viewport resizes while the map is already visible.
+      const setInline = (isFullscreen) => {
+        externalButtons.hidden = isFullscreen
+      }
+
+      map.on('app:opened', ({ isFullscreen }) => { setInline(isFullscreen) })
+      map.on('app:closed', () => { externalButtons.hidden = true })
+      map.on('app:fullscreenchange', ({ isFullscreen }) => { setInline(isFullscreen) })
+
+      map.on('interact:markerchange', () => {
+        continueBtn.disabled = false
+      })
+
+      continueBtn.addEventListener('click', () => {
+        // navigate to next step
+      })
+    `
+  },
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script src="/your-assets-path/interact-plugin/index.js"></script>
+
+      <div id="my-map"></div>
+      <div id="external-buttons" hidden>
+        <button class="govuk-button" id="continue-btn" disabled>Continue</button>
+      </div>
+
+      <script>
+      var interactPlugin = defra.interactPlugin({
+        interactionModes: ['placeMarker']
+      })
+
+      var map = new defra.InteractiveMap('my-map', {
+        behaviour: 'hybrid',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-0.1276, 51.5074],
+        zoom: 12,
+        containerHeight: '516px',
+        plugins: [interactPlugin],
+        backAndContinue: {
+          backLabel: 'Back',
+          continueLabel: 'Continue',
+          continueEnabledWhen: function (context) {
+            return context.mapState.markers.items.some(function (m) { return m.id === 'location' })
+          }
+        }
+      })
+
+      map.on('map:ready', function () {
+        interactPlugin.enable()
+      })
+
+      map.on('app:continue', function (context) {
+        var marker = context.mapState.markers.items.find(function (m) { return m.id === 'location' })
+        // navigate to next step with marker.coords
+      })
+
+      var continueBtn = document.getElementById('continue-btn')
+      var externalButtons = document.getElementById('external-buttons')
+
+      function setInline(isFullscreen) {
+        externalButtons.hidden = isFullscreen
+      }
+
+      map.on('app:opened', function (e) { setInline(e.isFullscreen) })
+      map.on('app:closed', function () { externalButtons.hidden = true })
+      map.on('app:fullscreenchange', function (e) { setInline(e.isFullscreen) })
+
+      map.on('interact:markerchange', function () {
+        continueBtn.disabled = false
+      })
+
+      continueBtn.addEventListener('click', function () {
+        // navigate to next step
+      })
+      </script>
+    `
+  }
+]} />

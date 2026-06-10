@@ -7,7 +7,7 @@ import * as queryString from '../utils/queryString.js'
 import { updateDOMState } from './domStateManager.js'
 
 jest.mock('../utils/queryString.js')
-jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn() }))
+jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }) }))
 
 describe('shouldLoadComponent', () => {
   beforeEach(() => {
@@ -67,7 +67,8 @@ describe('setupBehavior', () => {
       loadApp: jest.fn(),
       removeApp: jest.fn(),
       hideApp: jest.fn(),
-      showApp: jest.fn()
+      showApp: jest.fn(),
+      eventBus: { emit: jest.fn() }
     }
     // Default: viewport is wide
     window.matchMedia = jest.fn().mockImplementation(() => ({
@@ -187,14 +188,16 @@ describe('setupBehavior', () => {
       expect(mockMapInstance.showApp).not.toHaveBeenCalled()
     })
 
-    it('calls updateDOMState when map is showing and should load', () => {
+    it('calls updateDOMState and emits APP_FULLSCREEN_CHANGE when map is showing and should load', () => {
       mockMapInstance._isHidden = false
       mockMapInstance._root = {} // has root
       queryString.getQueryParam.mockReturnValue(null)
+      updateDOMState.mockReturnValue({ isFullscreen: false })
 
       handleChange()
 
       expect(updateDOMState).toHaveBeenCalledWith(mockMapInstance)
+      expect(mockMapInstance.eventBus.emit).toHaveBeenCalledWith('app:fullscreenchange', { isFullscreen: false })
       expect(mockMapInstance.loadApp).not.toHaveBeenCalled()
       expect(mockMapInstance.showApp).not.toHaveBeenCalled()
     })
