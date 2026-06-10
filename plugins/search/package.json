@@ -18,7 +18,7 @@
   },
   "type": "module",
   "files": ["dist"],
-  "sideEffects": ["**/*.css"],
+  "sideEffects": ["**/*.css", "**/*.scss"],
   "peerDependencies": {
     "@defra/interactive-map": "*"
   },
