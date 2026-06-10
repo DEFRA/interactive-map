@@ -88,14 +88,14 @@ function MapInner () {
       <div id='demo-map-place-marker'></div>
       {showButtons && (
         <div className='govuk-button-group govuk-!-margin-top-4'>
-          <button className='govuk-button' type='button' disabled={!markerCoords}>
+          <button
+            className='govuk-button'
+            type='button'
+            disabled={!markerCoords}
+            onClick={() => console.log('Continuing with marker at:', markerCoords)}
+          >
             Continue
           </button>
-          {markerCoords && (
-            <p className='govuk-body govuk-!-margin-bottom-0'>
-              Marker at {markerCoords[1].toFixed(5)}°N, {markerCoords[0].toFixed(5)}°
-            </p>
-          )}
         </div>
       )}
     </div>
