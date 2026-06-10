@@ -1,4 +1,4 @@
-import createVertex from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
+import createVertex from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
 
 import {
   getSnapInstance,

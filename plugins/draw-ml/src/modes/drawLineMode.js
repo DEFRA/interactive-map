@@ -1,4 +1,4 @@
-import DrawLineString from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/draw_line_string.js'
+import DrawLineString from '../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/draw_line_string.js'
 import { isValidLineClick } from '../utils/spatial.js'
 import { createDrawMode } from './createDrawMode.js'
 
