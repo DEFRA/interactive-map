@@ -1,12 +1,12 @@
 // CSS
 // import '../../dist/css/index.css'
-// import '/plugins/beta/map-styles/dist/css/index.css'
-// import '/plugins/beta/datasets/dist/css/index.css'
-// import '/plugins/beta/draw-ml/dist/css/index.css'
-// import '/plugins/beta/scale-bar/dist/css/index.css'
+// import '/plugins/map-styles/dist/css/index.css'
+// import '/plugins/datasets/dist/css/index.css'
+// import '/plugins/draw-ml/dist/css/index.css'
+// import '/plugins/scale-bar/dist/css/index.css'
 // import '/plugins/search/dist/css/index.css'
 // import '/plugins/interact/dist/css/index.css'
-// import '/plugins/beta/frame/dist/css/index.css'
+// import '/plugins/frame/dist/css/index.css'
 // InteractiveMap
 import InteractiveMap from '../../src/index.js'
 import { openMapStyles, vtsMapStyles3857 } from './mapStyles.js'
@@ -14,16 +14,16 @@ import { parcelSearch, gridRefSearchETRS89 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformVtsRequest3857, transformDataRequest } from './auth.js'
 // Providers
 import maplibreProvider from '/providers/maplibre/src/index.js'
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
+import openNamesProvider from '/providers/open-names/src/index.js'
 // Plugins
-import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
-// import createDrawPlugin from '/plugins/beta/draw-ml/src/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import useLocationPlugin from '/plugins/use-location/src/index.js'
+import mapStylesPlugin from '/plugins/map-styles/src/index.js'
+import createDatasetsPlugin from '/plugins/datasets/src/index.js'
+// import createDrawPlugin from '/plugins/draw-ml/src/index.js'
+import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
-import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import createFramePlugin from '/plugins/frame/src/index.js'
 
 const pointData = {
 	type: 'FeatureCollection',
