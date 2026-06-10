@@ -65,7 +65,8 @@ function MapInner () {
       { default: createSearchPlugin }
     ]) => {
       const searchPlugin = createSearchPlugin({
-        customDatasets: [nominatimDataset]
+        customDatasets: [nominatimDataset],
+        width: '300px'
       })
 
       new InteractiveMap('demo-map-search-control', {
