@@ -5,7 +5,7 @@ The datasets plugin renders GeoJSON and vector tile datasets on the map, with su
 ## ESM usage
 
 ```js
-import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
+import createDatasetsPlugin from '@defra/interactive-map-plugin-datasets'
 
 const datasetsPlugin = createDatasetsPlugin({
   datasets: [

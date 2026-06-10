@@ -5,7 +5,7 @@ Adds a UI control for switching between basemap styles and, where supported by t
 ## Usage
 
 ```js
-import createMapStylesPlugin from '@defra/interactive-map/plugins/map-styles'
+import createMapStylesPlugin from '@defra/interactive-map-plugin-map-styles'
 
 const mapStylesPlugin = createMapStylesPlugin({
   mapStyles: [

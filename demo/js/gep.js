@@ -1,7 +1,7 @@
 import InteractiveMap from '../../src/index.js'
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest27700 } from './auth.js'
-import '/plugins/beta/datasets/src/datasets.scss' // in a separate repo: import '@defra/interactive-map/plugins/datasets/css'
+import '/plugins/beta/datasets/src/datasets.scss' // in a separate repo: import '@defra/interactive-map-plugin-datasets/css'
 // Providers
 import openLayersProvider from '/providers/beta/openlayers/src/index.js'
 import openNamesProvider from '/providers/beta/open-names/src/index.js'
