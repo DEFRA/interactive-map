@@ -147,6 +147,7 @@ const ALL_BUILDS = [
   { entryPath: './plugins/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/datasets/dist/umd', cssOutDir: 'plugins/datasets/dist' },
   { entryPath: './plugins/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/map-styles/dist/umd' },
   { entryPath: './plugins/draw-ml/src/index.js', libraryPath: 'drawMLPlugin', outDir: 'plugins/draw-ml/dist/umd' },
+  { entryPath: './plugins/draw-ol/src/index.js', libraryPath: 'drawOLPlugin', outDir: 'plugins/draw-ol/dist/umd' },
   { entryPath: './plugins/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/frame/dist/umd' }
 ]
 
