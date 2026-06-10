@@ -123,6 +123,8 @@ const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter
   }
 }
 
+// Always draws a line ring. Only draws a fill when isSelected — active (cursor) features get
+// the ring only, so the fill isn't shown for every keyboard-navigated item.
 const applyFillGeomHighlight = (map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter }) => {
   if (isSelected) {
     const fillIdsArray = []
@@ -147,49 +149,44 @@ const applyFillExtrusionHighlight = (map, base, layerId, { ids, lineColor, lineW
   applyHighlightLayer(map, `${base}-line`, 'line', source, sourceLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
 }
 
-const applyGeometryHighlight = (geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter, getSymbolImageId }) => {
-  if (geom === 'fill') {
-    applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
-    return
-  }
+const resolveLineStyle = (style, selectedStyle) => ({
+  lineColor: selectedStyle ? style.selectionStroke : style.stroke,
+  lineWidth: selectedStyle ? style.strokeWidth : style.activeStrokeWidth
+})
 
-  if (geom === 'line') {
-    if (map.getLayer(`${base}-fill`)) {
-      map.setFilter(`${base}-fill`, ['==', 'id', ''])
-    }
-    applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
-    return
+const applyLineHighlight = (map, base, sourceId, srcLayer, lineColor, lineWidth, filter) => {
+  if (map.getLayer(`${base}-fill`)) {
+    map.setFilter(`${base}-fill`, ['==', 'id', ''])
   }
-
-  if (geom === 'symbol') {
-    applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
-  }
+  applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
 }
 
+const applySymbolHighlight = (map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId) => {
+  applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+}
+
+// Orchestrates highlight layers for a single source. prefix drives which visual style is used:
+//   active-highlight        → yellow active ring (stroke only)
+//   active-highlight-inner  → black thin ring drawn on top of active
+//   selected-highlight      → black thin ring + fill for polygon features
 const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId) => {
   const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
   const baseLayer = map.getLayer(layerId)
 
-  if (!baseLayer) {
+  if (!baseLayer || !stylesMap[layerId]) {
     return
   }
 
   const style = stylesMap[layerId]
-  if (!style) {
-    return
-  }
-
   const srcLayer = baseLayer.sourceLayer
   const geom = hasFillGeometry ? 'fill' : baseLayer.type
   const base = `${prefix}-${sourceId}`
-  const { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill } = style
+  const { fill } = style
   const isSelected = prefix === SELECTED_PREFIX
   const selectedStyle = usesSelectedStyle(prefix)
-  const lineColor = selectedStyle ? selectionStroke : stroke
-  const lineWidth = selectedStyle ? strokeWidth : activeStrokeWidth
+  const { lineColor, lineWidth } = resolveLineStyle(style, selectedStyle)
   const idExpression = idProperty ? ['get', idProperty] : ['id']
-  const idsArray = []
-  ids.forEach(id => idsArray.push(id))
+  const idsArray = Array.from(ids)
   const filter = ['in', idExpression, ['literal', idsArray]]
 
   if (baseLayer.type === 'fill-extrusion') {
@@ -197,7 +194,19 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
     return
   }
 
-  applyGeometryHighlight(geom, map, base, sourceId, srcLayer, layerId, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter, getSymbolImageId })
+  switch (geom) {
+    case 'fill':
+      applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
+      break
+    case 'line':
+      applyLineHighlight(map, base, sourceId, srcLayer, lineColor, lineWidth, filter)
+      break
+    case 'symbol':
+      applySymbolHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+      break
+    default:
+      break
+  }
 }
 
 const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImageId) => {
@@ -214,10 +223,19 @@ const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImage
 }
 
 /**
- * Update highlighted features using pure filters.
+ * Update highlighted features using pure filters (no cloned sources).
  * activeFeatures (keyboard cursor) render with the active ring (yellow) plus a selected ring inner (black).
  * selectedFeatures render with the selected ring (black) only.
  * Supports fill, line and symbol geometry, multi-source, cleanup, and bounds.
+ *
+ * @param {object} opts
+ * @param {Function} opts.LngLatBounds - MapLibre LngLatBounds constructor
+ * @param {object} opts.map - MapLibre map instance
+ * @param {Array}  opts.selectedFeatures - committed selection features
+ * @param {Array}  opts.activeFeatures   - keyboard-cursor features
+ * @param {object} opts.stylesMap        - keyed by layerId; each value is
+ *   { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill }
+ * @returns {number[]|null} [west, south, east, north] bounds or null if nothing is selected
  */
 export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures, activeFeatures, stylesMap }) {
   if (!map) {

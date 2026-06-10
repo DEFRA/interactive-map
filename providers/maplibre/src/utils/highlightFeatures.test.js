@@ -404,4 +404,47 @@ describe('Highlighting Utils — missing style entry', () => {
     expect(map.addLayer).not.toHaveBeenCalled()
     expect(map.setFilter).not.toHaveBeenCalled()
   })
+
+  test('returns early when base layer is not found', () => {
+    const map = makeMap()
+    let callCount = 0
+    map.getLayer.mockImplementation((id) => {
+      // First call from groupFeaturesBySource - return a valid layer
+      if (id === 'l1' && callCount === 0) {
+        callCount++
+        return { source: 's1', type: 'line' }
+      }
+      // Subsequent calls from applySourceHighlight - return null to trigger early return
+      return null
+    })
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
+      stylesMap: { l1: { stroke: 'red' } }
+    })
+
+    expect(map.addLayer).not.toHaveBeenCalled()
+  })
+
+  test('handles unexpected geometry type gracefully', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation((id) => {
+      if (id === 'l1') {
+        return { source: 's1', type: 'raster' }
+      }
+      return null
+    })
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
+      stylesMap: { l1: { stroke: 'red' } }
+    })
+
+    // Should not throw and not apply any highlighting for unexpected type
+    expect(map.addLayer).not.toHaveBeenCalled()
+  })
 })
