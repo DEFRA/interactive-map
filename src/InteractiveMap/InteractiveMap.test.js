@@ -23,7 +23,7 @@ jest.mock('./behaviourController.js', () => ({
   setupBehavior: jest.fn(),
   shouldLoadComponent: jest.fn(() => true)
 }))
-jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn(), removeLoadingState: jest.fn() }))
+jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }), removeLoadingState: jest.fn() }))
 jest.mock('./renderError.js', () => ({ renderError: jest.fn() }))
 jest.mock('../config/mergeConfig.js', () => ({ mergeConfig: jest.fn(cfg => cfg) }))
 const mockBreakpointDetector = {
@@ -183,7 +183,7 @@ describe('InteractiveMap — loadApp', () => {
     await map.loadApp()
     expect(map.on).toBe(originalOn)
     expect(typeof map.someMethod).toBe('function')
-    expect(map.eventBus.emit).toHaveBeenCalledWith('app:opened', { statePreserved: false })
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:opened', { statePreserved: false, isFullscreen: false })
   })
 })
 
@@ -436,7 +436,7 @@ describe('InteractiveMap — hideApp and showApp', () => {
     expect(map.rootEl.style.display).toBe('')
     expect(mockButtonInstance.style.display).toBe('none')
     expect(updateDOMState).toHaveBeenCalledWith(map)
-    expect(map.eventBus.emit).toHaveBeenCalledWith('app:opened', { statePreserved: true })
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:opened', { statePreserved: true, isFullscreen: false })
   })
 
   it('showApp: works without _openButton', () => {

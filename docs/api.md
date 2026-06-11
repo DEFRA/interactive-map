@@ -1008,3 +1008,58 @@ Emitted when a panel is closed.
 interactiveMap.on('app:panelclosed', ({ panelId }) => {
   console.log('Panel closed:', panelId)
 })
+```
+
+---
+
+### `app:opened`
+
+Emitted when the map becomes visible — either on first load (`loadApp`) or when restored after being hidden (`showApp`). In `hybrid` behaviour, this fires when the viewport is wide enough to show the map inline, or when the user opens a `buttonFirst` map.
+
+**Payload:**
+
+| Property | Type | Description |
+|---|---|---|
+| `isFullscreen` | `boolean` | Whether the map is currently in fullscreen mode (`true`) or inline (`false`) |
+| `statePreserved` | `boolean` | `false` on first load; `true` when showing a previously hidden map |
+
+```js
+interactiveMap.on('app:opened', ({ isFullscreen }) => {
+  console.log('Map opened, fullscreen:', isFullscreen)
+})
+```
+
+---
+
+### `app:closed`
+
+Emitted when the map is hidden or removed. In `hybrid` behaviour, fires when the viewport narrows below the breakpoint.
+
+**Payload:**
+
+| Property | Type | Description |
+|---|---|---|
+| `statePreserved` | `boolean` | `true` when the map is hidden but kept in memory (e.g. hybrid resize); `false` when fully removed |
+
+```js
+interactiveMap.on('app:closed', ({ statePreserved }) => {
+  console.log('Map closed, state preserved:', statePreserved)
+})
+```
+
+---
+
+### `app:fullscreenchange`
+
+Emitted when the map transitions between fullscreen and inline display while it is already visible. This covers the case in `hybrid` behaviour where the viewport crosses the breakpoint threshold without the map being hidden and re-shown — for example, when a user resizes a desktop browser window between narrow and wide. Use this alongside [`app:opened`](#appopened) to keep external UI (such as buttons rendered outside the map container) in sync with the map's display mode.
+
+**Payload:**
+
+| Property | Type | Description |
+|---|---|---|
+| `isFullscreen` | `boolean` | Whether the map is now in fullscreen mode (`true`) or inline (`false`) |
+
+```js
+interactiveMap.on('app:fullscreenchange', ({ isFullscreen }) => {
+  console.log('Display mode changed, fullscreen:', isFullscreen)
+})

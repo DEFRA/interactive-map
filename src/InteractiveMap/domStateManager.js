@@ -70,6 +70,8 @@ function updateDOMState (mapInstance, { isFullscreen: isFullscreenOverride } = {
     ? 'auto'
     : containerHeight
   rootEl.style.height = isFullscreen ? '100%' : height
+
+  return { isFullscreen }
 }
 
 /**

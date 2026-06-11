@@ -69,11 +69,13 @@ export const EVENTS = {
    * Fired after initial load (`loadApp`) and when the app is shown again after being hidden (`showApp`).
    * Subscribe to this event to react whenever the map becomes visible to the user.
    *
-   * Payload: `{ statePreserved: boolean }` — `true` if the map state was preserved from a previous session.
+   * Payload:
+   * - `statePreserved: boolean` — `true` if the map state was preserved from a previous session.
+   * - `isFullscreen: boolean` — `true` if the map opened in fullscreen mode, `false` if inline.
    *
    * @example
-   * map.on(EVENTS.APP_OPENED, ({ statePreserved }) => {
-   *   console.log('Map opened, state preserved:', statePreserved)
+   * map.on(EVENTS.APP_OPENED, ({ isFullscreen, statePreserved }) => {
+   *   console.log('Map opened, fullscreen:', isFullscreen, 'state preserved:', statePreserved)
    * })
    */
   APP_OPENED: 'app:opened',
@@ -92,6 +94,22 @@ export const EVENTS = {
    * })
    */
   APP_CLOSED: 'app:closed',
+
+  /**
+   * Emitted when the map transitions between fullscreen and inline display while already visible.
+   *
+   * Fired during viewport resize in `hybrid` behaviour when the map crosses the fullscreen/inline
+   * threshold without being hidden and re-shown. Use this alongside `app:opened` and `app:closed`
+   * to track the map's display mode across all transitions.
+   *
+   * Payload: `{ isFullscreen: boolean }` — `true` if the map is now fullscreen, `false` if inline.
+   *
+   * @example
+   * map.on(EVENTS.APP_FULLSCREEN_CHANGE, ({ isFullscreen }) => {
+   *   console.log('Display mode changed, fullscreen:', isFullscreen)
+   * })
+   */
+  APP_FULLSCREEN_CHANGE: 'app:fullscreenchange',
 
   /**
    * Emitted when a panel is opened.
