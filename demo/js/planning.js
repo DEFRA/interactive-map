@@ -28,7 +28,30 @@ import { getGeometryShape, getQueryParam } from './planning/utils.js'
 import { addVectorTileLayers, addFeatureLayers, setDataset, setMapFeatures, setColors } from './planning/layers.js'
 
 let feature
-// const feature = { id: 'boundary', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[371013.629737365,518087.27160546643],[371026.76930227707,518103.6431258204],[371076.00861123804,518150.38583537703],[371082.5004262571,518144.458668744],[371088.1419858577,518146.24617482634],[371119.04499505187,518121.1373772673],[371061.7528809118,518034.9300132221],[371044.3521903893,518057.18438187643],[371013.629737365,518087.27160546643]]]}, properties: { id: 'boundary' }}
+// Some examples of polygons - can be used for testing simplification, self-intersection and hole handling. 
+// The repeated point polygon is a non-simple feature that should be simplified to a valid polygon, 
+// the bow-tie polygon is a self-intersecting polygon that can be simplified to a valid polygon, 
+// but still contains multiple shapes that are not yet  supported and should be rejected.
+// the square contains a hole (the smaller square) which is not supported and should be rejected.
+const repeatedPointPolygon = [[[294776.26105,84443.86829],[294414.67425,84244.69738],[294414.67425,84244.69738],[293618.44985,83960.51247],[291704.91433,84262.56294],[290550.71282,84868.41697],[289664.4461,85675.22397],[288536.79025,86618.54328],[288400.39733,88159.71153],[288715.15255,88809.43255],[288164.58436,90321.29741],[287877.61377,90964.86384],[287875.45992,92614.33407],[288027.44177,93566.74813],[288225.26695,94030.91045],[288844.10898,94860.7026],[290115.02218,95451.89228],[290905.80852,95547.66262],[291373.54542,95462.97806],[292760.76096,95340.61139],[293688.25234,95696.19939],[294613.34168,95939.61197],[295499.30008,96109.05311],[296162.20635,96395.41811],[297400.19877,96333.44535],[298388.01025,95958.29754],[299457.18303,95900.10823],[300783.45777,95537.604],[301794.37439,94375.95283],[301919.46214,94036.41671],[301833.07241,93438.55414],[300695.99155,92916.73026],[299694.11958,92598.61727],[299137.12749,91972.21018],[299191.64292,90902.8417],[299255.94577,90339.24938],[299328.21833,89212.95611],[299066.14517,88299.15325],[298942.1195,87720.14546],[299164.81448,86590.35431],[299493.18917,86058.72191],[298345.16512,85067.65648],[297617.56462,84425.00966],[296499.88609,84052.86277],[294776.26105,84443.86829]]]
+const bowTiePolygon =[[[300615, 89868], [300893, 90348], [300283, 89988], [300030, 90393], [300615, 89868]]]
+// Note all of the following lack an extra array wrapper, so should be passed as [square], [smallerSquare], [ringPolygon] etc. to be valid GeoJSON
+const square =[[300615, 89868], [300815, 89868], [300815, 90068], [300615, 90068],  [300615, 89868]]
+const smallerSquare =[[300655, 89918], [300705, 89918], [300705, 89968], [300655, 89968],  [300655, 89918]]
+const offsetSmallerSquare =[[300855, 109918], [300805, 109918], [300805, 109968], [300855, 109968],  [300855, 109918]]
+const ringPolygon = [square, smallerSquare]
+
+feature = { // Non-Simple feature for testing simplification
+  id: 'boundary',
+  type: 'Feature',
+  geometry: {
+    type: 'MultiPolygon',
+    coordinates: repeatedPointPolygon
+  },
+  properties: {
+    id: 'boundary'
+  }
+}
 
 const interactPlugin = createInteractPlugin({
 	marker: {
@@ -49,7 +72,7 @@ const framePlugin = createFramePlugin({
 })
 
 const interactiveMap = new InteractiveMap('map', {
-	behaviour: 'inline',
+	behaviour: 'mapOnly',
 	mapProvider: esriProvider({
 		setupConfig: setupEsriConfig
 	}),
@@ -189,9 +212,19 @@ interactiveMap.on('interact:markerchange', function (e) {
 })
 
 interactiveMap.on('draw:ready', function () {
-	// Add a feature if provided
-	if (feature) {
-		drawPlugin.addFeature(feature)
+  // Add a feature if provided
+  if (feature) {
+    const result = drawPlugin.addFeature(feature)
+    if (!result.success) {
+      feature = null
+      interactiveMap.addPanel('error',{
+        label: 'Invalid site boundary supplied',
+        mobile: { slot: 'middle', modal: true},
+        tablet: { slot: 'middle', width: '400px', modal: true },
+        desktop: { slot: 'middle', width: '400px', modal: true },
+        html: 'Failed to add the supplied site boundary - it may be invalid, self-intersecting or contain unsupported geometry such as holes or multiple polygons'
+      })
+    }
 	}
 
 	// Add menu click handlers

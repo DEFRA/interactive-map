@@ -35,7 +35,9 @@ export function attachEvents ({ pluginState, mapProvider, events, eventBus, butt
         graphic.geometry.rings,
         mapColorScheme
       )
-      graphic.symbol = newGraphic.symbol
+      if (newGraphic) {
+        graphic.symbol = newGraphic.symbol
+      }
 
       if (activeGraphicId === graphic.attributes.id) {
         activeGraphic = graphic
@@ -88,8 +90,9 @@ export function attachEvents ({ pluginState, mapProvider, events, eventBus, butt
     }
 
     // Prevent self-intersect
+    // TODO - refactor this when rings and/or multipolygons are supported
     if (toolInfoType === 'reshape') {
-      const isSimple = simplifyOperator.isSimple(graphic.geometry)
+      const isSimple = simplifyOperator.isSimple(graphic.geometry) && graphic.geometry.rings.length === 1
       if (!isSimple) {
         sketchViewModel.undo()
       }
@@ -157,7 +160,9 @@ export function attachEvents ({ pluginState, mapProvider, events, eventBus, butt
         feature.geometry.coordinates,
         mapColorScheme
       )
-      sketchLayer.add(graphic)
+      if (graphic) {
+        sketchLayer.add(graphic)
+      }
     }
 
     // Prevent selection

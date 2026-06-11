@@ -5,6 +5,8 @@ import * as graphicJs from './graphic.js'
 jest.mock('./graphic.js')
 const createGraphic = jest.spyOn(graphicJs, 'createGraphic')
 const createSymbol = jest.spyOn(graphicJs, 'createSymbol')
+const simplifyGraphic = jest.spyOn(graphicJs, 'createGraphic')
+simplifyGraphic.mockImplementation((graphic, options) => graphic)
 // const graphicToGeoJSON = jest.spyOn(graphicJs, 'graphicToGeoJSON')
 
 const dispatch = jest.fn()
