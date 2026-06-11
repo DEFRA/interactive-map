@@ -1,4 +1,4 @@
-import { useLayoutEffect } from 'react'
+import { useLayoutEffect, useMemo } from 'react'
 import { useResizeObserver } from './useResizeObserver.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
@@ -153,7 +153,15 @@ export function useLayoutMeasurements () {
   //    actions buttons, etc.). Safe zone is intentionally not dispatched here —
   //    that is Effect 2's responsibility.
   // --------------------------------
-  useResizeObserver([bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef], () => {
+  // Stable reference — all entries are ref objects from useApp that never change.
+  // Prevents useResizeObserver's effect from re-running (and cancelling its RAF)
+  // on every render due to a new array literal being passed each time.
+  const observedRefs = useMemo(
+    () => [bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef],
+    []
+  )
+
+  useResizeObserver(observedRefs, () => {
     calculateLayout(layoutRefs)
   })
 }
