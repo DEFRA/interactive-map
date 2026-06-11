@@ -120,15 +120,27 @@
   inset: 0;
 }
 
-/* Two columns at tablet */
-@media (min-width: 641px) and (max-width: 1019px) {
-  .app-example-cards .govuk-grid-column-one-third {
-    width: 50%;
-  }
+/* Example cards grid — override GOV.UK float layout with CSS Grid */
+.app-example-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+}
 
-  .app-example-cards .govuk-grid-column-one-third:nth-child(odd) {
-    clear: left;
+@media (min-width: 641px) {
+  .app-example-cards {
+    grid-template-columns: repeat(2, 1fr);
   }
+}
+
+@media (min-width: 1020px) {
+  .app-example-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.app-example-cards .govuk-grid-column-one-third {
+  width: auto;
+  float: none;
 }
 
 /* GOV.UK tabs — enhanced styles for all devices; React manages active state.
