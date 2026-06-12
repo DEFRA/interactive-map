@@ -160,7 +160,7 @@ function MapInner () {
   return <div className='app-no-prose app-example'><div id='demo-map-draw'></div></div>
 }
 
-export default function DemoMapDraw () {
+export default function DemoMapDrawTools () {
   return (
     <BrowserOnly
       fallback={<div className='govuk-inset-text'>The map requires JavaScript to be enabled.</div>}

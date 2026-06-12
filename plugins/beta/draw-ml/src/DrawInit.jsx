@@ -35,6 +35,14 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     return () => remove()
   }, [mapState.isMapReady, appState.mode])
 
+  // Keep draw instance aware of the crossHair API so draw modes can use show/hide
+  // (rather than direct DOM manipulation which conflicts with React's controlled display style)
+  useEffect(() => {
+    if (mapProvider.draw) {
+      mapProvider.draw._crossHair = crossHair
+    }
+  }, [mapProvider.draw, crossHair])
+
   // Show crosshair immediately on touch/keyboard when entering draw mode
   useEffect(() => {
     if (['draw_polygon', 'draw_line'].includes(pluginState.mode) && isTouchOrKeyboard) {

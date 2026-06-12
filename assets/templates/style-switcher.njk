@@ -1,0 +1,87 @@
+{% extends "layouts/main.html" %}
+
+{% block pageTitle %}
+  Change map style – GOV.UK Prototype Kit
+{% endblock %}
+
+{% block head %}
+  <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/map-styles/dist/css/index.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block bodyStart %}
+  <script>document.body.classList.add('im-is-loading')</script>
+{% endblock %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:window.history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">
+      Change map style
+    </h1>
+
+    <div id="map"></div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block pageScripts %}
+  <!-- Defra library scripts -->
+  <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/map-styles/dist/umd/index.js"></script>
+
+  <script>
+    const attribution = 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap'
+
+    const mapStyles = [
+      {
+        id: 'road',
+        label: 'Road',
+        url: 'https://tiles.openfreemap.org/styles/liberty',
+        thumbnail: '/plugin-assets/%40defra%2Finteractive-map/assets/images/road-ofm-thumb.jpg',
+        attribution,
+        backgroundColor: '#f5f5f0'
+      },
+      {
+        id: 'bright',
+        label: 'Bright',
+        url: 'https://tiles.openfreemap.org/styles/bright',
+        thumbnail: '/plugin-assets/%40defra%2Finteractive-map/assets/images/bright-ofm-thumb.jpg',
+        attribution,
+        backgroundColor: '#f5f5f0'
+      },
+      {
+        id: 'dark',
+        label: 'Dark',
+        url: 'https://tiles.openfreemap.org/styles/fiord',
+        thumbnail: '/plugin-assets/%40defra%2Finteractive-map/assets/images/dark-ofm-thumb.jpg',
+        attribution,
+        mapColorScheme: 'dark',
+        appColorScheme: 'dark'
+      }
+    ]
+
+    const mapStylesPlugin = defra.mapStylesPlugin({ mapStyles })
+
+    new defra.InteractiveMap('map', {
+      behaviour: 'inline',
+      mapProvider: defra.maplibreProvider(),
+      mapStyle: mapStyles[0],
+      center: [-0.1276, 51.5074],
+      zoom: 12,
+      containerHeight: '516px',
+      plugins: [mapStylesPlugin]
+    })
+  </script>
+{% endblock %}

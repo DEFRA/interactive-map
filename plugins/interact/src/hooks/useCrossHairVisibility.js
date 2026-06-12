@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useRef } from 'react'
-import { getInterfaceType, subscribeToInterfaceChangesImmediate } from '../../../../src/utils/detectInterfaceType.js'
 
 export function useCrossHairVisibility ({ crossHair, enabled, selectMarkerOnly, appState }) {
   const enabledRef = useRef(enabled)
@@ -9,9 +8,11 @@ export function useCrossHairVisibility ({ crossHair, enabled, selectMarkerOnly, 
   const crossHairRef = useRef(crossHair)
   crossHairRef.current = crossHair
   const listboxFocusRef = useRef(false)
+  const interfaceTypeRef = useRef(appState.interfaceType)
+  interfaceTypeRef.current = appState.interfaceType
 
   const updateCrossHair = useCallback(() => {
-    const type = getInterfaceType()
+    const type = interfaceTypeRef.current
     const isToK = ['touch', 'keyboard'].includes(type)
     if (enabledRef.current && !listboxFocusRef.current && isToK && !(type === 'touch' && selectMarkerOnlyRef.current)) {
       crossHairRef.current.fixAtCenter()
@@ -20,17 +21,10 @@ export function useCrossHairVisibility ({ crossHair, enabled, selectMarkerOnly, 
     }
   }, [])
 
-  // Toggle target marker visibility on enabled/interactionModes changes
   useEffect(() => {
     updateCrossHair()
-  }, [enabled, selectMarkerOnly, updateCrossHair])
+  }, [enabled, selectMarkerOnly, appState.interfaceType, updateCrossHair])
 
-  // Toggle target marker visibility immediately on interface type change (no 150ms React delay)
-  useEffect(() => {
-    return subscribeToInterfaceChangesImmediate(updateCrossHair)
-  }, [updateCrossHair])
-
-  // Hide crosshair when listbox has focus
   useEffect(() => {
     const container = appState.layoutRefs?.appContainerRef?.current
     if (!container) { return undefined }

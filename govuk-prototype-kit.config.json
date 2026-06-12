@@ -1,8 +1,48 @@
 {
   "templates": [
     {
-      "name": "Map page",
-      "path": "/assets/templates/map.njk",
+      "name": "Basic map",
+      "path": "/assets/templates/basic-map.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Map with marker and panel",
+      "path": "/assets/templates/marker-panel.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Button-triggered map",
+      "path": "/assets/templates/button-map.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Toggle marker label",
+      "path": "/assets/templates/toggle-marker-label.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Place a marker to continue",
+      "path": "/assets/templates/place-marker.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Add a search control",
+      "path": "/assets/templates/search-control.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Select a feature",
+      "path": "/assets/templates/select-feature.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Change map style",
+      "path": "/assets/templates/style-switcher.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Draw tools",
+      "path": "/assets/templates/draw-tools.njk",
       "type": "nunjucks"
     }
   ],

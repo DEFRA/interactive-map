@@ -56,17 +56,22 @@ export const createDrawMode = (ParentMode, config) => {
       // Add initial props
       state[featureProp].properties = options.properties
 
-      const { container, interfaceType, vertexMarkerId } = state
+      const { container, vertexMarkerId, getInterfaceType } = state
+      const currentInterfaceType = getInterfaceType ? getInterfaceType() : state.interfaceType
+      state.interfaceType = currentInterfaceType
       const vertexMarker = container.querySelector(`#${vertexMarkerId}`)
-      vertexMarker.style.display = ['touch', 'keyboard'].includes(interfaceType) ? 'block' : 'none'
       state.vertexMarker = vertexMarker
+      if (['touch', 'keyboard'].includes(currentInterfaceType)) {
+        this._showCrossHair(state)
+      } else {
+        this._hideCrossHair(state)
+      }
 
       // Bind all handlers once
       const bind = (name, fn) => (this[name] = fn.bind(this, state))
       const handlers = {
         keydownHandler: this.onKeydown,
         keyupHandler: this.onKeyup,
-        focusHandler: this.onFocus,
         blurHandler: this.onBlur,
         createHandler: this.onCreate,
         moveHandler: this.onMove,
@@ -83,7 +88,6 @@ export const createDrawMode = (ParentMode, config) => {
         [window, 'keydown', this.keydownHandler],
         [window, 'keyup', this.keyupHandler],
         [window, 'click', this.vertexButtonClickHandler],
-        [container, 'focus', this.focusHandler],
         [container, 'blur', this.blurHandler],
         [container, 'pointermove', this.pointermoveHandler],
         [container, 'pointerup', this.pointerupHandler],
@@ -230,6 +234,7 @@ export const createDrawMode = (ParentMode, config) => {
           featureId,
           container: state.container,
           interfaceType: state.interfaceType,
+          crossHair: state.crossHair,
           vertexMarkerId: state.vertexMarkerId,
           addVertexButtonId: state.addVertexButtonId,
           getSnapEnabled: state.getSnapEnabled,
@@ -338,10 +343,18 @@ export const createDrawMode = (ParentMode, config) => {
       this.map.fire('draw.geometrychange', state.polygon || state.line)
     },
 
+    _showCrossHair (state) {
+      if (state.crossHair) { state.crossHair.show() } else { state.vertexMarker.style.display = 'block' }
+    },
+
+    _hideCrossHair (state) {
+      if (state.crossHair) { state.crossHair.hide() } else { state.vertexMarker.style.display = 'none' }
+    },
+
     _setInterface (state, type, show = true) {
       state.interfaceType = type
       if (show) {
-        state.vertexMarker.style.display = 'block'
+        this._showCrossHair(state)
       }
     },
 
@@ -449,13 +462,9 @@ export const createDrawMode = (ParentMode, config) => {
       }
     },
 
-    onFocus (state) {
-      state.vertexMarker.style.display = ['touch', 'keyboard'].includes(state.interfaceType) ? 'block' : 'none'
-    },
-
     onBlur (state, e) {
       if (e.target !== state.container) {
-        state.vertexMarker.style.display = 'none'
+        this._hideCrossHair(state)
       }
     },
 
@@ -511,7 +520,7 @@ export const createDrawMode = (ParentMode, config) => {
 
     onPointermove (state, e) {
       if (e.pointerType !== 'touch') {
-        state.vertexMarker.style.display = 'none'
+        this._hideCrossHair(state)
       }
     },
 
@@ -531,7 +540,7 @@ export const createDrawMode = (ParentMode, config) => {
     onStop (state) {
       ParentMode.onStop.call(this, state)
       this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
-      state.vertexMarker.style.display = 'none'
+      this._hideCrossHair(state)
     }
   }
 }
