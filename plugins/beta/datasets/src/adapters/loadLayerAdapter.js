@@ -4,7 +4,11 @@ const importLayerAdapter = async (mapProvider) => {
       const { default: LayerAdapter } = await import(/* webpackChunkName: "im-datasets-ml-adapter" */ './maplibre/maplibreLayerAdapter.js')
       return LayerAdapter
     }
-    // TODO: add cases for EsriProvider, OpenLayersProvider and potentially LeafletProvider
+    case 'EsriProvider': {
+      const { default: LayerAdapter } = await import(/* webpackChunkName: "im-datasets-esri-adapter" */ './esri/esriLayerAdapter.js')
+      return LayerAdapter
+    }
+    // TODO: add cases for OpenLayersProvider and potentially LeafletProvider
     default: {
       throw new Error(`No layer adapter available for map provider ${mapProvider.name}. Please provide a compatible layer adapter.`)
     }
@@ -28,6 +32,8 @@ export const loadLayerAdapter = async (mapProvider, symbolRegistry, patternRegis
   layerAdapter.applyGlobalOpacity = _layerAdapter.applyGlobalOpacity.bind(_layerAdapter)
   layerAdapter.addDataset = _layerAdapter.addDataset.bind(_layerAdapter)
   layerAdapter.applyFeatureFilter = _layerAdapter.applyFeatureFilter.bind(_layerAdapter)
+  layerAdapter.onMapStyleChange = _layerAdapter.onMapStyleChange?.bind(_layerAdapter)
+  layerAdapter.onMapSizeChange = _layerAdapter.onMapSizeChange?.bind(_layerAdapter)
 
   return _layerAdapter
 }
