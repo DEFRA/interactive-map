@@ -168,6 +168,10 @@ export const EditVertexMode = {
     state.interfaceType = 'keyboard'
     this.hideTouchVertexIndicator(state)
 
+    if (e.key === ' ') {
+      e.preventDefault()
+    }
+
     if (e.key === ' ' && state.selectedVertexIndex < 0) {
       // Clear snap indicator when starting keyboard selection
       const snap = getSnapInstance(this.map)
