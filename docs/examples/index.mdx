@@ -20,6 +20,7 @@ export function ExampleCards() {
   const drawHref = useBaseUrl('/examples/draw-tools')
   const placeMarkerHref = useBaseUrl('/examples/place-marker')
   const datasetsHref = useBaseUrl('/examples/datasets')
+  const polygonsHref = useBaseUrl('/examples/add-polygons')
 
   return (
     <div className='govuk-grid-row app-example-cards'>
@@ -118,7 +119,17 @@ export function ExampleCards() {
           <img src={basicMapImg} alt='' />
           <div className='app-example-card__body'>
             <h2 className='govuk-heading-s'>
-              <a href={datasetsHref}>Datasets</a>
+              <a href={datasetsHref}>Add symbols</a>
+            </h2>
+          </div>
+        </div>
+      </div>
+      <div className='govuk-grid-column-one-third'>
+        <div className='app-example-card'>
+          <img src={basicMapImg} alt='' />
+          <div className='app-example-card__body'>
+            <h2 className='govuk-heading-s'>
+              <a href={polygonsHref}>Add polygons</a>
             </h2>
           </div>
         </div>

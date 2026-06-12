@@ -99,6 +99,7 @@ const config = {
             { text: 'Change map style', href: '/examples/style-switcher' },
             { text: 'Draw tools', href: '/examples/draw-tools' },
             { text: 'Add symbols', href: '/examples/datasets' },
+            { text: 'Add polygons', href: '/examples/add-polygons' },
           ],
         },
         {

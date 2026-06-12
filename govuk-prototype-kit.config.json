@@ -47,7 +47,12 @@
     },
     {
       "name": "Add symbols",
-      "path": "/assets/templates/datasets.njk",
+      "path": "/assets/templates/add-symbols.njk",
+      "type": "nunjucks"
+    },
+    {
+      "name": "Add polygons",
+      "path": "/assets/templates/add-polygons.njk",
       "type": "nunjucks"
     }
   ],
