@@ -1,20 +1,15 @@
 import { act, renderHook } from '@testing-library/react'
 import { useCrossHairVisibility } from './useCrossHairVisibility.js'
-import { getInterfaceType } from '../../../../src/utils/detectInterfaceType.js'
-
-jest.mock('../../../../src/utils/detectInterfaceType.js', () => ({
-  getInterfaceType: jest.fn(() => 'mouse'),
-  subscribeToInterfaceChangesImmediate: jest.fn(() => () => {})
-}))
 
 let crossHair
 let appState
 
 beforeEach(() => {
-  jest.clearAllMocks()
   crossHair = { fixAtCenter: jest.fn(), hide: jest.fn() }
-  appState = { layoutRefs: { appContainerRef: { current: document.createElement('div') } } }
-  getInterfaceType.mockReturnValue('mouse')
+  appState = {
+    interfaceType: 'mouse',
+    layoutRefs: { appContainerRef: { current: document.createElement('div') } }
+  }
 })
 
 describe('useCrossHairVisibility', () => {
@@ -26,7 +21,7 @@ describe('useCrossHairVisibility', () => {
 
   it('shows crosshair on touch/keyboard and hides when listbox has focus', () => {
     const container = appState.layoutRefs.appContainerRef.current
-    getInterfaceType.mockReturnValue('touch')
+    appState.interfaceType = 'touch'
     renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, selectMarkerOnly: false, appState }))
 
     expect(crossHair.fixAtCenter).toHaveBeenCalled()

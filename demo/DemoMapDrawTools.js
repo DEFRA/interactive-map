@@ -76,10 +76,7 @@ function MapInner () {
               iconSvgContent: ICON_POLYGON,
               onClick: () => {
                 interactiveMap.toggleButtonState('drawTools', 'hidden', true)
-                drawPlugin.newPolygon(crypto.randomUUID(), {
-                  stroke: '#e6c700',
-                  fill: 'rgba(255, 221, 0, 0.1)'
-                })
+                drawPlugin.newPolygon(crypto.randomUUID())
               }
             },
             {
@@ -88,10 +85,7 @@ function MapInner () {
               iconSvgContent: ICON_LINE,
               onClick: () => {
                 interactiveMap.toggleButtonState('drawTools', 'hidden', true)
-                drawPlugin.newLine(crypto.randomUUID(), {
-                  stroke: '#d4351c',
-                  strokeWidth: 4
-                })
+                drawPlugin.newLine(crypto.randomUUID())
               }
             },
             {
@@ -100,7 +94,9 @@ function MapInner () {
               iconSvgContent: ICON_EDIT,
               isDisabled: true,
               onClick: () => {
-                if (!drawPlugin.editFeature(selectedFeatureIds[0])) return
+                if (!drawPlugin.editFeature(selectedFeatureIds[0])) {
+                  return
+                }
                 interactiveMap.toggleButtonState('drawTools', 'hidden', true)
                 interactPlugin.disable()
               }
@@ -160,7 +156,7 @@ function MapInner () {
   return <div className='app-no-prose app-example'><div id='demo-map-draw'></div></div>
 }
 
-export default function DemoMapDraw () {
+export default function DemoMapDrawTools () {
   return (
     <BrowserOnly
       fallback={<div className='govuk-inset-text'>The map requires JavaScript to be enabled.</div>}

@@ -56,6 +56,7 @@ export const newLine = ({ appState, appConfig, pluginConfig, pluginState, mapPro
     vertexMarkerId: `${appConfig.id}-cross-hair`,
     addVertexButtonId: `${appConfig.id}-draw-add-point`,
     interfaceType: appState.interfaceType,
+    crossHair: draw._crossHair,
     getSnapEnabled: () => mapProvider.snapEnabled === true,
     featureId,
     ...modeOptions,

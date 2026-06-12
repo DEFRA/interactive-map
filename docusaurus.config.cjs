@@ -91,13 +91,13 @@ const config = {
           sidebar: [
             { text: 'Basic map', href: '/examples/basic-map' },
             { text: 'Button-triggered map', href: '/examples/button-map' },
-            { text: 'Add a marker with a panel', href: '/examples/add-marker-with-panel' },
+            { text: 'Map with marker and panel', href: '/examples/add-marker-with-panel' },
             { text: 'Toggle marker label', href: '/examples/toggle-marker-label' },
             { text: 'Place a marker to continue', href: '/examples/place-marker' },
             { text: 'Add a search control', href: '/examples/search-control' },
             { text: 'Select a feature', href: '/examples/select-feature' },
             { text: 'Change map style', href: '/examples/style-switcher' },
-            { text: 'Draw tools', href: '/examples/draw' },
+            { text: 'Draw tools', href: '/examples/draw-tools' },
           ],
         },
         {
