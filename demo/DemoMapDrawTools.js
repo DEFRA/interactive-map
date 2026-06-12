@@ -76,10 +76,7 @@ function MapInner () {
               iconSvgContent: ICON_POLYGON,
               onClick: () => {
                 interactiveMap.toggleButtonState('drawTools', 'hidden', true)
-                drawPlugin.newPolygon(crypto.randomUUID(), {
-                  stroke: '#e6c700',
-                  fill: 'rgba(255, 221, 0, 0.1)'
-                })
+                drawPlugin.newPolygon(crypto.randomUUID())
               }
             },
             {
@@ -88,10 +85,7 @@ function MapInner () {
               iconSvgContent: ICON_LINE,
               onClick: () => {
                 interactiveMap.toggleButtonState('drawTools', 'hidden', true)
-                drawPlugin.newLine(crypto.randomUUID(), {
-                  stroke: '#d4351c',
-                  strokeWidth: 4
-                })
+                drawPlugin.newLine(crypto.randomUUID())
               }
             },
             {
@@ -100,7 +94,9 @@ function MapInner () {
               iconSvgContent: ICON_EDIT,
               isDisabled: true,
               onClick: () => {
-                if (!drawPlugin.editFeature(selectedFeatureIds[0])) return
+                if (!drawPlugin.editFeature(selectedFeatureIds[0])) {
+                  return
+                }
                 interactiveMap.toggleButtonState('drawTools', 'hidden', true)
                 interactPlugin.disable()
               }
