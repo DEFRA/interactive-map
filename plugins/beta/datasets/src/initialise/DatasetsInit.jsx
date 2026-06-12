@@ -9,7 +9,7 @@ import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
-  const isMapStyleReady = !!mapProvider.map?.getStyle()
+  const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
@@ -22,7 +22,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
     const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
 
-    if (!isMapStyleReady || !inModeWhitelist || inExcludeModes) {
+    if (!isBaseMapReady || !inModeWhitelist || inExcludeModes) {
       return
     }
 
@@ -47,7 +47,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     }
 
     initDatasets()
-  }, [isMapStyleReady, appState.mode])
+  }, [isBaseMapReady, appState.mode])
 
   useEffect(() => datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets),
     [pluginState.mappedDatasets, pluginState.orderedDatasets])
