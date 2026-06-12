@@ -44,6 +44,11 @@
       "name": "Draw tools",
       "path": "/assets/templates/draw-tools.njk",
       "type": "nunjucks"
+    },
+    {
+      "name": "Add symbols",
+      "path": "/assets/templates/datasets.njk",
+      "type": "nunjucks"
     }
   ],
   "assets": [
