@@ -3,6 +3,11 @@
   padding: 0;
   min-height: auto;
   border-radius: 0;
+  filter: var(--search-drop-shadow);
+  -webkit-transform: translate3d(0, 0, 0);
+   -moz-transform: translate3d(0, 0, 0);
+   -ms-transform: translate3d(0, 0, 0);
+   transform: translate3d(0, 0, 0);
   
   &:before {
     border-radius: 0;
@@ -17,11 +22,6 @@
   right: 0;
   height: auto;
   overflow: visible;
-  filter: var(--search-drop-shadow);
-  -webkit-transform: translate3d(0, 0, 0);
-   -moz-transform: translate3d(0, 0, 0);
-   -ms-transform: translate3d(0, 0, 0);
-   transform: translate3d(0, 0, 0);
 }
 
 .im-o-app--tablet .im-c-search-form,
@@ -30,7 +30,6 @@
   overflow: visible;
   border-radius: var(--button-border-radius);
   box-shadow: none;
-  filter: var(--search-drop-shadow);
 
   &:before {
     border-radius: var(--button-border-radius);
