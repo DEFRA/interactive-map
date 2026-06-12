@@ -18,6 +18,10 @@
   height: auto;
   overflow: visible;
   filter: var(--search-drop-shadow);
+  -webkit-transform: translate3d(0, 0, 0);
+   -moz-transform: translate3d(0, 0, 0);
+   -ms-transform: translate3d(0, 0, 0);
+   transform: translate3d(0, 0, 0);
 }
 
 .im-o-app--tablet .im-c-search-form,
