@@ -9,11 +9,12 @@ export default class EsriLayerAdapter {
   }
 
   async init (mapStyle) {
-    console.log('EsriLayerAdapter init', mapStyle)
+    // TODO - move some of this into a super LayerAdapter class that this extends
     datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset, mapStyle))
   }
 
   _addLayers (registryDataset, mapStyle) {
+    console.log('Creating Esri VectorTileLayer for dataset', registryDataset.id)
     const vectorTileLayer = new VectorTileLayer({
       id: registryDataset.id,
       url: registryDataset.tiles,
