@@ -1,10 +1,26 @@
+import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 export default class EsriLayerAdapter {
+  constructor (mapProvider, symbolRegistry, patternRegistry) {
+    this._mapProvider = mapProvider
+    this._map = mapProvider.map
+    // TODO: Implement symbolRegistry and patternRegistry usage in the adapter
+  }
+
   async init (mapStyle) {
     console.log('EsriLayerAdapter init', mapStyle)
-    // datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset, mapStyle))
-    // await new Promise(resolve => this._map.once('idle', resolve))
+    datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset, mapStyle))
+  }
+
+  _addLayers (registryDataset, mapStyle) {
+    const vectorTileLayer = new VectorTileLayer({
+      id: registryDataset.id,
+      url: registryDataset.tiles,
+      opacity: 1,
+      visible: registryDataset.visible
+    })
+    this._map.add(vectorTileLayer)
   }
 
   async removeDataset (...args) {
