@@ -9,9 +9,44 @@ import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } fro
 
 const datasets = [
   {
+    id: 'flood-zones-cc',
+    label: 'Flood Zones Climate Change',
+    groupLabel: 'Datasets',
+    groupId: 'flood-zones',
+    tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_CCP1_NON_PRODUCTION/VectorTileServer`,
+    showInKey: true,
+    showInMenu: true,
+    sublayers: [
+      {
+        id: 'flood-zones',
+        label: 'Climate change (2070 to 2125)',
+        styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Flood Zones plus climate change/1',
+        showInKey: true,
+        showInMenu: false,
+        style: {
+          fill: { outdoor: '#F4A582', dark: '#BF3D4A' },
+          stroke: 'none'
+        },
+      },
+      {
+        id: 'data-unavailable',
+        label: 'Climate change data unavailable',
+        styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/1',
+        showInKey: true,
+        showInMenu: false,
+        style: {
+          fillPattern: 'dot',
+          fillPatternForegroundColor: { outdoor: '#000000', dark: '#ffffff' },
+          stroke: { outdoor: '#000000', dark: '#ffffff' },
+        },
+      }
+    ]
+  },
+  {
     id: 'flood-zones',
     label: 'Flood Zones',
     groupLabel: 'Datasets',
+    groupId: 'flood-zones',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_NON_PRODUCTION/VectorTileServer`,
     showInKey: true,
     showInMenu: true,
