@@ -5,8 +5,6 @@ import { logger } from '../../../../../../../src/services/logger.js'
 const MAX_TILE_ZOOM = 22
 
 export class MapLibreDataset extends Dataset {
-  get visibility () { return this.visible ? 'visible' : 'none' }
-
   get fillLayerId () {
     if (this.hasSublayers) {
       return null
