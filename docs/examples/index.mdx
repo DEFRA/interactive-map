@@ -8,6 +8,8 @@ import searchImg from '../assets/images/search.jpg'
 import selectFeatureImg from '../assets/images/select-feature.jpg'
 import styleSwitcherImg from '../assets/images/style-switcher.jpg'
 import drawImg from '../assets/images/draw.jpg'
+import addSymbolsImg from '../assets/images/add-symbols.jpg'
+import addPolygonsImg from '../assets/images/add-polygons.jpg'
 
 export function ExampleCards() {
   const basicHref = useBaseUrl('/examples/basic-map')
@@ -116,7 +118,7 @@ export function ExampleCards() {
       </div>
       <div className='govuk-grid-column-one-third'>
         <div className='app-example-card'>
-          <img src={basicMapImg} alt='' />
+          <img src={addSymbolsImg} alt='' />
           <div className='app-example-card__body'>
             <h2 className='govuk-heading-s'>
               <a href={datasetsHref}>Add symbols</a>
@@ -126,7 +128,7 @@ export function ExampleCards() {
       </div>
       <div className='govuk-grid-column-one-third'>
         <div className='app-example-card'>
-          <img src={basicMapImg} alt='' />
+          <img src={addPolygonsImg} alt='' />
           <div className='app-example-card__body'>
             <h2 className='govuk-heading-s'>
               <a href={polygonsHref}>Add polygons</a>

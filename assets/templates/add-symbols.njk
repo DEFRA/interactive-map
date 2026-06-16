@@ -42,7 +42,9 @@
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/index.js"></script>
 
   <script>
-    const pointData = {
+    const symbolGraphic = 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z'
+
+    const geojson = {
       type: 'FeatureCollection',
       features: [{
         type: 'Feature',
@@ -63,7 +65,7 @@
       datasets: [{
         id: 'historic-monuments',
         label: 'Historic monuments',
-        geojson: pointData,
+        geojson: geojson,
         minZoom: 10,
         maxZoom: 24,
         showInKey: true,
@@ -75,7 +77,7 @@
           showInMenu: true,
           style: {
             symbol: 'square',
-            symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+            symbolGraphic,
             symbolBackgroundColor: '#00897B'
           }
         }, {
@@ -85,7 +87,7 @@
           showInMenu: true,
           style: {
             symbol: 'square',
-            symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+            symbolGraphic,
             symbolBackgroundColor: '#ca3535'
           }
         }, {
@@ -95,7 +97,7 @@
           showInMenu: true,
           style: {
             symbol: 'square',
-            symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+            symbolGraphic,
             symbolBackgroundColor: '#1565C0'
           }
         }]

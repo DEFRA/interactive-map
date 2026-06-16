@@ -16,7 +16,9 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
       import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
 
-      const pointData = {
+      const symbolGraphic = 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z'
+
+      const geojson = {
         type: 'FeatureCollection',
         features: [{
           type: 'Feature',
@@ -37,7 +39,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
         datasets: [{
           id: 'historic-monuments',
           label: 'Historic monuments',
-          geojson: pointData,
+          geojson: geojson,
           showInKey: true,
           showInMenu: true,
           sublayers: [{
@@ -47,7 +49,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             showInMenu: true,
             style: {
               symbol: 'circle',
-              symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+              symbolGraphic,
               symbolBackgroundColor: '#00897B'
             }
           }, {
@@ -57,7 +59,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             showInMenu: true,
             style: {
               symbol: 'square',
-              symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+              symbolGraphic,
               symbolBackgroundColor: '#ca3535'
             }
           }, {
@@ -67,7 +69,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             showInMenu: true,
             style: {
               symbol: 'square',
-              symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+              symbolGraphic,
               symbolBackgroundColor: '#1565C0'
             }
           }]
@@ -97,7 +99,9 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
       <script src="/your-assets-path/datasets-plugin/index.js"></script>
 
       <script>
-      const pointData = {
+      const symbolGraphic = 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z'
+
+      const geojson = {
         type: 'FeatureCollection',
         features: [{
           type: 'Feature',
@@ -118,7 +122,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
         datasets: [{
           id: 'historic-monuments',
           label: 'Historic monuments',
-          geojson: pointData,
+          geojson: geojson,
           showInKey: true,
           showInMenu: true,
           sublayers: [{
@@ -128,7 +132,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             showInMenu: true,
             style: {
               symbol: 'circle',
-              symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+              symbolGraphic,
               symbolBackgroundColor: '#00897B'
             }
           }, {
@@ -138,7 +142,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             showInMenu: true,
             style: {
               symbol: 'square',
-              symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+              symbolGraphic,
               symbolBackgroundColor: '#ca3535'
             }
           }, {
@@ -148,7 +152,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             showInMenu: true,
             style: {
               symbol: 'square',
-              symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+              symbolGraphic,
               symbolBackgroundColor: '#1565C0'
             }
           }]

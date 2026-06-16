@@ -42,7 +42,7 @@
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/index.js"></script>
 
   <script>
-    const parcels = {
+    const geojson = {
       type: 'FeatureCollection',
       features: [{
         type: 'Feature',
@@ -84,9 +84,9 @@
 
     const datasetsPlugin = defra.datasetsPlugin({
       datasets: [{
-        id: 'field-parcels',
-        label: 'Field parcels',
-        geojson: parcels,
+        id: 'field-geojson',
+        label: 'Field geojson',
+        geojson: geojson,
         minZoom: 10,
         maxZoom: 24,
         showInKey: true,

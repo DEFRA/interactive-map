@@ -7,7 +7,7 @@ const MAP_STYLE = {
   backgroundColor: '#f5f5f0'
 }
 
-const pointData = {
+const geojson = {
   type: 'FeatureCollection',
   features: [{
     type: 'Feature',
@@ -24,10 +24,12 @@ const pointData = {
   }]
 }
 
+const symbolGraphic = 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z'
+
 const historicMonumentsDataset = {
   id: 'historic-monuments',
   label: 'Historic monuments',
-  geojson: pointData,
+  geojson: geojson,
   minZoom: 10,
   maxZoom: 24,
   showInKey: true,
@@ -39,7 +41,7 @@ const historicMonumentsDataset = {
     showInMenu: true,
     style: {
       symbol: 'square',
-      symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+      symbolGraphic,
       symbolBackgroundColor: '#00897B'
     }
   }, {
@@ -49,7 +51,7 @@ const historicMonumentsDataset = {
     showInMenu: true,
     style: {
       symbol: 'square',
-      symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+      symbolGraphic,
       symbolBackgroundColor: '#ca3535'
     }
   }, {
@@ -59,7 +61,7 @@ const historicMonumentsDataset = {
     showInMenu: true,
     style: {
       symbol: 'square',
-      symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z',
+      symbolGraphic,
       symbolBackgroundColor: '#1565C0'
     }
   }]

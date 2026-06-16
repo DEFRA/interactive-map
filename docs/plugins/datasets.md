@@ -394,7 +394,7 @@ style: {
 
 Array of sublayer rules that partition the dataset into visually distinct groups based on feature filters. Each sublayer is rendered as a separate map layer.
 
-Sublayers inherit the parent dataset's style and only override what they specify in their own `style` object. For polygon/line datasets, fill precedence is (highest to lowest): sublayer `fillPattern` → sublayer `fill` → parent `fillPattern` → parent `fill`. For symbol datasets, each symbol property is inherited individually from the parent unless the sublayer sets it explicitly.
+Sublayer styles merge over the parent's — the sublayer wins on any property it sets. Rendering type is driven by the merged result: `symbol` > `fillPattern`/`fill` > `stroke`.
 
 #### `Sublayer` properties
 
@@ -438,7 +438,7 @@ sublayers: [
 
 **Symbol (point) example — scheduled monuments by type:**
 
-When the parent dataset has `symbol` set, each sublayer can override individual symbol properties to represent different categories. Properties not set on the sublayer are inherited from the parent.
+Here the parent defines the shared symbol shape; each sublayer only overrides what differs.
 
 ```js
 {
