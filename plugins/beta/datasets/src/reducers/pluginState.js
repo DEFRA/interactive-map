@@ -116,7 +116,7 @@ const hideFeatures = (state, payload) => {
   }
   const mappedDataset = { ...state.mappedDatasets[datasetId] }
   const existingIds = mappedDataset.hiddenFeatures || []
-  const newIds = [...new Set([...existingIds, ...featureIds])]
+  const newIds = Array.from(new Set([...existingIds, ...featureIds]))
   mappedDataset.hiddenFeatures = newIds
 
   return addAction('applyFeatureFilter', [datasetId], {

@@ -18,6 +18,7 @@ export class Dataset {
   get tiles () { return this._datasetDefinition.tiles }
   get geojson () { return this._datasetDefinition.geojson }
   get idProperty () { return this._datasetDefinition.idProperty }
+  get generateIds () { return this._datasetDefinition.generateIds }
   // TODO - handle transformRequest for non-dynamicGeoJSON as well (e.g. to add auth headers) --- IGNORE ---
   // get transformRequest () { return this._datasetDefinition.transformRequest }
   get parentId () { return this._datasetDefinition.parentId }

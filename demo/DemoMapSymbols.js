@@ -12,15 +12,15 @@ const pointData = {
   features: [{
     type: 'Feature',
     properties: { category: 'prehistoric', name: 'Prehistoric feature' },
-    geometry: { coordinates: [-2.4558622, 54.5617135], type: 'Point' }
+    geometry: { type: 'Point', coordinates: [-2.4615, 54.5616] }
   }, {
     type: 'Feature',
     properties: { category: 'roman', name: 'Roman feature' },
-    geometry: { coordinates: [-2.439823, 54.5525437], type: 'Point' }
+    geometry: { type: 'Point', coordinates: [-2.4628, 54.5541] }
   }, {
     type: 'Feature',
     properties: { category: 'medieval', name: 'Medieval feature' },
-    geometry: { coordinates: [-2.4481939, 54.5575261], type: 'Point' }
+    geometry: { type: 'Point', coordinates: [-2.4578, 54.5569] }
   }]
 }
 
@@ -69,7 +69,9 @@ function MapInner () {
   const initialised = useRef(false)
 
   useEffect(() => {
-    if (initialised.current) return
+    if (initialised.current) {
+      return
+    }
     initialised.current = true
 
     Promise.all([
@@ -85,22 +87,22 @@ function MapInner () {
         datasets: [historicMonumentsDataset]
       })
 
-      new InteractiveMap('demo-map-datasets', {
+      new InteractiveMap('demo-map-symbols', {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
-        center: [-2.448, 54.557],
-        zoom: 12,
+        center: [-2.4608,54.5574],
+        zoom: 14,
         containerHeight: '516px',
         plugins: [datasetsPlugin]
       })
     })
   }, [])
 
-  return <div id='demo-map-datasets' className='app-no-prose app-example'></div>
+  return <div id='demo-map-symbols' className='app-no-prose app-example'></div>
 }
 
-export default function DemoMapDatasets () {
+export default function DemoMapSymbols () {
   return (
     <BrowserOnly
       fallback={<div className='govuk-inset-text'>The map requires JavaScript to be enabled.</div>}

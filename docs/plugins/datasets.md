@@ -129,15 +129,61 @@ Human-readable name shown in the LayersMenu panel and Key panel.
 
 **Type:** `string | GeoJSON.FeatureCollection`
 
-GeoJSON source. Provide a URL string for remote data, or a GeoJSON object for inline data. Use alongside `transformRequest` to add authentication or append bbox parameters to the request.
+GeoJSON source. Provide a URL string for remote data, or a `FeatureCollection` object for inline data.
+
+For data that needs authentication headers or viewport-based filtering, use `dynamicGeoJSON` instead.
+
+---
+
+### `dynamicGeoJSON`
+
+**Type:** `Object`
+
+Enables dynamic, bbox-aware GeoJSON fetching — the plugin calls your API as the map pans and zooms, loading features for the current viewport and evicting distant ones. Configure this instead of `geojson` when your data is too large to load all at once.
+
+| Property | Type | Description |
+|----------|------|-------------|
+| `url` | `string` | **Required.** Base URL for the GeoJSON API endpoint |
+| `idProperty` | `string` | **Required.** Property name that uniquely identifies each feature. Used for deduplication across viewport fetches |
+| `transformRequest` | `Function` | Called before each fetch. Return a URL string or `{ url, headers }` object to add auth headers or modify the URL |
+| `maxFeatures` | `number` | Optional. Cap on features held in memory across all viewport fetches. Older out-of-viewport features are evicted when exceeded |
+
+**`transformRequest` signature:** `transformRequest(url, { bbox, zoom, dataset })`
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `url` | `string` | The base URL |
+| `bbox` | `number[]` | Current viewport bounds as `[west, south, east, north]` |
+| `zoom` | `number` | Current map zoom level |
+| `dataset` | `Object` | The full dataset configuration |
+
+```js
+{
+  id: 'land-parcels',
+  dynamicGeoJSON: {
+    url: 'https://example.com/api/parcels',
+    idProperty: 'parcel_id',
+    transformRequest: (url, { bbox }) => {
+      const separator = url.includes('?') ? '&' : '?'
+      return {
+        url: `${url}${separator}bbox=${bbox.join(',')}`,
+        headers: { Authorization: `Bearer ${getToken()}` }
+      }
+    },
+    maxFeatures: 50000
+  },
+  minZoom: 10,
+  style: { stroke: '#d4351c', strokeWidth: 2 }
+}
+```
 
 ---
 
 ### `tiles`
 
-**Type:** `string[]`
+**Type:** `string | string[]`
 
-Array of vector tile URL templates (e.g. `https://example.com/tiles/{z}/{x}/{y}`). When set, the dataset uses a vector tile source instead of GeoJSON.
+Vector tile URL template or array of templates (e.g. `'https://example.com/tiles/{z}/{x}/{y}'`). When set, the dataset uses a vector tile source instead of GeoJSON.
 
 ---
 
@@ -149,55 +195,44 @@ The layer name within the vector tile source to render. Required when using `til
 
 ---
 
-### `transformRequest`
+### `idProperty`
 
-**Type:** `Function`
+**Type:** `string`
 
-A function called before each fetch to transform the request. Its primary purpose is to attach authentication credentials — API keys, OAuth tokens, or other headers. It also receives the current viewport context so you can append bbox or zoom parameters to the URL if your API supports spatial filtering.
+Property name used to uniquely identify features in a static `geojson` source. When set, the plugin promotes this property to the MapLibre feature ID (`promoteId`) so that feature IDs are stable and derived from your data rather than auto-generated.
 
-The plugin handles all dynamic fetching concerns (viewport tracking, debouncing, deduplication, caching, request cancellation) — `transformRequest` only needs to return the final URL and any headers.
+Required for `setFeatureVisibility` to work correctly — the IDs you pass must match the values of this property in your data.
 
-**Signature:** `transformRequest(url, { bbox, zoom, dataset })`
-
-| Argument | Type | Description |
-|----------|------|-------------|
-| `url` | `string` | The base URL from `geojson` |
-| `bbox` | `number[]` | Current viewport bounds as `[west, south, east, north]` |
-| `zoom` | `number` | Current map zoom level |
-| `dataset` | `Object` | The full dataset configuration |
-
-Return either a plain URL string or an object `{ url, headers }`. The object form is needed when attaching auth headers.
+> [!NOTE]
+> For `dynamicGeoJSON` sources, set `idProperty` inside the `dynamicGeoJSON` object, not here.
 
 ```js
-// Auth headers only (no bbox filtering)
-transformRequest: (url) => ({
-  url,
-  headers: { Authorization: `Bearer ${getToken()}` }
-})
-
-// Append bbox to URL for server-side spatial filtering
-transformRequest: (url, { bbox }) => {
-  const separator = url.includes('?') ? '&' : '?'
-  return { url: `${url}${separator}bbox=${bbox.join(',')}` }
-}
-
-// Both — auth + bbox
-transformRequest: (url, { bbox }) => {
-  const separator = url.includes('?') ? '&' : '?'
-  return {
-    url: `${url}${separator}bbox=${bbox.join(',')}`,
-    headers: { Authorization: `Bearer ${getToken()}` }
-  }
+// Features have { properties: { parcel_id: 'ABC123', ... } }
+{
+  id: 'my-parcels',
+  geojson: 'https://example.com/api/parcels',
+  idProperty: 'parcel_id'
 }
 ```
 
 ---
 
-### `idProperty`
+### `generateIds`
 
-**Type:** `string`
+**Type:** `boolean`
 
-Property name used to uniquely identify features. Required alongside `transformRequest` to enable dynamic bbox-based fetching — the plugin uses it internally to deduplicate features across successive viewport fetches.
+When `true`, MapLibre auto-generates integer IDs for GeoJSON features by their array index position (0-based). Use this when your features have no natural unique ID property and you need `setFeatureVisibility` to work.
+
+> [!NOTE]
+> Auto-generated IDs are positional and reset on every `setData` call. If your data changes between calls, the same integer ID may refer to a different feature. Prefer `idProperty` whenever your data has a stable unique field.
+
+```js
+{
+  id: 'my-parcels',
+  geojson: 'https://example.com/api/parcels',
+  generateIds: true
+}
+```
 
 ---
 
@@ -231,18 +266,10 @@ Maximum zoom level at which the dataset is visible.
 
 ---
 
-### `maxFeatures`
+### `visible`
 
-**Type:** `number`
-
-Only applies to dynamic sources (those using `transformRequest`). Caps the number of features held in memory across all viewport fetches — older out-of-viewport features are evicted when the limit is exceeded. Omit for small or bounded datasets; set it when users are likely to pan extensively over a large dataset.
-
----
-
-### `visibility`
-
-**Type:** `'visible' | 'hidden'`
-**Default:** `'visible'`
+**Type:** `boolean`
+**Default:** `true`
 
 Initial visibility of the dataset.
 
@@ -520,26 +547,26 @@ datasetsPlugin.setDatasetVisibility(false, { datasetId: 'my-parcels', sublayerId
 
 ### `setFeatureVisibility(visible, featureIds, scope)`
 
-Show or hide specific features within a dataset without removing them from the source.
+Show or hide specific features within a dataset without removing them from the source. The feature IDs you pass are matched against the dataset's `idProperty` value, or against the native feature `id` when `idProperty` is not set.
+
+> [!NOTE]
+> The dataset must have `idProperty` or `generateIds: true` configured for feature matching to work. A console warning is emitted if neither is set.
 
 | Argument | Type | Description |
 |----------|------|-------------|
 | `visible` | `boolean` | `true` to show, `false` to hide |
-| `featureIds` | `(string \| number)[]` | IDs of the features to target |
+| `featureIds` | `(string \| number)[]` | IDs of the features to target — must match the `idProperty` values in your data |
 | `scope.datasetId` | `string` | ID of the dataset |
-| `scope.idProperty` | `string \| null` | Property name to match features on. Pass `null` to match against the top-level `feature.id` |
 
 ```js
-// Hide by a feature property
-datasetsPlugin.setFeatureVisibility(false, [123, 456], {
-  datasetId: 'my-parcels',
-  idProperty: 'parcel_id'
+// Dataset configured with idProperty: 'parcel_id'
+datasetsPlugin.setFeatureVisibility(false, ['ABC123', 'DEF456'], {
+  datasetId: 'my-parcels'
 })
 
-// Show using feature.id
-datasetsPlugin.setFeatureVisibility(true, [123, 456], {
-  datasetId: 'my-parcels',
-  idProperty: null
+// Show previously hidden features
+datasetsPlugin.setFeatureVisibility(true, ['ABC123'], {
+  datasetId: 'my-parcels'
 })
 ```
 
@@ -657,6 +684,26 @@ datasetsPlugin.setData(
   { type: 'FeatureCollection', features: [...] },
   { datasetId: 'my-parcels' }
 )
+```
+
+---
+
+### `setGlobals(values)`
+
+Set global state that applies across all datasets. Currently supports `opacityMode`.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `values.opacityMode` | `'dataset' \| 'global' \| 'multiply'` | Controls how opacity values are combined when both a global opacity and a per-dataset opacity are set |
+
+| Mode | Behaviour |
+|------|-----------|
+| `'dataset'` | Each dataset uses its own `style.opacity` only. Global opacity is ignored |
+| `'global'` | All datasets use the global opacity, ignoring per-dataset values |
+| `'multiply'` | Effective opacity is `globalOpacity × datasetOpacity` |
+
+```js
+datasetsPlugin.setGlobals({ opacityMode: 'multiply' })
 ```
 
 ---
