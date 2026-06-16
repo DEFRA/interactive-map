@@ -83,6 +83,9 @@ export class Dataset {
     return this._datasetDefinition.visible && getGlobalVisibility()
   }
 
+  get styleLayerId () { return this._datasetDefinition.styleLayerId }
+  get visibility () { return this.visible ? 'visible' : 'none' }
+
   get symbolAnchor () {
     if (this.style?.symbolAnchor) {
       return this.style.symbolAnchor
