@@ -104,153 +104,25 @@ function MapInner () {
     Promise.all([
       import('../src/index.js'),
       import('../providers/maplibre/src/index.js'),
-      import('../plugins/beta/datasets/src/index.js'),
-      import('../plugins/beta/draw-ml/src/index.js'),
-      import('../plugins/interact/src/index.js')
+      import('../plugins/beta/datasets/src/index.js')
     ]).then(([
       { default: InteractiveMap },
       { default: maplibreProvider },
-      { default: createDatasetsPlugin },
-      { default: createDrawPlugin },
-      { default: createInteractPlugin }
+      { default: createDatasetsPlugin }
     ]) => {
       const datasetsPlugin = createDatasetsPlugin({
         datasets: [parcelsDataset]
       })
 
-      const drawPlugin = createDrawPlugin({
-        snapLayers: ['stroke-inactive.cold', 'field-parcels', 'surfacewater shadow']
-      })
-
-      const interactPlugin = createInteractPlugin({
-        layers: [
-          { layerId: 'fill-inactive.cold' },
-          { layerId: 'stroke-inactive.cold' },
-          { layerId: 'field-parcels-arable' },
-          { layerId: 'field-parcels-permanent-grassland' },
-          { layerId: 'field-parcels-woodland' }
-        ],
-        interactionModes: ['selectFeature'],
-        multiSelect: false,
-        deselectOnClickOutside: true,
-        debug: true
-      })
-
-      const map = new InteractiveMap('demo-map-polygons', {
+      new InteractiveMap('demo-map-polygons', {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
         center: [-2.464, 54.558],
         zoom: 14,
         containerHeight: '516px',
-        plugins: [datasetsPlugin, drawPlugin, interactPlugin]
+        plugins: [datasetsPlugin]
       })
-
-      let selectedFeatures = []
-      let editingDrawFeatureId = null
-      let editingParcelFeatureId = null
-
-
-      map.on('map:ready', function () {
-        interactPlugin.enable()
-        map.addButton('drawActions', {
-          label: 'Draw tools',
-          mobile: { slot: 'bottom-right', order: 1 },
-          tablet: { slot: 'top-middle', order: 1 },
-          desktop: { slot: 'top-middle', order: 1 },
-          menuItems: [{
-            id: 'drawPolygon',
-            label: 'Draw polygon',
-            iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',
-            onClick: function () {
-              map.toggleButtonState('drawActions', 'hidden', true)
-              drawPlugin.newPolygon(crypto.randomUUID())
-            }
-          },{
-            id: 'editFeature',
-            label: 'Edit feature',
-            iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
-            isDisabled: true,
-            onClick: function () {
-              const selected = selectedFeatures[0]
-              const drawLayers = ['fill-inactive.cold', 'stroke-inactive.cold']
-              let featureIdToEdit = selected.featureId
-              if (!drawLayers.includes(selected.layerId)) {
-                const parcelFeature = geojson.features.find(function (f) { return f.id === selected.featureId })
-                if (!parcelFeature) {
-                  return
-                }
-                editingDrawFeatureId = crypto.randomUUID()
-                drawPlugin.addFeature({ ...parcelFeature, id: editingDrawFeatureId })
-                datasetsPlugin.setFeatureVisibility(false, [selected.featureId], { datasetId: 'field-parcels' })
-                editingParcelFeatureId = selected.featureId
-                featureIdToEdit = editingDrawFeatureId
-              }
-              if (!drawPlugin.editFeature(featureIdToEdit)) {
-                return
-              }
-              map.toggleButtonState('drawActions', 'hidden', true)
-              interactPlugin.disable()
-            }
-          },{
-            id: 'deleteFeature',
-            label: 'Delete feature',
-            iconSvgContent: '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
-            isDisabled: true,
-            onClick: function () {
-              drawPlugin.deleteFeature(selectedFeatures.map(function (f) { return f.featureId }))
-              interactPlugin.clear()
-              map.toggleButtonState('editFeature', 'disabled', true)
-              map.toggleButtonState('deleteFeature', 'disabled', true)
-            }
-          }]
-        })
-      })
-
-      map.on('interact:selectionchange', function (e) {
-        const drawLayers = ['fill-inactive.cold', 'stroke-inactive.cold']
-        const single = e.selectedFeatures.length === 1
-        const parcelLayers = ['field-parcels-arable', 'field-parcels-permanent-grassland', 'field-parcels-woodland']
-        const isEditableFeature = single && (
-          drawLayers.includes(e.selectedFeatures[0].layerId) ||
-          parcelLayers.includes(e.selectedFeatures[0].layerId)
-        )
-        const isDrawFeature = single && drawLayers.includes(e.selectedFeatures[0].layerId)
-        selectedFeatures = e.selectedFeatures
-        map.toggleButtonState('editFeature', 'disabled', !isEditableFeature)
-        map.toggleButtonState('deleteFeature', 'disabled', !isDrawFeature)
-      })
-
-      map.on('draw:started', function () {
-        interactPlugin.disable()
-      })
-
-      map.on('draw:created', function () {
-        map.toggleButtonState('drawActions', 'hidden', false)
-        interactPlugin.enable()
-      })
-
-      map.on('draw:edited', function (e) {
-        console.log(e)
-        if (editingParcelFeatureId !== null) {
-          datasetsPlugin.setFeatureVisibility(true, [editingParcelFeatureId], { datasetId: 'field-parcels' })
-          editingParcelFeatureId = null
-          editingDrawFeatureId = null
-        }
-        map.toggleButtonState('drawActions', 'hidden', false)
-        interactPlugin.enable()
-      })
-
-      map.on('draw:cancelled', function () {
-        if (editingParcelFeatureId !== null) {
-          datasetsPlugin.setFeatureVisibility(true, [editingParcelFeatureId], { datasetId: 'field-parcels' })
-          editingParcelFeatureId = null
-          editingDrawFeatureId = null
-        }
-        map.toggleButtonState('drawActions', 'hidden', false)
-        interactPlugin.enable()
-      })
-
     })
   }, [])
 

@@ -16,25 +16,69 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
       import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
 
-      const parcels = {"type":"FeatureCollection","features":[
-      {"type":"Feature","id":8,"properties":{"ngc":"NY70181559","sbi":106325052,"dominant_land_cover":"110"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-2.4669458,54.5603887],[-2.4676376,54.5613062],[-2.467345,54.5614462],[-2.4672963,54.5615083],[-2.4671758,54.5617419],[-2.4658485,54.5625512],[-2.4651586,54.5621435],[-2.4650192,54.5622627],[-2.4645724,54.5626649],[-2.4637217,54.5634822],[-2.4628815,54.5631138],[-2.4635847,54.5624485],[-2.4640658,54.5620683],[-2.4645584,54.5617088],[-2.4654946,54.561118],[-2.4659827,54.5608115],[-2.4664691,54.5604976],[-2.4666454,54.5604315],[-2.4669382,54.5603787],[-2.4669458,54.5603887]]]]}},
-      {"type":"Feature","id":12,"properties":{"ngc":"NY70182216","sbi":106325052,"dominant_land_cover":"110"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-2.4598452,54.557818],[-2.460681,54.5568701],[-2.4611938,54.5562415],[-2.4626414,54.5567211],[-2.4637933,54.5574402],[-2.4642666,54.5578021],[-2.4630153,54.5587787],[-2.4624178,54.5592888],[-2.4615192,54.558602],[-2.4605271,54.558106],[-2.4598452,54.557818]]]]}},
-      {"type":"Feature","id":56,"properties":{"ngc":"NY70184618","sbi":106325052,"dominant_land_cover":"130"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-2.4572253,54.5576631],[-2.4563103,54.5573127],[-2.4564716,54.5561412],[-2.4565577,54.5559038],[-2.4582444,54.5562183],[-2.459102,54.5563764],[-2.459898,54.5564176],[-2.4599774,54.5565719],[-2.4592589,54.5567144],[-2.4588154,54.5575093],[-2.4580387,54.557659],[-2.4572253,54.5576631]]]]}}
-      ]}
+      const parcels = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          id: 1,
+          properties: { name: 'Feature 1', land_use: 'Permanent grassland' },
+          geometry: { type: 'Polygon', coordinates: [[[-2.4691585,54.5552164],[-2.4669269,54.5566971],[-2.4607612,54.5560985],[-2.4636465,54.5543515],[-2.4691585,54.5552164]]] }
+        }, {
+          type: 'Feature',
+          id: 2,
+          properties: { name: 'Feature 2', land_use: 'Arable' },
+          geometry: { type: 'Polygon', coordinates: [[[-2.4611682,54.5562375],[-2.4628580,54.5568161],[-2.4641401,54.5576751],[-2.4624221,54.5592884],[-2.4598472,54.5578186],[-2.4611682,54.5562375]]] }
+        }, {
+          type: 'Feature',
+          id: 3,
+          properties: { name: 'Feature 3', land_use: 'Woodland' },
+          geometry: { type: 'Polygon', coordinates: [[[-2.4599129,54.5564203],[-2.4563093,54.5573092],[-2.4564891,54.5560664],[-2.4590331,54.5563705],[-2.4599129,54.5564203]]] }
+        }]
+      }
 
       const datasetsPlugin = createDatasetsPlugin({
         datasets: [{
           id: 'field-parcels',
           label: 'Field parcels',
           geojson: parcels,
+          minZoom: 10,
+          maxZoom: 24,
           showInKey: true,
           showInMenu: true,
-          style: {
-            fill: '#85994b',
-            stroke: '#485f28',
-            strokeWidth: 2,
-            opacity: 0.5
-          }
+          sublayers: [{
+            id: 'arable',
+            label: 'Arable',
+            filter: ['==', ['get', 'land_use'], 'Arable'],
+            showInMenu: true,
+            style: {
+              stroke: '#6D4C41',
+              fillPattern: 'horizontal-hatch',
+              fillPatternForegroundColor: '#6D4C41',
+              fillPatternBackgroundColor: 'transparent'
+            }
+          }, {
+            id: 'permanent-grassland',
+            label: 'Permanent grassland',
+            filter: ['==', ['get', 'land_use'], 'Permanent grassland'],
+            showInMenu: true,
+            style: {
+              stroke: '#00897B',
+              fillPattern: 'diagonal-cross-hatch',
+              fillPatternForegroundColor: '#00897B',
+              fillPatternBackgroundColor: 'transparent'
+            }
+          }, {
+            id: 'woodland',
+            label: 'Woodland',
+            filter: ['==', ['get', 'land_use'], 'Woodland'],
+            showInMenu: true,
+            style: {
+              stroke: '#2E7D32',
+              fillPattern: 'dot',
+              fillPatternForegroundColor: '#2E7D32',
+              fillPatternBackgroundColor: 'transparent'
+            }
+          }]
         }]
       })
 
@@ -46,7 +90,7 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
           attribution: 'Your tile attribution'
         },
         center: [-2.464, 54.558],
-        zoom: 13,
+        zoom: 14,
         containerHeight: '516px',
         plugins: [datasetsPlugin]
       })
@@ -61,25 +105,69 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
       <script src="/your-assets-path/datasets-plugin/index.js"></script>
 
       <script>
-      const parcels = {"type":"FeatureCollection","features":[
-      {"type":"Feature","id":8,"properties":{"ngc":"NY70181559","sbi":106325052,"dominant_land_cover":"110"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-2.4669458,54.5603887],[-2.4676376,54.5613062],[-2.467345,54.5614462],[-2.4672963,54.5615083],[-2.4671758,54.5617419],[-2.4658485,54.5625512],[-2.4651586,54.5621435],[-2.4650192,54.5622627],[-2.4645724,54.5626649],[-2.4637217,54.5634822],[-2.4628815,54.5631138],[-2.4635847,54.5624485],[-2.4640658,54.5620683],[-2.4645584,54.5617088],[-2.4654946,54.561118],[-2.4659827,54.5608115],[-2.4664691,54.5604976],[-2.4666454,54.5604315],[-2.4669382,54.5603787],[-2.4669458,54.5603887]]]]}},
-      {"type":"Feature","id":12,"properties":{"ngc":"NY70182216","sbi":106325052,"dominant_land_cover":"110"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-2.4598452,54.557818],[-2.460681,54.5568701],[-2.4611938,54.5562415],[-2.4626414,54.5567211],[-2.4637933,54.5574402],[-2.4642666,54.5578021],[-2.4630153,54.5587787],[-2.4624178,54.5592888],[-2.4615192,54.558602],[-2.4605271,54.558106],[-2.4598452,54.557818]]]]}},
-      {"type":"Feature","id":56,"properties":{"ngc":"NY70184618","sbi":106325052,"dominant_land_cover":"130"},"geometry":{"type":"MultiPolygon","coordinates":[[[[-2.4572253,54.5576631],[-2.4563103,54.5573127],[-2.4564716,54.5561412],[-2.4565577,54.5559038],[-2.4582444,54.5562183],[-2.459102,54.5563764],[-2.459898,54.5564176],[-2.4599774,54.5565719],[-2.4592589,54.5567144],[-2.4588154,54.5575093],[-2.4580387,54.557659],[-2.4572253,54.5576631]]]]}}
-      ]}
+      const parcels = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          id: 1,
+          properties: { name: 'Feature 1', land_use: 'Permanent grassland' },
+          geometry: { type: 'Polygon', coordinates: [[[-2.4691585,54.5552164],[-2.4669269,54.5566971],[-2.4607612,54.5560985],[-2.4636465,54.5543515],[-2.4691585,54.5552164]]] }
+        }, {
+          type: 'Feature',
+          id: 2,
+          properties: { name: 'Feature 2', land_use: 'Arable' },
+          geometry: { type: 'Polygon', coordinates: [[[-2.4611682,54.5562375],[-2.4628580,54.5568161],[-2.4641401,54.5576751],[-2.4624221,54.5592884],[-2.4598472,54.5578186],[-2.4611682,54.5562375]]] }
+        }, {
+          type: 'Feature',
+          id: 3,
+          properties: { name: 'Feature 3', land_use: 'Woodland' },
+          geometry: { type: 'Polygon', coordinates: [[[-2.4599129,54.5564203],[-2.4563093,54.5573092],[-2.4564891,54.5560664],[-2.4590331,54.5563705],[-2.4599129,54.5564203]]] }
+        }]
+      }
 
       const datasetsPlugin = defra.datasetsPlugin({
         datasets: [{
           id: 'field-parcels',
           label: 'Field parcels',
           geojson: parcels,
+          minZoom: 10,
+          maxZoom: 24,
           showInKey: true,
           showInMenu: true,
-          style: {
-            fill: '#85994b',
-            stroke: '#485f28',
-            strokeWidth: 2,
-            opacity: 0.5
-          }
+          sublayers: [{
+            id: 'arable',
+            label: 'Arable',
+            filter: ['==', ['get', 'land_use'], 'Arable'],
+            showInMenu: true,
+            style: {
+              stroke: '#6D4C41',
+              fillPattern: 'horizontal-hatch',
+              fillPatternForegroundColor: '#6D4C41',
+              fillPatternBackgroundColor: 'transparent'
+            }
+          }, {
+            id: 'permanent-grassland',
+            label: 'Permanent grassland',
+            filter: ['==', ['get', 'land_use'], 'Permanent grassland'],
+            showInMenu: true,
+            style: {
+              stroke: '#00897B',
+              fillPattern: 'diagonal-cross-hatch',
+              fillPatternForegroundColor: '#00897B',
+              fillPatternBackgroundColor: 'transparent'
+            }
+          }, {
+            id: 'woodland',
+            label: 'Woodland',
+            filter: ['==', ['get', 'land_use'], 'Woodland'],
+            showInMenu: true,
+            style: {
+              stroke: '#2E7D32',
+              fillPattern: 'dot',
+              fillPatternForegroundColor: '#2E7D32',
+              fillPatternBackgroundColor: 'transparent'
+            }
+          }]
         }]
       })
 
@@ -91,7 +179,7 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
           attribution: 'Your tile attribution'
         },
         center: [-2.464, 54.558],
-        zoom: 13,
+        zoom: 14,
         containerHeight: '516px',
         plugins: [datasetsPlugin]
       })
