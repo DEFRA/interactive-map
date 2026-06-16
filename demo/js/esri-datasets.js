@@ -16,14 +16,17 @@ const datasets = [
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_CCP1_NON_PRODUCTION/VectorTileServer`,
     showInKey: true,
     showInMenu: true,
+    removeStyles: true,
+    sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea CCP1',
     sublayers: [
       {
-        id: 'flood-zones',
+        id: 'climate-change',
         label: 'Climate change (2070 to 2125)',
         styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Flood Zones plus climate change/1',
         showInKey: true,
         showInMenu: false,
         style: {
+          filter: ['==', '_symbol', 0],
           fill: { outdoor: '#F4A582', dark: '#BF3D4A' },
           stroke: 'none'
         },
@@ -35,8 +38,10 @@ const datasets = [
         showInKey: true,
         showInMenu: false,
         style: {
+          filter: ['==', '_symbol', 1],
           fillPattern: 'dot',
           fillPatternForegroundColor: { outdoor: '#000000', dark: '#ffffff' },
+          fill: { outdoor: '#0000ff', dark: '#BF3D4A' },
           stroke: { outdoor: '#000000', dark: '#ffffff' },
         },
       }
@@ -50,6 +55,7 @@ const datasets = [
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_NON_PRODUCTION/VectorTileServer`,
     showInKey: true,
     showInMenu: true,
+    sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea',
     sublayers: [
       {
         id: 'flood-zone-2',
@@ -58,7 +64,9 @@ const datasets = [
         showInKey: true,
         showInMenu: false,
         style: {
-          fill: { outdoor: '#1d70b8', dark: '#7fcdbb' },
+          filter: ['==', 'flood_zone', 'FZ2'],
+          fill: { outdoor: '#ff0000', dark: '#7fcdbb' },
+          // fill: { outdoor: '#1d70b8', dark: '#7fcdbb' },
           stroke: 'none'
         },
       },
@@ -69,7 +77,9 @@ const datasets = [
         showInKey: true,
         showInMenu: false,
         style: {
-          fill: { outdoor: '#003078', dark: '#e5f5e0' },
+          filter: ['==', 'flood_zone', 'FZ3'],
+          fill: { outdoor: '#00ff00', dark: '#e5f5e0' },
+          // fill: { outdoor: '#003078', dark: '#e5f5e0' },
           stroke: 'none'
         },
       }
