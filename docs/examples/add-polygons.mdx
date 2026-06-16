@@ -16,6 +16,7 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
       import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
 
+      // GeoJSON can also be loaded from a URL; use the tiles property for vector tile sources
       const parcels = {
         type: 'FeatureCollection',
         features: [{
@@ -105,6 +106,7 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
       <script src="/your-assets-path/datasets-plugin/index.js"></script>
 
       <script>
+      // GeoJSON can also be loaded from a URL; use the tiles property for vector tile sources
       const parcels = {
         type: 'FeatureCollection',
         features: [{

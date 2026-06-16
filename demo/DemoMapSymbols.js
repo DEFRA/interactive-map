@@ -7,6 +7,7 @@ const MAP_STYLE = {
   backgroundColor: '#f5f5f0'
 }
 
+// GeoJSON can also be loaded from a URL; use the tiles property for vector tile sources
 const geojson = {
   type: 'FeatureCollection',
   features: [{
