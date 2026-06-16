@@ -62,9 +62,9 @@ const parcelsDataset = {
     filter: ['==', ['get', 'land_use'], 'Arable'],
     showInMenu: true,
     style: {
-      stroke: { outdoor: '#6D4C41', dark: '#ffffff' },
+      stroke: '#6D4C41',
       fillPattern: 'horizontal-hatch',
-      fillPatternForegroundColor: { outdoor: '#6D4C41', dark: '#ffffff' },
+      fillPatternForegroundColor: '#6D4C41',
       fillPatternBackgroundColor: 'transparent'
     }
   },{
@@ -73,9 +73,9 @@ const parcelsDataset = {
     filter: ['==', ['get', 'land_use'], 'Permanent grassland'],
     showInMenu: true,
     style: {
-      stroke: { outdoor: '#00897B', dark: '#ffffff' },
+      stroke: '#00897B',
       fillPattern: 'diagonal-cross-hatch',
-      fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
+      fillPatternForegroundColor: '#00897B',
       fillPatternBackgroundColor: 'transparent'
     }
   },{
@@ -84,9 +84,9 @@ const parcelsDataset = {
     filter: ['==', ['get', 'land_use'], 'Woodland'],
     showInMenu: true,
     style: {
-      stroke: { outdoor: '#2E7D32', dark: '#ffffff' },
+      stroke: '#2E7D32',
       fillPattern: 'dot',
-      fillPatternForegroundColor: { outdoor: '#2E7D32', dark: '#ffffff' },
+      fillPatternForegroundColor: '#2E7D32',
       fillPatternBackgroundColor: 'transparent'
     }
   }]
