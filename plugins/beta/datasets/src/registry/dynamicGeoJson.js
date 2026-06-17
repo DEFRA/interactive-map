@@ -11,7 +11,7 @@ export class DynamicGeoJson {
     this.source = {
       type: 'geojson',
       data: { type: 'FeatureCollection', features: [] },
-      generateId: true
+      ...(this.idProperty ? { promoteId: this.idProperty } : { generateId: true })
     }
   }
 }

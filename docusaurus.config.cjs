@@ -98,6 +98,8 @@ const config = {
             { text: 'Select a feature', href: '/examples/select-feature' },
             { text: 'Change map style', href: '/examples/style-switcher' },
             { text: 'Draw tools', href: '/examples/draw-tools' },
+            { text: 'Add symbols', href: '/examples/add-symbols' },
+            { text: 'Add polygons', href: '/examples/add-polygons' },
           ],
         },
         {

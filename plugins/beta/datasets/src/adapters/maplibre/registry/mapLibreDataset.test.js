@@ -1,11 +1,16 @@
 import { MapLibreDataset } from './mapLibreDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
+import { logger } from '../../../../../../../src/services/logger.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('../../../registry/datasetRegistry.js')
+jest.mock('../../../../../../../src/services/logger.js', () => ({
+  logger: { warn: jest.fn() }
+}))
 
 describe('MapLibreDataset', () => {
   beforeEach(() => {
+    logger.warn.mockClear()
     datasetRegistry.attachCreateDataset(def => new MapLibreDataset(def))
     datasetRegistry.mockExtend({
       // layerIds
@@ -27,7 +32,10 @@ describe('MapLibreDataset', () => {
       'ds-hf-all-neg1': { id: 'ds-hf-all-neg1', hiddenFeatures: [-1] },
       'ds-hf-empty': { id: 'ds-hf-empty', hiddenFeatures: [] },
       // filter
-      'ds-combined': { id: 'ds-combined', filter: ['==', ['get', 'type'], 'foo'], hiddenFeatures: [5] }
+      'ds-combined': { id: 'ds-combined', filter: ['==', ['get', 'type'], 'foo'], hiddenFeatures: [5] },
+      // _geojsonIdStrategy string-id warning
+      'ds-string-ids': { id: 'ds-string-ids', geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', id: 'feature-1', properties: {}, geometry: null }] } },
+      'ds-integer-ids': { id: 'ds-integer-ids', geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', id: 1, properties: {}, geometry: null }] } }
     })
   })
 
@@ -251,21 +259,55 @@ describe('MapLibreDataset', () => {
       })
     })
 
-    it('returns a geojson source with empty FeatureCollection for a dynamic geojson source', () => {
+    it('returns a geojson source with promoteId when the dynamic source has idProperty', () => {
       expect(datasetRegistry.getDataset('land-covers').source).toEqual({
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
+        promoteId: 'id'
+      })
+    })
+
+    it('returns a geojson source with promoteId when static geojson has idProperty', () => {
+      expect(datasetRegistry.getDataset('ds-no-transform').source).toEqual({
+        type: 'geojson',
+        data: 'https://example.com/data',
+        promoteId: 'id'
+      })
+    })
+
+    it('returns a geojson source with generateId when generateIds is true', () => {
+      datasetRegistry.mockExtend({ 'ds-generate-ids': { id: 'ds-generate-ids', geojson: 'https://example.com/data', generateIds: true } })
+      expect(datasetRegistry.getDataset('ds-generate-ids').source).toEqual({
+        type: 'geojson',
+        data: 'https://example.com/data',
         generateId: true
       })
     })
 
-    it('returns a geojson source with the geojson data for an object geojson source', () => {
+    it('returns a plain geojson source with no id strategy when neither idProperty nor generateIds is set', () => {
       const dataset = datasetRegistry.getDataset('historic-monuments')
-      expect(dataset.source).toEqual({ type: 'geojson', data: dataset.geojson, generateId: true })
+      expect(dataset.source).toEqual({ type: 'geojson', data: dataset.geojson })
     })
 
     it('returns null when there are no tiles and no geojson', () => {
       expect(datasetRegistry.getDataset('ds-bare').source).toBeNull()
+    })
+
+    it('warns when geojson features have string native IDs and no id strategy is set', () => {
+      expect(datasetRegistry.getDataset('ds-string-ids').source).toEqual(expect.objectContaining({ type: 'geojson' }))
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('"ds-string-ids"'))
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('string native IDs'))
+    })
+
+    it('does not warn when geojson features have integer native IDs', () => {
+      expect(datasetRegistry.getDataset('ds-integer-ids').source).toEqual(expect.objectContaining({ type: 'geojson' }))
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+
+    it('does not warn when idProperty is set even if features have string native IDs', () => {
+      datasetRegistry.mockExtend({ 'ds-string-with-prop': { id: 'ds-string-with-prop', idProperty: 'myId', geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', id: 'f-1', properties: { myId: 1 }, geometry: null }] } } })
+      expect(datasetRegistry.getDataset('ds-string-with-prop').source).toEqual(expect.objectContaining({ type: 'geojson' }))
+      expect(logger.warn).not.toHaveBeenCalled()
     })
   })
 
