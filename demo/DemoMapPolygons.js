@@ -61,7 +61,6 @@ const parcelsDataset = {
     id: 'arable',
     label: 'Arable',
     filter: ['==', ['get', 'land_use'], 'Arable'],
-    showInMenu: true,
     style: {
       stroke: '#6D4C41',
       fillPattern: 'horizontal-hatch',
@@ -72,7 +71,6 @@ const parcelsDataset = {
     id: 'permanent-grassland',
     label: 'Permanent grassland',
     filter: ['==', ['get', 'land_use'], 'Permanent grassland'],
-    showInMenu: true,
     style: {
       stroke: '#00897B',
       fillPattern: 'diagonal-cross-hatch',
@@ -83,7 +81,6 @@ const parcelsDataset = {
     id: 'woodland',
     label: 'Woodland',
     filter: ['==', ['get', 'land_use'], 'Woodland'],
-    showInMenu: true,
     style: {
       stroke: '#2E7D32',
       fillPattern: 'dot',
