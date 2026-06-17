@@ -35,19 +35,19 @@
       margin-bottom: 0;
     }
   }
-}
 
-.im-c-datasets-layers__item-label {
-  width: 100%;
-  max-width: none;
-  align-items: start;
-  padding-top: 12px;
-  padding-bottom: 10px;
-  align-self: auto;
-  font-size: 1rem;
-  line-height: 1.2;
+  .im-c-datasets-layers__item-label {
+    width: 100%;
+    max-width: none;
+    align-items: start;
+    padding-top: 12px;
+    padding-bottom: 10px;
+    align-self: auto;
+    font-size: 1rem;
+    line-height: 1.2;
 
-  color: var(--foreground-color);
+    color: var(--foreground-color);
+  }
 }
 
 // GovUK style overide
