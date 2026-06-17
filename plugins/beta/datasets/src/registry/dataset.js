@@ -91,7 +91,7 @@ export class Dataset {
     return this._datasetDefinition.visible && getGlobalVisibility()
   }
 
-  get styleLayerId () { return this._datasetDefinition.styleLayerId }
+  get esriStyleLayerId () { return this._datasetDefinition.esriStyleLayerId }
   get visibility () {
     const visible = this.visible
     if (visible && this.visibleWhen?.mapStyleId) {
