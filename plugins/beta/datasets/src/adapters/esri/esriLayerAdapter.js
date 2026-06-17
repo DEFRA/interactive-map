@@ -21,12 +21,13 @@ export default class EsriLayerAdapter {
     for await (const registryDataset of topLevelDatasets) {
       await this._addLayers(registryDataset, mapStyle)
     }
+    // Handles showing and hiding sublayers based on the mapStyle
+    // and updating the paint properties of the layers based on the dataset/mapStyle style
+    await this.onMapStyleChange(datasetRegistry.mapStyle, null)
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
-    console.log(this._map.layers.items.map(layer => layer.id))
   }
 
   async _addLayers (registryDataset, mapStyle) {
-    console.log('Adding VectorTileLayer for dataset', registryDataset.id)
     const vectorTileLayer = new VectorTileLayer({
       id: registryDataset.id,
       url: registryDataset.tiles,
@@ -34,20 +35,8 @@ export default class EsriLayerAdapter {
       visible: false
     })
     await vectorTileLayer.load()
-    console.log('VectorTileLayer loaded for dataset', registryDataset.id)
-    registryDataset.sublayers.forEach(sublayer => {
-      const { styleLayerId } = sublayer
-      if (!styleLayerId) {
-        return
-      }
-      const layerPaintProperties = vectorTileLayer.getPaintProperties(styleLayerId)
-      if (layerPaintProperties) {
-        vectorTileLayer.setPaintProperties(styleLayerId, sublayer.applyLayerPaintProperties(layerPaintProperties))
-      }
-    })
     this._mapLayers[registryDataset.id] = vectorTileLayer
     this._map.add(vectorTileLayer)
-    console.log('Added VectorTileLayer for dataset', registryDataset.id)
     return vectorTileLayer.when()
   }
 
@@ -63,27 +52,25 @@ export default class EsriLayerAdapter {
     console.log('ESRI: applyStyle', args)
   }
 
+  _applyStyleLayerVisibility (sublayer, vectorTileLayer) {
+    const { styleLayerId } = sublayer
+    if (!styleLayerId) {
+      return
+    }
+    vectorTileLayer.setStyleLayerVisibility(styleLayerId, sublayer.visibility)
+  }
+
   async applyDatasetVisibility (datasetId) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
-    const { id, isSublayer, visible } = registryDataset
+    const { id, isSublayer, visible, parentId } = registryDataset
+    const vectorTileLayer = this._mapLayers[isSublayer ? parentId : id]
     if (isSublayer) {
-      const { parent, styleLayerId } = registryDataset
-      const vectorTileLayer = this._mapLayers[parent.id]
-      // console.log('SUBLAYER setStyleLayerVisibility', vectorTileLayer.id, styleLayerId)
-      vectorTileLayer.setStyleLayerVisibility(styleLayerId, registryDataset.visibility)
+      this._applyStyleLayerVisibility(registryDataset, vectorTileLayer)
       return
     } else if (visible) {
-      const vectorTileLayer = this._mapLayers[datasetId]
-      registryDataset.sublayers.forEach(sublayer => {
-        const { styleLayerId } = sublayer
-        if (!styleLayerId) {
-          return
-        }
-        // console.log('setStyleLayerVisibility', datasetId, styleLayerId)
-        vectorTileLayer.setStyleLayerVisibility(styleLayerId, sublayer.visibility)
-      })
+      registryDataset.sublayers.forEach(sublayer => this._applyStyleLayerVisibility(sublayer, vectorTileLayer))
     }
-    this._mapLayers[id].visible = registryDataset.visible
+    this._mapLayers[id].visible = visible
   }
 
   async applyGlobalVisibility (...args) {
@@ -106,8 +93,28 @@ export default class EsriLayerAdapter {
     console.log('ESRI: applyFeatureFilter', args)
   }
 
-  async onMapStyleChange (...args) {
-    console.log('ESRI: onMapStyleChange', args)
+  async onMapStyleChange (newMapStyle, dynamicSources) {
+    if (datasetRegistry.mapStyle.id !== newMapStyle.id) {
+      // Ensure the datasetRegistry is aware of the new mapStyle so that the visibility and style properties of the datasets can be correctly applied
+      // TODO - this is a bit of a hack, we should probably have a better way to handle this
+      // such as having DatasetsInit listen for a mapStyle change event and then call datasetRegistry.attach with the new mapStyle
+      // and finally trigger this method
+      datasetRegistry.attach(datasetRegistry.datasets, datasetRegistry._orderedDatasets, newMapStyle)
+    }
+    datasetRegistry.forEach(registryDataset => {
+      const { id, isSublayer, styleLayerId, parent } = registryDataset
+      const vectorTileLayer = this._mapLayers[isSublayer ? parent.id : id]
+      if (vectorTileLayer && styleLayerId) {
+        // Show hide the style layer based on the dataset's mapStyle visibility
+        vectorTileLayer.setStyleLayerVisibility(styleLayerId, registryDataset.visibility)
+        // Update the paint properties of the style layer based on the dataset's mapStyle style
+        const layerPaintProperties = vectorTileLayer.getPaintProperties(styleLayerId)
+        if (layerPaintProperties) {
+          vectorTileLayer.setPaintProperties(styleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
+        }
+      }
+    })
+    // TODO - handle dynamic sources
   }
 
   async onMapSizeChange (...args) {
