@@ -270,6 +270,10 @@ const ALL_BUILDS = [
     }
   },
   {
+    entryPath: './plugins/datasets/src/adapters/maplibre/index.js',
+    outDir: 'plugins/datasets/dist/adapters/maplibre/esm'
+  },
+  {
     entryPath: './plugins/map-styles/src/index.js',
     outDir: 'plugins/map-styles/dist/esm',
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-map-styles-plugin' }

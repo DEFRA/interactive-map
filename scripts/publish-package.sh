@@ -115,10 +115,10 @@ publish_all() {
     echo "Publishing ${pkg_name}@${version} to npm with tag: ${pkg_tag}"
 
     if [ "$DRY_RUN" = "true" ]; then
-      echo "[DRY RUN] Would run: npm publish --prefix ${pkg_dir} --access public --tag=${pkg_tag}"
+      echo "[DRY RUN] Would run: npm publish ./${pkg_dir} --access public --tag=${pkg_tag}"
     else
       assert_version "$pkg_dir" "$version"
-      npm publish --prefix "$pkg_dir" --access public --tag="${pkg_tag}"
+      npm publish "./${pkg_dir}" --access public --tag="${pkg_tag}"
     fi
 
     echo "✓ Published ${pkg_name}@${version}"
