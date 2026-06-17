@@ -10,8 +10,10 @@ export const datasetsToMenu = (state) => {
       const visibleSublayers = dataset.sublayers.filter(sublayer =>
         dataset.showInMenu ? sublayer.showInMenu !== false : sublayer.showInMenu
       )
-      if (!visibleSublayers.length) { return }
-      menu.push({
+      if (dataset.showInMenu === false && !visibleSublayers.length) {
+        return
+      }
+      const groupObject = {
         id: dataset.id,
         groupLabel: dataset.label,
         visibleWhen: true,
@@ -20,7 +22,17 @@ export const datasetsToMenu = (state) => {
           id: `${dataset.id}-${sublayer.id}`,
           label: sublayer.label
         }))
-      })
+      }
+      // Temporary change until we handle multiple datasets with sublayers, that have a groupLabel
+      // So that the esri datasets with sublayers are displayed in the menu, even though they have a groupLabel
+      if (groupObject.items.length === 0) {
+        delete groupObject.groupLabel
+        groupObject.items.push({
+          id: dataset.id,
+          label: dataset.label
+        })
+      }
+      menu.push(groupObject)
     } else if (dataset.groupLabel) {
       // Check for existing group object for this groupLabel, or create it if it doesn't exist,
       // then add the dataset to its items and push it to the menu if it's new

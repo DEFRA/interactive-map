@@ -53,11 +53,11 @@ export default class EsriLayerAdapter {
   }
 
   _applyStyleLayerVisibility (sublayer, vectorTileLayer) {
-    const { styleLayerId } = sublayer
-    if (!styleLayerId) {
+    const { esriStyleLayerId } = sublayer
+    if (!esriStyleLayerId) {
       return
     }
-    vectorTileLayer.setStyleLayerVisibility(styleLayerId, sublayer.visibility)
+    vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, sublayer.visibility)
   }
 
   async applyDatasetVisibility (datasetId) {
@@ -102,15 +102,15 @@ export default class EsriLayerAdapter {
       datasetRegistry.attach(datasetRegistry.datasets, datasetRegistry._orderedDatasets, newMapStyle)
     }
     datasetRegistry.forEach(registryDataset => {
-      const { id, isSublayer, styleLayerId, parent } = registryDataset
+      const { id, isSublayer, esriStyleLayerId, parent } = registryDataset
       const vectorTileLayer = this._mapLayers[isSublayer ? parent.id : id]
-      if (vectorTileLayer && styleLayerId) {
+      if (vectorTileLayer && esriStyleLayerId) {
         // Show hide the style layer based on the dataset's mapStyle visibility
-        vectorTileLayer.setStyleLayerVisibility(styleLayerId, registryDataset.visibility)
+        vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
         // Update the paint properties of the style layer based on the dataset's mapStyle style
-        const layerPaintProperties = vectorTileLayer.getPaintProperties(styleLayerId)
+        const layerPaintProperties = vectorTileLayer.getPaintProperties(esriStyleLayerId)
         if (layerPaintProperties) {
-          vectorTileLayer.setPaintProperties(styleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
+          vectorTileLayer.setPaintProperties(esriStyleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
         }
       }
     })
