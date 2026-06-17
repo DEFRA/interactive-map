@@ -9,16 +9,12 @@ import { buildStylesMap } from '../utils/buildStylesMap.js'
  * (shown with the keyboard cursor ring) as separate arguments so the provider can style them
  * differently. Also re-applies highlights after a map style reload, since highlight layers
  * are removed when the base style changes.
- *
- * Dispatches UPDATE_SELECTED_BOUNDS with the bounding box returned by the provider so
- * downstream consumers (e.g. interact:done) receive up-to-date bounds.
  */
 export const useHighlightSync = ({
   mapProvider,
   mapStyle,
   pluginState,
   selectedFeatures,
-  dispatch,
   events,
   eventBus
 }) => {
@@ -37,12 +33,7 @@ export const useHighlightSync = ({
     const activeFeatures = listboxActiveItem
       ? [{ featureId: listboxActiveItem.featureId, layerId: listboxActiveItem.layerId, idProperty: listboxActiveItem.idProperty, geometry: listboxActiveItem.geometry }]
       : []
-    const bounds = mapProvider.updateHighlightedFeatures?.(selectedFeatures, activeFeatures, stylesMap)
-
-    dispatch({
-      type: 'UPDATE_SELECTED_BOUNDS',
-      payload: bounds
-    })
+    mapProvider.updateHighlightedFeatures?.(selectedFeatures, activeFeatures, stylesMap)
   }
 
   useEffect(() => {

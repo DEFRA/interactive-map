@@ -5,7 +5,7 @@ const MOCK_COORDS = [1, 2]
 
 const createParams = () => {
   const appState = { layoutRefs: { viewportRef: { current: document.body } }, disabledButtons: new Set() }
-  const pluginState = { dispatch: jest.fn(), selectionBounds: null, selectedFeatures: [], selectedMarkers: [], multiSelect: false }
+  const pluginState = { dispatch: jest.fn(), selectedFeatures: [], selectedMarkers: [], multiSelect: false }
   const clickReadyRef = { current: false }
   return {
     appState,
