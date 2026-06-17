@@ -5,20 +5,26 @@ const datasetRegistry = {
   attach (datasetsRef, orderedDatasetsRef, mapStyle) {
     this._datasets = datasetsRef
     this._orderedDatasets = orderedDatasetsRef
-    this._mapStyle = mapStyle
+    if (mapStyle) {
+      this._mapStyle = mapStyle
+    }
     this._invalidateChangedDatasets()
   },
+
   _definitionCache: new DatasetDefinitionCache(),
+
   _invalidateCache () { // used in tests to clear the cache between runs
     this._definitionCache = new DatasetDefinitionCache()
   },
-  _invalidateChangedDatasets () { // used in tests to clear the cache between runs
+
+  _invalidateChangedDatasets () {
     if (this._datasets) {
       this._definitionCache.invalidateChangedDatasets(Object.values(this._datasets))
     } else {
       this._invalidateCache()
     }
   },
+
   // createDataset defaults to a generic dataset factory function, but can be overridden by calling
   // attachCreateDataset, which allows the layer adapter to provide its own createDataset function,
   attachCreateDataset (createDataset) { this._createDataset = createDataset },
