@@ -127,9 +127,7 @@ describe('useHighlightSync — guards', () => {
     mockDeps.mapProvider = null
     mockDeps.selectedFeatures = [{ featureId: 'F1' }]
 
-    render()
-
-    // no error thrown, nothing called
+    expect(() => render()).not.toThrow()
   })
 
   it('does nothing when mapStyle is null', () => {
