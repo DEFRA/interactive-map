@@ -1,6 +1,6 @@
 import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
-import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
+import { EsriDataset } from './registry/esriDataset.js'
 
 export default class EsriLayerAdapter {
   constructor (mapProvider, symbolRegistry, patternRegistry) {
@@ -10,16 +10,23 @@ export default class EsriLayerAdapter {
     this._mapLayers = {}
   }
 
+  createDataset (datasetDefinition) {
+    return new EsriDataset(datasetDefinition)
+  }
+
   async init (mapStyle) {
     // TODO - move some of this into a super LayerAdapter class that this extends
-    console.log('adding layers')
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
-    await Promise.all(topLevelDatasets.map(registryDataset => this._addLayers(registryDataset, mapStyle)))
+    // ensure the datasets are added in order
+    for await (const registryDataset of topLevelDatasets) {
+      await this._addLayers(registryDataset, mapStyle)
+    }
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
+    console.log(this._map.layers.items.map(layer => layer.id))
   }
 
   async _addLayers (registryDataset, mapStyle) {
-    console.log('Creating Esri VectorTileLayer for dataset', registryDataset.id)
+    console.log('Adding VectorTileLayer for dataset', registryDataset.id)
     const vectorTileLayer = new VectorTileLayer({
       id: registryDataset.id,
       url: registryDataset.tiles,
@@ -27,28 +34,20 @@ export default class EsriLayerAdapter {
       visible: false
     })
     await vectorTileLayer.load()
-
+    console.log('VectorTileLayer loaded for dataset', registryDataset.id)
     registryDataset.sublayers.forEach(sublayer => {
-      const { styleLayerId, style, hasStroke, hasFill } = sublayer
+      const { styleLayerId } = sublayer
       if (!styleLayerId) {
         return
       }
       const layerPaintProperties = vectorTileLayer.getPaintProperties(styleLayerId)
       if (layerPaintProperties) {
-        console.log('VectorTileLayer styleLayer paint properties', styleLayerId, layerPaintProperties)
-        if (hasStroke) {
-          layerPaintProperties['line-color'] = getValueForStyle(style.stroke, mapStyle.id)
-        }
-        if (hasFill) {
-          layerPaintProperties['fill-color'] = getValueForStyle(style.fill, mapStyle.id)
-        }
-        console.log('VectorTileLayer updated paint properties', styleLayerId, layerPaintProperties)
-        vectorTileLayer.setPaintProperties(styleLayerId, layerPaintProperties)
+        vectorTileLayer.setPaintProperties(styleLayerId, sublayer.applyLayerPaintProperties(layerPaintProperties))
       }
     })
     this._mapLayers[registryDataset.id] = vectorTileLayer
     this._map.add(vectorTileLayer)
-    console.log('finished adding layers')
+    console.log('Added VectorTileLayer for dataset', registryDataset.id)
     return vectorTileLayer.when()
   }
 
@@ -65,13 +64,12 @@ export default class EsriLayerAdapter {
   }
 
   async applyDatasetVisibility (datasetId) {
-    console.log('ESRI: applyDatasetVisibility', datasetId)
     const registryDataset = datasetRegistry.getDataset(datasetId)
     const { id, isSublayer, visible } = registryDataset
     if (isSublayer) {
       const { parent, styleLayerId } = registryDataset
       const vectorTileLayer = this._mapLayers[parent.id]
-      console.log('SUBLAYER setStyleLayerVisibility', vectorTileLayer.id, styleLayerId)
+      // console.log('SUBLAYER setStyleLayerVisibility', vectorTileLayer.id, styleLayerId)
       vectorTileLayer.setStyleLayerVisibility(styleLayerId, registryDataset.visibility)
       return
     } else if (visible) {
@@ -81,7 +79,7 @@ export default class EsriLayerAdapter {
         if (!styleLayerId) {
           return
         }
-        console.log('setStyleLayerVisibility', datasetId, styleLayerId)
+        // console.log('setStyleLayerVisibility', datasetId, styleLayerId)
         vectorTileLayer.setStyleLayerVisibility(styleLayerId, sublayer.visibility)
       })
     }
@@ -97,7 +95,7 @@ export default class EsriLayerAdapter {
   }
 
   async applyGlobalOpacity (...args) {
-    console.log('ESRI: applyGlobalOpacity', args)
+    // console.log('ESRI: applyGlobalOpacity', args)
   }
 
   async addDataset (...args) {

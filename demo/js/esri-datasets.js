@@ -17,6 +17,7 @@ const datasets = [
     showInKey: true,
     showInMenu: true,
     removeStyles: true,
+    visible: true,
     sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea CCP1',
     sublayers: [
       {
@@ -26,7 +27,6 @@ const datasets = [
         showInKey: true,
         showInMenu: false,
         style: {
-          filter: ['==', '_symbol', 0],
           fill: { outdoor: '#F4A582', dark: '#BF3D4A' },
           stroke: 'none'
         },
@@ -34,16 +34,36 @@ const datasets = [
       {
         id: 'data-unavailable',
         label: 'Climate change data unavailable',
-        styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/1',
-        showInKey: true,
-        showInMenu: false,
-        style: {
-          filter: ['==', '_symbol', 1],
+        style: { // This is used just for the key - so that it renders the pattern correctly. 
           fillPattern: 'dot',
           fillPatternForegroundColor: { outdoor: '#000000', dark: '#ffffff' },
-          fill: { outdoor: '#0000ff', dark: '#BF3D4A' },
-          stroke: { outdoor: '#000000', dark: '#ffffff' },
+          stroke: { outdoor: '#000000', dark: '#FFFFFF' },
         },
+        showInKey: true,
+        showInMenu: false,
+      },
+      {
+        id: 'data-unavailable-outline',
+        style: {
+          stroke: { outdoor: '#000000', dark: '#FFFFFF' },
+        },
+        styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/0',
+        showInKey: false,
+        showInMenu: false,
+      },
+      {
+        id: 'data-unavailable-light',
+        visibleWhen: { mapStyleId: ['outdoor', 'black-and-white'] },
+        styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/1',
+        showInKey: false,
+        showInMenu: false,
+      },
+      {
+        id: 'data-unavailable-dark',
+        visibleWhen: { mapStyleId: ['dark'] },
+        styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/2',
+        showInKey: false,
+        showInMenu: false,
       }
     ]
   },
@@ -64,9 +84,8 @@ const datasets = [
         showInKey: true,
         showInMenu: false,
         style: {
-          filter: ['==', 'flood_zone', 'FZ2'],
-          fill: { outdoor: '#ff0000', dark: '#7fcdbb' },
-          // fill: { outdoor: '#1d70b8', dark: '#7fcdbb' },
+          // filter: ['==', 'flood_zone', 'FZ2'],
+          fill: { outdoor: '#1d70b8', dark: '#7fcdbb' },
           stroke: 'none'
         },
       },
@@ -77,9 +96,8 @@ const datasets = [
         showInKey: true,
         showInMenu: false,
         style: {
-          filter: ['==', 'flood_zone', 'FZ3'],
-          fill: { outdoor: '#00ff00', dark: '#e5f5e0' },
-          // fill: { outdoor: '#003078', dark: '#e5f5e0' },
+          // filter: ['==', 'flood_zone', 'FZ3'],
+          fill: { outdoor: '#003078', dark: '#e5f5e0' },
           stroke: 'none'
         },
       }
