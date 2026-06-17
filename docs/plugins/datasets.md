@@ -280,7 +280,7 @@ Initial visibility of the dataset.
 **Type:** `boolean`
 **Default:** `false`
 
-When `true`, the dataset appears in the Key panel with its style symbol and label.
+When `true`, the dataset appears in the Key panel with its style symbol and label. Sublayers inherit this value — set `showInKey: false` on an individual sublayer to opt it out.
 
 ---
 
@@ -289,7 +289,7 @@ When `true`, the dataset appears in the Key panel with its style symbol and labe
 **Type:** `boolean`
 **Default:** `false`
 
-When `true`, the dataset appears in the LayersMenu panel and can be toggled on and off by the user.
+When `true`, the dataset appears in the LayersMenu panel and can be toggled on and off by the user. Sublayers inherit this value — set `showInMenu: false` on an individual sublayer to opt it out.
 
 ---
 
@@ -404,36 +404,41 @@ Sublayer styles merge over the parent's — the sublayer wins on any property it
 | `label` | `string` | Human-readable name shown in the LayersMenu and Key panels |
 | `filter` | `FilterExpression` | MapLibre filter expression to match features for this sublayer |
 | `style` | `Object` | Style overrides. Accepts the same properties as the dataset `style` object |
-| `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from dataset if not set |
-| `showInMenu` | `boolean` | Shows this sublayer in the LayersMenu panel. **Default:** `false` |
+| `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from the dataset when not set; explicit `false` overrides a dataset-level `true` |
+| `showInMenu` | `boolean` | Shows this sublayer in the LayersMenu panel. Inherits from the dataset when not set; explicit `false` overrides a dataset-level `true` |
 
 **Polygon/line example:**
 
 ```js
-sublayers: [
-  {
-    id: 'active',
-    label: 'Active parcels',
-    filter: ['==', ['get', 'status'], 'active'],
-    showInMenu: true,
-    style: {
-      stroke: '#00703c',
-      fill: 'rgba(0,112,60,0.1)',
-      symbolDescription: 'Green outline'
+{
+  id: 'field-parcels',
+  label: 'Field parcels',
+  geojson: parcelsData,
+  showInKey: true,
+  showInMenu: true,
+  sublayers: [
+    {
+      id: 'active',
+      label: 'Active parcels',
+      filter: ['==', ['get', 'status'], 'active'],
+      style: {
+        stroke: '#00703c',
+        fill: 'rgba(0,112,60,0.1)',
+        symbolDescription: 'Green outline'
+      }
+    },
+    {
+      id: 'inactive',
+      label: 'Inactive parcels',
+      filter: ['==', ['get', 'status'], 'inactive'],
+      style: {
+        stroke: '#d4351c',
+        fillPattern: 'diagonal-cross-hatch',
+        fillPatternForegroundColor: '#d4351c'
+      }
     }
-  },
-  {
-    id: 'inactive',
-    label: 'Inactive parcels',
-    filter: ['==', ['get', 'status'], 'inactive'],
-    showInMenu: true,
-    style: {
-      stroke: '#d4351c',
-      fillPattern: 'diagonal-cross-hatch',
-      fillPatternForegroundColor: '#d4351c'
-    }
-  }
-]
+  ]
+}
 ```
 
 **Symbol (point) example — scheduled monuments by type:**
@@ -444,30 +449,26 @@ Here the parent defines the shared symbol shape; each sublayer only overrides wh
 {
   id: 'scheduled-monuments',
   geojson: scheduledMonumentsData,
+  showInKey: true,
+  showInMenu: true,
   style: { symbol: 'square' },
   sublayers: [
     {
       id: 'prehistoric',
       label: 'Prehistoric sites',
       filter: ['==', ['get', 'type'], 'prehistoric'],
-      showInKey: true,
-      showInMenu: true,
       style: { symbolBackgroundColor: '#0f7a52' }
     },
     {
       id: 'roman',
       label: 'Roman sites',
       filter: ['==', ['get', 'type'], 'roman'],
-      showInKey: true,
-      showInMenu: true,
       style: { symbolBackgroundColor: '#54319f' }
     },
     {
       id: 'medieval',
       label: 'Medieval sites',
       filter: ['==', ['get', 'type'], 'medieval'],
-      showInKey: true,
-      showInMenu: true,
       style: { symbolBackgroundColor: '#ca357c' }
     }
   ]

@@ -201,6 +201,20 @@ describe('Dataset class', () => {
       datasetRegistry.attach({ parent: parentDef, child: childDef })
       expect(new Dataset(childDef).showInKey).toBe(false)
     })
+
+    it('allows a sublayer to opt out with showInKey: false even when parent has showInKey: true', () => {
+      const parentDef = { id: 'parent', showInKey: true, style: {} }
+      const childDef = { id: 'child', parentId: 'parent', showInKey: false, style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).showInKey).toBe(false)
+    })
+
+    it('allows a sublayer to opt in with showInKey: true even when parent has showInKey: false', () => {
+      const parentDef = { id: 'parent', showInKey: false, style: {} }
+      const childDef = { id: 'child', parentId: 'parent', showInKey: true, style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).showInKey).toBe(true)
+    })
   })
 
   describe('tiles, geojson, idProperty, parentId', () => {

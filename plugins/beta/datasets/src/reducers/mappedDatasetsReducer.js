@@ -11,7 +11,14 @@ const flattenSublayer = (parentId, sublayer) => {
 
 const reduceDatasets = (acc, dataset) => {
   const { id } = dataset
-  acc[id] = applyDatasetDefaultsWithoutFlattening(dataset)
+  const processed = applyDatasetDefaultsWithoutFlattening(dataset)
+  // For sublayers, don't let defaults override the absence of showInKey/showInMenu —
+  // the Dataset class inherits these from the parent when not explicitly set by the user
+  if (dataset.parentId) {
+    if (!('showInKey' in dataset)) { delete processed.showInKey }
+    if (!('showInMenu' in dataset)) { delete processed.showInMenu }
+  }
+  acc[id] = processed
   const { orderedDatasets } = acc
   orderedDatasets.push(id)
   const flattenedSublayers = dataset.sublayers?.map((sublayer) => flattenSublayer(id, sublayer))

@@ -32,4 +32,53 @@ describe('datasetsToMenu', () => {
         .toEqual(expectedDatasetsMenuConfigWithGroups)
     })
   })
+
+  describe('showInMenu inheritance for sublayers', () => {
+    const sublayerDataset = (datasetShowInMenu, sublayerShowInMenu) => ({
+      id: 'test',
+      label: 'Test',
+      showInMenu: datasetShowInMenu,
+      sublayers: [
+        { id: 'a', label: 'A', ...(sublayerShowInMenu !== undefined && { showInMenu: sublayerShowInMenu }) },
+        { id: 'b', label: 'B', ...(sublayerShowInMenu !== undefined && { showInMenu: sublayerShowInMenu }) }
+      ]
+    })
+
+    it('sublayers inherit showInMenu: true from the dataset when not explicitly set', () => {
+      const result = datasetsToMenu({ datasets: [sublayerDataset(true, undefined)] })
+      expect(result[0].items).toHaveLength(2)
+    })
+
+    it('sublayer can opt out with showInMenu: false when dataset has showInMenu: true', () => {
+      const dataset = {
+        id: 'test',
+        label: 'Test',
+        showInMenu: true,
+        sublayers: [
+          { id: 'a', label: 'A', showInMenu: false },
+          { id: 'b', label: 'B' }
+        ]
+      }
+      const result = datasetsToMenu({ datasets: [dataset] })
+      expect(result[0].items).toEqual([{ id: 'test-b', label: 'B' }])
+    })
+
+    it('sublayers with showInMenu: true appear when dataset does not have showInMenu set', () => {
+      const dataset = {
+        id: 'test',
+        label: 'Test',
+        sublayers: [
+          { id: 'a', label: 'A', showInMenu: true },
+          { id: 'b', label: 'B' }
+        ]
+      }
+      const result = datasetsToMenu({ datasets: [dataset] })
+      expect(result[0].items).toEqual([{ id: 'test-a', label: 'A' }])
+    })
+
+    it('does not add a menu entry when dataset has showInMenu: true but all sublayers opt out', () => {
+      const result = datasetsToMenu({ datasets: [sublayerDataset(true, false)] })
+      expect(result).toHaveLength(0)
+    })
+  })
 })

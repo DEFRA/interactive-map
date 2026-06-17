@@ -39,7 +39,6 @@ const historicMonumentsDataset = {
     id: 'prehistoric',
     label: 'Prehistoric',
     filter: ['in', ['get', 'category'], 'prehistoric'],
-    showInMenu: true,
     style: {
       symbol: 'square',
       symbolGraphic,
@@ -49,7 +48,6 @@ const historicMonumentsDataset = {
     id: 'roman',
     label: 'Roman',
     filter: ['in', ['get', 'category'], 'roman'],
-    showInMenu: true,
     style: {
       symbol: 'square',
       symbolGraphic,
@@ -59,7 +57,6 @@ const historicMonumentsDataset = {
     id: 'medieval',
     label: 'Medieval',
     filter: ['in', ['get', 'category'], 'medieval'],
-    showInMenu: true,
     style: {
       symbol: 'square',
       symbolGraphic,
