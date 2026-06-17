@@ -1,0 +1,183 @@
+import DemoMapSymbols from '../../demo/DemoMapSymbols.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
+
+# Add symbols
+
+Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can contain sublayers with independent filters and styles. This example shows historic monument points categorised by period, each styled with a distinct symbol and colour.
+
+<DemoMapSymbols />
+
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+      import createDatasetsPlugin from '@defra/interactive-map/plugins/datasets'
+
+      const symbolGraphic = 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z'
+
+      // GeoJSON can also be loaded from a URL; use the tiles property for vector tile sources
+      const geojson = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: { category: 'prehistoric', name: 'Prehistoric feature' },
+          geometry: { type: 'Point', coordinates: [-2.4615, 54.5616] }
+        }, {
+          type: 'Feature',
+          properties: { category: 'roman', name: 'Roman feature' },
+          geometry: { type: 'Point', coordinates: [-2.4628, 54.5541] }
+        }, {
+          type: 'Feature',
+          properties: { category: 'medieval', name: 'Medieval feature' },
+          geometry: { type: 'Point', coordinates: [-2.4578, 54.5569] }
+        }]
+      }
+
+      const datasetsPlugin = createDatasetsPlugin({
+        datasets: [{
+          id: 'historic-monuments',
+          label: 'Historic monuments',
+          geojson: geojson,
+          minZoom: 10,
+          maxZoom: 24,
+          showInKey: true,
+          showInMenu: true,
+          sublayers: [{
+            id: 'prehistoric',
+            label: 'Prehistoric',
+            filter: ['in', ['get', 'category'], 'prehistoric'],
+            showInMenu: true,
+            style: {
+              symbol: 'square',
+              symbolGraphic,
+              symbolBackgroundColor: '#00897B'
+            }
+          }, {
+            id: 'roman',
+            label: 'Roman',
+            filter: ['in', ['get', 'category'], 'roman'],
+            showInMenu: true,
+            style: {
+              symbol: 'square',
+              symbolGraphic,
+              symbolBackgroundColor: '#ca3535'
+            }
+          }, {
+            id: 'medieval',
+            label: 'Medieval',
+            filter: ['in', ['get', 'category'], 'medieval'],
+            showInMenu: true,
+            style: {
+              symbol: 'square',
+              symbolGraphic,
+              symbolBackgroundColor: '#1565C0'
+            }
+          }]
+        }]
+      })
+
+      new InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-2.4608, 54.5574],
+        zoom: 14,
+        containerHeight: '516px',
+        plugins: [datasetsPlugin]
+      })
+    `
+  },
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script src="/your-assets-path/datasets-plugin/index.js"></script>
+
+      <script>
+      const symbolGraphic = 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z'
+
+      // GeoJSON can also be loaded from a URL; use the tiles property for vector tile sources
+      const geojson = {
+        type: 'FeatureCollection',
+        features: [{
+          type: 'Feature',
+          properties: { category: 'prehistoric', name: 'Prehistoric feature' },
+          geometry: { type: 'Point', coordinates: [-2.4615, 54.5616] }
+        }, {
+          type: 'Feature',
+          properties: { category: 'roman', name: 'Roman feature' },
+          geometry: { type: 'Point', coordinates: [-2.4628, 54.5541] }
+        }, {
+          type: 'Feature',
+          properties: { category: 'medieval', name: 'Medieval feature' },
+          geometry: { type: 'Point', coordinates: [-2.4578, 54.5569] }
+        }]
+      }
+
+      const datasetsPlugin = defra.datasetsPlugin({
+        datasets: [{
+          id: 'historic-monuments',
+          label: 'Historic monuments',
+          geojson: geojson,
+          minZoom: 10,
+          maxZoom: 24,
+          showInKey: true,
+          showInMenu: true,
+          sublayers: [{
+            id: 'prehistoric',
+            label: 'Prehistoric',
+            filter: ['in', ['get', 'category'], 'prehistoric'],
+            showInMenu: true,
+            style: {
+              symbol: 'square',
+              symbolGraphic,
+              symbolBackgroundColor: '#00897B'
+            }
+          }, {
+            id: 'roman',
+            label: 'Roman',
+            filter: ['in', ['get', 'category'], 'roman'],
+            showInMenu: true,
+            style: {
+              symbol: 'square',
+              symbolGraphic,
+              symbolBackgroundColor: '#ca3535'
+            }
+          }, {
+            id: 'medieval',
+            label: 'Medieval',
+            filter: ['in', ['get', 'category'], 'medieval'],
+            showInMenu: true,
+            style: {
+              symbol: 'square',
+              symbolGraphic,
+              symbolBackgroundColor: '#1565C0'
+            }
+          }]
+        }]
+      })
+
+      new defra.InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-2.4608, 54.5574],
+        zoom: 14,
+        containerHeight: '516px',
+        plugins: [datasetsPlugin]
+      })
+      </script>
+    `
+  }
+]} />
