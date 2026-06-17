@@ -12,7 +12,10 @@ export default class EsriLayerAdapter {
 
   async init (mapStyle) {
     // TODO - move some of this into a super LayerAdapter class that this extends
-    datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset, mapStyle))
+    console.log('adding layers')
+    const topLevelDatasets = datasetRegistry.topLevelDatasets()
+    await Promise.all(topLevelDatasets.map(registryDataset => this._addLayers(registryDataset, mapStyle)))
+    await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
   }
 
   async _addLayers (registryDataset, mapStyle) {
@@ -21,51 +24,32 @@ export default class EsriLayerAdapter {
       id: registryDataset.id,
       url: registryDataset.tiles,
       opacity: 1,
-      visible: registryDataset.visible
+      visible: false
     })
     await vectorTileLayer.load()
-    await vectorTileLayer.when()
-    console.log('vectorTileLayer.style', vectorTileLayer.style)
-    // console.log('VectorTileLayer loaded', vectorTileLayer)
-    // console.log('VectorTileLayer currentStyleInfo', vectorTileLayer.currentStyleInfo)
-    const { styleRepository = {} } = vectorTileLayer
-    // const { layers: styleLayers = [] } = styleRepository
-    const styleLayers = JSON.parse(JSON.stringify(styleRepository.layers))
-    console.log('VectorTileLayer styleLayers', registryDataset.id, JSON.parse(JSON.stringify(styleLayers)))
-    styleLayers.forEach((styleLayer) => {
-      console.log('Deleting VectorTileLayer styleLayer', styleLayer.id)
-      vectorTileLayer.deleteStyleLayer(styleLayer.id)
-    })
 
     registryDataset.sublayers.forEach(sublayer => {
-      // const style = vectorTileLayer.getStyleLayer(sublayer.styleLayerId)
-      // console.log('Sublayer', sublayer.id, sublayer.styleLayerId, style)
-      // vectorTileLayer.deleteStyleLayer(sublayer.styleLayerId)
-      const newStyle = {
-        id: sublayer.id,
-        type: 'fill',
-        paint: {
-          'fill-color': getValueForStyle(sublayer.style.fill, mapStyle.id)
-        },
-        source: 'esri',
-        'source-layer': sublayer.sourceLayer,
-        filter: sublayer.style.filter
+      const { styleLayerId, style, hasStroke, hasFill } = sublayer
+      if (!styleLayerId) {
+        return
       }
-      vectorTileLayer.setStyleLayer(newStyle)
-      const addedStyle = vectorTileLayer.getStyleLayer(newStyle.id)
-      console.log('Added style layer', addedStyle)
+      const layerPaintProperties = vectorTileLayer.getPaintProperties(styleLayerId)
+      if (layerPaintProperties) {
+        console.log('VectorTileLayer styleLayer paint properties', styleLayerId, layerPaintProperties)
+        if (hasStroke) {
+          layerPaintProperties['line-color'] = getValueForStyle(style.stroke, mapStyle.id)
+        }
+        if (hasFill) {
+          layerPaintProperties['fill-color'] = getValueForStyle(style.fill, mapStyle.id)
+        }
+        console.log('VectorTileLayer updated paint properties', styleLayerId, layerPaintProperties)
+        vectorTileLayer.setPaintProperties(styleLayerId, layerPaintProperties)
+      }
     })
-
-    console.log('VectorTileLayer styleLayers', JSON.parse(JSON.stringify(styleRepository.layers)))
-
-    // const styleUrl =
-    //   `${registryDataset.tiles}/resources/styles/root.json`
-
-    // const style = await fetch(styleUrl).then(r => r.json())
-    // console.log('style', style)
-
     this._mapLayers[registryDataset.id] = vectorTileLayer
     this._map.add(vectorTileLayer)
+    console.log('finished adding layers')
+    return vectorTileLayer.when()
   }
 
   async removeDataset (...args) {
@@ -83,15 +67,25 @@ export default class EsriLayerAdapter {
   async applyDatasetVisibility (datasetId) {
     console.log('ESRI: applyDatasetVisibility', datasetId)
     const registryDataset = datasetRegistry.getDataset(datasetId)
-    const { id, isSublayer } = registryDataset
+    const { id, isSublayer, visible } = registryDataset
     if (isSublayer) {
       const { parent, styleLayerId } = registryDataset
-      const parentLayer = this._mapLayers[parent.id]
-      parentLayer.setStyleLayerVisibility(styleLayerId, registryDataset.visibility)
+      const vectorTileLayer = this._mapLayers[parent.id]
+      console.log('SUBLAYER setStyleLayerVisibility', vectorTileLayer.id, styleLayerId)
+      vectorTileLayer.setStyleLayerVisibility(styleLayerId, registryDataset.visibility)
       return
+    } else if (visible) {
+      const vectorTileLayer = this._mapLayers[datasetId]
+      registryDataset.sublayers.forEach(sublayer => {
+        const { styleLayerId } = sublayer
+        if (!styleLayerId) {
+          return
+        }
+        console.log('setStyleLayerVisibility', datasetId, styleLayerId)
+        vectorTileLayer.setStyleLayerVisibility(styleLayerId, sublayer.visibility)
+      })
     }
     this._mapLayers[id].visible = registryDataset.visible
-    // this._map.getLayer(id).visible = registryDataset.visible
   }
 
   async applyGlobalVisibility (...args) {

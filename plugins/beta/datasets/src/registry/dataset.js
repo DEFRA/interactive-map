@@ -22,10 +22,18 @@ export class Dataset {
   get parentId () { return this._datasetDefinition.parentId }
   get minZoom () { return this._datasetDefinition.minZoom || this.parent?.minZoom }
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
+
   get showInKey () {
     const own = this._datasetDefinition.showInKey
     if (own !== undefined) { return own }
     return this.parent?.showInKey ?? false
+  }
+
+  get visibleWhen () {
+    if (this._datasetDefinition.visibleWhen === undefined) {
+      return this.parent?.visibleWhen
+    }
+    return this._datasetDefinition.visibleWhen
   }
 
   get groupLabel () { return this._datasetDefinition.groupLabel }
@@ -84,7 +92,13 @@ export class Dataset {
   }
 
   get styleLayerId () { return this._datasetDefinition.styleLayerId }
-  get visibility () { return this.visible ? 'visible' : 'none' }
+  get visibility () {
+    const visible = this.visible
+    if (visible && this.visibleWhen?.mapStyleId) {
+      return this.visibleWhen?.mapStyleId.includes(datasetRegistry.mapStyle.id) ? 'visible' : 'none'
+    }
+    return visible ? 'visible' : 'none'
+  }
 
   get symbolAnchor () {
     if (this.style?.symbolAnchor) {

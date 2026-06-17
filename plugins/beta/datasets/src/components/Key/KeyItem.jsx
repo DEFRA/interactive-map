@@ -2,6 +2,9 @@ import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.j
 import { KeySvg } from './KeySvg.jsx'
 
 export const KeyItem = ({ registryDataset, symbolRegistry, patternRegistry, mapStyle }) => {
+  if (!registryDataset.showInKey) {
+    return null
+  }
   return (
     <dl className='im-c-datasets-key__item'>
       <dt className='im-c-datasets-key__item-symbol'>

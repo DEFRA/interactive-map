@@ -27,7 +27,7 @@ export const initialiseDatasets = ({
   if (adapter.createDataset) {
     datasetRegistry.attachCreateDataset(adapter.createDataset)
   }
-  datasetRegistry.attach(mappedDatasets)
+  datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
   adapter.init(mapStyle).then(() => {
     datasetRegistry.forEachDataset(registryDataset => {
       if (!registryDataset.hasDynamicGeoJSON) {
