@@ -111,8 +111,6 @@ const datasetsPlugin = createDatasetsPlugin({
   datasets
 })
 
-
-
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'mapOnly',
   mapProvider: esriProvider({ setupConfig: setupEsriConfig }),
@@ -139,4 +137,13 @@ const interactiveMap = new InteractiveMap('map', {
       }
     })
   ]
+})
+
+const testGlobalVisibility = () => {
+  setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 3000)
+  setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 6000)
+}
+
+interactiveMap.on('datasets:ready', function () {
+  testGlobalVisibility()
 })
