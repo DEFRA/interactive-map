@@ -30,7 +30,6 @@ beforeEach(() => {
       layers: [{ layerId: 'layer1' }]
     },
     selectedFeatures: [],
-    dispatch: jest.fn(),
     events: { MAP_STYLE_CHANGE: STYLE_CHANGE, MAP_DATA_CHANGE: DATA_CHANGE },
     eventBus: {
       on: jest.fn((event, handler) => {
@@ -51,7 +50,7 @@ beforeEach(() => {
 // ─── useHighlightSync — highlighting ─────────────────────────────────────────
 
 describe('useHighlightSync — highlighting', () => {
-  it('updates map highlights and dispatches bounds', () => {
+  it('updates map highlights', () => {
     mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
 
     render()
@@ -61,22 +60,6 @@ describe('useHighlightSync — highlighting', () => {
       [],
       expect.any(Object)
     )
-    expect(mockDeps.dispatch).toHaveBeenCalledWith({
-      type: 'UPDATE_SELECTED_BOUNDS',
-      payload: { sw: [0, 0], ne: [1, 1] }
-    })
-  })
-
-  it('dispatches null bounds when provider returns null', () => {
-    mockDeps.selectedFeatures = [{ featureId: 'F1' }]
-    mockDeps.mapProvider.updateHighlightedFeatures.mockReturnValue(null)
-
-    render()
-
-    expect(mockDeps.dispatch).toHaveBeenCalledWith({
-      type: 'UPDATE_SELECTED_BOUNDS',
-      payload: null
-    })
   })
 })
 
@@ -146,7 +129,7 @@ describe('useHighlightSync — guards', () => {
 
     render()
 
-    expect(mockDeps.dispatch).not.toHaveBeenCalled()
+    // no error thrown, nothing called
   })
 
   it('does nothing when mapStyle is null', () => {

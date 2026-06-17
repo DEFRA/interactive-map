@@ -37,15 +37,10 @@ const findMarkerAtPoint = (markers, point, scale) => {
   return null
 }
 
-const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, selectionBounds) => {
+const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers) => {
   const lastEmittedSelectionChange = useRef(null)
 
   useEffect(() => {
-    const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
-    if (awaitingBounds) {
-      return
-    }
-
     const prev = lastEmittedSelectionChange.current
     const wasEmpty = prev === null || (prev.features.length === 0 && prev.markers.length === 0)
     if (wasEmpty && selectedFeatures.length === 0 && selectedMarkers.length === 0) {
@@ -53,14 +48,13 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
     }
 
     eventBus.emit('interact:selectionchange', {
-      selectedFeatures,
+      selectedFeatures: selectedFeatures.map(({ featureId, layerId, idProperty, properties }) => ({ featureId, layerId, idProperty, properties })),
       selectedMarkers,
-      selectionBounds,
       contiguous: areAllContiguous(selectedFeatures)
     })
 
     lastEmittedSelectionChange.current = { features: selectedFeatures, markers: selectedMarkers }
-  }, [selectedFeatures, selectedMarkers, selectionBounds])
+  }, [selectedFeatures, selectedMarkers])
 }
 
 /**
@@ -220,7 +214,7 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
   const {
     dispatch, layers, interactionModes, multiSelect, contiguous,
     marker: markerOptions, tolerance, selectedFeatures, selectedMarkers,
-    selectionBounds, deselectOnClickOutside
+    deselectOnClickOutside
   } = pluginState
   const { eventBus } = services
   const layerConfigMap = buildLayerConfigMap(layers)
@@ -272,6 +266,6 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
     scale
   })
 
-  useSelectionChangeEmitter(eventBus, selectedFeatures, selectedMarkers, selectionBounds)
+  useSelectionChangeEmitter(eventBus, selectedFeatures, selectedMarkers)
   return { handleInteraction }
 }

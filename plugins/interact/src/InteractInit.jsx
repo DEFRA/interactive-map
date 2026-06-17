@@ -27,7 +27,7 @@ export const InteractInit = ({
   mapProvider,
   pluginState
 }) => {
-  const { dispatch, enabled, selectedFeatures, interactionModes, layers } = pluginState
+  const { enabled, selectedFeatures, interactionModes, layers } = pluginState
   const { eventBus } = services
   const { crossHair, mapStyle, markers } = mapState
 
@@ -44,13 +44,11 @@ export const InteractInit = ({
     mapProvider
   })
 
-  // Highlight features and sync state selectedBounds from mapProvider
   useHighlightSync({
     mapProvider,
     mapStyle,
     pluginState,
     selectedFeatures,
-    dispatch,
     events: EVENTS,
     eventBus
   })
