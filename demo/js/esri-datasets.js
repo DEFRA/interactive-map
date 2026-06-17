@@ -12,17 +12,17 @@ const datasets = [
     id: 'flood-zones-cc',
     label: 'Flood Zones Climate Change',
     groupLabel: 'Datasets',
-    groupId: 'flood-zones',
+    esriGroupId: 'flood-zones',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_CCP1_NON_PRODUCTION/VectorTileServer`,
     showInKey: true,
     showInMenu: true,
-    removeStyles: true,
     visible: true,
     sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea CCP1',
     sublayers: [
       {
         id: 'climate-change',
         label: 'Climate change (2070 to 2125)',
+        // TODO change styleLayerId to esriStyleLayerId
         styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Flood Zones plus climate change/1',
         showInKey: true,
         showInMenu: false,
@@ -71,7 +71,7 @@ const datasets = [
     id: 'flood-zones',
     label: 'Flood Zones',
     groupLabel: 'Datasets',
-    groupId: 'flood-zones',
+    esriGroupId: 'flood-zones',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_NON_PRODUCTION/VectorTileServer`,
     showInKey: true,
     showInMenu: true,
@@ -81,7 +81,6 @@ const datasets = [
         id: 'flood-zone-2',
         label: 'Flood Zone 2',
         styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea/Flood Zone 2/1',
-        showInKey: true,
         showInMenu: false,
         style: {
           // filter: ['==', 'flood_zone', 'FZ2'],
@@ -93,7 +92,6 @@ const datasets = [
         id: 'flood-zone-3',
         label: 'Flood Zone 3',
         styleLayerId: 'Flood Zones 2 and 3 Rivers and Sea/Flood Zone 3/1',
-        showInKey: true,
         showInMenu: false,
         style: {
           // filter: ['==', 'flood_zone', 'FZ3'],
