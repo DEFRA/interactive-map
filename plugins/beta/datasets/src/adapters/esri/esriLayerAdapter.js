@@ -60,8 +60,7 @@ export default class EsriLayerAdapter {
     vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, sublayer.visibility)
   }
 
-  async applyDatasetVisibility (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+  _applyRegistryDatasetVisibility (registryDataset) {
     const { id, isSublayer, visible, parentId } = registryDataset
     const vectorTileLayer = this._mapLayers[isSublayer ? parentId : id]
     if (isSublayer) {
@@ -73,8 +72,15 @@ export default class EsriLayerAdapter {
     this._mapLayers[id].visible = visible
   }
 
+  async applyDatasetVisibility (datasetId) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    if (registryDataset) {
+      this._applyRegistryDatasetVisibility(registryDataset)
+    }
+  }
+
   async applyGlobalVisibility (...args) {
-    console.log('ESRI: applyGlobalVisibility', args)
+    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
   }
 
   async applyDatasetOpacity (...args) {
