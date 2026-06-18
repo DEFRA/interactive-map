@@ -29,6 +29,9 @@ export class Dataset {
     return this.parent?.showInKey ?? false
   }
 
+  // Note visibleWhen is used in combination with visible.
+  // both must be true for the dataset to be visible.
+  // visibleWhen is used to show/hide datasets based on mapStyle.
   get visibleWhen () {
     if (this._datasetDefinition.visibleWhen === undefined) {
       return this.parent?.visibleWhen
