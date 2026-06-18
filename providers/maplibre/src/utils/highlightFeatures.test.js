@@ -300,6 +300,95 @@ describe('Highlighting Utils — symbol layers (committed selection)', () => {
   })
 })
 
+// ─── fill-extrusion layers (3D buildings) ────────────────────────────────────
+
+describe('Highlighting Utils — fill-extrusion layers', () => {
+  const LAYER_ID = 'buildings 3D'
+  const STYLES = { [LAYER_ID]: { stroke: '#aaa', selectionStroke: '#0073cc', strokeWidth: 3, activeStrokeWidth: 6 } }
+  const LINE_LAYER_ID = 'selected-highlight-composite-line'
+
+  let map
+
+  beforeEach(() => {
+    map = makeMap()
+    map.getLayer.mockImplementation(id => {
+      if (id === LAYER_ID) return { source: 'composite', sourceLayer: 'building', type: 'fill-extrusion' }
+      return null
+    })
+  })
+
+  test('adds a line overlay layer above the extrusion pass', () => {
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'uuid-abc', layerId: LAYER_ID, idProperty: 'uuid' }],
+      stylesMap: STYLES
+    })
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: LINE_LAYER_ID,
+      type: 'line',
+      source: 'composite',
+      'source-layer': 'building'
+    }))
+    expect(map.moveLayer).toHaveBeenCalledWith(LINE_LAYER_ID)
+  })
+
+  test('filters by idProperty expression when set', () => {
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'uuid-abc', layerId: LAYER_ID, idProperty: 'uuid' }],
+      stylesMap: STYLES
+    })
+    expect(map.setFilter).toHaveBeenCalledWith(
+      LINE_LAYER_ID,
+      ['in', ['get', 'uuid'], ['literal', ['uuid-abc']]]
+    )
+  })
+
+  test('filters by feature id when no idProperty', () => {
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 42, layerId: LAYER_ID }],
+      stylesMap: STYLES
+    })
+    expect(map.setFilter).toHaveBeenCalledWith(
+      LINE_LAYER_ID,
+      ['in', ['id'], ['literal', [42]]]
+    )
+  })
+
+  test('paints the line overlay with selectionStroke colour', () => {
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'uuid-abc', layerId: LAYER_ID, idProperty: 'uuid' }],
+      stylesMap: STYLES
+    })
+    const colorCall = map.setPaintProperty.mock.calls.find(
+      c => c[0] === LINE_LAYER_ID && c[1] === 'line-color'
+    )
+    expect(colorCall?.[2]).toBe('#0073cc')
+  })
+
+  test('reuses existing line layer without re-adding', () => {
+    map.getLayer.mockImplementation(id => {
+      if (id === LAYER_ID) return { source: 'composite', sourceLayer: 'building', type: 'fill-extrusion' }
+      if (id === LINE_LAYER_ID) return { type: 'line' }
+      return null
+    })
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'uuid-abc', layerId: LAYER_ID, idProperty: 'uuid' }],
+      stylesMap: STYLES
+    })
+    expect(map.addLayer).not.toHaveBeenCalled()
+    expect(map.setPaintProperty).toHaveBeenCalledWith(LINE_LAYER_ID, 'line-color', '#0073cc')
+  })
+})
+
 describe('Highlighting Utils — missing style entry', () => {
   test('skips highlight when feature layerId has no entry in stylesMap', () => {
     const map = makeMap()
@@ -314,5 +403,48 @@ describe('Highlighting Utils — missing style entry', () => {
 
     expect(map.addLayer).not.toHaveBeenCalled()
     expect(map.setFilter).not.toHaveBeenCalled()
+  })
+
+  test('returns early when base layer is not found', () => {
+    const map = makeMap()
+    let callCount = 0
+    map.getLayer.mockImplementation((id) => {
+      // First call from groupFeaturesBySource - return a valid layer
+      if (id === 'l1' && callCount === 0) {
+        callCount++
+        return { source: 's1', type: 'line' }
+      }
+      // Subsequent calls from applySourceHighlight - return null to trigger early return
+      return null
+    })
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
+      stylesMap: { l1: { stroke: 'red' } }
+    })
+
+    expect(map.addLayer).not.toHaveBeenCalled()
+  })
+
+  test('handles unexpected geometry type gracefully', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation((id) => {
+      if (id === 'l1') {
+        return { source: 's1', type: 'raster' }
+      }
+      return null
+    })
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
+      stylesMap: { l1: { stroke: 'red' } }
+    })
+
+    // Should not throw and not apply any highlighting for unexpected type
+    expect(map.addLayer).not.toHaveBeenCalled()
   })
 })

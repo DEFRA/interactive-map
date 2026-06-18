@@ -1,0 +1,146 @@
+import DemoMapSelectBuilding from '../../demo/DemoMapSelectBuilding.js'
+import CodeTabs from '../../demo/js/codeTabs.js'
+
+# Select a feature
+
+Use the interact plugin to add feature selection to your map. This example adds the ability to select a building from the OS Open Zoomstack `Buildings 3D` layer and display its properties in a panel. Selecting another building replaces the current selection; clicking outside clears it.
+
+:::note
+The layer ID used here (`buildings 3D`) is specific to the OS Open Zoomstack outdoor style. For other tile styles, set `debug: true` in the plugin options, open the browser console, and click the map to see which layer IDs are available at that point.
+:::
+
+<DemoMapSelectBuilding />
+
+<CodeTabs tabs={[
+  {
+    label: 'ESM',
+    language: 'js',
+    code: `
+      import InteractiveMap from '@defra/interactive-map'
+      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+      import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+
+      const PANEL_ID = 'building-info'
+
+      const interactPlugin = createInteractPlugin({
+        interactionModes: ['selectFeature'],
+        deselectOnClickOutside: true,
+        layers: [
+          { layerId: 'buildings 3D', idProperty: 'uuid' }
+        ]
+      })
+
+      const map = new InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-1.55, 53.80],
+        zoom: 14.5,
+        maxZoom: 14.5,
+        containerHeight: '516px',
+        plugins: [interactPlugin]
+      })
+
+      map.on('map:ready', () => {
+        interactPlugin.enable()
+
+        map.addPanel(PANEL_ID, {
+          focus: false,
+          label: 'Selected building',
+          html: '<div id="building-info-content"></div>',
+          mobile: { slot: 'drawer', dismissible: true },
+          tablet: { slot: 'left-top', dismissible: true, width: '300px' },
+          desktop: { slot: 'left-top', dismissible: true, width: '300px' }
+        })
+      })
+
+      map.on('interact:selectionchange', ({ selectedFeatures }) => {
+        if (selectedFeatures.length > 0) {
+          let html = ''
+          for (const [k, v] of Object.entries(selectedFeatures[0].properties)) {
+            html += '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + k + ':</strong> ' + v + '</p>'
+          }
+          document.getElementById('building-info-content').innerHTML = html
+          map.showPanel(PANEL_ID)
+        } else {
+          map.hidePanel(PANEL_ID)
+        }
+      })
+
+      map.on('app:panelclosed', ({ panelId }) => {
+        if (panelId === PANEL_ID) {
+          interactPlugin.clear()
+        }
+      })
+    `
+  },
+  {
+    label: 'UMD',
+    language: 'html',
+    code: `
+      <script src="/your-assets-path/interactive-map/index.js"></script>
+      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script src="/your-assets-path/interact-plugin/index.js"></script>
+
+      <script>
+      const PANEL_ID = 'building-info'
+
+      const interactPlugin = defra.interactPlugin({
+        interactionModes: ['selectFeature'],
+        deselectOnClickOutside: true,
+        layers: [
+          { layerId: 'buildings 3D', idProperty: 'uuid' }
+        ]
+      })
+
+      const map = new defra.InteractiveMap('my-map', {
+        behaviour: 'inline',
+        mapProvider: defra.maplibreProvider(),
+        mapStyle: {
+          url: 'https://your-tile-url/style.json',
+          attribution: 'Your tile attribution'
+        },
+        center: [-1.55, 53.80],
+        zoom: 17,
+        containerHeight: '516px',
+        plugins: [interactPlugin]
+      })
+
+      map.on('map:ready', () => {
+        interactPlugin.enable()
+
+        map.addPanel(PANEL_ID, {
+          focus: false,
+          label: 'Selected building',
+          html: '<div id="building-info-content"></div>',
+          mobile: { slot: 'drawer', dismissible: true },
+          tablet: { slot: 'left-top', dismissible: true, width: '300px' },
+          desktop: { slot: 'left-top', dismissible: true, width: '300px' }
+        })
+      })
+
+      map.on('interact:selectionchange', ({ selectedFeatures }) => {
+        if (selectedFeatures.length > 0) {
+          let html = ''
+          for (const [k, v] of Object.entries(selectedFeatures[0].properties)) {
+            html += '<p class="govuk-body govuk-!-margin-bottom-1"><strong>' + k + ':</strong> ' + v + '</p>'
+          }
+          document.getElementById('building-info-content').innerHTML = html
+          map.showPanel(PANEL_ID)
+        } else {
+          map.hidePanel(PANEL_ID)
+        }
+      })
+
+      map.on('app:panelclosed', ({ panelId }) => {
+        if (panelId === PANEL_ID) {
+          interactPlugin.clear()
+        }
+      })
+      </script>
+    `
+  }
+]} />

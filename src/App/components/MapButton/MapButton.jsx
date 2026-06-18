@@ -55,6 +55,18 @@ const captureMenuRect = (buttonRefs, buttonId, setMenuRect) => {
 }
 
 /**
+ * Returns a keydown handler for buttons that control a popup menu.
+ * Prevents default scrolling behavior for ArrowDown and ArrowUp keys.
+ * @param {boolean} hasMenu - Whether the button has a popup menu
+ * @returns {Function} Keyboard event handler
+ */
+const makePopupKeyDownHandler = (hasMenu) => (e) => {
+  if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
+    e.preventDefault()
+  }
+}
+
+/**
  * Returns a keyup handler for buttons that control a popup menu.
  * ArrowDown opens the menu at the first item; ArrowUp opens at the last.
  * @param {boolean} hasMenu - Whether the button has a popup menu
@@ -67,7 +79,6 @@ const captureMenuRect = (buttonRefs, buttonId, setMenuRect) => {
  */
 const makePopupKeyUpHandler = (hasMenu, buttonRefs, buttonId, setMenuStartPos, setMenuRect, setIsPopupOpen) => (e) => {
   if (hasMenu && ['ArrowDown', 'ArrowUp'].includes(e.key)) {
-    e.preventDefault()
     setMenuStartPos(e.key === 'ArrowUp' ? 'last' : 'first')
     captureMenuRect(buttonRefs, buttonId, setMenuRect)
     setIsPopupOpen(true)
@@ -121,6 +132,7 @@ const buildButtonProps = ({
   className,
   onClick,
   onKeyUp,
+  onKeyDown,
   buttonRefs,
   isDisabled,
   isPressed,
@@ -146,6 +158,7 @@ const buildButtonProps = ({
     className,
     onClick,
     onKeyUp,
+    onKeyDown,
     ref: (el) => {
       if (buttonRefs.current && buttonId) {
         buttonRefs.current[buttonId] = el
@@ -242,6 +255,7 @@ export const MapButton = ({
   }
 
   const handleButtonKeyUp = makePopupKeyUpHandler(hasMenu, buttonRefs, buttonId, setMenuStartPos, setMenuRect, setIsPopupOpen)
+  const handleButtonKeyDown = makePopupKeyDownHandler(hasMenu)
 
   const buttonProps = buildButtonProps({
     appId,
@@ -249,6 +263,7 @@ export const MapButton = ({
     className: buildButtonClassNames(buttonId, variant, showLabel),
     onClick: handleButtonClick,
     onKeyUp: handleButtonKeyUp,
+    onKeyDown: handleButtonKeyDown,
     buttonRefs,
     isDisabled,
     isPressed,

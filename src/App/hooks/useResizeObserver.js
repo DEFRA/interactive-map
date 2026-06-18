@@ -3,6 +3,8 @@ import { useEffect, useRef } from 'react'
 export function useResizeObserver (targetRefs, callback) {
   const frameRef = useRef()
   const prevSizes = useRef(new WeakMap()) // track sizes per element
+  const callbackRef = useRef(callback)
+  callbackRef.current = callback
 
   useEffect(() => {
     const refs = Array.isArray(targetRefs) ? targetRefs : [targetRefs]
@@ -33,7 +35,7 @@ export function useResizeObserver (targetRefs, callback) {
         // causing a ResizeObserver loop under synchronous renderers like preact.
         cancelAnimationFrame(frameRef.current)
         frameRef.current = requestAnimationFrame(() => {
-          for (const entry of changedEntries) { callback(entry) }
+          for (const entry of changedEntries) { callbackRef.current(entry) }
         })
       }
     })
@@ -46,7 +48,7 @@ export function useResizeObserver (targetRefs, callback) {
         cancelAnimationFrame(frameRef.current)
       }
     }
-  }, [targetRefs, callback])
+  }, [targetRefs]) // callback intentionally omitted — always read from callbackRef
 
   return { frameRef }
 }

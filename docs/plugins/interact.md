@@ -295,7 +295,6 @@ Emitted when the user confirms their selection (clicks "Done").
 
   // If features were selected:
   selectedFeatures: [...],
-  selectionBounds: [west, south, east, north],
 
   // If markers were selected:
   selectedMarkers: ['...']
@@ -340,10 +339,9 @@ Emitted whenever the selected features or selected markers change.
 ```js
 {
   selectedFeatures: [
-    { featureId: '...', layerId: '...', properties: {...}, geometry: {...} }
+    { featureId: '...', layerId: '...', idProperty: '...', properties: {...} }
   ],
   selectedMarkers: ['...'],  // array of selected marker IDs
-  selectionBounds: [west, south, east, north] | null,
   contiguous: boolean  // true when 2+ features are selected and all form a single contiguous group
 }
 ```
@@ -351,7 +349,6 @@ Emitted whenever the selected features or selected markers change.
 ```js
 interactiveMap.on('interact:selectionchange', (e) => {
   console.log('Selected features:', e.selectedFeatures)
-  console.log('Bounds:', e.selectionBounds)
 })
 ```
 

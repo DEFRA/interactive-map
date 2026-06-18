@@ -37,15 +37,10 @@ const findMarkerAtPoint = (markers, point, scale) => {
   return null
 }
 
-const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, selectionBounds) => {
+const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers) => {
   const lastEmittedSelectionChange = useRef(null)
 
   useEffect(() => {
-    const awaitingBounds = selectedFeatures.length > 0 && !selectionBounds
-    if (awaitingBounds) {
-      return
-    }
-
     const prev = lastEmittedSelectionChange.current
     const wasEmpty = prev === null || (prev.features.length === 0 && prev.markers.length === 0)
     if (wasEmpty && selectedFeatures.length === 0 && selectedMarkers.length === 0) {
@@ -53,14 +48,13 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers, 
     }
 
     eventBus.emit('interact:selectionchange', {
-      selectedFeatures,
+      selectedFeatures: selectedFeatures.map(({ featureId, layerId, idProperty, properties }) => ({ featureId, layerId, idProperty, properties })),
       selectedMarkers,
-      selectionBounds,
       contiguous: areAllContiguous(selectedFeatures)
     })
 
     lastEmittedSelectionChange.current = { features: selectedFeatures, markers: selectedMarkers }
-  }, [selectedFeatures, selectedMarkers, selectionBounds])
+  }, [selectedFeatures, selectedMarkers])
 }
 
 /**
@@ -166,6 +160,15 @@ const resolveContiguousDispatch = ({ featureId, feature, config, selectedFeature
   return true
 }
 
+const logDebugFeatures = (coords, features) => {
+  const [lng, lat] = coords
+  console.groupCollapsed(`[interact] click (${lng.toFixed(4)}, ${lat.toFixed(4)}) — ${features.length} feature${features.length !== 1 ? 's' : ''}`) // NOSONAR
+  features.forEach(f => { // NOSONAR
+    console.log({ layer: f.layer.id, type: f.layer.type, id: f.id ?? '—', sourceLayer: f.sourceLayer ?? '—', properties: f.properties }) // NOSONAR
+  })
+  console.groupEnd() // NOSONAR
+}
+
 /**
  * Core interaction hook. Processes map clicks in fixed priority order:
  * selectMarker → selectFeature → placeMarker (fallback).
@@ -185,7 +188,7 @@ const useHandleInteraction = ({ mapProvider, layers, interactionModes, multiSele
   return useCallback(({ point, coords }) => {
     const debugFeatures = debug ? getFeaturesAtPoint(mapProvider, point, { radius: tolerance }) : null
     if (debugFeatures) {
-      console.log(`--- Features at ${coords} ---`, debugFeatures) // NOSONAR
+      logDebugFeatures(coords, debugFeatures)
     }
     if (interactionModes.includes('selectMarker')) {
       const markerHit = findMarkerAtPoint(markers, point, scale)
@@ -211,7 +214,7 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
   const {
     dispatch, layers, interactionModes, multiSelect, contiguous,
     marker: markerOptions, tolerance, selectedFeatures, selectedMarkers,
-    selectionBounds, deselectOnClickOutside
+    deselectOnClickOutside
   } = pluginState
   const { eventBus } = services
   const layerConfigMap = buildLayerConfigMap(layers)
@@ -263,6 +266,6 @@ export const useInteractionHandlers = ({ mapState, pluginState, services, mapPro
     scale
   })
 
-  useSelectionChangeEmitter(eventBus, selectedFeatures, selectedMarkers, selectionBounds)
+  useSelectionChangeEmitter(eventBus, selectedFeatures, selectedMarkers)
   return { handleInteraction }
 }

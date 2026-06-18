@@ -37,7 +37,6 @@ beforeEach(() => {
       enabled: true,
       selectedFeatures: [],
       selectedMarkers: [],
-      selectionBounds: {},
       interactionModes: ['selectFeature'],
       layers: []
     }
@@ -63,7 +62,6 @@ describe('InteractInit — hook delegation', () => {
       mapStyle: props.mapState.mapStyle,
       pluginState: props.pluginState,
       selectedFeatures: props.pluginState.selectedFeatures,
-      dispatch: props.pluginState.dispatch,
       events: EVENTS,
       eventBus: props.services.eventBus
     }))

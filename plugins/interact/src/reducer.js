@@ -7,7 +7,6 @@ const initialState = {
   deselectOnClickOutside: false,
   selectedFeatures: [],
   selectedMarkers: [],
-  selectionBounds: null,
   closeOnAction: true, // Done or Cancel
   listboxActiveItem: null // { featureId, layerId, idProperty, geometry } | null — ring shown but no selectionchange
 }
@@ -26,7 +25,6 @@ const disable = (state) => {
     enabled: false,
     selectedFeatures: [],
     selectedMarkers: [],
-    selectionBounds: null,
     listboxActiveItem: null
   }
 }
@@ -46,7 +44,7 @@ const toggleSelectedFeatures = (state, payload) => {
   // 1. Handle explicit unselect
   if (addToExisting === false) {
     const filtered = currentSelected.filter((_, i) => i !== existingIndex)
-    return { ...state, selectedFeatures: filtered, selectionBounds: null }
+    return { ...state, selectedFeatures: filtered }
   }
 
   // Define the feature object once to avoid repetition
@@ -70,18 +68,7 @@ const toggleSelectedFeatures = (state, payload) => {
     nextSelected = isSameSingle ? [] : [featureObj]
   }
 
-  return { ...state, selectedFeatures: nextSelected, selectedMarkers: multiSelect && !replaceAll ? state.selectedMarkers : [], selectionBounds: null }
-}
-
-// Update bounds (called from useEffect after map provider calculates them)
-const updateSelectedBounds = (state, payload) => {
-  if (JSON.stringify(payload) === JSON.stringify(state.selectionBounds)) {
-    return state
-  }
-  return {
-    ...state,
-    selectionBounds: payload
-  }
+  return { ...state, selectedFeatures: nextSelected, selectedMarkers: multiSelect && !replaceAll ? state.selectedMarkers : [] }
 }
 
 const toggleSelectedMarkers = (state, { markerId, multiSelect }) => {
@@ -94,7 +81,6 @@ const toggleSelectedMarkers = (state, { markerId, multiSelect }) => {
   return {
     ...state,
     selectedFeatures: [],
-    selectionBounds: null,
     selectedMarkers: exists && current.length === 1 ? [] : [markerId]
   }
 }
@@ -103,8 +89,7 @@ const clearSelectedFeatures = (state) => {
   return {
     ...state,
     selectedFeatures: [],
-    selectedMarkers: [],
-    selectionBounds: null
+    selectedMarkers: []
   }
 }
 
@@ -124,7 +109,6 @@ const selectMarker = (state, { markerId, multiSelect }) => {
   return {
     ...state,
     selectedFeatures: multiSelect ? state.selectedFeatures : [],
-    selectionBounds: null,
     selectedMarkers: nextMarkers
   }
 }
@@ -145,8 +129,7 @@ const unselectMarker = (state, { markerId }) => {
 
 const setSelectedFeatures = (state, features) => ({
   ...state,
-  selectedFeatures: features,
-  selectionBounds: null
+  selectedFeatures: features
 })
 
 const actions = {
@@ -154,7 +137,6 @@ const actions = {
   DISABLE: disable,
   TOGGLE_SELECTED_FEATURES: toggleSelectedFeatures,
   TOGGLE_SELECTED_MARKERS: toggleSelectedMarkers,
-  UPDATE_SELECTED_BOUNDS: updateSelectedBounds,
   CLEAR_SELECTED_FEATURES: clearSelectedFeatures,
   SET_SELECTED_FEATURES: setSelectedFeatures,
   SELECT_MARKER: selectMarker,

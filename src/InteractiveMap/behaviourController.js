@@ -1,6 +1,7 @@
 import { getQueryParam } from '../utils/queryString.js'
 import { isHybridFullscreen } from '../utils/getIsFullscreen.js'
 import { updateDOMState } from './domStateManager.js'
+import { EVENTS } from '../config/events.js'
 
 // -----------------------------------------------------------------------------
 // Public API
@@ -62,7 +63,8 @@ function setupBehavior (mapInstance) {
           mapInstance.loadApp()
         } else {
           // Map is showing - update DOM state for fullscreen/inline transition
-          updateDOMState(mapInstance)
+          const { isFullscreen } = updateDOMState(mapInstance)
+          mapInstance.eventBus.emit(EVENTS.APP_FULLSCREEN_CHANGE, { isFullscreen })
         }
       } else if (mapInstance._root) {
         mapInstance.hideApp()

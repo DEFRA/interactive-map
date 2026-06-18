@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, createEvent } from '@testing-library/react'
 import { MapButton } from './MapButton'
 
 jest.mock('../../../utils/stringToKebab', () => ({
@@ -151,6 +151,45 @@ describe('MapButton', () => {
     const menu = screen.getByTestId('popup-menu')
     expect(menu).toHaveAttribute('data-start-pos', expectedPos)
     expect(menu).toHaveAttribute('data-selected-index', String(expectedIndex))
+  })
+
+  it('prevents default on keyDown for arrow keys with menu', () => {
+    renderButton({ menuItems: [{ label: 'Item' }] })
+    const button = getButton()
+
+    const event = createEvent.keyDown(button, { key: 'ArrowDown' })
+    const preventDefaultSpy = jest.spyOn(event, 'preventDefault')
+
+    fireEvent(button, event)
+    expect(preventDefaultSpy).toHaveBeenCalled()
+    preventDefaultSpy.mockRestore()
+  })
+
+  it.each([
+    ['Enter'],
+    ['Escape']
+  ])('does not prevent default on keyDown for key %s', (key) => {
+    renderButton({ menuItems: [{ label: 'Item' }] })
+    const button = getButton()
+
+    const event = createEvent.keyDown(button, { key })
+    const preventDefaultSpy = jest.spyOn(event, 'preventDefault')
+
+    fireEvent(button, event)
+    expect(preventDefaultSpy).not.toHaveBeenCalled()
+    preventDefaultSpy.mockRestore()
+  })
+
+  it('does not prevent default on keyDown for arrow keys without menu', () => {
+    renderButton()
+    const button = getButton()
+
+    const event = createEvent.keyDown(button, { key: 'ArrowDown' })
+    const preventDefaultSpy = jest.spyOn(event, 'preventDefault')
+
+    fireEvent(button, event)
+    expect(preventDefaultSpy).not.toHaveBeenCalled()
+    preventDefaultSpy.mockRestore()
   })
 
   it('passes buttonRect to popup menu on open', () => {

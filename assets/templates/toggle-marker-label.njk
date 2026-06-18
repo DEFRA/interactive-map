@@ -1,13 +1,12 @@
 {% extends "layouts/main.html" %}
 
 {% block pageTitle %}
-  InteractiveMap page template – GOV.UK Prototype Kit
+  Toggle marker label – GOV.UK Prototype Kit
 {% endblock %}
 
 {% block head %}
   <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
   <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
-  <link href="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/scale-bar/dist/css/index.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
 {% block bodyStart %}
@@ -26,10 +25,10 @@
   <div class="govuk-grid-column-two-thirds">
 
     <h1 class="govuk-heading-l">
-      Basic map
+      Toggle marker label
     </h1>
 
-    <div id="map" data-zoom="12" data-center="[-2.968, 54.425]"></div>
+    <div id="map"></div>
 
   </div>
 </div>
@@ -39,26 +38,37 @@
   <!-- Defra library scripts -->
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/scale-bar/dist/umd/index.js"></script>
-  
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
+
   <script>
-    const interactiveMap = new defra.InteractiveMap('map', {
+    const interactPlugin = defra.interactPlugin({
+      deselectOnClickOutside: true
+    })
+
+    const map = new defra.InteractiveMap('map', {
+      behaviour: 'inline',
       mapProvider: defra.maplibreProvider(),
-      behaviour: 'hybrid',
-      mapLabel: 'Ambleside',
-      minZoom: 6,
-      maxZoom: 18,
-      containerHeight: '650px',
       mapStyle: {
         url: 'https://tiles.openfreemap.org/styles/liberty',
         attribution: 'OpenFreeMap © OpenMapTiles Data from OpenStreetMap',
         backgroundColor: '#f5f5f0'
       },
-      plugins: [
-        defra.scaleBarPlugin({
-          units: 'metric'
-        })
-      ]
+      center: [-2.96, 54.43],
+      zoom: 15,
+      containerHeight: '516px',
+      plugins: [interactPlugin]
+    })
+
+    map.on('map:ready', () => {
+      map.addMarker('my-marker', [-2.96, 54.43], {
+        label: 'My location',
+        showLabel: false
+      })
+      interactPlugin.enable()
+    })
+
+    map.on('interact:selectionchange', ({ selectedMarkers }) => {
+      map.updateMarker('my-marker', { showLabel: selectedMarkers.includes('my-marker') })
     })
   </script>
 {% endblock %}

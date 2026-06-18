@@ -83,12 +83,12 @@ const interactPlugin = createInteractPlugin({
     // idProperty: 'gid'
   },
   // {
-  // 	layerId: 'hedge-control',
-  // 	idProperty: 'id'
+  //   layerId: 'hedge-control',
+  //   idProperty: 'id'
   // },
   // {
-  // 	layerId: 'OS/TopographicArea_1/Agricultural Land',
-  // 	idProperty: 'TOID'
+  //   layerId: 'OS/TopographicArea_1/Agricultural Land',
+  //   idProperty: 'TOID'
   // },
   {
     layerId: 'fill-inactive.cold',
@@ -117,9 +117,9 @@ const landCoversDataset = {
   },
   // filter: ["!",["in",["to-string",["id"]],["literal",["12"]]]],
   // filter: [
-  // 	'all',
-  // 	['!=', ['get', 'sbi'], '106223377'],
-  // 	['==', ['get', 'is_dominant_land_cover'], true]
+  //   'all',
+  //   ['!=', ['get', 'sbi'], '106223377'],
+  //   ['==', ['get', 'is_dominant_land_cover'], true]
   // ],
   // tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
   // sourceLayer: 'field_parcels_filtered',
@@ -236,11 +236,11 @@ const historicMonumentsDataset = {
   showInKey: true,
   showInMenu: true,
   // style: {
-  // 	symbol: 'square',
-  // 	symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
-  // 	// symbolAnchor: [0.1, 0.1],
-  // 	// symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
-  // 	// symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
+  //   symbol: 'square',
+  //   symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
+  //   // symbolAnchor: [0.1, 0.1],
+  //   // symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
+  //   // symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
   // },
   sublayers: [{
     id: 'prehistoric',
@@ -514,8 +514,8 @@ interactiveMap.on('search:match', function (e) {
   }
   // Need to determine the layerId
   // interactPlugin.selectFeature({
-  // 	featureId: e.id,
-  // 	layerId: 'existing-fields'
+  //   featureId: e.id,
+  //   layerId: 'existing-fields'
   // })
 })
 

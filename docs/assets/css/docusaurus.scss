@@ -94,32 +94,54 @@
 .app-example-card {
   position: relative;
   margin-bottom: 30px;
-  border: 1px solid #b1b4b6;
 }
 
 .app-example-card > img {
   display: block;
   width: 100%;
+  border: 1px solid #b1b4b6;
 }
 
 .app-example-card__body {
-  padding: 15px;
+  padding: 10px 0;
 }
 
 .app-prose-scope *:not(.app-no-prose *) .app-example-card__body h2:last-child {
   margin-bottom: 0;
 }
 
-.app-example-card__body .govuk-heading-m {
+.app-example-card__body .govuk-heading-s {
   margin-bottom: 0;
 }
 
-.app-example-card .govuk-heading-m a::after {
+.app-example-card .govuk-heading-s a::after {
   content: '';
   position: absolute;
   inset: 0;
 }
 
+/* Example cards grid — override GOV.UK float layout with CSS Grid */
+.app-example-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+@media (min-width: 641px) {
+  .app-example-cards {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1020px) {
+  .app-example-cards {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.app-example-cards .govuk-grid-column-one-third {
+  width: auto;
+  float: none;
+}
 
 /* GOV.UK tabs — enhanced styles for all devices; React manages active state.
    Extra specificity via .app-prose-scope required to override the theme. */
@@ -210,6 +232,16 @@
   margin-bottom: 20px;
 }
 
+.app-prose-scope *:not(.app-no-prose *) .govuk-heading-s {
+  font-size: 1.1875rem;
+  line-height: 1.3157894737;
+  margin-bottom: 15px;
+}
+
 .govuk-\!-margin-bottom-0 {
   margin-bottom: 0 !important;
+}
+
+.govuk-\!-margin-top-4 {
+  margin-top: 20px !important;
 }

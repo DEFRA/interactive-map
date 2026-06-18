@@ -65,7 +65,6 @@ const setup = (pluginOverrides = {}, markerItems = [], markerRefs = new Map()) =
       marker: { symbol: 'pin', backgroundColor: 'red' },
       selectedFeatures: [],
       selectedMarkers: [],
-      selectionBounds: null,
       ...pluginOverrides
     },
     services: {
@@ -345,30 +344,12 @@ it('does not check markers when selectMarker is not in interactionModes', () => 
 /* Selection change event                                             */
 /* ------------------------------------------------------------------ */
 
-it('does not emit selectionchange when features are selected but bounds not yet calculated', () => {
+it('emits selectionchange when features are selected', () => {
   const deps = {
     mapState: { markers: { add: jest.fn(), remove: jest.fn(), items: [], markerRefs: new Map() } },
     pluginState: {
-      selectedFeatures: [{ featureId: 'F1' }],
-      selectedMarkers: [],
-      selectionBounds: null
-    },
-    services: { eventBus: { emit: jest.fn() } },
-    mapProvider: { getFeatureGeometry: jest.fn(() => null) }
-  }
-
-  renderHook(() => useInteractionHandlers(deps))
-
-  expect(deps.services.eventBus.emit).not.toHaveBeenCalled()
-})
-
-it('emits selectionchange once when bounds exist', () => {
-  const deps = {
-    mapState: { markers: { add: jest.fn(), remove: jest.fn(), items: [], markerRefs: new Map() } },
-    pluginState: {
-      selectedFeatures: [{ featureId: 'F1' }],
-      selectedMarkers: [],
-      selectionBounds: { sw: [0, 0], ne: [1, 1] }
+      selectedFeatures: [{ featureId: 'F1', layerId: 'l1', idProperty: 'id', properties: { name: 'A' }, geometry: { type: 'Point', coordinates: [0, 0] } }],
+      selectedMarkers: []
     },
     services: { eventBus: { emit: jest.fn() } },
     mapProvider: { getFeatureGeometry: jest.fn(() => null) }
@@ -379,9 +360,8 @@ it('emits selectionchange once when bounds exist', () => {
   expect(deps.services.eventBus.emit).toHaveBeenCalledWith(
     'interact:selectionchange',
     expect.objectContaining({
-      selectedFeatures: deps.pluginState.selectedFeatures,
+      selectedFeatures: [{ featureId: 'F1', layerId: 'l1', idProperty: 'id', properties: { name: 'A' } }],
       selectedMarkers: [],
-      selectionBounds: deps.pluginState.selectionBounds,
       contiguous: false
     })
   )
@@ -394,7 +374,7 @@ it('skips emission when selection remains empty after being cleared', () => {
   const { rerender } = renderHook(
     ({ features }) => useInteractionHandlers({
       mapState: { markers: { items: [], markerRefs: new Map() } },
-      pluginState: { selectedFeatures: features, selectedMarkers: [], selectionBounds: { b: 1 } },
+      pluginState: { selectedFeatures: features, selectedMarkers: [] },
       services: { eventBus },
       mapProvider: { getFeatureGeometry: jest.fn(() => null) }
     }),
@@ -423,18 +403,37 @@ it('skips emission when selection remains empty after being cleared', () => {
 /* ------------------------------------------------------------------ */
 
 it('logs features when debug mode is enabled', () => {
+  const groupSpy = jest.spyOn(console, 'groupCollapsed').mockImplementation(() => {})
   const logSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+  const groupEndSpy = jest.spyOn(console, 'groupEnd').mockImplementation(() => {})
 
   const { result } = setup({ debug: true })
 
   click(result)
 
-  expect(logSpy).toHaveBeenCalledWith(
-    expect.stringContaining('--- Features at'),
-    expect.any(Array)
-  )
+  expect(groupSpy).toHaveBeenCalledWith(expect.stringContaining('[interact] click ('))
+  expect(groupSpy).toHaveBeenCalledWith(expect.stringContaining('1 feature'))
+  expect(logSpy).toHaveBeenCalledWith(expect.objectContaining({ layer: 'parcels' }))
+  expect(groupEndSpy).toHaveBeenCalled()
 
+  groupSpy.mockRestore()
   logSpy.mockRestore()
+  groupEndSpy.mockRestore()
+})
+
+it('uses plural label when multiple features are found', () => {
+  const groupSpy = jest.spyOn(console, 'groupCollapsed').mockImplementation(() => {})
+  jest.spyOn(console, 'log').mockImplementation(() => {})
+  jest.spyOn(console, 'groupEnd').mockImplementation(() => {})
+
+  featureQueries.getFeaturesAtPoint.mockReturnValue([baseFeature, baseFeature])
+
+  const { result } = setup({ debug: true })
+  click(result)
+
+  expect(groupSpy).toHaveBeenCalledWith(expect.stringContaining('2 features'))
+
+  jest.restoreAllMocks()
 })
 
 /* ------------------------------------------------------------------ */

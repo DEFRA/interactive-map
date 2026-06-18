@@ -64,7 +64,8 @@ const clearPrefixSources = (map, prefix) => {
 }
 
 const applyHighlightLayer = (map, id, type, sourceId, srcLayer, paint, filter) => {
-  if (!map.getLayer(id)) {
+  const existed = !!map.getLayer(id)
+  if (!existed) {
     map.addLayer({
       id,
       type,
@@ -122,49 +123,89 @@ const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter
   }
 }
 
+// Always draws a line ring. Only draws a fill when isSelected — active (cursor) features get
+// the ring only, so the fill isn't shown for every keyboard-navigated item.
 const applyFillGeomHighlight = (map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter }) => {
   if (isSelected) {
-    const fillFilter = ['in', idExpression, ['literal', [...fillIds]]]
+    const fillIdsArray = []
+    fillIds.forEach(id => fillIdsArray.push(id))
+    const fillFilter = ['in', idExpression, ['literal', fillIdsArray]]
     // Only apply fill highlight to polygon features, not to any co-selected line features
     applyHighlightLayer(map, `${base}-fill`, 'fill', sourceId, srcLayer, { 'fill-color': fill }, fillFilter)
   }
   applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
 }
 
+const applyFillExtrusionHighlight = (map, base, layerId, { ids, lineColor, lineWidth, idExpression }) => {
+  // forEach bypasses broken Set iterator polyfill in the Docusaurus/core-js environment
+  const newIds = []
+  ids.forEach(id => newIds.push(id))
+
+  const filter = ['in', idExpression, ['literal', newIds]]
+  const { source, sourceLayer } = map.getLayer(layerId)
+
+  // A line layer moved to the top of the stack renders above the fill-extrusion 3D pass.
+  // fill-extrusion has no outline/stroke property, so this is the only way to show a stroke.
+  applyHighlightLayer(map, `${base}-line`, 'line', source, sourceLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+}
+
+const resolveLineStyle = (style, selectedStyle) => ({
+  lineColor: selectedStyle ? style.selectionStroke : style.stroke,
+  lineWidth: selectedStyle ? style.strokeWidth : style.activeStrokeWidth
+})
+
+const applyLineHighlight = (map, base, sourceId, srcLayer, lineColor, lineWidth, filter) => {
+  if (map.getLayer(`${base}-fill`)) {
+    map.setFilter(`${base}-fill`, ['==', 'id', ''])
+  }
+  applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
+}
+
+const applySymbolHighlight = (map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId) => {
+  applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+}
+
+// Orchestrates highlight layers for a single source. prefix drives which visual style is used:
+//   active-highlight        → yellow active ring (stroke only)
+//   active-highlight-inner  → black thin ring drawn on top of active
+//   selected-highlight      → black thin ring + fill for polygon features
 const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId) => {
   const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
   const baseLayer = map.getLayer(layerId)
-  const srcLayer = baseLayer.sourceLayer
-  const geom = hasFillGeometry ? 'fill' : baseLayer.type
-  const base = `${prefix}-${sourceId}`
-  const style = stylesMap[layerId]
 
-  if (!style) {
+  if (!baseLayer || !stylesMap[layerId]) {
     return
   }
 
-  const { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill } = style
+  const style = stylesMap[layerId]
+  const srcLayer = baseLayer.sourceLayer
+  const geom = hasFillGeometry ? 'fill' : baseLayer.type
+  const base = `${prefix}-${sourceId}`
+  const { fill } = style
   const isSelected = prefix === SELECTED_PREFIX
   const selectedStyle = usesSelectedStyle(prefix)
-  const lineColor = selectedStyle ? selectionStroke : stroke
-  const lineWidth = selectedStyle ? strokeWidth : activeStrokeWidth
+  const { lineColor, lineWidth } = resolveLineStyle(style, selectedStyle)
   const idExpression = idProperty ? ['get', idProperty] : ['id']
-  const filter = ['in', idExpression, ['literal', [...ids]]]
+  const idsArray = Array.from(ids)
+  const filter = ['in', idExpression, ['literal', idsArray]]
 
-  if (geom === 'fill') {
-    applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
+  if (baseLayer.type === 'fill-extrusion') {
+    applyFillExtrusionHighlight(map, base, layerId, { ids, lineColor, lineWidth, idExpression })
+    return
   }
 
-  if (geom === 'line') {
-    if (map.getLayer(`${base}-fill`)) {
-      // Clear any fill highlight from a previous polygon on the same source
-      map.setFilter(`${base}-fill`, ['==', 'id', ''])
-    }
-    applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
-  }
-
-  if (geom === 'symbol') {
-    applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+  switch (geom) {
+    case 'fill':
+      applyFillGeomHighlight(map, base, sourceId, srcLayer, { isSelected, idExpression, fillIds, fill, lineColor, lineWidth, filter })
+      break
+    case 'line':
+      applyLineHighlight(map, base, sourceId, srcLayer, lineColor, lineWidth, filter)
+      break
+    case 'symbol':
+      applySymbolHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+      break
+    default:
+      break
   }
 }
 
@@ -182,16 +223,24 @@ const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImage
 }
 
 /**
- * Update highlighted features using pure filters.
+ * Update highlighted features using pure filters (no cloned sources).
  * activeFeatures (keyboard cursor) render with the active ring (yellow) plus a selected ring inner (black).
  * selectedFeatures render with the selected ring (black) only.
  * Supports fill, line and symbol geometry, multi-source, cleanup, and bounds.
+ *
+ * @param {object} opts
+ * @param {Function} opts.LngLatBounds - MapLibre LngLatBounds constructor
+ * @param {object} opts.map - MapLibre map instance
+ * @param {Array}  opts.selectedFeatures - committed selection features
+ * @param {Array}  opts.activeFeatures   - keyboard-cursor features
+ * @param {object} opts.stylesMap        - keyed by layerId; each value is
+ *   { stroke, selectionStroke, strokeWidth, activeStrokeWidth, fill }
+ * @returns {number[]|null} [west, south, east, north] bounds or null if nothing is selected
  */
 export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures, activeFeatures, stylesMap }) {
   if (!map) {
     return null
   }
-
   // Active cursor features — rendered first so selected layers appear on top
   if (activeFeatures?.length) {
     applyFeatureHighlights(map, activeFeatures, stylesMap, ACTIVE_PREFIX, getActiveImageId)

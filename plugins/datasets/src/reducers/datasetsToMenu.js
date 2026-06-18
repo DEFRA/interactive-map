@@ -1,20 +1,25 @@
 export const datasetsToMenu = (state) => {
   const { datasets = [] } = state
   const menu = []
-  const datasetsForMenu = datasets.filter(dataset => dataset.showInMenu)
+  const datasetsForMenu = datasets.filter(dataset =>
+    dataset.showInMenu || dataset.sublayers?.some(s => s.showInMenu)
+  )
   const groups = new Map()
   datasetsForMenu.forEach(dataset => {
     if (dataset.sublayers?.length) {
+      const visibleSublayers = dataset.sublayers.filter(sublayer =>
+        dataset.showInMenu ? sublayer.showInMenu !== false : sublayer.showInMenu
+      )
+      if (!visibleSublayers.length) { return }
       menu.push({
         id: dataset.id,
         groupLabel: dataset.label,
         visibleWhen: true,
         type: 'checkbox',
-        items: dataset.sublayers.filter(sublayer => sublayer.showInMenu)
-          .map(sublayer => ({
-            id: `${dataset.id}-${sublayer.id}`,
-            label: sublayer.label
-          }))
+        items: visibleSublayers.map(sublayer => ({
+          id: `${dataset.id}-${sublayer.id}`,
+          label: sublayer.label
+        }))
       })
     } else if (dataset.groupLabel) {
       // Check for existing group object for this groupLabel, or create it if it doesn't exist,

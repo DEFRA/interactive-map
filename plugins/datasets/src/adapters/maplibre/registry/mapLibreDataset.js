@@ -1,6 +1,7 @@
 import { Dataset } from '../../../registry/dataset.js'
 import { hashString } from '../../../../../../src/utils/patternUtils.js'
 import { anchorToMaplibre } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
+import { logger } from '../../../../../../src/services/logger.js'
 const MAX_TILE_ZOOM = 22
 
 export class MapLibreDataset extends Dataset {
@@ -95,20 +96,31 @@ export class MapLibreDataset extends Dataset {
     return `source-${this.id}`
   }
 
-  get source () {
-    if (this.hasDynamicGeoJSON) {
-      return this.dynamicGeoJSON.source
+  _geojsonIdStrategy () {
+    if (this.idProperty) { return { promoteId: this.idProperty } }
+    if (this.generateIds) { return { generateId: true } }
+    if (this.geojson?.features?.some(f => typeof f.id === 'string')) {
+      logger.warn(`Dataset "${this.id}" has GeoJSON features with string native IDs. MapLibre only surfaces integer native feature IDs through queryRenderedFeatures. Use idProperty to promote a string property instead.`)
     }
+    return {}
+  }
+
+  get source () {
+    if (this.hasDynamicGeoJSON) { return this.dynamicGeoJSON.source }
     if (this.tiles) {
-      return {
+      const source = {
         type: 'vector',
         tiles: this.tiles,
         minzoom: this.minZoom || 0,
         maxzoom: this.maxZoom || MAX_TILE_ZOOM
       }
+      if (this.idProperty && this.sourceLayer) {
+        source.promoteId = { [this.sourceLayer]: this.idProperty }
+      }
+      return source
     }
     if (this.geojson) {
-      return { type: 'geojson', data: this.geojson, generateId: true }
+      return { type: 'geojson', data: this.geojson, ...this._geojsonIdStrategy() }
     }
     return null
   }
@@ -160,15 +172,21 @@ export class MapLibreDataset extends Dataset {
   }
 
   get _hiddenFeaturesIdExpression () {
-    return this.hasDynamicGeoJSON ? this.dynamicGeoJSON.hiddenFeaturesIdExpression : ['to-string', ['id']]
+    if (this.hasDynamicGeoJSON) {
+      return this.dynamicGeoJSON.hiddenFeaturesIdExpression
+    }
+    if (this.idProperty) {
+      return ['to-string', ['get', this.idProperty]]
+    }
+    return ['to-string', ['id']]
   }
 
   get _hiddenFeaturesFilter () {
     const hiddenFeatures = this.hiddenFeatures?.filter(id => id !== -1)
-    if (hiddenFeatures?.length) {
-      return ['!', ['in', this._hiddenFeaturesIdExpression, ['literal', hiddenFeatures.map(String)]]]
+    if (!hiddenFeatures?.length) {
+      return null
     }
-    return null
+    return ['!', ['in', this._hiddenFeaturesIdExpression, ['literal', hiddenFeatures.map(String)]]]
   }
 
   get filter () {

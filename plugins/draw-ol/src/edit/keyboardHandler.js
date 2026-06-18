@@ -153,9 +153,11 @@ const wireKeyboardEvents = ({ map, snap, getState, setState, onVertexMoved, onIn
 
   const handleKey = (e) => {
     onKeyboardActive?.()
-    if (e.key === ' ' && getState().selectedVertexIndex < 0) {
+    if (e.key === ' ') {
       e.preventDefault()
-      selectNearest(map, getState, setState)
+      if (getState().selectedVertexIndex < 0) {
+        selectNearest(map, getState, setState)
+      }
     } else if (ARROW_KEYS.has(e.key)) {
       handleArrowKey(e)
     } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {

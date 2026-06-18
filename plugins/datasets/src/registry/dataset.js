@@ -18,12 +18,16 @@ export class Dataset {
   get tiles () { return this._datasetDefinition.tiles }
   get geojson () { return this._datasetDefinition.geojson }
   get idProperty () { return this._datasetDefinition.idProperty }
-  // TODO - handle transformRequest for non-dynamicGeoJSON as well (e.g. to add auth headers) --- IGNORE ---
-  // get transformRequest () { return this._datasetDefinition.transformRequest }
+  get generateIds () { return this._datasetDefinition.generateIds }
   get parentId () { return this._datasetDefinition.parentId }
   get minZoom () { return this._datasetDefinition.minZoom || this.parent?.minZoom }
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
-  get showInKey () { return this._datasetDefinition.showInKey || this.parent?.showInKey || false }
+  get showInKey () {
+    const own = this._datasetDefinition.showInKey
+    if (own !== undefined) { return own }
+    return this.parent?.showInKey ?? false
+  }
+
   get groupLabel () { return this._datasetDefinition.groupLabel }
 
   get opacity () {
