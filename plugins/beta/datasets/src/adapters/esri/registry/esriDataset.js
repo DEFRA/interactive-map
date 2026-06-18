@@ -13,4 +13,15 @@ export class EsriDataset extends Dataset {
     }
     return layerPaintProperties
   }
+
+  get esriGroupId () {
+    if (this._datasetDefinition.esriGroupId === undefined) {
+      return this.parent?.esriGroupId
+    }
+    return this._datasetDefinition.esriGroupId
+  }
+
+  get useServerStyle () {
+    return Boolean(this._datasetDefinition.esriUseServerStyle)
+  }
 }

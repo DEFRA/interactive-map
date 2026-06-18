@@ -54,6 +54,7 @@ const datasets = [
         id: 'data-unavailable-light',
         visibleWhen: { mapStyleId: ['outdoor', 'black-and-white'] },
         esriStyleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/1',
+        esriUseServerStyle: true,
         showInKey: false,
         showInMenu: false,
       },
@@ -61,6 +62,7 @@ const datasets = [
         id: 'data-unavailable-dark',
         visibleWhen: { mapStyleId: ['dark'] },
         esriStyleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/2',
+        esriUseServerStyle: true,
         showInKey: false,
         showInMenu: false,
       }
@@ -82,7 +84,6 @@ const datasets = [
         esriStyleLayerId: 'Flood Zones 2 and 3 Rivers and Sea/Flood Zone 2/1',
         showInMenu: true,
         style: {
-          // filter: ['==', 'flood_zone', 'FZ2'],
           fill: { outdoor: '#1d70b8', dark: '#7fcdbb' },
           stroke: 'none'
         },
@@ -93,7 +94,6 @@ const datasets = [
         esriStyleLayerId: 'Flood Zones 2 and 3 Rivers and Sea/Flood Zone 3/1',
         showInMenu: true,
         style: {
-          // filter: ['==', 'flood_zone', 'FZ3'],
           fill: { outdoor: '#003078', dark: '#e5f5e0' },
           stroke: 'none'
         },
