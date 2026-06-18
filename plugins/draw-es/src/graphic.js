@@ -1,6 +1,6 @@
 import Graphic from '@arcgis/core/Graphic.js'
 import * as simplifyOperator from '@arcgis/core/geometry/operators/simplifyOperator.js'
-import { logger } from '../../../../src/services/logger.js'
+import { logger } from '../../../src/services/logger.js'
 
 function createSymbol (mapColorScheme) {
   return {

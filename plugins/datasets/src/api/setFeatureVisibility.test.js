@@ -1,12 +1,12 @@
 import { setFeatureVisibility } from './setFeatureVisibility.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { logger } from '../../../../../src/services/logger.js'
+import { logger } from '../../../../src/services/logger.js'
 
 jest.mock('../registry/datasetRegistry.js', () => ({
   datasetRegistry: { getDataset: jest.fn() }
 }))
 
-jest.mock('../../../../../src/services/logger.js', () => ({
+jest.mock('../../../../src/services/logger.js', () => ({
   logger: { warn: jest.fn() }
 }))
 
