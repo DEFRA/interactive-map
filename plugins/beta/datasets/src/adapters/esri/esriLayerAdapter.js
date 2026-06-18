@@ -146,7 +146,7 @@ export default class EsriLayerAdapter {
     }
   }
 
-  async applyGlobalOpacity (...args) {
+  async applyGlobalOpacity () {
     Object.entries(this._vectorTileOpacityLayers).forEach(([datasetId, vectorTileLayer]) => {
       const registryDataset = datasetRegistry.getDataset(datasetId)
       if (registryDataset) {
