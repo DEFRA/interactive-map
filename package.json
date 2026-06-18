@@ -17,7 +17,8 @@
       "import": "./dist/esm/index.js",
       "require": "./dist/umd/index.js"
     },
-    "./css": "./dist/css/index.css"
+    "./css": "./dist/css/index.css",
+    "./package.json": "./package.json"
   },
   "type": "module",
   "sideEffects": [
