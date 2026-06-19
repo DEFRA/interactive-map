@@ -1,3 +1,4 @@
+import { LayerAdapter } from '../layerAdapter.js'
 import { addDatasetLayers } from './layerBuilders.js'
 import { MapLibreDataset } from './registry/mapLibreDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
@@ -14,13 +15,14 @@ import { datasetRegistry } from '../../registry/datasetRegistry.js'
  * Symbol image rasterisation is delegated to the map provider via
  * `mapProvider.addSymbolsToMap()`, keeping this adapter free of provider internals.
  */
-export default class MaplibreLayerAdapter {
+export default class MaplibreLayerAdapter extends LayerAdapter {
   /**
    * @param {Object} mapProvider - Map provider instance (e.g. MapLibreProvider)
    * @param {Object} symbolRegistry
    * @param {Object} patternRegistry
    */
   constructor (mapProvider, symbolRegistry, patternRegistry) {
+    super()
     this._mapProvider = mapProvider
     this._map = mapProvider.map
     this._symbolRegistry = symbolRegistry
@@ -41,6 +43,8 @@ export default class MaplibreLayerAdapter {
   assertMapStyle (methodName, mapStyle) {
     if (mapStyle !== datasetRegistry.mapStyle) {
       console.error(`MaplibreLayerAdapter.${methodName} has mapStyle ${mapStyle.id}, but datasetRegistry has ${datasetRegistry.mapStyle.id}.`)
+    } else {
+      console.log(`MaplibreLayerAdapter.${methodName} has mapStyle ${mapStyle.id}, which matches datasetRegistry.`)
     }
   }
 

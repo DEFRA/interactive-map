@@ -46,24 +46,25 @@ export const initialiseDatasets = ({
     eventBus.emit('datasets:ready')
   })
 
-  let currentMapStyle = mapStyle
+  // let currentMapStyle = mapStyle
 
   // Handle basemap style changes — delegate entirely to the adapter
-  const onSetMapStyle = (newMapStyle) => {
-    currentMapStyle = newMapStyle
-    adapter.onMapStyleChange(newMapStyle, dynamicSources)
-  }
+  // const onSetMapStyle = (newMapStyle) => {
+  //   currentMapStyle = newMapStyle
+  //   adapter.onMapStyleChange(newMapStyle, dynamicSources)
+  // }
 
   const onMapSizeChange = () => {
-    adapter.onMapSizeChange(currentMapStyle)
+    // adapter.onMapSizeChange(currentMapStyle)
+    adapter.onMapSizeChange()
   }
 
-  eventBus.on(events.MAP_SET_STYLE, onSetMapStyle)
+  // eventBus.on(events.MAP_SET_STYLE, onSetMapStyle)
   eventBus.on(events.MAP_SIZE_CHANGE, onMapSizeChange)
 
   return {
     remove () {
-      eventBus.off(events.MAP_SET_STYLE, onSetMapStyle)
+      // eventBus.off(events.MAP_SET_STYLE, onSetMapStyle)
       eventBus.off(events.MAP_SIZE_CHANGE, onMapSizeChange)
 
       // Clean up dynamic sources
