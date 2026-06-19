@@ -5,9 +5,7 @@ const datasetRegistry = {
   attach (datasetsRef, orderedDatasetsRef, mapStyle) {
     this._datasets = datasetsRef
     this._orderedDatasets = orderedDatasetsRef
-    if (mapStyle) {
-      this._mapStyle = mapStyle
-    }
+    this.attachMapStyle(mapStyle)
     this._invalidateChangedDatasets()
   },
 
@@ -29,6 +27,12 @@ const datasetRegistry = {
   // attachCreateDataset, which allows the layer adapter to provide its own createDataset function,
   attachCreateDataset (createDataset) { this._createDataset = createDataset },
   _createDataset: (datasetDefinition) => createDataset(datasetDefinition),
+
+  attachMapStyle (mapStyle) {
+    if (mapStyle) {
+      this._mapStyle = mapStyle
+    }
+  },
 
   get mapStyle () {
     return this._mapStyle

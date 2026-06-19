@@ -49,8 +49,16 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     initDatasets()
   }, [isBaseMapReady, appState.mode])
 
-  useEffect(() => datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets, mapState.mapStyle),
-    [pluginState.mappedDatasets, pluginState.orderedDatasets, mapState.mapStyle])
+  useEffect(() => datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets),
+    [pluginState.mappedDatasets, pluginState.orderedDatasets])
+
+  useEffect(() => {
+    datasetRegistry.attachMapStyle(mapState.mapStyle)
+    if (layerAdapter?.onMapStyleChange) {
+      layerAdapter.onMapStyleChange(mapState.mapStyle)
+    }
+  },
+  [mapState.mapStyle])
 
   useEffect(() => attachGlobalState(pluginState.globals), [pluginState.globals])
 
