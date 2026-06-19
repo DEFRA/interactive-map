@@ -38,12 +38,19 @@ export default class MaplibreLayerAdapter {
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
 
+  assertMapStyle (methodName, mapStyle) {
+    if (mapStyle !== datasetRegistry.mapStyle) {
+      console.error(`MaplibreLayerAdapter.${methodName} has mapStyle ${mapStyle.id}, but datasetRegistry has ${datasetRegistry.mapStyle.id}.`)
+    }
+  }
+
   /**
    * Initialise all datasets: register patterns, add layers, then wait for idle.
    * @param {Object} mapStyle
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
   async init (mapStyle) {
+    this.assertMapStyle('init', mapStyle)
     const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs, mapStyle)
 
@@ -60,6 +67,7 @@ export default class MaplibreLayerAdapter {
   }
 
   async addPatternsAndSymbolsToMap (patterns, symbols, mapStyle) {
+    this.assertMapStyle('addPatternsAndSymbolsToMap', mapStyle)
     const mapStyleId = mapStyle.id
     return Promise.all([
       this._mapProvider.addPatternsToMap(patterns, mapStyleId, this._patternRegistry),
@@ -91,6 +99,7 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>}
    */
   async onMapStyleChange (newMapStyle, dynamicSources) {
+    this.assertMapStyle('onMapStyleChange', newMapStyle)
     // MapLibre wipes all sources/layers on style change — must wait for idle first
     await new Promise(resolve => this._map.once('idle', resolve))
 
@@ -115,6 +124,7 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>}
    */
   async onMapSizeChange (mapStyle) {
+    this.assertMapStyle('onMapSizeChange', mapStyle)
     const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs, mapStyle)
 
@@ -142,6 +152,7 @@ export default class MaplibreLayerAdapter {
    * @param {Object} mapStyle
    */
   async addDataset (datasetId, mapStyle) {
+    this.assertMapStyle('addDataset', mapStyle)
     const registryDataset = datasetRegistry.getDataset(datasetId)
     await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
     this._addLayers(registryDataset, mapStyle)
@@ -196,6 +207,7 @@ export default class MaplibreLayerAdapter {
    * @returns {Promise<void>}
    */
   async applyStyle (datasetId, mapStyle) {
+    this.assertMapStyle('applyStyle', mapStyle)
     const registryDataset = datasetRegistry.getDataset(datasetId)
     registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
     await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs, mapStyle)
@@ -254,6 +266,7 @@ export default class MaplibreLayerAdapter {
   }
 
   _addLayers (registryDataset, mapStyle) {
+    this.assertMapStyle('_addLayers', mapStyle)
     const sourceId = addDatasetLayers(this._map, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, this._pixelRatio)
     this._datasetSourceMap.set(registryDataset.id, sourceId)
     this._maintainSymbolOrdering(registryDataset)
