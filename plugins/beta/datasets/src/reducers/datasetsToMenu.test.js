@@ -76,9 +76,9 @@ describe('datasetsToMenu', () => {
       expect(result[0].items).toEqual([{ id: 'test-a', label: 'A' }])
     })
 
-    it('does not add a menu entry when dataset has showInMenu: true but all sublayers opt out', () => {
+    it('Should have a single menu entry for the parent dataset when showInMenu: true but all sublayers opt out', () => {
       const result = datasetsToMenu({ datasets: [sublayerDataset(true, false)] })
-      expect(result).toHaveLength(0)
+      expect(result).toEqual([{ id: 'test', items: [{ id: 'test', label: 'Test' }], type: 'checkbox', visibleWhen: true }])
     })
   })
 })
