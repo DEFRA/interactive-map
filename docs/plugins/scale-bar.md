@@ -5,7 +5,7 @@ Displays the current map scale. The scale bar automatically updates as the user 
 ## Usage
 
 ```js
-import createScaleBarPlugin from '@defra/interactive-map/plugins/scale-bar'
+import createScaleBarPlugin from '@defra/interactive-map-plugin-scale-bar'
 
 const scaleBarPlugin = createScaleBarPlugin({
   units: 'metric'

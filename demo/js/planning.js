@@ -1,23 +1,23 @@
 // CSS
 // import '../../dist/css/index.css'
-// import '/plugins/beta/map-styles/dist/css/index.css'
-// import '/plugins/beta/scale-bar/dist/css/index.css'
+// import '/plugins/map-styles/dist/css/index.css'
+// import '/plugins/scale-bar/dist/css/index.css'
 // import '/plugins/search/dist/css/index.css'
 // import '/plugins/interact/dist/css/index.css'
-// import '/plugins/beta/frame/dist/css/index.css'
+// import '/plugins/frame/dist/css/index.css'
 // InteractiveMap
 import InteractiveMap from '../../src/index.js'
 // Providers
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
-import esriProvider from '/providers/beta/esri/src/index.js'
+import openNamesProvider from '/providers/open-names/src/index.js'
+import esriProvider from '/providers/esri/src/index.js'
 // Plugins
-import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import createDrawPlugin from '/plugins/beta/draw-es/src/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import useLocationPlugin from '/plugins/use-location/src/index.js'
+import mapStylesPlugin from '/plugins/map-styles/src/index.js'
+import createDrawPlugin from '/plugins/draw-es/src/index.js'
+import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
-import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import createFramePlugin from '/plugins/frame/src/index.js'
 // Demo utils
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { gridRefSearchOSGB36 } from './searchCustomDatasets.js'

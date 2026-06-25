@@ -1,0 +1,28 @@
+{
+  "name": "@defra/interactive-map-plugin-draw-ol",
+  "version": "0.0.0-development",
+  "description": "OpenLayers draw plugin for @defra/interactive-map",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map",
+    "directory": "plugins/draw-ol"
+  },
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/umd/index.js"
+    },
+    "./css": "./dist/css/index.css"
+  },
+  "type": "module",
+  "files": ["dist"],
+  "sideEffects": ["**/*.scss"],
+  "publishConfig": { "tag": "beta" },
+  "peerDependencies": {
+    "@defra/interactive-map": "*",
+    "ol": "^10.9.0"
+  },
+  "license": ""
+}

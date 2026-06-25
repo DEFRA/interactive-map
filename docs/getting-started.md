@@ -54,7 +54,7 @@ npm install @arcgis/core
 
 ```js
 import InteractiveMap from '@defra/interactive-map'
-import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+import maplibreProvider from '@defra/interactive-map-provider-maplibre'
 
 import '@defra/interactive-map/css'
 
@@ -116,8 +116,8 @@ const interactiveMap = new InteractiveMap('map', {
 **ESM** — add the plugin import and its CSS alongside your existing core imports, then pass it to `plugins`:
 
 ```js
-import createInteractPlugin from '@defra/interactive-map/plugins/interact'
-import '@defra/interactive-map/plugins/interact/css'
+import createInteractPlugin from '@defra/interactive-map-plugin-interact'
+import '@defra/interactive-map-plugin-interact/css'
 
 const interactiveMap = new InteractiveMap('map', {
   // ...your existing options
