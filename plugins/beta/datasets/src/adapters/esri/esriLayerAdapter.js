@@ -1,10 +1,12 @@
 import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
 import GroupLayer from '@arcgis/core/layers/GroupLayer.js'
+import { LayerAdapter } from '../layerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { EsriDataset } from './registry/esriDataset.js'
 
-export default class EsriLayerAdapter {
+export default class EsriLayerAdapter extends LayerAdapter {
   constructor (mapProvider, symbolRegistry, patternRegistry) {
+    super()
     this._mapProvider = mapProvider
     this._map = mapProvider.map
     // TODO: Implement symbolRegistry and patternRegistry usage in the adapter

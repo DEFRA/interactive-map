@@ -145,5 +145,5 @@ const testGlobalVisibility = () => {
 }
 
 interactiveMap.on('datasets:ready', function () {
-  testGlobalVisibility()
+  // testGlobalVisibility()
 })
