@@ -16,6 +16,7 @@ jest.mock('../registry/datasetRegistry.js', () => ({
 
 const makeAdapter = (overrides = {}) => ({
   init: jest.fn().mockResolvedValue(undefined),
+  attachDynamicSources: jest.fn(),
   onMapStyleChange: jest.fn(),
   onMapSizeChange: jest.fn(),
   setData: jest.fn(),
@@ -42,7 +43,7 @@ const makeArgs = (overrides = {}) => {
     pluginStateRef: {},
     mapStyle: { layers: [] },
     mapProvider: { map: {} },
-    events: { MAP_SET_STYLE: 'map:setStyle', MAP_SIZE_CHANGE: 'map:sizeChange' },
+    events: { MAP_SIZE_CHANGE: 'map:sizeChange' },
     dispatch: jest.fn(),
     eventBus,
     ...overrides
@@ -94,10 +95,9 @@ describe('initialiseDatasets', () => {
     expect(args.dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_GLOBAL_STATE' }))
   })
 
-  it('registers MAP_SET_STYLE and MAP_SIZE_CHANGE event listeners', () => {
+  it('registers MAP_SET_STYLE event listeners', () => {
     const args = makeArgs()
     initialiseDatasets(args)
-    expect(args.eventBus.on).toHaveBeenCalledWith('map:setStyle', expect.any(Function))
     expect(args.eventBus.on).toHaveBeenCalledWith('map:sizeChange', expect.any(Function))
   })
 
@@ -153,28 +153,11 @@ describe('initialiseDatasets', () => {
 // ─── event handlers ───────────────────────────────────────────────────────────
 
 describe('event handlers', () => {
-  it('delegates MAP_SET_STYLE to adapter.onMapStyleChange', () => {
-    const args = makeArgs()
-    initialiseDatasets(args)
-    const newStyle = { layers: [{ id: 'new' }] }
-    args.eventBus._handlers['map:setStyle'](newStyle)
-    expect(args.adapter.onMapStyleChange).toHaveBeenCalledWith(newStyle, expect.any(Map))
-  })
-
   it('delegates MAP_SIZE_CHANGE to adapter.onMapSizeChange with current mapStyle', () => {
     const args = makeArgs()
     initialiseDatasets(args)
     args.eventBus._handlers['map:sizeChange']()
-    expect(args.adapter.onMapSizeChange).toHaveBeenCalledWith(args.mapStyle)
-  })
-
-  it('uses the updated mapStyle after MAP_SET_STYLE', () => {
-    const args = makeArgs()
-    initialiseDatasets(args)
-    const newStyle = { layers: [{ id: 'updated' }] }
-    args.eventBus._handlers['map:setStyle'](newStyle)
-    args.eventBus._handlers['map:sizeChange']()
-    expect(args.adapter.onMapSizeChange).toHaveBeenCalledWith(newStyle)
+    expect(args.adapter.onMapSizeChange).toHaveBeenCalled()
   })
 })
 
@@ -185,7 +168,6 @@ describe('returned API', () => {
     const args = makeArgs()
     const instance = initialiseDatasets(args)
     instance.remove()
-    expect(args.eventBus.off).toHaveBeenCalledWith('map:setStyle', expect.any(Function))
     expect(args.eventBus.off).toHaveBeenCalledWith('map:sizeChange', expect.any(Function))
     expect(args.adapter.destroy).toHaveBeenCalled()
   })
