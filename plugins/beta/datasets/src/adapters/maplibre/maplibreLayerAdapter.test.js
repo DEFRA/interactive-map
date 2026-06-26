@@ -62,26 +62,26 @@ beforeEach(() => {
 
 describe('init', () => {
   it('calls addPatternsAndSymbolsToMap before adding layers', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(mapProvider.addPatternsToMap).toHaveBeenCalled()
     expect(mapProvider.addSymbolsToMap).toHaveBeenCalled()
   })
 
   it('adds fill + stroke layers for existing-fields', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(map.getLayer('existing-fields')).toMatchObject({ type: 'fill' })
     expect(map.getLayer('existing-fields-stroke')).toMatchObject({ type: 'line' })
   })
 
   it('adds symbol layers for all historic-monuments sublayers', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(map.getLayer('historic-monuments-prehistoric')).toMatchObject({ type: 'symbol' })
     expect(map.getLayer('historic-monuments-roman')).toMatchObject({ type: 'symbol' })
     expect(map.getLayer('historic-monuments-medieval')).toMatchObject({ type: 'symbol' })
   })
 
   it('adds fill + stroke layers for land-covers sublayers', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(map.getLayer('land-covers-130-131')).toMatchObject({ type: 'fill' })
     expect(map.getLayer('land-covers-130-131-stroke')).toMatchObject({ type: 'line' })
     expect(map.getLayer('land-covers-332')).toMatchObject({ type: 'fill' })
@@ -90,49 +90,49 @@ describe('init', () => {
   })
 
   it('adds a stroke-only layer for hedge-control', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(map.getLayer('hedge-control')).toMatchObject({ type: 'line' })
   })
 
   it('adds a vector source for existing-fields', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     const ds = datasetRegistry.getDataset('existing-fields')
     expect(map.addSource).toHaveBeenCalledWith(ds.sourceId, expect.objectContaining({ type: 'vector' }))
   })
 
   it('adds a geojson source for historic-monuments', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     const ds = datasetRegistry.getDataset('historic-monuments')
     expect(map.addSource).toHaveBeenCalledWith(ds.sourceId, expect.objectContaining({ type: 'geojson' }))
   })
 
   it('adds a dynamic geojson source for land-covers', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     const ds = datasetRegistry.getDataset('land-covers')
     expect(map.addSource).toHaveBeenCalledWith(ds.sourceId, expect.objectContaining({ type: 'geojson' }))
   })
 
   it('adds each source only once even when multiple sublayers share it', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     const ds = datasetRegistry.getDataset('historic-monuments')
     const calls = map.addSource.mock.calls.filter(([id]) => id === ds.sourceId)
     expect(calls).toHaveLength(1)
   })
 
   it('waits for map idle before resolving', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(map.once).toHaveBeenCalledWith('idle', expect.any(Function))
   })
 
   it('tracks symbol layers in _symbolLayerIds', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(adapter._symbolLayerIds.has('historic-monuments-prehistoric')).toBe(true)
     expect(adapter._symbolLayerIds.has('historic-monuments-roman')).toBe(true)
     expect(adapter._symbolLayerIds.has('historic-monuments-medieval')).toBe(true)
   })
 
   it('does not track fill/line layers in _symbolLayerIds', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(adapter._symbolLayerIds.has('existing-fields')).toBe(false)
     expect(adapter._symbolLayerIds.has('land-covers-130-131')).toBe(false)
     expect(adapter._symbolLayerIds.has('hedge-control')).toBe(false)
@@ -143,7 +143,7 @@ describe('init', () => {
 
 describe('removeLayer', () => {
   it('removes an existing layer from the map', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     adapter.removeLayer('existing-fields')
     expect(map.removeLayer).toHaveBeenCalledWith('existing-fields')
     expect(map.getLayer('existing-fields')).toBeNull()
@@ -155,7 +155,7 @@ describe('removeLayer', () => {
   })
 
   it('removes the layer id from _symbolLayerIds', async () => {
-    await adapter.init(MAP_STYLE)
+    await adapter.init()
     expect(adapter._symbolLayerIds.has('historic-monuments-prehistoric')).toBe(true)
     adapter.removeLayer('historic-monuments-prehistoric')
     expect(adapter._symbolLayerIds.has('historic-monuments-prehistoric')).toBe(false)
@@ -165,7 +165,7 @@ describe('removeLayer', () => {
 // ─── destroy ──────────────────────────────────────────────────────────────────
 
 describe('destroy', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('removes all layers from the map', () => {
     adapter.destroy()
@@ -180,6 +180,11 @@ describe('destroy', () => {
   it('clears _datasetSourceMap', () => {
     adapter.destroy()
     expect(adapter._datasetSourceMap.size).toBe(0)
+  })
+
+  it('does not throw when getStyle returns null (covers _getLayersUsingSource early return)', () => {
+    map.getStyle.mockReturnValue(null)
+    expect(() => adapter.destroy()).not.toThrow()
   })
 })
 
@@ -204,12 +209,18 @@ describe('addDataset', () => {
     expect(mapProvider.addPatternsToMap).toHaveBeenCalled()
     expect(mapProvider.addSymbolsToMap).toHaveBeenCalled()
   })
+
+  it('does not call moveLayer when getStyle returns no layers (covers _getFirstSymbolLayerId null branch)', async () => {
+    map.getStyle.mockReturnValue({})
+    await adapter.addDataset('existing-fields')
+    expect(map.moveLayer).not.toHaveBeenCalled()
+  })
 })
 
 // ─── removeDataset ────────────────────────────────────────────────────────────
 
 describe('removeDataset', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('removes all layers for existing-fields', () => {
     adapter.removeDataset('existing-fields')
@@ -257,7 +268,7 @@ describe('removeDataset', () => {
 // ─── setData ──────────────────────────────────────────────────────────────────
 
 describe('setData', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('calls source.setData for a dynamic dataset (land-covers)', () => {
     const ds = datasetRegistry.getDataset('land-covers')
@@ -280,7 +291,7 @@ describe('setData', () => {
 // ─── applyDatasetVisibility ───────────────────────────────────────────────────
 
 describe('applyDatasetVisibility', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('sets visibility to "visible" for existing-fields layers', () => {
     adapter.applyDatasetVisibility('existing-fields')
@@ -305,12 +316,19 @@ describe('applyDatasetVisibility', () => {
     adapter.applyDatasetVisibility('unknown')
     expect(map.setLayoutProperty.mock.calls.length).toBe(before)
   })
+
+  it('skips setLayoutProperty for a layer that has been removed from the map', () => {
+    map._layers.delete('existing-fields')
+    map.setLayoutProperty.mockClear()
+    adapter.applyDatasetVisibility('existing-fields')
+    expect(map.setLayoutProperty).not.toHaveBeenCalledWith('existing-fields', 'visibility', expect.any(String))
+  })
 })
 
 // ─── applyGlobalVisibility ────────────────────────────────────────────────────
 
 describe('applyGlobalVisibility', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('sets visibility on layers for all top-level datasets', () => {
     map.setLayoutProperty.mockClear()
@@ -327,7 +345,7 @@ describe('applyGlobalVisibility', () => {
 // ─── applyFeatureFilter ───────────────────────────────────────────────────────
 
 describe('applyFeatureFilter', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('sets filter on all land-covers sublayers (parent has hiddenFeatures: [42])', () => {
     adapter.applyFeatureFilter('land-covers')
@@ -361,12 +379,19 @@ describe('applyFeatureFilter', () => {
     adapter.applyFeatureFilter('unknown')
     expect(map.setFilter).not.toHaveBeenCalled()
   })
+
+  it('skips setFilter for a sublayer whose layer has been removed from the map', () => {
+    map._layers.delete('land-covers-130-131')
+    map.setFilter.mockClear()
+    adapter.applyFeatureFilter('land-covers')
+    expect(map.setFilter).not.toHaveBeenCalledWith('land-covers-130-131', expect.anything())
+  })
 })
 
 // ─── applyDatasetOpacity ──────────────────────────────────────────────────────
 
 describe('applyDatasetOpacity', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('sets fill-opacity on the fill layer for existing-fields', () => {
     adapter.applyDatasetOpacity('existing-fields')
@@ -396,12 +421,19 @@ describe('applyDatasetOpacity', () => {
     adapter.applyDatasetOpacity('unknown')
     expect(map.setPaintProperty.mock.calls.length).toBe(before)
   })
+
+  it('does not call setPaintProperty for a layer that has been removed from the map (covers _setPaintOpacity early return)', () => {
+    map._layers.delete('existing-fields')
+    map.setPaintProperty.mockClear()
+    adapter.applyDatasetOpacity('existing-fields')
+    expect(map.setPaintProperty).not.toHaveBeenCalledWith('existing-fields', expect.any(String), expect.any(Number))
+  })
 })
 
 // ─── applyGlobalOpacity ───────────────────────────────────────────────────────
 
 describe('applyGlobalOpacity', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('sets paint opacity on layers for all datasets', () => {
     map.setPaintProperty.mockClear()
@@ -418,7 +450,7 @@ describe('applyGlobalOpacity', () => {
 // ─── applyStyle ───────────────────────────────────────────────────────────────
 
 describe('applyStyle', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('removes old fill + stroke layers then re-adds them for existing-fields', async () => {
     await adapter.applyStyle('existing-fields', MAP_STYLE)
@@ -444,7 +476,7 @@ describe('applyStyle', () => {
 // ─── onMapStyleChange ─────────────────────────────────────────────────────────
 
 describe('onMapStyleChange', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('waits for map idle before proceeding', async () => {
     let idleCb
@@ -483,11 +515,11 @@ describe('onMapStyleChange', () => {
 // ─── onMapSizeChange ──────────────────────────────────────────────────────────
 
 describe('onMapSizeChange', () => {
-  beforeEach(async () => { await adapter.init(MAP_STYLE) })
+  beforeEach(async () => { await adapter.init() })
 
   it('updates icon-image layout property for historic-monuments symbol layers', async () => {
     map.setLayoutProperty.mockClear()
-    await adapter.onMapSizeChange(MAP_STYLE)
+    await adapter.onMapSizeChange()
     const symbolUpdates = map.setLayoutProperty.mock.calls.filter(([, prop]) => prop === 'icon-image')
     const ids = symbolUpdates.map(([id]) => id)
     expect(ids).toContain('historic-monuments-prehistoric')
@@ -497,7 +529,7 @@ describe('onMapSizeChange', () => {
 
   it('updates fill-pattern paint property for land-covers sublayers', async () => {
     map.setPaintProperty.mockClear()
-    await adapter.onMapSizeChange(MAP_STYLE)
+    await adapter.onMapSizeChange()
     const patternUpdates = map.setPaintProperty.mock.calls.filter(([, prop]) => prop === 'fill-pattern')
     const ids = patternUpdates.map(([id]) => id)
     expect(ids).toContain('land-covers-130-131')
@@ -506,14 +538,22 @@ describe('onMapSizeChange', () => {
 
   it('does not update fill-pattern for existing-fields (no fillPattern style)', async () => {
     map.setPaintProperty.mockClear()
-    await adapter.onMapSizeChange(MAP_STYLE)
+    await adapter.onMapSizeChange()
     const patternUpdates = map.setPaintProperty.mock.calls.filter(([, prop]) => prop === 'fill-pattern')
     expect(patternUpdates.map(([id]) => id)).not.toContain('existing-fields')
   })
 
   it('calls addPatternsAndSymbolsToMap', async () => {
     mapProvider.addPatternsToMap.mockClear()
-    await adapter.onMapSizeChange(MAP_STYLE)
+    await adapter.onMapSizeChange()
     expect(mapProvider.addPatternsToMap).toHaveBeenCalled()
+  })
+
+  it('does not call setLayoutProperty for icon-image when getSymbolImageId returns null', async () => {
+    jest.spyOn(symbolRegistry, 'getSymbolImageId').mockReturnValue(null)
+    map.setLayoutProperty.mockClear()
+    await adapter.onMapSizeChange()
+    const symbolUpdates = map.setLayoutProperty.mock.calls.filter(([, prop]) => prop === 'icon-image')
+    expect(symbolUpdates).toHaveLength(0)
   })
 })
