@@ -309,6 +309,14 @@ describe('MapLibreDataset', () => {
       expect(datasetRegistry.getDataset('ds-string-with-prop').source).toEqual(expect.objectContaining({ type: 'geojson' }))
       expect(logger.warn).not.toHaveBeenCalled()
     })
+
+    it('adds promoteId keyed by sourceLayer when a vector source has both idProperty and sourceLayer', () => {
+      datasetRegistry.mockExtend({ 'ds-tiles-id-prop': { id: 'ds-tiles-id-prop', tiles: ['https://example.com/{z}/{x}/{y}'], idProperty: 'myId', sourceLayer: 'my-layer' } })
+      expect(datasetRegistry.getDataset('ds-tiles-id-prop').source).toEqual(expect.objectContaining({
+        type: 'vector',
+        promoteId: { 'my-layer': 'myId' }
+      }))
+    })
   })
 
   describe('getSymbolSource', () => {
@@ -436,6 +444,10 @@ describe('MapLibreDataset', () => {
   describe('_hiddenFeaturesIdExpression', () => {
     it('uses get(idProperty) when idProperty is set', () => {
       expect(datasetRegistry.getDataset('land-covers')._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'id']])
+    })
+
+    it('uses get(idProperty) for a non-dynamic dataset with idProperty set', () => {
+      expect(datasetRegistry.getDataset('ds-no-transform')._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'id']])
     })
 
     it('uses the feature id when idProperty is not set', () => {
