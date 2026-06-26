@@ -42,9 +42,10 @@ const makeMapProvider = (map) => ({
 const MAP_STYLE = { id: 'outdoor', layers: [] }
 
 let map, mapProvider, adapter
+const dynamicSources = new Map()
 
 beforeEach(() => {
-  datasetRegistry.attachCreateDataset(def => new MapLibreDataset(def))
+  datasetRegistry.attachMapStyle(MAP_STYLE)
   symbolRegistry.clear()
   symbolRegistry.initialise()
   patternRegistry.clear()
@@ -53,6 +54,8 @@ beforeEach(() => {
   map = makeMap()
   mapProvider = makeMapProvider(map)
   adapter = new MaplibreLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+  adapter.attachDynamicSources(dynamicSources)
+  datasetRegistry.attachCreateDataset(adapter.createDataset)
 })
 
 // ─── init ─────────────────────────────────────────────────────────────────────
