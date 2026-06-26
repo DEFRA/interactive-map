@@ -45,22 +45,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
-
-    // Log the layers for debugging
-    // this.logLayers('_vectorTileLayers')
-    // console.log('this._vectorTileOpacityLayers', this._vectorTileOpacityLayers)
-    // console.log('this._groupLayers', this._groupLayers)
-  }
-
-  logLayers (name) {
-    const obj = this[name]
-    console.log(`${name}:`)
-    Object.entries(obj).forEach(([datasetId, layer]) => {
-      console.log(`  ${datasetId}`)
-      layer.styleRepository.layers.forEach(styleLayer => {
-        console.log(`    ${styleLayer.id}`)
-      })
-    })
   }
 
   _addGroupLayer (esriGroupId) {
