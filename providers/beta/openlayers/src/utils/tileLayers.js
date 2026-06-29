@@ -1,4 +1,5 @@
 import XYZ from 'ol/source/XYZ.js'
+import TileWMS from 'ol/source/TileWMS.js'
 import VectorTileSource from 'ol/source/VectorTile.js'
 import TileLayer from 'ol/layer/Tile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
@@ -14,6 +15,7 @@ import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.
 recordStyleLayer(true)
 
 const CRS = 'EPSG:27700'
+const SUPPORTED_MAP_STYLE_TYPES = ['vector', 'raster', 'wms', 'ogc-vt']
 
 export function fetchWithTransform (url, resourceType, transformRequest) {
   const result = transformRequest ? (transformRequest(url, resourceType) || {}) : {}
@@ -30,12 +32,28 @@ const createTileLoadFunction = (transformRequest) => (tile, src) => {
     .catch(() => tile.setState(TileState.ERROR))
 }
 
-export function createTileSource (url, transformRequest) {
-  const tileGrid = new TileGrid({
+function createTileGrid () {
+  return new TileGrid({
     resolutions: TILE_GRID_RESOLUTIONS,
     origin: TILE_GRID_ORIGIN,
     tileSize: TILE_SIZE
   })
+}
+
+export function createWMSTileSource (url, params, transformRequest) {
+  const tileGrid = createTileGrid()
+
+  return new TileWMS({
+    url,
+    params,
+    projection: CRS,
+    tileGrid,
+    tileLoadFunction: transformRequest ? createTileLoadFunction(transformRequest) : undefined
+  })
+}
+
+export function createTileSource (url, transformRequest) {
+  const tileGrid = createTileGrid()
 
   const tileUrlFunction = ([z, x, y]) => url
     .replace('{z}', z)
@@ -51,6 +69,15 @@ export function createTileSource (url, transformRequest) {
 }
 
 export async function createMapStyleLayer (mapStyle, transformRequest) {
+  if (mapStyle.type && !SUPPORTED_MAP_STYLE_TYPES.includes(mapStyle.type)) {
+    throw new Error(`Unsupported map style type: '${mapStyle.type}'`)
+  }
+
+  if (mapStyle.type === 'wms') {
+    const source = createWMSTileSource(mapStyle.url, mapStyle.params || {}, transformRequest)
+    return { layer: new TileLayer({ source }), source }
+  }
+
   if (mapStyle.type === 'raster') {
     const source = createTileSource(mapStyle.url, transformRequest)
     return { layer: new TileLayer({ source }), source }

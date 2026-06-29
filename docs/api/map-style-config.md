@@ -14,14 +14,16 @@ Unique identifier for the style. Used to reference the style programmatically.
 ---
 
 ### `type`
-**Type:** `'raster' | 'ogc-vt'`
+**Type:** `'vector' | 'raster' | 'wms' | 'ogc-vt'`
 
 > [!NOTE]
 > This property is only relevant when using the **OpenLayers provider**. The ESRI and MapLibre providers always use the standard Mapbox GL vector tile format and ignore this property.
 
-Allows the OpenLayers provider to support raster, standard vector tile, and OGC API - Tiles basemaps. When omitted, OpenLayers uses the standard Mapbox GL vector tile path — the same format ESRI and MapLibre always use.
+Allows the OpenLayers provider to support raster, WMS, standard vector tile, and OGC API - Tiles basemaps. When omitted, OpenLayers uses the standard Mapbox GL vector tile path.
 
+- `'vector'` — standard Mapbox GL vector tile path. `url` should point to a Mapbox GL style document.
 - `'raster'` — XYZ raster tile source. `url` should be a tile URL template with `{x}`, `{y}`, `{z}` placeholders.
+- `'wms'` — WMS raster tile source. `url` should be the WMS service endpoint and `params` should provide the WMS request parameters.
 - `'ogc-vt'` — OGC API - Tiles vector tile source. `url` should point to an OGC style endpoint that returns a Mapbox GL style document.
 
 ---
@@ -70,7 +72,7 @@ URL that returns a Mapbox GL style document (Mapbox Style Specification).
 ```
 
 > [!NOTE]
-> The **OpenLayers provider** supports two additional URL forms via the `type` property.
+> The **OpenLayers provider** supports three additional URL forms via the `type` property.
 >
 > ```js
 > // type 'ogc-vt' — OS NGD OGC API - Tiles, Outdoor (EPSG:27700)
@@ -84,7 +86,29 @@ URL that returns a Mapbox GL style document (Mapbox Style Specification).
 >   type: 'raster',
 >   url: 'https://api.os.uk/maps/raster/v1/zxy/Outdoor_27700/{z}/{x}/{y}.png?key=YOUR_API_KEY'
 > }
+>
+> // type 'wms' — APGB aerial imagery via Getmapping WMS (EPSG:27700)
+> {
+>   type: 'wms',
+>   url: 'https://www.getmapping.com/GmWMS/YOUR_MEMBER_GUID/ApgbBng.wmsx',
+>   params: { LAYERS: 'APGB_Latest_UK_125mm' }
+> }
 > ```
+
+---
+
+### `params`
+**Type:** `Object`
+
+WMS request parameters. Passed directly to the OpenLayers `TileWMS` source when `type` is `'wms'`. Most WMS GetMap requests should include `LAYERS`.
+
+```js
+{
+  type: 'wms',
+  url: 'https://www.getmapping.com/GmWMS/YOUR_MEMBER_GUID/ApgbBng.wmsx',
+  params: { LAYERS: 'APGB_Latest_UK_125mm' }
+}
+```
 
 ---
 
