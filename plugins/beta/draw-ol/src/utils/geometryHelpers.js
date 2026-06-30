@@ -5,7 +5,9 @@
  */
 
 export const getCoords = (geom) => {
-  if (!geom?.coordinates) return []
+  if (!geom?.coordinates) {
+    return []
+  }
   switch (geom.type) {
     case 'LineString': return geom.coordinates
     case 'Polygon': return geom.coordinates.flatMap(ring => ring.slice(0, -1))
@@ -20,7 +22,9 @@ export const getCoords = (geom) => {
  * { start, length, path, closed }
  */
 export const getRingSegments = (geom) => {
-  if (!geom?.coordinates) return []
+  if (!geom?.coordinates) {
+    return []
+  }
   const segments = []
   let start = 0
 
@@ -80,7 +84,9 @@ export const getModifiableCoords = (geojsonGeometry, path) => {
 export const getMidpoints = (geom) => {
   const coords = getCoords(geom)
   const segments = getRingSegments(geom)
-  if (!coords.length || !segments.length) return []
+  if (!coords.length || !segments.length) {
+    return []
+  }
 
   const midpoints = []
   for (const seg of segments) {

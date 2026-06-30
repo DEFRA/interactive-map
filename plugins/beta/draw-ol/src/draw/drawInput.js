@@ -204,10 +204,13 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     lastPlacedCoord = coord
   }
 
+  const map = drawInteraction.getMap()
+  const olView = map?.getView()
+
   const events = wireInputEvents({
     container,
     addVertexButtonId,
-    olView: drawInteraction.getMap()?.getView(),
+    olView,
     onUndo,
     getInterfaceType: () => interfaceType,
     setInterfaceType: (t) => { interfaceType = t },
@@ -216,10 +219,19 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     placeVertex
   })
 
+  // change:center fires once when a keyboard pan animation starts; postrender tracks each frame.
+  const onMapRender = () => {
+    if (interfaceType !== 'pointer' && olView?.getAnimating()) {
+      updateRubberbanding()
+    }
+  }
+  map?.on('postrender', onMapRender)
+
   return {
     getInterfaceType: () => interfaceType,
     destroy () {
       events.destroy()
+      map?.un('postrender', onMapRender)
     }
   }
 }

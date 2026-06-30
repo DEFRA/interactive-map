@@ -62,6 +62,11 @@ export const createDrawMode = ({ map, manager, options }) => {
     condition: buildCondition(map, geometryType, () => sketchFeature)
   })
   map.addInteraction(drawInteraction)
+  // OL internal: overlay_ is the private VectorLayer used for the sketch geometry.
+  // updateWhileAnimating_ forces per-frame redraws during view animations (keyboard pan).
+  // Without this, geom.setCoordinates() calls are ignored while the ANIMATING hint is set.
+  // Check ol/interaction/Draw.js and ol/layer/BaseVector.js if this breaks after an OL upgrade.
+  drawInteraction.overlay_.updateWhileAnimating_ = true
 
   const updateVertexCount = () => {
     if (!sketchFeature) { return }
