@@ -1,18 +1,48 @@
 import Draw from 'ol/interaction/Draw.js'
+import { noModifierKeys } from 'ol/events/condition.js'
 import { createDrawInput } from './drawInput.js'
 import { getCoords } from '../utils/geometryHelpers.js'
 
-/**
- * Draw mode — handles draw_polygon and draw_line.
- *
- * OL's Draw interaction handles all pointer/mouse behaviour natively.
- * drawInput.js handles touch/keyboard/button input.
- *
- * @returns {{ done, cancel, undo, destroy }}
- */
+const SNAP_TOLERANCE_PX = 12
+const MIN_VERTICES = { Polygon: 3, LineString: 2 }
+
+const canFinish = (geometryType, sketchFeature) => {
+  if (!sketchFeature) { return false }
+  const geom = sketchFeature.getGeometry()
+  const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
+  // OL keeps a trailing rubber-band coordinate; subtract 1 to get real vertex count
+  return coords.length - 1 >= MIN_VERTICES[geometryType]
+}
+
+// OL closes Polygon rings by appending v1: [...placed, rubber_band, v1_closing]; last placed is 3 from end.
+const POLY_LAST_PLACED_OFFSET = 3
+
+const getLastPlacedCoord = (geom) => {
+  if (geom.getType() === 'Polygon') {
+    const ring = geom.getCoordinates()[0] || []
+    return ring.length >= POLY_LAST_PLACED_OFFSET ? ring[ring.length - POLY_LAST_PLACED_OFFSET] : null
+  }
+  const coords = geom.getCoordinates()
+  return coords.length >= 2 ? coords[coords.length - 2] : null
+}
+
+const DUPLICATE_TOLERANCE_PX = 2
+
+const buildCondition = (map, geometryType, getSketchFeature) => (e) => {
+  if (!noModifierKeys(e)) { return false }
+  const sf = getSketchFeature()
+  if (!sf || canFinish(geometryType, sf)) { return true }
+  const prev = getLastPlacedCoord(sf.getGeometry())
+  if (!prev) { return true }
+  const pp = map.getPixelFromCoordinate(prev)
+  if (!pp) { return true }
+  const dx = e.pixel[0] - pp[0]; const dy = e.pixel[1] - pp[1]
+  return dx * dx + dy * dy > DUPLICATE_TOLERANCE_PX * DUPLICATE_TOLERANCE_PX
+}
+
 export const createDrawMode = ({ map, manager, options }) => {
   const {
-    geometryType, // 'Polygon' | 'LineString'
+    geometryType,
     featureId,
     properties = {},
     container,
@@ -22,28 +52,23 @@ export const createDrawMode = ({ map, manager, options }) => {
     snap
   } = options
 
+  let sketchFeature = null
+
   const drawInteraction = new Draw({
     type: geometryType,
     style: manager.styles.createSketchStyle(),
     stopClick: true,
-    // minPoints defaults: 3 for Polygon, 2 for LineString — OL handles this
-    // snapTolerance: how close to first point to auto-close polygon
-    snapTolerance: 12
+    snapTolerance: SNAP_TOLERANCE_PX,
+    condition: buildCondition(map, geometryType, () => sketchFeature)
   })
   map.addInteraction(drawInteraction)
 
-  // Track vertex count for the Done button enabled state
-  let sketchFeature = null
-
   const updateVertexCount = () => {
-    if (!sketchFeature) {
-      return
-    }
+    if (!sketchFeature) { return }
     const geom = sketchFeature.getGeometry()
     const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
     // OL always keeps a trailing rubber-band coordinate; subtract 1
-    const numVertices = Math.max(0, coords.length - 1)
-    manager.emit('vertexchange', { numVertices })
+    manager.emit('vertexchange', { numVertices: Math.max(0, coords.length - 1) })
   }
 
   drawInteraction.on('drawstart', (e) => {
@@ -56,14 +81,11 @@ export const createDrawMode = ({ map, manager, options }) => {
     olFeature.setId(String(featureId))
     olFeature.setProperties(properties)
     manager.store.source.addFeature(olFeature)
-    const geojson = manager.store.toGeoJSON(olFeature)
-    manager.emit('create', geojson)
+    manager.emit('create', manager.store.toGeoJSON(olFeature))
     // Mode switches to disabled in events.js after receiving 'create'
   })
 
-  drawInteraction.on('drawabort', () => {
-    manager.emit('cancel')
-  })
+  drawInteraction.on('drawabort', () => { manager.emit('cancel') })
 
   const input = createDrawInput({
     drawInteraction,
@@ -74,36 +96,17 @@ export const createDrawMode = ({ map, manager, options }) => {
       addVertexButtonId,
       mapProvider,
       snap,
-      onUndo: () => {
-        drawInteraction.removeLastPoint()
-        updateVertexCount()
-      }
+      onUndo: () => { drawInteraction.removeLastPoint(); updateVertexCount() },
+      canFinish: () => canFinish(geometryType, sketchFeature)
     }
   })
 
   return {
     done () {
-      // Validate minimum points before finishing
-      if (sketchFeature) {
-        const geom = sketchFeature.getGeometry()
-        const coords = getCoords({ type: geometryType, coordinates: geom.getCoordinates() })
-        const min = geometryType === 'Polygon' ? 4 : 3 // +1 for rubber band
-        if (coords.length < min) {
-          return
-        }
-      }
-      drawInteraction.finishDrawing()
+      if (canFinish(geometryType, sketchFeature)) { drawInteraction.finishDrawing() }
     },
-
-    cancel () {
-      drawInteraction.abortDrawing()
-    },
-
-    undo () {
-      drawInteraction.removeLastPoint()
-      updateVertexCount()
-    },
-
+    cancel () { drawInteraction.abortDrawing() },
+    undo () { drawInteraction.removeLastPoint(); updateVertexCount() },
     destroy () {
       input.destroy()
       map.removeInteraction(drawInteraction)
