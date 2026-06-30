@@ -9,7 +9,7 @@ const initialState = {
   hasSnapLayers: false
 }
 
-const setMode = (state, payload) => ({ ...state, mode: payload })
+const setMode = (state, payload) => ({ ...state, mode: payload, numVertices: null })
 
 const setFeature = (state, payload) => ({
   ...state,
