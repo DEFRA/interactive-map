@@ -145,6 +145,75 @@ describe('PopupMenu', () => {
     expect(mockSetIsOpen).toHaveBeenCalled()
   })
 
+  describe('Tab key focus handoff', () => {
+    let before, instigatorEl, after1, after2
+
+    beforeEach(() => {
+      before = document.createElement('button')
+      instigatorEl = document.createElement('button')
+      after1 = document.createElement('button')
+      after2 = document.createElement('button')
+      document.body.append(before, instigatorEl, after1, after2)
+      // jsdom never computes layout, so offsetParent is always null — findTabStop
+      // treats that as "hidden" and skips it, so it must be stubbed for these to look focusable.
+      ;[before, instigatorEl, after1, after2].forEach(el => Object.defineProperty(el, 'offsetParent', { value: true, configurable: true }))
+      mockUseApp.buttonRefs.current.instigator = instigatorEl
+    })
+
+    afterEach(() => {
+      [before, instigatorEl, after1, after2].forEach(el => el.remove())
+    })
+
+    it('moves focus to the tab stop after the instigator, not the first tab stop on the page', () => {
+      renderMenu()
+      fireEvent.keyDown(screen.getByRole('menu'), { key: 'Tab' })
+      expect(document.activeElement).toBe(after1)
+    })
+
+    it('Shift+Tab moves focus to the tab stop before the instigator', () => {
+      renderMenu()
+      fireEvent.keyDown(screen.getByRole('menu'), { key: 'Tab', shiftKey: true })
+      expect(document.activeElement).toBe(before)
+    })
+
+    it('falls back to computing the tab stop from the menu itself when the instigator is no longer available', () => {
+      mockUseApp.buttonRefs.current.instigator = null
+      renderMenu()
+      expect(() => fireEvent.keyDown(screen.getByRole('menu'), { key: 'Tab' })).not.toThrow()
+      expect(document.activeElement).toBe(before)
+      expect(mockUseApp.layoutRefs.viewportRef.current.focus).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('Tab key inside a modal dialog', () => {
+    let dialogEl, insideBefore, instigatorEl, outsideAfter
+
+    beforeEach(() => {
+      dialogEl = document.createElement('div')
+      dialogEl.setAttribute('role', 'dialog')
+      dialogEl.setAttribute('aria-modal', 'true')
+      insideBefore = document.createElement('button')
+      instigatorEl = document.createElement('button')
+      dialogEl.append(insideBefore, instigatorEl)
+      outsideAfter = document.createElement('button')
+      document.body.append(dialogEl, outsideAfter)
+      ;[insideBefore, instigatorEl, outsideAfter].forEach(el => Object.defineProperty(el, 'offsetParent', { value: true, configurable: true }))
+      mockUseApp.buttonRefs.current.instigator = instigatorEl
+    })
+
+    afterEach(() => {
+      dialogEl.remove()
+      outsideAfter.remove()
+    })
+
+    it('wraps within the dialog instead of escaping to a tab stop outside it', () => {
+      renderMenu()
+      fireEvent.keyDown(screen.getByRole('menu'), { key: 'Tab' })
+      expect(document.activeElement).toBe(insideBefore)
+      expect(document.activeElement).not.toBe(outsideAfter)
+    })
+  })
+
   it('calls item onClick directly if no buttonConfig', () => {
     renderMenu()
     fireEvent.click(screen.getByText('Item 1'))
@@ -360,6 +429,16 @@ describe('PopupMenu', () => {
     const ul = screen.getByRole('menu')
     fireEvent.keyDown(ul, { key: 'Escape' })
     expect(focusSpy).toHaveBeenCalled()
+  })
+
+  it('Escape falls back to focusing viewport when instigator is no longer available', () => {
+    mockUseApp.buttonRefs.current.instigator = null
+    const focusSpy = jest.spyOn(mockUseApp.layoutRefs.viewportRef.current, 'focus')
+    renderMenu()
+    const ul = screen.getByRole('menu')
+    expect(() => fireEvent.keyDown(ul, { key: 'Escape' })).not.toThrow()
+    expect(focusSpy).toHaveBeenCalled()
+    focusSpy.mockRestore()
   })
 
   it('direct render without startIndex respects startPos="first" (covers initializer and effect)', () => {

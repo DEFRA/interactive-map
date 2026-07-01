@@ -7,9 +7,10 @@ import { findTabStop } from './findNextTabStop.js'
 // --- MOCK SETUP ---
 // Helper to create mock elements. The default value (tabIndex = 0)
 // is covered below by creating 'el1' without the second argument.
-const createMockElement = (id, tabIndex = 0) => ({
+const createMockElement = (id, tabIndex = 0, offsetParent = {}) => ({
   id,
   tabIndex,
+  offsetParent,
   // Required so Jest knows which element is which in the array lookup
   toString: () => id
 })
@@ -73,5 +74,28 @@ describe('findTabStop', () => {
 
     // Assert: It wraps around to the first element, el1.
     expect(result).toBe(el1)
+  })
+
+  // Test 4: Covers: skipping elements with no offsetParent (hidden, e.g. wrong-breakpoint duplicates).
+  it('should skip hidden elements (no offsetParent) even when tabIndex is valid', () => {
+    const el1 = createMockElement('el1', 0)
+    const hiddenEl = createMockElement('hidden', 0, null)
+    const el3 = createMockElement('el3', 0)
+
+    mockFocusableElements([el1, hiddenEl, el3])
+
+    const result = findTabStop({ el: el1, direction: 'next' })
+
+    expect(result).toBe(el3)
+  })
+
+  it('accepts a custom root to scope the search', () => {
+    const el1 = createMockElement('el1')
+    const scopedRoot = { querySelectorAll: jest.fn(() => [el1]) }
+
+    findTabStop({ el: el1, direction: 'next', root: scopedRoot })
+
+    expect(scopedRoot.querySelectorAll).toHaveBeenCalledTimes(1)
+    expect(document.querySelectorAll).not.toHaveBeenCalled()
   })
 })

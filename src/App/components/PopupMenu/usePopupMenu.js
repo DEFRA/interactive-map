@@ -1,5 +1,6 @@
 import { useState, useMemo, useEffect } from 'react'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
+import { findTabStop } from '../../../utils/findNextTabStop.js'
 import { useApp } from '../../store/appContext.js'
 
 /**
@@ -86,6 +87,54 @@ const resolveItemFocus = (item, buttonConfig) => ({
   keepFocus: buttonConfig[item.id]?.keepFocus ?? item.keepFocus
 })
 
+/**
+ * Focuses the instigator button if it's still in the DOM, otherwise falls back
+ * to the map viewport. The instigator can disappear while the menu is open
+ * (e.g. app state changes elsewhere remove/disable the triggering button),
+ * so callers must not assume it's still focusable.
+ *
+ * @param {HTMLElement|null} instigator - DOM node of the trigger button, may no longer exist.
+ * @param {object}           viewportRef - Ref to the map viewport element, used as fallback.
+ */
+const focusInstigatorOrViewport = (instigator, viewportRef) => {
+  if (instigator) {
+    instigator.focus()
+  } else {
+    viewportRef.current?.focus()
+  }
+}
+
+// A Panel rendered as a modal dialog (see Panel.jsx's computePanelState/getPanelRole)
+// carries both of these attributes together and traps focus within itself via
+// useModalPanelBehaviour's focusin redirect — tab-stop search must stay inside it.
+const MODAL_DIALOG_SELECTOR = '[role="dialog"][aria-modal="true"]'
+
+/**
+ * Moves focus to the tab stop immediately after (or before, for Shift+Tab)
+ * the instigator button, continuing the page's natural tab sequence rather
+ * than returning focus into the popup itself. The popup is rendered via a
+ * portal elsewhere in the DOM, so the browser's own Tab default action can't
+ * be relied on to continue from the instigator — it must be computed and
+ * applied manually. The search is scoped to the nearest modal dialog ancestor
+ * (if any): searching the whole document would let it pick a tab stop outside
+ * an open modal panel, which the app's own modal focus-trap then immediately
+ * yanks focus back from — landing on the trap's container div, which has no
+ * visible focus styling, making focus appear to vanish. Falls back to
+ * computing the tab stop from the menu element itself if the instigator is
+ * gone, so focus still lands on a real neighbouring control rather than
+ * jumping to an unrelated part of the app.
+ *
+ * @param {HTMLElement|null} instigator - DOM node of the trigger button, may no longer exist.
+ * @param {boolean}          isShiftTab - Whether Shift+Tab (move backwards) was pressed.
+ * @param {HTMLElement}      fallbackEl - Menu element to anchor from if the instigator is gone.
+ */
+const focusAdjacentTabStop = (instigator, isShiftTab, fallbackEl) => {
+  const anchor = instigator ?? fallbackEl
+  const root = anchor.closest?.(MODAL_DIALOG_SELECTOR) ?? document
+  const nextStop = findTabStop({ el: anchor, direction: isShiftTab ? 'prev' : 'next', root })
+  nextStop?.focus()
+}
+
 const handleMenuEnter = (event, { items, index, disabledButtons, activateCtx, instigator, dispatch, viewportRef, setIsOpen }) => {
   event.preventDefault()
   const item = items[index]
@@ -98,7 +147,7 @@ const handleMenuEnter = (event, { items, index, disabledButtons, activateCtx, in
     }
     activateItem(event, item, activateCtx)
     if (keepFocus) {
-      instigator.focus()
+      focusInstigatorOrViewport(instigator, viewportRef)
       setIsOpen(false)
       return
     }
@@ -122,7 +171,7 @@ const handleMenuSpace = (event, { items, index, disabledButtons, activateCtx, in
   activateItem(event, item, activateCtx)
   if (!(item.isPressed !== undefined || item.pressedWhen)) {
     if (keepFocus) {
-      instigator.focus()
+      focusInstigatorOrViewport(instigator, viewportRef)
     } else {
       requestAnimationFrame(() => viewportRef.current?.focus())
     }
@@ -149,11 +198,9 @@ const handleMenuSpace = (event, { items, index, disabledButtons, activateCtx, in
  * @returns {Function} onKeyDown handler for the menu element.
  */
 const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disabledButtons, instigator, setIsOpen, activateCtx, dispatch, viewportRef }) => {
-  const closeAndFocus = (event, preventDefault = false) => {
-    if (preventDefault && event?.preventDefault) {
-      event.preventDefault()
-    }
-    instigator.focus()
+  const closeAndFocus = (event) => {
+    event.preventDefault()
+    focusInstigatorOrViewport(instigator, viewportRef)
     setIsOpen(false)
   }
 
@@ -179,11 +226,13 @@ const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disa
 
   return (event) => {
     if (['Escape', 'Esc'].includes(event.key)) {
-      closeAndFocus(event, true)
+      closeAndFocus(event)
       return
     }
     if (event.key === 'Tab') {
-      closeAndFocus(event)
+      event.preventDefault()
+      focusAdjacentTabStop(instigator, event.shiftKey, event.currentTarget)
+      setIsOpen(false)
       return
     }
     if (['ArrowDown', 'ArrowUp'].includes(event.key)) {
@@ -195,7 +244,7 @@ const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disa
       return
     }
     if (event.key === 'End' && visibleIndices.length) {
-      setIndex(visibleIndices[visibleIndices.length - 1])
+      setIndex(visibleIndices[visibleIndices.length - 1]) // NOSONAR .length - 1 used instead of .at(-1) for wider browser support
       return
     }
     if (event.key === 'Enter') {
@@ -274,7 +323,7 @@ export const usePopupMenu = ({
     setIsOpen(false)
     activateItem(event, item, activateCtx)
     if (keepFocus) {
-      instigator.focus()
+      focusInstigatorOrViewport(instigator, viewportRef)
     } else {
       viewportRef.current?.focus()
     }
@@ -285,7 +334,7 @@ export const usePopupMenu = ({
     if (startPos === 'first') {
       setIndex(visibleIndices[0] ?? -1)
     } else if (startPos === 'last') {
-      setIndex(visibleIndices[visibleIndices.length - 1] ?? -1)
+      setIndex(visibleIndices[visibleIndices.length - 1] ?? -1) // NOSONAR .length - 1 used instead of .at(-1) for wider browser support
     } else {
       // No action
     }

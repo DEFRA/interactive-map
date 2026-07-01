@@ -172,7 +172,7 @@
 }
 
 // 4. State styles
-.im-c-map-button[aria-haspopup="true"][aria-expanded="true"] svg {
+.im-c-map-button[aria-haspopup="menu"][aria-expanded="true"] svg {
     transform: rotate(180deg);
 }
 
