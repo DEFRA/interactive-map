@@ -1,4 +1,4 @@
-import createVertex from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js'
+import createVertex from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js' // NOSONAR
 
 import {
   getSnapInstance,
@@ -23,7 +23,7 @@ import {
  * @param {Function} config.validateClick - Validation function for clicks
  * @param {Function} config.createVertices - Function to create vertex display features
  */
-export const createDrawMode = (ParentMode, config) => {
+export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory returns a single cohesive mode object; splitting across files would obscure the event flow
   const {
     featureProp,
     geometryType,
@@ -35,6 +35,7 @@ export const createDrawMode = (ParentMode, config) => {
   } = config
 
   const getFeature = (state) => state[featureProp]
+  const RUBBER_BAND_OFFSET = 2 // ring is [...placed, last_placed, rubber_band]; splice(-2,1) removes last_placed
 
   return {
     ...ParentMode,
@@ -45,7 +46,7 @@ export const createDrawMode = (ParentMode, config) => {
       // Some parent modes (DrawLineString) interpret featureId as "continue existing"
       // rather than "use this ID for new feature"
       const parentOptions = excludeFeatureIdFromSetup
-        ? { ...options, featureId: undefined }
+        ? { ...options, featureId: null }
         : options
 
       const state = {
@@ -122,9 +123,10 @@ export const createDrawMode = (ParentMode, config) => {
       }
       const coordsBefore = getCoords(getFeature(state)).length
       ParentMode.onClick.call(this, state, e)
-      // Push undo if a vertex was added
+      // Push undo and update count if a vertex was added
       if (getCoords(getFeature(state)).length > coordsBefore) {
         this.pushDrawUndo(state)
+        this.dispatchVertexChange(getCoords(getFeature(state)))
       }
     },
 
@@ -172,7 +174,7 @@ export const createDrawMode = (ParentMode, config) => {
     },
 
     dispatchVertexChange (coords) {
-      // Subtract 1 to exclude the rubber-band vertex that mapbox-gl-draw always appends
+      // Both polygon ring and LineString store [v0...vN, rubber_band] during drawing — subtract 1 to get placed vertex count
       this.map.fire('draw.vertexchange', {
         numVertecies: Math.max(0, coords.length - 1)
       })
@@ -274,7 +276,7 @@ export const createDrawMode = (ParentMode, config) => {
     _removeLastVertex (state, feature, coords) {
       // Structure during drawing: [v1, v2, ..., vN, rubber_band]
       const ring = geometryType === 'Polygon' ? feature.coordinates[0] : coords
-      ring.splice(ring.length - 2, 1)
+      ring.splice(-RUBBER_BAND_OFFSET, 1)
 
       // Snap rubber band to new last vertex position
       const newLastVertex = ring[ring.length - 2]
@@ -383,32 +385,36 @@ export const createDrawMode = (ParentMode, config) => {
       this.onMove(state, e)
     },
 
+    _handleUndoKeydown (state, e) {
+      const tag = document.activeElement?.tagName
+      if (tag === 'INPUT' || tag === 'TEXTAREA') {
+        return
+      }
+      e.preventDefault()
+      e.stopPropagation()
+      const undoStack = this.map._undoStack
+      if (undoStack && undoStack.length > 0) {
+        const operation = undoStack.pop()
+        if (operation?.type === 'draw_vertex') {
+          // Set flag to prevent click interference during undo
+          this.map._undoInProgress = true
+          setTimeout(() => { this.map._undoInProgress = false }, 100)
+          this.undoVertex(state)
+        }
+      }
+    },
+
     onKeydown (state, e) {
-      // Undo with Cmd/Ctrl+Z (works without viewport focus, but not in input fields)
       if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-        const tag = document.activeElement?.tagName
-        if (tag === 'INPUT' || tag === 'TEXTAREA') {
-          return
-        }
-        e.preventDefault()
-        e.stopPropagation()
-        const undoStack = this.map._undoStack
-        if (undoStack && undoStack.length > 0) {
-          const operation = undoStack.pop()
-          if (operation?.type === 'draw_vertex') {
-            // Set flag to prevent click interference during undo
-            this.map._undoInProgress = true
-            setTimeout(() => { this.map._undoInProgress = false }, 100)
-            this.undoVertex(state)
-          }
-        }
+        this._handleUndoKeydown(state, e)
         return
       }
       if (document.activeElement !== state.container) {
         return
       }
       if (e.key === 'Escape') {
-        return e.preventDefault()
+        e.preventDefault()
+        return
       }
       if (e.key === 'Enter') {
         state.isActive = true
