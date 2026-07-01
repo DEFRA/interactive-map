@@ -58,7 +58,7 @@ const wireInputEvents = ({
   updateRubberbanding, placeVertex
 }) => {
   const onCenterChange = () => {
-    if (getInterfaceType() !== 'pointer') {
+    if (getInterfaceType() !== 'mouse') {
       updateRubberbanding()
     }
   }
@@ -91,7 +91,7 @@ const wireInputEvents = ({
 
   const onPointerdown = (e) => {
     if (e.pointerType !== 'touch') {
-      setInterfaceType('pointer')
+      setInterfaceType('mouse')
       clearLastCoord()
     }
   }
@@ -101,7 +101,7 @@ const wireInputEvents = ({
   }
 
   const onPointerMove = () => {
-    if (getInterfaceType() === 'pointer') {
+    if (getInterfaceType() === 'mouse') {
       return
     }
     updateRubberbanding()
@@ -127,7 +127,7 @@ const wireInputEvents = ({
 
 export const createDrawInput = ({ drawInteraction, options }) => {
   const { container, addVertexButtonId, mapProvider, snap, onUndo, canFinish } = options
-  let interfaceType = options.interfaceType
+  let interfaceType = options.interfaceType ?? 'mouse'
   let sketchFeature = null
   let lastPlacedCoord = null
 
@@ -146,6 +146,12 @@ export const createDrawInput = ({ drawInteraction, options }) => {
 
   const updateRubberbanding = () => {
     if (!sketchFeature) {
+      // No sketch yet — update snap indicator at crosshair position so targets are
+      // visible before the first vertex is placed (touch/keyboard only; mouse uses
+      // the OL snap interaction's pointermove handler instead).
+      if (interfaceType !== 'mouse' && snap) {
+        snap.apply(mapProvider.getCenter())
+      }
       return
     }
     const geom = sketchFeature.getGeometry()
@@ -154,7 +160,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
       return
     }
     const raw = mapProvider.getCenter()
-    const centerCoord = (interfaceType !== 'pointer' && snap) ? snap.apply(raw) : raw
+    const centerCoord = (interfaceType !== 'mouse' && snap) ? snap.apply(raw) : raw
     applyRubberbanding(geom, centerCoord)
   }
 
@@ -192,7 +198,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
 
   const placeVertex = () => {
     const raw = mapProvider.getCenter()
-    const coord = (interfaceType !== 'pointer' && snap) ? snap.apply(raw) : raw
+    const coord = (interfaceType !== 'mouse' && snap) ? snap.apply(raw) : raw
     snap?.hideIndicator()
     if (sketchFeature) {
       const geom = sketchFeature.getGeometry()
@@ -221,7 +227,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
 
   // change:center fires once when a keyboard pan animation starts; postrender tracks each frame.
   const onMapRender = () => {
-    if (interfaceType !== 'pointer' && olView?.getAnimating()) {
+    if (interfaceType !== 'mouse' && olView?.getAnimating()) {
       updateRubberbanding()
     }
   }
