@@ -16,38 +16,39 @@ import Interaction from 'ol/interaction/Interaction.js'
 
 const SNAP_EVENTS = new Set(['pointermove', 'pointerdrag', 'pointerdown', 'pointerup', 'singleclick', 'click'])
 
-export const createSnapInteraction = (engine, indicator, snapRadius) => {
+const processSnapEvent = (mapBrowserEvent, engine, indicator, snapRadius, isIndicatorActive) => {
+  const { type } = mapBrowserEvent
+
+  if (type === 'pointerout' || type === 'pointerleave') {
+    indicator.hide()
+    return
+  }
+
+  if (!SNAP_EVENTS.has(type)) {
+    return
+  }
+
+  const result = engine.query(mapBrowserEvent.coordinate, snapRadius)
+  if (result) {
+    mapBrowserEvent.coordinate = result.coord.slice()
+  }
+
+  // Only update indicator during free mouse movement — hide during drag, no-op for clicks
+  if (type === 'pointermove' && isIndicatorActive()) {
+    result ? indicator.show(result.coord, result.type) : indicator.hide()
+  } else if (type === 'pointerdrag') {
+    indicator.hide()
+  } else {
+    // no indicator update for click/down/up events
+  }
+}
+
+export const createSnapInteraction = (engine, indicator, snapRadius, isIndicatorActive) => {
   const interaction = new Interaction({
     handleEvent (mapBrowserEvent) {
-      if (!interaction.getActive()) {
-        return true
+      if (interaction.getActive()) {
+        processSnapEvent(mapBrowserEvent, engine, indicator, snapRadius, isIndicatorActive)
       }
-
-      const { type } = mapBrowserEvent
-
-      if (type === 'pointerout' || type === 'pointerleave') {
-        indicator.hide()
-        return true
-      }
-
-      if (!SNAP_EVENTS.has(type)) {
-        return true
-      }
-
-      const result = engine.query(mapBrowserEvent.coordinate, snapRadius)
-      if (result) {
-        mapBrowserEvent.coordinate = result.coord.slice()
-      }
-
-      // Only show indicator during free mouse movement — hide during drag and clicks
-      if (type === 'pointermove') {
-        result ? indicator.show(result.coord, result.type) : indicator.hide()
-      } else if (type === 'pointerdrag') {
-        indicator.hide()
-      } else {
-        // No action
-      }
-
       return true
     }
   })

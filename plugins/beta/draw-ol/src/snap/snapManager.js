@@ -23,7 +23,9 @@ export const createSnapManager = (map, snapLayers, colors, snapRadius) => {
 
   const engine = createSnapEngine(map, snapLayers)
   const indicator = createSnapIndicator(map, colors)
-  const interaction = createSnapInteraction(engine, indicator, snapRadius)
+
+  let indicatorActive = false
+  const interaction = createSnapInteraction(engine, indicator, snapRadius, () => indicatorActive)
 
   map.addInteraction(interaction)
   interaction.setActive(false) // matches reducer initial state: snap: false
@@ -53,6 +55,13 @@ export const createSnapManager = (map, snapLayers, colors, snapRadius) => {
 
     hideIndicator () {
       indicator.hide()
+    },
+
+    setIndicatorActive (value) {
+      indicatorActive = value
+      if (!value) {
+        indicator.hide()
+      }
     },
 
     setActive (value) {

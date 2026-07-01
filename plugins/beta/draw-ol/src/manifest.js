@@ -81,7 +81,11 @@ export const manifest = {
         id: 'drawDeletePoint',
         label: 'Delete point',
         iconId: 'trash',
-        enableWhen: ({ pluginState }) => pluginState.selectedVertexIndex >= 0 && pluginState.numVertices > 2,
+        enableWhen: ({ pluginState }) => {
+          if (pluginState.selectedVertexIndex < 0) { return false }
+          const isPolygon = pluginState.feature?.geometry?.type === 'Polygon'
+          return isPolygon ? pluginState.numVertices > 3 : pluginState.numVertices > 2 // NOSONAR
+        },
         hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex'
       }],
       mobile: { slot: 'bottom-right' },

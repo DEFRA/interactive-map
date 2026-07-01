@@ -6,7 +6,7 @@
 /** OL coordinate [e, n] → screen pixel { x, y } */
 export const coordToPixel = (map, coord) => {
   const px = map.getPixelFromCoordinate(coord)
-  if (!px) return null
+  if (!px) { return null }
   return { x: px[0], y: px[1] }
 }
 
@@ -30,6 +30,6 @@ export const pixelToArray = ({ x, y }) => [x, y]
  */
 export const nudgeCoord = (map, coord, dx, dy) => {
   const px = map.getPixelFromCoordinate(coord)
-  if (!px) return coord
+  if (!px) { return coord }
   return map.getCoordinateFromPixel([px[0] + dx, px[1] + dy])
 }
