@@ -7,7 +7,7 @@ import openLayersProvider from '/providers/beta/openlayers/src/index.js'
 import openNamesProvider from '/providers/beta/open-names/src/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import createDrawPlugin from '/plugins/beta/draw-ol/src/index.js'
+import createDrawPlugin from '/plugins/beta/draw/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 
