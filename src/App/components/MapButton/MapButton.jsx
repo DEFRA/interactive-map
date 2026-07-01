@@ -1,5 +1,5 @@
 // components/MapButton.jsx
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useCallback } from 'react'
 import { stringToKebab } from '../../../utils/stringToKebab'
 import { Tooltip } from '../Tooltip/Tooltip'
 import { Icon } from '../Icon/Icon'
@@ -116,7 +116,7 @@ const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu }) => {
  * @param {string} options.className - CSS classes for the button
  * @param {Function} options.onClick - Click event handler
  * @param {Function} options.onKeyUp - Key up event handler
- * @param {Object} options.buttonRefs - React ref object for storing button references
+ * @param {Function} options.setButtonRef - Stable ref callback storing the button DOM node in buttonRefs
  * @param {boolean} options.isDisabled - Whether the button is disabled
  * @param {boolean} options.isPressed - Whether the button is in pressed state
  * @param {boolean} options.isExpanded - Whether content controlled by button is expanded
@@ -133,7 +133,7 @@ const buildButtonProps = ({
   onClick,
   onKeyUp,
   onKeyDown,
-  buttonRefs,
+  setButtonRef,
   isDisabled,
   isPressed,
   isExpanded,
@@ -159,16 +159,12 @@ const buildButtonProps = ({
     onClick,
     onKeyUp,
     onKeyDown,
-    ref: (el) => {
-      if (buttonRefs.current && buttonId) {
-        buttonRefs.current[buttonId] = el
-      }
-    },
+    ref: setButtonRef,
     'aria-disabled': isDisabled || undefined,
     'aria-expanded': ariaExpanded,
     'aria-pressed': typeof isPressed === 'boolean' ? isPressed : undefined,
     'aria-controls': controlledElement?.id,
-    'aria-haspopup': controlledElement?.type === 'popup' || undefined,
+    'aria-haspopup': controlledElement?.type === 'popup' ? 'menu' : undefined,
     ...(href
       ? { href, target: '_blank', onKeyUp: handleKeyUp, role: 'button' }
       : { type: 'button' })
@@ -224,6 +220,14 @@ export const MapButton = ({
   const [menuRect, setMenuRect] = useState(null)
   const menuRef = useRef(null)
 
+  // Stable across renders so Preact doesn't detach/reattach it (and transiently
+  // null out buttonRefs.current[buttonId]) on every unrelated re-render of this button.
+  const setButtonRef = useCallback((el) => {
+    if (buttonRefs.current && buttonId) {
+      buttonRefs.current[buttonId] = el
+    }
+  }, [buttonRefs, buttonId])
+
   const Element = href ? 'a' : 'button'
   const hasMenu = menuItems?.length >= 1
   const showIcon = iconId || iconSvgContent || hasMenu
@@ -264,7 +268,7 @@ export const MapButton = ({
     onClick: handleButtonClick,
     onKeyUp: handleButtonKeyUp,
     onKeyDown: handleButtonKeyDown,
-    buttonRefs,
+    setButtonRef,
     isDisabled,
     isPressed,
     isExpanded,
