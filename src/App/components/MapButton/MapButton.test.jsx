@@ -125,7 +125,7 @@ describe('MapButton', () => {
     renderButton({ idPrefix: 'prefix', menuItems: [{ label: 'Item' }] })
     const button = getButton()
     expect(button).toHaveAttribute('aria-controls', 'prefix-popup-test')
-    expect(button).toHaveAttribute('aria-haspopup', 'true')
+    expect(button).toHaveAttribute('aria-haspopup', 'menu')
   })
 
   it('toggles popup aria-expanded and startPos', () => {
