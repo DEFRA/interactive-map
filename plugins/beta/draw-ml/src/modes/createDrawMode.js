@@ -520,7 +520,7 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
 
     onPointerdown (state, e) {
       if (e.pointerType !== 'touch') {
-        this._setInterface(state, 'pointer', false)
+        this._setInterface(state, 'mouse', false)
       }
     },
 

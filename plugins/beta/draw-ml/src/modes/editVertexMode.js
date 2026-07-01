@@ -86,7 +86,8 @@ export const EditVertexMode = {
       selectionchange: bind(this.onSelectionChange),
       scalechange: bind(this.onScaleChange),
       update: bind(this.onUpdate),
-      move: bind(this.onMove)
+      move: bind(this.onMove),
+      interfacetypechange: bind(this.onInterfaceTypeChange)
     }
 
     window.addEventListener('keydown', h.keydown, { capture: true })
@@ -102,6 +103,7 @@ export const EditVertexMode = {
     this.map.on('draw.scalechange', h.scalechange)
     this.map.on('draw.update', h.update)
     this.map.on('move', h.move)
+    this.map.on('draw.interfacetypechange', h.interfacetypechange)
   },
 
   applyVertexSelection (state, options) {
@@ -151,6 +153,12 @@ export const EditVertexMode = {
 
   onScaleChange (state, e) {
     state.scale = e.scale
+  },
+
+  onInterfaceTypeChange (state, e) {
+    state.interfaceType = e.interfaceType
+    const vertex = state.selectedVertexIndex >= 0 ? state.vertecies[state.selectedVertexIndex] : null
+    this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
   onUpdate (state) {
@@ -477,6 +485,7 @@ export const EditVertexMode = {
     this.map.off('draw.scalechange', h.scalechange)
     this.map.off('draw.update', h.update)
     this.map.off('move', h.move)
+    this.map.off('draw.interfacetypechange', h.interfacetypechange)
     this.map.dragPan.enable()
     window.removeEventListener('click', h.click)
     window.removeEventListener('keydown', h.keydown, { capture: true })

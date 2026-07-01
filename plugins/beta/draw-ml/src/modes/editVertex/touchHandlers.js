@@ -43,7 +43,7 @@ export const touchHandlers = {
   },
 
   onPointerevent (state, e) {
-    state.interfaceType = e.pointerType === 'touch' ? 'touch' : 'pointer'
+    state.interfaceType = e.pointerType === 'touch' ? 'touch' : 'mouse'
     state.isPanEnabled = true
     if (e.pointerType === 'touch' && e.type === 'pointermove' && !isOnSVG(e.target.parentNode) && !state._ignorePointermoveDeselect) {
       this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null, coordPath: null })
