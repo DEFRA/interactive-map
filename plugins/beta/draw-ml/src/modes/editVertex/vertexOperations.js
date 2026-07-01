@@ -119,11 +119,12 @@ export const vertexOperations = {
     const deletedPosition = [...state.vertecies[state.selectedVertexIndex]]
     const deletedIndex = state.selectedVertexIndex
 
-    this._ctx.api.trash()
-
-    // Clear DirectSelect's coordinate selection to prevent visual artifacts
+    // Remove the coordinate directly rather than via this._ctx.api.trash(), which routes through
+    // DirectSelect.trash() and calls onSetup({ featureId }) with incomplete options, crashing event registration.
+    const coordPath = [...result.segment.path, result.localIdx].join('.')
+    feature.removeCoordinate(coordPath)
+    this.fireUpdate()
     this.clearSelectedCoordinates()
-    // Force feature re-render to clear vertex highlights
     feature.changed()
     this._ctx.store.render()
 

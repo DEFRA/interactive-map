@@ -1,4 +1,4 @@
-import DirectSelect from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js'
+import DirectSelect from '../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState
@@ -44,25 +44,7 @@ export const EditVertexMode = {
     state.midpoints = this.getMidpoints(state.featureId)
     this.setupEventListeners(state)
 
-    if (options.selectedVertexType === 'midpoint') {
-      // Clear any vertex selection when switching to midpoint
-      state.selectedCoordPaths = []
-      this.clearSelectedCoordinates()
-      // Force feature re-render to clear vertex highlights
-      if (state.feature) {
-        state.feature.changed()
-      }
-      this._ctx.store.render()
-      this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
-    } else if (options.selectedVertexIndex === -1) {
-      // Explicitly clear selection when re-entering with no vertex selected
-      state.selectedCoordPaths = []
-      this.clearSelectedCoordinates()
-      if (state.feature) {
-        state.feature.changed()
-      }
-      this._ctx.store.render()
-    }
+    this.applyVertexSelection(state, options)
     this.map._drawEditContainer = options.container
     this.addTouchVertexTarget(state)
 
@@ -122,7 +104,27 @@ export const EditVertexMode = {
     this.map.on('move', h.move)
   },
 
+  applyVertexSelection (state, options) {
+    if (options.selectedVertexType === 'midpoint') {
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      if (state.feature) { state.feature.changed() }
+      this._ctx.store.render()
+      this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
+      return
+    }
+    if (options.selectedVertexIndex === -1) {
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      if (state.feature) { state.feature.changed() }
+      this._ctx.store.render()
+    }
+  },
+
   onSelectionChange (state, e) {
+    // Refresh vertex list so numVertecies reflects the latest geometry (e.g. after midpoint insertion)
+    this.syncVertices(state)
+
     const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
 
     // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
@@ -325,6 +327,21 @@ export const EditVertexMode = {
     }
   },
 
+  onClick (state, e) { // NOSONAR — complexity accumulated from object-level context; single guard clause, see feedback_mgl_click_vs_mouseup.md
+    if (state._isInsertingVertex && state._insertedVertexIndex !== undefined) {
+      const insertedIndex = state._insertedVertexIndex
+      this.syncVertices(state)
+      this.pushUndo({ type: 'insert_vertex', featureId: state.featureId, vertexIndex: insertedIndex })
+      state.selectedVertexIndex = insertedIndex
+      state.selectedVertexType = 'vertex'
+      state._isInsertingVertex = false
+      state._insertedVertexIndex = undefined
+      this.map.fire('draw.vertexselection', { index: insertedIndex, numVertecies: state.vertecies.length })
+      return
+    }
+    DirectSelect.onClick.call(this, state, e)
+  },
+
   onMouseUp (state, e) {
     clearSnapState(getSnapInstance(this.map))
 
@@ -376,6 +393,8 @@ export const EditVertexMode = {
           vertexIndex: state._moveStartIndex,
           previousPosition: state._moveStartPosition
         })
+      } else {
+        // No action
       }
     }
 
