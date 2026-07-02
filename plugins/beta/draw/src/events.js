@@ -5,107 +5,84 @@
  * draw.setSnapEnabled(), etc.) so this file is map-framework-agnostic.
  * All MapLibre / OL specifics live in the adapter.
  */
-export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus }) {
-  const { drawDone, drawCancel, drawUndo, drawDeletePoint, drawSnap } = buttonConfig
+
+function createHandlers ({ pluginState, mapProvider, eventBus, resetState, disableSnap }) {
   const { draw } = mapProvider
-  const { dispatch, feature, tempFeature } = pluginState
-
-  const resetState = () => {
-    dispatch({ type: 'SET_MODE', payload: null })
-    dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
+  const { feature, tempFeature } = pluginState
+  return {
+    handleDone: () => { disableSnap(); draw.done() },
+    handleCancel: () => {
+      const mode = draw.getMode()
+      if (mode === 'edit_vertex' && tempFeature?.id) { draw.add(feature) }
+      disableSnap(); draw.cancel(); resetState()
+      eventBus.emit('draw:cancelled', feature)
+    },
+    handleUndo: () => draw.undo(),
+    handleDeleteVertex: () => draw.deleteVertex(),
+    handleSnap: () => {
+      pluginState.dispatch({ type: 'TOGGLE_SNAP' })
+      draw.setSnapEnabled(!pluginState.snap)
+    },
+    onCreate: (f) => { disableSnap(); resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', f) },
+    onEditFinish: (f) => { disableSnap(); resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:edited', f) },
+    onCancel: () => {},
+    onVertexSelection: (e) => { pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e }); eventBus.emit('draw:vertexselection', e) },
+    onVertexChange: (e) => { pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } }) },
+    onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
+    onUpdate: (f) => { eventBus.emit('draw:updated', f) }
   }
+}
 
+function attachButtonHandlers (buttonConfig, handlers) {
+  const { drawDone, drawCancel, drawUndo, drawDeletePoint, drawSnap } = buttonConfig
+  drawDone.onClick = handlers.handleDone
+  drawCancel.onClick = handlers.handleCancel
+  drawUndo.onClick = handlers.handleUndo
+  if (drawDeletePoint) { drawDeletePoint.onClick = handlers.handleDeleteVertex }
+  if (drawSnap) { drawSnap.onClick = handlers.handleSnap }
+}
+
+function attachDrawEvents (draw, handlers) {
+  draw.on('create', handlers.onCreate)
+  draw.on('editfinish', handlers.onEditFinish)
+  draw.on('cancel', handlers.onCancel)
+  draw.on('vertexselection', handlers.onVertexSelection)
+  draw.on('vertexchange', handlers.onVertexChange)
+  draw.on('undochange', handlers.onUndoChange)
+  draw.on('update', handlers.onUpdate)
+}
+
+function detachButtonHandlers (buttonConfig) {
+  const { drawDone, drawCancel, drawUndo, drawDeletePoint, drawSnap } = buttonConfig
+  drawDone.onClick = null
+  drawCancel.onClick = null
+  drawUndo.onClick = null
+  if (drawDeletePoint) { drawDeletePoint.onClick = null }
+  if (drawSnap) { drawSnap.onClick = null }
+}
+
+function detachDrawEvents (draw, handlers) {
+  draw.off('create', handlers.onCreate)
+  draw.off('editfinish', handlers.onEditFinish)
+  draw.off('cancel', handlers.onCancel)
+  draw.off('vertexselection', handlers.onVertexSelection)
+  draw.off('vertexchange', handlers.onVertexChange)
+  draw.off('undochange', handlers.onUndoChange)
+  draw.off('update', handlers.onUpdate)
+}
+
+export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus }) {
+  const { draw } = mapProvider
+  const resetState = () => {
+    pluginState.dispatch({ type: 'SET_MODE', payload: null })
+    pluginState.dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
+  }
   const disableSnap = () => {
-    dispatch({ type: 'SET_SNAP', payload: false })
+    pluginState.dispatch({ type: 'SET_SNAP', payload: false })
     draw.setSnapEnabled(false)
   }
-
-  const handleDone = () => {
-    disableSnap()
-    draw.done()
-  }
-
-  const handleCancel = () => {
-    const mode = draw.getMode()
-    if (mode === 'edit_vertex' && tempFeature?.id) {
-      draw.add(feature)
-    }
-    disableSnap()
-    draw.cancel()
-    resetState()
-    eventBus.emit('draw:cancelled', feature)
-  }
-
-  const handleUndo = () => { draw.undo() }
-
-  const handleDeleteVertex = () => { draw.deleteVertex() }
-
-  const handleSnap = () => {
-    const newSnapState = !pluginState.snap
-    dispatch({ type: 'TOGGLE_SNAP' })
-    draw.setSnapEnabled(newSnapState)
-  }
-
-  const onCreate = (geojsonFeature) => {
-    disableSnap()
-    resetState()
-    setTimeout(() => draw.changeMode('disabled'), 0)
-    eventBus.emit('draw:created', geojsonFeature)
-  }
-
-  const onEditFinish = (geojsonFeature) => {
-    disableSnap()
-    resetState()
-    setTimeout(() => draw.changeMode('disabled'), 0)
-    eventBus.emit('draw:edited', geojsonFeature)
-  }
-
-  const onCancel = () => {}
-
-  const onVertexSelection = (e) => {
-    dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e })
-    eventBus.emit('draw:vertexselection', e)
-  }
-
-  const onVertexChange = (e) => {
-    dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } })
-  }
-
-  const onUndoChange = (length) => {
-    dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: length })
-  }
-
-  const onUpdate = (geojsonFeature) => {
-    eventBus.emit('draw:updated', geojsonFeature)
-  }
-
-  drawDone.onClick = handleDone
-  drawCancel.onClick = handleCancel
-  drawUndo.onClick = handleUndo
-  if (drawDeletePoint) { drawDeletePoint.onClick = handleDeleteVertex }
-  if (drawSnap) { drawSnap.onClick = handleSnap }
-
-  draw.on('create', onCreate)
-  draw.on('editfinish', onEditFinish)
-  draw.on('cancel', onCancel)
-  draw.on('vertexselection', onVertexSelection)
-  draw.on('vertexchange', onVertexChange)
-  draw.on('undochange', onUndoChange)
-  draw.on('update', onUpdate)
-
-  return () => {
-    drawDone.onClick = null
-    drawCancel.onClick = null
-    drawUndo.onClick = null
-    if (drawDeletePoint) { drawDeletePoint.onClick = null }
-    if (drawSnap) { drawSnap.onClick = null }
-
-    draw.off('create', onCreate)
-    draw.off('editfinish', onEditFinish)
-    draw.off('cancel', onCancel)
-    draw.off('vertexselection', onVertexSelection)
-    draw.off('vertexchange', onVertexChange)
-    draw.off('undochange', onUndoChange)
-    draw.off('update', onUpdate)
-  }
+  const handlers = createHandlers({ pluginState, mapProvider, eventBus, resetState, disableSnap })
+  attachButtonHandlers(buttonConfig, handlers)
+  attachDrawEvents(draw, handlers)
+  return () => { detachButtonHandlers(buttonConfig); detachDrawEvents(draw, handlers) }
 }
