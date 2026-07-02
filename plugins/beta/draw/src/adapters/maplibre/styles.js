@@ -1,5 +1,6 @@
 // styles.js
 import { DEFAULTS } from './defaults.js'
+import { getColorForScheme } from '../../utils/getColorForScheme.js'
 
 const getColorScheme = (mapStyle) => mapStyle.mapColorScheme ?? 'light'
 
@@ -29,12 +30,12 @@ const strokeInactive = (mapStyle) => ({
   }
 })
 
-// Active lines and fills
-const fillActive = (editStrokeColor) => ({
+// Active lines and fills (sketch during drawing)
+const fillActive = (editFillColor) => ({
   id: 'fill-active',
   type: 'fill',
   filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
-  paint: { 'fill-color': editStrokeColor }
+  paint: { 'fill-color': editFillColor }
 })
 
 const strokeActive = (editStrokeColor) => ({
@@ -140,17 +141,18 @@ const touchVertexIndicator = () => ({
 
 const createDrawStyles = (mapStyle) => {
   const scheme = getColorScheme(mapStyle)
-  const editStrokeColor = DEFAULTS.editStroke[scheme]
-  const editVertexColor = DEFAULTS.editVertex[scheme]
-  const editMidpointColor = DEFAULTS.editMidpoint[scheme]
-  const editHaloColor = DEFAULTS.editHalo[scheme]
-  const editActiveColor = DEFAULTS.editActive[scheme]
-  const splitInvalidColor = DEFAULTS.splitInvalid[scheme]
-  const splitValidColor = DEFAULTS.splitValid[scheme]
+  const editStrokeColor = getColorForScheme(DEFAULTS.editStroke, scheme)
+  const editFillColor = getColorForScheme(DEFAULTS.editFill, scheme)
+  const editVertexColor = getColorForScheme(DEFAULTS.editVertex, scheme)
+  const editMidpointColor = getColorForScheme(DEFAULTS.editMidpoint, scheme)
+  const editHaloColor = getColorForScheme(DEFAULTS.editHalo, scheme)
+  const editActiveColor = getColorForScheme(DEFAULTS.editActive, scheme)
+  const splitInvalidColor = getColorForScheme(DEFAULTS.splitInvalid, scheme)
+  const splitValidColor = getColorForScheme(DEFAULTS.splitValid, scheme)
 
   return [
     fillInactive(mapStyle),
-    fillActive(editStrokeColor),
+    fillActive(editFillColor),
     strokeActive(editStrokeColor),
     strokeInactive(mapStyle),
     drawInvalidSplitter(splitInvalidColor),

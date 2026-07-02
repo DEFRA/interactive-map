@@ -1,12 +1,5 @@
 import { DEFAULTS } from '../defaults.js'
-
-const resolveVariant = (value, scheme, styleId) => {
-  if (typeof value !== 'object' || value === null) { return value }
-  if (styleId && value[styleId] !== undefined) { return value[styleId] }
-  if (value[scheme] !== undefined) { return value[scheme] }
-  if (value.light !== undefined) { return value.light }
-  return Object.values(value)[0]
-}
+import { getColorForScheme } from '../../../utils/getColorForScheme.js'
 
 /**
  * Resolve all draw-ol colors for the given map style and plugin config overrides.
@@ -21,19 +14,20 @@ const resolveVariant = (value, scheme, styleId) => {
 export const resolveColors = (mapStyle, pluginConfig = {}) => {
   const scheme = mapStyle?.mapColorScheme ?? 'light'
   const styleId = mapStyle?.id ?? null
-  const r = (key) => resolveVariant(pluginConfig[key] ?? DEFAULTS[key], scheme, styleId)
+  const resolveColor = (key) => getColorForScheme(pluginConfig[key] ?? DEFAULTS[key], scheme, styleId)
 
   return {
-    editStroke: r('editStroke'),
-    editVertex: r('editVertex'),
-    editMidpoint: r('editMidpoint'),
-    editActive: r('editActive'),
-    editHalo: r('editHalo'),
-    shapeStroke: r('shapeStroke'),
+    editStroke: resolveColor('editStroke'),
+    editFill: resolveColor('editFill'),
+    editVertex: resolveColor('editVertex'),
+    editMidpoint: resolveColor('editMidpoint'),
+    editActive: resolveColor('editActive'),
+    editHalo: resolveColor('editHalo'),
+    shapeStroke: resolveColor('shapeStroke'),
     strokeWidth: pluginConfig.strokeWidth ?? DEFAULTS.strokeWidth,
-    shapeFill: r('shapeFill'),
-    snapVertex: r('snapVertex'),
-    snapEdge: r('snapEdge'),
+    shapeFill: resolveColor('shapeFill'),
+    snapVertex: resolveColor('snapVertex'),
+    snapEdge: resolveColor('snapEdge'),
     mapStyleId: styleId
   }
 }

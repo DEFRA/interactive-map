@@ -53,15 +53,23 @@ export const createDrawMode = ({ map, manager, options }) => {
   } = options
 
   let sketchFeature = null
+  let currentSketchStyle = manager.styles.createSketchStyle()
 
   const drawInteraction = new Draw({
     type: geometryType,
-    style: manager.styles.createSketchStyle(),
+    style: (feature) => currentSketchStyle(feature),
     stopClick: true,
     snapTolerance: SNAP_TOLERANCE_PX,
     condition: buildCondition(map, geometryType, () => sketchFeature)
   })
   map.addInteraction(drawInteraction)
+
+  // Update sketch style when map style changes
+  const onStylesChanged = () => {
+    currentSketchStyle = manager.styles.createSketchStyle()
+    drawInteraction.overlay_.changed()
+  }
+  manager.on('styleschanged', onStylesChanged)
   // OL internal: overlay_ is the private VectorLayer used for the sketch geometry.
   // updateWhileAnimating_ forces per-frame redraws during view animations (keyboard pan).
   // Without this, geom.setCoordinates() calls are ignored while the ANIMATING hint is set.
@@ -113,6 +121,7 @@ export const createDrawMode = ({ map, manager, options }) => {
     cancel () { drawInteraction.abortDrawing() },
     undo () { drawInteraction.removeLastPoint(); updateVertexCount() },
     destroy () {
+      manager.off('styleschanged', onStylesChanged)
       input.destroy()
       map.removeInteraction(drawInteraction)
       sketchFeature = null

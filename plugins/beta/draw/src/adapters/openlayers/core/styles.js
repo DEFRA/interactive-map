@@ -56,12 +56,12 @@ export const createStyles = (colors) => {
 
   const editFeatureStyle = new Style({
     stroke: new Stroke({ color: colors.editStroke, width: 2 }),
-    fill: new Fill({ color: colors.shapeFill })
+    fill: new Fill({ color: colors.editFill })
   })
 
   const sketchLineStyle = new Style({
     stroke: new Stroke({ color: colors.editStroke, width: 2 }),
-    fill: new Fill({ color: colors.shapeFill })
+    fill: new Fill({ color: colors.editFill })
   })
 
   const sketchPointStyle = new Style({
