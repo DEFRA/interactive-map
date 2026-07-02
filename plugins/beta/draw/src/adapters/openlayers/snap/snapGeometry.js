@@ -15,7 +15,8 @@ const closestPointOnSegment = (p, a, b) => {
   return [a[0] + t * dx, a[1] + t * dy]
 }
 
-const bestOf = (current, candidate) => better(current, candidate) ? candidate : current
+// Exported for the snap engine to merge candidates across features/layers
+export const bestOf = (current, candidate) => better(current, candidate) ? candidate : current
 
 const better = (a, b) => {
   if (!a) {
@@ -62,6 +63,9 @@ const testCoords = (coords, query, toleranceSq, isClosedRing) => {
   return best
 }
 
+// Edge candidates carry their segment endpoints (seg) and vertex candidates their
+// neighbouring vertices (adjacent) so the snap engine can test segment orientation —
+// used to recognise tile clip artefacts, which are always axis-aligned in tile space.
 const getBestEdge = (flat, start, numPairs, edgeCount, query, toleranceSq) => {
   let best = null
   for (let i = 0; i < edgeCount; i++) {
@@ -72,36 +76,47 @@ const getBestEdge = (flat, start, numPairs, edgeCount, query, toleranceSq) => {
     const pt = closestPointOnSegment(query, a, b)
     const dSq = dist2(query, pt)
     if (dSq <= toleranceSq) {
-      best = bestOf(best, { type: 'edge', coord: pt, distSq: dSq })
+      best = bestOf(best, { type: 'edge', coord: pt, distSq: dSq, seg: [a, b] })
     }
   }
   return best
 }
 
-const getBestVertex = (flat, start, numPairs, query, toleranceSq) => {
+// Neighbouring vertex indices; closed rings (edgeCount === numPairs) wrap around the ring
+const adjacentIndices = (i, numPairs, wraps) => {
+  const prev = i > 0 ? i - 1 : numPairs - 1
+  const next = i < numPairs - 1 ? i + 1 : 0
+  return [
+    (i > 0 || wraps) ? prev : null,
+    (i < numPairs - 1 || wraps) ? next : null
+  ]
+}
+
+const getBestVertex = (flat, start, numPairs, edgeCount, query, toleranceSq) => {
+  const wraps = edgeCount === numPairs
+  const coordAt = (i) => i === null ? null : [flat[start + i * 2], flat[start + i * 2 + 1]]
   let best = null
   for (let i = 0; i < numPairs; i++) {
-    const xi = start + i * 2
-    const v = [flat[xi], flat[xi + 1]]
+    const v = coordAt(i)
     const dSq = dist2(query, v)
     if (dSq <= toleranceSq) {
-      best = bestOf(best, { type: 'vertex', coord: v, distSq: dSq })
+      const [prevIdx, nextIdx] = adjacentIndices(i, numPairs, wraps)
+      const adjacent = [coordAt(prevIdx), coordAt(nextIdx)]
+      best = bestOf(best, { type: 'vertex', coord: v, distSq: dSq, adjacent })
     }
   }
   return best
 }
 
-const getBestPair = (flat, start, numPairs, edgeCount, query, toleranceSq) => {
-  return bestOf(
-    getBestVertex(flat, start, numPairs, query, toleranceSq),
-    getBestEdge(flat, start, numPairs, edgeCount, query, toleranceSq)
-  )
-}
-
+// Returns the best vertex and best edge separately so the caller can filter one
+// (e.g. a clip-artefact vertex) while still snapping to the other.
 const testFlatCoords = (flat, start, end, query, toleranceSq, isClosedRing) => {
   const numPairs = (end - start) / 2
   const edgeCount = isClosedRing ? numPairs : numPairs - 1
-  return getBestPair(flat, start, numPairs, edgeCount, query, toleranceSq)
+  return {
+    vertex: getBestVertex(flat, start, numPairs, edgeCount, query, toleranceSq),
+    edge: getBestEdge(flat, start, numPairs, edgeCount, query, toleranceSq)
+  }
 }
 
 const olGeomHandlers = {
@@ -149,29 +164,35 @@ export const testOLFeature = (feature, query, toleranceSq) => {
   return handler ? handler(geom, query, toleranceSq) : null
 }
 
+// Returns an array of candidates (best vertex and best edge, when within tolerance)
+// rather than a single winner, so the snap engine can filter clip artefacts per
+// candidate and still fall back to the other.
 export const testRenderFeature = (feature, query, toleranceSq) => {
   const type = feature.getType()
   const flat = feature.getFlatCoordinates()
-  let best = null
+  let bestVertex = null
+  let bestEdge = null
 
   if (type === 'Point') {
     const dSq = dist2(query, flat)
     if (dSq <= toleranceSq) {
-      best = { type: 'vertex', coord: [flat[0], flat[1]], distSq: dSq }
+      bestVertex = { type: 'vertex', coord: [flat[0], flat[1]], distSq: dSq }
     }
   } else if (type === 'LineString') {
-    best = testFlatCoords(flat, 0, flat.length, query, toleranceSq, false)
+    ({ vertex: bestVertex, edge: bestEdge } = testFlatCoords(flat, 0, flat.length, query, toleranceSq, false))
   } else if (type === 'Polygon' || type === 'MultiLineString') {
     const ends = feature.getEnds()
     let start = 0
     const isClosedRing = type === 'Polygon'
     for (const end of ends) {
-      best = bestOf(best, testFlatCoords(flat, start, end, query, toleranceSq, isClosedRing))
+      const pair = testFlatCoords(flat, start, end, query, toleranceSq, isClosedRing)
+      bestVertex = bestOf(bestVertex, pair.vertex)
+      bestEdge = bestOf(bestEdge, pair.edge)
       start = end
     }
   } else {
     // MultiPoint / unknown — no snap candidates
   }
 
-  return best
+  return [bestVertex, bestEdge].filter(Boolean)
 }

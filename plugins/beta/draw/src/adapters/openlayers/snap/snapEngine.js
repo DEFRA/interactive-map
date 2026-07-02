@@ -1,13 +1,14 @@
 import { transform as projTransform } from 'ol/proj.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
-import { testOLFeature, testRenderFeature } from './snapGeometry.js'
+import { testOLFeature, testRenderFeature, bestOf } from './snapGeometry.js'
 
-// VectorTile features are clipped to tile extents, producing artificial straight edges at tile
-// boundaries. MVT tiles also carry a buffer region (geometry from adjacent tiles extending
-// past the tile boundary). Both the exact boundary and the buffer zone must be filtered.
-// Standard MVT buffer is 128 out of 4096 tile coordinate units.
-const TILE_BOUNDARY_EPS = 1 // source-projection units of margin beyond the buffer
+// VectorTile geometry is clipped to a rectangle (tile extent + buffer), producing fake
+// axis-aligned segments — and fake vertices where the clip cut the ring — that don't
+// exist in the real data and mustn't be snap targets. They are detected by orientation:
+// clip segments are exactly axis-aligned in tile space AND sit near a tile edge, a
+// combination real boundaries essentially never produce. This works without knowing
+// the exact buffer size the tiler used. Standard MVT buffer is 128/4096 tile units.
 const MVT_BUFFER_UNITS = 128
 const MVT_TILE_EXTENT = 4096
 
@@ -21,23 +22,57 @@ const buildTileBoundaryState = (layer, map) => {
   return { tileGrid, viewProj, sourceProj, zoom }
 }
 
-const isOnTileBoundary = (state, coord) => {
-  if (!state) { return false }
+// Per-candidate context: the candidate's tile extent plus the two tolerances,
+// computed once so both adjacent segments of a vertex reuse it.
+const getClipContext = (state, coord) => {
+  if (!state) { return null }
   const { tileGrid, viewProj, sourceProj, zoom } = state
-  const c = projTransform(coord, viewProj, sourceProj)
-  const tileCoord = tileGrid.getTileCoordForCoordAndZ(c, zoom)
-  const [minX, minY, maxX, maxY] = tileGrid.getTileCoordExtent(tileCoord)
-  // Buffer zone in source projection: edges within this distance of a tile boundary are
-  // MVT buffer clip artefacts (geometry from the adjacent tile included for rendering overlap).
-  const tileBuffer = (maxX - minX) * (MVT_BUFFER_UNITS / MVT_TILE_EXTENT)
-  const eps = tileBuffer + TILE_BOUNDARY_EPS
-  return (
-    Math.abs(c[0] - minX) < eps ||
-    Math.abs(c[0] - maxX) < eps ||
-    Math.abs(c[1] - minY) < eps ||
-    Math.abs(c[1] - maxY) < eps
-  )
+  const toSource = (c) => c ? projTransform(c, viewProj, sourceProj) : null
+  const anchor = toSource(coord)
+  const tileCoord = tileGrid.getTileCoordForCoordAndZ(anchor, zoom)
+  const extent = tileGrid.getTileCoordExtent(tileCoord)
+  const tileWidth = extent[2] - extent[0]
+  return {
+    toSource,
+    anchor,
+    extent,
+    // Coarse gate: within twice the standard MVT buffer of a tile edge. Generous on
+    // purpose (the axis-alignment test does the real discrimination) so tilers with
+    // a non-standard buffer size are still covered. Relative to tile width, so it is
+    // projection-unit independent.
+    band: tileWidth * (2 * MVT_BUFFER_UNITS / MVT_TILE_EXTENT),
+    // MVT coordinates are quantized to 1/4096 of the tile extent; two quantization
+    // steps of tolerance decides whether a segment is exactly axis-aligned.
+    eps: 2 * (tileWidth / MVT_TILE_EXTENT)
+  }
 }
+
+const isArtefactSegment = (ctx, pa, pb) => {
+  if (!pa || !pb) { return false }
+  const [minX, minY, maxX, maxY] = ctx.extent
+  const nearEdge = (v, lo, hi) => Math.min(Math.abs(v - lo), Math.abs(v - hi)) <= ctx.band
+  const vertical = Math.abs(pa[0] - pb[0]) <= ctx.eps && nearEdge(pa[0], minX, maxX)
+  const horizontal = Math.abs(pa[1] - pb[1]) <= ctx.eps && nearEdge(pa[1], minY, maxY)
+  return vertical || horizontal
+}
+
+// Edges: artefact when the snapped segment itself is an axis-aligned boundary segment.
+// Vertices: fake vertices are the points where clipping cut the ring, i.e. endpoints
+// of artefact segments — test both adjacent segments.
+const isClipArtefact = (state, candidate) => {
+  const ctx = getClipContext(state, candidate.coord)
+  if (!ctx) { return false }
+  if (candidate.type === 'edge') {
+    const [a, b] = candidate.seg ?? []
+    return isArtefactSegment(ctx, ctx.toSource(a), ctx.toSource(b))
+  }
+  const [prev, next] = candidate.adjacent ?? []
+  return isArtefactSegment(ctx, ctx.anchor, ctx.toSource(prev)) ||
+         isArtefactSegment(ctx, ctx.anchor, ctx.toSource(next))
+}
+
+// Read at call time so it can be toggled from the console at any point: window.DEBUG_SNAP_VISIBILITY = true
+const isDebugEnabled = () => globalThis.DEBUG_SNAP_VISIBILITY === true
 
 // Two same-style fill polygons share an invisible boundary — snapping to it is confusing.
 // Detect this by projecting a test point slightly past the snap position (away from the cursor)
@@ -63,12 +98,42 @@ const isInvisibleFillBoundary = (edgeCoord, cursorCoord, layerId, map, vtLayers,
   )
 }
 
-const pickBest = (a, b) => {
-  if (!b) { return a }
-  if (!a) { return b }
-  if (a.type === 'vertex' && b.type === 'edge') { return a }
-  if (a.type === 'edge' && b.type === 'vertex') { return b }
-  return b.distSq < a.distSq ? b : a
+const logCandidate = (candidate, mapboxLayer) => {
+  if (!isDebugEnabled()) { return }
+  console.log('[snap-candidate-found]', {
+    type: candidate.type,
+    layerId: mapboxLayer?.id,
+    layerType: mapboxLayer?.type,
+    coord: [candidate.coord[0].toFixed(2), candidate.coord[1].toFixed(2)],
+    distSq: candidate.distSq.toFixed(2)
+  })
+}
+
+// Returns true when the candidate is a rendering artefact rather than a visible
+// snap target: either a tile clip artefact, or an invisible same-fill boundary.
+const shouldFilterCandidate = ({ candidate, cursorCoord, mapboxLayer, boundaryState, map, vtLayers, resolution }) => {
+  if (isClipArtefact(boundaryState, candidate)) {
+    if (isDebugEnabled()) { console.log('[snap-filtered] tile clip artefact', candidate.type) }
+    return true
+  }
+  if (candidate.type === 'edge' && mapboxLayer?.type === 'fill' &&
+      isInvisibleFillBoundary(candidate.coord, cursorCoord, mapboxLayer.id, map, vtLayers, resolution)) {
+    if (isDebugEnabled()) { console.log('[snap-filtered] invisible fill boundary') }
+    return true
+  }
+  return false
+}
+
+// Folds a feature's candidates into the current best, skipping rendering artefacts
+const pickVisibleCandidates = (best, candidates, context) => {
+  let result = best
+  for (const candidate of candidates) {
+    logCandidate(candidate, context.mapboxLayer)
+    if (!shouldFilterCandidate({ candidate, ...context })) {
+      result = bestOf(result, candidate)
+    }
+  }
+  return result
 }
 
 // Collected on each query — VectorTileLayers are replaced when the map style changes
@@ -101,6 +166,9 @@ export const createSnapEngine = (map, snapLayers = []) => {
   setLayers(snapLayers)
 
   const query = (coord, radiusPx) => {
+    if (isDebugEnabled()) {
+      console.log('[snap-query]', { coord: [coord[0].toFixed(2), coord[1].toFixed(2)], radiusPx, vtLayerCount: vtLayerNames.size, olLayerCount: olLayers.length })
+    }
     const resolution = map.getView().getResolution()
     if (!resolution) { return null }
     const toleranceMapUnits = radiusPx * resolution
@@ -118,7 +186,7 @@ export const createSnapEngine = (map, snapLayers = []) => {
       const source = layer.getSource()
       if (!source) { continue }
       for (const feature of source.getFeaturesInExtent(ext)) {
-        best = pickBest(best, testOLFeature(feature, coord, toleranceSq))
+        best = bestOf(best, testOLFeature(feature, coord, toleranceSq))
       }
     }
 
@@ -132,14 +200,13 @@ export const createSnapEngine = (map, snapLayers = []) => {
           (feature, layer) => {
             const mapboxLayer = feature.get('mapbox-layer')
             if (!vtLayerNames.has(mapboxLayer?.id)) { return }
-            const candidate = testRenderFeature(feature, coord, toleranceSq)
-            if (!candidate) { return }
+            const candidates = testRenderFeature(feature, coord, toleranceSq)
+            if (!candidates.length) { return }
             if (!tileBoundaryStates.has(layer)) {
               tileBoundaryStates.set(layer, buildTileBoundaryState(layer, map))
             }
-            if (isOnTileBoundary(tileBoundaryStates.get(layer), candidate.coord)) { return }
-            if (candidate.type === 'edge' && mapboxLayer?.type === 'fill' && isInvisibleFillBoundary(candidate.coord, coord, mapboxLayer.id, map, vtLayers, resolution)) { return }
-            best = pickBest(best, candidate)
+            const boundaryState = tileBoundaryStates.get(layer)
+            best = pickVisibleCandidates(best, candidates, { cursorCoord: coord, mapboxLayer, boundaryState, map, vtLayers, resolution })
           },
           { hitTolerance: radiusPx, layerFilter: (l) => vtLayers.includes(l) }
         )
