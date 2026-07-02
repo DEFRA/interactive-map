@@ -547,6 +547,9 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
       ParentMode.onStop.call(this, state)
       this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
       this._hideCrossHair(state)
+      // Sync the final interfaceType from draw mode back to app state so crosshair
+      // visibility is correct when exiting draw mode (e.g., if user switched from mouse to keyboard)
+      this.map.fire('draw.interfacetypechange', { interfaceType: state.interfaceType })
     }
   }
 }

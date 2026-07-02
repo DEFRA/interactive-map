@@ -129,6 +129,15 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   }
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)
 
+  // --- Sync final interface type when exiting draw modes ---
+  // When user switches devices during drawing (e.g., mouse to keyboard), the draw
+  // mode's local interfaceType diverges from appState.interfaceType. When exiting
+  // draw mode, we emit the final interfaceType so appState can be updated.
+  const handleDrawInterfaceTypeChange = (e) => {
+    eventBus.emit('draw:interfacetypechange', { interfaceType: e.interfaceType })
+  }
+  map.on('draw.interfacetypechange', handleDrawInterfaceTypeChange)
+
   // --- Update map scale ---
   const handleSetMapSize = (e) => {
     map.fire('draw.scalechange', { scale: { small: 1, medium: 1.5, large: 2 }[e] })
@@ -145,6 +154,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
       // Remove event listeners
       eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)
       eventBus.off(events.MAP_SET_SIZE, handleSetMapSize)
+      map.off('draw.interfacetypechange', handleDrawInterfaceTypeChange)
       // Disable draw mode but keep control on map for reuse
       draw.changeMode('disabled')
       // Clear adapter reference (but not _mapboxDrawInstance so it persists)

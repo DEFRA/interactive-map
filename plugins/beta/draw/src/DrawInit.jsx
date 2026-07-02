@@ -42,7 +42,12 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       const wasAlreadyVisible = crossHair.isVisible
       crossHair.fixAtCenter()
       return () => {
-        if (!wasAlreadyVisible) { crossHair.hide() }
+        // Only hide crosshair if it wasn't visible before drawing AND we're not currently
+        // in keyboard/touch mode (user might have switched input devices during drawing).
+        // This ensures crosshair stays visible if user switched to keyboard mid-drawing.
+        if (!wasAlreadyVisible && !['touch', 'keyboard'].includes(appState.interfaceType)) {
+          crossHair.hide()
+        }
       }
     }
     return undefined

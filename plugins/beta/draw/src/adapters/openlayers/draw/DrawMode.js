@@ -121,6 +121,9 @@ export const createDrawMode = ({ map, manager, options }) => {
     undo () { drawInteraction.removeLastPoint(); updateVertexCount() },
     destroy () {
       manager.off('styleschanged', onStylesChanged)
+      // Emit the final interfaceType from draw mode so it's synced back to appState
+      // This ensures crosshair visibility is correct when exiting draw mode
+      manager.emit('interfacetypechange', { interfaceType: input.getInterfaceType() })
       input.destroy()
       map.removeInteraction(drawInteraction)
       sketchFeature = null

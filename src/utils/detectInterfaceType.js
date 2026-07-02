@@ -59,7 +59,11 @@ function createInterfaceDetector () {
   }
 
   const handleKeyDown = e => {
-    if (e.key === 'Tab') {
+    // Recognize keyboard mode from Tab (explicit focus), arrow keys (navigation),
+    // Enter (confirmation), or other significant keys. This allows the interface type
+    // to update even when keyboard input happens during drawing (where focus is on map).
+    const keyboardModeKeys = new Set(['Tab', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'])
+    if (keyboardModeKeys.has(e.key)) {
       notifyListeners('keyboard')
     }
   }
