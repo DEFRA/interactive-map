@@ -34,7 +34,7 @@ const fillActive = (editStrokeColor) => ({
   id: 'fill-active',
   type: 'fill',
   filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'true']],
-  paint: { 'fill-color': editStrokeColor, 'fill-opacity': 0.1 }
+  paint: { 'fill-color': editStrokeColor }
 })
 
 const strokeActive = (editStrokeColor) => ({

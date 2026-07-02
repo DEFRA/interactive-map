@@ -284,7 +284,7 @@ export function initMapLibreSnap (map, draw, snapOptions = {}) {
             id: SNAP_HELPER_LAYER,
             type: 'fill',
             source: SNAP_HELPER_LAYER,
-            paint: { 'fill-color': ['get', 'color'], 'fill-opacity': 0.6 },
+            paint: { 'fill-color': ['get', 'color'] },
             layout: { visibility: map._snapInstance?.status ? 'visible' : 'none' }
           })
         }
