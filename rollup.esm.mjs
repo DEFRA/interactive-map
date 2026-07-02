@@ -275,6 +275,12 @@ const ALL_BUILDS = [
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-map-styles-plugin' }
   },
   {
+    entryPath: './plugins/beta/draw/src/index.js',
+    outDir: 'plugins/beta/draw/dist/esm',
+    extraExternals: [/^ol\//],
+    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-plugin' }
+  },
+  {
     entryPath: './plugins/beta/draw-ml/src/index.js',
     outDir: 'plugins/beta/draw-ml/dist/esm',
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-ml-plugin' }
