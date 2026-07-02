@@ -8,7 +8,7 @@ import { createTouchTarget, applyTouchTargetColors } from '../../../../utils/tou
 import { COLORS } from '../../defaults.js'
 import { getColorForScheme } from '../../../../utils/getColorForScheme.js'
 
-const applyTouchVertexColors = (el, mapStyle) => {
+export const applyTouchVertexColors = (el, mapStyle) => {
   if (!el) { return }
   const scheme = mapStyle?.mapColorScheme ?? 'light'
   const colors = {
