@@ -4,6 +4,8 @@ import { createUndoStack } from './undoStack.js'
 import { createStyles } from './styles.js'
 import { resolveColors } from '../utils/resolveColors.js'
 import { createSnapManager } from '../snap/snapManager.js'
+import { createDrawMode } from '../draw/DrawMode.js'
+import { createEditMode } from '../edit/EditMode.js'
 import { DEFAULTS } from '../defaults.js'
 
 /**
@@ -82,10 +84,8 @@ export class OLDrawManager {
     const modeOptions = { ...options, snap: this.snap }
 
     if (modeName === 'draw_polygon' || modeName === 'draw_line') {
-      const { createDrawMode } = await import('../draw/DrawMode.js')
       this._modeInstance = createDrawMode({ map: this._map, manager: this, options: modeOptions })
     } else if (modeName === 'edit_vertex') {
-      const { createEditMode } = await import('../edit/EditMode.js')
       this._modeInstance = createEditMode({ map: this._map, manager: this, options: modeOptions })
     } else {
       // disabled — no mode instance needed

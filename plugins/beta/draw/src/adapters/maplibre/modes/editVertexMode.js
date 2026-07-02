@@ -36,6 +36,12 @@ export const EditVertexMode = {
       scale: options.scale ?? 1
     })
 
+    // Clear undo stack only on initial entry to edit mode for a feature
+    // Only clear if we're starting a new editing session (not already editing)
+    if (this.map._lastEditFeatureId !== state.featureId) {
+      this.map._undoStack?.clear()
+      this.map._lastEditFeatureId = state.featureId
+    }
 
     // Get feature type for later reference
     const feature = this.getFeature(state.featureId)

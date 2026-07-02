@@ -102,7 +102,9 @@ export const touchHandlers = {
 
   onTouchstart (state, e) {
     clearSnapState(getSnapInstance(this.map))
-    const vertex = state.vertecies?.[state.selectedVertexIndex]
+    // Always get fresh vertex data in case coordinates changed during previous edits
+    const freshVertices = this.getVerticies(state.featureId)
+    const vertex = freshVertices?.[state.selectedVertexIndex]
     if (!vertex || !isOnSVG(e.target.parentNode)) {
       return
     }
