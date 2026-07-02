@@ -4,9 +4,9 @@ import {
   getSegmentForIndex,
   getModifiableCoords
 } from './geometryHelpers.js'
+import { KEYBOARD } from '../../../../defaults.js'
 
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
-const NUDGE = 1; const STEP = 5
 
 export const vertexOperations = {
   updateMidpoint (coordinates) {
@@ -29,7 +29,7 @@ export const vertexOperations = {
 
   getOffset (coord, e) {
     const pt = this.map.project(coord)
-    const offset = e?.shiftKey ? NUDGE : STEP
+    const offset = e?.shiftKey ? KEYBOARD.nudgeAmount : KEYBOARD.stepAmount
     const [dx, dy] = e ? ARROW_OFFSETS[e.key].map(v => v * offset) : [0, 0]
     return this.map.unproject({ x: pt.x + dx, y: pt.y + dy })
   },

@@ -34,3 +34,8 @@ export const SIZES = {
 export const TOLERANCES = {
   snapRadius: 12
 }
+
+export const KEYBOARD = {
+  nudgeAmount: 1,
+  stepAmount: 5
+}

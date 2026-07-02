@@ -1,11 +1,10 @@
 import { coordToPixel, nudgeCoord } from '../utils/olCoords.js'
 import { spatialNavigate } from '../../../utils/spatial.js'
 import { moveVertex, insertAtMidpoint } from './vertexOps.js'
+import { KEYBOARD } from '../../../defaults.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const INTERACTIVE_TAGS = new Set(['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT', 'A'])
-const NUDGE_PX = 1
-const STEP_PX = 5
 
 const selectNearest = (map, getState, setState) => {
   const { vertices, midpoints } = getState()
@@ -94,7 +93,7 @@ const wireNudge = ({ map, snap, getState, setState, onInserted }) => {
     if (!olFeature) {
       return
     }
-    const step = e.shiftKey ? NUDGE_PX : STEP_PX
+    const step = e.shiftKey ? KEYBOARD.nudgeAmount : KEYBOARD.stepAmount
     const offsets = { ArrowUp: [0, -step], ArrowDown: [0, step], ArrowLeft: [-step, 0], ArrowRight: [step, 0] }
     const [dx, dy] = offsets[e.key]
     if (selectedVertexType === 'midpoint') {
