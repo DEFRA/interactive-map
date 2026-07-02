@@ -1,6 +1,6 @@
-import path, { dirname } from 'path'
-import { fileURLToPath } from 'url'
-import fs from 'fs'
+import path, { dirname } from 'node:path'
+import { fileURLToPath } from 'node:url'
+import fs from 'node:fs'
 
 import { nodeResolve } from '@rollup/plugin-node-resolve'
 import commonjs from '@rollup/plugin-commonjs'
@@ -11,7 +11,7 @@ import terser from '@rollup/plugin-terser'
 import postcss from 'rollup-plugin-postcss'
 import { visualizer } from 'rollup-plugin-visualizer'
 
-const __dirname = dirname(fileURLToPath(import.meta.url))
+const __dirname = dirname(fileURLToPath(import.meta.url)) // NOSONAR - Standard Node.js convention in bundler configs
 
 /**
  * Cleans output directories before each build starts.
@@ -69,7 +69,7 @@ const removeFullCssPlugin = (cssDir) => ({
 // rewritten by the alias plugin before Rollup's external check fires.
 const PREACT_EXTERNALS = [
   'preact',
-  'preact/compat',
+  'preact/compat', // NOSONAR
   'preact/compat/client',
   'preact/hooks',
   'preact/jsx-runtime'
@@ -178,7 +178,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
 
       // Only runs when ANALYZE=1 is set; writes stats to dist/stats/<name>.html
       ...(process.env.ANALYZE ? [visualizer({
-        filename: path.resolve(__dirname, 'dist/stats', `${outDir.replace(/\//g, '-')}.html`),
+        filename: path.resolve(__dirname, 'dist/stats', `${outDir.replace(/\//g, '-')}.html`), // NOSONAR replaceAll() requires Chrome 84 or later
         open: false,
         gzipSize: true
       })] : [])
@@ -217,89 +217,91 @@ const ALL_BUILDS = [
     entryPath: './providers/maplibre/src/index.js',
     outDir: 'providers/maplibre/dist/esm',
     // maplibre-gl is external; only the provider class itself becomes a chunk
-    manualChunks: (id) => { if (id.includes('/maplibreProvider')) return 'im-maplibre-provider' }
+    manualChunks: (id) => id.includes('/maplibreProvider') ? 'im-maplibre-provider' : undefined
   },
   {
     entryPath: './providers/beta/open-names/src/index.js',
     outDir: 'providers/beta/open-names/dist/esm',
-    manualChunks: (id) => { if (id.includes('/reverseGeocode')) return 'im-reverse-geocode' }
+    manualChunks: (id) => id.includes('/reverseGeocode') ? 'im-reverse-geocode' : undefined
   },
   {
     entryPath: './providers/beta/esri/src/index.js',
     outDir: 'providers/beta/esri/dist/esm',
-    manualChunks: (id) => { if (id.includes('/esriProvider')) return 'im-esri-provider' }
+    manualChunks: (id) => id.includes('/esriProvider') ? 'im-esri-provider' : undefined
   },
   {
     entryPath: './providers/beta/openlayers/src/index.js',
     outDir: 'providers/beta/openlayers/dist/esm',
     extraExternals: [/^ol\//, 'proj4'],
-    manualChunks: (id) => {
-      if (id.includes('/openlayersProvider')) {
-        return 'im-openlayers-provider'
-      }
-    }
+    manualChunks: (id) => id.includes('/openlayersProvider') ? 'im-openlayers-provider' : undefined
   },
 
   // Plugins — each lazy-loads ./manifest.js; manualChunks names that split chunk
   {
     entryPath: './plugins/beta/scale-bar/src/index.js',
     outDir: 'plugins/beta/scale-bar/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-scale-bar-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-scale-bar-plugin' : undefined
   },
   {
     entryPath: './plugins/beta/use-location/src/index.js',
     outDir: 'plugins/beta/use-location/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-use-location-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-use-location-plugin' : undefined
   },
   {
     entryPath: './plugins/search/src/index.js',
     outDir: 'plugins/search/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-search-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-search-plugin' : undefined
   },
   {
     entryPath: './plugins/interact/src/index.js',
     outDir: 'plugins/interact/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-interact-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-interact-plugin' : undefined
   },
   {
     entryPath: './plugins/beta/datasets/src/index.js',
     outDir: 'plugins/beta/datasets/dist/esm',
     manualChunks: (id) => {
-      if (id.includes('/manifest')) return 'im-datasets-plugin'
-      if (id.includes('maplibreLayerAdapter')) return 'im-datasets-ml-adapter'
+      if (id.includes('/manifest')) { return 'im-datasets-plugin' }
+      if (id.includes('maplibreLayerAdapter')) { return 'im-datasets-ml-adapter' }
+      return undefined
     }
   },
   {
     entryPath: './plugins/beta/map-styles/src/index.js',
     outDir: 'plugins/beta/map-styles/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-map-styles-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-map-styles-plugin' : undefined
   },
   {
     entryPath: './plugins/beta/draw/src/index.js',
     outDir: 'plugins/beta/draw/dist/esm',
     extraExternals: [/^ol\//],
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-plugin' }
+    manualChunks: (id) => {
+      if (id.includes('/manifest')) { return 'im-draw-plugin' }
+      if (id.includes('MaplibreDrawAdapter')) { return 'im-draw-ml-adapter' }
+      if (id.includes('OLDrawAdapter')) { return 'im-draw-ol-adapter' }
+      return undefined
+    }
   },
   {
     entryPath: './plugins/beta/draw-ml/src/index.js',
     outDir: 'plugins/beta/draw-ml/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-ml-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-ml-plugin' : undefined
   },
   {
     entryPath: './plugins/beta/draw-es/src/index.js',
     outDir: 'plugins/beta/draw-es/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-es-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-es-plugin' : undefined
   },
   {
     entryPath: './plugins/beta/draw-ol/src/index.js',
     outDir: 'plugins/beta/draw-ol/dist/esm',
     extraExternals: [/^ol\//],
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-draw-ol-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-ol-plugin' : undefined
   },
   {
     entryPath: './plugins/beta/frame/src/index.js',
     outDir: 'plugins/beta/frame/dist/esm',
-    manualChunks: (id) => { if (id.includes('/manifest')) return 'im-frame-plugin' }
+    manualChunks: (id) => id.includes('/manifest') ? 'im-frame-plugin' : undefined
   }
 ]
 
