@@ -67,8 +67,9 @@ export const createStyles = (colors) => {
 
   const sketchPointStyle = new Style({
     image: new CircleStyle({
-      radius: 5,
-      fill: new Fill({ color: colors.editVertex })
+      radius: SIZES.mousePointerRadius,
+      fill: new Fill({ color: colors.mousePointer }),
+      stroke: new Stroke({ color: colors.mousePointerHalo, width: 1 })
     })
   })
 

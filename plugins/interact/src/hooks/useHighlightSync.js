@@ -33,6 +33,7 @@ export const useHighlightSync = ({
     const activeFeatures = listboxActiveItem
       ? [{ featureId: listboxActiveItem.featureId, layerId: listboxActiveItem.layerId, idProperty: listboxActiveItem.idProperty, geometry: listboxActiveItem.geometry }]
       : []
+    console.log('[interact-highlight-sync] updateHighlightedFeatures: mapProvider.updateHighlightedFeatures =', !!mapProvider?.updateHighlightedFeatures, 'stylesMap =', stylesMap)
     mapProvider.updateHighlightedFeatures?.(selectedFeatures, activeFeatures, stylesMap)
   }
 

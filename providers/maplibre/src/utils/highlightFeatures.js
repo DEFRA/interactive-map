@@ -241,6 +241,7 @@ export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures
   if (!map) {
     return null
   }
+  console.log('[maplibre-highlight] updateHighlightedFeatures called with selectedFeatures:', selectedFeatures?.length, 'activeFeatures:', activeFeatures?.length, 'stylesMap keys:', Object.keys(stylesMap || {}))
   // Active cursor features — rendered first so selected layers appear on top
   if (activeFeatures?.length) {
     applyFeatureHighlights(map, activeFeatures, stylesMap, ACTIVE_PREFIX, getActiveImageId)

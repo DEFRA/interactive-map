@@ -1,6 +1,9 @@
 /**
- * Resolve a color value which may be either a string (same for all schemes)
+ * Resolve a configuration value which may be either a simple value (same for all styles)
  * or an object with scheme/style variants.
+ *
+ * Useful for resolving any value (colors, sizes, etc.) across different map styles and color schemes.
+ * Can resolve based on both style ID and color scheme.
  *
  * Resolution order for objects:
  * 1. Exact style ID match (e.g., { outdoor: '...', dark: '...' })
@@ -8,23 +11,26 @@
  * 3. Fallback to 'light' property
  * 4. First value in object
  *
- * @param {string|object} colorValue - Color as string or variant object
- * @param {string} scheme - Current scheme ('light' or 'dark')
+ * @param {any} value - Simple value or variant object
+ * @param {string} scheme - Current color scheme ('light' or 'dark')
  * @param {string|null} styleId - Map style ID for per-style customization
- * @returns {string} Resolved color value
+ * @returns {any} Resolved value
  */
-export const getColorForScheme = (colorValue, scheme, styleId = null) => {
-  if (typeof colorValue !== 'object' || colorValue === null) {
-    return colorValue
+export const getValueForStyle = (value, scheme, styleId = null) => {
+  if (typeof value !== 'object' || value === null) {
+    return value
   }
-  if (styleId && colorValue[styleId] !== undefined) {
-    return colorValue[styleId]
+  if (styleId && value[styleId] !== undefined) {
+    return value[styleId]
   }
-  if (colorValue[scheme] !== undefined) {
-    return colorValue[scheme]
+  if (value[scheme] !== undefined) {
+    return value[scheme]
   }
-  if (colorValue.light !== undefined) {
-    return colorValue.light
+  if (value.light !== undefined) {
+    return value.light
   }
-  return Object.values(colorValue)[0]
+  return Object.values(value)[0]
 }
+
+// Legacy alias for backwards compatibility
+export const getColorForScheme = getValueForStyle

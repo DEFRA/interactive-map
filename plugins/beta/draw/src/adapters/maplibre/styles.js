@@ -1,6 +1,6 @@
 // styles.js
 import { COLORS, SIZES } from './defaults.js'
-import { getColorForScheme } from '../../utils/getColorForScheme.js'
+import { getValueForStyle } from '../../utils/getColorForScheme.js'
 
 const getColorScheme = (mapStyle) => mapStyle.mapColorScheme ?? 'light'
 
@@ -141,14 +141,14 @@ const touchVertexIndicator = () => ({
 
 const createDrawStyles = (mapStyle) => {
   const scheme = getColorScheme(mapStyle)
-  const editStrokeColor = getColorForScheme(COLORS.editStroke, scheme)
-  const editFillColor = getColorForScheme(COLORS.editFill, scheme)
-  const editVertexColor = getColorForScheme(COLORS.editVertex, scheme)
-  const editMidpointColor = getColorForScheme(COLORS.editMidpoint, scheme)
-  const editHaloColor = getColorForScheme(COLORS.editHalo, scheme)
-  const editActiveColor = getColorForScheme(COLORS.editActive, scheme)
-  const splitInvalidColor = getColorForScheme(COLORS.splitInvalid, scheme)
-  const splitValidColor = getColorForScheme(COLORS.splitValid, scheme)
+  const editStrokeColor = getValueForStyle(COLORS.editStroke, scheme)
+  const editFillColor = getValueForStyle(COLORS.editFill, scheme)
+  const editVertexColor = getValueForStyle(COLORS.editVertex, scheme)
+  const editMidpointColor = getValueForStyle(COLORS.editMidpoint, scheme)
+  const editHaloColor = getValueForStyle(COLORS.editHalo, scheme)
+  const editActiveColor = getValueForStyle(COLORS.editActive, scheme)
+  const splitInvalidColor = getValueForStyle(COLORS.splitInvalid, scheme)
+  const splitValidColor = getValueForStyle(COLORS.splitValid, scheme)
   const { vertexRadius, midpointRadius, vertexHaloRadius } = SIZES
 
   return [

@@ -7,7 +7,7 @@ import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from './undoStack.js'
 import { applyTouchVertexColors } from './modes/editVertex/touchHandlers.js'
-import { TOLERANCES } from './defaults.js'
+import { COLORS, SIZES, TOLERANCES } from './defaults.js'
 
 /**
  * Creates and manages a MapLibre/Mapbox Draw control instance configured for polygon editing.
@@ -117,6 +117,74 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     radius: TOLERANCES.snapRadius,
     rules: ['vertex', 'edge']
   })
+
+  // --- Setup cursor indicator for draw modes ---
+  const CURSOR_SOURCE = 'draw-cursor-indicator'
+  const CURSOR_LAYER = 'draw-cursor-indicator-layer'
+  const cursorIndicatorSource = {
+    type: 'geojson',
+    data: { type: 'FeatureCollection', features: [] }
+  }
+  if (!map.getSource(CURSOR_SOURCE)) {
+    map.addSource(CURSOR_SOURCE, cursorIndicatorSource)
+  }
+
+  const resolveColor = (colorConfig, styleId) => {
+    if (typeof colorConfig === 'string') {
+      return colorConfig
+    }
+    if (typeof colorConfig === 'object' && colorConfig !== null) {
+      return styleId && colorConfig[styleId] ? colorConfig[styleId] : Object.values(colorConfig)[0] ?? null
+    }
+    return null
+  }
+
+  const ensureCursorLayer = () => {
+    if (!map.getLayer(CURSOR_LAYER)) {
+      const pointerColor = resolveColor(COLORS.mousePointer, mapStyle?.id)
+      const pointerHaloColor = resolveColor(COLORS.mousePointerHalo, mapStyle?.id)
+      map.addLayer({
+        id: CURSOR_LAYER,
+        type: 'circle',
+        source: CURSOR_SOURCE,
+        paint: {
+          'circle-radius': SIZES.mousePointerRadius,
+          'circle-color': pointerColor,
+          'circle-stroke-width': 1,
+          'circle-stroke-color': pointerHaloColor
+        }
+      })
+    }
+  }
+
+  let cursorIndicatorActive = false
+  const handleMapMouseMove = (e) => {
+    if (!cursorIndicatorActive) {
+      return
+    }
+    const feature = {
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [e.lngLat.lng, e.lngLat.lat] }
+    }
+    map.getSource(CURSOR_SOURCE).setData({
+      type: 'FeatureCollection',
+      features: [feature]
+    })
+  }
+
+  const originalChangeMode = draw.changeMode.bind(draw)
+  draw.changeMode = function (mode, opts) {
+    const isDrawMode = ['draw_polygon', 'draw_line'].includes(mode)
+    cursorIndicatorActive = isDrawMode
+    if (isDrawMode) {
+      ensureCursorLayer()
+      map.on('mousemove', handleMapMouseMove)
+    } else {
+      map.off('mousemove', handleMapMouseMove)
+      map.getSource(CURSOR_SOURCE).setData({ type: 'FeatureCollection', features: [] })
+    }
+    return originalChangeMode(mode, opts)
+  }
 
   // --- Update colour scheme ---
   const handleSetMapStyle = (e) => {

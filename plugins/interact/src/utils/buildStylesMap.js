@@ -21,8 +21,11 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
   const stylesMap = {}
 
   if (!mapStyle) {
+    console.warn('[interact] buildStylesMap: mapStyle is null/undefined, cannot build styles')
     return stylesMap
   }
+
+  console.log('[interact] buildStylesMap: mapStyle =', mapStyle.id, 'mapColorScheme =', mapStyle.mapColorScheme)
 
   const scheme = THEME_COLORS[mapStyle.mapColorScheme] ?? THEME_COLORS.light
   const schemeActiveColor = mapStyle.activeColor ?? scheme.activeColor

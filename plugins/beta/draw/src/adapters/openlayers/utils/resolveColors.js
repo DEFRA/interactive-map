@@ -1,5 +1,5 @@
 import { COLORS, SIZES } from '../defaults.js'
-import { getColorForScheme } from '../../../utils/getColorForScheme.js'
+import { getValueForStyle } from '../../../utils/getColorForScheme.js'
 
 /**
  * Resolve all draw-ol colors for the given map style and plugin config overrides.
@@ -14,9 +14,11 @@ import { getColorForScheme } from '../../../utils/getColorForScheme.js'
 export const resolveColors = (mapStyle, pluginConfig = {}) => {
   const scheme = mapStyle?.mapColorScheme ?? 'light'
   const styleId = mapStyle?.id ?? null
-  const resolveColor = (key) => getColorForScheme(pluginConfig[key] ?? COLORS[key], scheme, styleId)
+  const resolveColor = (key) => getValueForStyle(pluginConfig[key] ?? COLORS[key], scheme, styleId)
 
   return {
+    mousePointer: resolveColor('mousePointer'),
+    mousePointerHalo: resolveColor('mousePointerHalo'),
     editStroke: resolveColor('editStroke'),
     editFill: resolveColor('editFill'),
     editVertex: resolveColor('editVertex'),
