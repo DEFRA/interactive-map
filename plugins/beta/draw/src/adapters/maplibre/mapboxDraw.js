@@ -7,6 +7,7 @@ import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from './undoStack.js'
 import { applyTouchVertexColors } from './modes/editVertex/touchHandlers.js'
+import { TOLERANCES } from './defaults.js'
 
 /**
  * Creates and manages a MapLibre/Mapbox Draw control instance configured for polygon editing.
@@ -113,7 +114,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   // Start with status: false to match initial snap disabled state
   initMapLibreSnap(map, draw, {
     layers: snapLayers,
-    radius: 10,
+    radius: TOLERANCES.snapRadius,
     rules: ['vertex', 'edge']
   })
 
@@ -122,7 +123,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     map._drawCurrentMapStyle = e
     map.once('idle', () => {
       updateDrawStyles(map, e)
-      const svg = map._drawEditContainer?.querySelector('[data-touch-vertex-target]')
+      const svg = map._drawEditContainer?.querySelector('[data-im-draw-touch-target]')
       applyTouchVertexColors(svg, e)
     })
   }

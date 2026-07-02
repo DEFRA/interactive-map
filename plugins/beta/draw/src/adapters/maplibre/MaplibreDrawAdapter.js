@@ -1,20 +1,6 @@
 import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
-
-const createEventBus = () => {
-  const listeners = new Map()
-  return {
-    on (type, handler) {
-      if (!listeners.has(type)) { listeners.set(type, new Set()) }
-      listeners.get(type).add(handler)
-    },
-    off (type, handler) { listeners.get(type)?.delete(handler) },
-    emit (type, ...args) {
-      const handlers = listeners.get(type)
-      if (handlers) { [...handlers].forEach(h => h(...args)) }
-    }
-  }
-}
+import { createEventBus } from '../../utils/eventBus.js'
 
 /**
  * Draw adapter for MapLibre GL.

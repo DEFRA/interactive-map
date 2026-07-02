@@ -1,4 +1,4 @@
-import { DEFAULTS } from '../defaults.js'
+import { COLORS, SIZES } from '../defaults.js'
 import { getColorForScheme } from '../../../utils/getColorForScheme.js'
 
 /**
@@ -8,13 +8,13 @@ import { getColorForScheme } from '../../../utils/getColorForScheme.js'
  * Variant resolution order: exact style ID match → color scheme → 'light' fallback → first value.
  *
  * @param {object|null} mapStyle - Current map style object (has .id and .mapColorScheme)
- * @param {object} pluginConfig - Plugin-level user overrides (may override any DEFAULTS key)
+ * @param {object} pluginConfig - Plugin-level user overrides (may override any COLORS key)
  * @returns {object} Flat color values ready for use in createStyles()
  */
 export const resolveColors = (mapStyle, pluginConfig = {}) => {
   const scheme = mapStyle?.mapColorScheme ?? 'light'
   const styleId = mapStyle?.id ?? null
-  const resolveColor = (key) => getColorForScheme(pluginConfig[key] ?? DEFAULTS[key], scheme, styleId)
+  const resolveColor = (key) => getColorForScheme(pluginConfig[key] ?? COLORS[key], scheme, styleId)
 
   return {
     editStroke: resolveColor('editStroke'),
@@ -24,7 +24,7 @@ export const resolveColors = (mapStyle, pluginConfig = {}) => {
     editActive: resolveColor('editActive'),
     editHalo: resolveColor('editHalo'),
     shapeStroke: resolveColor('shapeStroke'),
-    strokeWidth: pluginConfig.strokeWidth ?? DEFAULTS.strokeWidth,
+    strokeWidth: pluginConfig.strokeWidth ?? SIZES.strokeWidth,
     shapeFill: resolveColor('shapeFill'),
     snapVertex: resolveColor('snapVertex'),
     snapEdge: resolveColor('snapEdge'),

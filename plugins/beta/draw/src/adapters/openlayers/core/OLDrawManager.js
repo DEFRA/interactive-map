@@ -6,7 +6,7 @@ import { resolveColors } from '../utils/resolveColors.js'
 import { createSnapManager } from '../snap/snapManager.js'
 import { createDrawMode } from '../draw/DrawMode.js'
 import { createEditMode } from '../edit/EditMode.js'
-import { DEFAULTS } from '../defaults.js'
+import { TOLERANCES } from '../defaults.js'
 
 /**
  * Mode machine for the OL draw plugin.
@@ -31,7 +31,7 @@ export class OLDrawManager {
 
     this.colors = resolveColors(null, pluginConfig)
     this.styles = createStyles(this.colors)
-    this.snap = createSnapManager(map, pluginConfig.snapLayers ?? null, this.colors, pluginConfig.snapRadius ?? DEFAULTS.snapRadius)
+    this.snap = createSnapManager(map, pluginConfig.snapLayers ?? null, this.colors, pluginConfig.snapRadius ?? TOLERANCES.snapRadius)
 
     this._layer = new VectorLayer({
       source: this.store.source,

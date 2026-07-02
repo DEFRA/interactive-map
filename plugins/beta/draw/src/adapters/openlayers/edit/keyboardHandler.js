@@ -1,5 +1,5 @@
 import { coordToPixel, nudgeCoord } from '../utils/olCoords.js'
-import { spatialNavigate } from '../utils/spatial.js'
+import { spatialNavigate } from '../../../utils/spatial.js'
 import { moveVertex, insertAtMidpoint } from './vertexOps.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])

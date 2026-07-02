@@ -1,1 +1,1 @@
-export { DEFAULTS } from '../../defaults.js'
+export { COLORS, SIZES, TOLERANCES } from '../../defaults.js'

@@ -2,8 +2,7 @@ import Draw from 'ol/interaction/Draw.js'
 import { noModifierKeys } from 'ol/events/condition.js'
 import { createDrawInput } from './drawInput.js'
 import { getCoords } from '../utils/geometryHelpers.js'
-
-const SNAP_TOLERANCE_PX = 12
+import { TOLERANCES } from '../defaults.js'
 const MIN_VERTICES = { Polygon: 3, LineString: 2 }
 
 const canFinish = (geometryType, sketchFeature) => {
@@ -59,7 +58,7 @@ export const createDrawMode = ({ map, manager, options }) => {
     type: geometryType,
     style: (feature) => currentSketchStyle(feature),
     stopClick: true,
-    snapTolerance: SNAP_TOLERANCE_PX,
+    snapTolerance: TOLERANCES.snapRadius,
     condition: buildCondition(map, geometryType, () => sketchFeature)
   })
   map.addInteraction(drawInteraction)

@@ -2,9 +2,10 @@ import Style from 'ol/style/Style.js'
 import Fill from 'ol/style/Fill.js'
 import Stroke from 'ol/style/Stroke.js'
 import CircleStyle from 'ol/style/Circle.js'
+import { SIZES } from '../defaults.js'
 
-const selectedVertexRadii = { outer: 11, mid: 8, inner: 6 }
-const selectedMidpointRadii = { outer: 9, mid: 6, inner: 4 }
+const selectedVertexRadii = { outer: SIZES.vertexHaloRadius + 3, mid: SIZES.vertexHaloRadius, inner: SIZES.vertexRadius }
+const selectedMidpointRadii = { outer: SIZES.vertexHaloRadius + 1, mid: SIZES.vertexHaloRadius, inner: SIZES.midpointRadius }
 
 const fillArc = (ctx, cx, cy, radius, fillStyle) => {
   ctx.beginPath()
@@ -38,7 +39,7 @@ const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 export const createStyles = (colors) => {
   const vertexStyle = new Style({
     image: new CircleStyle({
-      radius: 6,
+      radius: SIZES.vertexRadius,
       fill: new Fill({ color: colors.editVertex })
     })
   })
@@ -47,7 +48,7 @@ export const createStyles = (colors) => {
 
   const midpointStyle = new Style({
     image: new CircleStyle({
-      radius: 4,
+      radius: SIZES.midpointRadius,
       fill: new Fill({ color: colors.editMidpoint })
     })
   })

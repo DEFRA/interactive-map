@@ -1,5 +1,5 @@
 // styles.js
-import { DEFAULTS } from './defaults.js'
+import { COLORS, SIZES } from './defaults.js'
 import { getColorForScheme } from '../../utils/getColorForScheme.js'
 
 const getColorScheme = (mapStyle) => mapStyle.mapColorScheme ?? 'light'
@@ -8,7 +8,7 @@ const getUserProp = (mapStyle, prop, defaultsKey = prop) => [
   'coalesce',
   ['get', `user_${prop}${mapStyle.id.charAt(0).toUpperCase() + mapStyle.id.slice(1)}`],
   ['get', `user_${prop}`],
-  DEFAULTS[defaultsKey]
+  COLORS[defaultsKey]
 ]
 
 // Inactive lines and fills
@@ -26,7 +26,7 @@ const strokeInactive = (mapStyle) => ({
   layout: { 'line-cap': 'round', 'line-join': 'round' },
   paint: {
     'line-color': getUserProp(mapStyle, 'stroke', 'shapeStroke'),
-    'line-width': getUserProp(mapStyle, 'strokeWidth')
+    'line-width': SIZES.strokeWidth
   }
 })
 
@@ -82,47 +82,47 @@ const drawPreviewLine = (editStrokeColor) => ({
 })
 
 // Vertex layers
-const vertex = (editVertexColor) => ({
+const vertex = (editVertexColor, vertexRadius) => ({
   id: 'vertex',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex']],
-  paint: { 'circle-radius': 6, 'circle-color': editVertexColor }
+  paint: { 'circle-radius': vertexRadius, 'circle-color': editVertexColor }
 })
 
-const vertexHalo = (editHaloColor, editActiveColor) => ({
+const vertexHalo = (editHaloColor, editActiveColor, vertexHaloRadius) => ({
   id: 'vertex-halo',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 8, 'circle-stroke-width': 3, 'circle-color': editHaloColor, 'circle-stroke-color': editActiveColor }
+  paint: { 'circle-radius': vertexHaloRadius, 'circle-stroke-width': 3, 'circle-color': editHaloColor, 'circle-stroke-color': editActiveColor }
 })
 
-const vertexActive = (editVertexColor) => ({
+const vertexActive = (editVertexColor, vertexRadius) => ({
   id: 'vertex-active',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 6, 'circle-color': editVertexColor }
+  paint: { 'circle-radius': vertexRadius, 'circle-color': editVertexColor }
 })
 
 // Midpoints
-const midpoint = (editMidpointColor) => ({
+const midpoint = (editMidpointColor, midpointRadius) => ({
   id: 'midpoint',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint']],
-  paint: { 'circle-radius': 4, 'circle-color': editMidpointColor }
+  paint: { 'circle-radius': midpointRadius, 'circle-color': editMidpointColor }
 })
 
-const midpointHalo = (editHaloColor, editActiveColor) => ({
+const midpointHalo = (editHaloColor, editActiveColor, vertexHaloRadius) => ({
   id: 'midpoint-halo',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 6, 'circle-stroke-width': 3, 'circle-color': editHaloColor, 'circle-stroke-color': editActiveColor }
+  paint: { 'circle-radius': vertexHaloRadius, 'circle-stroke-width': 3, 'circle-color': editHaloColor, 'circle-stroke-color': editActiveColor }
 })
 
-const midpointActive = (editMidpointColor) => ({
+const midpointActive = (editMidpointColor, midpointRadius) => ({
   id: 'midpoint-active',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': 4, 'circle-color': editMidpointColor }
+  paint: { 'circle-radius': midpointRadius, 'circle-color': editMidpointColor }
 })
 
 const circle = (editStrokeColor) => ({
@@ -141,14 +141,15 @@ const touchVertexIndicator = () => ({
 
 const createDrawStyles = (mapStyle) => {
   const scheme = getColorScheme(mapStyle)
-  const editStrokeColor = getColorForScheme(DEFAULTS.editStroke, scheme)
-  const editFillColor = getColorForScheme(DEFAULTS.editFill, scheme)
-  const editVertexColor = getColorForScheme(DEFAULTS.editVertex, scheme)
-  const editMidpointColor = getColorForScheme(DEFAULTS.editMidpoint, scheme)
-  const editHaloColor = getColorForScheme(DEFAULTS.editHalo, scheme)
-  const editActiveColor = getColorForScheme(DEFAULTS.editActive, scheme)
-  const splitInvalidColor = getColorForScheme(DEFAULTS.splitInvalid, scheme)
-  const splitValidColor = getColorForScheme(DEFAULTS.splitValid, scheme)
+  const editStrokeColor = getColorForScheme(COLORS.editStroke, scheme)
+  const editFillColor = getColorForScheme(COLORS.editFill, scheme)
+  const editVertexColor = getColorForScheme(COLORS.editVertex, scheme)
+  const editMidpointColor = getColorForScheme(COLORS.editMidpoint, scheme)
+  const editHaloColor = getColorForScheme(COLORS.editHalo, scheme)
+  const editActiveColor = getColorForScheme(COLORS.editActive, scheme)
+  const splitInvalidColor = getColorForScheme(COLORS.splitInvalid, scheme)
+  const splitValidColor = getColorForScheme(COLORS.splitValid, scheme)
+  const { vertexRadius, midpointRadius, vertexHaloRadius } = SIZES
 
   return [
     fillInactive(mapStyle),
@@ -158,12 +159,12 @@ const createDrawStyles = (mapStyle) => {
     drawInvalidSplitter(splitInvalidColor),
     drawValidSplitter(splitValidColor),
     drawPreviewLine(editStrokeColor),
-    midpoint(editMidpointColor),
-    midpointHalo(editHaloColor, editActiveColor),
-    midpointActive(editMidpointColor),
-    vertex(editVertexColor),
-    vertexHalo(editHaloColor, editActiveColor),
-    vertexActive(editVertexColor),
+    midpoint(editMidpointColor, midpointRadius),
+    midpointHalo(editHaloColor, editActiveColor, vertexHaloRadius),
+    midpointActive(editMidpointColor, midpointRadius),
+    vertex(editVertexColor, vertexRadius),
+    vertexHalo(editHaloColor, editActiveColor, vertexHaloRadius),
+    vertexActive(editVertexColor, vertexRadius),
     circle(editStrokeColor),
     touchVertexIndicator()
   ]
