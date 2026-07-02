@@ -1,6 +1,6 @@
 import VectorLayer from 'ol/layer/Vector.js'
 import { createFeatureStore } from './featureStore.js'
-import { createUndoStack } from './undoStack.js'
+import { createUndoStack } from '../../../utils/undoStack.js'
 import { createStyles } from './styles.js'
 import { resolveColors } from '../utils/resolveColors.js'
 import { createSnapManager } from '../snap/snapManager.js'

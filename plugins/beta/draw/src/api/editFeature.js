@@ -1,3 +1,5 @@
+import { MAP_SIZE_SCALES } from '../defaults.js'
+
 export const editFeature = ({ appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
   const { draw } = mapProvider
@@ -25,7 +27,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
     undoButtonId: `${appConfig.id}-draw-undo`,
     isPanEnabled: appState.interfaceType !== 'keyboard',
     interfaceType: appState.interfaceType,
-    scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
+    scale: MAP_SIZE_SCALES[mapState.mapSize],
     featureId,
     getSnapEnabled: () => draw.isSnapEnabled()
   })

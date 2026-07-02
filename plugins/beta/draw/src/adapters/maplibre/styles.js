@@ -1,6 +1,6 @@
 // styles.js
 import { COLORS, SIZES } from './defaults.js'
-import { getValueForStyle } from '../../utils/getColorForScheme.js'
+import { getValueForStyle } from '../../utils/getValueForStyle.js'
 
 const getColorScheme = (mapStyle) => mapStyle.mapColorScheme ?? 'light'
 

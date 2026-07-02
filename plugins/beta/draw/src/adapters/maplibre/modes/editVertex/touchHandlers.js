@@ -6,7 +6,7 @@ import { coordPathToFlatIndex } from './geometryHelpers.js'
 import { isOnSVG } from './helpers.js'
 import { createTouchTarget, applyTouchTargetColors } from '../../../../utils/touchTarget.js'
 import { COLORS } from '../../defaults.js'
-import { getValueForStyle } from '../../../../utils/getColorForScheme.js'
+import { getValueForStyle } from '../../../../utils/getValueForStyle.js'
 
 export const applyTouchVertexColors = (el, mapStyle) => {
   if (!el) { return }

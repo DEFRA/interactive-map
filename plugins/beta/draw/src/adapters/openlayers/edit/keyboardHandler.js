@@ -1,7 +1,7 @@
 import { coordToPixel, nudgeCoord } from '../utils/olCoords.js'
 import { spatialNavigate } from '../../../utils/spatial.js'
 import { moveVertex, insertAtMidpoint } from './vertexOps.js'
-import { KEYBOARD } from '../../../defaults.js'
+import { KEYBOARD } from '../defaults.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const INTERACTIVE_TAGS = new Set(['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT', 'A'])

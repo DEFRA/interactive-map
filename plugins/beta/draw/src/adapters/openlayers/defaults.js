@@ -1,1 +1,1 @@
-export { COLORS, SIZES, TOLERANCES } from '../../defaults.js'
+export { COLORS, SIZES, TOLERANCES, KEYBOARD, MAP_SIZE_SCALES } from '../../defaults.js'

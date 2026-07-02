@@ -31,6 +31,3 @@ export const getValueForStyle = (value, scheme, styleId = null) => {
   }
   return Object.values(value)[0]
 }
-
-// Legacy alias for backwards compatibility
-export const getColorForScheme = getValueForStyle

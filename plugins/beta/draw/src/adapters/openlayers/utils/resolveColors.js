@@ -1,5 +1,5 @@
 import { COLORS, SIZES } from '../defaults.js'
-import { getValueForStyle } from '../../../utils/getColorForScheme.js'
+import { getValueForStyle } from '../../../utils/getValueForStyle.js'
 
 /**
  * Resolve all draw-ol colors for the given map style and plugin config overrides.

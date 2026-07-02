@@ -46,3 +46,10 @@ export const KEYBOARD = {
   nudgeAmount: 1,
   stepAmount: 5
 }
+
+// Scale factor applied to draw UI (touch targets, vertex handles) per app map size
+export const MAP_SIZE_SCALES = {
+  small: 1,
+  medium: 1.5,
+  large: 2
+}

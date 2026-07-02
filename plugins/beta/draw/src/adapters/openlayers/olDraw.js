@@ -1,4 +1,5 @@
 import { OLDrawManager } from './core/OLDrawManager.js'
+import { MAP_SIZE_SCALES } from './defaults.js'
 
 /**
  * Creates the OLDrawManager, attaches it to mapProvider, and wires
@@ -18,7 +19,7 @@ export const createOLDraw = ({ mapProvider, events, eventBus, pluginConfig = {},
   mapProvider.draw = manager
 
   const handleSetMapSize = (size) => {
-    mapProvider.drawScale = { small: 1, medium: 1.5, large: 2 }[size] ?? 1
+    mapProvider.drawScale = MAP_SIZE_SCALES[size] ?? 1
   }
   eventBus.on(events.MAP_SET_SIZE, handleSetMapSize)
 
