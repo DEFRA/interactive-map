@@ -7,6 +7,7 @@ const OS_ATTRIBUTION = `Contains OS data ${String.fromCodePoint(COPYRIGHT_SYMBOL
 const OUTDOOR_THUMBNAIL = '/assets/images/outdoor-map-thumb.jpg'
 const DARK_THUMBNAIL = '/assets/images/dark-map-thumb.jpg'
 const BW_THUMBNAIL = '/assets/images/black-and-white-map-thumb.jpg'
+const AERIAL_THUMBNAIL = '/assets/images/aerial-map-thumb.jpg'
 const BW_ID = 'black-and-white'
 const BW_LABEL = 'Black/White'
 
@@ -79,7 +80,7 @@ const vtsMapStyles3857 = [{
   label: 'Aerial',
   mapColorScheme: 'dark',
   url: process.env.AERIAL_URL,
-  thumbnail: '/assets/images/aerial-map-thumb.jpg',
+  thumbnail: AERIAL_THUMBNAIL,
   logoAltText: OS_LOGO_ALT,
   attribution: 'Test'
 }]
@@ -115,6 +116,17 @@ const vtsMapStyles27700 = [{
   logoAltText: OS_LOGO_ALT,
   attribution: 'Test'
 }]
+
+const apgbAerialStyle = {
+  id: 'apgb-aerial-125mm',
+  label: 'Aerial 12.5cm',
+  type: 'wms',
+  url: process.env.APGB_WMS_URL,
+  params: { LAYERS: 'APGB_Latest_UK_125mm', BGCOLOR: '0x1E3448', TRANSPARENT: false },
+  thumbnail: AERIAL_THUMBNAIL,
+  mapColorScheme: 'dark',
+  attribution: `${String.fromCodePoint(COPYRIGHT_SYMBOL)} Getmapping Plc and Bluesky International Limited ${(new Date()).getFullYear()}`
+}
 
 const ngdMapStyles27700 = [{
   id: 'outdoor',
@@ -184,5 +196,6 @@ export {
   vtsMapStyles3857,
   vtsMapStyles27700,
   ngdMapStyles27700,
-  mapsRasterStyles27700
+  mapsRasterStyles27700,
+  apgbAerialStyle
 }

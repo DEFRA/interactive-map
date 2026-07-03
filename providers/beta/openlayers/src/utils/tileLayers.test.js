@@ -1,14 +1,16 @@
 import XYZ from 'ol/source/XYZ.js'
+import TileWMS from 'ol/source/TileWMS.js'
 import TileGrid from 'ol/tilegrid/TileGrid.js'
 import TileLayer from 'ol/layer/Tile.js'
 import VectorTileSource from 'ol/source/VectorTile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import { stylefunction } from 'ol-mapbox-style'
-import { createTileSource, createMapStyleLayer, createVectorTileLayer } from './tileLayers.js'
+import { createTileSource, createWMSTileSource, createMapStyleLayer, createVectorTileLayer } from './tileLayers.js'
 import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.js'
 
 const mockTileGridInstance = {}
 const mockSourceInstance = {}
+const mockWMSSourceInstance = {}
 const mockTileLayerInstance = {}
 const mockVectorTileSourceInstance = {}
 const mockOGCVectorTileSourceInstance = { supportedMediaTypes: [] }
@@ -16,6 +18,7 @@ const mockVectorTileLayerInstance = {}
 const mockMVTInstance = { supportedMediaTypes: [] }
 
 jest.mock('ol/source/XYZ.js', () => ({ __esModule: true, default: jest.fn(() => mockSourceInstance) }))
+jest.mock('ol/source/TileWMS.js', () => ({ __esModule: true, default: jest.fn(() => mockWMSSourceInstance) }))
 jest.mock('ol/layer/Tile.js', () => ({ __esModule: true, default: jest.fn(() => mockTileLayerInstance) }))
 jest.mock('ol/tilegrid/TileGrid.js', () => ({ __esModule: true, default: jest.fn(() => mockTileGridInstance) }))
 jest.mock('ol/TileState.js', () => ({ __esModule: true, default: { ERROR: 'error' } }))
@@ -126,6 +129,43 @@ describe('createTileSource', () => {
   })
 })
 
+describe('createWMSTileSource', () => {
+  const wmsParams = { LAYERS: 'MyLayer', FORMAT: 'image/jpeg' }
+
+  beforeEach(() => jest.clearAllMocks())
+
+  it('creates TileGrid with correct OS tile grid config', () => {
+    createWMSTileSource('https://wms.example.com/wms', wmsParams, null)
+    expect(TileGrid).toHaveBeenCalledWith({
+      resolutions: TILE_GRID_RESOLUTIONS,
+      origin: TILE_GRID_ORIGIN,
+      tileSize: TILE_SIZE
+    })
+  })
+
+  it('creates TileWMS source with EPSG:27700 projection and params', () => {
+    createWMSTileSource('https://wms.example.com/wms', wmsParams, null)
+    expect(TileWMS).toHaveBeenCalledWith(expect.objectContaining({
+      url: 'https://wms.example.com/wms',
+      params: wmsParams,
+      projection: 'EPSG:27700',
+      tileGrid: mockTileGridInstance
+    }))
+  })
+
+  it('does not set tileLoadFunction when transformRequest is null', () => {
+    createWMSTileSource('https://wms.example.com/wms', wmsParams, null)
+    const { tileLoadFunction } = TileWMS.mock.calls[0][0]
+    expect(tileLoadFunction).toBeUndefined()
+  })
+
+  it('sets tileLoadFunction when transformRequest is provided', () => {
+    createWMSTileSource('https://wms.example.com/wms', wmsParams, jest.fn())
+    const { tileLoadFunction } = TileWMS.mock.calls[0][0]
+    expect(typeof tileLoadFunction).toBe('function')
+  })
+})
+
 describe('tileLoadFunction (via transformRequest)', () => {
   const url = 'https://tiles.example.com/7/3/5'
   const mockImg = { src: null }
@@ -191,6 +231,13 @@ describe('createMapStyleLayer', () => {
     global.fetch = makeVectorFetchMock()
   })
 
+  it('creates a WMS tile layer and source when mapStyle.type is wms', async () => {
+    const params = { LAYERS: 'MyLayer' }
+    const result = await createMapStyleLayer({ url: 'https://wms.example.com/wms', type: 'wms', params }, null)
+    expect(TileLayer).toHaveBeenCalledWith({ source: mockWMSSourceInstance })
+    expect(result).toEqual({ layer: mockTileLayerInstance, source: mockWMSSourceInstance })
+  })
+
   it('creates a raster tile layer and source when mapStyle.type is raster', async () => {
     const result = await createMapStyleLayer({ url: 'https://tiles.example.com/{z}/{x}/{y}', type: 'raster' }, null)
     expect(TileLayer).toHaveBeenCalledWith({ source: mockSourceInstance })
@@ -208,6 +255,11 @@ describe('createMapStyleLayer', () => {
     const result = await createMapStyleLayer({ url: styleUrl, type: 'vector' }, null)
     expect(VectorTileLayer).toHaveBeenCalledWith({ source: mockVectorTileSourceInstance, declutter: true })
     expect(result).toEqual({ layer: mockVectorTileLayerInstance, source: mockVectorTileSourceInstance })
+  })
+
+  it('throws when mapStyle.type is unsupported', async () => {
+    await expect(createMapStyleLayer({ url: styleUrl, type: 'unsupported' }, null))
+      .rejects.toThrow("Unsupported map style type: 'unsupported'")
   })
 
   it('creates a vector tile layer and source when mapStyle.type is missing', async () => {

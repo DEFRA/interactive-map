@@ -1,5 +1,5 @@
 import InteractiveMap from '../../src/index.js'
-import { vtsMapStyles27700 } from './mapStyles.js'
+import { vtsMapStyles27700, apgbAerialStyle } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest27700 } from './auth.js'
 import '/plugins/beta/datasets/src/datasets.scss' // in a separate repo: import '@defra/interactive-map/plugins/datasets/css'
 // Providers
@@ -37,7 +37,7 @@ const interactiveMap = new InteractiveMap('map', {
   containerHeight: '650px',
   plugins: [
     mapStylesPlugin({
-      mapStyles: vtsMapStyles27700
+      mapStyles: [...vtsMapStyles27700, apgbAerialStyle]
     }),
     scaleBarPlugin({
       units: 'metric'

@@ -1,6 +1,6 @@
 // InteractiveMap with OpenLayers provider and draw-ol plugin
 import InteractiveMap from '../../src/index.js'
-import { vtsMapStyles27700, ngdMapStyles27700 } from './mapStyles.js'
+import { vtsMapStyles27700, ngdMapStyles27700, apgbAerialStyle } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest27700 } from './auth.js'
 // Providers
 import openLayersProvider from '/providers/beta/openlayers/src/index.js'
@@ -54,7 +54,7 @@ const interactiveMap = new InteractiveMap('map', {
   // readMapText: true,
   plugins: [
     mapStylesPlugin({
-      mapStyles: vtsMapStyles27700 // ngdMapStyles27700
+      mapStyles: [...vtsMapStyles27700, apgbAerialStyle] // ngdMapStyles27700
     }),
     searchPlugin({
       transformRequest: transformGeocodeRequest,
