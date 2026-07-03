@@ -24,7 +24,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       events: EVENTS,
       eventBus
     }).then(adapter => {
-      if (!isMounted) return
+      if (!isMounted) { return }
       mapProvider.draw = adapter
       pluginState.dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: pluginConfig.snapLayers?.length > 0 })
       eventBus.emit('draw:ready')

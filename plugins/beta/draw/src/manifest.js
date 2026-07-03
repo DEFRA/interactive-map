@@ -47,10 +47,10 @@ export const manifest = {
       exclusiveSlot: true,
       hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
       enableWhen: ({ pluginState }) => {
-        if (pluginState.mode === 'draw_polygon') { return pluginState.numVertices >= 3 } // NOSONAR
-        if (pluginState.mode === 'draw_line') { return pluginState.numVertices >= 2 } // NOSONAR
-        if (pluginState.mode === 'edit_vertex') { return true }
-        return false
+        const { mode, numVertices } = pluginState
+        return (mode === 'draw_polygon' && numVertices >= 3) || // NOSONAR
+          (mode === 'draw_line' && numVertices >= 2) || // NOSONAR
+          mode === 'edit_vertex'
       },
       ...createButtonSlots(true)
     },
