@@ -34,6 +34,9 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
 
   const getFeature = (state) => state[featureProp]
   const RUBBER_BAND_OFFSET = 2 // ring is [...placed, last_placed, rubber_band]; splice(-2,1) removes last_placed
+  // Only these keys signal a switch to keyboard drawing (matches the OL adapter's
+  // drawInput) — modifier keys and shortcut chords like cmd+z must not show the crosshair
+  const INTERFACE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Enter'])
 
   return {
     ...ParentMode,
@@ -417,6 +420,9 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
       if (e.key === 'Enter') {
         state.isActive = true
       }
+      if (!INTERFACE_KEYS.has(e.key)) {
+        return
+      }
       this._setInterface(state, 'keyboard')
       this.onMove(state, e)
     },
@@ -431,6 +437,9 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
         return
       }
       if (document.activeElement !== state.container) {
+        return
+      }
+      if (!INTERFACE_KEYS.has(e.key)) {
         return
       }
       this._setInterface(state, 'keyboard')
