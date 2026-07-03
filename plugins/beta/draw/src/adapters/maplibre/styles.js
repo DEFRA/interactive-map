@@ -4,7 +4,7 @@ import { getValueForStyle } from '../../utils/getValueForStyle.js'
 
 const getColorScheme = (mapStyle) => mapStyle.mapColorScheme ?? 'light'
 
-const getUserProp = (mapStyle, prop, defaultsKey = prop) => [
+const getUserProp = (mapStyle, prop, defaultsKey) => [
   'coalesce',
   ['get', `user_${prop}${mapStyle.id.charAt(0).toUpperCase() + mapStyle.id.slice(1)}`],
   ['get', `user_${prop}`],
@@ -55,7 +55,7 @@ const drawInvalidSplitter = (splitInvalidColor) => ({
   paint: {
     'line-color': splitInvalidColor,
     'line-width': 2,
-    'line-dasharray': [0.2, 2],
+    'line-dasharray': [0.2, 2], // NOSONAR
     'line-opacity': 1
   }
 })
@@ -78,7 +78,7 @@ const drawPreviewLine = (editStrokeColor) => ({
   type: 'line',
   filter: ['all', ['==', '$type', 'LineString'], ['==', 'active', 'true'], ['!has', 'user_splitter']],
   layout: { 'line-cap': 'round', 'line-join': 'round' },
-  paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-dasharray': [0.2, 2], 'line-opacity': 1 }
+  paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-dasharray': [0.2, 2], 'line-opacity': 1 } // NOSONAR
 })
 
 // Vertex layers ('draw-vertex' = display-only markers on placed vertices while drawing)
