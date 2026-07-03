@@ -3,6 +3,8 @@
  * Provides a consistent interface for snap detection and coordinate retrieval
  */
 
+import { TOLERANCES } from '../../../defaults.js'
+
 /**
  * Get the snap instance from the map
  * @param {maplibregl.Map} map - Map instance
@@ -137,10 +139,10 @@ export function clearSnapState (snap) {
 /**
  * Get snap radius in pixels
  * @param {MapboxSnap} snap - Snap instance
- * @returns {number} Snap radius in pixels (default 15)
+ * @returns {number} Snap radius in pixels (falls back to the configured default)
  */
 export function getSnapRadius (snap) {
-  return snap?.options?.radius ?? 15
+  return snap?.options?.radius ?? TOLERANCES.snapRadius
 }
 
 /**
