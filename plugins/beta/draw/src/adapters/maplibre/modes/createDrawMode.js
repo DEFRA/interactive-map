@@ -146,8 +146,9 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
       this.dispatchVertexChange(coords)
 
       if (!validateClick(feature)) {
-        // For lines: clicking same spot (like double-click) should finish the line
-        if (finishOnInvalidClick && coords.length > 1) {
+        // For lines: clicking same spot (like double-click) should finish the line.
+        // isValidLineClick only returns false with 2+ coords, so coords.length is always > 1 here.
+        if (finishOnInvalidClick) {
           coords.pop()
           this.map.fire('draw.create', { features: [feature.toGeoJSON()] })
           this.changeMode('simple_select', { featureIds: [feature.id] })
@@ -157,7 +158,6 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
 
       const snap = getSnapInstance(this.map)
       const snappedEvent = isSnapEnabled(state) && createSnappedClickEvent(this.map, snap)
-      const coordsBefore = coords.length
 
       if (snappedEvent) {
         ParentMode.onClick.call(this, state, snappedEvent)
@@ -166,12 +166,11 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
         this._simulateMouse('click', ParentMode.onClick, state)
       }
 
-      // Push undo and update count if a vertex was added
+      // Push undo and update count if a vertex was added. A validated click always
+      // adds one vertex via the parent mode, so this runs on every successful doClick.
       const newCoords = getCoords(getFeature(state))
-      if (newCoords.length > coordsBefore) {
-        this.pushDrawUndo(state)
-        this.dispatchVertexChange(newCoords)
-      }
+      this.pushDrawUndo(state)
+      this.dispatchVertexChange(newCoords)
     },
 
     dispatchVertexChange (coords) {
@@ -279,11 +278,9 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
       const ring = geometryType === 'Polygon' ? feature.coordinates[0] : coords
       ring.splice(-RUBBER_BAND_OFFSET, 1)
 
-      // Snap rubber band to new last vertex position
-      const newLastVertex = ring[ring.length - 2]
-      if (newLastVertex) {
-        ring[ring.length - 1] = [...newLastVertex]
-      }
+      // Snap rubber band to new last vertex position. undoVertex only calls here with
+      // 3+ coords, so after the splice the ring always has a preceding vertex.
+      ring[ring.length - 1] = [...ring[ring.length - 2]]
 
       // Keep parent mode's vertex counter in sync (min 1 for rubber band)
       state.currentVertexPosition = Math.max(1, state.currentVertexPosition - 1)
@@ -301,19 +298,18 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
         this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
         this._ctx.store.render()
       } else {
-        // Mouse: keep rubber band at current position
+        // Mouse: keep rubber band at current position. After a vertex removal the
+        // rubber band index always resolves to a real coordinate.
         const rubberBandIndex = geometryType === 'Polygon' ? coords.length - 2 : coords.length - 1
         const rubberBandPos = coords[rubberBandIndex]
-        if (rubberBandPos) {
-          const lngLat = { lng: rubberBandPos[0], lat: rubberBandPos[1] }
-          const point = this.map.project(lngLat)
-          ParentMode.onMouseMove.call(this, state, {
-            lngLat,
-            point,
-            originalEvent: new MouseEvent('mousemove', { clientX: point.x, clientY: point.y })
-          })
-          this._ctx.store.render()
-        }
+        const lngLat = { lng: rubberBandPos[0], lat: rubberBandPos[1] }
+        const point = this.map.project(lngLat)
+        ParentMode.onMouseMove.call(this, state, {
+          lngLat,
+          point,
+          originalEvent: new MouseEvent('mousemove', { clientX: point.x, clientY: point.y })
+        })
+        this._ctx.store.render()
       }
       this.dispatchVertexChange(coords)
     },
