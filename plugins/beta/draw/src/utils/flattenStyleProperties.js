@@ -1,4 +1,4 @@
-const STYLE_PROPS = ['stroke', 'fill', 'strokeWidth']
+const STYLE_PROPS = new Set(['stroke', 'fill', 'strokeWidth'])
 
 export const flattenStyleProperties = (props) => {
   if (!props) {
@@ -8,7 +8,7 @@ export const flattenStyleProperties = (props) => {
   const result = {}
 
   for (const [key, value] of Object.entries(props)) {
-    if (STYLE_PROPS.includes(key) && typeof value === 'object' && value !== null) {
+    if (STYLE_PROPS.has(key) && typeof value === 'object' && value !== null) {
       const entries = Object.entries(value)
       if (entries.length > 0) {
         result[key] = entries[0][1]
