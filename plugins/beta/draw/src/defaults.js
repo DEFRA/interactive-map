@@ -29,6 +29,7 @@ export const SIZES = {
   vertexRadius: 6,
   midpointRadius: 4,
   vertexHaloRadius: 8,
+  midpointHaloRadius: 6,
   touchTargetSize: 48,
   touchIndicatorRadius: 30
 }

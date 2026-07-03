@@ -7,7 +7,7 @@ import { SIZES } from '../defaults.js'
 import { getPlacedSketchCoords } from '../utils/sketchHelpers.js'
 
 const selectedVertexRadii = { outer: SIZES.vertexHaloRadius + 3, mid: SIZES.vertexHaloRadius, inner: SIZES.vertexRadius }
-const selectedMidpointRadii = { outer: SIZES.vertexHaloRadius + 1, mid: SIZES.vertexHaloRadius, inner: SIZES.midpointRadius }
+const selectedMidpointRadii = { outer: SIZES.midpointHaloRadius + 3, mid: SIZES.midpointHaloRadius, inner: SIZES.midpointRadius }
 
 const fillArc = (ctx, cx, cy, radius, fillStyle) => {
   ctx.beginPath()

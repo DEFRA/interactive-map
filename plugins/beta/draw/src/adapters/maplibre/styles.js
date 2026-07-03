@@ -111,11 +111,11 @@ const midpoint = (editMidpointColor, midpointRadius) => ({
   paint: { 'circle-radius': midpointRadius, 'circle-color': editMidpointColor }
 })
 
-const midpointHalo = (editHaloColor, editActiveColor, vertexHaloRadius) => ({
+const midpointHalo = (editHaloColor, editActiveColor, midpointHaloRadius) => ({
   id: 'midpoint-halo',
   type: 'circle',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'midpoint'], ['==', 'active', 'true']],
-  paint: { 'circle-radius': vertexHaloRadius, 'circle-stroke-width': 3, 'circle-color': editHaloColor, 'circle-stroke-color': editActiveColor }
+  paint: { 'circle-radius': midpointHaloRadius, 'circle-stroke-width': 3, 'circle-color': editHaloColor, 'circle-stroke-color': editActiveColor }
 })
 
 const midpointActive = (editMidpointColor, midpointRadius) => ({
@@ -149,7 +149,7 @@ const createDrawStyles = (mapStyle) => {
   const editActiveColor = getValueForStyle(COLORS.editActive, scheme)
   const splitInvalidColor = getValueForStyle(COLORS.splitInvalid, scheme)
   const splitValidColor = getValueForStyle(COLORS.splitValid, scheme)
-  const { vertexRadius, midpointRadius, vertexHaloRadius } = SIZES
+  const { vertexRadius, midpointRadius, vertexHaloRadius, midpointHaloRadius } = SIZES
 
   return [
     fillInactive(mapStyle),
@@ -160,7 +160,7 @@ const createDrawStyles = (mapStyle) => {
     drawValidSplitter(splitValidColor),
     drawPreviewLine(editStrokeColor),
     midpoint(editMidpointColor, midpointRadius),
-    midpointHalo(editHaloColor, editActiveColor, vertexHaloRadius),
+    midpointHalo(editHaloColor, editActiveColor, midpointHaloRadius),
     midpointActive(editMidpointColor, midpointRadius),
     vertex(editVertexColor, vertexRadius),
     vertexHalo(editHaloColor, editActiveColor, vertexHaloRadius),
