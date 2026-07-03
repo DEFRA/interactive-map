@@ -4,6 +4,7 @@ import Stroke from 'ol/style/Stroke.js'
 import CircleStyle from 'ol/style/Circle.js'
 import MultiPoint from 'ol/geom/MultiPoint.js'
 import { SIZES } from '../defaults.js'
+import { getPlacedSketchCoords } from '../utils/sketchHelpers.js'
 
 const selectedVertexRadii = { outer: SIZES.vertexHaloRadius + 3, mid: SIZES.vertexHaloRadius, inner: SIZES.vertexRadius }
 const selectedMidpointRadii = { outer: SIZES.vertexHaloRadius + 1, mid: SIZES.vertexHaloRadius, inner: SIZES.midpointRadius }
@@ -30,17 +31,6 @@ const makeRingRenderer = ({ outer, mid, inner }, colors, innerKey) => (pixelCoor
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 
-// Placed vertices of an in-progress sketch, excluding OL's trailing rubber-band
-// coordinate (LineString: [...placed, rubber_band];
-// Polygon ring: [...placed, rubber_band, v0_closing])
-const getPlacedSketchCoords = (geom) => {
-  if (geom.getType() === 'Polygon') {
-    const ring = geom.getCoordinates()[0] ?? []
-    return ring.slice(0, Math.max(0, ring.length - 2))
-  }
-  return geom.getCoordinates().slice(0, -1)
-}
-
 /**
  * Create all draw-ol style instances for the given resolved color set.
  *
@@ -49,12 +39,13 @@ const getPlacedSketchCoords = (geom) => {
  *             editFeatureStyle, createSketchStyle, createFeatureStyle }}
  */
 export const createStyles = (colors) => {
-  const vertexStyle = new Style({
-    image: new CircleStyle({
-      radius: SIZES.vertexRadius,
-      fill: new Fill({ color: colors.editVertex })
-    })
+  // Shared by edit-mode vertices and in-progress sketch vertices so they always look the same
+  const vertexImage = new CircleStyle({
+    radius: SIZES.vertexRadius,
+    fill: new Fill({ color: colors.editVertex })
   })
+
+  const vertexStyle = new Style({ image: vertexImage })
 
   const selectedVertexStyle = new Style({ renderer: makeRingRenderer(selectedVertexRadii, colors, 'editVertex') })
 
@@ -77,14 +68,19 @@ export const createStyles = (colors) => {
     fill: new Fill({ color: colors.editFill })
   })
 
+  // Reused across renders — the geometry function runs every frame while sketching,
+  // so mutate one MultiPoint (setCoordinates bumps its revision, keeping OL's
+  // render caches correct) instead of allocating a new one per frame
+  const sketchVertices = new MultiPoint([])
   const sketchVertexStyle = new Style({
-    image: new CircleStyle({
-      radius: SIZES.vertexRadius,
-      fill: new Fill({ color: colors.editVertex })
-    }),
+    image: vertexImage,
     geometry: (feature) => {
       const coords = getPlacedSketchCoords(feature.getGeometry())
-      return coords.length ? new MultiPoint(coords) : null
+      if (!coords.length) {
+        return null
+      }
+      sketchVertices.setCoordinates(coords)
+      return sketchVertices
     }
   })
 

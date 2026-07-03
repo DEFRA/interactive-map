@@ -1,11 +1,10 @@
 import { coordToPixel, pixelDist } from '../utils/olCoords.js'
+import { getLastPlacedSketchCoord } from '../utils/sketchHelpers.js'
 
 const SNAP_TOLERANCE = 12 // pixels
 // Minimum ring length to allow snap-to-close (placed vertices + rubber-band)
 const MIN_SKETCH_COORDS = { Polygon: 4, LineString: 3 }
 const DUPLICATE_TOLERANCE_PX = 2
-// OL Polygon ring layout after addToDrawing_: [...committed, rubber_band, closing_v1]
-const POLY_COMMITTED_OFFSET = 3
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 
 const isCloseToFirstVertex = (map, coord, sketchCoords, geometryType) => {
@@ -39,17 +38,6 @@ const applyRubberbanding = (geom, centerCoord) => {
   } else {
     // No action
   }
-}
-
-// Returns the last vertex committed by OL's Draw interaction (not the rubber-band or
-// the closing copy that OL appends to Polygon rings).
-const getLastCommittedVertex = (geom) => {
-  if (geom.getType() === 'Polygon') {
-    const ring = geom.getCoordinates()[0] || []
-    return ring.length >= POLY_COMMITTED_OFFSET ? ring[ring.length - POLY_COMMITTED_OFFSET] : null
-  }
-  const coords = geom.getCoordinates()
-  return coords.length >= 2 ? coords[coords.length - 2] : null
 }
 
 const wireInputEvents = ({
@@ -181,7 +169,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     // committed a vertex at coord's position and skip the duplicate appendCoordinates,
     // but register coord as lastPlacedCoord so a second tap at the same position can close.
     const map = drawInteraction.getMap()
-    const lastCommitted = getLastCommittedVertex(geom)
+    const lastCommitted = getLastPlacedSketchCoord(geom)
     if (lastCommitted) {
       const p1 = map.getPixelFromCoordinate(lastCommitted)
       const p2 = map.getPixelFromCoordinate(coord)

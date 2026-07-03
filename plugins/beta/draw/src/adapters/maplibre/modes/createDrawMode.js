@@ -1,5 +1,3 @@
-import createVertex from '../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/create_vertex.js' // NOSONAR
-
 import {
   getSnapInstance,
   isSnapActive,
@@ -21,7 +19,7 @@ import {
  * @param {string} config.geometryType - 'Polygon' or 'LineString'
  * @param {Function} config.getCoords - Function to get coordinates from feature
  * @param {Function} config.validateClick - Validation function for clicks
- * @param {Function} config.createVertices - Function to create vertex display features
+ * @param {Function} config.getPlacedCoords - Function to get placed vertex coordinates from a display geojson
  */
 export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory returns a single cohesive mode object; splitting across files would obscure the event flow
   const {
@@ -29,7 +27,7 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
     geometryType,
     getCoords,
     validateClick,
-    createVertices,
+    getPlacedCoords,
     excludeFeatureIdFromSetup = false,
     finishOnInvalidClick = false // For lines: finish when clicking same spot (like double-click)
   } = config
@@ -540,7 +538,16 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
       // Display features carry the id in properties.id (no top-level id)
       const feature = getFeature(state)
       if (geojson.geometry.type === geometryType && geojson.properties.id === feature.id) {
-        createVertices(geojson, display, createVertex)
+        // Parent modes render only some placed vertices (which ones varies by
+        // mapbox-gl-draw version) — add a marker on every placed vertex. The
+        // 'draw-vertex' meta is display-only: it's not in mapbox-gl-draw's
+        // META_TYPES, so featuresAt ignores these markers and the parent's own
+        // vertex click targets (click first/last to finish) keep working.
+        getPlacedCoords(geojson).forEach((coordinates) => display({
+          type: 'Feature',
+          properties: { meta: 'draw-vertex', parent: feature.id, active: 'false' },
+          geometry: { type: 'Point', coordinates }
+        }))
       }
     },
 

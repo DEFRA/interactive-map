@@ -81,11 +81,11 @@ const drawPreviewLine = (editStrokeColor) => ({
   paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-dasharray': [0.2, 2], 'line-opacity': 1 }
 })
 
-// Vertex layers
+// Vertex layers ('draw-vertex' = display-only markers on placed vertices while drawing)
 const vertex = (editVertexColor, vertexRadius) => ({
   id: 'vertex',
   type: 'circle',
-  filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'vertex']],
+  filter: ['all', ['==', '$type', 'Point'], ['in', 'meta', 'vertex', 'draw-vertex']],
   paint: { 'circle-radius': vertexRadius, 'circle-color': editVertexColor }
 })
 
