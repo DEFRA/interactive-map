@@ -1,13 +1,4 @@
-import {
-  getSnapInstance,
-  isSnapActive,
-  isSnapEnabled,
-  getSnapLngLat,
-  triggerSnapAtPoint,
-  triggerSnapAtCenter,
-  createSnappedEvent,
-  createSnappedClickEvent
-} from '../utils/snapHelpers.js'
+import { getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, triggerSnapAtCenter, createSnappedEvent, createSnappedClickEvent } from '../utils/snapHelpers.js'
 
 /**
  * Factory function to create a draw mode for either polygons or lines.

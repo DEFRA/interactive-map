@@ -1,17 +1,15 @@
 import DirectSelect from '../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
-import {
-  getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
-  getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState
-} from '../utils/snapHelpers.js'
-import { getCoords, coordPathToFlatIndex } from './editVertex/geometryHelpers.js'
+import { getSnapInstance, clearSnapIndicator } from '../utils/snapHelpers.js'
+import { getCoords } from './editVertex/geometryHelpers.js'
 import { scalePoint } from './editVertex/helpers.js'
 import { undoHandlers } from './editVertex/undoHandlers.js'
 import { touchHandlers } from './editVertex/touchHandlers.js'
 import { vertexOperations } from './editVertex/vertexOperations.js'
 import { vertexQueries } from './editVertex/vertexQueries.js'
+import { keyboardHandlers } from './editVertex/keyboardHandlers.js'
+import { pointerHandlers } from './editVertex/pointerHandlers.js'
 
-const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
-const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
+const EVENT_VERTEX_SELECTION = 'draw.vertexselection'
 
 export const EditVertexMode = {
   ...DirectSelect,
@@ -19,6 +17,8 @@ export const EditVertexMode = {
   ...touchHandlers,
   ...vertexOperations,
   ...vertexQueries,
+  ...keyboardHandlers,
+  ...pointerHandlers,
 
   onSetup (options) {
     const state = DirectSelect.onSetup.call(this, options)
@@ -29,7 +29,7 @@ export const EditVertexMode = {
       undoButtonId: options.undoButtonId,
       isPanEnabled: options.isPanEnabled,
       getSnapEnabled: options.getSnapEnabled,
-      featureId: state.featureId || options.featureId,
+      featureId: state.featureId,
       selectedVertexIndex: options.selectedVertexIndex ?? -1,
       selectedVertexType: options.selectedVertexType,
       coordPath: options.coordPath,
@@ -117,7 +117,7 @@ export const EditVertexMode = {
     if (options.selectedVertexType === 'midpoint') {
       state.selectedCoordPaths = []
       this.clearSelectedCoordinates()
-      if (state.feature) { state.feature.changed() }
+      state.feature.changed()
       this._ctx.store.render()
       this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
       return
@@ -125,7 +125,7 @@ export const EditVertexMode = {
     if (options.selectedVertexIndex === -1) {
       state.selectedCoordPaths = []
       this.clearSelectedCoordinates()
-      if (state.feature) { state.feature.changed() }
+      state.feature.changed()
       this._ctx.store.render()
     }
   },
@@ -148,7 +148,7 @@ export const EditVertexMode = {
 
     state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
 
-    this.map.fire('draw.vertexselection', {
+    this.map.fire(EVENT_VERTEX_SELECTION, {
       index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
       numVertecies: state.vertecies.length
     })
@@ -173,299 +173,10 @@ export const EditVertexMode = {
     if (prev.size === state.vertecies.length) {
       return
     }
-    state.selectedVertexIndex = state.vertecies.findIndex(c => !prev.has(JSON.stringify(c)))
-    state.selectedVertexType ??= state.selectedVertexIndex >= 0 ? 'vertex' : null
-  },
-
-  onKeydown (state, e) {
-    const isInteractiveElementFocused = () => {
-      const el = document.activeElement
-      if (!el || el === document.body) return false
-      // Allow shortcuts even on interactive elements if they're inside the map viewport
-      if (state.container?.contains(el)) return false
-      const interactiveTags = new Set(['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT', 'A'])
-      return interactiveTags.has(el.tagName) || el.isContentEditable || el.hasAttribute('tabindex')
-    }
-
-    if (isInteractiveElementFocused()) {
-      return
-    }
-
-    state.interfaceType = 'keyboard'
-    this.hideTouchVertexIndicator(state)
-
-    if (e.key === ' ') {
-      e.preventDefault()
-    }
-
-    if (e.key === ' ' && state.selectedVertexIndex < 0) {
-      // Clear snap indicator when starting keyboard selection
-      const snap = getSnapInstance(this.map)
-      if (snap) {
-        clearSnapIndicator(snap, this.map)
-      }
-
-      // Ensure we have vertices to select
-      if (!state.vertecies?.length) {
-        state.vertecies = this.getVerticies(state.featureId)
-        state.midpoints = this.getMidpoints(state.featureId)
-      }
-      if (!state.vertecies?.length) {
-        return
-      }
-      state.isPanEnabled = false
-      return this.updateVertex(state)
-    }
-
-    if (!e.altKey && ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
-      e.preventDefault()
-      e.stopPropagation()
-      if (state.selectedVertexType === 'midpoint') {
-        return this.insertVertex(state, e)
-      }
-
-      const snap = getSnapInstance(this.map)
-      const feature = this.getFeature(state.featureId)
-      if (!feature) {
-        return
-      }
-      const coords = getCoords(feature)
-      const currentCoord = coords?.[state.selectedVertexIndex]
-      if (!currentCoord) {
-        return
-      }
-
-      // Save starting position for undo (only on first move of sequence)
-      if (!state._keyboardMoveStartPosition) {
-        state._keyboardMoveStartPosition = [...currentCoord]
-        state._keyboardMoveStartIndex = state.selectedVertexIndex
-      }
-
-      // Break out of snap by moving outside snap radius
-      if (isSnapEnabled(state) && state._isSnapped && snap) {
-        const offset = getSnapRadius(snap) + 1
-        const pt = this.map.project(currentCoord)
-        const [dx, dy] = ARROW_OFFSETS[e.key].map(v => v * offset)
-        state._isSnapped = false
-        clearSnapIndicator(snap, this.map)
-        return this.moveVertex(state, this.map.unproject({ x: pt.x + dx, y: pt.y + dy }))
-      }
-
-      const newCoord = this.getNewCoord(state, e)
-      if (isSnapEnabled(state) && snap) {
-        triggerSnapAtPoint(snap, this.map, this.map.project(newCoord))
-        if (isSnapActive(snap)) {
-          state._isSnapped = true
-          return this.moveVertex(state, getSnapLngLat(snap))
-        }
-      }
-      state._isSnapped = false
-      return this.moveVertex(state, newCoord)
-    }
-
-    if (e.altKey && ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
-      e.preventDefault()
-      e.stopPropagation()
-      return this.updateVertex(state, e.key)
-    }
-
-    if (e.key === 'Escape') {
-      this.changeMode(state, { isPanEnabled: true, selectedVertexIndex: -1, selectedVertexType: null })
-    }
-
-    // Undo with Cmd/Ctrl+Z (works without viewport focus, but not in input fields)
-    if (e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey) {
-      const tag = document.activeElement?.tagName
-      if (tag === 'INPUT' || tag === 'TEXTAREA') {
-        return
-      }
-      e.preventDefault()
-      e.stopPropagation()
-      return this.handleUndo(state)
-    }
-  },
-
-  onKeyup (state, e) {
-    const isInteractiveElementFocused = () => {
-      const el = document.activeElement
-      if (!el || el === document.body) return false
-      if (state.container?.contains(el)) return false
-      const interactiveTags = new Set(['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT', 'A'])
-      return interactiveTags.has(el.tagName) || el.isContentEditable || el.hasAttribute('tabindex')
-    }
-
-    if (isInteractiveElementFocused()) {
-      return
-    }
-
-    state.interfaceType = 'keyboard'
-    if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
-      e.stopPropagation()
-
-      // Push undo for keyboard move sequence
-      if (state._keyboardMoveStartPosition && state._keyboardMoveStartIndex !== undefined) {
-        this.pushUndo({
-          type: 'move_vertex',
-          featureId: state.featureId,
-          vertexIndex: state._keyboardMoveStartIndex,
-          previousPosition: state._keyboardMoveStartPosition
-        })
-        state._keyboardMoveStartPosition = null
-        state._keyboardMoveStartIndex = undefined
-      }
-    }
-    if (e.key === 'Delete') {
-      this.deleteVertex(state)
-    }
-  },
-
-  onMouseDown (state, e) {
-    clearSnapState(getSnapInstance(this.map))
-    const meta = e.featureTarget?.properties.meta
-    const coordPath = e.featureTarget?.properties.coord_path
-
-    if (['vertex', 'midpoint'].includes(meta)) {
-      state.dragMoveLocation = e.lngLat
-      state.dragMoving = false
-      DirectSelect.onMouseDown.call(this, state, e)
-
-      // Update selection state for vertex clicks (so onSelectionChange has correct context)
-      if (meta === 'vertex' && coordPath) {
-        const feature = this.getFeature(state.featureId)
-        const vertexIndex = coordPathToFlatIndex(feature, coordPath)
-        state.selectedVertexIndex = vertexIndex
-        state.selectedVertexType = 'vertex'
-        state.coordPath = coordPath
-        const vertex = state.vertecies?.[vertexIndex]
-        if (vertex) {
-          state._moveStartPosition = [...vertex]
-          state._moveStartIndex = vertexIndex
-        }
-      }
-    }
-    if (meta === 'midpoint') {
-      // DirectSelect converts midpoint to vertex - track this as an insert
-      const feature = this.getFeature(state.featureId)
-      const insertedIndex = coordPathToFlatIndex(feature, coordPath)
-
-      // Track this insertion for undo (will be pushed on mouseUp if drag occurred)
-      state._insertedVertexIndex = insertedIndex
-      state._isInsertingVertex = true
-
-      state.selectedVertexIndex = this.getVertexIndexFromMidpoint(state, coordPath)
-      state.selectedVertexType = 'vertex'
-      state.coordPath = null // Clear coordPath for midpoints
-      this.map.fire('draw.vertexselection', { index: state.selectedVertexIndex, numVertecies: state.vertecies.length })
-    }
-  },
-
-  onClick (state, e) { // NOSONAR — complexity accumulated from object-level context; single guard clause, see feedback_mgl_click_vs_mouseup.md
-    if (state._isInsertingVertex && state._insertedVertexIndex !== undefined) {
-      const insertedIndex = state._insertedVertexIndex
-      this.syncVertices(state)
-      this.pushUndo({ type: 'insert_vertex', featureId: state.featureId, vertexIndex: insertedIndex })
-      state.selectedVertexIndex = insertedIndex
-      state.selectedVertexType = 'vertex'
-      state._isInsertingVertex = false
-      state._insertedVertexIndex = undefined
-      this.map.fire('draw.vertexselection', { index: insertedIndex, numVertecies: state.vertecies.length })
-      return
-    }
-    DirectSelect.onClick.call(this, state, e)
-  },
-
-  onMouseUp (state, e) {
-    clearSnapState(getSnapInstance(this.map))
-
-    // Check if vertex actually moved by comparing current position to start position
-    // This is more robust than relying on state.dragMoving which can be inconsistent
-    // IMPORTANT: Get current position from the feature, not state.vertecies (which is cached)
-    let vertexMoved = false
-    if (state._moveStartPosition && state._moveStartIndex !== undefined) {
-      const feature = this.getFeature(state.featureId)
-      if (feature) {
-        const currentVertex = getCoords(feature)?.[state._moveStartIndex]
-        if (currentVertex) {
-          vertexMoved = currentVertex[0] !== state._moveStartPosition[0] ||
-                        currentVertex[1] !== state._moveStartPosition[1]
-        }
-      }
-    }
-
-    // Also check for insertions (dragMoving is reliable for midpoint drags)
-    const wasInsertion = state._isInsertingVertex && state._insertedVertexIndex !== undefined
-
-    if (state.dragMoving || vertexMoved || wasInsertion) {
-      this.syncVertices(state)
-
-      // Push undo for vertex insertion (from dragging midpoint)
-      if (wasInsertion) {
-        const insertedIndex = state._insertedVertexIndex
-        this.pushUndo({
-          type: 'insert_vertex',
-          featureId: state.featureId,
-          vertexIndex: insertedIndex
-        })
-        // selectedVertexIndex was pointing to the old midpoint-range index;
-        // update it to the actual flat index of the newly inserted vertex
-        state.selectedVertexIndex = insertedIndex
-        state.selectedVertexType = 'vertex'
-        state._isInsertingVertex = false
-        state._insertedVertexIndex = undefined
-        // Broadcast the updated vertex count — DirectSelect.onMouseUp only fires
-        // draw.update (not draw.selectionchange), so onSelectionChange never runs
-        this.map.fire('draw.vertexselection', {
-          index: insertedIndex, numVertecies: state.vertecies.length
-        })
-      } else if (vertexMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {
-        // Push undo for the move if vertex actually moved
-        this.pushUndo({
-          type: 'move_vertex',
-          featureId: state.featureId,
-          vertexIndex: state._moveStartIndex,
-          previousPosition: state._moveStartPosition
-        })
-      } else {
-        // No action
-      }
-    }
-
-    // Clean up move state
-    state._moveStartPosition = null
-    state._moveStartIndex = null
-
-    DirectSelect.onMouseUp.call(this, state, e)
-  },
-
-  onDrag (state, e) {
-    if (state.interfaceType === 'touch') {
-      return
-    }
-
-    this.map.fire('draw.geometrychange', state.feature)
-
-    const snap = getSnapInstance(this.map)
-    if (snap) {
-      snap.snapStatus = false
-      snap.snapCoords = null
-    }
-
-    if (!isSnapEnabled(state) || !snap?.status) {
-      DirectSelect.onDrag.call(this, state, e)
-      return
-    }
-
-    if (!state.selectedCoordPaths?.length || !state.canDragMove) {
-      return
-    }
-
-    state.dragMoving = true
-    e.originalEvent.stopPropagation()
-    triggerSnapAtPoint(snap, this.map, e.point)
-
-    const finalLngLat = getSnapLngLat(snap) || e.lngLat
-    state.feature.updateCoordinate(state.selectedCoordPaths[0], finalLngLat.lng, finalLngLat.lat)
-    state.dragMoveLocation = e.lngLat
+    // Duplicate coordinates exist (e.g. a self-touching ring). Comparing the list
+    // against itself cannot surface a distinct new vertex, so clear the selection.
+    state.selectedVertexIndex = -1
+    state.selectedVertexType ??= null
   },
 
   onMove (state) {

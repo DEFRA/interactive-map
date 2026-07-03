@@ -115,11 +115,8 @@ export const undoHandlers = {
     coords.splice(result.localIdx, 0, position)
     this._applyUndoAndSync(state, geojson, featureId)
 
-    // Update touch vertex target to restored vertex position
-    const vertex = state.vertecies[vertexIndex]
-    if (vertex) {
-      this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
-    }
+    // Re-insertion always lands the vertex back at vertexIndex, so it is guaranteed present
+    this.updateTouchVertexTarget(state, scalePoint(this.map.project(state.vertecies[vertexIndex]), state.scale))
     this.changeMode(state, { selectedVertexIndex: vertexIndex, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, vertexIndex) })
   },
 

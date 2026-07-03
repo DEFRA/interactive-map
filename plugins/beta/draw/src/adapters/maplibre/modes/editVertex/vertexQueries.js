@@ -45,7 +45,7 @@ export const vertexQueries = {
   },
 
   getVerticies (featureId) {
-    return getCoords(this.getFeature(featureId)) || []
+    return getCoords(this.getFeature(featureId))
   },
 
   getMidpoints (featureId) {
