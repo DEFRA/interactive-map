@@ -44,7 +44,10 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
 
   // --- Create or reuse MapLibre Draw instance ---
   let draw = mapProvider._mapboxDrawInstance
-  if (!draw) {
+  if (draw) {
+    // Update modes on existing draw instance when adapter is recreated
+    Object.assign(draw.modes, modes)
+  } else {
     draw = new MapboxDraw({
       modes,
       styles: createDrawStyles(mapStyle),
@@ -54,9 +57,6 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     })
     map.addControl(draw)
     mapProvider._mapboxDrawInstance = draw
-  } else {
-    // Update modes on existing draw instance when adapter is recreated
-    Object.assign(draw.modes, modes)
   }
 
   // mapbox-gl-draw swallows tap clicks in disabled mode — synthesize them
