@@ -11,7 +11,7 @@ export const newPolygon = ({ appState, appConfig, pluginConfig, pluginState, map
 
   eventBus.emit('draw:started', { mode: 'draw_polygon' })
 
-  const snapLayers = options.snapLayers !== undefined ? options.snapLayers : (pluginConfig.snapLayers ?? null)
+  const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 

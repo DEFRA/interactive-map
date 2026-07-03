@@ -11,7 +11,7 @@ export const newLine = ({ appState, appConfig, pluginConfig, pluginState, mapSta
 
   eventBus.emit('draw:started', { mode: 'draw_line' })
 
-  const snapLayers = options.snapLayers !== undefined ? options.snapLayers : (pluginConfig.snapLayers ?? null)
+  const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
