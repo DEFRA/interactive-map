@@ -9,10 +9,6 @@ const MID_BLUE = 'rgba(29,112,184,0.5)'
 const GREEN = 'rgba(40,161,151,1)'
 
 export const COLORS = {
-  mousePointer: { light: BLUE, dark: WHITE },
-  mousePointerHalo: { light: WHITE, dark: BLACK },
-  drawPointer: { light: BLUE, dark: WHITE },
-  drawPointerHalo: { light: WHITE, dark: BLACK },
   editStroke: { light: BLUE, dark: WHITE },
   editFill: { light: LIGHT_BLUE, dark: LIGHT_WHITE },
   editVertex: { light: BLUE, dark: WHITE },
@@ -29,7 +25,6 @@ export const COLORS = {
 }
 
 export const SIZES = {
-  mousePointerRadius: 4,
   strokeWidth: 2,
   vertexRadius: 6,
   midpointRadius: 4,

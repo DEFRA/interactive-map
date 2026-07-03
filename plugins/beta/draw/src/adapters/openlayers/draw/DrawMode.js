@@ -52,7 +52,7 @@ export const createDrawMode = ({ map, manager, options }) => {
   } = options
 
   let sketchFeature = null
-  let currentSketchStyle = manager.styles.createSketchStyle()
+  let currentSketchStyle = manager.styles.createSketchStyle(geometryType)
 
   const drawInteraction = new Draw({
     type: geometryType,
@@ -65,7 +65,7 @@ export const createDrawMode = ({ map, manager, options }) => {
 
   // Update sketch style when map style changes
   const onStylesChanged = () => {
-    currentSketchStyle = manager.styles.createSketchStyle()
+    currentSketchStyle = manager.styles.createSketchStyle(geometryType)
     drawInteraction.overlay_.changed()
   }
   manager.on('styleschanged', onStylesChanged)

@@ -2,6 +2,7 @@ import Style from 'ol/style/Style.js'
 import Fill from 'ol/style/Fill.js'
 import Stroke from 'ol/style/Stroke.js'
 import CircleStyle from 'ol/style/Circle.js'
+import MultiPoint from 'ol/geom/MultiPoint.js'
 import { SIZES } from '../defaults.js'
 
 const selectedVertexRadii = { outer: SIZES.vertexHaloRadius + 3, mid: SIZES.vertexHaloRadius, inner: SIZES.vertexRadius }
@@ -28,6 +29,17 @@ const makeRingRenderer = ({ outer, mid, inner }, colors, innerKey) => (pixelCoor
 }
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
+
+// Placed vertices of an in-progress sketch, excluding OL's trailing rubber-band
+// coordinate (LineString: [...placed, rubber_band];
+// Polygon ring: [...placed, rubber_band, v0_closing])
+const getPlacedSketchCoords = (geom) => {
+  if (geom.getType() === 'Polygon') {
+    const ring = geom.getCoordinates()[0] ?? []
+    return ring.slice(0, Math.max(0, ring.length - 2))
+  }
+  return geom.getCoordinates().slice(0, -1)
+}
 
 /**
  * Create all draw-ol style instances for the given resolved color set.
@@ -65,16 +77,26 @@ export const createStyles = (colors) => {
     fill: new Fill({ color: colors.editFill })
   })
 
-  const sketchPointStyle = new Style({
+  const sketchVertexStyle = new Style({
     image: new CircleStyle({
-      radius: SIZES.mousePointerRadius,
-      fill: new Fill({ color: colors.mousePointer }),
-      stroke: new Stroke({ color: colors.mousePointerHalo, width: 1 })
-    })
+      radius: SIZES.vertexRadius,
+      fill: new Fill({ color: colors.editVertex })
+    }),
+    geometry: (feature) => {
+      const coords = getPlacedSketchCoords(feature.getGeometry())
+      return coords.length ? new MultiPoint(coords) : null
+    }
   })
 
-  const createSketchStyle = () => (feature) =>
-    feature.getGeometry().getType() === 'Point' ? [sketchPointStyle] : [sketchLineStyle]
+  // No style for the Point sketch (cursor-following ghost marker); placed
+  // vertices get markers on the sketch feature instead. geometryType filters
+  // out the extra LineString sketch OL renders alongside a Polygon sketch,
+  // so vertices aren't drawn twice.
+  const createSketchStyle = (geometryType) => (feature) => {
+    const type = feature.getGeometry().getType()
+    if (type === 'Point') { return [] }
+    return type === geometryType ? [sketchLineStyle, sketchVertexStyle] : [sketchLineStyle]
+  }
 
   const createFeatureStyle = () => (feature) => {
     const p = feature.getProperties()

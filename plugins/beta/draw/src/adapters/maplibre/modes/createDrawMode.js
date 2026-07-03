@@ -537,8 +537,9 @@ export const createDrawMode = (ParentMode, config) => { // NOSONAR — factory r
     toDisplayFeatures (state, geojson, display) {
       ParentMode.toDisplayFeatures.call(this, state, geojson, display)
 
+      // Display features carry the id in properties.id (no top-level id)
       const feature = getFeature(state)
-      if (geojson.geometry.type === geometryType && geojson.id === feature.id) {
+      if (geojson.geometry.type === geometryType && geojson.properties.id === feature.id) {
         createVertices(geojson, display, createVertex)
       }
     },

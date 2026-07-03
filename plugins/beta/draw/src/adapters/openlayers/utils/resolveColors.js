@@ -17,8 +17,6 @@ export const resolveColors = (mapStyle, pluginConfig = {}) => {
   const resolveColor = (key) => getValueForStyle(pluginConfig[key] ?? COLORS[key], scheme, styleId)
 
   return {
-    mousePointer: resolveColor('mousePointer'),
-    mousePointerHalo: resolveColor('mousePointerHalo'),
     editStroke: resolveColor('editStroke'),
     editFill: resolveColor('editFill'),
     editVertex: resolveColor('editVertex'),

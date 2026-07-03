@@ -6,7 +6,6 @@ import { DrawLineMode } from './modes/drawLineMode.js'
 import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from '../../utils/undoStack.js'
-import { setupCursorIndicator } from './utils/cursorIndicator.js'
 import { setupTouchClickWorkaround } from './utils/touchClickWorkaround.js'
 import { applyTouchVertexColors } from './modes/editVertex/touchHandlers.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
@@ -84,15 +83,11 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     rules: ['vertex', 'edge']
   })
 
-  // --- Mouse cursor indicator during draw modes ---
-  const cursorIndicator = setupCursorIndicator(map, draw)
-
   // --- Update colour scheme ---
   const handleSetMapStyle = (e) => {
     map._drawCurrentMapStyle = e
     map.once('idle', () => {
       updateDrawStyles(map, e)
-      cursorIndicator.refreshColors()
       const svg = map._drawEditContainer?.querySelector('[data-im-draw-touch-target]')
       applyTouchVertexColors(svg, e)
     })
@@ -125,8 +120,6 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
       map.off('draw.interfacetypechange', handleDrawInterfaceTypeChange)
       // Disable draw mode but keep control on map for reuse
       draw.changeMode('disabled')
-      // Unwrap changeMode so wrappers don't stack when the adapter is recreated
-      cursorIndicator.remove()
       // Clear adapter reference (but not _mapboxDrawInstance so it persists)
       mapProvider.draw = null
     }
