@@ -1,18 +1,18 @@
-import DirectSelect from '../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
+import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import { getSnapInstance, clearSnapIndicator } from '../utils/snapHelpers.js'
-import { getCoords } from './editVertex/geometryHelpers.js'
-import { scalePoint } from './editVertex/helpers.js'
-import { undoHandlers } from './editVertex/undoHandlers.js'
-import { touchHandlers } from './editVertex/touchHandlers.js'
-import { vertexOperations } from './editVertex/vertexOperations.js'
-import { vertexQueries } from './editVertex/vertexQueries.js'
-import { keyboardHandlers } from './editVertex/keyboardHandlers.js'
-import { pointerHandlers } from './editVertex/pointerHandlers.js'
+import { getCoords } from './editVertexMode/geometryHelpers.js'
+import { scalePoint } from './editVertexMode/helpers.js'
+import { undoHandlers } from './editVertexMode/undoHandlers.js'
+import { touchHandlers } from './editVertexMode/touchHandlers.js'
+import { vertexOperations } from './editVertexMode/vertexOperations.js'
+import { vertexQueries } from './editVertexMode/vertexQueries.js'
+import { keyboardHandlers } from './editVertexMode/keyboardHandlers.js'
+import { pointerHandlers } from './editVertexMode/pointerHandlers.js'
 
 const EVENT_VERTEX_SELECTION = 'draw.vertexselection'
 
 export const EditVertexMode = {
-  ...DirectSelect,
+  ...MapboxDraw.modes.direct_select,
   ...undoHandlers,
   ...touchHandlers,
   ...vertexOperations,
@@ -21,7 +21,7 @@ export const EditVertexMode = {
   ...pointerHandlers,
 
   onSetup (options) {
-    const state = DirectSelect.onSetup.call(this, options)
+    const state = MapboxDraw.modes.direct_select.onSetup.call(this, options)
     Object.assign(state, {
       container: options.container,
       interfaceType: options.interfaceType,

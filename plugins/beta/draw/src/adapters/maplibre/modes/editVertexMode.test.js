@@ -1,10 +1,10 @@
-import { createHarness, POLYGON } from './editVertex/__helpers__/harness.js'
+import { createHarness, POLYGON } from './editVertexMode/__helpers__/harness.js'
 
 /**
  * Tests for EditVertexMode's own methods: setup/teardown lifecycle, selection/scale/update
  * events, and the small move/button/changeMode routing. The keyboard, pointer, touch, undo,
  * vertex-query, vertex-operation and geometry helpers are covered in their own colocated
- * test files under editVertex/.
+ * test files under editVertexMode/.
  */
 
 describe('onSetup / onStop lifecycle', () => {

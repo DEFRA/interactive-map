@@ -16,7 +16,7 @@ export const DisabledMode = {
     return false
   },
 
-  toDisplayFeatures (state, geojson, display) {
+  toDisplayFeatures (_state, geojson, display) {
     geojson.properties.active = 'false'
     display(geojson)
   }

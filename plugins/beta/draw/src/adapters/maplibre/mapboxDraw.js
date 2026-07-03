@@ -7,7 +7,7 @@ import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from '../../utils/undoStack.js'
 import { setupTouchClickWorkaround } from './utils/touchClickWorkaround.js'
-import { applyTouchVertexColors } from './modes/editVertex/touchHandlers.js'
+import { applyTouchVertexColors } from './modes/editVertexMode/touchHandlers.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
 
 /**
