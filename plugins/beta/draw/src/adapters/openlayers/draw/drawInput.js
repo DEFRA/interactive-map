@@ -1,44 +1,6 @@
-import { coordToPixel, pixelDist } from '../utils/olCoords.js'
-import { getLastPlacedSketchCoord } from '../utils/sketchHelpers.js'
+import { createVertexPlacement } from './vertexPlacement.js'
 
-const SNAP_TOLERANCE = 12 // pixels
-// Minimum ring length to allow snap-to-close (placed vertices + rubber-band)
-const MIN_SKETCH_COORDS = { Polygon: 4, LineString: 3 }
-const DUPLICATE_TOLERANCE_PX = 2
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
-
-const isCloseToFirstVertex = (map, coord, sketchCoords, geometryType) => {
-  if (geometryType !== 'Polygon' || sketchCoords.length < MIN_SKETCH_COORDS.Polygon) {
-    return false
-  }
-  const firstCoord = sketchCoords[0]
-  const currentPixel = coordToPixel(map, coord)
-  const firstPixel = coordToPixel(map, firstCoord)
-  if (!currentPixel || !firstPixel) {
-    return false
-  }
-  return pixelDist(currentPixel, firstPixel) < SNAP_TOLERANCE
-}
-
-const applyRubberbanding = (geom, centerCoord) => {
-  if (geom.getType() === 'LineString') {
-    const updated = [...geom.getCoordinates()]
-    updated[updated.length - 1] = centerCoord
-    geom.setCoordinates(updated)
-  } else if (geom.getType() === 'Polygon') {
-    const updated = geom.getCoordinates().map((ring, i) => {
-      if (i !== 0) {
-        return ring
-      }
-      const r = [...ring]
-      r[r.length - 1] = centerCoord
-      return r
-    })
-    geom.setCoordinates(updated)
-  } else {
-    // No action
-  }
-}
 
 const wireInputEvents = ({
   container, addVertexButtonId, olView, onUndo,
@@ -113,90 +75,25 @@ const wireInputEvents = ({
   }
 }
 
+/**
+ * Touch/keyboard input wiring for draw mode: crosshair vertex placement via the
+ * add-vertex button or Enter, keyboard undo, interface-type tracking, and
+ * rubber-band updates while the map pans under the crosshair.
+ *
+ * @returns {{ getInterfaceType: () => string, destroy: () => void }}
+ */
 export const createDrawInput = ({ drawInteraction, options }) => {
   const { container, addVertexButtonId, mapProvider, snap, onUndo, canFinish } = options
   let interfaceType = options.interfaceType ?? 'mouse'
-  let sketchFeature = null
-  let lastPlacedCoord = null
+  const getInterfaceType = () => interfaceType
 
-  drawInteraction.on('drawstart', (e) => {
-    sketchFeature = e.feature
-    lastPlacedCoord = null
+  const placement = createVertexPlacement({
+    drawInteraction,
+    mapProvider,
+    snap,
+    canFinish,
+    getInterfaceType
   })
-  drawInteraction.on('drawend', () => {
-    sketchFeature = null
-    lastPlacedCoord = null
-  })
-  drawInteraction.on('drawabort', () => {
-    sketchFeature = null
-    lastPlacedCoord = null
-  })
-
-  const updateRubberbanding = () => {
-    if (!sketchFeature) {
-      // No sketch yet — update snap indicator at crosshair position so targets are
-      // visible before the first vertex is placed (touch/keyboard only; mouse uses
-      // the OL snap interaction's pointermove handler instead).
-      if (interfaceType !== 'mouse' && snap) {
-        snap.apply(mapProvider.getCenter())
-      }
-      return
-    }
-    const geom = sketchFeature.getGeometry()
-    const coords = geom.getCoordinates()
-    if (!coords.length) {
-      return
-    }
-    const raw = mapProvider.getCenter()
-    const centerCoord = (interfaceType !== 'mouse' && snap) ? snap.apply(raw) : raw
-    applyRubberbanding(geom, centerCoord)
-  }
-
-  // Returns true if the vertex was handled as a close/finish attempt (caller should not append).
-  const tryClose = (geom, sketchCoords, coord) => {
-    if (lastPlacedCoord && lastPlacedCoord[0] === coord[0] && lastPlacedCoord[1] === coord[1]) {
-      // Same position as last placed: don't duplicate. Close only if enough real vertices exist.
-      if (canFinish?.()) { drawInteraction.finishDrawing() }
-      lastPlacedCoord = null
-      return true
-    }
-    if (isCloseToFirstVertex(drawInteraction.getMap(), coord, sketchCoords, geom.getType())) {
-      drawInteraction.finishDrawing()
-      return true
-    }
-    // When the add-vertex button overlays the map (touch UI), OL's native pointer handler
-    // and this button click handler both fire for the same tap. Detect that OL already
-    // committed a vertex at coord's position and skip the duplicate appendCoordinates,
-    // but register coord as lastPlacedCoord so a second tap at the same position can close.
-    const map = drawInteraction.getMap()
-    const lastCommitted = getLastPlacedSketchCoord(geom)
-    if (lastCommitted) {
-      const p1 = map.getPixelFromCoordinate(lastCommitted)
-      const p2 = map.getPixelFromCoordinate(coord)
-      if (p1 && p2) {
-        const dx = p1[0] - p2[0]; const dy = p1[1] - p2[1]
-        if (dx * dx + dy * dy < DUPLICATE_TOLERANCE_PX * DUPLICATE_TOLERANCE_PX) {
-          lastPlacedCoord = coord
-          return true
-        }
-      }
-    }
-    return false
-  }
-
-  const placeVertex = () => {
-    const raw = mapProvider.getCenter()
-    const coord = (interfaceType !== 'mouse' && snap) ? snap.apply(raw) : raw
-    snap?.hideIndicator()
-    if (sketchFeature) {
-      const geom = sketchFeature.getGeometry()
-      const rawCoords = geom.getCoordinates()
-      const sketchCoords = geom.getType() === 'Polygon' ? (rawCoords[0] || []) : rawCoords
-      if (tryClose(geom, sketchCoords, coord)) { return }
-    }
-    drawInteraction.appendCoordinates([coord])
-    lastPlacedCoord = coord
-  }
 
   const map = drawInteraction.getMap()
   const olView = map?.getView()
@@ -206,23 +103,23 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     addVertexButtonId,
     olView,
     onUndo,
-    getInterfaceType: () => interfaceType,
+    getInterfaceType,
     setInterfaceType: (t) => { interfaceType = t },
-    clearLastCoord: () => { lastPlacedCoord = null },
-    updateRubberbanding,
-    placeVertex
+    clearLastCoord: placement.clearLastCoord,
+    updateRubberbanding: placement.updateRubberbanding,
+    placeVertex: placement.placeVertex
   })
 
   // change:center fires once when a keyboard pan animation starts; postrender tracks each frame.
   const onMapRender = () => {
     if (interfaceType !== 'mouse' && olView?.getAnimating()) {
-      updateRubberbanding()
+      placement.updateRubberbanding()
     }
   }
   map?.on('postrender', onMapRender)
 
   return {
-    getInterfaceType: () => interfaceType,
+    getInterfaceType,
     destroy () {
       events.destroy()
       map?.un('postrender', onMapRender)

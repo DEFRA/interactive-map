@@ -5,6 +5,7 @@
  * draw.setSnapEnabled(), etc.) so this file is map-framework-agnostic.
  * All MapLibre / OL specifics live in the adapter.
  */
+import { ADAPTER_EVENTS } from './adapterEvents.js'
 
 function createHandlers ({ pluginState, mapProvider, eventBus, resetState, disableSnap }) {
   const { draw } = mapProvider
@@ -43,13 +44,13 @@ function attachButtonHandlers (buttonConfig, handlers) {
 }
 
 function attachDrawEvents (draw, handlers) {
-  draw.on('create', handlers.onCreate)
-  draw.on('editfinish', handlers.onEditFinish)
-  draw.on('cancel', handlers.onCancel)
-  draw.on('vertexselection', handlers.onVertexSelection)
-  draw.on('vertexchange', handlers.onVertexChange)
-  draw.on('undochange', handlers.onUndoChange)
-  draw.on('update', handlers.onUpdate)
+  draw.on(ADAPTER_EVENTS.CREATE, handlers.onCreate)
+  draw.on(ADAPTER_EVENTS.EDIT_FINISH, handlers.onEditFinish)
+  draw.on(ADAPTER_EVENTS.CANCEL, handlers.onCancel)
+  draw.on(ADAPTER_EVENTS.VERTEX_SELECTION, handlers.onVertexSelection)
+  draw.on(ADAPTER_EVENTS.VERTEX_CHANGE, handlers.onVertexChange)
+  draw.on(ADAPTER_EVENTS.UNDO_CHANGE, handlers.onUndoChange)
+  draw.on(ADAPTER_EVENTS.UPDATE, handlers.onUpdate)
 }
 
 function detachButtonHandlers (buttonConfig) {
@@ -62,13 +63,13 @@ function detachButtonHandlers (buttonConfig) {
 }
 
 function detachDrawEvents (draw, handlers) {
-  draw.off('create', handlers.onCreate)
-  draw.off('editfinish', handlers.onEditFinish)
-  draw.off('cancel', handlers.onCancel)
-  draw.off('vertexselection', handlers.onVertexSelection)
-  draw.off('vertexchange', handlers.onVertexChange)
-  draw.off('undochange', handlers.onUndoChange)
-  draw.off('update', handlers.onUpdate)
+  draw.off(ADAPTER_EVENTS.CREATE, handlers.onCreate)
+  draw.off(ADAPTER_EVENTS.EDIT_FINISH, handlers.onEditFinish)
+  draw.off(ADAPTER_EVENTS.CANCEL, handlers.onCancel)
+  draw.off(ADAPTER_EVENTS.VERTEX_SELECTION, handlers.onVertexSelection)
+  draw.off(ADAPTER_EVENTS.VERTEX_CHANGE, handlers.onVertexChange)
+  draw.off(ADAPTER_EVENTS.UNDO_CHANGE, handlers.onUndoChange)
+  draw.off(ADAPTER_EVENTS.UPDATE, handlers.onUpdate)
 }
 
 export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus }) {

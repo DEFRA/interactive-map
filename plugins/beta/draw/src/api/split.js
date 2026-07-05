@@ -1,5 +1,6 @@
 import { splitPolygon } from '../utils/spatial.js'
 import { debounce } from '../utils/debounce.js'
+import { ADAPTER_EVENTS } from '../adapterEvents.js'
 
 /**
  * Start drawing a split line for a polygon.
@@ -39,12 +40,12 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider 
 
   // One-shot: compute split result once the line is finalised
   const onSplitCreate = (geojsonFeature) => {
-    draw.off('create', onSplitCreate)
+    draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     const featureCollection = splitPolygon(polygonFeature, geojsonFeature)
     draw.setFeatureProperty('_splitter', 'splitter', featureCollection ? 'valid' : 'invalid')
     dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: !!featureCollection } })
   }
-  draw.on('create', onSplitCreate)
+  draw.on(ADAPTER_EVENTS.CREATE, onSplitCreate)
 
   // Real-time preview: update split validity as vertices are placed (ML only)
   const DEBOUNCE_MS = 50
@@ -59,7 +60,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider 
     e.ctx?.store?.render()
     dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
   }, DEBOUNCE_MS)
-  draw.on('geometrychange', onGeometryChange)
+  draw.on(ADAPTER_EVENTS.GEOMETRY_CHANGE, onGeometryChange)
 
   dispatch({ type: 'SET_MODE', payload: 'draw_line' })
   dispatch({ type: 'SET_ACTION', payload: { name: 'split' } })

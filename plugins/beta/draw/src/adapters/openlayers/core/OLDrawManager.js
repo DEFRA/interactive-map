@@ -7,6 +7,8 @@ import { createSnapManager } from '../snap/snapManager.js'
 import { createDrawMode } from '../draw/DrawMode.js'
 import { createEditMode } from '../edit/EditMode.js'
 import { TOLERANCES } from '../defaults.js'
+import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
+import { STYLES_CHANGED_EVENT } from './internalEvents.js'
 
 /**
  * Mode machine for the OL draw plugin.
@@ -27,7 +29,7 @@ export class OLDrawManager {
     this._listeners = new Map()
 
     this.store = createFeatureStore()
-    this.undoStack = createUndoStack((length) => this.emit('undochange', length))
+    this.undoStack = createUndoStack((length) => this.emit(ADAPTER_EVENTS.UNDO_CHANGE, length))
 
     this.colors = resolveColors(null, pluginConfig)
     this.styles = createStyles(this.colors)
@@ -50,7 +52,7 @@ export class OLDrawManager {
     this._layer.setStyle(this.styles.createFeatureStyle())
     this.store.source.changed()
     this.snap?.updateColors(this.colors)
-    this.emit('styleschanged', this.styles)
+    this.emit(STYLES_CHANGED_EVENT, this.styles)
   }
 
   // --- Internal event bus ---

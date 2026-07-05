@@ -1,6 +1,8 @@
 import { coordToPixel, pixelDist } from '../utils/olCoords.js'
 
-const PIXEL_TOLERANCE = 12
+// Also used as the Modify interaction's pixelTolerance so pointer hit
+// detection and OL's drag activation agree on what "on a handle" means
+export const PIXEL_TOLERANCE = 12
 
 /**
  * Find the nearest vertex to a screen pixel within tolerance.

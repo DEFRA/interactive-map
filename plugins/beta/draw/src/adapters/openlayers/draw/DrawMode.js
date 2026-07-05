@@ -3,6 +3,8 @@ import { noModifierKeys } from 'ol/events/condition.js'
 import { createDrawInput } from './drawInput.js'
 import { getPlacedSketchCoords, getLastPlacedSketchCoord } from '../utils/sketchHelpers.js'
 import { TOLERANCES } from '../defaults.js'
+import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
+import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
 const MIN_VERTICES = { Polygon: 3, LineString: 2 }
 
 const canFinish = (geometryType, sketchFeature) => {
@@ -53,7 +55,7 @@ export const createDrawMode = ({ map, manager, options }) => {
     currentSketchStyle = manager.styles.createSketchStyle(geometryType)
     drawInteraction.overlay_.changed()
   }
-  manager.on('styleschanged', onStylesChanged)
+  manager.on(STYLES_CHANGED_EVENT, onStylesChanged)
   // OL internal: overlay_ is the private VectorLayer used for the sketch geometry.
   // updateWhileAnimating_ forces per-frame redraws during view animations (keyboard pan).
   // Without this, geom.setCoordinates() calls are ignored while the ANIMATING hint is set.
@@ -62,7 +64,7 @@ export const createDrawMode = ({ map, manager, options }) => {
 
   const updateVertexCount = () => {
     if (!sketchFeature) { return }
-    manager.emit('vertexchange', { numVertices: getPlacedSketchCoords(sketchFeature.getGeometry()).length })
+    manager.emit(ADAPTER_EVENTS.VERTEX_CHANGE, { numVertices: getPlacedSketchCoords(sketchFeature.getGeometry()).length })
   }
 
   drawInteraction.on('drawstart', (e) => {
@@ -75,11 +77,11 @@ export const createDrawMode = ({ map, manager, options }) => {
     olFeature.setId(String(featureId))
     olFeature.setProperties(properties)
     manager.store.source.addFeature(olFeature)
-    manager.emit('create', manager.store.toGeoJSON(olFeature))
+    manager.emit(ADAPTER_EVENTS.CREATE, manager.store.toGeoJSON(olFeature))
     // Mode switches to disabled in events.js after receiving 'create'
   })
 
-  drawInteraction.on('drawabort', () => { manager.emit('cancel') })
+  drawInteraction.on('drawabort', () => { manager.emit(ADAPTER_EVENTS.CANCEL) })
 
   const input = createDrawInput({
     drawInteraction,
@@ -102,10 +104,10 @@ export const createDrawMode = ({ map, manager, options }) => {
     cancel () { drawInteraction.abortDrawing() },
     undo () { drawInteraction.removeLastPoint(); updateVertexCount() },
     destroy () {
-      manager.off('styleschanged', onStylesChanged)
+      manager.off(STYLES_CHANGED_EVENT, onStylesChanged)
       // Emit the final interfaceType from draw mode so it's synced back to appState
       // This ensures crosshair visibility is correct when exiting draw mode
-      manager.emit('interfacetypechange', { interfaceType: input.getInterfaceType() })
+      manager.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: input.getInterfaceType() })
       input.destroy()
       map.removeInteraction(drawInteraction)
       sketchFeature = null

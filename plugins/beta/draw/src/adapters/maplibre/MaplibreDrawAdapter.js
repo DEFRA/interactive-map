@@ -2,6 +2,7 @@ import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
+import { ADAPTER_EVENTS } from '../../adapterEvents.js'
 
 /**
  * Draw adapter for MapLibre GL.
@@ -37,18 +38,18 @@ export class MaplibreDrawAdapter {
     this._draw = draw
     this._cleanupDraw = remove
 
-    // Normalise ML map events → shared adapter event bus.
-    // draw-ol emits these same event names directly from OLDrawManager.
+    // Normalise ML map events → the shared adapter event contract (adapterEvents.js).
+    // The OL adapter emits the same contract directly from OLDrawManager.
     this._mapHandlers = {
-      create: (e) => this._bus.emit('create', e.features[0]),
-      editfinish: (e) => this._bus.emit('editfinish', e.features[0]),
-      cancel: () => this._bus.emit('cancel'),
-      // Normalise typo: draw-ml fires numVertecies, shared interface uses numVertices
-      vertexselection: (e) => this._bus.emit('vertexselection', { ...e, numVertices: e.numVertecies }),
-      vertexchange: (e) => this._bus.emit('vertexchange', { ...e, numVertices: e.numVertecies }),
-      undochange: (e) => this._bus.emit('undochange', e.length),
-      update: (e) => this._bus.emit('update', e.features[0]),
-      geometrychange: (e) => this._bus.emit('geometrychange', e),
+      create: (e) => this._bus.emit(ADAPTER_EVENTS.CREATE, e.features[0]),
+      editfinish: (e) => this._bus.emit(ADAPTER_EVENTS.EDIT_FINISH, e.features[0]),
+      cancel: () => this._bus.emit(ADAPTER_EVENTS.CANCEL),
+      // Normalise typo: the ML modes fire numVertecies, the contract uses numVertices
+      vertexselection: (e) => this._bus.emit(ADAPTER_EVENTS.VERTEX_SELECTION, { ...e, numVertices: e.numVertecies }),
+      vertexchange: (e) => this._bus.emit(ADAPTER_EVENTS.VERTEX_CHANGE, { ...e, numVertices: e.numVertecies }),
+      undochange: (e) => this._bus.emit(ADAPTER_EVENTS.UNDO_CHANGE, e.length),
+      update: (e) => this._bus.emit(ADAPTER_EVENTS.UPDATE, e.features[0]),
+      geometrychange: (e) => this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, e),
       modechange: (e) => this._handleModeChange(e),
       styledata: () => this._handleStyleData()
     }
