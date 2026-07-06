@@ -1,4 +1,4 @@
-import DirectSelect from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
+import DirectSelect from '../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
 import {
   getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState
 } from '../../utils/snapHelpers.js'

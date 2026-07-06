@@ -1,5 +1,5 @@
 import { render, act } from '@testing-library/react'
-import { EVENTS } from '../../../../src/config/events.js'
+import { EVENTS } from '../../../src/config/events.js'
 import { DrawInit } from './DrawInit.jsx'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'

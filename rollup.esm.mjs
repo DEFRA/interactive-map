@@ -272,8 +272,8 @@ const ALL_BUILDS = [
     manualChunks: (id) => id.includes('/manifest') ? 'im-map-styles-plugin' : undefined
   },
   {
-    entryPath: './plugins/beta/draw/src/index.js',
-    outDir: 'plugins/beta/draw/dist/esm',
+    entryPath: './plugins/draw/src/index.js',
+    outDir: 'plugins/draw/dist/esm',
     extraExternals: [/^ol\//],
     manualChunks: (id) => {
       if (id.includes('/manifest')) { return 'im-draw-plugin' }

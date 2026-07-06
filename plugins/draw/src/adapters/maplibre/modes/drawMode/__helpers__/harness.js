@@ -1,8 +1,8 @@
 import { DrawPolygonMode } from '../../drawPolygonMode.js'
 import { DrawLineMode } from '../../drawLineMode.js'
 import { createUndoStack } from '../../../../../utils/undoStack.js'
-import PolygonFeature from '../../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/polygon.js'
-import LineStringFeature from '../../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/line_string.js'
+import PolygonFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/polygon.js'
+import LineStringFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/line_string.js'
 
 /**
  * Shared test harness for the createDrawMode handler modules. Exercises the real

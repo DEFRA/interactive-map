@@ -1,7 +1,7 @@
 import { EditVertexMode } from '../../editVertexMode.js'
 import { createUndoStack } from '../../../../../utils/undoStack.js'
-import PolygonFeature from '../../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/polygon.js'
-import LineStringFeature from '../../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/line_string.js'
+import PolygonFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/polygon.js'
+import LineStringFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/line_string.js'
 
 /**
  * Shared test harness for the vertex-edit mode and its handler modules. Builds the real
