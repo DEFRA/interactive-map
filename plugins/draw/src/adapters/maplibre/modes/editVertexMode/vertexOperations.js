@@ -64,7 +64,7 @@ export const vertexOperations = {
       midpointCounter += segMidpoints
     }
 
-    if (!insertSegment) return
+    if (!insertSegment) { return }
 
     const coords = getModifiableCoords(geojson, insertSegment.path)
     coords.splice(localInsertIdx, 0, [newCoord.lng, newCoord.lat])
@@ -86,7 +86,7 @@ export const vertexOperations = {
     const geojson = feature.toGeoJSON()
     const segments = getRingSegments(feature)
     const result = getSegmentForIndex(segments, state.selectedVertexIndex)
-    if (!result) return
+    if (!result) { return }
 
     const coords = getModifiableCoords(geojson, result.segment.path)
     coords[result.localIdx] = [coord.lng, coord.lat]
@@ -110,7 +110,7 @@ export const vertexOperations = {
 
     const { segment } = result
     // Minimum vertices per segment: 3 for closed rings (mapbox-gl-draw's internal representation), 2 for lines
-    const minVertices = segment.closed ? 3 : 2
+    const minVertices = segment.closed ? 3 : 2 // NOSONAR, min vertices for closed ring
     if (segment.length <= minVertices) {
       return
     }

@@ -35,16 +35,15 @@ export const undoInsertVertex = (olFeature, op) => {
   const geojsonGeom = { type: geom.getType(), coordinates: geom.getCoordinates() }
   const segments = getRingSegments(geojsonGeom)
   const result = getSegmentForIndex(segments, vertexIndex)
-  if (!result) {
-    return -1
+  if (result) {
+    const ring = getModifiableCoords(geojsonGeom, result.segment.path)
+    ring.splice(result.localIdx, 1)
+    if (result.segment.closed) {
+      ring[ring.length - 1] = [...ring[0]]
+    }
+    geom.setCoordinates(geojsonGeom.coordinates)
   }
-
-  const ring = getModifiableCoords(geojsonGeom, result.segment.path)
-  ring.splice(result.localIdx, 1)
-  if (result.segment.closed) {
-    ring[ring.length - 1] = [...ring[0]]
-  }
-  geom.setCoordinates(geojsonGeom.coordinates)
+  // Undoing an insert removes the vertex, so there is never one to re-select
   return -1
 }
 

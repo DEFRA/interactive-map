@@ -12,7 +12,9 @@
  * @returns {Array<[number, number]>} Flat array of all coordinates
  */
 export const getCoords = (feature) => {
-  if (!feature?.coordinates) return []
+  if (!feature?.coordinates) {
+    return []
+  }
   switch (feature.type) {
     case 'LineString':
       return feature.coordinates
@@ -40,7 +42,9 @@ export const getCoords = (feature) => {
  *   - closed: Whether this segment is closed (true for Polygon rings)
  */
 export const getRingSegments = (feature) => {
-  if (!feature?.coordinates) return []
+  if (!feature?.coordinates) {
+    return []
+  }
   const segments = []
   let start = 0
 
@@ -125,11 +129,11 @@ export const coordPathToFlatIndex = (feature, coordPath) => {
     // Check if path matches (compare all but last element which is the local vertex index)
     const pathMatches = seg.path.every((val, idx) => val === parts[idx])
     if (pathMatches && parts.length === seg.path.length + 1) {
-      const localIdx = parts[parts.length - 1]
+      const localIdx = parts[parts.length - 1] // NOSONAR, .length greater borwser support
       return seg.start + localIdx
     }
   }
 
   // Fallback: just use the last number (works for simple geometries)
-  return parts[parts.length - 1]
+  return parts[parts.length - 1] // NOSONAR, .length greater borwser support
 }

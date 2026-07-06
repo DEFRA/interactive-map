@@ -40,18 +40,20 @@ export const undoHandlers = {
       this.undoInsertVertex(state, op)
     } else if (op.type === 'delete_vertex') {
       this.undoDeleteVertex(state, op)
+    } else {
+      // No action
     }
   },
 
   undoMoveVertex (state, op) {
     const { vertexIndex, previousPosition, featureId } = op
     const feature = this.getFeature(featureId)
-    if (!feature) return
+    if (!feature) { return }
 
     const geojson = feature.toGeoJSON()
     const segments = getRingSegments(feature)
     const result = getSegmentForIndex(segments, vertexIndex)
-    if (!result) return
+    if (!result) { return }
 
     const coords = getModifiableCoords(geojson, result.segment.path)
     coords[result.localIdx] = previousPosition
@@ -67,12 +69,12 @@ export const undoHandlers = {
   undoInsertVertex (state, op) {
     const { vertexIndex, featureId } = op
     const feature = this.getFeature(featureId)
-    if (!feature) return
+    if (!feature) { return }
 
     const geojson = feature.toGeoJSON()
     const segments = getRingSegments(feature)
     const result = getSegmentForIndex(segments, vertexIndex)
-    if (!result) return
+    if (!result) { return }
 
     const coords = getModifiableCoords(geojson, result.segment.path)
     coords.splice(result.localIdx, 1)
