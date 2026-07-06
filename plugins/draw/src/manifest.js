@@ -105,27 +105,32 @@ export const manifest = {
   keyboardShortcuts: [{
     id: 'drawAddPoint',
     group: 'Drawing',
-    title: 'Add new point',
+    title: 'Add point (draw)',
     command: '<kbd>Enter</kbd>'
   }, {
     id: 'drawSelectPoint',
     group: 'Drawing',
-    title: 'Select point closest to centre',
+    title: 'Select nearest point (edit)',
     command: '<kbd>Spacebar</kbd>'
+  }, {
+    id: 'drawSelectAdjacentPoint',
+    group: 'Drawing',
+    title: 'Select adjacent point (edit)',
+    command: '<kbd>Alt</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>'
   }, {
     id: 'drawMovePoint',
     group: 'Drawing',
-    title: 'Move point',
+    title: 'Move point (edit)',
     command: '<kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>'
   }, {
     id: 'drawNudgePoint',
     group: 'Drawing',
-    title: 'Nudge point',
+    title: 'Nudge point (edit)',
     command: '<kbd>Shift</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>'
   }, {
     id: 'drawDeletePoint',
     group: 'Drawing',
-    title: 'Delete point',
+    title: 'Delete point (edit)',
     command: '<kbd>Delete</kbd>'
   }, {
     id: 'drawUndo',
