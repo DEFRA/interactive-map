@@ -15,10 +15,6 @@ export const newLine = ({ appState, appConfig, pluginConfig, pluginState, mapSta
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
-  // A brand-new drawing always starts with snapping off.
-  dispatch({ type: 'SET_SNAP', payload: false })
-  draw.setSnapEnabled(false)
-
   const { stroke, fill, strokeWidth, properties: customProperties, ...modeOptions } = options
   const properties = {
     ...customProperties,

@@ -8,7 +8,7 @@ jest.mock('../utils/flattenStyleProperties.js', () => ({
 const makeContext = (overrides = {}) => {
   const dispatch = jest.fn()
   const eventBus = { emit: jest.fn() }
-  const draw = { setSnapLayers: jest.fn(), setSnapEnabled: jest.fn(), changeMode: jest.fn(), isSnapEnabled: jest.fn(() => true) }
+  const draw = { setSnapLayers: jest.fn(), changeMode: jest.fn(), isSnapEnabled: jest.fn(() => true) }
   const context = {
     appState: { layoutRefs: { viewportRef: { current: 'viewport' } }, interfaceType: 'mouse' },
     appConfig: { id: 'app' },
@@ -54,13 +54,6 @@ describe('newPolygon', () => {
     expect(draw.isSnapEnabled).toHaveBeenCalled()
 
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: 'draw_polygon' })
-  })
-
-  test('resets snap to off when starting a fresh drawing', () => {
-    const { context, draw, dispatch } = makeContext()
-    newPolygon(context, 'f1')
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SNAP', payload: false })
-    expect(draw.setSnapEnabled).toHaveBeenCalledWith(false)
   })
 
   test('prefers explicit option snapLayers and flags them', () => {

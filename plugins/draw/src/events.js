@@ -7,7 +7,7 @@
  */
 import { ADAPTER_EVENTS } from './adapterEvents.js'
 
-function createHandlers ({ pluginState, mapProvider, eventBus, resetState, disableSnap }) {
+function createHandlers ({ pluginState, mapProvider, eventBus, resetState }) {
   const { draw } = mapProvider
   const { feature, tempFeature } = pluginState
   return {
@@ -15,7 +15,7 @@ function createHandlers ({ pluginState, mapProvider, eventBus, resetState, disab
     handleCancel: () => {
       const mode = draw.getMode()
       if (mode === 'edit_vertex' && tempFeature?.id) { draw.add(feature) }
-      disableSnap(); draw.cancel(); resetState()
+      draw.cancel(); resetState()
       eventBus.emit('draw:cancelled', feature)
     },
     handleUndo: () => draw.undo(),
@@ -78,11 +78,7 @@ export function attachEvents ({ pluginState, mapProvider, buttonConfig, eventBus
     pluginState.dispatch({ type: 'SET_MODE', payload: null })
     pluginState.dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
   }
-  const disableSnap = () => {
-    pluginState.dispatch({ type: 'SET_SNAP', payload: false })
-    draw.setSnapEnabled(false)
-  }
-  const handlers = createHandlers({ pluginState, mapProvider, eventBus, resetState, disableSnap })
+  const handlers = createHandlers({ pluginState, mapProvider, eventBus, resetState })
   attachButtonHandlers(buttonConfig, handlers)
   attachDrawEvents(draw, handlers)
   return () => { detachButtonHandlers(buttonConfig); detachDrawEvents(draw, handlers) }
