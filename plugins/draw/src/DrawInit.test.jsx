@@ -124,6 +124,22 @@ describe('crosshair', () => {
     await renderInit(props)
     expect(props.mapState.crossHair.fixAtCenter).not.toHaveBeenCalled()
   })
+
+  test('hides the crosshair on cleanup when it was hidden before and the interface has left touch/keyboard', async () => {
+    const { props } = makeProps({
+      appState: { interfaceType: 'touch', mode: null },
+      pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' }
+    })
+    const result = await renderInit(props)
+    expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
+
+    // Switch away from touch/keyboard, then re-render so the crosshair effect's
+    // cleanup runs — it reads the (mutated) interface type and hides the crosshair.
+    props.appState.interfaceType = 'mouse'
+    await act(async () => { result.rerender(<DrawInit {...props} />) })
+
+    expect(props.mapState.crossHair.hide).toHaveBeenCalled()
+  })
 })
 
 describe('interface type sync', () => {
