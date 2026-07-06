@@ -90,6 +90,94 @@ determine_pkg_tag() {
   jq -r '.publishConfig.tag // "latest"' "$pkg_dir/package.json"
 }
 
+# Pre-flight gate — runs after version validation (and after the build, which
+# happens in the workflow before this script), but BEFORE any package.json is
+# stamped and BEFORE anything is published. It asserts every package (core + all
+# workspaces) can be published at the target version, so a problem aborts the
+# whole release while nothing has been mutated or published yet — instead of
+# dying mid-loop and leaving a partial, inconsistent release.
+#
+# It checks all packages and reports every failure (does not stop at the first),
+# so the operator can fix everything in one pass.
+#
+# What it catches:
+#   1. Package not registered on npm   → a new package that was never bootstrapped
+#                                         (seed + trusted publishing). See RELEASING.md.
+#   2. Target version already published → collision / re-run of a partial release.
+#   3. Package not publishable          → missing build output or invalid package.json
+#                                         (via `npm publish --dry-run`, no registry/auth).
+#
+# What it CANNOT catch: whether OIDC trusted publishing is correctly configured
+# for a package that *does* exist — there is no way to exercise the OIDC token
+# exchange without actually publishing. Check 1 catches the common case (a brand
+# new package that was never seeded). For a package's first real release we still
+# print a reminder to confirm trusted publishing is set up.
+preflight_checks() {
+  local version="${TAG_NAME#v}"
+  local release_tag
+  release_tag=$(determine_release_tag)
+  local failures=0
+  local count=0
+
+  echo "── Pre-flight: verifying every package can publish ${version} (nothing is published yet) ──"
+
+  local pkg_dirs=(".")
+  for d in providers/* plugins/*; do
+    [ -f "$d/package.json" ] && pkg_dirs+=("$d")
+  done
+
+  for pkg_dir in "${pkg_dirs[@]}"; do
+    count=$((count + 1))
+    local name versions_json
+    name=$(jq -r '.name' "$pkg_dir/package.json")
+
+    # 1. Registered on npm? (tag-independent — a seeded package has no `latest` yet)
+    if ! versions_json=$(npm view "$name" versions --json 2>/dev/null); then
+      echo "  ✗ ${name}: not found on npm — needs one-time bootstrap (seed + trusted publishing)."
+      echo "      Fix: follow RELEASING.md → 'One-time bootstrap', then re-run the release."
+      failures=$((failures + 1))
+      continue
+    fi
+
+    # 2. Target version not already published?
+    if echo "$versions_json" | jq -e --arg v "$version" \
+        'if type=="array" then index($v) else . == $v end' >/dev/null; then
+      echo "  ✗ ${name}: version ${version} is already published — bump the release version."
+      echo "      Fix: see RELEASING.md → 'Troubleshooting' (a partial release usually needs a new patch version)."
+      failures=$((failures + 1))
+      continue
+    fi
+
+    # 3. Packable? (no registry/auth — validates build output + package.json).
+    #    --tag is required or npm refuses to (dry-)publish a prerelease version.
+    if ! npm publish "$pkg_dir" --dry-run --tag "$release_tag" >/dev/null 2>&1; then
+      echo "  ✗ ${name}: 'npm publish --dry-run' failed — missing build output or invalid package.json."
+      echo "      Fix: see RELEASING.md → 'Troubleshooting'."
+      failures=$((failures + 1))
+      continue
+    fi
+
+    # Reminder: a package whose only published versions are 0.0.0 seed placeholders
+    # is having its first real release — the moment a missing OIDC config would bite.
+    if echo "$versions_json" | jq -e \
+        'if type=="array" then all(.[]; startswith("0.0.0")) else startswith("0.0.0") end' >/dev/null; then
+      echo "  ✓ ${name}  (ℹ first real release — confirm trusted publishing is configured, RELEASING.md Step 2)"
+    else
+      echo "  ✓ ${name}"
+    fi
+  done
+
+  if [ "$failures" -gt 0 ]; then
+    echo ""
+    echo "Pre-flight FAILED: ${failures} of ${count} package(s) cannot be published. Nothing was published."
+    echo "Resolve the issues above, then create a new GitHub Release to re-run."
+    echo "See RELEASING.md for the full release and bootstrap procedure: https://github.com/DEFRA/interactive-map/blob/main/RELEASING.md"
+    exit 1
+  fi
+
+  echo "✓ Pre-flight passed — all ${count} packages can publish ${version}."
+}
+
 publish_all() {
   local release_tag=$1
   local version="${TAG_NAME#v}"
@@ -134,6 +222,7 @@ main() {
   validate_arguments
   validate_version_format
   validate_version_bump
+  preflight_checks
   stamp_versions
 
   RELEASE_TAG=$(determine_release_tag)
