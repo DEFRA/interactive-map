@@ -104,3 +104,28 @@ describe('drawMenu', () => {
     })
   })
 })
+
+describe('drawUndo keyboard shortcut (platform-specific command)', () => {
+  const loadUndoCommand = (mac) => {
+    let command
+    jest.isolateModules(() => {
+      jest.doMock('../../../src/utils/isMac.js', () => ({ isMac: () => mac }))
+      const { manifest: reloaded } = require('./manifest.js')
+      command = reloaded.keyboardShortcuts.find((s) => s.id === 'drawUndo').command
+    })
+    return command
+  }
+
+  afterEach(() => {
+    jest.dontMock('../../../src/utils/isMac.js')
+    jest.resetModules()
+  })
+
+  test('uses Command on macOS', () => {
+    expect(loadUndoCommand(true)).toBe('<kbd>Command</kbd> + <kbd>Z</kbd>')
+  })
+
+  test('uses Ctrl on non-mac platforms', () => {
+    expect(loadUndoCommand(false)).toBe('<kbd>Ctrl</kbd> + <kbd>Z</kbd>')
+  })
+})

@@ -7,6 +7,10 @@ import { addFeature } from './api/addFeature.js'
 import { deleteFeature } from './api/deleteFeature.js'
 import { split } from './api/split.js'
 import { merge } from './api/merge.js'
+import { isMac } from '../../../src/utils/isMac.js'
+
+// Show the platform-appropriate undo modifier (⌘ on macOS, Ctrl elsewhere).
+const undoCommand = isMac() ? '<kbd>Command</kbd> + <kbd>Z</kbd>' : '<kbd>Ctrl</kbd> + <kbd>Z</kbd>'
 
 const createButtonSlots = (showLabel) => ({
   mobile: { slot: 'actions', showLabel },
@@ -99,10 +103,35 @@ export const manifest = {
   ],
 
   keyboardShortcuts: [{
-    id: 'drawStart',
+    id: 'drawAddPoint',
     group: 'Drawing',
-    title: 'Edit vertex',
-    command: '<kbd>Spacebar</kbd></dd>'
+    title: 'Add new point',
+    command: '<kbd>Enter</kbd>'
+  }, {
+    id: 'drawSelectPoint',
+    group: 'Drawing',
+    title: 'Select point closest to centre',
+    command: '<kbd>Spacebar</kbd>'
+  }, {
+    id: 'drawMovePoint',
+    group: 'Drawing',
+    title: 'Move point',
+    command: '<kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>'
+  }, {
+    id: 'drawNudgePoint',
+    group: 'Drawing',
+    title: 'Nudge point',
+    command: '<kbd>Shift</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>'
+  }, {
+    id: 'drawDeletePoint',
+    group: 'Drawing',
+    title: 'Delete point',
+    command: '<kbd>Delete</kbd>'
+  }, {
+    id: 'drawUndo',
+    group: 'Drawing',
+    title: 'Undo',
+    command: undoCommand
   }],
 
   icons: [{
