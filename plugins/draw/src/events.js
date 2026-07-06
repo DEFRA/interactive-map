@@ -11,7 +11,7 @@ function createHandlers ({ pluginState, mapProvider, eventBus, resetState, disab
   const { draw } = mapProvider
   const { feature, tempFeature } = pluginState
   return {
-    handleDone: () => { disableSnap(); draw.done() },
+    handleDone: () => { draw.done() },
     handleCancel: () => {
       const mode = draw.getMode()
       if (mode === 'edit_vertex' && tempFeature?.id) { draw.add(feature) }
@@ -24,8 +24,8 @@ function createHandlers ({ pluginState, mapProvider, eventBus, resetState, disab
       pluginState.dispatch({ type: 'TOGGLE_SNAP' })
       draw.setSnapEnabled(!pluginState.snap)
     },
-    onCreate: (f) => { disableSnap(); resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', f) },
-    onEditFinish: (f) => { disableSnap(); resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:edited', f) },
+    onCreate: (f) => { resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', f) },
+    onEditFinish: (f) => { resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:edited', f) },
     onCancel: () => {},
     onVertexSelection: (e) => { pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e }); eventBus.emit('draw:vertexselection', e) },
     onVertexChange: (e) => { pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } }) },

@@ -56,11 +56,11 @@ describe('attachEvents – wiring', () => {
 })
 
 describe('button handlers', () => {
-  test('done disables snap and finishes', () => {
+  test('done finishes without resetting snap', () => {
     const { buttonConfig, draw, dispatch } = setup()
     buttonConfig.drawDone.onClick()
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SNAP', payload: false })
-    expect(draw.setSnapEnabled).toHaveBeenCalledWith(false)
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_SNAP', payload: false })
+    expect(draw.setSnapEnabled).not.toHaveBeenCalledWith(false)
     expect(draw.done).toHaveBeenCalled()
   })
 
@@ -108,11 +108,11 @@ describe('button handlers', () => {
 })
 
 describe('draw event handlers', () => {
-  test('create resets state, disables mode asynchronously and emits', () => {
+  test('create resets state, preserves snap, disables mode asynchronously and emits', () => {
     const { draw, dispatch, eventBus } = setup()
     drawHandler(draw, 'create')({ id: 'new' })
 
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SNAP', payload: false })
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_SNAP', payload: false })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:created', { id: 'new' })
 

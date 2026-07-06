@@ -15,8 +15,8 @@ export const vertexQueries = {
       }
     })
 
-    if (matches.length === 0) return -1
-    if (matches.length === 1) return matches[0]
+    if (matches.length === 0) { return -1 }
+    if (matches.length === 1) { return matches[0] }
 
     // Multiple matches - pick closest to current selection
     if (currentIdx >= 0) {
@@ -29,11 +29,11 @@ export const vertexQueries = {
 
   getCoordPath (state, idx) {
     const feature = this.getFeature(state.featureId)
-    if (!feature) return '0'
+    if (!feature) { return '0' }
 
     const segments = getRingSegments(feature)
     const result = getSegmentForIndex(segments, idx)
-    if (!result) return '0'
+    if (!result) { return '0' }
 
     const { segment, localIdx } = result
     return [...segment.path, localIdx].join('.')
