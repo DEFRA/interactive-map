@@ -80,6 +80,21 @@ describe('plain vector layers', () => {
     map.getView = () => ({ getResolution: () => undefined })
     expect(createSnapEngine(map, ['boundaries']).query([0, 0], 12)).toBeNull()
   })
+
+  test('defaults to an empty snap-layer set when none are configured', () => {
+    const map = createEngineMap()
+    expect(createSnapEngine(map).query([0, 0], 12)).toBeNull()
+  })
+
+  test('setLayers tolerates a null layer list', () => {
+    const map = createEngineMap()
+    const source = new VectorSource()
+    source.addFeature(polygonFeature([[0, 0], [100, 0], [100, 100], [0, 0]]))
+    const engine = createSnapEngine(map, [new VectorLayer({ source })])
+    expect(engine.query([98, 2], 12)).not.toBeNull()
+    engine.setLayers(null)
+    expect(engine.query([98, 2], 12)).toBeNull()
+  })
 })
 
 describe('vector-tile layers', () => {
@@ -133,6 +148,34 @@ describe('vector-tile layers', () => {
     engine.query([600, 2005], 12)
     expect(tileGrid.getZForResolution).toHaveBeenCalledTimes(1)
   })
+
+  test('the boundary state is reused across multiple candidates from the same tile layer', () => {
+    const { engine } = setupVT({
+      features: [
+        renderFeature('LineString', [500, 2000, 1500, 2000]),
+        renderFeature('LineString', [500, 2005, 1500, 2005])
+      ]
+    })
+    expect(engine.query([600, 2002], 12)).not.toBeNull() // both features yield a candidate
+    expect(tileGrid.getZForResolution).toHaveBeenCalledTimes(1)
+  })
+
+  test('open-line endpoints test only the neighbour that exists', () => {
+    // Endpoint [2000,2000] has a null previous neighbour; the clip filter must skip it
+    const { engine } = setupVT({ features: [renderFeature('LineString', [2000, 2000, 3000, 2000])] })
+    expect(engine.query([2002, 2001], 12)).toEqual({ type: 'vertex', coord: [2000, 2000] })
+  })
+
+  test('a tile point candidate without adjacency data snaps as a vertex', () => {
+    const { engine } = setupVT({ features: [renderFeature('Point', [2000, 2000])] })
+    expect(engine.query([2001, 2000], 12)).toEqual({ type: 'vertex', coord: [2000, 2000] })
+  })
+
+  test('non-tile layers present on the map are ignored when gathering tile layers', () => {
+    const { engine, map } = setupVT({ features: [renderFeature('LineString', [500, 2000, 1500, 2000])] })
+    map.layers.unshift(new VectorLayer({})) // a non-tile layer sits in the stack
+    expect(engine.query([600, 2005], 12)).toEqual({ type: 'edge', coord: [600, 2000] })
+  })
 })
 
 describe('invisible shared fill boundaries', () => {
@@ -167,6 +210,21 @@ test('debug logging traces queries, candidates and filtering when enabled', () =
     expect(topics).toContain('[snap-query]')
     expect(topics).toContain('[snap-candidate-found]')
     expect(topics).toContain('[snap-filtered] tile clip artefact')
+  } finally {
+    delete globalThis.DEBUG_SNAP_VISIBILITY
+    log.mockRestore()
+  }
+})
+
+test('debug logging traces invisible-fill filtering when enabled', () => {
+  const log = jest.spyOn(console, 'log').mockImplementation(() => {})
+  globalThis.DEBUG_SNAP_VISIBILITY = true
+  try {
+    const fillSquare = renderFeature(
+      'Polygon', [1000, 1000, 3000, 1000, 3000, 3000, 1000, 3000], [8], { id: 'fills', type: 'fill' })
+    const { engine } = setupVT({ features: [fillSquare], fillNeighbour: true })
+    engine.query([2000, 995], 12)
+    expect(log.mock.calls.map(([topic]) => topic)).toContain('[snap-filtered] invisible fill boundary')
   } finally {
     delete globalThis.DEBUG_SNAP_VISIBILITY
     log.mockRestore()

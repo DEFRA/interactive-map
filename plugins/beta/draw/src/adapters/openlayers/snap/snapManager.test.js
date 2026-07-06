@@ -77,6 +77,8 @@ test('setSnapLayers forwards new layers, falling back to the configured set when
   expect(engine.setLayers).toHaveBeenCalledWith(['other'])
   snap.setSnapLayers(null)
   expect(engine.setLayers).toHaveBeenCalledWith(['boundaries'])
+  snap.setSnapLayers(undefined)
+  expect(engine.setLayers).toHaveBeenLastCalledWith(['boundaries'])
 })
 
 test('reattach re-adds the interaction so it processes pointer events first', () => {

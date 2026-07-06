@@ -108,6 +108,12 @@ describe('testRenderFeature (vector-tile render features)', () => {
     expect(vertex).toMatchObject({ coord: [0, 0], adjacent: [null, [100, 0]] })
   })
 
+  test('the far end of an open line also reports a null neighbour on its open side', () => {
+    const line = renderFeature('LineString', [0, 0, 100, 0])
+    const [vertex] = testRenderFeature(line, [99, 1], TOL)
+    expect(vertex).toMatchObject({ coord: [100, 0], adjacent: [[0, 0], null] })
+  })
+
   test('polygon rings (no duplicated closing coord in tiles) wrap edges and adjacency', () => {
     const square = renderFeature('Polygon', [0, 0, 100, 0, 100, 100, 0, 100], [8])
     const candidates = testRenderFeature(square, [2, 52], TOL)

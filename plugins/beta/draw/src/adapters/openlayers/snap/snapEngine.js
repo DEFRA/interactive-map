@@ -63,7 +63,7 @@ const isClipArtefact = (state, candidate) => {
   const ctx = getClipContext(state, candidate.coord)
   if (!ctx) { return false }
   if (candidate.type === 'edge') {
-    const [a, b] = candidate.seg ?? []
+    const [a, b] = candidate.seg
     return isArtefactSegment(ctx, ctx.toSource(a), ctx.toSource(b))
   }
   const [prev, next] = candidate.adjacent ?? []

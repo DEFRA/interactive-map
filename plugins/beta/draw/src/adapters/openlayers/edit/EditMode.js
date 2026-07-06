@@ -90,16 +90,15 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
         touchHandler.updateTargetPosition()
         return
       }
-      if (hit.type === 'midpoint') {
-        const result = insertAtMidpoint(olFeature, state.midpoints, hit.index, state.vertices.length)
-        if (!result) {
-          return
-        }
-        undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
-        syncGeom()
-        selectVertex(result.insertedIndex)
-        touchHandler.updateTargetPosition()
+      // Only vertex and midpoint hits reach here, and the vertex case returned above
+      const result = insertAtMidpoint(olFeature, state.midpoints, hit.index, state.vertices.length)
+      if (!result) {
+        return
       }
+      undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
+      syncGeom()
+      selectVertex(result.insertedIndex)
+      touchHandler.updateTargetPosition()
     }
   })
 

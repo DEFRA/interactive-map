@@ -56,6 +56,13 @@ test('colour updates apply to subsequent renders, refreshing a visible circle', 
   indicator.updateColors(colors) // also fine while hidden
 })
 
+test('colour updates while hidden skip the redraw', () => {
+  const { indicator, source } = setup()
+  const changed = jest.spyOn(source, 'changed')
+  indicator.updateColors({ snapVertex: '#x', snapEdge: '#y' }) // nothing showing yet
+  expect(changed).not.toHaveBeenCalled()
+})
+
 test('remove clears the source and detaches the layer', () => {
   const { map, indicator, source } = setup()
   indicator.show([10, 10], 'vertex')

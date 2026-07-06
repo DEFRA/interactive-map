@@ -79,7 +79,7 @@ export const createSnapManager = (map, snapLayers, colors, snapRadius) => {
      * the newly added Draw or Modify interaction.
      */
     setSnapLayers (layers) {
-      engine.setLayers(layers === null || layers === undefined ? (snapLayers ?? []) : layers)
+      engine.setLayers(layers === null || layers === undefined ? snapLayers : layers)
     },
 
     reattach () {
