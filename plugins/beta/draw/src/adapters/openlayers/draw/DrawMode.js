@@ -14,7 +14,10 @@ const canFinish = (geometryType, sketchFeature) => {
 
 const DUPLICATE_TOLERANCE_PX = 2
 
-const buildCondition = (map, geometryType, getSketchFeature) => (e) => {
+// Blocks clicks with modifier keys, and duplicate clicks on the last placed
+// vertex while the shape is not yet finishable (once finishable, clicking the
+// last vertex is OL's finish gesture and must go through)
+export const buildCondition = (map, geometryType, getSketchFeature) => (e) => {
   if (!noModifierKeys(e)) { return false }
   const sf = getSketchFeature()
   if (!sf || canFinish(geometryType, sf)) { return true }
