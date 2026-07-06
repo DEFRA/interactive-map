@@ -4,6 +4,7 @@ import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { createFakeMap, createFakeManager, createContainer, domEvent } from '../__helpers__/harness.js'
 import Style from 'ol/style/Style.js'
+import Polygon from 'ol/geom/Polygon.js'
 
 const RING = [[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]] // square: 4 vertices, deletable
 
@@ -135,6 +136,18 @@ test('touch: tapping a midpoint inserts a vertex there and selects it', () => {
   expect(ring()).toHaveLength(6)
   expect(ring()[1]).toEqual([50, 0])
   expect(manager.undoStack.pop()).toEqual({ type: 'insert_vertex', vertexIndex: 1 })
+})
+
+test('touch: tapping a stale midpoint the geometry can no longer place is a no-op', () => {
+  const { manager, olFeature, ring, tapAt } = setup()
+  // Desync state from geometry: swap in a smaller geometry object so the
+  // selection-state change listener (bound to the previous geometry) never
+  // fires. state.midpoints still describes the 4-vertex square (4 midpoints),
+  // while the live geometry is a 3-vertex triangle that has only 3 midpoints.
+  olFeature.setGeometry(new Polygon([[[0, 0], [100, 0], [100, 100], [0, 0]]]))
+  tapAt(0, 50) // the stale square's left-edge midpoint (index 3) — the triangle can't place it
+  expect(manager.undoStack.length).toBe(0)
+  expect(ring()).toHaveLength(4) // triangle geometry left untouched
 })
 
 test('undo in touch mode repositions the offset target on the restored vertex', () => {
