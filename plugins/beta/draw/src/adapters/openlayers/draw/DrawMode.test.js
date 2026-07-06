@@ -114,6 +114,13 @@ describe('drawing lifecycle', () => {
     expect(removeLast).toHaveBeenCalled()
     expect(emitted().at(-1)).toEqual({ type: ADAPTER_EVENTS.VERTEX_CHANGE, payload: { numVertices: 2 } })
   })
+
+  test('undo before any sketch exists re-reports nothing', () => {
+    const { mode, emitted, interaction } = setup()
+    jest.spyOn(interaction, 'removeLastPoint').mockImplementation(() => {})
+    mode.undo() // no sketch yet → updateVertexCount returns early
+    expect(emitted().some((e) => e.type === ADAPTER_EVENTS.VERTEX_CHANGE)).toBe(false)
+  })
 })
 
 describe('wiring', () => {
@@ -125,6 +132,17 @@ describe('wiring', () => {
     expect(inputOptions.canFinish()).toBe(true)
     inputOptions.onUndo()
     expect(removeLast).toHaveBeenCalled()
+  })
+
+  test('properties default to an empty object when omitted from options', () => {
+    const map = createFakeMap()
+    const manager = createFakeManager()
+    manager.store = createFeatureStore()
+    createDrawMode({ map, manager, options: { geometryType: 'Polygon', featureId: 'shape-2', container: null, snap: null } })
+    map.interactions[0].dispatchEvent({ type: 'drawend', feature: polygonFeature([[0, 0], [10, 0], [10, 10], [0, 0]], null) })
+    const created = manager.store.getOL('shape-2')
+    expect(created).not.toBeNull()
+    expect(created.get('label')).toBeUndefined()
   })
 
   test('map style changes rebuild the sketch style for the current geometry type', () => {

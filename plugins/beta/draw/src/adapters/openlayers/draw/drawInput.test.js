@@ -79,6 +79,24 @@ test('pointer and touch input switch the interface type', () => {
   expect(input.getInterfaceType()).toBe('touch')
 })
 
+test('a touch pointerdown is left for the touchstart handler to classify', () => {
+  const { container, input, placement } = setup('keyboard')
+  container.dispatchEvent(Object.assign(new Event('pointerdown'), { pointerType: 'touch' }))
+  expect(input.getInterfaceType()).toBe('keyboard') // onPointerdown ignored the touch pointer
+  expect(placement.clearLastCoord).not.toHaveBeenCalled()
+})
+
+test('the interface type defaults to mouse when none is supplied', () => {
+  const map = createFakeMap()
+  const container = createContainer()
+  const input = createDrawInput({
+    drawInteraction: { getMap: () => map },
+    options: { container, addVertexButtonId: 'add-pt', mapProvider: {}, snap: null, onUndo: jest.fn() }
+  })
+  liveInputs.push(input)
+  expect(input.getInterfaceType()).toBe('mouse')
+})
+
 test('pointer moves and map pans update the rubber band except for the mouse interface', () => {
   const { container, view, placement } = setup('touch')
   container.dispatchEvent(new Event('pointermove'))

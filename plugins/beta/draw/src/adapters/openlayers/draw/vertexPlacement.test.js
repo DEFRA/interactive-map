@@ -81,6 +81,28 @@ describe('placing vertices', () => {
     expect(drawInteraction.finishDrawing).toHaveBeenCalled()
   })
 
+  test('the first vertex of a fresh sketch appends — nothing is committed yet', () => {
+    const { placement, drawInteraction, startSketch } = setup()
+    startSketch(lineFeature([[0, 0]])) // only the rubber-band coord, no committed vertex
+    placement.placeVertex()
+    expect(drawInteraction.appendCoordinates).toHaveBeenCalledWith([CENTER])
+  })
+
+  test('an unprojectable committed vertex skips the duplicate-tolerance check', () => {
+    const { placement, drawInteraction, startSketch } = setup()
+    startSketch(lineFeature([[0, 0], [5, 6], [50, 50]]))
+    drawInteraction.getMap().getPixelFromCoordinate = () => null // mid view transition
+    placement.placeVertex()
+    expect(drawInteraction.appendCoordinates).toHaveBeenCalledWith([CENTER])
+  })
+
+  test('placing into an empty polygon sketch (no ring yet) appends without error', () => {
+    const { placement, drawInteraction, startSketch } = setup()
+    startSketch(new Feature(new Polygon([]))) // ring not created yet
+    placement.placeVertex()
+    expect(drawInteraction.appendCoordinates).toHaveBeenCalledWith([CENTER])
+  })
+
   test('clearLastCoord and sketch end/abort reset the duplicate bookkeeping', () => {
     const { placement, drawInteraction, startSketch, bus } = setup()
     startSketch(lineFeature([[0, 0], [50, 50]]))
