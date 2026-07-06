@@ -104,6 +104,17 @@ test('undo stack changes are published on the adapter bus; off unsubscribes', ()
   expect(onUndoChange).toHaveBeenCalledTimes(1)
 })
 
+test('several handlers can subscribe to the same event type and all fire', () => {
+  const { manager } = setup()
+  const h1 = jest.fn()
+  const h2 = jest.fn()
+  manager.on(ADAPTER_EVENTS.UNDO_CHANGE, h1)
+  manager.on(ADAPTER_EVENTS.UNDO_CHANGE, h2) // same type reuses the existing handler set
+  manager.undoStack.push({ type: 'draw_vertex' })
+  expect(h1).toHaveBeenCalledWith(1)
+  expect(h2).toHaveBeenCalledWith(1)
+})
+
 test('feature store delegation works with GeoJSON in and out', () => {
   const { manager } = setup()
   manager.add(geojson)

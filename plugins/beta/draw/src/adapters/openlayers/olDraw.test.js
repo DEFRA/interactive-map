@@ -43,6 +43,17 @@ test('map size changes update the draw UI scale, defaulting to 1 for unknown siz
   expect(mapProvider.drawScale).toBe(1)
 })
 
+test('pluginConfig and mapStyle are optional, defaulting to {} and no initial style', () => {
+  const eventBus = { on: jest.fn(), off: jest.fn() }
+  const mapProvider = { map: { id: 'ol-map' } }
+  const olDraw = createOLDraw({ mapProvider, events, eventBus }) // no pluginConfig, no mapStyle
+  const manager = OLDrawManager.mock.instances.at(-1)
+  expect(OLDrawManager).toHaveBeenCalledWith(mapProvider.map, {})
+  expect(manager.setMapStyle).not.toHaveBeenCalled()
+  expect(mapProvider.draw).toBe(manager)
+  olDraw.remove()
+})
+
 test('map style changes are forwarded to the manager', () => {
   const { eventBus, manager } = setup()
   eventBus.emit(events.MAP_SET_STYLE, { id: 'dark' })
