@@ -6,8 +6,10 @@ import MultiPoint from 'ol/geom/MultiPoint.js'
 import { SIZES } from '../defaults.js'
 import { getPlacedSketchCoords } from '../utils/sketchHelpers.js'
 
-const selectedVertexRadii = { outer: SIZES.vertexHaloRadius + 3, mid: SIZES.vertexHaloRadius, inner: SIZES.vertexRadius }
-const selectedMidpointRadii = { outer: SIZES.midpointHaloRadius + 3, mid: SIZES.midpointHaloRadius, inner: SIZES.midpointRadius }
+const HALO_RADIUS_OFFSET = 3
+
+const selectedVertexRadii = { outer: SIZES.vertexHaloRadius + HALO_RADIUS_OFFSET, mid: SIZES.vertexHaloRadius, inner: SIZES.vertexRadius }
+const selectedMidpointRadii = { outer: SIZES.midpointHaloRadius + HALO_RADIUS_OFFSET, mid: SIZES.midpointHaloRadius, inner: SIZES.midpointRadius }
 
 const fillArc = (ctx, cx, cy, radius, fillStyle) => {
   ctx.beginPath()

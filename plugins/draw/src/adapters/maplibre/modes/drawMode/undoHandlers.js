@@ -3,7 +3,9 @@
  * last placed vertex, reinitialising a feature, and the rubber-band update that follows.
  * Part of createDrawMode.
  */
-export const createUndoHandlers = ({ ParentMode, featureProp, geometryType, getCoords, getFeature, RUBBER_BAND_OFFSET }) => ({
+
+// Undo-stack and event wiring: pushing operations and reacting to undo triggers.
+const createUndoStackHandlers = ({ geometryType, getFeature }) => ({
   /**
    * Push an undo operation for the last added vertex
    */
@@ -21,6 +23,37 @@ export const createUndoHandlers = ({ ParentMode, featureProp, geometryType, getC
   },
 
   /**
+   * Handle draw.undo event
+   */
+  onUndo (state, e) {
+    if (e.operation?.type === 'draw_vertex') {
+      this.undoVertex(state)
+    }
+  },
+
+  _handleUndoKeydown (state, e) {
+    const tag = document.activeElement?.tagName
+    if (tag === 'INPUT' || tag === 'TEXTAREA') {
+      return
+    }
+    e.preventDefault()
+    e.stopPropagation()
+    const undoStack = this.map._undoStack
+    if (undoStack && undoStack.length > 0) {
+      const operation = undoStack.pop()
+      if (operation?.type === 'draw_vertex') {
+        // Set flag to prevent click interference during undo
+        this.map._undoInProgress = true
+        setTimeout(() => { this.map._undoInProgress = false }, 100)
+        this.undoVertex(state)
+      }
+    }
+  }
+})
+
+// Vertex-level undo: removing the last vertex and keeping the rubber band in sync.
+const createVertexUndoHandlers = ({ ParentMode, geometryType, getCoords, getFeature, RUBBER_BAND_OFFSET }) => ({
+  /**
    * Undo the last added vertex during drawing
    */
   undoVertex (state) {
@@ -37,60 +70,6 @@ export const createUndoHandlers = ({ ParentMode, featureProp, geometryType, getC
     }
 
     this._removeLastVertex(state, feature, coords)
-    return true
-  },
-
-  /**
-   * Reinitialize feature when undoing to 0 vertices
-   * For Polygon: reinitialize in place
-   * For LineString: restart the draw mode with fresh state
-   */
-  _reinitializeFeature (state, feature) {
-    const featureId = feature.id
-    this._ctx.store.delete([featureId])
-
-    // LineString: restart the draw mode with fresh state but same feature ID
-    if (geometryType === 'LineString') {
-      const undoStack = this.map._undoStack
-      if (undoStack) {
-        undoStack.clear()
-      }
-      // Restart draw with same options (excludeFeatureIdFromSetup prevents "continue" mode)
-      this._ctx.api.changeMode('draw_line', {
-        featureId,
-        container: state.container,
-        interfaceType: state.interfaceType,
-        crossHair: state.crossHair,
-        vertexMarkerId: state.vertexMarkerId,
-        addVertexButtonId: state.addVertexButtonId,
-        getSnapEnabled: state.getSnapEnabled,
-        properties: state.properties
-      })
-      return true
-    }
-
-    // Polygon: reinitialize in place
-    const center = this.map.getCenter()
-    const initialCoords = [[center.lng, center.lat], [center.lng, center.lat]]
-    const newFeature = this.newFeature({
-      type: 'Feature',
-      properties: state.properties || {},
-      geometry: {
-        type: geometryType,
-        coordinates: [initialCoords]
-      }
-    })
-    newFeature.id = featureId
-    this._ctx.store.add(newFeature)
-
-    state[featureProp] = newFeature
-    state.currentVertexPosition = 0
-
-    this._ctx.store.render()
-    this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
-    this._ctx.store.render()
-
-    this.dispatchVertexChange(initialCoords)
     return true
   },
 
@@ -136,33 +115,73 @@ export const createUndoHandlers = ({ ParentMode, featureProp, geometryType, getC
       this._ctx.store.render()
     }
     this.dispatchVertexChange(coords)
+  }
+})
+
+// Reinitialising back to zero vertices: reinitialize Polygon in place, restart LineString.
+const createFeatureReinitHandlers = ({ ParentMode, featureProp, geometryType }) => ({
+  /**
+   * Reinitialize feature when undoing to 0 vertices
+   */
+  _reinitializeFeature (state, feature) {
+    const featureId = feature.id
+    this._ctx.store.delete([featureId])
+
+    // LineString: restart the draw mode with fresh state but same feature ID
+    if (geometryType === 'LineString') {
+      return this._restartLineStringDraw(state, featureId)
+    }
+
+    // Polygon: reinitialize in place
+    const center = this.map.getCenter()
+    const initialCoords = [[center.lng, center.lat], [center.lng, center.lat]]
+    const newFeature = this.newFeature({
+      type: 'Feature',
+      properties: state.properties || {},
+      geometry: {
+        type: geometryType,
+        coordinates: [initialCoords]
+      }
+    })
+    newFeature.id = featureId
+    this._ctx.store.add(newFeature)
+
+    state[featureProp] = newFeature
+    state.currentVertexPosition = 0
+
+    this._ctx.store.render()
+    this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
+    this._ctx.store.render()
+
+    this.dispatchVertexChange(initialCoords)
+    return true
   },
 
   /**
-   * Handle draw.undo event
+   * Restart the LineString draw mode with fresh state but the same feature ID
    */
-  onUndo (state, e) {
-    if (e.operation?.type === 'draw_vertex') {
-      this.undoVertex(state)
-    }
-  },
-
-  _handleUndoKeydown (state, e) {
-    const tag = document.activeElement?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA') {
-      return
-    }
-    e.preventDefault()
-    e.stopPropagation()
+  _restartLineStringDraw (state, featureId) {
     const undoStack = this.map._undoStack
-    if (undoStack && undoStack.length > 0) {
-      const operation = undoStack.pop()
-      if (operation?.type === 'draw_vertex') {
-        // Set flag to prevent click interference during undo
-        this.map._undoInProgress = true
-        setTimeout(() => { this.map._undoInProgress = false }, 100)
-        this.undoVertex(state)
-      }
+    if (undoStack) {
+      undoStack.clear()
     }
+    // Restart draw with same options (excludeFeatureIdFromSetup prevents "continue" mode)
+    this._ctx.api.changeMode('draw_line', {
+      featureId,
+      container: state.container,
+      interfaceType: state.interfaceType,
+      crossHair: state.crossHair,
+      vertexMarkerId: state.vertexMarkerId,
+      addVertexButtonId: state.addVertexButtonId,
+      getSnapEnabled: state.getSnapEnabled,
+      properties: state.properties
+    })
+    return true
   }
+})
+
+export const createUndoHandlers = (deps) => ({
+  ...createUndoStackHandlers(deps),
+  ...createVertexUndoHandlers(deps),
+  ...createFeatureReinitHandlers(deps)
 })

@@ -7,86 +7,99 @@ const TAP_MOVE_THRESHOLD = 10
 const TAP_TIME_THRESHOLD = 400
 const TOUCH_TOLERANCE = 24
 
-const wireTouchEvents = ({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap }) => {
-  let dragStartCoord = null
-  let dragStartIndex = null
-  let vertexTouchDelta = null
-  let targetTouchDelta = null
-  let tapStart = null
+const handleTouchStart = (e, { map, targetEl, cssToOl, getState, drag }) => {
+  const touch = e.touches[0]
+  const onTarget = isOnTouchTarget(e.target)
+  drag.tapStart = { x: touch.clientX, y: touch.clientY, time: Date.now(), onTarget }
+  if (!onTarget) {
+    return
+  }
+  const { selectedVertexIndex, vertices } = getState()
+  const vertex = vertices[selectedVertexIndex]
+  if (!vertex) {
+    return
+  }
+  const tOl = map.getEventPixel({ clientX: touch.clientX, clientY: touch.clientY })
+  const vertexPx = coordToPixel(map, vertex)
+  const style = getComputedStyle(targetEl)
+  const svgOlPx = cssToOl({ x: Number.parseFloat(style.left), y: Number.parseFloat(style.top) })
+  drag.dragStartCoord = [...vertex]
+  drag.dragStartIndex = selectedVertexIndex
+  drag.vertexTouchDelta = { x: tOl[0] - vertexPx.x, y: tOl[1] - vertexPx.y }
+  drag.targetTouchDelta = { x: tOl[0] - svgOlPx.x, y: tOl[1] - svgOlPx.y }
+  e.preventDefault()
+}
 
-  const onTouchstart = (e) => {
-    const touch = e.touches[0]
-    const onTarget = isOnTouchTarget(e.target)
-    tapStart = { x: touch.clientX, y: touch.clientY, time: Date.now(), onTarget }
-    if (!onTarget) {
-      return
-    }
-    const { selectedVertexIndex, vertices } = getState()
-    const vertex = vertices[selectedVertexIndex]
-    if (!vertex) {
-      return
-    }
-    const tOl = map.getEventPixel({ clientX: touch.clientX, clientY: touch.clientY })
-    const vertexPx = coordToPixel(map, vertex)
-    const style = getComputedStyle(targetEl)
-    const svgOlPx = cssToOl({ x: Number.parseFloat(style.left), y: Number.parseFloat(style.top) })
-    dragStartCoord = [...vertex]
-    dragStartIndex = selectedVertexIndex
-    vertexTouchDelta = { x: tOl[0] - vertexPx.x, y: tOl[1] - vertexPx.y }
-    targetTouchDelta = { x: tOl[0] - svgOlPx.x, y: tOl[1] - svgOlPx.y }
+const handleTouchMove = (e, { map, targetEl, olToCSS, getState, setState, snap, drag }) => {
+  if (!isOnTouchTarget(e.target) || drag.dragStartIndex == null) {
+    return
+  }
+  e.preventDefault()
+  const tOl = map.getEventPixel({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY })
+  const rawCoord = pixelToCoord(map, { x: tOl[0] - drag.vertexTouchDelta.x, y: tOl[1] - drag.vertexTouchDelta.y })
+  const newCoord = snap ? snap.apply(rawCoord) : rawCoord
+  snap?.hideIndicator()
+  const { olFeature, vertices } = getState()
+  if (!olFeature) {
+    return
+  }
+  moveVertex(olFeature, drag.dragStartIndex, newCoord)
+  setState({ vertices: vertices.map((c, i) => i === drag.dragStartIndex ? newCoord : c) })
+  showTouchTarget(targetEl, olToCSS({ x: tOl[0] - drag.targetTouchDelta.x, y: tOl[1] - drag.targetTouchDelta.y }))
+}
+
+const handleTap = (e, { map, getState, onTap, drag }) => {
+  if (!drag.tapStart || drag.tapStart.onTarget || e.changedTouches.length === 0) {
+    return
+  }
+  const t = e.changedTouches[0]
+  const dt = Date.now() - drag.tapStart.time
+  if (Math.hypot(t.clientX - drag.tapStart.x, t.clientY - drag.tapStart.y) < TAP_MOVE_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
+    const tOl = map.getEventPixel({ clientX: t.clientX, clientY: t.clientY })
+    const tapState = getState()
+    onTap?.(findNearest(map, tapState.vertices, tapState.midpoints, { x: tOl[0], y: tOl[1] }, TOUCH_TOLERANCE))
     e.preventDefault()
   }
+}
 
-  const onTouchmove = (e) => {
-    if (!isOnTouchTarget(e.target) || dragStartIndex == null) {
-      return
-    }
-    e.preventDefault()
-    const tOl = map.getEventPixel({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY })
-    const rawCoord = pixelToCoord(map, { x: tOl[0] - vertexTouchDelta.x, y: tOl[1] - vertexTouchDelta.y })
-    const newCoord = snap ? snap.apply(rawCoord) : rawCoord
-    snap?.hideIndicator()
-    const { olFeature, vertices } = getState()
-    if (!olFeature) {
-      return
-    }
-    moveVertex(olFeature, dragStartIndex, newCoord)
-    setState({ vertices: vertices.map((c, i) => i === dragStartIndex ? newCoord : c) })
-    showTouchTarget(targetEl, olToCSS({ x: tOl[0] - targetTouchDelta.x, y: tOl[1] - targetTouchDelta.y }))
+const handleTouchEnd = (e, ctx) => {
+  const { getState, onVertexMoved, snap, drag } = ctx
+  if (drag.dragStartIndex == null) {
+    handleTap(e, ctx)
+    drag.tapStart = null
+    return
   }
+  drag.tapStart = null
+  const { vertices } = getState()
+  if (vertices[drag.dragStartIndex] && drag.dragStartCoord) {
+    onVertexMoved({ vertexIndex: drag.dragStartIndex, previousCoord: drag.dragStartCoord })
+  }
+  snap?.hideIndicator()
+  drag.dragStartCoord = null; drag.dragStartIndex = null; drag.vertexTouchDelta = null; drag.targetTouchDelta = null
+  e.preventDefault()
+}
 
-  const onTouchend = (e) => {
-    const wasDragging = dragStartIndex != null
-    if (!wasDragging) {
-      if (tapStart && !tapStart.onTarget && e.changedTouches.length > 0) {
-        const t = e.changedTouches[0]
-        const dt = Date.now() - tapStart.time
-        if (Math.hypot(t.clientX - tapStart.x, t.clientY - tapStart.y) < TAP_MOVE_THRESHOLD && dt < TAP_TIME_THRESHOLD) {
-          const tOl = map.getEventPixel({ clientX: t.clientX, clientY: t.clientY })
-          const tapState = getState()
-          onTap?.(findNearest(map, tapState.vertices, tapState.midpoints, { x: tOl[0], y: tOl[1] }, TOUCH_TOLERANCE))
-          e.preventDefault()
-        }
-      }
-      tapStart = null
-      return
-    }
-    tapStart = null
-    const { vertices } = getState()
-    if (vertices[dragStartIndex] && dragStartCoord) {
-      onVertexMoved({ vertexIndex: dragStartIndex, previousCoord: dragStartCoord })
-    }
-    snap?.hideIndicator()
-    dragStartCoord = null; dragStartIndex = null; vertexTouchDelta = null; targetTouchDelta = null
-    e.preventDefault()
+const wireTouchEvents = (deps) => {
+  const { container } = deps
+  const drag = {
+    dragStartCoord: null,
+    dragStartIndex: null,
+    vertexTouchDelta: null,
+    targetTouchDelta: null,
+    tapStart: null
   }
+  const ctx = { ...deps, drag }
+
+  const onTouchstart = (e) => handleTouchStart(e, ctx)
+  const onTouchmove = (e) => handleTouchMove(e, ctx)
+  const onTouchend = (e) => handleTouchEnd(e, ctx)
 
   container.addEventListener('touchstart', onTouchstart, { passive: false })
   container.addEventListener('touchmove', onTouchmove, { passive: false })
   container.addEventListener('touchend', onTouchend, { passive: false })
 
   return {
-    isDragging: () => dragStartIndex != null,
+    isDragging: () => drag.dragStartIndex != null,
     destroy () {
       container.removeEventListener('touchstart', onTouchstart)
       container.removeEventListener('touchmove', onTouchmove)

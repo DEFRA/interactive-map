@@ -22,7 +22,7 @@ export const deleteVertex = (olFeature, selectedIndex) => {
   }
 
   const { segment } = result
-  const minVertices = segment.closed ? 3 : 2
+  const minVertices = segment.closed ? 3 : 2 // NOSONAR, min vertecies in ring
   if (segment.length <= minVertices) {
     return null
   }

@@ -22,7 +22,7 @@ export const vertexQueries = {
     if (currentIdx >= 0) {
       return matches.reduce((best, idx) =>
         Math.abs(idx - currentIdx) < Math.abs(best - currentIdx) ? idx : best
-      )
+      , matches[0])
     }
     return matches[0]
   },
