@@ -71,6 +71,15 @@ describe('nudging a midpoint', () => {
     expect(onInserted).not.toHaveBeenCalled()
   })
 
+  test('snaps the inserted-then-moved coordinate when a snap manager is active', () => {
+    const snap = { apply: jest.fn((c) => [c[0] + 2, c[1]]), hideIndicator: jest.fn(), snapRadius: 12 }
+    const { state, nudge, olFeature } = setup({ snap })
+    Object.assign(state, { selectedVertexIndex: 4, selectedVertexType: 'midpoint' }) // midpoint [10, 5]
+    nudge({ key: 'ArrowRight', shiftKey: false })
+    expect(snap.apply).toHaveBeenCalled()
+    expect(ring(olFeature)[2]).toEqual([17, 5]) // inserted [10,5] nudged +5 -> [15,5], snapped +2 -> [17,5]
+  })
+
   test('stops safely if the inserted vertex is not reflected in state', () => {
     const { state, nudge, onInserted, setState } = setup()
     onInserted.mockImplementation(() => {}) // consumer failed to sync vertices
@@ -112,5 +121,10 @@ describe('resolveSnappedCoord', () => {
   test('escapes along both axes of a diagonal nudge when blocked', () => {
     const map = createFakeMap()
     expect(resolveSnappedCoord({ snapRadius: 12 }, map, [0, 0], [5, 5], [0, 0], 5, 5)).toEqual([13, 13])
+  })
+
+  test('escapes only the vertical axis when the horizontal delta is zero', () => {
+    const map = createFakeMap()
+    expect(resolveSnappedCoord({ snapRadius: 12 }, map, [0, 0], [0, 5], [0, 0], 0, 5)).toEqual([0, 13])
   })
 })

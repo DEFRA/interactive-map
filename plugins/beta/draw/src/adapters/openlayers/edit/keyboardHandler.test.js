@@ -44,12 +44,54 @@ test('Space selects the vertex or midpoint nearest the crosshair, only when noth
   expect(setState).not.toHaveBeenCalled()
 })
 
+test('Space selects a midpoint when it is the handle nearest the crosshair', () => {
+  const map = createFakeMap({ center: [100, 48] }) // crosshair beside midpoint [100, 50]
+  const state = {
+    olFeature: polygonFeature(RING),
+    selectedVertexIndex: -1,
+    selectedVertexType: null,
+    vertices: [[0, 0], [100, 0], [100, 100]],
+    midpoints: [[50, 0], [100, 50], [50, 50]]
+  }
+  const setState = jest.fn((updates) => Object.assign(state, updates))
+  const handler = createKeyboardHandler({
+    map,
+    getState: () => state,
+    setState,
+    snap: null,
+    onVertexMoved: jest.fn(),
+    onInserted: jest.fn(),
+    onDeleted: jest.fn(),
+    onUndo: jest.fn(),
+    onKeyboardActive: jest.fn()
+  })
+  liveHandlers.push(handler)
+  key('keydown', { key: ' ' })
+  expect(state.selectedVertexIndex).toBe(4) // midpoint [100, 50]
+  expect(state.selectedVertexType).toBe('midpoint')
+})
+
 test('Alt+Arrow navigates the selection to the nearest handle in that direction', () => {
   const { state } = setup()
   Object.assign(state, { selectedVertexIndex: 2, selectedVertexType: 'vertex' })
   key('keydown', { key: 'ArrowUp', altKey: true })
   expect(state.selectedVertexIndex).toBe(4) // midpoint [100, 50] is nearest above [100, 100]
   expect(state.selectedVertexType).toBe('midpoint')
+})
+
+test('Alt+Arrow with nothing selected navigates relative to the crosshair', () => {
+  const { state } = setup()
+  key('keydown', { key: 'ArrowUp', altKey: true }) // no selection → start from crosshair [98, 98]
+  expect(state.selectedVertexIndex).toBe(4) // midpoint [100, 50] above the crosshair
+  expect(state.selectedVertexType).toBe('midpoint')
+})
+
+test('Alt+Arrow can land the selection on a vertex', () => {
+  const { state } = setup()
+  Object.assign(state, { selectedVertexIndex: 4, selectedVertexType: 'midpoint' }) // midpoint [100, 50]
+  key('keydown', { key: 'ArrowUp', altKey: true })
+  expect(state.selectedVertexIndex).toBe(1) // vertex [100, 0] directly above
+  expect(state.selectedVertexType).toBe('vertex')
 })
 
 test('a plain arrow nudges the selected vertex, and keyup commits a single move op', () => {
@@ -104,6 +146,16 @@ test('keys are ignored while an interactive element outside the viewport has foc
   key('keydown', { key: ' ' })
   expect(onDeleted).not.toHaveBeenCalled()
   expect(onKeyboardActive).not.toHaveBeenCalled()
+})
+
+test('keys are ignored while a tabindex-focusable non-interactive element outside the viewport has focus', () => {
+  const { onDeleted } = setup()
+  const div = document.createElement('div')
+  div.tabIndex = 0 // focusable via tabindex, not one of the interactive tags
+  document.body.appendChild(div)
+  div.focus()
+  key('keyup', { key: 'Delete' })
+  expect(onDeleted).not.toHaveBeenCalled()
 })
 
 test('unhandled keys do nothing', () => {

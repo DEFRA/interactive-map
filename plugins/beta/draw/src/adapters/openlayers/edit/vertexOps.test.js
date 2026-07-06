@@ -20,6 +20,12 @@ describe('deleteVertex', () => {
     expect(ring(feature)).toEqual([[10, 0], [10, 10], [0, 10], [10, 0]])
   })
 
+  test('deleting from an open line needs no closing-coordinate sync', () => {
+    const feature = lineFeature([[0, 0], [10, 0], [20, 0]])
+    expect(deleteVertex(feature, 1)).toEqual({ deletedIndex: 1, deletedCoord: [10, 0] })
+    expect(feature.getGeometry().getCoordinates()).toEqual([[0, 0], [20, 0]])
+  })
+
   test('refuses to shrink below the minimum (3 for rings, 2 for lines) or for bad indices', () => {
     expect(deleteVertex(polygonFeature([[0, 0], [10, 0], [10, 10], [0, 0]]), 1)).toBeNull()
     expect(deleteVertex(lineFeature([[0, 0], [10, 0]]), 0)).toBeNull()
@@ -47,6 +53,12 @@ describe('insertAtMidpoint', () => {
     // A midpoint index past every segment's midpoints (stale midpoint array) is also refused
     const extra = [[5, 0], [10, 5], [5, 10], [0, 5], [9, 9]]
     expect(insertAtMidpoint(polygonFeature(SQUARE), extra, 4 + 4, 4)).toBeNull()
+  })
+
+  test('inserts a midpoint into an open line segment', () => {
+    const feature = lineFeature([[0, 0], [10, 0]]) // 2 vertices, 1 midpoint at flat index 2
+    expect(insertAtMidpoint(feature, [[5, 0]], 2, 2)).toEqual({ insertedIndex: 1 })
+    expect(feature.getGeometry().getCoordinates()).toEqual([[0, 0], [5, 0], [10, 0]])
   })
 })
 

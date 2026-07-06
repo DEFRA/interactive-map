@@ -27,6 +27,12 @@ describe('undoInsertVertex', () => {
   test('returns -1 for an index outside the geometry', () => {
     expect(undoInsertVertex(polygonFeature(SQUARE), { vertexIndex: 99 })).toBe(-1)
   })
+
+  test('removes the inserted vertex from an open line without a closing-coordinate sync', () => {
+    const feature = lineFeature([[0, 0], [50, 0], [100, 0]])
+    expect(undoInsertVertex(feature, { vertexIndex: 1 })).toBe(-1)
+    expect(feature.getGeometry().getCoordinates()).toEqual([[0, 0], [100, 0]])
+  })
 })
 
 describe('undoDeleteVertex', () => {
