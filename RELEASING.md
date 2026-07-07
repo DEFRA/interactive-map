@@ -201,6 +201,13 @@ carry `"publishConfig": { "tag": "beta" }`.
 > `plugin-search`) install normally. If you want a package to start resolving on
 > `latest`, remove its `publishConfig.tag`.
 
+**Graduating a package to stable** is a three-place change: remove its
+`publishConfig.tag`, remove its directory from `sonar.exclusions` in
+`sonar-project.properties`, and remove it from `coveragePathIgnorePatterns` in
+`jest.config.mjs` — beta packages are deliberately outside the Sonar quality
+gate and coverage collection (carried over from the old `beta/` directory
+layout), and a stable package should be inside both.
+
 ### 5. Verify
 
 Check the Actions run succeeded, then spot-check npm:
