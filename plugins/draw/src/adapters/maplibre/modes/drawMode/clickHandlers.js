@@ -1,15 +1,108 @@
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, createSnappedEvent, createSnappedClickEvent
 } from '../../utils/snapHelpers.js'
+import { validatePlacement } from '../../../../validation/validateGeometry.js'
 
-/**
- * Click / vertex-placement handling for the shared draw mode: mouse clicks, the
- * add-vertex button, and the draw.create re-id step. Part of createDrawMode.
- */
-export const createClickHandlers = ({ ParentMode, getFeature, getCoords, validateClick, finishOnInvalidClick }) => ({
+// The commit-level geometrychange payload for a vertex commit: the placed-only
+// geometry (trailing rubber-band point dropped so validation tests the committed shape).
+const placedDrawGeometryChange = (feature, getCoords, kind) => {
+  const placed = getCoords(feature).slice(0, -1)
+  const type = feature.toGeoJSON().geometry.type
+  const geometry = type === 'Polygon'
+    ? { type: 'Polygon', coordinates: [placed] }
+    : { type: 'LineString', coordinates: placed }
+  return { feature: { type: 'Feature', geometry, properties: {} }, kind, vertexIndex: Math.max(0, placed.length - 1) }
+}
+
+// Fire a commit-level geometrychange for validation, deferred a tick so it runs after
+// the current click settles.
+const scheduleDrawValidation = (map, getFeature, getCoords, state, kind) => {
+  setTimeout(() => {
+    const feature = getFeature(state)
+    if (!feature) { return }
+    map.fire('draw.geometrychange', placedDrawGeometryChange(feature, getCoords, kind))
+  }, 0)
+}
+
+// Candidate GeoJSON for a would-be placement: the placed path (trailing rubber-band
+// coord dropped) plus the point about to be placed.
+const candidatePlacement = (feature, getCoords, geometryType, point) => {
+  const placed = getCoords(feature).slice(0, -1)
+  const candidate = [...placed, point]
+  const geometry = geometryType === 'Polygon'
+    ? { type: 'Polygon', coordinates: [candidate] }
+    : { type: 'LineString', coordinates: candidate }
+  return { candidateFeature: { type: 'Feature', geometry, properties: {} }, vertexIndex: placed.length }
+}
+
+// Re-id a freshly created feature to the caller's requested id.
+const reidCreatedFeature = (api, feature, featureId) => {
+  api.delete(feature.id)
+  feature.id = featureId
+  api.add(feature, { userProperties: true })
+}
+
+// Guards, notifications, and small wiring handlers shared by the click paths.
+const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
+  // Non-drawing clicks: secondary buttons, clicks during an undo, or off-canvas.
+  _isIgnorableClick (e) {
+    return e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()
+  },
+
+  // Gate a would-be placement through the hard rules + user callback
+  // (validatePlacement). On a veto the vertex never appears and a
+  // draw.placementblocked event carries the reason.
+  _canPlaceVertex (state, point) {
+    const feature = getFeature(state)
+    if (!feature || !point) { return true }
+    const { candidateFeature, vertexIndex } = candidatePlacement(feature, getCoords, geometryType, point)
+    const mode = geometryType === 'Polygon' ? 'draw_polygon' : 'draw_line'
+    const result = validatePlacement(candidateFeature, { mode, vertexIndex }, { onGeometryChange: this.map._drawGeometryValidator })
+    if (!result.valid) {
+      this.map.fire('draw.placementblocked', { feature: candidateFeature, reason: result.reason ?? null, kind: 'place', mode, vertexIndex })
+    }
+    return result.valid
+  },
+
+  dispatchVertexChange (coords) {
+    // Both polygon ring and LineString store [v0...vN, rubber_band] during drawing — subtract 1 to get placed vertex count
+    this.map.fire('draw.vertexchange', {
+      numVertecies: Math.max(0, coords.length - 1)
+    })
+  },
+
+  // Emit a commit-level geometrychange after a vertex commit (placement or undo)
+  // so the validation layer can gate the Done button.
+  emitDrawValidation (state, kind = 'add') {
+    scheduleDrawValidation(this.map, getFeature, getCoords, state, kind)
+  },
+
+  onTap () {
+
+  },
+
+  onVertexButtonClick (state, e) {
+    // Only trigger for the specific add vertex button, and skip during undo
+    if (state.addVertexButtonId && !this.map._undoInProgress && e.target.closest(`#${state.addVertexButtonId}`)) {
+      this.doClick(state)
+    }
+  },
+
+  onCreate (state, e) {
+    reidCreatedFeature(this._ctx.api, e.features[0], state.featureId)
+  }
+})
+
+// The click paths themselves: mouse clicks and the simulated crosshair click
+// (touch / keyboard / add-vertex button).
+const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, finishOnInvalidClick }) => ({
   onClick (state, e) {
     // Skip non-primary clicks, undo operations, or clicks outside canvas
-    if (e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()) {
+    if (this._isIgnorableClick(e)) {
+      return
+    }
+    // Block a finish/close gesture (clicking a placed vertex) while the shape is invalid.
+    if (this.map._drawGeometryValid === false && e.featureTarget?.properties?.meta === 'vertex') {
       return
     }
     const snap = getSnapInstance(this.map)
@@ -26,17 +119,19 @@ export const createClickHandlers = ({ ParentMode, getFeature, getCoords, validat
         return
       }
     }
+    // Hard gate: a placement the rules or the user callback veto never appears, so
+    // an unrecoverable state (e.g. a self-crossing path) can't be drawn forward.
+    if (!this._canPlaceVertex(state, [e.lngLat.lng, e.lngLat.lat])) {
+      return
+    }
     const coordsBefore = getCoords(getFeature(state)).length
     ParentMode.onClick.call(this, state, e)
     // Push undo and update count if a vertex was added
     if (getCoords(getFeature(state)).length > coordsBefore) {
       this.pushDrawUndo(state)
       this.dispatchVertexChange(getCoords(getFeature(state)))
+      this.emitDrawValidation(state)
     }
-  },
-
-  onTap () {
-
   },
 
   doClick (state) {
@@ -50,9 +145,10 @@ export const createClickHandlers = ({ ParentMode, getFeature, getCoords, validat
     this.dispatchVertexChange(coords)
 
     if (!validateClick(feature)) {
-      // For lines: clicking same spot (like double-click) should finish the line.
+      // For lines: clicking same spot (like double-click) should finish the line — but
+      // only when the geometry is valid, so an invalid line can't be completed.
       // isValidLineClick only returns false with 2+ coords, so coords.length is always > 1 here.
-      if (finishOnInvalidClick) {
+      if (finishOnInvalidClick && this.map._drawGeometryValid !== false) {
         coords.pop()
         this.map.fire('draw.create', { features: [feature.toGeoJSON()] })
         this.changeMode('simple_select', { featureIds: [feature.id] })
@@ -62,6 +158,13 @@ export const createClickHandlers = ({ ParentMode, getFeature, getCoords, validat
 
     const snap = getSnapInstance(this.map)
     const snappedEvent = isSnapEnabled(state) && createSnappedClickEvent(this.map, snap)
+
+    // Hard-gate parity with onClick: touch/keyboard/add-button placements are vetoed
+    // at the point that would actually be committed (snapped or map centre).
+    const target = snappedEvent ? snappedEvent.lngLat : this.map.getCenter()
+    if (!this._canPlaceVertex(state, [target.lng, target.lat])) {
+      return
+    }
 
     if (snappedEvent) {
       ParentMode.onClick.call(this, state, snappedEvent)
@@ -75,27 +178,15 @@ export const createClickHandlers = ({ ParentMode, getFeature, getCoords, validat
     const newCoords = getCoords(getFeature(state))
     this.pushDrawUndo(state)
     this.dispatchVertexChange(newCoords)
-  },
-
-  dispatchVertexChange (coords) {
-    // Both polygon ring and LineString store [v0...vN, rubber_band] during drawing — subtract 1 to get placed vertex count
-    this.map.fire('draw.vertexchange', {
-      numVertecies: Math.max(0, coords.length - 1)
-    })
-  },
-
-  onVertexButtonClick (state, e) {
-    // Only trigger for the specific add vertex button, and skip during undo
-    if (state.addVertexButtonId && !this.map._undoInProgress && e.target.closest(`#${state.addVertexButtonId}`)) {
-      this.doClick(state)
-    }
-  },
-
-  onCreate (state, e) {
-    const draw = this._ctx.api
-    const feature = e.features[0]
-    draw.delete(feature.id)
-    feature.id = state.featureId
-    draw.add(feature, { userProperties: true })
+    this.emitDrawValidation(state)
   }
+})
+
+/**
+ * Click / vertex-placement handling for the shared draw mode: mouse clicks, the
+ * add-vertex button, and the draw.create re-id step. Part of createDrawMode.
+ */
+export const createClickHandlers = (deps) => ({
+  ...createClickHelpers(deps),
+  ...createClickActions(deps)
 })

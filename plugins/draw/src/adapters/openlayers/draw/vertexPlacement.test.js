@@ -6,7 +6,7 @@ import { createFakeMap, createEmitter, polygonFeature, lineFeature } from '../__
 
 const CENTER = [5, 5]
 
-const setup = ({ interfaceType = 'touch', snap = null, canFinish = () => true } = {}) => {
+const setup = ({ interfaceType = 'touch', snap = null, canFinish = () => true, canPlace } = {}) => {
   const map = createFakeMap()
   const bus = createEmitter()
   const drawInteraction = {
@@ -21,6 +21,7 @@ const setup = ({ interfaceType = 'touch', snap = null, canFinish = () => true } 
     mapProvider: { getCenter: () => CENTER },
     snap,
     canFinish,
+    canPlace,
     getInterfaceType: () => interfaceType
   })
   const startSketch = (feature) => { bus.emit('drawstart', { feature }); return feature }
@@ -38,6 +39,24 @@ describe('placing vertices', () => {
     snapped.placement.placeVertex()
     expect(snapped.drawInteraction.appendCoordinates).toHaveBeenCalledWith([[9, 9]])
     expect(snap.hideIndicator).toHaveBeenCalled()
+  })
+
+  test('a canPlace veto rejects the placement — the vertex is never appended', () => {
+    const canPlace = jest.fn(() => false)
+    const { placement, drawInteraction } = setup({ canPlace })
+    placement.placeVertex()
+    expect(canPlace).toHaveBeenCalledWith(CENTER)
+    expect(drawInteraction.appendCoordinates).not.toHaveBeenCalled()
+  })
+
+  test('a canPlace veto does not block a finish tap (close runs before the gate)', () => {
+    let allow = true
+    const { placement, drawInteraction, startSketch } = setup({ canPlace: () => allow })
+    startSketch(lineFeature([[0, 0], [50, 50]]))
+    placement.placeVertex() // placed at the crosshair
+    allow = false
+    placement.placeVertex() // same spot again → a finish attempt, not a placement
+    expect(drawInteraction.finishDrawing).toHaveBeenCalledTimes(1)
   })
 
   test('the mouse interface ignores snapping (the OL snap interaction covers it)', () => {

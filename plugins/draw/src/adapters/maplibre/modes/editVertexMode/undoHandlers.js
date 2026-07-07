@@ -5,6 +5,21 @@ import {
 } from './geometryHelpers.js'
 import { scalePoint } from './helpers.js'
 
+// Map an undo-stack op type onto the geometry-change `kind` consumed by validation.
+const UNDO_OP_KIND = {
+  move_vertex: 'move',
+  insert_vertex: 'insert',
+  delete_vertex: 'delete'
+}
+
+// Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
+// so its re-validation reports the inverse kind.
+const UNDO_INVERSE_KIND = {
+  move_vertex: 'move',
+  insert_vertex: 'delete',
+  delete_vertex: 'insert'
+}
+
 export const undoHandlers = {
   // Fire geometry change event (for external listeners)
   fireGeometryChange (state) {
@@ -17,6 +32,19 @@ export const undoHandlers = {
     }
   },
 
+  // Emit a commit-level geometrychange (feature + change kind + vertex index) so the
+  // validation layer can accept or reject the change. Deferred a tick to avoid
+  // re-entrancy: rejection calls draw.undo(), which must run after the current
+  // mutation (and its undo bookkeeping) has fully settled.
+  emitGeometryValidation (kind, vertexIndex, featureId) {
+    if (!kind) { return }
+    setTimeout(() => {
+      const feature = this.getFeature(featureId)
+      if (!feature) { return }
+      this.map.fire('draw.geometrychange', { feature: feature.toGeoJSON(), kind, vertexIndex })
+    }, 0)
+  },
+
   // Undo support
   pushUndo (operation) {
     const undoStack = this.map._undoStack
@@ -24,6 +52,9 @@ export const undoHandlers = {
       return
     }
     undoStack.push(operation)
+    // Every edit commit (move/insert/delete, via mouse or keyboard) records an undo
+    // op here, so this is the single point that feeds commit-level validation.
+    this.emitGeometryValidation(UNDO_OP_KIND[operation.type], operation.vertexIndex, operation.featureId)
   },
 
   handleUndo (state) {
@@ -43,6 +74,9 @@ export const undoHandlers = {
     } else {
       // No action
     }
+    // An undo commits the inverse change, so it must re-validate like any other
+    // commit — otherwise the invalid stroke and the Done gate go stale.
+    this.emitGeometryValidation(UNDO_INVERSE_KIND[op.type], op.vertexIndex, op.featureId)
   },
 
   undoMoveVertex (state, op) {

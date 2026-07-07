@@ -10,11 +10,20 @@ describe('createDrawStyles', () => {
   test('returns every draw layer in order', () => {
     const layers = createDrawStyles(mapStyle)
     expect(layers.map((l) => l.id)).toEqual([
-      'fill-inactive', 'fill-active', 'stroke-active', 'stroke-inactive',
+      'fill-inactive', 'fill-active', 'stroke-active', 'stroke-active-invalid', 'stroke-inactive',
       'stroke-invalid-splitter', 'stroke-valid-splitter', 'stroke-preview-line',
       'midpoint', 'midpoint-halo', 'midpoint-active',
       'vertex', 'vertex-halo', 'vertex-active', 'circle', 'touch-vertex-indicator'
     ])
+  })
+
+  test('the invalid stroke layer is a hidden dashed line matching the active shape', () => {
+    const layers = createDrawStyles(mapStyle)
+    const invalid = findLayer(layers, 'stroke-active-invalid')
+    expect(invalid.layout.visibility).toBe('none') // hidden until the shape is invalid
+    expect(invalid.paint['line-dasharray']).toEqual([0.2, 2])
+    expect(invalid.paint['line-color']).toBe(getValueForStyle(COLORS.invalidStroke, 'light'))
+    expect(invalid.filter).toEqual(findLayer(layers, 'stroke-active').filter)
   })
 
   test('resolves light-scheme colours', () => {

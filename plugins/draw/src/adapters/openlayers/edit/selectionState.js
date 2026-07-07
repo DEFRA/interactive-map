@@ -1,6 +1,32 @@
 import { getCoords, getMidpoints } from '../utils/geometryHelpers.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 
+// Deferred commit-level geometrychange emitter (feature + change kind + vertex index)
+// consumed by the validation layer. Deferred a tick so that a rejection's revert runs
+// after the current mutation's undo bookkeeping has settled.
+const createGeometryValidationEmitter = (manager, store, olFeature) => (kind, vertexIndex) => {
+  if (!kind) { return }
+  setTimeout(() => {
+    manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: store.toGeoJSON(olFeature), kind, vertexIndex })
+  }, 0)
+}
+
+// Reflect the current selection onto the handle layers and emit VERTEX_SELECTION.
+const applySelectionChange = (state, { vertexLayer, midpointLayer, activeLayer, manager, hooks }) => {
+  vertexLayer.setSelected(state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1)
+  midpointLayer.setSelected(
+    state.selectedVertexType === 'midpoint' ? state.selectedVertexIndex - state.vertices.length : -1
+  )
+  if (state.selectedVertexIndex < 0) {
+    hooks.onDeselect?.()
+  }
+  activeLayer.update(state)
+  manager.emit(ADAPTER_EVENTS.VERTEX_SELECTION, {
+    index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
+    numVertices: state.vertices.length
+  })
+}
+
 /**
  * Mutable edit-mode state shared by the Modify interaction, pointer, touch and
  * keyboard handlers, plus the setState/sync helpers that keep the handle
@@ -31,20 +57,7 @@ export const createSelectionState = ({ map, manager, store, olFeature, interface
     return { type: geom.getType(), coordinates: geom.getCoordinates() }
   }
 
-  const applySelectionChange = () => {
-    vertexLayer.setSelected(state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1)
-    midpointLayer.setSelected(
-      state.selectedVertexType === 'midpoint' ? state.selectedVertexIndex - state.vertices.length : -1
-    )
-    if (state.selectedVertexIndex < 0) {
-      hooks.onDeselect?.()
-    }
-    activeLayer.update(state)
-    manager.emit(ADAPTER_EVENTS.VERTEX_SELECTION, {
-      index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
-      numVertices: state.vertices.length
-    })
-  }
+  const applySelectionChangeLocal = () => applySelectionChange(state, { vertexLayer, midpointLayer, activeLayer, manager, hooks })
 
   const applyVertexChange = () => {
     const geom = plainGeom()
@@ -59,7 +72,7 @@ export const createSelectionState = ({ map, manager, store, olFeature, interface
   const setState = (updates) => {
     Object.assign(state, updates)
     if (updates.selectedVertexIndex !== undefined) {
-      applySelectionChange()
+      applySelectionChangeLocal()
     }
     if (updates.vertices !== undefined) {
       applyVertexChange()
@@ -82,6 +95,8 @@ export const createSelectionState = ({ map, manager, store, olFeature, interface
     manager.emit(ADAPTER_EVENTS.UPDATE, store.toGeoJSON(olFeature))
   }
 
+  const emitGeometryValidation = createGeometryValidationEmitter(manager, store, olFeature)
+
   // Keep overlay layers in sync on every geometry change (e.g. during pointer drag)
   const onGeometryChange = () => updateLayersFromGeom()
   olFeature.getGeometry().on('change', onGeometryChange)
@@ -91,6 +106,7 @@ export const createSelectionState = ({ map, manager, store, olFeature, interface
     getState: () => state,
     setState,
     syncGeom,
+    emitGeometryValidation,
     updateLayersFromGeom,
     setHooks,
     destroy () {

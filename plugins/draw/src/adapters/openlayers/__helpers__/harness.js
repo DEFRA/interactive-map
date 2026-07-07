@@ -55,6 +55,7 @@ export const createFakeManager = () => {
     // Real Style instances — OL asserts on setStyle args; identify them by reference
     styles: {
       editFeatureStyle: new Style({}),
+      editFeatureStyleInvalid: new Style({}),
       vertexStyle: new Style({}),
       midpointStyle: new Style({}),
       selectedVertexStyle: new Style({}),

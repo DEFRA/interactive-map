@@ -125,6 +125,95 @@ describe('map event normalisation', () => {
     onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(e)
     expect(bus.emit).toHaveBeenCalledWith('geometrychange', e)
   })
+
+  test('placementblocked forwards the raw event', () => {
+    const { map, bus } = setup()
+    const e = { kind: 'place', reason: 'outside region' }
+    onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)(e)
+    expect(bus.emit).toHaveBeenCalledWith('placementblocked', e)
+  })
+})
+
+describe('live invalid stroke (draw mode)', () => {
+  // Displayed rings (placed vertices + cursor) as the listener really receives them:
+  // MapLibre's fire() wraps the gl-draw feature in an Event whose `type` is the
+  // event name — the geometry type is clobbered, only `coordinates` survives.
+  const bowtie = { type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 10], [10, 0], [0, 10]]] }
+  const square = { type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10]]] }
+
+  const drawPolygonSetup = () => {
+    const fixture = setup()
+    fixture.draw.getMode.mockReturnValue('draw_polygon')
+    fixture.map.getLayer.mockReturnValue({})
+    return fixture
+  }
+
+  test('a self-intersecting displayed ring turns the stroke dashed; simple again restores it', () => {
+    const { map } = drawPolygonSetup()
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+
+    fire(bowtie)
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+
+    map.setLayoutProperty.mockClear()
+    fire(square)
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.hot', 'visibility', 'visible')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'none')
+  })
+
+  test('only restyles when the invalid state flips, not on every move', () => {
+    const { map } = drawPolygonSetup()
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    fire(bowtie)
+    const callsAfterFlip = map.setLayoutProperty.mock.calls.length
+    fire(bowtie)
+    fire(bowtie)
+    expect(map.setLayoutProperty.mock.calls.length).toBe(callsAfterFlip)
+  })
+
+  test('commit-level (kind-ful) events do not drive the stroke; events.js owns those', () => {
+    const { map } = drawPolygonSetup()
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: bowtie, kind: 'add', vertexIndex: 3 })
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
+  })
+
+  test('lines never go dashed from the live check', () => {
+    const { map, draw } = drawPolygonSetup()
+    draw.getMode.mockReturnValue('draw_line')
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ type: 'draw.geometrychange', coordinates: [[0, 0], [10, 10], [10, 0], [0, 10]] })
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
+  })
+
+  test('the rubber band sitting on the just-placed vertex never reads as a crossing', () => {
+    const { map } = drawPolygonSetup()
+    // 3 placed + rubber band duplicating the last placed vertex.
+    const justPlaced = { type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [10, 10]]] }
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(justPlaced)
+    expect(map.setLayoutProperty).not.toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+  })
+
+  test('entering a draw mode resets the stroke to solid', () => {
+    const { adapter, map } = drawPolygonSetup()
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(bowtie) // dashed
+    map.setLayoutProperty.mockClear()
+    adapter.changeMode('draw_polygon')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.hot', 'visibility', 'visible')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'none')
+    // ...and the flip guard is reset with it, so the next crossing restyles again.
+    map.setLayoutProperty.mockClear()
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(bowtie)
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+  })
+})
+
+describe('_geometryValidator accessor', () => {
+  test('stores the validator on the map for modes to read, and reads it back', () => {
+    const { adapter, map } = setup()
+    const validator = () => true
+    adapter._geometryValidator = validator
+    expect(map._drawGeometryValidator).toBe(validator)
+    expect(adapter._geometryValidator).toBe(validator)
+  })
 })
 
 describe('changeMode', () => {
@@ -147,6 +236,43 @@ describe('changeMode', () => {
     const { adapter, draw } = setup()
     adapter.changeMode('draw_polygon')
     expect(draw.changeMode).toHaveBeenCalledWith('draw_polygon', {})
+  })
+})
+
+describe('setGeometryValid', () => {
+  test('records validity on the map for the draw mode to read', () => {
+    const { adapter, map } = setup()
+    adapter.setGeometryValid(false)
+    expect(map._drawGeometryValid).toBe(false)
+    adapter.setGeometryValid(true)
+    expect(map._drawGeometryValid).toBe(true)
+  })
+})
+
+describe('setInvalid', () => {
+  test('shows the dashed stroke and hides the solid stroke when invalid', () => {
+    const { adapter, map } = setup()
+    map.getLayer.mockReturnValue({}) // every layer exists
+    adapter.setInvalid(true)
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.hot', 'visibility', 'none')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.cold', 'visibility', 'none')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.cold', 'visibility', 'visible')
+  })
+
+  test('restores the solid stroke when valid again', () => {
+    const { adapter, map } = setup()
+    map.getLayer.mockReturnValue({})
+    adapter.setInvalid(false)
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.hot', 'visibility', 'visible')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'none')
+  })
+
+  test('skips layers that are not present on the map', () => {
+    const { adapter, map } = setup()
+    map.getLayer.mockReturnValue(null)
+    adapter.setInvalid(true)
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
   })
 })
 

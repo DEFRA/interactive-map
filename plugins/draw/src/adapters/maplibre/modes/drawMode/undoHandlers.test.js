@@ -73,15 +73,35 @@ describe('cmd/ctrl+z undo', () => {
 })
 
 describe('undo via draw.undo event and reinitialisation', () => {
-  test('draw.undo with a draw_vertex operation removes the last vertex; other types are ignored', () => {
+  test('draw.undo pops the stack and removes the last vertex; non-draw ops are ignored', () => {
     const { ctx, state } = setup(DrawPolygonMode)
     clickAt(ctx, state, 0, 0)
     clickAt(ctx, state, 10, 0)
     clickAt(ctx, state, 10, 10)
-    ctx.map.fire('draw.undo', { operation: { type: 'edit_vertex' } })
+    // A non-draw op on top of the stack is popped but not undone.
+    ctx.map._undoStack.push({ type: 'edit_vertex' })
+    ctx.map.fire('draw.undo')
     expect(state.polygon.coordinates[0]).toHaveLength(4)
-    ctx.map.fire('draw.undo', { operation: { type: 'draw_vertex' } })
+    // The next op is a draw_vertex → the last vertex is removed.
+    ctx.map.fire('draw.undo')
     expect(state.polygon.coordinates[0]).toHaveLength(3)
+  })
+
+  test('undo re-validates the committed shape (deferred, kind delete)', () => {
+    jest.useFakeTimers()
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 0)
+    clickAt(ctx, state, 10, 10)
+    jest.runAllTimers()
+    ctx.map.fire.mockClear()
+    ctx.onUndo(state)
+    jest.runAllTimers()
+    expect(firedWith(ctx.map, 'draw.geometrychange').pop()).toEqual(expect.objectContaining({
+      kind: 'delete',
+      feature: expect.any(Object)
+    }))
+    jest.useRealTimers()
   })
 
   test('keyboard interface moves the rubber band to center after undo', () => {

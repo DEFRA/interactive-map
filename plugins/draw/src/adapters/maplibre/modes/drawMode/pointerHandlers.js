@@ -34,9 +34,11 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
       }
     }
 
-    this.map.fire('draw.geometrychange', state.polygon || state.line)
-
     ParentMode.onMouseMove.call(this, state, e)
+
+    // Fired after the parent updates the rubber band so the payload (and the live
+    // invalid-stroke check driven by it) reflects the current cursor position.
+    this.map.fire('draw.geometrychange', state.polygon || state.line)
   },
 
   onMove (state) {
@@ -61,6 +63,9 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
           })
         })
         this._ctx.store.render()
+        // Parity with _simulateMouse: report the rubber-band move so the live
+        // invalid-stroke check sees snapped touch/keyboard moves too.
+        this.map.fire('draw.geometrychange', state.polygon || state.line)
       } else {
         this._simulateMouse('mousemove', ParentMode.onMouseMove, state)
       }

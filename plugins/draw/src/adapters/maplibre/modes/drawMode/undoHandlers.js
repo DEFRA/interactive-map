@@ -23,11 +23,23 @@ const createUndoStackHandlers = ({ geometryType, getFeature }) => ({
   },
 
   /**
-   * Handle draw.undo event
+   * Handle the draw.undo event (fired by the undo button via the adapter). Pops the
+   * undo stack itself so it works regardless of whether the caller passes an operation.
    */
-  onUndo (state, e) {
-    if (e.operation?.type === 'draw_vertex') {
+  onUndo (state) {
+    const undoStack = this.map._undoStack
+    if (!undoStack || undoStack.length === 0) {
+      return
+    }
+    const operation = undoStack.pop()
+    if (operation?.type === 'draw_vertex') {
+      // Prevent click interference during undo
+      this.map._undoInProgress = true
+      setTimeout(() => { this.map._undoInProgress = false }, 100)
       this.undoVertex(state)
+      // An undo commits a vertex removal, so it must re-validate like any other
+      // commit — otherwise the Done gate goes stale.
+      this.emitDrawValidation(state, 'delete')
     }
   },
 
@@ -38,16 +50,7 @@ const createUndoStackHandlers = ({ geometryType, getFeature }) => ({
     }
     e.preventDefault()
     e.stopPropagation()
-    const undoStack = this.map._undoStack
-    if (undoStack && undoStack.length > 0) {
-      const operation = undoStack.pop()
-      if (operation?.type === 'draw_vertex') {
-        // Set flag to prevent click interference during undo
-        this.map._undoInProgress = true
-        setTimeout(() => { this.map._undoInProgress = false }, 100)
-        this.undoVertex(state)
-      }
-    }
+    this.onUndo(state)
   }
 })
 
@@ -113,6 +116,9 @@ const createVertexUndoHandlers = ({ ParentMode, geometryType, getCoords, getFeat
         originalEvent: new MouseEvent('mousemove', { clientX: point.x, clientY: point.y })
       })
       this._ctx.store.render()
+      // Parity with _simulateMouse: an undo can add/remove a crossing, so the live
+      // invalid-stroke check must see the new displayed geometry immediately.
+      this.map.fire('draw.geometrychange', state.polygon || state.line)
     }
     this.dispatchVertexChange(coords)
   }

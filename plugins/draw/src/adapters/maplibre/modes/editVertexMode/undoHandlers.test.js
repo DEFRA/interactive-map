@@ -12,6 +12,44 @@ describe('undoHandlers', () => {
     expect(map._undoStack.length).toBe(1)
   })
 
+  test('pushUndo emits a deferred commit-level geometrychange with the change kind', () => {
+    jest.useFakeTimers()
+    const { ctx, map } = createHarness()
+    map.fire.mockClear()
+
+    ctx.pushUndo({ type: 'move_vertex', featureId: 'feat-1', vertexIndex: 2 })
+    // Deferred a tick to avoid re-entrancy — nothing fired synchronously.
+    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
+
+    jest.runAllTimers()
+    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({
+      kind: 'move',
+      vertexIndex: 2,
+      feature: expect.any(Object)
+    }))
+    jest.useRealTimers()
+  })
+
+  test('pushUndo does not emit a geometrychange for unmapped op types', () => {
+    jest.useFakeTimers()
+    const { ctx, map } = createHarness()
+    map.fire.mockClear()
+    ctx.pushUndo({ type: 'draw_vertex', featureId: 'feat-1' })
+    jest.runAllTimers()
+    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
+    jest.useRealTimers()
+  })
+
+  test('emitGeometryValidation does not fire once the feature is gone', () => {
+    jest.useFakeTimers()
+    const { ctx, map } = createHarness()
+    map.fire.mockClear()
+    ctx.emitGeometryValidation('move', 0, 'missing-feature')
+    jest.runAllTimers()
+    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
+    jest.useRealTimers()
+  })
+
   test('handleUndo ignores an empty stack and dispatches by operation type', () => {
     const { ctx, state, map } = createHarness()
     ctx.handleUndo(state) // empty → no throw
@@ -26,6 +64,22 @@ describe('undoHandlers', () => {
 
     map._undoStack.push({ type: 'unknown' })
     expect(() => ctx.handleUndo(state)).not.toThrow()
+  })
+
+  test('handleUndo re-validates with the inverse change kind (undo of a delete re-inserts)', () => {
+    jest.useFakeTimers()
+    const { ctx, state, map } = createHarness()
+    jest.spyOn(ctx, 'undoDeleteVertex').mockImplementation(() => {})
+    map._undoStack.push({ type: 'delete_vertex', featureId: 'feat-1', vertexIndex: 1, position: [0, 0] })
+    map.fire.mockClear()
+    ctx.handleUndo(state)
+    jest.runAllTimers()
+    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({
+      kind: 'insert',
+      vertexIndex: 1,
+      feature: expect.any(Object)
+    }))
+    jest.useRealTimers()
   })
 
   test('fireGeometryChange fires draw.update only when the feature exists', () => {

@@ -70,6 +70,34 @@ test('syncGeom derives state from the geometry and emits vertexchange + update',
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.UPDATE, store.toGeoJSON())
 })
 
+test('emitGeometryValidation emits a deferred commit-level geometrychange with the change kind', () => {
+  jest.useFakeTimers()
+  const { selection, manager, store } = setup()
+  manager.emit.mockClear()
+
+  selection.emitGeometryValidation('move', 2)
+  // Deferred a tick to avoid re-entrancy — nothing emitted synchronously.
+  expect(manager.emit).not.toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.anything())
+
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, {
+    feature: store.toGeoJSON(),
+    kind: 'move',
+    vertexIndex: 2
+  })
+  jest.useRealTimers()
+})
+
+test('emitGeometryValidation is a no-op without a change kind', () => {
+  jest.useFakeTimers()
+  const { selection, manager } = setup()
+  manager.emit.mockClear()
+  selection.emitGeometryValidation(undefined, 0)
+  jest.runAllTimers()
+  expect(manager.emit).not.toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.anything())
+  jest.useRealTimers()
+})
+
 test('geometry changes refresh the layers until destroy unbinds the listener', () => {
   const { selection, olFeature, layers } = setup()
   olFeature.getGeometry().setCoordinates([[[0, 0], [20, 0], [20, 20], [0, 0]]])

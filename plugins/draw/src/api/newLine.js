@@ -15,7 +15,9 @@ export const newLine = ({ appState, appConfig, pluginConfig, pluginState, mapSta
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
-  const { stroke, fill, strokeWidth, properties: customProperties, ...modeOptions } = options
+  const { stroke, fill, strokeWidth, properties: customProperties, onGeometryChange, ...modeOptions } = options
+  // Per-call callback overrides the plugin-level one; events.js reads this on every commit.
+  draw._geometryValidator = onGeometryChange ?? pluginConfig.onGeometryChange
   const properties = {
     ...customProperties,
     ...flattenStyleProperties({ stroke, fill, strokeWidth })

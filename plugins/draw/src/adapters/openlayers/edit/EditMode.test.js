@@ -49,6 +49,14 @@ test('entering edit mode swaps the feature style and reports the initial vertex 
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.UPDATE, expect.objectContaining({ id: 'f1' }))
 })
 
+test('setInvalid swaps between the solid and dashed edit styles', () => {
+  const { manager, mode, olFeature } = setup()
+  mode.setInvalid(true)
+  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyleInvalid)
+  mode.setInvalid(false)
+  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyle)
+})
+
 test('done() emits the edited feature; cancel() is a no-op', () => {
   const { manager, mode } = setup()
   mode.done()
@@ -69,6 +77,23 @@ test('select via pointer, delete the vertex, then undo restores it', () => {
   expect(ring()).toHaveLength(5)
   expect(ring()[1]).toEqual([100, 0])
   mode.undo() // empty stack — no-op
+})
+
+test('undo re-validates with the inverse change kind (undo of a delete re-inserts)', () => {
+  jest.useFakeTimers()
+  const { container, manager, mode } = setup()
+  container.dispatchEvent(domEvent('pointerdown', { pointerType: 'mouse', clientX: 100, clientY: 0 }))
+  mode.deleteVertex()
+  jest.runAllTimers()
+  manager.emit.mockClear()
+  mode.undo()
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({
+    kind: 'insert',
+    vertexIndex: 1,
+    feature: expect.any(Object)
+  }))
+  jest.useRealTimers()
 })
 
 test('a Modify drag pushes a move op derived from the before/after vertices', () => {

@@ -84,7 +84,7 @@ const tryClose = ({ drawInteraction, canFinish, geom, sketchCoords, coord, lastP
  *
  * @returns {{ placeVertex, updateRubberbanding, clearLastCoord }}
  */
-export const createVertexPlacement = ({ drawInteraction, mapProvider, snap, canFinish, getInterfaceType }) => {
+export const createVertexPlacement = ({ drawInteraction, mapProvider, snap, canFinish, canPlace, getInterfaceType }) => {
   let sketchFeature = null
   let lastPlacedCoord = null
 
@@ -129,6 +129,9 @@ export const createVertexPlacement = ({ drawInteraction, mapProvider, snap, canF
       lastPlacedCoord = result.lastPlacedCoord
       if (result.handled) { return }
     }
+    // appendCoordinates bypasses the Draw interaction's condition, so the placement
+    // gate must run here explicitly — touch/keyboard parity with the mouse path.
+    if (canPlace && !canPlace(coord)) { return }
     drawInteraction.appendCoordinates([coord])
     lastPlacedCoord = coord
   }

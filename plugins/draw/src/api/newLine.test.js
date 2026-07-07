@@ -75,4 +75,19 @@ describe('newLine', () => {
     expect(draw.setSnapLayers).toHaveBeenCalledWith(null)
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HAS_SNAP_LAYERS', payload: false })
   })
+
+  test('stores a per-call onGeometryChange validator without leaking it into mode options', () => {
+    const { context, draw } = makeContext()
+    const onGeometryChange = jest.fn()
+    newLine(context, 'f1', { onGeometryChange })
+    expect(draw._geometryValidator).toBe(onGeometryChange)
+    expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryChange')
+  })
+
+  test('falls back to the plugin-level onGeometryChange validator', () => {
+    const pluginOnGeometryChange = jest.fn()
+    const { context, draw } = makeContext({ pluginConfig: { onGeometryChange: pluginOnGeometryChange } })
+    newLine(context, 'f1')
+    expect(draw._geometryValidator).toBe(pluginOnGeometryChange)
+  })
 })

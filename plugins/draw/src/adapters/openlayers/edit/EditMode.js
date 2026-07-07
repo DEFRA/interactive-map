@@ -14,6 +14,21 @@ import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
 const TOUCH_INTERFACE = 'touch'
 const VERTEX_TYPE = 'vertex'
 
+// Map an undo-op type onto the geometry-change `kind` consumed by validation.
+const OP_KIND = {
+  move_vertex: 'move',
+  insert_vertex: 'insert',
+  delete_vertex: 'delete'
+}
+
+// Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
+// so its re-validation reports the inverse kind.
+const UNDO_INVERSE_KIND = {
+  move_vertex: 'move',
+  insert_vertex: 'delete',
+  delete_vertex: 'insert'
+}
+
 /**
  * Edit vertex mode — handles edit_vertex.
  *
@@ -26,7 +41,7 @@ const VERTEX_TYPE = 'vertex'
 
 // Delete-selected-vertex and undo operations, shared by pointer, touch and keyboard input
 const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler }) => {
-  const { state, setState, syncGeom } = selection
+  const { state, setState, syncGeom, emitGeometryValidation } = selection
 
   const doDeleteVertex = () => {
     if (state.selectedVertexType !== VERTEX_TYPE || state.selectedVertexIndex < 0) {
@@ -38,6 +53,7 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
     }
     undoStack.push({ type: 'delete_vertex', vertexIndex: result.deletedIndex, deletedCoord: result.deletedCoord })
     syncGeom()
+    emitGeometryValidation('delete', result.deletedIndex)
     setState({ selectedVertexIndex: -1, selectedVertexType: null })
   }
 
@@ -49,6 +65,9 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
     const previousIndex = state.selectedVertexIndex
     const restoredIndex = applyUndo(olFeature, op)
     syncGeom()
+    // An undo commits the inverse change, so it must re-validate like any other
+    // commit — otherwise the invalid stroke and the Done gate go stale.
+    emitGeometryValidation(UNDO_INVERSE_KIND[op.type], restoredIndex)
     // Only re-select if a vertex was already active — undo must not create a new selection
     const newIndex = previousIndex >= 0 ? restoredIndex : -1
     setState({
@@ -64,7 +83,7 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
 }
 
 const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack, selection }) => {
-  const { state, getState, setState, syncGeom } = selection
+  const { state, getState, setState, syncGeom, emitGeometryValidation } = selection
   const selectVertex = (index) => setState({ selectedVertexIndex: index, selectedVertexType: VERTEX_TYPE })
 
   const touchHandler = createTouchHandler({
@@ -77,6 +96,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
+      emitGeometryValidation('move', vertexIndex)
       selectVertex(vertexIndex)
       touchHandler.updateTargetPosition()
     },
@@ -97,6 +117,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
       }
       undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
       syncGeom()
+      emitGeometryValidation('insert', result.insertedIndex)
       selectVertex(result.insertedIndex)
       touchHandler.updateTargetPosition()
     }
@@ -115,7 +136,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
 }
 
 const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touchHandler, actions }) => {
-  const { state, getState, setState, syncGeom } = selection
+  const { state, getState, setState, syncGeom, emitGeometryValidation } = selection
 
   return createKeyboardHandler({
     map,
@@ -125,11 +146,13 @@ const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touch
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
+      emitGeometryValidation('move', vertexIndex)
       setState({ selectedVertexIndex: vertexIndex, selectedVertexType: VERTEX_TYPE })
     },
     onInserted ({ insertedIndex }) {
       undoStack.push({ type: 'insert_vertex', vertexIndex: insertedIndex })
       syncGeom()
+      emitGeometryValidation('insert', insertedIndex)
     },
     onDeleted: actions.doDeleteVertex,
     onUndo: actions.doUndo,
@@ -198,6 +221,11 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
       manager.emit(ADAPTER_EVENTS.EDIT_FINISH, store.toGeoJSON(olFeature))
     },
 
+    // Swap the edited feature's stroke between solid (valid) and dashed (invalid).
+    setInvalid (invalid) {
+      olFeature.setStyle(invalid ? manager.styles.editFeatureStyleInvalid : manager.styles.editFeatureStyle)
+    },
+
     // Nothing to restore here: the pre-edit feature is kept as tempFeature in the
     // reducer and events.js re-adds it on cancel
     cancel () {},
@@ -247,7 +275,7 @@ export const createEditMode = ({ map, manager, options }) => {
     interfaceType,
     layers: { vertexLayer, midpointLayer, activeLayer }
   })
-  const { state, getState, setState, syncGeom } = selection
+  const { state, getState, setState, syncGeom, emitGeometryValidation } = selection
 
   const modify = createModifyInteraction({
     map,
@@ -260,6 +288,7 @@ export const createEditMode = ({ map, manager, options }) => {
         return
       }
       undoStack.push(op)
+      emitGeometryValidation(OP_KIND[op.type], op.vertexIndex)
       setState({ selectedVertexIndex: op.vertexIndex, selectedVertexType: VERTEX_TYPE })
     }
   })

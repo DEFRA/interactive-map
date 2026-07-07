@@ -22,6 +22,41 @@ describe('mouse clicks (polygon)', () => {
     expect(ctx.map._undoStack.length).toBe(1)
   })
 
+  test('rejects a click that would make the drawn path cross itself', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 10)
+    clickAt(ctx, state, 10, 0)
+    const lenBefore = state.polygon.coordinates[0].length
+    clickAt(ctx, state, 0, 10) // the new edge would cross the (0,0)-(10,10) edge
+    expect(state.polygon.coordinates[0].length).toBe(lenBefore) // vertex never placed
+  })
+
+  test('a rejected placement fires draw.placementblocked with the reason', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 10)
+    clickAt(ctx, state, 10, 0)
+    clickAt(ctx, state, 0, 10)
+    expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(expect.objectContaining({
+      kind: 'place',
+      mode: 'draw_polygon',
+      vertexIndex: 3,
+      reason: expect.any(String),
+      feature: expect.objectContaining({ type: 'Feature' })
+    }))
+  })
+
+  test('the user callback can veto a mouse placement (and receives kind "place")', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    ctx.map._drawGeometryValidator = jest.fn((feature, context) =>
+      context.kind === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
+    clickAt(ctx, state, 0, 0)
+    expect(state.polygon.coordinates[0]).toHaveLength(0) // first vertex vetoed
+    expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(
+      expect.objectContaining({ reason: 'outside region', vertexIndex: 0 }))
+  })
+
   test('non-primary buttons, undo-in-progress and off-canvas clicks are ignored', () => {
     const { ctx, state } = setup(DrawPolygonMode)
     ctx.onClick(state, clickEvent(ctx, 0, 0, { button: 2 }))
@@ -44,6 +79,49 @@ describe('mouse clicks (polygon)', () => {
     expect(ctx.onTap(state, clickEvent(ctx, 0, 0))).toBeUndefined()
     expect(state.polygon.coordinates[0]).toHaveLength(0)
   })
+
+  test('placing a vertex emits a deferred commit-level geometrychange for validation', () => {
+    jest.useFakeTimers()
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 0)
+    jest.runAllTimers()
+    const geomChange = firedWith(ctx.map, 'draw.geometrychange').pop()
+    expect(geomChange).toEqual(expect.objectContaining({ kind: 'add', feature: expect.any(Object) }))
+    jest.useRealTimers()
+  })
+
+  test('emitDrawValidation does not fire without a feature', () => {
+    jest.useFakeTimers()
+    const { ctx } = setup(DrawPolygonMode)
+    ctx.emitDrawValidation({}) // no polygon on the state
+    jest.runAllTimers()
+    expect(firedWith(ctx.map, 'draw.geometrychange')).toHaveLength(0)
+    jest.useRealTimers()
+  })
+
+  test('a line placement emits a LineString geometrychange', () => {
+    jest.useFakeTimers()
+    const { ctx, state } = setup(DrawLineMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 0)
+    jest.runAllTimers()
+    const geom = firedWith(ctx.map, 'draw.geometrychange').pop()
+    expect(geom.feature.geometry.type).toBe('LineString')
+    jest.useRealTimers()
+  })
+
+  test('blocks a close gesture (vertex click) while the geometry is invalid', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 0)
+    clickAt(ctx, state, 5, 10)
+    ctx.map._drawGeometryValid = false
+    const lenBefore = state.polygon.coordinates[0].length
+    ctx.onClick(state, { ...clickEvent(ctx, 0, 0), featureTarget: { properties: { meta: 'vertex' } } })
+    expect(state.polygon.coordinates[0].length).toBe(lenBefore) // finish gesture ignored
+    expect(firedWith(ctx.map, 'draw.create')).toHaveLength(0)
+  })
 })
 
 describe('add-vertex button and doClick', () => {
@@ -52,6 +130,17 @@ describe('add-vertex button and doClick', () => {
     ctx.vertexButtonClickHandler({ target: button })
     expect(state.polygon.coordinates[0][0]).toEqual([CENTER.lng, CENTER.lat])
     expect(ctx.map._undoStack.length).toBe(1)
+  })
+
+  test('does not finish a line via doClick while the geometry is invalid', () => {
+    const { ctx, state } = setup(DrawLineMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 0)
+    ctx.map._drawGeometryValid = false
+    // Rubber-band duplicates the last placed vertex → a finish gesture.
+    state.line.setCoordinates([[0, 0], [10, 0], [10, 0]])
+    ctx.doClick(state)
+    expect(firedWith(ctx.map, 'draw.create')).toHaveLength(0)
   })
 
   test('clicks elsewhere, without a button id, or during undo do nothing', () => {
@@ -64,6 +153,26 @@ describe('add-vertex button and doClick', () => {
     noButton.ctx.vertexButtonClickHandler({ target: document.body })
     expect(state.polygon.coordinates[0]).toHaveLength(0)
     expect(noButton.state.polygon.coordinates[0]).toHaveLength(0)
+  })
+
+  test('doClick rejects a placement that would make the drawn path cross itself', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    clickAt(ctx, state, 10, 0)
+    clickAt(ctx, state, 10, -10)
+    const lenBefore = state.polygon.coordinates[0].length
+    ctx.doClick(state) // map centre is (5,5): the new edge would cross (0,0)-(10,0)
+    expect(state.polygon.coordinates[0].length).toBe(lenBefore)
+    expect(firedWith(ctx.map, 'draw.placementblocked').length).toBeGreaterThan(0)
+  })
+
+  test('the user callback can veto a doClick placement', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    ctx.map._drawGeometryValidator = () => ({ valid: false, reason: 'outside region' })
+    ctx.doClick(state)
+    expect(state.polygon.coordinates[0]).toHaveLength(0)
+    expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(
+      expect.objectContaining({ reason: 'outside region', kind: 'place' }))
   })
 
   test('doClick places at the snapped position when snapping', () => {

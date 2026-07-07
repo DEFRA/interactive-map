@@ -65,8 +65,19 @@ export const createStyles = (colors) => {
     fill: new Fill({ color: colors.editFill })
   })
 
+  // Dashed variant shown while the edited/drawn shape is invalid.
+  const editFeatureStyleInvalid = new Style({
+    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] }),
+    fill: new Fill({ color: colors.editFill })
+  })
+
   const sketchLineStyle = new Style({
     stroke: new Stroke({ color: colors.editStroke, width: 2 }),
+    fill: new Fill({ color: colors.editFill })
+  })
+
+  const sketchLineStyleInvalid = new Style({
+    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] }),
     fill: new Fill({ color: colors.editFill })
   })
 
@@ -89,11 +100,12 @@ export const createStyles = (colors) => {
   // No style for the Point sketch (cursor-following ghost marker); placed
   // vertices get markers on the sketch feature instead. geometryType filters
   // out the extra LineString sketch OL renders alongside a Polygon sketch,
-  // so vertices aren't drawn twice.
-  const createSketchStyle = (geometryType) => (feature) => {
+  // so vertices aren't drawn twice. `invalid` swaps to the dashed line style.
+  const createSketchStyle = (geometryType, invalid = false) => (feature) => {
     const type = feature.getGeometry().getType()
     if (type === 'Point') { return [] }
-    return type === geometryType ? [sketchLineStyle, sketchVertexStyle] : [sketchLineStyle]
+    const lineStyle = invalid ? sketchLineStyleInvalid : sketchLineStyle
+    return type === geometryType ? [lineStyle, sketchVertexStyle] : [lineStyle]
   }
 
   const createFeatureStyle = () => (feature) => {
@@ -114,6 +126,7 @@ export const createStyles = (colors) => {
     midpointStyle,
     selectedMidpointStyle,
     editFeatureStyle,
+    editFeatureStyleInvalid,
     createSketchStyle,
     createFeatureStyle
   }

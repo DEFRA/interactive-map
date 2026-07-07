@@ -23,6 +23,9 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider 
 
   const polygonFeature = draw.get(featureId)
 
+  // Split draws its own throwaway line; user geometry validation must not apply here.
+  draw._geometryValidator = null
+
   // Always include the draw outline layer so the split line snaps to it
   const snapLayers = ['stroke-inactive.cold', ...(options.snapLayers || [])]
   draw.setSnapLayers(snapLayers)
@@ -50,7 +53,8 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider 
   // Real-time preview: update split validity as vertices are placed (ML only)
   const DEBOUNCE_MS = 50
   const onGeometryChange = debounce((e) => {
-    if (e.coordinates.length < 2) {
+    // Ignore commit-level validation events (they carry `kind`, not `coordinates`).
+    if (!e.coordinates || e.coordinates.length < 2) {
       return
     }
     const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates: e.coordinates } }

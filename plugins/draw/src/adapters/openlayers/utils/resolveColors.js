@@ -23,6 +23,7 @@ export const resolveColors = (mapStyle, pluginConfig = {}) => {
     editMidpoint: resolveColor('editMidpoint'),
     editActive: resolveColor('editActive'),
     editHalo: resolveColor('editHalo'),
+    invalidStroke: resolveColor('invalidStroke'),
     shapeStroke: resolveColor('shapeStroke'),
     strokeWidth: pluginConfig.strokeWidth ?? SIZES.strokeWidth,
     shapeFill: resolveColor('shapeFill'),

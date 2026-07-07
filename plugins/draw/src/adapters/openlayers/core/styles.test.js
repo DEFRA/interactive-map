@@ -12,6 +12,7 @@ const colors = {
   editMidpoint: '#em',
   editActive: '#ea',
   editHalo: '#eh',
+  invalidStroke: '#is',
   shapeStroke: '#ss',
   shapeFill: '#sf',
   strokeWidth: 3,
@@ -62,6 +63,12 @@ describe('handle styles', () => {
     expect(styles.editFeatureStyle.getStroke().getColor()).toBe(colors.editStroke)
     expect(styles.editFeatureStyle.getFill().getColor()).toBe(colors.editFill)
   })
+
+  test('the invalid edited feature gets a dashed stroke in the invalid colour', () => {
+    expect(styles.editFeatureStyleInvalid.getStroke().getColor()).toBe(colors.invalidStroke)
+    expect(styles.editFeatureStyleInvalid.getStroke().getLineDash()).toEqual([2, 4])
+    expect(styles.editFeatureStyleInvalid.getFill().getColor()).toBe(colors.editFill)
+  })
 })
 
 describe('sketch styles while drawing', () => {
@@ -70,6 +77,13 @@ describe('sketch styles while drawing', () => {
   test('the cursor-follow point renders nothing; the companion line gets stroke only', () => {
     expect(polygonStyleFn(new Feature(new Point([0, 0])))).toEqual([])
     expect(polygonStyleFn(new Feature(new LineString([[0, 0], [1, 1]])))).toHaveLength(1)
+  })
+
+  test('the invalid sketch renders a dashed line in the invalid colour', () => {
+    const invalidStyleFn = styles.createSketchStyle('Polygon', true)
+    const [lineStyle] = invalidStyleFn(new Feature(new LineString([[0, 0], [1, 1]])))
+    expect(lineStyle.getStroke().getColor()).toBe(colors.invalidStroke)
+    expect(lineStyle.getStroke().getLineDash()).toEqual([2, 4])
   })
 
   test('placed vertices render with the shared vertex image on a reused MultiPoint', () => {

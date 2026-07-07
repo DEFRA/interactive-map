@@ -11,7 +11,8 @@ describe('adapter event contract', () => {
       UNDO_CHANGE: 'undochange',
       UPDATE: 'update',
       GEOMETRY_CHANGE: 'geometrychange',
-      INTERFACE_TYPE_CHANGE: 'interfacetypechange'
+      INTERFACE_TYPE_CHANGE: 'interfacetypechange',
+      PLACEMENT_BLOCKED: 'placementblocked'
     })
   })
 })

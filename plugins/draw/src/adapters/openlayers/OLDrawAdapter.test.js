@@ -9,6 +9,7 @@ const fakeManager = () => ({
   cancel: jest.fn(),
   undo: jest.fn(),
   deleteVertex: jest.fn(),
+  setInvalid: jest.fn(),
   get: jest.fn(() => 'feature'),
   add: jest.fn(),
   delete: jest.fn(),
@@ -102,6 +103,18 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   expect(manager.off).toHaveBeenCalledWith('create', handler)
   expect(manager.undo).toHaveBeenCalled()
   expect(manager.deleteVertex).toHaveBeenCalled()
+})
+
+test('setGeometryValid records validity on the manager for finish gating', () => {
+  const { adapter, manager } = setup()
+  adapter.setGeometryValid(false)
+  expect(manager._geometryValid).toBe(false)
+})
+
+test('setInvalid delegates to the manager to toggle the dashed stroke', () => {
+  const { adapter, manager } = setup()
+  adapter.setInvalid(true)
+  expect(manager.setInvalid).toHaveBeenCalledWith(true)
 })
 
 test('remove runs the olDraw cleanup', () => {

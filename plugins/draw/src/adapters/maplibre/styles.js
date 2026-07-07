@@ -46,6 +46,22 @@ const strokeActive = (editStrokeColor) => ({
   paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-opacity': 1 }
 })
 
+// Dashed stroke shown in place of stroke-active while the shape is invalid. Same
+// filter as stroke-active; the adapter's setInvalid() toggles the two layers'
+// visibility (line-dasharray can't be data-driven per feature in MapLibre).
+const strokeActiveInvalid = (invalidStrokeColor) => ({
+  id: 'stroke-active-invalid',
+  type: 'line',
+  filter: ['all', ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']], ['==', 'active', 'true'], ['!has', 'user_splitter']],
+  layout: { 'line-cap': 'round', 'line-join': 'round', visibility: 'none' },
+  paint: {
+    'line-color': invalidStrokeColor,
+    'line-width': 2,
+    'line-dasharray': [0.2, 2], // NOSONAR
+    'line-opacity': 1
+  }
+})
+
 // Splitter line
 const drawInvalidSplitter = (splitInvalidColor) => ({
   id: 'stroke-invalid-splitter',
@@ -149,12 +165,14 @@ const createDrawStyles = (mapStyle) => {
   const editActiveColor = getValueForStyle(COLORS.editActive, scheme)
   const splitInvalidColor = getValueForStyle(COLORS.splitInvalid, scheme)
   const splitValidColor = getValueForStyle(COLORS.splitValid, scheme)
+  const invalidStrokeColor = getValueForStyle(COLORS.invalidStroke, scheme)
   const { vertexRadius, midpointRadius, vertexHaloRadius, midpointHaloRadius } = SIZES
 
   return [
     fillInactive(mapStyle),
     fillActive(editFillColor),
     strokeActive(editStrokeColor),
+    strokeActiveInvalid(invalidStrokeColor),
     strokeInactive(mapStyle),
     drawInvalidSplitter(splitInvalidColor),
     drawValidSplitter(splitValidColor),

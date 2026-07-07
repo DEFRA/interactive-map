@@ -3,6 +3,7 @@ import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/sna
 import { createEventBus } from '../../utils/eventBus.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { ADAPTER_EVENTS } from '../../adapterEvents.js'
+import { createLiveStroke } from '../../validation/liveStroke.js'
 
 /**
  * Draw adapter for MapLibre GL.
@@ -38,6 +39,10 @@ export class MaplibreDrawAdapter {
     this._draw = draw
     this._cleanupDraw = remove
 
+    // Drives the live invalid stroke from rubber-band moves (default rules sync,
+    // user callback throttled). onChange toggles the dashed stroke layers.
+    this._liveStroke = createLiveStroke({ onChange: (invalid) => this.setInvalid(invalid) })
+
     // Normalise ML map events → the shared adapter event contract (adapterEvents.js).
     // The OL adapter emits the same contract directly from OLDrawManager.
     this._mapHandlers = {
@@ -49,7 +54,13 @@ export class MaplibreDrawAdapter {
       vertexchange: (e) => this._bus.emit(ADAPTER_EVENTS.VERTEX_CHANGE, { ...e, numVertices: e.numVertecies }),
       undochange: (e) => this._bus.emit(ADAPTER_EVENTS.UNDO_CHANGE, e.length),
       update: (e) => this._bus.emit(ADAPTER_EVENTS.UPDATE, e.features[0]),
-      geometrychange: (e) => this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, e),
+      geometrychange: (e) => {
+        // Kind-less events are rubber-band moves carrying the displayed feature
+        // (placed vertices + cursor) — they drive the live invalid stroke.
+        if (!e?.kind) { this._updateLiveStroke(e) }
+        this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, e)
+      },
+      placementblocked: (e) => this._bus.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, e),
       modechange: (e) => this._handleModeChange(e),
       styledata: () => this._handleStyleData()
     }
@@ -62,6 +73,7 @@ export class MaplibreDrawAdapter {
     this._map.on(CUSTOM_DRAW_EVENTS.UNDO_CHANGE, this._mapHandlers.undochange)
     this._map.on(MAPBOX_DRAW_EVENTS.UPDATE, this._mapHandlers.update)
     this._map.on(CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE, this._mapHandlers.geometrychange)
+    this._map.on(CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED, this._mapHandlers.placementblocked)
     this._map.on(MAPBOX_DRAW_EVENTS.MODE_CHANGE, this._mapHandlers.modechange)
     this._map.on(STYLE_DATA_EVENT, this._mapHandlers.styledata)
   }
@@ -70,7 +82,39 @@ export class MaplibreDrawAdapter {
     if (name === 'edit_vertex') {
       this._editingFeatureId = options.featureId ?? null
     }
+    // A fresh draw always starts with a solid stroke; the live check owns it from here.
+    if (name === 'draw_polygon' || name === 'draw_line') {
+      this._liveStroke.reset()
+      this.setInvalid(false)
+    }
     this._draw.changeMode(name, options)
+  }
+
+  // Live invalid-stroke driver for draw mode: called on every rubber-band move with
+  // the displayed feature (placed vertices + cursor). Delegates to the shared
+  // live-stroke controller, which runs the default rules synchronously and the user
+  // callback throttled, toggling the dashed stroke only when validity flips. Edit
+  // mode is driven from events.js on committed changes instead.
+  //
+  // MapLibre's fire() copies the payload onto an Event whose `type` is the event
+  // name, so the feature's geometry type is clobbered — rebuild the geometry from
+  // the coordinates using the active draw mode.
+  _updateLiveStroke (e) {
+    if (!e?.coordinates) { return }
+    const mode = this._draw.getMode()
+    // eslint-disable-next-line no-console -- TEMP live-stroke diagnostics
+    console.log('[live-stroke ML] _updateLiveStroke', { mode, hasCoords: !!e?.coordinates })
+    let feature, placedCount
+    if (mode === 'draw_polygon') {
+      feature = { type: 'Feature', geometry: { type: 'Polygon', coordinates: e.coordinates } }
+      placedCount = (e.coordinates[0]?.length ?? 1) - 1
+    } else if (mode === 'draw_line') {
+      feature = { type: 'Feature', geometry: { type: 'LineString', coordinates: e.coordinates } }
+      placedCount = (e.coordinates?.length ?? 1) - 1
+    } else {
+      return
+    }
+    this._liveStroke.update({ feature, context: { mode }, placedCount, onGeometryChange: this._geometryValidator })
   }
 
   getMode () { return this._draw.getMode() }
@@ -99,6 +143,33 @@ export class MaplibreDrawAdapter {
 
   undo () {
     this._map.fire(CUSTOM_DRAW_EVENTS.UNDO)
+  }
+
+  // Record the current geometry validity so the draw mode can block finish gestures
+  // (double-click / click-to-close) while the in-progress shape is invalid.
+  setGeometryValid (valid) {
+    this._map._drawGeometryValid = valid
+  }
+
+  // The api entry points assign the active user validator to the adapter; store it
+  // on the map (like _drawGeometryValid) so modes can veto placements synchronously.
+  set _geometryValidator (fn) { this._map._drawGeometryValidator = fn }
+  get _geometryValidator () { return this._map._drawGeometryValidator }
+
+  // Toggle the active shape's stroke between solid (valid) and dashed (invalid) by
+  // swapping which of the two overlaid stroke layers is visible.
+  setInvalid (invalid) {
+    this._setLayerVisibility('stroke-active', !invalid)
+    this._setLayerVisibility('stroke-active-invalid', invalid)
+  }
+
+  _setLayerVisibility (id, visible) {
+    ['hot', 'cold'].forEach((suffix) => {
+      const layerId = `${id}.${suffix}`
+      if (this._map.getLayer(layerId)) {
+        this._map.setLayoutProperty(layerId, 'visibility', visible ? 'visible' : 'none')
+      }
+    })
   }
 
   deleteVertex () {
@@ -172,8 +243,10 @@ export class MaplibreDrawAdapter {
     this._map.off(CUSTOM_DRAW_EVENTS.UNDO_CHANGE, this._mapHandlers.undochange)
     this._map.off(MAPBOX_DRAW_EVENTS.UPDATE, this._mapHandlers.update)
     this._map.off(CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE, this._mapHandlers.geometrychange)
+    this._map.off(CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED, this._mapHandlers.placementblocked)
     this._map.off(MAPBOX_DRAW_EVENTS.MODE_CHANGE, this._mapHandlers.modechange)
     this._map.off(STYLE_DATA_EVENT, this._mapHandlers.styledata)
+    this._liveStroke.destroy()
     this._cleanupDraw()
   }
 }

@@ -1,4 +1,5 @@
 import { MAP_SIZE_SCALES } from '../defaults.js'
+import { validateGeometry } from '../validation/validateGeometry.js'
 
 export const editFeature = ({ appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
@@ -13,6 +14,9 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
   if (!existingFeature) {
     return false
   }
+
+  // Per-call callback overrides the plugin-level one; events.js reads this on every commit.
+  draw._geometryValidator = options.onGeometryChange ?? pluginConfig.onGeometryChange
 
   const editModeMap = { LineString: 'edit_line', Polygon: 'edit_polygon' }
   eventBus.emit('draw:editstart', { mode: editModeMap[existingFeature.geometry.type] })
@@ -39,6 +43,12 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
   })
 
   dispatch({ type: 'SET_MODE', payload: 'edit_vertex' })
+
+  // Seed the Done-button gate and the stroke from the feature's starting validity
+  // so an already invalid feature opens dashed and cannot be "finished" until fixed.
+  const { valid } = validateGeometry(feature, { kind: 'init', mode: 'edit_vertex' }, { onGeometryChange: draw._geometryValidator })
+  dispatch({ type: 'SET_GEOMETRY_VALID', payload: valid })
+  draw.setInvalid?.(!valid)
 
   return true
 }

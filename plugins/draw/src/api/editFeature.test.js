@@ -74,6 +74,42 @@ describe('editFeature', () => {
     expect(eventBus.emit).toHaveBeenCalledWith('draw:editstart', { mode: 'edit_line' })
   })
 
+  test('stores a per-call onGeometryChange validator, overriding the plugin-level one', () => {
+    const pluginOnGeometryChange = jest.fn()
+    const onGeometryChange = jest.fn()
+    const { context, draw } = makeContext({ pluginConfig: { snapLayers: ['pc-layer'], onGeometryChange: pluginOnGeometryChange } })
+    editFeature(context, 'f1', { onGeometryChange })
+    expect(draw._geometryValidator).toBe(onGeometryChange)
+  })
+
+  test('seeds the geometry-valid gate from the feature starting validity', () => {
+    const { context, dispatch, draw } = makeContext()
+    // A valid square → gate opens.
+    draw.get.mockReturnValue({ id: 'f1', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] } })
+    editFeature(context, 'f1')
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
+  })
+
+  test('seeds the gate closed for an already self-intersecting feature', () => {
+    const { context, dispatch, draw } = makeContext()
+    draw.get.mockReturnValue({ id: 'f1', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] } })
+    editFeature(context, 'f1')
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
+  })
+
+  test('seeds the stroke alongside the gate — an invalid feature opens edit mode dashed', () => {
+    const { context, draw } = makeContext()
+    draw.setInvalid = jest.fn()
+    draw.get.mockReturnValue({ id: 'f1', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] } })
+    editFeature(context, 'f1')
+    expect(draw.setInvalid).toHaveBeenCalledWith(true)
+
+    draw.setInvalid.mockClear()
+    draw.get.mockReturnValue({ id: 'f1', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] } })
+    editFeature(context, 'f1')
+    expect(draw.setInvalid).toHaveBeenCalledWith(false)
+  })
+
   test('disables panning for the keyboard interface', () => {
     const { context, draw } = makeContext({
       appState: { layoutRefs: { viewportRef: { current: 'viewport' } }, interfaceType: 'keyboard' }

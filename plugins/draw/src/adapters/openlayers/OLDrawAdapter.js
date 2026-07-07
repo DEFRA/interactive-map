@@ -21,9 +21,9 @@ import { createOLDraw } from './olDraw.js'
  *   remove()
  */
 export class OLDrawAdapter {
-  constructor (mapProvider, options) {
-    this._snapEnabled = false
+  _snapEnabled = false
 
+  constructor (mapProvider, options) {
     const { remove } = createOLDraw({
       mapProvider,
       events: options.events,
@@ -61,6 +61,18 @@ export class OLDrawAdapter {
 
   undo () { this._manager.undo() }
   deleteVertex () { this._manager.deleteVertex() }
+
+  // Record the current geometry validity so the draw mode can block finish gestures
+  // (double-click / click-to-close) while the in-progress shape is invalid.
+  setGeometryValid (valid) { this._manager._geometryValid = valid }
+
+  // The api entry points assign the active user validator to the adapter; store it
+  // on the manager so the draw mode can veto placements synchronously.
+  set _geometryValidator (fn) { this._manager._geometryValidator = fn }
+  get _geometryValidator () { return this._manager._geometryValidator }
+
+  // Show/hide the dashed invalid stroke on the active sketch or edit feature.
+  setInvalid (invalid) { this._manager.setInvalid(invalid) }
 
   get (id) { return this._manager.get(id) }
   add (feature) { return this._manager.add(feature) }

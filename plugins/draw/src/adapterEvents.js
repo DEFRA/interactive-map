@@ -18,8 +18,18 @@
  *   VERTEX_CHANGE          { numVertices }
  *   UNDO_CHANGE            number — current undo stack length
  *   UPDATE                 GeoJSON feature after a vertex operation
- *   GEOMETRY_CHANGE        in-progress geometry (real-time preview, e.g. split)
+ *   GEOMETRY_CHANGE        Two payload shapes share this event:
+ *                            - Preview (draw/split live update): the in-progress
+ *                              feature itself (has `coordinates`, no `kind`).
+ *                            - Commit-level validation: `{ feature, kind, vertexIndex }`
+ *                              where kind ∈ 'add' | 'move' | 'insert' | 'delete'.
+ *                              events.js validates these and reverts invalid ones.
+ *                          Listeners must guard for the shape they expect.
  *   INTERFACE_TYPE_CHANGE  { interfaceType: 'mouse' | 'touch' | 'keyboard' }
+ *   PLACEMENT_BLOCKED      { feature, reason, kind: 'place', mode, vertexIndex } —
+ *                          a vertex placement was rejected by validatePlacement
+ *                          (hard rule or user callback); feature is the candidate
+ *                          geometry that was refused.
  */
 export const ADAPTER_EVENTS = {
   CREATE: 'create',
@@ -30,5 +40,6 @@ export const ADAPTER_EVENTS = {
   UNDO_CHANGE: 'undochange',
   UPDATE: 'update',
   GEOMETRY_CHANGE: 'geometrychange',
-  INTERFACE_TYPE_CHANGE: 'interfacetypechange'
+  INTERFACE_TYPE_CHANGE: 'interfacetypechange',
+  PLACEMENT_BLOCKED: 'placementblocked'
 }

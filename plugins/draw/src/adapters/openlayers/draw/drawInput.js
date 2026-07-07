@@ -83,7 +83,7 @@ const wireInputEvents = ({
  * @returns {{ getInterfaceType: () => string, destroy: () => void }}
  */
 export const createDrawInput = ({ drawInteraction, options }) => {
-  const { container, addVertexButtonId, mapProvider, snap, onUndo, canFinish } = options
+  const { container, addVertexButtonId, mapProvider, snap, onUndo, canFinish, canPlace } = options
   let interfaceType = options.interfaceType ?? 'mouse'
   const getInterfaceType = () => interfaceType
 
@@ -92,6 +92,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     mapProvider,
     snap,
     canFinish,
+    canPlace,
     getInterfaceType
   })
 

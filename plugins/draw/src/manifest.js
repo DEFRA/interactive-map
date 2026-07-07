@@ -51,10 +51,10 @@ export const manifest = {
       exclusiveSlot: true,
       hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
       enableWhen: ({ pluginState }) => {
-        const { mode, numVertices } = pluginState
-        return (mode === 'draw_polygon' && numVertices >= 3) || // NOSONAR
-          (mode === 'draw_line' && numVertices >= 2) || // NOSONAR
-          mode === 'edit_vertex'
+        const { mode, geometryValid } = pluginState
+        // Min-vertices, area and self-intersection are all enforced by the validation
+        // rules via geometryValid, so the gate is simply "is the geometry valid now".
+        return ['draw_polygon', 'draw_line', 'edit_vertex'].includes(mode) && geometryValid
       },
       ...createButtonSlots(true)
     },

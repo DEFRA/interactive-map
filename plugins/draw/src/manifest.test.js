@@ -40,13 +40,17 @@ describe('drawDone', () => {
     expect(btn().hiddenWhen({ pluginState: { mode: 'draw_polygon' } })).toBe(false)
   })
 
-  test('enables per mode and vertex count', () => {
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', numVertices: 3 } })).toBe(true)
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', numVertices: 2 } })).toBe(false)
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_line', numVertices: 2 } })).toBe(true)
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_line', numVertices: 1 } })).toBe(false)
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex' } })).toBe(true)
-    expect(btn().enableWhen({ pluginState: { mode: 'disabled' } })).toBe(false)
+  test('enables in a draw/edit mode only when the geometry is valid', () => {
+    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', geometryValid: true } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'draw_line', geometryValid: true } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', geometryValid: true } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'disabled', geometryValid: true } })).toBe(false)
+  })
+
+  test('stays disabled while the geometry is invalid', () => {
+    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', geometryValid: false } })).toBe(false)
+    expect(btn().enableWhen({ pluginState: { mode: 'draw_line', geometryValid: false } })).toBe(false)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', geometryValid: false } })).toBe(false)
   })
 })
 

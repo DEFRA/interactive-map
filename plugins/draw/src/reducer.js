@@ -6,6 +6,7 @@ const initialState = {
   tempFeature: null,
   selectedVertexIndex: -1,
   numVertices: null,
+  geometryValid: true,
   snap: false,
   hasSnapLayers: false,
   undoStackLength: 0
@@ -16,7 +17,10 @@ const DRAW_MODES = new Set(['draw_polygon', 'draw_line'])
 const setMode = (state, payload) => ({
   ...state,
   mode: payload,
-  numVertices: DRAW_MODES.has(payload) ? 0 : state.numVertices
+  numVertices: DRAW_MODES.has(payload) ? 0 : state.numVertices,
+  // A new/empty shape is never valid; validation flips this true once the geometry
+  // passes all soft rules (edit mode seeds it explicitly in api/editFeature).
+  geometryValid: false
 })
 
 const setAction = (state, payload) => ({
@@ -45,6 +49,8 @@ const setHasSnapLayers = (state, payload) => ({ ...state, hasSnapLayers: !!paylo
 
 const setUndoStackLength = (state, payload) => ({ ...state, undoStackLength: payload })
 
+const setGeometryValid = (state, payload) => ({ ...state, geometryValid: !!payload })
+
 const actions = {
   SET_MODE: setMode,
   SET_ACTION: setAction,
@@ -53,7 +59,8 @@ const actions = {
   TOGGLE_SNAP: toggleSnap,
   SET_SNAP: setSnap,
   SET_HAS_SNAP_LAYERS: setHasSnapLayers,
-  SET_UNDO_STACK_LENGTH: setUndoStackLength
+  SET_UNDO_STACK_LENGTH: setUndoStackLength,
+  SET_GEOMETRY_VALID: setGeometryValid
 }
 
 export { initialState, actions }

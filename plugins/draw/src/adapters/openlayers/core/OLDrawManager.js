@@ -120,6 +120,11 @@ export class OLDrawManager {
     this._modeInstance?.deleteVertex()
   }
 
+  // Show/hide the dashed invalid stroke on the active draw sketch or edit feature.
+  setInvalid (invalid) {
+    this._modeInstance?.setInvalid?.(invalid)
+  }
+
   setInterfaceType (type) {
     this._modeInstance?.setInterfaceType?.(type)
   }
