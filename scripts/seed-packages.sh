@@ -41,6 +41,17 @@ seed_all() {
       continue
     fi
 
+    # npm view failed: only an explicit E404 means "does not exist". Anything
+    # else (network error, registry outage, rate limit) means we cannot tell —
+    # abort rather than risk bare-publishing over a package that does exist.
+    local view_err
+    view_err=$(npm view "$name" versions 2>&1 >/dev/null || true)
+    if ! echo "$view_err" | grep -q "E404"; then
+      echo "ERROR: could not query npm for ${name} (network/registry error?) — aborting, nothing further seeded."
+      echo "$view_err" | head -3
+      exit 1
+    fi
+
     echo "Seeding ${name}@${version} to npm with tag: ${SEED_TAG}"
     if [ "$DRY_RUN" = "true" ]; then
       echo "[DRY RUN] Would run: npm publish ./${pkg_dir} --access public --tag=${SEED_TAG}"

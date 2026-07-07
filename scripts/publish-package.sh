@@ -2,7 +2,7 @@
 
 set -e
 
-VERSION_PATTERN="^v([0-9]{1,}.[0-9]{1,}.[0-9]{1,})(-[0-9A-Za-z-].*)?$"
+VERSION_PATTERN="^v([0-9]{1,}\.[0-9]{1,}\.[0-9]{1,})(-[0-9A-Za-z-].*)?$"
 PRE_RELEASE_PATTERN="(-[0-9A-Za-z-].*)$"
 
 validate_arguments() {
@@ -23,12 +23,28 @@ validate_version_format() {
 
 get_published_version() {
   local major_version=$1
-  local published=$(npm view "${PACKAGE_NAME}@^${major_version}.0.0" version --json 2>/dev/null | jq -r '.[-1]' 2>/dev/null || echo "")
+  # Range is ${major}.x, NOT ^${major}.0.0 — for major 0 a caret range collapses
+  # to ">=0.0.0 <0.0.1" and matches nothing, disabling this check for all 0.x.
+  # npm returns a bare JSON string (not an array) when exactly one version
+  # matches, so normalise both shapes to one version per line.
+  local matched
+  # `| strings` drops non-string output — on failure npm prints an {"error":…}
+  # object to stdout with --json, which must not be mistaken for a version.
+  matched=$(npm view "${PACKAGE_NAME}@${major_version}.x" version --json 2>/dev/null \
+    | jq -r 'if type=="array" then .[] else . end | strings' 2>/dev/null || true)
 
-  if [ -z "$published" ] || [ "$published" = "null" ]; then
+  # npm lists versions in publish order, not semver order (a hand-published
+  # backport would be last) — semver-sort and take the highest.
+  local highest=""
+  if [ -n "$matched" ]; then
+    # shellcheck disable=SC2086 — versions are single tokens; splitting is intended
+    highest=$(npx --yes semver $matched 2>/dev/null | tail -n 1 || true)
+  fi
+
+  if [ -z "$highest" ] || [ "$highest" = "null" ]; then
     echo "0.0.0"
   else
-    echo "$published"
+    echo "$highest"
   fi
 }
 
@@ -44,8 +60,12 @@ validate_version_bump() {
   echo "Latest v${major_version}.x published: $published_version"
   echo "New version to publish: $new_version"
 
-  if npx --yes semver "$new_version" -r "<=$published_version" >/dev/null 2>&1; then
-    echo "ERROR: Version $new_version is not greater than published version $published_version in the v${major_version}.x line"
+  # Require positive proof the new version is GREATER. The previous inverted
+  # check ("fail if <= matches") treated any failure of the semver tool itself
+  # (npx fetch error, malformed version string) as a pass.
+  # --include-prerelease so a prerelease like 1.2.3-alpha.1 can satisfy ">1.2.2".
+  if ! npx --yes semver --include-prerelease "$new_version" -r ">$published_version" >/dev/null 2>&1; then
+    echo "ERROR: Version $new_version is not greater than published version $published_version in the v${major_version}.x line (or the semver check itself failed)"
     exit 1
   fi
 
@@ -132,9 +152,19 @@ preflight_checks() {
     name=$(jq -r '.name' "$pkg_dir/package.json")
 
     # 1. Registered on npm? (tag-independent — a seeded package has no `latest` yet)
+    #    Only npm's explicit E404 means "does not exist"; any other failure
+    #    (network, registry outage) means we cannot tell — report that instead
+    #    of sending the operator off to bootstrap an existing package.
     if ! versions_json=$(npm view "$name" versions --json 2>/dev/null); then
-      echo "  ✗ ${name}: not found on npm — needs one-time bootstrap (seed + trusted publishing)."
-      echo "      Fix: follow RELEASING.md → 'One-time bootstrap', then re-run the release."
+      local view_err
+      view_err=$(npm view "$name" versions --json 2>&1 >/dev/null || true)
+      if echo "$view_err" | grep -q "E404"; then
+        echo "  ✗ ${name}: not found on npm — needs one-time bootstrap (seed + trusted publishing)."
+        echo "      Fix: follow RELEASING.md → 'One-time bootstrap', then re-run the release."
+      else
+        echo "  ✗ ${name}: could not query npm (network/registry error) — unable to verify."
+        echo "      Fix: re-run the release; if it persists, check https://status.npmjs.org."
+      fi
       failures=$((failures + 1))
       continue
     fi
@@ -150,7 +180,9 @@ preflight_checks() {
 
     # 3. Packable? (no registry/auth — validates build output + package.json).
     #    --tag is required or npm refuses to (dry-)publish a prerelease version.
-    if ! npm publish "$pkg_dir" --dry-run --tag "$release_tag" >/dev/null 2>&1; then
+    #    The ./ prefix is load-bearing: a bare "providers/maplibre" is parsed by
+    #    npm as a GitHub owner/repo shorthand, not a local directory.
+    if ! npm publish "./${pkg_dir}" --dry-run --tag "$release_tag" >/dev/null 2>&1; then
       echo "  ✗ ${name}: 'npm publish --dry-run' failed — missing build output or invalid package.json."
       echo "      Fix: see RELEASING.md → 'Troubleshooting'."
       failures=$((failures + 1))
@@ -223,7 +255,14 @@ main() {
   validate_version_format
   validate_version_bump
   preflight_checks
-  stamp_versions
+
+  # A dry run must not mutate the working tree — stamping rewrites the version
+  # and peer pins in every package.json.
+  if [ "$DRY_RUN" = "true" ]; then
+    echo "[DRY RUN] Skipping version stamping — no files are modified in a dry run."
+  else
+    stamp_versions
+  fi
 
   RELEASE_TAG=$(determine_release_tag)
   publish_all "$RELEASE_TAG"
