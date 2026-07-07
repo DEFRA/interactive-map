@@ -15,8 +15,9 @@ import turfArea from '@turf/area'
  * Add a rule by appending it to SOFT_RULES or HARD_RULES.
  */
 
-const MIN_POLYGON_VERTICES = 3
-const MIN_LINE_VERTICES = 2
+// Minimum vertices for a finishable shape — the single source for every
+// threshold check (rules, live gating, adapter finish conditions).
+export const MIN_VERTICES = { Polygon: 3, LineString: 2 }
 const MIN_INTERSECT_VERTICES = 4 // need 4+ vertices for two non-adjacent edges to exist
 
 const getGeometry = (feature) => feature?.geometry ?? feature
@@ -93,7 +94,7 @@ const edgesSelfIntersect = (vertices, closed) => {
  * rejects the placement so the vertex never appears and a genuine self-intersection
  * can't be drawn forward.
  */
-export const pathSelfIntersects = (feature) => {
+const pathSelfIntersects = (feature) => {
   const geometry = getPolygon(feature)
   if (!geometry) { return false }
   const vertices = getRingVertices(geometry)
@@ -129,7 +130,7 @@ export const nonZeroArea = (feature) => {
   if (!geometry) { return { valid: true } }
 
   const vertices = getRingVertices(geometry)
-  if (vertices.length < MIN_POLYGON_VERTICES) { return { valid: true } }
+  if (vertices.length < MIN_VERTICES.Polygon) { return { valid: true } }
 
   let area = 0
   try {
@@ -147,12 +148,12 @@ export const nonZeroArea = (feature) => {
 export const minVertices = (feature) => {
   const geometry = getGeometry(feature)
   if (geometry?.type === 'Polygon') {
-    return getRingVertices(geometry).length >= MIN_POLYGON_VERTICES
+    return getRingVertices(geometry).length >= MIN_VERTICES.Polygon
       ? { valid: true }
       : { valid: false, reason: 'Shape needs at least 3 points' }
   }
   if (geometry?.type === 'LineString') {
-    return (geometry.coordinates?.length ?? 0) >= MIN_LINE_VERTICES
+    return (geometry.coordinates?.length ?? 0) >= MIN_VERTICES.LineString
       ? { valid: true }
       : { valid: false, reason: 'Line needs at least 2 points' }
   }

@@ -46,8 +46,6 @@ const setFeature = (state, payload) => ({
 
 const toggleSnap = (state) => ({ ...state, snap: !state.snap })
 
-const setSnap = (state, payload) => ({ ...state, snap: !!payload })
-
 const setHasSnapLayers = (state, payload) => ({ ...state, hasSnapLayers: !!payload })
 
 const setUndoStackLength = (state, payload) => ({ ...state, undoStackLength: payload })
@@ -62,7 +60,6 @@ const actions = {
   SET_FEATURE: setFeature,
   SET_SELECTED_VERTEX_INDEX: setSelectedVertexIndex,
   TOGGLE_SNAP: toggleSnap,
-  SET_SNAP: setSnap,
   SET_HAS_SNAP_LAYERS: setHasSnapLayers,
   SET_UNDO_STACK_LENGTH: setUndoStackLength,
   SET_GEOMETRY_VALID: setGeometryValid,

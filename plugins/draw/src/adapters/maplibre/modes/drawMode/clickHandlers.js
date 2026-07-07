@@ -1,7 +1,7 @@
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, createSnappedEvent, createSnappedClickEvent
 } from '../../utils/snapHelpers.js'
-import { validatePlacement } from '../../../../validation/validateGeometry.js'
+import { checkPlacement } from '../../../../validation/validateGeometry.js'
 
 // The commit-level geometrychange payload for a vertex commit: the placed-only
 // geometry (trailing rubber-band point dropped so validation tests the committed shape).
@@ -24,17 +24,6 @@ const scheduleDrawValidation = (map, getFeature, getCoords, state, kind) => {
   }, 0)
 }
 
-// Candidate GeoJSON for a would-be placement: the placed path (trailing rubber-band
-// coord dropped) plus the point about to be placed.
-const candidatePlacement = (feature, getCoords, geometryType, point) => {
-  const placed = getCoords(feature).slice(0, -1)
-  const candidate = [...placed, point]
-  const geometry = geometryType === 'Polygon'
-    ? { type: 'Polygon', coordinates: [candidate] }
-    : { type: 'LineString', coordinates: candidate }
-  return { candidateFeature: { type: 'Feature', geometry, properties: {} }, vertexIndex: placed.length }
-}
-
 // Re-id a freshly created feature to the caller's requested id.
 const reidCreatedFeature = (api, feature, featureId) => {
   api.delete(feature.id)
@@ -49,17 +38,21 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
     return e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()
   },
 
-  // Gate a would-be placement through the hard rules + user callback
-  // (validatePlacement). On a veto the vertex never appears and a
-  // draw.placementblocked event carries the reason.
+  // Gate a would-be placement through the shared checkPlacement gate (hard rules +
+  // user callback). On a veto the vertex never appears and a draw.placementblocked
+  // event carries the reason. The trailing rubber-band coord is dropped so the
+  // candidate is placed vertices + the point about to be placed.
   _canPlaceVertex (state, point) {
     const feature = getFeature(state)
     if (!feature || !point) { return true }
-    const { candidateFeature, vertexIndex } = candidatePlacement(feature, getCoords, geometryType, point)
-    const mode = geometryType === 'Polygon' ? 'draw_polygon' : 'draw_line'
-    const result = validatePlacement(candidateFeature, { mode, vertexIndex }, { onGeometryChange: this.map._drawGeometryValidator })
+    const result = checkPlacement({
+      placed: getCoords(feature).slice(0, -1),
+      point,
+      geometryType,
+      onGeometryChange: this.map._drawGeometryValidator
+    })
     if (!result.valid) {
-      this.map.fire('draw.placementblocked', { feature: candidateFeature, reason: result.reason ?? null, kind: 'place', mode, vertexIndex })
+      this.map.fire('draw.placementblocked', result.blocked)
     }
     return result.valid
   },

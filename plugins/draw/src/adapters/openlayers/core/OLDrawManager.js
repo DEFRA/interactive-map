@@ -127,6 +127,9 @@ export class OLDrawManager {
 
   setInterfaceType (type) {
     this._modeInstance?.setInterfaceType?.(type)
+    // Parity with the ML adapter: an explicit interface-type write is echoed on
+    // the bus so events.js can relay it as draw:interfacetypechange.
+    this.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: type })
   }
 
   // --- Feature store delegation ---

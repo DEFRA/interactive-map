@@ -17,7 +17,7 @@ export const COLORS = {
   editActive: { light: BLACK, dark: WHITE },
   splitInvalid: BLUE,
   splitValid: BLUE,
-  invalidStroke: BLUE,
+  invalidStroke: { light: BLUE, dark: WHITE },
   shapeStroke: RED,
   shapeFill: MID_ORANGE,
   snapVertex: MID_ORANGE,

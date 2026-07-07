@@ -1,4 +1,4 @@
-import { SOFT_RULES, HARD_RULES, LIVE_RULES } from './rules.js'
+import { SOFT_RULES, HARD_RULES, LIVE_RULES, MIN_VERTICES } from './rules.js'
 
 /**
  * Normalise a rule / callback result into `{ valid, reason }`.
@@ -66,7 +66,32 @@ export const validatePlacement = (feature, context = {}, config = {}) => {
   return validateGeometry(feature, { ...context, kind: 'place' }, { rules, onGeometryChange })
 }
 
-const MIN_VERTICES_BY_TYPE = { Polygon: 3, LineString: 2 }
+export const MODE_BY_GEOMETRY = { Polygon: 'draw_polygon', LineString: 'draw_line' }
+
+/**
+ * Engine-facing placement gate shared by both adapters: builds the candidate
+ * geometry (placed vertices + the point about to be placed), validates it against
+ * the hard rules and the user callback, and — on a veto — returns the
+ * PLACEMENT_BLOCKED payload for the caller to emit on its bus.
+ *
+ * @param {object} params
+ * @param {Array<Array<number>>} params.placed - committed vertex coordinates
+ * @param {Array<number>} params.point - the coordinate about to be placed
+ * @param {'Polygon'|'LineString'} params.geometryType
+ * @param {Function} [params.onGeometryChange] - user callback
+ * @returns {{ valid: true } | { valid: false, blocked: object }}
+ */
+export const checkPlacement = ({ placed, point, geometryType, onGeometryChange }) => {
+  const candidate = [...placed, point]
+  const geometry = geometryType === 'Polygon'
+    ? { type: 'Polygon', coordinates: [candidate] }
+    : { type: 'LineString', coordinates: candidate }
+  const feature = { type: 'Feature', geometry, properties: {} }
+  const mode = MODE_BY_GEOMETRY[geometryType]
+  const { valid, reason } = validatePlacement(feature, { mode, vertexIndex: placed.length }, { onGeometryChange })
+  if (valid) { return { valid: true } }
+  return { valid: false, blocked: { feature, reason: reason ?? null, kind: 'place', mode, vertexIndex: placed.length } }
+}
 
 /**
  * Validate the displayed (in-progress) geometry that drives the live invalid
@@ -86,7 +111,7 @@ const MIN_VERTICES_BY_TYPE = { Polygon: 3, LineString: 2 }
 export const validateDisplayedGeometry = (feature, context = {}, config = {}) => {
   const { rules = LIVE_RULES, onGeometryChange } = config
   const type = feature?.geometry?.type ?? feature?.type
-  const min = MIN_VERTICES_BY_TYPE[type] ?? 0
+  const min = MIN_VERTICES[type] ?? 0
   if ((context.placedCount ?? 0) < min) { return { valid: true } }
   return validateGeometry(feature, { ...context, kind: context.kind ?? 'preview' }, { rules, onGeometryChange })
 }

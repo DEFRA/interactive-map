@@ -38,13 +38,16 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
   const { draw } = mapProvider
   const { feature, tempFeature } = pluginState
   const { dispatch } = pluginState
+  // A shape that finished invalid and was re-opened in edit mode: its eventual
+  // edit-finish must report as a creation, not an edit.
+  let pendingCreateId = null
 
   return {
     handleDone: () => { draw.done() },
     handleCancel: () => {
       const mode = draw.getMode()
       if (mode === EDIT_VERTEX_MODE && tempFeature?.id) { draw.add(feature) }
-      draw._pendingCreateId = null
+      pendingCreateId = null
       draw.cancel(); resetState()
       eventBus.emit('draw:cancelled', feature)
     },
@@ -60,7 +63,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // here to catch the gesture paths — an invalid shape must never be finalised.
       const { valid } = validateGeometry(f, { kind: 'create', mode: draw.getMode() }, { onGeometryChange: draw._geometryValidator })
       if (!valid) {
-        draw._pendingCreateId = f.id
+        pendingCreateId = f.id
         eventBus.emit(GEOMETRY_INVALID_EVENT, { feature: f, kind: 'create', mode: EDIT_VERTEX_MODE })
         setTimeout(() => enterEditVertexMode({ draw, appState, appConfig, mapState, dispatch }, f.id), 0)
         return
@@ -71,8 +74,8 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       resetState()
       setTimeout(() => draw.changeMode('disabled'), 0)
       // A shape that was drawn-then-fixed reports as a creation, not an edit.
-      if (draw._pendingCreateId && f.id === draw._pendingCreateId) {
-        draw._pendingCreateId = null
+      if (pendingCreateId && f.id === pendingCreateId) {
+        pendingCreateId = null
         eventBus.emit('draw:created', f)
       } else {
         eventBus.emit('draw:edited', f)
@@ -122,6 +125,11 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     // never looks active when a tap would be rejected.
     onCanPlaceChange: (e) => {
       pluginState.dispatch({ type: 'SET_CAN_ADD_POINT', payload: e.canPlace })
+    },
+    // The mode's interface type changed (device switch mid-draw, or the final
+    // value on mode exit) — relay so the app can sync appState.interfaceType.
+    onInterfaceTypeChange: (e) => {
+      eventBus.emit('draw:interfacetypechange', { interfaceType: e.interfaceType })
     }
   }
 }
@@ -147,6 +155,7 @@ function attachDrawEvents (draw, handlers) {
   draw.on(ADAPTER_EVENTS.PLACEMENT_BLOCKED, handlers.onPlacementBlocked)
   draw.on(ADAPTER_EVENTS.VALIDITY_CHANGE, handlers.onValidityChange)
   draw.on(ADAPTER_EVENTS.CAN_PLACE_CHANGE, handlers.onCanPlaceChange)
+  draw.on(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, handlers.onInterfaceTypeChange)
 }
 
 function detachButtonHandlers (buttonConfig) {
@@ -170,6 +179,7 @@ function detachDrawEvents (draw, handlers) {
   draw.off(ADAPTER_EVENTS.PLACEMENT_BLOCKED, handlers.onPlacementBlocked)
   draw.off(ADAPTER_EVENTS.VALIDITY_CHANGE, handlers.onValidityChange)
   draw.off(ADAPTER_EVENTS.CAN_PLACE_CHANGE, handlers.onCanPlaceChange)
+  draw.off(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, handlers.onInterfaceTypeChange)
 }
 
 export function attachEvents ({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus }) {

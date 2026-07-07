@@ -81,12 +81,16 @@ describe('mode machine', () => {
     manager.done()
     manager.undo()
     manager.deleteVertex()
+    const emitted = jest.fn()
+    manager.on('interfacetypechange', emitted)
     manager.setInterfaceType('touch')
     manager.setInvalid(true)
     expect(instance.done).toHaveBeenCalled()
     expect(instance.undo).toHaveBeenCalled()
     expect(instance.deleteVertex).toHaveBeenCalled()
     expect(instance.setInterfaceType).toHaveBeenCalledWith('touch')
+    // Parity with ML: an explicit interface-type write is echoed on the bus.
+    expect(emitted).toHaveBeenCalledWith({ interfaceType: 'touch' })
     expect(instance.setInvalid).toHaveBeenCalledWith(true)
 
     manager.cancel()

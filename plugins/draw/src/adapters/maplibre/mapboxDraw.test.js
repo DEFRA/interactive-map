@@ -192,13 +192,9 @@ describe('createMapboxDraw – event handlers', () => {
     expect(applyTouchVertexColors).toHaveBeenCalledWith(undefined, 'dark')
   })
 
-  test('draw.interfacetypechange is forwarded to the event bus', () => {
-    const { map, eventBus } = setup()
-
-    const handler = handlerFor(map.on, 'draw.interfacetypechange')
-    handler({ interfaceType: 'keyboard' })
-
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:interfacetypechange', { interfaceType: 'keyboard' })
+  test('draw.interfacetypechange is not handled here — the adapter normalises it onto the bus', () => {
+    const { map } = setup()
+    expect(map.on).not.toHaveBeenCalledWith('draw.interfacetypechange', expect.any(Function))
   })
 
   test('MAP_SET_SIZE fires a scale change using the size lookup', () => {
@@ -212,7 +208,7 @@ describe('createMapboxDraw – event handlers', () => {
 
 describe('createMapboxDraw – cleanup', () => {
   test('remove() detaches listeners, disables draw and clears the adapter reference', () => {
-    const { map, mapProvider, eventBus, removeWorkaround, result } = setup()
+    const { mapProvider, eventBus, removeWorkaround, result } = setup()
     const draw = mapProvider.draw
 
     result.remove()
@@ -220,7 +216,6 @@ describe('createMapboxDraw – cleanup', () => {
     expect(removeWorkaround).toHaveBeenCalledTimes(1)
     expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_STYLE, expect.any(Function))
     expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_SIZE, expect.any(Function))
-    expect(map.off).toHaveBeenCalledWith('draw.interfacetypechange', expect.any(Function))
     expect(draw.changeMode).toHaveBeenCalledWith('disabled')
     expect(mapProvider.draw).toBeNull()
     expect(mapProvider._mapboxDrawInstance).toBe(draw)

@@ -111,6 +111,14 @@ test('setGeometryValid records validity on the manager for finish gating', () =>
   expect(manager._geometryValid).toBe(false)
 })
 
+test('_geometryValidator accessor stores and retrieves the user callback on the manager', () => {
+  const { adapter, manager } = setup()
+  const validator = jest.fn(() => ({ valid: true }))
+  adapter._geometryValidator = validator
+  expect(manager._geometryValidator).toBe(validator)
+  expect(adapter._geometryValidator).toBe(validator)
+})
+
 test('setInvalid delegates to the manager to toggle the dashed stroke', () => {
   const { adapter, manager } = setup()
   adapter.setInvalid(true)

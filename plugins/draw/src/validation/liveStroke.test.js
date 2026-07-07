@@ -127,14 +127,16 @@ describe('set / reset / destroy', () => {
     expect(onChange).toHaveBeenCalledWith(false, null)
   })
 
-  test('reset() clears state without firing onChange', () => {
+  test('refresh() re-asserts the cached state unconditionally (style-reload resync)', () => {
     const { onChange, stroke } = setup()
     stroke.update({ feature: bowtie, placedCount: 3 })
     onChange.mockClear()
-    stroke.reset()
-    expect(onChange).not.toHaveBeenCalled()
-    stroke.update({ feature: bowtie, placedCount: 3 }) // cache cleared → flips again
-    expect(onChange).toHaveBeenCalledWith(true, expect.any(String))
+    stroke.refresh() // rendered output was reset externally — re-apply dashed
+    expect(onChange).toHaveBeenCalledWith(true, null)
+    stroke.update({ feature: square, placedCount: 3 })
+    onChange.mockClear()
+    stroke.refresh()
+    expect(onChange).toHaveBeenCalledWith(false, null)
   })
 
   test('destroy() cancels a pending user-rule frame', () => {
@@ -145,4 +147,5 @@ describe('set / reset / destroy', () => {
     jest.runAllTimers()
     expect(onGeometryChange).not.toHaveBeenCalled()
   })
+
 })

@@ -15,7 +15,7 @@ const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Line
 // mode covers both shapes) from the coordinate nesting: a polygon's coordinates are
 // rings (one level deeper than a line's). Draw-mode coordinates carry a trailing
 // rubber-band point; edit-mode coordinates are all committed vertices.
-const displayedShape = (mode, coordinates) => {
+export const displayedShape = (mode, coordinates) => {
   if (mode === 'draw_polygon') {
     return { feature: polygonFeature(coordinates), placedCount: (coordinates[0]?.length ?? 1) - 1 }
   }
@@ -105,6 +105,7 @@ export class MaplibreDrawAdapter {
         this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, e)
       },
       placementblocked: (e) => this._bus.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, e),
+      interfacetypechange: (e) => this._bus.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: e.interfaceType }),
       modechange: (e) => this._handleModeChange(e),
       styledata: () => this._handleStyleData()
     }
@@ -118,6 +119,7 @@ export class MaplibreDrawAdapter {
     this._map.on(MAPBOX_DRAW_EVENTS.UPDATE, this._mapHandlers.update)
     this._map.on(CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE, this._mapHandlers.geometrychange)
     this._map.on(CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED, this._mapHandlers.placementblocked)
+    this._map.on(CUSTOM_DRAW_EVENTS.INTERFACE_TYPE_CHANGE, this._mapHandlers.interfacetypechange)
     this._map.on(MAPBOX_DRAW_EVENTS.MODE_CHANGE, this._mapHandlers.modechange)
     this._map.on(STYLE_DATA_EVENT, this._mapHandlers.styledata)
   }
@@ -273,6 +275,10 @@ export class MaplibreDrawAdapter {
 
   // Keeps draw layers on top after MapLibre style reloads
   _handleStyleData () {
+    // A style reload re-adds the draw layers with their spec-default visibility
+    // (solid stroke shown, dashed hidden) — re-assert the cached stroke state so
+    // an invalid shape stays dashed across the reload.
+    this._liveStroke.refresh()
     const layers = this._map.getStyle().layers || []
     if (!layers.length || layers[layers.length - 1].source?.startsWith('mapbox-gl-draw')) {
       return
@@ -292,6 +298,7 @@ export class MaplibreDrawAdapter {
     this._map.off(MAPBOX_DRAW_EVENTS.UPDATE, this._mapHandlers.update)
     this._map.off(CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE, this._mapHandlers.geometrychange)
     this._map.off(CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED, this._mapHandlers.placementblocked)
+    this._map.off(CUSTOM_DRAW_EVENTS.INTERFACE_TYPE_CHANGE, this._mapHandlers.interfacetypechange)
     this._map.off(MAPBOX_DRAW_EVENTS.MODE_CHANGE, this._mapHandlers.modechange)
     this._map.off(STYLE_DATA_EVENT, this._mapHandlers.styledata)
     this._liveStroke.destroy()

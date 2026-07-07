@@ -2,7 +2,7 @@ import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
-import { MaplibreDrawAdapter } from './MaplibreDrawAdapter.js'
+import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
 
 jest.mock('./mapboxDraw.js', () => ({ createMapboxDraw: jest.fn() }))
 jest.mock('./utils/snapHelpers.js', () => ({
@@ -131,6 +131,33 @@ describe('map event normalisation', () => {
     const e = { kind: 'place', reason: 'outside region' }
     onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)(e)
     expect(bus.emit).toHaveBeenCalledWith('placementblocked', e)
+  })
+})
+
+describe('displayedShape helper', () => {
+  test('builds a polygon feature from draw_polygon mode', () => {
+    const result = displayedShape('draw_polygon', [[[0, 0], [10, 0], [10, 10], [0, 0]]])
+    expect(result?.feature?.type).toBe('Feature')
+    expect(result?.feature?.geometry?.type).toBe('Polygon')
+    expect(result?.placedCount).toBe(3)
+  })
+
+  test('builds a line feature from draw_line mode', () => {
+    const result = displayedShape('draw_line', [[0, 0], [10, 0], [10, 10]])
+    expect(result?.feature?.type).toBe('Feature')
+    expect(result?.feature?.geometry?.type).toBe('LineString')
+    expect(result?.placedCount).toBe(2)
+  })
+
+  test('detects polygon vs line in edit_vertex mode from coordinate nesting', () => {
+    const polygon = displayedShape('edit_vertex', [[[0, 0], [10, 0], [10, 10], [0, 0]]])
+    expect(polygon?.feature?.geometry?.type).toBe('Polygon')
+    const line = displayedShape('edit_vertex', [[0, 0], [10, 0], [10, 10]])
+    expect(line?.feature?.geometry?.type).toBe('LineString')
+  })
+
+  test('returns null for an unknown mode', () => {
+    expect(displayedShape('unknown_mode', [[0, 0], [10, 0]])).toBeNull()
   })
 })
 
@@ -599,6 +626,29 @@ describe('_handleStyleData', () => {
     map.getStyle.mockReturnValue({ layers: [{ id: 'd', source: 'mapbox-gl-draw-hot' }, { id: 'nosrc' }] })
     onHandler(map, STYLE_DATA_EVENT)()
     expect(map.moveLayer).toHaveBeenCalledWith('d')
+  })
+
+  test('re-asserts a dashed stroke after a style reload resets layer visibility', () => {
+    const { adapter, map, draw } = setup()
+    draw.getMode.mockReturnValue('draw_polygon')
+    map.getLayer.mockReturnValue({})
+    // Live check flags a crossing → dashed.
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 10], [10, 0], [0, 10]]] })
+    expect(adapter).toBeDefined()
+    // A style reload re-adds the layers with spec defaults (solid visible)…
+    map.setLayoutProperty.mockClear()
+    onHandler(map, STYLE_DATA_EVENT)()
+    // …and the handler re-applies the cached dashed state.
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.hot', 'visibility', 'none')
+  })
+})
+
+describe('interface-type normalisation', () => {
+  test('draw.interfacetypechange is forwarded onto the adapter bus', () => {
+    const { map, bus } = setup()
+    onHandler(map, CUSTOM_DRAW_EVENTS.INTERFACE_TYPE_CHANGE)({ interfaceType: 'keyboard' })
+    expect(bus.emit).toHaveBeenCalledWith('interfacetypechange', { interfaceType: 'keyboard' })
   })
 })
 

@@ -206,11 +206,13 @@ const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touch
 }
 
 // Style hot-swap on map style change + touch-target reposition on map resize
-const wireMapSync = ({ map, manager, olFeature, layers, selection, touchHandler }) => {
+const wireMapSync = ({ map, manager, layers, selection, touchHandler, live }) => {
   const { state } = selection
 
   const onStylesChanged = (styles) => {
-    olFeature.setStyle(styles.editFeatureStyle)
+    // Re-assert through the live-stroke controller so an invalid (dashed) shape
+    // stays dashed across a map style change.
+    live.liveStroke.refresh()
     layers.vertexLayer.updateStyle(styles.vertexStyle)
     layers.midpointLayer.updateStyle(styles.midpointStyle)
     layers.activeLayer.update(state)
@@ -349,7 +351,7 @@ export const createEditMode = ({ map, manager, options }) => {
     deleteVertexButtonId,
     onDeleteVertex: actions.doDeleteVertex
   })
-  const mapSync = wireMapSync({ map, manager, olFeature, layers, selection, touchHandler })
+  const mapSync = wireMapSync({ map, manager, layers, selection, touchHandler, live })
 
   return buildModeApi({
     manager,

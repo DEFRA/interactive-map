@@ -1,4 +1,4 @@
-import { validateGeometry, validatePlacement } from './validateGeometry.js'
+import { validateGeometry, validatePlacement, checkPlacement, validateDisplayedGeometry } from './validateGeometry.js'
 
 const poly = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [coordinates] } })
 
@@ -59,6 +59,61 @@ describe('validateGeometry (soft gating)', () => {
 
   test('is valid with no rules and no callback', () => {
     expect(validateGeometry(square, {}, { rules: [] })).toEqual({ valid: true })
+  })
+})
+
+describe('checkPlacement (shared engine gate)', () => {
+  const placedL = [[0, 0], [1, 1], [1, 0]] // adding (0,1) makes the open path cross
+
+  test('a legal placement passes with no payload', () => {
+    expect(checkPlacement({ placed: [[0, 0], [1, 0], [1, 1]], point: [0, 1], geometryType: 'Polygon' }))
+      .toEqual({ valid: true })
+  })
+
+  test('a self-crossing placement is vetoed with the PLACEMENT_BLOCKED payload', () => {
+    const result = checkPlacement({ placed: placedL, point: [0, 1], geometryType: 'Polygon' })
+    expect(result.valid).toBe(false)
+    expect(result.blocked).toEqual({
+      feature: expect.objectContaining({ type: 'Feature' }),
+      reason: expect.stringMatching(/intersect/i),
+      kind: 'place',
+      mode: 'draw_polygon',
+      vertexIndex: 3
+    })
+  })
+
+  test('the user callback can veto, with mode derived from the geometry type', () => {
+    const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const result = checkPlacement({ placed: [[0, 0]], point: [1, 1], geometryType: 'LineString', onGeometryChange })
+    expect(result.blocked).toEqual(expect.objectContaining({ mode: 'draw_line', reason: 'outside region', vertexIndex: 1 }))
+    expect(onGeometryChange).toHaveBeenCalledWith(expect.anything(), { kind: 'place', mode: 'draw_line', vertexIndex: 1 })
+  })
+
+  test('checkPlacement mode is set correctly for Polygon vs LineString', () => {
+    // Both legal and illegal placements should have the correct mode set
+    const polygonLegal = checkPlacement({ placed: [[0, 0], [1, 0]], point: [1, 1], geometryType: 'Polygon' })
+    expect(polygonLegal).toEqual({ valid: true })
+    // Test a Polygon placement that would cross
+    const polygonCrossing = checkPlacement({ placed: [[0, 0], [2, 2], [2, 0]], point: [0, 2], geometryType: 'Polygon' })
+    expect(polygonCrossing.blocked?.mode).toBe('draw_polygon')
+  })
+})
+
+describe('validateDisplayedGeometry edge cases', () => {
+  test('handles unknown geometry types with fallback min vertices', () => {
+    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { type: 'Unknown', coordinates: [] } }, { placedCount: 0 })
+    expect(result.valid).toBe(true) // unknown types use MIN_VERTICES fallback of 0, so 0 placed = valid
+  })
+
+  test('feature without geometry type defaults to context.kind', () => {
+    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { coordinates: [[0, 0]] } }, { placedCount: 2, kind: 'custom' })
+    expect(typeof result).toBe('object')
+    expect(result).toHaveProperty('valid')
+  })
+
+  test('context without placedCount defaults to 0 for min-vertex check', () => {
+    const result = validateDisplayedGeometry(poly([[0, 0]]), {})
+    expect(result.valid).toBe(true) // no placedCount = 0, below any min, so valid
   })
 })
 

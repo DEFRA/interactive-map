@@ -65,11 +65,6 @@ describe('snap actions', () => {
     expect(actions.TOGGLE_SNAP({ ...initialState, snap: true }).snap).toBe(false)
   })
 
-  test('SET_SNAP coerces the payload to a boolean', () => {
-    expect(actions.SET_SNAP(initialState, 1).snap).toBe(true)
-    expect(actions.SET_SNAP(initialState, 0).snap).toBe(false)
-  })
-
   test('SET_HAS_SNAP_LAYERS coerces the payload to a boolean', () => {
     expect(actions.SET_HAS_SNAP_LAYERS(initialState, ['x']).hasSnapLayers).toBe(true)
     expect(actions.SET_HAS_SNAP_LAYERS(initialState, null).hasSnapLayers).toBe(false)

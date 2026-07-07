@@ -5,9 +5,9 @@ import { getPlacedSketchCoords, getLastPlacedSketchCoord } from '../utils/sketch
 import { TOLERANCES } from '../defaults.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
-import { validatePlacement } from '../../../validation/validateGeometry.js'
+import { checkPlacement, validatePlacement, MODE_BY_GEOMETRY } from '../../../validation/validateGeometry.js'
+import { MIN_VERTICES } from '../../../validation/rules.js'
 import { createLiveStroke } from '../../../validation/liveStroke.js'
-const MIN_VERTICES = { Polygon: 3, LineString: 2 }
 
 const canFinish = (geometryType, sketchFeature) => {
   if (!sketchFeature) { return false }
@@ -50,21 +50,19 @@ const placedFeatureGeoJSON = (store, sketchFeature) => {
   return { type: 'Feature', geometry, properties: gj.properties }
 }
 
-// Gate a would-be placement (mouse click, crosshair tap, Enter) through the hard
-// rules + user callback (validatePlacement). On a veto the vertex never appears
-// and a PLACEMENT_BLOCKED event carries the reason.
+// Gate a would-be placement (mouse click, crosshair tap, Enter) through the shared
+// checkPlacement gate (hard rules + user callback). On a veto the vertex never
+// appears and a PLACEMENT_BLOCKED event carries the reason.
 export const buildCanPlaceVertex = ({ manager, geometryType, getSketch }) => (coordinate) => {
   const sketch = getSketch()
-  const placed = sketch ? getPlacedSketchCoords(sketch.getGeometry()) : []
-  const candidate = [...placed, coordinate]
-  const geometry = geometryType === 'Polygon'
-    ? { type: 'Polygon', coordinates: [candidate] }
-    : { type: 'LineString', coordinates: candidate }
-  const feature = { type: 'Feature', geometry, properties: {} }
-  const mode = geometryType === 'Polygon' ? 'draw_polygon' : 'draw_line'
-  const result = validatePlacement(feature, { mode, vertexIndex: placed.length }, { onGeometryChange: manager._geometryValidator })
+  const result = checkPlacement({
+    placed: sketch ? getPlacedSketchCoords(sketch.getGeometry()) : [],
+    point: coordinate,
+    geometryType,
+    onGeometryChange: manager._geometryValidator
+  })
   if (!result.valid) {
-    manager.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, { feature, reason: result.reason ?? null, kind: 'place', mode, vertexIndex: placed.length })
+    manager.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, result.blocked)
   }
   return result.valid
 }
@@ -155,10 +153,9 @@ const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, 
 })
 
 // Build the touch/keyboard draw input for the interaction.
-const buildDrawInput = ({ drawInteraction, manager, options, geometryType, getSketch, updateVertexCount, emitUndoValidation, canPlaceVertex }) =>
+const buildDrawInput = ({ drawInteraction, options, geometryType, getSketch, updateVertexCount, emitUndoValidation, canPlaceVertex }) =>
   createDrawInput({
     drawInteraction,
-    manager,
     options: {
       container: options.container,
       interfaceType: options.interfaceType,
@@ -207,7 +204,7 @@ export const createDrawMode = ({ map, manager, options }) => {
     validate: validatePlacement,
     onChange: (vetoed, reason) => manager.emit(ADAPTER_EVENTS.CAN_PLACE_CHANGE, { canPlace: !vetoed, reason })
   })
-  const liveMode = geometryType === 'Polygon' ? 'draw_polygon' : 'draw_line'
+  const liveMode = MODE_BY_GEOMETRY[geometryType]
   const updateLiveValidity = () => {
     if (!sketchFeature) { return }
     const { feature, placedCount } = displayedSketch(geometryType, sketchFeature)
@@ -237,7 +234,6 @@ export const createDrawMode = ({ map, manager, options }) => {
 
   const input = buildDrawInput({
     drawInteraction,
-    manager,
     options,
     geometryType,
     getSketch: () => sketchFeature,

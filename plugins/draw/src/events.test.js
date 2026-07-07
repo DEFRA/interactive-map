@@ -2,7 +2,7 @@ import { attachEvents } from './events.js'
 
 jest.useFakeTimers()
 
-const DRAW_EVENTS = ['create', 'editfinish', 'cancel', 'vertexselection', 'vertexchange', 'undochange', 'update', 'geometrychange', 'placementblocked', 'validitychange', 'canplacechange']
+const DRAW_EVENTS = ['create', 'editfinish', 'cancel', 'vertexselection', 'vertexchange', 'undochange', 'update', 'geometrychange', 'placementblocked', 'validitychange', 'canplacechange', 'interfacetypechange']
 
 const setup = (overrides = {}) => {
   const draw = {
@@ -140,7 +140,6 @@ describe('draw event handlers', () => {
     const bowtie = { id: 'bad', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] } }
     drawHandler(draw, 'create')(bowtie)
     expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', bowtie)
-    expect(draw._pendingCreateId).toBe('bad')
     jest.runAllTimers()
     const editCall = draw.changeMode.mock.calls.find(([mode]) => mode === 'edit_vertex')
     expect(editCall[1]).toEqual(expect.objectContaining({ featureId: 'bad' }))
@@ -151,10 +150,15 @@ describe('draw event handlers', () => {
 
   test('edit finish of a drawn-then-fixed shape reports as a creation', () => {
     const { draw, eventBus } = setup()
-    draw._pendingCreateId = 'bad'
+    // An invalid finished shape is re-opened for fixing (marks it as a pending creation)…
+    const bowtie = { id: 'bad', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] } }
+    drawHandler(draw, 'create')(bowtie)
+    jest.runAllTimers()
+    // …so when its edit finishes, it reports as a creation, exactly once.
     drawHandler(draw, 'editfinish')({ id: 'bad' })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:created', { id: 'bad' })
-    expect(draw._pendingCreateId).toBeNull()
+    drawHandler(draw, 'editfinish')({ id: 'bad' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:edited', { id: 'bad' })
   })
 
   test('cancel handler is a no-op', () => {
@@ -279,6 +283,12 @@ describe('geometrychange validation', () => {
 
     drawHandler(draw, 'canplacechange')({ canPlace: true, reason: null })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_CAN_ADD_POINT', payload: true })
+  })
+
+  test('relays an interface-type change to the public bus', () => {
+    const { draw, eventBus } = setup()
+    drawHandler(draw, 'interfacetypechange')({ interfaceType: 'keyboard' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:interfacetypechange', { interfaceType: 'keyboard' })
   })
 
   test('relays a blocked placement to the public bus as draw:geometryinvalid', () => {

@@ -1,4 +1,4 @@
-import { setup, clickAt, firedWith, activeSnap, DrawPolygonMode, CENTER } from './__helpers__/harness.js'
+import { setup, clickAt, firedWith, activeSnap, DrawPolygonMode, DrawLineMode, CENTER } from './__helpers__/harness.js'
 
 describe('touch and pointer interface', () => {
   test('touch start/end switch to touch interface and show the crosshair', () => {
@@ -90,5 +90,14 @@ describe('rubber band and snapping while moving', () => {
     const before = [...state.polygon.coordinates[0].map((c) => [...c])]
     ctx.map.fire('move')
     expect(state.polygon.coordinates[0]).toEqual(before)
+  })
+
+  test('map move in keyboard line mode with snap fires geometrychange with state.line', () => {
+    const { ctx, state } = setup(DrawLineMode, { interfaceType: 'keyboard', getSnapEnabled: () => true })
+    clickAt(ctx, state, 0, 0)
+    ctx.map._snapInstance = activeSnap()
+    ctx.map.fire.mockClear()
+    ctx.map.fire('move')
+    expect(firedWith(ctx.map, 'draw.geometrychange').pop()).toBe(state.line)
   })
 })

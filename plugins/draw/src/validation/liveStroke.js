@@ -69,11 +69,11 @@ export const createLiveStroke = ({ onChange, validate = validateDisplayedGeometr
       cancelPending()
       flip(next, reason ?? null)
     },
-    // Clear state without firing onChange (the caller forces the stroke solid on a
-    // fresh draw); drops any pending user-rule frame.
-    reset () {
-      cancelPending()
-      invalid = false
+    // Re-assert the cached state through onChange unconditionally — for callers
+    // whose rendered output was reset behind the controller's back (e.g. a map
+    // style reload re-adding layers with their spec-default visibility).
+    refresh () {
+      onChange(invalid, null)
     },
     destroy () {
       cancelPending()

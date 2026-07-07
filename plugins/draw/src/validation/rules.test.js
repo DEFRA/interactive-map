@@ -1,4 +1,4 @@
-import { noSelfIntersection, nonZeroArea, minVertices, pathSelfIntersects, noPathSelfIntersection, SOFT_RULES, HARD_RULES } from './rules.js'
+import { noSelfIntersection, nonZeroArea, minVertices, noPathSelfIntersection, SOFT_RULES, HARD_RULES } from './rules.js'
 
 const poly = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [coordinates] } })
 const line = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
@@ -66,23 +66,24 @@ describe('minVertices (soft)', () => {
   })
 })
 
-describe('pathSelfIntersects (hard, draw placement)', () => {
-  test('detects a self-crossing open drawn path (no closing edge)', () => {
-    expect(pathSelfIntersects(poly([[0, 0], [2, 2], [2, 0], [0, 2]]))).toBe(true)
+describe('noPathSelfIntersection (hard, draw placement)', () => {
+  test('rejects a self-crossing open drawn path with a reason', () => {
+    expect(noPathSelfIntersection(poly([[0, 0], [2, 2], [2, 0], [0, 2]])))
+      .toEqual({ valid: false, reason: expect.stringMatching(/intersect/i) })
   })
 
   test('accepts an open path that only closes into a crossing', () => {
     // A bow-tie only crosses via its closing edge, which the open-path check ignores.
-    expect(pathSelfIntersects(poly([[0, 0], [2, 0], [0, 2], [2, 2]]))).toBe(false)
+    expect(noPathSelfIntersection(poly([[0, 0], [2, 0], [0, 2], [2, 2]]))).toEqual({ valid: true })
   })
 
   test('accepts a simple open path', () => {
-    expect(pathSelfIntersects(poly([[0, 0], [2, 0], [2, 2], [0, 2]]))).toBe(false)
+    expect(noPathSelfIntersection(poly([[0, 0], [2, 0], [2, 2], [0, 2]]))).toEqual({ valid: true })
   })
 
   test('skips non-polygons and paths under four vertices', () => {
-    expect(pathSelfIntersects(line([[0, 0], [1, 1]]))).toBe(false)
-    expect(pathSelfIntersects(poly([[0, 0], [1, 0], [1, 1]]))).toBe(false)
+    expect(noPathSelfIntersection(line([[0, 0], [1, 1]]))).toEqual({ valid: true })
+    expect(noPathSelfIntersection(poly([[0, 0], [1, 0], [1, 1]]))).toEqual({ valid: true })
   })
 })
 
@@ -96,14 +97,6 @@ describe('consecutive duplicate vertices (zero-length edges)', () => {
 
   test('a real crossing is still detected when a duplicate vertex is present', () => {
     expect(noSelfIntersection(poly([[0, 0], [1, 1], [1, 1], [1, 0], [0, 1], [0, 0]])).valid).toBe(false)
-  })
-})
-
-describe('noPathSelfIntersection (hard, rule shape)', () => {
-  test('wraps pathSelfIntersects with a reason for the placement veto', () => {
-    expect(noPathSelfIntersection(poly([[0, 0], [2, 2], [2, 0], [0, 2]])))
-      .toEqual({ valid: false, reason: expect.stringMatching(/intersect/i) })
-    expect(noPathSelfIntersection(poly([[0, 0], [2, 0], [2, 2], [0, 2]]))).toEqual({ valid: true })
   })
 })
 

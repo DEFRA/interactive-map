@@ -5,6 +5,7 @@ import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { createFakeMap, createFakeManager, createContainer, domEvent } from '../__helpers__/harness.js'
 import Style from 'ol/style/Style.js'
 import Polygon from 'ol/geom/Polygon.js'
+import LineString from 'ol/geom/LineString.js'
 
 const RING = [[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]] // square: 4 vertices, deletable
 
@@ -241,9 +242,24 @@ test('a tap on empty map deselects', () => {
 
 test('style changes re-style the feature and handles', () => {
   const { manager, olFeature } = setup()
+  // The real manager swaps manager.styles before emitting (see setMapStyle).
   const newStyles = { ...manager.styles, editFeatureStyle: new Style({}) }
+  manager.styles = newStyles
   manager.emit(STYLES_CHANGED_EVENT, newStyles)
   expect(olFeature.getStyle()).toBe(newStyles.editFeatureStyle)
+})
+
+test('a style change while the shape is invalid keeps the dashed stroke', () => {
+  const { manager, olFeature } = setup()
+  olFeature.getGeometry().setCoordinates([[[0, 0], [100, 100], [100, 0], [0, 100], [0, 0]]]) // dashed
+  const newStyles = {
+    ...manager.styles,
+    editFeatureStyle: new Style({}),
+    editFeatureStyleInvalid: new Style({})
+  }
+  manager.styles = newStyles
+  manager.emit(STYLES_CHANGED_EVENT, newStyles)
+  expect(olFeature.getStyle()).toBe(newStyles.editFeatureStyleInvalid)
 })
 
 test('map resize repositions the touch target after the next render — touch with a selection only', () => {
