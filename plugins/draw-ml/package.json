@@ -13,8 +13,7 @@
     ".": {
       "import": "./dist/esm/index.js",
       "require": "./dist/umd/index.js"
-    },
-    "./css": "./dist/css/index.css"
+    }
   },
   "type": "module",
   "files": ["dist"],
