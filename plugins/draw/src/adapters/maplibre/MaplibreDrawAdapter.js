@@ -4,6 +4,31 @@ import { createEventBus } from '../../utils/eventBus.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { ADAPTER_EVENTS } from '../../adapterEvents.js'
 import { createLiveStroke } from '../../validation/liveStroke.js'
+import { validatePlacement } from '../../validation/validateGeometry.js'
+
+const polygonFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates } })
+const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
+
+// The displayed feature + placed-vertex count for the live stroke check. MapLibre's
+// fire() copies the payload onto an Event whose `type` is the event name, so the
+// geometry type is clobbered — it comes from the draw mode, or (in edit, where the
+// mode covers both shapes) from the coordinate nesting: a polygon's coordinates are
+// rings (one level deeper than a line's). Draw-mode coordinates carry a trailing
+// rubber-band point; edit-mode coordinates are all committed vertices.
+const displayedShape = (mode, coordinates) => {
+  if (mode === 'draw_polygon') {
+    return { feature: polygonFeature(coordinates), placedCount: (coordinates[0]?.length ?? 1) - 1 }
+  }
+  if (mode === 'draw_line') {
+    return { feature: lineFeature(coordinates), placedCount: (coordinates?.length ?? 1) - 1 }
+  }
+  if (mode === 'edit_vertex') {
+    return Array.isArray(coordinates[0]?.[0])
+      ? { feature: polygonFeature(coordinates), placedCount: coordinates[0]?.length ?? 0 }
+      : { feature: lineFeature(coordinates), placedCount: coordinates?.length ?? 0 }
+  }
+  return null
+}
 
 /**
  * Draw adapter for MapLibre GL.
@@ -39,9 +64,28 @@ export class MaplibreDrawAdapter {
     this._draw = draw
     this._cleanupDraw = remove
 
-    // Drives the live invalid stroke from rubber-band moves (default rules sync,
-    // user callback throttled). onChange toggles the dashed stroke layers.
-    this._liveStroke = createLiveStroke({ onChange: (invalid) => this.setInvalid(invalid) })
+    // Single owner of the dashed-stroke state: live rubber-band / drag moves feed
+    // update() (default rules sync, user callback throttled) and committed verdicts
+    // (events.js) land via setInvalid → set(), so the cached state always mirrors
+    // the rendered layers. onChange does the actual layer toggle; in edit mode the
+    // displayed shape is exactly what Done finishes, so validity flips also gate
+    // the Done button (events.js dispatches them).
+    this._liveStroke = createLiveStroke({
+      onChange: (invalid, reason) => {
+        this._applyStrokeInvalid(invalid)
+        if (this._draw.getMode() === 'edit_vertex') {
+          this._bus.emit(ADAPTER_EVENTS.VALIDITY_CHANGE, { valid: !invalid, reason })
+        }
+      }
+    })
+
+    // Live Add-point gate: would placing a vertex at the crosshair be vetoed?
+    // Same throttling as the stroke, but evaluated with the placement (hard) rules
+    // so the button tracks exactly what a tap would do.
+    this._livePlacement = createLiveStroke({
+      validate: validatePlacement,
+      onChange: (vetoed, reason) => this._bus.emit(ADAPTER_EVENTS.CAN_PLACE_CHANGE, { canPlace: !vetoed, reason })
+    })
 
     // Normalise ML map events → the shared adapter event contract (adapterEvents.js).
     // The OL adapter emits the same contract directly from OLDrawManager.
@@ -82,39 +126,34 @@ export class MaplibreDrawAdapter {
     if (name === 'edit_vertex') {
       this._editingFeatureId = options.featureId ?? null
     }
-    // A fresh draw always starts with a solid stroke; the live check owns it from here.
+    // A fresh draw always starts with a solid stroke and a placeable crosshair;
+    // the live checks own both from here.
     if (name === 'draw_polygon' || name === 'draw_line') {
-      this._liveStroke.reset()
-      this.setInvalid(false)
+      this._liveStroke.set(false)
+      this._livePlacement.set(false)
     }
     this._draw.changeMode(name, options)
   }
 
-  // Live invalid-stroke driver for draw mode: called on every rubber-band move with
-  // the displayed feature (placed vertices + cursor). Delegates to the shared
+  // Live invalid-stroke driver: called on every rubber-band move (draw) and vertex
+  // drag / nudge (edit) with the displayed feature. Delegates to the shared
   // live-stroke controller, which runs the default rules synchronously and the user
-  // callback throttled, toggling the dashed stroke only when validity flips. Edit
-  // mode is driven from events.js on committed changes instead.
-  //
-  // MapLibre's fire() copies the payload onto an Event whose `type` is the event
-  // name, so the feature's geometry type is clobbered — rebuild the geometry from
-  // the coordinates using the active draw mode.
+  // callback throttled, toggling the dashed stroke only when validity flips. While
+  // drawing, the same displayed geometry (placed vertices + crosshair candidate)
+  // also feeds the Add-point placement gate.
   _updateLiveStroke (e) {
     if (!e?.coordinates) { return }
     const mode = this._draw.getMode()
-    // eslint-disable-next-line no-console -- TEMP live-stroke diagnostics
-    console.log('[live-stroke ML] _updateLiveStroke', { mode, hasCoords: !!e?.coordinates })
-    let feature, placedCount
-    if (mode === 'draw_polygon') {
-      feature = { type: 'Feature', geometry: { type: 'Polygon', coordinates: e.coordinates } }
-      placedCount = (e.coordinates[0]?.length ?? 1) - 1
-    } else if (mode === 'draw_line') {
-      feature = { type: 'Feature', geometry: { type: 'LineString', coordinates: e.coordinates } }
-      placedCount = (e.coordinates?.length ?? 1) - 1
-    } else {
-      return
+    const shape = displayedShape(mode, e.coordinates)
+    if (!shape) { return }
+    this._liveStroke.update({ ...shape, context: { mode }, onGeometryChange: this._geometryValidator })
+    if (mode === 'draw_polygon' || mode === 'draw_line') {
+      this._livePlacement.update({
+        feature: shape.feature,
+        context: { mode, vertexIndex: shape.placedCount },
+        onGeometryChange: this._geometryValidator
+      })
     }
-    this._liveStroke.update({ feature, context: { mode }, placedCount, onGeometryChange: this._geometryValidator })
   }
 
   getMode () { return this._draw.getMode() }
@@ -156,11 +195,20 @@ export class MaplibreDrawAdapter {
   set _geometryValidator (fn) { this._map._drawGeometryValidator = fn }
   get _geometryValidator () { return this._map._drawGeometryValidator }
 
-  // Toggle the active shape's stroke between solid (valid) and dashed (invalid) by
-  // swapping which of the two overlaid stroke layers is visible.
+  // Committed-verdict write (events.js, edit mode): routed through the live-stroke
+  // controller so its cached state stays in sync with the rendered layers.
   setInvalid (invalid) {
+    this._liveStroke.set(invalid)
+  }
+
+  // Toggle the active shape's stroke between solid (valid) and dashed (invalid) by
+  // swapping which of the two overlaid stroke layers is visible; the fill is hidden
+  // while invalid so the shape reads as an outline only. Only the live-stroke
+  // controller calls this — everything else goes through setInvalid.
+  _applyStrokeInvalid (invalid) {
     this._setLayerVisibility('stroke-active', !invalid)
     this._setLayerVisibility('stroke-active-invalid', invalid)
+    this._setLayerVisibility('fill-active', !invalid)
   }
 
   _setLayerVisibility (id, visible) {
@@ -247,6 +295,7 @@ export class MaplibreDrawAdapter {
     this._map.off(MAPBOX_DRAW_EVENTS.MODE_CHANGE, this._mapHandlers.modechange)
     this._map.off(STYLE_DATA_EVENT, this._mapHandlers.styledata)
     this._liveStroke.destroy()
+    this._livePlacement.destroy()
     this._cleanupDraw()
   }
 }

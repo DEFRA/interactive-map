@@ -30,6 +30,13 @@
  *                          a vertex placement was rejected by validatePlacement
  *                          (hard rule or user callback); feature is the candidate
  *                          geometry that was refused.
+ *   VALIDITY_CHANGE        { valid, reason } — the live validity of the displayed
+ *                          shape flipped while editing (drag/nudge in progress).
+ *                          Drives the Done gate in edit mode, where the displayed
+ *                          shape is exactly what Done finishes. Fires on flips only.
+ *   CAN_PLACE_CHANGE       { canPlace, reason } — whether placing a vertex at the
+ *                          crosshair would be vetoed flipped while drawing. Drives
+ *                          the Add-point button. Fires on flips only.
  */
 export const ADAPTER_EVENTS = {
   CREATE: 'create',
@@ -41,5 +48,7 @@ export const ADAPTER_EVENTS = {
   UPDATE: 'update',
   GEOMETRY_CHANGE: 'geometrychange',
   INTERFACE_TYPE_CHANGE: 'interfacetypechange',
-  PLACEMENT_BLOCKED: 'placementblocked'
+  PLACEMENT_BLOCKED: 'placementblocked',
+  VALIDITY_CHANGE: 'validitychange',
+  CAN_PLACE_CHANGE: 'canplacechange'
 }

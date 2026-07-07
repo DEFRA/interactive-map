@@ -12,7 +12,9 @@ describe('adapter event contract', () => {
       UPDATE: 'update',
       GEOMETRY_CHANGE: 'geometrychange',
       INTERFACE_TYPE_CHANGE: 'interfacetypechange',
-      PLACEMENT_BLOCKED: 'placementblocked'
+      PLACEMENT_BLOCKED: 'placementblocked',
+      VALIDITY_CHANGE: 'validitychange',
+      CAN_PLACE_CHANGE: 'canplacechange'
     })
   })
 })

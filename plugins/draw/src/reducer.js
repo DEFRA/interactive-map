@@ -7,6 +7,7 @@ const initialState = {
   selectedVertexIndex: -1,
   numVertices: null,
   geometryValid: true,
+  canAddPoint: true,
   snap: false,
   hasSnapLayers: false,
   undoStackLength: 0
@@ -20,7 +21,9 @@ const setMode = (state, payload) => ({
   numVertices: DRAW_MODES.has(payload) ? 0 : state.numVertices,
   // A new/empty shape is never valid; validation flips this true once the geometry
   // passes all soft rules (edit mode seeds it explicitly in api/editFeature).
-  geometryValid: false
+  geometryValid: false,
+  // A fresh mode can always place; the live placement gate flips this on veto.
+  canAddPoint: true
 })
 
 const setAction = (state, payload) => ({
@@ -51,6 +54,8 @@ const setUndoStackLength = (state, payload) => ({ ...state, undoStackLength: pay
 
 const setGeometryValid = (state, payload) => ({ ...state, geometryValid: !!payload })
 
+const setCanAddPoint = (state, payload) => ({ ...state, canAddPoint: !!payload })
+
 const actions = {
   SET_MODE: setMode,
   SET_ACTION: setAction,
@@ -60,7 +65,8 @@ const actions = {
   SET_SNAP: setSnap,
   SET_HAS_SNAP_LAYERS: setHasSnapLayers,
   SET_UNDO_STACK_LENGTH: setUndoStackLength,
-  SET_GEOMETRY_VALID: setGeometryValid
+  SET_GEOMETRY_VALID: setGeometryValid,
+  SET_CAN_ADD_POINT: setCanAddPoint
 }
 
 export { initialState, actions }

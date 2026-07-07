@@ -57,6 +57,38 @@ test('setInvalid swaps between the solid and dashed edit styles', () => {
   expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyle)
 })
 
+test('a mid-drag crossing turns the stroke dashed live, and back when it clears', () => {
+  const { manager, olFeature } = setup()
+  // Geometry mutation (as during a Modify/touch drag) — no commit yet.
+  olFeature.getGeometry().setCoordinates([[[0, 0], [100, 100], [100, 0], [0, 100], [0, 0]]])
+  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyleInvalid)
+  olFeature.getGeometry().setCoordinates([[[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]]])
+  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyle)
+})
+
+test('validity flips while editing also gate the Done button', () => {
+  const { manager, olFeature } = setup()
+  olFeature.getGeometry().setCoordinates([[[0, 0], [100, 100], [100, 0], [0, 100], [0, 0]]])
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VALIDITY_CHANGE,
+    expect.objectContaining({ valid: false, reason: expect.any(String) }))
+  olFeature.getGeometry().setCoordinates([[[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]]])
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VALIDITY_CHANGE,
+    expect.objectContaining({ valid: true }))
+})
+
+test('the user callback runs throttled during an edit drag', () => {
+  jest.useFakeTimers()
+  const { manager, olFeature } = setup()
+  manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+  olFeature.getGeometry().setCoordinates([[[0, 0], [110, 0], [100, 100], [0, 100], [0, 0]]])
+  olFeature.getGeometry().setCoordinates([[[0, 0], [120, 0], [100, 100], [0, 100], [0, 0]]])
+  expect(manager._geometryValidator).not.toHaveBeenCalled() // deferred to the frame
+  jest.runAllTimers()
+  expect(manager._geometryValidator).toHaveBeenCalledTimes(1) // trailing edge only
+  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyleInvalid)
+  jest.useRealTimers()
+})
+
 test('done() emits the edited feature; cancel() is a no-op', () => {
   const { manager, mode } = setup()
   mode.done()

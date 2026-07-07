@@ -65,10 +65,10 @@ export const createStyles = (colors) => {
     fill: new Fill({ color: colors.editFill })
   })
 
-  // Dashed variant shown while the edited/drawn shape is invalid.
+  // Dashed variant shown while the edited/drawn shape is invalid — no fill, so an
+  // invalid shape reads as an outline only.
   const editFeatureStyleInvalid = new Style({
-    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] }),
-    fill: new Fill({ color: colors.editFill })
+    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
   })
 
   const sketchLineStyle = new Style({
@@ -77,8 +77,7 @@ export const createStyles = (colors) => {
   })
 
   const sketchLineStyleInvalid = new Style({
-    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] }),
-    fill: new Fill({ color: colors.editFill })
+    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
   })
 
   // Reused across renders — the geometry function runs every frame while sketching,

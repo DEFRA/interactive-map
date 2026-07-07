@@ -42,6 +42,9 @@ export const manifest = {
       exclusiveSlot: true,
       hiddenWhen: ({ appState, pluginState }) =>
         !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
+      // Disabled while placing at the crosshair would be vetoed (validatePlacement) —
+      // driven live so the button never looks active when a tap would do nothing.
+      enableWhen: ({ pluginState }) => pluginState.canAddPoint,
       ...createButtonSlots(true)
     },
     {

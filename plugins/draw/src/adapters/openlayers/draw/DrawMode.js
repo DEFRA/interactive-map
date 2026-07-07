@@ -135,7 +135,7 @@ const createVertexTracker = (manager, getSketch) => {
 }
 
 // The mode interface consumed by OLDrawManager.
-const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, getSketch, updateVertexCount, emitUndoValidation, onStylesChanged, clearSketch, setInvalid, liveStroke }) => ({
+const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, getSketch, updateVertexCount, emitUndoValidation, onStylesChanged, clearSketch, setInvalid, liveStroke, livePlacement }) => ({
   done () {
     if (canFinish(geometryType, getSketch())) { drawInteraction.finishDrawing() }
   },
@@ -144,6 +144,7 @@ const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, 
   setInvalid,
   destroy () {
     liveStroke.destroy()
+    livePlacement.destroy()
     manager.off(STYLES_CHANGED_EVENT, onStylesChanged)
     // Emit the final interfaceType so crosshair visibility is correct on exit.
     manager.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: input.getInterfaceType() })
@@ -197,15 +198,21 @@ export const createDrawMode = ({ map, manager, options }) => {
     drawInteraction.overlay_.changed()
   }
   // Drives the live invalid stroke from every sketch change (mouse / touch / keyboard
-  // rubber-banding): default rules synchronously, user callback throttled.
+  // rubber-banding): default rules synchronously, user callback throttled. The same
+  // displayed geometry (placed vertices + crosshair candidate) feeds the Add-point
+  // placement gate, evaluated with the placement (hard) rules so the button tracks
+  // exactly what a tap would do.
   const liveStroke = createLiveStroke({ onChange: setSketchInvalid })
+  const livePlacement = createLiveStroke({
+    validate: validatePlacement,
+    onChange: (vetoed, reason) => manager.emit(ADAPTER_EVENTS.CAN_PLACE_CHANGE, { canPlace: !vetoed, reason })
+  })
   const liveMode = geometryType === 'Polygon' ? 'draw_polygon' : 'draw_line'
   const updateLiveValidity = () => {
     if (!sketchFeature) { return }
     const { feature, placedCount } = displayedSketch(geometryType, sketchFeature)
-    // eslint-disable-next-line no-console -- TEMP live-stroke diagnostics
-    console.log('[live-stroke OL] updateLiveValidity', { placedCount })
     liveStroke.update({ feature, context: { mode: liveMode }, placedCount, onGeometryChange: manager._geometryValidator })
+    livePlacement.update({ feature, context: { mode: liveMode, vertexIndex: placedCount }, onGeometryChange: manager._geometryValidator })
   }
 
   // Update sketch style when map style changes
@@ -250,7 +257,9 @@ export const createDrawMode = ({ map, manager, options }) => {
     emitUndoValidation,
     onStylesChanged,
     clearSketch: () => { sketchFeature = null },
-    setInvalid: setSketchInvalid,
-    liveStroke
+    // External writes go through the controller so its cache mirrors the style.
+    setInvalid: (next) => liveStroke.set(next),
+    liveStroke,
+    livePlacement
   })
 }

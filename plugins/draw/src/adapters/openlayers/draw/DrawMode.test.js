@@ -186,6 +186,29 @@ describe('drawing lifecycle', () => {
     expect(typeof inputOptions.canPlace).toBe('function')
   })
 
+  test('a placement-vetoing path disables Add point; a legal one re-enables it', () => {
+    const { emitted, interaction } = setup('Polygon')
+    const sketch = polygonFeature([[0, 0], [5, 5], [0, 0]])
+    interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
+    // Open drawn path crosses itself → placing at the crosshair would be vetoed.
+    sketch.getGeometry().setCoordinates([[[0, 0], [2, 2], [2, 0], [0, 2], [0, 0]]])
+    expect(emitted().find((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE)?.payload)
+      .toEqual(expect.objectContaining({ canPlace: false, reason: expect.any(String) }))
+    sketch.getGeometry().setCoordinates([[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]])
+    expect(emitted().filter((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE).pop()?.payload)
+      .toEqual(expect.objectContaining({ canPlace: true }))
+  })
+
+  test('a red stroke via the closing edge alone keeps Add point enabled', () => {
+    const { manager, emitted, interaction } = setup('Polygon')
+    const sketch = polygonFeature([[0, 0], [5, 5], [0, 0]])
+    interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
+    // Only the implicit closing edge crosses: stroke dashed, but the placement is legal.
+    sketch.getGeometry().setCoordinates([[[0, 0], [2, 0], [0, 2], [2, 2], [0, 0]]])
+    expect(manager.styles.createSketchStyle).toHaveBeenLastCalledWith('Polygon', true)
+    expect(emitted().find((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE)).toBeUndefined()
+  })
+
   test('setInvalid rebuilds the sketch style in the invalid variant and re-renders', () => {
     const { mode, manager, interaction } = setup('Polygon')
     const changed = jest.spyOn(interaction.overlay_, 'changed')

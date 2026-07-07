@@ -12,7 +12,8 @@ describe('initialState', () => {
       numVertices: null,
       snap: false,
       hasSnapLayers: false,
-      undoStackLength: 0
+      undoStackLength: 0,
+      canAddPoint: true
     })
   })
 })
@@ -21,6 +22,11 @@ describe('SET_MODE', () => {
   test('resets numVertices to 0 for draw modes', () => {
     expect(actions.SET_MODE(initialState, 'draw_polygon')).toMatchObject({ mode: 'draw_polygon', numVertices: 0 })
     expect(actions.SET_MODE(initialState, 'draw_line')).toMatchObject({ mode: 'draw_line', numVertices: 0 })
+  })
+
+  test('a fresh mode can always place a point', () => {
+    const state = { ...initialState, canAddPoint: false }
+    expect(actions.SET_MODE(state, 'draw_polygon')).toMatchObject({ canAddPoint: true })
   })
 
   test('preserves numVertices for non-draw modes', () => {
@@ -73,5 +79,12 @@ describe('snap actions', () => {
 describe('SET_UNDO_STACK_LENGTH', () => {
   test('sets the undo stack length', () => {
     expect(actions.SET_UNDO_STACK_LENGTH(initialState, 3).undoStackLength).toBe(3)
+  })
+})
+
+describe('SET_CAN_ADD_POINT', () => {
+  test('coerces the payload to a boolean', () => {
+    expect(actions.SET_CAN_ADD_POINT(initialState, false).canAddPoint).toBe(false)
+    expect(actions.SET_CAN_ADD_POINT(initialState, 1).canAddPoint).toBe(true)
   })
 })

@@ -192,6 +192,24 @@ describe('live invalid stroke (draw mode)', () => {
     expect(map.setLayoutProperty).not.toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
   })
 
+  test('a placement-vetoing path disables Add point; a legal one re-enables it', () => {
+    const { map, bus } = drawPolygonSetup()
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    // Open drawn path crosses itself → placing at the crosshair would be vetoed.
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [2, 2], [2, 0], [0, 2]]] })
+    expect(bus.emit).toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: false, reason: expect.any(String) }))
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2]]] })
+    expect(bus.emit).toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: true }))
+  })
+
+  test('a red stroke via the closing edge alone keeps Add point enabled', () => {
+    const { map, bus } = drawPolygonSetup()
+    // Only the implicit closing edge crosses: stroke dashed, but the placement is legal.
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ type: 'draw.geometrychange', coordinates: [[[0, 0], [2, 0], [0, 2], [2, 2]]] })
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+    expect(bus.emit).not.toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: false }))
+  })
+
   test('entering a draw mode resets the stroke to solid', () => {
     const { adapter, map } = drawPolygonSetup()
     onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(bowtie) // dashed
@@ -203,6 +221,57 @@ describe('live invalid stroke (draw mode)', () => {
     map.setLayoutProperty.mockClear()
     onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(bowtie)
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+  })
+})
+
+describe('live invalid stroke (edit mode)', () => {
+  const editSetup = () => {
+    const fixture = setup()
+    fixture.draw.getMode.mockReturnValue('edit_vertex')
+    fixture.map.getLayer.mockReturnValue({})
+    return fixture
+  }
+
+  test('dragging a polygon vertex into a crossing turns the stroke dashed, and back', () => {
+    const { map } = editSetup()
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    // Edit payloads have the type clobbered too — polygon detected from ring nesting.
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 10], [10, 0], [0, 10]]] })
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+    map.setLayoutProperty.mockClear()
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10]]] })
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.hot', 'visibility', 'visible')
+  })
+
+  test('validity flips while editing also gate the Done button', () => {
+    const { map, bus } = editSetup()
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 10], [10, 0], [0, 10]]] })
+    expect(bus.emit).toHaveBeenCalledWith('validitychange', expect.objectContaining({ valid: false, reason: expect.any(String) }))
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10]]] })
+    expect(bus.emit).toHaveBeenCalledWith('validitychange', expect.objectContaining({ valid: true }))
+    // Add point is a draw-mode concern — never driven from edit mode.
+    expect(bus.emit).not.toHaveBeenCalledWith('canplacechange', expect.anything())
+  })
+
+  test('lines never go dashed from the default rules while editing', () => {
+    const { map } = editSetup()
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ type: 'draw.geometrychange', coordinates: [[0, 0], [10, 10], [10, 0], [0, 10]] })
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
+  })
+
+  test('the user callback runs throttled during an edit drag', () => {
+    jest.useFakeTimers()
+    const { map } = editSetup()
+    map._drawGeometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10]]] })
+    fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 11]]] })
+    expect(map._drawGeometryValidator).not.toHaveBeenCalled() // deferred to the frame
+    jest.runAllTimers()
+    expect(map._drawGeometryValidator).toHaveBeenCalledTimes(1) // trailing edge only
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+    jest.useRealTimers()
   })
 })
 
@@ -250,7 +319,7 @@ describe('setGeometryValid', () => {
 })
 
 describe('setInvalid', () => {
-  test('shows the dashed stroke and hides the solid stroke when invalid', () => {
+  test('shows the dashed stroke and hides the solid stroke and fill when invalid', () => {
     const { adapter, map } = setup()
     map.getLayer.mockReturnValue({}) // every layer exists
     adapter.setInvalid(true)
@@ -258,14 +327,30 @@ describe('setInvalid', () => {
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.cold', 'visibility', 'none')
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.cold', 'visibility', 'visible')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('fill-active.hot', 'visibility', 'none')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('fill-active.cold', 'visibility', 'none')
   })
 
-  test('restores the solid stroke when valid again', () => {
+  test('restores the solid stroke and fill when valid again', () => {
     const { adapter, map } = setup()
     map.getLayer.mockReturnValue({})
+    adapter.setInvalid(true)
+    map.setLayoutProperty.mockClear()
     adapter.setInvalid(false)
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active.hot', 'visibility', 'visible')
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'none')
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('fill-active.hot', 'visibility', 'visible')
+  })
+
+  test('writes are flip-guarded: repeating the same state does not touch the layers', () => {
+    const { adapter, map } = setup()
+    map.getLayer.mockReturnValue({})
+    adapter.setInvalid(false) // already solid — no-op
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
+    adapter.setInvalid(true)
+    map.setLayoutProperty.mockClear()
+    adapter.setInvalid(true) // already dashed — no-op
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
   })
 
   test('skips layers that are not present on the map', () => {

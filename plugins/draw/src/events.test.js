@@ -2,7 +2,7 @@ import { attachEvents } from './events.js'
 
 jest.useFakeTimers()
 
-const DRAW_EVENTS = ['create', 'editfinish', 'cancel', 'vertexselection', 'vertexchange', 'undochange', 'update', 'geometrychange', 'placementblocked']
+const DRAW_EVENTS = ['create', 'editfinish', 'cancel', 'vertexselection', 'vertexchange', 'undochange', 'update', 'geometrychange', 'placementblocked', 'validitychange', 'canplacechange']
 
 const setup = (overrides = {}) => {
   const draw = {
@@ -260,6 +260,25 @@ describe('geometrychange validation', () => {
     draw.getMode.mockReturnValue('edit_vertex')
     drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, kind: 'move', vertexIndex: 2 })
     expect(draw.setInvalid).toHaveBeenCalledWith(true)
+  })
+
+  test('a live validity flip (edit drag) drives the Done gate', () => {
+    const { draw, dispatch } = setup()
+    drawHandler(draw, 'validitychange')({ valid: false, reason: 'Shape must not intersect itself' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
+    expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
+
+    drawHandler(draw, 'validitychange')({ valid: true, reason: null })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
+  })
+
+  test('a live placement-veto flip drives the Add point gate', () => {
+    const { draw, dispatch } = setup()
+    drawHandler(draw, 'canplacechange')({ canPlace: false, reason: 'outside region' })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_CAN_ADD_POINT', payload: false })
+
+    drawHandler(draw, 'canplacechange')({ canPlace: true, reason: null })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_CAN_ADD_POINT', payload: true })
   })
 
   test('relays a blocked placement to the public bus as draw:geometryinvalid', () => {

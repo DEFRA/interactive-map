@@ -10,6 +10,7 @@ import { deleteVertex, insertAtMidpoint } from './vertexOps.js'
 import { applyUndo } from './undoOps.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
+import { createLiveStroke } from '../../../validation/liveStroke.js'
 
 const TOUCH_INTERFACE = 'touch'
 const VERTEX_TYPE = 'vertex'
@@ -27,6 +28,43 @@ const UNDO_INVERSE_KIND = {
   move_vertex: 'move',
   insert_vertex: 'delete',
   delete_vertex: 'insert'
+}
+
+// Live invalid-stroke wiring: re-validate the displayed geometry on every geometry
+// change (Modify drag, touch drag, keyboard nudge) via the shared controller —
+// default rules synchronously, user callback throttled. All committed vertices are
+// "placed", so the polygon count drops only OL's closing duplicate.
+const wireLiveStroke = ({ manager, olFeature }) => {
+  const liveStroke = createLiveStroke({
+    onChange: (invalid, reason) => {
+      olFeature.setStyle(invalid ? manager.styles.editFeatureStyleInvalid : manager.styles.editFeatureStyle)
+      // In edit mode the displayed shape is exactly what Done finishes, so live
+      // validity flips also gate the Done button (events.js dispatches them).
+      manager.emit(ADAPTER_EVENTS.VALIDITY_CHANGE, { valid: !invalid, reason })
+    }
+  })
+  const updateLiveValidity = () => {
+    const geom = olFeature.getGeometry()
+    const type = geom.getType()
+    const coordinates = geom.getCoordinates()
+    const placedCount = type === 'Polygon'
+      ? Math.max(0, (coordinates[0]?.length ?? 1) - 1)
+      : coordinates.length
+    liveStroke.update({
+      feature: { type: 'Feature', geometry: { type, coordinates } },
+      context: { mode: 'edit_vertex' },
+      placedCount,
+      onGeometryChange: manager._geometryValidator
+    })
+  }
+  olFeature.getGeometry().on('change', updateLiveValidity)
+  return {
+    liveStroke,
+    destroy () {
+      olFeature.getGeometry().un('change', updateLiveValidity)
+      liveStroke.destroy()
+    }
+  }
 }
 
 /**
@@ -221,9 +259,10 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
       manager.emit(ADAPTER_EVENTS.EDIT_FINISH, store.toGeoJSON(olFeature))
     },
 
-    // Swap the edited feature's stroke between solid (valid) and dashed (invalid).
+    // Committed-verdict write (events.js): routed through the live-stroke
+    // controller so its cached state stays in sync with the rendered style.
     setInvalid (invalid) {
-      olFeature.setStyle(invalid ? manager.styles.editFeatureStyleInvalid : manager.styles.editFeatureStyle)
+      parts.live.liveStroke.set(invalid)
     },
 
     // Nothing to restore here: the pre-edit feature is kept as tempFeature in the
@@ -234,6 +273,7 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
     deleteVertex: actions.doDeleteVertex,
 
     destroy () {
+      parts.live.destroy()
       olFeature.setStyle(originalFeatureStyle)
       selection.destroy()
       parts.mapSync.destroy()
@@ -296,6 +336,7 @@ export const createEditMode = ({ map, manager, options }) => {
   syncGeom() // initial populate
 
   const layers = { vertexLayer, midpointLayer, activeLayer }
+  const live = wireLiveStroke({ manager, olFeature })
   const touchHandler = wireTouchHandler({ map, container, manager, snap, olFeature, undoStack, selection })
   const actions = createVertexActions({ olFeature, undoStack, selection, getTouchHandler: () => touchHandler })
   const keyboardHandler = wireKeyboardHandler({ map, container, snap, undoStack, selection, touchHandler, actions })
@@ -317,6 +358,6 @@ export const createEditMode = ({ map, manager, options }) => {
     originalFeatureStyle,
     selection,
     actions,
-    parts: { touchHandler, keyboardHandler, pointerHandlers, modify, mapSync, layers }
+    parts: { touchHandler, keyboardHandler, pointerHandlers, modify, mapSync, layers, live }
   })
 }

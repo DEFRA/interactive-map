@@ -110,6 +110,18 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     // on the public bus with kind 'place' so a future tooltip can show the reason.
     onPlacementBlocked: (e) => {
       eventBus.emit(GEOMETRY_INVALID_EVENT, e)
+    },
+    // Live (mid-drag) validity flip while editing — the displayed shape is exactly
+    // what Done finishes there, so it gates the Done button in real time. Emitted
+    // by the adapters' edit wiring only, on flips only.
+    onValidityChange: (e) => {
+      pluginState.dispatch({ type: 'SET_GEOMETRY_VALID', payload: e.valid })
+      draw.setGeometryValid?.(e.valid)
+    },
+    // Live placement-veto flip while drawing — gates the Add point button so it
+    // never looks active when a tap would be rejected.
+    onCanPlaceChange: (e) => {
+      pluginState.dispatch({ type: 'SET_CAN_ADD_POINT', payload: e.canPlace })
     }
   }
 }
@@ -133,6 +145,8 @@ function attachDrawEvents (draw, handlers) {
   draw.on(ADAPTER_EVENTS.UPDATE, handlers.onUpdate)
   draw.on(ADAPTER_EVENTS.GEOMETRY_CHANGE, handlers.onGeometryChange)
   draw.on(ADAPTER_EVENTS.PLACEMENT_BLOCKED, handlers.onPlacementBlocked)
+  draw.on(ADAPTER_EVENTS.VALIDITY_CHANGE, handlers.onValidityChange)
+  draw.on(ADAPTER_EVENTS.CAN_PLACE_CHANGE, handlers.onCanPlaceChange)
 }
 
 function detachButtonHandlers (buttonConfig) {
@@ -154,6 +168,8 @@ function detachDrawEvents (draw, handlers) {
   draw.off(ADAPTER_EVENTS.UPDATE, handlers.onUpdate)
   draw.off(ADAPTER_EVENTS.GEOMETRY_CHANGE, handlers.onGeometryChange)
   draw.off(ADAPTER_EVENTS.PLACEMENT_BLOCKED, handlers.onPlacementBlocked)
+  draw.off(ADAPTER_EVENTS.VALIDITY_CHANGE, handlers.onValidityChange)
+  draw.off(ADAPTER_EVENTS.CAN_PLACE_CHANGE, handlers.onCanPlaceChange)
 }
 
 export function attachEvents ({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus }) {

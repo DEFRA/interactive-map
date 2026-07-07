@@ -30,6 +30,12 @@ describe('drawAddPoint', () => {
     expect(hidden('mouse', 'draw_polygon')).toBe(true)
     expect(hidden('touch', 'edit_vertex')).toBe(true)
   })
+
+  test('is disabled while placing at the crosshair would be vetoed', () => {
+    const btn = findButton('drawAddPoint')
+    expect(btn.enableWhen({ pluginState: { canAddPoint: true } })).toBe(true)
+    expect(btn.enableWhen({ pluginState: { canAddPoint: false } })).toBe(false)
+  })
 })
 
 describe('drawDone', () => {

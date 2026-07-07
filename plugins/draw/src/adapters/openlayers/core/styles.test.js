@@ -64,10 +64,10 @@ describe('handle styles', () => {
     expect(styles.editFeatureStyle.getFill().getColor()).toBe(colors.editFill)
   })
 
-  test('the invalid edited feature gets a dashed stroke in the invalid colour', () => {
+  test('the invalid edited feature gets a dashed stroke and no fill', () => {
     expect(styles.editFeatureStyleInvalid.getStroke().getColor()).toBe(colors.invalidStroke)
     expect(styles.editFeatureStyleInvalid.getStroke().getLineDash()).toEqual([2, 4])
-    expect(styles.editFeatureStyleInvalid.getFill().getColor()).toBe(colors.editFill)
+    expect(styles.editFeatureStyleInvalid.getFill()).toBeNull()
   })
 })
 
@@ -79,11 +79,12 @@ describe('sketch styles while drawing', () => {
     expect(polygonStyleFn(new Feature(new LineString([[0, 0], [1, 1]])))).toHaveLength(1)
   })
 
-  test('the invalid sketch renders a dashed line in the invalid colour', () => {
+  test('the invalid sketch renders a dashed line in the invalid colour with no fill', () => {
     const invalidStyleFn = styles.createSketchStyle('Polygon', true)
     const [lineStyle] = invalidStyleFn(new Feature(new LineString([[0, 0], [1, 1]])))
     expect(lineStyle.getStroke().getColor()).toBe(colors.invalidStroke)
     expect(lineStyle.getStroke().getLineDash()).toEqual([2, 4])
+    expect(lineStyle.getFill()).toBeNull()
   })
 
   test('placed vertices render with the shared vertex image on a reused MultiPoint', () => {
