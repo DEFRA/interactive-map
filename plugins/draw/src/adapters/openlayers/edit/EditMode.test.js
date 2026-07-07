@@ -5,7 +5,6 @@ import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { createFakeMap, createFakeManager, createContainer, domEvent } from '../__helpers__/harness.js'
 import Style from 'ol/style/Style.js'
 import Polygon from 'ol/geom/Polygon.js'
-import LineString from 'ol/geom/LineString.js'
 
 const RING = [[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]] // square: 4 vertices, deletable
 

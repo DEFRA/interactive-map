@@ -147,5 +147,4 @@ describe('set / reset / destroy', () => {
     jest.runAllTimers()
     expect(onGeometryChange).not.toHaveBeenCalled()
   })
-
 })
