@@ -164,11 +164,12 @@ That triggers the **"Publish to NPM"** workflow:
 ### 3. Pre-flight checks
 
 The pre-flight gate runs once over all packages and reports **every** problem
-before publishing starts. The three failure modes and how to fix each:
+before publishing starts. The failure modes and how to fix each:
 
 | Pre-flight failure | Meaning | Fix |
 | --- | --- | --- |
-| `not found on npm — needs bootstrap` | A new package was never seeded / OIDC-configured | Do the [One-time bootstrap](#one-time-bootstrap-new-packages-only), then re-release |
+| `not found on npm — needs bootstrap` | A new package was never seeded / OIDC-configured (npm returned an explicit E404) | Do the [One-time bootstrap](#one-time-bootstrap-new-packages-only), then re-release |
+| `could not query npm (network/registry error)` | npm couldn't be reached — the gate can't tell whether the package exists | Re-run the release; if it persists, check [status.npmjs.org](https://status.npmjs.org) |
 | `version X is already published` | This version exists (often a partial earlier release) | Cut a new patch version — see [Troubleshooting](#troubleshooting) |
 | `npm publish --dry-run failed` | Missing build output or invalid `package.json` | Fix the package/build — see [Troubleshooting](#troubleshooting) |
 
