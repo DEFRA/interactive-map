@@ -41,7 +41,7 @@ export const createEditMode = ({ map, manager, options }) => {
     selectedVertexType: null,
     vertices: [],
     midpoints: [],
-    interfaceType: interfaceType ?? 'pointer'
+    interfaceType: interfaceType ?? 'mouse'
   }
 
   const getState = () => state
@@ -210,7 +210,7 @@ export const createEditMode = ({ map, manager, options }) => {
       touchHandler.updateTargetPosition()
       return
     }
-    state.interfaceType = 'pointer'
+    state.interfaceType = 'mouse'
 
     const olPixel = map.getEventPixel(e)
     const pixel = { x: olPixel[0], y: olPixel[1] }
@@ -242,10 +242,10 @@ export const createEditMode = ({ map, manager, options }) => {
     if (e.pointerType !== 'mouse') {
       return
     }
-    if (state.interfaceType === 'pointer') {
+    if (state.interfaceType === 'mouse') {
       return
     }
-    state.interfaceType = 'pointer'
+    state.interfaceType = 'mouse'
     touchHandler.hide()
   }
 

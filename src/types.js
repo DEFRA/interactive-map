@@ -403,18 +403,27 @@
  * Falls back to `#0b0c0c` (light) or `#ffffff` (dark).
  * Injected as the `--map-overlay-foreground-color` CSS custom property.
  *
- * @property {'raster' | 'ogc-vt'} [type]
+ * @property {'vector' | 'raster' | 'wms' | 'ogc-vt'} [type]
  * Tile layer type. Controls how the map provider constructs the basemap source. Omit (or leave
  * undefined) for the default Mapbox GL vector tile path. The OpenLayers provider supports all
- * three types, enabling raster, standard vector tile, and OGC vector tile basemaps:
+ * four types, enabling raster, WMS, standard vector tile, and OGC vector tile basemaps:
  * - `'raster'` — XYZ raster tile source; `url` should be a tile URL template.
+ * - `'vector'` — Mapbox GL vector tile path; `url` should point to a Mapbox GL style document.
+ * - `'wms'` — WMS raster tile source; `url` should be the WMS service endpoint and `params`
+ *   should provide the WMS request parameters.
+ *   **Currently only supported by the OpenLayers provider.**
  * - `'ogc-vt'` — OGC API - Tiles vector tile source; `url` should point to an OGC style endpoint
  *   that returns a Mapbox GL style document. **Currently only supported by the OpenLayers provider.**
  *
  * @property {string} url
  * URL for the style. For the default vector tile path and `'ogc-vt'`, this should be a URL that
  * returns a Mapbox GL style document (Mapbox Style Specification). For `'raster'`, this should
- * be an XYZ tile URL template with `{x}`, `{y}`, `{z}` placeholders.
+ * be an XYZ tile URL template with `{x}`, `{y}`, `{z}` placeholders. For `'wms'`, this should
+ * be the WMS service endpoint (the GetMap URL).
+ *
+ * @property {Object} [params]
+ * WMS request parameters. Passed directly to the OpenLayers `TileWMS` source when `type` is `'wms'`.
+ * Most WMS GetMap requests should include `LAYERS`. Example: `{ LAYERS: 'MyLayer', FORMAT: 'image/jpeg' }`.
  */
 
 /**

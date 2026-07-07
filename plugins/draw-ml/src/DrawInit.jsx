@@ -56,6 +56,17 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     }
   }, [pluginState.mode, appState.interfaceType])
 
+  // Keep edit mode in sync with the global interface type so the touch
+  // offset target shows/hides immediately when the input device changes
+  // (e.g. switching between stylus/touch and mouse on a Surface tablet).
+  useEffect(() => {
+    if (pluginState.mode !== 'edit_vertex' || !mapProvider.map) {
+      return undefined
+    }
+    mapProvider.map.fire('draw.interfacetypechange', { interfaceType: appState.interfaceType })
+    return undefined
+  }, [appState.interfaceType, pluginState.mode])
+
   // Attach events when plgin state changes
   useEffect(() => {
     if (!mapProvider.draw) {

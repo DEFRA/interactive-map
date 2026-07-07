@@ -87,6 +87,7 @@ export default {
         NGD_BLACK_AND_WHITE_URL_27700: JSON.stringify(process.env.NGD_BLACK_AND_WHITE_URL_27700),
         // Aerial photography
         AERIAL_URL: JSON.stringify(process.env.AERIAL_URL),
+        APGB_WMS_URL: JSON.stringify(process.env.APGB_WMS_URL),
         // OS Maps API (27700 raster)
         MAPS_OUTDOOR_URL: JSON.stringify(process.env.MAPS_OUTDOOR_URL),
         MAPS_ROAD_URL: JSON.stringify(process.env.MAPS_ROAD_URL),

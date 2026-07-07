@@ -46,25 +46,7 @@ export const EditVertexMode = {
     state.midpoints = this.getMidpoints(state.featureId)
     this.setupEventListeners(state)
 
-    if (options.selectedVertexType === 'midpoint') {
-      // Clear any vertex selection when switching to midpoint
-      state.selectedCoordPaths = []
-      this.clearSelectedCoordinates()
-      // Force feature re-render to clear vertex highlights
-      if (state.feature) {
-        state.feature.changed()
-      }
-      this._ctx.store.render()
-      this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
-    } else if (options.selectedVertexIndex === -1) {
-      // Explicitly clear selection when re-entering with no vertex selected
-      state.selectedCoordPaths = []
-      this.clearSelectedCoordinates()
-      if (state.feature) {
-        state.feature.changed()
-      }
-      this._ctx.store.render()
-    }
+    this.applyVertexSelection(state, options)
     this.map._drawEditContainer = options.container
     this.addTouchVertexTarget(state)
 
@@ -106,7 +88,8 @@ export const EditVertexMode = {
       selectionchange: bind(this.onSelectionChange),
       scalechange: bind(this.onScaleChange),
       update: bind(this.onUpdate),
-      move: bind(this.onMove)
+      move: bind(this.onMove),
+      interfacetypechange: bind(this.onInterfaceTypeChange)
     }
 
     window.addEventListener('keydown', h.keydown, { capture: true })
@@ -122,9 +105,30 @@ export const EditVertexMode = {
     this.map.on('draw.scalechange', h.scalechange)
     this.map.on('draw.update', h.update)
     this.map.on('move', h.move)
+    this.map.on('draw.interfacetypechange', h.interfacetypechange)
+  },
+
+  applyVertexSelection (state, options) {
+    if (options.selectedVertexType === 'midpoint') {
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      if (state.feature) { state.feature.changed() }
+      this._ctx.store.render()
+      this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
+      return
+    }
+    if (options.selectedVertexIndex === -1) {
+      state.selectedCoordPaths = []
+      this.clearSelectedCoordinates()
+      if (state.feature) { state.feature.changed() }
+      this._ctx.store.render()
+    }
   },
 
   onSelectionChange (state, e) {
+    // Refresh vertex list so numVertecies reflects the latest geometry (e.g. after midpoint insertion)
+    this.syncVertices(state)
+
     const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
 
     // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
@@ -151,6 +155,12 @@ export const EditVertexMode = {
 
   onScaleChange (state, e) {
     state.scale = e.scale
+  },
+
+  onInterfaceTypeChange (state, e) {
+    state.interfaceType = e.interfaceType
+    const vertex = state.selectedVertexIndex >= 0 ? state.vertecies[state.selectedVertexIndex] : null
+    this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
   onUpdate (state) {
@@ -327,6 +337,21 @@ export const EditVertexMode = {
     }
   },
 
+  onClick (state, e) { // NOSONAR — complexity accumulated from object-level context; single guard clause, see feedback_mgl_click_vs_mouseup.md
+    if (state._isInsertingVertex && state._insertedVertexIndex !== undefined) {
+      const insertedIndex = state._insertedVertexIndex
+      this.syncVertices(state)
+      this.pushUndo({ type: 'insert_vertex', featureId: state.featureId, vertexIndex: insertedIndex })
+      state.selectedVertexIndex = insertedIndex
+      state.selectedVertexType = 'vertex'
+      state._isInsertingVertex = false
+      state._insertedVertexIndex = undefined
+      this.map.fire('draw.vertexselection', { index: insertedIndex, numVertecies: state.vertecies.length })
+      return
+    }
+    DirectSelect.onClick.call(this, state, e)
+  },
+
   onMouseUp (state, e) {
     clearSnapState(getSnapInstance(this.map))
 
@@ -378,6 +403,8 @@ export const EditVertexMode = {
           vertexIndex: state._moveStartIndex,
           previousPosition: state._moveStartPosition
         })
+      } else {
+        // No action
       }
     }
 
@@ -460,6 +487,7 @@ export const EditVertexMode = {
     this.map.off('draw.scalechange', h.scalechange)
     this.map.off('draw.update', h.update)
     this.map.off('move', h.move)
+    this.map.off('draw.interfacetypechange', h.interfacetypechange)
     this.map.dragPan.enable()
     window.removeEventListener('click', h.click)
     window.removeEventListener('keydown', h.keydown, { capture: true })

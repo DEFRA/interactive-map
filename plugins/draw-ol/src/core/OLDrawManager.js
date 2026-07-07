@@ -75,6 +75,9 @@ export class OLDrawManager {
     this._modeInstance = null
     this._mode = modeName
 
+    const isDrawMode = modeName === 'draw_polygon' || modeName === 'draw_line' || modeName === 'edit_vertex'
+    this.snap?.setIndicatorActive(isDrawMode)
+
     const modeOptions = { ...options, snap: this.snap }
 
     if (modeName === 'draw_polygon' || modeName === 'draw_line') {
