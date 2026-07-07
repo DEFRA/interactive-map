@@ -27,7 +27,7 @@ function MapInner () {
       import('../src/index.js'),
       import('../providers/maplibre/src/index.js'),
       import('../plugins/interact/src/index.js'),
-      import('../plugins/beta/draw-ml/src/index.js')
+      import('../plugins/draw-ml/src/index.js')
     ]).then(([
       { default: InteractiveMap },
       { default: maplibreProvider },
