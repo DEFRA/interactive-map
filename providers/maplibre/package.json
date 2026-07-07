@@ -18,6 +18,9 @@
   "type": "module",
   "files": ["dist"],
   "sideEffects": false,
+  "dependencies": {
+    "@babel/runtime": "^7.28.6"
+  },
   "peerDependencies": {
     "@defra/interactive-map": "*",
     "maplibre-gl": "^5.23.0"

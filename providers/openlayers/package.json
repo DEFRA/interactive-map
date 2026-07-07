@@ -19,6 +19,9 @@
   "files": ["dist"],
   "sideEffects": false,
   "publishConfig": { "tag": "beta" },
+  "dependencies": {
+    "@babel/runtime": "^7.28.6"
+  },
   "peerDependencies": {
     "@defra/interactive-map": "*",
     "ol": "^10.9.0",

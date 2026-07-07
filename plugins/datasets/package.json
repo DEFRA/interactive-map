@@ -21,6 +21,10 @@
   "files": ["dist"],
   "sideEffects": ["**/*.css", "**/*.scss"],
   "publishConfig": { "tag": "beta" },
+  "dependencies": {
+    "preact": "^10.27.2",
+    "@babel/runtime": "^7.28.6"
+  },
   "peerDependencies": {
     "@defra/interactive-map": "*"
   },

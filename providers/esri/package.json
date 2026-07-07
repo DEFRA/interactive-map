@@ -18,6 +18,9 @@
   "files": ["dist"],
   "sideEffects": ["**/*.css", "**/*.scss"],
   "publishConfig": { "tag": "beta" },
+  "dependencies": {
+    "@babel/runtime": "^7.28.6"
+  },
   "peerDependencies": {
     "@defra/interactive-map": "*",
     "@arcgis/core": "^5.0.9"
