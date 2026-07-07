@@ -1,8 +1,8 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
-
-const DrawLineString = MapboxDraw.modes.draw_line_string
 import { isValidLineClick } from '../utils/spatial.js'
 import { createDrawMode } from './createDrawMode.js'
+
+const DrawLineString = MapboxDraw.modes.draw_line_string
 
 export const DrawLineMode = createDrawMode(DrawLineString, {
   featureProp: 'line',

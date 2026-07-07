@@ -1,7 +1,4 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
-
-const { createVertex } = MapboxDraw.lib
-
 import {
   getSnapInstance,
   isSnapActive,
@@ -12,6 +9,8 @@ import {
   createSnappedEvent,
   createSnappedClickEvent
 } from '../utils/snapHelpers.js'
+
+const { createVertex } = MapboxDraw.lib
 
 /**
  * Factory function to create a draw mode for either polygons or lines.

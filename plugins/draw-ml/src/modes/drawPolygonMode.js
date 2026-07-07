@@ -1,8 +1,8 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
-
-const DrawPolygon = MapboxDraw.modes.draw_polygon
 import { isValidClick } from '../utils/spatial.js'
 import { createDrawMode } from './createDrawMode.js'
+
+const DrawPolygon = MapboxDraw.modes.draw_polygon
 
 export const DrawPolygonMode = createDrawMode(DrawPolygon, {
   featureProp: 'polygon',

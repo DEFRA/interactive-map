@@ -1,6 +1,4 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
-
-const DirectSelect = MapboxDraw.modes.direct_select
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator, clearSnapState
@@ -11,6 +9,8 @@ import { undoHandlers } from './editVertex/undoHandlers.js'
 import { touchHandlers } from './editVertex/touchHandlers.js'
 import { vertexOperations } from './editVertex/vertexOperations.js'
 import { vertexQueries } from './editVertex/vertexQueries.js'
+
+const DirectSelect = MapboxDraw.modes.direct_select
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
