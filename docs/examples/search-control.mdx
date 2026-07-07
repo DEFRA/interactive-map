@@ -17,8 +17,8 @@ The live demo below uses Nominatim (no API key required) — the code example us
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
-      import createSearchPlugin from '@defra/interactive-map/plugins/search'
+      import maplibreProvider from '@defra/interactive-map-provider-maplibre'
+      import createSearchPlugin from '@defra/interactive-map-plugin-search'
 
       const searchPlugin = createSearchPlugin({
         osNamesURL: 'https://api.os.uk/search/names/v1/find?query={query}&key=YOUR_API_KEY',
