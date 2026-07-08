@@ -41,9 +41,9 @@ describe('Dataset class', () => {
   })
 
   describe('sublayers', () => {
-    it('returns undefined for a dataset with no sublayerIds', () => {
+    it('returns an empty array for a dataset with no sublayerIds', () => {
       const dataset = datasetRegistry.getDataset('hedge-control')
-      expect(dataset.sublayers).toBeUndefined()
+      expect(dataset.sublayers).toEqual([])
     })
 
     it('returns a Dataset instance for each sublayer', () => {

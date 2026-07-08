@@ -252,7 +252,7 @@ describe('esriLayerAdapter', () => {
     })
 
     it('calls map.add for each top-level dataset', async () => {
-      expect(map.add.mock.calls.length).toEqual(3)
+      expect(map.add.mock.calls.length).toEqual(5) // 3 top-level datasets + 2 group layers
     })
   })
 
