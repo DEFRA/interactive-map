@@ -53,7 +53,7 @@ function MapInner () {
     Promise.all([
       import('../src/index.js'),
       import('../providers/maplibre/src/index.js'),
-      import('../plugins/beta/map-styles/src/index.js')
+      import('../plugins/map-styles/src/index.js')
     ]).then(([
       { default: InteractiveMap },
       { default: maplibreProvider },

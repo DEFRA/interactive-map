@@ -1,0 +1,43 @@
+name: Seed new packages to NPM
+
+# One-time bootstrap for brand-new workspace packages (providers/* and plugins/*).
+#
+# npm OIDC trusted publishing can only be configured for a package that already
+# exists on the registry, so a new package cannot be published by the OIDC-only
+# publish.yml on its first run. This workflow publishes a bare placeholder for
+# any not-yet-existing package using a temporary NPM_TOKEN secret.
+#
+# This token is NOT meant to live in the repo long term. The procedure is:
+#   1. Create a short-lived granular npm token (publish + create-package on @defra).
+#   2. Add it as a repository secret named NPM_TOKEN.
+#   3. Run this workflow (dry run first, then for real).
+#   4. DELETE the NPM_TOKEN secret and revoke the token on npmjs.com.
+# See RELEASING.md for the full procedure.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run — list what would be seeded without publishing.'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Seed new packages
+        run: ./scripts/seed-packages.sh "${{ inputs.dry_run }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

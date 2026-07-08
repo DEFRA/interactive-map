@@ -1,0 +1,29 @@
+{
+  "name": "@defra/interactive-map-plugin-draw-es",
+  "version": "0.0.0-development",
+  "description": "ArcGIS/ESRI draw plugin for @defra/interactive-map",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map",
+    "directory": "plugins/draw-es"
+  },
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js"
+    }
+  },
+  "type": "module",
+  "files": ["dist"],
+  "sideEffects": false,
+  "publishConfig": { "tag": "beta" },
+  "dependencies": {
+    "preact": "^10.27.2",
+    "@babel/runtime": "^7.28.6"
+  },
+  "peerDependencies": {
+    "@defra/interactive-map": "*",
+    "@arcgis/core": "^5.0.9"
+  },
+  "license": ""
+}

@@ -1,0 +1,29 @@
+{
+  "name": "@defra/interactive-map-provider-open-names",
+  "version": "0.0.0-development",
+  "description": "OS Open Names search provider for @defra/interactive-map",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map",
+    "directory": "providers/open-names"
+  },
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/umd/index.js"
+    }
+  },
+  "type": "module",
+  "files": ["dist"],
+  "sideEffects": false,
+  "publishConfig": { "tag": "beta" },
+  "dependencies": {
+    "@babel/runtime": "^7.28.6"
+  },
+  "peerDependencies": {
+    "@defra/interactive-map": "*"
+  },
+  "license": ""
+}

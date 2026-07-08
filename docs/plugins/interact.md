@@ -5,7 +5,7 @@ The interact plugin provides a unified way to handle user interactions for selec
 ## Usage
 
 ```js
-import createInteractPlugin from '@defra/interactive-map/plugins/interact'
+import createInteractPlugin from '@defra/interactive-map-plugin-interact'
 
 const interactPlugin = createInteractPlugin({
   interactionModes: ['selectMarker', 'selectFeature'],

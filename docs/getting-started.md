@@ -2,8 +2,10 @@
 
 ## Installation
 
+Install the core package plus a map provider package (see [Manual setup](#manual-setup) below for choosing a provider):
+
 ```shell
-npm install @defra/interactive-map@x.y.z-alpha
+npm install @defra/interactive-map@x.y.z-alpha @defra/interactive-map-provider-maplibre@x.y.z-alpha
 ```
 
 > [!NOTE]
@@ -28,20 +30,20 @@ The map component also requires a **map provider** — a separate library that h
 
 ### MapLibre provider (recommended)
 
-**ESM:** `maplibre-gl` is a peer dependency, install it separately:
+**ESM:** install the provider package. `maplibre-gl` is a required peer dependency of the provider, install it alongside:
 
 ```shell
-npm install maplibre-gl
+npm install @defra/interactive-map-provider-maplibre maplibre-gl
 ```
 
 **UMD:** `maplibre-gl` is bundled — no separate install needed.
 
 ### ESRI provider (optional)
 
-The ESRI provider is available for ESM projects only. Install `@arcgis/core` separately:
+The ESRI provider is available for ESM projects only and is published under the `beta` dist-tag. `@arcgis/core` is a required peer dependency of the provider:
 
 ```shell
-npm install @arcgis/core
+npm install @defra/interactive-map-provider-esri@beta @arcgis/core
 ```
 
 ## Basic usage
@@ -54,7 +56,7 @@ npm install @arcgis/core
 
 ```js
 import InteractiveMap from '@defra/interactive-map'
-import maplibreProvider from '@defra/interactive-map/providers/maplibre'
+import maplibreProvider from '@defra/interactive-map-provider-maplibre'
 
 import '@defra/interactive-map/css'
 
@@ -116,8 +118,8 @@ const interactiveMap = new InteractiveMap('map', {
 **ESM** — add the plugin import and its CSS alongside your existing core imports, then pass it to `plugins`:
 
 ```js
-import createInteractPlugin from '@defra/interactive-map/plugins/interact'
-import '@defra/interactive-map/plugins/interact/css'
+import createInteractPlugin from '@defra/interactive-map-plugin-interact'
+import '@defra/interactive-map-plugin-interact/css'
 
 const interactiveMap = new InteractiveMap('map', {
   // ...your existing options

@@ -136,18 +136,19 @@ const ALL_BUILDS = [
 
   // Providers
   { entryPath: './providers/maplibre/src/index.js', libraryPath: 'maplibreProvider', outDir: 'providers/maplibre/dist/umd' },
-  { entryPath: './providers/beta/open-names/src/index.js', libraryPath: 'openNamesProvider', outDir: 'providers/beta/open-names/dist/umd' },
-  { entryPath: './providers/beta/openlayers/src/index.js', libraryPath: 'openLayersProvider', outDir: 'providers/beta/openlayers/dist/umd' },
+  { entryPath: './providers/open-names/src/index.js', libraryPath: 'openNamesProvider', outDir: 'providers/open-names/dist/umd' },
+  { entryPath: './providers/openlayers/src/index.js', libraryPath: 'openLayersProvider', outDir: 'providers/openlayers/dist/umd' },
 
   // Plugins
-  { entryPath: './plugins/beta/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/beta/scale-bar/dist/umd' },
-  { entryPath: './plugins/beta/use-location/src/index.js', libraryPath: 'useLocationPlugin', outDir: 'plugins/beta/use-location/dist/umd' },
+  { entryPath: './plugins/scale-bar/src/index.js', libraryPath: 'scaleBarPlugin', outDir: 'plugins/scale-bar/dist/umd' },
+  { entryPath: './plugins/use-location/src/index.js', libraryPath: 'useLocationPlugin', outDir: 'plugins/use-location/dist/umd' },
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },
-  { entryPath: './plugins/beta/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/beta/datasets/dist/umd', cssOutDir: 'plugins/beta/datasets/dist' },
-  { entryPath: './plugins/beta/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/beta/map-styles/dist/umd' },
-  { entryPath: './plugins/beta/draw-ml/src/index.js', libraryPath: 'drawMLPlugin', outDir: 'plugins/beta/draw-ml/dist/umd' },
-  { entryPath: './plugins/beta/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/beta/frame/dist/umd' }
+  { entryPath: './plugins/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/datasets/dist/umd', cssOutDir: 'plugins/datasets/dist' },
+  { entryPath: './plugins/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/map-styles/dist/umd' },
+  { entryPath: './plugins/draw-ml/src/index.js', libraryPath: 'drawMLPlugin', outDir: 'plugins/draw-ml/dist/umd' },
+  { entryPath: './plugins/draw-ol/src/index.js', libraryPath: 'drawOLPlugin', outDir: 'plugins/draw-ol/dist/umd' },
+  { entryPath: './plugins/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/frame/dist/umd' }
 ]
 
 // === Filter via environment variable ===

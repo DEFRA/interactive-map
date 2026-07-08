@@ -4,14 +4,14 @@ import { parcelSearch, gridRefSearchETRS89 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformVtsRequest3857, transformDataRequest } from './auth.js'
 // Providers
 import maplibreProvider from '/providers/maplibre/src/index.js'
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
+import openNamesProvider from '/providers/open-names/src/index.js'
 // Plugins
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import createDatasetsPlugin from '/plugins/beta/datasets/dist/esm/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import mapStylesPlugin from '/plugins/map-styles/src/index.js'
+import createDatasetsPlugin from '/plugins/datasets/dist/esm/index.js'
+import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
-import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import createFramePlugin from '/plugins/frame/src/index.js'
 
 const pointData = {
   type: 'FeatureCollection',

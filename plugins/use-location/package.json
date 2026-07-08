@@ -1,0 +1,30 @@
+{
+  "name": "@defra/interactive-map-plugin-use-location",
+  "version": "0.0.0-development",
+  "description": "Use-location plugin for @defra/interactive-map",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map",
+    "directory": "plugins/use-location"
+  },
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/umd/index.js"
+    }
+  },
+  "type": "module",
+  "files": ["dist"],
+  "sideEffects": false,
+  "publishConfig": { "tag": "beta" },
+  "dependencies": {
+    "preact": "^10.27.2",
+    "@babel/runtime": "^7.28.6"
+  },
+  "peerDependencies": {
+    "@defra/interactive-map": "*"
+  },
+  "license": ""
+}

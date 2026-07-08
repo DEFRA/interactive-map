@@ -5,7 +5,7 @@ Location search with autocomplete. Supports the OS Names API out of the box, and
 ## Usage
 
 ```js
-import searchPlugin from '@defra/interactive-map/plugins/search'
+import searchPlugin from '@defra/interactive-map-plugin-search'
 
 const interactiveMap = new InteractiveMap({
   plugins: [

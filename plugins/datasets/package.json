@@ -1,0 +1,32 @@
+{
+  "name": "@defra/interactive-map-plugin-datasets",
+  "version": "0.0.0-development",
+  "description": "Datasets plugin for @defra/interactive-map",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map",
+    "directory": "plugins/datasets"
+  },
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js"
+    },
+    "./adapters/maplibre": {
+      "import": "./dist/adapters/maplibre/esm/index.js"
+    },
+    "./css": "./dist/css/index.css"
+  },
+  "type": "module",
+  "files": ["dist"],
+  "sideEffects": ["**/*.css", "**/*.scss"],
+  "publishConfig": { "tag": "beta" },
+  "dependencies": {
+    "preact": "^10.27.2",
+    "@babel/runtime": "^7.28.6"
+  },
+  "peerDependencies": {
+    "@defra/interactive-map": "*"
+  },
+  "license": ""
+}
