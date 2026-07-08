@@ -55,82 +55,6 @@ describe('esriLayerAdapter', () => {
     })
   })
 
-  // ─── _addLayers ──────────────────────────────────────────────────────────────
-
-  // describe('_addLayers', () => {
-  //   it('stores the VectorTileLayer in _vectorTileLayers', async () => {
-  //     await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'), MAP_STYLE)
-  //     expect(adapter._vectorTileLayers['esri-standalone']).toBeDefined()
-  //   })
-
-  //   it('adds the VectorTileLayer directly to the map when there is no esriGroupId', async () => {
-  //     const ds = datasetRegistry.getDataset('esri-standalone')
-  //     await adapter._addLayers(ds, MAP_STYLE)
-  //     expect(map.add).toHaveBeenCalledWith(adapter._vectorTileLayers['esri-standalone'])
-  //   })
-
-  //   it('stores the VectorTileLayer as the opacity layer when standalone', async () => {
-  //     const ds = datasetRegistry.getDataset('esri-standalone')
-  //     await adapter._addLayers(ds, MAP_STYLE)
-  //     expect(adapter._vectorTileOpacityLayers['esri-standalone']).toBe(adapter._vectorTileLayers['esri-standalone'])
-  //   })
-
-  //   it('adds the VectorTileLayer inside a GroupLayer when esriGroupId is set', async () => {
-  //     const ds = datasetRegistry.getDataset('esri-grouped')
-  //     await adapter._addLayers(ds, MAP_STYLE)
-  //     const gl = adapter._groupLayers['my-group']
-  //     expect(gl.add).toHaveBeenCalledWith(adapter._vectorTileLayers['esri-grouped'])
-  //   })
-
-  //   it('stores the GroupLayer as the opacity layer when esriGroupId is set', async () => {
-  //     const ds = datasetRegistry.getDataset('esri-grouped')
-  //     await adapter._addLayers(ds, MAP_STYLE)
-  //     expect(adapter._vectorTileOpacityLayers['esri-grouped']).toBe(adapter._groupLayers['my-group'])
-  //   })
-  // })
-
-  // ─── _applyRegistryDatasetVisibility ─────────────────────────────────────────
-
-  describe.skip('_applyRegistryDatasetVisibility', () => {
-    it('calls setStyleLayerVisibility on the parent VectorTileLayer for a sublayer', async () => {
-      await adapter._addLayers(datasetRegistry.getDataset('esri-parent'), MAP_STYLE)
-      const subA = datasetRegistry.getDataset('esri-parent-sub-a')
-      adapter._applyRegistryDatasetVisibility(subA)
-      expect(adapter._vectorTileLayers['esri-parent'].setStyleLayerVisibility)
-        .toHaveBeenCalledWith('style-sub-a', subA.visibility)
-    })
-
-    it('sets vectorTileLayer.visible to true for a visible top-level dataset', async () => {
-      const ds = datasetRegistry.getDataset('esri-standalone')
-      await adapter._addLayers(ds, MAP_STYLE)
-      adapter._applyRegistryDatasetVisibility(ds)
-      expect(adapter._vectorTileLayers['esri-standalone'].visible).toBe(true)
-    })
-
-    it('sets vectorTileLayer.visible to false for a hidden top-level dataset', async () => {
-      const ds = datasetRegistry.getDataset('esri-grouped')
-      await adapter._addLayers(ds, MAP_STYLE)
-      adapter._applyRegistryDatasetVisibility(ds)
-      expect(adapter._vectorTileLayers['esri-grouped'].visible).toBe(false)
-    })
-
-    it('applies sublayer style visibility when the top-level dataset is visible', async () => {
-      await adapter._addLayers(datasetRegistry.getDataset('esri-parent'), MAP_STYLE)
-      const parent = datasetRegistry.getDataset('esri-parent')
-      adapter._applyRegistryDatasetVisibility(parent)
-      const vtl = adapter._vectorTileLayers['esri-parent']
-      expect(vtl.setStyleLayerVisibility).toHaveBeenCalledWith('style-sub-a', 'visible')
-      expect(vtl.setStyleLayerVisibility).toHaveBeenCalledWith('style-sub-b', 'none')
-    })
-
-    it('skips sublayer style visibility when the top-level dataset is not visible', async () => {
-      const ds = datasetRegistry.getDataset('esri-grouped')
-      await adapter._addLayers(ds, MAP_STYLE)
-      adapter._applyRegistryDatasetVisibility(ds)
-      expect(adapter._vectorTileLayers['esri-grouped'].setStyleLayerVisibility).not.toHaveBeenCalled()
-    })
-  })
-
   // ─── applyDatasetVisibility ──────────────────────────────────────────────────
 
   describe('applyDatasetVisibility', () => {
@@ -146,16 +70,6 @@ describe('esriLayerAdapter', () => {
 
     it('does nothing for an unknown dataset', async () => {
       await expect(adapter.applyDatasetVisibility('unknown')).resolves.not.toThrow()
-    })
-  })
-
-  // ─── applyGlobalVisibility ───────────────────────────────────────────────────
-
-  describe('applyGlobalVisibility', () => {
-    it.skip('applies visibility to all known datasets', async () => {
-      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'), MAP_STYLE)
-      await adapter.applyGlobalVisibility()
-      expect(adapter._vectorTileLayers['esri-standalone'].visible).toBe(true)
     })
   })
 
