@@ -137,7 +137,7 @@ export class Dataset {
     if (sublayerIds) {
       return sublayerIds.map(id => datasetRegistry.getDataset(id))
     }
-    return undefined
+    return []
   }
 
   get parent () {
