@@ -55,7 +55,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useEffect(() => {
     datasetRegistry.attachMapStyle(mapState.mapStyle)
     if (layerAdapter?.onMapStyleChange) {
-      layerAdapter.onMapStyleChange(mapState.mapStyle)
+      layerAdapter.onMapStyleChange()
     }
   },
   [mapState.mapStyle])

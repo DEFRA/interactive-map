@@ -29,16 +29,16 @@ export default class EsriLayerAdapter extends LayerAdapter {
     return new EsriDataset(datasetDefinition)
   }
 
-  async init (mapStyle) {
+  async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
     // ensure the datasets are added in order
     for await (const registryDataset of topLevelDatasets) {
-      await this._addLayers(registryDataset, mapStyle)
+      await this._addLayers(registryDataset)
     }
 
-    // onMapStyleChange: handles showing and hiding sublayers based on the mapStyle
+    // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
     // and updating the paint properties of the layers based on the dataset/mapStyle style
-    await this.onMapStyleChange(datasetRegistry.mapStyle, null)
+    await this.onMapStyleChange()
 
     // Apply opacity to all layers
     await this.applyGlobalOpacity()
@@ -61,7 +61,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     return this._groupLayers[esriGroupId]
   }
 
-  async _addLayers (registryDataset, mapStyle) {
+  async _addLayers (registryDataset) {
     const { esriGroupId } = registryDataset
     const vectorTileParent = esriGroupId ? this._addGroupLayer(esriGroupId) : this._map
     const vectorTileLayer = new VectorTileLayer({
@@ -149,14 +149,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     console.log('TODO: applyFeatureFilter', args)
   }
 
-  async onMapStyleChange (newMapStyle, dynamicSources) {
-    if (datasetRegistry.mapStyle.id !== newMapStyle.id) {
-      // Ensure the datasetRegistry is aware of the new mapStyle so that the visibility and style properties of the datasets can be correctly applied
-      // TODO - this is a bit of a hack, we should probably have a better way to handle this
-      // such as having DatasetsInit listen for a mapStyle change event and then call datasetRegistry.attach with the new mapStyle
-      // and finally trigger this method
-      datasetRegistry.attach(datasetRegistry.datasets, datasetRegistry._orderedDatasets, newMapStyle)
-    }
+  async onMapStyleChange () {
     datasetRegistry.forEach(registryDataset => {
       const { id, isSublayer, esriStyleLayerId, parent } = registryDataset
       const vectorTileLayer = this._vectorTileLayers[isSublayer ? parent.id : id]
@@ -179,5 +172,5 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   // onMapSizeChange is not applicable to the esriLayerAdapter
-  async onMapSizeChange (_mapStyle) {}
+  async onMapSizeChange () {}
 }

@@ -1,5 +1,6 @@
 import { mappedDatasetsReducer } from '../../reducers/mappedDatasetsReducer.js'
 import { datasets as datasetDefinitions } from '../../reducers/__data__/demoDatasets.js'
+import { datasets as esriDatasetDefinitions } from '../../reducers/__data__/esriDatasets.js'
 import { attachGlobalState } from '../globalDataset.js'
 const { datasetRegistry } = jest.requireActual('../datasetRegistry.js')
 const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetDefinitions })
@@ -25,5 +26,13 @@ datasetRegistry.mockExtend = (extraDatasets) => datasetRegistry.attach(
   { ...mappedDatasets, ...extraDatasets },
   [...orderedDatasets, ...Object.keys(extraDatasets)]
 )
+
+datasetRegistry.useEsriDatasets = (extraDatasets = {}) => {
+  const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets: esriDatasetDefinitions })
+  datasetRegistry.attach(
+    { ...mappedDatasets, ...extraDatasets },
+    [...orderedDatasets, ...Object.keys(extraDatasets)]
+  )
+}
 
 export { datasetRegistry }
