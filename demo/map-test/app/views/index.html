@@ -1,0 +1,77 @@
+{% extends "layouts/main.html" %}
+
+{% set pageName="Home" %}
+
+{% block content %}
+
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-xl">
+      {{ serviceName }}
+    </h1>
+
+    <p class="govuk-body">
+      This prototype contains a set of Defra InteractiveMap examples. Each page
+      demonstrates a single map feature or interaction in isolation, so it can be
+      tested on its own. Select an example to open its page and test the map.
+    </p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/basic-map">1. Basic map</a>
+    </h2>
+    <p class="govuk-body">A simple inline map with no interaction.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/button-map">2. Button-triggered map</a>
+    </h2>
+    <p class="govuk-body">A map that opens from a button rather than loading inline.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/style-switcher">3. Change map style</a>
+    </h2>
+    <p class="govuk-body">Switch between the Outdoor, Dark and Black and white base maps.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/marker-panel">4. Map with marker and panel</a>
+    </h2>
+    <p class="govuk-body">A marker that opens an information panel when selected.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/toggle-marker-label">5. Toggle marker label</a>
+    </h2>
+    <p class="govuk-body">Show or hide the text label on a marker.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/place-marker">6. Place a marker to continue</a>
+    </h2>
+    <p class="govuk-body">Place a marker on the map, then continue in a task flow.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/search-control">7. Add a search control</a>
+    </h2>
+    <p class="govuk-body">Search for and locate places on the map.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/select-feature">8. Select a feature</a>
+    </h2>
+    <p class="govuk-body">Select a map feature to reveal information about it.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/draw-tools">9. Draw tools</a>
+    </h2>
+    <p class="govuk-body">Draw and edit polygons and lines on the map.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/add-symbols">10. Add symbols</a>
+    </h2>
+    <p class="govuk-body">Display point symbols from a dataset.</p>
+
+    <h2 class="govuk-heading-s govuk-!-margin-bottom-1">
+      <a class="govuk-link" href="/add-polygons">11. Add polygons</a>
+    </h2>
+    <p class="govuk-body">Display polygon data on the map.</p>
+  </div>
+</div>
+
+{% endblock %}

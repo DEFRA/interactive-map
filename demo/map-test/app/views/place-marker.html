@@ -1,0 +1,104 @@
+{% extends "layouts/main.html" %}
+
+{% block pageTitle %}
+  6. Place a marker to continue – GOV.UK Prototype Kit
+{% endblock %}
+
+{% block head %}
+  <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block bodyStart %}
+  <script>document.body.classList.add('im-is-loading')</script>
+{% endblock %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:window.history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">
+      6. Place a marker to continue
+    </h1>
+
+    <div id="map"></div>
+
+    <div id="external-buttons" hidden>
+      <button class="govuk-button govuk-!-margin-top-4" id="continue-btn" disabled>Continue</button>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block pageScripts %}
+  <!-- Defra library scripts -->
+  <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
+
+  <script>
+    var interactPlugin = defra.interactPlugin({
+      interactionModes: ['placeMarker']
+    })
+
+    var map = new defra.InteractiveMap('map', {
+      behaviour: 'hybrid',
+      mapProvider: defra.maplibreProvider(),
+      mapStyle: {
+        url: '/os-vector-tile-styles/outdoor',
+        attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
+        backgroundColor: '#f5f5f0'
+      },
+      center: [-2.9631689, 54.4323129],
+      zoom: 15,
+      containerHeight: '516px',
+      plugins: [interactPlugin],
+      backAndContinue: {
+        backLabel: 'Back',
+        continueLabel: 'Continue',
+        continueEnabledWhen: function (context) {
+          return context.mapState.markers.items.some(function (m) { return m.id === 'location' })
+        }
+      }
+    })
+
+    map.on('map:ready', function () {
+      interactPlugin.enable()
+    })
+
+    map.on('app:continue', function (context) {
+      var marker = context.mapState.markers.items.find(function (m) { return m.id === 'location' })
+      // navigate to next step with marker.coords
+      if (marker) {
+        console.log('Continuing with marker at:', marker.coords)
+      }
+    })
+
+    var continueBtn = document.getElementById('continue-btn')
+    var externalButtons = document.getElementById('external-buttons')
+
+    function setInline(isFullscreen) {
+      externalButtons.hidden = isFullscreen
+    }
+
+    map.on('app:opened', function (e) { setInline(e.isFullscreen) })
+    map.on('app:closed', function () { externalButtons.hidden = true })
+    map.on('app:fullscreenchange', function (e) { setInline(e.isFullscreen) })
+
+    map.on('interact:markerchange', function () {
+      continueBtn.disabled = false
+    })
+
+    continueBtn.addEventListener('click', function () {
+      // navigate to next step
+    })
+  </script>
+{% endblock %}

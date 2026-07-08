@@ -1,0 +1,91 @@
+{% extends "layouts/main.html" %}
+
+{% block pageTitle %}
+  4. Map with marker and panel – GOV.UK Prototype Kit
+{% endblock %}
+
+{% block head %}
+  <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
+{% endblock %}
+
+{% block bodyStart %}
+  <script>document.body.classList.add('im-is-loading')</script>
+{% endblock %}
+
+{% block beforeContent %}
+  {{ govukBackLink({
+    text: "Back",
+    href: "javascript:window.history.back()"
+  }) }}
+{% endblock %}
+
+{% block content %}
+<div class="govuk-grid-row">
+  <div class="govuk-grid-column-two-thirds">
+
+    <h1 class="govuk-heading-l">
+      4. Map with marker and panel
+    </h1>
+
+    <div id="map" data-zoom="15" data-center="[-2.9631689, 54.4323129]"></div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block pageScripts %}
+  <!-- Defra library scripts -->
+  <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
+
+  <script>
+    const interactPlugin = defra.interactPlugin({
+      deselectOnClickOutside: true
+    })
+
+    const map = new defra.InteractiveMap('map', {
+      behaviour: 'inline',
+      mapProvider: defra.maplibreProvider(),
+      mapStyle: {
+        url: '/os-vector-tile-styles/outdoor',
+        attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
+        backgroundColor: '#f5f5f0'
+      },
+      center: [-2.9631689, 54.4323129],
+      zoom: 15,
+      containerHeight: '516px',
+      plugins: [interactPlugin]
+    })
+
+    map.on('map:ready', () => {
+      map.addMarker('my-marker', [-2.9631689, 54.4323129])
+      interactPlugin.enable()
+      interactPlugin.selectMarker('my-marker')
+
+      map.addPanel('marker-info', {
+        focus: false,
+        label: 'Marker',
+        html: '<p class="govuk-body">Information about the selected marker</p>',
+        mobile: { slot: 'drawer', dismissible: true },
+        tablet: { slot: 'left-top', dismissible: true, width: '280px' },
+        desktop: { slot: 'left-top', dismissible: true, width: '280px' }
+      })
+    })
+
+    map.on('interact:selectionchange', ({ selectedMarkers }) => {
+      if (selectedMarkers.length > 0) {
+        map.showPanel('marker-info')
+      } else {
+        map.hidePanel('marker-info')
+      }
+    })
+
+    map.on('app:panelclosed', ({ panelId }) => {
+      if (panelId === 'marker-info') {
+        interactPlugin.unselectMarker('my-marker')
+      }
+    })
+  </script>
+{% endblock %}

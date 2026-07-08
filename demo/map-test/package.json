@@ -1,0 +1,15 @@
+{
+  "name": "map-test",
+  "private": true,
+  "scripts": {
+    "dev": "govuk-prototype-kit dev",
+    "serve": "govuk-prototype-kit serve",
+    "start": "govuk-prototype-kit start"
+  },
+  "dependencies": {
+    "@defra/interactive-map": "file:../..",
+    "@govuk-prototype-kit/common-templates": "3.0.0",
+    "govuk-frontend": "6.3.0",
+    "govuk-prototype-kit": "13.20.2"
+  }
+}
