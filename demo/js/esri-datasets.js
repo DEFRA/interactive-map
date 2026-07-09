@@ -146,4 +146,6 @@ const testGlobalVisibility = () => {
 
 interactiveMap.on('datasets:ready', function () {
   // testGlobalVisibility()
+  setTimeout(() => datasetsPlugin.removeDataset('flood-zones-cc'), 1000)
+  setTimeout(() => datasetsPlugin.removeDataset('flood-zones'), 3000)
 })

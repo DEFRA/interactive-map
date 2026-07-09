@@ -76,8 +76,30 @@ export default class EsriLayerAdapter extends LayerAdapter {
     return vectorTileLayer.when()
   }
 
-  async removeDataset (...args) {
-    console.log('TODO: removeDataset', args)
+  async removeDataset (datasetId) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    if (!registryDataset) {
+      return
+    }
+    const { esriGroupId } = registryDataset
+    const vectorTileLayer = this._vectorTileLayers[datasetId]
+    // If the dataset is part of a group layer, we need to remove it from the group layer
+    const groupLayer = esriGroupId ? this._groupLayers[esriGroupId] : null
+    const vectorTileParent = groupLayer || this._map
+
+    if (vectorTileLayer) {
+      // Remove the vectorTileLayer from the map or group layer
+      vectorTileParent.remove(vectorTileLayer)
+      // And remove the vectorTileLayer from the adapter's internal state
+      delete this._vectorTileLayers[datasetId]
+      delete this._vectorTileOpacityLayers[datasetId]
+    }
+
+    // If the group layer has no more sublayers, we need to also remove the group layer from the map
+    if (groupLayer && groupLayer.layers.length === 0) {
+      this._map.remove(groupLayer)
+      delete this._groupLayers[esriGroupId]
+    }
   }
 
   async setData (...args) {
