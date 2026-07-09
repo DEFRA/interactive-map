@@ -59,7 +59,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
   draw.on(ADAPTER_EVENTS.CREATE, onSplitCreate)
 
   // Real-time preview: update split validity as vertices are placed (ML only)
-  const DEBOUNCE_MS = 50
+  const DEBOUNCE_MS = 10
   const onGeometryChange = debounce((e) => {
     if (!e.coordinates || e.coordinates.length < 2) {
       return

@@ -19,40 +19,25 @@ import {
  */
 
 /**
- * Extend a LineString at endpoints AND intermediate vertices.
- * For intermediate vertices on the polygon boundary, this creates small
- * extensions that ensure polygon-splitter recognizes them as crossing points.
+ * Extend a LineString at endpoints.
  *
  * @param {Feature<LineString>} line
  * @param {number} extendDist (distance to extend in Turf units)
  */
 function extendLine (line, extendDist = 1, units = 'meters') {
-  const coords = line.geometry.coordinates
-  const result = []
+  const coords = line.geometry.coordinates.map(c => [...c])
 
   // Extend start point backward
   const startBearing = turfBearing(coords[1], coords[0])
   const newStart = turfDestination(coords[0], extendDist, startBearing, { units })
-  result.push(newStart.geometry.coordinates)
-
-  // Process each vertex
-  for (let i = 0; i < coords.length; i++) {
-    if (i > 0 && i < coords.length - 1) {
-      // Intermediate vertex: add extension past it (creates spike for boundary crossing)
-      const incomingBearing = turfBearing(coords[i - 1], coords[i])
-      const pastPt = turfDestination(coords[i], extendDist, incomingBearing, { units })
-      result.push(pastPt.geometry.coordinates)
-    }
-
-    result.push(coords[i])
-  }
+  coords[0] = newStart.geometry.coordinates
 
   // Extend end point forward
   const endBearing = turfBearing(coords[coords.length - 2], coords[coords.length - 1])
   const newEnd = turfDestination(coords[coords.length - 1], extendDist, endBearing, { units })
-  result.push(newEnd.geometry.coordinates)
+  coords[coords.length - 1] = newEnd.geometry.coordinates
 
-  return turfLineString(result)
+  return turfLineString(coords)
 }
 
 /**
@@ -65,11 +50,11 @@ function extendLine (line, extendDist = 1, units = 'meters') {
  */
 const splitPolygon = (polygon, line) => {
   // Extend only start and end vertices
-  // const extended = extendLine(line) // assume extendLine only touches start/end now
+  const extended = extendLine(line) // assume extendLine only touches start/end now
 
   let result
   try {
-    result = polygonSplitter(polygon, line)
+    result = polygonSplitter(polygon, extended)
   } catch {
     return null
   }

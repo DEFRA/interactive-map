@@ -253,7 +253,7 @@ interactiveMap.on('draw:ready', function () {
 })
 
 interactiveMap.on('draw:started', function (e) {
-  console.log('draw:started')
+  // console.log('draw:started')
   interactPlugin.disable()
 })
 
@@ -262,7 +262,7 @@ interactiveMap.on('draw:editstart', function (e) {
 })
 
 interactiveMap.on('draw:created', function (e) {
-  console.log('draw:created', e)
+  // console.log('draw:created', e)
   interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
   interactPlugin.enable()
 })
@@ -272,7 +272,7 @@ interactiveMap.on('draw:updated', function (e) {
 })
 
 interactiveMap.on('draw:edited', function (e) {
-  console.log('draw:edited', e) // Should be editcomplete
+  // console.log('draw:edited', e)
   interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
   interactPlugin.enable()
 })
@@ -300,7 +300,7 @@ interactiveMap.on('interact:selectionchange', function (e) {
 })
 
 interactiveMap.on('draw:split', function (e) {
-  console.log('draw:split', { originalFeatureId: e.originalFeatureId, newFeatures: e.featureCollection.features })
+  // console.log('draw:split', { originalFeatureId: e.originalFeatureId, newFeatures: e.featureCollection.features })
 
   // Delete the original polygon
   drawPlugin.deleteFeature([e.originalFeatureId])
