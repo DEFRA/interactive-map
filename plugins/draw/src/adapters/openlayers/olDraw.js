@@ -6,7 +6,7 @@ import { MAP_SIZE_SCALES } from './defaults.js'
  * app-level events (MAP_SET_SIZE for scale-aware touch targets,
  * MAP_SET_STYLE for dynamic color updates).
  *
- * @returns {{ remove: () => void }}
+ * @returns {{ manager: OLDrawManager, remove: () => void }}
  */
 export const createOLDraw = ({ mapProvider, events, eventBus, pluginConfig = {}, mapStyle = null }) => {
   const { map } = mapProvider
@@ -29,6 +29,7 @@ export const createOLDraw = ({ mapProvider, events, eventBus, pluginConfig = {},
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)
 
   return {
+    manager,
     remove () {
       eventBus.off(events.MAP_SET_SIZE, handleSetMapSize)
       eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)

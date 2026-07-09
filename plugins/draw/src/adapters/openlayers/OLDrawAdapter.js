@@ -25,7 +25,7 @@ export class OLDrawAdapter {
   _snapEnabled = false
 
   constructor (mapProvider, options) {
-    const { remove } = createOLDraw({
+    const { manager, remove } = createOLDraw({
       mapProvider,
       events: options.events,
       eventBus: options.eventBus,
@@ -33,8 +33,7 @@ export class OLDrawAdapter {
       mapStyle: options.mapStyle
     })
     this._cleanupOLDraw = remove
-    // createOLDraw sets mapProvider.draw = manager; save it before DrawInit overwrites it
-    this._manager = mapProvider.draw
+    this._manager = manager
     this._mapProvider = mapProvider
   }
 

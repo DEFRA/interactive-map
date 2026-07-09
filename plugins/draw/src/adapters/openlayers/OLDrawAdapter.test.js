@@ -21,10 +21,7 @@ const fakeManager = () => ({
 })
 
 jest.mock('./olDraw.js', () => ({
-  createOLDraw: jest.fn(({ mapProvider }) => {
-    mapProvider.draw = mapProvider._testManager
-    return { remove: jest.fn() }
-  })
+  createOLDraw: jest.fn(({ mapProvider }) => ({ manager: mapProvider._testManager, remove: jest.fn() }))
 }))
 
 const setup = () => {
@@ -41,7 +38,7 @@ const setup = () => {
 
 afterEach(() => jest.clearAllMocks())
 
-test('wires olDraw with the plugin options and keeps the manager before DrawInit overwrites it', () => {
+test('wires olDraw with the plugin options and uses the returned manager', () => {
   const { manager, adapter } = setup()
   expect(createOLDraw).toHaveBeenCalledWith(expect.objectContaining({
     pluginConfig: { snapLayers: ['boundaries'] },
