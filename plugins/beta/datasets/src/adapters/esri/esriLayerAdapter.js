@@ -3,6 +3,7 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer.js'
 import { LayerAdapter } from '../layerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { EsriDataset } from './registry/esriDataset.js'
+import { logger } from '../../../../../../src/services/logger.js'
 
 export default class EsriLayerAdapter extends LayerAdapter {
   constructor (mapProvider, symbolRegistry, patternRegistry) {
@@ -79,7 +80,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   async addDataset (datasetId) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
-      console.warn(`addDataset called, but Dataset with id ${datasetId} not found in registry`)
+      logger.warn(`addDataset called, but Dataset with id ${datasetId} not found in registry`)
       return
     }
     await this._addLayers(registryDataset)

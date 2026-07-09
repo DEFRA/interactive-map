@@ -3,6 +3,8 @@ import EsriLayerAdapter from './esriLayerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 jest.mock('../../registry/datasetRegistry.js')
+jest.mock('../../../../../../src/services/logger.js')
+
 jest.mock('@arcgis/core/layers/VectorTileLayer.js', () =>
   jest.fn().mockImplementation((opts = {}) => ({
     ...opts,
@@ -61,6 +63,47 @@ describe('esriLayerAdapter', () => {
   describe('createDataset', () => {
     it('returns an EsriDataset instance', () => {
       expect(adapter.createDataset({ id: 'test' })).toBeInstanceOf(EsriDataset)
+    })
+  })
+
+  // ─── addDataset ──────────────────────────────────────────────────────────────
+
+  describe('addDataset', () => {
+    it('copes and returns when the dataset is not in the registry', async () => {
+      await adapter.addDataset('unknown')
+      expect(adapter._vectorTileLayers.unknown).toBeUndefined()
+    })
+
+    it('adds a standalone dataset to the map and populates internal state', async () => {
+      await adapter.addDataset('esri-standalone')
+      expect(adapter._vectorTileLayers['esri-standalone']).toBeDefined()
+      expect(adapter._vectorTileOpacityLayers['esri-standalone']).toBeDefined()
+    })
+
+    it('applies opacity and visibility after adding layers', async () => {
+      await adapter.addDataset('esri-standalone')
+      const vtl = adapter._vectorTileLayers['esri-standalone']
+      expect(vtl.visible).toBe(true)
+      expect(adapter._vectorTileOpacityLayers['esri-standalone'].opacity)
+        .toBe(datasetRegistry.getDataset('esri-standalone').opacity)
+    })
+
+    it('applies paint properties for datasets with esriStyleLayerId', async () => {
+      await adapter.addDataset('esri-standalone')
+      const vtl = adapter._vectorTileLayers['esri-standalone']
+      expect(vtl.setPaintProperties).toHaveBeenCalledWith('standalone-style', expect.any(Object))
+    })
+
+    it('does not apply paint properties for server-style datasets', async () => {
+      await adapter.addDataset('esri-server')
+      const vtl = adapter._vectorTileLayers['esri-server']
+      expect(vtl.setPaintProperties).not.toHaveBeenCalled()
+    })
+
+    it('creates a group layer when adding a grouped dataset', async () => {
+      await adapter.addDataset('esri-grouped')
+      expect(adapter._vectorTileLayers['esri-grouped']).toBeDefined()
+      expect(adapter._groupLayers['my-group']).toBeDefined()
     })
   })
 
