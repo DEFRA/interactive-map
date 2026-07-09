@@ -6,8 +6,8 @@
 
 {% block head %}
   <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
-  <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
-  <link href="/plugin-assets/%40defra%2Finteractive-map/plugins/datasets/dist/css/index.css" rel="stylesheet" type="text/css">
+  <link href="/public/vendor/interactive-map/css/index.css" rel="stylesheet" type="text/css">
+  <link href="/public/vendor/plugin-datasets/css/index.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
 {% block bodyStart %}
@@ -37,9 +37,9 @@
 
 {% block pageScripts %}
   <!-- Defra library scripts -->
-  <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/datasets/dist/umd/index.js"></script>
+  <script src="/public/vendor/interactive-map/umd/index.js"></script>
+  <script src="/public/vendor/provider-maplibre/umd/index.js"></script>
+  <script src="/public/vendor/plugin-datasets/umd/index.js"></script>
 
   <script>
     // GeoJSON can also be loaded from a URL; use the tiles property for vector tile sources
