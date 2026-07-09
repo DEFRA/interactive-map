@@ -76,6 +76,20 @@ export default class EsriLayerAdapter extends LayerAdapter {
     return vectorTileLayer.when()
   }
 
+  async addDataset (datasetId) {
+    const registryDataset = datasetRegistry.getDataset(datasetId)
+    if (!registryDataset) {
+      console.warn(`addDataset called, but Dataset with id ${datasetId} not found in registry`)
+      return
+    }
+    await this._addLayers(registryDataset)
+    const { parentId } = registryDataset
+    const vectorTileLayer = this._vectorTileLayers[parentId || datasetId]
+    this.applyDatasetOpacity(datasetId)
+    this._applyStyleLayerPaintProperties(registryDataset, vectorTileLayer)
+    this.applyDatasetVisibility(datasetId)
+  }
+
   async removeDataset (datasetId) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
@@ -100,22 +114,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
       this._map.remove(groupLayer)
       delete this._groupLayers[esriGroupId]
     }
-  }
-
-  async setData (...args) {
-    console.log('TODO: setData', args)
-  }
-
-  async applyStyle (...args) {
-    console.log('TODO: applyStyle', args)
-  }
-
-  _applyStyleLayerVisibility (sublayer, vectorTileLayer) {
-    const { esriStyleLayerId } = sublayer
-    if (!esriStyleLayerId) {
-      return
-    }
-    vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, sublayer.visibility)
   }
 
   _applyRegistryDatasetVisibility (registryDataset) {
@@ -163,36 +161,49 @@ export default class EsriLayerAdapter extends LayerAdapter {
     })
   }
 
-  async addDataset (...args) {
-    console.log('TODO: addDataset', args)
+  _applyStyleLayerVisibility (registryDataset, vectorTileLayer) {
+    const { esriStyleLayerId } = registryDataset
+    if (!esriStyleLayerId || !vectorTileLayer) {
+      return
+    }
+    vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
   }
 
-  async applyFeatureFilter (...args) {
-    console.log('TODO: applyFeatureFilter', args)
+  _applyStyleLayerPaintProperties (registryDataset, vectorTileLayer) {
+    const { esriStyleLayerId, useServerStyle } = registryDataset
+    if (useServerStyle || !esriStyleLayerId || !vectorTileLayer) {
+      return
+    }
+    const layerPaintProperties = vectorTileLayer.getPaintProperties(esriStyleLayerId)
+    if (layerPaintProperties) {
+      registryDataset.applyLayerPaintProperties(layerPaintProperties)
+      vectorTileLayer.setPaintProperties(esriStyleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
+    }
   }
 
   async onMapStyleChange () {
     datasetRegistry.forEach(registryDataset => {
-      const { id, isSublayer, esriStyleLayerId, parent } = registryDataset
+      const { id, isSublayer, parent } = registryDataset
       const vectorTileLayer = this._vectorTileLayers[isSublayer ? parent.id : id]
-      if (vectorTileLayer && esriStyleLayerId) {
-        // Show hide the style layer based on the dataset's mapStyle visibility
-        vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
-        if (registryDataset.useServerStyle) {
-          // If the dataset is using the server style, we don't need to apply any paint properties
-          return
-        }
-        // Update the paint properties of the style layer based on the dataset's mapStyle style
-        const layerPaintProperties = vectorTileLayer.getPaintProperties(esriStyleLayerId)
-        if (layerPaintProperties) {
-          registryDataset.applyLayerPaintProperties(layerPaintProperties)
-          vectorTileLayer.setPaintProperties(esriStyleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
-        }
-      }
+      this._applyStyleLayerVisibility(registryDataset, vectorTileLayer)
+      this._applyStyleLayerPaintProperties(registryDataset, vectorTileLayer)
     })
     // TODO - handle dynamic sources
   }
 
   // onMapSizeChange is not applicable to the esriLayerAdapter
   async onMapSizeChange () {}
+
+  // Remaining methods are still todo
+  async applyFeatureFilter (...args) {
+    console.log('TODO: applyFeatureFilter', args)
+  }
+
+  async setData (...args) {
+    console.log('TODO: setData', args)
+  }
+
+  async applyStyle (...args) {
+    console.log('TODO: applyStyle', args)
+  }
 }

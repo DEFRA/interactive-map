@@ -7,8 +7,7 @@ import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
 
-const datasets = [
-  {
+const datasetFloodZonesCC =   {
     id: 'flood-zones-cc',
     label: 'Flood Zones Climate Change',
     groupLabel: 'Datasets',
@@ -67,8 +66,9 @@ const datasets = [
         showInMenu: false,
       }
     ]
-  },
-  {
+  }
+
+  const datasetFloodZones = {
     id: 'flood-zones',
     label: 'Flood Zones',
     groupLabel: 'Datasets',
@@ -100,6 +100,9 @@ const datasets = [
       }
     ]
   }
+
+const datasets = [
+  datasetFloodZonesCC,  datasetFloodZones
 ]
 
 const datasetsPlugin = createDatasetsPlugin({
@@ -148,4 +151,5 @@ interactiveMap.on('datasets:ready', function () {
   // testGlobalVisibility()
   setTimeout(() => datasetsPlugin.removeDataset('flood-zones-cc'), 1000)
   setTimeout(() => datasetsPlugin.removeDataset('flood-zones'), 3000)
+  setTimeout(() => datasetsPlugin.addDataset(datasetFloodZones), 5000)
 })

@@ -234,4 +234,16 @@ describe('esriLayerAdapter', () => {
       await expect(adapter.onMapSizeChange()).resolves.toBeUndefined()
     })
   })
+
+  describe('applyGlobalVisibility', () => {
+    beforeEach(async () => {
+      await adapter.init()
+    })
+
+    it('applies visibility for all datasets', async () => {
+      const applyStyleLayerVisibilitySpy = jest.spyOn(adapter, '_applyStyleLayerVisibility')
+      await adapter.applyGlobalVisibility()
+      expect(applyStyleLayerVisibilitySpy.mock.calls).toHaveLength(7)
+    })
+  })
 })
