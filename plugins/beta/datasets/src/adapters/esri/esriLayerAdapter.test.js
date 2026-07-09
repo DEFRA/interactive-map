@@ -14,13 +14,21 @@ jest.mock('@arcgis/core/layers/VectorTileLayer.js', () =>
   }))
 )
 jest.mock('@arcgis/core/layers/GroupLayer.js', () =>
-  jest.fn().mockImplementation((opts = {}) => ({
-    ...opts,
-    add: jest.fn()
-  }))
+  jest.fn().mockImplementation((opts = {}) => {
+    const layers = []
+    return {
+      ...opts,
+      layers,
+      add: jest.fn(layer => layers.push(layer)),
+      remove: jest.fn(layer => {
+        const idx = layers.indexOf(layer)
+        if (idx !== -1) layers.splice(idx, 1)
+      })
+    }
+  })
 )
 
-// Uncovered: 80-88,124,145-149
+// Uncovered: 124,145-149
 
 const MAP_STYLE = { id: 'outdoor' }
 const makeMap = () => {
@@ -30,7 +38,8 @@ const makeMap = () => {
       // Ensure that the same layer is never added twice
       expect(_added[id]).toBeUndefined()
       _added[id] = true
-    })
+    }),
+    remove: jest.fn()
   }
 }
 const makeMapProvider = (map) => ({ map })
@@ -52,6 +61,54 @@ describe('esriLayerAdapter', () => {
   describe('createDataset', () => {
     it('returns an EsriDataset instance', () => {
       expect(adapter.createDataset({ id: 'test' })).toBeInstanceOf(EsriDataset)
+    })
+  })
+
+  // ─── removeDataset ────────────────────────────────────────────────────────────
+
+  describe('removeDataset', () => {
+    it('does nothing when dataset is not in the registry', async () => {
+      await expect(adapter.removeDataset('unknown')).resolves.toBeUndefined()
+      expect(map.remove).not.toHaveBeenCalled()
+    })
+
+    it('does nothing when the dataset has not been added to the adapter', async () => {
+      await adapter.removeDataset('esri-standalone')
+      expect(map.remove).not.toHaveBeenCalled()
+    })
+
+    it('removes a standalone vectorTileLayer from the map and clears internal state', async () => {
+      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
+      const vtl = adapter._vectorTileLayers['esri-standalone']
+      await adapter.removeDataset('esri-standalone')
+      expect(map.remove).toHaveBeenCalledWith(vtl)
+      expect(adapter._vectorTileLayers['esri-standalone']).toBeUndefined()
+      expect(adapter._vectorTileOpacityLayers['esri-standalone']).toBeUndefined()
+    })
+
+    it('removes the vectorTileLayer from its group layer but keeps the group when other layers remain', async () => {
+      await adapter._addLayers(datasetRegistry.getDataset('flood-zones-cc'))
+      await adapter._addLayers(datasetRegistry.getDataset('flood-zones'))
+      const vtl = adapter._vectorTileLayers['flood-zones-cc']
+      const groupLayer = adapter._groupLayers['flood-zones-group']
+      await adapter.removeDataset('flood-zones-cc')
+      expect(groupLayer.remove).toHaveBeenCalledWith(vtl)
+      expect(map.remove).not.toHaveBeenCalledWith(groupLayer)
+      expect(adapter._groupLayers['flood-zones-group']).toBeDefined()
+      expect(adapter._vectorTileLayers['flood-zones-cc']).toBeUndefined()
+      expect(adapter._vectorTileOpacityLayers['flood-zones-cc']).toBeUndefined()
+    })
+
+    it('removes the group layer from the map when its last vectorTileLayer is removed', async () => {
+      await adapter._addLayers(datasetRegistry.getDataset('esri-grouped'))
+      const vtl = adapter._vectorTileLayers['esri-grouped']
+      const groupLayer = adapter._groupLayers['my-group']
+      await adapter.removeDataset('esri-grouped')
+      expect(groupLayer.remove).toHaveBeenCalledWith(vtl)
+      expect(map.remove).toHaveBeenCalledWith(groupLayer)
+      expect(adapter._groupLayers['my-group']).toBeUndefined()
+      expect(adapter._vectorTileLayers['esri-grouped']).toBeUndefined()
+      expect(adapter._vectorTileOpacityLayers['esri-grouped']).toBeUndefined()
     })
   })
 
