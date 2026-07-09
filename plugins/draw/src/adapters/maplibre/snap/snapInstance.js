@@ -12,16 +12,28 @@ function cleanupOldSnap (map) {
   }
 }
 
+// Snap indicators (and all snap processing) are only meaningful while actively
+// drawing or editing vertices — outside these modes there is nothing to snap to.
+const SNAP_ACTIVE_MODES = new Set(['draw_polygon', 'draw_line', 'edit_vertex'])
+
 /**
  * Externally-controlled status: ignore library writes so status is only changed
  * via setSnapStatus(). The library otherwise sets status=true on mode/selection change.
+ *
+ * Also gated on the current draw mode: the library's own mousemove listener
+ * (added once in its constructor) calls snapToClosestPoint on every mouse move
+ * regardless of draw mode, repainting the snap-helper-circle layer whenever
+ * status is true. Without this gate, the marker reappears on the very next
+ * mouse move after leaving draw/edit mode, since mapbox-gl-draw's public
+ * changeMode API is silent by default and rarely gives us a mode-change event
+ * to react to.
  */
-function defineControlledStatus (snap, initialStatus) {
+function defineControlledStatus (snap, initialStatus, draw) {
   let controlledStatus = initialStatus
 
   Object.defineProperty(snap, 'status', {
     get () { // nosonar
-      return controlledStatus
+      return controlledStatus && SNAP_ACTIVE_MODES.has(draw.getMode())
     },
     set () { // nosonar
       // intentionally empty: library writes are ignored
@@ -70,7 +82,7 @@ export function createSnapInstance (map, draw, source, config) {
     onSnapped: config.onSnapped
   })
 
-  defineControlledStatus(snap, config.status)
+  defineControlledStatus(snap, config.status, draw)
   configureSnapLayers(snap, config.layers)
 
   // Apply any pending snap layers that were set before the instance was ready

@@ -135,6 +135,10 @@ export class MaplibreDrawAdapter {
       this._livePlacement.set(false)
     }
     this._draw.changeMode(name, options)
+    // The underlying mapbox-gl-draw control's public changeMode API is silent by
+    // default (it never fires 'draw.modechange'), so every mode change requested
+    // through this adapter must drive the same cleanup manually.
+    this._handleModeChange({ mode: name })
   }
 
   // Live invalid-stroke driver: called on every rubber-band move (draw) and vertex
@@ -168,11 +172,15 @@ export class MaplibreDrawAdapter {
     this._mapProvider.undoStack?.clear()
     const mode = this._draw.getMode()
     if (mode === 'edit_vertex' && this._editingFeatureId) {
+      // Leaving edit_vertex here — hide immediately rather than waiting on the
+      // async disable() the EDIT_FINISH handler fires later (see changeMode()).
+      this._handleModeChange({ mode: 'disabled' })
       this._map.fire(CUSTOM_DRAW_EVENTS.EDIT_FINISH, { features: [this._draw.get(this._editingFeatureId)] })
       return
     }
     if (mode === 'draw_polygon' || mode === 'draw_line') {
       this._draw.changeMode('disabled')
+      this._handleModeChange({ mode: 'disabled' })
     }
   }
 
@@ -180,6 +188,7 @@ export class MaplibreDrawAdapter {
     this._mapProvider.undoStack?.clear()
     this._draw.trash()
     this._draw.changeMode('disabled')
+    this._handleModeChange({ mode: 'disabled' })
   }
 
   undo () {
@@ -276,7 +285,7 @@ export class MaplibreDrawAdapter {
   }
 
   _handleModeChange (e) {
-    const DRAW_MODES = new Set(['draw_polygon', 'draw_line'])
+    const DRAW_MODES = new Set(['draw_polygon', 'draw_line', 'edit_vertex'])
     if (!DRAW_MODES.has(e.mode)) {
       clearSnapIndicator(getSnapInstance(this._map), this._map)
     }

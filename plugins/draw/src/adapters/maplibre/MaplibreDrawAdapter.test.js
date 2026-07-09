@@ -572,12 +572,12 @@ describe('setSnapLayers', () => {
 })
 
 describe('_handleModeChange', () => {
-  test('clears the snap indicator when leaving a draw mode', () => {
+  test('clears the snap indicator when leaving to a non-draw mode', () => {
     const { map } = setup()
     const snap = { id: 'snap' }
     getSnapInstance.mockReturnValue(snap)
 
-    onHandler(map, MAPBOX_DRAW_EVENTS.MODE_CHANGE)({ mode: 'edit_vertex' })
+    onHandler(map, MAPBOX_DRAW_EVENTS.MODE_CHANGE)({ mode: 'simple_select' })
 
     expect(clearSnapIndicator).toHaveBeenCalledWith(snap, map)
   })
@@ -585,6 +585,12 @@ describe('_handleModeChange', () => {
   test('keeps the snap indicator while in a draw mode', () => {
     const { map } = setup()
     onHandler(map, MAPBOX_DRAW_EVENTS.MODE_CHANGE)({ mode: 'draw_polygon' })
+    expect(clearSnapIndicator).not.toHaveBeenCalled()
+  })
+
+  test('keeps the snap indicator while in edit_vertex mode', () => {
+    const { map } = setup()
+    onHandler(map, MAPBOX_DRAW_EVENTS.MODE_CHANGE)({ mode: 'edit_vertex' })
     expect(clearSnapIndicator).not.toHaveBeenCalled()
   })
 })

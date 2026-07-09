@@ -42,9 +42,17 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
     properties: { splitter: 'invalid' }
   })
 
+  // Both listeners are scoped to this one splitter-line session — leaving either
+  // registered past that would leak into whatever the user draws or edits next.
+  const stopListening = () => {
+    draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
+    draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)
+    draw.off(ADAPTER_EVENTS.GEOMETRY_CHANGE, onGeometryChange)
+  }
+
   // One-shot: compute split result once the line is finalised
   const onSplitCreate = (geojsonFeature) => {
-    draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
+    stopListening()
     const featureCollection = splitPolygon(polygonFeature, geojsonFeature)
 
     dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: !!featureCollection } })
@@ -56,7 +64,14 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
       })
     }
   }
+
+  // The splitter line was abandoned (e.g. Escape) — nothing to compute, just stop listening.
+  const onSplitCancel = () => {
+    stopListening()
+  }
+
   draw.on(ADAPTER_EVENTS.CREATE, onSplitCreate)
+  draw.on(ADAPTER_EVENTS.CANCEL, onSplitCancel)
 
   // Real-time preview: update split validity as vertices are placed (ML only)
   const DEBOUNCE_MS = 10

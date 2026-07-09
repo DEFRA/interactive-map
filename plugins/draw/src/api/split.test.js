@@ -80,9 +80,38 @@ describe('split', () => {
     onCreate(geojson)
 
     expect(draw.off).toHaveBeenCalledWith('create', onCreate)
+    expect(draw.off).toHaveBeenCalledWith('cancel', expect.any(Function))
+    expect(draw.off).toHaveBeenCalledWith('geometrychange', expect.any(Function))
     expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, geojson)
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:split', { originalFeatureId: 'poly', featureCollection })
+  })
+
+  test('cancelling the splitter line stops listening without computing a split', () => {
+    const { context, draw } = makeContext()
+
+    split(context, 'poly')
+    const onCancel = handlerFor(draw, 'cancel')
+    onCancel()
+
+    expect(draw.off).toHaveBeenCalledWith('create', expect.any(Function))
+    expect(draw.off).toHaveBeenCalledWith('cancel', onCancel)
+    expect(draw.off).toHaveBeenCalledWith('geometrychange', expect.any(Function))
+    expect(splitPolygon).not.toHaveBeenCalled()
+  })
+
+  test('a stale geometrychange listener cannot fire after the split line is created', () => {
+    const { context, draw } = makeContext()
+    splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
+
+    split(context, 'poly')
+    const onCreate = handlerFor(draw, 'create')
+    onCreate({ id: 'line' })
+
+    // Real draw.off would deregister the handler; confirm split.js requested it
+    // for every listener it registered, so none can leak into a later session.
+    const offEvents = draw.off.mock.calls.map(([name]) => name)
+    expect(offEvents).toEqual(expect.arrayContaining(['create', 'cancel', 'geometrychange']))
   })
 
   test('finalising the line computes an invalid split and does not emit', () => {
