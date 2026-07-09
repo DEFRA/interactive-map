@@ -65,11 +65,11 @@ function extendLine (line, extendDist = 1, units = 'meters') {
  */
 const splitPolygon = (polygon, line) => {
   // Extend only start and end vertices
-  const extended = extendLine(line) // assume extendLine only touches start/end now
+  // const extended = extendLine(line) // assume extendLine only touches start/end now
 
   let result
   try {
-    result = polygonSplitter(polygon, extended)
+    result = polygonSplitter(polygon, line)
   } catch {
     return null
   }

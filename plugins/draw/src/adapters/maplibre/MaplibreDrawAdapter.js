@@ -259,12 +259,21 @@ export class MaplibreDrawAdapter {
     }
   }
 
-  isSnapEnabled () { return this._mapProvider.snapEnabled === true }
+  isSnapEnabled () {
+    return this._mapProvider.snapEnabled === true
+  }
 
-  setFeatureProperty (id, property, value) { this._draw.setFeatureProperty(id, property, value) }
+  setFeatureProperty (id, property, value) {
+    this._draw.setFeatureProperty(id, property, value)
+  }
 
-  on (type, handler) { this._bus.on(type, handler) }
-  off (type, handler) { this._bus.off(type, handler) }
+  on (type, handler) {
+    this._bus.on(type, handler)
+  }
+
+  off (type, handler) {
+    this._bus.off(type, handler)
+  }
 
   _handleModeChange (e) {
     const DRAW_MODES = new Set(['draw_polygon', 'draw_line'])

@@ -13,9 +13,10 @@ import { ADAPTER_EVENTS } from '../adapterEvents.js'
  * @param {string} featureId - ID of the polygon to split
  * @param {object} options - Options including snapLayers.
  */
-export const split = ({ appState, appConfig, pluginState, mapState, mapProvider }, featureId, options = {}) => {
+export const split = ({ appState, appConfig, pluginState, mapState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
   const { draw } = mapProvider
+  const { eventBus } = services
 
   if (!draw) {
     return
@@ -45,15 +46,21 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider 
   const onSplitCreate = (geojsonFeature) => {
     draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     const featureCollection = splitPolygon(polygonFeature, geojsonFeature)
-    draw.setFeatureProperty('_splitter', 'splitter', featureCollection ? 'valid' : 'invalid')
+
     dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: !!featureCollection } })
+
+    if (featureCollection) {
+      eventBus.emit('draw:split', {
+        originalFeatureId: featureId,
+        featureCollection
+      })
+    }
   }
   draw.on(ADAPTER_EVENTS.CREATE, onSplitCreate)
 
   // Real-time preview: update split validity as vertices are placed (ML only)
   const DEBOUNCE_MS = 50
   const onGeometryChange = debounce((e) => {
-    // Ignore commit-level validation events (they carry `kind`, not `coordinates`).
     if (!e.coordinates || e.coordinates.length < 2) {
       return
     }

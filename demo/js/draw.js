@@ -195,6 +195,16 @@ interactiveMap.on('map:ready', function (e) {
         interactPlugin.disable()
       }
     },{
+      id: 'splitShape',
+      label: 'Split shape',
+      iconSvgContent: '<path d="M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3"/><path d="M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3"/><line x1="12" x2="12" y1="4" y2="20"/>',
+      isDisabled: true,
+      onClick: function (e) {
+        drawPlugin.split(selectedFeatureIds[0])
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        interactPlugin.disable()
+      }
+    },{
       id: 'deleteFeature',
       label: 'Delete feature',
       iconSvgContent: '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
@@ -206,6 +216,7 @@ interactiveMap.on('map:ready', function (e) {
         interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
         interactiveMap.toggleButtonState('drawLine', 'disabled', false)
         interactiveMap.toggleButtonState('editFeature', 'disabled', true)
+        interactiveMap.toggleButtonState('splitShape', 'disabled', true)
         interactiveMap.toggleButtonState('deleteFeature', 'disabled', true)
       }
     }]
@@ -278,12 +289,34 @@ interactiveMap.on('interact:selectionchange', function (e) {
   const singleFeature = e.selectedFeatures.length === 1
   const anyFeature = e.selectedFeatures.length > 0
   const isDrawFeature = singleFeature && drawLayers.includes(e.selectedFeatures[0].layerId)
+  const isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
   const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return drawLayers.includes(f.layerId) })
   selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
   interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
   interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
   interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
+  interactiveMap.toggleButtonState('splitShape', 'disabled', !isPolygon)
   interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
+})
+
+interactiveMap.on('draw:split', function (e) {
+  console.log('draw:split', { originalFeatureId: e.originalFeatureId, newFeatures: e.featureCollection.features })
+
+  // Delete the original polygon
+  drawPlugin.deleteFeature([e.originalFeatureId])
+
+  // Add the two new split features with IDs based on the original
+  e.featureCollection.features.forEach(function (feature, index) {
+    const newId = e.originalFeatureId + (index === 0 ? '-a' : '-b')
+    drawPlugin.addFeature({
+      id: newId,
+      type: feature.type,
+      geometry: feature.geometry,
+      properties: feature.properties
+    })
+  })
+
+  interactPlugin.clear()
 })
 
 interactiveMap.on('interact:markerchange', function (e) {

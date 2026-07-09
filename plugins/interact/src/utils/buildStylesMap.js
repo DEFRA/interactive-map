@@ -25,8 +25,6 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
     return stylesMap
   }
 
-  console.log('[interact] buildStylesMap: mapStyle =', mapStyle.id, 'mapColorScheme =', mapStyle.mapColorScheme)
-
   const scheme = THEME_COLORS[mapStyle.mapColorScheme] ?? THEME_COLORS.light
   const schemeActiveColor = mapStyle.activeColor ?? scheme.activeColor
   const schemeSelectedColor = mapStyle.selectedColor ?? scheme.selectedColor

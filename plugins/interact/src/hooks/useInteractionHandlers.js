@@ -48,7 +48,7 @@ const useSelectionChangeEmitter = (eventBus, selectedFeatures, selectedMarkers) 
     }
 
     eventBus.emit('interact:selectionchange', {
-      selectedFeatures: selectedFeatures.map(({ featureId, layerId, idProperty, properties }) => ({ featureId, layerId, idProperty, properties })),
+      selectedFeatures: selectedFeatures.map(({ featureId, layerId, idProperty, properties, geometry }) => ({ featureId, layerId, idProperty, properties, geometryType: geometry?.type })),
       selectedMarkers,
       contiguous: areAllContiguous(selectedFeatures)
     })
