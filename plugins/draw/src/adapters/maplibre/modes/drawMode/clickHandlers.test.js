@@ -39,7 +39,7 @@ describe('mouse clicks (polygon)', () => {
     clickAt(ctx, state, 10, 0)
     clickAt(ctx, state, 0, 10)
     expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(expect.objectContaining({
-      kind: 'place',
+      phase: 'place',
       mode: 'draw_polygon',
       vertexIndex: 3,
       reason: expect.any(String),
@@ -47,10 +47,10 @@ describe('mouse clicks (polygon)', () => {
     }))
   })
 
-  test('the user callback can veto a mouse placement (and receives kind "place")', () => {
+  test('the user callback can veto a mouse placement (and receives phase "place")', () => {
     const { ctx, state } = setup(DrawPolygonMode)
     ctx.map._drawGeometryValidator = jest.fn((feature, context) =>
-      context.kind === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
+      context.phase === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
     clickAt(ctx, state, 0, 0)
     expect(state.polygon.coordinates[0]).toHaveLength(0) // first vertex vetoed
     expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(
@@ -87,7 +87,7 @@ describe('mouse clicks (polygon)', () => {
     clickAt(ctx, state, 10, 0)
     jest.runAllTimers()
     const geomChange = firedWith(ctx.map, 'draw.geometrychange').pop()
-    expect(geomChange).toEqual(expect.objectContaining({ kind: 'add', feature: expect.any(Object) }))
+    expect(geomChange).toEqual(expect.objectContaining({ phase: 'commit-add', feature: expect.any(Object) }))
     jest.useRealTimers()
   })
 
@@ -172,7 +172,7 @@ describe('add-vertex button and doClick', () => {
     ctx.doClick(state)
     expect(state.polygon.coordinates[0]).toHaveLength(0)
     expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(
-      expect.objectContaining({ reason: 'outside region', kind: 'place' }))
+      expect.objectContaining({ reason: 'outside region', phase: 'place' }))
   })
 
   test('doClick places at the snapped position when snapping', () => {

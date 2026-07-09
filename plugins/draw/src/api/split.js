@@ -27,7 +27,7 @@ const applySplitValidity = ({ draw, dispatch, polygonFeature, coordinates }) => 
 // setFeatureProperty is a no-op on the OL adapter, per its documented interface).
 //
 // events.js has its own shared geometrychange handler, and it also reacts to
-// every commit-level event (one with a `kind`, e.g. a vertex add/move/insert/
+// every commit-level event (one with a `phase`, e.g. commit-add/move/insert/
 // delete). Since split nulls out the user validator (see split() below), that
 // shared handler always marks the event valid via the default rules — clobbering
 // split's own validity gate. DrawInit's effect re-attaches the shared handler on
@@ -41,9 +41,9 @@ const createGeometryChangeHandler = ({ draw, dispatch, polygonFeature, isStopped
   const debouncedPreview = debounce(apply, DEBOUNCE_MS)
 
   return (e) => {
-    if (e?.kind) {
+    if (e?.phase) {
       debouncedPreview.cancel?.()
-      // Commit-level events carry { feature, kind, vertexIndex } per the shared
+      // Commit-level events carry { feature, phase, vertexIndex } per the shared
       // adapter contract (adapterEvents.js) rather than a top-level coordinates.
       const coordinates = e.feature?.geometry?.coordinates
       if (!coordinates || coordinates.length < 2) {

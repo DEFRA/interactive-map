@@ -101,15 +101,15 @@ const attachDrawListeners = (drawInteraction, { manager, featureId, properties, 
 }
 
 // Tracks placed-vertex count and emits VERTEX_CHANGE plus, on each genuine placement,
-// a commit-level GEOMETRY_CHANGE ('add') for validation. Deferred a tick so a
+// a commit-level GEOMETRY_CHANGE ('commit-add') for validation. Deferred a tick so a
 // rejection's revert runs after the current click settles.
 const createVertexTracker = (manager, getSketch) => {
   let lastPlacedCount = 0
-  const emit = (kind, vertexIndex) => {
+  const emit = (phase, vertexIndex) => {
     setTimeout(() => {
       const sketch = getSketch()
       if (!sketch) { return }
-      manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: placedFeatureGeoJSON(manager.store, sketch), kind, vertexIndex })
+      manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: placedFeatureGeoJSON(manager.store, sketch), phase, vertexIndex })
     }, 0)
   }
   return {
@@ -119,7 +119,7 @@ const createVertexTracker = (manager, getSketch) => {
       if (!sketch) { return }
       const placed = getPlacedSketchCoords(sketch.getGeometry()).length
       manager.emit(ADAPTER_EVENTS.VERTEX_CHANGE, { numVertices: placed })
-      if (placed > lastPlacedCount) { emit('add', placed - 1) }
+      if (placed > lastPlacedCount) { emit('commit-add', placed - 1) }
       lastPlacedCount = placed
     },
     // An undo commits a vertex removal, so it must re-validate like any other
@@ -127,7 +127,7 @@ const createVertexTracker = (manager, getSketch) => {
     emitUndoValidation: () => {
       const sketch = getSketch()
       if (!sketch) { return }
-      emit('delete', getPlacedSketchCoords(sketch.getGeometry()).length)
+      emit('commit-delete', getPlacedSketchCoords(sketch.getGeometry()).length)
     }
   }
 }

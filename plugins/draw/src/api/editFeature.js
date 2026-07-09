@@ -46,7 +46,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
 
   // Seed the Done-button gate and the stroke from the feature's starting validity
   // so an already invalid feature opens dashed and cannot be "finished" until fixed.
-  const { valid } = validateGeometry(feature, { kind: 'init', mode: 'edit_vertex' }, { onGeometryChange: draw._geometryValidator })
+  const { valid } = validateGeometry(feature, { phase: 'edit-start', mode: 'edit_vertex' }, { onGeometryChange: draw._geometryValidator })
   dispatch({ type: 'SET_GEOMETRY_VALID', payload: valid })
   draw.setInvalid?.(!valid)
 

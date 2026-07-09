@@ -171,7 +171,7 @@ describe('split', () => {
   // clobbering split's own gate. DrawInit re-attaches that shared handler on every
   // pluginState change, so listener order on the bus isn't stable; the correction is
   // deferred one tick (a real setTimeout) so it's always the final word regardless.
-  describe('commit-level (kind-ful) geometry change', () => {
+  describe('commit-level (has a phase) geometry change', () => {
     beforeEach(() => jest.useFakeTimers())
     afterEach(() => jest.useRealTimers())
 
@@ -181,7 +181,7 @@ describe('split', () => {
 
       split(context, 'poly')
       const commitEvent = {
-        kind: 'add',
+        phase: 'commit-add',
         vertexIndex: 1,
         feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties: {} }
       }
@@ -201,7 +201,7 @@ describe('split', () => {
 
       split(context, 'poly')
       handlerFor(draw, 'geometrychange')({
-        kind: 'add',
+        phase: 'commit-add',
         feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties: {} }
       })
       jest.runAllTimers()
@@ -216,7 +216,7 @@ describe('split', () => {
       splitPolygon.mockClear()
 
       handlerFor(draw, 'geometrychange')({
-        kind: 'add',
+        phase: 'commit-add',
         feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0]] }, properties: {} }
       })
       jest.runAllTimers()
@@ -230,7 +230,7 @@ describe('split', () => {
 
       split(context, 'poly')
       handlerFor(draw, 'geometrychange')({
-        kind: 'add',
+        phase: 'commit-add',
         feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties: {} }
       })
       // The split completes (or is cancelled) before the deferred tick runs.

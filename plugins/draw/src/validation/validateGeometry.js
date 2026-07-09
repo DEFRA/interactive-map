@@ -23,7 +23,7 @@ const normaliseResult = (result) => {
  * user callback runs last.
  *
  * @param {object} feature - current GeoJSON feature
- * @param {object} context - { kind: 'add'|'move'|'insert'|'delete', vertexIndex, mode }
+ * @param {object} context - { phase: import('../adapterEvents.js').GeometryChangePhase, vertexIndex, mode }
  * @param {object} [config]
  * @param {Array<Function>} [config.rules] - defaults to DEFAULT_RULES
  * @param {Function} [config.onGeometryChange] - user callback, same signature as a rule
@@ -51,11 +51,11 @@ export const validateGeometry = (feature, context = {}, config = {}) => {
  * reject the placement (the vertex never appears), used for states that could
  * not be recovered from by continuing to draw.
  *
- * The user callback receives `context.kind === 'place'` to distinguish a
+ * The user callback receives `context.phase === 'place'` to distinguish a
  * placement veto from a soft validity check.
  *
  * @param {object} feature - candidate GeoJSON feature (placed vertices + new point)
- * @param {object} context - { vertexIndex, mode }; kind is forced to 'place'
+ * @param {object} context - { vertexIndex, mode }; phase is forced to 'place'
  * @param {object} [config]
  * @param {Array<Function>} [config.rules] - defaults to HARD_RULES
  * @param {Function} [config.onGeometryChange] - user callback, same signature as a rule
@@ -63,7 +63,7 @@ export const validateGeometry = (feature, context = {}, config = {}) => {
  */
 export const validatePlacement = (feature, context = {}, config = {}) => {
   const { rules = HARD_RULES, onGeometryChange } = config
-  return validateGeometry(feature, { ...context, kind: 'place' }, { rules, onGeometryChange })
+  return validateGeometry(feature, { ...context, phase: 'place' }, { rules, onGeometryChange })
 }
 
 export const MODE_BY_GEOMETRY = { Polygon: 'draw_polygon', LineString: 'draw_line' }
@@ -90,7 +90,7 @@ export const checkPlacement = ({ placed, point, geometryType, onGeometryChange }
   const mode = MODE_BY_GEOMETRY[geometryType]
   const { valid, reason } = validatePlacement(feature, { mode, vertexIndex: placed.length }, { onGeometryChange })
   if (valid) { return { valid: true } }
-  return { valid: false, blocked: { feature, reason: reason ?? null, kind: 'place', mode, vertexIndex: placed.length } }
+  return { valid: false, blocked: { feature, reason: reason ?? null, phase: 'place', mode, vertexIndex: placed.length } }
 }
 
 /**
@@ -102,7 +102,7 @@ export const checkPlacement = ({ placed, point, geometryType, onGeometryChange }
  * against the displayed geometry, returning `{ valid, reason }`.
  *
  * @param {object} feature - displayed GeoJSON feature (placed vertices + cursor)
- * @param {object} context - { mode, placedCount, kind }; kind defaults to 'preview'
+ * @param {object} context - { mode, placedCount, phase }; phase defaults to 'preview'
  * @param {object} [config]
  * @param {Array<Function>} [config.rules] - defaults to LIVE_RULES
  * @param {Function} [config.onGeometryChange] - user callback, same signature as a rule
@@ -113,5 +113,5 @@ export const validateDisplayedGeometry = (feature, context = {}, config = {}) =>
   const type = feature?.geometry?.type ?? feature?.type
   const min = MIN_VERTICES[type] ?? 0
   if ((context.placedCount ?? 0) < min) { return { valid: true } }
-  return validateGeometry(feature, { ...context, kind: context.kind ?? 'preview' }, { rules, onGeometryChange })
+  return validateGeometry(feature, { ...context, phase: context.phase ?? 'preview' }, { rules, onGeometryChange })
 }

@@ -70,25 +70,25 @@ test('syncGeom derives state from the geometry and emits vertexchange + update',
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.UPDATE, store.toGeoJSON())
 })
 
-test('emitGeometryValidation emits a deferred commit-level geometrychange with the change kind', () => {
+test('emitGeometryValidation emits a deferred commit-level geometrychange with the change phase', () => {
   jest.useFakeTimers()
   const { selection, manager, store } = setup()
   manager.emit.mockClear()
 
-  selection.emitGeometryValidation('move', 2)
+  selection.emitGeometryValidation('commit-move', 2)
   // Deferred a tick to avoid re-entrancy — nothing emitted synchronously.
   expect(manager.emit).not.toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.anything())
 
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, {
     feature: store.toGeoJSON(),
-    kind: 'move',
+    phase: 'commit-move',
     vertexIndex: 2
   })
   jest.useRealTimers()
 })
 
-test('emitGeometryValidation is a no-op without a change kind', () => {
+test('emitGeometryValidation is a no-op without a change phase', () => {
   jest.useFakeTimers()
   const { selection, manager } = setup()
   manager.emit.mockClear()

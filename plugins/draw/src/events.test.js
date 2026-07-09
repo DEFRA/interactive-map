@@ -206,7 +206,7 @@ describe('geometrychange validation', () => {
     geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [2, 0], [0, 0]]] }
   }
 
-  test('ignores preview payloads that carry no change kind', () => {
+  test('ignores preview payloads that carry no phase', () => {
     const { draw, dispatch } = setup()
     drawHandler(draw, 'geometrychange')({ coordinates: [[0, 0], [1, 1]] })
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: expect.anything() })
@@ -214,13 +214,13 @@ describe('geometrychange validation', () => {
 
   test('opens the gate for a valid geometry', () => {
     const { draw, dispatch } = setup()
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, kind: 'add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
   })
 
   test('gates a self-intersecting shape while drawing', () => {
     const { draw, dispatch, eventBus } = setup()
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, kind: 'add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-add', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
     expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
@@ -228,14 +228,14 @@ describe('geometrychange validation', () => {
 
   test('gates a zero-area shape while drawing', () => {
     const { draw, dispatch } = setup()
-    drawHandler(draw, 'geometrychange')({ feature: collinearFeature, kind: 'add', vertexIndex: 2 })
+    drawHandler(draw, 'geometrychange')({ feature: collinearFeature, phase: 'commit-add', vertexIndex: 2 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
   })
 
   test('gates a self-intersecting move in edit mode (never reverts)', () => {
     const { draw, dispatch, eventBus } = setup()
     draw.getMode.mockReturnValue('edit_vertex')
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, kind: 'move', vertexIndex: 2 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-move', vertexIndex: 2 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
   })
@@ -243,14 +243,14 @@ describe('geometrychange validation', () => {
   test('keeps a valid edit move (gate open)', () => {
     const { draw, dispatch } = setup()
     draw.getMode.mockReturnValue('edit_vertex')
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, kind: 'move', vertexIndex: 1 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-move', vertexIndex: 1 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
   })
 
   test('applies the per-session user validator as a gate', () => {
     const { draw, dispatch, eventBus } = setup()
     draw._geometryValidator = () => ({ valid: false, reason: 'too big' })
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, kind: 'add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: 'too big' }))
   })
@@ -258,11 +258,11 @@ describe('geometrychange validation', () => {
   test('drives the invalid stroke from committed validity in edit mode only', () => {
     const { draw } = setup()
     draw.getMode.mockReturnValue('draw_polygon')
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, kind: 'add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-add', vertexIndex: 3 })
     expect(draw.setInvalid).not.toHaveBeenCalled() // draw mode: the adapter's live check owns the stroke
 
     draw.getMode.mockReturnValue('edit_vertex')
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, kind: 'move', vertexIndex: 2 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-move', vertexIndex: 2 })
     expect(draw.setInvalid).toHaveBeenCalledWith(true)
   })
 
@@ -293,7 +293,7 @@ describe('geometrychange validation', () => {
 
   test('relays a blocked placement to the public bus as draw:geometryinvalid', () => {
     const { draw, eventBus } = setup()
-    const blocked = { kind: 'place', mode: 'draw_polygon', vertexIndex: 2, reason: 'outside region', feature: { type: 'Feature' } }
+    const blocked = { phase: 'place', mode: 'draw_polygon', vertexIndex: 2, reason: 'outside region', feature: { type: 'Feature' } }
     drawHandler(draw, 'placementblocked')(blocked)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', blocked)
   })
@@ -303,8 +303,8 @@ describe('geometrychange validation', () => {
     draw.getMode.mockReturnValue('draw_polygon')
     const validator = jest.fn(() => true)
     draw._geometryValidator = validator
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, kind: 'add', vertexIndex: 3 })
-    expect(validator).toHaveBeenCalledWith(squareFeature, { kind: 'add', vertexIndex: 3, mode: 'draw_polygon' })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
+    expect(validator).toHaveBeenCalledWith(squareFeature, { phase: 'commit-add', vertexIndex: 3, mode: 'draw_polygon' })
   })
 })
 

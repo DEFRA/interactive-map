@@ -36,7 +36,7 @@ describe('validateGeometry (soft gating)', () => {
   test('passes the context to rules and the callback', () => {
     const rule = jest.fn(() => ({ valid: true }))
     const onGeometryChange = jest.fn(() => ({ valid: true }))
-    const context = { kind: 'move', vertexIndex: 2, mode: 'edit_vertex' }
+    const context = { phase: 'commit-move', vertexIndex: 2, mode: 'edit_vertex' }
     validateGeometry(square, context, { rules: [rule], onGeometryChange })
     expect(rule).toHaveBeenCalledWith(square, context)
     expect(onGeometryChange).toHaveBeenCalledWith(square, context)
@@ -76,7 +76,7 @@ describe('checkPlacement (shared engine gate)', () => {
     expect(result.blocked).toEqual({
       feature: expect.objectContaining({ type: 'Feature' }),
       reason: expect.stringMatching(/intersect/i),
-      kind: 'place',
+      phase: 'place',
       mode: 'draw_polygon',
       vertexIndex: 3
     })
@@ -86,7 +86,7 @@ describe('checkPlacement (shared engine gate)', () => {
     const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'outside region' }))
     const result = checkPlacement({ placed: [[0, 0]], point: [1, 1], geometryType: 'LineString', onGeometryChange })
     expect(result.blocked).toEqual(expect.objectContaining({ mode: 'draw_line', reason: 'outside region', vertexIndex: 1 }))
-    expect(onGeometryChange).toHaveBeenCalledWith(expect.anything(), { kind: 'place', mode: 'draw_line', vertexIndex: 1 })
+    expect(onGeometryChange).toHaveBeenCalledWith(expect.anything(), { phase: 'place', mode: 'draw_line', vertexIndex: 1 })
   })
 
   test('checkPlacement mode is set correctly for Polygon vs LineString', () => {
@@ -105,8 +105,8 @@ describe('validateDisplayedGeometry edge cases', () => {
     expect(result.valid).toBe(true) // unknown types use MIN_VERTICES fallback of 0, so 0 placed = valid
   })
 
-  test('feature without geometry type defaults to context.kind', () => {
-    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { coordinates: [[0, 0]] } }, { placedCount: 2, kind: 'custom' })
+  test('feature without geometry type defaults to context.phase', () => {
+    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { coordinates: [[0, 0]] } }, { placedCount: 2, phase: 'custom' })
     expect(typeof result).toBe('object')
     expect(result).toHaveProperty('valid')
   })
@@ -132,10 +132,10 @@ describe('validatePlacement (hard gating)', () => {
     expect(validatePlacement(simplePath)).toEqual({ valid: true })
   })
 
-  test('forces kind "place" into the rule and callback context', () => {
+  test('forces phase "place" into the rule and callback context', () => {
     const onGeometryChange = jest.fn(() => true)
     validatePlacement(simplePath, { mode: 'draw_polygon', vertexIndex: 4 }, { onGeometryChange })
-    expect(onGeometryChange).toHaveBeenCalledWith(simplePath, { kind: 'place', mode: 'draw_polygon', vertexIndex: 4 })
+    expect(onGeometryChange).toHaveBeenCalledWith(simplePath, { phase: 'place', mode: 'draw_polygon', vertexIndex: 4 })
   })
 
   test('the user callback can veto a placement with a reason', () => {

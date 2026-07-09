@@ -1,4 +1,25 @@
 /**
+ * What stage of the draw/edit lifecycle a geometry validation call is running at.
+ * Passed as `context.phase` through validateGeometry (validation/validateGeometry.js)
+ * to the default rules (validation/rules.js) and the user's `onGeometryChange` callback.
+ *
+ * @typedef {'preview' | 'place' | 'create' | 'edit-start' |
+ *   'commit-add' | 'commit-move' | 'commit-insert' | 'commit-delete'} GeometryChangePhase
+ *
+ *   'preview'       - live, in-progress feedback (drag / rubber-band); nothing
+ *                     has committed yet, and nothing can be vetoed at this stage.
+ *   'place'         - a candidate vertex is about to be committed; a HARD_RULES
+ *                     failure vetoes it outright and it never appears.
+ *   'create'        - a whole new feature just finished being drawn.
+ *   'edit-start'    - an existing feature was just loaded into an edit session;
+ *                     nothing has changed yet, this is the baseline check.
+ *   'commit-add'    - a vertex was added while drawing.
+ *   'commit-move'   - a vertex was dragged/nudged while editing.
+ *   'commit-insert' - a vertex was inserted at a midpoint while editing.
+ *   'commit-delete' - a vertex was removed while editing.
+ */
+
+/**
  * Shared adapter event contract.
  *
  * Both draw adapters (MaplibreDrawAdapter, OLDrawAdapter) expose an on/off bus
@@ -20,13 +41,14 @@
  *   UPDATE                 GeoJSON feature after a vertex operation
  *   GEOMETRY_CHANGE        Two payload shapes share this event:
  *                            - Preview (draw/split live update): the in-progress
- *                              feature itself (has `coordinates`, no `kind`).
- *                            - Commit-level validation: `{ feature, kind, vertexIndex }`
- *                              where kind ∈ 'add' | 'move' | 'insert' | 'delete'.
+ *                              feature itself (has `coordinates`, no `phase`).
+ *                            - Commit-level validation: `{ feature, phase, vertexIndex }`
+ *                              where phase ∈ 'commit-add' | 'commit-move' |
+ *                              'commit-insert' | 'commit-delete' (see GeometryChangePhase).
  *                              events.js validates these and reverts invalid ones.
  *                          Listeners must guard for the shape they expect.
  *   INTERFACE_TYPE_CHANGE  { interfaceType: 'mouse' | 'touch' | 'keyboard' }
- *   PLACEMENT_BLOCKED      { feature, reason, kind: 'place', mode, vertexIndex } —
+ *   PLACEMENT_BLOCKED      { feature, reason, phase: 'place', mode, vertexIndex } —
  *                          a vertex placement was rejected by validatePlacement
  *                          (hard rule or user callback); feature is the candidate
  *                          geometry that was refused.

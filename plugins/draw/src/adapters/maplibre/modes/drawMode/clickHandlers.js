@@ -5,22 +5,22 @@ import { checkPlacement } from '../../../../validation/validateGeometry.js'
 
 // The commit-level geometrychange payload for a vertex commit: the placed-only
 // geometry (trailing rubber-band point dropped so validation tests the committed shape).
-const placedDrawGeometryChange = (feature, getCoords, kind) => {
+const placedDrawGeometryChange = (feature, getCoords, phase) => {
   const placed = getCoords(feature).slice(0, -1)
   const type = feature.toGeoJSON().geometry.type
   const geometry = type === 'Polygon'
     ? { type: 'Polygon', coordinates: [placed] }
     : { type: 'LineString', coordinates: placed }
-  return { feature: { type: 'Feature', geometry, properties: {} }, kind, vertexIndex: Math.max(0, placed.length - 1) }
+  return { feature: { type: 'Feature', geometry, properties: {} }, phase, vertexIndex: Math.max(0, placed.length - 1) }
 }
 
 // Fire a commit-level geometrychange for validation, deferred a tick so it runs after
 // the current click settles.
-const scheduleDrawValidation = (map, getFeature, getCoords, state, kind) => {
+const scheduleDrawValidation = (map, getFeature, getCoords, state, phase) => {
   setTimeout(() => {
     const feature = getFeature(state)
     if (!feature) { return }
-    map.fire('draw.geometrychange', placedDrawGeometryChange(feature, getCoords, kind))
+    map.fire('draw.geometrychange', placedDrawGeometryChange(feature, getCoords, phase))
   }, 0)
 }
 
@@ -66,8 +66,8 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
 
   // Emit a commit-level geometrychange after a vertex commit (placement or undo)
   // so the validation layer can gate the Done button.
-  emitDrawValidation (state, kind = 'add') {
-    scheduleDrawValidation(this.map, getFeature, getCoords, state, kind)
+  emitDrawValidation (state, phase = 'commit-add') {
+    scheduleDrawValidation(this.map, getFeature, getCoords, state, phase)
   },
 
   onTap () {

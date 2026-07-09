@@ -12,7 +12,7 @@ describe('undoHandlers', () => {
     expect(map._undoStack.length).toBe(1)
   })
 
-  test('pushUndo emits a deferred commit-level geometrychange with the change kind', () => {
+  test('pushUndo emits a deferred commit-level geometrychange with the change phase', () => {
     jest.useFakeTimers()
     const { ctx, map } = createHarness()
     map.fire.mockClear()
@@ -23,7 +23,7 @@ describe('undoHandlers', () => {
 
     jest.runAllTimers()
     expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({
-      kind: 'move',
+      phase: 'commit-move',
       vertexIndex: 2,
       feature: expect.any(Object)
     }))
@@ -44,7 +44,7 @@ describe('undoHandlers', () => {
     jest.useFakeTimers()
     const { ctx, map } = createHarness()
     map.fire.mockClear()
-    ctx.emitGeometryValidation('move', 0, 'missing-feature')
+    ctx.emitGeometryValidation('commit-move', 0, 'missing-feature')
     jest.runAllTimers()
     expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
     jest.useRealTimers()
@@ -66,7 +66,7 @@ describe('undoHandlers', () => {
     expect(() => ctx.handleUndo(state)).not.toThrow()
   })
 
-  test('handleUndo re-validates with the inverse change kind (undo of a delete re-inserts)', () => {
+  test('handleUndo re-validates with the inverse change phase (undo of a delete re-inserts)', () => {
     jest.useFakeTimers()
     const { ctx, state, map } = createHarness()
     jest.spyOn(ctx, 'undoDeleteVertex').mockImplementation(() => {})
@@ -75,7 +75,7 @@ describe('undoHandlers', () => {
     ctx.handleUndo(state)
     jest.runAllTimers()
     expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({
-      kind: 'insert',
+      phase: 'commit-insert',
       vertexIndex: 1,
       feature: expect.any(Object)
     }))

@@ -89,7 +89,7 @@ describe('buildCanPlaceVertex', () => {
     const gate = gateFor([[0, 0], [2, 2], [2, 0], [9, 9], [0, 0]], manager)
     expect(gate([0, 2])).toBe(false)
     expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.PLACEMENT_BLOCKED, expect.objectContaining({
-      kind: 'place',
+      phase: 'place',
       mode: 'draw_polygon',
       vertexIndex: 3,
       reason: expect.any(String),
@@ -97,14 +97,14 @@ describe('buildCanPlaceVertex', () => {
     }))
   })
 
-  test('the user callback can veto a placement (and receives kind "place")', () => {
+  test('the user callback can veto a placement (and receives phase "place")', () => {
     const manager = createFakeManager()
     manager._geometryValidator = jest.fn((feature, context) =>
-      context.kind === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
+      context.phase === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
     const gate = gateFor([[0, 0], [2, 0], [9, 9], [0, 0]], manager)
     expect(gate([5, 5])).toBe(false)
     expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.PLACEMENT_BLOCKED,
-      expect.objectContaining({ reason: 'outside region', kind: 'place' }))
+      expect.objectContaining({ reason: 'outside region', phase: 'place' }))
   })
 
   test('the user callback can veto the very first vertex (no sketch yet)', () => {
@@ -217,7 +217,7 @@ describe('drawing lifecycle', () => {
     expect(changed).toHaveBeenCalled()
   })
 
-  test('undo re-validates the committed shape (deferred, kind delete)', () => {
+  test('undo re-validates the committed shape (deferred, phase commit-delete)', () => {
     jest.useFakeTimers()
     const { mode, manager, emitted, interaction } = setup()
     const sketch = polygonFeature([[0, 0], [10, 0], [5, 5], [0, 0]])
@@ -227,7 +227,7 @@ describe('drawing lifecycle', () => {
     mode.undo()
     jest.runAllTimers()
     expect(emitted().filter((e) => e.type === ADAPTER_EVENTS.GEOMETRY_CHANGE).pop()?.payload).toEqual(
-      expect.objectContaining({ kind: 'delete', feature: expect.any(Object) }))
+      expect.objectContaining({ phase: 'commit-delete', feature: expect.any(Object) }))
     jest.useRealTimers()
   })
 
@@ -241,7 +241,7 @@ describe('drawing lifecycle', () => {
     expect(emitted().some((e) => e.type === ADAPTER_EVENTS.GEOMETRY_CHANGE)).toBe(false)
     jest.runAllTimers()
     const geom = emitted().find((e) => e.type === ADAPTER_EVENTS.GEOMETRY_CHANGE)
-    expect(geom.payload).toEqual(expect.objectContaining({ kind: 'add' }))
+    expect(geom.payload).toEqual(expect.objectContaining({ phase: 'commit-add' }))
     jest.useRealTimers()
   })
 

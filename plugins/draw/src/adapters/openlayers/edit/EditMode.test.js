@@ -111,7 +111,7 @@ test('select via pointer, delete the vertex, then undo restores it', () => {
   mode.undo() // empty stack — no-op
 })
 
-test('undo re-validates with the inverse change kind (undo of a delete re-inserts)', () => {
+test('undo re-validates with the inverse change phase (undo of a delete re-inserts)', () => {
   jest.useFakeTimers()
   const { container, manager, mode } = setup()
   container.dispatchEvent(domEvent('pointerdown', { pointerType: 'mouse', clientX: 100, clientY: 0 }))
@@ -121,7 +121,7 @@ test('undo re-validates with the inverse change kind (undo of a delete re-insert
   mode.undo()
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({
-    kind: 'insert',
+    phase: 'commit-insert',
     vertexIndex: 1,
     feature: expect.any(Object)
   }))

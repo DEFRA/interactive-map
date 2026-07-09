@@ -39,7 +39,7 @@ const createUndoStackHandlers = ({ geometryType, getFeature }) => ({
       this.undoVertex(state)
       // An undo commits a vertex removal, so it must re-validate like any other
       // commit — otherwise the Done gate goes stale.
-      this.emitDrawValidation(state, 'delete')
+      this.emitDrawValidation(state, 'commit-delete')
     }
   },
 

@@ -15,19 +15,19 @@ import { createLiveStroke } from '../../../validation/liveStroke.js'
 const TOUCH_INTERFACE = 'touch'
 const VERTEX_TYPE = 'vertex'
 
-// Map an undo-op type onto the geometry-change `kind` consumed by validation.
-const OP_KIND = {
-  move_vertex: 'move',
-  insert_vertex: 'insert',
-  delete_vertex: 'delete'
+// Map an undo-op type onto the geometry-change `phase` consumed by validation.
+const OP_PHASE = {
+  move_vertex: 'commit-move',
+  insert_vertex: 'commit-insert',
+  delete_vertex: 'commit-delete'
 }
 
 // Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
-// so its re-validation reports the inverse kind.
-const UNDO_INVERSE_KIND = {
-  move_vertex: 'move',
-  insert_vertex: 'delete',
-  delete_vertex: 'insert'
+// so its re-validation reports the inverse phase.
+const UNDO_INVERSE_PHASE = {
+  move_vertex: 'commit-move',
+  insert_vertex: 'commit-delete',
+  delete_vertex: 'commit-insert'
 }
 
 // Live invalid-stroke wiring: re-validate the displayed geometry on every geometry
@@ -91,7 +91,7 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
     }
     undoStack.push({ type: 'delete_vertex', vertexIndex: result.deletedIndex, deletedCoord: result.deletedCoord })
     syncGeom()
-    emitGeometryValidation('delete', result.deletedIndex)
+    emitGeometryValidation('commit-delete', result.deletedIndex)
     setState({ selectedVertexIndex: -1, selectedVertexType: null })
   }
 
@@ -105,7 +105,7 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
     syncGeom()
     // An undo commits the inverse change, so it must re-validate like any other
     // commit — otherwise the invalid stroke and the Done gate go stale.
-    emitGeometryValidation(UNDO_INVERSE_KIND[op.type], restoredIndex)
+    emitGeometryValidation(UNDO_INVERSE_PHASE[op.type], restoredIndex)
     // Only re-select if a vertex was already active — undo must not create a new selection
     const newIndex = previousIndex >= 0 ? restoredIndex : -1
     setState({
@@ -134,7 +134,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation('move', vertexIndex)
+      emitGeometryValidation('commit-move', vertexIndex)
       selectVertex(vertexIndex)
       touchHandler.updateTargetPosition()
     },
@@ -155,7 +155,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
       }
       undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
       syncGeom()
-      emitGeometryValidation('insert', result.insertedIndex)
+      emitGeometryValidation('commit-insert', result.insertedIndex)
       selectVertex(result.insertedIndex)
       touchHandler.updateTargetPosition()
     }
@@ -184,13 +184,13 @@ const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touch
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation('move', vertexIndex)
+      emitGeometryValidation('commit-move', vertexIndex)
       setState({ selectedVertexIndex: vertexIndex, selectedVertexType: VERTEX_TYPE })
     },
     onInserted ({ insertedIndex }) {
       undoStack.push({ type: 'insert_vertex', vertexIndex: insertedIndex })
       syncGeom()
-      emitGeometryValidation('insert', insertedIndex)
+      emitGeometryValidation('commit-insert', insertedIndex)
     },
     onDeleted: actions.doDeleteVertex,
     onUndo: actions.doUndo,
@@ -330,7 +330,7 @@ export const createEditMode = ({ map, manager, options }) => {
         return
       }
       undoStack.push(op)
-      emitGeometryValidation(OP_KIND[op.type], op.vertexIndex)
+      emitGeometryValidation(OP_PHASE[op.type], op.vertexIndex)
       setState({ selectedVertexIndex: op.vertexIndex, selectedVertexType: VERTEX_TYPE })
     }
   })

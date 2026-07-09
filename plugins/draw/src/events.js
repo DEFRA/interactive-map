@@ -61,10 +61,10 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // A shape can be finished by the Done button OR a map gesture (double-click,
       // clicking the first vertex, Enter). Only the button is gated, so re-validate
       // here to catch the gesture paths — an invalid shape must never be finalised.
-      const { valid } = validateGeometry(f, { kind: 'create', mode: draw.getMode() }, { onGeometryChange: draw._geometryValidator })
+      const { valid } = validateGeometry(f, { phase: 'create', mode: draw.getMode() }, { onGeometryChange: draw._geometryValidator })
       if (!valid) {
         pendingCreateId = f.id
-        eventBus.emit(GEOMETRY_INVALID_EVENT, { feature: f, kind: 'create', mode: EDIT_VERTEX_MODE })
+        eventBus.emit(GEOMETRY_INVALID_EVENT, { feature: f, phase: 'create', mode: EDIT_VERTEX_MODE })
         setTimeout(() => enterEditVertexMode({ draw, appState, appConfig, mapState, dispatch }, f.id), 0)
         return
       }
@@ -87,12 +87,12 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
     onUpdate: (f) => { eventBus.emit('draw:updated', f) },
     onGeometryChange: (e) => {
-      // Only commit-level changes (add/move/insert/delete) carry a `kind`.
+      // Only commit-level changes (commit-add/move/insert/delete) carry a `phase`.
       // Preview events (e.g. split's live preview) have none and are ignored.
-      if (!e?.kind) { return }
+      if (!e?.phase) { return }
 
       const mode = draw.getMode()
-      const context = { kind: e.kind, vertexIndex: e.vertexIndex, mode }
+      const context = { phase: e.phase, vertexIndex: e.vertexIndex, mode }
       const { valid, reason } = validateGeometry(e.feature, context, { onGeometryChange: draw._geometryValidator })
 
       // Rules only gate the Done button — never revert. A shape can pass through
@@ -110,7 +110,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       }
     },
     // A vertex placement was rejected (hard rule or user callback veto). Surface it
-    // on the public bus with kind 'place' so a future tooltip can show the reason.
+    // on the public bus with phase 'place' so a future tooltip can show the reason.
     onPlacementBlocked: (e) => {
       eventBus.emit(GEOMETRY_INVALID_EVENT, e)
     },

@@ -128,7 +128,7 @@ describe('map event normalisation', () => {
 
   test('placementblocked forwards the raw event', () => {
     const { map, bus } = setup()
-    const e = { kind: 'place', reason: 'outside region' }
+    const e = { phase: 'place', reason: 'outside region' }
     onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)(e)
     expect(bus.emit).toHaveBeenCalledWith('placementblocked', e)
   })
@@ -198,9 +198,9 @@ describe('live invalid stroke (draw mode)', () => {
     expect(map.setLayoutProperty.mock.calls.length).toBe(callsAfterFlip)
   })
 
-  test('commit-level (kind-ful) events do not drive the stroke; events.js owns those', () => {
+  test('commit-level (has a phase) events do not drive the stroke; events.js owns those', () => {
     const { map } = drawPolygonSetup()
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: bowtie, kind: 'add', vertexIndex: 3 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: bowtie, phase: 'commit-add', vertexIndex: 3 })
     expect(map.setLayoutProperty).not.toHaveBeenCalled()
   })
 
@@ -433,7 +433,7 @@ describe('simple delegations', () => {
     const { adapter, map } = setup()
     const render = jest.fn()
     const drawEvent = { coordinates: [[0, 0], [1, 1]], properties: {}, ctx: { store: { render } } }
-    // Kind-less events are rubber-band moves — cached so setDrawingPreviewProperty
+    // Phase-less events are rubber-band moves — cached so setDrawingPreviewProperty
     // has something to tag (the in-progress feature has no id yet to look up).
     onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(drawEvent)
 
@@ -448,12 +448,12 @@ describe('simple delegations', () => {
     expect(() => adapter.setDrawingPreviewProperty('splitter', 'valid')).not.toThrow()
   })
 
-  test('setDrawingPreviewProperty ignores commit-level (kind-ful) events', () => {
+  test('setDrawingPreviewProperty ignores commit-level (has a phase) events', () => {
     const { adapter, map } = setup()
     const render = jest.fn()
-    // A commit event (kind-ful) must not become the cached preview target — it
+    // A commit event (has a phase) must not become the cached preview target — it
     // carries a `feature`, not the live `properties` object rubber-band moves do.
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: {}, kind: 'add', ctx: { store: { render } } })
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: {}, phase: 'commit-add', ctx: { store: { render } } })
 
     expect(() => adapter.setDrawingPreviewProperty('splitter', 'valid')).not.toThrow()
     expect(render).not.toHaveBeenCalled()

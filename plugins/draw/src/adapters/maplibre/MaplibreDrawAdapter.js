@@ -100,12 +100,12 @@ export class MaplibreDrawAdapter {
       undochange: (e) => this._bus.emit(ADAPTER_EVENTS.UNDO_CHANGE, e.length),
       update: (e) => this._bus.emit(ADAPTER_EVENTS.UPDATE, e.features[0]),
       geometrychange: (e) => {
-        // Kind-less events are rubber-band moves carrying the displayed feature
+        // Phase-less events are rubber-band moves carrying the displayed feature
         // (placed vertices + cursor) — they drive the live invalid stroke, and are
         // cached for setDrawingPreviewProperty (the in-progress feature has no
         // stable id yet — only assigned once drawing actually finishes — so it
         // can't be targeted via setFeatureProperty).
-        if (!e?.kind) {
+        if (!e?.phase) {
           this._updateLiveStroke(e)
           this._currentDrawEvent = e
         }

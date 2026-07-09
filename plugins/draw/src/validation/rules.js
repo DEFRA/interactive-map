@@ -11,7 +11,8 @@ import turfArea from '@turf/area'
  *     the vertex never appears (used for unrecoverable states, e.g. a vertex
  *     that would force the drawn path to cross itself).
  *
- * `context` is `{ kind, vertexIndex, mode }` so rules can vary by change kind or mode.
+ * `context` is `{ phase, vertexIndex, mode }` (phase: import('../adapterEvents.js').GeometryChangePhase)
+ * so rules can vary by phase or mode.
  * Add a rule by appending it to SOFT_RULES or HARD_RULES.
  */
 
