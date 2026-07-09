@@ -15,7 +15,7 @@ const makeContext = (overrides = {}) => {
     off: jest.fn(),
     isSnapEnabled: jest.fn(() => true),
     setGeometryValid: jest.fn(),
-    setFeatureProperty: jest.fn()
+    setDrawingPreviewProperty: jest.fn()
   }
   const context = {
     appState: { layoutRefs: { viewportRef: { current: 'viewport' } }, interfaceType: 'mouse' },
@@ -135,7 +135,7 @@ describe('split', () => {
     const e = { coordinates: [[0, 0], [1, 1]] }
     handlerFor(draw, 'geometrychange')(e)
 
-    expect(draw.setFeatureProperty).toHaveBeenCalledWith('_splitter', 'splitter', 'valid')
+    expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
     // A valid split line must allow completion: Done enabled (pluginState.geometryValid)
     // and the double-click/click-vertex finish gesture unblocked (map._drawGeometryValid).
@@ -151,7 +151,7 @@ describe('split', () => {
     const e = { coordinates: [[0, 0], [1, 1]] }
     handlerFor(draw, 'geometrychange')(e)
 
-    expect(draw.setFeatureProperty).toHaveBeenCalledWith('_splitter', 'splitter', 'invalid')
+    expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
     expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
   })
@@ -253,7 +253,7 @@ describe('split', () => {
     const e = { coordinates: [[0, 0], [1, 1]] }
 
     expect(() => handlerFor(draw, 'geometrychange')(e)).not.toThrow()
-    expect(draw.setFeatureProperty).toHaveBeenCalledWith('_splitter', 'splitter', 'invalid')
+    expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })
   })
 })

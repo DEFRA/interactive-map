@@ -429,6 +429,36 @@ describe('simple delegations', () => {
     expect(draw.setFeatureProperty).toHaveBeenCalledWith('d', 'p', 1)
   })
 
+  test('setDrawingPreviewProperty tags the in-progress feature and re-renders', () => {
+    const { adapter, map } = setup()
+    const render = jest.fn()
+    const drawEvent = { coordinates: [[0, 0], [1, 1]], properties: {}, ctx: { store: { render } } }
+    // Kind-less events are rubber-band moves — cached so setDrawingPreviewProperty
+    // has something to tag (the in-progress feature has no id yet to look up).
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(drawEvent)
+
+    adapter.setDrawingPreviewProperty('splitter', 'valid')
+
+    expect(drawEvent.properties.splitter).toBe('valid')
+    expect(render).toHaveBeenCalled()
+  })
+
+  test('setDrawingPreviewProperty tolerates nothing having been drawn yet', () => {
+    const { adapter } = setup()
+    expect(() => adapter.setDrawingPreviewProperty('splitter', 'valid')).not.toThrow()
+  })
+
+  test('setDrawingPreviewProperty ignores commit-level (kind-ful) events', () => {
+    const { adapter, map } = setup()
+    const render = jest.fn()
+    // A commit event (kind-ful) must not become the cached preview target — it
+    // carries a `feature`, not the live `properties` object rubber-band moves do.
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: {}, kind: 'add', ctx: { store: { render } } })
+
+    expect(() => adapter.setDrawingPreviewProperty('splitter', 'valid')).not.toThrow()
+    expect(render).not.toHaveBeenCalled()
+  })
+
   test('on/off delegate to the internal event bus', () => {
     const { adapter, bus } = setup()
     const handler = jest.fn()

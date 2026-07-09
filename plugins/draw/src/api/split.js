@@ -13,7 +13,11 @@ const applySplitValidity = ({ draw, dispatch, polygonFeature, coordinates }) => 
   const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates } }
   const featureCollection = splitPolygon(polygonFeature, lineFeature)
   const isValid = !!featureCollection
-  draw.setFeatureProperty('_splitter', 'splitter', isValid ? 'valid' : 'invalid')
+  // The splitter line has no stable id until it's actually created, so the
+  // in-progress preview colour is tagged via setDrawingPreviewProperty, not
+  // setFeatureProperty (that targets the '_splitter' id assigned on completion —
+  // see onSplitCreate below).
+  draw.setDrawingPreviewProperty('splitter', isValid ? 'valid' : 'invalid')
   dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
   dispatch({ type: 'SET_GEOMETRY_VALID', payload: isValid })
   draw.setGeometryValid(isValid)

@@ -43,6 +43,7 @@ export const displayedShape = (mode, coordinates) => {
  *   done() / cancel() / undo() / deleteVertex()
  *   get(id) / add(feature) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
+ *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
  *   remove()
  */
@@ -100,8 +101,14 @@ export class MaplibreDrawAdapter {
       update: (e) => this._bus.emit(ADAPTER_EVENTS.UPDATE, e.features[0]),
       geometrychange: (e) => {
         // Kind-less events are rubber-band moves carrying the displayed feature
-        // (placed vertices + cursor) — they drive the live invalid stroke.
-        if (!e?.kind) { this._updateLiveStroke(e) }
+        // (placed vertices + cursor) — they drive the live invalid stroke, and are
+        // cached for setDrawingPreviewProperty (the in-progress feature has no
+        // stable id yet — only assigned once drawing actually finishes — so it
+        // can't be targeted via setFeatureProperty).
+        if (!e?.kind) {
+          this._updateLiveStroke(e)
+          this._currentDrawEvent = e
+        }
         this._bus.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, e)
       },
       placementblocked: (e) => this._bus.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, e),
@@ -274,6 +281,19 @@ export class MaplibreDrawAdapter {
 
   setFeatureProperty (id, property, value) {
     this._draw.setFeatureProperty(id, property, value)
+  }
+
+  // Tag the feature currently being drawn (rubber-band, not yet created — so it
+  // has no stable id to target via setFeatureProperty) with a property, and
+  // re-render so the change is visible immediately. Used for live preview styling
+  // while drawing, e.g. split's valid/invalid line colour. A no-op once nothing
+  // has been drawn yet this session, or outside draw_polygon/draw_line.
+  setDrawingPreviewProperty (property, value) {
+    const e = this._currentDrawEvent
+    if (e?.properties) {
+      e.properties[property] = value
+    }
+    e?.ctx?.store?.render()
   }
 
   on (type, handler) {

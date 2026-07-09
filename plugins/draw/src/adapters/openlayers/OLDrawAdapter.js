@@ -17,6 +17,7 @@ import { createOLDraw } from './olDraw.js'
  *   done() / cancel() / undo() / deleteVertex()
  *   get(id) / add(feature) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
+ *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
  *   remove()
  */
@@ -91,6 +92,7 @@ export class OLDrawAdapter {
   isSnapEnabled () { return this._snapEnabled }
 
   setFeatureProperty () { /* not implemented for OL */ }
+  setDrawingPreviewProperty () { /* not implemented for OL */ }
 
   on (type, handler) { this._manager.on(type, handler) }
   off (type, handler) { this._manager.off(type, handler) }
