@@ -6,7 +6,7 @@
 
 {% block head %}
   <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
-  <link href="/public/vendor/interactive-map/css/index.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
 {% block bodyStart %}
@@ -36,10 +36,10 @@
 
 {% block pageScripts %}
   <!-- Defra library scripts -->
-  <script src="/public/vendor/interactive-map/umd/index.js"></script>
-  <script src="/public/vendor/provider-maplibre/umd/index.js"></script>
-  <script src="/public/vendor/plugin-interact/umd/index.js"></script>
-  <script src="/public/vendor/plugin-draw-ml/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map-provider-maplibre/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map-plugin-interact/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map-plugin-draw-ml/dist/umd/index.js"></script>
 
   <script>
     const DRAW_LAYERS = ['fill-inactive.cold', 'stroke-inactive.cold']

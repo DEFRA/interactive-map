@@ -1,0 +1,6 @@
+{
+  "assets": [
+    "/dist/umd",
+    "/dist/css"
+  ]
+}

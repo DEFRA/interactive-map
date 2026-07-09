@@ -12,5 +12,4 @@ migrate.log
 
 # Local consumer-install artifacts (regenerate with scripts/install-local-packages.sh)
 .tarballs/
-app/assets/vendor/
 package-lock.json
