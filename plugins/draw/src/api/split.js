@@ -2,6 +2,61 @@ import { splitPolygon } from '../utils/spatial.js'
 import { debounce } from '../utils/debounce.js'
 import { ADAPTER_EVENTS } from '../adapterEvents.js'
 
+const DEBOUNCE_MS = 10
+
+// Recompute split validity and re-apply the same gate normal draw/edit uses:
+// disables Done (manifest.js enableWhen reads pluginState.geometryValid) and blocks
+// the double-click/click-vertex finish gesture (drawMode/clickHandlers.js reads
+// map._drawGeometryValid) while the line wouldn't produce a valid split. Only uses
+// the shared, engine-agnostic adapter interface — no mapbox-gl-draw internals.
+const applySplitValidity = ({ draw, dispatch, polygonFeature, coordinates }) => {
+  const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates } }
+  const featureCollection = splitPolygon(polygonFeature, lineFeature)
+  const isValid = !!featureCollection
+  draw.setFeatureProperty('_splitter', 'splitter', isValid ? 'valid' : 'invalid')
+  dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
+  dispatch({ type: 'SET_GEOMETRY_VALID', payload: isValid })
+  draw.setGeometryValid(isValid)
+}
+
+// Real-time preview + completion gate as the splitter line is drawn (ML only —
+// setFeatureProperty is a no-op on the OL adapter, per its documented interface).
+//
+// events.js's shared onGeometryChange handler also reacts to every commit-level
+// (kind-ful) geometrychange event and — since split nulls out the user validator
+// (see split() below) — always marks it valid via the default rules, clobbering
+// split's own gate. DrawInit's effect re-attaches that shared handler on every
+// pluginState change (detach+reattach reorders the event bus's listener Set), so
+// which handler runs first for a given event isn't stable — this can't rely on
+// registration order to "win". Instead the correction is deferred one more tick:
+// whatever events.js did already ran synchronously by the time this fires, so
+// this is always the final word regardless of ordering.
+const createGeometryChangeHandler = ({ draw, dispatch, polygonFeature, isStopped }) => {
+  const apply = (coordinates) => applySplitValidity({ draw, dispatch, polygonFeature, coordinates })
+  const debouncedPreview = debounce(apply, DEBOUNCE_MS)
+
+  return (e) => {
+    if (e?.kind) {
+      debouncedPreview.cancel?.()
+      // Commit-level events carry { feature, kind, vertexIndex } per the shared
+      // adapter contract (adapterEvents.js) rather than a top-level coordinates.
+      const coordinates = e.feature?.geometry?.coordinates
+      if (!coordinates || coordinates.length < 2) {
+        return
+      }
+      setTimeout(() => {
+        if (isStopped()) { return }
+        apply(coordinates)
+      }, 0)
+      return
+    }
+    if (!e.coordinates || e.coordinates.length < 2) {
+      return
+    }
+    debouncedPreview(e.coordinates)
+  }
+}
+
 /**
  * Start drawing a split line for a polygon.
  *
@@ -44,7 +99,11 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
 
   // Both listeners are scoped to this one splitter-line session — leaving either
   // registered past that would leak into whatever the user draws or edits next.
+  // Also guards the deferred correction in createGeometryChangeHandler: once true,
+  // a stale setTimeout callback from a since-ended session must not touch shared state.
+  let stopped = false
   const stopListening = () => {
+    stopped = true
     draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)
     draw.off(ADAPTER_EVENTS.GEOMETRY_CHANGE, onGeometryChange)
@@ -73,19 +132,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
   draw.on(ADAPTER_EVENTS.CREATE, onSplitCreate)
   draw.on(ADAPTER_EVENTS.CANCEL, onSplitCancel)
 
-  // Real-time preview: update split validity as vertices are placed (ML only)
-  const DEBOUNCE_MS = 10
-  const onGeometryChange = debounce((e) => {
-    if (!e.coordinates || e.coordinates.length < 2) {
-      return
-    }
-    const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates: e.coordinates } }
-    const featureCollection = splitPolygon(polygonFeature, lineFeature)
-    const isValid = !!featureCollection
-    e.properties.splitter = isValid ? 'valid' : 'invalid'
-    e.ctx?.store?.render()
-    dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
-  }, DEBOUNCE_MS)
+  const onGeometryChange = createGeometryChangeHandler({ draw, dispatch, polygonFeature, isStopped: () => stopped })
   draw.on(ADAPTER_EVENTS.GEOMETRY_CHANGE, onGeometryChange)
 
   dispatch({ type: 'SET_MODE', payload: 'draw_line' })
