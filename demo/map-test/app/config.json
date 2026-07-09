@@ -1,0 +1,9 @@
+{
+  "serviceName": "InteractiveMap",
+  "useServiceNavigation": false,
+  "plugins": {
+    "govuk-frontend": {
+      "rebrand": true
+    }
+  }
+}

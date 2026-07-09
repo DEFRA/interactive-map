@@ -1,0 +1,22 @@
+{
+  "name": "map-test",
+  "private": true,
+  "scripts": {
+    "dev": "govuk-prototype-kit dev",
+    "serve": "govuk-prototype-kit serve",
+    "start": "govuk-prototype-kit start"
+  },
+  "dependencies": {
+    "@defra/interactive-map": "file:.tarballs/defra-interactive-map-0.0.0-development.tgz",
+    "@defra/interactive-map-plugin-datasets": "file:.tarballs/defra-interactive-map-plugin-datasets-0.0.0-development.tgz",
+    "@defra/interactive-map-plugin-draw-ml": "file:.tarballs/defra-interactive-map-plugin-draw-ml-0.0.0-development.tgz",
+    "@defra/interactive-map-plugin-interact": "file:.tarballs/defra-interactive-map-plugin-interact-0.0.0-development.tgz",
+    "@defra/interactive-map-plugin-map-styles": "file:.tarballs/defra-interactive-map-plugin-map-styles-0.0.0-development.tgz",
+    "@defra/interactive-map-plugin-search": "file:.tarballs/defra-interactive-map-plugin-search-0.0.0-development.tgz",
+    "@defra/interactive-map-provider-maplibre": "file:.tarballs/defra-interactive-map-provider-maplibre-0.0.0-development.tgz",
+    "@defra/interactive-map-provider-open-names": "file:.tarballs/defra-interactive-map-provider-open-names-0.0.0-development.tgz",
+    "@govuk-prototype-kit/common-templates": "3.0.0",
+    "govuk-frontend": "6.3.0",
+    "govuk-prototype-kit": "13.20.2"
+  }
+}

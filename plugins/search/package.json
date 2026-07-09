@@ -17,8 +17,14 @@
     "./css": "./dist/css/index.css"
   },
   "type": "module",
-  "files": ["dist"],
-  "sideEffects": ["**/*.css", "**/*.scss"],
+  "files": [
+    "dist",
+    "govuk-prototype-kit.config.json"
+  ],
+  "sideEffects": [
+    "**/*.css",
+    "**/*.scss"
+  ],
   "dependencies": {
     "preact": "^10.27.2",
     "@babel/runtime": "^7.28.6"

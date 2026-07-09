@@ -1,0 +1,15 @@
+# Node.js ignores
+node_modules/
+
+# Prototype ignores - per-user
+.tmp/
+.env
+migrate.log
+
+# General ignores
+.DS_Store
+.idea
+
+# Local consumer-install artifacts (regenerate with scripts/install-local-packages.sh)
+.tarballs/
+package-lock.json

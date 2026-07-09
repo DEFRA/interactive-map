@@ -17,9 +17,16 @@
     "./css": "./dist/css/index.css"
   },
   "type": "module",
-  "files": ["dist"],
-  "sideEffects": ["**/*.scss"],
-  "publishConfig": { "tag": "beta" },
+  "files": [
+    "dist",
+    "govuk-prototype-kit.config.json"
+  ],
+  "sideEffects": [
+    "**/*.scss"
+  ],
+  "publishConfig": {
+    "tag": "beta"
+  },
   "dependencies": {
     "preact": "^10.27.2",
     "@babel/runtime": "^7.28.6"
