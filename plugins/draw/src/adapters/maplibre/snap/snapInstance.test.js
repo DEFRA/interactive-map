@@ -67,12 +67,25 @@ describe('createSnapInstance', () => {
 
   test('exposes an externally-controlled status via setSnapStatus', () => {
     const map = makeMap()
-    const snap = createSnapInstance(map, {}, {}, { ...config, status: false })
+    const draw = { getMode: jest.fn(() => 'draw_polygon') }
+    const snap = createSnapInstance(map, draw, {}, { ...config, status: false })
 
     expect(snap.status).toBe(false)
     snap.status = true // library write ignored
     expect(snap.status).toBe(false)
     snap.setSnapStatus(true)
+    expect(snap.status).toBe(true)
+  })
+
+  test('status is false outside draw/edit modes even when the toggle is on', () => {
+    const map = makeMap()
+    const draw = { getMode: jest.fn(() => 'simple_select') }
+    const snap = createSnapInstance(map, draw, {}, { ...config, status: false })
+
+    snap.setSnapStatus(true)
+    expect(snap.status).toBe(false)
+
+    draw.getMode.mockReturnValue('edit_vertex')
     expect(snap.status).toBe(true)
   })
 

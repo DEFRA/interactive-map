@@ -41,12 +41,12 @@ describe('extendLine', () => {
     const line = { geometry: { coordinates: [[0, 0], [0, 1]] } }
     const result = extendLine(line)
     expect(result.geometry.type).toBe('LineString')
-    expect(result.geometry.coordinates).toHaveLength(4)
+    expect(result.geometry.coordinates).toHaveLength(2)
   })
 
-  test('adds a spike at each intermediate vertex', () => {
+  test('extends only the endpoints of a multi-point line', () => {
     const line = { geometry: { coordinates: [[0, 0], [0, 1], [0, 2]] } }
-    expect(extendLine(line).geometry.coordinates).toHaveLength(6)
+    expect(extendLine(line).geometry.coordinates).toHaveLength(3)
   })
 })
 
