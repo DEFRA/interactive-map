@@ -6,9 +6,7 @@ jest.mock('../registry/datasetRegistry.js', () => ({
   datasetRegistry: { getDataset: jest.fn() }
 }))
 
-jest.mock('../../../../../src/services/logger.js', () => ({
-  logger: { warn: jest.fn() }
-}))
+jest.mock('../../../../../src/services/logger.js')
 
 describe('getOpacity', () => {
   beforeEach(() => {

@@ -21,6 +21,7 @@ export default {
     ],
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
+      '/__mocks__/',
       '<rootDir>/src/index.umd.js',
       '<rootDir>/stylelint.config.js',
       '<rootDir>/coverage',

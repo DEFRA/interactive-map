@@ -4,9 +4,7 @@ import { logger } from '../../../../../../../src/services/logger.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('../../../registry/datasetRegistry.js')
-jest.mock('../../../../../../../src/services/logger.js', () => ({
-  logger: { warn: jest.fn() }
-}))
+jest.mock('../../../../../../../src/services/logger.js')
 
 describe('MapLibreDataset', () => {
   beforeEach(() => {
