@@ -26,15 +26,16 @@ const applySplitValidity = ({ draw, dispatch, polygonFeature, coordinates }) => 
 // Real-time preview + completion gate as the splitter line is drawn (ML only —
 // setFeatureProperty is a no-op on the OL adapter, per its documented interface).
 //
-// events.js's shared onGeometryChange handler also reacts to every commit-level
-// (kind-ful) geometrychange event and — since split nulls out the user validator
-// (see split() below) — always marks it valid via the default rules, clobbering
-// split's own gate. DrawInit's effect re-attaches that shared handler on every
-// pluginState change (detach+reattach reorders the event bus's listener Set), so
-// which handler runs first for a given event isn't stable — this can't rely on
-// registration order to "win". Instead the correction is deferred one more tick:
-// whatever events.js did already ran synchronously by the time this fires, so
-// this is always the final word regardless of ordering.
+// events.js has its own shared geometrychange handler, and it also reacts to
+// every commit-level event (one with a `kind`, e.g. a vertex add/move/insert/
+// delete). Since split nulls out the user validator (see split() below), that
+// shared handler always marks the event valid via the default rules — clobbering
+// split's own validity gate. DrawInit's effect re-attaches the shared handler on
+// every pluginState change (detach+reattach reorders the event bus's listener
+// Set), so which handler runs first for a given event isn't stable — this can't
+// rely on registration order to "win". Instead the correction is deferred one
+// more tick: whatever events.js did already ran synchronously by the time this
+// fires, so this is always the final word regardless of ordering.
 const createGeometryChangeHandler = ({ draw, dispatch, polygonFeature, isStopped }) => {
   const apply = (coordinates) => applySplitValidity({ draw, dispatch, polygonFeature, coordinates })
   const debouncedPreview = debounce(apply, DEBOUNCE_MS)
