@@ -117,7 +117,9 @@ describe('esriLayerAdapter', () => {
   describe('applyDatasetVisibility', () => {
     beforeEach(async () => {
       const standAlone = datasetRegistry.getDataset('esri-standalone')
-      await adapter._addLayers(standAlone, MAP_STYLE)
+      await adapter._addLayers(standAlone)
+      const fz3 = datasetRegistry.getDataset('flood-zones-flood-zone-3')
+      await adapter._addLayers(fz3)
     })
 
     it('applies visibility for a known dataset', async () => {
@@ -134,7 +136,7 @@ describe('esriLayerAdapter', () => {
 
   describe('applyDatasetOpacity', () => {
     it('sets opacity on the opacity layer for a known dataset', async () => {
-      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'), MAP_STYLE)
+      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
       await adapter.applyDatasetOpacity('esri-standalone')
       expect(adapter._vectorTileOpacityLayers['esri-standalone'].opacity)
         .toBe(datasetRegistry.getDataset('esri-standalone').opacity)
@@ -145,7 +147,7 @@ describe('esriLayerAdapter', () => {
     })
 
     it('does nothing for an unknown dataset', async () => {
-      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'), MAP_STYLE)
+      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
       await expect(adapter.applyDatasetOpacity('unknown')).resolves.not.toThrow()
     })
   })
@@ -154,7 +156,7 @@ describe('esriLayerAdapter', () => {
 
   describe('applyGlobalOpacity', () => {
     it('sets opacity on all opacity layers', async () => {
-      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'), MAP_STYLE)
+      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
       await adapter.applyGlobalOpacity()
       expect(adapter._vectorTileOpacityLayers['esri-standalone'].opacity)
         .toBe(datasetRegistry.getDataset('esri-standalone').opacity)
@@ -171,33 +173,26 @@ describe('esriLayerAdapter', () => {
 
   describe('onMapStyleChange', () => {
     beforeEach(async () => {
-      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'), MAP_STYLE)
-      await adapter._addLayers(datasetRegistry.getDataset('esri-server'), MAP_STYLE)
+      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
+      await adapter._addLayers(datasetRegistry.getDataset('esri-server'))
     })
 
     it('calls setStyleLayerVisibility for datasets with esriStyleLayerId', async () => {
-      await adapter.onMapStyleChange(MAP_STYLE, null)
+      await adapter.onMapStyleChange()
       expect(adapter._vectorTileLayers['esri-standalone'].setStyleLayerVisibility)
         .toHaveBeenCalledWith('standalone-style', expect.any(String))
     })
 
     it('calls setPaintProperties for datasets not using server style', async () => {
-      await adapter.onMapStyleChange(MAP_STYLE, null)
+      await adapter.onMapStyleChange()
       expect(adapter._vectorTileLayers['esri-standalone'].setPaintProperties)
         .toHaveBeenCalledWith('standalone-style', expect.any(Object))
     })
 
     it('does not call setPaintProperties when useServerStyle is true', async () => {
-      await adapter.onMapStyleChange(MAP_STYLE, null)
+      await adapter.onMapStyleChange()
       expect(adapter._vectorTileLayers['esri-server'].setPaintProperties).not.toHaveBeenCalled()
     })
-
-    // it('does not call setPaintProperties when getPaintProperties returns null', async () => {
-    //   const vtl = adapter._vectorTileLayers['esri-standalone']
-    //   vtl.getPaintProperties.mockReturnValueOnce(null)
-    //   await adapter.onMapStyleChange(MAP_STYLE, null)
-    //   expect(vtl.setPaintProperties).not.toHaveBeenCalled()
-    // })
   })
 
   // ─── init ────────────────────────────────────────────────────────────────────
