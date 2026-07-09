@@ -118,8 +118,6 @@ describe('esriLayerAdapter', () => {
     beforeEach(async () => {
       const standAlone = datasetRegistry.getDataset('esri-standalone')
       await adapter._addLayers(standAlone)
-      const fz3 = datasetRegistry.getDataset('flood-zones-flood-zone-3')
-      await adapter._addLayers(fz3)
     })
 
     it('applies visibility for a known dataset', async () => {
@@ -129,6 +127,13 @@ describe('esriLayerAdapter', () => {
 
     it('does nothing for an unknown dataset', async () => {
       await expect(adapter.applyDatasetVisibility('unknown')).resolves.not.toThrow()
+    })
+
+    it('calls setStyleLayerVisibility for datasets with esriStyleLayerId', async () => {
+      const applyStyleLayerVisibilitySpy = jest.spyOn(adapter, '_applyStyleLayerVisibility')
+      await adapter._addLayers(datasetRegistry.getDataset('flood-zones'))
+      await adapter.applyDatasetVisibility('flood-zones-flood-zone-3')
+      expect(applyStyleLayerVisibilitySpy.mock.calls).toHaveLength(1)
     })
   })
 
@@ -218,7 +223,7 @@ describe('esriLayerAdapter', () => {
     })
 
     it('calls map.add for each top-level dataset', async () => {
-      expect(map.add.mock.calls.length).toEqual(5) // 3 top-level datasets + 2 group layers
+      expect(map.add.mock.calls).toHaveLength(5) // 3 top-level datasets + 2 group layers
     })
   })
 
