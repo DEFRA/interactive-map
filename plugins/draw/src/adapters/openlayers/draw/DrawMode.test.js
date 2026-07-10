@@ -217,6 +217,19 @@ describe('drawing lifecycle', () => {
     expect(changed).toHaveBeenCalled()
   })
 
+  test('setDrawingPreviewProperty tags the sketch feature and re-renders; safe with no sketch yet', () => {
+    const { mode, interaction } = setup('LineString')
+    const changed = jest.spyOn(interaction.overlay_, 'changed')
+    expect(() => mode.setDrawingPreviewProperty('splitter', 'valid')).not.toThrow()
+    expect(changed).not.toHaveBeenCalled()
+
+    const sketch = lineFeature([[0, 0], [1, 1]])
+    interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
+    mode.setDrawingPreviewProperty('splitter', 'valid')
+    expect(sketch.get('splitter')).toBe('valid')
+    expect(changed).toHaveBeenCalled()
+  })
+
   test('undo re-validates the committed shape (deferred, phase commit-delete)', () => {
     jest.useFakeTimers()
     const { mode, manager, emitted, interaction } = setup()

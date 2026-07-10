@@ -101,8 +101,8 @@ interactiveMap.on('map:ready', function (e) {
         })
       }
     },{
-      id: 'editFeature',
-      label: 'Edit feature',
+      id: 'editShape',
+      label: 'Edit shape',
       iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
       isDisabled: true,
       onClick: function (e) {
@@ -112,6 +112,25 @@ interactiveMap.on('map:ready', function (e) {
         }
         interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
         interactPlugin.disable()
+      }
+    },{
+      id: 'splitShape',
+      label: 'Split shape',
+      iconSvgContent: '<path d="M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3"/><path d="M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3"/><line x1="12" x2="12" y1="4" y2="20"/>',
+      isDisabled: true,
+      onClick: function (e) {
+        drawPlugin.split(selectedFeatureIds[0])
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        interactPlugin.disable()
+      }
+    },{
+      id: 'mergeShapes',
+      label: 'Merge shapes',
+      iconSvgContent: '<path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 0 1 1h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-3a1 1 0 0 0-1-1z"/>',
+      isDisabled: true,
+      onClick: function (e) {
+        drawPlugin.merge(selectedFeatureIds)
+        interactPlugin.clear()
       }
     },{
       id: 'deleteFeature',
@@ -124,7 +143,9 @@ interactiveMap.on('map:ready', function (e) {
         interactPlugin.clear()
         interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
         interactiveMap.toggleButtonState('drawLine', 'disabled', false)
-        interactiveMap.toggleButtonState('editFeature', 'disabled', true)
+        interactiveMap.toggleButtonState('editShape', 'disabled', true)
+        interactiveMap.toggleButtonState('splitShape', 'disabled', true)
+        interactiveMap.toggleButtonState('mergeShapes', 'disabled', true)
         interactiveMap.toggleButtonState('deleteFeature', 'disabled', true)
       }
     }]
@@ -177,16 +198,51 @@ interactiveMap.on('draw:cancelled', function (e) {
   interactPlugin.enable()
 })
 
+interactiveMap.on('draw:split', function (e) {
+  // Delete the original polygon
+  drawPlugin.deleteFeature([e.originalFeatureId])
+
+  // Add the two new split features with IDs based on the original
+  e.featureCollection.features.forEach(function (feature, index) {
+    const newId = e.originalFeatureId + (index === 0 ? '-a' : '-b')
+    drawPlugin.addFeature({
+      id: newId,
+      type: feature.type,
+      geometry: feature.geometry,
+      properties: feature.properties
+    })
+  })
+
+  interactPlugin.clear()
+})
+
+interactiveMap.on('draw:merge', function (e) {
+  // Delete the original polygons
+  drawPlugin.deleteFeature(e.originalFeatureIds)
+
+  // Add the single merged feature, keeping the first original's id
+  drawPlugin.addFeature({
+    id: e.originalFeatureIds[0],
+    type: e.feature.type,
+    geometry: e.feature.geometry,
+    properties: e.feature.properties
+  })
+})
+
 
 interactiveMap.on('interact:selectionchange', function (e) {
   const singleFeature = e.selectedFeatures.length === 1
   const anyFeature = e.selectedFeatures.length > 0
   const isDrawFeature = singleFeature && e.selectedFeatures[0].layerId === 'draw'
+  const isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
   const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return f.layerId === 'draw' })
+  const canMerge = allDrawFeatures && e.contiguous && e.selectedFeatures.length > 1
   selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
   interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
   interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
-  interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
+  interactiveMap.toggleButtonState('editShape', 'disabled', !isDrawFeature)
+  interactiveMap.toggleButtonState('splitShape', 'disabled', !isPolygon)
+  interactiveMap.toggleButtonState('mergeShapes', 'disabled', !canMerge)
   interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
 })
 

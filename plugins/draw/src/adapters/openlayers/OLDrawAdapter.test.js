@@ -1,7 +1,13 @@
 import { OLDrawAdapter } from './OLDrawAdapter.js'
 import { createOLDraw } from './olDraw.js'
 
+// The literal split.js passes — see OLDrawAdapter.js's DRAW_OUTLINE_STYLE_LAYER comment.
+const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
+
+const fakeVectorLayer = { id: 'draw-layer' }
+
 const fakeManager = () => ({
+  _layer: fakeVectorLayer,
   changeMode: jest.fn(),
   getMode: jest.fn(() => 'disabled'),
   setInterfaceType: jest.fn(),
@@ -10,6 +16,7 @@ const fakeManager = () => ({
   undo: jest.fn(),
   deleteVertex: jest.fn(),
   setInvalid: jest.fn(),
+  setDrawingPreviewProperty: jest.fn(),
   get: jest.fn(() => 'feature'),
   add: jest.fn(),
   delete: jest.fn(),
@@ -76,6 +83,10 @@ test('snap state is tracked locally and forwarded, tolerating a missing snap man
   adapter.setSnapLayers(['x'])
   expect(manager.snap.setSnapLayers).toHaveBeenCalledWith(['x'])
 
+  // The shared sentinel translates onto the draw plugin's own VectorLayer instance.
+  adapter.setSnapLayers([DRAW_OUTLINE_STYLE_LAYER, 'x'])
+  expect(manager.snap.setSnapLayers).toHaveBeenCalledWith([fakeVectorLayer, 'x'])
+
   manager.snap = null
   adapter.setSnapEnabled(false)
   adapter.setSnapLayers(['y']) // no throw
@@ -95,6 +106,8 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   adapter.on('create', handler)
   adapter.off('create', handler)
   expect(adapter.setFeatureProperty('f1', 'stroke', '#000')).toBeUndefined()
+  adapter.setDrawingPreviewProperty('splitter', 'valid')
+  expect(manager.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
   expect(manager.setInterfaceType).toHaveBeenCalledWith('touch')
   expect(manager.on).toHaveBeenCalledWith('create', handler)
   expect(manager.off).toHaveBeenCalledWith('create', handler)

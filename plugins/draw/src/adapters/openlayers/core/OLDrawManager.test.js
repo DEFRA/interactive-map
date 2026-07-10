@@ -8,7 +8,7 @@ import { createFakeMap } from '../__helpers__/harness.js'
 import { TOLERANCES } from '../defaults.js'
 
 jest.mock('../draw/DrawMode.js', () => ({
-  createDrawMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
+  createDrawMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn(), setDrawingPreviewProperty: jest.fn() }))
 }))
 jest.mock('../edit/EditMode.js', () => ({
   createEditMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
@@ -75,6 +75,7 @@ describe('mode machine', () => {
   test('operations delegate to the current mode instance and are safe without one', async () => {
     const { manager } = setup()
     manager.done(); manager.undo(); manager.deleteVertex(); manager.setInterfaceType('touch'); manager.setInvalid(true) // no mode — no throw
+    manager.setDrawingPreviewProperty('splitter', 'valid') // no mode — no throw
 
     await manager.changeMode('draw_polygon')
     const instance = createDrawMode.mock.results[0].value
@@ -85,6 +86,7 @@ describe('mode machine', () => {
     manager.on('interfacetypechange', emitted)
     manager.setInterfaceType('touch')
     manager.setInvalid(true)
+    manager.setDrawingPreviewProperty('splitter', 'valid')
     expect(instance.done).toHaveBeenCalled()
     expect(instance.undo).toHaveBeenCalled()
     expect(instance.deleteVertex).toHaveBeenCalled()
@@ -92,6 +94,7 @@ describe('mode machine', () => {
     // Parity with ML: an explicit interface-type write is echoed on the bus.
     expect(emitted).toHaveBeenCalledWith({ interfaceType: 'touch' })
     expect(instance.setInvalid).toHaveBeenCalledWith(true)
+    expect(instance.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
 
     manager.cancel()
     expect(instance.cancel).toHaveBeenCalled()

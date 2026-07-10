@@ -125,6 +125,12 @@ export class OLDrawManager {
     this._modeInstance?.setInvalid?.(invalid)
   }
 
+  // Tag the active draw sketch with a custom style property (e.g. split's
+  // valid/invalid line colour). No-op in edit mode or without a mode instance.
+  setDrawingPreviewProperty (property, value) {
+    this._modeInstance?.setDrawingPreviewProperty?.(property, value)
+  }
+
   setInterfaceType (type) {
     this._modeInstance?.setInterfaceType?.(type)
     // Parity with the ML adapter: an explicit interface-type write is echoed on

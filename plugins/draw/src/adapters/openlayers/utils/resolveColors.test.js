@@ -9,6 +9,12 @@ test('without a map style, colours resolve to their light variants and defaults'
   expect(colors.mapStyleId).toBeNull()
 })
 
+test('splitter colours are resolved', () => {
+  const colors = resolveColors(null)
+  expect(colors.splitValid).toBe(COLORS.splitValid.light)
+  expect(colors.splitInvalid).toBe(COLORS.splitInvalid.light)
+})
+
 test('a dark map style resolves dark variants and carries its id through', () => {
   const colors = resolveColors({ id: 'dark', mapColorScheme: 'dark' })
   expect(colors.editStroke).toBe(COLORS.editStroke.dark)

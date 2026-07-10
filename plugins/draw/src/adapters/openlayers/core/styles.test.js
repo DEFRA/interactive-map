@@ -13,6 +13,8 @@ const colors = {
   editActive: '#ea',
   editHalo: '#eh',
   invalidStroke: '#is',
+  splitValid: '#sv',
+  splitInvalid: '#si',
   shapeStroke: '#ss',
   shapeFill: '#sf',
   strokeWidth: 3,
@@ -85,6 +87,20 @@ describe('sketch styles while drawing', () => {
     expect(lineStyle.getStroke().getColor()).toBe(colors.invalidStroke)
     expect(lineStyle.getStroke().getLineDash()).toEqual([2, 4])
     expect(lineStyle.getFill()).toBeNull()
+  })
+
+  test('a splitter-tagged sketch renders the split colours (valid solid, invalid dashed), overriding invalid', () => {
+    const valid = lineFeature([[0, 0], [1, 1]])
+    valid.set('splitter', 'valid')
+    const [validStyle] = styles.createSketchStyle('LineString')(valid)
+    expect(validStyle.getStroke().getColor()).toBe(colors.splitValid)
+    expect(validStyle.getStroke().getLineDash()).toBeNull()
+
+    const invalid = lineFeature([[0, 0], [1, 1]])
+    invalid.set('splitter', 'invalid')
+    const [invalidStyle] = styles.createSketchStyle('LineString', true)(invalid)
+    expect(invalidStyle.getStroke().getColor()).toBe(colors.splitInvalid)
+    expect(invalidStyle.getStroke().getLineDash()).toEqual([2, 4])
   })
 
   test('placed vertices render with the shared vertex image on a reused MultiPoint', () => {

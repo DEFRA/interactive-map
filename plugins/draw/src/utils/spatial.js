@@ -1,6 +1,4 @@
 import polygonSplitter from 'polygon-splitter'
-import turfBearing from '@turf/bearing'
-import turfDestination from '@turf/destination'
 import turfUnion from '@turf/union'
 import {
   featureCollection as turfFeatureCollection,
@@ -20,23 +18,33 @@ import {
  */
 
 /**
- * Extend a LineString at endpoints.
+ * Extend a LineString at its endpoints, along their own direction, by a small
+ * fraction of the adjacent segment's length. Pure planar vector math — no
+ * geodesic assumption, so it works for any coordinate system (lon/lat degrees,
+ * projected meters like British National Grid, etc.). Turf's bearing/distance
+ * functions assume WGS84 lon/lat input; feeding them projected coordinates
+ * silently produces nonsense (large eastings/northings get treated as
+ * out-of-range degrees and wrapped), which is why this doesn't use them.
  *
  * @param {Feature<LineString>} line
- * @param {number} extendDist (distance to extend in Turf units)
+ * @param {number} fraction - portion of the adjacent segment's length to extend by
  */
-function extendLine (line, extendDist = 1, units = 'meters') {
+function extendLine (line, fraction = 0.01) {
   const coords = line.geometry.coordinates.map(c => [...c])
+  const last = coords.length - 1
 
-  // Extend start point backward
-  const startBearing = turfBearing(coords[1], coords[0])
-  const newStart = turfDestination(coords[0], extendDist, startBearing, { units })
-  coords[0] = newStart.geometry.coordinates
+  const extend = (from, towards) => [
+    from[0] + (from[0] - towards[0]) * fraction,
+    from[1] + (from[1] - towards[1]) * fraction
+  ]
 
-  // Extend end point forward
-  const endBearing = turfBearing(coords[coords.length - 2], coords[coords.length - 1])
-  const newEnd = turfDestination(coords[coords.length - 1], extendDist, endBearing, { units })
-  coords[coords.length - 1] = newEnd.geometry.coordinates
+  // Compute both from the original coordinates before assigning either — for a
+  // 2-point line, coords[last - 1] is coords[0], so writing coords[0] first
+  // would corrupt the reference point the end extension reads.
+  const newStart = extend(coords[0], coords[1])
+  const newEnd = extend(coords[last], coords[last - 1])
+  coords[0] = newStart
+  coords[last] = newEnd
 
   return turfLineString(coords)
 }

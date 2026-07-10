@@ -3,13 +3,14 @@ import { ADAPTER_EVENTS } from '../adapterEvents.js'
 
 const INVALID_REASON = 'Line does not split the shape into two parts'
 const MIN_LINE_VERTICES = 2
+const SPLITTER_ID = '_splitter'
 
 const computeIsValid = (polygonFeature, feature) => {
   const coordinates = feature.geometry?.coordinates
   if (!coordinates || coordinates.length < MIN_LINE_VERTICES) {
     return false
   }
-  return !!splitPolygon(polygonFeature, { id: '_splitter', geometry: feature.geometry })
+  return !!splitPolygon(polygonFeature, { id: SPLITTER_ID, geometry: feature.geometry })
 }
 
 // Colours the splitter line preview. Uses setDrawingPreviewProperty rather than
@@ -81,7 +82,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
     interfaceType: appState.interfaceType,
     crossHair: mapState?.crossHair,
     getSnapEnabled: () => draw.isSnapEnabled(),
-    featureId: '_splitter',
+    featureId: SPLITTER_ID,
     properties: { splitter: 'invalid' }
   })
 
@@ -92,9 +93,11 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
     draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)
   }
 
-  // Compute split result once the line is finalised
+  // Compute split result once the line is finalised. The splitter line only ever
+  // exists to compute this — it must never linger in the draw store afterwards.
   const onSplitCreate = (geojsonFeature) => {
     stopListening()
+    draw.delete(SPLITTER_ID)
     const featureCollection = splitPolygon(polygonFeature, geojsonFeature)
 
     dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid: !!featureCollection } })

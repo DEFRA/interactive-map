@@ -140,6 +140,14 @@ const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, 
   cancel () { drawInteraction.abortDrawing() },
   undo () { drawInteraction.removeLastPoint(); updateVertexCount(); emitUndoValidation() },
   setInvalid,
+  // Tags the sketch feature so createSketchStyle can pick the split-specific
+  // colour (see styles.js); no-op before any sketch exists.
+  setDrawingPreviewProperty (property, value) {
+    const sketch = getSketch()
+    if (!sketch) { return }
+    sketch.set(property, value)
+    drawInteraction.overlay_.changed()
+  },
   destroy () {
     liveStroke.destroy()
     livePlacement.destroy()

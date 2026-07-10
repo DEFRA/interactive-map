@@ -80,6 +80,16 @@ export const createStyles = (colors) => {
     stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
   })
 
+  // Split-line preview colours: valid is solid, invalid is dashed — matching
+  // ML's stroke-valid-splitter / stroke-invalid-splitter layers.
+  const sketchLineStyleSplitValid = new Style({
+    stroke: new Stroke({ color: colors.splitValid, width: 2 })
+  })
+
+  const sketchLineStyleSplitInvalid = new Style({
+    stroke: new Stroke({ color: colors.splitInvalid, width: 2, lineDash: [2, 4] })
+  })
+
   // Reused across renders — the geometry function runs every frame while sketching,
   // so mutate one MultiPoint (setCoordinates bumps its revision, keeping OL's
   // render caches correct) instead of allocating a new one per frame
@@ -100,10 +110,15 @@ export const createStyles = (colors) => {
   // vertices get markers on the sketch feature instead. geometryType filters
   // out the extra LineString sketch OL renders alongside a Polygon sketch,
   // so vertices aren't drawn twice. `invalid` swaps to the dashed line style.
+  // A 'splitter' property on the feature (set via setDrawingPreviewProperty)
+  // overrides both with the split-specific valid/invalid colours.
   const createSketchStyle = (geometryType, invalid = false) => (feature) => {
     const type = feature.getGeometry().getType()
     if (type === 'Point') { return [] }
-    const lineStyle = invalid ? sketchLineStyleInvalid : sketchLineStyle
+    const splitter = feature.get('splitter')
+    let lineStyle = invalid ? sketchLineStyleInvalid : sketchLineStyle
+    if (splitter === 'valid') { lineStyle = sketchLineStyleSplitValid }
+    if (splitter === 'invalid') { lineStyle = sketchLineStyleSplitInvalid }
     return type === geometryType ? [lineStyle, sketchVertexStyle] : [lineStyle]
   }
 

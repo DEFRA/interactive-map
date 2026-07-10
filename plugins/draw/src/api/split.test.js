@@ -14,7 +14,8 @@ const makeContext = (overrides = {}) => {
     off: jest.fn(),
     isSnapEnabled: jest.fn(() => true),
     setGeometryValid: jest.fn(),
-    setDrawingPreviewProperty: jest.fn()
+    setDrawingPreviewProperty: jest.fn(),
+    delete: jest.fn()
   }
   const context = {
     appState: { layoutRefs: { viewportRef: { current: 'viewport' } }, interfaceType: 'mouse' },
@@ -91,6 +92,9 @@ describe('split', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:split', { originalFeatureId: 'poly', featureCollection })
     expect(draw._geometryValidator).toBe(previousValidator)
+    // The splitter line only ever existed to compute the split — it must not
+    // linger in the draw store afterwards.
+    expect(draw.delete).toHaveBeenCalledWith('_splitter')
   })
 
   test('cancelling the splitter line stops listening and restores the previous validator', () => {
@@ -117,6 +121,7 @@ describe('split', () => {
 
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })
     expect(eventBus.emit).not.toHaveBeenCalled()
+    expect(draw.delete).toHaveBeenCalledWith('_splitter')
   })
 
   describe('the installed draw._geometryValidator', () => {

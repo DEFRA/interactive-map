@@ -40,16 +40,29 @@ describe('toTurfGeometry', () => {
 })
 
 describe('extendLine', () => {
-  test('extends a two-point line at both ends', () => {
-    const line = { geometry: { coordinates: [[0, 0], [0, 1]] } }
-    const result = extendLine(line)
+  test('extends a two-point line at both ends, along each segment\'s own direction', () => {
+    const line = { geometry: { coordinates: [[0, 0], [0, 10]] } }
+    const result = extendLine(line, 0.1)
     expect(result.geometry.type).toBe('LineString')
-    expect(result.geometry.coordinates).toHaveLength(2)
+    // Start moves further away from the second point (backward); end moves
+    // further away from the second-to-last point (forward).
+    expect(result.geometry.coordinates).toEqual([[0, -1], [0, 11]])
   })
 
   test('extends only the endpoints of a multi-point line', () => {
     const line = { geometry: { coordinates: [[0, 0], [0, 1], [0, 2]] } }
-    expect(extendLine(line).geometry.coordinates).toHaveLength(3)
+    const result = extendLine(line, 0.1)
+    expect(result.geometry.coordinates).toHaveLength(3)
+    expect(result.geometry.coordinates[1]).toEqual([0, 1]) // middle vertex untouched
+  })
+
+  test('is pure planar math — correct at British National Grid scale (large eastings/northings)', () => {
+    // Geodesic bearing/destination would misread these as out-of-range lon/lat
+    // degrees and wrap them; plain vector extension has no such assumption.
+    const line = { geometry: { coordinates: [[337600, 504600], [337650, 504650]] } }
+    const result = extendLine(line, 0.1)
+    expect(result.geometry.coordinates[0]).toEqual([337595, 504595])
+    expect(result.geometry.coordinates[1]).toEqual([337655, 504655])
   })
 })
 

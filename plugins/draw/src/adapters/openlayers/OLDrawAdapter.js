@@ -1,5 +1,14 @@
 import { createOLDraw } from './olDraw.js'
 
+// split.js passes this literal — MapLibre's own always-present "already-drawn
+// shapes" style layer id — as a snapLayers entry so the split line snaps to the
+// polygon it's splitting. On MapLibre it needs no help: mapbox-gl-snap resolves
+// it by querying the map's rendered style layers directly. OL's snap engine has
+// no such string-based lookup for plain vector layers (only direct instances or
+// vector-tile layer names), so this adapter recognises the same literal here and
+// resolves it to the draw plugin's own VectorLayer instance instead.
+const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
+
 /**
  * Draw adapter for OpenLayers.
  *
@@ -85,13 +94,14 @@ export class OLDrawAdapter {
   }
 
   setSnapLayers (layers) {
-    this._manager.snap?.setSnapLayers(layers)
+    const translated = layers?.map((l) => (l === DRAW_OUTLINE_STYLE_LAYER ? this._manager._layer : l))
+    this._manager.snap?.setSnapLayers(translated)
   }
 
   isSnapEnabled () { return this._snapEnabled }
 
   setFeatureProperty () { /* not implemented for OL */ }
-  setDrawingPreviewProperty () { /* not implemented for OL */ }
+  setDrawingPreviewProperty (property, value) { this._manager.setDrawingPreviewProperty(property, value) }
 
   on (type, handler) { this._manager.on(type, handler) }
   off (type, handler) { this._manager.off(type, handler) }
