@@ -17,10 +17,8 @@ const normaliseResult = (result) => {
 
 /**
  * Validate an in-progress geometry against the default rules and an optional user
- * callback. The result only gates the Done button (see events.js); it never reverts
- * a vertex change, so a shape can pass through interim invalid states while being
- * built. Rules run first (in order) and short-circuit on the first failure; the
- * user callback runs last.
+ * callback. Rules run first and short-circuit on the first failure; the callback
+ * runs last. Gates the Done button only — never reverts a vertex change.
  *
  * @param {object} feature - current GeoJSON feature
  * @param {object} context - { phase: import('../adapterEvents.js').GeometryChangePhase, vertexIndex, mode }
@@ -46,13 +44,8 @@ export const validateGeometry = (feature, context = {}, config = {}) => {
 
 /**
  * Validate a candidate vertex placement against the hard rules and the same
- * optional user callback. `feature` is the candidate geometry — the placed
- * vertices plus the point about to be placed. A failure means the adapter must
- * reject the placement (the vertex never appears), used for states that could
- * not be recovered from by continuing to draw.
- *
- * The user callback receives `context.phase === 'place'` to distinguish a
- * placement veto from a soft validity check.
+ * optional user callback. A failure means the vertex is rejected outright and
+ * never appears. The callback receives `context.phase === 'place'`.
  *
  * @param {object} feature - candidate GeoJSON feature (placed vertices + new point)
  * @param {object} context - { vertexIndex, mode }; phase is forced to 'place'
@@ -69,10 +62,9 @@ export const validatePlacement = (feature, context = {}, config = {}) => {
 export const MODE_BY_GEOMETRY = { Polygon: 'draw_polygon', LineString: 'draw_line' }
 
 /**
- * Engine-facing placement gate shared by both adapters: builds the candidate
- * geometry (placed vertices + the point about to be placed), validates it against
- * the hard rules and the user callback, and — on a veto — returns the
- * PLACEMENT_BLOCKED payload for the caller to emit on its bus.
+ * Attempt to place a vertex — shared by both adapters. Builds the candidate
+ * geometry, validates it, and on a veto returns the PLACEMENT_BLOCKED payload
+ * for the caller to emit.
  *
  * @param {object} params
  * @param {Array<Array<number>>} params.placed - committed vertex coordinates
@@ -81,7 +73,7 @@ export const MODE_BY_GEOMETRY = { Polygon: 'draw_polygon', LineString: 'draw_lin
  * @param {Function} [params.onGeometryChange] - user callback
  * @returns {{ valid: true } | { valid: false, blocked: object }}
  */
-export const checkPlacement = ({ placed, point, geometryType, onGeometryChange }) => {
+export const attemptPlacement = ({ placed, point, geometryType, onGeometryChange }) => {
   const candidate = [...placed, point]
   const geometry = geometryType === 'Polygon'
     ? { type: 'Polygon', coordinates: [candidate] }
@@ -95,11 +87,10 @@ export const checkPlacement = ({ placed, point, geometryType, onGeometryChange }
 
 /**
  * Validate the displayed (in-progress) geometry that drives the live invalid
- * stroke: the placed vertices plus the current cursor / crosshair point. It gates
- * on `context.placedCount` so a shape below its minimum vertex count is treated as
- * "part-drawn" (always valid — solid stroke); once past the threshold it runs the
- * live rules (self-intersection, non-zero area) and the optional user callback
- * against the displayed geometry, returning `{ valid, reason }`.
+ * stroke: the placed vertices plus the current cursor point. Below the minimum
+ * vertex count, the built-in live rules are skipped (not enough of a shape yet
+ * to check self-intersection/area) — but a caller's own `onGeometryChange` always
+ * runs regardless, since its data requirements are its own business.
  *
  * @param {object} feature - displayed GeoJSON feature (placed vertices + cursor)
  * @param {object} context - { mode, placedCount, phase }; phase defaults to 'preview'
@@ -112,6 +103,7 @@ export const validateDisplayedGeometry = (feature, context = {}, config = {}) =>
   const { rules = LIVE_RULES, onGeometryChange } = config
   const type = feature?.geometry?.type ?? feature?.type
   const min = MIN_VERTICES[type] ?? 0
-  if ((context.placedCount ?? 0) < min) { return { valid: true } }
-  return validateGeometry(feature, { ...context, phase: context.phase ?? 'preview' }, { rules, onGeometryChange })
+  const belowMinVertices = (context.placedCount ?? 0) < min
+  const effectiveRules = belowMinVertices ? [] : rules
+  return validateGeometry(feature, { ...context, phase: context.phase ?? 'preview' }, { rules: effectiveRules, onGeometryChange })
 }

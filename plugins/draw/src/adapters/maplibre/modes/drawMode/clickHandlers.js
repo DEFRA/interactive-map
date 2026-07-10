@@ -1,7 +1,7 @@
 import {
   getSnapInstance, isSnapActive, isSnapEnabled, createSnappedEvent, createSnappedClickEvent
 } from '../../utils/snapHelpers.js'
-import { checkPlacement } from '../../../../validation/validateGeometry.js'
+import { attemptPlacement } from '../../../../validation/validateGeometry.js'
 
 // The commit-level geometrychange payload for a vertex commit: the placed-only
 // geometry (trailing rubber-band point dropped so validation tests the committed shape).
@@ -38,14 +38,14 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
     return e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()
   },
 
-  // Gate a would-be placement through the shared checkPlacement gate (hard rules +
-  // user callback). On a veto the vertex never appears and a draw.placementblocked
-  // event carries the reason. The trailing rubber-band coord is dropped so the
-  // candidate is placed vertices + the point about to be placed.
+  // Attempt a placement through the shared hard rules + user callback. On a veto
+  // the vertex never appears and a draw.placementblocked event carries the
+  // reason. The trailing rubber-band coord is dropped so the candidate is placed
+  // vertices + the point about to be placed.
   _canPlaceVertex (state, point) {
     const feature = getFeature(state)
     if (!feature || !point) { return true }
-    const result = checkPlacement({
+    const result = attemptPlacement({
       placed: getCoords(feature).slice(0, -1),
       point,
       geometryType,

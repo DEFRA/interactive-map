@@ -5,7 +5,7 @@ import { getPlacedSketchCoords, getLastPlacedSketchCoord } from '../utils/sketch
 import { TOLERANCES } from '../defaults.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
-import { checkPlacement, validatePlacement, MODE_BY_GEOMETRY } from '../../../validation/validateGeometry.js'
+import { attemptPlacement, validatePlacement, MODE_BY_GEOMETRY } from '../../../validation/validateGeometry.js'
 import { MIN_VERTICES } from '../../../validation/rules.js'
 import { createLiveStroke } from '../../../validation/liveStroke.js'
 
@@ -50,12 +50,12 @@ const placedFeatureGeoJSON = (store, sketchFeature) => {
   return { type: 'Feature', geometry, properties: gj.properties }
 }
 
-// Gate a would-be placement (mouse click, crosshair tap, Enter) through the shared
-// checkPlacement gate (hard rules + user callback). On a veto the vertex never
-// appears and a PLACEMENT_BLOCKED event carries the reason.
+// Attempt a placement (mouse click, crosshair tap, Enter) through the shared
+// hard rules + user callback. On a veto the vertex never appears and a
+// PLACEMENT_BLOCKED event carries the reason.
 export const buildCanPlaceVertex = ({ manager, geometryType, getSketch }) => (coordinate) => {
   const sketch = getSketch()
-  const result = checkPlacement({
+  const result = attemptPlacement({
     placed: sketch ? getPlacedSketchCoords(sketch.getGeometry()) : [],
     point: coordinate,
     geometryType,

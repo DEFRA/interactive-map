@@ -182,8 +182,8 @@ interactiveMap.on('map:ready', function (e) {
         })
       }
     },{
-      id: 'editFeature',
-      label: 'Edit feature',
+      id: 'editShape',
+      label: 'Edit shape',
       iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
       isDisabled: true,
       onClick: function (e) {
@@ -224,7 +224,7 @@ interactiveMap.on('map:ready', function (e) {
         interactPlugin.clear()
         interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
         interactiveMap.toggleButtonState('drawLine', 'disabled', false)
-        interactiveMap.toggleButtonState('editFeature', 'disabled', true)
+        interactiveMap.toggleButtonState('editShape', 'disabled', true)
         interactiveMap.toggleButtonState('splitShape', 'disabled', true)
         interactiveMap.toggleButtonState('mergeShapes', 'disabled', true)
         interactiveMap.toggleButtonState('deleteFeature', 'disabled', true)
@@ -305,7 +305,7 @@ interactiveMap.on('interact:selectionchange', function (e) {
   selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
   interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
   interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
-  interactiveMap.toggleButtonState('editFeature', 'disabled', !isDrawFeature)
+  interactiveMap.toggleButtonState('editShape', 'disabled', !isDrawFeature)
   interactiveMap.toggleButtonState('splitShape', 'disabled', !isPolygon)
   interactiveMap.toggleButtonState('mergeShapes', 'disabled', !canMerge)
   interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)

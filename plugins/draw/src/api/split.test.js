@@ -145,27 +145,31 @@ describe('split', () => {
       expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_ACTION' }))
     })
 
-    test('evaluates a valid split on the live preview (phase: preview)', () => {
+    test('the live preview (phase: preview) only updates the visual colour, never Done-gating — even with just 1 placed vertex', () => {
       const { context, dispatch, draw } = makeContext()
       const polygonFeature = { id: 'poly' }
       draw.get.mockReturnValue(polygonFeature)
       splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
       split(context, 'poly')
+      dispatch.mockClear()
 
+      // 1 placed vertex + the rubber-band cursor. validateDisplayedGeometry only
+      // gates the built-in rules by placedCount, not a caller's own rule, so this
+      // must still reach the validator (placedCount: 1, below MIN_VERTICES.LineString).
       const feature = lineFeature([[0, 0], [1, 1]])
-      const result = draw._geometryValidator(feature, { phase: 'preview', mode: 'draw_line', placedCount: 2 })
+      const result = draw._geometryValidator(feature, { phase: 'preview', mode: 'draw_line', placedCount: 1 })
 
       expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, { id: '_splitter', geometry: feature.geometry })
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
-      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
-      // A valid split line must allow completion: Done enabled (pluginState.geometryValid)
-      // and the double-click/click-vertex finish gesture unblocked (map._drawGeometryValid).
-      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
-      expect(draw.setGeometryValid).toHaveBeenCalledWith(true)
+      // Committed Done-gating (pluginState.geometryValid / map._drawGeometryValid) must only
+      // change on an actual commit — otherwise a live "what if you added a point here" check
+      // could flicker a just-committed valid split back to disabled.
+      expect(dispatch).not.toHaveBeenCalled()
+      expect(draw.setGeometryValid).not.toHaveBeenCalled()
       expect(result).toEqual({ valid: true })
     })
 
-    test('evaluates an invalid split with a reason on a committed vertex (phase: commit-add)', () => {
+    test('a committed vertex (phase: commit-add) updates both the visual colour and Done-gating', () => {
       const { context, dispatch, draw } = makeContext()
       splitPolygon.mockReturnValue(null)
       split(context, 'poly')
@@ -174,8 +178,21 @@ describe('split', () => {
       const result = draw._geometryValidator(feature, { phase: 'commit-add', mode: 'draw_line', vertexIndex: 1 })
 
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
       expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
+      expect(result).toEqual({ valid: false, reason: expect.any(String) })
+    })
+
+    test('a line with fewer than two coordinates is treated as invalid without calling splitPolygon', () => {
+      const { context, draw } = makeContext()
+      split(context, 'poly')
+
+      const feature = lineFeature([[0, 0]])
+      const result = draw._geometryValidator(feature, { phase: 'preview', mode: 'draw_line', placedCount: 0 })
+
+      expect(splitPolygon).not.toHaveBeenCalled()
+      expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
       expect(result).toEqual({ valid: false, reason: expect.any(String) })
     })
   })

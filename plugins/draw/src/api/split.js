@@ -2,45 +2,54 @@ import { splitPolygon } from '../utils/spatial.js'
 import { ADAPTER_EVENTS } from '../adapterEvents.js'
 
 const INVALID_REASON = 'Line does not split the shape into two parts'
+const MIN_LINE_VERTICES = 2
 
-// Recompute split validity and re-apply the same gate normal draw/edit uses:
-// disables Done (manifest.js enableWhen reads pluginState.geometryValid) and blocks
-// the double-click/click-vertex finish gesture (drawMode/clickHandlers.js reads
-// map._drawGeometryValid) while the line wouldn't produce a valid split. Only uses
-// the shared, engine-agnostic adapter interface — no mapbox-gl-draw internals.
-const applySplitValidity = ({ draw, dispatch, polygonFeature, feature }) => {
-  const lineFeature = { id: '_splitter', geometry: feature.geometry }
-  const featureCollection = splitPolygon(polygonFeature, lineFeature)
-  const isValid = !!featureCollection
-  // The splitter line has no stable id until it's actually created, so the
-  // in-progress preview colour is tagged via setDrawingPreviewProperty, not
-  // setFeatureProperty (that targets the '_splitter' id assigned on completion —
-  // see onSplitCreate below).
+const computeIsValid = (polygonFeature, feature) => {
+  const coordinates = feature.geometry?.coordinates
+  if (!coordinates || coordinates.length < MIN_LINE_VERTICES) {
+    return false
+  }
+  return !!splitPolygon(polygonFeature, { id: '_splitter', geometry: feature.geometry })
+}
+
+// Colours the splitter line preview. Uses setDrawingPreviewProperty rather than
+// setFeatureProperty since the line has no stable id until it's created.
+const applySplitPreview = ({ draw, polygonFeature, feature }) => {
+  const isValid = computeIsValid(polygonFeature, feature)
   draw.setDrawingPreviewProperty('splitter', isValid ? 'valid' : 'invalid')
+  // DEBUG
+  console.log('[split] preview', { coords: feature.geometry?.coordinates, isValid })
+  return isValid
+}
+
+// Colours the preview and gates Done/the finish gesture for a committed vertex.
+const applySplitCommit = ({ draw, dispatch, polygonFeature, feature }) => {
+  const isValid = applySplitPreview({ draw, polygonFeature, feature })
   dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
   dispatch({ type: 'SET_GEOMETRY_VALID', payload: isValid })
   draw.setGeometryValid(isValid)
-  return isValid ? { valid: true } : { valid: false, reason: INVALID_REASON }
+  // DEBUG
+  console.log('[split] commit', { coords: feature.geometry?.coordinates, isValid })
+  return isValid
 }
 
-// Installed as draw._geometryValidator so the normal validation pipeline drives
-// split's validity too. Skip 'place' and 'create': the line isn't a full split until
-// its last vertex, so checking those would block placement and hijack an early
-// finish into edit mode. Only check on the live preview and each committed vertex.
+// Installed as draw._geometryValidator. 'place' and 'create' are no-ops — a split
+// isn't complete until its last vertex, so checking those would block placement
+// and hijack an early finish into edit mode.
 const createSplitValidator = ({ draw, dispatch, polygonFeature }) => (feature, context) => {
-  const isSoftCheck = context.phase === 'preview' || context.phase?.startsWith('commit-')
-  if (!isSoftCheck) {
+  let isValid
+  if (context.phase === 'preview') {
+    isValid = applySplitPreview({ draw, polygonFeature, feature })
+  } else if (context.phase?.startsWith('commit-')) {
+    isValid = applySplitCommit({ draw, dispatch, polygonFeature, feature })
+  } else {
     return { valid: true }
   }
-  return applySplitValidity({ draw, dispatch, polygonFeature, feature })
+  return isValid ? { valid: true } : { valid: false, reason: INVALID_REASON }
 }
 
 /**
  * Start drawing a split line for a polygon.
- *
- * Only fully implemented for MapLibre. For OpenLayers the geometry calculation
- * will run but real-time preview (geometrychange) and snap-to-outline are not
- * wired up — coordinate-system differences mean results may be incorrect too.
  *
  * @param {object} context - plugin context
  * @param {string} featureId - ID of the polygon to split
@@ -57,9 +66,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
 
   const polygonFeature = draw.get(featureId)
 
-  // Swap in split's own rule for the splitter-line session; restored in
-  // stopListening so the polygon's own developer-supplied validator isn't left
-  // permanently replaced once the split session ends.
+  // Swap in split's own rule; restored in stopListening.
   const previousValidator = draw._geometryValidator
   draw._geometryValidator = createSplitValidator({ draw, dispatch, polygonFeature })
 
@@ -78,15 +85,14 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
     properties: { splitter: 'invalid' }
   })
 
-  // Scoped to this one splitter-line session — leaving either registered past
-  // that would leak into whatever the user draws or edits next.
+  // Unregister everything scoped to this session.
   const stopListening = () => {
     draw._geometryValidator = previousValidator
     draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)
   }
 
-  // One-shot: compute split result once the line is finalised
+  // Compute split result once the line is finalised
   const onSplitCreate = (geojsonFeature) => {
     stopListening()
     const featureCollection = splitPolygon(polygonFeature, geojsonFeature)
@@ -101,7 +107,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
     }
   }
 
-  // The splitter line was abandoned (e.g. Escape) — nothing to compute, just stop listening.
+  // Abandoned (e.g. Escape) — just stop listening.
   const onSplitCancel = () => {
     stopListening()
   }
