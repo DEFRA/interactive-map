@@ -23,19 +23,10 @@ const applySplitValidity = ({ draw, dispatch, polygonFeature, feature }) => {
   return isValid ? { valid: true } : { valid: false, reason: INVALID_REASON }
 }
 
-// Installed as draw._geometryValidator for the splitter-line session, so the shared
-// validation pipeline (rules.js / validateGeometry.js, and the adapters' live-stroke
-// and live-placement controllers) drives split's validity the same way any other draw
-// session's rules do — no separate GEOMETRY_CHANGE listener, debounce, or
-// event-ordering correction needed.
-//
-// 'place' (hard placement veto — checkPlacement/validatePlacement) and 'create'
-// (whole-feature finish check — events.js's onCreate, which on failure drops the
-// feature into edit_vertex mode) must never run split's rule: the splitter line
-// isn't a complete valid split until its final vertex, so almost every intermediate
-// placement or early finish would "fail" a check that was never meant to gate them.
-// Only the continuous soft checks — the live preview and each committed vertex —
-// actually evaluate the split.
+// Installed as draw._geometryValidator so the normal validation pipeline drives
+// split's validity too. Skip 'place' and 'create': the line isn't a full split until
+// its last vertex, so checking those would block placement and hijack an early
+// finish into edit mode. Only check on the live preview and each committed vertex.
 const createSplitValidator = ({ draw, dispatch, polygonFeature }) => (feature, context) => {
   const isSoftCheck = context.phase === 'preview' || context.phase?.startsWith('commit-')
   if (!isSoftCheck) {
