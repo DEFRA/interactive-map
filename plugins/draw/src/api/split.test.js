@@ -2,7 +2,6 @@ import { split } from './split.js'
 import { splitPolygon } from '../utils/spatial.js'
 
 jest.mock('../utils/spatial.js', () => ({ splitPolygon: jest.fn() }))
-jest.mock('../utils/debounce.js', () => ({ debounce: jest.fn((fn) => fn) }))
 
 const makeContext = (overrides = {}) => {
   const dispatch = jest.fn()
@@ -31,6 +30,8 @@ const makeContext = (overrides = {}) => {
 
 const handlerFor = (draw, event) => draw.on.mock.calls.find(([name]) => name === event)?.[1]
 
+const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
+
 beforeEach(() => jest.clearAllMocks())
 
 describe('split', () => {
@@ -40,12 +41,12 @@ describe('split', () => {
     expect(dispatch).not.toHaveBeenCalled()
   })
 
-  test('sets up the splitter line drawing and registers listeners', () => {
+  test('sets up the splitter line drawing, installs a validator, and registers listeners', () => {
     const { context, dispatch, draw } = makeContext()
 
     split(context, 'poly')
 
-    expect(draw._geometryValidator).toBeNull()
+    expect(typeof draw._geometryValidator).toBe('function')
     expect(draw.setSnapLayers).toHaveBeenCalledWith(['stroke-inactive.cold'])
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HAS_SNAP_LAYERS', payload: true })
     expect(draw.changeMode).toHaveBeenCalledWith('draw_line', expect.objectContaining({
@@ -57,7 +58,8 @@ describe('split', () => {
       properties: { splitter: 'invalid' }
     }))
     expect(draw.on).toHaveBeenCalledWith('create', expect.any(Function))
-    expect(draw.on).toHaveBeenCalledWith('geometrychange', expect.any(Function))
+    expect(draw.on).toHaveBeenCalledWith('cancel', expect.any(Function))
+    expect(draw.on).not.toHaveBeenCalledWith('geometrychange', expect.anything())
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: 'draw_line' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split' } })
     expect(draw.changeMode.mock.calls[0][1].getSnapEnabled()).toBe(true)
@@ -69,10 +71,12 @@ describe('split', () => {
     expect(draw.setSnapLayers).toHaveBeenCalledWith(['stroke-inactive.cold', 'extra'])
   })
 
-  test('finalising the line computes a valid split and emits the result', () => {
+  test('finalising the line computes a valid split, emits the result, and restores the previous validator', () => {
     const { context, dispatch, draw, eventBus } = makeContext()
     const polygonFeature = { id: 'poly' }
     const featureCollection = { type: 'FeatureCollection' }
+    const previousValidator = jest.fn()
+    draw._geometryValidator = previousValidator
     draw.get.mockReturnValue(polygonFeature)
     splitPolygon.mockReturnValue(featureCollection)
 
@@ -83,14 +87,16 @@ describe('split', () => {
 
     expect(draw.off).toHaveBeenCalledWith('create', onCreate)
     expect(draw.off).toHaveBeenCalledWith('cancel', expect.any(Function))
-    expect(draw.off).toHaveBeenCalledWith('geometrychange', expect.any(Function))
     expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, geojson)
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:split', { originalFeatureId: 'poly', featureCollection })
+    expect(draw._geometryValidator).toBe(previousValidator)
   })
 
-  test('cancelling the splitter line stops listening without computing a split', () => {
+  test('cancelling the splitter line stops listening and restores the previous validator', () => {
     const { context, draw } = makeContext()
+    const previousValidator = jest.fn()
+    draw._geometryValidator = previousValidator
 
     split(context, 'poly')
     const onCancel = handlerFor(draw, 'cancel')
@@ -98,22 +104,8 @@ describe('split', () => {
 
     expect(draw.off).toHaveBeenCalledWith('create', expect.any(Function))
     expect(draw.off).toHaveBeenCalledWith('cancel', onCancel)
-    expect(draw.off).toHaveBeenCalledWith('geometrychange', expect.any(Function))
     expect(splitPolygon).not.toHaveBeenCalled()
-  })
-
-  test('a stale geometrychange listener cannot fire after the split line is created', () => {
-    const { context, draw } = makeContext()
-    splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
-
-    split(context, 'poly')
-    const onCreate = handlerFor(draw, 'create')
-    onCreate({ id: 'line' })
-
-    // Real draw.off would deregister the handler; confirm split.js requested it
-    // for every listener it registered, so none can leak into a later session.
-    const offEvents = draw.off.mock.calls.map(([name]) => name)
-    expect(offEvents).toEqual(expect.arrayContaining(['create', 'cancel', 'geometrychange']))
+    expect(draw._geometryValidator).toBe(previousValidator)
   })
 
   test('finalising the line computes an invalid split and does not emit', () => {
@@ -127,133 +119,64 @@ describe('split', () => {
     expect(eventBus.emit).not.toHaveBeenCalled()
   })
 
-  test('geometry change updates validity via the adapter only — no mapbox-gl-draw internals', () => {
-    const { context, dispatch, draw } = makeContext()
-    splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
-
-    split(context, 'poly')
-    const e = { coordinates: [[0, 0], [1, 1]] }
-    handlerFor(draw, 'geometrychange')(e)
-
-    expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
-    // A valid split line must allow completion: Done enabled (pluginState.geometryValid)
-    // and the double-click/click-vertex finish gesture unblocked (map._drawGeometryValid).
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
-    expect(draw.setGeometryValid).toHaveBeenCalledWith(true)
-  })
-
-  test('an invalid split line blocks completion: disables Done and the finish gesture', () => {
-    const { context, dispatch, draw } = makeContext()
-    splitPolygon.mockReturnValue(null)
-
-    split(context, 'poly')
-    const e = { coordinates: [[0, 0], [1, 1]] }
-    handlerFor(draw, 'geometrychange')(e)
-
-    expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
-    expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
-  })
-
-  test('geometry change ignores lines with fewer than two coordinates', () => {
-    const { context, draw } = makeContext()
-    split(context, 'poly')
-    splitPolygon.mockClear()
-
-    handlerFor(draw, 'geometrychange')({ coordinates: [[0, 0]] })
-
-    expect(splitPolygon).not.toHaveBeenCalled()
-  })
-
-  // events.js's shared onGeometryChange also reacts to this commit event and — since
-  // split nulls out the user validator — always marks it valid via the default rules,
-  // clobbering split's own gate. DrawInit re-attaches that shared handler on every
-  // pluginState change, so listener order on the bus isn't stable; the correction is
-  // deferred one tick (a real setTimeout) so it's always the final word regardless.
-  describe('commit-level (has a phase) geometry change', () => {
-    beforeEach(() => jest.useFakeTimers())
-    afterEach(() => jest.useRealTimers())
-
-    test('re-validates from a valid split after the deferred tick', () => {
+  describe('the installed draw._geometryValidator', () => {
+    test('never blocks a hard placement veto (phase: place)', () => {
       const { context, dispatch, draw } = makeContext()
-      splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
-
       split(context, 'poly')
-      const commitEvent = {
-        phase: 'commit-add',
-        vertexIndex: 1,
-        feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties: {} }
-      }
-      handlerFor(draw, 'geometrychange')(commitEvent)
-      jest.runAllTimers()
+      dispatch.mockClear()
 
-      expect(splitPolygon).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({
-        geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }
-      }))
+      const result = draw._geometryValidator(lineFeature([[0, 0], [1, 1]]), { phase: 'place', mode: 'draw_line', vertexIndex: 1 })
+
+      expect(result).toEqual({ valid: true })
+      expect(splitPolygon).not.toHaveBeenCalled()
+      expect(draw.setDrawingPreviewProperty).not.toHaveBeenCalled()
+      expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_ACTION' }))
+    })
+
+    test('never blocks the whole-feature finish check (phase: create)', () => {
+      const { context, dispatch, draw } = makeContext()
+      split(context, 'poly')
+      dispatch.mockClear()
+
+      const result = draw._geometryValidator(lineFeature([[0, 0], [1, 1]]), { phase: 'create', mode: 'draw_line' })
+
+      expect(result).toEqual({ valid: true })
+      expect(splitPolygon).not.toHaveBeenCalled()
+      expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_ACTION' }))
+    })
+
+    test('evaluates a valid split on the live preview (phase: preview)', () => {
+      const { context, dispatch, draw } = makeContext()
+      const polygonFeature = { id: 'poly' }
+      draw.get.mockReturnValue(polygonFeature)
+      splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
+      split(context, 'poly')
+
+      const feature = lineFeature([[0, 0], [1, 1]])
+      const result = draw._geometryValidator(feature, { phase: 'preview', mode: 'draw_line', placedCount: 2 })
+
+      expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, { id: '_splitter', geometry: feature.geometry })
+      expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
+      // A valid split line must allow completion: Done enabled (pluginState.geometryValid)
+      // and the double-click/click-vertex finish gesture unblocked (map._drawGeometryValid).
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
       expect(draw.setGeometryValid).toHaveBeenCalledWith(true)
+      expect(result).toEqual({ valid: true })
     })
 
-    test('re-validates from an invalid split after the deferred tick', () => {
+    test('evaluates an invalid split with a reason on a committed vertex (phase: commit-add)', () => {
       const { context, dispatch, draw } = makeContext()
       splitPolygon.mockReturnValue(null)
-
       split(context, 'poly')
-      handlerFor(draw, 'geometrychange')({
-        phase: 'commit-add',
-        feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties: {} }
-      })
-      jest.runAllTimers()
 
+      const feature = lineFeature([[0, 0], [1, 1]])
+      const result = draw._geometryValidator(feature, { phase: 'commit-add', mode: 'draw_line', vertexIndex: 1 })
+
+      expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
       expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
+      expect(result).toEqual({ valid: false, reason: expect.any(String) })
     })
-
-    test('with too few coordinates is ignored and never schedules a correction', () => {
-      const { context, draw } = makeContext()
-      split(context, 'poly')
-      splitPolygon.mockClear()
-
-      handlerFor(draw, 'geometrychange')({
-        phase: 'commit-add',
-        feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0]] }, properties: {} }
-      })
-      jest.runAllTimers()
-
-      expect(splitPolygon).not.toHaveBeenCalled()
-    })
-
-    test('does not touch state if the split session already ended before the tick fires', () => {
-      const { context, dispatch, draw } = makeContext()
-      splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
-
-      split(context, 'poly')
-      handlerFor(draw, 'geometrychange')({
-        phase: 'commit-add',
-        feature: { type: 'Feature', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties: {} }
-      })
-      // The split completes (or is cancelled) before the deferred tick runs.
-      handlerFor(draw, 'create')({ id: 'line' })
-      dispatch.mockClear()
-      draw.setGeometryValid.mockClear()
-
-      jest.runAllTimers()
-
-      expect(dispatch).not.toHaveBeenCalled()
-      expect(draw.setGeometryValid).not.toHaveBeenCalled()
-    })
-  })
-
-  test('geometry change marks invalid splits', () => {
-    const { context, dispatch, draw } = makeContext()
-    splitPolygon.mockReturnValue(null)
-
-    split(context, 'poly')
-    const e = { coordinates: [[0, 0], [1, 1]] }
-
-    expect(() => handlerFor(draw, 'geometrychange')(e)).not.toThrow()
-    expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })
   })
 })

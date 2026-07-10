@@ -1,16 +1,15 @@
 import { splitPolygon } from '../utils/spatial.js'
-import { debounce } from '../utils/debounce.js'
 import { ADAPTER_EVENTS } from '../adapterEvents.js'
 
-const DEBOUNCE_MS = 10
+const INVALID_REASON = 'Line does not split the shape into two parts'
 
 // Recompute split validity and re-apply the same gate normal draw/edit uses:
 // disables Done (manifest.js enableWhen reads pluginState.geometryValid) and blocks
 // the double-click/click-vertex finish gesture (drawMode/clickHandlers.js reads
 // map._drawGeometryValid) while the line wouldn't produce a valid split. Only uses
 // the shared, engine-agnostic adapter interface — no mapbox-gl-draw internals.
-const applySplitValidity = ({ draw, dispatch, polygonFeature, coordinates }) => {
-  const lineFeature = { id: '_splitter', geometry: { type: 'LineString', coordinates } }
+const applySplitValidity = ({ draw, dispatch, polygonFeature, feature }) => {
+  const lineFeature = { id: '_splitter', geometry: feature.geometry }
   const featureCollection = splitPolygon(polygonFeature, lineFeature)
   const isValid = !!featureCollection
   // The splitter line has no stable id until it's actually created, so the
@@ -21,45 +20,28 @@ const applySplitValidity = ({ draw, dispatch, polygonFeature, coordinates }) => 
   dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
   dispatch({ type: 'SET_GEOMETRY_VALID', payload: isValid })
   draw.setGeometryValid(isValid)
+  return isValid ? { valid: true } : { valid: false, reason: INVALID_REASON }
 }
 
-// Real-time preview + completion gate as the splitter line is drawn (ML only —
-// setFeatureProperty is a no-op on the OL adapter, per its documented interface).
+// Installed as draw._geometryValidator for the splitter-line session, so the shared
+// validation pipeline (rules.js / validateGeometry.js, and the adapters' live-stroke
+// and live-placement controllers) drives split's validity the same way any other draw
+// session's rules do — no separate GEOMETRY_CHANGE listener, debounce, or
+// event-ordering correction needed.
 //
-// events.js has its own shared geometrychange handler, and it also reacts to
-// every commit-level event (one with a `phase`, e.g. commit-add/move/insert/
-// delete). Since split nulls out the user validator (see split() below), that
-// shared handler always marks the event valid via the default rules — clobbering
-// split's own validity gate. DrawInit's effect re-attaches the shared handler on
-// every pluginState change (detach+reattach reorders the event bus's listener
-// Set), so which handler runs first for a given event isn't stable — this can't
-// rely on registration order to "win". Instead the correction is deferred one
-// more tick: whatever events.js did already ran synchronously by the time this
-// fires, so this is always the final word regardless of ordering.
-const createGeometryChangeHandler = ({ draw, dispatch, polygonFeature, isStopped }) => {
-  const apply = (coordinates) => applySplitValidity({ draw, dispatch, polygonFeature, coordinates })
-  const debouncedPreview = debounce(apply, DEBOUNCE_MS)
-
-  return (e) => {
-    if (e?.phase) {
-      debouncedPreview.cancel?.()
-      // Commit-level events carry { feature, phase, vertexIndex } per the shared
-      // adapter contract (adapterEvents.js) rather than a top-level coordinates.
-      const coordinates = e.feature?.geometry?.coordinates
-      if (!coordinates || coordinates.length < 2) {
-        return
-      }
-      setTimeout(() => {
-        if (isStopped()) { return }
-        apply(coordinates)
-      }, 0)
-      return
-    }
-    if (!e.coordinates || e.coordinates.length < 2) {
-      return
-    }
-    debouncedPreview(e.coordinates)
+// 'place' (hard placement veto — checkPlacement/validatePlacement) and 'create'
+// (whole-feature finish check — events.js's onCreate, which on failure drops the
+// feature into edit_vertex mode) must never run split's rule: the splitter line
+// isn't a complete valid split until its final vertex, so almost every intermediate
+// placement or early finish would "fail" a check that was never meant to gate them.
+// Only the continuous soft checks — the live preview and each committed vertex —
+// actually evaluate the split.
+const createSplitValidator = ({ draw, dispatch, polygonFeature }) => (feature, context) => {
+  const isSoftCheck = context.phase === 'preview' || context.phase?.startsWith('commit-')
+  if (!isSoftCheck) {
+    return { valid: true }
   }
+  return applySplitValidity({ draw, dispatch, polygonFeature, feature })
 }
 
 /**
@@ -84,8 +66,11 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
 
   const polygonFeature = draw.get(featureId)
 
-  // Split draws its own throwaway line; user geometry validation must not apply here.
-  draw._geometryValidator = null
+  // Swap in split's own rule for the splitter-line session; restored in
+  // stopListening so the polygon's own developer-supplied validator isn't left
+  // permanently replaced once the split session ends.
+  const previousValidator = draw._geometryValidator
+  draw._geometryValidator = createSplitValidator({ draw, dispatch, polygonFeature })
 
   // Always include the draw outline layer so the split line snaps to it
   const snapLayers = ['stroke-inactive.cold', ...(options.snapLayers || [])]
@@ -102,16 +87,12 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
     properties: { splitter: 'invalid' }
   })
 
-  // Both listeners are scoped to this one splitter-line session — leaving either
-  // registered past that would leak into whatever the user draws or edits next.
-  // Also guards the deferred correction in createGeometryChangeHandler: once true,
-  // a stale setTimeout callback from a since-ended session must not touch shared state.
-  let stopped = false
+  // Scoped to this one splitter-line session — leaving either registered past
+  // that would leak into whatever the user draws or edits next.
   const stopListening = () => {
-    stopped = true
+    draw._geometryValidator = previousValidator
     draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)
-    draw.off(ADAPTER_EVENTS.GEOMETRY_CHANGE, onGeometryChange)
   }
 
   // One-shot: compute split result once the line is finalised
@@ -136,9 +117,6 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
 
   draw.on(ADAPTER_EVENTS.CREATE, onSplitCreate)
   draw.on(ADAPTER_EVENTS.CANCEL, onSplitCancel)
-
-  const onGeometryChange = createGeometryChangeHandler({ draw, dispatch, polygonFeature, isStopped: () => stopped })
-  draw.on(ADAPTER_EVENTS.GEOMETRY_CHANGE, onGeometryChange)
 
   dispatch({ type: 'SET_MODE', payload: 'draw_line' })
   dispatch({ type: 'SET_ACTION', payload: { name: 'split' } })
