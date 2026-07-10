@@ -167,13 +167,12 @@ interactiveMap.on('draw:ready', function () {
 })
 
 interactiveMap.on('draw:started', function (e) {
-  interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+  // console.log('draw:started')
   interactPlugin.disable()
 })
 
 interactiveMap.on('draw:editstart', function (e) {
-  interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
-  interactPlugin.disable()
+  console.log('draw:editstart', e)
 })
 
 interactiveMap.on('draw:created', function (e) {
