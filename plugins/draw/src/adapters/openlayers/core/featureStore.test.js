@@ -40,6 +40,16 @@ test('remove deletes by id and tolerates unknown ids; clear empties the source',
   expect(store.source.getFeatures()).toHaveLength(0)
 })
 
+test('remove accepts an array of ids and deletes all of them', () => {
+  const store = createFeatureStore()
+  store.add(geojson('f1'))
+  store.add(geojson('f2'))
+  store.add(geojson('f3'))
+  store.remove(['f1', 'f2', 'missing'])
+  expect(store.source.getFeatures()).toHaveLength(1)
+  expect(store.get('f3')).not.toBeNull()
+})
+
 test('toGeoJSON / fromGeoJSON round-trip without touching the source', () => {
   const store = createFeatureStore()
   const olFeature = store.fromGeoJSON(geojson('f9'))

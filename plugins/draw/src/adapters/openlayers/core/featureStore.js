@@ -39,11 +39,15 @@ export const createFeatureStore = () => {
       return feature ? format.writeFeatureObject(feature) : null
     },
 
-    /** Remove a feature by ID. */
+    /** Remove one feature, or several, by ID. Matches mapbox-gl-draw's delete(ids),
+     * which accepts a single id or an array — deleteFeature.js passes either. */
     remove (id) {
-      const feature = this.getOL(id)
-      if (feature) {
-        source.removeFeature(feature)
+      const ids = Array.isArray(id) ? id : [id]
+      for (const featureId of ids) {
+        const feature = this.getOL(featureId)
+        if (feature) {
+          source.removeFeature(feature)
+        }
       }
     },
 
