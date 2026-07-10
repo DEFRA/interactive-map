@@ -15,7 +15,8 @@ const initialState = {
     items: [],
     hasGroups: false
   },
-  actionsArray: []
+  actionsArray: [],
+  menu: []
 }
 
 const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') => {
@@ -41,14 +42,21 @@ const setGlobalState = (state, payload) => {
   })
 }
 
+const setMenu = (state, payload) => {
+  const { menu } = payload
+  return {
+    ...state,
+    menu
+  }
+}
+
 const setDatasets = (state, payload) => {
-  const { datasets, mappedDatasets, orderedDatasets } = payload
-  const menu = payload.menu || datasetsToMenu({ datasets })
+  const { mappedDatasets, orderedDatasets } = payload
+
   return {
     ...state,
     mappedDatasets,
-    orderedDatasets,
-    menu
+    orderedDatasets
   }
 }
 
@@ -197,7 +205,8 @@ const actions = {
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
   REMOVE_ADAPTER_ACTIONS: removeAdapterActions,
-  SET_GLOBAL_STATE: setGlobalState
+  SET_GLOBAL_STATE: setGlobalState,
+  SET_MENU: setMenu
 }
 
 export {

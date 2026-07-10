@@ -3,6 +3,7 @@ import { createDynamicSource } from '../fetch/createDynamicSource.js'
 import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
+import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
 export const initialiseDatasets = ({
   adapter,
@@ -44,6 +45,8 @@ export const initialiseDatasets = ({
     adapter.attachDynamicSources(dynamicSources)
     // TODO - apply dynamic source defaults here, and include in mappedDatasets
     dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, mappedDatasets, orderedDatasets } })
+    const menu = pluginConfig.menu || datasetsToMenu({ datasets: processedDatasets })
+    dispatch({ type: 'SET_MENU', payload: { menu } })
     eventBus.emit('datasets:ready')
   })
 
