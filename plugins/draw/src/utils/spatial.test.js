@@ -1,7 +1,9 @@
 import polygonSplitter from 'polygon-splitter'
+import turfUnion from '@turf/union'
 import {
   toTurfGeometry,
   splitPolygon,
+  mergePolygons,
   extendLine,
   isNewCoordinate,
   isValidClick,
@@ -10,6 +12,7 @@ import {
 } from './spatial.js'
 
 jest.mock('polygon-splitter', () => jest.fn())
+jest.mock('@turf/union', () => jest.fn())
 
 beforeEach(() => jest.clearAllMocks())
 
@@ -103,6 +106,58 @@ describe('splitPolygon', () => {
 
     const anonymous = { properties: {}, geometry: polygon.geometry }
     expect(splitPolygon(anonymous, line).features[0].id).toBe('poly-1')
+  })
+})
+
+describe('mergePolygons', () => {
+  const squareA = {
+    id: 'sq-a',
+    properties: { id: 'sq-a', name: 'field' },
+    geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 1], [0, 0]]] }
+  }
+  const squareB = {
+    id: 'sq-b',
+    properties: { id: 'sq-b' },
+    geometry: { type: 'Polygon', coordinates: [[[1, 0], [2, 0], [2, 1], [1, 1], [1, 0]]] }
+  }
+
+  const mergedResult = {
+    geometry: { type: 'Polygon', coordinates: [[[0, 0], [2, 0], [2, 1], [0, 1], [0, 0]]] }
+  }
+
+  test('returns a single merged polygon for a valid union', () => {
+    turfUnion.mockReturnValue(mergedResult)
+
+    const result = mergePolygons([squareA, squareB])
+
+    expect(result.geometry.type).toBe('Polygon')
+    expect(result.id).toBe('sq-a')
+    expect(result.properties).toMatchObject({ id: 'sq-a', name: 'field' })
+  })
+
+  test('returns null when union throws', () => {
+    turfUnion.mockImplementation(() => { throw new Error('bad geometry') })
+    expect(mergePolygons([squareA, squareB])).toBeNull()
+  })
+
+  test('returns null when the inputs are not contiguous (MultiPolygon result)', () => {
+    turfUnion.mockReturnValue({ geometry: { type: 'MultiPolygon', coordinates: [] } })
+    expect(mergePolygons([squareA, squareB])).toBeNull()
+  })
+
+  test('returns null when union returns null', () => {
+    turfUnion.mockReturnValue(null)
+    expect(mergePolygons([squareA, squareB])).toBeNull()
+  })
+
+  test('derives the base id from properties.id then a default', () => {
+    turfUnion.mockReturnValue(mergedResult)
+
+    const noTopLevelId = { properties: { id: 'pid' }, geometry: squareA.geometry }
+    expect(mergePolygons([noTopLevelId, squareB]).id).toBe('pid')
+
+    const anonymous = { properties: {}, geometry: squareA.geometry }
+    expect(mergePolygons([anonymous, squareB]).id).toBe('poly')
   })
 })
 

@@ -1,6 +1,7 @@
 import polygonSplitter from 'polygon-splitter'
 import turfBearing from '@turf/bearing'
 import turfDestination from '@turf/destination'
+import turfUnion from '@turf/union'
 import {
   featureCollection as turfFeatureCollection,
   polygon as turfPolygon,
@@ -81,6 +82,31 @@ const splitPolygon = (polygon, line) => {
   )
 
   return turfFeatureCollection(features)
+}
+
+/**
+ * Merge multiple contiguous polygons into a single polygon.
+ * Only accepts a merge that results in exactly one polygon — a gap between two
+ * of the inputs would make Turf return a MultiPolygon instead, which is rejected.
+ *
+ * @param {Polygon[]} polygons
+ * @returns {Polygon|null}
+ */
+const mergePolygons = (polygons) => {
+  let result
+  try {
+    result = turfUnion(turfFeatureCollection(polygons))
+  } catch {
+    return null
+  }
+
+  if (result?.geometry?.type !== 'Polygon') {
+    return null
+  }
+
+  // Assign ID & properties from the first feature, matching splitPolygon's convention.
+  const baseId = polygons[0].id ?? polygons[0].properties?.id ?? 'poly'
+  return turfPolygon(result.geometry.coordinates, { ...polygons[0].properties, id: baseId }, { id: baseId })
 }
 
 /**
@@ -200,6 +226,7 @@ const spatialNavigate = (start, pixels, direction) => {
 export {
   toTurfGeometry,
   splitPolygon,
+  mergePolygons,
   extendLine,
   isNewCoordinate,
   isValidClick,

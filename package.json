@@ -233,6 +233,7 @@
     "@turf/line-intersect": "^7.3.3",
     "@turf/point-to-line-distance": "^7.3.3",
     "@turf/polygon-to-line": "^7.3.3",
+    "@turf/union": "^7.3.5",
     "accessible-autocomplete": "^3.0.1",
     "govuk-frontend": "^5.13.0",
     "maplibre-gl": "^5.23.0",
