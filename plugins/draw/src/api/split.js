@@ -108,9 +108,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
   }
 
   // Abandoned (e.g. Escape) — just stop listening.
-  const onSplitCancel = () => {
-    stopListening()
-  }
+  const onSplitCancel = () => { stopListening() }
 
   draw.on(ADAPTER_EVENTS.CREATE, onSplitCreate)
   draw.on(ADAPTER_EVENTS.CANCEL, onSplitCancel)
