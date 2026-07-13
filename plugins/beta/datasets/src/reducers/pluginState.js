@@ -101,6 +101,9 @@ const setDatasetVisibility = (state, payload) => {
   if (!validateDatasetExists(state, datasetId, 'setDatasetVisibility')) {
     return state
   }
+  if (state.mappedDatasets[datasetId].visible === visible) {
+    return state
+  }
 
   return addAction('applyDatasetVisibility', [datasetId, visible], {
     ...state,
