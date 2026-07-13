@@ -44,10 +44,17 @@ const setGlobalState = (state, payload) => {
   })
 }
 
+const updateMenuState = (state, payload) => {
+  return addAction('applyGlobalVisibility', [], {
+    ...state,
+    menuState: { ...state.menuState, ...payload }
+  })
+}
+
 const setMenu = (state, payload) => {
   const { menu } = payload
+  // build the initial menuState for radios from the menu
   const menuState = buildMenuState(menu)
-  console.log('setMenu: menuState:', menuState)
   return {
     ...state,
     menu,
@@ -214,7 +221,8 @@ const actions = {
   SHOW_FEATURES: showFeatures,
   REMOVE_ADAPTER_ACTIONS: removeAdapterActions,
   SET_GLOBAL_STATE: setGlobalState,
-  SET_MENU: setMenu
+  SET_MENU: setMenu,
+  UPDATE_MENU_STATE: updateMenuState
 }
 
 export {

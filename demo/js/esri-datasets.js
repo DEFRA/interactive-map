@@ -340,9 +340,7 @@ const menu = [
     value: 'floodzones', // this is the default value for the menu, it should be one of the items' id
     items: [
       { id: 'floodzones', label: 'Flood zones' },
-      { id: 'floodzonescc', label: 'Flood zones climate change' },
       { id: 'surfacewater', label: 'Surface water' },
-      { id: 'surfacewaterDepthAll', label: 'Surface water all depths' },
       { id: 'none', label: 'None', },
     ],
   },
@@ -353,7 +351,7 @@ const menu = [
     urlIndex: 1, // eg: surfacewater-presentday-high-depth or floodzones-climatechange
     type: 'radio',
     visibleWhen: { dataset: ['floodzones', 'surfacewater'] },
-    value: 'climatechange',
+    value: 'presentday',
     items: [
       { id: 'presentday', label: 'Present day' },
       { id: 'climatechange', label: '2070 to 2125', visibleWhen: { dataset: ['floodzones'], aep: ['medium', 'low'] } },
