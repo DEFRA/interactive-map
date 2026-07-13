@@ -1,14 +1,21 @@
 import React, { useState } from 'react'
+import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 import { LayersMenuRadio } from './LayersMenuRadio.jsx'
 
 export const LayersRadioGroupWrapper = ({ pluginState, menuGroup }) => {
-  const { id, items } = menuGroup
+  const { id, items, visibleWhen } = menuGroup
+  const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true
+  if (!visible) {
+    return null
+  }
+
   const { menuState, dispatch } = pluginState
   const [value, setValue] = useState(menuState[id])
   const handleChange = (event) => {
     setValue(event.target.value)
     dispatch({ type: 'UPDATE_MENU_STATE', payload: { [id]: event.target.value } })
   }
+
   const wrapperClass = 'govuk-form-group im-c-datasets-layers-group'
   return (
     <div key={menuGroup.id} className={wrapperClass}>

@@ -350,12 +350,12 @@ const menu = [
     urlKey: 'dataset',
     urlIndex: 1, // eg: surfacewater-presentday-high-depth or floodzones-climatechange
     type: 'radio',
-    visibleWhen: { dataset: ['floodzones', 'surfacewater'] },
+    visibleWhen: { menu: { dataset: ['floodzones', 'surfacewater'] } },
     value: 'presentday',
     items: [
       { id: 'presentday', label: 'Present day' },
-      { id: 'climatechange', label: '2070 to 2125', visibleWhen: { dataset: ['floodzones'], aep: ['medium', 'low'] } },
-      { id: 'climatechange', label: '2061 to 2125', visibleWhen: { dataset: ['surfacewater'] } },
+      { id: 'climatechange', label: '2070 to 2125', visibleWhen: { menu: { dataset: ['floodzones'] } } },
+      { id: 'climatechange', label: '2061 to 2125', visibleWhen: { menu: { dataset: ['surfacewater'] } } },
     ]
   }, {
     id: 'aep',
@@ -363,7 +363,7 @@ const menu = [
     urlKey: 'dataset',
     urlIndex: 2,
     type: 'radio',
-    visibleWhen: { dataset: ['surfacewater'] },
+    visibleWhen: { menu: { dataset: ['surfacewater'] } },
     value: 'medium',
     items: [
       { id: 'high', label: '1 in 30' },
@@ -376,7 +376,7 @@ const menu = [
     urlKey: 'dataset',
     urlIndex: 3,
     type: 'radio',
-    visibleWhen: { dataset: ['surfacewater'] },
+    visibleWhen: { menu: { dataset: ['surfacewater'] } },
     subMenu: true,
     value: 'depthAll',
     items: [

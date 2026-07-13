@@ -1,7 +1,12 @@
-// import { datasetRegistry } from '../../registry/datasetRegistry.js'
+import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 
 export const LayersMenuRadio = ({ menuState, menuGroupItem, checked, name, onChange }) => {
   const itemClass = 'im-c-datasets-layers__item govuk-radios govuk-radios--small"'
+  const { visibleWhen } = menuGroupItem
+  const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true
+  if (!visible) {
+    return null
+  }
   return (
     <div className={itemClass} data-module='govuk-radios'>
       <div className='govuk-radios__item'>
