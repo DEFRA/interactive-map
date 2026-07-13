@@ -1,16 +1,7 @@
 import { datasetRegistry } from './datasetRegistry.js'
 
 let _menuState = {}
-
-export const setMenuState = (menu) => {
-  _menuState = {}
-  menu.forEach(item => {
-    if (item.type === 'radio') {
-      _menuState[item.id] = item.value
-    }
-  })
-  console.log('_menuState:', _menuState)
-}
+export const setMenuState = (menuState) => (_menuState = menuState)
 
 const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
   for (const [key, valueArray] of Object.entries(menuVisibleWhen)) {

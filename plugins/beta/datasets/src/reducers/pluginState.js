@@ -1,4 +1,5 @@
-import { datasetsToMenu, addDatasetToMenu, removeDatasetsFromMenu } from './datasetsToMenu.js'
+import { addDatasetToMenu, removeDatasetsFromMenu } from './datasetsToMenu.js'
+import { buildMenuState } from './menuStateReducer.js'
 import { mappedDatasetsReducer } from './mappedDatasetsReducer.js'
 import { logger } from '../../../../../src/services/logger.js'
 
@@ -16,7 +17,8 @@ const initialState = {
     hasGroups: false
   },
   actionsArray: [],
-  menu: []
+  menu: [],
+  menuState: {}
 }
 
 const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') => {
@@ -44,9 +46,12 @@ const setGlobalState = (state, payload) => {
 
 const setMenu = (state, payload) => {
   const { menu } = payload
+  const menuState = buildMenuState(menu)
+  console.log('setMenu: menuState:', menuState)
   return {
     ...state,
-    menu
+    menu,
+    menuState
   }
 }
 
