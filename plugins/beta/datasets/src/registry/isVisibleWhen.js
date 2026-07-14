@@ -50,4 +50,6 @@ export const isVisibleWhen = (visibleWhen) => {
     }
     return true
   }
+  // Fallback to true if visibleWhen is incorrectly configured
+  return true
 }
