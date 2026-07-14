@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
-import { LayersMenuCheckbox } from './LayersMenuCheckbox'
+import { LayersMenuCheckbox } from './LayersMenuCheckbox.jsx'
 
 jest.mock('../../registry/datasetRegistry.js', () => ({
   datasetRegistry: {

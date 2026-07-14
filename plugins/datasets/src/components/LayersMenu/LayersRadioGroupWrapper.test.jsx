@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
-import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper'
+import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper.jsx'
 
 jest.mock('../../registry/isVisibleWhen.js', () => ({
   isVisibleWhen: jest.fn()

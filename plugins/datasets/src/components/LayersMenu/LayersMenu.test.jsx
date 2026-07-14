@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { LayersMenu } from './LayersMenu'
+import { LayersMenu } from './LayersMenu.jsx'
 import { setDatasetVisibility } from '../../api/setDatasetVisibility.js'
 
 jest.mock('../../api/setDatasetVisibility.js', () => ({

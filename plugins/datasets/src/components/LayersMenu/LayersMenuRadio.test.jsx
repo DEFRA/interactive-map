@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
-import { LayersMenuRadio } from './LayersMenuRadio'
+import { LayersMenuRadio } from './LayersMenuRadio.jsx'
 
 jest.mock('../../registry/isVisibleWhen.js', () => ({
   isVisibleWhen: jest.fn()
