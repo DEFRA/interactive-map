@@ -1,4 +1,5 @@
 import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
+import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js'
 import GroupLayer from '@arcgis/core/layers/GroupLayer.js'
 import { LayerAdapter } from '../layerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
@@ -61,8 +62,30 @@ export default class EsriLayerAdapter extends LayerAdapter {
     return this._groupLayers[esriGroupId]
   }
 
+  async _addFeatureLayers (registryDataset) {
+    const featureLayer = new FeatureLayer({
+      id: registryDataset.id,
+      url: registryDataset.tiles,
+      opacity: 1,
+      visible: false
+    })
+    this._vectorTileLayers[registryDataset.id] = featureLayer
+    this._vectorTileOpacityLayers[registryDataset.id] = featureLayer
+    try {
+      this._map.add(featureLayer)
+      return featureLayer.when()
+    } catch (error) {
+      logger.error(`Error adding FeatureLayer for dataset ${registryDataset.id}:`, error)
+    }
+  }
+
   async _addLayers (registryDataset) {
-    const { esriGroupId } = registryDataset
+    const { type, esriGroupId } = registryDataset
+
+    if (type === 'FeatureService') {
+      return this._addFeatureLayers(registryDataset)
+    }
+
     const vectorTileParent = esriGroupId ? this._addGroupLayer(esriGroupId) : this._map
     const vectorTileLayer = new VectorTileLayer({
       id: registryDataset.id,
@@ -121,6 +144,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // if this is a top level dataset, we need to apply the visibility to the vectorTileLayer/ groupLayer itself
     const { id, isSublayer, visible, parentId } = registryDataset
     const vectorTileLayer = this._vectorTileLayers[isSublayer ? parentId : id]
+    if (!vectorTileLayer) {
+      return
+    }
 
     if (isSublayer) {
       this._applyStyleLayerVisibility(registryDataset, vectorTileLayer)

@@ -9,6 +9,8 @@ import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } fro
 
 const nonFloodZoneLight = '#2b8cbe'
 const nonFloodZoneDark = '#7fcdbb'
+const white = '#ffffff'
+const darkTeal = '#12393d'
 
 const COLOURS = {
   // floodExtents: { default: nonFloodZoneLight, dark: nonFloodZoneDark },
@@ -35,8 +37,6 @@ const COLOURS = {
 const nonFloodZoneDepthBandsLight = [COLOURS.depthOver2300.default, COLOURS.depth2300.default, COLOURS.depth1200.default, COLOURS.depth900.default, COLOURS.depth600.default, COLOURS.depth300.default, COLOURS.depth150.default]
 // GREENS dark tones > 2300 to < 150
 const nonFloodZoneDepthBandsDark = [COLOURS.depthOver2300.dark, COLOURS.depth2300.dark, COLOURS.depth1200.dark, COLOURS.depth900.dark, COLOURS.depth600.dark, COLOURS.depth300.dark, COLOURS.depth150.dark]
-
-
 
 const datasetFloodZonesCC =   {
   id: 'floodzonescc',
@@ -326,8 +326,60 @@ const surfaceWaterDepthAllDataset = {
   ]
 }
 
+const datasetMainRivers = {
+  id: 'mainrivers',
+  label: 'Main Rivers',
+  groupLabel: 'Map features',
+  type: 'FeatureService',
+  tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Statutory_Main_River_Map/FeatureServer',
+  showInKey: true,
+  showInMenu: true,
+  sourceLayer: 'Statutory_Main_River_Map',
+  visible: false,
+  style: {
+    stroke: { outdoor: darkTeal, dark: white },
+    strokeWidth: 3
+  }
+}
+
+const datasetWaterStorageAreas = {
+  id: 'waterstorage',
+  label: 'Water Storage',
+  groupLabel: 'Map features',
+  type: 'FeatureService',
+  tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Storage_Areas_NON_PRODUCTION/FeatureServer',
+  showInKey: true,
+  showInMenu: true,
+  sourceLayer: 'Flood_Storage_Areas',
+  visible: false,
+  style: {
+    stroke: { outdoor: darkTeal, dark: white },
+    strokeWidth: 1,
+    fillPattern: 'diagonal-cross-hatch',
+    fillPatternForegroundColor: { outdoor: darkTeal, dark: white },
+    fillPatternBackgroundColor: 'transparent'
+  }
+}
+
+const datasetFloodDefences = {
+  id: 'flooddefence',
+  label: 'Flood Defence',
+  groupLabel: 'Map features',
+  type: 'FeatureService',
+  tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Defences_NON_PRODUCTION/FeatureServer',
+  showInKey: true,
+  showInMenu: true,
+  sourceLayer: 'Defences',
+  visible: false,
+  style: {
+    stroke: { outdoor: '#f47738', dark: '#f47738' },
+    strokeWidth: 3
+  }
+}
+
 const datasets = [
-  datasetFloodZonesCC,  datasetFloodZones, surfaceWaterDataset, surfaceWaterDepthAllDataset
+  datasetFloodZonesCC, datasetFloodZones, surfaceWaterDataset, surfaceWaterDepthAllDataset,
+  datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
 
 const menu = [
@@ -391,14 +443,14 @@ const menu = [
     ]
   }, {
     id: 'features',
-    label: 'Map features',
+    groupLabel: 'Map features',
     urlKey: 'features',
     type: 'checkbox',
     visibleWhen: true,
     items: [
-      { id: 'water-storage', label: 'Water storage', checked: false },
-      { id: 'flood-defence', label: 'Flood defence', checked: false },
-      { id: 'main-rivers', label: 'Main rivers', checked: false },
+      { id: 'waterstorage', label: 'Water storage' },
+      { id: 'flooddefence', label: 'Flood defence' },
+      { id: 'mainrivers', label: 'Main rivers' },
     ]
   }
 ]

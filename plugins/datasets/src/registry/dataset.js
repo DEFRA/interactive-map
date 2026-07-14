@@ -23,6 +23,7 @@ export class Dataset {
   get parentId () { return this._datasetDefinition.parentId }
   get minZoom () { return this._datasetDefinition.minZoom || this.parent?.minZoom }
   get maxZoom () { return this._datasetDefinition.maxZoom || this.parent?.maxZoom }
+  get type () { return this._datasetDefinition.type || this.parent?.type }
 
   get showInKey () {
     const own = this._datasetDefinition.showInKey
