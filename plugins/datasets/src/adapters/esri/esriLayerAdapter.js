@@ -3,7 +3,7 @@ import GroupLayer from '@arcgis/core/layers/GroupLayer.js'
 import { LayerAdapter } from '../layerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { EsriDataset } from './registry/esriDataset.js'
-import { logger } from '../../../../../../src/services/logger.js'
+import { logger } from '../../../../../src/services/logger.js'
 
 export default class EsriLayerAdapter extends LayerAdapter {
   constructor (mapProvider, symbolRegistry, patternRegistry) {

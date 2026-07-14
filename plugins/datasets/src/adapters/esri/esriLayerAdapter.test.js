@@ -3,7 +3,7 @@ import EsriLayerAdapter from './esriLayerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 jest.mock('../../registry/datasetRegistry.js')
-jest.mock('../../../../../../src/services/logger.js')
+jest.mock('../../../../../src/services/logger.js')
 
 jest.mock('@arcgis/core/layers/VectorTileLayer.js', () =>
   jest.fn().mockImplementation((opts = {}) => ({

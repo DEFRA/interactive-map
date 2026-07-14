@@ -1,7 +1,7 @@
 import { setGlobals } from './setGlobals.js'
-import { logger } from '../../../../../src/services/logger.js'
+import { logger } from '../../../../src/services/logger.js'
 
-jest.mock('../../../../../src/services/logger.js')
+jest.mock('../../../../src/services/logger.js')
 
 describe('setGlobals', () => {
   const dispatch = jest.fn()

@@ -1,7 +1,7 @@
 import { addDatasetToMenu, removeDatasetsFromMenu } from './datasetsToMenu.js'
 import { buildMenuState } from './menuStateReducer.js'
 import { mappedDatasetsReducer } from './mappedDatasetsReducer.js'
-import { logger } from '../../../../../src/services/logger.js'
+import { logger } from '../../../../src/services/logger.js'
 
 const initialState = {
   globals: {

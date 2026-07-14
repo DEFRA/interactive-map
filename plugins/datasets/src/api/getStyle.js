@@ -1,4 +1,4 @@
-import { logger } from '../../../../../src/services/logger.js'
+import { logger } from '../../../../src/services/logger.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 
 export const getStyle = ({ pluginState }, { datasetId, sublayerId } = {}) => {

@@ -27,7 +27,7 @@ export default {
       '<rootDir>/coverage',
       '<rootDir>/demo',
       '<rootDir>/src/test-utils.js',
-      '<rootDir>/plugins/beta/datasets/',
+      '<rootDir>/plugins/datasets/',
       '<rootDir>/providers/beta/',
       '<rootDir>/plugins/beta/draw-es',
       '<rootDir>/plugins/beta/draw-ml',

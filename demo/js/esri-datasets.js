@@ -2,7 +2,7 @@ import InteractiveMap from '../../src/index.js'
 import esriProvider from '/providers/beta/esri/src/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
+import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'

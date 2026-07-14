@@ -1,6 +1,6 @@
 // src/plugins/datasets/datasetsInit.jsx
 import { useEffect, useRef } from 'react'
-import { EVENTS } from '../../../../../src/config/events.js'
+import { EVENTS } from '../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { setMenuState } from '../registry/isVisibleWhen.js'

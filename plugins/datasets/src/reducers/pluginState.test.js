@@ -1,7 +1,7 @@
 import { initialState, actions } from './pluginState.js'
-import { logger } from '../../../../../src/services/logger.js'
+import { logger } from '../../../../src/services/logger.js'
 
-jest.mock('../../../../../src/services/logger.js')
+jest.mock('../../../../src/services/logger.js')
 
 // Helper: build a minimal plugin state with some mapped datasets
 const makeState = (overrides = {}) => ({

@@ -1,6 +1,6 @@
 import { Dataset } from '../../../registry/dataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
-import { getValueForStyle } from '../../../../../../../src/utils/getValueForStyle.js'
+import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 
 export class EsriDataset extends Dataset {
   applyLayerPaintProperties (layerPaintProperties) {

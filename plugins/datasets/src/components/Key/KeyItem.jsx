@@ -1,4 +1,4 @@
-import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
+import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
 import { KeySvg } from './KeySvg.jsx'
 
 export const KeyItem = ({ registryDataset, symbolRegistry, patternRegistry, mapStyle }) => {
