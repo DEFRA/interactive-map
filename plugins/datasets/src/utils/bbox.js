@@ -103,10 +103,10 @@ export const getGeometryBbox = (geometry) => {
     case 'GeometryCollection':
       geometry.geometries.forEach(g => {
         const b = getGeometryBbox(g)
-        minX = Math.min(minX, b[0])
-        minY = Math.min(minY, b[1])
-        maxX = Math.max(maxX, b[2])
-        maxY = Math.max(maxY, b[3])
+        minX = Math.min(minX, b[0]) // west
+        minY = Math.min(minY, b[1]) // south
+        maxX = Math.max(maxX, b[2]) // east
+        maxY = Math.max(maxY, b[3]) // NOSONAR north
       })
       break
     default:

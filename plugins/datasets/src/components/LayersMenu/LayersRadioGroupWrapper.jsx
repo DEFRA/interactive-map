@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React from 'react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 import { LayersMenuRadio } from './LayersMenuRadio.jsx'
 
@@ -10,9 +10,8 @@ export const LayersRadioGroupWrapper = ({ pluginState, menuGroup }) => {
   }
 
   const { menuState, dispatch } = pluginState
-  const [value, setValue] = useState(menuState[id])
+  const value = menuState[id]
   const handleChange = (event) => {
-    setValue(event.target.value)
     dispatch({ type: 'UPDATE_MENU_STATE', payload: { [id]: event.target.value } })
   }
 
@@ -23,7 +22,7 @@ export const LayersRadioGroupWrapper = ({ pluginState, menuGroup }) => {
         <legend className='im-c-datasets-layers-group__legend'>
           {menuGroup.label}
         </legend>
-        <div class='govuk-radios govuk-radios--small' data-module='govuk-radios'>
+        <div className='govuk-radios govuk-radios--small' data-module='govuk-radios'>
           {items.map((menuGroupItem) =>
             <LayersMenuRadio
               key={menuGroupItem.id}

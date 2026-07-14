@@ -125,7 +125,9 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
         if (imageId) {
           this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
         }
-      } else if (fillLayerId && this._map.getLayer(fillLayerId)) {
+        return
+      }
+      if (fillLayerId && this._map.getLayer(fillLayerId)) {
         const imageId = this._patternRegistry.getPatternImageId(registryDataset.style, mapStyle.id, this._pixelRatio)
         if (imageId) {
           this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
@@ -163,7 +165,7 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
 
     // Remove source if no other dataset is using it
     const sourceIsShared = datasetRegistry.topLevelDatasets()
-      .filter(registryDataset => registryDataset.id !== datasetId && registryDataset.sourceId === sourceId)
+      .filter(dataset => dataset.id !== datasetId && dataset.sourceId === sourceId)
       .length > 0
 
     if (!sourceIsShared && this._map.getSource(sourceId)) {

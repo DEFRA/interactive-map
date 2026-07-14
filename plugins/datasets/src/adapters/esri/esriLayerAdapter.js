@@ -6,11 +6,10 @@ import { EsriDataset } from './registry/esriDataset.js'
 import { logger } from '../../../../../src/services/logger.js'
 
 export default class EsriLayerAdapter extends LayerAdapter {
-  constructor (mapProvider, symbolRegistry, patternRegistry) {
+  constructor (mapProvider) {
     super()
     this._mapProvider = mapProvider
     this._map = mapProvider.map
-    // TODO: Implement symbolRegistry and patternRegistry usage in the adapter
 
     // _vectorTileLayers is a map of datasetId to VectorTileLayer instances
     // it includes stand alone vectorTileLayers and vectorTileLayers that are part of a groupLayer
@@ -33,7 +32,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
     // ensure the datasets are added in order
-    for await (const registryDataset of topLevelDatasets) {
+    for (const registryDataset of topLevelDatasets) {
       await this._addLayers(registryDataset)
     }
 
@@ -111,7 +110,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
 
     // If the group layer has no more sublayers, we need to also remove the group layer from the map
-    if (groupLayer && groupLayer.layers.length === 0) {
+    if (groupLayer?.layers.length === 0) {
       this._map.remove(groupLayer)
       delete this._groupLayers[esriGroupId]
     }
@@ -127,7 +126,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
       this._applyStyleLayerVisibility(registryDataset, vectorTileLayer)
       // Don't apply the visibility change to the parent, since the parent may have other sublayers that are visible
       return
-    } else if (visible) {
+    }
+    if (visible) {
       // No need to apply style layer visibility for datasets that are hidden
       registryDataset.sublayers.forEach(sublayer => this._applyStyleLayerVisibility(sublayer, vectorTileLayer))
     }

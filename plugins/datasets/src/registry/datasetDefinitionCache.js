@@ -13,8 +13,8 @@ export class DatasetDefinitionCache {
     const existingDefinition = this.idToDefinitionMap.get(registryDataset.id)
     const allIds = [existingDefinition.id, ...(existingDefinition?.sublayerIds || [])]
     allIds.forEach(id => {
-      const existingDefinition = this.idToDefinitionMap.get(id)
-      this.definitionToInstanceMap.delete(existingDefinition)
+      const definition = this.idToDefinitionMap.get(id)
+      this.definitionToInstanceMap.delete(definition)
       this.idToDefinitionMap.delete(id)
     })
   }

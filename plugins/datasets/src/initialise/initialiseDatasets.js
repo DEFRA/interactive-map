@@ -10,7 +10,6 @@ import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 export const initialiseDatasets = ({
   adapter,
   pluginConfig,
-  pluginStateRef,
   mapStyle,
   mapProvider,
   events,

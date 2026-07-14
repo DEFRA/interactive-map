@@ -25,7 +25,7 @@ const datasetRegistry = {
 
   // createDataset defaults to a generic dataset factory function, but can be overridden by calling
   // attachCreateDataset, which allows the layer adapter to provide its own createDataset function,
-  attachCreateDataset (createDataset) { this._createDataset = createDataset },
+  attachCreateDataset (newCreateDatasetFunction) { this._createDataset = newCreateDatasetFunction },
   _createDataset: (datasetDefinition) => createDataset(datasetDefinition),
 
   attachMapStyle (mapStyle) {

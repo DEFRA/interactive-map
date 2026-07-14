@@ -1,6 +1,6 @@
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 
-export const LayersMenuRadio = ({ menuState, menuGroupItem, checked, name, onChange }) => {
+export const LayersMenuRadio = ({ menuGroupItem, name, checked, onChange }) => {
   const itemClass = 'im-c-datasets-layers__item govuk-radios govuk-radios--small"'
   const { visibleWhen } = menuGroupItem
   const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true

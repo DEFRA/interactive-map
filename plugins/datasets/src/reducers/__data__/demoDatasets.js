@@ -98,9 +98,8 @@ export const datasets = [
     }]
   },
   {
-    id: 'existing-fields',
+    id: 'existing-fields', // NOSONAR
     label: 'Existing fields',
-    // groupLabel: 'Test group',
     filter: ['all', ['==', ['get', 'sbi'], '106223377'], ['==', ['get', 'is_dominant_land_cover'], true]],
     tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}',
     sourceLayer: 'field_parcels_filtered',
@@ -157,9 +156,8 @@ export const datasets = [
       }
     }]
   }, {
-    id: 'hedge-control',
+    id: 'hedge-control', // NOSONAR
     label: 'Hedge control',
-    // groupLabel: 'Test group',
     tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
     sourceLayer: 'hedge_control',
     minZoom: 10,
@@ -195,9 +193,9 @@ export const expectedDatasetsMenuConfig = [
   {
     visibleWhen: true,
     type: 'checkbox',
-    id: 'existing-fields',
+    id: 'existing-fields', // NOSONAR
     items: [
-      { id: 'existing-fields', label: 'Existing fields' }
+      { id: 'existing-fields', label: 'Existing fields' } // NOSONAR
     ]
   },
   {
@@ -214,9 +212,9 @@ export const expectedDatasetsMenuConfig = [
   {
     visibleWhen: true,
     type: 'checkbox',
-    id: 'hedge-control',
+    id: 'hedge-control', // NOSONAR
     items: [
-      { id: 'hedge-control', label: 'Hedge control' }
+      { id: 'hedge-control', label: 'Hedge control' } // NOSONAR
     ]
   }
 ]
@@ -230,11 +228,12 @@ const existingFieldsMenuItem = expectedDatasetsMenuConfig[1]
 const historicMonumentsMenuItem = expectedDatasetsMenuConfig[2]
 const hedgeControlMenuItem = expectedDatasetsMenuConfig[3]
 
+const testGroupLabel = 'Test group'
 export const datasetsWithGroups = [
   { ...landCovers },
-  { ...existingFields, groupLabel: 'Test group' },
+  { ...existingFields, groupLabel: testGroupLabel },
   { ...historicMonuments },
-  { ...hedgeControl, groupLabel: 'Test group', visible: true }
+  { ...hedgeControl, groupLabel: testGroupLabel, visible: true }
 ]
 
 export const expectedDatasetsMenuConfigWithGroups = [
@@ -242,8 +241,8 @@ export const expectedDatasetsMenuConfigWithGroups = [
   {
     visibleWhen: true,
     type: 'checkbox',
-    groupLabel: 'Test group',
-    id: 'Test group',
+    groupLabel: testGroupLabel,
+    id: testGroupLabel,
     items: [
       ...existingFieldsMenuItem.items,
       ...hedgeControlMenuItem.items

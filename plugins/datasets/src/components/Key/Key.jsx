@@ -7,7 +7,6 @@ import { datasetRegistry } from '../../registry/datasetRegistry.js'
 export const Key = ({
   pluginConfig: { noKeyItemText },
   mapState: { mapStyle },
-  pluginState: { mappedDatasets },
   services: { symbolRegistry, patternRegistry }
 }) => {
   const { items: keyGroups, hasGroups } = datasetRegistry.keyItems()
