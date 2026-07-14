@@ -1,7 +1,7 @@
 import { datasetRegistry } from './datasetRegistry.js'
 
 let _menuState = {}
-export const setMenuState = (menuState) => (_menuState = menuState)
+export const setMenuState = (menuState) => { _menuState = menuState }
 
 const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
   for (const [key, valueArray] of Object.entries(menuVisibleWhen)) {
