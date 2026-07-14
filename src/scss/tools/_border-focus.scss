@@ -43,21 +43,27 @@
     } @else {
       box-shadow: null;
     }
+
+    // Forced-colors mode mis-resolves this pseudo-element's height: 100%
+    // (the panel is an auto-height flex column, not a definite height),
+    // producing a solid painted block instead of the intended soft shadow.
+    // The shadow is purely decorative, so drop the box entirely here.
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      content: none;
+    }
   }
 
   // Offset
   $offset: -1px;
+  $outline-offset: 0px;
 
   @if $is-inset == true {
-    $offset: var(--focus-border-width);
+    $offset: var(--focus-box-shadow-width);
+    $outline-offset: calc(-1 * var(--focus-outline-width));
   }
 
   &:focus {
     outline: 0;
-  }
-
-  &[data-focus-visible="true"] {
-    outline: 3px solid transparent;
   }
 
   &::after {
@@ -70,17 +76,37 @@
     bottom: $offset;
     left: $offset;
     border: var(--focus-border-width) solid var(--focus-border-color);
-    outline: var(--focus-outline-width) solid var(--focus-outline-color);
+    outline: var(--focus-outline-width) solid transparent;
+    outline-offset: 1px;
+    box-shadow: 0 0 0 var(--focus-box-shadow-width) var(--focus-outline-color);
     border-radius: calc($border-radius - 2px);  // default radius on focus ring
     opacity: 0;
 
     @media (prefers-reduced-motion: no-preference) {
       transition: opacity var(--duration) ease;
     }
+
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      outline-color: Highlight;
+    }
   }
 
   &[data-focus-visible="true"]::after {
     opacity: 1;
+    outline-style: solid;
+
+    // Forced-colors uses a plain outline directly on the element instead
+    // (see below) so the ::after ring is hidden to avoid a double ring.
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      opacity: 0;
+    }
+  }
+
+  &[data-focus-visible="true"] {
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      outline: var(--focus-highlight-width) solid Highlight;
+      outline-offset: $outline-offset;
+    }
   }
 }
 
@@ -195,7 +221,7 @@
   bottom: $offset;
   left: $offset;
   border: var(--focus-border-width) solid var(--focus-border-color);
-  outline: var(--focus-outline-width) solid var(--focus-outline-color);
+  outline: var(--focus-box-shadow-width) solid var(--focus-outline-color);
   border-radius: calc(#{$border-radius} - 2px);
 }
 

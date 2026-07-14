@@ -70,6 +70,14 @@
 
         background-color: var(--button-hover-color);
     }
+
+    // Excludes focus-visible so the thicker focus outline (border-focus-base)
+    // always wins when a button is both hovered and keyboard-focused.
+    .im-c-map-button:hover:not([data-focus-visible="true"]) {
+        @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+            outline: var(--hover-outline-width) solid Highlight;
+        }
+    }
 }
 
 // 2. Elements
@@ -172,6 +180,7 @@
 }
 
 // 4. State styles
+
 .im-c-map-button[aria-haspopup="menu"][aria-expanded="true"] svg {
     transform: rotate(180deg);
 }

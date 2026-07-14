@@ -63,6 +63,10 @@
         outline: var(--scrollable-outline);
         outline-offset: var(--scrollable-outline-offset);
         box-shadow: var(--scrollable-box-shadow);
+
+        @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+            outline-width: 4px;
+        }
     }
 }
 
@@ -76,6 +80,11 @@
     }
 
     background-color: var(--button-hover-color);
+
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      border: 2px solid Highlight;
+      padding: calc(var(--button-padding) - 2px);
+    }
 }
 
 // 3. Modifiers
