@@ -71,38 +71,38 @@ describe('esriLayerAdapter', () => {
   describe('addDataset', () => {
     it('copes and returns when the dataset is not in the registry', async () => {
       await adapter.addDataset('unknown')
-      expect(adapter._vectorTileLayers.unknown).toBeUndefined()
+      expect(adapter._mapVisibilityLayers.unknown).toBeUndefined()
     })
 
     it('adds a standalone dataset to the map and populates internal state', async () => {
       await adapter.addDataset('esri-standalone')
-      expect(adapter._vectorTileLayers['esri-standalone']).toBeDefined()
-      expect(adapter._vectorTileOpacityLayers['esri-standalone']).toBeDefined()
+      expect(adapter._mapVisibilityLayers['esri-standalone']).toBeDefined()
+      expect(adapter._mapOpacityLayers['esri-standalone']).toBeDefined()
     })
 
     it('applies opacity and visibility after adding layers', async () => {
       await adapter.addDataset('esri-standalone')
-      const vtl = adapter._vectorTileLayers['esri-standalone']
+      const vtl = adapter._mapVisibilityLayers['esri-standalone']
       expect(vtl.visible).toBe(true)
-      expect(adapter._vectorTileOpacityLayers['esri-standalone'].opacity)
+      expect(adapter._mapOpacityLayers['esri-standalone'].opacity)
         .toBe(datasetRegistry.getDataset('esri-standalone').opacity)
     })
 
     it('applies paint properties for datasets with esriStyleLayerId', async () => {
       await adapter.addDataset('esri-standalone')
-      const vtl = adapter._vectorTileLayers['esri-standalone']
+      const vtl = adapter._mapVisibilityLayers['esri-standalone']
       expect(vtl.setPaintProperties).toHaveBeenCalledWith('standalone-style', expect.any(Object))
     })
 
     it('does not apply paint properties for server-style datasets', async () => {
       await adapter.addDataset('esri-server')
-      const vtl = adapter._vectorTileLayers['esri-server']
+      const vtl = adapter._mapVisibilityLayers['esri-server']
       expect(vtl.setPaintProperties).not.toHaveBeenCalled()
     })
 
     it('creates a group layer when adding a grouped dataset', async () => {
       await adapter.addDataset('esri-grouped')
-      expect(adapter._vectorTileLayers['esri-grouped']).toBeDefined()
+      expect(adapter._mapVisibilityLayers['esri-grouped']).toBeDefined()
       expect(adapter._groupLayers['my-group']).toBeDefined()
     })
   })
@@ -122,36 +122,36 @@ describe('esriLayerAdapter', () => {
 
     it('removes a standalone vectorTileLayer from the map and clears internal state', async () => {
       await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
-      const vtl = adapter._vectorTileLayers['esri-standalone']
+      const vtl = adapter._mapVisibilityLayers['esri-standalone']
       await adapter.removeDataset('esri-standalone')
       expect(map.remove).toHaveBeenCalledWith(vtl)
-      expect(adapter._vectorTileLayers['esri-standalone']).toBeUndefined()
-      expect(adapter._vectorTileOpacityLayers['esri-standalone']).toBeUndefined()
+      expect(adapter._mapVisibilityLayers['esri-standalone']).toBeUndefined()
+      expect(adapter._mapOpacityLayers['esri-standalone']).toBeUndefined()
     })
 
     it('removes the vectorTileLayer from its group layer but keeps the group when other layers remain', async () => {
       await adapter._addLayers(datasetRegistry.getDataset('flood-zones-cc'))
       await adapter._addLayers(datasetRegistry.getDataset('flood-zones'))
-      const vtl = adapter._vectorTileLayers['flood-zones-cc']
+      const vtl = adapter._mapVisibilityLayers['flood-zones-cc']
       const groupLayer = adapter._groupLayers['flood-zones-group']
       await adapter.removeDataset('flood-zones-cc')
       expect(groupLayer.remove).toHaveBeenCalledWith(vtl)
       expect(map.remove).not.toHaveBeenCalledWith(groupLayer)
       expect(adapter._groupLayers['flood-zones-group']).toBeDefined()
-      expect(adapter._vectorTileLayers['flood-zones-cc']).toBeUndefined()
-      expect(adapter._vectorTileOpacityLayers['flood-zones-cc']).toBeUndefined()
+      expect(adapter._mapVisibilityLayers['flood-zones-cc']).toBeUndefined()
+      expect(adapter._mapOpacityLayers['flood-zones-cc']).toBeUndefined()
     })
 
     it('removes the group layer from the map when its last vectorTileLayer is removed', async () => {
       await adapter._addLayers(datasetRegistry.getDataset('esri-grouped'))
-      const vtl = adapter._vectorTileLayers['esri-grouped']
+      const vtl = adapter._mapVisibilityLayers['esri-grouped']
       const groupLayer = adapter._groupLayers['my-group']
       await adapter.removeDataset('esri-grouped')
       expect(groupLayer.remove).toHaveBeenCalledWith(vtl)
       expect(map.remove).toHaveBeenCalledWith(groupLayer)
       expect(adapter._groupLayers['my-group']).toBeUndefined()
-      expect(adapter._vectorTileLayers['esri-grouped']).toBeUndefined()
-      expect(adapter._vectorTileOpacityLayers['esri-grouped']).toBeUndefined()
+      expect(adapter._mapVisibilityLayers['esri-grouped']).toBeUndefined()
+      expect(adapter._mapOpacityLayers['esri-grouped']).toBeUndefined()
     })
   })
 
@@ -165,7 +165,7 @@ describe('esriLayerAdapter', () => {
 
     it('applies visibility for a known dataset', async () => {
       await adapter.applyDatasetVisibility('esri-standalone')
-      expect(adapter._vectorTileLayers['esri-standalone'].visible).toBe(true)
+      expect(adapter._mapVisibilityLayers['esri-standalone'].visible).toBe(true)
     })
 
     it('does nothing for an unknown dataset', async () => {
@@ -186,7 +186,7 @@ describe('esriLayerAdapter', () => {
     it('sets opacity on the opacity layer for a known dataset', async () => {
       await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
       await adapter.applyDatasetOpacity('esri-standalone')
-      expect(adapter._vectorTileOpacityLayers['esri-standalone'].opacity)
+      expect(adapter._mapOpacityLayers['esri-standalone'].opacity)
         .toBe(datasetRegistry.getDataset('esri-standalone').opacity)
     })
 
@@ -206,14 +206,14 @@ describe('esriLayerAdapter', () => {
     it('sets opacity on all opacity layers', async () => {
       await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
       await adapter.applyGlobalOpacity()
-      expect(adapter._vectorTileOpacityLayers['esri-standalone'].opacity)
+      expect(adapter._mapOpacityLayers['esri-standalone'].opacity)
         .toBe(datasetRegistry.getDataset('esri-standalone').opacity)
     })
 
     it('skips entries whose dataset is not in the registry', async () => {
-      adapter._vectorTileOpacityLayers['ghost-id'] = { opacity: 99 }
+      adapter._mapOpacityLayers['ghost-id'] = { opacity: 99 }
       await expect(adapter.applyGlobalOpacity()).resolves.not.toThrow()
-      expect(adapter._vectorTileOpacityLayers['ghost-id'].opacity).toBe(99)
+      expect(adapter._mapOpacityLayers['ghost-id'].opacity).toBe(99)
     })
   })
 
@@ -227,19 +227,19 @@ describe('esriLayerAdapter', () => {
 
     it('calls setStyleLayerVisibility for datasets with esriStyleLayerId', async () => {
       await adapter.onMapStyleChange()
-      expect(adapter._vectorTileLayers['esri-standalone'].setStyleLayerVisibility)
+      expect(adapter._mapVisibilityLayers['esri-standalone'].setStyleLayerVisibility)
         .toHaveBeenCalledWith('standalone-style', expect.any(String))
     })
 
     it('calls setPaintProperties for datasets not using server style', async () => {
       await adapter.onMapStyleChange()
-      expect(adapter._vectorTileLayers['esri-standalone'].setPaintProperties)
+      expect(adapter._mapVisibilityLayers['esri-standalone'].setPaintProperties)
         .toHaveBeenCalledWith('standalone-style', expect.any(Object))
     })
 
     it('does not call setPaintProperties when useServerStyle is true', async () => {
       await adapter.onMapStyleChange()
-      expect(adapter._vectorTileLayers['esri-server'].setPaintProperties).not.toHaveBeenCalled()
+      expect(adapter._mapVisibilityLayers['esri-server'].setPaintProperties).not.toHaveBeenCalled()
     })
   })
 
@@ -251,14 +251,14 @@ describe('esriLayerAdapter', () => {
     })
 
     it('adds VectorTileLayers for all top-level datasets', async () => {
-      expect(adapter._vectorTileLayers['flood-zones-cc']).toBeDefined()
-      expect(adapter._vectorTileLayers['flood-zones']).toBeDefined()
+      expect(adapter._mapVisibilityLayers['flood-zones-cc']).toBeDefined()
+      expect(adapter._mapVisibilityLayers['flood-zones']).toBeDefined()
     })
 
     it('applies dataset visibility after adding layers', async () => {
       expect(adapter._groupLayers['flood-zones-group'].visible).toBe(true)
-      expect(adapter._vectorTileLayers['flood-zones-cc'].visible).toBe(true)
-      expect(adapter._vectorTileLayers['flood-zones'].visible).toBe(false)
+      expect(adapter._mapVisibilityLayers['flood-zones-cc'].visible).toBe(true)
+      expect(adapter._mapVisibilityLayers['flood-zones'].visible).toBe(false)
     })
 
     it('adds GroupLayers for datasets with esriGroupId', async () => {

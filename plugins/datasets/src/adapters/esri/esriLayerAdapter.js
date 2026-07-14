@@ -12,15 +12,15 @@ export default class EsriLayerAdapter extends LayerAdapter {
     this._mapProvider = mapProvider
     this._map = mapProvider.map
 
-    // _vectorTileLayers is a map of datasetId to VectorTileLayer instances
+    // _mapVisibilityLayers is a map of datasetId to VectorTileLayer or FeatureLayer instances
     // it includes stand alone vectorTileLayers and vectorTileLayers that are part of a groupLayer
     // but does not include group layers themselves, which are tracked in _groupLayers
-    this._vectorTileLayers = {}
+    this._mapVisibilityLayers = {}
 
-    // _vectorTileOpacityLayers is a map of datasetId to VectorTileLayer/GroupLayer where opacity is applied
-    // it includes stand alone vectorTileLayers and groupLayers that contain vectorTileLayers
+    // _mapOpacityLayers is a map of datasetId to mapLayers where opacity is applied
+    // it includes featureLayers, vectorTileLayers and groupLayers
     // but does not include vectorTileLayers that are part of a groupLayer
-    this._vectorTileOpacityLayers = {}
+    this._mapOpacityLayers = {}
 
     // _groupLayers is a map of esriGroupId to GroupLayer
     this._groupLayers = {}
@@ -66,11 +66,12 @@ export default class EsriLayerAdapter extends LayerAdapter {
     const featureLayer = new FeatureLayer({
       id: registryDataset.id,
       url: registryDataset.tiles,
+      renderer: registryDataset.renderer,
       opacity: 1,
       visible: false
     })
-    this._vectorTileLayers[registryDataset.id] = featureLayer
-    this._vectorTileOpacityLayers[registryDataset.id] = featureLayer
+    this._mapVisibilityLayers[registryDataset.id] = featureLayer
+    this._mapOpacityLayers[registryDataset.id] = featureLayer
     try {
       this._map.add(featureLayer)
       return featureLayer.when()
@@ -93,8 +94,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
       opacity: 1,
       visible: false
     })
-    this._vectorTileLayers[registryDataset.id] = vectorTileLayer
-    this._vectorTileOpacityLayers[registryDataset.id] = esriGroupId ? vectorTileParent : vectorTileLayer
+    this._mapVisibilityLayers[registryDataset.id] = vectorTileLayer
+    this._mapOpacityLayers[registryDataset.id] = esriGroupId ? vectorTileParent : vectorTileLayer
     vectorTileParent.add(vectorTileLayer)
     return vectorTileLayer.when()
   }
@@ -107,7 +108,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
     await this._addLayers(registryDataset)
     const { parentId } = registryDataset
-    const vectorTileLayer = this._vectorTileLayers[parentId || datasetId]
+    const vectorTileLayer = this._mapVisibilityLayers[parentId || datasetId]
     this.applyDatasetOpacity(datasetId)
     this._applyStyleLayerPaintProperties(registryDataset, vectorTileLayer)
     this.applyDatasetVisibility(datasetId)
@@ -119,7 +120,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
       return
     }
     const { esriGroupId } = registryDataset
-    const vectorTileLayer = this._vectorTileLayers[datasetId]
+    const vectorTileLayer = this._mapVisibilityLayers[datasetId]
     // If the dataset is part of a group layer, we need to remove it from the group layer
     const groupLayer = esriGroupId ? this._groupLayers[esriGroupId] : null
     const vectorTileParent = groupLayer || this._map
@@ -128,8 +129,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
       // Remove the vectorTileLayer from the map or group layer
       vectorTileParent.remove(vectorTileLayer)
       // And remove the vectorTileLayer from the adapter's internal state
-      delete this._vectorTileLayers[datasetId]
-      delete this._vectorTileOpacityLayers[datasetId]
+      delete this._mapVisibilityLayers[datasetId]
+      delete this._mapOpacityLayers[datasetId]
     }
 
     // If the group layer has no more sublayers, we need to also remove the group layer from the map
@@ -143,7 +144,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // if this is a sublayer, we need to apply the visibility to the vectorTileLayers style sheet
     // if this is a top level dataset, we need to apply the visibility to the vectorTileLayer/ groupLayer itself
     const { id, isSublayer, visible, parentId } = registryDataset
-    const vectorTileLayer = this._vectorTileLayers[isSublayer ? parentId : id]
+    const vectorTileLayer = this._mapVisibilityLayers[isSublayer ? parentId : id]
     if (!vectorTileLayer) {
       return
     }
@@ -172,7 +173,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async applyDatasetOpacity (datasetId) {
-    const vectorTileLayer = this._vectorTileOpacityLayers[datasetId]
+    const vectorTileLayer = this._mapOpacityLayers[datasetId]
     const registryDataset = datasetRegistry.getDataset(datasetId)
     if (vectorTileLayer && registryDataset) {
       vectorTileLayer.opacity = registryDataset.opacity
@@ -180,7 +181,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async applyGlobalOpacity () {
-    Object.entries(this._vectorTileOpacityLayers).forEach(([datasetId, vectorTileLayer]) => {
+    Object.entries(this._mapOpacityLayers).forEach(([datasetId, vectorTileLayer]) => {
       const registryDataset = datasetRegistry.getDataset(datasetId)
       if (registryDataset) {
         vectorTileLayer.opacity = registryDataset.opacity
@@ -211,9 +212,16 @@ export default class EsriLayerAdapter extends LayerAdapter {
   async onMapStyleChange () {
     datasetRegistry.forEach(registryDataset => {
       const { id, isSublayer, parent } = registryDataset
-      const vectorTileLayer = this._vectorTileLayers[isSublayer ? parent.id : id]
-      this._applyStyleLayerVisibility(registryDataset, vectorTileLayer)
-      this._applyStyleLayerPaintProperties(registryDataset, vectorTileLayer)
+
+      // mapLayer could be a VectorTileLayer or a FeatureLayer, depending on the dataset type
+      const mapLayer = this._mapVisibilityLayers[isSublayer ? parent.id : id]
+      if (registryDataset.type === 'FeatureService') {
+        // FeatureLayers don't have style layers, so we don't need to apply style layer visibility or paint properties
+        mapLayer.renderer = registryDataset.renderer
+      } else {
+        this._applyStyleLayerVisibility(registryDataset, mapLayer)
+        this._applyStyleLayerPaintProperties(registryDataset, mapLayer)
+      }
     })
     // TODO - handle dynamic sources
   }

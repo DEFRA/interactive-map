@@ -337,6 +337,14 @@ const datasetMainRivers = {
   sourceLayer: 'Statutory_Main_River_Map',
   visible: false,
   style: {
+    renderer: {
+      type: 'simple',
+      symbol: {
+        type: 'simple-line',
+        width: '3px',
+        color: { outdoor: darkTeal, dark: white },
+      }
+    },
     stroke: { outdoor: darkTeal, dark: white },
     strokeWidth: 3
   }
@@ -353,6 +361,18 @@ const datasetWaterStorageAreas = {
   sourceLayer: 'Flood_Storage_Areas',
   visible: false,
   style: {
+    renderer: {
+      type: 'simple',
+      symbol: {
+        type: 'simple-fill',
+        style: 'diagonal-cross',
+        color: { outdoor: darkTeal, dark: white },
+        outline: { 
+          color: { outdoor: darkTeal, dark: white }, 
+          width: 1 
+        }
+      }
+    },
     stroke: { outdoor: darkTeal, dark: white },
     strokeWidth: 1,
     fillPattern: 'diagonal-cross-hatch',
@@ -372,7 +392,15 @@ const datasetFloodDefences = {
   sourceLayer: 'Defences',
   visible: false,
   style: {
-    stroke: { outdoor: '#f47738', dark: '#f47738' },
+    renderer: {
+      type: 'simple',
+      symbol: {
+        type: 'simple-line',
+        width: '3px',
+        color: '#f47738',
+      }
+    },
+    stroke: '#f47738',
     strokeWidth: 3
   }
 }
