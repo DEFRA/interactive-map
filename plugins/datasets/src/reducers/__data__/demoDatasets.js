@@ -3,16 +3,16 @@ const pointData = {
   features: [{
     type: 'Feature',
     properties: { category: 'prehistoric' },
-    geometry: { coordinates: [-2.4558622, 54.5617135], type: 'Point' }
+    geometry: { coordinates: [-2.4558622, 54.5617135], type: 'Point' } // NOSONAR
   }, {
     type: 'Feature',
     properties: { category: 'roman' },
-    geometry: { coordinates: [-2.439823, 54.5525437], type: 'Point' }
+    geometry: { coordinates: [-2.439823, 54.5525437], type: 'Point' } // NOSONAR
   },
   {
     type: 'Feature',
     properties: { category: 'medieval' },
-    geometry: { coordinates: [-2.4481939, 54.5575261], type: 'Point' }
+    geometry: { coordinates: [-2.4481939, 54.5575261], type: 'Point' } // NOSONAR
   }]
 }
 export const datasets = [
@@ -25,7 +25,7 @@ export const datasets = [
       transformRequest: (url) => url + 'TRANSFORMED', // Required
       maxFeatures: 50000 // Optional: evict distant features when exceeded
     },
-    hiddenFeatures: [42],
+    hiddenFeatures: [42], // NOSONAR
     query: {},
     maxFeatures: 50000, // Optional: evict distant features when exceeded
     minZoom: 10,
@@ -219,14 +219,8 @@ export const expectedDatasetsMenuConfig = [
   }
 ]
 
-const landCovers = datasets[0]
-const existingFields = datasets[1]
-const historicMonuments = datasets[2]
-const hedgeControl = datasets[3]
-const landCoversMenuItem = expectedDatasetsMenuConfig[0]
-const existingFieldsMenuItem = expectedDatasetsMenuConfig[1]
-const historicMonumentsMenuItem = expectedDatasetsMenuConfig[2]
-const hedgeControlMenuItem = expectedDatasetsMenuConfig[3]
+const [landCovers, existingFields, historicMonuments, hedgeControl] = datasets
+const [landCoversMenuItem, existingFieldsMenuItem, historicMonumentsMenuItem, hedgeControlMenuItem] = expectedDatasetsMenuConfig
 
 const testGroupLabel = 'Test group'
 export const datasetsWithGroups = [
