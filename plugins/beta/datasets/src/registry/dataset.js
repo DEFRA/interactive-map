@@ -1,4 +1,5 @@
 import { datasetRegistry } from './datasetRegistry.js'
+import { isVisibleWhen } from './isVisibleWhen.js'
 import { hasCustomVisualStyle } from '../initialise/defaults.js'
 import { hasPattern } from '../../../../../src/utils/patternUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
@@ -96,9 +97,9 @@ export class Dataset {
 
   get esriStyleLayerId () { return this._datasetDefinition.esriStyleLayerId }
   get visibility () {
-    const visible = this.visible
-    if (visible && this.visibleWhen?.mapStyleId) {
-      return this.visibleWhen?.mapStyleId.includes(datasetRegistry.mapStyle.id) ? 'visible' : 'none'
+    const { visible, visibleWhen } = this
+    if (visible && visibleWhen) {
+      return isVisibleWhen(visibleWhen) ? 'visible' : 'none'
     }
     return visible ? 'visible' : 'none'
   }

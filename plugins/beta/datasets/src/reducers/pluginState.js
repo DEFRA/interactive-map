@@ -1,4 +1,5 @@
-import { datasetsToMenu, addDatasetToMenu, removeDatasetsFromMenu } from './datasetsToMenu.js'
+import { addDatasetToMenu, removeDatasetsFromMenu } from './datasetsToMenu.js'
+import { buildMenuState } from './menuStateReducer.js'
 import { mappedDatasetsReducer } from './mappedDatasetsReducer.js'
 import { logger } from '../../../../../src/services/logger.js'
 
@@ -15,7 +16,9 @@ const initialState = {
     items: [],
     hasGroups: false
   },
-  actionsArray: []
+  actionsArray: [],
+  menu: [],
+  menuState: {}
 }
 
 const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') => {
@@ -41,14 +44,31 @@ const setGlobalState = (state, payload) => {
   })
 }
 
+const updateMenuState = (state, payload) => {
+  return addAction('applyGlobalVisibility', [], {
+    ...state,
+    menuState: { ...state.menuState, ...payload }
+  })
+}
+
+const setMenu = (state, payload) => {
+  const { menu } = payload
+  // build the initial menuState for radios from the menu
+  const menuState = buildMenuState(menu)
+  return {
+    ...state,
+    menu,
+    menuState
+  }
+}
+
 const setDatasets = (state, payload) => {
-  const { datasets, mappedDatasets, orderedDatasets } = payload
-  const menu = payload.menu || datasetsToMenu({ datasets })
+  const { mappedDatasets, orderedDatasets } = payload
+
   return {
     ...state,
     mappedDatasets,
-    orderedDatasets,
-    menu
+    orderedDatasets
   }
 }
 
@@ -91,6 +111,9 @@ const removeDataset = (state, payload) => {
 const setDatasetVisibility = (state, payload) => {
   const { datasetId, visible } = payload
   if (!validateDatasetExists(state, datasetId, 'setDatasetVisibility')) {
+    return state
+  }
+  if (state.mappedDatasets[datasetId].visible === visible) {
     return state
   }
 
@@ -197,7 +220,9 @@ const actions = {
   HIDE_FEATURES: hideFeatures,
   SHOW_FEATURES: showFeatures,
   REMOVE_ADAPTER_ACTIONS: removeAdapterActions,
-  SET_GLOBAL_STATE: setGlobalState
+  SET_GLOBAL_STATE: setGlobalState,
+  SET_MENU: setMenu,
+  UPDATE_MENU_STATE: updateMenuState
 }
 
 export {

@@ -15,7 +15,6 @@ describe('datasetDefaults', () => {
     expect(datasetDefaults.style).toMatchObject({
       stroke: '#d4351c',
       strokeWidth: 2,
-      fill: 'transparent',
       symbolDescription: 'red outline'
     })
   })

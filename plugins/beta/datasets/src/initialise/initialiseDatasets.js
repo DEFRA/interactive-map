@@ -3,6 +3,9 @@ import { createDynamicSource } from '../fetch/createDynamicSource.js'
 import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
+import { setMenuState } from '../registry/isVisibleWhen.js'
+import { buildMenuState } from '../reducers/menuStateReducer.js'
+import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
 export const initialiseDatasets = ({
   adapter,
@@ -28,7 +31,10 @@ export const initialiseDatasets = ({
     datasetRegistry.attachCreateDataset(adapter.createDataset)
   }
   datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
-  adapter.init(mapStyle).then(() => {
+  const menu = pluginConfig.menu || datasetsToMenu({ datasets: processedDatasets })
+  setMenuState(buildMenuState(menu)) // Must be called before adapter.init so that menuState is set before any datasets are checked for visibility
+
+  adapter.init().then(() => {
     datasetRegistry.forEachDataset(registryDataset => {
       if (!registryDataset.hasDynamicGeoJSON) {
         return
@@ -43,6 +49,7 @@ export const initialiseDatasets = ({
     })
     adapter.attachDynamicSources(dynamicSources)
     // TODO - apply dynamic source defaults here, and include in mappedDatasets
+    dispatch({ type: 'SET_MENU', payload: { menu } })
     dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, mappedDatasets, orderedDatasets } })
     eventBus.emit('datasets:ready')
   })

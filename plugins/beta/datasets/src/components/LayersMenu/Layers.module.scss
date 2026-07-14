@@ -51,10 +51,11 @@
 }
 
 // GovUK style overide
-.im-c-datasets-layers__item .govuk-checkboxes__item {
+.im-c-datasets-layers__item .govuk-checkboxes__item,
+.im-c-datasets-layers__item .govuk-radios__item {
   flex-wrap: nowrap;
 
-  .govuk-checkboxes__input {
+  .govuk-checkboxes__input, .govuk-radios__input {
     margin-left: -3px;
   }
 }

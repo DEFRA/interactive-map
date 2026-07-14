@@ -54,13 +54,12 @@ describe('SET_DATASETS', () => {
     const payload = {
       datasets: [{ id: 'parks', label: 'Parks', showInMenu: true }],
       mappedDatasets: { parks: { id: 'parks', label: 'Parks' } },
-      orderedDatasets: ['parks'],
-      menu: [{ id: 'parks', label: 'Parks', type: 'item' }]
+      orderedDatasets: ['parks']
     }
     const result = actions.SET_DATASETS(state, payload)
     expect(result.mappedDatasets).toEqual(payload.mappedDatasets)
     expect(result.orderedDatasets).toEqual(payload.orderedDatasets)
-    expect(result.menu).toEqual(payload.menu)
+    expect(result.menu).toEqual([])
   })
 
   it('derives menu from datasets when menu is not in payload', () => {

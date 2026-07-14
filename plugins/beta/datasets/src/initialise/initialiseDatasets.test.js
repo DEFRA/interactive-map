@@ -61,7 +61,7 @@ describe('initialiseDatasets', () => {
   it('calls adapter.init with mapStyle', () => {
     const args = makeArgs()
     initialiseDatasets(args)
-    expect(args.adapter.init).toHaveBeenCalledWith(args.mapStyle)
+    expect(args.adapter.init).toHaveBeenCalledWith()
   })
 
   it('attaches mappedDatasets to datasetRegistry', () => {

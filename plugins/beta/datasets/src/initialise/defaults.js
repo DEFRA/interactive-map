@@ -7,7 +7,6 @@ const datasetDefaults = {
   style: {
     stroke: '#d4351c',
     strokeWidth: 2,
-    fill: 'transparent',
     symbolDescription: 'red outline'
   }
 }
