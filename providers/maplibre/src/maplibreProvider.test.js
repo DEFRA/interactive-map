@@ -64,7 +64,8 @@ describe('MapLibreProvider', () => {
       getPixelRatio: jest.fn(() => 1),
       getCanvas: jest.fn(() => ({ style: {} })),
       getLayer: jest.fn(() => true),
-      queryRenderedFeatures: jest.fn(() => [])
+      queryRenderedFeatures: jest.fn(() => []),
+      getStyle: jest.fn(() => ({ layers: [] }))
     }
     eventBus = { emit: jest.fn() }
     maplibreModule = { Map: jest.fn(() => map), LngLatBounds: jest.fn() }
@@ -133,6 +134,28 @@ describe('MapLibreProvider', () => {
     await p2.initMap({ container: 'div', padding: {}, mapStyle: null, center: [0, 0], zoom: 5 })
     loadCallback()
     expect(createMapLabelNavigator).toHaveBeenCalledWith(map, undefined, expect.anything(), eventBus)
+  })
+
+  describe('isBaseMapReady', () => {
+    test('returns the result of map.getStyle() after map is initialised', async () => {
+      const p = makeProvider()
+      await doInitMap(p)
+      const style = { layers: [{ id: 'background' }] }
+      map.getStyle.mockReturnValue(style)
+      expect(p.isBaseMapReady()).toEqual(true)
+    })
+
+    test('returns undefined when map has not been initialised', () => {
+      const p = makeProvider()
+      expect(p.isBaseMapReady()).toEqual(false)
+    })
+
+    test('returns undefined when map.getStyle() returns undefined', async () => {
+      const p = makeProvider()
+      await doInitMap(p)
+      map.getStyle.mockReturnValue(undefined)
+      expect(p.isBaseMapReady()).toEqual(false)
+    })
   })
 
   test('destroyMap: calls remove on mapEvents/appEvents if set; skips if absent', async () => {

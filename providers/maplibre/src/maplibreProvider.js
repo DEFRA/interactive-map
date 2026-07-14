@@ -120,7 +120,7 @@ export default class MapLibreProvider extends MapProvider {
   }
 
   isBaseMapReady () {
-    return this.map?.getStyle()
+    return Boolean(this.map?.getStyle())
   }
 
   /** Destroy the map and clean up resources. */
