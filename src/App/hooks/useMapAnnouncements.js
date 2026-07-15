@@ -50,7 +50,7 @@ export function useMapAnnouncements () {
 
       const message = resolveMessage(previous, current, mapProvider)
       if (message) {
-        announce(message, 'core')
+        announce(message, 'action')
       }
     }
 
