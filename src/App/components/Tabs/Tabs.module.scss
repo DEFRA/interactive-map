@@ -28,6 +28,20 @@
     font-weight: normal;
     outline: 3px solid transparent;
 
+    // The tab's own outline is otherwise invisible when focused, so forced-colors
+    // would substitute a default ring around the whole button. The label carries
+    // the intended ring (via link-focus below), so suppress this one entirely
+    // and leave the 1px border untouched.
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+        outline: none;
+    }
+
+    .im-c-tabs__label {
+        @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+            color: Highlight;
+        }
+    }
+
     &[aria-selected='true'] {
         background: var(--background-color);
         border-color: var(--app-border-color);
@@ -38,6 +52,16 @@
 
     &:focus .im-c-tabs__label {
         @include tools.link-focus;
+    }
+
+    // Chromium/Firefox force a native button's border to Highlight on
+    // :hover/:focus regardless of author border-color. Pin it to the system
+    // equivalent of "currentColor" so hovering/focusing a tab doesn't change
+    // its border — only the label (above) should react to focus.
+    &:hover, &:focus {
+        @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+            border-color: ButtonBorder;
+        }
     }
 }
 

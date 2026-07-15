@@ -4,7 +4,12 @@
   &:before {
     box-shadow: none;
   }
+  
   &[data-focus-visible="true"] {
+    z-index: 1;
+  }
+
+  &:hover {
     z-index: 1;
   }
 }
