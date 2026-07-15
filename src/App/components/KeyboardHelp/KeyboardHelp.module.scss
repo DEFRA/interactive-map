@@ -37,16 +37,45 @@
 }
 
 // 3. Modifiers
-.im-o-app--mobile .im-c-keyboard-help__title {
-    width: 100%;
-    display: block;
-}
-
-.im-o-app--mobile .im-c-keyboard-help__description {
-    display: block;
-    margin-top: 5px;
-}
 
 .im-c-tabs__panel .im-c-keyboard-help__item:first-child {
     border-top: 0;
+}
+
+// Fallback: without container-query support the two-column pairing drops to a
+// stacked layout at the app's primary (mobile) breakpoint. Scoped to browsers
+// that lack container queries so it can't compete with the enhancement below
+// (container queries add no specificity, so a lingering breakpoint rule would
+// always win and the panel would never stack on width alone).
+@supports not (container-type: inline-size) {
+    .im-o-app--mobile .im-c-keyboard-help__title {
+        width: 100%;
+        display: block;
+    }
+
+    .im-o-app--mobile .im-c-keyboard-help__description {
+        display: block;
+        margin-top: 5px;
+    }
+}
+
+// Progressive enhancement: drive the stacking off the panel's own width rather
+// than the app breakpoint, so the two-column pairing is only dropped when the
+// panel itself is too narrow.
+@supports (container-type: inline-size) {
+    .im-c-keyboard-help {
+        container: im-keyboard-help / inline-size;
+    }
+
+    @container im-keyboard-help (max-width: 26rem) {
+        .im-c-keyboard-help__title {
+            width: 100%;
+            display: block;
+        }
+
+        .im-c-keyboard-help__description {
+            display: block;
+            margin-top: 5px;
+        }
+    }
 }
