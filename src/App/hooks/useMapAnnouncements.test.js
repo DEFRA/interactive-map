@@ -77,7 +77,7 @@ describe('useMapAnnouncements', () => {
       direction: 'north',
       areaDimensions: { width: 100, height: 100 }
     })
-    expect(announce).toHaveBeenCalledWith('Moved north', 'core')
+    expect(announce).toHaveBeenCalledWith('Moved north', 'action')
   })
 
   test('announces zoomed message when only zoom changes', () => {
@@ -97,7 +97,7 @@ describe('useMapAnnouncements', () => {
       to: 12,
       areaDimensions: { width: 100, height: 100 }
     })
-    expect(announce).toHaveBeenCalledWith('Zoomed in', 'core')
+    expect(announce).toHaveBeenCalledWith('Zoomed in', 'action')
   })
 
   test('announces no change message when neither center nor zoom changes', () => {
@@ -114,7 +114,7 @@ describe('useMapAnnouncements', () => {
       center: [0, 0],
       zoom: 10
     })
-    expect(announce).toHaveBeenCalledWith('No change', 'core')
+    expect(announce).toHaveBeenCalledWith('No change', 'action')
   })
 
   test('announces new area message when both center and zoom change', () => {
@@ -132,7 +132,7 @@ describe('useMapAnnouncements', () => {
       zoom: 12,
       areaDimensions: { width: 100, height: 100 }
     })
-    expect(announce).toHaveBeenCalledWith('New area', 'core')
+    expect(announce).toHaveBeenCalledWith('New area', 'action')
   })
 
   test('detects center change correctly for lat or lng', () => {

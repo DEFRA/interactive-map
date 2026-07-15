@@ -25,12 +25,12 @@ describe('show', () => {
 
   it('calls announce with stripped html', () => {
     hints.show('<kbd>Enter</kbd> to select')
-    expect(announce).toHaveBeenCalledWith('Enter to select', 'plugin')
+    expect(announce).toHaveBeenCalledWith('Enter to select', 'ambient')
   })
 
   it('calls announce with custom text when announce option is provided', () => {
     hints.show('<kbd>Alt+K</kbd> help', { announce: 'Press Alt+K for keyboard controls' })
-    expect(announce).toHaveBeenCalledWith('Press Alt+K for keyboard controls', 'plugin')
+    expect(announce).toHaveBeenCalledWith('Press Alt+K for keyboard controls', 'ambient')
   })
 
   it('replaces an existing hint and resets the timer', () => {
