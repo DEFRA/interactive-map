@@ -1,17 +1,17 @@
-import InteractiveMap from '../../src/index.js'
+import InteractiveMap from '../../dist/esm/index.js'
 import { vtsMapStyles3857 } from './mapStyles.js'
 import { parcelSearch, gridRefSearchETRS89 } from './searchCustomDatasets.js'
 import { transformGeocodeRequest, transformVtsRequest3857, transformDataRequest } from './auth.js'
 // Providers
-import maplibreProvider from '/providers/maplibre/src/index.js'
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
+import maplibreProvider from '/providers/maplibre/dist/esm/index.js'
+import openNamesProvider from '/providers/beta/open-names/dist/esm/index.js'
 // Plugins
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
+import mapStylesPlugin from '/plugins/beta/map-styles/dist/esm/index.js'
 import createDatasetsPlugin from '/plugins/beta/datasets/dist/esm/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
-import searchPlugin from '/plugins/search/src/index.js'
-import createInteractPlugin from '/plugins/interact/src/index.js'
-import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import scaleBarPlugin from '/plugins/beta/scale-bar/dist/esm/index.js'
+import searchPlugin from '/plugins/search/dist/esm/index.js'
+import createInteractPlugin from '/plugins/interact/dist/esm/index.js'
+import createFramePlugin from '/plugins/beta/frame/dist/esm/index.js'
 
 const pointData = {
   type: 'FeatureCollection',
