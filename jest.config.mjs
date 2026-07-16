@@ -21,6 +21,8 @@ export default {
     ],
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
+      '/node_modules/',
+      '<rootDir>/public',
       '<rootDir>/src/index.umd.js',
       '<rootDir>/stylelint.config.js',
       '<rootDir>/coverage',
@@ -30,6 +32,7 @@ export default {
       '<rootDir>/providers/beta/',
       '<rootDir>/plugins/beta/draw-es',
       '<rootDir>/plugins/beta/draw-ml',
+      '<rootDir>/plugins/beta/draw-ol',
       '<rootDir>/plugins/beta/frame',
       '<rootDir>/plugins/beta/map-styles',
       '<rootDir>/plugins/beta/scale-bar',
