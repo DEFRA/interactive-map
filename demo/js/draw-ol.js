@@ -53,14 +53,14 @@ const interactiveMap = new InteractiveMap('map', {
   enableZoomControls: true,
   // readMapText: true,
   plugins: [
-    mapStylesPlugin({
-      mapStyles: [...vtsMapStyles27700, apgbAerialStyle] // ngdMapStyles27700
-    }),
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       osNamesURL: process.env.OS_NAMES_URL,
       width: '300px',
       showMarker: false,
+    }),
+    mapStylesPlugin({
+      mapStyles: [...vtsMapStyles27700, apgbAerialStyle] // ngdMapStyles27700
     }),
     interactPlugin,
     drawPlugin

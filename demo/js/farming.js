@@ -105,9 +105,6 @@ var interactiveMap = new InteractiveMap('map', {
     backgroundColor: '#f5f5f0'
   },
   plugins: [
-    scaleBarPlugin({
-      units: 'metric'
-    }),
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       osNamesURL: process.env.OS_NAMES_URL,
@@ -115,6 +112,9 @@ var interactiveMap = new InteractiveMap('map', {
       width: '300px',
       showMarker: false,
       // expanded: true
+    }),
+    scaleBarPlugin({
+      units: 'metric'
     }),
     // useLocationPlugin(),
     datasetsPlugin,

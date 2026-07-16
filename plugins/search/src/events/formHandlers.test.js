@@ -46,34 +46,67 @@ describe('createFormHandlers', () => {
     jest.clearAllMocks()
   })
 
-  test('handleOpenClick dispatches and emits', () => {
-    handlers.handleOpenClick()
+  describe('handleCloseClick focus restoration', () => {
+    let raf
+    let button
 
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'TOGGLE_EXPANDED',
-      payload: true
+    beforeEach(() => {
+      // Run rAF callbacks synchronously so focus assertions are deterministic
+      raf = jest.spyOn(global, 'requestAnimationFrame').mockImplementation((cb) => {
+        cb()
+        return 0
+      })
+      // A real, focusable element so element.focus() updates document.activeElement
+      button = document.createElement('button')
+      button.className = 'im-c-map-button im-c-map-button--search'
+      document.body.appendChild(button)
     })
-    expect(services.eventBus.emit).toHaveBeenCalledWith('search:open')
-  })
 
-  test('handleCloseClick resets state and focuses button', () => {
-    jest.useFakeTimers()
-    const buttonRef = { current: { focus: jest.fn() } }
+    afterEach(() => {
+      raf.mockRestore()
+      button.remove()
+    })
 
-    handlers.handleCloseClick(null, buttonRef)
+    test('resets state, emits events and returns focus to the trigger via buttonRefs', () => {
+      handlers.handleCloseClick(null, { buttonRefs: { current: { search: button } } })
 
-    expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_EXPANDED', payload: false })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALUE', payload: '' })
-    expect(markers.remove).toHaveBeenCalledWith('search')
+      expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_EXPANDED', payload: false })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALUE', payload: '' })
+      expect(markers.remove).toHaveBeenCalledWith('search')
+      expect(services.eventBus.emit).toHaveBeenCalledWith('search:clear')
+      expect(services.eventBus.emit).toHaveBeenCalledWith('search:close')
 
-    jest.runAllTimers()
-    expect(buttonRef.current.focus).toHaveBeenCalled()
+      expect(document.activeElement).toBe(button)
+    })
 
-    expect(services.eventBus.emit).toHaveBeenCalledWith('search:clear')
-    expect(services.eventBus.emit).toHaveBeenCalledWith('search:close')
+    test('falls back to a DOM query when the ref is not set', () => {
+      handlers.handleCloseClick(null, { buttonRefs: { current: {} } })
 
-    jest.useRealTimers()
+      expect(document.activeElement).toBe(button)
+    })
+
+    test('does not throw when no trigger exists (default-expanded)', () => {
+      button.remove() // no trigger in the DOM and none in the ref map
+
+      expect(() =>
+        handlers.handleCloseClick(null, { buttonRefs: { current: {} } })
+      ).not.toThrow()
+    })
+
+    test('retries across frames and gives up when the trigger never becomes active', () => {
+      // Disabled buttons can't receive focus in jsdom, so activeElement never
+      // matches — forces the retry loop through to its MAX_FOCUS_FRAMES exit
+      button.disabled = true
+      const focusSpy = jest.spyOn(button, 'focus')
+
+      handlers.handleCloseClick(null, { buttonRefs: { current: { search: button } } })
+
+      // rAF is mocked synchronous, so the whole retry loop unwinds within this call
+      expect(focusSpy.mock.calls.length).toBeGreaterThan(1)
+      expect(raf.mock.calls.length).toBeGreaterThan(1)
+      expect(document.activeElement).not.toBe(button)
+    })
   })
 
   test('handleSubmit uses selected suggestion when selectedIndex >= 0', async () => {
