@@ -100,7 +100,15 @@ describe('useEvaluateProp — plugin state isolation', () => {
     const { result } = renderHook(() => useEvaluateProp(), { wrapper: withPluginContext })
     const ctx = result.current(c => c, 'myPlugin')
     expect(ctx.pluginConfig).toEqual({ pluginId: 'myPlugin', includeModes: ['edit'], excludeModes: ['view'] })
-    expect(ctx.pluginState).toMatchObject({ foo: 'bar', dispatch: pluginDispatch })
+    expect(ctx.pluginState).toMatchObject({ foo: 'bar', dispatch: expect.any(Function) })
+  })
+
+  it('scopes pluginState.dispatch to the plugin by injecting pluginId', () => {
+    mockPluginRegistry.registeredPlugins.push({ id: 'myPlugin', config: {} })
+    const { result } = renderHook(() => useEvaluateProp(), { wrapper: withPluginContext })
+    const ctx = result.current(c => c, 'myPlugin')
+    ctx.pluginState.dispatch({ type: 'DO_THING', payload: 1 })
+    expect(pluginDispatch).toHaveBeenCalledWith({ type: 'DO_THING', payload: 1, pluginId: 'myPlugin' })
   })
 
   it('does not include pluginStates for real plugin buttons', () => {
@@ -123,6 +131,6 @@ describe('useEvaluateProp — plugin state isolation', () => {
     )
     const { result } = renderHook(() => useEvaluateProp(), { wrapper })
     const ctx = result.current(c => c, 'myPlugin')
-    expect(ctx.pluginState).toMatchObject({ dispatch: pluginDispatch })
+    expect(ctx.pluginState).toMatchObject({ dispatch: expect.any(Function) })
   })
 })
