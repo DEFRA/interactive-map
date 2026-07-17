@@ -172,8 +172,8 @@ const surfaceWaterDataset = {
   sublayers: [
     {
       id: 'depthOver2300',
-      label: 'Depth over 2300mm',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/>2300mm/1',
+      showInKey: false,
       visibleWhen: {
         menu: {
           dataset: ['surfacewater'],
@@ -186,6 +186,7 @@ const surfaceWaterDataset = {
     {
       id: 'depth2300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/1200-2300mm/1',
+      showInKey: false,
       visibleWhen: {
         menu: {
           dataset: ['surfacewater'],
@@ -198,6 +199,7 @@ const surfaceWaterDataset = {
     {
       id: 'depth1200',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/900-1200mm/1',
+      showInKey: false,
       visibleWhen: {
         menu: {
           dataset: ['surfacewater'],
@@ -210,6 +212,7 @@ const surfaceWaterDataset = {
     {
       id: 'depth900',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/600-900mm/1',
+      showInKey: false,
       visibleWhen: {
         menu: {
           dataset: ['surfacewater'],
@@ -222,6 +225,7 @@ const surfaceWaterDataset = {
     {
       id: 'depth600',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/300-600mm/1',
+      showInKey: false,
       visibleWhen: {
         menu: {
           dataset: ['surfacewater'],
@@ -234,6 +238,7 @@ const surfaceWaterDataset = {
     {
       id: 'depth300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/150-300mm/1',
+      showInKey: false,
       visibleWhen: {
         menu: {
           dataset: ['surfacewater'],
@@ -246,6 +251,7 @@ const surfaceWaterDataset = {
     {
       id: 'depth150',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/<150mm/1',
+      showInKey: false,
       visibleWhen: {
         menu: {
           dataset: ['surfacewater'],
@@ -277,6 +283,7 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depthOver2300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/>2300mm/1',
+      label: 'Extent over 2300mm',
       style: {
         fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
       }
@@ -284,6 +291,7 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depth2300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/1200-2300mm/1',
+      label: 'Extent over 1200mm',
       style: {
         fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
       }
@@ -291,6 +299,7 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depth1200',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/900-1200mm/1',
+      label: 'Extent over 900mm',
       style: {
         fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
       }
@@ -298,6 +307,7 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depth900',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/600-900mm/1',
+      label: 'Extent over 600mm',
       style: {
         fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
       }
@@ -305,6 +315,7 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depth600',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/300-600mm/1',
+      label: 'Extent over 300mm',
       style: {
         fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
       }
@@ -312,6 +323,7 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depth300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/150-300mm/1',
+      label: 'Extent over 150mm',
       style: {
         fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
       }
@@ -319,10 +331,66 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depth150',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/<150mm/1',
+      label: 'Extent up to 150mm',
       style: {
         fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
       }
     },
+  ]
+}
+
+const surfaceWaterExtentsKey = {
+  id: 'surfacewater-extents-key',
+  label: 'Surface Water',
+  groupLabel: 'Datasets',
+  showInKey: true,
+  style: {
+    stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
+    fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
+  },
+  sublayers: [
+    {
+      id: 'key-150',
+      label: 'Full extend of flooding',
+      showInKey: true,
+      visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth150'] } }
+    },
+    {
+      id: 'key-300',
+      label: 'Extent over 150mm',
+      showInKey: true,
+      visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth300'] } }
+    },
+    {
+      id: 'key-600',
+      label: 'Extent over 300mm',
+      showInKey: true,
+      visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth600'] } }
+    },
+    {
+      id: 'key-900',
+      label: 'Extent over 600mm',
+      showInKey: true,
+      visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth900'] } }
+    },
+    {
+      id: 'key-1200',
+      label: 'Extent over 900mm',
+      showInKey: true,
+      visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth1200'] } }
+    },
+    {
+      id: 'key-2300',
+      label: 'Extent over 1200mm',
+      showInKey: true,
+      visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth2300'] } }
+    },
+    {
+      id: 'key-over-2300',
+      label: 'Extent over 2300mm',
+      showInKey: true,
+      visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthOver2300'] } }
+    }
   ]
 }
 
@@ -406,7 +474,8 @@ const datasetFloodDefences = {
 }
 
 const datasets = [
-  datasetFloodZonesCC, datasetFloodZones, surfaceWaterDataset, surfaceWaterDepthAllDataset,
+  datasetFloodZonesCC, datasetFloodZones,
+  surfaceWaterDataset, surfaceWaterDepthAllDataset, surfaceWaterExtentsKey,
   datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
 

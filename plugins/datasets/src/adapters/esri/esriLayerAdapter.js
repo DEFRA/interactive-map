@@ -82,7 +82,10 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async _addLayers (registryDataset) {
-    const { type, esriGroupId } = registryDataset
+    const { type, esriGroupId, tiles } = registryDataset
+    if (!tiles) {
+      return
+    }
 
     if (type === 'FeatureService') {
       return this._addFeatureLayers(registryDataset)
