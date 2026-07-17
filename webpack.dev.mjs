@@ -25,6 +25,7 @@ export default {
     'planning-ol': path.join(__dirname, 'demo/js/planning-ol.js'),
     gep: path.join(__dirname, 'demo/js/gep.js'),
     'ml-datasets': path.join(__dirname, 'demo/js/ml-datasets.js'),
+    'esri-datasets': path.join(__dirname, 'demo/js/esri-datasets.js'),
     esm: path.join(__dirname, 'demo/js/esm.js'),
     multimap: path.join(__dirname, 'demo/js/multimap.js')
   },

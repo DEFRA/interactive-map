@@ -5,7 +5,7 @@ import { logger } from '../services/logger.js'
 
 jest.mock('./renderError.js')
 jest.mock('./domStateManager.js')
-jest.mock('../services/logger.js', () => ({ logger: { warn: jest.fn() } }))
+jest.mock('../services/logger.js')
 
 describe('checkDeviceSupport', () => {
   let rootEl, config

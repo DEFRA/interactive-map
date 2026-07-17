@@ -105,7 +105,7 @@ function MapInner () {
     Promise.all([
       import('../src/index.js'),
       import('../providers/maplibre/src/index.js'),
-      import('../plugins/beta/datasets/src/index.js')
+      import('../plugins/datasets/src/index.js')
     ]).then(([
       { default: InteractiveMap },
       { default: maplibreProvider },
