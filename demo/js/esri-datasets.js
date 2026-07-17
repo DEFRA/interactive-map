@@ -148,7 +148,7 @@ const datasetFloodZones = {
 const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep}) => {
   const visibleWhenMenu = { dataset: ['surfacewater'], timeframe, aep }
   const extentsDataset = {
-    id,
+    id: `${id}-extents`,
     label: 'Surface Water',
     groupLabel: 'Datasets',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
@@ -201,7 +201,75 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       },
     ]
   }
-  return [extentsDataset]
+
+  const depthDataset = {
+    id: `${id}-depths`,
+    label: 'Surface Water Depth All',
+    groupLabel: 'Datasets',
+    tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
+    showInKey: true,
+    sourceLayer,
+    visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
+    sublayers: [
+      {
+        id: 'depthOver2300',
+        esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
+        label: 'Extent over 2300mm',
+        style: {
+          fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
+        }
+      },
+      {
+        id: 'depth2300',
+        esriStyleLayerId: `${sourceLayer}/1200-2300mm/1`,
+        label: 'Extent over 1200mm',
+        style: {
+          fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
+        }
+      },
+      {
+        id: 'depth1200',
+        esriStyleLayerId: `${sourceLayer}/900-1200mm/1`,
+        label: 'Extent over 900mm',
+        style: {
+          fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
+        }
+      },
+      {
+        id: 'depth900',
+        esriStyleLayerId: `${sourceLayer}/600-900mm/1`,
+        label: 'Extent over 600mm',
+        style: {
+          fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
+        }
+      },
+      {
+        id: 'depth600',
+        esriStyleLayerId: `${sourceLayer}/300-600mm/1`,
+        label: 'Extent over 300mm',
+        style: {
+          fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
+        }
+      },
+      {
+        id: 'depth300',
+        esriStyleLayerId: `${sourceLayer}/150-300mm/1`,
+        label: 'Extent over 150mm',
+        style: {
+          fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
+        }
+      },
+      {
+        id: 'depth150',
+        esriStyleLayerId: `${sourceLayer}/<150mm/1`,
+        label: 'Extent up to 150mm',
+        style: {
+          fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
+        }
+      },
+    ]
+  }
+  return [extentsDataset, depthDataset]
 }
 
 
@@ -412,15 +480,54 @@ const datasetFloodDefences = {
 }
 
 const datasets = [
-  datasetFloodZonesCC, datasetFloodZones,
+  datasetFloodZonesCC,
+  datasetFloodZones,
+  surfaceWaterExtentsKey,
+  // Surface Water Present Day
   ...surfaceWaterDatasetGenerator({
-    id: 'surfacewater-present-day-low',
-    tileName: 'Surface_Water_Spatial_Planning_1_in_1000_Depths_NON_PRODUCTION', 
-    sourceLayer: 'Surface Water Spatial Planning 1 in 1000 Depths', 
+    id: 'surfacewater-presentday-low',
+    tileName: 'Surface_Water_Spatial_Planning_1_in_1000_Depths_NON_PRODUCTION',
+    sourceLayer: 'Surface Water Spatial Planning 1 in 1000 Depths',
     timeframe: ['presentday'],
     aep: ['low'],
-  })
-  , surfaceWaterDepthAllDataset, surfaceWaterExtentsKey,
+  }),
+  ...surfaceWaterDatasetGenerator({
+    id: 'surfacewater-presentday-medium',
+    tileName: 'Surface_Water_Spatial_Planning_1_in_100_Depths_NON_PRODUCTION',
+    sourceLayer: 'Surface Water Spatial Planning 1 in 100 Depths',
+    timeframe: ['presentday'],
+    aep: ['medium'],
+  }),
+  ...surfaceWaterDatasetGenerator({
+    id: 'surfacewater-presentday-high',
+    tileName: 'Surface_Water_Spatial_Planning_1_in_30_Depths_NON_PRODUCTION',
+    sourceLayer: 'Surface Water Spatial Planning 1 in 30 Depths',
+    timeframe: ['presentday'],
+    aep: ['high'],
+  }),
+  // Surface Water Climate Change
+  ...surfaceWaterDatasetGenerator({
+    id: 'surfacewater-climatechange-low',
+    tileName: 'Surface_Water_Spatial_Planning_1_in_1000_CCP1_Depths_NON_PRODUCTION',
+    sourceLayer: 'Surface Water Spatial Planning 1 in 1000 CCP1 Depths',
+    timeframe: ['climatechange'],
+    aep: ['low'],
+  }),
+  ...surfaceWaterDatasetGenerator({
+    id: 'surfacewater-climatechange-medium',
+    tileName: 'Surface_Water_Spatial_Planning_1_in_100_CCP1_Depths_NON_PRODUCTION',
+    sourceLayer: 'Surface Water Spatial Planning 1 in 100 CCP1 Depths',
+    timeframe: ['climatechange'],
+    aep: ['medium'],
+  }),
+  ...surfaceWaterDatasetGenerator({
+    id: 'surfacewater-climatechange-high',
+    tileName: 'Surface_Water_Spatial_Planning_1_in_30_CCP1_Depths_NON_PRODUCTION',
+    sourceLayer: 'Surface Water Spatial Planning 1 in 30 CCP1 Depths',
+    timeframe: ['climatechange'],
+    aep: ['high'],
+  }),
+
   datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
 
