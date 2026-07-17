@@ -47,7 +47,7 @@ describe('initialState', () => {
     expect(result.preferredColorScheme).toBe('dark')
     expect(result.mode).toBe('edit')
     expect(result.panelConfig).toEqual({ panel1: {} })
-    expect(result.nudgeStepSize).toBe('small')
+    expect(result.nudgeStepSize).toBe('large')
   })
 
   test('uses appColorScheme when autoColorScheme is false', () => {

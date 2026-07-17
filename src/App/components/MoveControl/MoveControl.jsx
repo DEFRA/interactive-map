@@ -6,10 +6,10 @@ import { useService } from '../../store/serviceContext.js'
 import { resolveStepAmount } from '../../../utils/resolveNudgeStep.js'
 
 const DIRECTIONS = [
-  { id: 'panUp', label: 'Pan up', announceLabel: 'Panned up', dx: 0, dy: -1 },
-  { id: 'panDown', label: 'Pan down', announceLabel: 'Panned down', dx: 0, dy: 1 },
-  { id: 'panLeft', label: 'Pan left', announceLabel: 'Panned left', dx: -1, dy: 0 },
-  { id: 'panRight', label: 'Pan right', announceLabel: 'Panned right', dx: 1, dy: 0 }
+  { id: 'panUp', verb: 'up', dx: 0, dy: -1 },
+  { id: 'panDown', verb: 'down', dx: 0, dy: 1 },
+  { id: 'panLeft', verb: 'left', dx: -1, dy: 0 },
+  { id: 'panRight', verb: 'right', dx: 1, dy: 0 }
 ]
 
 const ZOOM_ACTIONS = [
@@ -24,11 +24,14 @@ export const MoveControl = () => {
 
   const isOpen = expandedButtons.has('moveControl')
   const isLargeStep = nudgeStepSize === 'large'
+  // Matches the draw plugin's existing "Move point" (default)/"Nudge point" (Shift, small)
+  // keyboard-shortcut vocabulary, so the label always describes the step size in effect.
+  const actionWord = isLargeStep ? 'Move' : 'Nudge'
 
-  const handlePan = (dx, dy, label) => {
+  const handlePan = (dx, dy, verb) => {
     const amount = resolveStepAmount(isLargeStep, nudgePanDelta, panDelta)
     mapProvider.panBy([dx * amount, dy * amount])
-    announce(label)
+    announce(`${actionWord}d ${verb}`)
   }
 
   const handleZoom = (method, label) => {
@@ -39,7 +42,7 @@ export const MoveControl = () => {
 
   const handleToggleStep = () => {
     dispatch({ type: 'TOGGLE_NUDGE_STEP' })
-    announce(isLargeStep ? 'Small step' : 'Large step')
+    announce(isLargeStep ? 'Nudge mode on' : 'Nudge mode off')
   }
 
   const containerClassName = [
@@ -49,16 +52,26 @@ export const MoveControl = () => {
 
   return (
     <div id={`${appId}-move-control`} className={containerClassName}>
-      <div role='group' aria-label='Pan controls' className='im-c-move-control__directions'>{/* NOSONAR - div with role="group" is correct for a button group */}
-        {DIRECTIONS.map(({ id, label, announceLabel, dx, dy }) => (
+      <div role='group' aria-label='Direction controls' className='im-c-move-control__directions'>{/* NOSONAR - div with role="group" is correct for a button group */}
+        {DIRECTIONS.map(({ id, verb, dx, dy }) => (
           <MapButton
             key={id}
             buttonId={id}
-            label={label}
+            label={`${actionWord} ${verb}`}
             iconId='chevron'
-            onClick={() => handlePan(dx, dy, announceLabel)}
+            onClick={() => handlePan(dx, dy, verb)}
           />
         ))}
+
+        {/* Stable label/icon regardless of state (WAI-ARIA toggle-button pattern) —
+            aria-pressed alone conveys whether nudge (small-step) mode is active. */}
+        <MapButton
+          buttonId='nudgeStepToggle'
+          label='Nudge mode'
+          iconId='turtle'
+          isPressed={!isLargeStep}
+          onClick={handleToggleStep}
+        />
       </div>
 
       <div role='group' aria-label='Zoom controls' className='im-c-move-control__zoom'>{/* NOSONAR - div with role="group" is correct for a button group */}
@@ -72,14 +85,6 @@ export const MoveControl = () => {
           />
         ))}
       </div>
-
-      <MapButton
-        buttonId='nudgeStepToggle'
-        label={isLargeStep ? 'Large step' : 'Small step'}
-        showLabel
-        isPressed={isLargeStep}
-        onClick={handleToggleStep}
-      />
     </div>
   )
 }

@@ -21,7 +21,7 @@ describe('MoveControl', () => {
     interfaceType: 'mouse',
     dispatch,
     expandedButtons: new Set(['moveControl']),
-    nudgeStepSize: 'small',
+    nudgeStepSize: 'large',
     ...overrides
   })
 
@@ -60,49 +60,69 @@ describe('MoveControl', () => {
     expect(container.querySelector('.im-c-move-control--collapsed')).toBeInTheDocument()
   })
 
-  it('pans by the small delta and announces the action', () => {
+  it('labels direction buttons "Move" and pans by the large delta by default', () => {
     render(<MoveControl />)
-    fireEvent.click(screen.getByRole('button', { name: 'Pan up' }))
-    expect(mapProvider.panBy).toHaveBeenCalledWith([0, -5])
-    expect(announce).toHaveBeenCalledWith('Panned up')
-  })
-
-  it('pans by the large delta when nudgeStepSize is large', () => {
-    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'large' }))
-    render(<MoveControl />)
-    fireEvent.click(screen.getByRole('button', { name: 'Pan right' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
     expect(mapProvider.panBy).toHaveBeenCalledWith([100, 0])
+    expect(announce).toHaveBeenCalledWith('Moved right')
   })
 
-  it('zooms in and out and announces the action', () => {
+  it('labels direction buttons "Nudge" and pans by the small delta when nudgeStepSize is small', () => {
+    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
+    render(<MoveControl />)
+    fireEvent.click(screen.getByRole('button', { name: 'Nudge up' }))
+    expect(mapProvider.panBy).toHaveBeenCalledWith([0, -5])
+    expect(announce).toHaveBeenCalledWith('Nudged up')
+  })
+
+  it('zooms in and out by the large delta by default and announces the action', () => {
     render(<MoveControl />)
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
-    expect(mapProvider.zoomIn).toHaveBeenCalledWith(0.1)
+    expect(mapProvider.zoomIn).toHaveBeenCalledWith(1)
     expect(announce).toHaveBeenCalledWith('Zoomed in')
 
     fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
-    expect(mapProvider.zoomOut).toHaveBeenCalledWith(0.1)
+    expect(mapProvider.zoomOut).toHaveBeenCalledWith(1)
     expect(announce).toHaveBeenCalledWith('Zoomed out')
   })
 
-  it('toggles the step size and announces the new mode when going small to large', () => {
+  it('zooms by the small delta when nudgeStepSize is small', () => {
+    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
     render(<MoveControl />)
-    fireEvent.click(screen.getByRole('button', { name: 'Small step' }))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_NUDGE_STEP' })
-    expect(announce).toHaveBeenCalledWith('Large step')
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    expect(mapProvider.zoomIn).toHaveBeenCalledWith(0.1)
   })
 
-  it('toggles the step size and announces the new mode when going large to small', () => {
-    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'large' }))
-    render(<MoveControl />)
-    fireEvent.click(screen.getByRole('button', { name: 'Large step' }))
-    expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_NUDGE_STEP' })
-    expect(announce).toHaveBeenCalledWith('Small step')
+  it('has a stable "Nudge mode" label regardless of state', () => {
+    const { rerender } = render(<MoveControl />)
+    expect(screen.getByRole('button', { name: 'Nudge mode' })).toBeInTheDocument()
+
+    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
+    rerender(<MoveControl />)
+    expect(screen.getByRole('button', { name: 'Nudge mode' })).toBeInTheDocument()
   })
 
-  it('shows "Large step" as the toggle label when nudgeStepSize is large', () => {
-    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'large' }))
+  it('reflects nudge mode via aria-pressed, not via label changes', () => {
+    const { rerender } = render(<MoveControl />)
+    expect(screen.getByRole('button', { name: 'Nudge mode' })).toHaveAttribute('aria-pressed', 'false')
+
+    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
+    rerender(<MoveControl />)
+    expect(screen.getByRole('button', { name: 'Nudge mode' })).toHaveAttribute('aria-pressed', 'true')
+  })
+
+  it('toggles nudge mode on and announces it when currently in large-step mode', () => {
     render(<MoveControl />)
-    expect(screen.getByRole('button', { name: 'Large step' })).toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: 'Nudge mode' }))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_NUDGE_STEP' })
+    expect(announce).toHaveBeenCalledWith('Nudge mode on')
+  })
+
+  it('toggles nudge mode off and announces it when currently in small-step mode', () => {
+    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
+    render(<MoveControl />)
+    fireEvent.click(screen.getByRole('button', { name: 'Nudge mode' }))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_NUDGE_STEP' })
+    expect(announce).toHaveBeenCalledWith('Nudge mode off')
   })
 })

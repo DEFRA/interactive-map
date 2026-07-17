@@ -8,11 +8,6 @@
     flex-direction: column;
     align-items: center;
     gap: var(--divider-gap);
-
-    padding: var(--primary-gap);
-    border-radius: var(--panel-border-radius);
-    background-color: var(--button-background-color);
-    box-shadow: var(--tertiary-button-box-shadow);
 }
 
 .im-c-move-control--collapsed {
@@ -44,6 +39,11 @@
 .im-c-move-control__directions .im-c-button-wrapper--pan-down {
     grid-column: 2;
     grid-row: 3;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--nudge-step-toggle {
+    grid-column: 2;
+    grid-row: 2;
 }
 
 .im-c-move-control__directions .im-c-map-button--pan-up svg {
