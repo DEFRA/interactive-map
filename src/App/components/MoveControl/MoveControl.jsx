@@ -2,6 +2,7 @@ import React from 'react'
 import { MapButton } from '../MapButton/MapButton.jsx'
 import { useApp } from '../../store/appContext.js'
 import { useConfig } from '../../store/configContext.js'
+import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { resolveStepAmount } from '../../../utils/resolveNudgeStep.js'
 
@@ -20,6 +21,7 @@ const ZOOM_ACTIONS = [
 export const MoveControl = () => {
   const { id: appId, mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta } = useConfig()
   const { dispatch, expandedButtons, nudgeStepSize } = useApp()
+  const { isAtMaxZoom, isAtMinZoom } = useMap()
   const { announce } = useService()
 
   const isOpen = expandedButtons.has('moveControl')
@@ -84,6 +86,7 @@ export const MoveControl = () => {
             buttonId={id}
             label={label}
             iconId={method === 'zoomIn' ? 'plus' : 'minus'}
+            isDisabled={method === 'zoomIn' ? isAtMaxZoom : isAtMinZoom}
             onClick={() => handleZoom(method, announceLabel)}
           />
         ))}

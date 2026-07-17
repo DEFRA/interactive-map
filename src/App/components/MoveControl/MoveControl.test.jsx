@@ -3,10 +3,12 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { MoveControl } from './MoveControl.jsx'
 import { useApp } from '../../store/appContext.js'
 import { useConfig } from '../../store/configContext.js'
+import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 
 jest.mock('../../store/appContext.js', () => ({ useApp: jest.fn() }))
 jest.mock('../../store/configContext.js', () => ({ useConfig: jest.fn() }))
+jest.mock('../../store/mapContext.js', () => ({ useMap: jest.fn() }))
 jest.mock('../../store/serviceContext.js', () => ({ useService: jest.fn() }))
 
 describe('MoveControl', () => {
@@ -39,6 +41,7 @@ describe('MoveControl', () => {
       nudgeZoomDelta: 0.1
     })
     useApp.mockReturnValue(buildAppState())
+    useMap.mockReturnValue({ isAtMaxZoom: false, isAtMinZoom: false })
     useService.mockReturnValue({ announce })
   })
 
@@ -91,6 +94,27 @@ describe('MoveControl', () => {
     render(<MoveControl />)
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
     expect(mapProvider.zoomIn).toHaveBeenCalledWith(0.1)
+  })
+
+  it('disables the zoom in button at max zoom, and zoom out at min zoom', () => {
+    useMap.mockReturnValue({ isAtMaxZoom: true, isAtMinZoom: false })
+    const { rerender } = render(<MoveControl />)
+    expect(screen.getByRole('button', { name: 'Zoom in' })).toHaveAttribute('aria-disabled', 'true')
+    expect(screen.getByRole('button', { name: 'Zoom out' })).not.toHaveAttribute('aria-disabled')
+
+    useMap.mockReturnValue({ isAtMaxZoom: false, isAtMinZoom: true })
+    rerender(<MoveControl />)
+    expect(screen.getByRole('button', { name: 'Zoom in' })).not.toHaveAttribute('aria-disabled')
+    expect(screen.getByRole('button', { name: 'Zoom out' })).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('does not zoom when the relevant button is disabled at max/min zoom', () => {
+    useMap.mockReturnValue({ isAtMaxZoom: true, isAtMinZoom: true })
+    render(<MoveControl />)
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
+    expect(mapProvider.zoomIn).not.toHaveBeenCalled()
+    expect(mapProvider.zoomOut).not.toHaveBeenCalled()
   })
 
   it('has a stable "Nudge mode" label regardless of state', () => {
