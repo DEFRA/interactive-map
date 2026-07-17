@@ -272,82 +272,6 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
   return [extentsDataset, depthDataset]
 }
 
-
-const surfaceWaterDepthAllDataset = {
-  id: 'surfacewaterDepthAll',
-  label: 'Surface Water Depth All',
-  groupLabel: 'Datasets',
-  tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Surface_Water_Spatial_Planning_1_in_1000_Depths_NON_PRODUCTION/VectorTileServer`,
-  showInKey: true,
-  sourceLayer: 'Surface Water Spatial Planning 1 in 1000 Depths',
-  visibleWhen: {
-    menu: {
-      dataset: ['surfacewater'],
-      timeframe: ['presentday'],
-      aep: ['low'],
-      depth: ['depthAll']
-    },
-  },
-  sublayers: [
-    {
-      id: 'depthOver2300',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/>2300mm/1',
-      label: 'Extent over 2300mm',
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
-      }
-    },
-    {
-      id: 'depth2300',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/1200-2300mm/1',
-      label: 'Extent over 1200mm',
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
-      }
-    },
-    {
-      id: 'depth1200',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/900-1200mm/1',
-      label: 'Extent over 900mm',
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
-      }
-    },
-    {
-      id: 'depth900',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/600-900mm/1',
-      label: 'Extent over 600mm',
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
-      }
-    },
-    {
-      id: 'depth600',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/300-600mm/1',
-      label: 'Extent over 300mm',
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
-      }
-    },
-    {
-      id: 'depth300',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/150-300mm/1',
-      label: 'Extent over 150mm',
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
-      }
-    },
-    {
-      id: 'depth150',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/<150mm/1',
-      label: 'Extent up to 150mm',
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
-      }
-    },
-  ]
-}
-
 const surfaceWaterExtentsKey = {
   id: 'surfacewater-extents-key',
   label: 'Surface Water',
@@ -605,6 +529,19 @@ const menu = [
 ]
 
 const datasetsPlugin = createDatasetsPlugin({
+  manifest: {
+    panels: [{
+      id: 'datasetsLayers',
+      desktop: { open: true, slot: 'side', width: '280px', dismissible: false},
+      tablet: { slot: 'side', width: '280px', modal: true }
+    }],
+    buttons: [
+      {
+        id: 'datasetsLayers',
+        excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
+      }
+    ]
+  },
   globals: {
     opacityMode: 'global', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,

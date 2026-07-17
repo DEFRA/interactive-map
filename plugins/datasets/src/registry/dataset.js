@@ -97,6 +97,7 @@ export class Dataset {
   }
 
   get esriStyleLayerId () { return this._datasetDefinition.esriStyleLayerId }
+
   get visibility () {
     const { visible, visibleWhen } = this
     if (visible && visibleWhen) {
