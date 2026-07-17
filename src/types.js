@@ -131,6 +131,11 @@
  *
  * @typedef {Object} ButtonDefinition
  *
+ * @property {string | ((context: PluginContext) => string)} [ariaControls]
+ * Id of a custom control this button toggles, set as aria-controls. Use when the button
+ * opens or expands a custom control rendered elsewhere by the plugin. Text or a function
+ * returning the id.
+ *
  * @property {ButtonBreakpointConfig} [desktop]
  * Desktop breakpoint configuration.
  *

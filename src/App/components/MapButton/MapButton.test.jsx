@@ -96,6 +96,16 @@ describe('MapButton', () => {
     expect(getButton()).toHaveAttribute('aria-expanded', 'true')
   })
 
+  it('sets aria-controls from ariaControls when there is no panel or popup', () => {
+    renderButton({ ariaControls: 'map-search-form' })
+    expect(getButton()).toHaveAttribute('aria-controls', 'map-search-form')
+  })
+
+  it('prefers a controlled panel/popup id over ariaControls', () => {
+    renderButton({ panelId: 'Settings', idPrefix: 'prefix', ariaControls: 'ignored' })
+    expect(getButton()).toHaveAttribute('aria-controls', 'prefix-panel-settings')
+  })
+
   it('handles click events', () => {
     const onClick = jest.fn()
     renderButton({ onClick })

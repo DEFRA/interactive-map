@@ -33,7 +33,12 @@ export function useEvaluateProp () {
     // Framework entries like 'appConfig' have no reducer so their buttons get pluginStates instead.
     if (Object.hasOwn(pluginContext?.state ?? {}, pluginId)) {
       const stateForPlugin = pluginContext?.state?.[pluginId] ?? {}
-      const pluginState = { ...stateForPlugin, dispatch: pluginContext?.dispatch }
+      // Scope dispatch to this plugin, mirroring usePlugin — the combined reducer
+      // routes by action.pluginId, so an unscoped dispatch would be a no-op.
+      const pluginState = {
+        ...stateForPlugin,
+        dispatch: (action) => pluginContext?.dispatch?.({ ...action, pluginId })
+      }
       return { pluginConfig, pluginState }
     }
 
