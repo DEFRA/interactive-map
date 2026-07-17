@@ -159,6 +159,9 @@ const surfaceWaterDataset = {
   tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Surface_Water_Spatial_Planning_1_in_1000_Depths_NON_PRODUCTION/VectorTileServer`,
   showInKey: true,
   sourceLayer: 'Surface Water Spatial Planning 1 in 1000 Depths',
+  style: {
+    fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
+  },
   visibleWhen: {
     menu: {
       dataset: ['surfacewater'],
@@ -178,9 +181,6 @@ const surfaceWaterDataset = {
           aep: ['low'],
           depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300', 'depthOver2300']
         }
-      },
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
       }
     },
     {
@@ -193,9 +193,6 @@ const surfaceWaterDataset = {
           aep: ['low'],
           depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300']
         }
-      },
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
       }
     },
     {
@@ -208,9 +205,6 @@ const surfaceWaterDataset = {
           aep: ['low'],
           depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200']
         }
-      },
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
       }
     },
     {
@@ -223,9 +217,6 @@ const surfaceWaterDataset = {
           aep: ['low'],
           depth: ['depth150', 'depth300', 'depth600', 'depth900']
         }
-      },
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
       }
     },
     {
@@ -238,9 +229,6 @@ const surfaceWaterDataset = {
           aep: ['low'],
           depth: ['depth150', 'depth300', 'depth600']
         }
-      },
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
       }
     },
     {
@@ -253,9 +241,6 @@ const surfaceWaterDataset = {
           aep: ['low'],
           depth: ['depth150', 'depth300']
         }
-      },
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
       }
     },
     {
@@ -268,9 +253,6 @@ const surfaceWaterDataset = {
           aep: ['low'],
           depth: ['depth150']
         }
-      },
-      style: {
-        fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
       }
     },
   ]
@@ -283,9 +265,6 @@ const surfaceWaterDepthAllDataset = {
   tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Surface_Water_Spatial_Planning_1_in_1000_Depths_NON_PRODUCTION/VectorTileServer`,
   showInKey: true,
   sourceLayer: 'Surface Water Spatial Planning 1 in 1000 Depths',
-  style: {
-    fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-  },
   visibleWhen: {
     menu: {
       dataset: ['surfacewater'],
@@ -298,31 +277,52 @@ const surfaceWaterDepthAllDataset = {
     {
       id: 'depthOver2300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/>2300mm/1',
+      style: {
+        fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
+      }
     },
     {
       id: 'depth2300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/1200-2300mm/1',
+      style: {
+        fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
+      }
     },
     {
       id: 'depth1200',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/900-1200mm/1',
+      style: {
+        fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
+      }
     },
     {
       id: 'depth900',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/600-900mm/1',
+      style: {
+        fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
+      }
     },
     {
       id: 'depth600',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/300-600mm/1',
+      style: {
+        fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
+      }
     },
     {
       id: 'depth300',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/150-300mm/1',
+      style: {
+        fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
+      }
     },
     {
       id: 'depth150',
       esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/<150mm/1',
-    }
+      style: {
+        fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
+      }
+    },
   ]
 }
 
