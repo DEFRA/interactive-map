@@ -102,6 +102,28 @@ describe('MoveControl', () => {
     expect(screen.getByRole('button', { name: 'Nudge mode' })).toBeInTheDocument()
   })
 
+  it('shows an aria-hidden (On)/(Off) suffix in the tooltip without affecting the accessible name', () => {
+    // The (On)/(Off) suffix lives in the Tooltip's content div (a sibling of the
+    // <button>, referenced via aria-labelledby), not inside the button itself. Several
+    // tooltips exist in the DOM (one per icon-only button), so resolve this button's
+    // own tooltip via its aria-labelledby id rather than grabbing the first one.
+    const getOwnTooltip = () => {
+      const button = screen.getByRole('button', { name: 'Nudge mode' })
+      return document.getElementById(button.getAttribute('aria-labelledby'))
+    }
+
+    const { rerender } = render(<MoveControl />)
+    let tooltip = getOwnTooltip()
+    expect(tooltip.querySelector('[aria-hidden="true"]')).toHaveTextContent('(Off)')
+    expect(tooltip).toHaveTextContent('Nudge mode (Off)')
+
+    useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
+    rerender(<MoveControl />)
+    tooltip = getOwnTooltip()
+    expect(tooltip.querySelector('[aria-hidden="true"]')).toHaveTextContent('(On)')
+    expect(tooltip).toHaveTextContent('Nudge mode (On)')
+  })
+
   it('reflects nudge mode via aria-pressed, not via label changes', () => {
     const { rerender } = render(<MoveControl />)
     expect(screen.getByRole('button', { name: 'Nudge mode' })).toHaveAttribute('aria-pressed', 'false')

@@ -63,11 +63,14 @@ export const MoveControl = () => {
           />
         ))}
 
-        {/* Stable label/icon regardless of state (WAI-ARIA toggle-button pattern) —
-            aria-pressed alone conveys whether nudge (small-step) mode is active. */}
+        {/* Stable accessible name regardless of state (WAI-ARIA toggle-button pattern) —
+            aria-pressed alone conveys state to assistive tech. The (On)/(Off) suffix is
+            aria-hidden so it's excluded from the computed name (avoiding a duplicate
+            announcement alongside aria-pressed) but still visible in the tooltip for
+            sighted users. */}
         <MapButton
           buttonId='nudgeStepToggle'
-          label='Nudge mode'
+          label={<>Nudge mode <span aria-hidden='true'>({isLargeStep ? 'Off' : 'On'})</span></>}
           iconId='turtle'
           isPressed={!isLargeStep}
           onClick={handleToggleStep}
