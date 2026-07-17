@@ -1,0 +1,64 @@
+// ===================================================
+// Component: MoveControl
+// ===================================================
+
+// 1. Base styles
+.im-c-move-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--divider-gap);
+
+    padding: var(--primary-gap);
+    border-radius: var(--panel-border-radius);
+    background-color: var(--button-background-color);
+    box-shadow: var(--tertiary-button-box-shadow);
+}
+
+.im-c-move-control--collapsed {
+    display: none;
+}
+
+// 2. Elements
+.im-c-move-control__directions {
+    display: grid;
+    grid-template-columns: repeat(3, var(--button-size));
+    grid-template-rows: repeat(3, var(--button-size));
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-up {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-down {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+.im-c-move-control__directions .im-c-map-button--pan-up svg {
+    transform: rotate(180deg);
+}
+
+.im-c-move-control__directions .im-c-map-button--pan-left svg {
+    transform: rotate(90deg);
+}
+
+.im-c-move-control__directions .im-c-map-button--pan-right svg {
+    transform: rotate(-90deg);
+}
+
+.im-c-move-control__zoom {
+    display: flex;
+    flex-direction: row;
+}

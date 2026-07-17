@@ -1,4 +1,5 @@
 import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
+import { MoveControl } from '../App/components/MoveControl/MoveControl.jsx'
 
 const keyboardBasePanelSlots = {
   slot: 'middle',
@@ -89,6 +90,21 @@ export const defaultAppConfig = {
     mobile: buttonSlots,
     tablet: buttonSlots,
     desktop: buttonSlots
+  }, {
+    id: 'moveControl',
+    label: 'Pan and zoom controls',
+    iconId: 'move',
+    keepFocus: true,
+    isExpanded: false,
+    ariaControls: ({ appConfig }) => `${appConfig.id}-move-control`,
+    onClick: (_e, { appState }) => appState.dispatch({
+      type: 'TOGGLE_BUTTON_EXPANDED',
+      payload: { id: 'moveControl', isExpanded: !appState.expandedButtons.has('moveControl') }
+    }),
+    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
+    mobile: buttonSlots,
+    tablet: buttonSlots,
+    desktop: buttonSlots
   }],
 
   panels: [{
@@ -108,6 +124,22 @@ export const defaultAppConfig = {
     render: (props) => <KeyboardHelp context={props?.context} />
   }],
 
+  controls: [{
+    id: 'moveControl',
+    label: 'Pan and zoom controls',
+    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
+    mobile: {
+      slot: 'right-bottom'
+    },
+    tablet: {
+      slot: 'right-top'
+    },
+    desktop: {
+      slot: 'right-top'
+    },
+    render: MoveControl
+  }],
+
   icons: [{
     id: 'maximise',
     svgContent: '<path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/>'
@@ -123,6 +155,9 @@ export const defaultAppConfig = {
   }, {
     id: 'chevron',
     svgContent: '<path d="m6 9 6 6 6-6"/>'
+  }, {
+    id: 'move',
+    svgContent: '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>'
   }]
 }
 

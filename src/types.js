@@ -685,6 +685,11 @@
  * @property {boolean} [enableFullscreen=false]
  * Whether a toggle fullscreen button is displayed.
  *
+ * @property {boolean} [enableMoveControl=true]
+ * Whether the move control is displayed — a button that reveals directional pan,
+ * zoom, and step-size buttons, providing a non-dragging alternative to panning
+ * and zooming the map (WCAG 2.5.7).
+ *
  * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed.
  *

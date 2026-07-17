@@ -25,6 +25,7 @@ describe('actionsMap full coverage', () => {
       openPanels: { panel1: { props: {} } },
       previousOpenPanels: {},
       hasExclusiveControl: false,
+      nudgeStepSize: 'small',
       safeZoneInset: { top: 0, bottom: 0 },
       isLayoutReady: false,
       syncMapPadding: true,
@@ -136,6 +137,17 @@ describe('actionsMap full coverage', () => {
   test('TOGGLE_HAS_EXCLUSIVE_CONTROL sets flag', () => {
     const result = actionsMap.TOGGLE_HAS_EXCLUSIVE_CONTROL(state, true)
     expect(result.hasExclusiveControl).toBe(true)
+  })
+
+  test('TOGGLE_NUDGE_STEP flips small to large', () => {
+    const result = actionsMap.TOGGLE_NUDGE_STEP(state)
+    expect(result.nudgeStepSize).toBe('large')
+  })
+
+  test('TOGGLE_NUDGE_STEP flips large to small', () => {
+    const s = { ...state, nudgeStepSize: 'large' }
+    const result = actionsMap.TOGGLE_NUDGE_STEP(s)
+    expect(result.nudgeStepSize).toBe('small')
   })
 
   test('PLUGINS_EVALUATED is no-op when arePluginsEvaluated already true', () => {

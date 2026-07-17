@@ -23,6 +23,7 @@ export const allowedSlots = Object.freeze({
     layoutSlots.TOP_LEFT,
     layoutSlots.TOP_RIGHT,
     layoutSlots.MIDDLE,
+    layoutSlots.RIGHT_TOP,
     layoutSlots.RIGHT_BOTTOM,
     layoutSlots.BOTTOM_RIGHT,
     layoutSlots.DRAWER,

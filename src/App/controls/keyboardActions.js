@@ -1,5 +1,6 @@
 import { reverseGeocode, hasReverseGeocode } from '../../services/reverseGeocode.js'
 import { logger } from '../../services/logger.js'
+import { resolveStepAmount } from '../../utils/resolveNudgeStep.js'
 
 export const createKeyboardActions = (mapProvider, announce, {
   containerRef,
@@ -10,8 +11,9 @@ export const createKeyboardActions = (mapProvider, announce, {
   nudgeZoomDelta,
   readMapText
 }) => {
-  const getPan = (shift) => (shift ? nudgePanDelta : panDelta)
-  const getZoom = (shift) => (shift ? nudgeZoomDelta : zoomDelta)
+  // Shift held selects the fine nudge amount (the smaller value), not a "large step".
+  const getPan = (shift) => resolveStepAmount(!shift, nudgePanDelta, panDelta)
+  const getZoom = (shift) => resolveStepAmount(!shift, nudgeZoomDelta, zoomDelta)
 
   return {
     showKeyboardControls: (e) => {

@@ -19,6 +19,7 @@ describe('defaultAppConfig', () => {
   const journeyContinueBtn = buttons.find(b => b.id === 'journeyContinue')
   const zoomInBtn = buttons.find(b => b.id === 'zoomIn')
   const zoomOutBtn = buttons.find(b => b.id === 'zoomOut')
+  const moveControlBtn = buttons.find(b => b.id === 'moveControl')
 
   // --- UI RENDER TESTS ---
   it('renders KeyboardHelp panel', () => {
@@ -173,6 +174,40 @@ describe('defaultAppConfig', () => {
 
     zoomOutBtn.onClick({}, { mapProvider: mapProviderMock, appConfig: appConfigMock })
     expect(mapProviderMock.zoomOut).toHaveBeenCalledWith(2)
+  })
+
+  // --- MOVE CONTROL TOGGLE BUTTON ---
+  it('covers all branches of moveControl excludeWhen', () => {
+    expect(moveControlBtn.excludeWhen({ appConfig: { enableMoveControl: false } })).toBe(true)
+    expect(moveControlBtn.excludeWhen({ appConfig: { enableMoveControl: true } })).toBe(false)
+  })
+
+  it('moveControl ariaControls resolves the control element id', () => {
+    expect(moveControlBtn.ariaControls({ appConfig: { id: 'im' } })).toBe('im-move-control')
+  })
+
+  it('moveControl onClick toggles TOGGLE_BUTTON_EXPANDED based on current state', () => {
+    const dispatch = jest.fn()
+
+    moveControlBtn.onClick({}, { appState: { dispatch, expandedButtons: new Set() } })
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'TOGGLE_BUTTON_EXPANDED',
+      payload: { id: 'moveControl', isExpanded: true }
+    })
+
+    dispatch.mockClear()
+    moveControlBtn.onClick({}, { appState: { dispatch, expandedButtons: new Set(['moveControl']) } })
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'TOGGLE_BUTTON_EXPANDED',
+      payload: { id: 'moveControl', isExpanded: false }
+    })
+  })
+
+  // --- MOVE CONTROL ---
+  it('covers all branches of moveControl control excludeWhen', () => {
+    const control = defaultAppConfig.controls.find(c => c.id === 'moveControl')
+    expect(control.excludeWhen({ appConfig: { enableMoveControl: false } })).toBe(true)
+    expect(control.excludeWhen({ appConfig: { enableMoveControl: true } })).toBe(false)
   })
 
   // --- SUPPLEMENTARY CONFIGS ---

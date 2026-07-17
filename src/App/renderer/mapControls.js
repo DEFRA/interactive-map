@@ -12,7 +12,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
   const { breakpoint, mode, pluginRegistry, controlConfig } = appState
 
   return Object.values(controlConfig)
-    .filter(control => {
+    .filter(control => { // NOSONAR, extracting to a helper wouldn't necessarily improve readability
       // Consumer HTML controls are managed by HtmlElementHost
       if (isConsumerHtml(control)) {
         return false
@@ -20,6 +20,11 @@ export function mapControls ({ slot, appState, evaluateProp }) {
 
       const bpConfig = control[breakpoint]
       if (!bpConfig) {
+        return false
+      }
+
+      // Dynamic exclusion
+      if (typeof control.excludeWhen === 'function' && evaluateProp(control.excludeWhen, control.pluginId)) {
         return false
       }
 

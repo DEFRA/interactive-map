@@ -45,6 +45,7 @@ export const initialState = (config) => {
     pressedButtons: new Set(),
     expandedButtons: new Set(),
     hasExclusiveControl: false,
+    nudgeStepSize: 'small',
     openPanels,
     previousOpenPanels: {},
     listboxIsActive: false,

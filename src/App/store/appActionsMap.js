@@ -152,6 +152,13 @@ const toggleHasExclusiveControl = (state, payload) => {
   }
 }
 
+const toggleNudgeStep = (state) => {
+  return {
+    ...state,
+    nudgeStepSize: state.nudgeStepSize === 'small' ? 'large' : 'small'
+  }
+}
+
 const setPluginsEvaluated = (state) =>
   state.arePluginsEvaluated ? state : { ...state, arePluginsEvaluated: true }
 
@@ -385,6 +392,7 @@ export const actionsMap = {
   RESTORE_PREVIOUS_PANELS: restorePreviousPanels,
   TOGGLE_APP_VISIBLE: toggleAppVisible,
   TOGGLE_HAS_EXCLUSIVE_CONTROL: toggleHasExclusiveControl,
+  TOGGLE_NUDGE_STEP: toggleNudgeStep,
   TOGGLE_BUTTON_DISABLED: toggleButtonDisabled,
   TOGGLE_BUTTON_HIDDEN: toggleButtonHidden,
   TOGGLE_BUTTON_PRESSED: toggleButtonPressed,

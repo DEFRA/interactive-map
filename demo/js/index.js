@@ -282,9 +282,10 @@ const interactiveMap = new InteractiveMap('map', {
   bounds: [-2.450804, 54.5599279, -2.403804, 54.6199279],
   containerHeight: '650px',
   transformRequest: transformVtsRequest3857,
+  enableZoomControls: false,
   // readMapText: true,
   // urlPosition: 'none',
-  // enableFullscreen: true,
+  enableFullscreen: true,
   // hasExitButton: true,
   // markers: [{
   //   id: 'location',
