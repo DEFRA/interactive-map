@@ -1,17 +1,19 @@
 import { useEffect, useRef, useState } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
 
-const CENTER = [-0.1276, 51.5074]
-const ZOOM = 12
+const CENTER = [-2.9631008, 54.432306]
+const ZOOM = 15
 
 const MAP_STYLE = {
-  url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
-  attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
+  url: OS_VTS_STYLE_URLS.outdoor,
+  attribution: OS_ATTRIBUTION,
   backgroundColor: '#f5f5f0'
 }
 
 function MapInner () {
   const initialised = useRef(false)
+  const transformRequest = useOsTransformRequest()
   const [mapReady, setMapReady] = useState(false)
   const [isInline, setIsInline] = useState(false)
   const [markerCoords, setMarkerCoords] = useState(null)
@@ -39,6 +41,7 @@ function MapInner () {
         behaviour: 'hybrid',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
+        transformRequest,
         center: CENTER,
         zoom: ZOOM,
         containerHeight: '516px',

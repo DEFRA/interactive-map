@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
-import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, OS_NAMES_URL, useOsTransformRequest, useOsGeocodeTransformRequest } from './osMapStyle.js'
 
 const MAP_STYLE = {
   url: OS_VTS_STYLE_URLS.outdoor,
@@ -8,12 +8,10 @@ const MAP_STYLE = {
   backgroundColor: '#f5f5f0'
 }
 
-const MARKER_COORDS = [-2.9631008, 54.432306]
-const MARKER_ID = 'my-marker'
-
 function MapInner () {
   const initialised = useRef(false)
   const transformRequest = useOsTransformRequest()
+  const geocodeTransformRequest = useOsGeocodeTransformRequest()
 
   useEffect(() => {
     if (initialised.current) {
@@ -24,45 +22,35 @@ function MapInner () {
     Promise.all([
       import('../src/index.js'),
       import('../providers/maplibre/src/index.js'),
-      import('../plugins/interact/src/index.js')
+      import('../plugins/search/src/index.js')
     ]).then(([
       { default: InteractiveMap },
       { default: maplibreProvider },
-      { default: createInteractPlugin }
+      { default: createSearchPlugin }
     ]) => {
-      const interactPlugin = createInteractPlugin({
-        deselectOnClickOutside: true
+      const searchPlugin = createSearchPlugin({
+        osNamesURL: OS_NAMES_URL,
+        transformRequest: geocodeTransformRequest,
+        width: '300px'
       })
 
-      const map = new InteractiveMap('demo-map-toggle-marker-label', {
+      new InteractiveMap('demo-map-search', {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
         transformRequest,
-        center: MARKER_COORDS,
-        zoom: 15,
+        center: [-2.9631008, 54.432306],
+        zoom: 6,
         containerHeight: '516px',
-        plugins: [interactPlugin]
-      })
-
-      map.on('map:ready', () => {
-        map.addMarker(MARKER_ID, MARKER_COORDS, {
-          label: 'My location',
-          showLabel: false
-        })
-        interactPlugin.enable()
-      })
-
-      map.on('interact:selectionchange', ({ selectedMarkers }) => {
-        map.updateMarker(MARKER_ID, { showLabel: selectedMarkers.includes(MARKER_ID) })
+        plugins: [searchPlugin]
       })
     })
   }, [])
 
-  return <div id='demo-map-toggle-marker-label' className='app-no-prose app-example'></div>
+  return <div id='demo-map-search' className='app-no-prose app-example'></div>
 }
 
-export default function DemoMapToggleMarkerLabel () {
+export default function DemoMapSearch () {
   return (
     <BrowserOnly
       fallback={<div className='govuk-inset-text'>The map requires JavaScript to be enabled.</div>}

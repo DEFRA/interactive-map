@@ -46,6 +46,8 @@ jobs:
 
       - name: Build Docusaurus + LikeC4
         run: npm run docs:build:all
+        env:
+          OS_API_KEY: ${{ secrets.OS_API_KEY }}
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

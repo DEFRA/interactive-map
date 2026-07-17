@@ -1,53 +1,44 @@
 import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
-import outdoorThumb from '../docs/assets/images/outdoor-ozs-map-thumb.jpg'
-import nightThumb from '../docs/assets/images/night-ozs-map-thumb.jpg'
-import deuteranopiaThumb from '../docs/assets/images/deuteranopia-ozs-map-thumb.jpg'
-import tritanopiaThumb from '../docs/assets/images/tritanopia-ozs-map-thumb.jpg'
-
-const ATTRIBUTION = `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`
+import outdoorThumb from '../docs/assets/images/outdoor-map-thumb.jpg'
+import darkThumb from '../docs/assets/images/dark-map-thumb.jpg'
+import blackWhiteThumb from '../docs/assets/images/black-and-white-map-thumb.jpg'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
 
 const MAP_STYLES = [
   {
     id: 'outdoor',
     label: 'Outdoor',
-    url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
+    url: OS_VTS_STYLE_URLS.outdoor,
     thumbnail: outdoorThumb,
-    attribution: ATTRIBUTION,
+    attribution: OS_ATTRIBUTION,
     backgroundColor: '#f5f5f0'
   },
   {
-    id: 'night',
-    label: 'Night',
-    url: 'https://labs.os.uk/tiles/styles/open-zoomstack-night/style.json',
-    thumbnail: nightThumb,
-    attribution: ATTRIBUTION,
+    id: 'dark',
+    label: 'Dark',
+    url: OS_VTS_STYLE_URLS.dark,
+    thumbnail: darkThumb,
+    attribution: OS_ATTRIBUTION,
     mapColorScheme: 'dark',
     appColorScheme: 'dark'
   },
   {
-    id: 'deuteranopia',
-    label: 'Deuteranopia',
-    url: 'https://labs.os.uk/tiles/styles/open-zoomstack-deuteranopia/style.json',
-    thumbnail: deuteranopiaThumb,
-    attribution: ATTRIBUTION,
-    backgroundColor: '#f5f5f0'
-  },
-  {
-    id: 'tritanopia',
-    label: 'Tritanopia',
-    url: 'https://labs.os.uk/tiles/styles/open-zoomstack-tritanopia/style.json',
-    thumbnail: tritanopiaThumb,
-    attribution: ATTRIBUTION,
+    id: 'blackWhite',
+    label: 'Black/White',
+    url: OS_VTS_STYLE_URLS.blackWhite,
+    thumbnail: blackWhiteThumb,
+    attribution: OS_ATTRIBUTION,
     backgroundColor: '#f5f5f0'
   }
 ]
 
 function MapInner () {
   const initialised = useRef(false)
+  const transformRequest = useOsTransformRequest()
 
   useEffect(() => {
-    if (initialised.current) return
+    if (initialised.current) { return }
     initialised.current = true
 
     Promise.all([
@@ -69,9 +60,9 @@ function MapInner () {
       new InteractiveMap('demo-map-style-switcher', {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
-        mapStyle: MAP_STYLES[0],
-        center: [-0.1276, 51.5074],
-        zoom: 12,
+        transformRequest,
+        center: [-2.9631008, 54.432306],
+        zoom: 15,
         containerHeight: '516px',
         plugins: [mapStylesPlugin]
       })
