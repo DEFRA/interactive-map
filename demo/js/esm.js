@@ -333,13 +333,6 @@ const interactiveMap = new InteractiveMap('map', {
     backgroundColor: '#f5f5f0'
   },
   plugins: [
-    datasetsPlugin,
-    mapStylesPlugin({
-      mapStyles: vtsMapStyles3857
-    }),
-    scaleBarPlugin({
-      units: 'metric'
-    }),
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       osNamesURL: process.env.OS_NAMES_URL,
@@ -347,6 +340,13 @@ const interactiveMap = new InteractiveMap('map', {
       width: '300px',
       showMarker: true
       // expanded: true
+    }),
+    datasetsPlugin,
+    mapStylesPlugin({
+      mapStyles: vtsMapStyles3857
+    }),
+    scaleBarPlugin({
+      units: 'metric'
     }),
     interactPlugin,
     framePlugin

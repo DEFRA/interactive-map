@@ -5,14 +5,6 @@ import { attachEvents } from './events/index.js'
 import { createDatasets } from './datasets.js'
 
 // Mock sub-components
-jest.mock('./components/OpenButton/OpenButton', () => ({
-  OpenButton: ({ id, isExpanded, onClick }) => (
-    <button data-testid='open-button' onClick={onClick}>
-      OpenButton-{id}-{isExpanded ? 'expanded' : 'collapsed'}
-    </button>
-  )
-}))
-
 jest.mock('./components/CloseButton/CloseButton', () => ({
   CloseButton: ({ defaultExpanded, onClick }) => (
     <button data-testid='close-button' onClick={onClick}>
@@ -40,7 +32,6 @@ jest.mock('./datasets.js', () => ({
 
 jest.mock('./events/index.js', () => ({
   attachEvents: jest.fn(() => ({
-    handleOpenClick: jest.fn(),
     handleCloseClick: jest.fn(),
     handleOutside: jest.fn()
   }))
@@ -85,18 +76,36 @@ describe('Search component', () => {
     cleanup()
   })
 
-  it('renders OpenButton when expanded is false', () => {
+  // The open trigger is no longer part of this control — it is a standard MapButton
+  // declared in the manifest (see manifest.test.js). The control renders the form only.
+  it('renders the form and close button when collapsed', () => {
     render(<Search {...props} />)
-    expect(screen.getByTestId('open-button')).toBeInTheDocument()
     expect(screen.getByTestId('form')).toBeInTheDocument()
     expect(screen.getByTestId('close-button')).toBeInTheDocument()
   })
 
-  it('does not render OpenButton when expanded is true', () => {
+  it('renders the form regardless of default-expanded mode', () => {
     props.pluginConfig.expanded = true
     render(<Search {...props} />)
-    expect(screen.queryByTestId('open-button')).not.toBeInTheDocument()
+    expect(screen.getByTestId('form')).toBeInTheDocument()
     expect(screen.getByTestId('close-button')).toBeInTheDocument()
+  })
+
+  it('marks the wrapper collapsed so it takes no layout space when the form is hidden', () => {
+    const { container } = render(<Search {...props} />)
+    expect(container.querySelector('.im-c-search')).toHaveClass('im-c-search--collapsed')
+  })
+
+  it('does not collapse the wrapper when expanded', () => {
+    props.pluginState.isExpanded = true
+    const { container } = render(<Search {...props} />)
+    expect(container.querySelector('.im-c-search')).not.toHaveClass('im-c-search--collapsed')
+  })
+
+  it('does not collapse the wrapper in default-expanded mode', () => {
+    props.pluginConfig.expanded = true
+    const { container } = render(<Search {...props} />)
+    expect(container.querySelector('.im-c-search')).not.toHaveClass('im-c-search--collapsed')
   })
 
   it('calls attachEvents once and persists it across re-renders (useRef coverage)', () => {
@@ -115,23 +124,9 @@ describe('Search component', () => {
     expect(attachEvents).toHaveBeenCalledTimes(1)
   })
 
-  it('OpenButton click triggers handleOpenClick', () => {
-    render(<Search {...props} />)
-    const events = attachEvents.mock.results[0].value
-    fireEvent.click(screen.getByTestId('open-button'))
-    expect(events.handleOpenClick).toHaveBeenCalledTimes(1)
-  })
-
   it('renders SubmitButton when expanded is false', () => {
     render(<Search {...props} />)
     expect(screen.getByTestId('submit-button')).toBeInTheDocument()
-  })
-
-  it('SubmitButton click triggers handleCloseClick', () => {
-    render(<Search {...props} />)
-    const events = attachEvents.mock.results[0].value
-    fireEvent.click(screen.getByTestId('submit-button'))
-    expect(events.handleCloseClick).toHaveBeenCalledTimes(1)
   })
 
   it('CloseButton click triggers handleCloseClick', () => {
@@ -139,14 +134,6 @@ describe('Search component', () => {
     const events = attachEvents.mock.results[0].value
     fireEvent.click(screen.getByTestId('close-button'))
     expect(events.handleCloseClick).toHaveBeenCalledTimes(1)
-  })
-
-  it('focuses input when pluginState.isExpanded is true', () => {
-    // We have to mock the implementation because inputRef is internal
-    // This is a bit of a workaround for testing internal refs
-    props.pluginState.isExpanded = true
-    render(<Search {...props} />)
-    expect(screen.getByTestId('form')).toBeInTheDocument()
   })
 
   describe('searchOpen logic (Line 46 coverage)', () => {

@@ -1,7 +1,13 @@
 .im-c-search-submit-button {
+  // Needed so the z-index below is effective (z-index only applies to positioned
+  // elements). Without it the keyboard focus ring renders behind the input
+  // container's border and is hidden — matching the close button's own treatment.
+  position: relative;
+
   &:before {
     box-shadow: none;
   }
+
   &[data-focus-visible="true"] {
     z-index: 1;
   }

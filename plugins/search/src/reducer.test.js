@@ -72,6 +72,19 @@ describe('search state actions', () => {
     expect(newState.hasFetchedSuggestions).toBe(false)
   })
 
+  it('Escape sequence (SET_KEYBOARD_FOCUS_WITHIN then HIDE_SUGGESTIONS then SET_SELECTED) restores the ring without reopening the list', () => {
+    // Reproduces suggestionHandlers.js's Escape dispatch order: the ring must come back
+    // while HIDE_SUGGESTIONS/SET_SELECTED still win on areSuggestionsVisible
+    let state = { ...initialState, areSuggestionsVisible: true, hasKeyboardFocusWithin: false, selectedIndex: 0 }
+    state = actions.SET_KEYBOARD_FOCUS_WITHIN(state, true)
+    state = actions.HIDE_SUGGESTIONS(state)
+    state = actions.SET_SELECTED(state, -1)
+
+    expect(state.hasKeyboardFocusWithin).toBe(true)
+    expect(state.areSuggestionsVisible).toBe(false)
+    expect(state.selectedIndex).toBe(-1)
+  })
+
   it('SET_SELECTED updates selectedIndex and visibility', () => {
     const state = { ...initialState, areSuggestionsVisible: false }
 

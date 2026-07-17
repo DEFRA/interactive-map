@@ -36,17 +36,17 @@ const interactiveMap = new InteractiveMap('map', {
   maxZoom: 20,
   containerHeight: '650px',
   plugins: [
-    mapStylesPlugin({
-      mapStyles: [...vtsMapStyles27700, apgbAerialStyle]
-    }),
-    scaleBarPlugin({
-      units: 'metric'
-    }),
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       osNamesURL: process.env.OS_NAMES_URL,
       width: '300px',
       showMarker: true
+    }),
+    mapStylesPlugin({
+      mapStyles: [...vtsMapStyles27700, apgbAerialStyle]
+    }),
+    scaleBarPlugin({
+      units: 'metric'
     }),
     interactPlugin
   ]
