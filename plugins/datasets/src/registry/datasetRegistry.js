@@ -83,6 +83,9 @@ const datasetRegistry = {
     }, { patternConfigs: [], symbolConfigs: [] })
   },
 
+  invalidateKeyItems () {
+    this._lastKeyItemsDatasets = null
+  },
   _lastKeyItems: {},
   keyItems () {
     if (this.datasets === this._lastKeyItemsDatasets) {
@@ -93,11 +96,11 @@ const datasetRegistry = {
     const seenGroups = new Set()
     let hasGroups = false
     this.forEachDataset((dataset) => {
-      if (!(dataset.showInKey && dataset.visible)) {
+      if (!(dataset.showInKey && dataset.keyVisibility)) {
         return
       }
       if (dataset.hasSublayers) {
-        const sublayers = dataset.sublayers.filter(sublayer => sublayer.visible)
+        const sublayers = dataset.sublayers.filter(sublayer => sublayer.keyVisibility)
         if (sublayers.length) {
           hasGroups = true
           items.push({ type: 'sublayers', dataset, sublayers })

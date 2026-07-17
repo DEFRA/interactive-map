@@ -78,7 +78,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     } catch (error) {
       logger.error(`Error adding FeatureLayer for dataset ${registryDataset.id}:`, error)
     }
-    return Promise.resolve() // Return a resolved promise to avoid unhandled promise rejection
+    return null
   }
 
   async _addLayers (registryDataset) {

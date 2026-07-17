@@ -105,6 +105,10 @@ export class Dataset {
     return visible ? 'visible' : 'none'
   }
 
+  get keyVisibility () {
+    return this.visibility === 'visible' && this.showInKey
+  }
+
   get symbolAnchor () {
     if (this.style?.symbolAnchor) {
       return this.style.symbolAnchor
