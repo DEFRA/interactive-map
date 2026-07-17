@@ -52,45 +52,52 @@ export const MoveControl = () => {
     !isOpen && 'im-c-move-control--collapsed'
   ].filter(Boolean).join(' ')
 
+  const directionsGroup = (
+    <div key='directions' role='group' aria-label='Direction controls' className='im-c-move-control__directions'>{/* NOSONAR - div with role="group" is correct for a button group */}
+      {DIRECTIONS.map(({ id, verb, dx, dy }) => (
+        <MapButton
+          key={id}
+          buttonId={id}
+          label={`${actionWord} ${verb}`}
+          iconId='chevron'
+          onClick={() => handlePan(dx, dy, verb)}
+        />
+      ))}
+
+      {/* Stable accessible name regardless of state (WAI-ARIA toggle-button pattern) —
+          aria-pressed alone conveys state to assistive tech. The (On)/(Off) suffix is
+          aria-hidden so it's excluded from the computed name (avoiding a duplicate
+          announcement alongside aria-pressed) but still visible in the tooltip for
+          sighted users. */}
+      <MapButton
+        buttonId='nudgeStepToggle'
+        label={<>Nudge mode <span aria-hidden='true'>({isLargeStep ? 'Off' : 'On'})</span></>}
+        iconId='precision'
+        isPressed={!isLargeStep}
+        onClick={handleToggleStep}
+      />
+    </div>
+  )
+
+  const zoomGroup = (
+    <div key='zoom' role='group' aria-label='Zoom controls' className='im-c-move-control__zoom'>{/* NOSONAR - div with role="group" is correct for a button group */}
+      {ZOOM_ACTIONS.map(({ id, label, announceLabel, method }) => (
+        <MapButton
+          key={id}
+          buttonId={id}
+          label={label}
+          iconId={method === 'zoomIn' ? 'plus' : 'minus'}
+          isDisabled={method === 'zoomIn' ? isAtMaxZoom : isAtMinZoom}
+          onClick={() => handleZoom(method, announceLabel)}
+        />
+      ))}
+    </div>
+  )
+
   return (
     <div id={`${appId}-move-control`} className={containerClassName}>
-      <div role='group' aria-label='Direction controls' className='im-c-move-control__directions'>{/* NOSONAR - div with role="group" is correct for a button group */}
-        {DIRECTIONS.map(({ id, verb, dx, dy }) => (
-          <MapButton
-            key={id}
-            buttonId={id}
-            label={`${actionWord} ${verb}`}
-            iconId='chevron'
-            onClick={() => handlePan(dx, dy, verb)}
-          />
-        ))}
-
-        {/* Stable accessible name regardless of state (WAI-ARIA toggle-button pattern) —
-            aria-pressed alone conveys state to assistive tech. The (On)/(Off) suffix is
-            aria-hidden so it's excluded from the computed name (avoiding a duplicate
-            announcement alongside aria-pressed) but still visible in the tooltip for
-            sighted users. */}
-        <MapButton
-          buttonId='nudgeStepToggle'
-          label={<>Nudge mode <span aria-hidden='true'>({isLargeStep ? 'Off' : 'On'})</span></>}
-          iconId='turtle'
-          isPressed={!isLargeStep}
-          onClick={handleToggleStep}
-        />
-      </div>
-
-      <div role='group' aria-label='Zoom controls' className='im-c-move-control__zoom'>{/* NOSONAR - div with role="group" is correct for a button group */}
-        {ZOOM_ACTIONS.map(({ id, label, announceLabel, method }) => (
-          <MapButton
-            key={id}
-            buttonId={id}
-            label={label}
-            iconId={method === 'zoomIn' ? 'plus' : 'minus'}
-            isDisabled={method === 'zoomIn' ? isAtMaxZoom : isAtMinZoom}
-            onClick={() => handleZoom(method, announceLabel)}
-          />
-        ))}
-      </div>
+      {directionsGroup}
+      {zoomGroup}
     </div>
   )
 }

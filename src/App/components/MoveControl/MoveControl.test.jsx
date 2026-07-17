@@ -21,6 +21,7 @@ describe('MoveControl', () => {
   const buildAppState = (overrides) => ({
     buttonRefs: { current: {} },
     interfaceType: 'mouse',
+    breakpoint: 'desktop',
     dispatch,
     expandedButtons: new Set(['moveControl']),
     nudgeStepSize: 'large',
@@ -55,6 +56,17 @@ describe('MoveControl', () => {
   it('is not visually collapsed when moveControl is expanded', () => {
     const { container } = render(<MoveControl />)
     expect(container.querySelector('.im-c-move-control--collapsed')).not.toBeInTheDocument()
+  })
+
+  it('renders the directions group before the zoom group at every breakpoint', () => {
+    ['mobile', 'tablet', 'desktop'].forEach(breakpoint => {
+      useApp.mockReturnValue(buildAppState({ breakpoint }))
+      const { container, unmount } = render(<MoveControl />)
+      const groups = container.querySelectorAll('[role="group"]')
+      expect(groups[0]).toHaveAttribute('aria-label', 'Direction controls')
+      expect(groups[1]).toHaveAttribute('aria-label', 'Zoom controls')
+      unmount()
+    })
   })
 
   it('is collapsed when moveControl is not expanded', () => {
