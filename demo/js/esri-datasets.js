@@ -145,117 +145,65 @@ const datasetFloodZones = {
   ]
 }
 
-const surfaceWaterDataset = {
-  id: 'surfacewater',
-  label: 'Surface Water',
-  groupLabel: 'Datasets',
-  tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Surface_Water_Spatial_Planning_1_in_1000_Depths_NON_PRODUCTION/VectorTileServer`,
-  showInKey: true,
-  sourceLayer: 'Surface Water Spatial Planning 1 in 1000 Depths',
-  style: {
-    fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-  },
-  visibleWhen: {
-    menu: {
-      dataset: ['surfacewater'],
-      timeframe: ['presentday'],
-      aep: ['low'],
-    }
-  },
-  sublayers: [
-    {
-      id: 'depthOver2300',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/>2300mm/1',
-      showInKey: false,
-      visibleWhen: {
-        menu: {
-          dataset: ['surfacewater'],
-          timeframe: ['presentday'],
-          aep: ['low'],
-          depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300', 'depthOver2300']
-        }
-      }
-    },
-    {
-      id: 'depth2300',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/1200-2300mm/1',
-      showInKey: false,
-      visibleWhen: {
-        menu: {
-          dataset: ['surfacewater'],
-          timeframe: ['presentday'],
-          aep: ['low'],
-          depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300']
-        }
-      }
-    },
-    {
-      id: 'depth1200',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/900-1200mm/1',
-      showInKey: false,
-      visibleWhen: {
-        menu: {
-          dataset: ['surfacewater'],
-          timeframe: ['presentday'],
-          aep: ['low'],
-          depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200']
-        }
-      }
-    },
-    {
-      id: 'depth900',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/600-900mm/1',
-      showInKey: false,
-      visibleWhen: {
-        menu: {
-          dataset: ['surfacewater'],
-          timeframe: ['presentday'],
-          aep: ['low'],
-          depth: ['depth150', 'depth300', 'depth600', 'depth900']
-        }
-      }
-    },
-    {
-      id: 'depth600',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/300-600mm/1',
-      showInKey: false,
-      visibleWhen: {
-        menu: {
-          dataset: ['surfacewater'],
-          timeframe: ['presentday'],
-          aep: ['low'],
-          depth: ['depth150', 'depth300', 'depth600']
-        }
-      }
-    },
-    {
-      id: 'depth300',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/150-300mm/1',
-      showInKey: false,
-      visibleWhen: {
-        menu: {
-          dataset: ['surfacewater'],
-          timeframe: ['presentday'],
-          aep: ['low'],
-          depth: ['depth150', 'depth300']
-        }
-      }
-    },
-    {
-      id: 'depth150',
-      esriStyleLayerId: 'Surface Water Spatial Planning 1 in 1000 Depths/<150mm/1',
-      showInKey: false,
-      visibleWhen: {
-        menu: {
-          dataset: ['surfacewater'],
-          timeframe: ['presentday'],
-          aep: ['low'],
-          depth: ['depth150']
-        }
-      }
-    },
-  ]
+const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep}) => {
+  const visibleWhenMenu = { dataset: ['surfacewater'], timeframe, aep }
+  const extentsDataset = {
+    id,
+    label: 'Surface Water',
+    groupLabel: 'Datasets',
+    tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
+    showInKey: true,
+    sourceLayer,
+    style: { fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, },
+    visibleWhen: { menu: visibleWhenMenu },
+    sublayers: [
+      {
+        id: 'depthOver2300',
+        esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
+        showInKey: false,
+        visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300', 'depthOver2300'] } },
+      },
+      {
+        id: 'depth2300',
+        esriStyleLayerId: `${sourceLayer}/1200-2300mm/1`,
+        showInKey: false,
+        visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300'] } },
+      },
+      {
+        id: 'depth1200',
+        esriStyleLayerId: `${sourceLayer}/900-1200mm/1`,
+        showInKey: false,
+        visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200'] } },
+      },
+      {
+        id: 'depth900',
+        esriStyleLayerId: `${sourceLayer}/600-900mm/1`,
+        showInKey: false,
+        visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900'] } },
+      },
+      {
+        id: 'depth600',
+        esriStyleLayerId: `${sourceLayer}/300-600mm/1`,
+        showInKey: false,
+        visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600'] } },
+      },
+      {
+        id: 'depth300',
+        esriStyleLayerId: `${sourceLayer}/150-300mm/1`,
+        showInKey: false,
+        visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300'] } },
+      },
+      {
+        id: 'depth150',
+        esriStyleLayerId: `${sourceLayer}/<150mm/1`,
+        showInKey: false,
+        visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150'] } },
+      },
+    ]
+  }
+  return [extentsDataset]
 }
+
 
 const surfaceWaterDepthAllDataset = {
   id: 'surfacewaterDepthAll',
@@ -465,7 +413,14 @@ const datasetFloodDefences = {
 
 const datasets = [
   datasetFloodZonesCC, datasetFloodZones,
-  surfaceWaterDataset, surfaceWaterDepthAllDataset, surfaceWaterExtentsKey,
+  ...surfaceWaterDatasetGenerator({
+    id: 'surfacewater-present-day-low',
+    tileName: 'Surface_Water_Spatial_Planning_1_in_1000_Depths_NON_PRODUCTION', 
+    sourceLayer: 'Surface Water Spatial Planning 1 in 1000 Depths', 
+    timeframe: ['presentday'],
+    aep: ['low'],
+  })
+  , surfaceWaterDepthAllDataset, surfaceWaterExtentsKey,
   datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
 
