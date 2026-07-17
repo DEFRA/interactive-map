@@ -45,7 +45,6 @@ const datasetFloodZonesCC =   {
   esriGroupId: 'floodzones-group',
   tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_CCP1_NON_PRODUCTION/VectorTileServer`,
   showInKey: true,
-  showInMenu: true,
   visible: true,
   sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea CCP1',
   sublayers: [
@@ -54,7 +53,6 @@ const datasetFloodZonesCC =   {
       label: 'Climate change (2070 to 2125)',
       esriStyleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Flood Zones plus climate change/1',
       showInKey: true,
-      showInMenu: false,
       visibleWhen: {
         menu: {
           dataset: ['floodzones'], timeframe: ['climatechange']
@@ -69,7 +67,6 @@ const datasetFloodZonesCC =   {
       id: 'data-unavailable',
       label: 'Climate change data unavailable',
       showInKey: true,
-      showInMenu: false,
       visibleWhen: {
         menu: {
           dataset: ['floodzones'], timeframe: ['climatechange']
@@ -84,7 +81,6 @@ const datasetFloodZonesCC =   {
     {
       id: 'data-unavailable-outline',
       showInKey: false,
-      showInMenu: false,
       visibleWhen: {
         menu: { dataset: ['floodzones'], timeframe: ['climatechange'] }
       },
@@ -102,7 +98,6 @@ const datasetFloodZonesCC =   {
       esriStyleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/1',
       esriUseServerStyle: true,
       showInKey: false,
-      showInMenu: false,
     },
     {
       id: 'data-unavailable-dark',
@@ -113,7 +108,6 @@ const datasetFloodZonesCC =   {
       esriStyleLayerId: 'Flood Zones 2 and 3 Rivers and Sea CCP1/Unavailable/2',
       esriUseServerStyle: true,
       showInKey: false,
-      showInMenu: false,
     }
   ]
 }
@@ -125,7 +119,6 @@ const datasetFloodZones = {
   esriGroupId: 'floodzones-group',
   tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_NON_PRODUCTION/VectorTileServer`,
   showInKey: true,
-  // showInMenu: true,
   sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea',
   visibleWhen: {
     menu: { dataset: ['floodzones'] }
@@ -401,7 +394,6 @@ const datasetMainRivers = {
   type: 'FeatureService',
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Statutory_Main_River_Map/FeatureServer',
   showInKey: true,
-  showInMenu: true,
   sourceLayer: 'Statutory_Main_River_Map',
   visible: false,
   style: {
@@ -425,7 +417,6 @@ const datasetWaterStorageAreas = {
   type: 'FeatureService',
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Storage_Areas_NON_PRODUCTION/FeatureServer',
   showInKey: true,
-  showInMenu: true,
   sourceLayer: 'Flood_Storage_Areas',
   visible: false,
   style: {
@@ -456,7 +447,6 @@ const datasetFloodDefences = {
   type: 'FeatureService',
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Defences_NON_PRODUCTION/FeatureServer',
   showInKey: true,
-  showInMenu: true,
   sourceLayer: 'Defences',
   visible: false,
   style: {

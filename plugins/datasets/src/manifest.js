@@ -67,7 +67,7 @@ export const manifest = {
     label: 'Layers',
     panelId: 'datasetsLayers',
     iconId: 'layers',
-    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.some(l =>
+    excludeWhen: ({ pluginConfig }) => !pluginConfig.menu && !pluginConfig.datasets.some(l =>
       l.showInMenu || l.sublayers?.some(r => r.showInMenu)
     ),
     mobile: {
