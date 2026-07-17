@@ -123,6 +123,9 @@ const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu }) => {
  * @param {boolean} options.isPanelOpen - Whether the controlled panel is open
  * @param {boolean} options.isPopupOpen - Whether the popup menu is open
  * @param {Object|null} options.controlledElement - The element controlled by this button
+ * @param {string} [options.ariaControls] - Explicit id for aria-controls when the button controls
+ *   inline UI that is neither a panel nor a popup (e.g. a plugin-owned control). Ignored when
+ *   controlledElement is set, which takes precedence.
  * @param {string} options.href - URL for anchor element (if provided, renders as <a> instead of <button>)
  * @returns {Object} Props object suitable for button or anchor element
  */
@@ -140,6 +143,7 @@ const buildButtonProps = ({
   isPanelOpen,
   isPopupOpen,
   controlledElement,
+  ariaControls,
   href
 }) => {
   let ariaExpanded
@@ -163,7 +167,7 @@ const buildButtonProps = ({
     'aria-disabled': isDisabled || undefined,
     'aria-expanded': ariaExpanded,
     'aria-pressed': typeof isPressed === 'boolean' ? isPressed : undefined,
-    'aria-controls': controlledElement?.id,
+    'aria-controls': controlledElement?.id ?? ariaControls,
     'aria-haspopup': controlledElement?.type === 'popup' ? 'menu' : undefined,
     ...(href
       ? { href, target: '_blank', onKeyUp: handleKeyUp, role: 'button' }
@@ -193,6 +197,8 @@ const buildButtonProps = ({
  * @param {Array<Object>} [props.menuItems] - Array of items for popup menu
  * @param {string} [props.idPrefix=''] - Prefix for generated panel/popup IDs
  * @param {string} [props.href] - URL for anchor element; if provided, renders as <a> instead of <button>
+ * @param {string} [props.ariaControls] - Explicit aria-controls target id for buttons that toggle
+ *   inline UI which is neither a panel nor a popup (a panelId/menuItems always takes precedence).
  * @returns {JSX.Element} The rendered button component
  */
 export const MapButton = ({
@@ -211,7 +217,8 @@ export const MapButton = ({
   panelId,
   menuItems,
   idPrefix,
-  href
+  href,
+  ariaControls
 }) => {
   const { id: appId } = useConfig()
   const { buttonRefs } = useApp()
@@ -275,6 +282,7 @@ export const MapButton = ({
     isPanelOpen,
     isPopupOpen,
     controlledElement,
+    ariaControls,
     href
   })
 

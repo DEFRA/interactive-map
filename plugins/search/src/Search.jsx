@@ -1,6 +1,5 @@
 // src/plugins/search/Search.jsx
 import { useRef, useEffect } from 'react'
-import { OpenButton } from './components/OpenButton/OpenButton'
 import { Form } from './components/Form/Form'
 import { CloseButton } from './components/CloseButton/CloseButton'
 import { SubmitButton } from './components/SubmitButton/SubmitButton'
@@ -12,11 +11,9 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
   const { interfaceType } = appState
   const { expanded: defaultExpanded, customDatasets, osNamesURL, regions, maxSuggestions } = pluginConfig
   const { dispatch, isExpanded, areSuggestionsVisible, suggestions } = pluginState
-  const showLabel = appState?.controlConfig?.search?.[appState?.breakpoint].showLabel || false
   const closeIcon = iconRegistry.close
   const searchIcon = iconRegistry.search
   const searchContainerRef = useRef(null)
-  const buttonRef = useRef(null)
   const inputRef = useRef(null)
   const viewportRef = appState.layoutRefs.viewportRef
 
@@ -79,18 +76,16 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
     }
   }, [isExpanded, interfaceType, areSuggestionsVisible, suggestions])
 
+  // The form is only visible when expanded (or default-expanded). When collapsed the
+  // trigger button (a separate slot item) is what shows, so keep this wrapper out of
+  // layout — otherwise its empty box adds a stray flex gap in the slot column.
+  const isFormVisible = defaultExpanded || isExpanded
+
   return (
-    <div className='im-c-search' ref={searchContainerRef}>
-      {!defaultExpanded && (
-        <OpenButton
-          id={id}
-          isExpanded={isExpanded}
-          onClick={() => events.handleOpenClick(appState)}
-          buttonRef={buttonRef}
-          searchIcon={searchIcon}
-          showLabel={showLabel}
-        />
-      )}
+    <div
+      className={`im-c-search${isFormVisible ? '' : ' im-c-search--collapsed'}`}
+      ref={searchContainerRef}
+    >
       <Form
         id={id}
         pluginState={pluginState}
@@ -102,12 +97,11 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
       >
         <CloseButton
           defaultExpanded={defaultExpanded}
-          onClick={(e) => events.handleCloseClick(e, buttonRef, appState)}
+          onClick={(e) => events.handleCloseClick(e, appState)}
           closeIcon={closeIcon}
         />
         <SubmitButton
           defaultExpanded={defaultExpanded}
-          onClick={(e) => events.handleCloseClick(e, buttonRef, appState)}
           submitIcon={searchIcon}
         />
       </Form>

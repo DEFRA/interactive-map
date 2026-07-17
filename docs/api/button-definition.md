@@ -90,6 +90,19 @@ Associated panel identifier. When set, clicking the button toggles the panel ope
 
 ---
 
+### `ariaControls`
+**Type:** `string | function`
+
+Id of a custom control this button toggles, applied as `aria-controls`. Use when the button opens or expands a custom control rendered elsewhere by the plugin. Can be a string or a function that receives the [Context](./context.md) and returns the id.
+
+```js
+ariaControls: (context) => `${context.appConfig.id}-search-form`
+```
+
+> Pair this with [`expandedWhen`](#expandedwhen) to also reflect the open/closed state via `aria-expanded`.
+
+---
+
 ### `keepFocus`
 **Type:** `boolean`
 **Default:** `false`

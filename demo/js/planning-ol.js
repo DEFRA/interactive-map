@@ -46,14 +46,6 @@ const interactiveMap = new InteractiveMap('map', {
   enableFullscreen: false,
   hasExitButton: true,
   plugins: [
-    mapStylesPlugin({
-      mapStyles: vtsMapStyles27700, // ngdMapStyles27700,
-      manifest: {
-        buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false } }],
-        panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: true } }]
-      }
-    }),
-    scaleBarPlugin({ units: 'metric' }),
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       placeholder: 'Search for a place in England',
@@ -66,6 +58,14 @@ const interactiveMap = new InteractiveMap('map', {
       width: '300px',
       showMarker: true
     }),
+    mapStylesPlugin({
+      mapStyles: vtsMapStyles27700, // ngdMapStyles27700,
+      manifest: {
+        buttons: [{ id: 'mapStyles', desktop: { slot: 'right-top', showLabel: false } }],
+        panels: [{ id: 'mapStyles', desktop: { slot: 'map-styles-button', width: '400px', modal: true } }]
+      }
+    }),
+    scaleBarPlugin({ units: 'metric' }),
     useLocationPlugin(),
     interactPlugin
   ]

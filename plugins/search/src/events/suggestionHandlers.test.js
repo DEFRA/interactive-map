@@ -144,7 +144,7 @@ describe('createSuggestionHandlers', () => {
 
   // ---------- Escape & default ----------
 
-  test('Escape hides suggestions and clears selection', () => {
+  test('Escape hides suggestions, clears selection and restores the input focus ring', () => {
     const e = { key: 'Escape', preventDefault: jest.fn() }
 
     handlers.handleInputKeyDown(e, {
@@ -153,8 +153,14 @@ describe('createSuggestionHandlers', () => {
     })
 
     expect(e.preventDefault).toHaveBeenCalled()
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_KEYBOARD_FOCUS_WITHIN', payload: true })
     expect(dispatch).toHaveBeenCalledWith({ type: 'HIDE_SUGGESTIONS' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SELECTED', payload: -1 })
+
+    // SET_KEYBOARD_FOCUS_WITHIN must be dispatched before HIDE_SUGGESTIONS — it has a
+    // side effect of turning areSuggestionsVisible back on, which HIDE_SUGGESTIONS must win over
+    const order = dispatch.mock.calls.map(([action]) => action.type)
+    expect(order.indexOf('SET_KEYBOARD_FOCUS_WITHIN')).toBeLessThan(order.indexOf('HIDE_SUGGESTIONS'))
   })
 
   test('Other keys do nothing', () => {

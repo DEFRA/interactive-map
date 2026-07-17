@@ -54,6 +54,9 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
 
         case 'Escape': {
           e.preventDefault()
+          // Restore the focus ring to the input container first — SET_KEYBOARD_FOCUS_WITHIN
+          // also flips areSuggestionsVisible on, so HIDE_SUGGESTIONS must run after to win
+          dispatch({ type: 'SET_KEYBOARD_FOCUS_WITHIN', payload: true })
           dispatch({ type: 'HIDE_SUGGESTIONS' })
           dispatch({ type: 'SET_SELECTED', payload: -1 })
           break
