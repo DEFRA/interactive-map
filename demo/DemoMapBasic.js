@@ -1,14 +1,16 @@
 import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
 
 const MAP_STYLE = {
-  url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
-  attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
+  url: OS_VTS_STYLE_URLS.outdoor,
+  attribution: OS_ATTRIBUTION,
   backgroundColor: '#f5f5f0'
 }
 
 function MapInner () {
   const initialised = useRef(false)
+  const transformRequest = useOsTransformRequest()
 
   useEffect(() => {
     if (initialised.current) {
@@ -28,6 +30,7 @@ function MapInner () {
         behaviour: 'inline',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
+        transformRequest,
         center: [-2.9631008,54.432306],
         zoom: 15,
         containerHeight: '516px'

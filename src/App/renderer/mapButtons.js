@@ -159,6 +159,7 @@ function renderButton ({ btn, appState, appConfig, evaluateProp }) {
       panelId={config.panelId}
       menuItems={config.menuItems}
       idPrefix={appConfig.id}
+      ariaControls={evaluateProp(config.ariaControls, config.pluginId)}
     />
   )
 }

@@ -14,8 +14,11 @@
     --app-border-width: 1px;
     --button-border-radius: 0px; // 4px;
     --panel-border-radius: 0px; // 8px;
-    --focus-border-width: 3px;
-    --focus-outline-width: 3px;
+    --focus-border-width: 4px; // The black inner focus stroke
+    --focus-box-shadow-width: 3px; // The yellow outer focus stroke
+    --focus-highlight-width: 4px;
+    --focus-outline-width: 3px; // Transparent, used for forced-colors focus
+    --hover-outline-width: 2px; // Used with forced-colors hover state
 
     // Modal offset placeholders (These are set with JS)
     --modal-offset-top: 0px;

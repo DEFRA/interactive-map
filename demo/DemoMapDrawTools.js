@@ -1,10 +1,11 @@
 import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
 
 const MAP_STYLE = {
   id: 'outdoor',
-  url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
-  attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
+  url: OS_VTS_STYLE_URLS.outdoor,
+  attribution: OS_ATTRIBUTION,
   backgroundColor: '#f5f5f0'
 }
 
@@ -16,6 +17,7 @@ const ICON_DELETE = '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2
 
 function MapInner () {
   const initialised = useRef(false)
+  const transformRequest = useOsTransformRequest()
 
   useEffect(() => {
     if (initialised.current) {
@@ -44,16 +46,18 @@ function MapInner () {
         deselectOnClickOutside: true
       })
 
+      // Open VTS style has no 3D buildings layer — snap to woodland polygons instead
       const drawPlugin = createDrawPlugin({
-        snapLayers: ['buildings 3D']
+        snapLayers: ['OS/Woodland:3/Local/1']
       })
 
       const interactiveMap = new InteractiveMap('demo-map-draw', {
         behaviour: 'hybrid',
         mapProvider: maplibreProvider(),
         mapStyle: MAP_STYLE,
-        center: [-0.1276, 51.5074],
-        zoom: 12,
+        transformRequest,
+        center: [-2.9631008, 54.432306],
+        zoom: 15,
         containerHeight: '516px',
         plugins: [interactPlugin, drawPlugin],
         hasExitButton: true

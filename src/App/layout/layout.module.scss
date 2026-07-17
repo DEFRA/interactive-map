@@ -503,10 +503,10 @@
 .im-o-app--mobile .im-o-app__drawer .im-c-panel::after,
 .im-o-app--mobile .im-o-app__actions .im-c-panel::after,
 .im-o-app__modal .im-c-panel--drawer::after {
-  top: var(--focus-border-width);
-  right: var(--focus-border-width);
-  bottom: var(--focus-border-width);
-  left: var(--focus-border-width);
+  top: var(--focus-box-shadow-width);
+  right: var(--focus-box-shadow-width);
+  bottom: var(--focus-box-shadow-width);
+  left: var(--focus-box-shadow-width);
 }
 
 // 4. State styles

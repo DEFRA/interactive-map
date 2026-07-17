@@ -2,6 +2,35 @@ import { fetchSuggestions } from './fetchSuggestions.js'
 import { updateMap } from '../utils/updateMap.js'
 import { DEFAULTS } from '../defaults.js'
 
+// Resolve the open trigger — a core-rendered MapButton. Prefer the shared buttonRefs
+// map (keyed by the manifest button id), falling back to a DOM query on the button's
+// class so focus restoration works even if the ref is transiently null / not yet set.
+const getTriggerButton = (buttonRefs) =>
+  buttonRefs?.current?.search || document.querySelector('.im-c-map-button--search')
+
+// Restore focus to the open trigger once the closing DOM has settled. The trigger only
+// becomes focusable again a frame or two after the form closes (its hidden/exclusive
+// state clears across re-renders), so keep trying until focus actually lands.
+const MAX_FOCUS_FRAMES = 30
+
+const restoreTriggerFocus = (buttonRefs) => {
+  let frames = 0
+  const focusWhenReady = () => {
+    const button = getTriggerButton(buttonRefs)
+    if (button) {
+      button.focus()
+      if (document.activeElement === button) {
+        return
+      }
+    }
+    if (frames < MAX_FOCUS_FRAMES) {
+      frames += 1
+      requestAnimationFrame(focusWhenReady)
+    }
+  }
+  requestAnimationFrame(focusWhenReady)
+}
+
 export const createFormHandlers = ({
   dispatch,
   services,
@@ -16,16 +45,11 @@ export const createFormHandlers = ({
   let lastFetchedValue = ''
 
   return {
-    handleOpenClick () {
-      dispatch({ type: 'TOGGLE_EXPANDED', payload: true })
-      services.eventBus.emit('search:open')
-    },
-
-    handleCloseClick (_e, buttonRef) {
+    handleCloseClick (_e, appState) {
       dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
       dispatch({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })
       dispatch({ type: 'SET_VALUE', payload: '' })
-      setTimeout(() => buttonRef.current.focus(), 0)
+      restoreTriggerFocus(appState?.buttonRefs)
       markers.remove('search')
       services.eventBus.emit('search:clear')
       services.eventBus.emit('search:close')

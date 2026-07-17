@@ -2,7 +2,6 @@
 
 // Components, using 'CSS in Component' pattern
 @use './components/Form/Form.module';
-@use './components/OpenButton/OpenButton.module';
 @use './components/CloseButton/CloseButton.module';
 @use './components/SubmitButton/SubmitButton.module';
 @use './components/Suggestions/Suggestions.module';
@@ -20,6 +19,14 @@
   // To follow...
 }
 
+// When the form is hidden (collapsed), the trigger button — a separate slot item —
+// is what shows. Take this wrapper out of layout entirely so its empty box doesn't
+// add a stray flex gap in the slot column. The form remains in the DOM (display:none
+// ancestor) so the trigger's aria-controls target still resolves.
+.im-c-search--collapsed {
+  display: none;
+}
+
 // 2. Elements
 .im-c-search__input-container {
   display: flex;
@@ -32,19 +39,31 @@
     content: '';
     z-index: 1;
     position: absolute;
-    top: -1px;
-    right: -1px;
-    bottom: -1px;
-    left: -1px;
+    top: -2px;
+    right: -2px;
+    bottom: -2px;
+    left: -2px;
     border-radius: var(--button-border-radius);
     border: 2px solid var(--foreground-color);
     pointer-events: none;
+
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      border-color: ButtonText;
+    }
+  }
+
+  // Excludes the close button so its own hover indicator (shared via
+  // .im-c-map-button) doesn't also light up this container's ring.
+  &:hover:not(:has(.im-c-search-close-button:hover)):before {
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      border-color: Highlight;
+    }
   }
 
   &:after {
     @include tools.focus-base($type: 'button');
     opacity: 0;
-    
+
     @media (prefers-reduced-motion: no-preference) {
       transition: opacity var(--duration) ease;
     }
@@ -64,6 +83,11 @@
   &:focus {
     outline: 3px solid transparent;
     box-shadow: none;
+
+    // The container's own :before is the only focus indicator we want.
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+      outline: none;
+    }
   }
 
   &::placeholder {
@@ -92,6 +116,16 @@
     opacity: 0;
     z-index: -1;
   }
+
+  // The search open trigger shares its slot with the search form. While the form is
+  // open we take the trigger out of layout flow (it is already opacity:0 above) so the
+  // form occupies its place with no gap — but crucially it stays display:visible and
+  // therefore focusable, so focus can be returned to it when the form closes.
+  .im-c-button-wrapper--search {
+    position: absolute;
+    pointer-events: none;
+  }
+
   .im-o-app__left-top,
   .im-o-app__left-bottom,
   .im-o-app__right-top,
@@ -107,6 +141,27 @@
   margin: var(--primary-gap);
 }
 
+.im-c-search__input-container--keyboard-focus-within:before {
+  @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+    border-color: Highlight;
+  }
+}
+
 .im-c-search__input-container--keyboard-focus-within:after {
   opacity: 1;
+
+  // Forced-colors uses a Highlight outline on the container itself instead
+  // (see below); hiding this avoids a mega-thick double ring that
+  // doesn't pick up forced colors correctly.
+  @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+    opacity: 0;
+  }
+}
+
+// A real outline (not the :before border) so it sits flush against the real
+// edge and grows outward exactly like the close button's own focus ring.
+.im-c-search__input-container--keyboard-focus-within {
+  @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+    outline: var(--focus-highlight-width) solid Highlight;
+  }
 }

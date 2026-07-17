@@ -51,6 +51,10 @@
     height: var(--tooltip-arrow-size);
     color: var(--tooltip-background-color);
     border: calc(var(--tooltip-arrow-size) / 2) solid currentcolor;
+
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+        border-color: Canvas;
+    }
 }
 
 // 2. Elements

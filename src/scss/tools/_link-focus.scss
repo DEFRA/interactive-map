@@ -4,4 +4,12 @@
     background-color: var(--focus-outline-color);
     box-shadow: 0 -2px var(--focus-outline-color), 0 4px var(--focus-border-color);
     text-decoration: none;
+
+    // Forced-colors mode ignores the transparent outline-color and substitutes
+    // a UA default (rendering as the page foreground colour) unless a system
+    // colour keyword is set explicitly.
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+        outline-color: Highlight;
+        color: Highlight;
+    }
 }

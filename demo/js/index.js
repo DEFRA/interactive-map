@@ -305,13 +305,6 @@ const interactiveMap = new InteractiveMap('map', {
   //   selectedColor: { outdoor: '#ffdd00', dark: '#ffaa00' }
   // },
   plugins: [
-    datasetsPlugin,
-    mapStylesPlugin({
-      mapStyles: vtsMapStyles3857
-    }),
-    scaleBarPlugin({
-      units: 'metric'
-    }),
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       osNamesURL: process.env.OS_NAMES_URL,
@@ -319,6 +312,13 @@ const interactiveMap = new InteractiveMap('map', {
       width: '300px',
       showMarker: true,
       showLabel: true
+    }),
+    datasetsPlugin,
+    mapStylesPlugin({
+      mapStyles: vtsMapStyles3857
+    }),
+    scaleBarPlugin({
+      units: 'metric'
     }),
     // useLocationPlugin(),
     interactPlugin,

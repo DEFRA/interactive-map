@@ -32,7 +32,7 @@ export function createHints (announce) {
     clearTimer()
     current = { html }
     notify()
-    announce(announceText ?? stripHtml(html), 'plugin')
+    announce(announceText ?? stripHtml(html), 'ambient')
     if (duration > 0) {
       timer = setTimeout(dismiss, duration)
     }

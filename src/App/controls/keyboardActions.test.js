@@ -129,7 +129,7 @@ describe('getInfo', () => {
     const { actions, announce } = makeActions()
     await actions.getInfo()
     expect(reverseGeocode).toHaveBeenCalledWith(ZOOM_LEVEL, { lng: 1, lat: 2 })
-    expect(announce).toHaveBeenCalledWith('London. Covering 5km².', 'core')
+    expect(announce).toHaveBeenCalledWith('London. Covering 5km².', 'action')
   })
 
   test('announces result without area when getAreaDimensions is absent', async () => {
@@ -137,7 +137,7 @@ describe('getInfo', () => {
     const { actions, mapProvider, announce } = makeActions()
     delete mapProvider.getAreaDimensions
     await actions.getInfo()
-    expect(announce).toHaveBeenCalledWith('Paris.', 'core')
+    expect(announce).toHaveBeenCalledWith('Paris.', 'action')
   })
 })
 
@@ -146,7 +146,7 @@ describe('label actions', () => {
     const { actions, mapProvider, announce } = makeActions()
     mapProvider.highlightNextLabel.mockReturnValue('Label A')
     actions.highlightNextLabel({ key: 'A' })
-    expect(announce).toHaveBeenCalledWith('Label A', 'core')
+    expect(announce).toHaveBeenCalledWith('Label A', 'action')
   })
 
   test('highlightNextLabel is no-op when readMapText is false', () => {
@@ -160,7 +160,7 @@ describe('label actions', () => {
     const { actions, mapProvider, announce } = makeActions()
     mapProvider.highlightLabelAtCenter.mockReturnValue('Center Label')
     actions.highlightLabelAtCenter()
-    expect(announce).toHaveBeenCalledWith('Center Label', 'core')
+    expect(announce).toHaveBeenCalledWith('Center Label', 'action')
   })
 
   test('highlightLabelAtCenter is no-op when readMapText is false', () => {

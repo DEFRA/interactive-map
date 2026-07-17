@@ -46,7 +46,7 @@ export const createKeyboardActions = (mapProvider, announce, {
       const place = await reverseGeocode(mapProvider.getZoom(), coord)
       const area = mapProvider.getAreaDimensions?.()
       const message = area ? `${place}. Covering ${area}.` : `${place}.`
-      announce(message, 'core')
+      announce(message, 'action')
     },
 
     highlightNextLabel: (e) => {
@@ -54,7 +54,7 @@ export const createKeyboardActions = (mapProvider, announce, {
         return
       }
       const label = mapProvider.highlightNextLabel(e.key)
-      announce(label, 'core')
+      announce(label, 'action')
     },
 
     highlightLabelAtCenter: () => {
@@ -62,7 +62,7 @@ export const createKeyboardActions = (mapProvider, announce, {
         return
       }
       const label = mapProvider.highlightLabelAtCenter()
-      announce(label, 'core')
+      announce(label, 'action')
     },
 
     clearSelection: () => mapProvider?.clearHighlightedLabel?.()
