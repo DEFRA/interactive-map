@@ -136,7 +136,7 @@
     }
   },
   "devDependencies": {
-    "@arcgis/core": "^5.0.9",
+    "@arcgis/core": "^5.1.13",
     "@babel/core": "^7.28.0",
     "@babel/plugin-transform-runtime": "^7.29.0",
     "@babel/preset-env": "^7.28.0",
