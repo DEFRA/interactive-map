@@ -147,7 +147,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
   _applyRegistryDatasetVisibility (registryDataset) {
     // if this is a sublayer, we need to apply the visibility to the vectorTileLayers style sheet
     // if this is a top level dataset, we need to apply the visibility to the vectorTileLayer/ groupLayer itself
-    const { id, isSublayer, visible, parentId } = registryDataset
+    const { id, isSublayer, parentId } = registryDataset
+    const visible = registryDataset.visibility === 'visible'
     const vectorTileLayer = this._mapVisibilityLayers[isSublayer ? parentId : id]
     if (!vectorTileLayer) {
       return
