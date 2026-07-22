@@ -47,6 +47,7 @@ const datasetFloodZonesCC =   {
   showInKey: true,
   visible: true,
   sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea CCP1',
+  visibleWhen: { menu: { dataset: ['floodzones'] } },
   sublayers: [
     {
       id: 'climate-change',
@@ -593,4 +594,76 @@ const testAddRemoveDataset = () => {
 interactiveMap.on('datasets:ready', function () {
   // testGlobalVisibility()
   // testAddRemoveDataset()
+  console.log('datasets:ready')
+  updateVisibleLayers()
+  initPointerMove(mapState.view)
 })
+
+const mapState = {}
+
+interactiveMap.on('map:ready', function ({ map, view, mapStyleId, mapSize, crs }) {
+  console.log('map:ready', { map, view, mapStyleId, mapSize, crs })
+  mapState.map = map
+  mapState.view = view
+
+  interactiveMap.addPanel('help-banner', {
+    label: 'Click on the flood zones for information',
+    html: '<span class="im-u-visually-hidden">Alert:</span>',
+    mobile: { slot: 'banner', dismissible: true },
+    tablet: { slot: 'banner', dismissible: true, width: '372px' },
+    desktop: { slot: 'banner', dismissible: true, width: '372px' }
+  })
+})
+
+let visibleLayers = null
+
+const updateVisibleLayers = () => {
+  // Ensure the visibleLayers array is updated whenever the user hovers over the map,
+  // so that we can use them in the hitTest to determine which layers to test against.
+  visibleLayers = mapState.map.allLayers.items.filter((item) => item.type === 'vector-tile' && item.visible === true && item.id !== 'baselayer')
+}
+
+const initPointerMove = (view) => {
+  let lastHit = 0
+  const throttleMs = 20 // Throttle to reduce hitTest usage
+  const minScale = 250000 // vector tile layers use minScale value from arcgis online config for visibility
+
+  view.on('pointer-enter', updateVisibleLayers)
+  view.on('pointer-move', e => {
+    const now = Date.now()
+    if (!visibleLayers || now - lastHit < throttleMs || view.scale > minScale) {
+      return
+    }
+    lastHit = now
+    const layersToTest = visibleLayers
+    view.hitTest(e, { include: layersToTest, pixelRadius: 0, tolerance: 0 }).then((response) => {
+      let topVisibleStyleLayerId = null
+      if (response?.results?.length > 0) {
+        // const { layerId } = response?.results?.[0]?.graphic?.origin || {}
+        const visibleStyleLayerIds = response?.results.reduce((layerIds, result) => {
+          const { layerId } = result.graphic?.origin || {}
+          if (!layerId) {
+            return layerIds
+          }
+          const vtLayer = result.layer
+          const styleLayer = vtLayer?.getStyleLayer(layerId)
+          if (styleLayer?.layout?.visibility === 'visible') {
+            layerIds.push(layerId)
+          }
+          return layerIds
+        }, [])
+        topVisibleStyleLayerId = visibleStyleLayerIds?.[0] || null
+      }
+      if (mapState.cursorStyleLayer !== topVisibleStyleLayerId) {
+        mapState.cursorStyleLayer = topVisibleStyleLayerId
+        console.log('cursorStyleLayer', mapState.cursorStyleLayer)
+      }
+      document.body.style.cursor = topVisibleStyleLayerId ? 'pointer' : 'default'
+    })
+  })
+
+  view.on('pointer-leave', _e => {
+    document.body.style.cursor = 'default'
+    visibleLayers = null
+  })
+}
