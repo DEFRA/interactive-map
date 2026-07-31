@@ -17,15 +17,6 @@ const moveControlSlot = {
   slot: 'right-bottom'
 }
 
-const moveControlButtonSlots = {
-  ...moveControlSlot,
-  showLabel: false,
-  // Splices this button to the front of the shared right-bottom slot (see
-  // getSlotItems in slotAggregator.js), ahead of the scale-bar control that also
-  // shares this slot, without needing a slot-wide category-order change.
-  order: 1
-}
-
 const exitButtonSlots = {
   slot: 'top-left',
   showLabel: false
@@ -115,13 +106,9 @@ export const defaultAppConfig = {
       payload: { id: 'moveControl', isExpanded: !appState.expandedButtons.has('moveControl') }
     }),
     excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
-    // display:none (via isHidden) removes it from the tab order while the control is
-    // open, unlike a CSS opacity/pointer-events approach — the button stays in the DOM
-    // (unlike excludeWhen) so it's still there to receive focus back on close.
-    hiddenWhen: ({ appState }) => appState.expandedButtons.has('moveControl'),
-    mobile: moveControlButtonSlots,
-    tablet: moveControlButtonSlots,
-    desktop: moveControlButtonSlots
+    mobile: buttonSlots,
+    tablet: buttonSlots,
+    desktop: buttonSlots
   }],
 
   panels: [{

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from 'react'
 import { MapButton } from '../MapButton/MapButton.jsx'
 import { useApp } from '../../store/appContext.js'
 import { useConfig } from '../../store/configContext.js'
@@ -20,39 +20,19 @@ const ZOOM_ACTIONS = [
 
 export const MoveControl = () => {
   const { id: appId, mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta } = useConfig()
-  const { dispatch, expandedButtons, hiddenButtons, nudgeStepSize } = useApp()
+  const { dispatch, expandedButtons, nudgeStepSize } = useApp()
   const { isAtMaxZoom, isAtMinZoom } = useMap()
   const { announce } = useService()
 
   const isOpen = expandedButtons.has('moveControl')
-  const isTriggerHidden = hiddenButtons.has('moveControl')
-  const triggerId = `${appId}-move-control`
   const firstDirectionButtonId = `${appId}-pan-up`
-
-  // The trigger button is hidden via hiddenWhen (appConfig.js) while the control is
-  // open — display:none, so it's correctly removed from the tab order — rather than
-  // unmounted, so it's still there (once un-hidden) to receive focus back on close.
-  // hiddenWhen is evaluated by the app-wide useButtonStateEvaluator on its own pass, one
-  // render behind the expandedButtons change that drives it, so returning focus after
-  // close can't happen synchronously in the click handler — it has to wait for
-  // isTriggerHidden to actually flip back, which this effect tracks via a pending flag.
-  const pendingFocusReturnRef = useRef(false)
 
   useEffect(() => {
     if (isOpen) {
       document.getElementById(firstDirectionButtonId)?.focus()
-      return
     }
-    if (pendingFocusReturnRef.current && !isTriggerHidden) {
-      pendingFocusReturnRef.current = false
-      document.getElementById(triggerId)?.focus()
-    }
-  }, [isOpen, isTriggerHidden, firstDirectionButtonId, triggerId])
+  }, [isOpen, firstDirectionButtonId])
 
-  const handleHide = () => {
-    pendingFocusReturnRef.current = true
-    dispatch({ type: 'TOGGLE_BUTTON_EXPANDED', payload: { id: 'moveControl', isExpanded: false } })
-  }
   const isLargeStep = nudgeStepSize === 'large'
   // Matches the draw plugin's existing "Move point" (default)/"Nudge point" (Shift, small)
   // keyboard-shortcut vocabulary, so the label always describes the step size in effect.
@@ -128,12 +108,6 @@ export const MoveControl = () => {
     <div id={`${appId}-move-control-content`} className={containerClassName}>
       {directionsGroup}
       {zoomGroup}
-      <MapButton
-        buttonId='moveControlHide'
-        label='Hide move and zoom controls'
-        iconId='chevron'
-        onClick={handleHide}
-      />
     </div>
   )
 }

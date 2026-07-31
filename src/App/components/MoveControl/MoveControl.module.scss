@@ -10,6 +10,8 @@
     flex-direction: column;
     align-items: center;
     gap: var(--divider-gap);
+    padding: var(--divider-gap);
+    border: var(--app-border-width) solid var(--app-border-color);
 }
 
 .im-c-move-control--collapsed {
