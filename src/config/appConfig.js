@@ -13,6 +13,19 @@ const buttonSlots = {
   showLabel: false
 }
 
+const moveControlSlot = {
+  slot: 'right-bottom'
+}
+
+const moveControlButtonSlots = {
+  ...moveControlSlot,
+  showLabel: false,
+  // Splices this button to the front of the shared right-bottom slot (see
+  // getSlotItems in slotAggregator.js), ahead of the scale-bar control that also
+  // shares this slot, without needing a slot-wide category-order change.
+  order: 1
+}
+
 const exitButtonSlots = {
   slot: 'top-left',
   showLabel: false
@@ -73,7 +86,7 @@ export const defaultAppConfig = {
     iconId: 'plus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControl || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMaxZoom,
     mobile: buttonSlots,
     tablet: buttonSlots,
@@ -85,7 +98,7 @@ export const defaultAppConfig = {
     iconId: 'minus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControl || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMinZoom,
     mobile: buttonSlots,
     tablet: buttonSlots,
@@ -96,15 +109,19 @@ export const defaultAppConfig = {
     iconId: 'move',
     keepFocus: true,
     isExpanded: false,
-    ariaControls: ({ appConfig }) => `${appConfig.id}-move-control`,
+    ariaControls: ({ appConfig }) => `${appConfig.id}-move-control-content`,
     onClick: (_e, { appState }) => appState.dispatch({
       type: 'TOGGLE_BUTTON_EXPANDED',
       payload: { id: 'moveControl', isExpanded: !appState.expandedButtons.has('moveControl') }
     }),
     excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
-    mobile: buttonSlots,
-    tablet: buttonSlots,
-    desktop: buttonSlots
+    // display:none (via isHidden) removes it from the tab order while the control is
+    // open, unlike a CSS opacity/pointer-events approach — the button stays in the DOM
+    // (unlike excludeWhen) so it's still there to receive focus back on close.
+    hiddenWhen: ({ appState }) => appState.expandedButtons.has('moveControl'),
+    mobile: moveControlButtonSlots,
+    tablet: moveControlButtonSlots,
+    desktop: moveControlButtonSlots
   }],
 
   panels: [{
@@ -128,17 +145,9 @@ export const defaultAppConfig = {
     id: 'moveControl',
     label: 'Move and zoom',
     excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
-    mobile: {
-      slot: 'right-bottom'
-    },
-    tablet: {
-      slot: 'right-top',
-      order: 99
-    },
-    desktop: {
-      slot: 'right-top',
-      order: 99
-    },
+    mobile: moveControlSlot,
+    tablet: moveControlSlot,
+    desktop: moveControlSlot,
     render: MoveControl
   }],
 
@@ -163,6 +172,9 @@ export const defaultAppConfig = {
   }, {
     id: 'precision',
     svgContent: '<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/>'
+  }, {
+    id: 'precision-active',
+    svgContent: '<circle cx="12" cy="12" r="10"/><line x1="22" x2="16" y1="12" y2="12"/><line x1="8" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="8" y2="2"/><line x1="12" x2="12" y1="22" y2="16"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>'
   }]
 }
 

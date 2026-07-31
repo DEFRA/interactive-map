@@ -1,3 +1,5 @@
+@use '../../../scss/tools/index' as tools;
+
 // ===================================================
 // Component: MoveControl
 // ===================================================
@@ -8,9 +10,6 @@
     flex-direction: column;
     align-items: center;
     gap: var(--divider-gap);
-
-    padding: var(--primary-gap);
-    border: 1px solid var(--app-border-color);
 }
 
 .im-c-move-control--collapsed {
@@ -61,7 +60,51 @@
     transform: rotate(-90deg);
 }
 
+// Each button's own drop shadow (tools.border-focus-base's ::before) otherwise bleeds
+// into whichever neighbour it butts up against. The standard button-group treatment
+// (border-focus-corner-override) only handles a single-axis linear strip, so it can't
+// express a plus-shaped grid where the centre button touches all four neighbours —
+// clip-path is set directly per button instead, clipping only the side(s) where it
+// touches another button and leaving the exposed side(s) showing the shadow as normal.
+.im-c-move-control__directions .im-c-button-wrapper--pan-up .im-c-map-button::before {
+    clip-path: inset(-20px -20px 0 -20px); // touches nudge-step-toggle below
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-left .im-c-map-button::before {
+    clip-path: inset(-20px 0 -20px -20px); // touches nudge-step-toggle to the right
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-right .im-c-map-button::before {
+    clip-path: inset(-20px -20px -20px 0); // touches nudge-step-toggle to the left
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-down .im-c-map-button::before {
+    clip-path: inset(0 -20px -20px -20px); // touches nudge-step-toggle above
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button::before {
+    clip-path: inset(0); // touches all four neighbours
+}
+
+// Same inverted "pressed" treatment already used for actions-slot toggle buttons
+// (e.g. draw's Snap toggle) — reused here so Nudge mode reads consistently active.
+.im-c-move-control .im-c-map-button[aria-pressed="true"] {
+    color: var(--pressed-button-foreground-color);
+    border-color: var(--pressed-button-border-color);
+    background-color: var(--pressed-button-background-color);
+}
+
 .im-c-move-control__zoom {
     display: flex;
     flex-direction: row;
+}
+
+// A simple two-item linear row, so the standard button-group corner/shadow treatment
+// applies directly (matches .im-o-app__top's first/last-child pattern).
+.im-c-move-control__zoom .im-c-button-wrapper--nudge-zoom-in .im-c-map-button {
+    @include tools.border-focus-corner-override($corners: 'left');
+}
+
+.im-c-move-control__zoom .im-c-button-wrapper--nudge-zoom-out .im-c-map-button {
+    @include tools.border-focus-corner-override($corners: 'right');
 }

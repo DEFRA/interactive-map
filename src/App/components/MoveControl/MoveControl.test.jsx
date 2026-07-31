@@ -24,6 +24,7 @@ describe('MoveControl', () => {
     breakpoint: 'desktop',
     dispatch,
     expandedButtons: new Set(['moveControl']),
+    hiddenButtons: new Set(['moveControl']),
     nudgeStepSize: 'large',
     ...overrides
   })
@@ -50,12 +51,58 @@ describe('MoveControl', () => {
 
   it('renders with the id matching the trigger button aria-controls value', () => {
     const { container } = render(<MoveControl />)
-    expect(container.querySelector('#im-move-control')).toBeInTheDocument()
+    expect(container.querySelector('#im-move-control-content')).toBeInTheDocument()
   })
 
   it('is not visually collapsed when moveControl is expanded', () => {
     const { container } = render(<MoveControl />)
     expect(container.querySelector('.im-c-move-control--collapsed')).not.toBeInTheDocument()
+  })
+
+  it('renders the hide button last in DOM order', () => {
+    const { container } = render(<MoveControl />)
+    const hideButton = screen.getByRole('button', { name: 'Hide move and zoom controls' })
+    expect(container.querySelector('.im-c-move-control').lastElementChild).toContainElement(hideButton)
+  })
+
+  it('hides the control and returns focus to the trigger once hiddenWhen catches up', () => {
+    // The trigger lives outside MoveControl's own render tree (rendered separately via
+    // the button registry), so stand in a real element at its DOM id — the component
+    // looks it up via document.getElementById, not the shared buttonRefs map.
+    const trigger = document.createElement('button')
+    trigger.id = 'im-move-control'
+    document.body.appendChild(trigger)
+
+    const { rerender } = render(<MoveControl />)
+    fireEvent.click(screen.getByRole('button', { name: 'Hide move and zoom controls' }))
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'TOGGLE_BUTTON_EXPANDED',
+      payload: { id: 'moveControl', isExpanded: false }
+    })
+
+    // expandedButtons updates first; hiddenWhen (evaluated separately by the app-wide
+    // useButtonStateEvaluator) hasn't caught up yet, so the trigger is still hidden —
+    // focus must not jump to it while it's still un-focusable.
+    useApp.mockReturnValue(buildAppState({ expandedButtons: new Set() }))
+    rerender(<MoveControl />)
+    expect(trigger).not.toHaveFocus()
+
+    // hiddenWhen catches up on the next pass — only now does focus return.
+    useApp.mockReturnValue(buildAppState({ expandedButtons: new Set(), hiddenButtons: new Set() }))
+    rerender(<MoveControl />)
+    expect(trigger).toHaveFocus()
+
+    trigger.remove()
+  })
+
+  it('moves focus to the first direction button when the control opens', () => {
+    const { rerender } = render(<MoveControl />)
+    useApp.mockReturnValue(buildAppState({ expandedButtons: new Set() }))
+    rerender(<MoveControl />)
+
+    useApp.mockReturnValue(buildAppState({ expandedButtons: new Set(['moveControl']) }))
+    rerender(<MoveControl />)
+    expect(screen.getByRole('button', { name: 'Move up' })).toHaveFocus()
   })
 
   it('renders the directions group before the zoom group at every breakpoint', () => {
@@ -129,13 +176,13 @@ describe('MoveControl', () => {
     expect(mapProvider.zoomOut).not.toHaveBeenCalled()
   })
 
-  it('has a stable "Nudge mode" label regardless of state', () => {
+  it('has a stable "Precision" label regardless of state', () => {
     const { rerender } = render(<MoveControl />)
-    expect(screen.getByRole('button', { name: 'Nudge mode' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Precision' })).toBeInTheDocument()
 
     useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
     rerender(<MoveControl />)
-    expect(screen.getByRole('button', { name: 'Nudge mode' })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Precision' })).toBeInTheDocument()
   })
 
   it('shows an aria-hidden (On)/(Off) suffix in the tooltip without affecting the accessible name', () => {
@@ -144,43 +191,43 @@ describe('MoveControl', () => {
     // tooltips exist in the DOM (one per icon-only button), so resolve this button's
     // own tooltip via its aria-labelledby id rather than grabbing the first one.
     const getOwnTooltip = () => {
-      const button = screen.getByRole('button', { name: 'Nudge mode' })
+      const button = screen.getByRole('button', { name: 'Precision' })
       return document.getElementById(button.getAttribute('aria-labelledby'))
     }
 
     const { rerender } = render(<MoveControl />)
     let tooltip = getOwnTooltip()
     expect(tooltip.querySelector('[aria-hidden="true"]')).toHaveTextContent('(Off)')
-    expect(tooltip).toHaveTextContent('Nudge mode (Off)')
+    expect(tooltip).toHaveTextContent('Precision (Off)')
 
     useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
     rerender(<MoveControl />)
     tooltip = getOwnTooltip()
     expect(tooltip.querySelector('[aria-hidden="true"]')).toHaveTextContent('(On)')
-    expect(tooltip).toHaveTextContent('Nudge mode (On)')
+    expect(tooltip).toHaveTextContent('Precision (On)')
   })
 
-  it('reflects nudge mode via aria-pressed, not via label changes', () => {
+  it('reflects precision mode via aria-pressed, not via label changes', () => {
     const { rerender } = render(<MoveControl />)
-    expect(screen.getByRole('button', { name: 'Nudge mode' })).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Precision' })).toHaveAttribute('aria-pressed', 'false')
 
     useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
     rerender(<MoveControl />)
-    expect(screen.getByRole('button', { name: 'Nudge mode' })).toHaveAttribute('aria-pressed', 'true')
+    expect(screen.getByRole('button', { name: 'Precision' })).toHaveAttribute('aria-pressed', 'true')
   })
 
-  it('toggles nudge mode on and announces it when currently in large-step mode', () => {
+  it('toggles precision on and announces it when currently in large-step mode', () => {
     render(<MoveControl />)
-    fireEvent.click(screen.getByRole('button', { name: 'Nudge mode' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Precision' }))
     expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_NUDGE_STEP' })
-    expect(announce).toHaveBeenCalledWith('Nudge mode on')
+    expect(announce).toHaveBeenCalledWith('Precision on')
   })
 
-  it('toggles nudge mode off and announces it when currently in small-step mode', () => {
+  it('toggles precision off and announces it when currently in small-step mode', () => {
     useApp.mockReturnValue(buildAppState({ nudgeStepSize: 'small' }))
     render(<MoveControl />)
-    fireEvent.click(screen.getByRole('button', { name: 'Nudge mode' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Precision' }))
     expect(dispatch).toHaveBeenCalledWith({ type: 'TOGGLE_NUDGE_STEP' })
-    expect(announce).toHaveBeenCalledWith('Nudge mode off')
+    expect(announce).toHaveBeenCalledWith('Precision off')
   })
 })

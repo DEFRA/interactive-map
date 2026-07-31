@@ -144,15 +144,21 @@ describe('defaultAppConfig', () => {
         appState: { interfaceType: 'mouse' }
       })).toBe(true)
 
-      // Branch B: Second part of OR is true (interfaceType === 'touch')
+      // Branch B: Second part of OR is true (enableMoveControl)
       expect(btn.excludeWhen({
-        appConfig: { enableZoomControls: true },
+        appConfig: { enableZoomControls: true, enableMoveControl: true },
+        appState: { interfaceType: 'mouse' }
+      })).toBe(true)
+
+      // Branch C: Third part of OR is true (interfaceType === 'touch')
+      expect(btn.excludeWhen({
+        appConfig: { enableZoomControls: true, enableMoveControl: false },
         appState: { interfaceType: 'touch' }
       })).toBe(true)
 
-      // Branch C: Both parts are false (Result: false)
+      // Branch D: All parts are false (Result: false)
       expect(btn.excludeWhen({
-        appConfig: { enableZoomControls: true },
+        appConfig: { enableZoomControls: true, enableMoveControl: false },
         appState: { interfaceType: 'mouse' }
       })).toBe(false)
     })
@@ -183,7 +189,12 @@ describe('defaultAppConfig', () => {
   })
 
   it('moveControl ariaControls resolves the control element id', () => {
-    expect(moveControlBtn.ariaControls({ appConfig: { id: 'im' } })).toBe('im-move-control')
+    expect(moveControlBtn.ariaControls({ appConfig: { id: 'im' } })).toBe('im-move-control-content')
+  })
+
+  it('moveControl hiddenWhen hides the trigger while the control is open', () => {
+    expect(moveControlBtn.hiddenWhen({ appState: { expandedButtons: new Set(['moveControl']) } })).toBe(true)
+    expect(moveControlBtn.hiddenWhen({ appState: { expandedButtons: new Set() } })).toBe(false)
   })
 
   it('moveControl onClick toggles TOGGLE_BUTTON_EXPANDED based on current state', () => {
