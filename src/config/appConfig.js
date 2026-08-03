@@ -1,4 +1,5 @@
 import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
+import { MoveControl } from '../App/components/MoveControl/MoveControl.jsx'
 
 const keyboardBasePanelSlots = {
   slot: 'middle',
@@ -10,6 +11,10 @@ const keyboardBasePanelSlots = {
 const buttonSlots = {
   slot: 'right-top',
   showLabel: false
+}
+
+const moveControlSlot = {
+  slot: 'right-bottom'
 }
 
 const exitButtonSlots = {
@@ -72,7 +77,7 @@ export const defaultAppConfig = {
     iconId: 'plus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControl || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMaxZoom,
     mobile: buttonSlots,
     tablet: buttonSlots,
@@ -84,8 +89,23 @@ export const defaultAppConfig = {
     iconId: 'minus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControl || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMinZoom,
+    mobile: buttonSlots,
+    tablet: buttonSlots,
+    desktop: buttonSlots
+  }, {
+    id: 'moveControl',
+    label: 'Move and zoom controls',
+    iconId: 'move',
+    keepFocus: true,
+    isExpanded: false,
+    ariaControls: ({ appConfig }) => `${appConfig.id}-move-control-content`,
+    onClick: (_e, { appState }) => appState.dispatch({
+      type: 'TOGGLE_BUTTON_EXPANDED',
+      payload: { id: 'moveControl', isExpanded: !appState.expandedButtons.has('moveControl') }
+    }),
+    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
     mobile: buttonSlots,
     tablet: buttonSlots,
     desktop: buttonSlots
@@ -108,6 +128,16 @@ export const defaultAppConfig = {
     render: (props) => <KeyboardHelp context={props?.context} />
   }],
 
+  controls: [{
+    id: 'moveControl',
+    label: 'Move and zoom',
+    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
+    mobile: moveControlSlot,
+    tablet: moveControlSlot,
+    desktop: moveControlSlot,
+    render: MoveControl
+  }],
+
   icons: [{
     id: 'maximise',
     svgContent: '<path d="M15 3h6v6"/><path d="m21 3-7 7"/><path d="m3 21 7-7"/><path d="M9 21H3v-6"/>'
@@ -123,6 +153,15 @@ export const defaultAppConfig = {
   }, {
     id: 'chevron',
     svgContent: '<path d="m6 9 6 6 6-6"/>'
+  }, {
+    id: 'move',
+    svgContent: '<path d="M12 2v20"/><path d="m15 19-3 3-3-3"/><path d="m19 9 3 3-3 3"/><path d="M2 12h20"/><path d="m5 9-3 3 3 3"/><path d="m9 5 3-3 3 3"/>'
+  }, {
+    id: 'precision',
+    svgContent: '<circle cx="12" cy="12" r="10"/><line x1="22" x2="18" y1="12" y2="12"/><line x1="6" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="6" y2="2"/><line x1="12" x2="12" y1="22" y2="18"/>'
+  }, {
+    id: 'precision-active',
+    svgContent: '<circle cx="12" cy="12" r="10"/><line x1="22" x2="16" y1="12" y2="12"/><line x1="8" x2="2" y1="12" y2="12"/><line x1="12" x2="12" y1="8" y2="2"/><line x1="12" x2="12" y1="22" y2="16"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/>'
   }]
 }
 
