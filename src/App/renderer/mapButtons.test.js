@@ -98,7 +98,7 @@ describe('mapButtons module', () => {
   // -------------------------
   describe('getMatchingButtons', () => {
     const testFilter = (config, expected) => {
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp }).length).toBe(expected)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp })).toHaveLength(expected)
     }
 
     it('returns empty array when buttonConfig is null', () => testFilter(null, 0))
@@ -117,41 +117,41 @@ describe('mapButtons module', () => {
     it('filters out buttons with inline:false when not in fullscreen', () => {
       const config = { b1: { ...baseBtn, inline: false } }
       const state = { ...appState, isFullscreen: false }
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(0)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp })).toHaveLength(0)
     })
 
     it('includes buttons with inline:false when in fullscreen', () => {
       const config = { b1: { ...baseBtn, inline: false } }
       const state = { ...appState, isFullscreen: true }
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(1)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp })).toHaveLength(1)
     })
 
     it('includes buttons without inline property regardless of fullscreen state', () => {
       const config = { b1: baseBtn }
       const state = { ...appState, isFullscreen: false }
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(1)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp })).toHaveLength(1)
     })
 
     it('filters out buttons with isMenuItem:true', () => {
       const config = { b1: { ...baseBtn, isMenuItem: true } }
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp }).length).toBe(0)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp })).toHaveLength(0)
     })
 
     it('does not filter out buttons without isMenuItem', () => {
       const config = { b1: baseBtn, b2: { ...baseBtn, isMenuItem: false } }
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp }).length).toBe(2)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState, evaluateProp })).toHaveLength(2)
     })
 
     it('filters out panel-toggle button when panel is open and non-dismissible at current breakpoint', () => {
       const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissible: false } } } }
       const config = { b1: { ...baseBtn, panelId: 'myPanel' } }
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(0)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp })).toHaveLength(0)
     })
 
     it('includes panel-toggle button when panel is dismissible at current breakpoint', () => {
       const state = { ...appState, panelConfig: { myPanel: { desktop: { open: true, dismissible: true } } } }
       const config = { b1: { ...baseBtn, panelId: 'myPanel' } }
-      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp }).length).toBe(1)
+      expect(getMatchingButtons({ buttonConfig: config, slot: 'header', appState: state, evaluateProp })).toHaveLength(1)
     })
   })
 

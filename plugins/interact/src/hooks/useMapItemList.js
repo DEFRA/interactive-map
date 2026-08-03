@@ -111,8 +111,8 @@ function useActiveItemHandler ({ markers, interactionModes, layers, mapProvider,
         dispatch({ type: 'SET_LISTBOX_ACTIVE', payload: null })
         return
       }
-      const markerMatch = markers.items.find(m => m.id === id)
-      if (markerMatch) {
+      const hasMarkerMatch = markers.items.some(m => m.id === id)
+      if (hasMarkerMatch) {
         listboxActiveItemRef.current = { id, isMarker: true }
         dispatch({ type: 'SET_LISTBOX_ACTIVE', payload: null })
         return

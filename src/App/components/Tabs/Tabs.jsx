@@ -40,6 +40,7 @@ export const Tabs = ({ tabs, defaultTab }) => { // NOSONAR: project does not use
       <div role='tablist' className='im-c-tabs__list'>
         {tabs.map(({ name }) => (
           <button
+            type='button'
             key={name}
             id={toTabId(name)}
             role='tab'
