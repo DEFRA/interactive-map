@@ -197,12 +197,26 @@ The button is only displayed when the map is rendered inline.
 
 ---
 
+### `enableMoveControl`
+**Type:** `boolean`
+**Default:** `true`
+
+Whether the move control is displayed — a button that reveals directional pan, zoom,
+and step-size buttons, providing a non-dragging alternative to panning and zooming the
+map ([WCAG 2.5.7](https://www.w3.org/WAI/WCAG21/Understanding/dragging-movements.html)).
+Unlike the standard zoom control buttons, the move control remains visible when the
+interface type is 'touch'. When enabled, the standard zoom control buttons
+(`enableZoomControls`) are hidden to avoid duplicating zoom controls.
+
+---
+
 ### `enableZoomControls`
 **Type:** `boolean`
 **Default:** `true`
 
 Whether zoom control buttons are displayed.
-Zoom controls are not displayed when the interface type is 'touch'.
+Zoom controls are not displayed when the interface type is 'touch', or when
+`enableMoveControl` is enabled.
 
 ---
 
