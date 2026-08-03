@@ -15,6 +15,7 @@ const setup = (overrides = {}) => {
     setGeometryValid: jest.fn(),
     setInvalid: jest.fn(),
     deleteVertex: jest.fn(),
+    nudgeSelectedVertex: jest.fn(),
     setSnapEnabled: jest.fn(),
     isSnapEnabled: jest.fn(() => false),
     changeMode: jest.fn(),
@@ -71,9 +72,10 @@ describe('button handlers', () => {
     expect(draw.done).toHaveBeenCalled()
   })
 
-  test('cancel re-adds the feature when cancelling a vertex edit', () => {
-    const { buttonConfig, draw, dispatch, eventBus } = setup()
+  test('cancel re-adds the feature when cancelling a vertex edit, and releases activeMoveTarget', () => {
+    const { buttonConfig, draw, dispatch, eventBus, mapProvider } = setup()
     draw.getMode.mockReturnValue('edit_vertex')
+    drawHandler(draw, 'vertexselection')({ index: 1 })
 
     buttonConfig.drawCancel.onClick()
 
@@ -82,6 +84,7 @@ describe('button handlers', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', { id: 'F' })
+    expect(mapProvider.activeMoveTarget).toBeNull()
   })
 
   test('cancel does not re-add outside a vertex edit', () => {
@@ -166,17 +169,30 @@ describe('draw event handlers', () => {
     expect(() => drawHandler(draw, 'cancel')()).not.toThrow()
   })
 
-  test('vertexselection dispatches and emits', () => {
-    const { draw, dispatch, eventBus } = setup()
+  test('vertexselection dispatches, emits, and claims mapProvider.activeMoveTarget for MoveControl', () => {
+    const { draw, dispatch, eventBus, mapProvider } = setup()
     drawHandler(draw, 'vertexselection')({ index: 2 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: 2 } })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:vertexselection', { index: 2 })
+    expect(mapProvider.activeMoveTarget).toMatchObject({ label: 'vertex' })
+
+    mapProvider.activeMoveTarget.move(1, 0, true)
+    expect(draw.nudgeSelectedVertex).toHaveBeenCalledWith(1, 0, true)
   })
 
-  test('vertexchange resets the selected index with the new count', () => {
-    const { draw, dispatch } = setup()
+  test('vertexselection releases activeMoveTarget when the index is deselected', () => {
+    const { draw, mapProvider } = setup()
+    drawHandler(draw, 'vertexselection')({ index: 2 })
+    drawHandler(draw, 'vertexselection')({ index: -1 })
+    expect(mapProvider.activeMoveTarget).toBeNull()
+  })
+
+  test('vertexchange resets the selected index with the new count and releases activeMoveTarget', () => {
+    const { draw, dispatch, mapProvider } = setup()
+    drawHandler(draw, 'vertexselection')({ index: 2 })
     drawHandler(draw, 'vertexchange')({ numVertices: 5 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: 5 } })
+    expect(mapProvider.activeMoveTarget).toBeNull()
   })
 
   test('undochange dispatches the stack length', () => {

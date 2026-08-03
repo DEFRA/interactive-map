@@ -10,6 +10,7 @@ import { keyboardHandlers } from './editVertexMode/keyboardHandlers.js'
 import { pointerHandlers } from './editVertexMode/pointerHandlers.js'
 
 const EVENT_VERTEX_SELECTION = 'draw.vertexselection'
+const EVENT_NUDGE_VERTEX = 'draw.nudgevertex'
 
 export const EditVertexMode = {
   ...MapboxDraw.modes.direct_select,
@@ -94,7 +95,8 @@ export const EditVertexMode = {
       scalechange: bind(this.onScaleChange),
       update: bind(this.onUpdate),
       move: bind(this.onMove),
-      interfacetypechange: bind(this.onInterfaceTypeChange)
+      interfacetypechange: bind(this.onInterfaceTypeChange),
+      nudgevertex: bind(this.onNudgeVertex)
     }
 
     window.addEventListener('keydown', h.keydown, { capture: true })
@@ -111,6 +113,7 @@ export const EditVertexMode = {
     this.map.on('draw.update', h.update)
     this.map.on('move', h.move)
     this.map.on('draw.interfacetypechange', h.interfacetypechange)
+    this.map.on(EVENT_NUDGE_VERTEX, h.nudgevertex)
   },
 
   applyVertexSelection (state, options) {
@@ -186,6 +189,20 @@ export const EditVertexMode = {
     }
   },
 
+  // Inbound signal from MaplibreDrawAdapter.nudgeSelectedVertex — bridges into the
+  // running mode the same way onInterfaceTypeChange does, since the adapter has no
+  // direct reference to this mode's live state. Unlike OL (where setState's shared
+  // onUpdate hook repositions the touch target for any vertex move), moveVertex
+  // here has no equivalent hook, so the reposition has to happen explicitly —
+  // same as onMove/onSelectionChange/onInterfaceTypeChange already do.
+  onNudgeVertex (state, e) {
+    this.nudgeVertexByDelta(state, e.dx, e.dy, e.isLargeStep)
+    const vertex = state.vertecies[state.selectedVertexIndex]
+    if (vertex) {
+      this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
+    }
+  },
+
   onButtonClick (state, e) {
     if (e.target.closest(`#${state.deleteVertexButtonId}`) && state.selectedVertexType === 'vertex') {
       this.deleteVertex(state)
@@ -222,6 +239,7 @@ export const EditVertexMode = {
     this.map.off('draw.update', h.update)
     this.map.off('move', h.move)
     this.map.off('draw.interfacetypechange', h.interfacetypechange)
+    this.map.off(EVENT_NUDGE_VERTEX, h.nudgevertex)
     this.map.dragPan.enable()
     window.removeEventListener('click', h.click)
     window.removeEventListener('keydown', h.keydown, { capture: true })

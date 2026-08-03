@@ -66,6 +66,12 @@ describe('drawMenu', () => {
     expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_vertex' } })).toBe(false)
   })
 
+  test('labels "Edit actions" in edit mode, "Draw actions" otherwise', () => {
+    expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_vertex' } })).toBe('Edit actions')
+    expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_polygon' } })).toBe('Draw actions')
+    expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_line' } })).toBe('Draw actions')
+  })
+
   describe('drawUndo', () => {
     const item = () => findMenuItem('drawMenu', 'drawUndo')
 

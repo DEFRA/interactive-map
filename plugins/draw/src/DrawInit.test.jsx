@@ -80,15 +80,17 @@ describe('adapter lifecycle', () => {
     expect(loadDrawAdapter).not.toHaveBeenCalled()
   })
 
-  test('removes the adapter and clears the reference on unmount', async () => {
+  test('removes the adapter, clears the reference, and releases activeMoveTarget on unmount', async () => {
     const { props, adapter } = makeProps()
     const result = await renderInit(props)
     expect(props.mapProvider.draw).toBe(adapter)
+    props.mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
 
     await act(async () => { result.unmount() })
 
     expect(adapter.remove).toHaveBeenCalled()
     expect(props.mapProvider.draw).toBeNull()
+    expect(props.mapProvider.activeMoveTarget).toBeNull()
   })
 
   test('ignores a late-resolving adapter after unmount', async () => {

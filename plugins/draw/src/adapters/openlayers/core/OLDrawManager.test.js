@@ -8,10 +8,10 @@ import { createFakeMap } from '../__helpers__/harness.js'
 import { TOLERANCES } from '../defaults.js'
 
 jest.mock('../draw/DrawMode.js', () => ({
-  createDrawMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn(), setDrawingPreviewProperty: jest.fn() }))
+  createDrawMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn(), setDrawingPreviewProperty: jest.fn() }))
 }))
 jest.mock('../edit/EditMode.js', () => ({
-  createEditMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
+  createEditMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
 }))
 jest.mock('../snap/snapManager.js', () => ({
   createSnapManager: jest.fn(() => ({ setIndicatorActive: jest.fn(), reattach: jest.fn(), updateColors: jest.fn(), destroy: jest.fn() }))
@@ -74,7 +74,7 @@ describe('mode machine', () => {
 
   test('operations delegate to the current mode instance and are safe without one', async () => {
     const { manager } = setup()
-    manager.done(); manager.undo(); manager.deleteVertex(); manager.setInterfaceType('touch'); manager.setInvalid(true) // no mode — no throw
+    manager.done(); manager.undo(); manager.deleteVertex(); manager.nudgeSelectedVertex(1, 0, true); manager.setInterfaceType('touch'); manager.setInvalid(true) // no mode — no throw
     manager.setDrawingPreviewProperty('splitter', 'valid') // no mode — no throw
 
     await manager.changeMode('draw_polygon')
@@ -82,6 +82,7 @@ describe('mode machine', () => {
     manager.done()
     manager.undo()
     manager.deleteVertex()
+    manager.nudgeSelectedVertex(1, 0, true)
     const emitted = jest.fn()
     manager.on('interfacetypechange', emitted)
     manager.setInterfaceType('touch')
@@ -90,6 +91,7 @@ describe('mode machine', () => {
     expect(instance.done).toHaveBeenCalled()
     expect(instance.undo).toHaveBeenCalled()
     expect(instance.deleteVertex).toHaveBeenCalled()
+    expect(instance.nudgeSelectedVertex).toHaveBeenCalledWith(1, 0, true)
     expect(instance.setInterfaceType).toHaveBeenCalledWith('touch')
     // Parity with ML: an explicit interface-type write is echoed on the bus.
     expect(emitted).toHaveBeenCalledWith({ interfaceType: 'touch' })

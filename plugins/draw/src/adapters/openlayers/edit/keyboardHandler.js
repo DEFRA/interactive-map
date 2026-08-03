@@ -133,11 +133,11 @@ const buildKeyupHandler = ({ snap, keyMove, onVertexMoved, onDeleted, isFocused 
  * convert it. Only pressing a plain/Shift arrow converts it.
  *
  * @param {{ map, getState, setState, snap, onVertexMoved, onInserted, onDeleted, onUndo, onKeyboardActive }} options
- * @returns {{ destroy }}
+ * @returns {{ nudgeByDelta: (dx: number, dy: number, isLargeStep: boolean) => void, destroy: () => void }}
  */
 export const createKeyboardHandler = (options) => {
   const { map, snap, getState, setState, onVertexMoved, onInserted, onDeleted, onUndo, onKeyboardActive } = options
-  const { nudge, keyMove } = wireNudge({ map, snap, getState, setState, onInserted })
+  const { nudge, keyMove, nudgeByDelta } = wireNudge({ map, snap, getState, setState, onInserted, onVertexMoved })
   const appViewport = map.getViewport().closest('[role="application"]') ?? map.getViewport()
   const isFocused = () => isInteractiveElementFocused(appViewport)
 
@@ -148,6 +148,7 @@ export const createKeyboardHandler = (options) => {
   globalThis.addEventListener('keyup', onKeyup, { capture: true })
 
   return {
+    nudgeByDelta,
     destroy () {
       globalThis.removeEventListener('keydown', onKeydown, { capture: true })
       globalThis.removeEventListener('keyup', onKeyup, { capture: true })

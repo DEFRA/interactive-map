@@ -15,6 +15,7 @@ const fakeManager = () => ({
   cancel: jest.fn(),
   undo: jest.fn(),
   deleteVertex: jest.fn(),
+  nudgeSelectedVertex: jest.fn(),
   setInvalid: jest.fn(),
   setDrawingPreviewProperty: jest.fn(),
   get: jest.fn(() => 'feature'),
@@ -102,6 +103,7 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   adapter.deleteAll()
   adapter.undo()
   adapter.deleteVertex()
+  adapter.nudgeSelectedVertex(1, 0, true)
   const handler = () => {}
   adapter.on('create', handler)
   adapter.off('create', handler)
@@ -113,6 +115,7 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   expect(manager.off).toHaveBeenCalledWith('create', handler)
   expect(manager.undo).toHaveBeenCalled()
   expect(manager.deleteVertex).toHaveBeenCalled()
+  expect(manager.nudgeSelectedVertex).toHaveBeenCalledWith(1, 0, true)
 })
 
 test('setGeometryValid records validity on the manager for finish gating', () => {

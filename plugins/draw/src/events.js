@@ -12,6 +12,28 @@ import { MAP_SIZE_SCALES } from './defaults.js'
 const EDIT_VERTEX_MODE = 'edit_vertex'
 const GEOMETRY_INVALID_EVENT = 'draw:geometryinvalid'
 
+// Claims MoveControl's D-pad for the currently selected vertex — see the generic
+// mapProvider.activeMoveTarget contract (MoveControl.jsx). Any plugin could use
+// this slot; the draw plugin is just its first consumer.
+const buildVertexMoveTarget = (draw) => ({
+  move: (dx, dy, isLargeStep) => draw.nudgeSelectedVertex(dx, dy, isLargeStep),
+  label: 'vertex'
+})
+
+// Vertex-selection handlers: sync pluginState.selectedVertexIndex, and claim/release
+// MoveControl's D-pad via buildVertexMoveTarget above.
+const createVertexSelectionHandlers = ({ draw, pluginState, mapProvider, eventBus }) => ({
+  onVertexSelection: (e) => {
+    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e })
+    mapProvider.activeMoveTarget = e.index >= 0 ? buildVertexMoveTarget(draw) : null
+    eventBus.emit('draw:vertexselection', e)
+  },
+  onVertexChange: (e) => {
+    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } })
+    mapProvider.activeMoveTarget = null
+  }
+})
+
 // Re-open a feature in vertex-edit mode (used when a drawn shape finishes invalid).
 // Mirrors the options built by api/editFeature.js. Edit-mode Done is gated by the
 // same validity, so the shape can't be finished until it's fixed.
@@ -82,8 +104,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       }
     },
     onCancel: () => {},
-    onVertexSelection: (e) => { pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e }); eventBus.emit('draw:vertexselection', e) },
-    onVertexChange: (e) => { pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } }) },
+    ...createVertexSelectionHandlers({ draw, pluginState, mapProvider, eventBus }),
     onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
     onUpdate: (f) => { eventBus.emit('draw:updated', f) },
     onGeometryChange: (e) => {
@@ -187,6 +208,9 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   const resetState = () => {
     pluginState.dispatch({ type: 'SET_MODE', payload: null })
     pluginState.dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
+    // Release MoveControl's D-pad back to panning the map whenever a draw/edit
+    // session ends — a stale claim here would silently hijack it for good.
+    mapProvider.activeMoveTarget = null
   }
   const handlers = createHandlers({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, resetState })
   attachButtonHandlers(buttonConfig, handlers)

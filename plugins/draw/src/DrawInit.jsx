@@ -34,6 +34,8 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       isMounted = false
       mapProvider.draw?.remove()
       mapProvider.draw = null
+      // Release MoveControl's D-pad if this plugin instance still held it.
+      mapProvider.activeMoveTarget = null
     }
   }, [mapState.isMapReady, appState.mode])
 

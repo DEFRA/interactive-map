@@ -30,10 +30,28 @@ export const resolveSnappedCoord = (snap, map, current, nudgedCoord, snappedCoor
  * `keyMove` tracks the coordinate at the start of a nudge sequence so a single
  * move_vertex undo op can be pushed on keyup (see keyboardHandler).
  *
- * @returns {{ nudge: (e: KeyboardEvent) => void, keyMove: { start, index } }}
+ * @returns {{ nudge: (e: KeyboardEvent) => void, keyMove: { start, index }, nudgeByDelta: (dx: number, dy: number, isLargeStep: boolean) => void }}
  */
-export const wireNudge = ({ map, snap, getState, setState, onInserted }) => {
+export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexMoved }) => {
   const keyMove = { start: null, index: null }
+
+  // Shared core: moves the selected vertex by an already pixel-scaled delta,
+  // applying snap. Returns the previous coordinate (for undo) and vertex index,
+  // or null if there's no valid vertex selection to move.
+  const moveSelectedVertexBy = (dx, dy) => {
+    const { selectedVertexIndex, vertices, olFeature } = getState()
+    if (!olFeature || selectedVertexIndex < 0 || !vertices[selectedVertexIndex]) {
+      return null
+    }
+    const current = vertices[selectedVertexIndex]
+    const nudgedCoord = nudgeCoord(map, current, dx, dy)
+    const snappedCoord = snap ? snap.apply(nudgedCoord) : nudgedCoord
+    snap?.hideIndicator()
+    const newCoord = resolveSnappedCoord(snap, map, current, nudgedCoord, snappedCoord, dx, dy)
+    moveVertex(olFeature, selectedVertexIndex, newCoord)
+    setState({ vertices: vertices.map((c, i) => i === selectedVertexIndex ? newCoord : c) })
+    return { previousCoord: current, vertexIndex: selectedVertexIndex }
+  }
 
   // Insert the midpoint as a vertex then move it — midpoints stay as midpoints until actually moved.
   const nudgeMidpoint = (olFeature, midpoints, selectedVertexIndex, vertices, dx, dy) => {
@@ -74,18 +92,27 @@ export const wireNudge = ({ map, snap, getState, setState, onInserted }) => {
     if (selectedVertexIndex < 0 || !vertices[selectedVertexIndex]) {
       return
     }
-    const current = vertices[selectedVertexIndex]
     if (!keyMove.start) {
-      keyMove.start = [...current]
+      keyMove.start = [...vertices[selectedVertexIndex]]
       keyMove.index = selectedVertexIndex
     }
-    const nudgedCoord = nudgeCoord(map, current, dx, dy)
-    const snappedCoord = snap ? snap.apply(nudgedCoord) : nudgedCoord
-    snap?.hideIndicator()
-    const newCoord = resolveSnappedCoord(snap, map, current, nudgedCoord, snappedCoord, dx, dy)
-    moveVertex(olFeature, selectedVertexIndex, newCoord)
-    setState({ vertices: vertices.map((c, i) => i === selectedVertexIndex ? newCoord : c) })
+    moveSelectedVertexBy(dx, dy)
   }
 
-  return { nudge, keyMove }
+  // Explicit-delta counterpart to nudge(e) — the entry point for MoveControl's
+  // D-pad (see mapProvider.activeMoveTarget in events.js). Unlike nudge(e)'s
+  // held-key sequencing (undo pushed on keyup via keyMove, so repeated keydowns
+  // while held batch into one undo step), each call here is one complete,
+  // undoable action — a button click has no "held" state to batch. Midpoints
+  // aren't handled here: MoveControl only claims the D-pad once a real vertex is
+  // selected (see buildVertexMoveTarget in events.js).
+  const nudgeByDelta = (dx, dy, isLargeStep) => {
+    const step = isLargeStep ? KEYBOARD.stepAmount : KEYBOARD.nudgeAmount
+    const result = moveSelectedVertexBy(dx * step, dy * step)
+    if (result) {
+      onVertexMoved({ vertexIndex: result.vertexIndex, previousCoord: result.previousCoord })
+    }
+  }
+
+  return { nudge, keyMove, nudgeByDelta }
 }

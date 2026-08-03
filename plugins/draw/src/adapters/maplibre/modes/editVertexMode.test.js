@@ -17,6 +17,7 @@ describe('onSetup / onStop lifecycle', () => {
     expect(map._lastEditFeatureId).toBe('feat-1')
     expect(map._drawEditContainer).toBe(state.container)
     expect(ctx.map.on).toHaveBeenCalledWith('draw.update', expect.any(Function))
+    expect(ctx.map.on).toHaveBeenCalledWith('draw.nudgevertex', expect.any(Function))
   })
 
   test('does not clear the undo stack when re-entering the same feature', () => {
@@ -33,6 +34,7 @@ describe('onSetup / onStop lifecycle', () => {
     ctx.onStop(state)
     expect(map._drawEditContainer).toBeNull()
     expect(map.off).toHaveBeenCalledWith('draw.update', expect.any(Function))
+    expect(map.off).toHaveBeenCalledWith('draw.nudgevertex', expect.any(Function))
   })
 
   test('onSetup edge cases: clears an active snap indicator, positions or skips the touch target, clears an explicit -1 selection', () => {
@@ -95,6 +97,17 @@ describe('selection, scale and update events', () => {
     ctx.onInterfaceTypeChange(state, { interfaceType: 'touch' })
     expect(state.interfaceType).toBe('touch')
     ctx.onInterfaceTypeChange({ ...state, selectedVertexIndex: -1 }, { interfaceType: 'mouse' })
+  })
+
+  test('draw.nudgevertex moves the selected vertex and repositions the touch target — the inbound bridge for MoveControl.mapProvider.activeMoveTarget', () => {
+    jest.useFakeTimers()
+    const { state, map } = createHarness(POLYGON(), { interfaceType: 'touch', selectedVertexIndex: 0, selectedVertexType: 'vertex' })
+    jest.runAllTimers() // flush onSetup's deferred initial touch-target positioning
+    const before = [...state.vertecies[0]]
+    const targetBefore = { top: state.touchVertexTarget.style.top, left: state.touchVertexTarget.style.left }
+    map.fire('draw.nudgevertex', { dx: 1, dy: 0, isLargeStep: true })
+    expect(state.vertecies[0]).not.toEqual(before)
+    expect({ top: state.touchVertexTarget.style.top, left: state.touchVertexTarget.style.left }).not.toEqual(targetBefore)
   })
 
   test('onUpdate re-selects a changed vertex only when the vertex count is ambiguous', () => {

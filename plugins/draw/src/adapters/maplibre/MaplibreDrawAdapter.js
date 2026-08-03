@@ -41,6 +41,7 @@ export const displayedShape = (mode, coordinates) => {
  *   getMode()
  *   setInterfaceType(type)
  *   done() / cancel() / undo() / deleteVertex()
+ *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   get(id) / add(feature) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
@@ -200,6 +201,14 @@ export class MaplibreDrawAdapter {
 
   undo () {
     this._map.fire(CUSTOM_DRAW_EVENTS.UNDO)
+  }
+
+  // MoveControl's D-pad, routed here via mapProvider.activeMoveTarget (see
+  // events.js) once a vertex is selected. Bridged into the running edit mode the
+  // same way setInterfaceType is, since the adapter has no direct reference to the
+  // mode's live state.
+  nudgeSelectedVertex (dx, dy, isLargeStep) {
+    this._map.fire(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, { dx, dy, isLargeStep })
   }
 
   // Record the current geometry validity so the draw mode can block finish gestures

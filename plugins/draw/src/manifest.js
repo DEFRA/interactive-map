@@ -63,7 +63,7 @@ export const manifest = {
     },
     {
       id: 'drawMenu',
-      label: 'Menu',
+      label: ({ pluginState }) => pluginState.mode === 'edit_vertex' ? 'Edit actions' : 'Draw actions',
       iconId: 'menu',
       exclusiveSlot: true,
       hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
@@ -99,7 +99,7 @@ export const manifest = {
           hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex'
         }
       ],
-      mobile: { slot: 'bottom-right' },
+      mobile: { slot: 'top-middle' },
       tablet: { slot: 'top-middle' },
       desktop: { slot: 'top-middle' }
     }

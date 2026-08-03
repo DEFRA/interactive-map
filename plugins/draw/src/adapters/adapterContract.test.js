@@ -16,6 +16,7 @@ const CONTRACT_METHODS = [
   'cancel',
   'undo',
   'deleteVertex',
+  'nudgeSelectedVertex',
   'get',
   'add',
   'delete',

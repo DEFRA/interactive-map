@@ -111,6 +111,17 @@ test('select via pointer, delete the vertex, then undo restores it', () => {
   mode.undo() // empty stack — no-op
 })
 
+test('nudgeSelectedVertex (MoveControl D-pad) moves the selected vertex and is undoable', () => {
+  const { container, manager, mode, ring } = setup()
+  container.dispatchEvent(domEvent('pointerdown', { pointerType: 'mouse', clientX: 100, clientY: 0 }))
+  mode.nudgeSelectedVertex(1, 0, true)
+  expect(ring()[1]).not.toEqual([100, 0])
+  expect(manager.undoStack.length).toBe(1)
+
+  mode.undo()
+  expect(ring()[1]).toEqual([100, 0])
+})
+
 test('undo re-validates with the inverse change phase (undo of a delete re-inserts)', () => {
   jest.useFakeTimers()
   const { container, manager, mode } = setup()

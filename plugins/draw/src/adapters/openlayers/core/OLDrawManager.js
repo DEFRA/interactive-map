@@ -120,6 +120,10 @@ export class OLDrawManager {
     this._modeInstance?.deleteVertex()
   }
 
+  nudgeSelectedVertex (dx, dy, isLargeStep) {
+    this._modeInstance?.nudgeSelectedVertex?.(dx, dy, isLargeStep)
+  }
+
   // Show/hide the dashed invalid stroke on the active draw sketch or edit feature.
   setInvalid (invalid) {
     this._modeInstance?.setInvalid?.(invalid)

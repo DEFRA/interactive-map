@@ -273,6 +273,9 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
 
     undo: actions.doUndo,
     deleteVertex: actions.doDeleteVertex,
+    // MoveControl's D-pad, routed here via mapProvider.activeMoveTarget (see
+    // events.js) once a vertex is selected.
+    nudgeSelectedVertex: parts.keyboardHandler.nudgeByDelta,
 
     destroy () {
       parts.live.destroy()
@@ -291,7 +294,7 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
 }
 
 /**
- * @returns {{ setInterfaceType, done, cancel, undo, deleteVertex, destroy } | null}
+ * @returns {{ setInterfaceType, done, cancel, undo, deleteVertex, nudgeSelectedVertex, destroy } | null}
  */
 export const createEditMode = ({ map, manager, options }) => {
   const { featureId, container, interfaceType, deleteVertexButtonId, snap } = options

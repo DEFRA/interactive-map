@@ -19,8 +19,9 @@ const setup = ({ snap = null } = {}) => {
     // EditMode's onInserted runs syncGeom, refreshing vertices from the geometry
     state.vertices = getCoords({ type: 'Polygon', coordinates: olFeature.getGeometry().getCoordinates() })
   })
-  const { nudge, keyMove } = wireNudge({ map, snap, getState: () => state, setState, onInserted })
-  return { olFeature, state, setState, onInserted, nudge, keyMove }
+  const onVertexMoved = jest.fn()
+  const { nudge, keyMove, nudgeByDelta } = wireNudge({ map, snap, getState: () => state, setState, onInserted, onVertexMoved })
+  return { olFeature, state, setState, onInserted, onVertexMoved, nudge, keyMove, nudgeByDelta }
 }
 
 const ring = (olFeature) => olFeature.getGeometry().getCoordinates()[0]
@@ -49,6 +50,40 @@ describe('nudging a vertex', () => {
     state.olFeature = null
     nudge({ key: 'ArrowRight' })
     expect(setState).not.toHaveBeenCalled()
+  })
+})
+
+describe('nudgeByDelta (MoveControl D-pad)', () => {
+  test('moves the selected vertex by an explicit direction, scaled by isLargeStep, and reports the move for undo', () => {
+    const { state, nudgeByDelta, olFeature, onVertexMoved } = setup()
+    Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
+    nudgeByDelta(1, 0, true)
+    expect(ring(olFeature)[1]).toEqual([15, 0])
+    expect(onVertexMoved).toHaveBeenCalledWith({ vertexIndex: 1, previousCoord: [10, 0] })
+
+    onVertexMoved.mockClear()
+    nudgeByDelta(0, 1, false)
+    expect(ring(olFeature)[1]).toEqual([15, 1])
+    expect(onVertexMoved).toHaveBeenCalledWith({ vertexIndex: 1, previousCoord: [15, 0] })
+  })
+
+  test('each call is its own undo-able action, unlike nudge(e)\'s held-key batching', () => {
+    const { state, nudgeByDelta, onVertexMoved } = setup()
+    Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
+    nudgeByDelta(1, 0, true)
+    nudgeByDelta(1, 0, true)
+    expect(onVertexMoved).toHaveBeenCalledTimes(2)
+  })
+
+  test('does nothing without a feature or a valid vertex selection, and never touches midpoints', () => {
+    const { state, nudgeByDelta, onVertexMoved } = setup()
+    nudgeByDelta(1, 0, true) // nothing selected
+    Object.assign(state, { selectedVertexIndex: 4, selectedVertexType: 'midpoint' })
+    nudgeByDelta(1, 0, true) // midpoint selected — MoveControl only claims a real vertex
+    state.olFeature = null
+    Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
+    nudgeByDelta(1, 0, true)
+    expect(onVertexMoved).not.toHaveBeenCalled()
   })
 })
 

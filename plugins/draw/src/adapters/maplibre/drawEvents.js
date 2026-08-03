@@ -27,7 +27,8 @@ export const CUSTOM_DRAW_EVENTS = {
   UNDO: 'draw.undo',
   GEOMETRY_CHANGE: 'draw.geometrychange',
   INTERFACE_TYPE_CHANGE: 'draw.interfacetypechange',
-  PLACEMENT_BLOCKED: 'draw.placementblocked'
+  PLACEMENT_BLOCKED: 'draw.placementblocked',
+  NUDGE_VERTEX: 'draw.nudgevertex'
 }
 
 // Native MapLibre map event (not a draw event) — fires whenever the map style data changes.

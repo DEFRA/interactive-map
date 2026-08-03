@@ -38,6 +38,35 @@ export const vertexOperations = {
     return this.getOffset(getCoords(this.getFeature(state.featureId))[state.selectedVertexIndex], e)
   },
 
+  // Explicit-delta counterpart to getOffset, driven by a unit direction vector and
+  // MoveControl's own Precision toggle rather than a KeyboardEvent — used by
+  // nudgeVertexByDelta below.
+  getOffsetByDelta (coord, dx, dy, isLargeStep) {
+    const pt = this.map.project(coord)
+    const amount = isLargeStep ? KEYBOARD.stepAmount : KEYBOARD.nudgeAmount
+    return this.map.unproject({ x: pt.x + dx * amount, y: pt.y + dy * amount })
+  },
+
+  // Moves the selected vertex by an explicit (dx, dy) unit direction — the entry
+  // point for MoveControl's D-pad (see mapProvider.activeMoveTarget in events.js),
+  // as opposed to moveVertexByKey's KeyboardEvent-driven path. Each call is treated
+  // as one complete, undoable action (no held-key sequencing/snap-breaking, since a
+  // button click has no "held" state to batch the way arrow keys do).
+  nudgeVertexByDelta (state, dx, dy, isLargeStep) {
+    if (state.selectedVertexType !== 'vertex' || state.selectedVertexIndex < 0) {
+      return
+    }
+    const feature = this.getFeature(state.featureId)
+    const currentCoord = feature && getCoords(feature)?.[state.selectedVertexIndex]
+    if (!currentCoord) {
+      return
+    }
+    const previousPosition = [...currentCoord]
+    const vertexIndex = state.selectedVertexIndex
+    this.moveVertex(state, this.getOffsetByDelta(currentCoord, dx, dy, isLargeStep))
+    this.pushUndo({ type: 'move_vertex', featureId: state.featureId, vertexIndex, previousPosition })
+  },
+
   insertVertex (state, e) {
     const midIdx = state.selectedVertexIndex - state.vertecies.length
     const newCoord = this.getOffset(state.midpoints[midIdx], e)

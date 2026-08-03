@@ -100,6 +100,31 @@ describe('MoveControl', () => {
     expect(announce).toHaveBeenCalledWith('Nudged up')
   })
 
+  it('routes direction clicks to mapProvider.activeMoveTarget instead of panning, when a plugin has claimed it', () => {
+    mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
+    render(<MoveControl />)
+    fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
+    expect(mapProvider.activeMoveTarget.move).toHaveBeenCalledWith(1, 0, true)
+    expect(mapProvider.panBy).not.toHaveBeenCalled()
+    expect(announce).toHaveBeenCalledWith('Moved vertex right')
+  })
+
+  it('falls back to panning once activeMoveTarget is released', () => {
+    mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
+    const { rerender } = render(<MoveControl />)
+    mapProvider.activeMoveTarget = null
+    rerender(<MoveControl />)
+    fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
+    expect(mapProvider.panBy).toHaveBeenCalledWith([100, 0])
+  })
+
+  it('omits the target label from the announcement when activeMoveTarget has none', () => {
+    mapProvider.activeMoveTarget = { move: jest.fn() }
+    render(<MoveControl />)
+    fireEvent.click(screen.getByRole('button', { name: 'Move up' }))
+    expect(announce).toHaveBeenCalledWith('Moved up')
+  })
+
   it('zooms in and out by the large delta by default and announces the action', () => {
     render(<MoveControl />)
     fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))

@@ -407,6 +407,12 @@ describe('simple delegations', () => {
     expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.UNDO)
   })
 
+  test('nudgeSelectedVertex fires the nudge-vertex event with the given delta and step size', () => {
+    const { adapter, map } = setup()
+    adapter.nudgeSelectedVertex(1, 0, true)
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, { dx: 1, dy: 0, isLargeStep: true })
+  })
+
   test('deleteVertex is a no-op', () => {
     const { adapter, draw, map } = setup()
     expect(() => adapter.deleteVertex()).not.toThrow()

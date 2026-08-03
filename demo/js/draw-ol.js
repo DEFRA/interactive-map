@@ -75,7 +75,7 @@ interactiveMap.on('map:ready', function (e) {
   interactPlugin.enable()
   interactiveMap.addButton('geometryActions', {
     label: 'Draw tools',
-    mobile: { slot: 'bottom-right', order: 3 },
+    mobile: { slot: 'top-middle', order: 3 },
     tablet: { slot: 'top-middle', order: 3 },
     desktop: { slot: 'top-middle', order: 3 },
     menuItems: [{

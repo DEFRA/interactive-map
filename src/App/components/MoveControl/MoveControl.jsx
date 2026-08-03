@@ -39,6 +39,20 @@ export const MoveControl = () => {
   const actionWord = isLargeStep ? 'Move' : 'Nudge'
 
   const handlePan = (dx, dy, verb) => {
+    // Any plugin can claim the D-pad for something other than panning the map (e.g.
+    // moving a selected draw vertex) by setting mapProvider.activeMoveTarget — a
+    // generic { move(dx, dy, isLargeStep), label? } contract. MoveControl doesn't
+    // know or care what's claiming it; it just checks for a claimant before
+    // defaulting to its own panBy behaviour. Read fresh on every click rather than
+    // subscribed to reactively, since it's a plain mapProvider property, not state.
+    const activeMoveTarget = mapProvider.activeMoveTarget
+    if (activeMoveTarget) {
+      activeMoveTarget.move(dx, dy, isLargeStep)
+      const target = activeMoveTarget.label ? `${activeMoveTarget.label} ` : ''
+      announce(`${actionWord}d ${target}${verb}`)
+      return
+    }
+
     const amount = resolveStepAmount(isLargeStep, nudgePanDelta, panDelta)
     mapProvider.panBy([dx * amount, dy * amount])
     announce(`${actionWord}d ${verb}`)

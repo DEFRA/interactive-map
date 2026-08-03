@@ -33,6 +33,14 @@ afterEach(() => {
 
 const key = (type, props) => window.dispatchEvent(new KeyboardEvent(type, { cancelable: true, ...props }))
 
+test('nudgeByDelta (exposed for MoveControl) moves the selected vertex and reports it via onVertexMoved', () => {
+  const { state, handler, onVertexMoved } = setup()
+  Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
+  handler.nudgeByDelta(1, 0, true)
+  expect(state.vertices[1]).not.toEqual([100, 0])
+  expect(onVertexMoved).toHaveBeenCalledWith(expect.objectContaining({ vertexIndex: 1 }))
+})
+
 test('Space selects the vertex or midpoint nearest the crosshair, only when nothing is selected', () => {
   const { state, setState, onKeyboardActive } = setup()
   key('keydown', { key: ' ' })

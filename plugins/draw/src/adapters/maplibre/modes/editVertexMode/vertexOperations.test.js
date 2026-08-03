@@ -45,6 +45,34 @@ describe('vertexOperations', () => {
     expect(ctx.getNewCoord(state, { key: 'ArrowRight', shiftKey: false })).toHaveProperty('lng')
   })
 
+  test('getOffsetByDelta applies step/nudge amounts along an explicit direction, mirroring getOffset\'s shiftKey polarity', () => {
+    const { ctx } = createHarness()
+    const large = ctx.getOffsetByDelta([5, 5], 1, 0, true)
+    const small = ctx.getOffsetByDelta([5, 5], 1, 0, false)
+    expect(large.lng).not.toBe(5)
+    expect(Math.abs(small.lng - 5)).toBeLessThan(Math.abs(large.lng - 5))
+    expect(ctx.getOffsetByDelta([5, 5], 0, 0, true)).toEqual({ lng: 5, lat: 5 })
+  })
+
+  test('nudgeVertexByDelta moves the selected vertex and pushes a single undo entry, or no-ops for a midpoint/no selection', () => {
+    const { ctx, state, map } = createHarness()
+    state.selectedVertexIndex = 0
+    state.selectedVertexType = 'vertex'
+    const before = [...state.vertecies[0]]
+    ctx.nudgeVertexByDelta(state, 1, 0, true)
+    expect(state.vertecies[0]).not.toEqual(before)
+    expect(map._undoStack.pop()).toMatchObject({ type: 'move_vertex', vertexIndex: 0, previousPosition: before })
+
+    map._undoStack.clear()
+    ctx.nudgeVertexByDelta({ ...state, selectedVertexType: 'midpoint' }, 1, 0, true)
+    ctx.nudgeVertexByDelta({ ...state, selectedVertexIndex: -1 }, 1, 0, true)
+    // Passes the type/index guard but resolves to no coordinate — missing feature,
+    // and a valid feature with an out-of-range index.
+    ctx.nudgeVertexByDelta({ ...state, featureId: 'missing' }, 1, 0, true)
+    ctx.nudgeVertexByDelta({ ...state, selectedVertexIndex: 99 }, 1, 0, true)
+    expect(map._undoStack).toHaveLength(0)
+  })
+
   test('insertVertex splits a midpoint into a new vertex, records undo and selects it', () => {
     const { ctx, state, api } = createHarness()
     ctx.insertVertex({ ...state, selectedVertexIndex: state.vertecies.length, selectedVertexType: 'midpoint' }, { key: 'ArrowRight', shiftKey: false })
