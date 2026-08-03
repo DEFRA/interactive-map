@@ -24,7 +24,6 @@ describe('MoveControl', () => {
     breakpoint: 'desktop',
     dispatch,
     expandedButtons: new Set(['moveControl']),
-    hiddenButtons: new Set(['moveControl']),
     nudgeStepSize: 'large',
     ...overrides
   })
@@ -57,42 +56,6 @@ describe('MoveControl', () => {
   it('is not visually collapsed when moveControl is expanded', () => {
     const { container } = render(<MoveControl />)
     expect(container.querySelector('.im-c-move-control--collapsed')).not.toBeInTheDocument()
-  })
-
-  it('renders the hide button last in DOM order', () => {
-    const { container } = render(<MoveControl />)
-    const hideButton = screen.getByRole('button', { name: 'Hide move and zoom controls' })
-    expect(container.querySelector('.im-c-move-control').lastElementChild).toContainElement(hideButton)
-  })
-
-  it('hides the control and returns focus to the trigger once hiddenWhen catches up', () => {
-    // The trigger lives outside MoveControl's own render tree (rendered separately via
-    // the button registry), so stand in a real element at its DOM id — the component
-    // looks it up via document.getElementById, not the shared buttonRefs map.
-    const trigger = document.createElement('button')
-    trigger.id = 'im-move-control'
-    document.body.appendChild(trigger)
-
-    const { rerender } = render(<MoveControl />)
-    fireEvent.click(screen.getByRole('button', { name: 'Hide move and zoom controls' }))
-    expect(dispatch).toHaveBeenCalledWith({
-      type: 'TOGGLE_BUTTON_EXPANDED',
-      payload: { id: 'moveControl', isExpanded: false }
-    })
-
-    // expandedButtons updates first; hiddenWhen (evaluated separately by the app-wide
-    // useButtonStateEvaluator) hasn't caught up yet, so the trigger is still hidden —
-    // focus must not jump to it while it's still un-focusable.
-    useApp.mockReturnValue(buildAppState({ expandedButtons: new Set() }))
-    rerender(<MoveControl />)
-    expect(trigger).not.toHaveFocus()
-
-    // hiddenWhen catches up on the next pass — only now does focus return.
-    useApp.mockReturnValue(buildAppState({ expandedButtons: new Set(), hiddenButtons: new Set() }))
-    rerender(<MoveControl />)
-    expect(trigger).toHaveFocus()
-
-    trigger.remove()
   })
 
   it('moves focus to the first direction button when the control opens', () => {

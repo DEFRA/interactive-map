@@ -10,8 +10,6 @@
     flex-direction: column;
     align-items: center;
     gap: var(--divider-gap);
-    padding: var(--divider-gap);
-    border: var(--app-border-width) solid var(--app-border-color);
 }
 
 .im-c-move-control--collapsed {
@@ -91,6 +89,17 @@
 // Same inverted "pressed" treatment already used for actions-slot toggle buttons
 // (e.g. draw's Snap toggle) — reused here so Nudge mode reads consistently active.
 .im-c-move-control .im-c-map-button[aria-pressed="true"] {
+    color: var(--pressed-button-foreground-color);
+    border-color: var(--pressed-button-border-color);
+    background-color: var(--pressed-button-background-color);
+}
+
+// The trigger lives in the right-top slot, outside .im-c-move-control, so this is
+// its own top-level rule. Same colour treatment as above, but keyed off
+// aria-expanded rather than aria-pressed — the trigger is correctly a disclosure
+// button (it reveals the control below), not a toggle button, so it doesn't carry
+// aria-pressed itself; the colour is purely a visual echo of its expanded state.
+.im-c-map-button--move-control[aria-expanded="true"] {
     color: var(--pressed-button-foreground-color);
     border-color: var(--pressed-button-border-color);
     background-color: var(--pressed-button-background-color);

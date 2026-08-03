@@ -192,11 +192,6 @@ describe('defaultAppConfig', () => {
     expect(moveControlBtn.ariaControls({ appConfig: { id: 'im' } })).toBe('im-move-control-content')
   })
 
-  it('moveControl hiddenWhen hides the trigger while the control is open', () => {
-    expect(moveControlBtn.hiddenWhen({ appState: { expandedButtons: new Set(['moveControl']) } })).toBe(true)
-    expect(moveControlBtn.hiddenWhen({ appState: { expandedButtons: new Set() } })).toBe(false)
-  })
-
   it('moveControl onClick toggles TOGGLE_BUTTON_EXPANDED based on current state', () => {
     const dispatch = jest.fn()
 
