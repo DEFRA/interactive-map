@@ -7,9 +7,7 @@ jest.mock('../../services/reverseGeocode.js', () => ({
   hasReverseGeocode: jest.fn()
 }))
 
-jest.mock('../../services/logger.js', () => ({
-  logger: { warn: jest.fn() }
-}))
+jest.mock('../../services/logger.js')
 
 const PAN_DELTA = 10
 const NUDGE_PAN_DELTA = 5

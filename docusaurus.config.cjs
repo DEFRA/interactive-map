@@ -1,4 +1,6 @@
 // @ts-check
+const path = require('path');
+require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 /** @type {import('@docusaurus/types').Config} */
 const config = {
@@ -14,10 +16,17 @@ const config = {
   projectName: 'interactive-map',
   deploymentBranch: 'main',
   trailingSlash: false,
-  
+
   i18n: {
     defaultLocale: 'en',
     locales: ['en'],
+  },
+
+  // Exposed to the client bundle via useDocusaurusContext().siteConfig.customFields.
+  // Only put values here that are safe to ship in a public bundle — this is a
+  // client-visible API key (OS Data Hub open-content tier), not a real secret.
+  customFields: {
+    osApiKey: process.env.OS_API_KEY,
   },
 
   presets: [],

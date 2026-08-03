@@ -33,10 +33,10 @@ const interactiveMap = new InteractiveMap({
 
 ## UMD usage
 
-Copy the entire `plugins/beta/datasets/dist/umd/` directory to `/your-assets-path/plugins/beta/datasets/umd/`. The plugin uses dynamic imports, so all files in the directory must be served from the same location. Then add the script tag:
+Copy the entire `plugins/datasets/dist/umd/` directory to `/your-assets-path/plugins/datasets/umd/`. The plugin uses dynamic imports, so all files in the directory must be served from the same location. Then add the script tag:
 
 ```html
-<script defer src="/your-assets-path/plugins/beta/datasets/umd/index.js"></script>
+<script defer src="/your-assets-path/plugins/datasets/umd/index.js"></script>
 ```
 
 ```js
@@ -68,7 +68,7 @@ const interactiveMap = new defra.InteractiveMap('map', {
 > [!NOTE]
 > **GOV.UK Prototype Kit** — skip the copy step. All files are served automatically. Use this path instead:
 > ```html
-> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/datasets/dist/umd/index.js"></script>
+> <script defer src="/plugin-assets/%40defra%2Finteractive-map/plugins/datasets/dist/umd/index.js"></script>
 > ```
 
 ## Options

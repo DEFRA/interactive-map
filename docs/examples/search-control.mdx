@@ -1,4 +1,4 @@
-import DemoMapSearchNominatim from '../../demo/DemoMapSearchNominatim.js'
+import DemoMapSearch from '../../demo/DemoMapSearch.js'
 import CodeTabs from '../../demo/js/codeTabs.js'
 
 # Add a search control
@@ -6,10 +6,10 @@ import CodeTabs from '../../demo/js/codeTabs.js'
 Add a search control using the built-in OS Names API integration.
 
 :::note
-The live demo below uses Nominatim (no API key required) — the code example uses OS Names, so results may differ slightly. Embedding the key in the URL is the simplest approach for prototyping; for production, `transformRequest` can be used to inject auth headers, or you may need to route requests through your own server-side proxy.
+This requires an OS Data Hub API key. Embedding the key in the URL is the simplest approach for prototyping; for production, `transformRequest` can be used to inject auth headers instead, or you may need to route requests through your own server-side proxy.
 :::
 
-<DemoMapSearchNominatim />
+<DemoMapSearch />
 
 <CodeTabs tabs={[
   {

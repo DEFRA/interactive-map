@@ -1,4 +1,5 @@
 // src/plugins/mapStyles/EsriProvider.jsx
+import { MapProvider } from '../../../mapProvider.js'
 import './esriProvider.scss'
 import esriConfig from '@arcgis/core/config.js'
 import TileInfo from '@arcgis/core/layers/support/TileInfo.js'
@@ -14,8 +15,9 @@ import { queryVectorTileFeatures } from './utils/query.js'
 import { getExtentFromFlatCoords, getPointFromFlatCoords, getBboxFromGeoJSON } from './utils/coords.js'
 import { cleanDOM } from './utils/esriFixes.js'
 
-export default class EsriProvider {
+export default class EsriProvider extends MapProvider {
   constructor ({ mapProviderConfig = {}, events, eventBus }) {
+    super()
     this.events = events
     this.eventBus = eventBus
     this.capabilities = {
@@ -100,6 +102,15 @@ export default class EsriProvider {
     this.map = map
     this.view = view
     this.baseTileLayer = baseTileLayer
+  }
+
+  _isBaseMapReady = false
+  setBaseMapReady (ready) {
+    this._isBaseMapReady = ready
+  }
+
+  isBaseMapReady () {
+    return this._isBaseMapReady
   }
 
   destroyMap () {

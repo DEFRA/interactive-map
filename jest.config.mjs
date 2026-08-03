@@ -21,6 +21,8 @@ export default {
     ],
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
+      '/__mocks__/',
+      '/__data__/',
       '/node_modules/',
       '<rootDir>/public',
       '<rootDir>/src/index.umd.js',
@@ -29,7 +31,7 @@ export default {
       '<rootDir>/demo',
       '<rootDir>/src/test-utils.js',
       '__helpers__',
-      '<rootDir>/plugins/beta/datasets/',
+      '<rootDir>/plugins/datasets/',
       '<rootDir>/providers/beta/',
       '<rootDir>/plugins/beta/draw-es',
       '<rootDir>/plugins/beta/draw-ml',

@@ -181,7 +181,8 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
         filename: path.resolve(__dirname, 'dist/stats', `${outDir.replace(/\//g, '-')}.html`), // NOSONAR replaceAll() requires Chrome 84 or later
         open: false,
         gzipSize: true
-      })] : [])
+      })]
+      : [])
     ],
 
     output: {
@@ -258,8 +259,8 @@ const ALL_BUILDS = [
     manualChunks: (id) => id.includes('/manifest') ? 'im-interact-plugin' : undefined
   },
   {
-    entryPath: './plugins/beta/datasets/src/index.js',
-    outDir: 'plugins/beta/datasets/dist/esm',
+    entryPath: './plugins/datasets/src/index.js',
+    outDir: 'plugins/datasets/dist/esm',
     manualChunks: (id) => {
       if (id.includes('/manifest')) { return 'im-datasets-plugin' }
       if (id.includes('maplibreLayerAdapter')) { return 'im-datasets-ml-adapter' }

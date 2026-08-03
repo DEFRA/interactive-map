@@ -9,6 +9,10 @@ Draw, edit, select and delete polygons and lines using the draw and interact plu
 The draw plugin (`draw-ml`) is currently in beta.
 :::
 
+:::note
+This example configures snapping (`snapLayers`) against the base map style's woodland layer, so new vertices placed near a wooded area snap to its boundary. Swap in whichever layer ID suits your own style.
+:::
+
 <DemoMapDrawTools />
 
 <CodeTabs tabs={[
@@ -33,7 +37,10 @@ The draw plugin (`draw-ml`) is currently in beta.
         deselectOnClickOutside: true
       })
 
-      const drawPlugin = createDrawPlugin()
+      // Snap new vertices to the woodland layer when drawing near one
+      const drawPlugin = createDrawPlugin({
+        snapLayers: ['OS/Woodland:3/Local/1']
+      })
 
       const interactiveMap = new InteractiveMap('my-map', {
         behaviour: 'inline',
@@ -161,7 +168,10 @@ The draw plugin (`draw-ml`) is currently in beta.
         deselectOnClickOutside: true
       })
 
-      const drawPlugin = defra.drawMLPlugin()
+      // Snap new vertices to the woodland layer when drawing near one
+      const drawPlugin = defra.drawMLPlugin({
+        snapLayers: ['OS/Woodland:3/Local/1']
+      })
 
       const interactiveMap = new defra.InteractiveMap('my-map', {
         behaviour: 'inline',

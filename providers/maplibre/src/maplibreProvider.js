@@ -2,7 +2,7 @@
  * @typedef {import('../../../src/types.js').MapProvider} MapProvider
  * @typedef {import('../../../src/types.js').MapProviderConfig} MapProviderConfig
  */
-
+import { MapProvider } from '../../mapProvider.js'
 import { DEFAULTS, supportedShortcuts } from './defaults.js'
 import { cleanCanvas, applyPreventDefaultFix } from './utils/maplibreFixes.js'
 import { attachMapEvents } from './mapEvents.js'
@@ -20,7 +20,7 @@ import { addPatternsToMap } from './utils/patternImages.js'
  *
  * @implements {MapProvider}
  */
-export default class MapLibreProvider {
+export default class MapLibreProvider extends MapProvider {
   /**
    * @param {Object} options - Constructor options.
    * @param {any} options.mapFramework - The MapLibre GL JS module.
@@ -29,6 +29,7 @@ export default class MapLibreProvider {
    * @param {Object} options.eventBus - Event emitter for publishing map events.
    */
   constructor ({ mapFramework, mapProviderConfig = {}, events, eventBus }) {
+    super()
     this.maplibreModule = mapFramework
     this.events = events
     this.eventBus = eventBus
@@ -116,6 +117,10 @@ export default class MapLibreProvider {
       mapSize: this.mapSize,
       crs: this.crs
     })
+  }
+
+  isBaseMapReady () {
+    return Boolean(this.map?.getStyle())
   }
 
   /** Destroy the map and clean up resources. */

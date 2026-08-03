@@ -7,7 +7,7 @@ import maplibreProvider from '/providers/maplibre/dist/esm/index.js'
 import openNamesProvider from '/providers/beta/open-names/dist/esm/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/dist/esm/index.js'
-import createDatasetsPlugin from '/plugins/beta/datasets/dist/esm/index.js'
+import createDatasetsPlugin from '/plugins/datasets/dist/esm/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/dist/esm/index.js'
 import searchPlugin from '/plugins/search/dist/esm/index.js'
 import createInteractPlugin from '/plugins/interact/dist/esm/index.js'
