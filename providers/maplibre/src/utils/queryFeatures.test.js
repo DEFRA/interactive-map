@@ -27,7 +27,7 @@ describe('queryFeatures coverage', () => {
     cases.forEach(({ type, coords, p }) => {
       const feat = { id: type, layer: { id: 'L1' }, geometry: { type, coordinates: coords } }
       const map = { ...mockMap, queryRenderedFeatures: () => [feat, feat] } // Hits deduplication
-      expect(queryFeatures(map, p).length).toBe(1)
+      expect(queryFeatures(map, p)).toHaveLength(1)
     })
 
     // 3. Hits Line 144 (.sort) and property-based ID fallback
@@ -46,7 +46,7 @@ describe('queryFeatures coverage', () => {
     const sortMap = { ...mockMap, queryRenderedFeatures: () => [f1, f2] }
     const result = queryFeatures(sortMap, { x: 0, y: 0 })
 
-    expect(result.length).toBe(2)
+    expect(result).toHaveLength(2)
     expect(result[0].layer.id).toBe('layer-A') // Sorted by layerStack index
 
     // 4. Hit ray-casting intersect logic — point inside the polygon
@@ -55,16 +55,16 @@ describe('queryFeatures coverage', () => {
       geometry: { type: 'Polygon', coordinates: [[[0, 0], [10, 10], [0, 10], [0, 0]]] }
     }
     const rayMap = { ...mockMap, queryRenderedFeatures: () => [polyFeat] }
-    expect(queryFeatures(rayMap, { x: 2, y: 8 }).length).toBe(1)
+    expect(queryFeatures(rayMap, { x: 2, y: 8 })).toHaveLength(1)
 
     // 5. Outside polygon is filtered out (tolerance only applies to lines)
     const outsideMap = { ...mockMap, queryRenderedFeatures: () => [polyFeat] }
-    expect(queryFeatures(outsideMap, { x: -1, y: 5 }).length).toBe(0)
+    expect(queryFeatures(outsideMap, { x: -1, y: 5 })).toHaveLength(0)
 
     // 6. Symbol under exact click point is included
     const symbolFeat = { id: 'sym', layer: { id: 'S', source: 'src' }, geometry: { type: 'Point', coordinates: [0, 0] } }
     const symbolMap = { ...mockMap, queryRenderedFeatures: () => [symbolFeat] } // both calls return it
-    expect(queryFeatures(symbolMap, { x: 5, y: 5 }).length).toBe(1)
+    expect(queryFeatures(symbolMap, { x: 5, y: 5 })).toHaveLength(1)
 
     // 7. Symbol NOT under exact click point is filtered out
     let call = 0
@@ -72,6 +72,6 @@ describe('queryFeatures coverage', () => {
       ...mockMap,
       queryRenderedFeatures: () => call++ === 0 ? [symbolFeat] : [] // bbox returns it, exact does not
     }
-    expect(queryFeatures(symbolMissMap, { x: 5, y: 5 }).length).toBe(0)
+    expect(queryFeatures(symbolMissMap, { x: 5, y: 5 })).toHaveLength(0)
   })
 })

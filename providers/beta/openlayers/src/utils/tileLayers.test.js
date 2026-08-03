@@ -305,7 +305,7 @@ describe('createVectorTileLayer', () => {
   it('slices capabilities lods to max 16 resolutions', async () => {
     await createVectorTileLayer(styleUrl, null)
     const { resolutions } = TileGrid.mock.calls[0][0]
-    expect(resolutions.length).toBe(16)
+    expect(resolutions).toHaveLength(16)
   })
 
   it('creates VectorTileSource with MVT format and 27700 projection', async () => {

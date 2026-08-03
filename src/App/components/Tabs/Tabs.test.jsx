@@ -77,40 +77,17 @@ describe('Tabs — WCAG attributes', () => {
 // ─── WCAG keyboard navigation ─────────────────────────────────────────────────
 
 describe('Tabs — WCAG keyboard navigation', () => {
-  it('ArrowRight moves to next tab', () => {
-    render(<Tabs tabs={[TAB_A, TAB_B, TAB_C]} />)
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Alpha' }), { key: 'ArrowRight' })
-    expect(screen.getByRole('tab', { name: 'Beta' })).toHaveAttribute('aria-selected', 'true')
-  })
-
-  it('ArrowLeft moves to previous tab', () => {
-    render(<Tabs tabs={[TAB_A, TAB_B, TAB_C]} defaultTab='Beta' />)
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Beta' }), { key: 'ArrowLeft' })
-    expect(screen.getByRole('tab', { name: 'Alpha' })).toHaveAttribute('aria-selected', 'true')
-  })
-
-  it('ArrowRight wraps from last tab to first', () => {
-    render(<Tabs tabs={[TAB_A, TAB_B, TAB_C]} defaultTab='Gamma' />)
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Gamma' }), { key: 'ArrowRight' })
-    expect(screen.getByRole('tab', { name: 'Alpha' })).toHaveAttribute('aria-selected', 'true')
-  })
-
-  it('ArrowLeft wraps from first tab to last', () => {
-    render(<Tabs tabs={[TAB_A, TAB_B, TAB_C]} />)
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Alpha' }), { key: 'ArrowLeft' })
-    expect(screen.getByRole('tab', { name: 'Gamma' })).toHaveAttribute('aria-selected', 'true')
-  })
-
-  it('Home moves to first tab', () => {
-    render(<Tabs tabs={[TAB_A, TAB_B, TAB_C]} defaultTab='Gamma' />)
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Gamma' }), { key: 'Home' })
-    expect(screen.getByRole('tab', { name: 'Alpha' })).toHaveAttribute('aria-selected', 'true')
-  })
-
-  it('End moves to last tab', () => {
-    render(<Tabs tabs={[TAB_A, TAB_B, TAB_C]} />)
-    fireEvent.keyDown(screen.getByRole('tab', { name: 'Alpha' }), { key: 'End' })
-    expect(screen.getByRole('tab', { name: 'Gamma' })).toHaveAttribute('aria-selected', 'true')
+  it.each([
+    ['ArrowRight moves to next tab', undefined, 'Alpha', 'ArrowRight', 'Beta'],
+    ['ArrowLeft moves to previous tab', 'Beta', 'Beta', 'ArrowLeft', 'Alpha'],
+    ['ArrowRight wraps from last tab to first', 'Gamma', 'Gamma', 'ArrowRight', 'Alpha'],
+    ['ArrowLeft wraps from first tab to last', undefined, 'Alpha', 'ArrowLeft', 'Gamma'],
+    ['Home moves to first tab', 'Gamma', 'Gamma', 'Home', 'Alpha'],
+    ['End moves to last tab', undefined, 'Alpha', 'End', 'Gamma']
+  ])('%s', (_description, defaultTab, focusedTab, key, expectedTab) => {
+    render(<Tabs tabs={[TAB_A, TAB_B, TAB_C]} defaultTab={defaultTab} />)
+    fireEvent.keyDown(screen.getByRole('tab', { name: focusedTab }), { key })
+    expect(screen.getByRole('tab', { name: expectedTab })).toHaveAttribute('aria-selected', 'true')
   })
 
   it('unhandled keys do not change the active tab', () => {
