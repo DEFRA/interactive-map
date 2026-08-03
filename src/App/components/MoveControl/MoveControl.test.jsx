@@ -25,6 +25,7 @@ describe('MoveControl', () => {
     dispatch,
     expandedButtons: new Set(['moveControl']),
     nudgeStepSize: 'large',
+    layoutRefs: { viewportRef: { current: { focus: jest.fn() } } },
     ...overrides
   })
 
@@ -162,6 +163,52 @@ describe('MoveControl', () => {
     fireEvent.click(screen.getByRole('button', { name: 'Zoom out' }))
     expect(mapProvider.zoomIn).not.toHaveBeenCalled()
     expect(mapProvider.zoomOut).not.toHaveBeenCalled()
+  })
+
+  describe('returning focus to the viewport after a click', () => {
+    let rafSpy
+
+    beforeEach(() => {
+      rafSpy = jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 1 })
+    })
+
+    afterEach(() => rafSpy.mockRestore())
+
+    it('returns focus to the viewport after panning on mouse/touch, so arrow-key shortcuts elsewhere are not left stranded on the D-pad button', () => {
+      const appState = buildAppState({ interfaceType: 'mouse' })
+      useApp.mockReturnValue(appState)
+      render(<MoveControl />)
+
+      fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
+      expect(appState.layoutRefs.viewportRef.current.focus).toHaveBeenCalled()
+    })
+
+    it('keeps focus on the button when driven by keyboard, so repeated Enter/Space presses do not require re-tabbing', () => {
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard' }))
+      render(<MoveControl />)
+      fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
+      expect(rafSpy).not.toHaveBeenCalled()
+    })
+
+    it('also returns focus after zooming on mouse/touch, but not on keyboard', () => {
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'mouse' }))
+      const { rerender } = render(<MoveControl />)
+      fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+      expect(rafSpy).toHaveBeenCalledTimes(1)
+
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard' }))
+      rerender(<MoveControl />)
+      fireEvent.click(screen.getByRole('button', { name: 'Zoom in' }))
+      expect(rafSpy).toHaveBeenCalledTimes(1)
+    })
+
+    it('also returns focus after a vertex nudge via activeMoveTarget on mouse/touch', () => {
+      mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'touch' }))
+      render(<MoveControl />)
+      fireEvent.click(screen.getByRole('button', { name: 'Move right' }))
+      expect(rafSpy).toHaveBeenCalledTimes(1)
+    })
   })
 
   it('has a stable "Precision" label regardless of state', () => {

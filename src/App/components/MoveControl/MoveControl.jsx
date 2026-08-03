@@ -20,7 +20,7 @@ const ZOOM_ACTIONS = [
 
 export const MoveControl = () => {
   const { id: appId, mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta } = useConfig()
-  const { dispatch, expandedButtons, nudgeStepSize } = useApp()
+  const { dispatch, expandedButtons, nudgeStepSize, interfaceType, layoutRefs } = useApp()
   const { isAtMaxZoom, isAtMinZoom } = useMap()
   const { announce } = useService()
 
@@ -38,6 +38,24 @@ export const MoveControl = () => {
   // keyboard-shortcut vocabulary, so the label always describes the step size in effect.
   const actionWord = isLargeStep ? 'Move' : 'Nudge'
 
+  // Registry buttons (declared via a plugin's manifest) auto-return focus to the map
+  // viewport after a click (see createButtonClickHandler in mapButtons.js) unless
+  // marked keepFocus — which is how e.g. draw's own toolbar buttons never leave
+  // keyboard shortcuts (like arrow-key vertex nudging) stranded afterward. MoveControl
+  // renders its own buttons directly, bypassing that mechanism entirely, so it has to
+  // replicate the same return-to-viewport behaviour itself. But unlike a one-off
+  // action button, the D-pad is meant to be pressed repeatedly — a keyboard/switch
+  // user tabs to a direction button once and presses Enter/Space many times in a row,
+  // which requires focus to stay put. So this only returns focus when the interface
+  // type isn't 'keyboard': a mouse/touch user doesn't need retained focus to click the
+  // same visible button again, and returning it immediately means they can switch to
+  // arrow keys right after without an extra click into the map first.
+  const returnFocusToViewport = () => {
+    if (interfaceType !== 'keyboard') {
+      requestAnimationFrame(() => layoutRefs.viewportRef.current?.focus())
+    }
+  }
+
   const handlePan = (dx, dy, verb) => {
     // Any plugin can claim the D-pad for something other than panning the map (e.g.
     // moving a selected draw vertex) by setting mapProvider.activeMoveTarget — a
@@ -50,18 +68,21 @@ export const MoveControl = () => {
       activeMoveTarget.move(dx, dy, isLargeStep)
       const target = activeMoveTarget.label ? `${activeMoveTarget.label} ` : ''
       announce(`${actionWord}d ${target}${verb}`)
+      returnFocusToViewport()
       return
     }
 
     const amount = resolveStepAmount(isLargeStep, nudgePanDelta, panDelta)
     mapProvider.panBy([dx * amount, dy * amount])
     announce(`${actionWord}d ${verb}`)
+    returnFocusToViewport()
   }
 
   const handleZoom = (method, label) => {
     const amount = resolveStepAmount(isLargeStep, nudgeZoomDelta, zoomDelta)
     mapProvider[method](amount)
     announce(label)
+    returnFocusToViewport()
   }
 
   const handleToggleStep = () => {
