@@ -144,7 +144,7 @@ const ALL_BUILDS = [
   { entryPath: './plugins/beta/use-location/src/index.js', libraryPath: 'useLocationPlugin', outDir: 'plugins/beta/use-location/dist/umd' },
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },
-  { entryPath: './plugins/beta/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/beta/datasets/dist/umd', cssOutDir: 'plugins/beta/datasets/dist' },
+  { entryPath: './plugins/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/datasets/dist/umd', cssOutDir: 'plugins/datasets/dist' },
   { entryPath: './plugins/beta/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/beta/map-styles/dist/umd' },
   { entryPath: './plugins/beta/draw-ml/src/index.js', libraryPath: 'drawMLPlugin', outDir: 'plugins/beta/draw-ml/dist/umd' },
   { entryPath: './plugins/beta/frame/src/index.js', libraryPath: 'framePlugin', outDir: 'plugins/beta/frame/dist/umd' }

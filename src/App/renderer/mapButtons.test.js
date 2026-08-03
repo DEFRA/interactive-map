@@ -3,7 +3,7 @@ import { mapButtons, getMatchingButtons, applySlotExclusivity, renderButton, res
 import { logger } from '../../services/logger.js'
 import { getPanelConfig } from '../registry/panelRegistry.js'
 
-jest.mock('../../services/logger.js', () => ({ logger: { warn: jest.fn() } }))
+jest.mock('../../services/logger.js')
 jest.mock('../registry/buttonRegistry.js')
 jest.mock('../registry/panelRegistry.js')
 jest.mock('../components/MapButton/MapButton.jsx', () => ({

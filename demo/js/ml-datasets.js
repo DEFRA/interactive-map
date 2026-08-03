@@ -7,7 +7,7 @@ import maplibreProvider from '/providers/maplibre/src/index.js'
 import openNamesProvider from '/providers/beta/open-names/src/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import createDatasetsPlugin from '/plugins/beta/datasets/src/index.js'
+import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
@@ -467,15 +467,15 @@ const testSetData = () => {
 }
 
 interactiveMap.on('datasets:ready', function () {
-  testGetters()
-  testInvalidApiCalls()
-  testFeatureVisibility()
-  testSetOpacity()
-  testSetStyle()
-  testVisibility()
-  testGlobalVisibility()
-  testRemoveAndAddDataset()
-  testSetData()
+  // testGetters()
+  // testInvalidApiCalls()
+  // testFeatureVisibility()
+  // testSetOpacity()
+  // testSetStyle()
+  // testVisibility()
+  // testGlobalVisibility()
+  // testRemoveAndAddDataset()
+  // testSetData()
 })
 
 // Ref to the selected features

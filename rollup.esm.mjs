@@ -177,11 +177,13 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       ...(isCore ? [removeFullCssPlugin(cssDir)] : []),
 
       // Only runs when ANALYZE=1 is set; writes stats to dist/stats/<name>.html
-      ...(process.env.ANALYZE ? [visualizer({
+      ...(process.env.ANALYZE
+? [visualizer({
         filename: path.resolve(__dirname, 'dist/stats', `${outDir.replace(/\//g, '-')}.html`),
         open: false,
         gzipSize: true
-      })] : [])
+      })]
+: [])
     ],
 
     output: {
@@ -262,8 +264,8 @@ const ALL_BUILDS = [
     manualChunks: (id) => { if (id.includes('/manifest')) return 'im-interact-plugin' }
   },
   {
-    entryPath: './plugins/beta/datasets/src/index.js',
-    outDir: 'plugins/beta/datasets/dist/esm',
+    entryPath: './plugins/datasets/src/index.js',
+    outDir: 'plugins/datasets/dist/esm',
     manualChunks: (id) => {
       if (id.includes('/manifest')) return 'im-datasets-plugin'
       if (id.includes('maplibreLayerAdapter')) return 'im-datasets-ml-adapter'
