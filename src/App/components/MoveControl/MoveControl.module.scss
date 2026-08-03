@@ -1,0 +1,121 @@
+@use '../../../scss/tools/index' as tools;
+
+// ===================================================
+// Component: MoveControl
+// ===================================================
+
+// 1. Base styles
+.im-c-move-control {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--divider-gap);
+}
+
+.im-c-move-control--collapsed {
+    display: none;
+}
+
+// 2. Elements
+.im-c-move-control__directions {
+    display: grid;
+    grid-template-columns: repeat(3, var(--button-size));
+    grid-template-rows: repeat(3, var(--button-size));
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-up {
+    grid-column: 2;
+    grid-row: 1;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-left {
+    grid-column: 1;
+    grid-row: 2;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-right {
+    grid-column: 3;
+    grid-row: 2;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-down {
+    grid-column: 2;
+    grid-row: 3;
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--nudge-step-toggle {
+    grid-column: 2;
+    grid-row: 2;
+}
+
+.im-c-move-control__directions .im-c-map-button--pan-up svg {
+    transform: rotate(180deg);
+}
+
+.im-c-move-control__directions .im-c-map-button--pan-left svg {
+    transform: rotate(90deg);
+}
+
+.im-c-move-control__directions .im-c-map-button--pan-right svg {
+    transform: rotate(-90deg);
+}
+
+// Each button's own drop shadow (tools.border-focus-base's ::before) otherwise bleeds
+// into whichever neighbour it butts up against. The standard button-group treatment
+// (border-focus-corner-override) only handles a single-axis linear strip, so it can't
+// express a plus-shaped grid where the centre button touches all four neighbours —
+// clip-path is set directly per button instead, clipping only the side(s) where it
+// touches another button and leaving the exposed side(s) showing the shadow as normal.
+.im-c-move-control__directions .im-c-button-wrapper--pan-up .im-c-map-button::before {
+    clip-path: inset(-20px -20px 0 -20px); // touches nudge-step-toggle below
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-left .im-c-map-button::before {
+    clip-path: inset(-20px 0 -20px -20px); // touches nudge-step-toggle to the right
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-right .im-c-map-button::before {
+    clip-path: inset(-20px -20px -20px 0); // touches nudge-step-toggle to the left
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--pan-down .im-c-map-button::before {
+    clip-path: inset(0 -20px -20px -20px); // touches nudge-step-toggle above
+}
+
+.im-c-move-control__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button::before {
+    clip-path: inset(0); // touches all four neighbours
+}
+
+// Same inverted "pressed" treatment already used for actions-slot toggle buttons
+// (e.g. draw's Snap toggle) — reused here so Nudge mode reads consistently active.
+.im-c-move-control .im-c-map-button[aria-pressed="true"] {
+    color: var(--pressed-button-foreground-color);
+    border-color: var(--pressed-button-border-color);
+    background-color: var(--pressed-button-background-color);
+}
+
+// The trigger lives in the right-top slot, outside .im-c-move-control, so this is
+// its own top-level rule. Same colour treatment as above, but keyed off
+// aria-expanded rather than aria-pressed — the trigger is correctly a disclosure
+// button (it reveals the control below), not a toggle button, so it doesn't carry
+// aria-pressed itself; the colour is purely a visual echo of its expanded state.
+.im-c-map-button--move-control[aria-expanded="true"] {
+    color: var(--pressed-button-foreground-color);
+    border-color: var(--pressed-button-border-color);
+    background-color: var(--pressed-button-background-color);
+}
+
+.im-c-move-control__zoom {
+    display: flex;
+    flex-direction: row;
+}
+
+// A simple two-item linear row, so the standard button-group corner/shadow treatment
+// applies directly (matches .im-o-app__top's first/last-child pattern).
+.im-c-move-control__zoom .im-c-button-wrapper--nudge-zoom-in .im-c-map-button {
+    @include tools.border-focus-corner-override($corners: 'left');
+}
+
+.im-c-move-control__zoom .im-c-button-wrapper--nudge-zoom-out .im-c-map-button {
+    @include tools.border-focus-corner-override($corners: 'right');
+}

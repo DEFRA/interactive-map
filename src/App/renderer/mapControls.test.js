@@ -63,6 +63,30 @@ describe('mapControls', () => {
     expect(result).toEqual([])
   })
 
+  it('filters out controls when excludeWhen evaluates truthy', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, excludeWhen: () => true }
+    })
+    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p() })
+    expect(result).toEqual([])
+  })
+
+  it('includes controls when excludeWhen evaluates falsy', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, excludeWhen: () => false }
+    })
+    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p() })
+    expect(result.map(c => c.id)).toEqual(['ctrl1'])
+  })
+
+  it('ignores excludeWhen when it is not a function', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, excludeWhen: true }
+    })
+    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p() })
+    expect(result.map(c => c.id)).toEqual(['ctrl1'])
+  })
+
   it('filters by excludeModes', () => {
     defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, excludeModes: ['view'] }

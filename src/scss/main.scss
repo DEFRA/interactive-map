@@ -31,6 +31,7 @@
 @use '../App/components/Markers/Markers.module';
 @use '../App/components/Viewport/Features.module';
 @use '../App/components/Actions/Actions.module';
+@use '../App/components/MoveControl/MoveControl.module';
 
 // Components that dont have a corresponding React Component
 @use 'components';
