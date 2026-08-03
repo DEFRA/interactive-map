@@ -143,15 +143,15 @@ describe('crosshair', () => {
 })
 
 describe('interface type sync', () => {
-  test('pushes the interface type to the adapter in edit mode', async () => {
-    const { props, adapter } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+  test.each(['edit_vertex', 'draw_polygon', 'draw_line'])('pushes the interface type to the adapter in %s mode', async (mode) => {
+    const { props, adapter } = makeProps({ pluginState: { dispatch: jest.fn(), mode } })
     props.mapProvider.draw = adapter
     await renderInit(props)
     expect(adapter.setInterfaceType).toHaveBeenCalledWith('mouse')
   })
 
-  test('does nothing outside edit mode', async () => {
-    const { props, adapter } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_line' } })
+  test('does nothing outside draw/edit modes', async () => {
+    const { props, adapter } = makeProps({ pluginState: { dispatch: jest.fn(), mode: null } })
     props.mapProvider.draw = adapter
     await renderInit(props)
     expect(adapter.setInterfaceType).not.toHaveBeenCalled()

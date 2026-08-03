@@ -17,6 +17,15 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
     this.onMove(state, e)
   },
 
+  // The global interface type (e.g. switching to touch and panning via MoveControl)
+  // can change mid-session without any touch/pointer/key event ever landing on the
+  // map container, so this can't rely on onTouchStart/onPointerdown alone — refresh
+  // the rubber band immediately rather than waiting for the next incidental 'move'.
+  onInterfaceTypeChange (state, e) {
+    this._setInterface(state, e.interfaceType)
+    this.onMove(state)
+  },
+
   onBlur (state, e) {
     if (e.target !== state.container) {
       this._hideCrossHair(state)

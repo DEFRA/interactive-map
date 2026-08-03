@@ -43,7 +43,8 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
       pointermoveHandler: this.onPointermove,
       pointerupHandler: this.onPointerup,
       vertexButtonClickHandler: this.onVertexButtonClick,
-      undoHandler: this.onUndo
+      undoHandler: this.onUndo,
+      interfaceTypeChangeHandler: this.onInterfaceTypeChange
     }
     Object.entries(handlers).forEach(([k, fn]) => bind(k, fn))
 
@@ -58,7 +59,8 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
       [map, 'pointerdown', this.pointerdownHandler],
       [map, 'draw.create', this.createHandler],
       [map, 'move', this.moveHandler],
-      [map, 'draw.undo', this.undoHandler]
+      [map, 'draw.undo', this.undoHandler],
+      [map, 'draw.interfacetypechange', this.interfaceTypeChangeHandler]
     ]
     this._listeners.forEach(([t, e, h]) => t.addEventListener ? t.addEventListener(e, h) : t.on(e, h))
 

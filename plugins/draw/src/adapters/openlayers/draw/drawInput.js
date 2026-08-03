@@ -121,6 +121,16 @@ export const createDrawInput = ({ drawInteraction, options }) => {
 
   return {
     getInterfaceType,
+    // Called when the global interface type changes without any pointer/touch/key
+    // event landing on the map container (e.g. panning via MoveControl after
+    // switching to touch) — refresh the rubber band immediately rather than
+    // waiting for the next incidental change:center/postrender event.
+    setInterfaceType (type) {
+      interfaceType = type
+      if (type !== 'mouse') {
+        placement.updateRubberbanding()
+      }
+    },
     destroy () {
       events.destroy()
       map?.un('postrender', onMapRender)

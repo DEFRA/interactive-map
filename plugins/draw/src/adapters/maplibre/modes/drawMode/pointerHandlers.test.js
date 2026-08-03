@@ -43,6 +43,14 @@ describe('touch and pointer interface', () => {
     ctx.blurHandler({ target: document.body })
     expect(marker.style.display).toBe('none')
   })
+
+  test('draw.interfacetypechange (e.g. switching to touch and panning via MoveControl mid-session) updates the interface and refreshes the rubber band immediately', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    ctx.map.fire('draw.interfacetypechange', { interfaceType: 'touch' })
+    expect(state.interfaceType).toBe('touch')
+    expect(state.polygon.coordinates[0].at(-1)).toEqual([CENTER.lng, CENTER.lat])
+  })
 })
 
 describe('rubber band and snapping while moving', () => {

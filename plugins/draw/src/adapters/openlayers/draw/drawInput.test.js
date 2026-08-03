@@ -109,6 +109,17 @@ test('pointer moves and map pans update the rubber band except for the mouse int
   expect(mouse.placement.updateRubberbanding).not.toHaveBeenCalled()
 })
 
+test('setInterfaceType updates the interface and refreshes the rubber band immediately for non-mouse types, e.g. switching to touch and panning via MoveControl mid-session', () => {
+  const { input, placement } = setup('mouse')
+  input.setInterfaceType('touch')
+  expect(input.getInterfaceType()).toBe('touch')
+  expect(placement.updateRubberbanding).toHaveBeenCalledTimes(1)
+
+  input.setInterfaceType('mouse')
+  expect(input.getInterfaceType()).toBe('mouse')
+  expect(placement.updateRubberbanding).toHaveBeenCalledTimes(1) // not called again for mouse
+})
+
 test('keyboard pan animations keep the rubber band anchored via postrender', () => {
   const { map, view, placement } = setup('keyboard')
   view.getAnimating.mockReturnValue(true)

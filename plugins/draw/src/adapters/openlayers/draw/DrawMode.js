@@ -140,6 +140,7 @@ const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, 
   cancel () { drawInteraction.abortDrawing() },
   undo () { drawInteraction.removeLastPoint(); updateVertexCount(); emitUndoValidation() },
   setInvalid,
+  setInterfaceType (type) { input.setInterfaceType(type) },
   // Tags the sketch feature so createSketchStyle can pick the split-specific
   // colour (see styles.js); no-op before any sketch exists.
   setDrawingPreviewProperty (property, value) {

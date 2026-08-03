@@ -8,6 +8,7 @@ import { createFakeMap, createFakeManager, polygonFeature, lineFeature } from '.
 jest.mock('./drawInput.js', () => ({
   createDrawInput: jest.fn(() => ({
     getInterfaceType: jest.fn(() => 'keyboard'),
+    setInterfaceType: jest.fn(),
     destroy: jest.fn()
   }))
 }))
@@ -215,6 +216,12 @@ describe('drawing lifecycle', () => {
     mode.setInvalid(true)
     expect(manager.styles.createSketchStyle).toHaveBeenLastCalledWith('Polygon', true)
     expect(changed).toHaveBeenCalled()
+  })
+
+  test('setInterfaceType forwards to the draw input (e.g. DrawInit syncing MoveControl-driven interface changes mid-session)', () => {
+    const { mode, input } = setup('Polygon')
+    mode.setInterfaceType('touch')
+    expect(input.setInterfaceType).toHaveBeenCalledWith('touch')
   })
 
   test('setDrawingPreviewProperty tags the sketch feature and re-renders; safe with no sketch yet', () => {
