@@ -7,7 +7,7 @@ export const Actions = ({ children }) => {
   const { openPanels, panelConfig, breakpoint } = useApp()
 
   const childArray = React.Children.toArray(children)
-  const visibleChild = childArray.find(c => c.props?.isHidden === false && c.props?.variant !== 'touch')
+  const hasVisibleChild = childArray.some(c => c.props?.isHidden === false && c.props?.variant !== 'touch')
 
   // If a panel exists above we need so css adjustment
   const isBottomSlotUsed = Object.keys(openPanels).some(panelId => {
@@ -17,7 +17,7 @@ export const Actions = ({ children }) => {
   const className = [
     'im-c-panel',
     'im-c-actions',
-    !visibleChild && 'im-c-actions--hidden',
+    !hasVisibleChild && 'im-c-actions--hidden',
     isBottomSlotUsed && 'im-c-actions--border-top'
   ].filter(Boolean).join(' ')
 

@@ -178,10 +178,10 @@ describe('pluginRegistry', () => {
 
     pluginRegistry.registerPlugin(pluginA)
     pluginRegistry.registerPlugin(pluginB)
-    expect(pluginRegistry.registeredPlugins.length).toBe(2)
+    expect(pluginRegistry.registeredPlugins).toHaveLength(2)
 
     pluginRegistry.clear()
-    expect(pluginRegistry.registeredPlugins.length).toBe(0)
+    expect(pluginRegistry.registeredPlugins).toHaveLength(0)
     expect(pluginRegistry.registeredPlugins).toEqual([])
   })
 })

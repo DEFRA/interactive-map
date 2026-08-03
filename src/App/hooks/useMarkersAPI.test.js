@@ -244,7 +244,7 @@ describe('useMarkers — cleanup', () => {
     let cleanup
     act(() => { cleanup = result.current.markerRef('m1')(ctx.mockElement) })
     const updateCallback = ctx.mockEventBus.on.mock.calls.find(call => call[0] === 'map:render')[1]
-    act(() => { if (cleanup) cleanup() })
+    if (cleanup) cleanup()
     expect(ctx.mockEventBus.off).toHaveBeenCalledWith('map:render', updateCallback)
   })
 
