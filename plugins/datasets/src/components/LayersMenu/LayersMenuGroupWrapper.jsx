@@ -7,7 +7,9 @@ export const LayersMenuGroupWrapper = ({ menuGroup, children }) => {
     <div key={menuGroup.id} className={wrapperClass}>
       <fieldset className='im-c-datasets-layers-group__fieldset'>
         <legend className='im-c-datasets-layers-group__legend'>
-          {menuGroup.groupLabel}
+          <h3>
+            {menuGroup.groupLabel}
+          </h3>
         </legend>
         {children}
       </fieldset>

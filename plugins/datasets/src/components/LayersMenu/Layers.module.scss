@@ -75,6 +75,9 @@
   font-size: 1rem;
   font-weight: bold;
   color: var(--foreground-color);
+  h3 {
+    font-size: inherit;
+  }
 }
 
 .im-c-datasets-layers-group:first-child .im-c-datasets-layers-group__legend {
