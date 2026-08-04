@@ -77,7 +77,7 @@ const displayedSketch = (geometryType, sketch) => {
   const geometry = geometryType === 'Polygon'
     ? { type: 'Polygon', coordinates: [ring] }
     : { type: 'LineString', coordinates: ring }
-  return { feature: { type: 'Feature', geometry }, placedCount: getPlacedSketchCoords(geom).length }
+  return { feature: { type: 'Feature', geometry }, numVertices: getPlacedSketchCoords(geom).length }
 }
 
 // Commit a finished sketch to the store under the requested id and emit CREATE.
@@ -216,9 +216,9 @@ export const createDrawMode = ({ map, manager, options }) => {
   const liveMode = MODE_BY_GEOMETRY[geometryType]
   const updateLiveValidity = () => {
     if (!sketchFeature) { return }
-    const { feature, placedCount } = displayedSketch(geometryType, sketchFeature)
-    liveStroke.update({ feature, context: { mode: liveMode }, placedCount, onGeometryChange: manager._geometryValidator })
-    livePlacement.update({ feature, context: { mode: liveMode, vertexIndex: placedCount }, onGeometryChange: manager._geometryValidator })
+    const { feature, numVertices } = displayedSketch(geometryType, sketchFeature)
+    liveStroke.update({ feature, context: { mode: liveMode }, numVertices, onGeometryChange: manager._geometryValidator })
+    livePlacement.update({ feature, context: { mode: liveMode, vertexIndex: numVertices }, onGeometryChange: manager._geometryValidator })
   }
 
   // Update sketch style when map style changes

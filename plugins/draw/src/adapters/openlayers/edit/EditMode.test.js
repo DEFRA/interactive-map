@@ -8,6 +8,11 @@ import Polygon from 'ol/geom/Polygon.js'
 
 const RING = [[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]] // square: 4 vertices, deletable
 
+// The feature style is a live function (see wireLiveStroke in EditMode.js — avoids
+// Feature#setStyle() on every flip, which would break an in-progress Modify drag),
+// not a static Style instance, so tests must invoke it to read the current style.
+const currentStyle = (olFeature) => olFeature.getStyle()()
+
 const setup = (ring = RING) => {
   const map = createFakeMap()
   const manager = createFakeManager()
@@ -44,7 +49,7 @@ test('returns null for an unknown feature id', () => {
 
 test('entering edit mode swaps the feature style and reports the initial vertex state', () => {
   const { manager, olFeature } = setup()
-  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyle)
+  expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyle)
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_CHANGE, { numVertices: 4 })
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.UPDATE, expect.objectContaining({ id: 'f1' }))
 })
@@ -52,18 +57,25 @@ test('entering edit mode swaps the feature style and reports the initial vertex 
 test('setInvalid swaps between the solid and dashed edit styles', () => {
   const { manager, mode, olFeature } = setup()
   mode.setInvalid(true)
-  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyleInvalid)
+  expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyleInvalid)
   mode.setInvalid(false)
-  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyle)
+  expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyle)
 })
 
 test('a mid-drag crossing turns the stroke dashed live, and back when it clears', () => {
   const { manager, olFeature } = setup()
   // Geometry mutation (as during a Modify/touch drag) — no commit yet.
   olFeature.getGeometry().setCoordinates([[[0, 0], [100, 100], [100, 0], [0, 100], [0, 0]]])
-  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyleInvalid)
+  expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyleInvalid)
   olFeature.getGeometry().setCoordinates([[[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]]])
-  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyle)
+  expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyle)
+})
+
+test('a validity flip repaints the map without touching the feature — Modify tracks its own drag via feature #change, which setStyle() would trip', () => {
+  const { map, olFeature } = setup()
+  const renderCallsBefore = map.render.mock.calls.length
+  olFeature.getGeometry().setCoordinates([[[0, 0], [100, 100], [100, 0], [0, 100], [0, 0]]])
+  expect(map.render.mock.calls.length).toBeGreaterThan(renderCallsBefore)
 })
 
 test('validity flips while editing also gate the Done button', () => {
@@ -85,7 +97,7 @@ test('the user callback runs throttled during an edit drag', () => {
   expect(manager._geometryValidator).not.toHaveBeenCalled() // deferred to the frame
   jest.runAllTimers()
   expect(manager._geometryValidator).toHaveBeenCalledTimes(1) // trailing edge only
-  expect(olFeature.getStyle()).toBe(manager.styles.editFeatureStyleInvalid)
+  expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyleInvalid)
   jest.useRealTimers()
 })
 
@@ -256,7 +268,7 @@ test('style changes re-style the feature and handles', () => {
   const newStyles = { ...manager.styles, editFeatureStyle: new Style({}) }
   manager.styles = newStyles
   manager.emit(STYLES_CHANGED_EVENT, newStyles)
-  expect(olFeature.getStyle()).toBe(newStyles.editFeatureStyle)
+  expect(currentStyle(olFeature)).toBe(newStyles.editFeatureStyle)
 })
 
 test('a style change while the shape is invalid keeps the dashed stroke', () => {
@@ -269,7 +281,7 @@ test('a style change while the shape is invalid keeps the dashed stroke', () => 
   }
   manager.styles = newStyles
   manager.emit(STYLES_CHANGED_EVENT, newStyles)
-  expect(olFeature.getStyle()).toBe(newStyles.editFeatureStyleInvalid)
+  expect(currentStyle(olFeature)).toBe(newStyles.editFeatureStyleInvalid)
 })
 
 test('map resize repositions the touch target after the next render — touch with a selection only', () => {

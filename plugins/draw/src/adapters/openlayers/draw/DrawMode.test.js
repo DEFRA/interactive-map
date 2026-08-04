@@ -100,8 +100,8 @@ describe('buildCanPlaceVertex', () => {
 
   test('the user callback can veto a placement (and receives phase "place")', () => {
     const manager = createFakeManager()
-    manager._geometryValidator = jest.fn((feature, context) =>
-      context.phase === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
+    manager._geometryValidator = jest.fn((event) =>
+      event.phase === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
     const gate = gateFor([[0, 0], [2, 0], [9, 9], [0, 0]], manager)
     expect(gate([5, 5])).toBe(false)
     expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.PLACEMENT_BLOCKED,

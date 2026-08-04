@@ -51,8 +51,8 @@ export const createLiveStroke = ({ onChange, validate = validateDisplayedGeometr
 
   return {
     // Re-evaluate the displayed geometry after a rubber-band move.
-    update ({ feature, context = {}, placedCount, onGeometryChange }) {
-      const ctx = { ...context, placedCount }
+    update ({ feature, context = {}, numVertices, onGeometryChange }) {
+      const ctx = { ...context, numVertices }
       // Default rules first, synchronously — immediate feedback on self-intersection / area.
       const base = validate(feature, ctx)
       if (!base.valid) { cancelPending(); flip(true, base.reason); return }

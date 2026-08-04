@@ -28,9 +28,22 @@ const interactPlugin = createInteractPlugin({
   // debug: true
 })
 
+// Rough approximation of the England/Wales border as a line of easting —
+// good enough for a demo, not for anything that actually needs to be accurate.
+const WALES_BORDER_EASTING = 337300
+
+const getAllCoordinates = (coordinates) =>
+  Array.isArray(coordinates[0][0]) ? coordinates.flatMap(getAllCoordinates) : coordinates
+
+const isEastOfWalesBorder = (geometry) =>
+  getAllCoordinates(geometry.coordinates).every(([lng]) => lng > WALES_BORDER_EASTING)
+
 const drawPlugin = createDrawPlugin({
-  // snapLayers: ['OS/NGD/lnd_fts_land/Arable Or Grazing Land']
-  snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline']
+  snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
+  onGeometryChange: (event) => ({
+    valid: isEastOfWalesBorder(event.feature.geometry),
+    reason: 'Points must be placed east of the England/Wales border'
+  })
 })
 
 const interactiveMap = new InteractiveMap('map', {

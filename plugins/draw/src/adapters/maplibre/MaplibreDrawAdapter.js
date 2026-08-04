@@ -17,15 +17,15 @@ const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Line
 // rubber-band point; edit-mode coordinates are all committed vertices.
 export const displayedShape = (mode, coordinates) => {
   if (mode === 'draw_polygon') {
-    return { feature: polygonFeature(coordinates), placedCount: (coordinates[0]?.length ?? 1) - 1 }
+    return { feature: polygonFeature(coordinates), numVertices: (coordinates[0]?.length ?? 1) - 1 }
   }
   if (mode === 'draw_line') {
-    return { feature: lineFeature(coordinates), placedCount: (coordinates?.length ?? 1) - 1 }
+    return { feature: lineFeature(coordinates), numVertices: (coordinates?.length ?? 1) - 1 }
   }
   if (mode === 'edit_vertex') {
     return Array.isArray(coordinates[0]?.[0])
-      ? { feature: polygonFeature(coordinates), placedCount: coordinates[0]?.length ?? 0 }
-      : { feature: lineFeature(coordinates), placedCount: coordinates?.length ?? 0 }
+      ? { feature: polygonFeature(coordinates), numVertices: coordinates[0]?.length ?? 0 }
+      : { feature: lineFeature(coordinates), numVertices: coordinates?.length ?? 0 }
   }
   return null
 }
@@ -164,7 +164,7 @@ export class MaplibreDrawAdapter {
     if (mode === 'draw_polygon' || mode === 'draw_line') {
       this._livePlacement.update({
         feature: shape.feature,
-        context: { mode, vertexIndex: shape.placedCount },
+        context: { mode, vertexIndex: shape.numVertices },
         onGeometryChange: this._geometryValidator
       })
     }

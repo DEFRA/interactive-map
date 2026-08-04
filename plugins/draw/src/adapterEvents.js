@@ -20,6 +20,33 @@
  */
 
 /**
+ * The single event object passed to a user's `onGeometryChange` callback
+ * (validateGeometry.js) — `onGeometryChange({ feature, ...context })`. Not every
+ * field is present on every phase; see each field's own doc below.
+ *
+ * @typedef {object} GeometryChangeEvent
+ * @property {object} feature - GeoJSON feature representing the shape at this
+ *   point. Always present. During 'preview' this is the in-progress feature
+ *   (placed vertices + rubber-band cursor); at every other phase it's the
+ *   committed/candidate feature for that specific change.
+ * @property {GeometryChangePhase} phase - what stage of the draw/edit lifecycle
+ *   this is. Always present.
+ * @property {'draw_polygon' | 'draw_line' | 'edit_vertex'} mode - the active draw
+ *   mode. Always present.
+ * @property {number} [vertexIndex] - index of the vertex being placed, added,
+ *   moved, inserted, or deleted. Present on 'place' and every 'commit-*' phase;
+ *   absent on 'preview', 'create', and 'edit-start' (those have no single vertex
+ *   to point at).
+ * @property {number} [numVertices] - count of already-committed vertices,
+ *   excluding any in-progress rubber-band cursor point. Present only on
+ *   'preview', and only once at least one vertex has been committed
+ *   (validateDisplayedGeometry skips the callback entirely with zero
+ *   committed vertices, since there's nothing meaningful to validate yet).
+ *   Note this is a lower bar than the built-in live rules, which stay
+ *   skipped until the geometry type's minimum vertex count is reached.
+ */
+
+/**
  * Shared adapter event contract.
  *
  * Both draw adapters (MaplibreDrawAdapter, OLDrawAdapter) expose an on/off bus

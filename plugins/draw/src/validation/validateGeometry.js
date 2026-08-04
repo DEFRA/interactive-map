@@ -23,8 +23,11 @@ const normaliseResult = (result) => {
  * @param {object} feature - current GeoJSON feature
  * @param {object} context - { phase: import('../adapterEvents.js').GeometryChangePhase, vertexIndex, mode }
  * @param {object} [config]
- * @param {Array<Function>} [config.rules] - defaults to DEFAULT_RULES
- * @param {Function} [config.onGeometryChange] - user callback, same signature as a rule
+ * @param {Array<Function>} [config.rules] - defaults to DEFAULT_RULES; called as rule(feature, context)
+ * @param {function(import('../adapterEvents.js').GeometryChangeEvent): (boolean|{valid: boolean, reason?: string}|undefined)} [config.onGeometryChange]
+ *   - user callback, called as onGeometryChange({ feature, ...context }) — a single
+ *   event object, unlike the internal rules above, matching the shape of the
+ *   PLACEMENT_BLOCKED adapter event
  * @returns {{ valid: boolean, reason?: string }}
  */
 export const validateGeometry = (feature, context = {}, config = {}) => {
@@ -36,7 +39,7 @@ export const validateGeometry = (feature, context = {}, config = {}) => {
   }
 
   if (typeof onGeometryChange === 'function') {
-    return normaliseResult(onGeometryChange(feature, context))
+    return normaliseResult(onGeometryChange({ feature, ...context }))
   }
 
   return { valid: true }
@@ -51,7 +54,7 @@ export const validateGeometry = (feature, context = {}, config = {}) => {
  * @param {object} context - { vertexIndex, mode }; phase is forced to 'place'
  * @param {object} [config]
  * @param {Array<Function>} [config.rules] - defaults to HARD_RULES
- * @param {Function} [config.onGeometryChange] - user callback, same signature as a rule
+ * @param {function(import('../adapterEvents.js').GeometryChangeEvent): (boolean|{valid: boolean, reason?: string}|undefined)} [config.onGeometryChange] - user callback
  * @returns {{ valid: boolean, reason?: string }}
  */
 export const validatePlacement = (feature, context = {}, config = {}) => {
@@ -70,7 +73,7 @@ export const MODE_BY_GEOMETRY = { Polygon: 'draw_polygon', LineString: 'draw_lin
  * @param {Array<Array<number>>} params.placed - committed vertex coordinates
  * @param {Array<number>} params.point - the coordinate about to be placed
  * @param {'Polygon'|'LineString'} params.geometryType
- * @param {Function} [params.onGeometryChange] - user callback
+ * @param {function(import('../adapterEvents.js').GeometryChangeEvent): (boolean|{valid: boolean, reason?: string}|undefined)} [params.onGeometryChange] - user callback
  * @returns {{ valid: true } | { valid: false, blocked: object }}
  */
 export const attemptPlacement = ({ placed, point, geometryType, onGeometryChange }) => {
@@ -87,23 +90,33 @@ export const attemptPlacement = ({ placed, point, geometryType, onGeometryChange
 
 /**
  * Validate the displayed (in-progress) geometry that drives the live invalid
- * stroke: the placed vertices plus the current cursor point. Below the minimum
- * vertex count, the built-in live rules are skipped (not enough of a shape yet
- * to check self-intersection/area) — but a caller's own `onGeometryChange` always
- * runs regardless, since its data requirements are its own business.
+ * stroke: the placed vertices plus the current cursor point. Two different
+ * thresholds gate the two kinds of check:
+ *   - The built-in live rules (self-intersection/area) are meaningless below
+ *     the geometry type's minimum vertex count — there isn't a real ring/line
+ *     yet — so they're skipped entirely until then.
+ *   - A caller's own `onGeometryChange` can be meaningful on a single point
+ *     (e.g. "is this point inside a region?"), so it runs as soon as at least
+ *     one vertex is committed, rather than waiting for a real shape.
+ * With zero committed vertices neither check runs — there's nothing to
+ * validate on the very first mouse-move before any click. This only affects
+ * the live-stroke preview; the Add-point placement gate (validatePlacement,
+ * used by attemptPlacement) is a separate check and keeps running from the
+ * first vertex.
  *
  * @param {object} feature - displayed GeoJSON feature (placed vertices + cursor)
- * @param {object} context - { mode, placedCount, phase }; phase defaults to 'preview'
+ * @param {object} context - { mode, numVertices, phase }; phase defaults to 'preview'
  * @param {object} [config]
  * @param {Array<Function>} [config.rules] - defaults to LIVE_RULES
- * @param {Function} [config.onGeometryChange] - user callback, same signature as a rule
+ * @param {function(import('../adapterEvents.js').GeometryChangeEvent): (boolean|{valid: boolean, reason?: string}|undefined)} [config.onGeometryChange] - user callback
  * @returns {{ valid: boolean, reason?: string }}
  */
 export const validateDisplayedGeometry = (feature, context = {}, config = {}) => {
   const { rules = LIVE_RULES, onGeometryChange } = config
   const type = feature?.geometry?.type ?? feature?.type
   const min = MIN_VERTICES[type] ?? 0
-  const belowMinVertices = (context.placedCount ?? 0) < min
-  const effectiveRules = belowMinVertices ? [] : rules
-  return validateGeometry(feature, { ...context, phase: context.phase ?? 'preview' }, { rules: effectiveRules, onGeometryChange })
+  const numVertices = context.numVertices ?? 0
+  const effectiveRules = numVertices < min ? [] : rules
+  const effectiveOnGeometryChange = numVertices < 1 ? undefined : onGeometryChange
+  return validateGeometry(feature, { ...context, phase: context.phase ?? 'preview' }, { rules: effectiveRules, onGeometryChange: effectiveOnGeometryChange })
 }

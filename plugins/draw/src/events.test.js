@@ -320,7 +320,7 @@ describe('geometrychange validation', () => {
     const validator = jest.fn(() => true)
     draw._geometryValidator = validator
     drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
-    expect(validator).toHaveBeenCalledWith(squareFeature, { phase: 'commit-add', vertexIndex: 3, mode: 'draw_polygon' })
+    expect(validator).toHaveBeenCalledWith({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3, mode: 'draw_polygon' })
   })
 })
 

@@ -130,7 +130,7 @@ describe('split', () => {
       split(context, 'poly')
       dispatch.mockClear()
 
-      const result = draw._geometryValidator(lineFeature([[0, 0], [1, 1]]), { phase: 'place', mode: 'draw_line', vertexIndex: 1 })
+      const result = draw._geometryValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'place', mode: 'draw_line', vertexIndex: 1 })
 
       expect(result).toEqual({ valid: true })
       expect(splitPolygon).not.toHaveBeenCalled()
@@ -143,7 +143,7 @@ describe('split', () => {
       split(context, 'poly')
       dispatch.mockClear()
 
-      const result = draw._geometryValidator(lineFeature([[0, 0], [1, 1]]), { phase: 'create', mode: 'draw_line' })
+      const result = draw._geometryValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'create', mode: 'draw_line' })
 
       expect(result).toEqual({ valid: true })
       expect(splitPolygon).not.toHaveBeenCalled()
@@ -159,10 +159,10 @@ describe('split', () => {
       dispatch.mockClear()
 
       // 1 placed vertex + the rubber-band cursor. validateDisplayedGeometry only
-      // gates the built-in rules by placedCount, not a caller's own rule, so this
-      // must still reach the validator (placedCount: 1, below MIN_VERTICES.LineString).
+      // gates the built-in rules by numVertices, not a caller's own rule, so this
+      // must still reach the validator (numVertices: 1, below MIN_VERTICES.LineString).
       const feature = lineFeature([[0, 0], [1, 1]])
-      const result = draw._geometryValidator(feature, { phase: 'preview', mode: 'draw_line', placedCount: 1 })
+      const result = draw._geometryValidator({ feature, phase: 'preview', mode: 'draw_line', numVertices: 1 })
 
       expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, { id: '_splitter', geometry: feature.geometry })
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
@@ -180,7 +180,7 @@ describe('split', () => {
       split(context, 'poly')
 
       const feature = lineFeature([[0, 0], [1, 1]])
-      const result = draw._geometryValidator(feature, { phase: 'commit-add', mode: 'draw_line', vertexIndex: 1 })
+      const result = draw._geometryValidator({ feature, phase: 'commit-add', mode: 'draw_line', vertexIndex: 1 })
 
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })
@@ -194,7 +194,7 @@ describe('split', () => {
       split(context, 'poly')
 
       const feature = lineFeature([[0, 0]])
-      const result = draw._geometryValidator(feature, { phase: 'preview', mode: 'draw_line', placedCount: 0 })
+      const result = draw._geometryValidator({ feature, phase: 'preview', mode: 'draw_line', numVertices: 0 })
 
       expect(splitPolygon).not.toHaveBeenCalled()
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')

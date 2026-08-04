@@ -33,13 +33,13 @@ describe('validateGeometry (soft gating)', () => {
     expect(second).not.toHaveBeenCalled()
   })
 
-  test('passes the context to rules and the callback', () => {
+  test('passes the context to rules as (feature, context), and to the callback as a single flattened event object', () => {
     const rule = jest.fn(() => ({ valid: true }))
     const onGeometryChange = jest.fn(() => ({ valid: true }))
     const context = { phase: 'commit-move', vertexIndex: 2, mode: 'edit_vertex' }
     validateGeometry(square, context, { rules: [rule], onGeometryChange })
     expect(rule).toHaveBeenCalledWith(square, context)
-    expect(onGeometryChange).toHaveBeenCalledWith(square, context)
+    expect(onGeometryChange).toHaveBeenCalledWith({ feature: square, ...context })
   })
 
   test('runs the user callback after the rules pass', () => {
@@ -86,7 +86,13 @@ describe('attemptPlacement (shared engine gate)', () => {
     const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'outside region' }))
     const result = attemptPlacement({ placed: [[0, 0]], point: [1, 1], geometryType: 'LineString', onGeometryChange })
     expect(result.blocked).toEqual(expect.objectContaining({ mode: 'draw_line', reason: 'outside region', vertexIndex: 1 }))
-    expect(onGeometryChange).toHaveBeenCalledWith(expect.anything(), { phase: 'place', mode: 'draw_line', vertexIndex: 1 })
+    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ phase: 'place', mode: 'draw_line', vertexIndex: 1 }))
+  })
+
+  test('a veto with no reason falls back to null in the PLACEMENT_BLOCKED payload', () => {
+    const onGeometryChange = jest.fn(() => false) // false → invalid, no reason (see normaliseResult)
+    const result = attemptPlacement({ placed: [[0, 0]], point: [1, 1], geometryType: 'LineString', onGeometryChange })
+    expect(result.blocked.reason).toBeNull()
   })
 
   test('attemptPlacement mode is set correctly for Polygon vs LineString', () => {
@@ -101,40 +107,60 @@ describe('attemptPlacement (shared engine gate)', () => {
 
 describe('validateDisplayedGeometry edge cases', () => {
   test('handles unknown geometry types with fallback min vertices', () => {
-    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { type: 'Unknown', coordinates: [] } }, { placedCount: 0 })
+    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { type: 'Unknown', coordinates: [] } }, { numVertices: 0 })
     expect(result.valid).toBe(true) // unknown types use MIN_VERTICES fallback of 0, so 0 placed = valid
   })
 
   test('feature without geometry type defaults to context.phase', () => {
-    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { coordinates: [[0, 0]] } }, { placedCount: 2, phase: 'custom' })
+    const result = validateDisplayedGeometry({ type: 'Feature', geometry: { coordinates: [[0, 0]] } }, { numVertices: 2, phase: 'custom' })
     expect(typeof result).toBe('object')
     expect(result).toHaveProperty('valid')
   })
 
-  test('context without placedCount defaults to 0 for min-vertex check', () => {
+  test('context without numVertices defaults to 0 for min-vertex check', () => {
     const result = validateDisplayedGeometry(poly([[0, 0]]), {})
-    expect(result.valid).toBe(true) // no placedCount = 0, below any min, so valid
+    expect(result.valid).toBe(true) // no numVertices = 0, below any min, so valid
   })
 
-  test('still calls the caller\'s own onGeometryChange below the vertex threshold — only the built-in rules are gated', () => {
+  test('context and config are both optional — called with just a feature', () => {
+    expect(validateDisplayedGeometry(poly([[0, 0]]))).toEqual({ valid: true })
+  })
+
+  test('calls the caller\'s own onGeometryChange once at/above the vertex threshold, with a single flattened event object', () => {
     const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'too few for my rule' }))
-    const feature = poly([[0, 0], [1, 0]])
+    // Polygon minimum is 3 placed vertices — this feature/numVertices pair is at it.
+    const feature = poly([[0, 0], [1, 0], [1, 1]])
 
-    const result = validateDisplayedGeometry(feature, { placedCount: 1 }, { onGeometryChange })
+    const result = validateDisplayedGeometry(feature, { numVertices: 3 }, { onGeometryChange })
 
-    expect(onGeometryChange).toHaveBeenCalledWith(feature, expect.objectContaining({ placedCount: 1, phase: 'preview' }))
+    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ feature, numVertices: 3, phase: 'preview' }))
     expect(result).toEqual({ valid: false, reason: 'too few for my rule' })
   })
 
-  test('skips the built-in rules below the vertex threshold even when a callback is supplied', () => {
+  test('skips both the built-in rules AND the caller\'s onGeometryChange with zero committed vertices — nothing meaningful to validate yet before the first click', () => {
     const failingRule = jest.fn(() => ({ valid: false, reason: 'should not run' }))
     const onGeometryChange = jest.fn(() => true)
 
-    const result = validateDisplayedGeometry(poly([[0, 0]]), { placedCount: 0 }, { rules: [failingRule], onGeometryChange })
+    const result = validateDisplayedGeometry(poly([[0, 0]]), { numVertices: 0 }, { rules: [failingRule], onGeometryChange })
 
     expect(failingRule).not.toHaveBeenCalled()
-    expect(onGeometryChange).toHaveBeenCalled()
+    expect(onGeometryChange).not.toHaveBeenCalled()
     expect(result).toEqual({ valid: true })
+  })
+
+  test('runs the caller\'s onGeometryChange from the first committed vertex, even while the built-in rules are still skipped', () => {
+    const failingRule = jest.fn(() => ({ valid: false, reason: 'should not run' }))
+    // A single committed vertex — well below the Polygon minimum of 3 — so the
+    // built-in self-intersection/area rules stay skipped, but a per-point user
+    // rule (e.g. "is this inside a region?") is meaningful and should still run.
+    const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const feature = poly([[0, 0], [1, 1]])
+
+    const result = validateDisplayedGeometry(feature, { numVertices: 1 }, { rules: [failingRule], onGeometryChange })
+
+    expect(failingRule).not.toHaveBeenCalled()
+    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ feature, numVertices: 1, phase: 'preview' }))
+    expect(result).toEqual({ valid: false, reason: 'outside region' })
   })
 })
 
@@ -156,7 +182,7 @@ describe('validatePlacement (hard gating)', () => {
   test('forces phase "place" into the rule and callback context', () => {
     const onGeometryChange = jest.fn(() => true)
     validatePlacement(simplePath, { mode: 'draw_polygon', vertexIndex: 4 }, { onGeometryChange })
-    expect(onGeometryChange).toHaveBeenCalledWith(simplePath, { phase: 'place', mode: 'draw_polygon', vertexIndex: 4 })
+    expect(onGeometryChange).toHaveBeenCalledWith({ feature: simplePath, phase: 'place', mode: 'draw_polygon', vertexIndex: 4 })
   })
 
   test('the user callback can veto a placement with a reason', () => {

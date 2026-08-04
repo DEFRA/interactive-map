@@ -37,11 +37,11 @@ const applySplitCommit = ({ draw, dispatch, polygonFeature, feature }) => {
 // Installed as draw._geometryValidator. 'place' and 'create' are no-ops — a split
 // isn't complete until its last vertex, so checking those would block placement
 // and hijack an early finish into edit mode.
-const createSplitValidator = ({ draw, dispatch, polygonFeature }) => (feature, context) => {
+const createSplitValidator = ({ draw, dispatch, polygonFeature }) => ({ feature, phase }) => {
   let isValid
-  if (context.phase === 'preview') {
+  if (phase === 'preview') {
     isValid = applySplitPreview({ draw, polygonFeature, feature })
-  } else if (context.phase?.startsWith('commit-')) {
+  } else if (phase?.startsWith('commit-')) {
     isValid = applySplitCommit({ draw, dispatch, polygonFeature, feature })
   } else {
     return { valid: true }

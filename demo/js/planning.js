@@ -64,7 +64,7 @@ const interactPlugin = createInteractPlugin({
 })
 
 const drawPlugin = createDrawPlugin({
-  onGeometryChange: (geometry) => true
+  onGeometryChange: (event) => true
 })
 
 const framePlugin = createFramePlugin({
@@ -231,7 +231,7 @@ interactiveMap.on('draw:ready', function () {
   addMenuClickHandlers({
     onDrawShape: function() {
       drawPlugin.newPolygon('boundary', {
-        onGeometryChange: (geometry) => true
+        onGeometryChange: (event) => true
       })
       hideMenu(interactiveMap)
     },
@@ -247,7 +247,7 @@ interactiveMap.on('draw:ready', function () {
         framePlugin.editFeature(feature)
       } else {
         drawPlugin.editFeature('boundary', {
-          onGeometryChange: (geometry) => true
+          onGeometryChange: (event) => true
         })
       }
       hideMenu(interactiveMap)

@@ -139,14 +139,14 @@ describe('displayedShape helper', () => {
     const result = displayedShape('draw_polygon', [[[0, 0], [10, 0], [10, 10], [0, 0]]])
     expect(result?.feature?.type).toBe('Feature')
     expect(result?.feature?.geometry?.type).toBe('Polygon')
-    expect(result?.placedCount).toBe(3)
+    expect(result?.numVertices).toBe(3)
   })
 
   test('builds a line feature from draw_line mode', () => {
     const result = displayedShape('draw_line', [[0, 0], [10, 0], [10, 10]])
     expect(result?.feature?.type).toBe('Feature')
     expect(result?.feature?.geometry?.type).toBe('LineString')
-    expect(result?.placedCount).toBe(2)
+    expect(result?.numVertices).toBe(2)
   })
 
   test('detects polygon vs line in edit_vertex mode from coordinate nesting', () => {

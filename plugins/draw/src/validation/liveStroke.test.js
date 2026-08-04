@@ -17,35 +17,35 @@ afterEach(() => jest.useRealTimers())
 describe('default rules (synchronous)', () => {
   test('a failing default rule flips dashed immediately with the reason', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: bowtie, placedCount: 3 })
+    stroke.update({ feature: bowtie, numVertices: 3 })
     expect(onChange).toHaveBeenCalledWith(true, expect.stringMatching(/intersect/i))
   })
 
   test('going valid again flips back solid', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: bowtie, placedCount: 3 })
-    stroke.update({ feature: square, placedCount: 3 })
+    stroke.update({ feature: bowtie, numVertices: 3 })
+    stroke.update({ feature: square, numVertices: 3 })
     expect(onChange).toHaveBeenLastCalledWith(false, null)
   })
 
   test('onChange fires only when the state flips, not on every update', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: bowtie, placedCount: 3 })
-    stroke.update({ feature: bowtie, placedCount: 3 })
-    stroke.update({ feature: bowtie, placedCount: 3 })
+    stroke.update({ feature: bowtie, numVertices: 3 })
+    stroke.update({ feature: bowtie, numVertices: 3 })
+    stroke.update({ feature: bowtie, numVertices: 3 })
     expect(onChange).toHaveBeenCalledTimes(1)
   })
 
-  test('below the minimum placed count the shape is part-drawn — never dashed', () => {
+  test('below the minimum vertex count the shape is part-drawn — never dashed', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: bowtie, placedCount: 2 })
+    stroke.update({ feature: bowtie, numVertices: 2 })
     expect(onChange).not.toHaveBeenCalled()
   })
 
   test('a default-rule failure never invokes the user callback', () => {
     const { stroke } = setup()
     const onGeometryChange = jest.fn()
-    stroke.update({ feature: bowtie, placedCount: 3, onGeometryChange })
+    stroke.update({ feature: bowtie, numVertices: 3, onGeometryChange })
     jest.runAllTimers()
     expect(onGeometryChange).not.toHaveBeenCalled()
   })
@@ -55,19 +55,19 @@ describe('user callback (throttled)', () => {
   test('runs once per frame with the latest geometry (trailing edge)', () => {
     const { stroke } = setup()
     const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, placedCount: 3, onGeometryChange })
-    stroke.update({ feature: square, placedCount: 4, onGeometryChange })
+    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+    stroke.update({ feature: square, numVertices: 4, onGeometryChange })
     const latest = poly([[0, 0], [20, 0], [20, 20], [0, 20]])
-    stroke.update({ feature: latest, placedCount: 5, onGeometryChange })
+    stroke.update({ feature: latest, numVertices: 5, onGeometryChange })
     expect(onGeometryChange).not.toHaveBeenCalled() // nothing synchronous
     jest.runAllTimers()
     expect(onGeometryChange).toHaveBeenCalledTimes(1)
-    expect(onGeometryChange).toHaveBeenCalledWith(latest, expect.objectContaining({ placedCount: 5 }))
+    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ feature: latest, numVertices: 5 }))
   })
 
   test('a user-callback veto flips dashed with its reason', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: square, placedCount: 3, onGeometryChange: () => ({ valid: false, reason: 'outside region' }) })
+    stroke.update({ feature: square, numVertices: 3, onGeometryChange: () => ({ valid: false, reason: 'outside region' }) })
     jest.runAllTimers()
     expect(onChange).toHaveBeenCalledWith(true, 'outside region')
   })
@@ -75,8 +75,8 @@ describe('user callback (throttled)', () => {
   test('a synchronous default failure cancels a pending user-rule frame', () => {
     const { onChange, stroke } = setup()
     const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, placedCount: 3, onGeometryChange })
-    stroke.update({ feature: bowtie, placedCount: 3, onGeometryChange }) // sync dashed
+    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+    stroke.update({ feature: bowtie, numVertices: 3, onGeometryChange }) // sync dashed
     jest.runAllTimers()
     expect(onGeometryChange).not.toHaveBeenCalled() // stale frame dropped
     expect(onChange).toHaveBeenLastCalledWith(true, expect.any(String))
@@ -84,8 +84,8 @@ describe('user callback (throttled)', () => {
 
   test('without a user callback a valid update settles solid immediately', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: bowtie, placedCount: 3 })
-    stroke.update({ feature: square, placedCount: 3 })
+    stroke.update({ feature: bowtie, numVertices: 3 })
+    stroke.update({ feature: square, numVertices: 3 })
     expect(onChange).toHaveBeenLastCalledWith(false, null)
     expect(jest.getTimerCount()).toBe(0)
   })
@@ -98,8 +98,8 @@ describe('custom validate function', () => {
       config?.onGeometryChange ? config.onGeometryChange(feature, context) : { valid: true })
     const stroke = createLiveStroke({ onChange, validate })
     const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'vetoed' }))
-    stroke.update({ feature: square, placedCount: 3, onGeometryChange })
-    expect(validate).toHaveBeenCalledWith(square, expect.objectContaining({ placedCount: 3 }))
+    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+    expect(validate).toHaveBeenCalledWith(square, expect.objectContaining({ numVertices: 3 }))
     jest.runAllTimers()
     expect(onChange).toHaveBeenCalledWith(true, 'vetoed')
   })
@@ -109,7 +109,7 @@ describe('set / reset / destroy', () => {
   test('set() applies through the flip guard and drops any pending frame', () => {
     const { onChange, stroke } = setup()
     const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, placedCount: 3, onGeometryChange })
+    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
     stroke.set(true, 'committed invalid')
     expect(onChange).toHaveBeenCalledWith(true, 'committed invalid')
     jest.runAllTimers()
@@ -123,17 +123,17 @@ describe('set / reset / destroy', () => {
     const { onChange, stroke } = setup()
     stroke.set(true)
     onChange.mockClear()
-    stroke.update({ feature: square, placedCount: 3 }) // valid → back solid
+    stroke.update({ feature: square, numVertices: 3 }) // valid → back solid
     expect(onChange).toHaveBeenCalledWith(false, null)
   })
 
   test('refresh() re-asserts the cached state unconditionally (style-reload resync)', () => {
     const { onChange, stroke } = setup()
-    stroke.update({ feature: bowtie, placedCount: 3 })
+    stroke.update({ feature: bowtie, numVertices: 3 })
     onChange.mockClear()
     stroke.refresh() // rendered output was reset externally — re-apply dashed
     expect(onChange).toHaveBeenCalledWith(true, null)
-    stroke.update({ feature: square, placedCount: 3 })
+    stroke.update({ feature: square, numVertices: 3 })
     onChange.mockClear()
     stroke.refresh()
     expect(onChange).toHaveBeenCalledWith(false, null)
@@ -142,7 +142,7 @@ describe('set / reset / destroy', () => {
   test('destroy() cancels a pending user-rule frame', () => {
     const { stroke } = setup()
     const onGeometryChange = jest.fn(() => true)
-    stroke.update({ feature: square, placedCount: 3, onGeometryChange })
+    stroke.update({ feature: square, numVertices: 3, onGeometryChange })
     stroke.destroy()
     jest.runAllTimers()
     expect(onGeometryChange).not.toHaveBeenCalled()

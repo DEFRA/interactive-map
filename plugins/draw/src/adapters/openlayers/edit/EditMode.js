@@ -34,26 +34,41 @@ const UNDO_INVERSE_PHASE = {
 // change (Modify drag, touch drag, keyboard nudge) via the shared controller —
 // default rules synchronously, user callback throttled. All committed vertices are
 // "placed", so the polygon count drops only OL's closing duplicate.
-const wireLiveStroke = ({ manager, olFeature }) => {
+//
+// The style is set ONCE to a function backed by `invalid`, rather than calling
+// Feature#setStyle() on every flip: setStyle() fires a feature-level 'change'
+// event, which OL's Modify interaction also listens for (to detect out-of-band
+// edits and rebuild its internal drag/segment index) — guarded only while Modify
+// itself is synchronously mutating the geometry. The built-in rules' flip stays
+// inside that guarded window, but the user-callback flip is deliberately
+// throttled to the next animation frame (liveStroke.js), landing outside it —
+// so calling setStyle() there makes Modify treat its own flip as an external
+// edit and rebuild mid-drag, killing the in-progress drag. A style function +
+// map.render() repaints without ever touching the feature, so Modify's listener
+// never fires from our own bookkeeping.
+const wireLiveStroke = ({ map, manager, olFeature }) => {
+  let invalid = false
+  olFeature.setStyle(() => (invalid ? manager.styles.editFeatureStyleInvalid : manager.styles.editFeatureStyle))
   const liveStroke = createLiveStroke({
-    onChange: (invalid, reason) => {
-      olFeature.setStyle(invalid ? manager.styles.editFeatureStyleInvalid : manager.styles.editFeatureStyle)
+    onChange: (next, reason) => {
+      invalid = next
+      map.render()
       // In edit mode the displayed shape is exactly what Done finishes, so live
       // validity flips also gate the Done button (events.js dispatches them).
-      manager.emit(ADAPTER_EVENTS.VALIDITY_CHANGE, { valid: !invalid, reason })
+      manager.emit(ADAPTER_EVENTS.VALIDITY_CHANGE, { valid: !next, reason })
     }
   })
   const updateLiveValidity = () => {
     const geom = olFeature.getGeometry()
     const type = geom.getType()
     const coordinates = geom.getCoordinates()
-    const placedCount = type === 'Polygon'
+    const numVertices = type === 'Polygon'
       ? Math.max(0, (coordinates[0]?.length ?? 1) - 1)
       : coordinates.length
     liveStroke.update({
       feature: { type: 'Feature', geometry: { type, coordinates } },
       context: { mode: 'edit_vertex' },
-      placedCount,
+      numVertices,
       onGeometryChange: manager._geometryValidator
     })
   }
@@ -306,7 +321,6 @@ export const createEditMode = ({ map, manager, options }) => {
   }
 
   const originalFeatureStyle = olFeature.getStyle()
-  olFeature.setStyle(manager.styles.editFeatureStyle)
 
   const midpointLayer = createMidpointLayer(map, manager.styles.midpointStyle)
   const vertexLayer = createVertexLayer(map, manager.styles.vertexStyle)
@@ -341,7 +355,7 @@ export const createEditMode = ({ map, manager, options }) => {
   syncGeom() // initial populate
 
   const layers = { vertexLayer, midpointLayer, activeLayer }
-  const live = wireLiveStroke({ manager, olFeature })
+  const live = wireLiveStroke({ map, manager, olFeature })
   const touchHandler = wireTouchHandler({ map, container, manager, snap, olFeature, undoStack, selection })
   const actions = createVertexActions({ olFeature, undoStack, selection, getTouchHandler: () => touchHandler })
   const keyboardHandler = wireKeyboardHandler({ map, container, snap, undoStack, selection, touchHandler, actions })
