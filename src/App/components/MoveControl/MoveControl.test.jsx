@@ -211,6 +211,70 @@ describe('MoveControl', () => {
     })
   })
 
+  describe('arrow keys while focus is anywhere within the control', () => {
+    // A keyboard user who tabs to a direction button and repeat-presses Enter keeps
+    // focus there (see the describe block above) — this lets them fall back to raw
+    // arrow keys without first tabbing all the way back out to the map.
+    it('pans the map on an arrow key, regardless of which button currently has focus', () => {
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard' }))
+      render(<MoveControl />)
+      // Focus a button unrelated to the direction being pressed, to prove this
+      // isn't just reading the focused button's own handler.
+      fireEvent.focus(screen.getByRole('button', { name: 'Zoom in' }))
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Zoom in' }), { key: 'ArrowRight' })
+      expect(mapProvider.panBy).toHaveBeenCalledWith([100, 0])
+      expect(announce).toHaveBeenCalledWith('Moved right')
+    })
+
+    it('routes the arrow key through activeMoveTarget when a plugin has claimed the control', () => {
+      mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard' }))
+      render(<MoveControl />)
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Move up' }), { key: 'ArrowUp' })
+      expect(mapProvider.activeMoveTarget.move).toHaveBeenCalledWith(0, -1, true)
+      expect(mapProvider.panBy).not.toHaveBeenCalled()
+    })
+
+    it('ignores non-arrow keys, leaving default behaviour (e.g. Enter/Space activating the focused button) untouched', () => {
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard' }))
+      render(<MoveControl />)
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Move up' }), { key: 'Enter' })
+      expect(mapProvider.panBy).not.toHaveBeenCalled()
+    })
+
+    it('shift+arrow overrides the Precision toggle to the small step, matching the map\'s own native keyboard shortcuts', () => {
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard', nudgeStepSize: 'large' }))
+      render(<MoveControl />)
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Move right' }), { key: 'ArrowRight', shiftKey: true })
+      expect(mapProvider.panBy).toHaveBeenCalledWith([5, 0])
+      expect(announce).toHaveBeenCalledWith('Nudged right')
+    })
+
+    it('shift+arrow still resolves to the small step when Precision is already on (idempotent, not a toggle-relative flip)', () => {
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard', nudgeStepSize: 'small' }))
+      render(<MoveControl />)
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Nudge right' }), { key: 'ArrowRight', shiftKey: true })
+      expect(mapProvider.panBy).toHaveBeenCalledWith([5, 0])
+      expect(announce).toHaveBeenCalledWith('Nudged right')
+    })
+
+    it('shift+arrow overrides activeMoveTarget.move to the small step too', () => {
+      mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard', nudgeStepSize: 'large' }))
+      render(<MoveControl />)
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Move up' }), { key: 'ArrowUp', shiftKey: true })
+      expect(mapProvider.activeMoveTarget.move).toHaveBeenCalledWith(0, -1, false)
+    })
+
+    it('arrow key without shift still follows the Precision toggle as before', () => {
+      useApp.mockReturnValue(buildAppState({ interfaceType: 'keyboard', nudgeStepSize: 'large' }))
+      render(<MoveControl />)
+      fireEvent.keyDown(screen.getByRole('button', { name: 'Move right' }), { key: 'ArrowRight' })
+      expect(mapProvider.panBy).toHaveBeenCalledWith([100, 0])
+      expect(announce).toHaveBeenCalledWith('Moved right')
+    })
+  })
+
   it('has a stable "Precision" label regardless of state', () => {
     const { rerender } = render(<MoveControl />)
     expect(screen.getByRole('button', { name: 'Precision' })).toBeInTheDocument()
