@@ -16,6 +16,8 @@ const initialState = {
     items: [],
     hasGroups: false
   },
+  mappedDatasets: {},
+  orderedDatasets: [],
   actionsArray: [],
   menu: [],
   menuState: {}

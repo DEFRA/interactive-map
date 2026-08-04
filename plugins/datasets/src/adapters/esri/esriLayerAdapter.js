@@ -9,6 +9,9 @@ import { logger } from '../../../../../src/services/logger.js'
 export default class EsriLayerAdapter extends LayerAdapter {
   constructor (mapProvider) {
     super()
+    this.ready = new Promise((resolve) => {
+      this.resolveReady = resolve
+    })
     this._mapProvider = mapProvider
     this._map = mapProvider.map
 
@@ -46,6 +49,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
+    this.resolveReady()
   }
 
   _addGroupLayer (esriGroupId) {
@@ -199,7 +203,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
     if (!esriStyleLayerId || !vectorTileLayer) {
       return
     }
-    vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
+    this.ready.then(() => {
+      vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
+    })
   }
 
   _applyStyleLayerPaintProperties (registryDataset, vectorTileLayer) {
