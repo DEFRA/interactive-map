@@ -91,7 +91,7 @@ export function attachEvents ({ pluginState, mapProvider, events, eventBus, butt
 
     // Prevent self-intersect
     // TODO - refactor this when rings and/or multipolygons are supported
-    if (toolInfoType === 'reshape') {
+    if (toolInfoType === 'reshape-stop') {
       const isSimple = simplifyOperator.isSimple(graphic.geometry) && graphic.geometry.rings.length === 1
       if (!isSimple) {
         sketchViewModel.undo()
