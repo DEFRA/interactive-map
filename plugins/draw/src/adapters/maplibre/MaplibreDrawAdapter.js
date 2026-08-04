@@ -4,7 +4,7 @@ import { createEventBus } from '../../utils/eventBus.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { ADAPTER_EVENTS } from '../../adapterEvents.js'
 import { createLiveStroke } from '../../validation/liveStroke.js'
-import { validatePlacement } from '../../validation/validateGeometry.js'
+import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
 
 const polygonFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates } })
 const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
@@ -81,12 +81,16 @@ export class MaplibreDrawAdapter {
       }
     })
 
-    // Live Add-point gate: would placing a vertex at the crosshair be vetoed?
-    // Same throttling as the stroke, but evaluated with the placement (hard) rules
-    // so the button tracks exactly what a tap would do.
-    this._livePlacement = createLiveStroke({
-      validate: validatePlacement,
-      onChange: (vetoed, reason) => this._bus.emit(ADAPTER_EVENTS.CAN_PLACE_CHANGE, { canPlace: !vetoed, reason })
+    // Draw-mode-only: computes both the stroke/Done verdict and the Add-point
+    // verdict from a SINGLE throttled call to the user's callback per rubber-band
+    // move (see liveDrawChecks.js for why), and is flip-guarded itself. The
+    // stroke verdict still routes through _liveStroke.set() — that instance is
+    // also driven independently by edit mode and must stay the single source of
+    // truth for the rendered stroke across mode switches. The Add-point verdict
+    // has no such cross-mode instance to stay in sync with, so it emits directly.
+    this._liveDrawChecks = createLiveDrawChecks({
+      onStrokeChange: (invalid, reason) => this._liveStroke.set(invalid, reason),
+      onPlaceChange: (vetoed, reason) => this._bus.emit(ADAPTER_EVENTS.CAN_PLACE_CHANGE, { canPlace: !vetoed, reason })
     })
 
     // Normalise ML map events → the shared adapter event contract (adapterEvents.js).
@@ -140,7 +144,7 @@ export class MaplibreDrawAdapter {
     // the live checks own both from here.
     if (name === 'draw_polygon' || name === 'draw_line') {
       this._liveStroke.set(false)
-      this._livePlacement.set(false)
+      this._liveDrawChecks.reset()
     }
     this._draw.changeMode(name, options)
     // The underlying mapbox-gl-draw control's public changeMode API is silent by
@@ -150,23 +154,20 @@ export class MaplibreDrawAdapter {
   }
 
   // Live invalid-stroke driver: called on every rubber-band move (draw) and vertex
-  // drag / nudge (edit) with the displayed feature. Delegates to the shared
-  // live-stroke controller, which runs the default rules synchronously and the user
-  // callback throttled, toggling the dashed stroke only when validity flips. While
-  // drawing, the same displayed geometry (placed vertices + crosshair candidate)
-  // also feeds the Add-point placement gate.
+  // drag / nudge (edit) with the displayed feature. Edit mode has no Add-point
+  // gate, so it goes straight through the live-stroke controller as before. Draw
+  // mode routes through _liveDrawChecks instead, which computes both the stroke
+  // and Add-point verdicts from one throttled user-callback call (see
+  // liveDrawChecks.js).
   _updateLiveStroke (e) {
     if (!e?.coordinates) { return }
     const mode = this._draw.getMode()
     const shape = displayedShape(mode, e.coordinates)
     if (!shape) { return }
-    this._liveStroke.update({ ...shape, context: { mode }, onGeometryChange: this._geometryValidator })
     if (mode === 'draw_polygon' || mode === 'draw_line') {
-      this._livePlacement.update({
-        feature: shape.feature,
-        context: { mode, vertexIndex: shape.numVertices },
-        onGeometryChange: this._geometryValidator
-      })
+      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryChange: this._geometryValidator })
+    } else {
+      this._liveStroke.update({ ...shape, context: { mode }, onGeometryChange: this._geometryValidator })
     }
   }
 
@@ -349,7 +350,7 @@ export class MaplibreDrawAdapter {
     this._map.off(MAPBOX_DRAW_EVENTS.MODE_CHANGE, this._mapHandlers.modechange)
     this._map.off(STYLE_DATA_EVENT, this._mapHandlers.styledata)
     this._liveStroke.destroy()
-    this._livePlacement.destroy()
+    this._liveDrawChecks.destroy()
     this._cleanupDraw()
   }
 }

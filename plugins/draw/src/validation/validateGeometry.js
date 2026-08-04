@@ -90,19 +90,17 @@ export const attemptPlacement = ({ placed, point, geometryType, onGeometryChange
 
 /**
  * Validate the displayed (in-progress) geometry that drives the live invalid
- * stroke: the placed vertices plus the current cursor point. Two different
- * thresholds gate the two kinds of check:
- *   - The built-in live rules (self-intersection/area) are meaningless below
- *     the geometry type's minimum vertex count — there isn't a real ring/line
- *     yet — so they're skipped entirely until then.
- *   - A caller's own `onGeometryChange` can be meaningful on a single point
- *     (e.g. "is this point inside a region?"), so it runs as soon as at least
- *     one vertex is committed, rather than waiting for a real shape.
- * With zero committed vertices neither check runs — there's nothing to
- * validate on the very first mouse-move before any click. This only affects
- * the live-stroke preview; the Add-point placement gate (validatePlacement,
- * used by attemptPlacement) is a separate check and keeps running from the
- * first vertex.
+ * stroke: the placed vertices plus the current cursor point. The built-in live
+ * rules (self-intersection/area) are meaningless below the geometry type's
+ * minimum vertex count — there isn't a real ring/line yet — so they're skipped
+ * entirely until then; a caller's own `onGeometryChange` has no such floor
+ * (numVertices defaults to 0 via `context.numVertices ?? 0`, so it still runs).
+ *
+ * Used directly by edit mode's live-stroke check (there's no Add-point gate to
+ * combine with there, so it's a self-contained call). Draw mode does NOT use
+ * this — see liveDrawChecks.js, which combines this same LIVE_RULES set with a
+ * separate HARD_RULES-based placement check, both driven from a single shared
+ * `onGeometryChange` call rather than one call each.
  *
  * @param {object} feature - displayed GeoJSON feature (placed vertices + cursor)
  * @param {object} context - { mode, numVertices, phase }; phase defaults to 'preview'
@@ -117,6 +115,5 @@ export const validateDisplayedGeometry = (feature, context = {}, config = {}) =>
   const min = MIN_VERTICES[type] ?? 0
   const numVertices = context.numVertices ?? 0
   const effectiveRules = numVertices < min ? [] : rules
-  const effectiveOnGeometryChange = numVertices < 1 ? undefined : onGeometryChange
-  return validateGeometry(feature, { ...context, phase: context.phase ?? 'preview' }, { rules: effectiveRules, onGeometryChange: effectiveOnGeometryChange })
+  return validateGeometry(feature, { ...context, phase: context.phase ?? 'preview' }, { rules: effectiveRules, onGeometryChange })
 }

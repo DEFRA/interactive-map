@@ -5,9 +5,10 @@ import { getPlacedSketchCoords, getLastPlacedSketchCoord } from '../utils/sketch
 import { TOLERANCES } from '../defaults.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
-import { attemptPlacement, validatePlacement, MODE_BY_GEOMETRY } from '../../../validation/validateGeometry.js'
+import { attemptPlacement, MODE_BY_GEOMETRY } from '../../../validation/validateGeometry.js'
 import { MIN_VERTICES } from '../../../validation/rules.js'
 import { createLiveStroke } from '../../../validation/liveStroke.js'
+import { createLiveDrawChecks } from '../../../validation/liveDrawChecks.js'
 
 const canFinish = (geometryType, sketchFeature) => {
   if (!sketchFeature) { return false }
@@ -133,7 +134,7 @@ const createVertexTracker = (manager, getSketch) => {
 }
 
 // The mode interface consumed by OLDrawManager.
-const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, getSketch, updateVertexCount, emitUndoValidation, onStylesChanged, clearSketch, setInvalid, liveStroke, livePlacement }) => ({
+const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, getSketch, updateVertexCount, emitUndoValidation, onStylesChanged, clearSketch, setInvalid, liveStroke, liveDrawChecks }) => ({
   done () {
     if (canFinish(geometryType, getSketch())) { drawInteraction.finishDrawing() }
   },
@@ -151,7 +152,7 @@ const buildDrawModeApi = ({ map, manager, drawInteraction, input, geometryType, 
   },
   destroy () {
     liveStroke.destroy()
-    livePlacement.destroy()
+    liveDrawChecks.destroy()
     manager.off(STYLES_CHANGED_EVENT, onStylesChanged)
     // Emit the final interfaceType so crosshair visibility is correct on exit.
     manager.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: input.getInterfaceType() })
@@ -203,22 +204,23 @@ export const createDrawMode = ({ map, manager, options }) => {
     currentSketchStyle = manager.styles.createSketchStyle(geometryType, invalid)
     drawInteraction.overlay_.changed()
   }
-  // Drives the live invalid stroke from every sketch change (mouse / touch / keyboard
-  // rubber-banding): default rules synchronously, user callback throttled. The same
-  // displayed geometry (placed vertices + crosshair candidate) feeds the Add-point
-  // placement gate, evaluated with the placement (hard) rules so the button tracks
-  // exactly what a tap would do.
+  // liveStroke stays a real createLiveStroke instance (not just a set() sink)
+  // since edit mode drives its own separate instance the same way — kept here
+  // for consistency with that pattern, even though draw mode only ever calls
+  // set() on it (see liveDrawChecks.js, which is flip-guarded itself). There's
+  // no equivalent cross-mode instance for Add-point, so that verdict emits directly.
   const liveStroke = createLiveStroke({ onChange: setSketchInvalid })
-  const livePlacement = createLiveStroke({
-    validate: validatePlacement,
-    onChange: (vetoed, reason) => manager.emit(ADAPTER_EVENTS.CAN_PLACE_CHANGE, { canPlace: !vetoed, reason })
+  // Computes both verdicts from a SINGLE throttled call to the user's callback
+  // per sketch change (see liveDrawChecks.js for why that matters).
+  const liveDrawChecks = createLiveDrawChecks({
+    onStrokeChange: (nextInvalid, reason) => liveStroke.set(nextInvalid, reason),
+    onPlaceChange: (vetoed, reason) => manager.emit(ADAPTER_EVENTS.CAN_PLACE_CHANGE, { canPlace: !vetoed, reason })
   })
   const liveMode = MODE_BY_GEOMETRY[geometryType]
   const updateLiveValidity = () => {
     if (!sketchFeature) { return }
     const { feature, numVertices } = displayedSketch(geometryType, sketchFeature)
-    liveStroke.update({ feature, context: { mode: liveMode }, numVertices, onGeometryChange: manager._geometryValidator })
-    livePlacement.update({ feature, context: { mode: liveMode, vertexIndex: numVertices }, onGeometryChange: manager._geometryValidator })
+    liveDrawChecks.update({ feature, context: { mode: liveMode }, numVertices, onGeometryChange: manager._geometryValidator })
   }
 
   // Update sketch style when map style changes
@@ -265,6 +267,6 @@ export const createDrawMode = ({ map, manager, options }) => {
     // External writes go through the controller so its cache mirrors the style.
     setInvalid: (next) => liveStroke.set(next),
     liveStroke,
-    livePlacement
+    liveDrawChecks
   })
 }

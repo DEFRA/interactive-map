@@ -237,6 +237,35 @@ describe('live invalid stroke (draw mode)', () => {
     expect(bus.emit).not.toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: false }))
   })
 
+  test('the user callback runs ONCE per frame in draw mode, with phase preview, driving both the stroke and Add point from that single call', () => {
+    jest.useFakeTimers()
+    const { map, bus } = drawPolygonSetup()
+    map._drawGeometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    fire(square)
+    expect(map._drawGeometryValidator).not.toHaveBeenCalled() // deferred to the frame
+    jest.runAllTimers()
+    expect(map._drawGeometryValidator).toHaveBeenCalledTimes(1) // not once per gate
+    expect(map._drawGeometryValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'preview' }))
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+    expect(bus.emit).toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: false, reason: 'outside region' }))
+    jest.useRealTimers()
+  })
+
+  test('the user callback runs even before any vertex is placed, gating both the stroke and Add point from the very first candidate point', () => {
+    jest.useFakeTimers()
+    const { map, bus } = drawPolygonSetup()
+    map._drawGeometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    // Zero committed vertices — coordinates is just the rubber-band cursor point.
+    fire({ type: 'draw.geometrychange', coordinates: [[[5, 5]]] })
+    jest.runAllTimers()
+    expect(map._drawGeometryValidator).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
+    expect(bus.emit).toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: false, reason: 'outside region' }))
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
+    jest.useRealTimers()
+  })
+
   test('entering a draw mode resets the stroke to solid', () => {
     const { adapter, map } = drawPolygonSetup()
     onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(bowtie) // dashed

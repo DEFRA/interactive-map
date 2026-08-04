@@ -137,15 +137,16 @@ describe('validateDisplayedGeometry edge cases', () => {
     expect(result).toEqual({ valid: false, reason: 'too few for my rule' })
   })
 
-  test('skips both the built-in rules AND the caller\'s onGeometryChange with zero committed vertices — nothing meaningful to validate yet before the first click', () => {
+  test('skips the built-in rules with zero committed vertices, but still runs the caller\'s onGeometryChange — a location-based rule is meaningful against the very first candidate point', () => {
     const failingRule = jest.fn(() => ({ valid: false, reason: 'should not run' }))
-    const onGeometryChange = jest.fn(() => true)
+    const onGeometryChange = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const feature = poly([[0, 0]])
 
-    const result = validateDisplayedGeometry(poly([[0, 0]]), { numVertices: 0 }, { rules: [failingRule], onGeometryChange })
+    const result = validateDisplayedGeometry(feature, { numVertices: 0 }, { rules: [failingRule], onGeometryChange })
 
     expect(failingRule).not.toHaveBeenCalled()
-    expect(onGeometryChange).not.toHaveBeenCalled()
-    expect(result).toEqual({ valid: true })
+    expect(onGeometryChange).toHaveBeenCalledWith(expect.objectContaining({ feature, numVertices: 0, phase: 'preview' }))
+    expect(result).toEqual({ valid: false, reason: 'outside region' })
   })
 
   test('runs the caller\'s onGeometryChange from the first committed vertex, even while the built-in rules are still skipped', () => {

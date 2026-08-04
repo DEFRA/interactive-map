@@ -1,8 +1,11 @@
 import { validateDisplayedGeometry } from './validateGeometry.js'
 
-const requestFrame = (cb) =>
+// Shared with liveDrawChecks.js — the same one-call-per-frame throttle for a
+// user rule of unknown cost, used both for the invalid stroke and (there) the
+// combined draw-mode live checks.
+export const requestFrame = (cb) =>
   (typeof requestAnimationFrame === 'function' ? requestAnimationFrame(cb) : setTimeout(cb, 16))
-const cancelFrame = (id) =>
+export const cancelFrame = (id) =>
   (typeof cancelAnimationFrame === 'function' ? cancelAnimationFrame(id) : clearTimeout(id))
 
 /**

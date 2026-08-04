@@ -210,6 +210,37 @@ describe('drawing lifecycle', () => {
     expect(emitted().find((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE)).toBeUndefined()
   })
 
+  test('the user callback runs ONCE per sketch change, with phase preview, driving both the stroke and Add point from that single call', () => {
+    jest.useFakeTimers()
+    const { manager, emitted, interaction } = setup('Polygon')
+    manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const sketch = polygonFeature([[0, 0], [5, 5], [0, 0]])
+    interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
+    sketch.getGeometry().setCoordinates([[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]])
+    expect(manager._geometryValidator).not.toHaveBeenCalled() // deferred to the frame
+    jest.runAllTimers()
+    expect(manager._geometryValidator).toHaveBeenCalledTimes(1) // not once per gate
+    expect(manager._geometryValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'preview' }))
+    expect(manager.styles.createSketchStyle).toHaveBeenLastCalledWith('Polygon', true)
+    expect(emitted().find((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE)?.payload)
+      .toEqual(expect.objectContaining({ canPlace: false, reason: 'outside region' }))
+    jest.useRealTimers()
+  })
+
+  test('the user callback runs even before any vertex is placed, gating Add point from the very first candidate point', () => {
+    jest.useFakeTimers()
+    const { manager, emitted, interaction } = setup('Polygon')
+    manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    const sketch = polygonFeature([[5, 5], [5, 5]]) // no committed vertices yet — rubber-band + closing dupe only
+    interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
+    sketch.getGeometry().setCoordinates([[[5, 5], [5, 5]]])
+    jest.runAllTimers()
+    expect(manager._geometryValidator).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
+    expect(emitted().find((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE)?.payload)
+      .toEqual(expect.objectContaining({ canPlace: false, reason: 'outside region' }))
+    jest.useRealTimers()
+  })
+
   test('setInvalid rebuilds the sketch style in the invalid variant and re-renders', () => {
     const { mode, manager, interaction } = setup('Polygon')
     const changed = jest.spyOn(interaction.overlay_, 'changed')
