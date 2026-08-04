@@ -5,6 +5,10 @@ import {
   getModifiableCoords
 } from './geometryHelpers.js'
 import { KEYBOARD } from '../../defaults.js'
+import {
+  getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
+  getSnapRadius, triggerSnapAtPoint, clearSnapIndicator
+} from '../../utils/snapHelpers.js'
 
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
 
@@ -47,11 +51,42 @@ export const vertexOperations = {
     return this.map.unproject({ x: pt.x + dx * amount, y: pt.y + dy * amount })
   },
 
+  // Resolves the destination coordinate for a vertex nudge by (dx, dy) unit
+  // direction, applying snap or breaking out of an already-active one — shared by
+  // the keyboard arrow-key path (_keyboardMoveTarget) and MoveControl's
+  // explicit-delta path (nudgeVertexByDelta) so both snap identically. dx/dy are
+  // only needed for the snap-escape offset; getCandidate computes the raw,
+  // un-snapped destination the caller would otherwise have used.
+  resolveSnapTarget (state, dx, dy, currentCoord, getCandidate) {
+    const snap = getSnapInstance(this.map)
+
+    // Break out of an active snap by moving beyond the snap radius
+    if (isSnapEnabled(state) && state._isSnapped && snap) {
+      const offset = getSnapRadius(snap) + 1
+      const pt = this.map.project(currentCoord)
+      state._isSnapped = false
+      clearSnapIndicator(snap, this.map)
+      return this.map.unproject({ x: pt.x + dx * offset, y: pt.y + dy * offset })
+    }
+
+    const newCoord = getCandidate()
+    if (isSnapEnabled(state) && snap) {
+      triggerSnapAtPoint(snap, this.map, this.map.project(newCoord))
+      if (isSnapActive(snap)) {
+        state._isSnapped = true
+        return getSnapLngLat(snap)
+      }
+    }
+    state._isSnapped = false
+    return newCoord
+  },
+
   // Moves the selected vertex by an explicit (dx, dy) unit direction — the entry
   // point for MoveControl's D-pad (see mapProvider.activeMoveTarget in events.js),
   // as opposed to moveVertexByKey's KeyboardEvent-driven path. Each call is treated
-  // as one complete, undoable action (no held-key sequencing/snap-breaking, since a
-  // button click has no "held" state to batch the way arrow keys do).
+  // as one complete, undoable action (no held-key sequencing, since a button click
+  // has no "held" state to batch the way arrow keys do) — but still honours snap
+  // via the shared resolveSnapTarget, same as keyboard nudging.
   nudgeVertexByDelta (state, dx, dy, isLargeStep) {
     if (state.selectedVertexType !== 'vertex' || state.selectedVertexIndex < 0) {
       return
@@ -63,7 +98,8 @@ export const vertexOperations = {
     }
     const previousPosition = [...currentCoord]
     const vertexIndex = state.selectedVertexIndex
-    this.moveVertex(state, this.getOffsetByDelta(currentCoord, dx, dy, isLargeStep))
+    const target = this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getOffsetByDelta(currentCoord, dx, dy, isLargeStep))
+    this.moveVertex(state, target)
     this.pushUndo({ type: 'move_vertex', featureId: state.featureId, vertexIndex, previousPosition })
   },
 

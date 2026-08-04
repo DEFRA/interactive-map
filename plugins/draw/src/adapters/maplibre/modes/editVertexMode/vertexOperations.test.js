@@ -73,6 +73,31 @@ describe('vertexOperations', () => {
     expect(map._undoStack).toHaveLength(0)
   })
 
+  test('nudgeVertexByDelta snaps to a nearby target, breaks out of an active snap, and falls back to the raw coord when snap is inactive — same as keyboard nudging (regression: MoveControl bypassed snap entirely before resolveSnapTarget was shared)', () => {
+    const { ctx, state, map } = createHarness()
+    state.selectedVertexIndex = 1
+    state.selectedVertexType = 'vertex'
+    state.getSnapEnabled = () => true
+
+    map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
+    ctx.nudgeVertexByDelta(state, 0, -1, true)
+    expect(state._isSnapped).toBe(true)
+    expect(state.vertecies[1]).toEqual([7, 8])
+
+    ctx.nudgeVertexByDelta(state, -1, 0, true) // already snapped → breaks out of the snap radius
+    expect(state._isSnapped).toBe(false)
+
+    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
+    ctx.nudgeVertexByDelta(state, 1, 0, true) // snap enabled but inactive → raw offset coord
+    expect(state._isSnapped).toBe(false)
+  })
+
+  test('resolveSnapTarget is a no-op passthrough to the candidate coordinate when snap is disabled', () => {
+    const { ctx, state } = createHarness()
+    const candidate = { lng: 3, lat: 4 }
+    expect(ctx.resolveSnapTarget(state, 1, 0, [0, 0], () => candidate)).toEqual(candidate)
+  })
+
   test('insertVertex splits a midpoint into a new vertex, records undo and selects it', () => {
     const { ctx, state, api } = createHarness()
     ctx.insertVertex({ ...state, selectedVertexIndex: state.vertecies.length, selectedVertexType: 'midpoint' }, { key: 'ArrowRight', shiftKey: false })

@@ -1,7 +1,4 @@
-import {
-  getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
-  getSnapRadius, triggerSnapAtPoint, clearSnapIndicator
-} from '../../utils/snapHelpers.js'
+import { getSnapInstance, clearSnapIndicator } from '../../utils/snapHelpers.js'
 import { getCoords } from './geometryHelpers.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
@@ -107,30 +104,12 @@ export const keyboardHandlers = {
     this.moveVertex(state, this._keyboardMoveTarget(state, e, currentCoord))
   },
 
-  // Resolve the destination coordinate for a keyboard nudge, applying or breaking snap.
+  // Resolve the destination coordinate for a keyboard nudge, applying or breaking
+  // snap — delegates to the shared resolver (vertexOperations.js) also used by
+  // MoveControl's nudgeVertexByDelta, so both snap identically.
   _keyboardMoveTarget (state, e, currentCoord) {
-    const snap = getSnapInstance(this.map)
-
-    // Break out of an active snap by moving beyond the snap radius
-    if (isSnapEnabled(state) && state._isSnapped && snap) {
-      const offset = getSnapRadius(snap) + 1
-      const pt = this.map.project(currentCoord)
-      const [dx, dy] = ARROW_OFFSETS[e.key].map(v => v * offset)
-      state._isSnapped = false
-      clearSnapIndicator(snap, this.map)
-      return this.map.unproject({ x: pt.x + dx, y: pt.y + dy })
-    }
-
-    const newCoord = this.getNewCoord(state, e)
-    if (isSnapEnabled(state) && snap) {
-      triggerSnapAtPoint(snap, this.map, this.map.project(newCoord))
-      if (isSnapActive(snap)) {
-        state._isSnapped = true
-        return getSnapLngLat(snap)
-      }
-    }
-    state._isSnapped = false
-    return newCoord
+    const [dx, dy] = ARROW_OFFSETS[e.key]
+    return this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getNewCoord(state, e))
   },
 
   // Cmd/Ctrl+Z: undo the last edit, unless the user is typing in a text field.
