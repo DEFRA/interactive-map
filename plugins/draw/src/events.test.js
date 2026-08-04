@@ -26,13 +26,14 @@ const setup = (overrides = {}) => {
   const pluginState = { dispatch, feature: { id: 'F' }, tempFeature: { id: 'T' }, snap: false, ...overrides.pluginState }
   const mapProvider = { draw }
   const eventBus = { emit: jest.fn() }
+  const hints = { show: jest.fn() }
   const buttonConfig = { drawDone: {}, drawCancel: {}, drawUndo: {}, drawDeletePoint: {}, drawSnap: {}, ...overrides.buttonConfig }
   const appState = { layoutRefs: { viewportRef: { current: 'viewport' } }, interfaceType: 'mouse' }
   const appConfig = { id: 'app' }
   const mapState = { mapSize: 'medium' }
 
-  const detach = attachEvents({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus })
-  return { draw, dispatch, pluginState, mapProvider, eventBus, buttonConfig, detach }
+  const detach = attachEvents({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus, hints })
+  return { draw, dispatch, pluginState, mapProvider, eventBus, hints, buttonConfig, detach }
 }
 
 const drawHandler = (draw, event) => draw.on.mock.calls.find(([name]) => name === event)[1]
@@ -139,10 +140,12 @@ describe('draw event handlers', () => {
   })
 
   test('re-opens an invalid finished shape in edit mode instead of creating it', () => {
-    const { draw, eventBus } = setup()
+    const { draw, eventBus, hints } = setup()
     const bowtie = { id: 'bad', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] } }
     drawHandler(draw, 'create')(bowtie)
     expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', bowtie)
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
+    expect(hints.show).toHaveBeenCalledWith(expect.stringMatching(/intersect/i))
     jest.runAllTimers()
     const editCall = draw.changeMode.mock.calls.find(([mode]) => mode === 'edit_vertex')
     expect(editCall[1]).toEqual(expect.objectContaining({ featureId: 'bad' }))
@@ -221,6 +224,10 @@ describe('geometrychange validation', () => {
     type: 'Feature',
     geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [2, 0], [0, 0]]] }
   }
+  const partDrawnFeature = {
+    type: 'Feature',
+    geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] }
+  }
 
   test('ignores preview payloads that carry no phase', () => {
     const { draw, dispatch } = setup()
@@ -235,11 +242,20 @@ describe('geometrychange validation', () => {
   })
 
   test('gates a self-intersecting shape while drawing', () => {
-    const { draw, dispatch, eventBus } = setup()
+    const { draw, dispatch, eventBus, hints } = setup()
     drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-add', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
     expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
+    expect(hints.show).toHaveBeenCalledWith(expect.stringMatching(/intersect/i))
+  })
+
+  test('gates a part-drawn shape below the minimum vertex count, but skips the hint — an incomplete shape is expected, not a mistake', () => {
+    const { draw, dispatch, eventBus, hints } = setup()
+    drawHandler(draw, 'geometrychange')({ feature: partDrawnFeature, phase: 'commit-add', vertexIndex: 1 })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/at least 3 points/) }))
+    expect(hints.show).not.toHaveBeenCalled()
   })
 
   test('gates a zero-area shape while drawing', () => {
@@ -264,11 +280,21 @@ describe('geometrychange validation', () => {
   })
 
   test('applies the per-session user validator as a gate', () => {
-    const { draw, dispatch, eventBus } = setup()
+    const { draw, dispatch, eventBus, hints } = setup()
     draw._geometryValidator = () => ({ valid: false, reason: 'too big' })
     drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: 'too big' }))
+    expect(hints.show).toHaveBeenCalledWith('too big')
+  })
+
+  test('a user validator that vetoes with no reason (plain `false`) still emits, but skips the hint', () => {
+    const { draw, dispatch, eventBus, hints } = setup()
+    draw._geometryValidator = () => false
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: null }))
+    expect(hints.show).not.toHaveBeenCalled()
   })
 
   test('drives the invalid stroke from committed validity in edit mode only', () => {
@@ -307,11 +333,12 @@ describe('geometrychange validation', () => {
     expect(eventBus.emit).toHaveBeenCalledWith('draw:interfacetypechange', { interfaceType: 'keyboard' })
   })
 
-  test('relays a blocked placement to the public bus as draw:geometryinvalid', () => {
-    const { draw, eventBus } = setup()
+  test('relays a blocked placement to the public bus as draw:geometryinvalid, and as a hint', () => {
+    const { draw, eventBus, hints } = setup()
     const blocked = { phase: 'place', mode: 'draw_polygon', vertexIndex: 2, reason: 'outside region', feature: { type: 'Feature' } }
     drawHandler(draw, 'placementblocked')(blocked)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', blocked)
+    expect(hints.show).toHaveBeenCalledWith('outside region')
   })
 
   test('passes the current mode into the validation context', () => {

@@ -56,6 +56,10 @@ const drawPlugin = createDrawPlugin({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
   })
+  // onGeometryChange: (event) => { console.log(event); return {
+  //   valid: isEastOfWalesBorder(event.feature.geometry),
+  //   reason: 'Points must be placed east of the England/Wales border'
+  // }}
 })
 
 const datasetsPlugin = createDatasetsPlugin({

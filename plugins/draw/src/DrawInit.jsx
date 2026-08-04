@@ -4,7 +4,7 @@ import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 
 export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
-  const { eventBus } = services
+  const { eventBus, hints } = services
   const { crossHair } = mapState
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
 
@@ -81,7 +81,8 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       buttonConfig,
       pluginState,
       events: EVENTS,
-      eventBus
+      eventBus,
+      hints
     })
   }, [mapProvider, appState, pluginState])
 }

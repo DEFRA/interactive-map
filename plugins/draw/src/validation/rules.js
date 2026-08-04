@@ -143,6 +143,15 @@ export const nonZeroArea = (feature) => {
   return area > 0 ? { valid: true } : { valid: false, reason: 'Shape must enclose an area' }
 }
 
+// minVertices' own reason strings, exported so callers (events.js's hint toast)
+// can recognise "still being built" as distinct from a genuine rule violation —
+// unlike self-intersection/zero-area/a custom onGeometryChange veto, an
+// incomplete shape isn't a mistake worth interrupting the user over.
+export const MIN_VERTICES_REASONS = {
+  Polygon: 'Shape needs at least 3 points',
+  LineString: 'Line needs at least 2 points'
+}
+
 /**
  * A shape needs enough vertices to be finishable (3 for a polygon, 2 for a line).
  */
@@ -151,12 +160,12 @@ export const minVertices = (feature) => {
   if (geometry?.type === 'Polygon') {
     return getRingVertices(geometry).length >= MIN_VERTICES.Polygon
       ? { valid: true }
-      : { valid: false, reason: 'Shape needs at least 3 points' }
+      : { valid: false, reason: MIN_VERTICES_REASONS.Polygon }
   }
   if (geometry?.type === 'LineString') {
     return (geometry.coordinates?.length ?? 0) >= MIN_VERTICES.LineString
       ? { valid: true }
-      : { valid: false, reason: 'Line needs at least 2 points' }
+      : { valid: false, reason: MIN_VERTICES_REASONS.LineString }
   }
   return { valid: true }
 }

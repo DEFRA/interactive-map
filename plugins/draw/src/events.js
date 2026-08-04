@@ -7,10 +7,27 @@
  */
 import { ADAPTER_EVENTS } from './adapterEvents.js'
 import { validateGeometry } from './validation/validateGeometry.js'
+import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { MAP_SIZE_SCALES } from './defaults.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
 const GEOMETRY_INVALID_EVENT = 'draw:geometryinvalid'
+
+// A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
+// it's the normal, expected state of "still being drawn" — so it's excluded below
+// even though it's a genuine SOFT_RULES failure like any other.
+const isIncompleteShape = (reason) => Object.values(MIN_VERTICES_REASONS).includes(reason)
+
+// A discrete, one-shot invalid result (a rejected placement, a finished-but-invalid
+// shape, or a completed commit that failed validation — never a continuous live-drag
+// flip, which goes via onValidityChange/CAN_PLACE_CHANGE instead) gets a hint toast
+// alongside the existing public event, so the reason is visible without every
+// consumer having to wire up their own listener for it. The public event still
+// fires either way — only the hint is skipped for an incomplete shape.
+const createGeometryInvalidEmitter = (eventBus, hints) => (payload) => {
+  eventBus.emit(GEOMETRY_INVALID_EVENT, payload)
+  if (payload.reason && !isIncompleteShape(payload.reason)) { hints.show(payload.reason) }
+}
 
 // Claims MoveControl's D-pad for the currently selected vertex — see the generic
 // mapProvider.activeMoveTarget contract (MoveControl.jsx). Any plugin could use
@@ -56,8 +73,9 @@ const enterEditVertexMode = ({ draw, appState, appConfig, mapState, dispatch }, 
   draw.setInvalid?.(true)
 }
 
-function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, resetState }) {
+function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, hints, resetState }) {
   const { draw } = mapProvider
+  const emitGeometryInvalid = createGeometryInvalidEmitter(eventBus, hints)
   const { feature, tempFeature } = pluginState
   const { dispatch } = pluginState
   // A shape that finished invalid and was re-opened in edit mode: its eventual
@@ -83,10 +101,10 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // A shape can be finished by the Done button OR a map gesture (double-click,
       // clicking the first vertex, Enter). Only the button is gated, so re-validate
       // here to catch the gesture paths — an invalid shape must never be finalised.
-      const { valid } = validateGeometry(f, { phase: 'create', mode: draw.getMode() }, { onGeometryChange: draw._geometryValidator })
+      const { valid, reason } = validateGeometry(f, { phase: 'create', mode: draw.getMode() }, { onGeometryChange: draw._geometryValidator })
       if (!valid) {
         pendingCreateId = f.id
-        eventBus.emit(GEOMETRY_INVALID_EVENT, { feature: f, phase: 'create', mode: EDIT_VERTEX_MODE })
+        emitGeometryInvalid({ feature: f, reason, phase: 'create', mode: EDIT_VERTEX_MODE })
         setTimeout(() => enterEditVertexMode({ draw, appState, appConfig, mapState, dispatch }, f.id), 0)
         return
       }
@@ -127,13 +145,13 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
         draw.setInvalid?.(!valid)
       }
       if (!valid) {
-        eventBus.emit(GEOMETRY_INVALID_EVENT, { reason, ...context, feature: e.feature })
+        emitGeometryInvalid({ reason, ...context, feature: e.feature })
       }
     },
     // A vertex placement was rejected (hard rule or user callback veto). Surface it
-    // on the public bus with phase 'place' so a future tooltip can show the reason.
+    // on the public bus with phase 'place', and as a hint toast, so the reason is visible.
     onPlacementBlocked: (e) => {
-      eventBus.emit(GEOMETRY_INVALID_EVENT, e)
+      emitGeometryInvalid(e)
     },
     // Live (mid-drag) validity flip while editing — the displayed shape is exactly
     // what Done finishes there, so it gates the Done button in real time. Emitted
@@ -203,7 +221,7 @@ function detachDrawEvents (draw, handlers) {
   draw.off(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, handlers.onInterfaceTypeChange)
 }
 
-export function attachEvents ({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus }) {
+export function attachEvents ({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus, hints }) {
   const { draw } = mapProvider
   const resetState = () => {
     pluginState.dispatch({ type: 'SET_MODE', payload: null })
@@ -212,7 +230,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     // session ends — a stale claim here would silently hijack it for good.
     mapProvider.activeMoveTarget = null
   }
-  const handlers = createHandlers({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, resetState })
+  const handlers = createHandlers({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, hints, resetState })
   attachButtonHandlers(buttonConfig, handlers)
   attachDrawEvents(draw, handlers)
   return () => { detachButtonHandlers(buttonConfig); detachDrawEvents(draw, handlers) }

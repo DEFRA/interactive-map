@@ -1,4 +1,4 @@
-import { noSelfIntersection, nonZeroArea, minVertices, noPathSelfIntersection, SOFT_RULES, HARD_RULES } from './rules.js'
+import { noSelfIntersection, nonZeroArea, minVertices, noPathSelfIntersection, SOFT_RULES, HARD_RULES, MIN_VERTICES_REASONS } from './rules.js'
 
 const poly = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [coordinates] } })
 const line = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
@@ -50,6 +50,13 @@ describe('minVertices (soft)', () => {
   test('requires three points for a polygon', () => {
     expect(minVertices(poly([[0, 0], [1, 0]])).valid).toBe(false)
     expect(minVertices(poly([[0, 0], [1, 0], [1, 1]]))).toEqual({ valid: true })
+  })
+
+  // events.js's hint toast recognises MIN_VERTICES_REASONS to skip hinting on an
+  // incomplete (still-being-drawn) shape — these must stay the actual reasons used.
+  test('uses the exported MIN_VERTICES_REASONS text', () => {
+    expect(minVertices(poly([[0, 0], [1, 0]])).reason).toBe(MIN_VERTICES_REASONS.Polygon)
+    expect(minVertices(line([[0, 0]])).reason).toBe(MIN_VERTICES_REASONS.LineString)
   })
 
   test('counts a closed ring by its distinct vertices', () => {
