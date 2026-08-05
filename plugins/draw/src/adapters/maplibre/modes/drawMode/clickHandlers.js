@@ -116,6 +116,8 @@ const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, 
         e = createSnappedEvent(e, snap)
       } else if (!prepareUnsnappedClick(state, e)) {
         return
+      } else {
+        // No action
       }
       // Hard gate: a placement the rules or the user callback veto never appears, so
       // an unrecoverable state (e.g. a self-crossing path) can't be drawn forward.
