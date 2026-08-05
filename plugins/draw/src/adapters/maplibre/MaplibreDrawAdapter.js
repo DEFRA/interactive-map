@@ -196,7 +196,17 @@ export class MaplibreDrawAdapter {
 
   cancel () {
     this._mapProvider.undoStack?.clear()
-    this._draw.trash()
+    const mode = this._draw.getMode()
+    // trash() only belongs to an in-progress, never-committed draw — it deletes
+    // whatever's selected. For edit_vertex, events.js's handleCancel has already
+    // restored the original feature via draw.add() before this runs; trash()
+    // here would instead run mapbox-gl-draw's direct_select onTrash on the
+    // mode's own live state (removing the selected vertex, or — if the
+    // in-progress edit happened to leave the shape invalid — deleting the
+    // entire feature), silently discarding the just-restored original.
+    if (mode === 'draw_polygon' || mode === 'draw_line') {
+      this._draw.trash()
+    }
     this._draw.changeMode('disabled')
     this._handleModeChange({ mode: 'disabled' })
   }

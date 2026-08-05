@@ -573,11 +573,41 @@ describe('done', () => {
 })
 
 describe('cancel', () => {
-  test('clears the undo stack, trashes and disables the control', () => {
+  test('cancelling an in-progress draw clears the undo stack, trashes the sketch and disables the control', () => {
     const { adapter, draw, undoStack } = setup()
+    draw.getMode.mockReturnValue('draw_polygon')
     adapter.cancel()
     expect(undoStack.clear).toHaveBeenCalled()
     expect(draw.trash).toHaveBeenCalled()
+    expect(draw.changeMode).toHaveBeenCalledWith('disabled')
+  })
+
+  test('cancelling a draw_line session also trashes the sketch', () => {
+    const { adapter, draw } = setup()
+    draw.getMode.mockReturnValue('draw_line')
+    adapter.cancel()
+    expect(draw.trash).toHaveBeenCalled()
+  })
+
+  // Regression: events.js's handleCancel already restores the original feature
+  // via draw.add() before calling this. trash() runs mapbox-gl-draw's
+  // direct_select onTrash handler, which operates on the mode's own live
+  // state — removing the selected vertex or (if the in-progress edit left the
+  // shape invalid) deleting the whole feature — silently discarding the
+  // just-restored original. See MaplibreDrawAdapter.js's cancel() comment.
+  test('cancelling an edit session does NOT trash — the restored feature must survive', () => {
+    const { adapter, draw, undoStack } = setup()
+    draw.getMode.mockReturnValue('edit_vertex')
+    adapter.cancel()
+    expect(undoStack.clear).toHaveBeenCalled()
+    expect(draw.trash).not.toHaveBeenCalled()
+    expect(draw.changeMode).toHaveBeenCalledWith('disabled')
+  })
+
+  test('cancelling with no active session (disabled mode) does not trash', () => {
+    const { adapter, draw } = setup()
+    adapter.cancel()
+    expect(draw.trash).not.toHaveBeenCalled()
     expect(draw.changeMode).toHaveBeenCalledWith('disabled')
   })
 })
