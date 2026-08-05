@@ -106,7 +106,7 @@ const pathSelfIntersects = (feature) => {
 /** Rule-shaped wrapper for pathSelfIntersects (see HARD_RULES). */
 export const noPathSelfIntersection = (feature) =>
   pathSelfIntersects(feature)
-    ? { valid: false, reason: 'Point would make the shape intersect itself' }
+    ? { valid: false, reason: 'Shape must not intersect itself' }
     : { valid: true }
 
 /**
