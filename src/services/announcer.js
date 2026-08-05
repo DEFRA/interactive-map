@@ -26,8 +26,17 @@ export function createAnnouncer (mapStatusRef) {
   // debounce + clear write (600ms) plus a short buffer so a hint firing right
   // after a user action can't stomp the action's message before it is read.
   const ACTION_HOLD_DELAY = 1000
+  // Invisible, unpronounced marker appended to alternate repeats of the same
+  // message. Some screen readers (VoiceOver in particular) de-dupe against the
+  // last utterance they spoke for a live region, not just the DOM's final
+  // state — so a genuine ''-then-text mutation can still be silently skipped
+  // if the text matches what was already read. Toggling this marker in keeps
+  // consecutive identical announcements from ever being byte-identical.
+  const REPEAT_MARKER = '\u200B'
 
   let actionHoldTimer = null
+  let lastAnnouncedMsg = null
+  let repeatMarkerOn = false
 
   // Core function to write to the live region
   const setLiveRegion = (msg) => {
@@ -41,7 +50,9 @@ export function createAnnouncer (mapStatusRef) {
       if (!mapStatusRef.current) {
         return
       }
-      mapStatusRef.current.textContent = msg
+      repeatMarkerOn = msg === lastAnnouncedMsg ? !repeatMarkerOn : false
+      lastAnnouncedMsg = msg
+      mapStatusRef.current.textContent = repeatMarkerOn ? msg + REPEAT_MARKER : msg
     }, CLEAR_DELAY)
   }
 
@@ -74,6 +85,17 @@ export function createAnnouncer (mapStatusRef) {
     // Action: latest deliberate user action wins and is always read
     holdActionPriority()
     debouncedAnnounce(msg)
+  }
+
+  // Blanks the live region without announcing anything. Used when a message is
+  // dismissed (e.g. a hint toast auto-dismissing) so a later identical message
+  // starts from a genuinely empty region — otherwise clear-then-set-same-text
+  // nets out to no change and some screen readers skip the re-announcement.
+  announce.clear = () => {
+    if (!mapStatusRef?.current) {
+      return
+    }
+    mapStatusRef.current.textContent = ''
   }
 
   return announce
