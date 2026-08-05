@@ -47,6 +47,10 @@ export const EVENTS = {
   APP_HIDE_PANEL: 'app:hidepanel',
   /** @internal Add a control. Payload: { id, config } */
   APP_ADD_CONTROL: 'app:addcontrol',
+  /** @internal Show a toast hint, announced to screen readers. Payload: { text, options } */
+  APP_SHOW_HINT: 'app:showhint',
+  /** @internal Dismiss the active toast hint, if any. */
+  APP_DISMISS_HINT: 'app:dismisshint',
 
   // ============================================
   // App responses (end-user / subscribe)

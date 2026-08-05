@@ -526,6 +526,18 @@
  */
 
 /**
+ * Options for a toast hint shown via `showHint()`.
+ *
+ * @typedef {Object} HintOptions
+ *
+ * @property {number} [duration=4000]
+ * Auto-dismiss delay in milliseconds. Pass `0` to persist until `dismissHint()` is called.
+ *
+ * @property {string} [announce]
+ * Plain-text override for the screen-reader announcement. Defaults to `text` with any HTML tags stripped.
+ */
+
+/**
  * Defines a panel that can be rendered in the UI at various breakpoints.
  *
  * @typedef {Object} PanelDefinition

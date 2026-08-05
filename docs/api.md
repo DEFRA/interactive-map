@@ -763,6 +763,36 @@ See [ControlDefinition](./api/control-definition.md) for configuration options.
 
 ---
 
+### `showHint(text, options?)`
+
+Show a toast hint, announced to screen readers. Replaces any hint currently showing and restarts its dismiss timer — there is only ever one hint visible at a time.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `text` | `string` | Hint text. May contain simple HTML (e.g. `<kbd>`) |
+| `options.duration` | `number` | Auto-dismiss delay in milliseconds. Pass `0` to persist until `dismissHint()` is called. Default: `4000` |
+| `options.announce` | `string` | Optional plain-text override for the screen-reader announcement. Defaults to `text` with any HTML tags stripped |
+
+```js
+interactiveMap.showHint('Press <kbd>Enter</kbd> to select')
+
+// Persist until explicitly dismissed
+interactiveMap.showHint('Draw mode active', { duration: 0 })
+interactiveMap.dismissHint()
+```
+
+---
+
+### `dismissHint()`
+
+Dismiss the active toast hint, if any. No-op if no hint is showing. Mainly useful for hints shown with `{ duration: 0 }`, which otherwise persist indefinitely.
+
+```js
+interactiveMap.dismissHint()
+```
+
+---
+
 ### `setContinueEnabled(enabled)`
 
 Enable or disable the Continue button added by [`backAndContinue`](#backandcontinue). Use this for imperative control — for example, enabling Continue after an async operation or in response to an external event. For reactive state-derived conditions, prefer the `continueEnabledWhen` function in `backAndContinue` instead.

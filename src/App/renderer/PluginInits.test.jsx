@@ -6,6 +6,7 @@ import { useButtonStateEvaluator } from '../hooks/useButtonStateEvaluator.js'
 import { withPluginApiContexts } from './pluginApiWrapper.js'
 import { withPluginContexts } from './pluginWrapper.js'
 import { useInterfaceAPI } from '../hooks/useInterfaceAPI.js'
+import { useHintsAPI } from '../hooks/useHintsAPI.js'
 import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
 
@@ -27,6 +28,10 @@ jest.mock('../hooks/useButtonStateEvaluator.js', () => ({
 
 jest.mock('../hooks/useInterfaceAPI.js', () => ({
   useInterfaceAPI: jest.fn()
+}))
+
+jest.mock('../hooks/useHintsAPI.js', () => ({
+  useHintsAPI: jest.fn()
 }))
 
 jest.mock('../hooks/useEvaluateProp.js', () => ({
@@ -59,10 +64,11 @@ describe('PluginInits', () => {
     useConfig.mockReturnValue({ pluginRegistry: pluginRegistryMock })
   })
 
-  it('calls useButtonStateEvaluator and useInterfaceAPI on render', () => {
+  it('calls useButtonStateEvaluator, useInterfaceAPI and useHintsAPI on render', () => {
     render(<PluginInits />)
     expect(useButtonStateEvaluator).toHaveBeenCalled()
     expect(useInterfaceAPI).toHaveBeenCalled()
+    expect(useHintsAPI).toHaveBeenCalled()
   })
 
   it('renders nothing when no plugins registered', () => {
