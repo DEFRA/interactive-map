@@ -14,20 +14,23 @@ import { createLiveStroke } from '../../../validation/liveStroke.js'
 
 const TOUCH_INTERFACE = 'touch'
 const VERTEX_TYPE = 'vertex'
+const MOVE_VERTEX = 'commit-move'
+const INSERT_VERTEX = 'commit-insert'
+const DELETE_VERTEX = 'commit-delete'
 
 // Map an undo-op type onto the geometry-change `phase` consumed by validation.
 const OP_PHASE = {
-  move_vertex: 'commit-move',
-  insert_vertex: 'commit-insert',
-  delete_vertex: 'commit-delete'
+  move_vertex: MOVE_VERTEX,
+  insert_vertex: INSERT_VERTEX,
+  delete_vertex: DELETE_VERTEX
 }
 
 // Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
 // so its re-validation reports the inverse phase.
 const UNDO_INVERSE_PHASE = {
-  move_vertex: 'commit-move',
-  insert_vertex: 'commit-delete',
-  delete_vertex: 'commit-insert'
+  move_vertex: MOVE_VERTEX,
+  insert_vertex: DELETE_VERTEX,
+  delete_vertex: INSERT_VERTEX
 }
 
 // Live invalid-stroke wiring: re-validate the displayed geometry on every geometry
@@ -106,7 +109,7 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
     }
     undoStack.push({ type: 'delete_vertex', vertexIndex: result.deletedIndex, deletedCoord: result.deletedCoord })
     syncGeom()
-    emitGeometryValidation('commit-delete', result.deletedIndex)
+    emitGeometryValidation(DELETE_VERTEX, result.deletedIndex)
     setState({ selectedVertexIndex: -1, selectedVertexType: null })
   }
 
@@ -149,7 +152,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation('commit-move', vertexIndex)
+      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
       selectVertex(vertexIndex)
       touchHandler.updateTargetPosition()
     },
@@ -170,7 +173,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
       }
       undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
       syncGeom()
-      emitGeometryValidation('commit-insert', result.insertedIndex)
+      emitGeometryValidation(INSERT_VERTEX, result.insertedIndex)
       selectVertex(result.insertedIndex)
       touchHandler.updateTargetPosition()
     }
@@ -199,13 +202,13 @@ const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touch
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation('commit-move', vertexIndex)
+      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
       setState({ selectedVertexIndex: vertexIndex, selectedVertexType: VERTEX_TYPE })
     },
     onInserted ({ insertedIndex }) {
       undoStack.push({ type: 'insert_vertex', vertexIndex: insertedIndex })
       syncGeom()
-      emitGeometryValidation('commit-insert', insertedIndex)
+      emitGeometryValidation(INSERT_VERTEX, insertedIndex)
     },
     onDeleted: actions.doDeleteVertex,
     onUndo: actions.doUndo,

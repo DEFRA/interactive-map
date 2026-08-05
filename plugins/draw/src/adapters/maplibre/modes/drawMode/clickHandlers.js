@@ -88,92 +88,98 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
 
 // The click paths themselves: mouse clicks and the simulated crosshair click
 // (touch / keyboard / add-vertex button).
-const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, finishOnInvalidClick }) => ({
-  onClick (state, e) {
-    // Skip non-primary clicks, undo operations, or clicks outside canvas
-    if (this._isIgnorableClick(e)) {
-      return
+const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, finishOnInvalidClick }) => {
+  // Snap is inactive: sync the trailing rubber-band point to the click, then guard
+  // against a duplicate-coordinate click reaching ParentMode, which would trigger a
+  // changeMode chain and cause a runtime error on coords.length access (polygon).
+  // Returns false when the click should be dropped without placing a vertex.
+  const prepareUnsnappedClick = (state, e) => {
+    const coords = getCoords(getFeature(state))
+    if (coords.length > 0) {
+      coords[coords.length - 1] = [e.lngLat.lng, e.lngLat.lat]
     }
-    // Block a finish/close gesture (clicking a placed vertex) while the shape is invalid.
-    if (this.map._drawGeometryValid === false && e.featureTarget?.properties?.meta === 'vertex') {
-      return
-    }
-    const snap = getSnapInstance(this.map)
-    if (isSnapEnabled(state) && isSnapActive(snap)) {
-      e = createSnappedEvent(e, snap)
-    } else {
-      const coords = getCoords(getFeature(state))
-      if (coords.length > 0) {
-        coords[coords.length - 1] = [e.lngLat.lng, e.lngLat.lat]
-      }
-      // For polygon: prevent duplicate-coordinate clicks from reaching ParentMode, which
-      // would trigger a changeMode chain and cause a runtime error on coords.length access
-      if (!finishOnInvalidClick && !validateClick(getFeature(state))) {
+    return finishOnInvalidClick || validateClick(getFeature(state))
+  }
+
+  return {
+    onClick (state, e) {
+      // Skip non-primary clicks, undo operations, or clicks outside canvas
+      if (this._isIgnorableClick(e)) {
         return
       }
-    }
-    // Hard gate: a placement the rules or the user callback veto never appears, so
-    // an unrecoverable state (e.g. a self-crossing path) can't be drawn forward.
-    if (!this._canPlaceVertex(state, [e.lngLat.lng, e.lngLat.lat])) {
-      return
-    }
-    const coordsBefore = getCoords(getFeature(state)).length
-    ParentMode.onClick.call(this, state, e)
-    // Push undo and update count if a vertex was added
-    if (getCoords(getFeature(state)).length > coordsBefore) {
+      // Block a finish/close gesture (clicking a placed vertex) while the shape is invalid.
+      if (this.map._drawGeometryValid === false && e.featureTarget?.properties?.meta === 'vertex') {
+        return
+      }
+      const snap = getSnapInstance(this.map)
+      if (isSnapEnabled(state) && isSnapActive(snap)) {
+        e = createSnappedEvent(e, snap)
+      } else if (!prepareUnsnappedClick(state, e)) {
+        return
+      }
+      // Hard gate: a placement the rules or the user callback veto never appears, so
+      // an unrecoverable state (e.g. a self-crossing path) can't be drawn forward.
+      if (!this._canPlaceVertex(state, [e.lngLat.lng, e.lngLat.lat])) {
+        return
+      }
+      const coordsBefore = getCoords(getFeature(state)).length
+      ParentMode.onClick.call(this, state, e)
+      // Push undo and update count if a vertex was added
+      if (getCoords(getFeature(state)).length > coordsBefore) {
+        this.pushDrawUndo(state)
+        this.dispatchVertexChange(getCoords(getFeature(state)))
+        this.emitDrawValidation(state)
+      }
+    },
+
+    doClick (state) {
+      // Skip during undo operation
+      if (this.map._undoInProgress) {
+        return
+      }
+
+      const feature = getFeature(state)
+      const coords = getCoords(feature)
+      this.dispatchVertexChange(coords)
+
+      if (!validateClick(feature)) {
+        // For lines: clicking same spot (like double-click) should finish the line — but
+        // only when the geometry is valid, so an invalid line can't be completed.
+        // isValidLineClick only returns false with 2+ coords, so coords.length is always > 1 here.
+        if (finishOnInvalidClick && this.map._drawGeometryValid !== false) {
+          coords.pop()
+          this.map.fire('draw.create', { features: [feature.toGeoJSON()] })
+          this.changeMode('simple_select', { featureIds: [feature.id] })
+        }
+        return
+      }
+
+      const snap = getSnapInstance(this.map)
+      const snappedEvent = isSnapEnabled(state) && createSnappedClickEvent(this.map, snap)
+
+      // Hard-gate parity with onClick: touch/keyboard/add-button placements are vetoed
+      // at the point that would actually be committed (snapped or map centre).
+      const target = snappedEvent ? snappedEvent.lngLat : this.map.getCenter()
+      if (!this._canPlaceVertex(state, [target.lng, target.lat])) {
+        return
+      }
+
+      if (snappedEvent) {
+        ParentMode.onClick.call(this, state, snappedEvent)
+        this._ctx.store.render()
+      } else {
+        this._simulateMouse('click', ParentMode.onClick, state)
+      }
+
+      // Push undo and update count if a vertex was added. A validated click always
+      // adds one vertex via the parent mode, so this runs on every successful doClick.
+      const newCoords = getCoords(getFeature(state))
       this.pushDrawUndo(state)
-      this.dispatchVertexChange(getCoords(getFeature(state)))
+      this.dispatchVertexChange(newCoords)
       this.emitDrawValidation(state)
     }
-  },
-
-  doClick (state) {
-    // Skip during undo operation
-    if (this.map._undoInProgress) {
-      return
-    }
-
-    const feature = getFeature(state)
-    const coords = getCoords(feature)
-    this.dispatchVertexChange(coords)
-
-    if (!validateClick(feature)) {
-      // For lines: clicking same spot (like double-click) should finish the line — but
-      // only when the geometry is valid, so an invalid line can't be completed.
-      // isValidLineClick only returns false with 2+ coords, so coords.length is always > 1 here.
-      if (finishOnInvalidClick && this.map._drawGeometryValid !== false) {
-        coords.pop()
-        this.map.fire('draw.create', { features: [feature.toGeoJSON()] })
-        this.changeMode('simple_select', { featureIds: [feature.id] })
-      }
-      return
-    }
-
-    const snap = getSnapInstance(this.map)
-    const snappedEvent = isSnapEnabled(state) && createSnappedClickEvent(this.map, snap)
-
-    // Hard-gate parity with onClick: touch/keyboard/add-button placements are vetoed
-    // at the point that would actually be committed (snapped or map centre).
-    const target = snappedEvent ? snappedEvent.lngLat : this.map.getCenter()
-    if (!this._canPlaceVertex(state, [target.lng, target.lat])) {
-      return
-    }
-
-    if (snappedEvent) {
-      ParentMode.onClick.call(this, state, snappedEvent)
-      this._ctx.store.render()
-    } else {
-      this._simulateMouse('click', ParentMode.onClick, state)
-    }
-
-    // Push undo and update count if a vertex was added. A validated click always
-    // adds one vertex via the parent mode, so this runs on every successful doClick.
-    const newCoords = getCoords(getFeature(state))
-    this.pushDrawUndo(state)
-    this.dispatchVertexChange(newCoords)
-    this.emitDrawValidation(state)
   }
-})
+}
 
 /**
  * Click / vertex-placement handling for the shared draw mode: mouse clicks, the

@@ -9,6 +9,8 @@ import { split } from './api/split.js'
 import { merge } from './api/merge.js'
 import { isMac } from '../../../src/utils/isMac.js'
 
+const DRAW_ACTIONS_SLOT = 'top-middle'
+
 // Show the platform-appropriate undo modifier (⌘ on macOS, Ctrl elsewhere).
 const undoCommand = isMac() ? '<kbd>Command</kbd> + <kbd>Z</kbd>' : '<kbd>Ctrl</kbd> + <kbd>Z</kbd>'
 
@@ -99,9 +101,9 @@ export const manifest = {
           hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex'
         }
       ],
-      mobile: { slot: 'top-middle' },
-      tablet: { slot: 'top-middle' },
-      desktop: { slot: 'top-middle' }
+      mobile: { slot: DRAW_ACTIONS_SLOT },
+      tablet: { slot: DRAW_ACTIONS_SLOT },
+      desktop: { slot: DRAW_ACTIONS_SLOT }
     }
   ],
 

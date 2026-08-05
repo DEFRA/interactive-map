@@ -33,6 +33,47 @@ const makeRingRenderer = ({ outer, mid, inner }, colors, innerKey) => (pixelCoor
 
 const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
 
+// Shared by edit-mode vertices and in-progress sketch vertices so they always look the same
+const createVertexStyles = (colors) => {
+  const vertexImage = new CircleStyle({
+    radius: SIZES.vertexRadius,
+    fill: new Fill({ color: colors.editVertex })
+  })
+  return {
+    vertexImage,
+    vertexStyle: new Style({ image: vertexImage }),
+    selectedVertexStyle: new Style({ renderer: makeRingRenderer(selectedVertexRadii, colors, 'editVertex') })
+  }
+}
+
+const createMidpointStyles = (colors) => ({
+  midpointStyle: new Style({
+    image: new CircleStyle({
+      radius: SIZES.midpointRadius,
+      fill: new Fill({ color: colors.editMidpoint })
+    })
+  }),
+  selectedMidpointStyle: new Style({ renderer: makeRingRenderer(selectedMidpointRadii, colors, 'editMidpoint') })
+})
+
+// Split-line preview colours: valid is solid, invalid is dashed — matching
+// ML's stroke-valid-splitter / stroke-invalid-splitter layers.
+const createSketchLineStyles = (colors) => ({
+  valid: new Style({
+    stroke: new Stroke({ color: colors.editStroke, width: 2 }),
+    fill: new Fill({ color: colors.editFill })
+  }),
+  invalid: new Style({
+    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
+  }),
+  splitValid: new Style({
+    stroke: new Stroke({ color: colors.splitValid, width: 2 })
+  }),
+  splitInvalid: new Style({
+    stroke: new Stroke({ color: colors.splitInvalid, width: 2, lineDash: [2, 4] })
+  })
+})
+
 /**
  * Create all draw-ol style instances for the given resolved color set.
  *
@@ -41,24 +82,8 @@ const capitalize = (s) => s.charAt(0).toUpperCase() + s.slice(1)
  *             editFeatureStyle, createSketchStyle, createFeatureStyle }}
  */
 export const createStyles = (colors) => {
-  // Shared by edit-mode vertices and in-progress sketch vertices so they always look the same
-  const vertexImage = new CircleStyle({
-    radius: SIZES.vertexRadius,
-    fill: new Fill({ color: colors.editVertex })
-  })
-
-  const vertexStyle = new Style({ image: vertexImage })
-
-  const selectedVertexStyle = new Style({ renderer: makeRingRenderer(selectedVertexRadii, colors, 'editVertex') })
-
-  const midpointStyle = new Style({
-    image: new CircleStyle({
-      radius: SIZES.midpointRadius,
-      fill: new Fill({ color: colors.editMidpoint })
-    })
-  })
-
-  const selectedMidpointStyle = new Style({ renderer: makeRingRenderer(selectedMidpointRadii, colors, 'editMidpoint') })
+  const { vertexImage, vertexStyle, selectedVertexStyle } = createVertexStyles(colors)
+  const { midpointStyle, selectedMidpointStyle } = createMidpointStyles(colors)
 
   const editFeatureStyle = new Style({
     stroke: new Stroke({ color: colors.editStroke, width: 2 }),
@@ -71,24 +96,7 @@ export const createStyles = (colors) => {
     stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
   })
 
-  const sketchLineStyle = new Style({
-    stroke: new Stroke({ color: colors.editStroke, width: 2 }),
-    fill: new Fill({ color: colors.editFill })
-  })
-
-  const sketchLineStyleInvalid = new Style({
-    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
-  })
-
-  // Split-line preview colours: valid is solid, invalid is dashed — matching
-  // ML's stroke-valid-splitter / stroke-invalid-splitter layers.
-  const sketchLineStyleSplitValid = new Style({
-    stroke: new Stroke({ color: colors.splitValid, width: 2 })
-  })
-
-  const sketchLineStyleSplitInvalid = new Style({
-    stroke: new Stroke({ color: colors.splitInvalid, width: 2, lineDash: [2, 4] })
-  })
+  const sketchLineStyles = createSketchLineStyles(colors)
 
   // Reused across renders — the geometry function runs every frame while sketching,
   // so mutate one MultiPoint (setCoordinates bumps its revision, keeping OL's
@@ -116,9 +124,9 @@ export const createStyles = (colors) => {
     const type = feature.getGeometry().getType()
     if (type === 'Point') { return [] }
     const splitter = feature.get('splitter')
-    let lineStyle = invalid ? sketchLineStyleInvalid : sketchLineStyle
-    if (splitter === 'valid') { lineStyle = sketchLineStyleSplitValid }
-    if (splitter === 'invalid') { lineStyle = sketchLineStyleSplitInvalid }
+    let lineStyle = invalid ? sketchLineStyles.invalid : sketchLineStyles.valid
+    if (splitter === 'valid') { lineStyle = sketchLineStyles.splitValid }
+    if (splitter === 'invalid') { lineStyle = sketchLineStyles.splitInvalid }
     return type === geometryType ? [lineStyle, sketchVertexStyle] : [lineStyle]
   }
 
