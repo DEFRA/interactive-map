@@ -32,13 +32,9 @@ The following plugins are in early development. APIs and features may change.
 
 Add datasets to your map, configure the display, layer toggling and render a key of symbology.
 
-### Draw for MapLibre
+### [Draw](./plugins/draw.md)
 
-Draw lines, polygons and place points using the MapLibre map provider. Includes geometry actions such as split and merge.
-
-### Draw for ESRI SDK
-
-Draw polygons using the Esri map provider.
+Draw and edit polygon and line features, with snapping and validation; polygons can also be split and merged. Works with both the MapLibre and OpenLayers map providers.
 
 ### Frame
 

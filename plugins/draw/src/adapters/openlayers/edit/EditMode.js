@@ -1,0 +1,385 @@
+import { createMidpointLayer } from './midpointLayer.js'
+import { createVertexLayer } from './vertexLayer.js'
+import { createActiveVertexLayer } from './activeVertexLayer.js'
+import { createSelectionState } from './selectionState.js'
+import { createModifyInteraction, deriveModifyOp } from './modifyInteraction.js'
+import { createPointerHandlers } from './pointerHandlers.js'
+import { createTouchHandler } from './touchHandler.js'
+import { createKeyboardHandler } from './keyboardHandler.js'
+import { deleteVertex, insertAtMidpoint } from './vertexOps.js'
+import { applyUndo } from './undoOps.js'
+import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
+import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
+import { createLiveStroke } from '../../../validation/liveStroke.js'
+
+const TOUCH_INTERFACE = 'touch'
+const VERTEX_TYPE = 'vertex'
+const MOVE_VERTEX = 'commit-move'
+const INSERT_VERTEX = 'commit-insert'
+const DELETE_VERTEX = 'commit-delete'
+
+// Map an undo-op type onto the geometry-change `phase` consumed by validation.
+const OP_PHASE = {
+  move_vertex: MOVE_VERTEX,
+  insert_vertex: INSERT_VERTEX,
+  delete_vertex: DELETE_VERTEX
+}
+
+// Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
+// so its re-validation reports the inverse phase.
+const UNDO_INVERSE_PHASE = {
+  move_vertex: MOVE_VERTEX,
+  insert_vertex: DELETE_VERTEX,
+  delete_vertex: INSERT_VERTEX
+}
+
+// Live invalid-stroke wiring: re-validate the displayed geometry on every geometry
+// change (Modify drag, touch drag, keyboard nudge) via the shared controller —
+// default rules synchronously, user callback throttled. All committed vertices are
+// "placed", so the polygon count drops only OL's closing duplicate.
+//
+// The style is set ONCE to a function backed by `invalid`, rather than calling
+// Feature#setStyle() on every flip: setStyle() fires a feature-level 'change'
+// event, which OL's Modify interaction also listens for (to detect out-of-band
+// edits and rebuild its internal drag/segment index) — guarded only while Modify
+// itself is synchronously mutating the geometry. The built-in rules' flip stays
+// inside that guarded window, but the user-callback flip is deliberately
+// throttled to the next animation frame (liveStroke.js), landing outside it —
+// so calling setStyle() there makes Modify treat its own flip as an external
+// edit and rebuild mid-drag, killing the in-progress drag. A style function +
+// map.render() repaints without ever touching the feature, so Modify's listener
+// never fires from our own bookkeeping.
+const wireLiveStroke = ({ map, manager, olFeature }) => {
+  let invalid = false
+  olFeature.setStyle(() => (invalid ? manager.styles.editFeatureStyleInvalid : manager.styles.editFeatureStyle))
+  const liveStroke = createLiveStroke({
+    onChange: (next, reason) => {
+      invalid = next
+      map.render()
+      // In edit mode the displayed shape is exactly what Done finishes, so live
+      // validity flips also gate the Done button (events.js dispatches them).
+      manager.emit(ADAPTER_EVENTS.VALIDITY_CHANGE, { valid: !next, reason })
+    }
+  })
+  const updateLiveValidity = () => {
+    const geom = olFeature.getGeometry()
+    const type = geom.getType()
+    const coordinates = geom.getCoordinates()
+    const numVertices = type === 'Polygon'
+      ? Math.max(0, (coordinates[0]?.length ?? 1) - 1)
+      : coordinates.length
+    liveStroke.update({
+      feature: { type: 'Feature', geometry: { type, coordinates } },
+      context: { mode: 'edit_vertex' },
+      numVertices,
+      onGeometryChange: manager._geometryValidator
+    })
+  }
+  olFeature.getGeometry().on('change', updateLiveValidity)
+  return {
+    liveStroke,
+    destroy () {
+      olFeature.getGeometry().un('change', updateLiveValidity)
+      liveStroke.destroy()
+    }
+  }
+}
+
+/**
+ * Edit vertex mode — handles edit_vertex.
+ *
+ * createEditMode composes the OL pieces along their natural seams:
+ *   - selectionState: shared mutable state + layer/event sync
+ *   - modifyInteraction: OL Modify (pointer drag / midpoint insert) + undo-op derivation
+ *   - pointerHandlers: mouse selection + delete-vertex button
+ *   - touchHandler / keyboardHandler: touch drag and keyboard nudge input
+ */
+
+// Delete-selected-vertex and undo operations, shared by pointer, touch and keyboard input
+const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler }) => {
+  const { state, setState, syncGeom, emitGeometryValidation } = selection
+
+  const doDeleteVertex = () => {
+    if (state.selectedVertexType !== VERTEX_TYPE || state.selectedVertexIndex < 0) {
+      return
+    }
+    const result = deleteVertex(olFeature, state.selectedVertexIndex)
+    if (!result) {
+      return
+    }
+    undoStack.push({ type: 'delete_vertex', vertexIndex: result.deletedIndex, deletedCoord: result.deletedCoord })
+    syncGeom()
+    emitGeometryValidation(DELETE_VERTEX, result.deletedIndex)
+    setState({ selectedVertexIndex: -1, selectedVertexType: null })
+  }
+
+  const doUndo = () => {
+    const op = undoStack.pop()
+    if (!op) {
+      return
+    }
+    const previousIndex = state.selectedVertexIndex
+    const restoredIndex = applyUndo(olFeature, op)
+    syncGeom()
+    // An undo commits the inverse change, so it must re-validate like any other
+    // commit — otherwise the invalid stroke and the Done gate go stale.
+    emitGeometryValidation(UNDO_INVERSE_PHASE[op.type], restoredIndex)
+    // Only re-select if a vertex was already active — undo must not create a new selection
+    const newIndex = previousIndex >= 0 ? restoredIndex : -1
+    setState({
+      selectedVertexIndex: newIndex,
+      selectedVertexType: newIndex >= 0 ? VERTEX_TYPE : null
+    })
+    if (previousIndex >= 0 && newIndex >= 0 && state.interfaceType === TOUCH_INTERFACE) {
+      getTouchHandler().updateTargetPosition()
+    }
+  }
+
+  return { doDeleteVertex, doUndo }
+}
+
+const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack, selection }) => {
+  const { state, getState, setState, syncGeom, emitGeometryValidation } = selection
+  const selectVertex = (index) => setState({ selectedVertexIndex: index, selectedVertexType: VERTEX_TYPE })
+
+  const touchHandler = createTouchHandler({
+    map,
+    container,
+    getState,
+    setState,
+    colors: manager.colors,
+    snap,
+    onVertexMoved ({ vertexIndex, previousCoord }) {
+      undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
+      syncGeom()
+      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
+      selectVertex(vertexIndex)
+      touchHandler.updateTargetPosition()
+    },
+    onTap (hit) {
+      if (!hit) {
+        setState({ selectedVertexIndex: -1, selectedVertexType: null })
+        return
+      }
+      if (hit.type === VERTEX_TYPE) {
+        selectVertex(hit.index)
+        touchHandler.updateTargetPosition()
+        return
+      }
+      // Only vertex and midpoint hits reach here, and the vertex case returned above
+      const result = insertAtMidpoint(olFeature, state.midpoints, hit.index, state.vertices.length)
+      if (!result) {
+        return
+      }
+      undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
+      syncGeom()
+      emitGeometryValidation(INSERT_VERTEX, result.insertedIndex)
+      selectVertex(result.insertedIndex)
+      touchHandler.updateTargetPosition()
+    }
+  })
+
+  selection.setHooks({
+    onDeselect: () => touchHandler.hide(),
+    onUpdate () {
+      if (state.interfaceType === TOUCH_INTERFACE) {
+        touchHandler.updateTargetPosition()
+      }
+    }
+  })
+
+  return touchHandler
+}
+
+const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touchHandler, actions }) => {
+  const { state, getState, setState, syncGeom, emitGeometryValidation } = selection
+
+  return createKeyboardHandler({
+    map,
+    getState,
+    setState,
+    snap,
+    onVertexMoved ({ vertexIndex, previousCoord }) {
+      undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
+      syncGeom()
+      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
+      setState({ selectedVertexIndex: vertexIndex, selectedVertexType: VERTEX_TYPE })
+    },
+    onInserted ({ insertedIndex }) {
+      undoStack.push({ type: 'insert_vertex', vertexIndex: insertedIndex })
+      syncGeom()
+      emitGeometryValidation(INSERT_VERTEX, insertedIndex)
+    },
+    onDeleted: actions.doDeleteVertex,
+    onUndo: actions.doUndo,
+    onKeyboardActive () {
+      if (state.interfaceType === 'keyboard') {
+        return
+      }
+      state.interfaceType = 'keyboard'
+      touchHandler.hide()
+      container.focus({ preventScroll: true })
+    }
+  })
+}
+
+// Style hot-swap on map style change + touch-target reposition on map resize
+const wireMapSync = ({ map, manager, layers, selection, touchHandler, live }) => {
+  const { state } = selection
+
+  const onStylesChanged = (styles) => {
+    // Re-assert through the live-stroke controller so an invalid (dashed) shape
+    // stays dashed across a map style change.
+    live.liveStroke.refresh()
+    layers.vertexLayer.updateStyle(styles.vertexStyle)
+    layers.midpointLayer.updateStyle(styles.midpointStyle)
+    layers.activeLayer.update(state)
+    touchHandler.updateColors(manager.colors)
+  }
+  manager.on(STYLES_CHANGED_EVENT, onStylesChanged)
+
+  // Reposition the touch target after OL re-renders with the new size.
+  // change:size fires before the render, so we wait for postrender to get
+  // correct pixel coords from getPixelFromCoordinate.
+  const onMapSizeChange = () => {
+    if (state.interfaceType !== TOUCH_INTERFACE || state.selectedVertexIndex < 0) {
+      return
+    }
+    map.once('postrender', () => touchHandler.updateTargetPosition())
+  }
+  map.on('change:size', onMapSizeChange)
+
+  return {
+    destroy () {
+      manager.off(STYLES_CHANGED_EVENT, onStylesChanged)
+      map.un('change:size', onMapSizeChange)
+    }
+  }
+}
+
+// The mode interface consumed by OLDrawManager
+const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selection, actions, parts }) => {
+  const { state } = selection
+  const { touchHandler } = parts
+
+  return {
+    setInterfaceType (type) {
+      if (type === state.interfaceType) {
+        return
+      }
+      state.interfaceType = type
+      if (type === TOUCH_INTERFACE) {
+        touchHandler.updateTargetPosition()
+      } else {
+        touchHandler.hide()
+      }
+    },
+
+    done () {
+      manager.emit(ADAPTER_EVENTS.EDIT_FINISH, store.toGeoJSON(olFeature))
+    },
+
+    // Committed-verdict write (events.js): routed through the live-stroke
+    // controller so its cached state stays in sync with the rendered style.
+    setInvalid (invalid) {
+      parts.live.liveStroke.set(invalid)
+    },
+
+    // Nothing to restore here: the pre-edit feature is kept as tempFeature in the
+    // reducer and events.js re-adds it on cancel
+    cancel () {},
+
+    undo: actions.doUndo,
+    deleteVertex: actions.doDeleteVertex,
+    // MoveControl's D-pad, routed here via mapProvider.activeMoveTarget (see
+    // events.js) once a vertex is selected.
+    nudgeSelectedVertex: parts.keyboardHandler.nudgeByDelta,
+
+    destroy () {
+      parts.live.destroy()
+      olFeature.setStyle(originalFeatureStyle)
+      selection.destroy()
+      parts.mapSync.destroy()
+      parts.pointerHandlers.destroy()
+      parts.modify.destroy()
+      parts.layers.activeLayer.remove()
+      parts.layers.midpointLayer.remove()
+      parts.layers.vertexLayer.remove()
+      touchHandler.destroy()
+      parts.keyboardHandler.destroy()
+    }
+  }
+}
+
+/**
+ * @returns {{ setInterfaceType, done, cancel, undo, deleteVertex, nudgeSelectedVertex, destroy } | null}
+ */
+export const createEditMode = ({ map, manager, options }) => {
+  const { featureId, container, interfaceType, deleteVertexButtonId, snap } = options
+  const { store, undoStack } = manager
+
+  const olFeature = store.getOL(featureId)
+  if (!olFeature) {
+    return null
+  }
+
+  const originalFeatureStyle = olFeature.getStyle()
+
+  const midpointLayer = createMidpointLayer(map, manager.styles.midpointStyle)
+  const vertexLayer = createVertexLayer(map, manager.styles.vertexStyle)
+  const activeLayer = createActiveVertexLayer(map, () => manager.styles)
+
+  const selection = createSelectionState({
+    map,
+    manager,
+    store,
+    olFeature,
+    interfaceType,
+    layers: { vertexLayer, midpointLayer, activeLayer }
+  })
+  const { state, getState, setState, syncGeom, emitGeometryValidation } = selection
+
+  const modify = createModifyInteraction({
+    map,
+    olFeature,
+    getState,
+    onModifyEnd (prevCoords) {
+      syncGeom()
+      const op = prevCoords && deriveModifyOp(prevCoords, state.vertices)
+      if (!op) {
+        return
+      }
+      undoStack.push(op)
+      emitGeometryValidation(OP_PHASE[op.type], op.vertexIndex)
+      setState({ selectedVertexIndex: op.vertexIndex, selectedVertexType: VERTEX_TYPE })
+    }
+  })
+
+  syncGeom() // initial populate
+
+  const layers = { vertexLayer, midpointLayer, activeLayer }
+  const live = wireLiveStroke({ map, manager, olFeature })
+  const touchHandler = wireTouchHandler({ map, container, manager, snap, olFeature, undoStack, selection })
+  const actions = createVertexActions({ olFeature, undoStack, selection, getTouchHandler: () => touchHandler })
+  const keyboardHandler = wireKeyboardHandler({ map, container, snap, undoStack, selection, touchHandler, actions })
+  const pointerHandlers = createPointerHandlers({
+    map,
+    container,
+    getState,
+    setState,
+    touchHandler,
+    deleteVertexButtonId,
+    onDeleteVertex: actions.doDeleteVertex
+  })
+  const mapSync = wireMapSync({ map, manager, layers, selection, touchHandler, live })
+
+  return buildModeApi({
+    manager,
+    store,
+    olFeature,
+    originalFeatureStyle,
+    selection,
+    actions,
+    parts: { touchHandler, keyboardHandler, pointerHandlers, modify, mapSync, layers, live }
+  })
+}

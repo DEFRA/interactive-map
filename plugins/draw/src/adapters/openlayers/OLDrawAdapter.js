@@ -1,0 +1,117 @@
+import { createOLDraw } from './olDraw.js'
+
+// split.js passes this literal — MapLibre's own always-present "already-drawn
+// shapes" style layer id — as a snapLayers entry so the split line snaps to the
+// polygon it's splitting. On MapLibre it needs no help: mapbox-gl-snap resolves
+// it by querying the map's rendered style layers directly. OL's snap engine has
+// no such string-based lookup for plain vector layers (only direct instances or
+// vector-tile layer names), so this adapter recognises the same literal here and
+// resolves it to the draw plugin's own VectorLayer instance instead.
+const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
+
+/**
+ * Draw adapter for OpenLayers.
+ *
+ * Wraps OLDrawManager (via createOLDraw) and exposes the shared adapter interface
+ * consumed by events.js, DrawInit, and the api entry points.
+ *
+ * OLDrawManager already exposes on/off/emit, changeMode, done/cancel/undo/deleteVertex,
+ * get/add/delete/deleteAll, and setInterfaceType. This adapter adds the snap methods
+ * and undo-stack clearing (OL manages its own undo stack on the manager).
+ *
+ * Adapter interface (also implemented by MaplibreDrawAdapter):
+ *   changeMode(name, options)
+ *   getMode()
+ *   setInterfaceType(type)
+ *   done() / cancel() / undo() / deleteVertex()
+ *   nudgeSelectedVertex(dx, dy, isLargeStep)
+ *   get(id) / add(feature) / delete(id) / deleteAll()
+ *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
+ *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
+ *   on(event, handler) / off(event, handler)
+ *   remove()
+ */
+export class OLDrawAdapter {
+  _snapEnabled = false
+
+  constructor (mapProvider, options) {
+    const { manager, remove } = createOLDraw({
+      mapProvider,
+      events: options.events,
+      eventBus: options.eventBus,
+      // The full pluginConfig, not just snapLayers — OLDrawManager also reads
+      // colour/size overrides (shapeStroke, editStroke, strokeWidth, snapRadius,
+      // etc.) off this object via resolveColors().
+      pluginConfig: options.pluginConfig ?? { snapLayers: options.snapLayers },
+      mapStyle: options.mapStyle
+    })
+    this._cleanupOLDraw = remove
+    this._manager = manager
+    this._mapProvider = mapProvider
+  }
+
+  changeMode (name, options = {}) {
+    // Inject OL-specific options that the unified api doesn't supply
+    const opts = { ...options, mapProvider: this._mapProvider }
+    if (name === 'draw_polygon') { opts.geometryType = 'Polygon' }
+    if (name === 'draw_line') { opts.geometryType = 'LineString' }
+    return this._manager.changeMode(name, opts)
+  }
+
+  getMode () { return this._manager.getMode() }
+
+  setInterfaceType (type) { this._manager.setInterfaceType(type) }
+
+  done () {
+    this._manager.undoStack.clear()
+    this._manager.done()
+  }
+
+  cancel () {
+    this._manager.undoStack.clear()
+    this._manager.cancel()
+  }
+
+  undo () { this._manager.undo() }
+  deleteVertex () { this._manager.deleteVertex() }
+  nudgeSelectedVertex (dx, dy, isLargeStep) { this._manager.nudgeSelectedVertex(dx, dy, isLargeStep) }
+
+  // Record the current geometry validity so the draw mode can block finish gestures
+  // (double-click / click-to-close) while the in-progress shape is invalid.
+  setGeometryValid (valid) { this._manager._geometryValid = valid }
+
+  // The api entry points assign the active user validator to the adapter; store it
+  // on the manager so the draw mode can veto placements synchronously.
+  set _geometryValidator (fn) { this._manager._geometryValidator = fn }
+  get _geometryValidator () { return this._manager._geometryValidator }
+
+  // Show/hide the dashed invalid stroke on the active sketch or edit feature.
+  setInvalid (invalid) { this._manager.setInvalid(invalid) }
+
+  get (id) { return this._manager.get(id) }
+  add (feature) { return this._manager.add(feature) }
+  delete (id) { return this._manager.delete(id) }
+  deleteAll () { return this._manager.deleteAll() }
+
+  setSnapEnabled (bool) {
+    this._snapEnabled = bool
+    this._manager.snap?.setActive(bool)
+  }
+
+  setSnapLayers (layers) {
+    const translated = layers?.map((l) => (l === DRAW_OUTLINE_STYLE_LAYER ? this._manager._layer : l))
+    this._manager.snap?.setSnapLayers(translated)
+  }
+
+  isSnapEnabled () { return this._snapEnabled }
+
+  setFeatureProperty () { /* not implemented for OL */ }
+  setDrawingPreviewProperty (property, value) { this._manager.setDrawingPreviewProperty(property, value) }
+
+  on (type, handler) { this._manager.on(type, handler) }
+  off (type, handler) { this._manager.off(type, handler) }
+
+  remove () {
+    this._cleanupOLDraw()
+  }
+}

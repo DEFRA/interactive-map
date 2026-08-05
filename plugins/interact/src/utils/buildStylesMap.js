@@ -21,6 +21,7 @@ export const buildStylesMap = (dataLayers, mapStyle) => {
   const stylesMap = {}
 
   if (!mapStyle) {
+    console.warn('[interact] buildStylesMap: mapStyle is null/undefined, cannot build styles')
     return stylesMap
   }
 

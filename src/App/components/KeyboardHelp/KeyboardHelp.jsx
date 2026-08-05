@@ -46,7 +46,7 @@ export const KeyboardHelp = ({ context = 'viewport' }) => { // NOSONAR: project 
   const allShortcuts = getKeyboardShortcuts(appConfig)
   const shortcuts = listboxIsActive
     ? allShortcuts
-    : allShortcuts.filter(s => !s.group && s.context !== 'listbox')
+    : allShortcuts.filter(s => s.context !== 'listbox')
   const groupMap = buildGroupMap(shortcuts)
   const groupEntries = Object.entries(groupMap)
 

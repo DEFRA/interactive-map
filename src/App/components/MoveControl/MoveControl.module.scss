@@ -12,7 +12,7 @@
     gap: var(--divider-gap);
 }
 
-.im-c-move-control--collapsed {
+.im-c-move-control.im-c-move-control--collapsed {
     display: none;
 }
 
@@ -99,7 +99,17 @@
 // aria-expanded rather than aria-pressed — the trigger is correctly a disclosure
 // button (it reveals the control below), not a toggle button, so it doesn't carry
 // aria-pressed itself; the colour is purely a visual echo of its expanded state.
-.im-c-map-button--move-control[aria-expanded="true"] {
+//
+// Compound selector (base class + variant class), not the variant class alone —
+// same reasoning as the --collapsed rule above. This selector's specificity was
+// tied with .im-c-map-button:hover (MapButton.module.scss), both (0,2,0), so
+// hovering the expanded trigger button was a coin-flip decided by cascade order —
+// one cssnano mergeRules reshuffle in production and hover started winning,
+// showing the hover tint instead of the pressed colours. The sibling
+// .im-c-move-control .im-c-map-button[aria-pressed="true"] rule above never had
+// this problem (it's already (0,3,0), safely ahead of hover); this one needed the
+// same headroom.
+.im-c-map-button.im-c-map-button--move-control[aria-expanded="true"] {
     color: var(--pressed-button-foreground-color);
     border-color: var(--pressed-button-border-color);
     background-color: var(--pressed-button-background-color);

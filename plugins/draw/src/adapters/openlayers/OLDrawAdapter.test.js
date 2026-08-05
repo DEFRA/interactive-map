@@ -1,0 +1,159 @@
+import { OLDrawAdapter } from './OLDrawAdapter.js'
+import { createOLDraw } from './olDraw.js'
+
+// The literal split.js passes — see OLDrawAdapter.js's DRAW_OUTLINE_STYLE_LAYER comment.
+const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
+
+const fakeVectorLayer = { id: 'draw-layer' }
+
+const fakeManager = () => ({
+  _layer: fakeVectorLayer,
+  changeMode: jest.fn(),
+  getMode: jest.fn(() => 'disabled'),
+  setInterfaceType: jest.fn(),
+  done: jest.fn(),
+  cancel: jest.fn(),
+  undo: jest.fn(),
+  deleteVertex: jest.fn(),
+  nudgeSelectedVertex: jest.fn(),
+  setInvalid: jest.fn(),
+  setDrawingPreviewProperty: jest.fn(),
+  get: jest.fn(() => 'feature'),
+  add: jest.fn(),
+  delete: jest.fn(),
+  deleteAll: jest.fn(),
+  on: jest.fn(),
+  off: jest.fn(),
+  undoStack: { clear: jest.fn() },
+  snap: { setActive: jest.fn(), setSnapLayers: jest.fn() }
+})
+
+jest.mock('./olDraw.js', () => ({
+  createOLDraw: jest.fn(({ mapProvider }) => ({ manager: mapProvider._testManager, remove: jest.fn() }))
+}))
+
+const setup = () => {
+  const manager = fakeManager()
+  const mapProvider = { _testManager: manager }
+  const adapter = new OLDrawAdapter(mapProvider, {
+    events: { MAP_SET_STYLE: 's' },
+    eventBus: {},
+    snapLayers: ['boundaries'],
+    mapStyle: { id: 'default' }
+  })
+  return { manager, mapProvider, adapter }
+}
+
+afterEach(() => jest.clearAllMocks())
+
+test('wires olDraw with the plugin options and uses the returned manager', () => {
+  const { manager, adapter } = setup()
+  expect(createOLDraw).toHaveBeenCalledWith(expect.objectContaining({
+    pluginConfig: { snapLayers: ['boundaries'] },
+    mapStyle: { id: 'default' }
+  }))
+  expect(adapter.getMode()).toBe('disabled')
+  expect(manager.getMode).toHaveBeenCalled()
+})
+
+test('forwards the full pluginConfig (colour/size overrides too), not just snapLayers', () => {
+  const manager = fakeManager()
+  const mapProvider = { _testManager: manager }
+  const pluginConfig = { snapLayers: ['boundaries'], shapeStroke: '#custom', strokeWidth: 5 }
+  // eslint-disable-next-line no-new
+  new OLDrawAdapter(mapProvider, {
+    events: { MAP_SET_STYLE: 's' },
+    eventBus: {},
+    pluginConfig,
+    mapStyle: { id: 'default' }
+  })
+  expect(createOLDraw).toHaveBeenCalledWith(expect.objectContaining({ pluginConfig }))
+})
+
+test('changeMode injects the mapProvider and the OL geometry type per draw mode', () => {
+  const { manager, mapProvider, adapter } = setup()
+  adapter.changeMode('draw_polygon', { featureId: 'f1' })
+  expect(manager.changeMode).toHaveBeenCalledWith('draw_polygon', { featureId: 'f1', mapProvider, geometryType: 'Polygon' })
+  adapter.changeMode('draw_line')
+  expect(manager.changeMode).toHaveBeenCalledWith('draw_line', { mapProvider, geometryType: 'LineString' })
+  adapter.changeMode('edit_vertex', { featureId: 'f1' })
+  expect(manager.changeMode).toHaveBeenCalledWith('edit_vertex', { featureId: 'f1', mapProvider })
+})
+
+test('done and cancel clear the undo stack before delegating', () => {
+  const { manager, adapter } = setup()
+  adapter.done()
+  adapter.cancel()
+  expect(manager.undoStack.clear).toHaveBeenCalledTimes(2)
+  expect(manager.done).toHaveBeenCalled()
+  expect(manager.cancel).toHaveBeenCalled()
+})
+
+test('snap state is tracked locally and forwarded, tolerating a missing snap manager', () => {
+  const { manager, adapter } = setup()
+  expect(adapter.isSnapEnabled()).toBe(false)
+  adapter.setSnapEnabled(true)
+  expect(adapter.isSnapEnabled()).toBe(true)
+  expect(manager.snap.setActive).toHaveBeenCalledWith(true)
+  adapter.setSnapLayers(['x'])
+  expect(manager.snap.setSnapLayers).toHaveBeenCalledWith(['x'])
+
+  // The shared sentinel translates onto the draw plugin's own VectorLayer instance.
+  adapter.setSnapLayers([DRAW_OUTLINE_STYLE_LAYER, 'x'])
+  expect(manager.snap.setSnapLayers).toHaveBeenCalledWith([fakeVectorLayer, 'x'])
+
+  manager.snap = null
+  adapter.setSnapEnabled(false)
+  adapter.setSnapLayers(['y']) // no throw
+  expect(adapter.isSnapEnabled()).toBe(false)
+})
+
+test('remaining calls delegate straight through; setFeatureProperty is a deliberate no-op', () => {
+  const { manager, adapter } = setup()
+  adapter.setInterfaceType('touch')
+  expect(adapter.get('f1')).toBe('feature')
+  adapter.add({ id: 'f2' })
+  adapter.delete('f1')
+  adapter.deleteAll()
+  adapter.undo()
+  adapter.deleteVertex()
+  adapter.nudgeSelectedVertex(1, 0, true)
+  const handler = () => {}
+  adapter.on('create', handler)
+  adapter.off('create', handler)
+  expect(adapter.setFeatureProperty('f1', 'stroke', '#000')).toBeUndefined()
+  adapter.setDrawingPreviewProperty('splitter', 'valid')
+  expect(manager.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
+  expect(manager.setInterfaceType).toHaveBeenCalledWith('touch')
+  expect(manager.on).toHaveBeenCalledWith('create', handler)
+  expect(manager.off).toHaveBeenCalledWith('create', handler)
+  expect(manager.undo).toHaveBeenCalled()
+  expect(manager.deleteVertex).toHaveBeenCalled()
+  expect(manager.nudgeSelectedVertex).toHaveBeenCalledWith(1, 0, true)
+})
+
+test('setGeometryValid records validity on the manager for finish gating', () => {
+  const { adapter, manager } = setup()
+  adapter.setGeometryValid(false)
+  expect(manager._geometryValid).toBe(false)
+})
+
+test('_geometryValidator accessor stores and retrieves the user callback on the manager', () => {
+  const { adapter, manager } = setup()
+  const validator = jest.fn(() => ({ valid: true }))
+  adapter._geometryValidator = validator
+  expect(manager._geometryValidator).toBe(validator)
+  expect(adapter._geometryValidator).toBe(validator)
+})
+
+test('setInvalid delegates to the manager to toggle the dashed stroke', () => {
+  const { adapter, manager } = setup()
+  adapter.setInvalid(true)
+  expect(manager.setInvalid).toHaveBeenCalledWith(true)
+})
+
+test('remove runs the olDraw cleanup', () => {
+  const { adapter } = setup()
+  adapter.remove()
+  expect(createOLDraw.mock.results.at(-1).value.remove).toHaveBeenCalled()
+})

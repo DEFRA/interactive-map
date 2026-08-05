@@ -163,6 +163,17 @@ describe('KeyboardHelp — listboxIsActive filtering', () => {
     expect(screen.getByText('Move')).toBeInTheDocument()
   })
 
+  it('shows non-listbox grouped shortcuts (e.g. Drawing) when listboxIsActive is false', () => {
+    getKeyboardShortcuts.mockReturnValue([
+      ...VIEWPORT_SHORTCUTS,
+      { id: 'd1', group: 'Drawing', title: 'Add new point', command: '<kbd>Enter</kbd>' },
+      ...LISTBOX_SHORTCUTS
+    ])
+    render(<KeyboardHelp />)
+    expect(screen.getByRole('tab', { name: 'Drawing' })).toBeInTheDocument()
+    expect(screen.queryByRole('tab', { name: SELECT_FEATURES_GROUP })).not.toBeInTheDocument()
+  })
+
   it('renders as a flat list when only ungrouped shortcuts remain after filtering', () => {
     getKeyboardShortcuts.mockReturnValue([...VIEWPORT_SHORTCUTS, ...LISTBOX_SHORTCUTS])
     render(<KeyboardHelp />)

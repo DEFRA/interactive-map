@@ -33,7 +33,7 @@
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
-  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/beta/draw-ml/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/draw/dist/umd/index.js"></script>
 
   <script>
     const DRAW_LAYERS = ['fill-inactive.cold', 'stroke-inactive.cold']
@@ -48,7 +48,7 @@
       deselectOnClickOutside: true
     })
 
-    const drawPlugin = defra.drawMLPlugin({
+    const drawPlugin = defra.drawPlugin({
       snapLayers: ['building-3d']
     })
 
@@ -75,7 +75,7 @@
 
       interactiveMap.addButton('drawTools', {
         label: 'Draw tools',
-        mobile: { slot: 'bottom-right' },
+        mobile: { slot: 'top-middle' },
         tablet: { slot: 'top-middle' },
         desktop: { slot: 'top-middle' },
         menuItems: [
@@ -150,6 +150,7 @@
       var singleFeature = e.selectedFeatures.length === 1
       var anyFeature = e.selectedFeatures.length > 0
       var isDrawFeature = singleFeature && DRAW_LAYERS.includes(e.selectedFeatures[0].layerId)
+      var isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
       var allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return DRAW_LAYERS.includes(f.layerId) })
       selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
       interactiveMap.toggleButtonState('drawPolygon', 'disabled', singleFeature)

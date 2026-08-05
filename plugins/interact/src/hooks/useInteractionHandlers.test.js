@@ -360,7 +360,7 @@ it('emits selectionchange when features are selected', () => {
   expect(deps.services.eventBus.emit).toHaveBeenCalledWith(
     'interact:selectionchange',
     expect.objectContaining({
-      selectedFeatures: [{ featureId: 'F1', layerId: 'l1', idProperty: 'id', properties: { name: 'A' } }],
+      selectedFeatures: [{ featureId: 'F1', layerId: 'l1', idProperty: 'id', properties: { name: 'A' }, geometryType: 'Point' }],
       selectedMarkers: [],
       contiguous: false
     })

@@ -1,0 +1,43 @@
+// Touch vertex target (MapLibre)
+.touch-vertex-target {
+    circle {
+        fill: var(--map-overlay-foreground-color);
+    }
+    path {
+        fill: var(--map-overlay-halo-color);
+    }
+}
+
+// Touch vertex target (OpenLayers)
+.im-draw-touch-target {
+  color: #3b82f6;
+  filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.15));
+  cursor: grab;
+
+  &:active {
+    cursor: grabbing;
+  }
+}
+
+// Accessibility: focus visible on buttons
+.im-draw-button:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+// Ensure action buttons take up same width
+.im-c-actions {
+    .im-c-button-wrapper--draw-done,
+    .im-c-button-wrapper--draw-menu,
+    .im-c-button-wrapper--draw-cancel {
+        width: 33.33%;
+    }
+}
+.im-o-app--tablet .im-c-actions,
+.im-o-app--desktop .im-c-actions {
+    .im-c-button-wrapper--draw-done,
+    .im-c-button-wrapper--draw-menu,
+    .im-c-button-wrapper--draw-cancel {
+        width: 100px;
+    }
+}
