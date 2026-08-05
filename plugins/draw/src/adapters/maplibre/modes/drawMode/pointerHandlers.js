@@ -21,8 +21,12 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
   // can change mid-session without any touch/pointer/key event ever landing on the
   // map container, so this can't rely on onTouchStart/onPointerdown alone — refresh
   // the rubber band immediately rather than waiting for the next incidental 'move'.
+  // Also fires once on every mode entry (DrawInit.jsx syncs setInterfaceType whenever
+  // draw_polygon/draw_line starts), so this must only show the crosshair for
+  // touch/keyboard — same as onSetup/onMove — not unconditionally like touch's own
+  // onTouchStart/onTouchEnd, or a mouse-driven session would flash it on every entry.
   onInterfaceTypeChange (state, e) {
-    this._setInterface(state, e.interfaceType)
+    this._setInterface(state, e.interfaceType, ['touch', 'keyboard'].includes(e.interfaceType))
     this.onMove(state)
   },
 

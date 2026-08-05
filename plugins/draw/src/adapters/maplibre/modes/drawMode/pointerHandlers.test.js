@@ -51,6 +51,22 @@ describe('touch and pointer interface', () => {
     expect(state.interfaceType).toBe('touch')
     expect(state.polygon.coordinates[0].at(-1)).toEqual([CENTER.lng, CENTER.lat])
   })
+
+  test('draw.interfacetypechange to touch/keyboard shows the crosshair; to mouse it does not', () => {
+    const { ctx, marker } = setup(DrawPolygonMode)
+    ctx.map.fire('draw.interfacetypechange', { interfaceType: 'touch' })
+    expect(marker.style.display).toBe('block')
+
+    marker.style.display = 'none' // reset, isolate the next assertion
+    ctx.map.fire('draw.interfacetypechange', { interfaceType: 'keyboard' })
+    expect(marker.style.display).toBe('block')
+  })
+
+  test('draw.interfacetypechange to mouse never shows the crosshair — fires on every mode entry regardless of device', () => {
+    const { ctx, marker } = setup(DrawPolygonMode)
+    ctx.map.fire('draw.interfacetypechange', { interfaceType: 'mouse' })
+    expect(marker.style.display).toBe('none')
+  })
 })
 
 describe('rubber band and snapping while moving', () => {
