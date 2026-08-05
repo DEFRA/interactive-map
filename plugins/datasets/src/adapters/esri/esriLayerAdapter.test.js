@@ -56,6 +56,7 @@ describe('esriLayerAdapter', () => {
     map = makeMap()
     mapProvider = makeMapProvider(map)
     adapter = new EsriLayerAdapter(mapProvider, null, null)
+    adapter.resolveReady()
   })
 
   // ─── createDataset ───────────────────────────────────────────────────────────

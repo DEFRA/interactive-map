@@ -3,7 +3,7 @@ const OS_LOGO = '/assets/images/os-logo.svg'
 const OS_LOGO_WHITE = '/assets/images/os-logo-white.svg'
 const OS_LOGO_BLACK = '/assets/images/os-logo-black.svg'
 const OS_LOGO_ALT = 'Ordnance Survey logo'
-const OS_ATTRIBUTION = `Contains OS data ${String.fromCodePoint(COPYRIGHT_SYMBOL)} Crown copyright and database rights ${(new Date()).getFullYear()}`
+const OS_ATTRIBUTION = `<a href="https://www.ordnancesurvey.co.uk/" class="os-credits__link">&copy; Crown copyright and database rights 2026 OS 123456789 </a>`
 const OUTDOOR_THUMBNAIL = '/assets/images/outdoor-map-thumb.jpg'
 const DARK_THUMBNAIL = '/assets/images/dark-map-thumb.jpg'
 const BW_THUMBNAIL = '/assets/images/black-and-white-map-thumb.jpg'

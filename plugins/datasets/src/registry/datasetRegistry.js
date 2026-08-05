@@ -115,7 +115,7 @@ const datasetRegistry = {
           type: 'group',
           groupLabel: dataset.groupLabel,
           datasets: this.topLevelDatasets()
-            .filter(groupDataset => (groupDataset.groupLabel === dataset.groupLabel && !groupDataset.hasSublayers && groupDataset.showInKey))
+            .filter(groupDataset => (groupDataset.groupLabel === dataset.groupLabel && !groupDataset.hasSublayers && groupDataset.keyVisibility))
         })
       } else {
         items.push({ type: 'flat', dataset })

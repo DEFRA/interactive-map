@@ -32,6 +32,8 @@ export const initialiseDatasets = ({
   datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
   const menu = pluginConfig.menu || datasetsToMenu({ datasets: processedDatasets })
   setMenuState(buildMenuState(menu)) // Must be called before adapter.init so that menuState is set before any datasets are checked for visibility
+  dispatch({ type: 'SET_MENU', payload: { menu } })
+  dispatch({ type: 'SET_DATASETS', payload: { mappedDatasets, orderedDatasets } })
 
   adapter.init().then(() => {
     datasetRegistry.forEachDataset(registryDataset => {
@@ -48,8 +50,6 @@ export const initialiseDatasets = ({
     })
     adapter.attachDynamicSources(dynamicSources)
     // TODO - apply dynamic source defaults here, and include in mappedDatasets
-    dispatch({ type: 'SET_MENU', payload: { menu } })
-    dispatch({ type: 'SET_DATASETS', payload: { datasets: processedDatasets, mappedDatasets, orderedDatasets } })
     eventBus.emit('datasets:ready')
   })
 

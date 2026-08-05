@@ -9,6 +9,9 @@ import { logger } from '../../../../../src/services/logger.js'
 export default class EsriLayerAdapter extends LayerAdapter {
   constructor (mapProvider) {
     super()
+    this.ready = new Promise((resolve) => {
+      this.resolveReady = resolve
+    })
     this._mapProvider = mapProvider
     this._map = mapProvider.map
 
@@ -46,6 +49,19 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
+    this._reorderLayers()
+    this.resolveReady()
+  }
+
+  _reorderLayers () {
+    // Ensure that all sketch layers are on top of the map, so that they are not obscured by other layers
+    // Only applicable when the draw plugin is in use, but safe to call regardless
+    const layersLength = this._map?.allLayers?.items?.length
+    if (layersLength) {
+      this._map.allLayers.items
+        .filter((layer) => layer.id.includes('ketchLayer'))
+        .forEach((layer) => this._map.reorder(layer, layersLength))
+    }
   }
 
   _addGroupLayer (esriGroupId) {
@@ -113,6 +129,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     await this._addLayers(registryDataset)
     const { parentId } = registryDataset
     const vectorTileLayer = this._mapVisibilityLayers[parentId || datasetId]
+    this._reorderLayers()
     this.applyDatasetOpacity(datasetId)
     this._applyStyleLayerPaintProperties(registryDataset, vectorTileLayer)
     this.applyDatasetVisibility(datasetId)
@@ -199,7 +216,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
     if (!esriStyleLayerId || !vectorTileLayer) {
       return
     }
-    vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
+    this.ready.then(() => {
+      vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
+    })
   }
 
   _applyStyleLayerPaintProperties (registryDataset, vectorTileLayer) {
