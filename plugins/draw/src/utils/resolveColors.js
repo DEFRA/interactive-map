@@ -1,15 +1,18 @@
 import { COLORS, SIZES } from '../defaults.js'
-import { getValueForStyle } from '../../../utils/getValueForStyle.js'
+import { getValueForStyle } from './getValueForStyle.js'
 
 /**
- * Resolve all draw-ol colors for the given map style and plugin config overrides.
+ * Resolve all draw colors for the given map style and plugin config overrides.
+ * Shared by both adapters (MapLibre and OpenLayers) — they draw from the same
+ * COLORS/SIZES palette (defaults.js), so a plugin-level override behaves
+ * identically regardless of which map provider is in use.
  *
  * Values in pluginConfig may be plain strings or variant objects (e.g. { light: '...', dark: '...' }).
  * Variant resolution order: exact style ID match → color scheme → 'light' fallback → first value.
  *
  * @param {object|null} mapStyle - Current map style object (has .id and .mapColorScheme)
  * @param {object} pluginConfig - Plugin-level user overrides (may override any COLORS key)
- * @returns {object} Flat color values ready for use in createStyles()
+ * @returns {object} Flat color values ready for use in each adapter's styles module
  */
 export const resolveColors = (mapStyle, pluginConfig = {}) => {
   const scheme = mapStyle?.mapColorScheme ?? 'light'

@@ -8,6 +8,7 @@ import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from '../../utils/undoStack.js'
 import { setupTouchClickWorkaround } from './utils/touchClickWorkaround.js'
 import { applyTouchVertexColors } from './modes/editVertexMode/touchHandlers.js'
+import { resolveColors } from '../../utils/resolveColors.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
 
 /**
@@ -23,9 +24,10 @@ import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
  * @param {string} options.mapStyle - Map style object
  * @param {Object} options.mapProvider - Object containing the map instance
  * @param {Object} options.eventBus - Event bus for app-level events
+ * @param {Object} [options.pluginConfig] - Plugin-level colour/size overrides — see resolveColors()
  * @returns {{ draw: MapboxDraw, remove: Function }} draw instance and cleanup function
  */
-export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snapLayers }) => {
+export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snapLayers, pluginConfig = {} }) => {
   const { map } = mapProvider
 
   // --- Configure MapLibre GL Draw CSS classes ---
@@ -50,7 +52,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   } else {
     draw = new MapboxDraw({
       modes,
-      styles: createDrawStyles(mapStyle),
+      styles: createDrawStyles(mapStyle, pluginConfig),
       displayControlsDefault: false,
       userProperties: true,
       defaultMode: 'disabled'
@@ -65,6 +67,11 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   // We need a reference to this
   mapProvider.draw = draw
   map._drawCurrentMapStyle = mapStyle
+  // Stashed on the map (alongside _drawCurrentMapStyle) so mode code that only
+  // has `this.map` — e.g. touchHandlers.js's addTouchVertexTarget — can still
+  // resolve colour overrides without pluginConfig being threaded through every
+  // mode's option object.
+  map._drawPluginConfig = pluginConfig
   // Initialize snap as disabled (matches initialState.snap = false)
   mapProvider.snapEnabled = false
   // Initialize undo stack (reuse if already exists)
@@ -77,19 +84,21 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
 
   // --- Initialize MapboxSnap using external module ---
   // Start with status: false to match initial snap disabled state
+  const snapColors = resolveColors(mapStyle, pluginConfig)
   initMapLibreSnap(map, draw, {
     layers: snapLayers,
-    radius: TOLERANCES.snapRadius,
-    rules: ['vertex', 'edge']
+    radius: pluginConfig.snapRadius ?? TOLERANCES.snapRadius,
+    rules: ['vertex', 'edge'],
+    colors: { vertex: snapColors.snapVertex, edge: snapColors.snapEdge }
   })
 
   // --- Update colour scheme ---
   const handleSetMapStyle = (e) => {
     map._drawCurrentMapStyle = e
     map.once('idle', () => {
-      updateDrawStyles(map, e)
+      updateDrawStyles(map, e, pluginConfig)
       const svg = map._drawEditContainer?.querySelector('[data-im-draw-touch-target]')
-      applyTouchVertexColors(svg, e)
+      applyTouchVertexColors(svg, e, pluginConfig)
     })
   }
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)

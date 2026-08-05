@@ -21,6 +21,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     loadDrawAdapter(mapProvider, {
       mapStyle: mapState.mapStyle,
       snapLayers: pluginConfig.snapLayers,
+      pluginConfig,
       events: EVENTS,
       eventBus
     }).then(adapter => {

@@ -56,6 +56,20 @@ test('wires olDraw with the plugin options and uses the returned manager', () =>
   expect(manager.getMode).toHaveBeenCalled()
 })
 
+test('forwards the full pluginConfig (colour/size overrides too), not just snapLayers', () => {
+  const manager = fakeManager()
+  const mapProvider = { _testManager: manager }
+  const pluginConfig = { snapLayers: ['boundaries'], shapeStroke: '#custom', strokeWidth: 5 }
+  // eslint-disable-next-line no-new
+  new OLDrawAdapter(mapProvider, {
+    events: { MAP_SET_STYLE: 's' },
+    eventBus: {},
+    pluginConfig,
+    mapStyle: { id: 'default' }
+  })
+  expect(createOLDraw).toHaveBeenCalledWith(expect.objectContaining({ pluginConfig }))
+})
+
 test('changeMode injects the mapProvider and the OL geometry type per draw mode', () => {
   const { manager, mapProvider, adapter } = setup()
   adapter.changeMode('draw_polygon', { featureId: 'f1' })

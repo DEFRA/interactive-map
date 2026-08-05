@@ -5,24 +5,18 @@ import {
 import { coordPathToFlatIndex } from './geometryHelpers.js'
 import { isOnSVG } from './helpers.js'
 import { createTouchTarget, applyTouchTargetColors } from '../../../../utils/touchTarget.js'
-import { COLORS } from '../../defaults.js'
-import { getValueForStyle } from '../../../../utils/getValueForStyle.js'
+import { resolveColors } from '../../../../utils/resolveColors.js'
 
-export const applyTouchVertexColors = (el, mapStyle) => {
+export const applyTouchVertexColors = (el, mapStyle, pluginConfig = {}) => {
   if (!el) { return }
-  const scheme = mapStyle?.mapColorScheme ?? 'light'
-  const colors = {
-    editActive: getValueForStyle(COLORS.editActive, scheme),
-    editHalo: getValueForStyle(COLORS.editHalo, scheme),
-    editVertex: getValueForStyle(COLORS.editVertex, scheme)
-  }
-  applyTouchTargetColors(el, colors)
+  const { editActive, editHalo, editVertex } = resolveColors(mapStyle, pluginConfig)
+  applyTouchTargetColors(el, { editActive, editHalo, editVertex })
 }
 
 export const touchHandlers = {
   addTouchVertexTarget (state) {
     state.touchVertexTarget = createTouchTarget(state.container)
-    applyTouchVertexColors(state.touchVertexTarget, this.map._drawCurrentMapStyle)
+    applyTouchVertexColors(state.touchVertexTarget, this.map._drawCurrentMapStyle, this.map._drawPluginConfig)
   },
 
   updateTouchVertexTarget (state, point) {

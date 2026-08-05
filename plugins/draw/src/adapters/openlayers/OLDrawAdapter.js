@@ -39,7 +39,10 @@ export class OLDrawAdapter {
       mapProvider,
       events: options.events,
       eventBus: options.eventBus,
-      pluginConfig: { snapLayers: options.snapLayers },
+      // The full pluginConfig, not just snapLayers — OLDrawManager also reads
+      // colour/size overrides (shapeStroke, editStroke, strokeWidth, snapRadius,
+      // etc.) off this object via resolveColors().
+      pluginConfig: options.pluginConfig ?? { snapLayers: options.snapLayers },
       mapStyle: options.mapStyle
     })
     this._cleanupOLDraw = remove

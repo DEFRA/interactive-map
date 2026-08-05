@@ -60,7 +60,8 @@ export class MaplibreDrawAdapter {
       mapProvider,
       events: options.events,
       eventBus: options.eventBus,
-      snapLayers: options.snapLayers
+      snapLayers: options.snapLayers,
+      pluginConfig: options.pluginConfig ?? {}
     })
 
     this._draw = draw

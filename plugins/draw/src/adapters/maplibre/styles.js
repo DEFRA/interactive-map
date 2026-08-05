@@ -1,32 +1,34 @@
 // styles.js
-import { COLORS, SIZES } from './defaults.js'
-import { getValueForStyle } from '../../utils/getValueForStyle.js'
+import { SIZES } from './defaults.js'
+import { resolveColors } from '../../utils/resolveColors.js'
 
-const getColorScheme = (mapStyle) => mapStyle.mapColorScheme ?? 'light'
-
-const getUserProp = (mapStyle, prop, defaultsKey) => [
+// `defaultValue` is the already-resolved fallback (colors[defaultsKey] — the
+// plugin-config override if one was set, else the built-in default), not the
+// raw COLORS constant, so a shapeStroke/shapeFill override applies to every
+// feature that doesn't set its own stroke/fill property.
+const getUserProp = (mapStyle, prop, defaultValue) => [
   'coalesce',
   ['get', `user_${prop}${mapStyle.id.charAt(0).toUpperCase() + mapStyle.id.slice(1)}`],
   ['get', `user_${prop}`],
-  COLORS[defaultsKey]
+  defaultValue
 ]
 
 // Inactive lines and fills
-const fillInactive = (mapStyle) => ({
+const fillInactive = (mapStyle, colors) => ({
   id: 'fill-inactive',
   type: 'fill',
   filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
-  paint: { 'fill-color': getUserProp(mapStyle, 'fill', 'shapeFill') }
+  paint: { 'fill-color': getUserProp(mapStyle, 'fill', colors.shapeFill) }
 })
 
-const strokeInactive = (mapStyle) => ({
+const strokeInactive = (mapStyle, colors) => ({
   id: 'stroke-inactive',
   type: 'line',
   filter: ['all', ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']], ['==', 'active', 'false'], ['!has', 'user_splitter']],
   layout: { 'line-cap': 'round', 'line-join': 'round' },
   paint: {
-    'line-color': getUserProp(mapStyle, 'stroke', 'shapeStroke'),
-    'line-width': SIZES.strokeWidth
+    'line-color': getUserProp(mapStyle, 'stroke', colors.shapeStroke),
+    'line-width': colors.strokeWidth
   }
 })
 
@@ -155,35 +157,29 @@ const touchVertexIndicator = () => ({
   paint: { 'circle-radius': 30, 'circle-color': '#3bb2d0', 'circle-stroke-width': 3, 'circle-stroke-color': '#ffffff', 'circle-opacity': 0.9 }
 })
 
-const createDrawStyles = (mapStyle) => {
-  const scheme = getColorScheme(mapStyle)
-  const editStrokeColor = getValueForStyle(COLORS.editStroke, scheme)
-  const editFillColor = getValueForStyle(COLORS.editFill, scheme)
-  const editVertexColor = getValueForStyle(COLORS.editVertex, scheme)
-  const editMidpointColor = getValueForStyle(COLORS.editMidpoint, scheme)
-  const editHaloColor = getValueForStyle(COLORS.editHalo, scheme)
-  const editActiveColor = getValueForStyle(COLORS.editActive, scheme)
-  const splitInvalidColor = getValueForStyle(COLORS.splitInvalid, scheme)
-  const splitValidColor = getValueForStyle(COLORS.splitValid, scheme)
-  const invalidStrokeColor = getValueForStyle(COLORS.invalidStroke, scheme)
+// `pluginConfig` lets callers override any of these colours/strokeWidth — see
+// resolveColors() and the draw plugin's own options docs. Unaffected keys
+// still resolve to the built-in COLORS/SIZES defaults.
+const createDrawStyles = (mapStyle, pluginConfig = {}) => {
+  const colors = resolveColors(mapStyle, pluginConfig)
   const { vertexRadius, midpointRadius, vertexHaloRadius, midpointHaloRadius } = SIZES
 
   return [
-    fillInactive(mapStyle),
-    fillActive(editFillColor),
-    strokeActive(editStrokeColor),
-    strokeActiveInvalid(invalidStrokeColor),
-    strokeInactive(mapStyle),
-    drawInvalidSplitter(splitInvalidColor),
-    drawValidSplitter(splitValidColor),
-    drawPreviewLine(editStrokeColor),
-    midpoint(editMidpointColor, midpointRadius),
-    midpointHalo(editHaloColor, editActiveColor, midpointHaloRadius),
-    midpointActive(editMidpointColor, midpointRadius),
-    vertex(editVertexColor, vertexRadius),
-    vertexHalo(editHaloColor, editActiveColor, vertexHaloRadius),
-    vertexActive(editVertexColor, vertexRadius),
-    circle(editStrokeColor),
+    fillInactive(mapStyle, colors),
+    fillActive(colors.editFill),
+    strokeActive(colors.editStroke),
+    strokeActiveInvalid(colors.invalidStroke),
+    strokeInactive(mapStyle, colors),
+    drawInvalidSplitter(colors.splitInvalid),
+    drawValidSplitter(colors.splitValid),
+    drawPreviewLine(colors.editStroke),
+    midpoint(colors.editMidpoint, midpointRadius),
+    midpointHalo(colors.editHalo, colors.editActive, midpointHaloRadius),
+    midpointActive(colors.editMidpoint, midpointRadius),
+    vertex(colors.editVertex, vertexRadius),
+    vertexHalo(colors.editHalo, colors.editActive, vertexHaloRadius),
+    vertexActive(colors.editVertex, vertexRadius),
+    circle(colors.editStroke),
     touchVertexIndicator()
   ]
 }
@@ -191,8 +187,8 @@ const createDrawStyles = (mapStyle) => {
 /**
  * Helper to iterate over a MapLibre map and apply new paint properties
  */
-const updateDrawStyles = (map, mapStyle) => {
-  const layers = createDrawStyles(mapStyle)
+const updateDrawStyles = (map, mapStyle, pluginConfig = {}) => {
+  const layers = createDrawStyles(mapStyle, pluginConfig)
   layers.forEach(layer => {
     Object.entries(layer.paint).forEach(([prop, value]) => {
       if (map.getLayer(`${layer.id}.cold`)) {

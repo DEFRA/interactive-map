@@ -4,6 +4,7 @@ import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from '../../utils/undoStack.js'
 import { setupTouchClickWorkaround } from './utils/touchClickWorkaround.js'
 import { applyTouchVertexColors } from './modes/editVertexMode/touchHandlers.js'
+import { resolveColors } from '../../utils/resolveColors.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
 import { createMapboxDraw } from './mapboxDraw.js'
 
@@ -29,6 +30,9 @@ jest.mock('./mapboxSnap.js', () => ({ initMapLibreSnap: jest.fn() }))
 jest.mock('../../utils/undoStack.js', () => ({ createUndoStack: jest.fn(() => ({ id: 'undo-stack' })) }))
 jest.mock('./utils/touchClickWorkaround.js', () => ({ setupTouchClickWorkaround: jest.fn() }))
 jest.mock('./modes/editVertexMode/touchHandlers.js', () => ({ applyTouchVertexColors: jest.fn() }))
+jest.mock('../../utils/resolveColors.js', () => ({
+  resolveColors: jest.fn(() => ({ snapVertex: 'resolved-vertex', snapEdge: 'resolved-edge' }))
+}))
 jest.mock('./defaults.js', () => ({
   TOLERANCES: { snapRadius: 12 },
   MAP_SIZE_SCALES: { medium: 1.5 }
@@ -47,7 +51,7 @@ const createMap = () => ({
   fire: jest.fn()
 })
 
-const setup = ({ existingDraw, existingUndoStack } = {}) => {
+const setup = ({ existingDraw, existingUndoStack, pluginConfig } = {}) => {
   const map = createMap()
   const mapProvider = {
     map,
@@ -63,7 +67,8 @@ const setup = ({ existingDraw, existingUndoStack } = {}) => {
     mapProvider,
     events: EVENTS,
     eventBus,
-    snapLayers: ['layer-a']
+    snapLayers: ['layer-a'],
+    ...(pluginConfig !== undefined ? { pluginConfig } : {})
   })
 
   return { map, mapProvider, eventBus, removeWorkaround, result }
@@ -101,7 +106,7 @@ describe('createMapboxDraw – instance creation', () => {
       draw_polygon: { id: 'draw_polygon' },
       draw_line: { id: 'draw_line' }
     })
-    expect(createDrawStyles).toHaveBeenCalledWith('light')
+    expect(createDrawStyles).toHaveBeenCalledWith('light', {})
 
     const draw = MapboxDraw.mock.instances[0]
     expect(map.addControl).toHaveBeenCalledWith(draw)
@@ -134,6 +139,19 @@ describe('createMapboxDraw – setup side effects', () => {
     expect(mapProvider.snapEnabled).toBe(false)
   })
 
+  test('stashes pluginConfig on the map for mode code that only has `this.map`', () => {
+    const pluginConfig = { shapeStroke: '#custom' }
+    const { map } = setup({ pluginConfig })
+
+    expect(map._drawPluginConfig).toBe(pluginConfig)
+  })
+
+  test('defaults pluginConfig to {} when not provided', () => {
+    const { map } = setup()
+
+    expect(map._drawPluginConfig).toEqual({})
+  })
+
   test('creates an undo stack when none exists and wires it to the map', () => {
     const { map, mapProvider } = setup()
 
@@ -155,14 +173,30 @@ describe('createMapboxDraw – setup side effects', () => {
     expect(map._undoStack).toBe(existingUndoStack)
   })
 
-  test('initializes snapping with the configured radius and rules', () => {
+  test('initializes snapping with the default radius, rules, and resolved colours', () => {
     const { map, mapProvider } = setup()
 
     expect(initMapLibreSnap).toHaveBeenCalledWith(map, mapProvider.draw, {
       layers: ['layer-a'],
       radius: TOLERANCES.snapRadius,
-      rules: ['vertex', 'edge']
+      rules: ['vertex', 'edge'],
+      colors: { vertex: 'resolved-vertex', edge: 'resolved-edge' }
     })
+  })
+
+  test('a pluginConfig.snapRadius overrides the default snap radius', () => {
+    const { map, mapProvider } = setup({ pluginConfig: { snapRadius: 20 } })
+
+    expect(initMapLibreSnap).toHaveBeenCalledWith(map, mapProvider.draw, expect.objectContaining({
+      radius: 20
+    }))
+  })
+
+  test('resolves snap colours from mapStyle + pluginConfig', () => {
+    const pluginConfig = { snapVertex: '#custom' }
+    setup({ pluginConfig })
+
+    expect(resolveColors).toHaveBeenCalledWith('light', pluginConfig)
   })
 })
 
@@ -178,9 +212,9 @@ describe('createMapboxDraw – event handlers', () => {
 
     const idleCallback = handlerFor(map.once, 'idle')
     idleCallback()
-    expect(updateDrawStyles).toHaveBeenCalledWith(map, 'dark')
+    expect(updateDrawStyles).toHaveBeenCalledWith(map, 'dark', {})
     expect(map._drawEditContainer.querySelector).toHaveBeenCalledWith('[data-im-draw-touch-target]')
-    expect(applyTouchVertexColors).toHaveBeenCalledWith('svg-el', 'dark')
+    expect(applyTouchVertexColors).toHaveBeenCalledWith('svg-el', 'dark', {})
   })
 
   test('MAP_SET_STYLE idle handler tolerates a missing edit container', () => {
@@ -189,7 +223,18 @@ describe('createMapboxDraw – event handlers', () => {
     handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
     handlerFor(map.once, 'idle')()
 
-    expect(applyTouchVertexColors).toHaveBeenCalledWith(undefined, 'dark')
+    expect(applyTouchVertexColors).toHaveBeenCalledWith(undefined, 'dark', {})
+  })
+
+  test('MAP_SET_STYLE passes pluginConfig through to restyling and touch colours', () => {
+    const pluginConfig = { editStroke: '#custom' }
+    const { map, eventBus } = setup({ pluginConfig })
+
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(map.once, 'idle')()
+
+    expect(updateDrawStyles).toHaveBeenCalledWith(map, 'dark', pluginConfig)
+    expect(applyTouchVertexColors).toHaveBeenCalledWith(undefined, 'dark', pluginConfig)
   })
 
   test('draw.interfacetypechange is not handled here — the adapter normalises it onto the bus', () => {

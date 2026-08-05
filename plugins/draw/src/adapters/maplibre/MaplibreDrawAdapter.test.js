@@ -67,8 +67,36 @@ describe('construction', () => {
       mapProvider: expect.any(Object),
       events: options.events,
       eventBus: options.eventBus,
-      snapLayers: ['layer-a']
+      snapLayers: ['layer-a'],
+      pluginConfig: {}
     })
+  })
+
+  test('forwards a provided pluginConfig through to createMapboxDraw', () => {
+    const map = {
+      on: jest.fn(),
+      off: jest.fn(),
+      fire: jest.fn(),
+      getLayer: jest.fn(() => null),
+      setLayoutProperty: jest.fn(),
+      getStyle: jest.fn(() => ({ layers: [] })),
+      moveLayer: jest.fn()
+    }
+    const mapProvider = { map, undoStack: { clear: jest.fn() }, snapEnabled: false }
+    createMapboxDraw.mockReturnValue({ draw: { changeMode: jest.fn(), getMode: jest.fn() }, remove: jest.fn() })
+    createEventBus.mockReturnValue({ on: jest.fn(), off: jest.fn(), emit: jest.fn() })
+
+    const pluginConfig = { shapeStroke: '#custom' }
+    // eslint-disable-next-line no-new
+    new MaplibreDrawAdapter(mapProvider, {
+      mapStyle: 'light',
+      events: { MAP_SET_STYLE: 'mss' },
+      eventBus: { on: jest.fn() },
+      snapLayers: ['layer-a'],
+      pluginConfig
+    })
+
+    expect(createMapboxDraw).toHaveBeenCalledWith(expect.objectContaining({ pluginConfig }))
   })
 
   test('subscribes to every MapLibre draw event', () => {

@@ -83,6 +83,30 @@ describe('createDrawStyles', () => {
     expect(findLayer(layers, 'stroke-valid-splitter').paint['line-color']).toBe(getValueForStyle(COLORS.splitValid, 'light'))
     expect(findLayer(layers, 'touch-vertex-indicator').paint['circle-color']).toBe('#3bb2d0')
   })
+
+  test('a pluginConfig override replaces the default colour/width everywhere it applies', () => {
+    const pluginConfig = { editStroke: '#custom-stroke', shapeStroke: '#custom-shape', strokeWidth: 9 }
+    const layers = createDrawStyles(mapStyle, pluginConfig)
+
+    expect(findLayer(layers, 'stroke-active').paint['line-color']).toBe('#custom-stroke')
+    expect(findLayer(layers, 'stroke-preview-line').paint['line-color']).toBe('#custom-stroke')
+    expect(findLayer(layers, 'circle').paint['line-color']).toBe('#custom-stroke')
+    expect(findLayer(layers, 'stroke-inactive').paint['line-color']).toEqual([
+      'coalesce',
+      ['get', 'user_strokeOutdoor'],
+      ['get', 'user_stroke'],
+      '#custom-shape'
+    ])
+    expect(findLayer(layers, 'stroke-inactive').paint['line-width']).toBe(9)
+  })
+
+  test('a per-feature stroke/fill property still wins over a pluginConfig override — coalesce checks it first', () => {
+    const layers = createDrawStyles(mapStyle, { shapeStroke: '#custom-shape' })
+    const [, userStyleKey, userKey, fallback] = findLayer(layers, 'stroke-inactive').paint['line-color']
+    expect(userStyleKey).toEqual(['get', 'user_strokeOutdoor'])
+    expect(userKey).toEqual(['get', 'user_stroke'])
+    expect(fallback).toBe('#custom-shape') // only reached when the feature sets neither
+  })
 })
 
 describe('updateDrawStyles', () => {
@@ -119,5 +143,13 @@ describe('updateDrawStyles', () => {
     expect(targets.length).toBeGreaterThan(0)
     expect(targets.every((id) => id.endsWith('.cold'))).toBe(true)
     expect(targets.some((id) => id.endsWith('.hot'))).toBe(false)
+  })
+
+  test('applies a pluginConfig override on the re-styled layers', () => {
+    const map = { getLayer: jest.fn(() => true), setPaintProperty: jest.fn() }
+
+    updateDrawStyles(map, mapStyle, { editStroke: '#custom' })
+
+    expect(map.setPaintProperty).toHaveBeenCalledWith('stroke-active.cold', 'line-color', '#custom')
   })
 })

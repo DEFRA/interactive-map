@@ -8,6 +8,19 @@ describe('touchHandlers', () => {
     expect(() => applyTouchVertexColors(state.touchVertexTarget, null)).not.toThrow()
   })
 
+  test('applyTouchVertexColors applies a pluginConfig override to the CSS custom properties', () => {
+    const el = document.createElement('div')
+    applyTouchVertexColors(el, { mapColorScheme: 'light' }, { editVertex: '#custom' })
+    expect(el.style.getPropertyValue('--draw-primary')).toBe('#custom')
+  })
+
+  test('addTouchVertexTarget resolves colours from map._drawPluginConfig', () => {
+    const { ctx, state, map } = createHarness()
+    map._drawPluginConfig = { editVertex: '#custom' }
+    ctx.addTouchVertexTarget(state)
+    expect(state.touchVertexTarget.style.getPropertyValue('--draw-primary')).toBe('#custom')
+  })
+
   test('updateTouchVertexTarget shows the target for a touch selection and hides it otherwise', () => {
     const { ctx, state } = createHarness()
     state.interfaceType = 'touch'
