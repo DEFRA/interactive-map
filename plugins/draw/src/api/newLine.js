@@ -1,5 +1,8 @@
 import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
 
+// Near-identical to newPolygon.js, differing only in the 'draw_line'/'draw_polygon'
+// mode string — kept as two small, explicit entry points rather than one
+// mode-parameterised factory. Revisit if a third geometry type is ever added.
 export const newLine = ({ appState, appConfig, pluginConfig, pluginState, mapState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
   const { draw } = mapProvider

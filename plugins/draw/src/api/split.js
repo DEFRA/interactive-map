@@ -18,8 +18,6 @@ const computeIsValid = (polygonFeature, feature) => {
 const applySplitPreview = ({ draw, polygonFeature, feature }) => {
   const isValid = computeIsValid(polygonFeature, feature)
   draw.setDrawingPreviewProperty('splitter', isValid ? 'valid' : 'invalid')
-  // DEBUG
-  console.log('[split] preview', { coords: feature.geometry?.coordinates, isValid })
   return isValid
 }
 
@@ -29,8 +27,6 @@ const applySplitCommit = ({ draw, dispatch, polygonFeature, feature }) => {
   dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
   dispatch({ type: 'SET_GEOMETRY_VALID', payload: isValid })
   draw.setGeometryValid(isValid)
-  // DEBUG
-  console.log('[split] commit', { coords: feature.geometry?.coordinates, isValid })
   return isValid
 }
 

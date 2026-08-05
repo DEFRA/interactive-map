@@ -4,10 +4,11 @@ import {
   getSegmentForIndex,
   getModifiableCoords
 } from '../utils/geometryHelpers.js'
+import { MIN_VERTICES } from '../../../validation/rules.js'
 
 /**
  * Delete the vertex at `selectedIndex` from the OL feature's geometry.
- * Respects minimum vertex counts (3 for closed rings, 2 for lines).
+ * Respects minimum vertex counts (MIN_VERTICES — validation/rules.js).
  *
  * @returns {{ deletedIndex: number, deletedCoord: number[] } | null} undo payload, or null if not deleted
  */
@@ -22,7 +23,7 @@ export const deleteVertex = (olFeature, selectedIndex) => {
   }
 
   const { segment } = result
-  const minVertices = segment.closed ? 3 : 2 // NOSONAR, min vertecies in ring
+  const minVertices = segment.closed ? MIN_VERTICES.Polygon : MIN_VERTICES.LineString
   if (segment.length <= minVertices) {
     return null
   }

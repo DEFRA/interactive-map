@@ -35,11 +35,6 @@ beforeAll(() => {
 
 beforeEach(() => {
   jest.clearAllMocks()
-  jest.spyOn(console, 'log').mockImplementation(() => {})
-})
-
-afterEach(() => {
-  console.log.mockRestore()
 })
 
 describe('applyMapboxSnapPatches', () => {

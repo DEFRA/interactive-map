@@ -9,6 +9,7 @@ import {
   getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
   getSnapRadius, triggerSnapAtPoint, clearSnapIndicator
 } from '../../utils/snapHelpers.js'
+import { MIN_VERTICES } from '../../../../validation/rules.js'
 
 const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
 
@@ -174,8 +175,10 @@ export const vertexOperations = {
     }
 
     const { segment } = result
-    // Minimum vertices per segment: 3 for closed rings (mapbox-gl-draw's internal representation), 2 for lines
-    const minVertices = segment.closed ? 3 : 2 // NOSONAR, min vertices for closed ring
+    // Minimum vertices per segment (mapbox-gl-draw's internal representation is
+    // a closed ring for polygons, an open path for lines) — MIN_VERTICES is the
+    // single source for this threshold (validation/rules.js).
+    const minVertices = segment.closed ? MIN_VERTICES.Polygon : MIN_VERTICES.LineString
     if (segment.length <= minVertices) {
       return
     }

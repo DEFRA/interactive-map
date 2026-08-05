@@ -47,9 +47,8 @@ function patchGeometryMethods (proto, orig) {
         return coords.filter(c => Array.isArray(c) && c.length > 0).map(c => lineString(c))
       }
       return orig.getLines.call(this, feature, mouse, radiusArg)
-    } catch (e) {
+    } catch {
       // Invalid geometry - skip this feature
-      console.log(e)
       return []
     }
   }
@@ -111,9 +110,8 @@ function patchSnapMethod (proto, orig) {
         this.lines.length = 0
       }
       return result
-    } catch (err) {
+    } catch {
       // Invalid geometry encountered - clear state and continue
-      console.log(err)
       this.snapStatus = false
       this.snapCoords = null
       return undefined
