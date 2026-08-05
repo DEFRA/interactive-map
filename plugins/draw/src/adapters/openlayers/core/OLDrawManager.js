@@ -70,7 +70,11 @@ export class OLDrawManager {
 
   emit (type, detail) {
     const handlers = this._listeners.get(type)
-    if (handlers) { [...handlers].forEach(h => h(detail)) }
+    // Array.from, not [...handlers] — see the comment in utils/eventBus.js:
+    // under a loose-mode Babel build (Docusaurus's docs site), spreading a Set
+    // compiles to [].concat(handlers), which doesn't flatten it — it appends
+    // the whole Set as one non-function element, and h(...) throws.
+    if (handlers) { Array.from(handlers).forEach(h => h(detail)) }
   }
 
   // --- Mode machine ---

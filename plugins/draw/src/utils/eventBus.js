@@ -22,7 +22,14 @@ export const createEventBus = () => {
     emit (type, ...args) {
       const handlers = listeners.get(type)
       if (handlers) {
-        [...handlers].forEach(h => h(...args))
+        // Array.from, not [...handlers] — under Docusaurus's docs build, Babel
+        // compiles with `loose: true` (@docusaurus/babel/preset.js), which turns
+        // spread-of-non-array-iterable into `[].concat(handlers)`. concat() only
+        // flattens real arrays; for a Set it appends the whole Set as a single
+        // element, so every handler call becomes `set.apply(...)` and throws
+        // "h.apply is not a function". Array.from() is a plain function call, so
+        // it's untouched by that transform and always iterates correctly.
+        Array.from(handlers).forEach(h => h(...args))
       }
     }
   }
