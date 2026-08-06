@@ -19,7 +19,7 @@ import { debounce } from '../utils/debounce.js'
  *              action result is holding priority so they can never clobber what
  *              the user actually requested.
  */
-export function createAnnouncer (mapStatusRef) {
+export function createAnnouncer (mapStatusRef, { startupGraceDelay = 1000 } = {}) {
   const CLEAR_DELAY = 100
   const DEBOUNCE_DELAY = 500
   // How long an action result keeps priority over ambient messages. Covers the
@@ -33,6 +33,17 @@ export function createAnnouncer (mapStatusRef) {
   // if the text matches what was already read. Toggling this marker in keeps
   // consecutive identical announcements from ever being byte-identical.
   const REPEAT_MARKER = '\u200B'
+  // A screen reader may still be building its accessibility tree for a
+  // newly-loaded page — the live region's DOM node can exist and mutate
+  // correctly while the AT hasn't registered it yet, so an announcement fired
+  // this soon after boot (e.g. a consumer calling showHint() on 'app:ready')
+  // can be silently missed even though nothing here did anything wrong. Give
+  // any announcement inside this window from creation an extra head start;
+  // announcements after it behave exactly as before, with zero extra delay.
+  // Configurable (default 1000ms) so tests can set it to 0 and not have to
+  // account for it in every unrelated timing assertion.
+  const STARTUP_GRACE_DELAY = startupGraceDelay
+  const startedAt = Date.now()
 
   let actionHoldTimer = null
   let lastAnnouncedMsg = null
@@ -44,6 +55,8 @@ export function createAnnouncer (mapStatusRef) {
       return
     }
 
+    const startupDelay = Math.max(0, STARTUP_GRACE_DELAY - (Date.now() - startedAt))
+
     // Clear first (for SR to re-announce)
     mapStatusRef.current.textContent = ''
     setTimeout(() => {
@@ -53,7 +66,7 @@ export function createAnnouncer (mapStatusRef) {
       repeatMarkerOn = msg === lastAnnouncedMsg ? !repeatMarkerOn : false
       lastAnnouncedMsg = msg
       mapStatusRef.current.textContent = repeatMarkerOn ? msg + REPEAT_MARKER : msg
-    }, CLEAR_DELAY)
+    }, CLEAR_DELAY + startupDelay)
   }
 
   // Debounced announcer to group rapid action events down to the latest one

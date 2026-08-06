@@ -787,6 +787,8 @@ interactiveMap.dismissHint()
 
 Dismiss the active toast hint, if any. No-op if no hint is showing. Mainly useful for hints shown with `{ duration: 0 }`, which otherwise persist indefinitely.
 
+The active hint is also dismissed automatically when the user presses <kbd>Escape</kbd> anywhere within this map instance. With multiple map instances on a page, Escape only dismisses the hint belonging to the instance the keypress originated in.
+
 ```js
 interactiveMap.dismissHint()
 ```

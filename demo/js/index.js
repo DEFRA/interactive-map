@@ -330,6 +330,7 @@ const interactiveMap = new InteractiveMap('map', {
 
 interactiveMap.on('app:ready', function (e) {
   // console.log('app:ready')
+  interactiveMap.showHint('My hint', { duration: 0 })
 })
 
 interactiveMap.on('map:ready', function (e) {

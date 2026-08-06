@@ -8,7 +8,9 @@ describe('createAnnouncer', () => {
 
   beforeEach(() => {
     mapStatusRef = { current: { textContent: '' } }
-    announce = createAnnouncer(mapStatusRef)
+    // startupGraceDelay: 0 — these tests exercise everything except the startup
+    // grace window itself, which has its own dedicated describe block below.
+    announce = createAnnouncer(mapStatusRef, { startupGraceDelay: 0 })
   })
 
   afterEach(() => {
@@ -181,5 +183,67 @@ describe('createAnnouncer', () => {
 
     jest.advanceTimersByTime(600) // let the second one land
     expect(mapStatusRef.current.textContent).toBe('Second')
+  })
+})
+
+describe('createAnnouncer — startup grace delay', () => {
+  // A consumer calling showHint() the instant the app is ready (e.g. on
+  // 'app:ready') can fire before the screen reader has finished registering
+  // the live region in its own accessibility tree, even though the DOM node
+  // already exists and mutates correctly. These tests use a small explicit
+  // window (rather than the real 1000ms default) purely so assertions don't
+  // need to advance unrealistic amounts of fake time.
+  const GRACE = 300
+  let mapStatusRef
+  let announce
+
+  beforeEach(() => {
+    mapStatusRef = { current: { textContent: '' } }
+    announce = createAnnouncer(mapStatusRef, { startupGraceDelay: GRACE })
+  })
+
+  afterEach(() => {
+    jest.clearAllTimers()
+  })
+
+  it('delays an announcement fired immediately after creation by the full grace window', () => {
+    announce('Ready', 'ambient')
+    jest.advanceTimersByTime(100) // normal CLEAR_DELAY only
+    expect(mapStatusRef.current.textContent).toBe('') // still withheld
+
+    jest.advanceTimersByTime(GRACE) // the rest of the grace window
+    expect(mapStatusRef.current.textContent).toBe('Ready')
+  })
+
+  it('only waits out the remaining grace window, not the full window again', () => {
+    jest.advanceTimersByTime(200) // partway through the grace window already
+    announce('Ready', 'ambient')
+
+    // Remaining grace (100) + CLEAR_DELAY (100) = 200 total from this point
+    jest.advanceTimersByTime(199)
+    expect(mapStatusRef.current.textContent).toBe('')
+
+    jest.advanceTimersByTime(1)
+    expect(mapStatusRef.current.textContent).toBe('Ready')
+  })
+
+  it('adds no extra delay once the grace window has fully elapsed', () => {
+    jest.advanceTimersByTime(GRACE)
+    announce('Later', 'ambient')
+
+    jest.advanceTimersByTime(100) // normal CLEAR_DELAY only
+    expect(mapStatusRef.current.textContent).toBe('Later')
+  })
+
+  it('defaults to a 1000ms grace window when not configured', () => {
+    const defaultAnnounce = createAnnouncer(mapStatusRef)
+    defaultAnnounce('Ready', 'ambient')
+
+    // 1000ms grace + 100ms CLEAR_DELAY = 1100 total
+    jest.advanceTimersByTime(1099)
+    expect(mapStatusRef.current.textContent).toBe('')
+
+    jest.advanceTimersByTime(1)
+    expect(mapStatusRef.current.textContent).toBe('Ready')
   })
 })
