@@ -579,4 +579,11 @@ describe('InteractiveMap — Public API Methods', () => {
     expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:fittobounds', bbox)
     expect(map.eventBus.emitWhenReady).toHaveBeenCalledWith('map:setview', { center, zoom: 12 })
   })
+
+  it('showHint and dismissHint emit correct events', () => {
+    map.showHint('Press <kbd>Enter</kbd> to select', { duration: 2000 })
+    map.dismissHint()
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:showhint', { text: 'Press <kbd>Enter</kbd> to select', options: { duration: 2000 } })
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:dismisshint')
+  })
 })

@@ -25,6 +25,9 @@ export function createHints (announce) {
     clearTimer()
     current = null
     notify()
+    // Blank the live region so a later identical hint re-announces instead of
+    // silently netting-out against the stale text left by this dismissal.
+    announce.clear?.()
   }
 
   const show = (html, options = {}) => {

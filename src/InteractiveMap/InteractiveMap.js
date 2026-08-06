@@ -3,6 +3,7 @@
 /**
  * @typedef {import('../types.js').ButtonDefinition} ButtonDefinition
  * @typedef {import('../types.js').ControlDefinition} ControlDefinition
+ * @typedef {import('../types.js').HintOptions} HintOptions
  * @typedef {import('../types.js').InteractiveMapConfig} InteractiveMapConfig
  * @typedef {import('../types.js').MarkerOptions} MarkerOptions
  * @typedef {import('../types.js').PanelDefinition} PanelDefinition
@@ -479,6 +480,25 @@ export default class InteractiveMap {
    */
   addControl (id, config) {
     this.eventBus.emit(events.APP_ADD_CONTROL, { id, config })
+  }
+
+  /**
+   * Show a toast hint, announced to screen readers via the live region.
+   * Replaces any hint currently showing and restarts its dismiss timer.
+   *
+   * @param {string} text - Hint text. May contain simple HTML (e.g. `<kbd>`).
+   * @param {HintOptions} [options] - Optional hint behaviour.
+   */
+  showHint (text, options) {
+    this.eventBus.emit(events.APP_SHOW_HINT, { text, options })
+  }
+
+  /**
+   * Dismiss the active toast hint, if any. No-op if no hint is showing.
+   * Mainly useful for hints shown with `{ duration: 0 }`, which otherwise persist indefinitely.
+   */
+  dismissHint () {
+    this.eventBus.emit(events.APP_DISMISS_HINT)
   }
 
   /**

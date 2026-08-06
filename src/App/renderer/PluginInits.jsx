@@ -3,6 +3,7 @@ import React, { useEffect } from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { withPluginApiContexts, usePluginApiState } from './pluginApiWrapper.js'
 import { useInterfaceAPI } from '../hooks/useInterfaceAPI.js'
+import { useHintsAPI } from '../hooks/useHintsAPI.js'
 import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
 import { useEvaluateProp } from '../hooks/useEvaluateProp.js'
@@ -52,6 +53,9 @@ export const PluginInits = () => {
 
   // Add button, panel and control API methods (Needs to be top-level)
   useInterfaceAPI()
+
+  // Wire the showHint()/dismissHint() public API onto the hints service
+  useHintsAPI()
 
   // Evaluate reactive button states globally
   const evaluateProp = useEvaluateProp()

@@ -85,6 +85,25 @@ describe('dismiss', () => {
   it('is safe to call when no hint is active', () => {
     expect(() => hints.dismiss()).not.toThrow()
   })
+
+  it('blanks the live region via announce.clear so a later identical hint re-announces', () => {
+    announce.clear = jest.fn()
+    hints.show('hello')
+    hints.dismiss()
+    expect(announce.clear).toHaveBeenCalled()
+  })
+
+  it('is safe to call when announce has no clear method', () => {
+    hints.show('hello')
+    expect(() => hints.dismiss()).not.toThrow()
+  })
+
+  it('blanks the live region on auto-dismiss too, not just explicit dismiss', () => {
+    announce.clear = jest.fn()
+    hints.show('hello', { duration: 3000 })
+    jest.advanceTimersByTime(3000)
+    expect(announce.clear).toHaveBeenCalled()
+  })
 })
 
 // ─── subscribe / unsubscribe ──────────────────────────────────────────────────
