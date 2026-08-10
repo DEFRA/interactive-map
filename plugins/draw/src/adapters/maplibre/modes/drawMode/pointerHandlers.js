@@ -17,7 +17,7 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
     this.onMove(state, e)
   },
 
-  // The global interface type (e.g. switching to touch and panning via MoveControl)
+  // The global interface type (e.g. switching to touch and panning via MoveControls)
   // can change mid-session without any touch/pointer/key event ever landing on the
   // map container, so this can't rely on onTouchStart/onPointerdown alone — refresh
   // the rubber band immediately rather than waiting for the next incidental 'move'.

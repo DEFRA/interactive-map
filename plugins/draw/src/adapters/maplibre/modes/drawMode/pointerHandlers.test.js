@@ -44,7 +44,7 @@ describe('touch and pointer interface', () => {
     expect(marker.style.display).toBe('none')
   })
 
-  test('draw.interfacetypechange (e.g. switching to touch and panning via MoveControl mid-session) updates the interface and refreshes the rubber band immediately', () => {
+  test('draw.interfacetypechange (e.g. switching to touch and panning via MoveControls mid-session) updates the interface and refreshes the rubber band immediately', () => {
     const { ctx, state } = setup(DrawPolygonMode)
     clickAt(ctx, state, 0, 0)
     ctx.map.fire('draw.interfacetypechange', { interfaceType: 'touch' })

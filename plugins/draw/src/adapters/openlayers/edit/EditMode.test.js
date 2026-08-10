@@ -123,7 +123,7 @@ test('select via pointer, delete the vertex, then undo restores it', () => {
   mode.undo() // empty stack — no-op
 })
 
-test('nudgeSelectedVertex (MoveControl D-pad) moves the selected vertex and is undoable', () => {
+test('nudgeSelectedVertex (MoveControls D-pad) moves the selected vertex and is undoable', () => {
   const { container, manager, mode, ring } = setup()
   container.dispatchEvent(domEvent('pointerdown', { pointerType: 'mouse', clientX: 100, clientY: 0 }))
   mode.nudgeSelectedVertex(1, 0, true)

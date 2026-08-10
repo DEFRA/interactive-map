@@ -73,7 +73,7 @@ describe('vertexOperations', () => {
     expect(map._undoStack).toHaveLength(0)
   })
 
-  test('nudgeVertexByDelta snaps to a nearby target, breaks out of an active snap, and falls back to the raw coord when snap is inactive — same as keyboard nudging (regression: MoveControl bypassed snap entirely before resolveSnapTarget was shared)', () => {
+  test('nudgeVertexByDelta snaps to a nearby target, breaks out of an active snap, and falls back to the raw coord when snap is inactive — same as keyboard nudging (regression: MoveControls bypassed snap entirely before resolveSnapTarget was shared)', () => {
     const { ctx, state, map } = createHarness()
     state.selectedVertexIndex = 1
     state.selectedVertexType = 'vertex'

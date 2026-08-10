@@ -353,7 +353,7 @@ The plugin registers its own toolbar buttons automatically — Cancel, Add point
 | <kbd>Delete</kbd> | Delete point (edit) |
 | <kbd>Command</kbd>/<kbd>Ctrl</kbd> + <kbd>Z</kbd> | Undo |
 
-A selected edit vertex also claims the map's [`enableMoveControl`](../api.md#enablemovecontrol) D-pad, if enabled, so it can be nudged with the on-screen directional buttons as well as the keyboard.
+A selected edit vertex also claims the map's [`enableMoveControls`](../api.md#enablemovecontrols) D-pad, if enabled, so it can be nudged with the on-screen directional buttons as well as the keyboard.
 
 ## Events
 

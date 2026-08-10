@@ -18,13 +18,13 @@ const ZOOM_ACTIONS = [
   { id: 'nudgeZoomOut', label: 'Zoom out', announceLabel: 'Zoomed out', method: 'zoomOut' }
 ]
 
-export const MoveControl = () => {
+export const MoveControls = () => {
   const { id: appId, mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta } = useConfig()
   const { dispatch, expandedButtons, nudgeStepSize, interfaceType, layoutRefs } = useApp()
   const { isAtMaxZoom, isAtMinZoom } = useMap()
   const { announce } = useService()
 
-  const isOpen = expandedButtons.has('moveControl')
+  const isOpen = expandedButtons.has('moveControls')
   const firstDirectionButtonId = `${appId}-pan-up`
 
   useEffect(() => {
@@ -41,7 +41,7 @@ export const MoveControl = () => {
   // Registry buttons (declared via a plugin's manifest) auto-return focus to the map
   // viewport after a click (see createButtonClickHandler in mapButtons.js) unless
   // marked keepFocus — which is how e.g. draw's own toolbar buttons never leave
-  // keyboard shortcuts (like arrow-key vertex nudging) stranded afterward. MoveControl
+  // keyboard shortcuts (like arrow-key vertex nudging) stranded afterward. MoveControls
   // renders its own buttons directly, bypassing that mechanism entirely, so it has to
   // replicate the same return-to-viewport behaviour itself. But unlike a one-off
   // action button, the D-pad is meant to be pressed repeatedly — a keyboard/switch
@@ -70,7 +70,7 @@ export const MoveControl = () => {
 
     // Any plugin can claim the D-pad for something other than panning the map (e.g.
     // moving a selected draw vertex) by setting mapProvider.activeMoveTarget — a
-    // generic { move(dx, dy, isLargeStep), label? } contract. MoveControl doesn't
+    // generic { move(dx, dy, isLargeStep), label? } contract. MoveControls doesn't
     // know or care what's claiming it; it just checks for a claimant before
     // defaulting to its own panBy behaviour. Read fresh on every click rather than
     // subscribed to reactively, since it's a plain mapProvider property, not state.
@@ -107,7 +107,7 @@ export const MoveControl = () => {
   // first tabbing all the way back to the map. Handling arrow keys here — while
   // focus is anywhere within this control, not just on a direction button — covers
   // that directly, without needing draw's (or the app's own) keyboard-shortcut
-  // guards to special-case MoveControl's buttons. Only arrow keys are handled;
+  // guards to special-case MoveControls' buttons. Only arrow keys are handled;
   // other shortcuts (delete/escape/undo) still require focus on the viewport,
   // which mouse/touch users already get back automatically after any click here.
   const handleContainerKeyDown = (e) => {
@@ -120,12 +120,12 @@ export const MoveControl = () => {
   }
 
   const containerClassName = [
-    'im-c-move-control',
-    !isOpen && 'im-c-move-control--collapsed'
+    'im-c-move-controls',
+    !isOpen && 'im-c-move-controls--collapsed'
   ].filter(Boolean).join(' ')
 
   const directionsGroup = (
-    <div key='directions' role='group' aria-label='Direction controls' className='im-c-move-control__directions'>{/* NOSONAR - div with role="group" is correct for a button group */}
+    <div key='directions' role='group' aria-label='Direction controls' className='im-c-move-controls__directions'>{/* NOSONAR - div with role="group" is correct for a button group */}
       {DIRECTIONS.map(({ id, verb, dx, dy }) => (
         <MapButton
           key={id}
@@ -154,7 +154,7 @@ export const MoveControl = () => {
   )
 
   const zoomGroup = (
-    <div key='zoom' role='group' aria-label='Zoom controls' className='im-c-move-control__zoom'>{/* NOSONAR - div with role="group" is correct for a button group */}
+    <div key='zoom' role='group' aria-label='Zoom controls' className='im-c-move-controls__zoom'>{/* NOSONAR - div with role="group" is correct for a button group */}
       {ZOOM_ACTIONS.map(({ id, label, announceLabel, method }) => (
         <MapButton
           key={id}
@@ -169,7 +169,7 @@ export const MoveControl = () => {
   )
 
   return (
-    <div id={`${appId}-move-control-content`} className={containerClassName} onKeyDown={handleContainerKeyDown}>{/* NOSONAR - only catches arrow-key bubbling from the real, already-focusable button descendants below; the div itself needs no role/tabIndex */}
+    <div id={`${appId}-move-controls-content`} className={containerClassName} onKeyDown={handleContainerKeyDown}>{/* NOSONAR - only catches arrow-key bubbling from the real, already-focusable button descendants below; the div itself needs no role/tabIndex */}
       {directionsGroup}
       {zoomGroup}
     </div>

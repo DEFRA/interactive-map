@@ -215,7 +215,7 @@ export class MaplibreDrawAdapter {
     this._map.fire(CUSTOM_DRAW_EVENTS.UNDO)
   }
 
-  // MoveControl's D-pad, routed here via mapProvider.activeMoveTarget (see
+  // MoveControls' D-pad, routed here via mapProvider.activeMoveTarget (see
   // events.js) once a vertex is selected. Bridged into the running edit mode the
   // same way setInterfaceType is, since the adapter has no direct reference to the
   // mode's live state.

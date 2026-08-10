@@ -35,7 +35,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       isMounted = false
       mapProvider.draw?.remove()
       mapProvider.draw = null
-      // Release MoveControl's D-pad if this plugin instance still held it.
+      // Release MoveControls' D-pad if this plugin instance still held it.
       mapProvider.activeMoveTarget = null
     }
   }, [mapState.isMapReady, appState.mode])
@@ -59,7 +59,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   // Keep the active draw/edit session in sync with the global interface type so
   // the touch offset target shows/hides, and the rubber band keeps following the
   // map, immediately when the input device changes mid-session (e.g. the user
-  // starts drawing with the mouse then switches to touch and pans via MoveControl).
+  // starts drawing with the mouse then switches to touch and pans via MoveControls).
   useEffect(() => {
     if (!['edit_vertex', 'draw_polygon', 'draw_line'].includes(pluginState.mode) || !mapProvider.draw) {
       return undefined

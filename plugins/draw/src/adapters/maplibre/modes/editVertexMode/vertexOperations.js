@@ -44,7 +44,7 @@ export const vertexOperations = {
   },
 
   // Explicit-delta counterpart to getOffset, driven by a unit direction vector and
-  // MoveControl's own Precision toggle rather than a KeyboardEvent — used by
+  // MoveControls' own Precision toggle rather than a KeyboardEvent — used by
   // nudgeVertexByDelta below.
   getOffsetByDelta (coord, dx, dy, isLargeStep) {
     const pt = this.map.project(coord)
@@ -54,7 +54,7 @@ export const vertexOperations = {
 
   // Resolves the destination coordinate for a vertex nudge by (dx, dy) unit
   // direction, applying snap or breaking out of an already-active one — shared by
-  // the keyboard arrow-key path (_keyboardMoveTarget) and MoveControl's
+  // the keyboard arrow-key path (_keyboardMoveTarget) and MoveControls'
   // explicit-delta path (nudgeVertexByDelta) so both snap identically. dx/dy are
   // only needed for the snap-escape offset; getCandidate computes the raw,
   // un-snapped destination the caller would otherwise have used.
@@ -83,7 +83,7 @@ export const vertexOperations = {
   },
 
   // Moves the selected vertex by an explicit (dx, dy) unit direction — the entry
-  // point for MoveControl's D-pad (see mapProvider.activeMoveTarget in events.js),
+  // point for MoveControls' D-pad (see mapProvider.activeMoveTarget in events.js),
   // as opposed to moveVertexByKey's KeyboardEvent-driven path. Each call is treated
   // as one complete, undoable action (no held-key sequencing, since a button click
   // has no "held" state to batch the way arrow keys do) — but still honours snap

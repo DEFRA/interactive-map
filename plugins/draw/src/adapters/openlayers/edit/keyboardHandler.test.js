@@ -33,7 +33,7 @@ afterEach(() => {
 
 const key = (type, props) => window.dispatchEvent(new KeyboardEvent(type, { cancelable: true, ...props }))
 
-test('nudgeByDelta (exposed for MoveControl) moves the selected vertex and reports it via onVertexMoved', () => {
+test('nudgeByDelta (exposed for MoveControls) moves the selected vertex and reports it via onVertexMoved', () => {
   const { state, handler, onVertexMoved } = setup()
   Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
   handler.nudgeByDelta(1, 0, true)

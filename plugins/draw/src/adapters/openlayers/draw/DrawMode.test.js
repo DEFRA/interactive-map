@@ -249,7 +249,7 @@ describe('drawing lifecycle', () => {
     expect(changed).toHaveBeenCalled()
   })
 
-  test('setInterfaceType forwards to the draw input (e.g. DrawInit syncing MoveControl-driven interface changes mid-session)', () => {
+  test('setInterfaceType forwards to the draw input (e.g. DrawInit syncing MoveControls-driven interface changes mid-session)', () => {
     const { mode, input } = setup('Polygon')
     mode.setInterfaceType('touch')
     expect(input.setInterfaceType).toHaveBeenCalledWith('touch')

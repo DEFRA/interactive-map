@@ -697,8 +697,8 @@
  * @property {boolean} [enableFullscreen=false]
  * Whether a toggle fullscreen button is displayed.
  *
- * @property {boolean} [enableMoveControl=true]
- * Whether the move control is displayed — a button that reveals directional pan,
+ * @property {boolean} [enableMoveControls=true]
+ * Whether the move controls are displayed — a button that reveals directional pan,
  * zoom, and step-size buttons, providing a non-dragging alternative to panning
  * and zooming the map (WCAG 2.5.7). Unlike enableZoomControls, it remains visible
  * when the interface type is 'touch'. When enabled, enableZoomControls' buttons
@@ -706,7 +706,7 @@
  *
  * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed. Not displayed when the interface
- * type is 'touch', or when enableMoveControl is enabled.
+ * type is 'touch', or when enableMoveControls is enabled.
  *
  * @property {[number, number, number, number]} [extent]
  * Initial extent [minX, minY, maxX, maxY]. Equivalent to bounds; use whichever matches your map provider's terminology.
