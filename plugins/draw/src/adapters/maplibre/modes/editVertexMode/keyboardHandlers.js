@@ -106,7 +106,7 @@ export const keyboardHandlers = {
 
   // Resolve the destination coordinate for a keyboard nudge, applying or breaking
   // snap — delegates to the shared resolver (vertexOperations.js) also used by
-  // MoveControl's nudgeVertexByDelta, so both snap identically.
+  // MoveControls' nudgeVertexByDelta, so both snap identically.
   _keyboardMoveTarget (state, e, currentCoord) {
     const [dx, dy] = ARROW_OFFSETS[e.key]
     return this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getNewCoord(state, e))

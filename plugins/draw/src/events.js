@@ -29,8 +29,8 @@ const createGeometryInvalidEmitter = (eventBus, hints) => (payload) => {
   if (payload.reason && !isIncompleteShape(payload.reason)) { hints.show(payload.reason) }
 }
 
-// Claims MoveControl's D-pad for the currently selected vertex — see the generic
-// mapProvider.activeMoveTarget contract (MoveControl.jsx). Any plugin could use
+// Claims MoveControls' D-pad for the currently selected vertex — see the generic
+// mapProvider.activeMoveTarget contract (MoveControls.jsx). Any plugin could use
 // this slot; the draw plugin is just its first consumer.
 const buildVertexMoveTarget = (draw) => ({
   move: (dx, dy, isLargeStep) => draw.nudgeSelectedVertex(dx, dy, isLargeStep),
@@ -38,7 +38,7 @@ const buildVertexMoveTarget = (draw) => ({
 })
 
 // Vertex-selection handlers: sync pluginState.selectedVertexIndex, and claim/release
-// MoveControl's D-pad via buildVertexMoveTarget above.
+// MoveControls' D-pad via buildVertexMoveTarget above.
 const createVertexSelectionHandlers = ({ draw, pluginState, mapProvider, eventBus }) => ({
   onVertexSelection: (e) => {
     pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e })
@@ -226,7 +226,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   const resetState = () => {
     pluginState.dispatch({ type: 'SET_MODE', payload: null })
     pluginState.dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
-    // Release MoveControl's D-pad back to panning the map whenever a draw/edit
+    // Release MoveControls' D-pad back to panning the map whenever a draw/edit
     // session ends — a stale claim here would silently hijack it for good.
     mapProvider.activeMoveTarget = null
   }

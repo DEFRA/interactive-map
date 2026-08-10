@@ -99,7 +99,7 @@ describe('selection, scale and update events', () => {
     ctx.onInterfaceTypeChange({ ...state, selectedVertexIndex: -1 }, { interfaceType: 'mouse' })
   })
 
-  test('draw.nudgevertex moves the selected vertex and repositions the touch target — the inbound bridge for MoveControl.mapProvider.activeMoveTarget', () => {
+  test('draw.nudgevertex moves the selected vertex and repositions the touch target — the inbound bridge for MoveControls.mapProvider.activeMoveTarget', () => {
     jest.useFakeTimers()
     const { state, map } = createHarness(POLYGON(), { interfaceType: 'touch', selectedVertexIndex: 0, selectedVertexType: 'vertex' })
     jest.runAllTimers() // flush onSetup's deferred initial touch-target positioning

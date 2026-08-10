@@ -53,7 +53,7 @@ describe('nudging a vertex', () => {
   })
 })
 
-describe('nudgeByDelta (MoveControl D-pad)', () => {
+describe('nudgeByDelta (MoveControls D-pad)', () => {
   test('moves the selected vertex by an explicit direction, scaled by isLargeStep, and reports the move for undo', () => {
     const { state, nudgeByDelta, olFeature, onVertexMoved } = setup()
     Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
@@ -79,7 +79,7 @@ describe('nudgeByDelta (MoveControl D-pad)', () => {
     const { state, nudgeByDelta, onVertexMoved } = setup()
     nudgeByDelta(1, 0, true) // nothing selected
     Object.assign(state, { selectedVertexIndex: 4, selectedVertexType: 'midpoint' })
-    nudgeByDelta(1, 0, true) // midpoint selected — MoveControl only claims a real vertex
+    nudgeByDelta(1, 0, true) // midpoint selected — MoveControls only claims a real vertex
     state.olFeature = null
     Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
     nudgeByDelta(1, 0, true)

@@ -1,5 +1,5 @@
 import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
-import { MoveControl } from '../App/components/MoveControl/MoveControl.jsx'
+import { MoveControls } from '../App/components/MoveControls/MoveControls.jsx'
 
 const keyboardBasePanelSlots = {
   slot: 'middle',
@@ -13,7 +13,7 @@ const buttonSlots = {
   showLabel: false
 }
 
-const moveControlSlot = {
+const moveControlsSlot = {
   slot: 'right-bottom'
 }
 
@@ -79,7 +79,7 @@ export const defaultAppConfig = {
     iconId: 'plus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControl || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMaxZoom,
     mobile: buttonSlots,
     tablet: buttonSlots,
@@ -91,23 +91,23 @@ export const defaultAppConfig = {
     iconId: 'minus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControl || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMinZoom,
     mobile: buttonSlots,
     tablet: buttonSlots,
     desktop: buttonSlots
   }, {
-    id: 'moveControl',
+    id: 'moveControls',
     label: 'Move and zoom controls',
     iconId: 'move',
     keepFocus: true,
     isExpanded: false,
-    ariaControls: ({ appConfig }) => `${appConfig.id}-move-control-content`,
+    ariaControls: ({ appConfig }) => `${appConfig.id}-move-controls-content`,
     onClick: (_e, { appState }) => appState.dispatch({
       type: 'TOGGLE_BUTTON_EXPANDED',
-      payload: { id: 'moveControl', isExpanded: !appState.expandedButtons.has('moveControl') }
+      payload: { id: 'moveControls', isExpanded: !appState.expandedButtons.has('moveControls') }
     }),
-    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
+    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControls,
     mobile: buttonSlots,
     tablet: buttonSlots,
     desktop: buttonSlots
@@ -131,13 +131,13 @@ export const defaultAppConfig = {
   }],
 
   controls: [{
-    id: 'moveControl',
+    id: 'moveControls',
     label: 'Move and zoom',
-    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControl,
-    mobile: moveControlSlot,
-    tablet: moveControlSlot,
-    desktop: moveControlSlot,
-    render: MoveControl
+    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControls,
+    mobile: moveControlsSlot,
+    tablet: moveControlsSlot,
+    desktop: moveControlsSlot,
+    render: MoveControls
   }],
 
   icons: [{

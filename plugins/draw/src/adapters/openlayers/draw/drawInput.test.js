@@ -109,7 +109,7 @@ test('pointer moves and map pans update the rubber band except for the mouse int
   expect(mouse.placement.updateRubberbanding).not.toHaveBeenCalled()
 })
 
-test('setInterfaceType updates the interface and refreshes the rubber band immediately for non-mouse types, e.g. switching to touch and panning via MoveControl mid-session', () => {
+test('setInterfaceType updates the interface and refreshes the rubber band immediately for non-mouse types, e.g. switching to touch and panning via MoveControls mid-session', () => {
   const { input, placement } = setup('mouse')
   input.setInterfaceType('touch')
   expect(input.getInterfaceType()).toBe('touch')

@@ -99,12 +99,12 @@ export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexM
     moveSelectedVertexBy(dx, dy)
   }
 
-  // Explicit-delta counterpart to nudge(e) — the entry point for MoveControl's
+  // Explicit-delta counterpart to nudge(e) — the entry point for MoveControls'
   // D-pad (see mapProvider.activeMoveTarget in events.js). Unlike nudge(e)'s
   // held-key sequencing (undo pushed on keyup via keyMove, so repeated keydowns
   // while held batch into one undo step), each call here is one complete,
   // undoable action — a button click has no "held" state to batch. Midpoints
-  // aren't handled here: MoveControl only claims the D-pad once a real vertex is
+  // aren't handled here: MoveControls only claims the D-pad once a real vertex is
   // selected (see buildVertexMoveTarget in events.js).
   const nudgeByDelta = (dx, dy, isLargeStep) => {
     const step = isLargeStep ? KEYBOARD.stepAmount : KEYBOARD.nudgeAmount
