@@ -56,7 +56,7 @@ export const defaultAppConfig = {
     label: 'Exit',
     iconId: 'close',
     onClick: (_e, { services }) => services.closeApp(),
-    excludeWhen: ({ appConfig, appState }) => !appConfig.hasExitButton || !appState.isFullscreen || appConfig.behaviour === 'mapOnly',
+    excludeWhen: ({ appConfig, appState }) => !appConfig.hasExitButton || !appState.isFullscreen,
     mobile: exitButtonSlots,
     tablet: exitButtonSlots,
     desktop: exitButtonSlots

@@ -40,4 +40,24 @@ describe('mergeConfig', () => {
     expect(warnSpy).not.toHaveBeenCalled()
     warnSpy.mockRestore()
   })
+
+  it('sanitises hasExitButton to false for mapOnly behaviour', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const result = mergeConfig({ behaviour: 'mapOnly', hasExitButton: true })
+    expect(result.hasExitButton).toBe(false)
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("hasExitButton has no effect when behaviour is 'mapOnly'"))
+    warnSpy.mockRestore()
+  })
+
+  it('leaves hasExitButton alone for non-mapOnly behaviours', () => {
+    const result = mergeConfig({ behaviour: 'buttonFirst', hasExitButton: true })
+    expect(result.hasExitButton).toBe(true)
+  })
+
+  it('does not warn when hasExitButton is already false for mapOnly', () => {
+    const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {})
+    mergeConfig({ behaviour: 'mapOnly', hasExitButton: false })
+    expect(warnSpy).not.toHaveBeenCalled()
+    warnSpy.mockRestore()
+  })
 })

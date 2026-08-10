@@ -41,11 +41,6 @@ describe('defaultAppConfig', () => {
     })).toBe(true)
 
     expect(exitBtn.excludeWhen({
-      appConfig: { hasExitButton: true, behaviour: 'mapOnly' },
-      appState: { isFullscreen: true }
-    })).toBe(true)
-
-    expect(exitBtn.excludeWhen({
       appConfig: { hasExitButton: true },
       appState: { isFullscreen: true }
     })).toBe(false)
