@@ -19,7 +19,9 @@ const moveControlSlot = {
 
 const exitButtonSlots = {
   slot: 'top-left',
-  showLabel: false
+  showLabel: false,
+  // Explicit order so exit always sorts first in its slot.
+  order: 1
 }
 
 const journeyBackSlots = { slot: 'actions', showLabel: true }
@@ -54,7 +56,7 @@ export const defaultAppConfig = {
     label: 'Exit',
     iconId: 'close',
     onClick: (_e, { services }) => services.closeApp(),
-    excludeWhen: ({ appConfig, appState }) => !appConfig.hasExitButton || !appState.isFullscreen,
+    excludeWhen: ({ appConfig, appState }) => !appConfig.hasExitButton || !appState.isFullscreen || appConfig.behaviour === 'mapOnly',
     mobile: exitButtonSlots,
     tablet: exitButtonSlots,
     desktop: exitButtonSlots
