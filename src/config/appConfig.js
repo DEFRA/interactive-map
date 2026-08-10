@@ -19,7 +19,9 @@ const moveControlSlot = {
 
 const exitButtonSlots = {
   slot: 'top-left',
-  showLabel: false
+  showLabel: false,
+  // Explicit order so exit always sorts first in its slot.
+  order: 1
 }
 
 const journeyBackSlots = { slot: 'actions', showLabel: true }

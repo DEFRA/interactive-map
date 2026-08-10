@@ -98,7 +98,11 @@ const interactiveMap = new InteractiveMap('map', {
       transformRequest: transformGeocodeRequest,
       placeholder: 'Search for a place in England',
       manifest: {
-        controls: [{id: 'search', desktop: {slot: 'top-left', showLabel: true}}]
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-left', showLabel: true },
+          desktop: { slot: 'top-left', showLabel: true }
+        }]
       },
       osNamesURL: process.env.OS_NAMES_URL,
       regions: ['england'],
@@ -138,7 +142,7 @@ interactiveMap.on('app:ready', function (e) {
     label: 'Menu',
     panelId: 'menu',
     iconSvgContent: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"/><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"/><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"/>',
-    mobile: { slot: 'top-left', order: 1, showLabel: false },
+    mobile: { slot: 'top-left', order: 2, showLabel: false },
     tablet: { slot: 'top-left', order: 2 },
     desktop: { slot: 'top-left', order: 2 }
   })
@@ -146,7 +150,7 @@ interactiveMap.on('app:ready', function (e) {
     label: 'Key',
     panelId: 'key',
     iconSvgContent: '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>',
-    mobile: { slot: 'top-left', order: 2, showLabel: false },
+    mobile: { slot: 'top-left', order: 3, showLabel: false },
     tablet: { slot: 'top-left', order: 3 },
     desktop: { slot: 'top-left', order: 3 }
   })
