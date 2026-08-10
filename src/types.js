@@ -722,7 +722,9 @@
  * In `mapOnly` behaviour the Back button is hidden when there is no browser history to go back to.
  *
  * @property {boolean} [hasExitButton=false]
- * Whether an exit map button is displayed when the app is fullscreen.
+ * Whether an exit map button is displayed. Only shown when the behaviour is `buttonFirst`
+ * or `hybrid` and the map is fullscreen - `mapOnly` has no launcher button or history entry
+ * to exit back to, so the exit button is never shown there.
  *
  * @property {number | null} [hybridWidth]
  * Optional breakpoint (in pixels) for hybrid behaviour. Defaults to 'maxMobileWidth' when not set.
