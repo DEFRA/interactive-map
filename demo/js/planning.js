@@ -98,7 +98,11 @@ const interactiveMap = new InteractiveMap('map', {
       transformRequest: transformGeocodeRequest,
       placeholder: 'Search for a place in England',
       manifest: {
-        controls: [{id: 'search', desktop: {slot: 'top-left', showLabel: true}}]
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-left', showLabel: true },
+          desktop: { slot: 'top-left', showLabel: true }
+        }]
       },
       osNamesURL: process.env.OS_NAMES_URL,
       regions: ['england'],
