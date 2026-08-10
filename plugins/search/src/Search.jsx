@@ -1,5 +1,5 @@
 // src/plugins/search/Search.jsx
-import { useRef, useEffect } from 'react'
+import { useRef, useEffect, useLayoutEffect } from 'react'
 import { Form } from './components/Form/Form'
 import { CloseButton } from './components/CloseButton/CloseButton'
 import { SubmitButton } from './components/SubmitButton/SubmitButton'
@@ -55,7 +55,10 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
   }, [isExpanded])
 
   // Manage focus outside the search control
-  useEffect(() => {
+  // useLayoutEffect (not useEffect) so hasExclusiveControl flips in the same paint as the
+  // form expanding - otherwise the browser paints once with the other buttons still visible,
+  // then again once this dispatch lands, producing a visible flicker.
+  useLayoutEffect(() => {
     appState.dispatch({ type: 'TOGGLE_HAS_EXCLUSIVE_CONTROL', payload: isExpanded })
 
     if (!searchOpen) {
