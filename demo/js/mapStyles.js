@@ -105,7 +105,7 @@ const vtsMapStyles27700 = [{
   thumbnail: DARK_THUMBNAIL,
   logo: OS_LOGO_WHITE,
   logoAltText: OS_LOGO_ALT,
-  attribution: 'Test'
+  attribution: OS_ATTRIBUTION
 }, {
   id: BW_ID,
   label: BW_LABEL,
@@ -114,7 +114,7 @@ const vtsMapStyles27700 = [{
   thumbnail: BW_THUMBNAIL,
   logo: OS_LOGO_BLACK,
   logoAltText: OS_LOGO_ALT,
-  attribution: 'Test'
+  attribution: OS_ATTRIBUTION
 }]
 
 const apgbAerialStyle = {
