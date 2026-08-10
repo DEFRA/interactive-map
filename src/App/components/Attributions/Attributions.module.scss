@@ -1,3 +1,5 @@
+@use '../../../scss/tools/index' as tools;
+
 .im-c-attributions {
     color: var(--attributions-foreground-color);
     background-color: var(--attributions-background-color);
@@ -7,4 +9,12 @@
     overflow: hidden;
     text-overflow: ellipsis;
     pointer-events: auto;
+}
+
+.im-c-attributions a {
+    color: inherit;
+
+    &[data-focus-visible="true"] {
+        @include tools.link-focus;
+    }
 }
