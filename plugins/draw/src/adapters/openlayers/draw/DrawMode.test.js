@@ -187,6 +187,20 @@ describe('drawing lifecycle', () => {
     expect(typeof inputOptions.canPlace).toBe('function')
   })
 
+  test('drawInput receives the crossHair passed to the mode, so it can sync visibility itself', () => {
+    const map = createFakeMap()
+    const manager = createFakeManager()
+    manager.store = createFeatureStore()
+    const crossHair = { fixAtCenter: jest.fn(), hide: jest.fn() }
+    createDrawMode({
+      map,
+      manager,
+      options: { geometryType: 'Polygon', featureId: 'shape-1', properties: {}, container: null, snap: null, crossHair }
+    })
+    const inputOptions = createDrawInput.mock.calls.at(-1)[0].options
+    expect(inputOptions.crossHair).toBe(crossHair)
+  })
+
   test('a placement-vetoing path disables Add point; a legal one re-enables it', () => {
     const { emitted, interaction } = setup('Polygon')
     const sketch = polygonFeature([[0, 0], [5, 5], [0, 0]])

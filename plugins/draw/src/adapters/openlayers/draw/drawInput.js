@@ -2,6 +2,16 @@ import { createVertexPlacement } from './vertexPlacement.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 
+// Mirrors DrawInit.jsx's fixAtCenter()/hide() gate, but reasserted on every interface-type transition this module detects — matching MapLibre's own onSetup/onInterfaceTypeChange redundancy.
+const applyCrossHairVisibility = (crossHair, type) => {
+  if (!crossHair) { return }
+  if (['touch', 'keyboard'].includes(type)) {
+    crossHair.fixAtCenter()
+  } else {
+    crossHair.hide()
+  }
+}
+
 const wireInputEvents = ({
   container, addVertexButtonId, olView, onUndo,
   getInterfaceType, setInterfaceType, clearLastCoord,
@@ -83,7 +93,7 @@ const wireInputEvents = ({
  * @returns {{ getInterfaceType: () => string, destroy: () => void }}
  */
 export const createDrawInput = ({ drawInteraction, options }) => {
-  const { container, addVertexButtonId, mapProvider, snap, onUndo, canFinish, canPlace } = options
+  const { container, addVertexButtonId, mapProvider, snap, onUndo, canFinish, canPlace, crossHair } = options
   let interfaceType = options.interfaceType ?? 'mouse'
   const getInterfaceType = () => interfaceType
 
@@ -105,11 +115,14 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     olView,
     onUndo,
     getInterfaceType,
-    setInterfaceType: (t) => { interfaceType = t },
+    setInterfaceType: (t) => { interfaceType = t; applyCrossHairVisibility(crossHair, t) },
     clearLastCoord: placement.clearLastCoord,
     updateRubberbanding: placement.updateRubberbanding,
     placeVertex: placement.placeVertex
   })
+
+  // Sync on creation too (mirrors MapLibre's own onSetup), so the crosshair reflects the mode's starting interface type immediately.
+  applyCrossHairVisibility(crossHair, interfaceType)
 
   // change:center fires once when a keyboard pan animation starts; postrender tracks each frame.
   const onMapRender = () => {
@@ -127,6 +140,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     // waiting for the next incidental change:center/postrender event.
     setInterfaceType (type) {
       interfaceType = type
+      applyCrossHairVisibility(crossHair, type)
       if (type !== 'mouse') {
         placement.updateRubberbanding()
       }

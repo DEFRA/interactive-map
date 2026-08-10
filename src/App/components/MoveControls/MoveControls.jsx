@@ -169,7 +169,7 @@ export const MoveControls = () => {
   )
 
   return (
-    <div id={`${appId}-move-controls-content`} className={containerClassName} onKeyDown={handleContainerKeyDown}>{/* NOSONAR - only catches arrow-key bubbling from the real, already-focusable button descendants below; the div itself needs no role/tabIndex */}
+    <div id={`${appId}-move-controls-content`} className={containerClassName} onKeyDown={handleContainerKeyDown} data-map-keyboard-scope>{/* NOSONAR - only catches arrow-key bubbling from the real, already-focusable button descendants below; the div itself needs no role/tabIndex */}
       {directionsGroup}
       {zoomGroup}
     </div>
