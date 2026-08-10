@@ -92,35 +92,41 @@ const datasetRegistry = {
       return this._lastKeyItems
     }
     this._lastKeyItemsDatasets = this.datasets
-    const items = []
-    const seenGroups = new Set()
-    let hasGroups = false
-    this.forEachDataset((dataset) => {
+    const _items = []
+    const groups = new Map()
+
+    const getOrCreateGroup = (groupLabel) => {
+      if (groups.has(groupLabel)) {
+        return groups.get(groupLabel)
+      }
+      const groupObject = {
+        type: 'group',
+        groupLabel,
+        datasets: []
+      }
+      groups.set(groupLabel, groupObject)
+      _items.push(groupObject)
+      return groupObject
+    }
+
+    this.forEach((dataset) => {
       if (!(dataset.showInKey && dataset.keyVisibility)) {
         return
       }
-      if (dataset.hasSublayers) {
-        const sublayers = dataset.sublayers.filter(sublayer => sublayer.keyVisibility)
-        if (sublayers.length) {
-          hasGroups = true
-          items.push({ type: 'sublayers', dataset, sublayers })
-        }
-      } else if (dataset.groupLabel) {
-        if (seenGroups.has(dataset.groupLabel)) {
-          return
-        }
-        seenGroups.add(dataset.groupLabel)
-        hasGroups = true
-        items.push({
-          type: 'group',
-          groupLabel: dataset.groupLabel,
-          datasets: this.topLevelDatasets()
-            .filter(groupDataset => (groupDataset.groupLabel === dataset.groupLabel && !groupDataset.hasSublayers && groupDataset.keyVisibility))
-        })
-      } else {
-        items.push({ type: 'flat', dataset })
+      const isGroup = dataset.hasSublayers || dataset.groupLabel
+      if (!isGroup) {
+        _items.push({ type: 'flat', dataset })
+        return
+      }
+
+      const groupLabel = dataset.groupLabel || dataset.label
+      const groupObject = getOrCreateGroup(groupLabel)
+      if (!dataset.hasSublayers) {
+        groupObject.datasets.push(dataset)
       }
     })
+    const items = _items.filter((item) => item.type === 'flat' || Boolean(item.datasets?.length))
+    const hasGroups = items.some(item => item.type === 'group')
     this._lastKeyItems = { items, hasGroups }
     return this._lastKeyItems
   }

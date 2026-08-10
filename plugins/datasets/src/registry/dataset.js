@@ -41,7 +41,9 @@ export class Dataset {
     return this._datasetDefinition.visibleWhen
   }
 
-  get groupLabel () { return this._datasetDefinition.groupLabel }
+  // A sublayer effectively has a groupLabel, even if it or its parent doesn't,
+  // as it will be grouped with its siblings under the parents label if it doesn't.
+  get groupLabel () { return this._datasetDefinition.groupLabel || this.parent?.groupLabel || this.parent?.label }
 
   get opacity () {
     const myOpacity = this.style?.opacity

@@ -40,8 +40,8 @@ const nonFloodZoneDepthBandsDark = [COLOURS.depthOver2300.dark, COLOURS.depth230
 
 const datasetFloodZonesCC =   {
   id: 'floodzonescc',
-  label: 'Flood Zones Climate Change',
-  groupLabel: 'Datasets',
+  label: 'Flood zones',
+  groupLabel: 'Flood zones',
   esriGroupId: 'floodzones-group',
   tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_CCP1_NON_PRODUCTION/VectorTileServer`,
   showInKey: true,
@@ -116,7 +116,7 @@ const datasetFloodZonesCC =   {
 const datasetFloodZones = {
   id: 'floodzones',
   label: 'Flood Zones',
-  groupLabel: 'Datasets',
+  groupLabel: 'Flood zones',
   esriGroupId: 'floodzones-group',
   tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Zones_2_and_3_Rivers_and_Sea_NON_PRODUCTION/VectorTileServer`,
   showInKey: true,
@@ -151,7 +151,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
   const extentsDataset = {
     id: `${id}-extents`,
     label: 'Surface Water',
-    groupLabel: 'Datasets',
+    groupLabel: 'Surface Water',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
     showInKey: true,
     sourceLayer,
@@ -206,7 +206,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
   const depthDataset = {
     id: `${id}-depths`,
     label: 'Surface Water Depth All',
-    groupLabel: 'Datasets',
+    groupLabel: 'Surface Water',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
     showInKey: true,
     sourceLayer,
@@ -276,7 +276,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
 const surfaceWaterExtentsKey = {
   id: 'surfacewater-extents-key',
   label: 'Surface Water',
-  groupLabel: 'Datasets',
+  groupLabel: 'Surface Water',
   showInKey: true,
   style: {
     stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
@@ -605,14 +605,6 @@ interactiveMap.on('map:ready', function ({ map, view, mapStyleId, mapSize, crs }
   console.log('map:ready', { map, view, mapStyleId, mapSize, crs })
   mapState.map = map
   mapState.view = view
-
-  interactiveMap.addPanel('help-banner', {
-    label: 'Click on the flood zones for information',
-    html: '<span class="im-u-visually-hidden">Alert:</span>',
-    mobile: { slot: 'banner', dismissible: true },
-    tablet: { slot: 'banner', dismissible: true, width: '372px' },
-    desktop: { slot: 'banner', dismissible: true, width: '372px' }
-  })
 })
 
 let visibleLayers = null
