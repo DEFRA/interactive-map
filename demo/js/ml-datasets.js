@@ -109,6 +109,7 @@ const framePlugin = createFramePlugin({ aspectRatio: 1.5 })
 const landCoversDataset = {
   id: 'land-covers',
   label: 'Land covers',
+  groupLabel: 'Land covers and hedge control',
   dynamicGeoJSON: {
     idProperty: 'id',  // required - the ID that identifies individual features 
     url: `${process.env.FARMING_API_URL}/api/collections/parcels/items?sbi=106325052`, // required
@@ -140,6 +141,8 @@ const landCoversDataset = {
   sublayers: [{
     id: '130-131',
     label: 'Permanent grassland',
+    showInKey: true,
+    groupLabel: 'Grassland covers',
     filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
     showInMenu: true,
     style: {
@@ -151,6 +154,8 @@ const landCoversDataset = {
   }, {
     id: 'permanent-grassland-2',
     label: 'Permanent grassland 2',
+    showInKey: true,
+    groupLabel: 'Grassland covers',
     filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
     showInMenu: true,
     visible: false,
@@ -211,7 +216,7 @@ const landCoversDataset = {
 const existingFieldsDataset = {
   id: 'existing-fields',
   label: 'Existing fields',
-  groupLabel: 'Test group',
+  // groupLabel: 'Land covers and hedge control',
   filter: ['all', ['==', ['get', 'sbi'], '106223377'], ['==', ['get', 'is_dominant_land_cover'], true]],
   tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
   sourceLayer: 'field_parcels_filtered',
@@ -280,7 +285,7 @@ const historicMonumentsDataset = {
 const hedgeControlDataset = {
   id: 'hedge-control',
   label: 'Hedge control',
-  groupLabel: 'Test group',
+  groupLabel: 'Land covers and hedge control',
   tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
   sourceLayer: 'hedge_control',
   minZoom: 10,

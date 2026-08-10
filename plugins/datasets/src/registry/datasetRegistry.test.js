@@ -121,10 +121,10 @@ describe('datasetRegistry', () => {
       expect(typeof hasGroups).toBe('boolean')
     })
 
-    it('includes a sublayers entry for each dataset that has sublayers', () => {
+    it('includes a group entry for each dataset that has sublayers', () => {
       const { items } = datasetRegistry.keyItems()
-      const sublayerItems = items.filter(item => item.type === 'sublayers')
-      expect(sublayerItems).toHaveLength(2) // land-covers and historic-monuments
+      const groupItems = items.filter(item => item.type === 'group')
+      expect(groupItems).toHaveLength(2) // land-covers and historic-monuments
     })
 
     it('includes a flat entry for datasets without sublayers and no groupLabel', () => {
@@ -139,13 +139,13 @@ describe('datasetRegistry', () => {
     })
 
     it('sets hasGroups to false when all items are flat with no groupLabel', () => {
-      datasetRegistry.attach({ simple: { id: 'simple', showInKey: true, visible: true, style: {} } })
+      datasetRegistry.attach({ simple: { id: 'simple', showInKey: true, visible: true, style: {} } }, ['simple'])
       const { hasGroups } = datasetRegistry.keyItems()
       expect(hasGroups).toBe(false)
     })
 
     it('sets hasGroups to false when a dataset has only one sublayer and it is not visible', () => {
-      const { mappedDatasets: singleHiddenSublayer } = mappedDatasetsReducer({
+      const { mappedDatasets: singleHiddenSublayer, orderedDatasets } = mappedDatasetsReducer({
         datasets: [{
           id: 'single-sublayer-dataset',
           showInKey: true,
@@ -154,38 +154,38 @@ describe('datasetRegistry', () => {
           sublayers: [{ id: 'sub', visible: false, style: {} }]
         }]
       })
-      datasetRegistry.attach(singleHiddenSublayer)
+      datasetRegistry.attach(singleHiddenSublayer, orderedDatasets)
       const { hasGroups } = datasetRegistry.keyItems()
       expect(hasGroups).toBe(false)
     })
 
-    it('only includes visible sublayers in sublayers items', () => {
+    it('only includes visible sublayers in group items', () => {
       const { items } = datasetRegistry.keyItems()
-      const landCoversItem = items.find(item => item.type === 'sublayers' && item.dataset.id === 'land-covers')
-      const sublayerIds = landCoversItem.sublayers.map(s => s.id)
+      const landCoversItem = items.find(item => item.type === 'group' && item.groupLabel === 'Land covers')
+      const sublayerIds = landCoversItem.datasets.map(s => s.id)
       expect(sublayerIds).not.toContain('land-covers-379') // land-covers-379 has visible: false
     })
 
     it('includes a group entry for datasets sharing a groupLabel', () => {
-      const { mappedDatasets: grouped } = mappedDatasetsReducer({ datasets: datasetsWithGroups })
-      datasetRegistry.attach(grouped)
+      const { mappedDatasets: grouped, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetsWithGroups })
+      datasetRegistry.attach(grouped, orderedDatasets)
       const { items } = datasetRegistry.keyItems()
       const groupItems = items.filter(item => item.type === 'group')
-      expect(groupItems).toHaveLength(1)
-      expect(groupItems[0].groupLabel).toBe('Test group')
+      expect(groupItems).toHaveLength(3)
+      expect(groupItems[1].groupLabel).toBe('Test group')
     })
 
     it('only adds one group entry per unique groupLabel', () => {
-      const { mappedDatasets: grouped } = mappedDatasetsReducer({ datasets: datasetsWithGroups })
-      datasetRegistry.attach(grouped)
+      const { mappedDatasets: grouped, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetsWithGroups })
+      datasetRegistry.attach(grouped, orderedDatasets)
       const { items } = datasetRegistry.keyItems()
       const groupLabels = items.filter(i => i.type === 'group').map(i => i.groupLabel)
       expect(groupLabels.length).toBe(new Set(groupLabels).size)
     })
 
     it('populates group item datasets with matching showInKey datasets', () => {
-      const { mappedDatasets: grouped } = mappedDatasetsReducer({ datasets: datasetsWithGroups })
-      datasetRegistry.attach(grouped)
+      const { mappedDatasets: grouped, orderedDatasets } = mappedDatasetsReducer({ datasets: datasetsWithGroups })
+      datasetRegistry.attach(grouped, orderedDatasets)
       const { items } = datasetRegistry.keyItems()
       const groupItem = items.find(item => item.type === 'group' && item.groupLabel === 'Test group')
       const ids = groupItem.datasets.map(d => d.id)
@@ -199,9 +199,16 @@ describe('datasetRegistry', () => {
       expect(result1).toBe(result2)
     })
 
+    it('recalculates caches the cached result when invalidateKeyItems is called', () => {
+      const result1 = datasetRegistry.keyItems()
+      datasetRegistry.invalidateKeyItems()
+      const result2 = datasetRegistry.keyItems()
+      expect(result1).not.toBe(result2)
+    })
+
     it('recomputes when the datasets ref changes', () => {
       const result1 = datasetRegistry.keyItems()
-      datasetRegistry.attach({ simple: { id: 'simple', showInKey: true, visible: true, style: {} } })
+      datasetRegistry.attach({ simple: { id: 'simple', showInKey: true, visible: true, style: {} } }, ['simple'])
       const result2 = datasetRegistry.keyItems()
       expect(result1).not.toBe(result2)
     })
