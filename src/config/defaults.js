@@ -23,6 +23,7 @@ const defaults = {
   backAndContinue: null,
   hybridWidth: null, // Defaults to maxMobileWidth if not set
   keyboardHintText: '<span class="im-u-visually-hidden">Press </span><kbd>Shift</kbd> + <span class="im-u-visually-hidden">Question mark</span><kbd aria-hidden="true">?</kbd> <span class="im-u-visually-hidden">to view </span>keyboard shortcuts',
+  mapHintText: 'Press Tab to focus it. Keyboard commands are only available once it has focus.', // Visually hidden text for assitive technology
   mapLabel: 'Interactive map application',
   mapProvider: null,
   mapSize: 'small',
@@ -31,6 +32,7 @@ const defaults = {
   urlPosition: 'sync',
   maxMobileWidth: 640,
   minDesktopWidth: 835,
+  moveControlsHintText: 'A "Move and zoom controls" button is also available, opening further controls for moving and zooming.',
   nudgePanDelta: 5,
   nudgeZoomDelta: 0.1,
   panDelta: 100,

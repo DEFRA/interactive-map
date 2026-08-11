@@ -16,7 +16,7 @@ import { getMapThemeVars } from '../../config/mapTheme.js'
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Layout = () => {
-  const { id } = useConfig()
+  const { id, mapLabel, mapHintText } = useConfig()
   const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen } = useApp()
   const { mapStyle } = useMap()
 
@@ -37,6 +37,8 @@ export const Layout = () => {
       style={{ backgroundColor: mapStyle?.backgroundColor || undefined, ...getMapThemeVars(mapStyle) }}
       ref={layoutRefs.appContainerRef}
     >
+      {/* Leads with mapLabel so screen reader users can tell multiple maps on a page apart. */}
+      <div className='im-u-visually-hidden'>{mapLabel}. {mapHintText}</div>
       <Viewport />
       <div className={`im-o-app__overlay${isLayoutReady ? '' : ' im-o-app__overlay--not-ready'}`}>
         <div className='im-o-app__side' ref={layoutRefs.sideRef}>

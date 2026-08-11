@@ -185,6 +185,18 @@ describe('InteractiveMap — loadApp', () => {
     expect(typeof map.someMethod).toBe('function')
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:opened', { statePreserved: false, isFullscreen: false })
   })
+
+  it('defaults focusOnMount to false when not passed', async () => {
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    await map.loadApp()
+    expect(initialiseApp).toHaveBeenCalledWith(rootEl, expect.objectContaining({ focusOnMount: false }))
+  })
+
+  it('passes focusOnMount through to initialiseApp when set', async () => {
+    const map = new InteractiveMap('map', { behaviour: 'buttonFirst', mapProvider: mapProviderMock })
+    await map.loadApp({ focusOnMount: true })
+    expect(initialiseApp).toHaveBeenCalledWith(rootEl, expect.objectContaining({ focusOnMount: true }))
+  })
 })
 
 // --- _handleButtonClick ---
@@ -193,25 +205,30 @@ describe('InteractiveMap — _handleButtonClick', () => {
   beforeEach(setupBeforeEach)
   afterEach(() => jest.restoreAllMocks())
 
-  it('pushState and loadApp on first open', async () => {
+  it('pushState and loadApp (with focusOnMount) on first open', async () => {
     const map = new InteractiveMap('map', { behaviour: 'buttonFirst', manageHistoryState: true, mapProvider: mapProviderMock })
     jest.spyOn(map, 'loadApp').mockResolvedValue()
     jest.spyOn(history, 'pushState').mockImplementation(() => {})
     await openButtonCallback({ currentTarget: { getAttribute: jest.fn().mockReturnValue('/?mv=map') } })
-    expect(map.loadApp).toHaveBeenCalled()
+    expect(map.loadApp).toHaveBeenCalledWith({ focusOnMount: true })
     expect(history.pushState).toHaveBeenCalledWith({ isBack: true }, '', '/?mv=map')
   })
 
-  it('calls showApp (not loadApp) when map is hidden', async () => {
+  it('calls showApp (not loadApp) and focuses the viewport when map is hidden', async () => {
     const map = new InteractiveMap('map', { behaviour: 'buttonFirst', manageHistoryState: true, mapProvider: mapProviderMock })
     map._isHidden = true
     jest.spyOn(map, 'showApp').mockImplementation(() => {})
     jest.spyOn(map, 'loadApp').mockResolvedValue()
     jest.spyOn(history, 'pushState').mockImplementation(() => {})
+    const viewport = document.createElement('div')
+    viewport.setAttribute('role', 'application')
+    viewport.setAttribute('tabindex', '0')
+    rootEl.appendChild(viewport)
     await openButtonCallback({ currentTarget: { getAttribute: jest.fn().mockReturnValue('/?mv=map') } })
     expect(map.showApp).toHaveBeenCalled()
     expect(map.loadApp).not.toHaveBeenCalled()
     expect(history.pushState).toHaveBeenCalled()
+    expect(viewport).toHaveFocus()
   })
 
   it('skips pushState when manageHistoryState is false', async () => {

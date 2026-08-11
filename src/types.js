@@ -730,10 +730,16 @@
  * Optional breakpoint (in pixels) for hybrid behaviour. Defaults to 'maxMobileWidth' when not set.
  *
  * @property {string} [keyboardHintText]
- * HTML string providing keyboard shortcut instructions for accessibility users.
+ * HTML string providing keyboard shortcut instructions for accessibility users, announced via aria-describedby whenever the map viewport gains focus.
+ *
+ * @property {string} [mapHintText]
+ * Visually hidden text, rendered immediately before the map for screen reader users, explaining that it must be focused before keyboard commands work. Prefixed with mapLabel, so multiple maps on one page can be told apart.
  *
  * @property {string} [mapLabel='Interactive map']
- * Accessible label for the map, announced by screen readers.
+ * Accessible label for the map, announced by screen readers. Also prefixed onto mapHintText, so give each map on a page a distinct label.
+ *
+ * @property {string} [moveControlsHintText]
+ * Visually hidden text describing the move controls button, appended to keyboardHintText when enableMoveControls is true.
  *
  * @property {MapProviderDescriptor} [mapProvider]
  * A factory function that returns a map provider instance (e.g. maplibreProvider()).
