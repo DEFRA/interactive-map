@@ -5,6 +5,7 @@ import { useMap } from '../store/mapContext.js'
 import { getSafeZoneInset } from '../../utils/getSafeZoneInset.js'
 
 const BANNER_DOCKED_CLASS = 'im-o-app__banner--docked'
+const BANNER_PANEL_SELECTOR = '.im-c-panel--banner'
 
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
@@ -19,6 +20,20 @@ const subSlotMaxHeight = (columnHeight, siblingButtons, gap) => columnHeight - (
 const bannerGutterWidth = (mainWidth, sideColWidth, gap) => mainWidth - (sideColWidth * 2) - (gap * 2)
 
 const isBannerDocked = (gutterWidth, preferredWidth) => gutterWidth >= preferredWidth
+
+// Widest explicit width configured on a banner panel (e.g. addPanel's slot.width), if any —
+// lets a consumer override the default --banner-preferred-width for their own banner content.
+const bannerConfiguredWidth = (bannerEl) => {
+  const widths = Array.from(bannerEl?.querySelectorAll(BANNER_PANEL_SELECTOR) ?? [])
+    .map(el => Number.parseInt(el.style.width, 10))
+    .filter(w => !Number.isNaN(w))
+  return widths.length ? Math.max(...widths) : null
+}
+
+// Mobile always stacks full-width, so any inline width Panel.jsx applied is ignored.
+const clearBannerPanelWidths = (bannerEl) => {
+  bannerEl?.querySelectorAll(BANNER_PANEL_SELECTOR).forEach(el => { el.style.width = '' })
+}
 
 // Docked insets to the side-column width so it can't overlap either side; stacked is full-bleed.
 const bannerInset = (isDocked, primaryGap, sideColWidth, gap) =>
@@ -63,7 +78,7 @@ const bannerInset = (isDocked, primaryGap, sideColWidth, gap) =>
  * It does not dispatch the safe zone — safe zone dispatch is owned entirely by
  * Effect 3 to prevent jumps on panel open/close and other non-structural resizes.
  */
-function calculateLayout (layoutRefs) {
+function calculateLayout (layoutRefs, breakpoint) {
   const {
     appContainerRef, mainRef, topRef, topLeftColRef, topRightColRef,
     bottomRef, attributionsRef, bottomRightRef, leftTopRef, leftBottomRef,
@@ -92,13 +107,20 @@ function calculateLayout (layoutRefs) {
   appContainer.style.setProperty('--top-col-width', `${topColWidthPx}px`)
 
   // === Banner: docked (centred between .im-o-app__left/.im-o-app__right, up to its preferred
-  // width) when there's room between them, otherwise stacked full-width below the top row ===
+  // width) when there's room, otherwise stacked full-width. Mobile always stacks, ignoring
+  // any configured width, regardless of gutter. ===
+  const isMobile = breakpoint === 'mobile'
+  if (isMobile) {
+    clearBannerPanelWidths(banner)
+  }
   const bannerHeight = buttonHeight(bannerRef)
   const hasBanner = bannerHeight > 0
   const bannerSideColWidth = symmetricWidth(buttonWidth(leftRef), buttonWidth(rightRef))
-  const preferredWidth = Number.parseInt(getComputedStyle(root).getPropertyValue('--banner-preferred-width'), 10)
+  const defaultPreferredWidth = Number.parseInt(getComputedStyle(root).getPropertyValue('--banner-preferred-width'), 10)
+  const preferredWidth = bannerConfiguredWidth(banner) ?? defaultPreferredWidth
+  appContainer.style.setProperty('--banner-preferred-width', `${preferredWidth}px`)
   const gutterWidth = bannerGutterWidth(top.offsetWidth, bannerSideColWidth, dividerGap)
-  const isDocked = isBannerDocked(gutterWidth, preferredWidth)
+  const isDocked = !isMobile && isBannerDocked(gutterWidth, preferredWidth)
   banner?.classList.toggle(BANNER_DOCKED_CLASS, isDocked)
 
   const bannerSideInset = `${bannerInset(isDocked, primaryGap, bannerSideColWidth, dividerGap)}px`
@@ -180,7 +202,7 @@ export function useLayoutMeasurements () {
       return
     }
     requestAnimationFrame(() => {
-      calculateLayout(layoutRefs)
+      calculateLayout(layoutRefs, breakpoint)
       const safeZoneInset = getSafeZoneInset(layoutRefs)
       if (safeZoneInset) {
         dispatch({ type: 'SET_SAFE_ZONE_INSET', payload: { safeZoneInset } })
@@ -202,6 +224,6 @@ export function useLayoutMeasurements () {
   )
 
   useResizeObserver(observedRefs, () => {
-    calculateLayout(layoutRefs)
+    calculateLayout(layoutRefs, breakpoint)
   })
 }
