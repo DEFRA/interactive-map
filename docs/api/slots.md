@@ -6,7 +6,7 @@ Slots are named regions in the UI where buttons, controls, and panels can be pla
 
 <img src="/interactive-map/images/slot-map.svg" alt="Slot map showing the position of each named slot in the UI layout" width="838" />
 
-`banner` appears at the top of the map on mobile and tablet. On desktop it moves into the `top-middle` slot.
+`banner` sits at the top of the map, below the top row of buttons/controls. If there's enough room between the top-left and top-right columns for it at its preferred width, it's centred there; otherwise it drops to full width, pushing the side columns down below it. This applies the same way at every breakpoint.
 
 `drawer` is typically used on mobile. At tablet and desktop breakpoints, panels assigned to `drawer` automatically fall back to `left-top`.
 
@@ -17,7 +17,7 @@ Slots are named regions in the UI where buttons, controls, and panels can be pla
 | `top-left` | Buttons and controls. Typically the search control on tablet and desktop |
 | `top-middle` | Buttons and controls for optional actions |
 | `top-right` | Buttons and controls. Typically the search button on mobile |
-| `banner` | Tips, notifications, and context messages. Full width on mobile and tablet; rendered in the `top-middle` slot on desktop |
+| `banner` | Tips, notifications, and context messages. Centred between the top-left/top-right columns when there's room, otherwise full width below them |
 | `left-top` | Panels stacked on the left side (upper) |
 | `left-bottom` | Panels stacked on the left side (lower) |
 | `right-top` | Panels stacked on the right side (upper) |

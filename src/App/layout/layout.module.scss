@@ -76,10 +76,17 @@
 }
 
 // ---------------------------------------------------
-// Banner: Panels only
+// Banner: Panels only. Sits below the top row; docked centres it at its preferred width
+// between the left/right side columns, stacked drops it full-width and pushes them down.
+// Mode and position are decided in JS (useLayoutMeasurements).
 // ---------------------------------------------------
 
 .im-o-app__banner {
+  position: absolute;
+  top: var(--banner-top);
+  left: var(--banner-left);
+  right: var(--banner-right);
+  z-index: 9;
   display: flex;
   flex-direction: column;
   gap: var(--divider-gap);
@@ -87,6 +94,13 @@
 
 .im-o-app__banner .im-c-panel:last-child {
   margin-bottom: var(--divider-gap);
+}
+
+// Stacked (no class) fills full width via default stretch; docked caps the width and
+// centres it with auto margins.
+.im-o-app__banner--docked .im-c-panel--banner {
+  max-width: var(--banner-preferred-width);
+  margin-inline: auto;
 }
 
 // ---------------------------------------------------
@@ -421,10 +435,6 @@
   .im-o-app__modal .im-c-panel--banner {
     margin: var(--primary-gap);
   }
-
-  .im-o-app__banner {
-    z-index: 9;
-  }
 }
 
 // Desktop modal banner margin
@@ -445,13 +455,6 @@
 .im-o-app__overlay--not-ready {
   visibility: hidden;
   opacity: 0;
-}
-
-// Banner on desktop
-.im-o-app--desktop .im-c-panel--banner {
-  margin-left: auto;
-  margin-right: auto;
-  max-width: var(--banner-max-desktop-width);
 }
 
 // Actions inset when width is greater
