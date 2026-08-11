@@ -3,7 +3,7 @@ import { coreShortcuts } from '../controls/keyboardShortcuts.js'
 
 // State is passed in explicitly, rather than held at module scope, so each map instance gets its own registry and can't leak shortcuts or provider support into another map's help panel.
 
-export const registerKeyboardShortcut = (state, { shortcut }) => {
+const _registerKeyboardShortcut = (state, { shortcut }) => {
   const { pluginShortcutHelp, pluginShortcutIds } = state
   if (pluginShortcutIds.has(shortcut.id)) {
     pluginShortcutHelp[pluginShortcutHelp.findIndex(s => s.id === shortcut.id)] = shortcut
@@ -13,11 +13,11 @@ export const registerKeyboardShortcut = (state, { shortcut }) => {
   }
 }
 
-export const setProviderSupportedShortcuts = (state, ids = []) => {
+const _setProviderSupportedShortcuts = (state, ids = []) => {
   state.providerSupportedIds = new Set(ids)
 }
 
-export const getKeyboardShortcuts = (state, appConfig = {}) => {
+const _getKeyboardShortcuts = (state, appConfig = {}) => {
   const filteredCore = coreShortcuts.filter(s => {
     // Must be supported by provider
     if (!state.providerSupportedIds.has(s.id)) {
@@ -47,8 +47,8 @@ export function createKeyboardShortcutRegistry () {
   }
 
   return {
-    registerKeyboardShortcut: (args) => registerKeyboardShortcut(state, args),
-    setProviderSupportedShortcuts: (ids) => setProviderSupportedShortcuts(state, ids),
-    getKeyboardShortcuts: (appConfig) => getKeyboardShortcuts(state, appConfig)
+    registerKeyboardShortcut: (args) => _registerKeyboardShortcut(state, args),
+    setProviderSupportedShortcuts: (ids) => _setProviderSupportedShortcuts(state, ids),
+    getKeyboardShortcuts: (appConfig) => _getKeyboardShortcuts(state, appConfig)
   }
 }
