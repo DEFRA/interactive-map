@@ -135,6 +135,11 @@
       z-index: -1;
     }
   }
+
+  .im-o-app__banner {
+    opacity: 0;
+    z-index: -1;
+  }
 }
 
 .im-o-app--mobile .im-c-search__input-container {
