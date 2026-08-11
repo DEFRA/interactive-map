@@ -172,6 +172,7 @@ const buildDrawInput = ({ drawInteraction, options, geometryType, getSketch, upd
       addVertexButtonId: options.addVertexButtonId,
       mapProvider: options.mapProvider,
       snap: options.snap,
+      crossHair: options.crossHair,
       onUndo: () => { drawInteraction.removeLastPoint(); updateVertexCount(); emitUndoValidation() },
       canFinish: () => canFinish(geometryType, getSketch()),
       canPlace: canPlaceVertex

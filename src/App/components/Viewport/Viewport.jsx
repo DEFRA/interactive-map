@@ -71,6 +71,7 @@ export const Viewport = () => {
         aria-label={mapLabel}
         role='application'
         tabIndex='0' // nosonar
+        data-map-keyboard-scope
         onFocus={handleFocus}
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}

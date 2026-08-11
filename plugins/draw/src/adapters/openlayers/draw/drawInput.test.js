@@ -10,7 +10,7 @@ jest.mock('./vertexPlacement.js', () => ({
   }))
 }))
 
-const setup = (interfaceType = 'mouse') => {
+const setup = (interfaceType = 'mouse', crossHair) => {
   const map = createFakeMap()
   const container = createContainer()
   const button = document.createElement('button')
@@ -19,12 +19,14 @@ const setup = (interfaceType = 'mouse') => {
   const onUndo = jest.fn()
   const input = createDrawInput({
     drawInteraction: { getMap: () => map },
-    options: { container, addVertexButtonId: 'add-pt', interfaceType, mapProvider: {}, snap: null, onUndo }
+    options: { container, addVertexButtonId: 'add-pt', interfaceType, mapProvider: {}, snap: null, onUndo, crossHair }
   })
   const placement = createVertexPlacement.mock.results.at(-1).value
   liveInputs.push(input)
   return { map, view: map.getView(), container, button, input, placement, onUndo }
 }
+
+const fakeCrossHair = () => ({ fixAtCenter: jest.fn(), hide: jest.fn() })
 
 const liveInputs = []
 afterEach(() => {
@@ -128,6 +130,48 @@ test('keyboard pan animations keep the rubber band anchored via postrender', () 
   view.getAnimating.mockReturnValue(false)
   map.emit('postrender')
   expect(placement.updateRubberbanding).toHaveBeenCalledTimes(1)
+})
+
+test('syncs the crosshair on creation to match the starting interface type', () => {
+  const touchCrossHair = fakeCrossHair()
+  setup('touch', touchCrossHair)
+  expect(touchCrossHair.fixAtCenter).toHaveBeenCalled()
+  expect(touchCrossHair.hide).not.toHaveBeenCalled()
+
+  const mouseCrossHair = fakeCrossHair()
+  setup('mouse', mouseCrossHair)
+  expect(mouseCrossHair.hide).toHaveBeenCalled()
+  expect(mouseCrossHair.fixAtCenter).not.toHaveBeenCalled()
+})
+
+test('shows the crosshair when a key press switches to keyboard, hides it when a mouse pointerdown switches back', () => {
+  const crossHair = fakeCrossHair()
+  const { container } = setup('mouse', crossHair)
+  expect(crossHair.hide).toHaveBeenCalledTimes(1) // initial sync at creation, starting interface is 'mouse'
+
+  container.focus()
+  key({ key: 'ArrowUp' })
+  expect(crossHair.fixAtCenter).toHaveBeenCalledTimes(1)
+
+  container.dispatchEvent(Object.assign(new Event('pointerdown'), { pointerType: 'mouse' }))
+  expect(crossHair.hide).toHaveBeenCalledTimes(2)
+})
+
+test('setInterfaceType syncs the crosshair the same way as a detected input change', () => {
+  const crossHair = fakeCrossHair()
+  const { input } = setup('mouse', crossHair)
+  expect(crossHair.hide).toHaveBeenCalledTimes(1) // initial sync at creation, starting interface is 'mouse'
+
+  input.setInterfaceType('touch')
+  expect(crossHair.fixAtCenter).toHaveBeenCalledTimes(1)
+
+  input.setInterfaceType('mouse')
+  expect(crossHair.hide).toHaveBeenCalledTimes(2)
+})
+
+test('tolerates a missing crosshair (e.g. edit_vertex mode, which does not supply one)', () => {
+  const { input } = setup('mouse')
+  expect(() => input.setInterfaceType('keyboard')).not.toThrow()
 })
 
 test('destroy removes all listeners', () => {
