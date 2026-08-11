@@ -180,7 +180,7 @@ describe('datasetRegistry', () => {
       datasetRegistry.attach(grouped, orderedDatasets)
       const { items } = datasetRegistry.keyItems()
       const groupLabels = items.filter(i => i.type === 'group').map(i => i.groupLabel)
-      expect(groupLabels.length).toBe(new Set(groupLabels).size)
+      expect(groupLabels).toHaveLength(new Set(groupLabels).size)
     })
 
     it('populates group item datasets with matching showInKey datasets', () => {

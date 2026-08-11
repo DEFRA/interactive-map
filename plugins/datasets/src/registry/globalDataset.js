@@ -4,9 +4,6 @@ export const attachGlobalState = (globalStateRef) => {
   globalState = globalStateRef
 }
 
-// TODO - remove this once testing finishes
-window.getGlobalState = () => Object.freeze(globalState)
-
 const calculateLocalOpacity = (opacityValue, parentOpacityValue) => {
   if (opacityValue === undefined) {
     if (parentOpacityValue === undefined) {

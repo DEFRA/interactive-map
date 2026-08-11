@@ -8,7 +8,7 @@ const importLayerAdapter = async (mapProvider) => {
       const { default: LayerAdapter } = await import(/* webpackChunkName: "im-datasets-esri-adapter" */ './esri/esriLayerAdapter.js')
       return LayerAdapter
     }
-    // TODO: add cases for OpenLayersProvider and potentially LeafletProvider
+    // Once they are ready, add cases for OpenLayersProvider and potentially LeafletProvider
     default: {
       throw new Error(`No layer adapter available for map provider ${mapProvider.name}. Please provide a compatible layer adapter.`)
     }

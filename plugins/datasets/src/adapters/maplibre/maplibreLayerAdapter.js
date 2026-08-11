@@ -103,7 +103,6 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
       this._applyFeatureFilter(registryDataset)
     })
 
-    // TODO: check dynamicSources still work
     // Re-push cached data for dynamic sources
     this.dynamicSources.forEach(source => source.reapply())
   }
@@ -165,8 +164,7 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
 
     // Remove source if no other dataset is using it
     const sourceIsShared = datasetRegistry.topLevelDatasets()
-      .filter(dataset => dataset.id !== datasetId && dataset.sourceId === sourceId)
-      .length > 0
+      .some(dataset => dataset.id !== datasetId && dataset.sourceId === sourceId)
 
     if (!sourceIsShared && this._map.getSource(sourceId)) {
       this._map.removeSource(sourceId)

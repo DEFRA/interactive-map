@@ -34,7 +34,7 @@ export class EsriDataset extends Dataset {
       return undefined
     }
     const { mapStyle } = datasetRegistry
-    const renderer = JSON.parse(JSON.stringify(rendererDefinition))
+    const renderer = structuredClone(rendererDefinition)
     if (renderer.symbol?.color) {
       renderer.symbol.color = getValueForStyle(renderer.symbol.color, mapStyle.id)
     }

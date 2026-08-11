@@ -49,7 +49,6 @@ export const initialiseDatasets = ({
       dynamicSources.set(registryDataset.id, dynamicSource)
     })
     adapter.attachDynamicSources(dynamicSources)
-    // TODO - apply dynamic source defaults here, and include in mappedDatasets
     eventBus.emit('datasets:ready')
   })
 

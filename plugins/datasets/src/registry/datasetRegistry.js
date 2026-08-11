@@ -134,7 +134,4 @@ const datasetRegistry = {
 
 Object.defineProperty(datasetRegistry, 'datasets', { get: () => datasetRegistry._datasets })
 
-// TODO remove this global reference once development is finished
-window.datasetRegistry = datasetRegistry
-
 export { datasetRegistry }

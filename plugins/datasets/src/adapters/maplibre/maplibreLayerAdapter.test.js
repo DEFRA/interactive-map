@@ -260,7 +260,7 @@ describe('removeDataset', () => {
   it('does nothing when the dataset is not in the registry', () => {
     const removeBefore = map.removeLayer.mock.calls.length
     adapter.removeDataset('nonexistent')
-    expect(map.removeLayer.mock.calls.length).toBe(removeBefore)
+    expect(map.removeLayer.mock.calls).toHaveLength(removeBefore)
   })
 })
 
@@ -313,7 +313,7 @@ describe('applyDatasetVisibility', () => {
   it('does nothing for an unknown dataset', () => {
     const before = map.setLayoutProperty.mock.calls.length
     adapter.applyDatasetVisibility('unknown')
-    expect(map.setLayoutProperty.mock.calls.length).toBe(before)
+    expect(map.setLayoutProperty.mock.calls).toHaveLength(before)
   })
 
   it('skips setLayoutProperty for a layer that has been removed from the map', () => {
@@ -418,7 +418,7 @@ describe('applyDatasetOpacity', () => {
   it('does nothing for an unknown dataset', () => {
     const before = map.setPaintProperty.mock.calls.length
     adapter.applyDatasetOpacity('unknown')
-    expect(map.setPaintProperty.mock.calls.length).toBe(before)
+    expect(map.setPaintProperty.mock.calls).toHaveLength(before)
   })
 
   it('does not call setPaintProperty for a layer that has been removed from the map (covers _setPaintOpacity early return)', () => {

@@ -100,7 +100,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   async _addLayers (registryDataset) {
     const { type, esriGroupId, tiles } = registryDataset
     if (!tiles) {
-      return
+      return null
     }
 
     if (type === 'FeatureService') {
@@ -247,13 +247,12 @@ export default class EsriLayerAdapter extends LayerAdapter {
         this._applyStyleLayerPaintProperties(registryDataset, mapLayer)
       }
     })
-    // TODO - handle dynamic sources
   }
 
   // onMapSizeChange is not applicable to the esriLayerAdapter
   async onMapSizeChange () {}
 
-  // Remaining methods are still todo
+  // Remaining methods
   async applyFeatureFilter (...args) {
     console.log('TODO: applyFeatureFilter', args)
   }

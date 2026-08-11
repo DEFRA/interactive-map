@@ -67,12 +67,11 @@ export class Dataset {
   get hasHiddenFeatures () { return Boolean(this.hiddenFeatures?.length > 0 || this.parent?.hasHiddenFeatures) }
 
   get filter () {
-    return null // TODO - implement filter construction for esri and openLayers adapters
+    return null
   }
 
   // Returns true if either the parent (if it has one) or global visibility is hidden , otherwise returns true.
   // This is used to determine whether to show a tooltip
-  // TODO: also work out how to convey datasets hidden by zoom filter.
   get isHiddenByInheritance () {
     if (this.isSublayer) {
       return !this.parent?.visible
@@ -165,7 +164,7 @@ export class Dataset {
       // any child with a parent opacity only would be multiplied by itself
       return {
         ...parentStyle,
-        opacity: undefined,
+        opacity: undefined, // NOSONAR - we need to set this to undefined so that the opacity getter can calculate the correct opacity
         ...this._datasetDefinition.style,
         symbolDescription: this.symbolDescription
       }
