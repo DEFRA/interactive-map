@@ -32,6 +32,11 @@ export const createMockRegistries = (overrides = {}) => {
       registeredPlugins: [],
       registerPlugin: jest.fn(),
       clear: jest.fn()
+    },
+    keyboardShortcutRegistry: {
+      registerKeyboardShortcut: jest.fn(),
+      setProviderSupportedShortcuts: jest.fn(),
+      getKeyboardShortcuts: jest.fn(() => [])
     }
   }
 }

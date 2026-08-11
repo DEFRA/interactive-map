@@ -5,7 +5,6 @@ jest.mock('./buttonRegistry.js', () => ({ registerButton: jest.fn() }))
 jest.mock('./panelRegistry.js', () => ({ registerPanel: jest.fn() }))
 jest.mock('./controlRegistry.js', () => ({ registerControl: jest.fn() }))
 jest.mock('./iconRegistry.js', () => ({ registerIcon: jest.fn() }))
-jest.mock('./keyboardShortcutRegistry.js', () => ({ registerKeyboardShortcut: jest.fn() }))
 
 describe('pluginRegistry', () => {
   let pluginRegistry
@@ -18,9 +17,11 @@ describe('pluginRegistry', () => {
     registerPanel = require('./panelRegistry.js').registerPanel
     registerControl = require('./controlRegistry.js').registerControl
     registerIcon = require('./iconRegistry.js').registerIcon
-    registerKeyboardShortcut = require('./keyboardShortcutRegistry.js').registerKeyboardShortcut
+    // registerKeyboardShortcut is injected (per-instance registry), not imported from a module —
+    // see keyboardShortcutRegistry.js's createKeyboardShortcutRegistry.
+    registerKeyboardShortcut = jest.fn()
 
-    pluginRegistry = createPluginRegistry({ registerButton, registerPanel, registerControl })
+    pluginRegistry = createPluginRegistry({ registerButton, registerPanel, registerControl, registerKeyboardShortcut })
   })
 
   it('registers plugin and pushes to registeredPlugins', () => {

@@ -5,7 +5,7 @@ import { createButtonRegistry } from './registry/buttonRegistry.js'
 import { createPanelRegistry } from './registry/panelRegistry.js'
 import { createControlRegistry } from './registry/controlRegistry.js'
 import { createPluginRegistry } from './registry/pluginRegistry.js'
-import { setProviderSupportedShortcuts } from './registry/keyboardShortcutRegistry.js'
+import { createKeyboardShortcutRegistry } from './registry/keyboardShortcutRegistry.js'
 import { mergeManifests } from './registry/mergeManifests.js'
 import { App } from './App.jsx'
 
@@ -19,13 +19,15 @@ const getOrCreateRegistries = (rootElement) => {
     const buttonRegistry = createButtonRegistry()
     const panelRegistry = createPanelRegistry()
     const controlRegistry = createControlRegistry()
+    const keyboardShortcutRegistry = createKeyboardShortcutRegistry()
     const pluginRegistry = createPluginRegistry({
       registerButton: buttonRegistry.registerButton,
       registerPanel: panelRegistry.registerPanel,
-      registerControl: controlRegistry.registerControl
+      registerControl: controlRegistry.registerControl,
+      registerKeyboardShortcut: keyboardShortcutRegistry.registerKeyboardShortcut
     })
 
-    registries = { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry }
+    registries = { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry, keyboardShortcutRegistry }
     registryMap.set(rootElement, registries)
   }
   return registries
@@ -70,14 +72,14 @@ export async function initialiseApp (rootElement, {
     mapProviderMap.set(rootElement, mapProvider)
   }
 
+  // Reuse or create registries (persist across app open/close cycles)
+  const { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry, keyboardShortcutRegistry } = getOrCreateRegistries(rootElement)
+  const { registerPlugin } = pluginRegistry
+
   // Register provider-supported shortcuts
   if (mapProvider.capabilities?.supportedShortcuts) {
-    setProviderSupportedShortcuts(mapProvider.capabilities.supportedShortcuts)
+    keyboardShortcutRegistry.setProviderSupportedShortcuts(mapProvider.capabilities.supportedShortcuts)
   }
-
-  // Reuse or create registries (persist across app open/close cycles)
-  const { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry } = getOrCreateRegistries(rootElement)
-  const { registerPlugin } = pluginRegistry
 
   // Clear previous plugins (but keep runtime additions)
   pluginRegistry.clear()
@@ -121,6 +123,7 @@ export async function initialiseApp (rootElement, {
     panelRegistry={panelRegistry}
     controlRegistry={controlRegistry}
     pluginRegistry={pluginRegistry}
+    keyboardShortcutRegistry={keyboardShortcutRegistry}
     mapProvider={mapProvider}
               />)
 

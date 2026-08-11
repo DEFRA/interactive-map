@@ -1,6 +1,5 @@
 // src/core/registry/pluginRegistry.js
 import { registerIcon } from './iconRegistry.js'
-import { registerKeyboardShortcut } from './keyboardShortcutRegistry.js'
 import { allowedSlots } from '../renderer/slots.js'
 import { logger } from '../../services/logger.js'
 
@@ -18,7 +17,7 @@ function validateSlots (item, type) {
   })
 }
 
-export function createPluginRegistry ({ registerButton, registerPanel, registerControl }) {
+export function createPluginRegistry ({ registerButton, registerPanel, registerControl, registerKeyboardShortcut }) {
   const registeredPlugins = []
 
   function registerPlugin (plugin) {
