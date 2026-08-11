@@ -2,13 +2,10 @@
 import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { KeyboardHelp } from './KeyboardHelp'
-import { getKeyboardShortcuts } from '../../registry/keyboardShortcutRegistry.js'
 import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext.js'
 
-jest.mock('../../registry/keyboardShortcutRegistry.js', () => ({
-  getKeyboardShortcuts: jest.fn()
-}))
+const getKeyboardShortcuts = jest.fn()
 
 jest.mock('../../store/configContext', () => ({
   useConfig: jest.fn()
@@ -40,7 +37,7 @@ const GLOBAL_SHORTCUTS = [
 
 beforeEach(() => {
   useConfig.mockReturnValue({})
-  useApp.mockReturnValue({ listboxIsActive: false })
+  useApp.mockReturnValue({ listboxIsActive: false, keyboardShortcutRegistry: { getKeyboardShortcuts } })
 })
 
 afterEach(() => {
@@ -79,7 +76,7 @@ describe('KeyboardHelp — tabs', () => {
   const allShortcuts = [...GLOBAL_SHORTCUTS, ...VIEWPORT_SHORTCUTS, ...LISTBOX_SHORTCUTS]
 
   beforeEach(() => {
-    useApp.mockReturnValue({ listboxIsActive: true })
+    useApp.mockReturnValue({ listboxIsActive: true, keyboardShortcutRegistry: { getKeyboardShortcuts } })
   })
 
   it('renders a tab for each group when listboxIsActive is true', () => {

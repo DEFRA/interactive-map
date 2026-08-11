@@ -2,7 +2,7 @@ import { render } from '@testing-library/react'
 import { defaultAppConfig, defaultButtonConfig, scaleFactor } from './appConfig'
 
 jest.mock('../App/store/appContext.js', () => ({
-  useApp: () => ({ listboxIsActive: false })
+  useApp: () => ({ listboxIsActive: false, keyboardShortcutRegistry: { getKeyboardShortcuts: () => [] } })
 }))
 
 describe('defaultAppConfig', () => {

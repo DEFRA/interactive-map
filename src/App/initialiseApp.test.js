@@ -3,7 +3,6 @@ import { initialiseApp } from './initialiseApp.js'
 import { createRoot } from 'react-dom/client'
 import { EVENTS as events } from '../config/events.js'
 import { createMockRegistries } from '../test-utils.js'
-import { setProviderSupportedShortcuts } from './registry/keyboardShortcutRegistry.js'
 
 // --------------------------------------------------
 // Shared mocks
@@ -48,7 +47,7 @@ jest.mock('./registry/pluginRegistry.js', () => ({
 }))
 
 jest.mock('./registry/keyboardShortcutRegistry.js', () => ({
-  setProviderSupportedShortcuts: jest.fn()
+  createKeyboardShortcutRegistry: jest.fn(() => mockRegistries.keyboardShortcutRegistry)
 }))
 
 jest.mock('./registry/mergeManifests.js', () => ({
@@ -179,6 +178,19 @@ describe('initialiseApp', () => {
 
     await initApp()
 
-    expect(setProviderSupportedShortcuts).not.toHaveBeenCalled()
+    expect(mockRegistries.keyboardShortcutRegistry.setProviderSupportedShortcuts).not.toHaveBeenCalled()
+  })
+
+  test('registers provider-supported shortcuts on the per-instance registry', async () => {
+    await initApp()
+
+    expect(mockRegistries.keyboardShortcutRegistry.setProviderSupportedShortcuts).toHaveBeenCalledWith(['ctrl+a'])
+  })
+
+  test('passes keyboardShortcutRegistry through to the rendered App', async () => {
+    await initApp()
+
+    const rendered = createRoot.mock.results[0].value.render.mock.calls[0][0]
+    expect(rendered.props.keyboardShortcutRegistry).toBe(mockRegistries.keyboardShortcutRegistry)
   })
 })

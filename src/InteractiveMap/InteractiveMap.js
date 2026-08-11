@@ -111,13 +111,16 @@ export default class InteractiveMap {
         history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
       }
       this.showApp()
+      // App is already mounted, so focus the viewport directly rather than via a mount effect.
+      this.rootEl.querySelector('[role="application"]')?.focus()
     } else if (this._root) {
       // app already open — no-op, no push
     } else {
       if (this.config.manageHistoryState) {
         history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
       }
-      this.loadApp()
+      // Only a genuine launcher click moves focus into the map — never a resize/breakpoint transition.
+      this.loadApp({ focusOnMount: true })
     }
   }
 
@@ -175,9 +178,11 @@ export default class InteractiveMap {
    * Load and initialize the map application.
    *
    * @internal Not intended for end-user use.
+   * @param {Object} [options]
+   * @param {boolean} [options.focusOnMount=false] - Focus the viewport once mounted; only set by a genuine launcher click.
    * @returns {Promise<void>}
    */
-  async loadApp () {
+  async loadApp ({ focusOnMount = false } = {}) {
     if (this._root || this._isLoading) {
       return
     }
@@ -204,6 +209,7 @@ export default class InteractiveMap {
         id: this.id,
         initialBreakpoint: this._breakpointDetector.getBreakpoint(),
         initialInterfaceType: getInterfaceType(),
+        focusOnMount,
         ...this.config,
         MapProvider,
         mapProviderConfig,

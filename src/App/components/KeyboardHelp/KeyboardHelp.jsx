@@ -2,7 +2,6 @@
 import React from 'react'
 import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext.js'
-import { getKeyboardShortcuts } from '../../registry/keyboardShortcutRegistry.js'
 import { Tabs } from '../Tabs/Tabs.jsx'
 
 const ShortcutList = ({ items }) => (
@@ -42,8 +41,8 @@ const getDefaultTab = (groupEntries, context) => {
 // sonarjs/disable-next-line function-name
 export const KeyboardHelp = ({ context = 'viewport' }) => { // NOSONAR: project does not use PropTypes
   const appConfig = useConfig()
-  const { listboxIsActive } = useApp()
-  const allShortcuts = getKeyboardShortcuts(appConfig)
+  const { listboxIsActive, keyboardShortcutRegistry } = useApp()
+  const allShortcuts = keyboardShortcutRegistry.getKeyboardShortcuts(appConfig)
   const shortcuts = listboxIsActive
     ? allShortcuts
     : allShortcuts.filter(s => s.context !== 'listbox')

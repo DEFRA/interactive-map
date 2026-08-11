@@ -115,6 +115,17 @@ describe('Viewport rendering', () => {
     onViewportFocusChange(false)
     expect(hints.dismiss).toHaveBeenCalled()
   })
+
+  it('focuses the viewport on mount when focusOnMount is true', () => {
+    useConfig.mockReturnValueOnce({ ...useConfig(), focusOnMount: true })
+    const { viewport } = renderViewport()
+    expect(viewport).toHaveFocus()
+  })
+
+  it('does not focus the viewport on mount when focusOnMount is false', () => {
+    renderViewport()
+    expect(viewportEl).not.toHaveFocus()
+  })
 })
 
 describe('Viewport interactions', () => {

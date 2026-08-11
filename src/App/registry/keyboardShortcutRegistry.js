@@ -1,15 +1,10 @@
 // src/core/registry/keyboardShortcutRegistry.js
 import { coreShortcuts } from '../controls/keyboardShortcuts.js'
 
-// Stores the actual shortcut objects in insertion order
-const pluginShortcutHelp = []
+// State is passed in explicitly, rather than held at module scope, so each map instance gets its own registry and can't leak shortcuts or provider support into another map's help panel.
 
-// Tracks only IDs for O(1) duplicate detection
-const pluginShortcutIds = new Set()
-
-let providerSupportedIds = new Set()
-
-export const registerKeyboardShortcut = ({ shortcut }) => {
+const _registerKeyboardShortcut = (state, { shortcut }) => {
+  const { pluginShortcutHelp, pluginShortcutIds } = state
   if (pluginShortcutIds.has(shortcut.id)) {
     pluginShortcutHelp[pluginShortcutHelp.findIndex(s => s.id === shortcut.id)] = shortcut
   } else {
@@ -18,14 +13,14 @@ export const registerKeyboardShortcut = ({ shortcut }) => {
   }
 }
 
-export const setProviderSupportedShortcuts = (ids = []) => {
-  providerSupportedIds = new Set(ids)
+const _setProviderSupportedShortcuts = (state, ids = []) => {
+  state.providerSupportedIds = new Set(ids)
 }
 
-export const getKeyboardShortcuts = (appConfig = {}) => {
+const _getKeyboardShortcuts = (state, appConfig = {}) => {
   const filteredCore = coreShortcuts.filter(s => {
     // Must be supported by provider
-    if (!providerSupportedIds.has(s.id)) {
+    if (!state.providerSupportedIds.has(s.id)) {
       return false
     }
     // Check requiredConfig - all specified config values must be truthy
@@ -37,6 +32,23 @@ export const getKeyboardShortcuts = (appConfig = {}) => {
 
   return [
     ...filteredCore, // supported core shortcuts
-    ...pluginShortcutHelp // plugin-defined shortcuts (deduped)
+    ...state.pluginShortcutHelp // plugin-defined shortcuts (deduped)
   ]
+}
+
+// One instance per map — see initialiseApp.js's getOrCreateRegistries.
+export function createKeyboardShortcutRegistry () {
+  const state = {
+    // Stores the actual shortcut objects in insertion order
+    pluginShortcutHelp: [],
+    // Tracks only IDs for O(1) duplicate detection
+    pluginShortcutIds: new Set(),
+    providerSupportedIds: new Set()
+  }
+
+  return {
+    registerKeyboardShortcut: (args) => _registerKeyboardShortcut(state, args),
+    setProviderSupportedShortcuts: (ids) => _setProviderSupportedShortcuts(state, ids),
+    getKeyboardShortcuts: (appConfig) => _getKeyboardShortcuts(state, appConfig)
+  }
 }
