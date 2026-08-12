@@ -1,14 +1,14 @@
 import createPlugin from './index.js'
 
 // Mock the scss import
-jest.mock('./scaleBar.scss', () => ({}))
+jest.mock('./mapKey.scss', () => ({}))
 
 describe('createPlugin', () => {
   describe('plugin descriptor', () => {
     it('returns plugin with correct id', () => {
       const plugin = createPlugin()
 
-      expect(plugin.id).toBe('scaleBar')
+      expect(plugin.id).toBe('mapKey')
     })
 
     it('returns plugin with load function', () => {
@@ -46,11 +46,11 @@ describe('createPlugin', () => {
       expect(manifest.controls).toBeDefined()
     })
 
-    it('manifest contains scaleBar control', async () => {
+    it('manifest contains mapKey control', async () => {
       const plugin = createPlugin()
       const manifest = await plugin.load()
 
-      const scaleBarControl = manifest.controls.find(c => c.id === 'scaleBar')
+      const scaleBarControl = manifest.controls.find(c => c.id === 'mapKey')
       expect(scaleBarControl).toBeDefined()
       expect(scaleBarControl.label).toBe('Scale bar')
     })
@@ -78,14 +78,14 @@ describe('createPlugin', () => {
     it('handles empty options object', () => {
       const plugin = createPlugin({})
 
-      expect(plugin.id).toBe('scaleBar')
+      expect(plugin.id).toBe('mapKey')
       expect(plugin.units).toBe('metric')
     })
 
     it('handles undefined options', () => {
       const plugin = createPlugin(undefined)
 
-      expect(plugin.id).toBe('scaleBar')
+      expect(plugin.id).toBe('mapKey')
       expect(plugin.units).toBe('metric')
     })
   })

@@ -1,9 +1,9 @@
-// /plugins/scale-bar/manifest.js
-import { ScaleBar } from './ScaleBar.jsx'
+// /plugins//manifest.js
+import { MapKey } from './MapKey.jsx'
 
 export const manifest = {
   controls: [{
-    id: 'scaleBar',
+    id: 'mapKey',
     label: 'Scale bar',
     mobile: {
       slot: 'right-bottom'
@@ -14,6 +14,6 @@ export const manifest = {
     desktop: {
       slot: 'right-bottom'
     },
-    render: ScaleBar
+    render: MapKey
   }]
 }

@@ -1,11 +1,11 @@
-// src/plugins/scaleBar/ScaleBarInit.jsx
+// src/plugins/mapKey/ScaleBarInit.jsx
 import React, { useMemo, useRef } from 'react'
 import { getBestScale } from './utils.js'
 
 const MAX_WIDTH = 120
 const CSS_SCALE = 1
 
-export function ScaleBar ({
+export function MapKey ({
   mapState,
   pluginConfig
 }) {
@@ -23,7 +23,7 @@ export function ScaleBar ({
   }, [resolution, mapSize, pluginConfig.units])
 
   return (
-    <div className='im-c-scale-bar' ref={elRef} style={{ width: `${scale.width}px` }}>
+    <div className='im-c-' ref={elRef} style={{ width: `${scale.width}px` }}>
       <span className='im-c-scale-bar__label'>
         <span className='im-u-visually-hidden'>Scale bar: </span>
         {scale.label}

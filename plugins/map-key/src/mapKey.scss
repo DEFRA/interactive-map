@@ -1,10 +1,10 @@
 // ===================================================
-// Component: ScaleBar
+// Component: MapKey
 // ===================================================
 
 // 1. Base styles
 
-.im-c-scale-bar {
+.im-c- {
     position: relative;
     margin-left: auto;
     margin-bottom: 1px; // Account for halo
@@ -24,7 +24,7 @@
         1px  1px 0 var(--map-overlay-halo-color);
 }
 
-.im-c-scale-bar::after {
+.im-c-::after {
     content: '';
     position: absolute;
     bottom: 0;
