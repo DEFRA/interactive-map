@@ -147,6 +147,13 @@ const interactiveMap = new InteractiveMap('map', {
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
       showMarker: false,
+      manifest: {
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-left', order: 3 },
+          desktop: { slot: 'top-left', order: 3 }
+        }]
+      },
       // expanded: true
     }),
     datasetsPlugin,
@@ -166,10 +173,17 @@ interactiveMap.on('app:ready', function (e) {
   // console.log('app:ready')
   interactiveMap.addPanel('banner', {
     label: 'Hello',
-    html: 'Alert',
-    mobile: { slot: 'banner' },
-    tablet: { slot: 'banner', width: '320px' },
-    desktop: { slot: 'banner', width: '400px' }
+    html: 'Alert1',
+    mobile: { slot: 'banner', showLabel: false },
+    tablet: { slot: 'banner', showLabel: false, width: '320px' },
+    desktop: { slot: 'banner', showLabel: false, width: '400px' }
+  })
+  interactiveMap.addPanel('banner2', {
+    label: 'Hello',
+    html: 'Alert2',
+    mobile: { slot: 'banner', showLabel: false },
+    tablet: { slot: 'banner', showLabel: false, width: '320px' },
+    desktop: { slot: 'banner', showLabel: false, width: '400px' }
   })
 })
 

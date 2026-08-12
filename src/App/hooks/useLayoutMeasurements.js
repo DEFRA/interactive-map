@@ -10,8 +10,7 @@ const BANNER_PANEL_SELECTOR = '.im-c-panel--banner'
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
 
-// Max of the two sides, applied symmetrically so centred content doesn't lean towards
-// whichever side is emptier. Used for --top-col-width and the banner's gutter below.
+// Max of both sides, so centred content doesn't lean toward the emptier one.
 const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 0
 
 const subSlotMaxHeight = (columnHeight, siblingButtons, gap) => columnHeight - (siblingButtons ? siblingButtons + gap : 0)
@@ -21,8 +20,7 @@ const bannerGutterWidth = (mainWidth, sideColWidth, gap) => mainWidth - (sideCol
 
 const isBannerDocked = (gutterWidth, preferredWidth) => gutterWidth >= preferredWidth
 
-// Widest explicit width configured on a banner panel (e.g. addPanel's slot.width), if any —
-// lets a consumer override the default --banner-preferred-width for their own banner content.
+// Widest explicit width configured on a banner panel, if any, overriding the default.
 const bannerConfiguredWidth = (bannerEl) => {
   const widths = Array.from(bannerEl?.querySelectorAll(BANNER_PANEL_SELECTOR) ?? [])
     .map(el => Number.parseInt(el.style.width, 10))
@@ -35,48 +33,14 @@ const clearBannerPanelWidths = (bannerEl) => {
   bannerEl?.querySelectorAll(BANNER_PANEL_SELECTOR).forEach(el => { el.style.width = '' })
 }
 
-// Docked insets to the side-column width so it can't overlap either side; stacked is full-bleed.
+// Docked insets to the side-column width; stacked is full-bleed.
 const bannerInset = (isDocked, primaryGap, sideColWidth, gap) =>
   isDocked ? primaryGap + sideColWidth + gap : primaryGap
 
 /**
- * Manages all layout measurements for the map overlay and dispatches the safe
- * zone inset used by the map to pad `fitBounds` / `setView` operations.
- *
- * ## Lifecycle
- *
- * The safe zone must only be dispatched once every plugin button's reactive
- * props (`hiddenWhen`, `enableWhen`, `pressedWhen`, `expandedWhen`) have been
- * evaluated for the current app/map state. Dispatching too early — before
- * buttons that affect layout (e.g. the actions bar) have their correct
- * visibility — produces a stale inset that causes the map to jump when the UI
- * then settles into its real state.
- *
- * ### Trigger events
- * The following state changes can alter which buttons are visible and therefore
- * how much space the UI occupies:
- *   - `breakpoint`   — responsive layout changes (desktop ↔ mobile / tablet)
- *   - `mapSize`      — map container size variant changes
- *   - `isMapReady`   — plugins are enabled on `map:ready`, changing button visibility
- *   - `isFullscreen` — fullscreen entry/exit changes which buttons are visible
- *   - `appVisible`   — app shown/hidden by parent HTML outside React (hybrid mode)
- *
- * When any of these change, `CLEAR_PLUGINS_EVALUATED` is dispatched (Effect 2),
- * which prevents the safe zone from being re-dispatched until
- * `useButtonStateEvaluator` has completed a full pass with no button state
- * changes and sets `PLUGINS_EVALUATED` again.
- *
- * ### Safe zone dispatch
- * Effect 3 fires whenever `arePluginsEvaluated` transitions to `true`, at which
- * point DOM dimensions are stable and `getSafeZoneInset` can be read reliably.
- * A `requestAnimationFrame` is used to ensure the browser has committed all
- * layout changes before measuring.
- *
- * ### Resize observer
- * Effect 4 keeps CSS custom properties up to date whenever any observed element
- * resizes (e.g. panels opening, banner appearing, actions buttons toggling).
- * It does not dispatch the safe zone — safe zone dispatch is owned entirely by
- * Effect 3 to prevent jumps on panel open/close and other non-structural resizes.
+ * Computes layout CSS vars for the map overlay and dispatches the safe zone inset used
+ * for `fitBounds`/`setView`. Waits for `arePluginsEvaluated` so the inset reflects final
+ * button visibility rather than a mid-evaluation state, which would make the map jump.
  */
 function calculateLayout (layoutRefs, breakpoint) {
   const {
@@ -106,9 +70,8 @@ function calculateLayout (layoutRefs, breakpoint) {
   const topColWidthPx = symmetricWidth(topLeftCol.offsetWidth, topRightCol.offsetWidth)
   appContainer.style.setProperty('--top-col-width', `${topColWidthPx}px`)
 
-  // === Banner: docked (centred between .im-o-app__left/.im-o-app__right, up to its preferred
-  // width) when there's room, otherwise stacked full-width. Mobile always stacks, ignoring
-  // any configured width, regardless of gutter. ===
+  // === Banner: docks centred between the side columns when there's room, otherwise
+  // stacks full-width. Mobile always stacks. ===
   const isMobile = breakpoint === 'mobile'
   if (isMobile) {
     clearBannerPanelWidths(banner)
@@ -127,15 +90,15 @@ function calculateLayout (layoutRefs, breakpoint) {
   appContainer.style.setProperty('--banner-left', bannerSideInset)
   appContainer.style.setProperty('--banner-right', bannerSideInset)
 
-  // Never above the top row's own bottom edge, in either mode — top.offsetHeight already
-  // bakes in a trailing --divider-gap via .im-o-app__top-col's padding-bottom.
+  // Sits at the top row's bottom edge; top.offsetHeight already includes a trailing gap.
   const isBannerStacked = hasBanner && !isDocked
   const bannerTop = hasBanner ? top.offsetTop + top.offsetHeight : 0
   appContainer.style.setProperty('--banner-top', `${bannerTop}px`)
 
-  // Stacked pushes both side columns below the banner; docked (or no banner) leaves them as is.
+  // Stacked pushes the side columns below the banner plus a trailing gap — added here, not
+  // via a CSS last-child margin, since closed consumer HTML panels stay in the DOM (display:none).
   const sideOffsetTop = (colHeight) => isBannerStacked
-    ? bannerTop + bannerHeight
+    ? bannerTop + bannerHeight + dividerGap
     : colHeight + top.offsetTop
 
   // === Left container offsets ===
@@ -146,9 +109,7 @@ function calculateLayout (layoutRefs, breakpoint) {
   appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
 
   // === Right container offsets ===
-  // Mirrors the top formula (topRightCol.offsetHeight + top.offsetTop):
-  // bottomRight.offsetHeight is 0 when no buttons so the offset collapses to just
-  // the padding between the bottom of the bottom container and the bottom of main.
+  // Mirrors the left formula; bottomRight.offsetHeight is 0 when empty.
   const bottomRightHeight = bottomRightRef?.current?.offsetHeight ?? 0
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const rightOffsetTop = sideOffsetTop(topRightCol.offsetHeight)
@@ -160,10 +121,8 @@ function calculateLayout (layoutRefs, breakpoint) {
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
   // === Keyboard hint bottom offset ===
-  // On mobile the actions bar is in-flow so baseBottom already accounts for it.
-  // On tablet/desktop the actions bar is position:absolute (not in flow), so baseBottom
-  // only sees the bottom padding. actionsOffset measures the gap from the actions bar's
-  // top edge to the bottom of main, ensuring the hint always clears the floating bar.
+  // baseBottom covers the in-flow mobile actions bar; actionsOffset covers the
+  // floating tablet/desktop one so the hint always clears it.
   const actionsEl = actionsRef?.current
   const actionsHeight = actionsEl?.offsetHeight ?? 0
   const baseBottom = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
@@ -183,20 +142,12 @@ export function useLayoutMeasurements () {
 
   const { bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
 
-  // --------------------------------
-  // 1. Clear the evaluated flag when structural inputs change so the safe zone
-  //    is not dispatched until useButtonStateEvaluator has completed a full
-  //    pass with the new app/map state and set PLUGINS_EVALUATED.
-  // --------------------------------
+  // 1. Clear the evaluated flag on structural changes, gating the safe zone until re-evaluated.
   useLayoutEffect(() => {
     dispatch({ type: 'CLEAR_PLUGINS_EVALUATED' })
   }, [breakpoint, mapSize, isMapReady, appVisible, isFullscreen])
 
-  // --------------------------------
-  // 2. Once all plugin button props have been evaluated (arePluginsEvaluated),
-  //    recalculate layout and dispatch the safe zone inset.
-  //    RAF required to ensure browser layout is committed before measuring.
-  // --------------------------------
+  // 2. Once evaluated, recalculate layout and dispatch the safe zone (RAF waits for layout to commit).
   useLayoutEffect(() => {
     if (!arePluginsEvaluated) {
       return
@@ -210,14 +161,8 @@ export function useLayoutMeasurements () {
     })
   }, [arePluginsEvaluated])
 
-  // --------------------------------
-  // 3. Recalculate CSS vars whenever observed elements resize (panels, banner,
-  //    actions buttons, etc.). Safe zone is intentionally not dispatched here —
-  //    that is Effect 2's responsibility.
-  // --------------------------------
-  // Stable reference — all entries are ref objects from useApp that never change.
-  // Prevents useResizeObserver's effect from re-running (and cancelling its RAF)
-  // on every render due to a new array literal being passed each time.
+  // 3. Recalculate CSS vars on resize; safe zone dispatch stays Effect 2's job.
+  // Memoized so useResizeObserver doesn't re-run (and cancel its RAF) on every render.
   const observedRefs = useMemo(
     () => [bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
     []

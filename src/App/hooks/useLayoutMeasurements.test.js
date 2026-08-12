@@ -185,8 +185,8 @@ describe('useLayoutMeasurements', () => {
     renderHook(() => useLayoutMeasurements())
     // bannerTop = top.offsetTop (10) + top.offsetHeight (0)
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-top', '10px')
-    // stacked: left column pushed below the banner (bannerTop 10 + bannerHeight 30)
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-top', '40px')
+    // stacked: left column pushed below the banner (bannerTop 10 + bannerHeight 30 + dividerGap 8)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-top', '48px')
   })
 
   test('uses 0 when bottomRightRef current is null', () => {

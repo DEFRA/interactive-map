@@ -76,9 +76,8 @@
 }
 
 // ---------------------------------------------------
-// Banner: Panels only. Sits below the top row; docked centres it at its preferred width
-// between the left/right side columns, stacked drops it full-width and pushes them down.
-// Mode and position are decided in JS (useLayoutMeasurements).
+// Banner: docks centred between the side columns, or stacks full-width; mode and
+// position are set in JS (useLayoutMeasurements).
 // ---------------------------------------------------
 
 .im-o-app__banner {
@@ -92,12 +91,10 @@
   gap: var(--divider-gap);
 }
 
-.im-o-app__banner .im-c-panel:last-child {
-  margin-bottom: var(--divider-gap);
-}
+// Trailing gap below the banner is added in JS, not via a last-child margin —
+// closed consumer HTML panels stay in the DOM (display:none).
 
-// Stacked (no class) fills full width via default stretch; docked caps the width and
-// centres it with auto margins.
+// Stacked fills full width; docked caps the width and centres it.
 .im-o-app__banner--docked .im-c-panel--banner {
   max-width: var(--banner-preferred-width);
   margin-inline: auto;
@@ -469,8 +466,7 @@
       max-width: var(--action-bar-max-width);
     }
 
-    // max-height animation on a bottom-anchored element grows upward, looking like
-    // a slide-up. Override to opacity-only so the bar fades in instead.
+    // Opacity-only so it fades in instead of visually sliding up.
     @media (prefers-reduced-motion: no-preference) {
       .im-c-actions {
         transition: opacity var(--duration) ease;
@@ -501,8 +497,7 @@
     clip-path: inset(-20px 0 0 0);
 }
 
-// Inset focus ring on panels that are flush with the container edge,
-// so the ::after ring isn't clipped by the parent overflow:hidden
+// Inset the focus ring so it isn't clipped by the parent's overflow:hidden.
 .im-o-app--mobile .im-o-app__drawer .im-c-panel::after,
 .im-o-app--mobile .im-o-app__actions .im-c-panel::after,
 .im-o-app__modal .im-c-panel--drawer::after {

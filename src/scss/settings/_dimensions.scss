@@ -39,8 +39,8 @@
     --panel-close-button-gap: 4px;
     --panel-heading-margin-top: 12px;
     --panel-margin: 15px;
-    --banner-close-button-gap: 0px;
     --banner-preferred-width: 280px; // Docked max-width, and the gutter threshold JS docks/stacks against
+    --banner-border-radius: var(--tooltip-border-radius); // Styled like a hint, not a panel
 
     // Popup menu
     --popup-menu-min-width: 200px;

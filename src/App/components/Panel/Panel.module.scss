@@ -18,6 +18,7 @@
     min-height: 0;
     min-width: var(--min-panel-width);
     pointer-events: auto;
+    color: var(--foreground-color);
     background-color: var(--background-color);
 }
 
@@ -98,17 +99,43 @@
     );
 }
 
-// When banner heading is hidden we need to align with the close button
-.im-o-app--desktop .im-c-panel--banner.im-c-panel--no-heading {
-    .im-c-panel__close {
-        top: var(--banner-close-button-gap);
-        right: var(--banner-close-button-gap);
+// Banner: styled like a hint/tooltip rather than a standard panel — it's used for tips
+// and contextual messages, not persistent controls — so it gets a dark background,
+// light foreground, and small rounded corners instead of the default (square) panel look.
+// --background-color/--foreground-color are inherited by __heading and __close below;
+// --button-hover-color overrides the close button's hover so it doesn't stay the light
+// grey used for buttons on a light background.
+.im-c-panel--banner {
+    --background-color: var(--tooltip-background-color);
+    --foreground-color: var(--tooltip-foreground-color);
+    --button-hover-color: var(--tooltip-hover-color);
+
+    &,
+    &::before {
+        border-radius: var(--banner-border-radius);
     }
 
-    .im-c-panel__body--offset {
-        padding-top: 10px;
-        padding-bottom: 10px;
+    &::after {
+        border-radius: calc(var(--banner-border-radius) - 2px);
     }
+}
+
+// When the heading is visually hidden there's no built-in top spacing (padding-bottom is
+// already --panel-margin via the base rule above, so only top needs setting here). This is
+// the content's own reading padding — kept separate from the close button's clearance below,
+// since the two are independent: the button can sit flush in the corner while the text still
+// gets comfortable spacing.
+.im-c-panel--no-heading .im-c-panel__body {
+    padding-top: var(--panel-margin);
+}
+
+// Dismissible panels additionally need the body sized to fully encompass the close button,
+// so it can never end up taller than the panel around it. Banner used to snap its close
+// button flush to the corner (0px gap) for a no-heading layout, but that reads as broken
+// now the banner has a visible dark/rounded frame — sharing the default panel gap gives it
+// the same breathing room as every other no-heading panel.
+.im-c-panel--no-heading .im-c-panel__body--offset {
+    min-height: calc((var(--panel-close-button-gap) * 2) + var(--button-size));
 }
 
 .im-c-panel__body--offset {
