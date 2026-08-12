@@ -140,6 +140,55 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--top-col-width', expected)
   })
 
+  test('clears inline banner panel widths on mobile', () => {
+    const { layoutRefs } = setup({ app: { breakpoint: 'mobile' } })
+    const panel = document.createElement('div')
+    panel.className = 'im-c-panel--banner'
+    panel.style.width = '250px'
+    layoutRefs.bannerRef.current.appendChild(panel)
+    renderHook(() => useLayoutMeasurements())
+    expect(panel.style.width).toBe('')
+  })
+
+  test('uses widest parseable banner panel width, ignoring unparseable ones', () => {
+    const { layoutRefs } = setup()
+    const banner = layoutRefs.bannerRef.current
+    const panel = (width) => {
+      const p = document.createElement('div')
+      p.className = 'im-c-panel--banner'
+      p.style.width = width
+      return p
+    }
+    banner.appendChild(panel('250px'))
+    banner.appendChild(panel('auto')) // unparseable, filtered out
+    banner.appendChild(panel('400px'))
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-preferred-width', '400px')
+  })
+
+  test('falls back to default preferred width when banner element is absent', () => {
+    const { layoutRefs } = setup()
+    layoutRefs.bannerRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-preferred-width', '8px')
+  })
+
+  test('docks the banner when the gutter is wide enough for the preferred width', () => {
+    const { layoutRefs } = setup({ refs: { top: { offsetWidth: 1000 } } })
+    renderHook(() => useLayoutMeasurements())
+    // docked: primaryGap (8) + sideColWidth (0) + dividerGap (8)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-left', '16px')
+  })
+
+  test('stacks a present banner below the top row when not docked', () => {
+    const { layoutRefs } = setup({ refs: { banner: { offsetHeight: 30 } } })
+    renderHook(() => useLayoutMeasurements())
+    // bannerTop = top.offsetTop (10) + top.offsetHeight (0)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-top', '10px')
+    // stacked: left column pushed below the banner (bannerTop 10 + bannerHeight 30)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-top', '40px')
+  })
+
   test('uses 0 when bottomRightRef current is null', () => {
     const { layoutRefs } = setup()
     layoutRefs.bottomRightRef.current = null
