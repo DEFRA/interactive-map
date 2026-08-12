@@ -1,0 +1,44 @@
+// ===================================================
+// Component: ScaleBar
+// ===================================================
+
+// 1. Base styles
+
+.im-c-scale-bar {
+    position: relative;
+    margin-left: auto;
+    margin-bottom: 1px; // Account for halo
+    text-align: right;
+    padding-bottom: 5px;
+    color: var(--map-overlay-foreground-color);
+    user-select: none;
+    height: 25px; // Required to ensure padding is calculated before scale bar is rendered
+    width: 100px;
+}
+
+.im-c-scale-bar__label {
+    text-shadow:
+        -1px -1px 0 var(--map-overlay-halo-color),
+        1px -1px 0 var(--map-overlay-halo-color),
+        -1px  1px 0 var(--map-overlay-halo-color),
+        1px  1px 0 var(--map-overlay-halo-color);
+}
+
+.im-c-scale-bar::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    height: 4px;
+    width: 100%;
+    background-color: var(--map-overlay-foreground-color);
+    box-shadow:
+        -1px -1px 0 var(--map-overlay-halo-color),
+        1px -1px 0 var(--map-overlay-halo-color),
+        -1px  1px 0 var(--map-overlay-halo-color),
+        1px  1px 0 var(--map-overlay-halo-color);
+    
+    @media (forced-colors: active) {
+        background-color: Canvas;
+    }
+}

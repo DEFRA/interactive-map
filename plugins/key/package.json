@@ -1,0 +1,28 @@
+{
+  "name": "@defra/scale-bar-plugin",
+  "version": "1.0.0-alpha.1",
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    "import": "./dist/esm/index.js",
+    "require": "./dist/umd/index.js"
+  },
+  "type": "module",
+  "peerDependencies": {
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "preact": "^10.27.0"
+  },
+  "peerDependenciesMeta": {
+    "react": { "optional": true },
+    "react-dom": { "optional": true }
+  },
+  "scripts": {
+    "build:umd": "webpack --config ../../../webpack.umd.js --mode production",
+    "build:esm": "webpack --config ../../../webpack.esm.mjs --mode production",
+    "build": "npm run build:umd && npm run build:esm",
+    "clean": "rm -rf dist"
+  },
+  "devDependencies": {},
+  "dependencies": {}
+}
