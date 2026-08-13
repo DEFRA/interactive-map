@@ -1,8 +1,8 @@
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
 import { svgProps, SVG_SIZE } from './svgProperties.js'
 
-export const KeySvgRect = ({ mapStyle, registryDataset }) => {
-  const { style } = registryDataset
+export const KeySvgRect = ({ mapStyle, keyDefinition }) => {
+  const { style } = keyDefinition
   return (
     <svg {...svgProps}>
       <rect

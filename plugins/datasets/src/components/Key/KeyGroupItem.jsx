@@ -1,13 +1,13 @@
 import { KeyItem } from './KeyItem.jsx'
 
-export const KeyGroupItem = ({ headingId, label, datasets, symbolRegistry, patternRegistry, mapStyle }) => {
+export const KeyGroupItem = ({ headingId, label, keyDefinitions, symbolRegistry, patternRegistry, mapStyle }) => {
   return (
     <section className='im-c-datasets-key__group' aria-labelledby={headingId}>
       <h3 id={headingId} className='im-c-datasets-key__group-heading'>{label}</h3>
-      {datasets.map(dataset =>
+      {keyDefinitions.map(keyDefinition =>
         <KeyItem
-          key={`${dataset.id}`}
-          registryDataset={dataset}
+          key={`${keyDefinition.id}`}
+          keyDefinition={keyDefinition}
           symbolRegistry={symbolRegistry}
           patternRegistry={patternRegistry}
           mapStyle={mapStyle}

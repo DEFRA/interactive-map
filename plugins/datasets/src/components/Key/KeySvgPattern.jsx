@@ -1,8 +1,8 @@
 import { svgProps } from './svgProperties.js'
 const PATTERN_INSET = 2
 
-export const KeySvgPattern = ({ patternRegistry, registryDataset, mapStyle }) => {
-  const { style } = registryDataset
+export const KeySvgPattern = ({ patternRegistry, keyDefinition, mapStyle }) => {
+  const { style } = keyDefinition
   const paths = patternRegistry.getKeyPatternPaths(style, mapStyle.id)
   return (
     <svg {...svgProps}>

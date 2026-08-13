@@ -1,20 +1,17 @@
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
 import { KeySvg } from './KeySvg.jsx'
 
-export const KeyItem = ({ registryDataset, symbolRegistry, patternRegistry, mapStyle }) => {
-  if (!registryDataset.showInKey) {
-    return null
-  }
+export const KeyItem = ({ keyDefinition, symbolRegistry, patternRegistry, mapStyle }) => {
   return (
     <dl className='im-c-datasets-key__item'>
       <dt className='im-c-datasets-key__item-symbol'>
-        <KeySvg registryDataset={registryDataset} symbolRegistry={symbolRegistry} patternRegistry={patternRegistry} mapStyle={mapStyle} />
+        <KeySvg keyDefinition={keyDefinition} symbolRegistry={symbolRegistry} patternRegistry={patternRegistry} mapStyle={mapStyle} />
       </dt>
       <dd className='im-c-datasets-key__item-label'>
-        {registryDataset.label}
-        {registryDataset.symbolDescription && (
+        {keyDefinition.label}
+        {keyDefinition.symbolDescription && (
           <span className='govuk-visually-hidden'>
-            ({getValueForStyle(registryDataset.symbolDescription, mapStyle.id)})
+            ({getValueForStyle(keyDefinition.symbolDescription, mapStyle.id)})
           </span>
         )}
       </dd>

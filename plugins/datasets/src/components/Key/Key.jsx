@@ -18,17 +18,15 @@ export const Key = ({
   const containerClass = `im-c-datasets-key${hasGroups ? ' im-c-datasets-key--has-groups' : ''}`
   return (
     <div className={containerClass}>{keyGroups.map(item => {
-      const key = item.type === 'group' ? item.groupLabel.toLowerCase().replaceAll(/\s+/g, '-') : item.dataset.id
+      const key = item.type === 'group' ? item.groupLabel.toLowerCase().replaceAll(/\s+/g, '-') : item.keyDefinition.id
 
-      if (item.type === 'sublayers' || item.type === 'group') {
-        const datasets = item.type === 'sublayers' ? item.sublayers : item.datasets
-        const label = item.type === 'sublayers' ? item.dataset.label : item.groupLabel
+      if (item.type === 'group') {
         return (
           <KeyGroupItem
             key={key}
             headingId={`key-heading-${key}`}
-            label={label}
-            datasets={datasets}
+            label={item.groupLabel}
+            keyDefinitions={item.keyDefinitions}
             symbolRegistry={symbolRegistry}
             patternRegistry={patternRegistry}
             mapStyle={mapStyle}
@@ -38,7 +36,7 @@ export const Key = ({
       return (
         <KeyItem
           key={key}
-          registryDataset={item.dataset}
+          keyDefinition={item.keyDefinition}
           symbolRegistry={symbolRegistry}
           patternRegistry={patternRegistry}
           mapStyle={mapStyle}

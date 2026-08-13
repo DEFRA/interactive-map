@@ -102,7 +102,7 @@ const datasetRegistry = {
       const groupObject = {
         type: 'group',
         groupLabel,
-        datasets: []
+        keyDefinitions: []
       }
       groups.set(groupLabel, groupObject)
       _items.push(groupObject)
@@ -110,22 +110,22 @@ const datasetRegistry = {
     }
 
     this.forEach((dataset) => {
-      if (!(dataset.showInKey && dataset.keyVisibility)) {
+      if (!dataset.keyVisibility) {
         return
       }
       const isGroup = dataset.hasSublayers || dataset.groupLabel
       if (!isGroup) {
-        _items.push({ type: 'flat', dataset })
+        _items.push({ type: 'flat', keyDefinition: dataset.keyDefinition })
         return
       }
 
       const groupLabel = dataset.groupLabel || dataset.label
       const groupObject = getOrCreateGroup(groupLabel)
       if (!dataset.hasSublayers) {
-        groupObject.datasets.push(dataset)
+        groupObject.keyDefinitions.push(dataset.keyDefinition)
       }
     })
-    const items = _items.filter((item) => item.type === 'flat' || Boolean(item.datasets?.length))
+    const items = _items.filter((item) => item.type === 'flat' || Boolean(item.keyDefinitions?.length))
     const hasGroups = items.some(item => item.type === 'group')
     this._lastKeyItems = { items, hasGroups }
     return this._lastKeyItems
