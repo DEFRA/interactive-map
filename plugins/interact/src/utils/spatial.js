@@ -41,19 +41,25 @@ function isContiguousWithAny (feature, features) {
   return features.some(f => !booleanDisjoint(toTurfGeometry(f), toTurfGeometry(feature)))
 }
 
+const isPolygonal = (type) => type === 'Polygon' || type === 'MultiPolygon'
+
 /**
- * Check if all features form a single contiguous group (can be merged).
+ * Check if all features are polygons/multi-polygons and form a single contiguous group
+ * (mergeable). Mixed geometry types (e.g. a line crossing a polygon) are never contiguous,
+ * regardless of spatial overlap, so the type check runs first and skips the spatial work
+ * entirely when it fails.
+ *
  * Uses flood-fill to find connected components.
  *
  * @param {Array} features - Array of features to test
- * @returns {boolean} True if 2+ features and all are contiguous
+ * @returns {boolean} True if 2+ features, all polygonal, and all contiguous
  */
 function areAllContiguous (features) {
   if (features.length < 2) {
     return false
   }
 
-  if (features.some(f => !f.geometry?.type)) {
+  if (features.some(feature => !isPolygonal(feature.geometry?.type))) {
     return false
   }
 

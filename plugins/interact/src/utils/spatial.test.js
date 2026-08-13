@@ -67,9 +67,11 @@ describe('areAllContiguous', () => {
   const B = poly([[2, 0], [4, 0], [4, 2], [2, 2], [2, 0]]) // touches A
   const C = poly([[4, 0], [6, 0], [6, 2], [4, 2], [4, 0]]) // touches B
   const D = poly([[10, 10], [12, 10], [12, 12], [10, 12], [10, 10]]) // isolated
+  const multiA = { geometry: { type: 'MultiPolygon', coordinates: [[[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]]] } } // same shape as A
 
   const noGeom = { geometry: undefined }
   const noType = { geometry: {} }
+  const lineThroughA = { geometry: { type: 'LineString', coordinates: [[1, -1], [1, 3]] } } // crosses straight through A's interior
 
   it.each([
     [[], false],
@@ -81,8 +83,17 @@ describe('areAllContiguous', () => {
     [[noGeom, A], false],
     [[A, noGeom], false],
     [[noGeom, noGeom], false],
-    [[noType, A], false]
+    [[noType, A], false],
+    [[multiA, B], true],
+    [[A, lineThroughA], false]
   ])('returns expected result for %# features', (features, expected) => {
     expect(areAllContiguous(features)).toBe(expected)
+  })
+
+  it('excludes a line from the contiguous group even when it spatially crosses a polygon', () => {
+    // Without the type restriction this would be true — isContiguousWithAny alone treats
+    // a line crossing a polygon's interior the same as a shared boundary.
+    expect(isContiguousWithAny(lineThroughA, [A])).toBe(true)
+    expect(areAllContiguous([A, lineThroughA])).toBe(false)
   })
 })
