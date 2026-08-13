@@ -3,6 +3,7 @@ import esriProvider from '/providers/beta/esri/src/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
+import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
@@ -561,6 +562,7 @@ const interactiveMap = new InteractiveMap('map', {
   center: [481146,484971],
   zoom: 13,
   plugins: [
+    createMapKeyPlugin(),
     datasetsPlugin,
     mapStylesPlugin({
       mapStyles: vtsMapStyles27700,

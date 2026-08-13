@@ -4,15 +4,15 @@ import { MapKey } from './MapKey.jsx'
 export const manifest = {
   controls: [{
     id: 'mapKey',
-    label: 'Scale bar',
+    label: 'Key',
     mobile: {
-      slot: 'right-bottom'
+      slot: 'drawer'
     },
     tablet: {
-      slot: 'right-bottom'
+      slot: 'top-left'
     },
     desktop: {
-      slot: 'right-bottom'
+      slot: 'top-left'
     },
     render: MapKey
   }]

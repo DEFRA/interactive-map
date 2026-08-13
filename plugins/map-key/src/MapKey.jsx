@@ -1,35 +1,10 @@
-// src/plugins/mapKey/ScaleBarInit.jsx
-import React, { useMemo, useRef } from 'react'
-import { getBestScale } from './utils.js'
+import React from 'react'
 
-const MAX_WIDTH = 120
-const CSS_SCALE = 1
-
-export function MapKey ({
-  mapState,
-  pluginConfig
-}) {
-  const { resolution, mapSize } = mapState
-  const elRef = useRef(null)
-
-  // useMemo to prevent scale flashing between renders
-  const scale = useMemo(() => {
-    if (!resolution) {
-      return { width: 0, label: '', abbr: '', unit: '' }
-    }
-
-    const metersPerPx = resolution / CSS_SCALE
-    return getBestScale(metersPerPx, MAX_WIDTH, pluginConfig.units, mapSize)
-  }, [resolution, mapSize, pluginConfig.units])
-
+export function MapKey ({ mapState, pluginConfig }) {
+  // console.log({ mapState, pluginConfig })
   return (
-    <div className='im-c-' ref={elRef} style={{ width: `${scale.width}px` }}>
-      <span className='im-c-scale-bar__label'>
-        <span className='im-u-visually-hidden'>Scale bar: </span>
-        {scale.label}
-        <span aria-hidden='true'>{scale.abbr}</span>
-        <span className='im-u-visually-hidden'>{scale.unit}</span>
-      </span>
+    <div className='im-c-map-key'>
+      My Map Key Plugin
     </div>
   )
 }
