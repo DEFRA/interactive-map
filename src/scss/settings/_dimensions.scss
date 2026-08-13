@@ -40,7 +40,7 @@
     --panel-heading-margin-top: 12px;
     --panel-margin: 15px;
     --banner-preferred-width: 280px; // Docked max-width, and the gutter threshold JS docks/stacks against
-    --banner-border-radius: var(--tooltip-border-radius); // Styled like a hint, not a panel
+    --banner-border-radius: 0px; // Styled like a hint, not a panel
 
     // Popup menu
     --popup-menu-min-width: 200px;
