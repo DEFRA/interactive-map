@@ -31,7 +31,6 @@ export default {
       '<rootDir>/demo',
       '<rootDir>/src/test-utils.js',
       '__helpers__',
-      '<rootDir>/plugins/datasets/',
       '<rootDir>/providers/beta/',
       '<rootDir>/plugins/beta/draw-es',
       '<rootDir>/plugins/beta/draw-ml',
