@@ -562,7 +562,14 @@ const interactiveMap = new InteractiveMap('map', {
   center: [481146,484971],
   zoom: 13,
   plugins: [
-    createMapKeyPlugin(),
+    createMapKeyPlugin({
+      manifest: {
+        buttons: [{
+          id: 'mapKey',
+          label: 'Map Key',
+        }]
+      }
+    }),
     datasetsPlugin,
     mapStylesPlugin({
       mapStyles: vtsMapStyles27700,
@@ -596,7 +603,6 @@ const testAddRemoveDataset = () => {
 interactiveMap.on('datasets:ready', function () {
   // testGlobalVisibility()
   // testAddRemoveDataset()
-  console.log('datasets:ready')
   updateVisibleLayers()
   initPointerMove(mapState.view)
 })
@@ -604,7 +610,7 @@ interactiveMap.on('datasets:ready', function () {
 const mapState = {}
 
 interactiveMap.on('map:ready', function ({ map, view, mapStyleId, mapSize, crs }) {
-  console.log('map:ready', { map, view, mapStyleId, mapSize, crs })
+  // console.log('map:ready', { map, view, mapStyleId, mapSize, crs })
   mapState.map = map
   mapState.view = view
 })
@@ -650,7 +656,6 @@ const initPointerMove = (view) => {
       }
       if (mapState.cursorStyleLayer !== topVisibleStyleLayerId) {
         mapState.cursorStyleLayer = topVisibleStyleLayerId
-        console.log('cursorStyleLayer', mapState.cursorStyleLayer)
       }
       document.body.style.cursor = topVisibleStyleLayerId ? 'pointer' : 'default'
     })
