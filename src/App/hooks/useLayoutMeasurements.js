@@ -15,6 +15,18 @@ const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 
 
 const subSlotMaxHeight = (columnHeight, siblingButtons, gap) => columnHeight - (siblingButtons ? siblingButtons + gap : 0)
 
+// bottomRightHeight is 0 when empty, falling back to the attributions' own height for spacing.
+const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, gap) =>
+  containerPad + (bottomRightHeight > 0 ? bottomRightHeight + gap : attributionsHeight)
+
+// Mobile's actions bar sits in flow (already reflected in baseBottom); tablet/desktop's floats, so this clears it too.
+const hintBottom = (main, bottom, actionsEl, gap) => {
+  const baseBottom = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
+  const actionsHeight = actionsEl?.offsetHeight ?? 0
+  const actionsOffset = actionsHeight > 0 ? main.offsetHeight - actionsEl.offsetTop : 0
+  return Math.max(baseBottom, actionsOffset + gap)
+}
+
 // Space between .im-o-app__left/.im-o-app__right for the banner to dock in.
 const bannerGutterWidth = (mainWidth, sideColWidth, gap) => mainWidth - (sideColWidth * 2) - (gap * 2)
 
@@ -108,26 +120,18 @@ function calculateLayout (layoutRefs, breakpoint) {
   appContainer.style.setProperty('--left-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
   appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
 
-  // === Right container offsets ===
-  // Mirrors the left formula; bottomRight.offsetHeight is 0 when empty.
-  const bottomRightHeight = bottomRightRef?.current?.offsetHeight ?? 0
+  // === Right container offsets === (mirrors the left formula)
+  const bottomRightHeight = buttonHeight(bottomRightRef)
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const rightOffsetTop = sideOffsetTop(topRightCol.offsetHeight)
   const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight
   const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
-  const rightOffsetBottom = bottomContainerPad + (bottomRightHeight > 0 ? (bottomRightHeight + dividerGap) : attributions.offsetHeight)
   appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom}px`)
+  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, dividerGap)}px`)
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
   // === Keyboard hint bottom offset ===
-  // baseBottom covers the in-flow mobile actions bar; actionsOffset covers the
-  // floating tablet/desktop one so the hint always clears it.
-  const actionsEl = actionsRef?.current
-  const actionsHeight = actionsEl?.offsetHeight ?? 0
-  const baseBottom = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
-  const actionsOffset = actionsHeight > 0 ? main.offsetHeight - actionsEl.offsetTop : 0
-  appContainer.style.setProperty('--hint-bottom', `${Math.max(baseBottom, actionsOffset + dividerGap)}px`)
+  appContainer.style.setProperty('--hint-bottom', `${hintBottom(main, bottom, actionsRef?.current, dividerGap)}px`)
 
   // === Sub-slot panel max-heights ===
   appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)
