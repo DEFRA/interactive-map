@@ -147,6 +147,13 @@ const interactiveMap = new InteractiveMap('map', {
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
       showMarker: false,
+      manifest: {
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-left', order: 3 },
+          desktop: { slot: 'top-left', order: 3 }
+        }]
+      },
       // expanded: true
     }),
     datasetsPlugin,
@@ -164,13 +171,6 @@ const interactiveMap = new InteractiveMap('map', {
 
 interactiveMap.on('app:ready', function (e) {
   // console.log('app:ready')
-  // interactiveMap.addPanel('banner', {
-  //   label: 'Hello',
-  //   html: 'Alert',
-  //   mobile: { slot: 'banner' },
-  //   tablet: { slot: 'banner' },
-  //   desktop: { slot: 'banner' }
-  // })
 })
 
 

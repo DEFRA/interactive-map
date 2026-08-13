@@ -76,16 +76,41 @@
 }
 
 // ---------------------------------------------------
-// Banner: Panels only
+// Banner: docks centred between the side columns or stacks full-width; mode and position are set in JS.
 // ---------------------------------------------------
 
 .im-o-app__banner {
+  position: absolute;
+  top: var(--banner-top);
+  left: var(--banner-left);
+  right: var(--banner-right);
+  z-index: 9;
   display: flex;
   flex-direction: column;
   gap: var(--divider-gap);
 }
 
-.im-o-app__banner .im-c-panel:last-child {
+// Trailing gap below the banner is added in JS, not via a last-child margin, since closed consumer HTML panels stay in the DOM.
+
+// Stacked fills full width; docked caps the width and centres it.
+.im-o-app__banner--docked .im-c-panel--banner {
+  max-width: var(--banner-preferred-width);
+  margin-inline: auto;
+}
+
+// ---------------------------------------------------
+// Header: normal flow, above the top row — pushes everything below it down for free.
+// ---------------------------------------------------
+
+// z-index only, no position — flex items get stacking priority from z-index alone, and must stay above .im-o-app__top's since header comes first in the DOM.
+.im-o-app__header {
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.im-o-app__header:not(:empty) {
   margin-bottom: var(--divider-gap);
 }
 
@@ -93,7 +118,9 @@
 // Top: Includes a panel and buttons in colums
 // ---------------------------------------------------
 
+// z-index only (see .im-o-app__header's comment above) — must stay below its value.
 .im-o-app__top {
+  z-index: 10;
   display: flex;
   margin-bottom: auto;
   justify-content: space-between;
@@ -421,10 +448,6 @@
   .im-o-app__modal .im-c-panel--banner {
     margin: var(--primary-gap);
   }
-
-  .im-o-app__banner {
-    z-index: 9;
-  }
 }
 
 // Desktop modal banner margin
@@ -447,13 +470,6 @@
   opacity: 0;
 }
 
-// Banner on desktop
-.im-o-app--desktop .im-c-panel--banner {
-  margin-left: auto;
-  margin-right: auto;
-  max-width: var(--banner-max-desktop-width);
-}
-
 // Actions inset when width is greater
 .im-o-app--tablet, .im-o-app--desktop {
   .im-o-app__actions {
@@ -466,8 +482,7 @@
       max-width: var(--action-bar-max-width);
     }
 
-    // max-height animation on a bottom-anchored element grows upward, looking like
-    // a slide-up. Override to opacity-only so the bar fades in instead.
+    // Opacity-only so it fades in instead of visually sliding up.
     @media (prefers-reduced-motion: no-preference) {
       .im-c-actions {
         transition: opacity var(--duration) ease;
@@ -498,8 +513,7 @@
     clip-path: inset(-20px 0 0 0);
 }
 
-// Inset focus ring on panels that are flush with the container edge,
-// so the ::after ring isn't clipped by the parent overflow:hidden
+// Inset the focus ring so it isn't clipped by the parent's overflow:hidden.
 .im-o-app--mobile .im-o-app__drawer .im-c-panel::after,
 .im-o-app--mobile .im-o-app__actions .im-c-panel::after,
 .im-o-app__modal .im-c-panel--drawer::after {

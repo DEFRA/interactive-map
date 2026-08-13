@@ -130,13 +130,20 @@ const interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
+  interactiveMap.addPanel('banner', {
+    label: 'Hello',
+    html: 'Alert',
+    mobile: { slot: 'banner' },
+    tablet: { slot: 'banner' },
+    desktop: { slot: 'banner' }
+  })
   interactiveMap.addButton('help', {
     label: 'Help',
     href: 'https://google.co.uk',
     iconSvgContent: '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/>',
-    mobile: { slot: 'right-top', showLabel: false },
-    tablet: { slot: 'right-top', showLabel: false, order: 1 },
-    desktop: { slot: 'right-top', showLabel: false, order: 1 }
+    mobile: { slot: 'right-top', showLabel: false, order: 1 },
+    tablet: { slot: 'top-right', showLabel: false, order: 1 },
+    desktop: { slot: 'top-right', showLabel: false, order: 1 }
   })
   interactiveMap.addButton('menu', {
     label: 'Menu',
@@ -164,9 +171,9 @@ interactiveMap.on('app:ready', function (e) {
   interactiveMap.addPanel('key', {
     label: 'Key',
     html: renderKeyHTML(),
-    mobile: { slot: 'drawer', open: false, exclusive: true },
-    tablet: { slot: 'left-top', width: '260px', open: false, exclusive: true },
-    desktop: { slot: 'left-top', width: '280px', open: false, exclusive: true }
+    mobile: { slot: 'drawer', open: false, exclusive: false },
+    tablet: { slot: 'left-top', width: '260px', open: false, exclusive: false },
+    desktop: { slot: 'left-top', width: '280px', open: false, exclusive: false }
   })
 })
 

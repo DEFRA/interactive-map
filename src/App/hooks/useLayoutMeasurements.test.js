@@ -20,10 +20,13 @@ const el = (props = {}) => {
 const refs = (o = {}) => ({
   appContainerRef: { current: o.appContainer || el() },
   mainRef: { current: o.main === null ? null : el({ offsetHeight: 500, ...o.main }) },
+  headerRef: { current: el(o.header) },
   bannerRef: { current: el(o.banner) },
   topRef: { current: o.top === null ? null : el({ offsetTop: 10, ...o.top }) },
   topLeftColRef: { current: el({ offsetHeight: 50, offsetWidth: 200, ...o.topLeftCol }) },
   topRightColRef: { current: el({ offsetHeight: 40, offsetWidth: 180, ...o.topRightCol }) },
+  leftRef: { current: el(o.left) },
+  rightRef: { current: el(o.right) },
   bottomRef: { current: o.bottom === null ? null : el({ offsetTop: 400, ...o.bottom }) },
   bottomRightRef: { current: el({ offsetTop: 400, ...o.bottomRight }) },
   leftTopRef: { current: el({ offsetHeight: 0, ...o.leftTop }) },
@@ -138,6 +141,63 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup({ refs: { topLeftCol: { offsetHeight: 50, ...left }, topRightCol: { offsetHeight: 40, ...right } } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--top-col-width', expected)
+  })
+
+  test('clears inline banner panel widths on mobile', () => {
+    const { layoutRefs } = setup({ app: { breakpoint: 'mobile' } })
+    const panel = document.createElement('div')
+    panel.className = 'im-c-panel--banner'
+    panel.style.width = '250px'
+    layoutRefs.bannerRef.current.appendChild(panel)
+    renderHook(() => useLayoutMeasurements())
+    expect(panel.style.width).toBe('')
+  })
+
+  test('uses widest parseable banner panel width, ignoring unparseable ones', () => {
+    const { layoutRefs } = setup()
+    const banner = layoutRefs.bannerRef.current
+    const panel = (width) => {
+      const p = document.createElement('div')
+      p.className = 'im-c-panel--banner'
+      p.style.width = width
+      return p
+    }
+    banner.appendChild(panel('250px'))
+    banner.appendChild(panel('auto')) // unparseable, filtered out
+    banner.appendChild(panel('400px'))
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-preferred-width', '400px')
+  })
+
+  test('falls back to default preferred width when banner element is absent', () => {
+    const { layoutRefs } = setup()
+    layoutRefs.bannerRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-preferred-width', '8px')
+  })
+
+  test('docks the banner when the gutter is wide enough for the preferred width', () => {
+    const { layoutRefs } = setup({ refs: { top: { offsetWidth: 1000 } } })
+    renderHook(() => useLayoutMeasurements())
+    // docked: primaryGap (8) + sideColWidth (0) + dividerGap (8)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-left', '16px')
+  })
+
+  test('treats a null leftRef current as 0 width in the banner gutter calc', () => {
+    const { layoutRefs } = setup({ refs: { top: { offsetWidth: 1000 }, right: { offsetWidth: 20 } } })
+    layoutRefs.leftRef.current = null
+    renderHook(() => useLayoutMeasurements())
+    // symmetricWidth(0, 20) = 20; docked: primaryGap (8) + sideColWidth (20) + dividerGap (8)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-left', '36px')
+  })
+
+  test('stacks a present banner below the top row when not docked', () => {
+    const { layoutRefs } = setup({ refs: { banner: { offsetHeight: 30 } } })
+    renderHook(() => useLayoutMeasurements())
+    // bannerTop = top.offsetTop (10) + top.offsetHeight (0)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-top', '10px')
+    // stacked: left column pushed below the banner (bannerTop 10 + bannerHeight 30 + dividerGap 8)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-top', '48px')
   })
 
   test('uses 0 when bottomRightRef current is null', () => {
@@ -264,7 +324,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()

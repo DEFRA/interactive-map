@@ -6,27 +6,30 @@ Slots are named regions in the UI where buttons, controls, and panels can be pla
 
 <img src="/interactive-map/images/slot-map.svg" alt="Slot map showing the position of each named slot in the UI layout" width="838" />
 
-`banner` appears at the top of the map on mobile and tablet. On desktop it moves into the `top-middle` slot.
+`header` sits above the top row of buttons/controls, at every breakpoint, pushing everything below it down. Use it for content that needs to take over the very top of the screen — `banner` can only sit below the row.
 
-`drawer` is typically used on mobile. At tablet and desktop breakpoints, panels assigned to `drawer` automatically fall back to `left-top`.
+`banner` sits below the top row of buttons/controls, at every breakpoint — full width by default, pushing the left and right side columns down further, or centred between them at its preferred width when there's enough room. On mobile it's always full width, regardless of available room.
+
+`drawer` only renders as a drawer on mobile — at tablet and desktop breakpoints, panels assigned to `drawer` automatically fall back to `left-top`.
 
 ## Available Slots
 
 | Slot | Typical use |
 |---|---|
+| `header` | Full width, above the top row, pushing everything below it down. Typically used for an expanded search bar on mobile |
 | `top-left` | Buttons and controls. Typically the search control on tablet and desktop |
 | `top-middle` | Buttons and controls for optional actions |
 | `top-right` | Buttons and controls. Typically the search button on mobile |
-| `banner` | Tips, notifications, and context messages. Full width on mobile and tablet; rendered in the `top-middle` slot on desktop |
+| `banner` | Tips, notifications, and context messages. Sits below the top row, full width — or centred between the left/right side columns when there's room |
 | `left-top` | Panels stacked on the left side (upper) |
 | `left-bottom` | Panels stacked on the left side (lower) |
 | `right-top` | Panels stacked on the right side (upper) |
 | `right-bottom` | Panels stacked on the right side (lower) |
 | `bottom-right` | Buttons and controls in the bottom-right corner |
 | `middle` | Overlays centred on the map (e.g. loading screens or keyboard controls). Typically modal, as these will obscure map content |
-| `drawer` | Full-width drawer below the map — typically for mobile panels |
+| `drawer` | Full-width drawer below the map — mobile only, falls back to `left-top` on tablet/desktop |
 | `actions` | Full width at the bottom of the screen on mobile. On tablet or desktop, a floating control at the bottom of the map area |
-| `side` | Persistent side panel alongside the map |
+| `side` | Persistent side panel alongside the map. Typically a custom menu |
 
 ## Slot Eligibility
 
@@ -34,6 +37,7 @@ Not all element types can use every slot. The table below shows which slots are 
 
 | Slot | Buttons | Panels | Controls |
 |---|:---:|:---:|:---:|
+| `header` | | ✓ | ✓ |
 | `top-left` | ✓ | | ✓ |
 | `top-middle` | ✓ | | |
 | `top-right` | ✓ | | ✓ |
