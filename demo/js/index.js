@@ -312,8 +312,7 @@ const interactiveMap = new InteractiveMap('map', {
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
       showMarker: true,
-      showLabel: true,
-      expanded: true
+      showLabel: true
     }),
     datasetsPlugin,
     mapStylesPlugin({
@@ -341,13 +340,6 @@ interactiveMap.on('map:ready', function (e) {
   interactPlugin.enable()
   interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407], { label: 'My label', showLabel: true })
   interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], { label: 'Another marker', symbol: 'square' })
-  interactiveMap.addPanel('banner', {
-    label: 'Hello',
-    html: 'Alert',
-    mobile: { slot: 'banner' },
-    tablet: { slot: 'banner' },
-    desktop: { slot: 'banner' }
-  })
 })
 
 interactiveMap.on('datasets:ready', function () {

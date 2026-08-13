@@ -171,20 +171,6 @@ const interactiveMap = new InteractiveMap('map', {
 
 interactiveMap.on('app:ready', function (e) {
   // console.log('app:ready')
-  interactiveMap.addPanel('banner', {
-    label: 'Hello',
-    html: 'Alert1',
-    mobile: { slot: 'banner', showLabel: false },
-    tablet: { slot: 'banner', showLabel: false, width: '320px' },
-    desktop: { slot: 'banner', showLabel: false, width: '400px' }
-  })
-  interactiveMap.addPanel('banner2', {
-    label: 'Hello',
-    html: 'Alert2',
-    mobile: { slot: 'banner', showLabel: false },
-    tablet: { slot: 'banner', showLabel: false, width: '320px' },
-    desktop: { slot: 'banner', showLabel: false, width: '400px' }
-  })
 })
 
 
