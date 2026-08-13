@@ -45,6 +45,9 @@ export const Layout = () => {
           <SlotRenderer slot={layoutSlots.SIDE} />
         </div>
         <div className='im-o-app__main' ref={layoutRefs.mainRef}>
+          <div className='im-o-app__header' ref={layoutRefs.headerRef}>
+            <SlotRenderer slot={layoutSlots.HEADER} />
+          </div>
           <div className='im-o-app__top' ref={layoutRefs.topRef}>
             <div className='im-o-app__top-col' ref={layoutRefs.topLeftColRef}>
               <SlotRenderer slot={layoutSlots.TOP_LEFT} />

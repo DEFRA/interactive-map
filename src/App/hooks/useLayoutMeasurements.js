@@ -140,7 +140,7 @@ export function useLayoutMeasurements () {
   const { dispatch, breakpoint, layoutRefs, arePluginsEvaluated, appVisible, isFullscreen } = useApp()
   const { mapSize, isMapReady } = useMap()
 
-  const { bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
+  const { bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
 
   // 1. Clear the evaluated flag on structural changes, gating the safe zone until re-evaluated.
   useLayoutEffect(() => {
@@ -164,7 +164,7 @@ export function useLayoutMeasurements () {
   // 3. Recalculate CSS vars on resize; safe zone dispatch stays Effect 2's job.
   // Memoized so useResizeObserver doesn't re-run (and cancel its RAF) on every render.
   const observedRefs = useMemo(
-    () => [bannerRef, mainRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
+    () => [bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
     []
   )
 

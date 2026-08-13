@@ -16,15 +16,18 @@
 
 // 1. Base styles
 .im-c-search {
-  // To follow...
+  // Contains margin collapsing so a nested negative margin can't understate .im-o-app__header's measured height.
+  display: flow-root;
 }
 
-// When the form is hidden (collapsed), the trigger button — a separate slot item —
-// is what shows. Take this wrapper out of layout entirely so its empty box doesn't
-// add a stray flex gap in the slot column. The form remains in the DOM (display:none
-// ancestor) so the trigger's aria-controls target still resolves.
+// Keeps the collapsed form out of layout so its empty box doesn't add a stray flex gap.
 .im-c-search--collapsed {
   display: none;
+}
+
+// Prevents a phantom trailing gap when the only header content is a collapsed (but still present) search form.
+.im-o-app__header:has(> .im-c-search--collapsed:only-child) {
+  margin-bottom: 0;
 }
 
 // 2. Elements
@@ -52,8 +55,7 @@
     }
   }
 
-  // Excludes the close button so its own hover indicator (shared via
-  // .im-c-map-button) doesn't also light up this container's ring.
+  // Excludes the close button so its own hover indicator doesn't also light up this ring.
   &:hover:not(:has(.im-c-search-close-button:hover)):before {
     @media (-ms-high-contrast:active), screen and (forced-colors: active) {
       border-color: Highlight;
@@ -117,10 +119,7 @@
     z-index: -1;
   }
 
-  // The search open trigger shares its slot with the search form. While the form is
-  // open we take the trigger out of layout flow (it is already opacity:0 above) so the
-  // form occupies its place with no gap — but crucially it stays display:visible and
-  // therefore focusable, so focus can be returned to it when the form closes.
+  // Takes the trigger out of flow (already hidden above) but keeps it focusable so focus can return to it on close.
   .im-c-button-wrapper--search {
     position: absolute;
     pointer-events: none;
@@ -155,16 +154,13 @@
 .im-c-search__input-container--keyboard-focus-within:after {
   opacity: 1;
 
-  // Forced-colors uses a Highlight outline on the container itself instead
-  // (see below); hiding this avoids a mega-thick double ring that
-  // doesn't pick up forced colors correctly.
+  // Hidden in forced-colors mode to avoid a double ring with the container's own Highlight outline below.
   @media (-ms-high-contrast:active), screen and (forced-colors: active) {
     opacity: 0;
   }
 }
 
-// A real outline (not the :before border) so it sits flush against the real
-// edge and grows outward exactly like the close button's own focus ring.
+// A real outline, not the :before border, so it sits flush and grows outward like the close button's ring.
 .im-c-search__input-container--keyboard-focus-within {
   @media (-ms-high-contrast:active), screen and (forced-colors: active) {
     outline: var(--focus-highlight-width) solid Highlight;

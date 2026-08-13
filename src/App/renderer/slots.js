@@ -1,6 +1,7 @@
 // src/core/renderers/slots.js
 export const layoutSlots = Object.freeze({
   SIDE: 'side',
+  HEADER: 'header',
   BANNER: 'banner',
   TOP_LEFT: 'top-left',
   TOP_MIDDLE: 'top-middle',
@@ -19,6 +20,7 @@ export const layoutSlots = Object.freeze({
 
 export const allowedSlots = Object.freeze({
   control: [
+    layoutSlots.HEADER,
     layoutSlots.BANNER,
     layoutSlots.TOP_LEFT,
     layoutSlots.TOP_RIGHT,
@@ -31,6 +33,7 @@ export const allowedSlots = Object.freeze({
   ],
   panel: [
     layoutSlots.SIDE,
+    layoutSlots.HEADER,
     layoutSlots.BANNER,
     layoutSlots.LEFT_TOP,
     layoutSlots.LEFT_BOTTOM,

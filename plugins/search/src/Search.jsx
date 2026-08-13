@@ -79,9 +79,8 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
     }
   }, [isExpanded, interfaceType, areSuggestionsVisible, suggestions])
 
-  // The form is only visible when expanded (or default-expanded). When collapsed the
-  // trigger button (a separate slot item) is what shows, so keep this wrapper out of
-  // layout — otherwise its empty box adds a stray flex gap in the slot column.
+  // Visible when expanded (or default-expanded); otherwise the trigger button in its own
+  // slot is what shows, so this wrapper stays out of layout to avoid an empty stray gap.
   const isFormVisible = defaultExpanded || isExpanded
 
   return (

@@ -136,7 +136,7 @@ searchPlugin({
 
 Controls whether the search input is always visible or hidden behind an open button.
 
-- **Mobile** — by default the search is hidden and requires a button tap to open. When `expanded: true`, it moves to the banner slot and is shown inline at the top of the map at all times.
+- **Mobile** — the search form always lives in the `header` slot, above the top row. By default it's collapsed behind a button tap; setting `expanded: true` shows it inline at all times and removes the open button.
 - **Tablet and desktop** — the search always sits in the `top-left` slot regardless of this setting, but setting `expanded: true` removes the open button so the input is immediately visible without interaction.
 
 ---

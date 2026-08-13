@@ -46,7 +46,7 @@ export const manifest = {
   controls: [{
     id: 'search',
     mobile: {
-      slot: 'top-right'
+      slot: 'header'
     },
     tablet: {
       slot: 'top-left'

@@ -36,6 +36,7 @@ describe('Layout', () => {
   const mockRefs = {
     appContainerRef: React.createRef(),
     mainRef: React.createRef(),
+    headerRef: React.createRef(),
     bannerRef: React.createRef(),
     topRef: React.createRef(),
     topLeftColRef: React.createRef(),
@@ -89,6 +90,7 @@ describe('Layout', () => {
     expect(screen.getByTestId('attributions')).toBeInTheDocument()
 
     expect(screen.getByTestId('slot-side')).toBeInTheDocument()
+    expect(screen.getByTestId('slot-header')).toBeInTheDocument()
     expect(screen.getByTestId('slot-banner')).toBeInTheDocument()
     expect(screen.getByTestId('slot-top-left')).toBeInTheDocument()
     expect(screen.getByTestId('slot-bottom-right')).toBeInTheDocument()

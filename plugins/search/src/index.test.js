@@ -17,12 +17,10 @@ describe('createPlugin', () => {
     expect(typeof plugin.load).toBe('function')
   })
 
-  it('overrides manifest when expanded is true', () => {
+  it('does not override manifest when expanded is true — mobile always uses the header slot', () => {
     const plugin = createPlugin({ expanded: true })
     expect(plugin.expanded).toBe(true)
-    expect(plugin.manifest).toEqual({
-      controls: [{ id: 'search', mobile: { slot: 'banner' } }]
-    })
+    expect(plugin.manifest).toBeUndefined()
   })
 
   it('spreads custom options correctly', () => {

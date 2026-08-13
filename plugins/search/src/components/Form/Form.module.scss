@@ -4,10 +4,6 @@
   min-height: auto;
   border-radius: 0;
   filter: var(--search-drop-shadow);
-  -webkit-transform: translate3d(0, 0, 0);
-   -moz-transform: translate3d(0, 0, 0);
-   -ms-transform: translate3d(0, 0, 0);
-   transform: translate3d(0, 0, 0);
   
   &:before {
     border-radius: 0;
@@ -15,12 +11,10 @@
   }
 }
 
+// Bleeds past .im-o-app__header's inherited inset via negative margin, now that it's real header-slot content.
 .im-o-app--mobile .im-c-search-form {
-  position: absolute;
-  left: 0;
-  top: 0;
-  right: 0;
-  height: auto;
+  position: relative;
+  margin: calc(-1 * var(--primary-gap)) calc(-1 * var(--primary-gap)) 0;
   overflow: visible;
 }
 
@@ -57,15 +51,10 @@
   border-bottom-right-radius: var(--button-border-radius);
 }
 
-// Default expanded
-.im-o-app--mobile .im-c-search-form--default-expanded {
-  position: relative;
-  margin: calc(-1 * var(--primary-gap)) calc(-1 * var(--primary-gap)) 0;
-
-  .im-c-search-suggestions {
-    position: absolute;
-    top: 100%;
-    width: 100%;
-    left: 0;
-  }
+// Default expanded is a persistent bar, so its suggestions float as a dropdown instead of reflowing the layout.
+.im-o-app--mobile .im-c-search-form--default-expanded .im-c-search-suggestions {
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  left: 0;
 }

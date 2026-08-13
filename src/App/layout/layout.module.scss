@@ -76,8 +76,7 @@
 }
 
 // ---------------------------------------------------
-// Banner: docks centred between the side columns, or stacks full-width; mode and
-// position are set in JS (useLayoutMeasurements).
+// Banner: docks centred between the side columns or stacks full-width; mode and position are set in JS.
 // ---------------------------------------------------
 
 .im-o-app__banner {
@@ -91,8 +90,7 @@
   gap: var(--divider-gap);
 }
 
-// Trailing gap below the banner is added in JS, not via a last-child margin —
-// closed consumer HTML panels stay in the DOM (display:none).
+// Trailing gap below the banner is added in JS, not via a last-child margin, since closed consumer HTML panels stay in the DOM.
 
 // Stacked fills full width; docked caps the width and centres it.
 .im-o-app__banner--docked .im-c-panel--banner {
@@ -101,10 +99,28 @@
 }
 
 // ---------------------------------------------------
+// Header: normal flow, above the top row — pushes everything below it down for free.
+// ---------------------------------------------------
+
+// z-index only, no position — flex items get stacking priority from z-index alone, and must stay above .im-o-app__top's since header comes first in the DOM.
+.im-o-app__header {
+  z-index: 11;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.im-o-app__header:not(:empty) {
+  margin-bottom: var(--divider-gap);
+}
+
+// ---------------------------------------------------
 // Top: Includes a panel and buttons in colums
 // ---------------------------------------------------
 
+// z-index only (see .im-o-app__header's comment above) — must stay below its value.
 .im-o-app__top {
+  z-index: 10;
   display: flex;
   margin-bottom: auto;
   justify-content: space-between;

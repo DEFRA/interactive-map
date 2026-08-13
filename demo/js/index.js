@@ -312,7 +312,8 @@ const interactiveMap = new InteractiveMap('map', {
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
       showMarker: true,
-      showLabel: true
+      showLabel: true,
+      expanded: true
     }),
     datasetsPlugin,
     mapStylesPlugin({
