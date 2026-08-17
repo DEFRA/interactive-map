@@ -102,6 +102,7 @@ const datasetRegistry = {
       }
       const groupObject = {
         type: 'group',
+        id: groupLabel.toLowerCase().replaceAll(/\s+/g, '-'),
         groupLabel,
         keyDefinitions: []
       }
@@ -116,7 +117,7 @@ const datasetRegistry = {
       }
       const isGroup = dataset.hasSublayers || dataset.groupLabel
       if (!isGroup) {
-        _items.push({ type: 'flat', keyDefinition: dataset.keyDefinition })
+        _items.push({ type: 'flat', id: dataset.id, keyDefinition: dataset.keyDefinition })
         return
       }
 

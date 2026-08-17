@@ -1,7 +1,25 @@
-import React from 'react'
+import React, { useEffect, useState } from 'react'
 import { EmptyKey } from './EmptyKey.jsx'
 import { KeyItem } from './KeyItem.jsx'
 import { KeyGroupItem } from './KeyGroupItem.jsx'
+
+const keyClassName = 'im-c-map-key'
+const keyGroupsClassName = 'im-c-map-key--has-groups'
+
+const KeyItemWrapper = ({ item, mapStyle }) => {
+  if (item.type === 'group') {
+    return (
+      <KeyGroupItem
+        headingId={`key-heading-${item.id}`}
+        label={item.groupLabel}
+        keyDefinitions={item.keyDefinitions}
+        mapStyle={mapStyle}
+      />
+    )
+  } else {
+    return (<KeyItem keyDefinition={item.keyDefinition} mapStyle={mapStyle} />)
+  }
+}
 
 export const Key = ({
   noKeyItemText,
@@ -13,30 +31,12 @@ export const Key = ({
     return (<EmptyKey text={noKeyItemText} />)
   }
 
-  const containerClass = `im-c-map-key${hasGroups ? ' im-c-map-key--has-groups' : ''}`
-  return (
-    <div className={containerClass}>{keyGroups.map(item => {
-      const key = item.type === 'group' ? item.groupLabel.toLowerCase().replaceAll(/\s+/g, '-') : item.keyDefinition.id
+  const [className, setClassName] = useState('im-c-map-key')
+  useEffect(() => setClassName(hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName), [hasGroups])
 
-      if (item.type === 'group') {
-        return (
-          <KeyGroupItem
-            key={key}
-            headingId={`key-heading-${key}`}
-            label={item.groupLabel}
-            keyDefinitions={item.keyDefinitions}
-            mapStyle={mapStyle}
-          />
-        )
-      }
-      return (
-        <KeyItem
-          key={key}
-          keyDefinition={item.keyDefinition}
-          mapStyle={mapStyle}
-        />
-      )
-    })}
+  return (
+    <div className={className}>
+      {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} />)}
     </div>
   )
 }
