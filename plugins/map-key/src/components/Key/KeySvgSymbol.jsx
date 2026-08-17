@@ -1,7 +1,8 @@
 import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
 import { svgSymbolProps } from './svgProperties.js'
+import { symbolRegistry } from '../../registry/index.js'
 
-export const KeySvgSymbol = ({ symbolRegistry, keyDefinition, mapStyle, symbolDef }) => {
+export const KeySvgSymbol = ({ keyDefinition, mapStyle, symbolDef }) => {
   const { style } = keyDefinition
   const mapColorScheme = mapStyle?.appColorScheme ?? 'light'
   const keyMapStyle = { ...mapStyle, mapColorScheme }

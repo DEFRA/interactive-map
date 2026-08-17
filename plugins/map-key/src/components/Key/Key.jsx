@@ -2,14 +2,12 @@ import React from 'react'
 import { EmptyKey } from './EmptyKey.jsx'
 import { KeyItem } from './KeyItem.jsx'
 import { KeyGroupItem } from './KeyGroupItem.jsx'
-// import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 export const Key = ({
   noKeyItemText,
   keyGroups,
   hasGroups,
-  mapStyle,
-  services: { symbolRegistry, patternRegistry }
+  mapStyle
 }) => {
   // const { items: keyGroups, hasGroups } = datasetRegistry.keyItems()
 
@@ -29,8 +27,6 @@ export const Key = ({
             headingId={`key-heading-${key}`}
             label={item.groupLabel}
             keyDefinitions={item.keyDefinitions}
-            symbolRegistry={symbolRegistry}
-            patternRegistry={patternRegistry}
             mapStyle={mapStyle}
           />
         )
@@ -39,8 +35,6 @@ export const Key = ({
         <KeyItem
           key={key}
           keyDefinition={item.keyDefinition}
-          symbolRegistry={symbolRegistry}
-          patternRegistry={patternRegistry}
           mapStyle={mapStyle}
         />
       )

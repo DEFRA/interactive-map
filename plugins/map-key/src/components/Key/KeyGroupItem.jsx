@@ -1,6 +1,6 @@
 import { KeyItem } from './KeyItem.jsx'
 
-export const KeyGroupItem = ({ headingId, label, keyDefinitions, symbolRegistry, patternRegistry, mapStyle }) => {
+export const KeyGroupItem = ({ headingId, label, keyDefinitions, mapStyle }) => {
   return (
     <section className='im-c-map-key__group' aria-labelledby={headingId}>
       <h3 id={headingId} className='im-c-map-key__group-heading'>{label}</h3>
@@ -8,8 +8,6 @@ export const KeyGroupItem = ({ headingId, label, keyDefinitions, symbolRegistry,
         <KeyItem
           key={`${keyDefinition.id}`}
           keyDefinition={keyDefinition}
-          symbolRegistry={symbolRegistry}
-          patternRegistry={patternRegistry}
           mapStyle={mapStyle}
         />
       )}
