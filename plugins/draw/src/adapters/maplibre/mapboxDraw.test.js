@@ -6,6 +6,7 @@ import { setupTouchClickWorkaround } from './utils/touchClickWorkaround.js'
 import { applyTouchVertexColors } from './modes/editVertexMode/touchHandlers.js'
 import { resolveColors } from '../../utils/resolveColors.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
+import { refreshAllPointSymbols } from './pointSymbolImages.js'
 import { createMapboxDraw } from './mapboxDraw.js'
 
 jest.mock('@mapbox/mapbox-gl-draw', () => {
@@ -22,6 +23,8 @@ jest.mock('./modes/disabledMode.js', () => ({ DisabledMode: { id: 'disabled' } }
 jest.mock('./modes/editVertexMode.js', () => ({ EditVertexMode: { id: 'edit_vertex' } }))
 jest.mock('./modes/drawPolygonMode.js', () => ({ DrawPolygonMode: { id: 'draw_polygon' } }))
 jest.mock('./modes/drawLineMode.js', () => ({ DrawLineMode: { id: 'draw_line' } }))
+jest.mock('./modes/drawPointMode.js', () => ({ DrawPointMode: { id: 'draw_point' } }))
+jest.mock('./pointSymbolImages.js', () => ({ refreshAllPointSymbols: jest.fn() }))
 jest.mock('./styles.js', () => ({
   createDrawStyles: jest.fn(() => ['style']),
   updateDrawStyles: jest.fn()
@@ -38,7 +41,7 @@ jest.mock('./defaults.js', () => ({
   MAP_SIZE_SCALES: { medium: 1.5 }
 }))
 
-const EVENTS = { MAP_SET_STYLE: 'map:setstyle', MAP_SET_SIZE: 'map:setsize' }
+const EVENTS = { MAP_SET_STYLE: 'map:setstyle', MAP_SET_SIZE: 'map:setsize', MAP_SET_PIXEL_RATIO: 'map:setpixelratio' }
 
 const handlerFor = (mockFn, eventName) =>
   mockFn.mock.calls.find(([name]) => name === eventName)?.[1]
@@ -202,7 +205,7 @@ describe('createMapboxDraw – setup side effects', () => {
 
 describe('createMapboxDraw – event handlers', () => {
   test('MAP_SET_STYLE updates the current style and restyles on idle', () => {
-    const { map, eventBus } = setup()
+    const { map, eventBus, mapProvider, result } = setup()
 
     const styleHandler = handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)
     map._drawEditContainer = { querySelector: jest.fn(() => 'svg-el') }
@@ -215,6 +218,7 @@ describe('createMapboxDraw – event handlers', () => {
     expect(updateDrawStyles).toHaveBeenCalledWith(map, 'dark', {})
     expect(map._drawEditContainer.querySelector).toHaveBeenCalledWith('[data-im-draw-touch-target]')
     expect(applyTouchVertexColors).toHaveBeenCalledWith('svg-el', 'dark', {})
+    expect(refreshAllPointSymbols).toHaveBeenCalledWith({ draw: result.draw, mapProvider, map })
   })
 
   test('MAP_SET_STYLE idle handler tolerates a missing edit container', () => {
@@ -249,6 +253,22 @@ describe('createMapboxDraw – event handlers', () => {
 
     expect(map.fire).toHaveBeenCalledWith('draw.scalechange', { scale: MAP_SIZE_SCALES.medium })
   })
+
+  // map.getPixelRatio() never updates itself from a plain map-size change — nothing in this
+  // app calls map.setPixelRatio() off MAP_SET_SIZE alone, so a point-symbol refresh here
+  // would run before the map actually knows about the new size. MAP_SET_PIXEL_RATIO (fired
+  // separately, after MAP_SET_SIZE, carrying the freshly computed value) owns that instead.
+  test('MAP_SET_SIZE does not refresh point symbols — MAP_SET_PIXEL_RATIO owns that', () => {
+    const { eventBus } = setup()
+    handlerFor(eventBus.on, EVENTS.MAP_SET_SIZE)('medium')
+    expect(refreshAllPointSymbols).not.toHaveBeenCalled()
+  })
+
+  test('MAP_SET_PIXEL_RATIO refreshes point symbols with the freshly computed pixel ratio', () => {
+    const { map, eventBus, mapProvider, result } = setup()
+    handlerFor(eventBus.on, EVENTS.MAP_SET_PIXEL_RATIO)(3)
+    expect(refreshAllPointSymbols).toHaveBeenCalledWith({ draw: result.draw, mapProvider, map, pixelRatioOverride: 3 })
+  })
 })
 
 describe('createMapboxDraw – cleanup', () => {
@@ -261,6 +281,7 @@ describe('createMapboxDraw – cleanup', () => {
     expect(removeWorkaround).toHaveBeenCalledTimes(1)
     expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_STYLE, expect.any(Function))
     expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_SIZE, expect.any(Function))
+    expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_PIXEL_RATIO, expect.any(Function))
     expect(draw.changeMode).toHaveBeenCalledWith('disabled')
     expect(mapProvider.draw).toBeNull()
     expect(mapProvider._mapboxDrawInstance).toBe(draw)

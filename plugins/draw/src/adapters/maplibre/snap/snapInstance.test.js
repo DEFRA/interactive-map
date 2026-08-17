@@ -89,6 +89,18 @@ describe('createSnapInstance', () => {
     expect(snap.status).toBe(true)
   })
 
+  test('status is true for every draw/edit mode, including point placement/edit', () => {
+    const map = makeMap()
+    const draw = { getMode: jest.fn(() => 'draw_polygon') }
+    const snap = createSnapInstance(map, draw, {}, { ...config, status: false })
+    snap.setSnapStatus(true)
+
+    for (const mode of ['draw_polygon', 'draw_line', 'draw_point', 'edit_vertex', 'edit_point']) {
+      draw.getMode.mockReturnValue(mode)
+      expect(snap.status).toBe(true)
+    }
+  })
+
   test('setSnapLayers overrides, resets and ignores invalid input', () => {
     const map = makeMap()
     const snap = createSnapInstance(map, {}, {}, { ...config, layers: ['a'] })

@@ -150,6 +150,37 @@ const circle = (editStrokeColor) => ({
   paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-opacity': 0.8 }
 })
 
+// A committed point feature, rendered as its resolved symbol-config icon rather than a
+// paint colour — icon-image/icon-anchor/icon-offset are data-driven per feature
+// (pointSymbolImages.js resolves and writes user_symbolImageId/user_symbolIconAnchor/
+// user_symbolIconOffset onto each point feature as its symbol config changes), so no
+// colour/size params are needed here at all; the image itself carries the styling.
+// icon-offset compensates for icon-anchor's 9-position precision limit — see
+// anchorToMaplibreOffset's own comment (providers/maplibre/src/utils/symbolImages.js).
+// Every mapbox-gl-draw feature carries a `meta` property, not just the internal
+// vertex/midpoint/touch-indicator handles — an ordinary committed feature gets
+// `meta: 'feature'` (Feature.prototype.internal() in the library itself), so this matches
+// that value directly rather than excluding features that merely have some `meta`.
+// Included via createDrawStyles() (not a manual map.addLayer() call) so MapboxDraw's own
+// style-injection duplicates it across both the cold and hot sources, same as every other
+// draw layer.
+const pointSymbol = () => ({
+  id: 'point-symbol',
+  type: 'symbol',
+  filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
+  layout: {
+    'icon-image': ['get', 'user_symbolImageId'],
+    'icon-anchor': ['get', 'user_symbolIconAnchor'],
+    'icon-offset': ['get', 'user_symbolIconOffset'],
+    'icon-allow-overlap': true,
+    'icon-ignore-placement': true
+  },
+  // No paint properties of its own (styling comes entirely from the resolved icon image),
+  // but updateDrawStyles() below iterates every layer's paint object unconditionally, so
+  // this still needs to exist, even empty.
+  paint: {}
+})
+
 const touchVertexIndicator = () => ({
   id: 'touch-vertex-indicator',
   type: 'circle',
@@ -170,6 +201,7 @@ const createDrawStyles = (mapStyle, pluginConfig = {}) => {
     strokeActive(colors.editStroke),
     strokeActiveInvalid(colors.invalidStroke),
     strokeInactive(mapStyle, colors),
+    pointSymbol(),
     drawInvalidSplitter(colors.splitInvalid),
     drawValidSplitter(colors.splitValid),
     drawPreviewLine(colors.editStroke),

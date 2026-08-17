@@ -5,6 +5,7 @@ import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './draw
 import { ADAPTER_EVENTS } from '../../adapterEvents.js'
 import { createLiveStroke } from '../../validation/liveStroke.js'
 import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
+import { resolvePointSymbol } from './pointSymbolImages.js'
 
 const polygonFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates } })
 const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
@@ -147,11 +148,24 @@ export class MaplibreDrawAdapter {
       this._liveStroke.set(false)
       this._liveDrawChecks.reset()
     }
+    // draw_point has no direct dependency on symbolRegistry/mapProvider — the resolver is
+    // injected here so the mode only ever calls state.resolvePointSymbol(...) and stays
+    // decoupled from how a symbol image actually gets resolved/registered.
+    if (name === 'draw_point') {
+      options = { ...options, resolvePointSymbol: (featureId, properties) => this._resolvePointSymbol(featureId, properties) }
+    }
     this._draw.changeMode(name, options)
     // The underlying mapbox-gl-draw control's public changeMode API is silent by
     // default (it never fires 'draw.modechange'), so every mode change requested
     // through this adapter must drive the same cleanup manually.
     this._handleModeChange({ mode: name })
+  }
+
+  // Injected into draw_point's changeMode options as state.resolvePointSymbol — resolves and
+  // registers the feature's symbol-config icon, then writes the resolved image id/anchor back
+  // onto the feature so the data-driven point-symbol layer (styles.js) can render it.
+  _resolvePointSymbol (featureId, properties) {
+    return resolvePointSymbol({ draw: this._draw, mapProvider: this._mapProvider, map: this._map, featureId, properties })
   }
 
   // Live invalid-stroke driver: called on every rubber-band move (draw) and vertex
@@ -326,7 +340,7 @@ export class MaplibreDrawAdapter {
   }
 
   _handleModeChange (e) {
-    const DRAW_MODES = new Set(['draw_polygon', 'draw_line', 'edit_vertex'])
+    const DRAW_MODES = new Set(['draw_polygon', 'draw_line', 'draw_point', 'edit_vertex', 'edit_point'])
     if (!DRAW_MODES.has(e.mode)) {
       clearSnapIndicator(getSnapInstance(this._map), this._map)
     }

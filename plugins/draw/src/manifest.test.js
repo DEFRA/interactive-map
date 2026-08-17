@@ -9,7 +9,7 @@ describe('manifest structure', () => {
     expect(manifest.reducer).toHaveProperty('actions')
     expect(manifest.InitComponent).toBeDefined()
     expect(Object.keys(manifest.api)).toEqual(expect.arrayContaining([
-      'newPolygon', 'newLine', 'editFeature', 'addFeature', 'deleteFeature', 'split', 'merge'
+      'newPolygon', 'newLine', 'newPoint', 'editFeature', 'addFeature', 'deleteFeature', 'split', 'merge'
     ]))
   })
 })
@@ -66,6 +66,13 @@ describe('drawMenu', () => {
     expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_vertex' } })).toBe(false)
   })
 
+  // draw_point has no Undo and no delete-vertex, but it does support snapping, and Snap is
+  // a menuItem inside this same button — so the button itself must stay visible for it even
+  // though drawUndo/drawDeletePoint (below) correctly keep excluding it.
+  test('is visible during draw_point, for the Snap toggle, even though it has no undo/delete', () => {
+    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'draw_point' } })).toBe(false)
+  })
+
   test('labels "Edit actions" in edit mode, "Draw actions" otherwise', () => {
     expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_vertex' } })).toBe('Edit actions')
     expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_polygon' } })).toBe('Draw actions')
@@ -78,6 +85,10 @@ describe('drawMenu', () => {
     test('is hidden outside draw/edit modes', () => {
       expect(item().hiddenWhen({ pluginState: { mode: null } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line' } })).toBe(false)
+    })
+
+    test('stays hidden for draw_point — nothing to undo before a single-click commit', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_point' } })).toBe(true)
     })
 
     test('enables from vertex count while drawing and from the undo stack while editing', () => {

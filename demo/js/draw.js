@@ -44,8 +44,14 @@ const interactPlugin = createInteractPlugin({
 // good enough for a demo, not for anything that actually needs to be accurate.
 const WALES_BORDER_LONGITUDE = -3.0
 
-const getAllCoordinates = (coordinates) =>
-  Array.isArray(coordinates[0][0]) ? coordinates.flatMap(getAllCoordinates) : coordinates
+const getAllCoordinates = (coordinates) => {
+  // A Point's coordinates are a single [lng, lat] pair, not a list of pairs like
+  // LineString/Polygon — wrap it so the .every(([lng]) => ...) below still works.
+  if (typeof coordinates[0] === 'number') {
+    return [coordinates]
+  }
+  return Array.isArray(coordinates[0][0]) ? coordinates.flatMap(getAllCoordinates) : coordinates
+}
 
 const isEastOfWalesBorder = (geometry) =>
   getAllCoordinates(geometry.coordinates).every(([lng]) => lng > WALES_BORDER_LONGITUDE)
@@ -185,6 +191,17 @@ interactiveMap.on('map:ready', function (e) {
     tablet: { slot: 'top-middle', order: 3 },
     desktop: { slot: 'top-middle', order: 3 },
     menuItems: [{
+      id: 'addPoint',
+      label: 'Add point',
+      iconSvgContent: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+      onClick: function (e) {
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        drawPlugin.newPoint(crypto.randomUUID(), {
+          symbol: 'pin',
+          symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+        })
+      }
+    },{
       id: 'drawPolygon',
       label: 'Draw polygon',
       iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',

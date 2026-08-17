@@ -1,4 +1,4 @@
-import { anchorToMaplibre, addSymbolsToMap } from './symbolImages.js'
+import { anchorToMaplibre, anchorToMaplibreOffset, addSymbolsToMap } from './symbolImages.js'
 import { symbolRegistry } from '../../../../src/services/symbolRegistry.js'
 
 beforeAll(() => {
@@ -84,6 +84,36 @@ describe('anchorToMaplibre', () => {
   })
 })
 
+// ─── anchorToMaplibreOffset ───────────────────────────────────────────────────
+
+describe('anchorToMaplibreOffset', () => {
+  const VIEW_BOX = '0 0 44 44'
+
+  it('is zero for an anchor that already sits exactly on a discrete position', () => {
+    expect(anchorToMaplibreOffset([0.5, 0.5], VIEW_BOX)).toEqual([0, 0]) // center
+    expect(anchorToMaplibreOffset([0, 0], VIEW_BOX)).toEqual([0, 0]) // top-left
+    expect(anchorToMaplibreOffset([1, 1], VIEW_BOX)).toEqual([0, 0]) // bottom-right
+  })
+
+  it('corrects for pin-style [0.5, 0.9] snapping to bottom (1.0)', () => {
+    expect(anchorToMaplibreOffset([0.5, 0.9], VIEW_BOX)).toEqual([0, 4.4])
+  })
+
+  it('corrects both axes when both are off-grid', () => {
+    // 0.1 snaps to 'left'/'top' (0), 0.9 snaps to 'right'/'bottom' (1)
+    expect(anchorToMaplibreOffset([0.1, 0.1], VIEW_BOX)).toEqual([-4.4, -4.4])
+    expect(anchorToMaplibreOffset([0.9, 0.9], VIEW_BOX)).toEqual([4.4, 4.4])
+  })
+
+  it('still corrects a value inside the centre band that is not exactly 0.5 — the whole band snaps to 0.5, not just its edges', () => {
+    expect(anchorToMaplibreOffset([0.4, 0.6], VIEW_BOX)).toEqual([4.4, -4.4])
+  })
+
+  it('scales with the viewBox, not just the anchor fraction', () => {
+    expect(anchorToMaplibreOffset([0.5, 0.9], '0 0 100 100')).toEqual([0, 10])
+  })
+})
+
 // ─── addSymbolsToMap ──────────────────────────────────────────────────────────
 
 const makeMap = (existingIds = []) => ({
@@ -103,13 +133,17 @@ describe('addSymbolsToMap — registration', () => {
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
-  it('resets _activeSymbolImageMap and _selectedSymbolImageMap before processing', async () => {
+  it('merges into existing _activeSymbolImageMap/_selectedSymbolImageMap rather than replacing them', async () => {
+    // More than one caller (datasets, draw, ...) can register symbols on the same map —
+    // a later call must add to the shared registry, not wipe an earlier caller's entries.
     const map = makeMap()
-    map._activeSymbolImageMap = { stale: 'entry' }
-    map._selectedSymbolImageMap = { stale: 'entry' }
+    map._activeSymbolImageMap = { 'other-normal-id': 'other-active-id' }
+    map._selectedSymbolImageMap = { 'other-normal-id': 'other-selected-id' }
     await addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
-    expect(map._activeSymbolImageMap).not.toHaveProperty('stale')
-    expect(map._selectedSymbolImageMap).not.toHaveProperty('stale')
+    expect(map._activeSymbolImageMap['other-normal-id']).toBe('other-active-id')
+    expect(map._selectedSymbolImageMap['other-normal-id']).toBe('other-selected-id')
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false)
+    expect(map._activeSymbolImageMap).toHaveProperty(normalId)
   })
 
   it('calls addImage for normal, active and selected variants', async () => {

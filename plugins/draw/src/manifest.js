@@ -2,6 +2,7 @@ import { initialState, actions } from './reducer.js'
 import { DrawInit } from './DrawInit.jsx'
 import { newPolygon } from './api/newPolygon.js'
 import { newLine } from './api/newLine.js'
+import { newPoint } from './api/newPoint.js'
 import { editFeature } from './api/editFeature.js'
 import { addFeature } from './api/addFeature.js'
 import { deleteFeature } from './api/deleteFeature.js'
@@ -43,7 +44,7 @@ export const manifest = {
       variant: 'primary',
       exclusiveSlot: true,
       hiddenWhen: ({ appState, pluginState }) =>
-        !['draw_polygon', 'draw_line'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
+        !['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
       // Disabled while placing at the crosshair would be vetoed (validatePlacement) —
       // driven live so the button never looks active when a tap would do nothing.
       enableWhen: ({ pluginState }) => pluginState.canAddPoint,
@@ -68,7 +69,10 @@ export const manifest = {
       label: ({ pluginState }) => pluginState.mode === 'edit_vertex' ? 'Edit actions' : 'Draw actions',
       iconId: 'menu',
       exclusiveSlot: true,
-      hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
+      // draw_point belongs here too — it has no Undo (nothing to undo before a single-click
+      // commit, gated separately below) and no delete-vertex, but it DOES support snapping,
+      // and the Snap toggle is a menuItem living inside this same button.
+      hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'draw_point', 'edit_vertex'].includes(pluginState.mode),
       menuItems: [
         {
           id: 'drawUndo',
@@ -161,6 +165,7 @@ export const manifest = {
   api: {
     newPolygon,
     newLine,
+    newPoint,
     editFeature,
     addFeature,
     deleteFeature,

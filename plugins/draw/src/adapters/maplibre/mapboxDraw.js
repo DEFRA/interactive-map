@@ -3,6 +3,7 @@ import { DisabledMode } from './modes/disabledMode.js'
 import { EditVertexMode } from './modes/editVertexMode.js'
 import { DrawPolygonMode } from './modes/drawPolygonMode.js'
 import { DrawLineMode } from './modes/drawLineMode.js'
+import { DrawPointMode } from './modes/drawPointMode.js'
 import { createDrawStyles, updateDrawStyles } from './styles.js'
 import { initMapLibreSnap } from './mapboxSnap.js'
 import { createUndoStack } from '../../utils/undoStack.js'
@@ -10,6 +11,7 @@ import { setupTouchClickWorkaround } from './utils/touchClickWorkaround.js'
 import { applyTouchVertexColors } from './modes/editVertexMode/touchHandlers.js'
 import { resolveColors } from '../../utils/resolveColors.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
+import { refreshAllPointSymbols } from './pointSymbolImages.js'
 
 /**
  * Creates and manages a MapLibre/Mapbox Draw control instance configured for polygon editing.
@@ -41,7 +43,8 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     disabled: DisabledMode,
     edit_vertex: EditVertexMode,
     draw_polygon: DrawPolygonMode,
-    draw_line: DrawLineMode
+    draw_line: DrawLineMode,
+    draw_point: DrawPointMode
   }
 
   // --- Create or reuse MapLibre Draw instance ---
@@ -99,6 +102,9 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
       updateDrawStyles(map, e, pluginConfig)
       const svg = map._drawEditContainer?.querySelector('[data-im-draw-touch-target]')
       applyTouchVertexColors(svg, e, pluginConfig)
+      // Rasterised point symbol images are style-scoped (colours resolve per map style) —
+      // re-resolve every drawn point's icon now the new style has settled.
+      refreshAllPointSymbols({ draw, mapProvider, map })
     })
   }
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)
@@ -109,6 +115,19 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   }
   eventBus.on(events.MAP_SET_SIZE, handleSetMapSize)
 
+  // --- Update point symbol resolution for the new pixel ratio ---
+  // map.getPixelRatio() never changes on its own after construction — nothing in this app
+  // calls map.setPixelRatio() from a plain map-size change. The map-size UI fires
+  // MAP_SET_SIZE (handled above) immediately followed by MAP_SET_PIXEL_RATIO carrying the
+  // freshly computed value itself (window.devicePixelRatio * scaleFactor[mapSize]) — that
+  // second event is the one this needs, both for the correct value and the correct timing
+  // (MAP_SET_SIZE's own listeners, including this file's, run before map.setPixelRatio()
+  // has even been called).
+  const handleSetPixelRatio = (pixelRatio) => {
+    refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: pixelRatio })
+  }
+  eventBus.on(events.MAP_SET_PIXEL_RATIO, handleSetPixelRatio)
+
   // --- Return instance and cleanup function ---
   return {
     draw,
@@ -117,6 +136,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
       // Remove event listeners
       eventBus.off(events.MAP_SET_STYLE, handleSetMapStyle)
       eventBus.off(events.MAP_SET_SIZE, handleSetMapSize)
+      eventBus.off(events.MAP_SET_PIXEL_RATIO, handleSetPixelRatio)
       // Disable draw mode but keep control on map for reuse
       draw.changeMode('disabled')
       // Clear adapter reference (but not _mapboxDrawInstance so it persists)

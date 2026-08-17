@@ -36,10 +36,48 @@ export const anchorToMaplibre = ([ax, ay]) => {
   return (y + (x && y ? '-' : '') + x) || 'center'
 }
 
+// The discrete fraction (0, 0.5 or 1) icon-anchor actually renders a given axis at — the
+// same left/right/top/bottom/center snapping xAnchor/yAnchor above already do, expressed as
+// a number instead of a string so it can be compared against the true, unsnapped fraction.
+const discreteFraction = (a) => {
+  if (a <= ANCHOR_LOW) { return 0 }
+  if (a >= ANCHOR_HIGH) { return 1 }
+  return 0.5
+}
+
+/**
+ * MapLibre's icon-anchor only has 9 discrete positions — anchorToMaplibre above snaps a
+ * fractional anchor to the nearest one, which loses precision for anything off-grid (e.g.
+ * pin's [0.5, 0.9] renders as if it were 1.0/'bottom', shifting the whole icon ~10% of its
+ * height off from where a DOM marker using the same anchor value would place it —
+ * SymbolMarker.jsx positions markers with the exact fraction via CSS margins, with no such
+ * snapping). icon-offset corrects this: the pixel distance, in the icon's own display-space
+ * dimensions (derived from its viewBox), between the true anchor and the discrete one it
+ * snapped to — applied on top of icon-anchor, on both provider and dataset symbol layers.
+ *
+ * @param {number[]} anchor - [x, y] in 0–1 space (the true, unsnapped anchor)
+ * @param {string} viewBox - SVG viewBox string, e.g. '0 0 44 44'
+ * @returns {number[]} [offsetX, offsetY] in pixels, for the icon-offset layout property
+ */
+// Rounded to 2dp: sub-hundredth-of-a-pixel precision is meaningless for rendering, and
+// without it fractions like 0.8 produce float noise (8.799999999999997, not 8.8).
+const round2dp = (n) => Math.round(n * 100) / 100
+
+export const anchorToMaplibreOffset = ([ax, ay], viewBox) => {
+  const [,, width, height] = viewBox.split(' ').map(Number)
+  return [
+    round2dp((discreteFraction(ax) - ax) * width),
+    round2dp((discreteFraction(ay) - ay) * height)
+  ]
+}
+
 /**
  * Register normal, active (both rings) and selected (black ring) symbol images.
  * Skips images that are already registered (safe to call on style change).
- * Updates `map._activeSymbolImageMap` (normal→active) and `map._selectedSymbolImageMap` (normal→selected).
+ * Merges into `map._activeSymbolImageMap` (normal→active) and `map._selectedSymbolImageMap`
+ * (normal→selected) rather than replacing them — more than one caller (e.g. the datasets
+ * and draw plugins) can register symbols on the same map, and each call must add to that
+ * shared registry, not wipe out whatever another caller already registered there.
  *
  * @param {Object} map - MapLibre map instance
  * @param {Object[]} styleArray - an array of symbol configs
@@ -53,8 +91,8 @@ export const addSymbolsToMap = async (map, styleArray, mapStyle, symbolRegistry,
     return
   }
 
-  map._activeSymbolImageMap = {}
-  map._selectedSymbolImageMap = {}
+  map._activeSymbolImageMap ??= {}
+  map._selectedSymbolImageMap ??= {}
 
   await Promise.all(styleArray.flatMap(config => {
     const normalId = symbolRegistry.getSymbolImageId(config, mapStyle, false, pixelRatio)

@@ -13,8 +13,12 @@ function cleanupOldSnap (map) {
 }
 
 // Snap indicators (and all snap processing) are only meaningful while actively
-// drawing or editing vertices — outside these modes there is nothing to snap to.
-const SNAP_ACTIVE_MODES = new Set(['draw_polygon', 'draw_line', 'edit_vertex'])
+// drawing or editing — outside these modes there is nothing to snap to. This list is
+// independent of (and must be kept in sync with) MaplibreDrawAdapter's own DRAW_MODES set,
+// which only controls when the snap *indicator* gets cleared on mode exit — this one gates
+// snap.status itself, which both the visual indicator AND actual snap-to-coordinate
+// (isSnapActive() in snapHelpers.js) depend on.
+const SNAP_ACTIVE_MODES = new Set(['draw_polygon', 'draw_line', 'draw_point', 'edit_vertex', 'edit_point'])
 
 /**
  * Externally-controlled status: ignore library writes so status is only changed

@@ -1,6 +1,6 @@
 import { injectColors, getEffectivePixelRatio } from '../../../../src/utils/patternUtils.js'
 import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
-import { rasteriseToImageData } from './rasteriseToImageData.js'
+import { rasteriseToImageData } from '../../../../src/utils/rasteriseToImageData.js'
 
 // Module-level cache: imageId → ImageData. Avoids re-rasterising identical patterns.
 const imageDataCache = new Map()
