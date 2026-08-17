@@ -18,7 +18,7 @@ export const KeySvg = ({ keyDefinition, mapStyle }) => {
     if (hasSymbol) {
       const symbolDef = symbolRegistry.getSymbolDef(style)
       setSymbolDef(symbolDef)
-      setSymbolShape('symbol')
+      setSymbolShape(symbolDef ? 'symbol' : 'rect')
     } else if (hasPattern) {
       setSymbolShape('pattern')
     } else if (style.keySymbolShape === 'line') {
