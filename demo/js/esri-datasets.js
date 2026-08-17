@@ -348,6 +348,9 @@ const datasetMainRivers = {
       }
     },
     stroke: { outdoor: darkTeal, dark: white },
+    fill: 'transparent',
+    symbolDescription: { outdoor: 'dark teal line', dark: 'white line' },
+    keySymbolShape: 'line',
     strokeWidth: 3
   }
 }
@@ -401,6 +404,9 @@ const datasetFloodDefences = {
       }
     },
     stroke: '#f47738',
+    fill: 'transparent',
+    symbolDescription: 'orange line',
+    keySymbolShape: 'line',
     strokeWidth: 3
   }
 }

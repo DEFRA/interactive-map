@@ -9,8 +9,6 @@ export const Key = ({
   hasGroups,
   mapStyle
 }) => {
-  // const { items: keyGroups, hasGroups } = datasetRegistry.keyItems()
-
   if (!keyGroups?.length) {
     return (<EmptyKey text={noKeyItemText} />)
   }
