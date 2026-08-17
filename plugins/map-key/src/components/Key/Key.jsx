@@ -2,20 +2,22 @@ import React from 'react'
 import { EmptyKey } from './EmptyKey.jsx'
 import { KeyItem } from './KeyItem.jsx'
 import { KeyGroupItem } from './KeyGroupItem.jsx'
-import { datasetRegistry } from '../../registry/datasetRegistry.js'
+// import { datasetRegistry } from '../../registry/datasetRegistry.js'
 
 export const Key = ({
-  pluginConfig: { noKeyItemText },
-  mapState: { mapStyle },
+  noKeyItemText,
+  keyGroups,
+  hasGroups,
+  mapStyle,
   services: { symbolRegistry, patternRegistry }
 }) => {
-  const { items: keyGroups, hasGroups } = datasetRegistry.keyItems()
+  // const { items: keyGroups, hasGroups } = datasetRegistry.keyItems()
 
   if (!keyGroups?.length) {
     return (<EmptyKey text={noKeyItemText} />)
   }
 
-  const containerClass = `im-c-datasets-key${hasGroups ? ' im-c-datasets-key--has-groups' : ''}`
+  const containerClass = `im-c-map-key${hasGroups ? ' im-c-map-key--has-groups' : ''}`
   return (
     <div className={containerClass}>{keyGroups.map(item => {
       const key = item.type === 'group' ? item.groupLabel.toLowerCase().replaceAll(/\s+/g, '-') : item.keyDefinition.id

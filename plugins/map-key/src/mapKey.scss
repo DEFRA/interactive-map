@@ -1,9 +1,18 @@
 // ===================================================
 // Component: MapKey
 // ===================================================
+@use './components/Key/Key.module';
 
-// 1. Base styles
+.im-c-map-button--map-key {
+  border: 2px solid red;
+}
 
 .im-c-map-key {
-  background-color: pink;
+    border: 2px solid red;
+    display: block;
 }
+
+
+// .im-c-map-key {
+//   background-color: pink;
+// }

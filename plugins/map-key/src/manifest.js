@@ -1,4 +1,4 @@
-import { MapKey } from './MapKey.jsx'
+import { MapKey } from './components/Key/MapKey.jsx'
 import './registry/getDatasetRegistry.js'
 
 export const manifest = {
