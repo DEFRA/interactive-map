@@ -1,5 +1,6 @@
 import { createDataset } from './createDataset.js'
 import { DatasetDefinitionCache } from './datasetDefinitionCache.js'
+import eventBus from '../../../../src/services/eventBus.js'
 
 const datasetRegistry = {
   attach (datasetsRef, orderedDatasetsRef, mapStyle) {
@@ -133,5 +134,7 @@ const datasetRegistry = {
 }
 
 Object.defineProperty(datasetRegistry, 'datasets', { get: () => datasetRegistry._datasets })
+
+eventBus.emit('datasets:registryReady', datasetRegistry)
 
 export { datasetRegistry }

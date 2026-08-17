@@ -1,5 +1,5 @@
-// /plugins//manifest.js
 import { MapKey } from './MapKey.jsx'
+import './registry/getDatasetRegistry.js'
 
 export const manifest = {
   panels: [
@@ -17,7 +17,6 @@ export const manifest = {
     panelId: 'mapKey',
     label: 'Key',
     iconId: 'key',
-    // excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.some(l => l.showInKey),
     mobile: { slot: 'top-left', showLabel: false },
     tablet: { slot: 'top-left', showLabel: true },
     desktop: { slot: 'top-left', showLabel: true }
