@@ -71,6 +71,13 @@ test('a mid-drag crossing turns the stroke dashed live, and back when it clears'
   expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyle)
 })
 
+test('a Polygon with no ring yet (transiently empty mid-drag) never throws computing numVertices', () => {
+  const { olFeature } = setup()
+  // OL's own Polygon geometry supports zero rings natively — coordinates[0] is undefined,
+  // exercising updateLiveValidity's `?? 1` fallback rather than a real drag scenario.
+  expect(() => olFeature.getGeometry().setCoordinates([])).not.toThrow()
+})
+
 test('a validity flip repaints the map without touching the feature — Modify tracks its own drag via feature #change, which setStyle() would trip', () => {
   const { map, olFeature } = setup()
   const renderCallsBefore = map.render.mock.calls.length
@@ -86,6 +93,30 @@ test('validity flips while editing also gate the Done button', () => {
   olFeature.getGeometry().setCoordinates([[[0, 0], [100, 0], [100, 100], [0, 100], [0, 0]]])
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VALIDITY_CHANGE,
     expect.objectContaining({ valid: true }))
+})
+
+test('a LineString edit computes numVertices directly from coordinates.length (no ring -1 adjustment)', () => {
+  const map = createFakeMap()
+  const manager = createFakeManager()
+  manager.store = createFeatureStore()
+  manager.store.add({ type: 'Feature', id: 'l1', properties: {}, geometry: { type: 'LineString', coordinates: [[0, 0], [100, 0], [100, 100]] } })
+  const container = createContainer()
+  map.getViewport().appendChild(container)
+  const mode = createEditMode({
+    map,
+    manager,
+    options: { featureId: 'l1', container, interfaceType: 'mouse', deleteVertexButtonId: 'del-v', snap: null }
+  })
+  liveModes.push(mode)
+  const olFeature = manager.store.getOL('l1')
+
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_CHANGE, { numVertices: 3 })
+
+  // LIVE_RULES (self-intersect/area) only ever apply to Polygon (see rules.js's getPolygon
+  // guard) — a self-crossing LineString still drives updateLiveValidity, but never flips
+  // the stroke invalid, unlike the Polygon case above.
+  olFeature.getGeometry().setCoordinates([[0, 0], [100, 100], [100, 0], [0, 100]])
+  expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyle)
 })
 
 test('the user callback runs throttled during an edit drag', () => {

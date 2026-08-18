@@ -1,4 +1,4 @@
-import { createLiveStroke } from './liveStroke.js'
+import { createLiveStroke, requestFrame, cancelFrame } from './liveStroke.js'
 
 const poly = (ring) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [ring] } })
 
@@ -105,6 +105,45 @@ describe('custom validate function', () => {
   })
 })
 
+describe('requestFrame / cancelFrame (engine-agnostic frame scheduling)', () => {
+  test('uses requestAnimationFrame/cancelAnimationFrame when available', () => {
+    const raf = jest.spyOn(globalThis, 'requestAnimationFrame')
+    const caf = jest.spyOn(globalThis, 'cancelAnimationFrame')
+    const cb = jest.fn()
+    const id = requestFrame(cb)
+    expect(raf).toHaveBeenCalledWith(cb)
+    cancelFrame(id)
+    expect(caf).toHaveBeenCalledWith(id)
+    raf.mockRestore()
+    caf.mockRestore()
+  })
+
+  test('falls back to setTimeout/clearTimeout when rAF is unavailable (e.g. SSR)', () => {
+    const rafDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'requestAnimationFrame')
+    const cafDescriptor = Object.getOwnPropertyDescriptor(globalThis, 'cancelAnimationFrame')
+    // jsdom defines these as configurable globals — delete rather than assign undefined,
+    // so `typeof requestAnimationFrame` genuinely reads 'undefined' inside the module.
+    delete globalThis.requestAnimationFrame
+    delete globalThis.cancelAnimationFrame
+    try {
+      const cb = jest.fn()
+      requestFrame(cb)
+      expect(cb).not.toHaveBeenCalled()
+      jest.advanceTimersByTime(16)
+      expect(cb).toHaveBeenCalledTimes(1)
+
+      const cb2 = jest.fn()
+      const id2 = requestFrame(cb2)
+      cancelFrame(id2)
+      jest.advanceTimersByTime(16)
+      expect(cb2).not.toHaveBeenCalled()
+    } finally {
+      Object.defineProperty(globalThis, 'requestAnimationFrame', rafDescriptor)
+      Object.defineProperty(globalThis, 'cancelAnimationFrame', cafDescriptor)
+    }
+  })
+})
+
 describe('set / reset / destroy', () => {
   test('set() applies through the flip guard and drops any pending frame', () => {
     const { onChange, stroke } = setup()
@@ -146,5 +185,29 @@ describe('set / reset / destroy', () => {
     stroke.destroy()
     jest.runAllTimers()
     expect(onGeometryChange).not.toHaveBeenCalled()
+  })
+
+  // Belt-and-braces: runUserRule() re-checks `pending` itself rather than trusting that
+  // cancelFrame() actually stopped the callback — simulated here by making
+  // cancelAnimationFrame a no-op, so the already-queued frame still fires after
+  // cancelPending() has cleared `pending`. The guard must make that a safe no-op rather
+  // than reading a null pending's properties.
+  test('a frame that still fires despite cancellation is a no-op, guarded by pending being cleared', () => {
+    const noopCancel = jest.fn()
+    const originalCaf = globalThis.cancelAnimationFrame
+    globalThis.cancelAnimationFrame = noopCancel
+    try {
+      const { onChange, stroke } = setup()
+      const onGeometryChange = jest.fn(() => true)
+      stroke.update({ feature: square, numVertices: 3, onGeometryChange })
+      stroke.destroy() // calls our no-op cancel — the queued frame is NOT actually removed
+      expect(noopCancel).toHaveBeenCalled()
+      onChange.mockClear()
+      expect(() => jest.runAllTimers()).not.toThrow()
+      expect(onGeometryChange).not.toHaveBeenCalled() // guard returns before reading pending's fields
+      expect(onChange).not.toHaveBeenCalled()
+    } finally {
+      globalThis.cancelAnimationFrame = originalCaf
+    }
   })
 })

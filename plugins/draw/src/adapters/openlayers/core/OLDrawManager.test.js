@@ -3,6 +3,7 @@ import { STYLES_CHANGED_EVENT } from './internalEvents.js'
 import { createDrawMode } from '../draw/DrawMode.js'
 import { createEditMode } from '../edit/EditMode.js'
 import { createDrawPointMode } from '../point/drawPointMode.js'
+import { resolvePointSymbol } from '../point/pointSymbolImages.js'
 import { createSnapManager } from '../snap/snapManager.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { createFakeMap } from '../__helpers__/harness.js'
@@ -16,6 +17,9 @@ jest.mock('../edit/EditMode.js', () => ({
 }))
 jest.mock('../point/drawPointMode.js', () => ({
   createDrawPointMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), setInterfaceType: jest.fn() }))
+}))
+jest.mock('../point/pointSymbolImages.js', () => ({
+  resolvePointSymbol: jest.fn()
 }))
 jest.mock('../snap/snapManager.js', () => ({
   createSnapManager: jest.fn(() => ({ setIndicatorActive: jest.fn(), reattach: jest.fn(), updateColors: jest.fn(), destroy: jest.fn() }))
@@ -71,11 +75,19 @@ describe('mode machine', () => {
   // into the table above.
   test('draw_point creates its mode with snap and resolvePointSymbol injected, activates the indicator and reattaches snap last', async () => {
     const { map, manager } = setup()
-    await manager.changeMode('draw_point', { featureId: 'f1' })
+    const mapProvider = { drawScale: 2 }
+    await manager.changeMode('draw_point', { featureId: 'f1', mapProvider })
     expect(manager.getMode()).toBe('draw_point')
-    expect(createDrawPointMode).toHaveBeenCalledWith({ map, manager, options: { featureId: 'f1', snap: manager.snap, resolvePointSymbol: expect.any(Function) } })
+    expect(createDrawPointMode).toHaveBeenCalledWith({ map, manager, options: { featureId: 'f1', mapProvider, snap: manager.snap, resolvePointSymbol: expect.any(Function) } })
     expect(manager.snap.setIndicatorActive).toHaveBeenCalledWith(true)
     expect(manager.snap.reattach).toHaveBeenCalled()
+
+    // The injected hook delegates to point/pointSymbolImages.js's resolvePointSymbol with
+    // this manager and the mapProvider changeMode was called with.
+    const injected = createDrawPointMode.mock.calls.at(-1)[0].options.resolvePointSymbol
+    const olFeature = { id: 'point-1' }
+    injected(olFeature)
+    expect(resolvePointSymbol).toHaveBeenCalledWith({ manager, mapProvider, olFeature })
   })
 
   test('disabled destroys the previous mode and deactivates the indicator', async () => {

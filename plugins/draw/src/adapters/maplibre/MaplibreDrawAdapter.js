@@ -24,8 +24,13 @@ export const displayedShape = (mode, coordinates) => {
     return { feature: lineFeature(coordinates), numVertices: (coordinates?.length ?? 1) - 1 }
   }
   if (mode === 'edit_vertex') {
-    return Array.isArray(coordinates[0]?.[0])
-      ? { feature: polygonFeature(coordinates), numVertices: coordinates[0]?.length ?? 0 }
+    // Read the outer ring once — Array.isArray(ring?.[0]) already proves `ring` itself is
+    // non-nullish whenever it's true, so the polygon branch can use it directly with no
+    // second optional-chaining/fallback (which `coordinates[0]` re-read a second time,
+    // unreachably, used to need).
+    const ring = coordinates[0]
+    return Array.isArray(ring?.[0])
+      ? { feature: polygonFeature(coordinates), numVertices: ring.length }
       : { feature: lineFeature(coordinates), numVertices: coordinates?.length ?? 0 }
   }
   return null

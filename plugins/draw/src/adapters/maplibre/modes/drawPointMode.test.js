@@ -115,6 +115,27 @@ describe('DrawPointMode', () => {
       const { crossHair } = setup({ interfaceType: 'mouse' })
       expect(crossHair.hide).toHaveBeenCalled()
     })
+
+    it('falls back to a DOM vertexMarker element when no crossHair is supplied', () => {
+      const ctx = createModeContext()
+      const dom = createContainer()
+      const marker = document.createElement('div')
+      marker.id = 'vertex-marker'
+      dom.container.appendChild(marker)
+      ctx.map._undoStack = createUndoStack(() => {})
+
+      const state = ctx.onSetup({
+        container: dom.container,
+        vertexMarkerId: 'vertex-marker',
+        interfaceType: 'touch', // shown on setup
+        featureId: 'point-1',
+        properties: {}
+      })
+      expect(marker.style.display).toBe('block')
+
+      ctx.onPointermove(state, { pointerType: 'mouse' }) // hidden
+      expect(marker.style.display).toBe('none')
+    })
   })
 
   describe('onClick (mouse)', () => {
@@ -168,6 +189,14 @@ describe('DrawPointMode', () => {
       expect(blocked[0]).toMatchObject({ reason: 'not allowed here', phase: 'place', mode: 'draw_point' })
       expect(firedWith(ctx.map, 'draw.create')).toHaveLength(0)
     })
+
+    it('defaults the blocked reason to null when the veto gives none', () => {
+      const { ctx, state } = setup()
+      ctx.map._drawGeometryValidator = () => false // no {reason} shape
+      ctx.onClick(state, clickEvent(ctx, 1, 2))
+      const blocked = firedWith(ctx.map, 'draw.placementblocked')
+      expect(blocked[0].reason).toBeNull()
+    })
   })
 
   describe('onTap', () => {
@@ -195,6 +224,42 @@ describe('DrawPointMode', () => {
       expect(state.point.coordinates).toEqual([])
     })
 
+    it('onKeydown ignores keys while the container is not focused', () => {
+      const { ctx, state } = setup({ interfaceType: 'mouse' })
+      expect(() => ctx.onKeydown(state, { key: 'Enter' })).not.toThrow()
+      expect(state.isActive).toBeFalsy()
+      expect(state.interfaceType).toBe('mouse') // never switched to keyboard
+    })
+
+    it('onKeydown Escape is a no-op there (handled window-level in onKeyup instead)', () => {
+      const { ctx, state, container } = setup({ interfaceType: 'mouse' })
+      container.focus()
+      const preventDefault = jest.fn()
+      ctx.onKeydown(state, { key: 'Escape', preventDefault })
+      expect(preventDefault).toHaveBeenCalled()
+      expect(state.interfaceType).toBe('mouse')
+    })
+
+    it('onKeydown ignores non-interface keys', () => {
+      const { ctx, state, container } = setup({ interfaceType: 'mouse' })
+      container.focus()
+      ctx.onKeydown(state, { key: 'a' })
+      expect(state.interfaceType).toBe('mouse')
+    })
+
+    it('onKeyup ignores non-Escape keys while the container is not focused', () => {
+      const { ctx, state } = setup({ interfaceType: 'mouse' })
+      expect(() => ctx.onKeyup(state, { key: 'Enter' })).not.toThrow()
+      expect(state.interfaceType).toBe('mouse')
+    })
+
+    it('onKeyup ignores non-interface keys', () => {
+      const { ctx, state, container } = setup({ interfaceType: 'mouse' })
+      container.focus()
+      ctx.onKeyup(state, { key: 'a' })
+      expect(state.interfaceType).toBe('mouse')
+    })
+
     it('the "Add point" button commits at the map centre', () => {
       const { ctx, state, button } = setup()
       ctx.onVertexButtonClick(state, { target: button })
@@ -220,6 +285,14 @@ describe('DrawPointMode', () => {
       const { ctx, state } = setup()
       expect(() => ctx.onKeyUp(state, { key: 'Enter' })).not.toThrow()
       expect(state.point.coordinates).toEqual([])
+    })
+  })
+
+  describe('no-op handlers required by createLifecycle\'s bind contract', () => {
+    it('onUndo and onPointerup are harmless no-ops — nothing to undo/report before a single-click commit', () => {
+      const { ctx, state } = setup()
+      expect(() => ctx.onUndo(state)).not.toThrow()
+      expect(() => ctx.onPointerup(state)).not.toThrow()
     })
   })
 
@@ -256,10 +329,22 @@ describe('DrawPointMode', () => {
       expect(crossHair.show).not.toHaveBeenCalled()
     })
 
+    it('a touch pointerdown leaves the interface type alone', () => {
+      const { ctx, state } = setup({ interfaceType: 'touch' })
+      ctx.onPointerdown(state, { pointerType: 'touch' })
+      expect(state.interfaceType).toBe('touch')
+    })
+
     it('a non-touch pointermove hides the crosshair', () => {
       const { ctx, state, crossHair } = setup({ interfaceType: 'touch' })
       ctx.onPointermove(state, { pointerType: 'mouse' })
       expect(crossHair.hide).toHaveBeenCalled()
+    })
+
+    it('a touch pointermove does not hide the crosshair', () => {
+      const { ctx, state, crossHair } = setup({ interfaceType: 'touch' })
+      ctx.onPointermove(state, { pointerType: 'touch' })
+      expect(crossHair.hide).not.toHaveBeenCalled()
     })
 
     it('touch end shows the crosshair', () => {
@@ -304,6 +389,15 @@ describe('DrawPointMode', () => {
       state.getSnapEnabled = () => true
       ctx.onMouseMove(state, { point: { x: 7, y: 8 } })
       expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point: { x: 7, y: 8 }, lngLat: CENTER })
+    })
+
+    it('onMouseMove does nothing while snapping is disabled', () => {
+      const { ctx, state } = setup()
+      const snap = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
+      ctx.map._snapInstance = snap
+      state.getSnapEnabled = () => false
+      ctx.onMouseMove(state, { point: { x: 7, y: 8 } })
+      expect(snap.snapToClosestPoint).not.toHaveBeenCalled()
     })
 
     it('a real click commits the snapped coordinate when a snap candidate is active', () => {

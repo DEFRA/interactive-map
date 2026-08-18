@@ -229,6 +229,18 @@ describe('line mode mouse interactions', () => {
   })
 })
 
+describe('_canPlaceVertex guard', () => {
+  test('allows placement when there is no sketch feature yet (nothing to validate against)', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    expect(ctx._canPlaceVertex({ ...state, polygon: null }, [1, 2])).toBe(true)
+  })
+
+  test('allows placement when there is no candidate point yet', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    expect(ctx._canPlaceVertex(state, null)).toBe(true)
+  })
+})
+
 describe('onCreate (draw.create re-id)', () => {
   test('re-ids the created feature to the requested featureId', () => {
     const { ctx } = setup(DrawPolygonMode)

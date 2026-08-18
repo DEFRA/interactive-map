@@ -107,6 +107,17 @@ describe('resolvePointSymbol', () => {
     expect(getCachedSymbolImage(expectedImageId)).toBeInstanceOf(HTMLCanvasElement)
   })
 
+  it('does nothing when rasterisation resolves null (e.g. an unresolvable symbol id)', async () => {
+    const properties = { symbol: 'not-a-real-symbol' }
+    const olFeature = createOlFeature(properties)
+    const manager = createManager({ features: [olFeature] })
+    symbolRegistry.rasteriseSymbolImage.mockResolvedValueOnce(null)
+
+    await resolvePointSymbol({ manager, mapProvider: createMapProvider(), olFeature })
+
+    expect(olFeature.set).not.toHaveBeenCalled()
+  })
+
   it('does not write back if the feature was removed from the source while rasterising was in flight', async () => {
     const properties = { symbol: 'pin' }
     const olFeature = createOlFeature(properties)

@@ -172,6 +172,23 @@ describe('createFeatureStyle (inactive shapes)', () => {
     expect(style.getImage().getImage(1)).toBe(canvas)
   })
 
+  test('reuses the same Icon Style instance across renders for the same imageId/anchor/pixelRatio', () => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+      this._ctx ??= { putImageData: jest.fn() }
+      return this._ctx
+    })
+    clearSymbolImageCache()
+    getOrCreateSymbolImage('symbol-pin-cache', { width: 10, height: 10 })
+
+    const feature = pointFeature([5, 5])
+    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-cache' })
+
+    const styleFn = styles.createFeatureStyle()
+    const first = styleFn(feature)[0]
+    const second = styleFn(feature)[0] // a style function runs every render frame
+    expect(second).toBe(first)
+  })
+
   test('scales the Icon down by the rasterisation pixelRatio, so a high-DPI raster still displays at its intended CSS size', () => {
     HTMLCanvasElement.prototype.getContext = jest.fn(function () {
       this._ctx ??= { putImageData: jest.fn() }

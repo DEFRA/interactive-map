@@ -1,6 +1,7 @@
 import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
+import { resolvePointSymbol } from './pointSymbolImages.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
 
@@ -11,6 +12,10 @@ jest.mock('./utils/snapHelpers.js', () => ({
   clearSnapIndicator: jest.fn()
 }))
 jest.mock('../../utils/eventBus.js', () => ({ createEventBus: jest.fn() }))
+jest.mock('./pointSymbolImages.js', () => ({
+  resolvePointSymbol: jest.fn(),
+  refreshAllPointSymbols: jest.fn()
+}))
 
 const SNAP_LAYER = 'snap-helper-circle'
 
@@ -186,6 +191,31 @@ describe('displayedShape helper', () => {
 
   test('returns null for an unknown mode', () => {
     expect(displayedShape('unknown_mode', [[0, 0], [10, 0]])).toBeNull()
+  })
+
+  // A ring/coordinate array can transiently be empty/absent right as a sketch starts —
+  // the `?? …` fallbacks keep numVertices a sane number instead of crashing on `undefined.length`.
+  test('falls back to numVertices 0 for a draw_polygon sketch with no ring yet', () => {
+    expect(displayedShape('draw_polygon', [])?.numVertices).toBe(0)
+  })
+
+  test('falls back to numVertices 0 for a draw_line sketch with no coordinates yet', () => {
+    expect(displayedShape('draw_line', undefined)?.numVertices).toBe(0)
+  })
+
+  test('falls back to numVertices 0 for an edit_vertex polygon with no ring yet', () => {
+    const result = displayedShape('edit_vertex', [])
+    expect(result?.feature?.geometry?.type).toBe('LineString') // coordinates[0] undefined → not detected as a polygon ring
+    expect(result?.numVertices).toBe(0)
+  })
+
+  // A plain object (not an array) still satisfies edit_vertex's own coordinates[0]?.[0]
+  // access without throwing, but has no .length of its own — the line branch's `?? 0`
+  // fallback the case above can't reach (an empty array's .length is 0, not nullish).
+  test('falls back to numVertices 0 for an edit_vertex line whose coordinates have no length at all', () => {
+    const result = displayedShape('edit_vertex', {})
+    expect(result?.feature?.geometry?.type).toBe('LineString')
+    expect(result?.numVertices).toBe(0)
   })
 })
 
@@ -389,6 +419,20 @@ describe('changeMode', () => {
     const { adapter, draw } = setup()
     adapter.changeMode('draw_polygon')
     expect(draw.changeMode).toHaveBeenCalledWith('draw_polygon', {})
+  })
+
+  test('draw_point gets a resolvePointSymbol hook injected, delegating to pointSymbolImages.js', () => {
+    const { adapter, draw, map, mapProvider } = setup()
+    adapter.changeMode('draw_point', { featureId: 'p1' })
+
+    expect(draw.changeMode).toHaveBeenCalledWith('draw_point', {
+      featureId: 'p1',
+      resolvePointSymbol: expect.any(Function)
+    })
+
+    const injected = draw.changeMode.mock.calls[0][1].resolvePointSymbol
+    injected('p1', { symbol: 'pin' })
+    expect(resolvePointSymbol).toHaveBeenCalledWith({ draw, mapProvider, map, featureId: 'p1', properties: { symbol: 'pin' } })
   })
 })
 

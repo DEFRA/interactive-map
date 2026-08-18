@@ -110,6 +110,11 @@ describe('selection, scale and update events', () => {
     expect({ top: state.touchVertexTarget.style.top, left: state.touchVertexTarget.style.left }).not.toEqual(targetBefore)
   })
 
+  test('draw.nudgevertex with no vertex selected moves nothing and skips repositioning the touch target', () => {
+    const { map } = createHarness(POLYGON(), { interfaceType: 'touch', selectedVertexIndex: -1 })
+    expect(() => map.fire('draw.nudgevertex', { dx: 1, dy: 0, isLargeStep: false })).not.toThrow()
+  })
+
   test('onUpdate re-selects a changed vertex only when the vertex count is ambiguous', () => {
     const { ctx, state } = createHarness()
     ctx.onUpdate(state) // unique coords → no change

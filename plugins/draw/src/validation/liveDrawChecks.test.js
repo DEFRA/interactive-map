@@ -49,6 +49,14 @@ describe('built-in rules (synchronous, independently floored, flip-guarded)', ()
     expect(onStrokeChange).not.toHaveBeenCalled()
   })
 
+  test('a non-Polygon/LineString geometry type (e.g. Point) floors at 0 via the MIN_VERTICES fallback, and never flips', () => {
+    const { onStrokeChange, onPlaceChange, checks } = setup()
+    const point = { type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] } }
+    expect(() => checks.update({ feature: point, numVertices: 0 })).not.toThrow()
+    expect(onStrokeChange).not.toHaveBeenCalled()
+    expect(onPlaceChange).not.toHaveBeenCalled()
+  })
+
   test('numVertices defaults to 0 when omitted from context', () => {
     const { onStrokeChange, checks } = setup()
     checks.update({ feature: closingEdgeCrosses })
@@ -155,5 +163,51 @@ describe('reset / destroy', () => {
     checks.destroy()
     jest.runAllTimers()
     expect(onGeometryChange).not.toHaveBeenCalled()
+  })
+
+  // Belt-and-braces: recompute()/runUserRule() re-check `pending` themselves rather than
+  // trusting that cancelFrame() actually stopped the callback — simulated here by making
+  // cancelAnimationFrame a no-op, so an already-queued frame still fires after reset()/
+  // destroy() have cleared `pending`. The guards must make that a safe no-op.
+  test('a frame that still fires despite cancellation is a no-op, guarded by pending being cleared', () => {
+    const noopCancel = jest.fn()
+    const originalCaf = globalThis.cancelAnimationFrame
+    globalThis.cancelAnimationFrame = noopCancel
+    try {
+      const { onStrokeChange, onPlaceChange, checks } = setup()
+      const onGeometryChange = jest.fn(() => true)
+      checks.update({ feature: square, numVertices: 3, onGeometryChange })
+      checks.reset() // calls our no-op cancel — the queued frame is NOT actually removed
+      expect(noopCancel).toHaveBeenCalled()
+      onStrokeChange.mockClear()
+      onPlaceChange.mockClear()
+      expect(() => jest.runAllTimers()).not.toThrow()
+      expect(onGeometryChange).not.toHaveBeenCalled() // guard returns before reading pending's fields
+      expect(onStrokeChange).not.toHaveBeenCalled()
+      expect(onPlaceChange).not.toHaveBeenCalled()
+    } finally {
+      globalThis.cancelAnimationFrame = originalCaf
+    }
+  })
+
+  // recompute() carries its own `if (!pending) return` guard too, distinct from
+  // runUserRule()'s — reachable when the user's own onGeometryChange callback
+  // reentrantly clears `pending` (e.g. via reset()) partway through the very frame that's
+  // evaluating it, before runUserRule() reaches its trailing recompute() call.
+  test('recompute() guards against pending being cleared reentrantly by the user callback', () => {
+    const { onStrokeChange, onPlaceChange, checks } = setup()
+    const onGeometryChange = jest.fn(() => {
+      checks.reset() // reentrant — clears `pending` mid-evaluation, frame is already null by now
+      return true
+    })
+    checks.update({ feature: square, numVertices: 3, onGeometryChange })
+    onStrokeChange.mockClear()
+    onPlaceChange.mockClear()
+    expect(() => jest.runAllTimers()).not.toThrow()
+    expect(onGeometryChange).toHaveBeenCalledTimes(1)
+    // recompute()'s trailing call (after the reentrant reset) is a safe no-op — no further
+    // gate changes are reported off a pending the reentrant reset() already cleared.
+    expect(onStrokeChange).not.toHaveBeenCalled()
+    expect(onPlaceChange).not.toHaveBeenCalled()
   })
 })

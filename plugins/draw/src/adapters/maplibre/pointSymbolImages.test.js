@@ -80,6 +80,19 @@ describe('resolvePointSymbol', () => {
     })
   })
 
+  it('does nothing when getSymbolImageId resolves null (e.g. an unresolvable symbol id)', async () => {
+    const map = createMap()
+    const mapProvider = createMapProvider()
+    const properties = { symbol: 'not-a-real-symbol' }
+    const draw = createDraw([point('p1', properties)])
+    const spy = jest.spyOn(symbolRegistry, 'getSymbolImageId').mockReturnValueOnce(null)
+
+    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+
+    expect(draw.add).not.toHaveBeenCalled()
+    spy.mockRestore()
+  })
+
   it('does not re-add the feature if it was deleted while registration was in flight', async () => {
     const map = createMap()
     const properties = { symbol: 'pin' }

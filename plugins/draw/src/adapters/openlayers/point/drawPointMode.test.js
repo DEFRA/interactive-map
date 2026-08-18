@@ -79,6 +79,17 @@ describe('createDrawPointMode', () => {
     expect(() => interaction.dispatchEvent({ type: 'drawend', feature: pointFeature([1, 2], 'ol-generated-id') })).not.toThrow()
   })
 
+  test('defaults properties to {} when none are supplied', () => {
+    const { interaction, manager, emitted } = setup({ properties: undefined })
+    interaction.dispatchEvent({ type: 'drawend', feature: pointFeature([1, 2], 'ol-generated-id') })
+    const created = emitted().filter((e) => e.type === ADAPTER_EVENTS.CREATE)
+    // OL's GeoJSON writer reports no properties as null (not {}) — the meaningful
+    // assertion is what setProperties() was actually called with, on the stored feature.
+    expect(created[0].payload.properties).toBeNull()
+    const { geometry, ...nonGeometryProps } = manager.store.getOL('point-1').getProperties()
+    expect(nonGeometryProps).toEqual({})
+  })
+
   test('condition vetoes placement via onGeometryChange', () => {
     const { interaction, manager, emitted } = setup()
     manager._geometryValidator = () => ({ valid: false, reason: 'not allowed here' })

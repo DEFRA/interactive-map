@@ -4,6 +4,8 @@ import { createFeatureStore } from '../core/featureStore.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
 import { createFakeMap, createFakeManager, polygonFeature, lineFeature } from '../__helpers__/harness.js'
+import Feature from 'ol/Feature.js'
+import Polygon from 'ol/geom/Polygon.js'
 
 jest.mock('./drawInput.js', () => ({
   createDrawInput: jest.fn(() => ({
@@ -171,6 +173,16 @@ describe('drawing lifecycle', () => {
     interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
     // 3 placed + rubber band duplicating the just-placed vertex + closing coord.
     sketch.getGeometry().setCoordinates([[[0, 0], [10, 0], [10, 10], [10, 10], [0, 0]]])
+    expect(manager.styles.createSketchStyle).not.toHaveBeenCalledWith('Polygon', true)
+  })
+
+  test('a Polygon sketch with no ring yet (freshly started, before the first coordinate) never throws or goes dashed', () => {
+    const { manager, interaction } = setup('Polygon')
+    const sketch = new Feature(new Polygon([]))
+    sketch.setId('shape-1')
+    interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
+    // coords[0] is undefined with zero rings — displayedSketch's `?? []` fallback covers it.
+    expect(() => sketch.getGeometry().setCoordinates([])).not.toThrow()
     expect(manager.styles.createSketchStyle).not.toHaveBeenCalledWith('Polygon', true)
   })
 
