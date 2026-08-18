@@ -8,6 +8,7 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
+import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
@@ -50,9 +51,6 @@ const adjustedPointData = {
     geometry: { coordinates: [-2.4981939, 54.5575261], type: 'Point' }
   }]
 }
-
-
-
 
 const interactPlugin = createInteractPlugin({
   layers: [{
@@ -346,6 +344,7 @@ const interactiveMap = new InteractiveMap('map', {
       showMarker: true
       // expanded: true
     }),
+    createMapKeyPlugin(),
     datasetsPlugin,
     mapStylesPlugin({
       mapStyles: vtsMapStyles3857

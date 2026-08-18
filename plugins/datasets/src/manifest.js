@@ -2,7 +2,6 @@
 import { initialState, actions } from './reducers/pluginState.js'
 import { DatasetsInit } from './initialise/DatasetsInit.jsx'
 import { LayersMenu } from './components/LayersMenu/LayersMenu.jsx'
-import { Key } from './components/Key/Key.jsx'
 import { addDataset } from './api/addDataset.js'
 import { removeDataset } from './api/removeDataset.js'
 import { setDatasetVisibility } from './api/setDatasetVisibility.js'
@@ -44,22 +43,6 @@ export const manifest = {
       width: '280px'
     },
     render: LayersMenu
-  }, {
-    id: 'datasetsKey',
-    label: 'Key',
-    mobile: {
-      slot: 'drawer',
-      modal: true
-    },
-    tablet: {
-      slot: 'left-top',
-      width: '260px'
-    },
-    desktop: {
-      slot: 'left-top',
-      width: '280px'
-    },
-    render: Key
   }],
 
   buttons: [{
@@ -73,24 +56,6 @@ export const manifest = {
     mobile: {
       slot: 'top-left',
       showLabel: true
-    },
-    tablet: {
-      slot: 'top-left',
-      showLabel: true
-    },
-    desktop: {
-      slot: 'top-left',
-      showLabel: true
-    }
-  }, {
-    id: 'datasetsKey',
-    label: 'Key',
-    panelId: 'datasetsKey',
-    iconId: 'key',
-    excludeWhen: ({ pluginConfig }) => !pluginConfig.datasets.some(l => l.showInKey),
-    mobile: {
-      slot: 'top-left',
-      showLabel: false
     },
     tablet: {
       slot: 'top-left',

@@ -148,6 +148,7 @@ describe('datasetRegistry', () => {
       const { mappedDatasets: singleHiddenSublayer, orderedDatasets } = mappedDatasetsReducer({
         datasets: [{
           id: 'single-sublayer-dataset',
+          label: 'Single Layer',
           showInKey: true,
           visible: true,
           style: {},
@@ -162,7 +163,7 @@ describe('datasetRegistry', () => {
     it('only includes visible sublayers in group items', () => {
       const { items } = datasetRegistry.keyItems()
       const landCoversItem = items.find(item => item.type === 'group' && item.groupLabel === 'Land covers')
-      const sublayerIds = landCoversItem.datasets.map(s => s.id)
+      const sublayerIds = landCoversItem.keyDefinitions.map(s => s.id)
       expect(sublayerIds).not.toContain('land-covers-379') // land-covers-379 has visible: false
     })
 
@@ -188,7 +189,7 @@ describe('datasetRegistry', () => {
       datasetRegistry.attach(grouped, orderedDatasets)
       const { items } = datasetRegistry.keyItems()
       const groupItem = items.find(item => item.type === 'group' && item.groupLabel === 'Test group')
-      const ids = groupItem.datasets.map(d => d.id)
+      const ids = groupItem.keyDefinitions.map(d => d.id)
       expect(ids).toContain('existing-fields')
       expect(ids).toContain('hedge-control')
     })

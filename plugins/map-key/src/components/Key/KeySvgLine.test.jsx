@@ -8,7 +8,7 @@ jest.mock('../../../../../src/utils/getValueForStyle', () => ({
 }))
 
 const defaultProps = {
-  registryDataset: {
+  keyDefinition: {
     style: {
       stroke: '#ff0000',
       strokeWidth: 2
