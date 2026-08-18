@@ -81,4 +81,9 @@ describe('KeySvg', () => {
     const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasSymbol: true }} />)
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
+
+  it('should return null if keyDefinition is undefined', () => {
+    const { container } = render(<KeySvg {...baseProps} keyDefinition={null} />)
+    expect(container.firstChild).toBeNull()
+  })
 })
