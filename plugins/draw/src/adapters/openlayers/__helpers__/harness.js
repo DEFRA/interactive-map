@@ -1,6 +1,7 @@
 import Feature from 'ol/Feature.js'
 import Polygon from 'ol/geom/Polygon.js'
 import LineString from 'ol/geom/LineString.js'
+import Point from 'ol/geom/Point.js'
 import Style from 'ol/style/Style.js'
 import { createUndoStack } from '../../../utils/undoStack.js'
 
@@ -75,6 +76,12 @@ export const polygonFeature = (ring, id = 'f1') => {
 
 export const lineFeature = (coords, id = 'f1') => {
   const feature = new Feature(new LineString(coords))
+  feature.setId(id)
+  return feature
+}
+
+export const pointFeature = (coord, id = 'f1') => {
+  const feature = new Feature(new Point(coord))
   feature.setId(id)
   return feature
 }

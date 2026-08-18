@@ -2,6 +2,7 @@ import { OLDrawManager } from './OLDrawManager.js'
 import { STYLES_CHANGED_EVENT } from './internalEvents.js'
 import { createDrawMode } from '../draw/DrawMode.js'
 import { createEditMode } from '../edit/EditMode.js'
+import { createDrawPointMode } from '../point/drawPointMode.js'
 import { createSnapManager } from '../snap/snapManager.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { createFakeMap } from '../__helpers__/harness.js'
@@ -12,6 +13,9 @@ jest.mock('../draw/DrawMode.js', () => ({
 }))
 jest.mock('../edit/EditMode.js', () => ({
   createEditMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
+}))
+jest.mock('../point/drawPointMode.js', () => ({
+  createDrawPointMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), setInterfaceType: jest.fn() }))
 }))
 jest.mock('../snap/snapManager.js', () => ({
   createSnapManager: jest.fn(() => ({ setIndicatorActive: jest.fn(), reattach: jest.fn(), updateColors: jest.fn(), destroy: jest.fn() }))
@@ -58,6 +62,18 @@ describe('mode machine', () => {
     await manager.changeMode(name, { featureId: 'f1' })
     expect(manager.getMode()).toBe(name)
     expect(factory).toHaveBeenCalledWith({ map, manager, options: { featureId: 'f1', snap: manager.snap } })
+    expect(manager.snap.setIndicatorActive).toHaveBeenCalledWith(true)
+    expect(manager.snap.reattach).toHaveBeenCalled()
+  })
+
+  // draw_point gets an extra options key (resolvePointSymbol) the other modes don't — see
+  // OLDrawManager.js's changeMode comment — so it's asserted separately rather than folded
+  // into the table above.
+  test('draw_point creates its mode with snap and resolvePointSymbol injected, activates the indicator and reattaches snap last', async () => {
+    const { map, manager } = setup()
+    await manager.changeMode('draw_point', { featureId: 'f1' })
+    expect(manager.getMode()).toBe('draw_point')
+    expect(createDrawPointMode).toHaveBeenCalledWith({ map, manager, options: { featureId: 'f1', snap: manager.snap, resolvePointSymbol: expect.any(Function) } })
     expect(manager.snap.setIndicatorActive).toHaveBeenCalledWith(true)
     expect(manager.snap.reattach).toHaveBeenCalled()
   })

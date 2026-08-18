@@ -1,9 +1,11 @@
 import Point from 'ol/geom/Point.js'
 import LineString from 'ol/geom/LineString.js'
 import Feature from 'ol/Feature.js'
+import Icon from 'ol/style/Icon.js'
 import { createStyles } from './styles.js'
 import { SIZES } from '../defaults.js'
-import { polygonFeature, lineFeature } from '../__helpers__/harness.js'
+import { polygonFeature, lineFeature, pointFeature } from '../__helpers__/harness.js'
+import { getOrCreateSymbolImage, clearSymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 
 const colors = {
   editStroke: '#e5',
@@ -117,7 +119,11 @@ describe('sketch styles while drawing', () => {
 })
 
 describe('createFeatureStyle (inactive shapes)', () => {
-  const styleFor = (properties) => styles.createFeatureStyle()({ getProperties: () => properties })[0]
+  const styleFor = (properties) => {
+    const feature = polygonFeature([[0, 0], [1, 0], [1, 1], [0, 0]])
+    feature.setProperties(properties)
+    return styles.createFeatureStyle()(feature)[0]
+  }
 
   test('falls back to the configured shape colours', () => {
     const style = styleFor({})
@@ -137,7 +143,73 @@ describe('createFeatureStyle (inactive shapes)', () => {
 
   test('without a map style id only the generic properties apply', () => {
     const plain = createStyles({ ...colors, mapStyleId: null })
-    const style = plain.createFeatureStyle()({ getProperties: () => ({ strokeRoad: '#r1' }) })[0]
+    const feature = polygonFeature([[0, 0], [1, 0], [1, 1], [0, 0]])
+    feature.setProperties({ strokeRoad: '#r1' })
+    const style = plain.createFeatureStyle()(feature)[0]
     expect(style.getStroke().getColor()).toBe(colors.shapeStroke)
+  })
+
+  test('a committed Point feature gets the placeholder circle style, not Stroke/Fill', () => {
+    const style = styles.createFeatureStyle()(pointFeature([5, 5]))[0]
+    expect(style.getImage()).toBeTruthy()
+    expect(style.getStroke()).toBeFalsy()
+    expect(style.getFill()).toBeFalsy()
+  })
+
+  test('a Point feature with a resolved+cached symbolImageId renders a real Icon, not the placeholder', () => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+      this._ctx ??= { putImageData: jest.fn() }
+      return this._ctx
+    })
+    clearSymbolImageCache()
+    const canvas = getOrCreateSymbolImage('symbol-pin-1x', { width: 10, height: 10 })
+
+    const feature = pointFeature([5, 5])
+    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-1x' })
+
+    const style = styles.createFeatureStyle()(feature)[0]
+    expect(style.getImage()).toBeInstanceOf(Icon)
+    expect(style.getImage().getImage(1)).toBe(canvas)
+  })
+
+  test('scales the Icon down by the rasterisation pixelRatio, so a high-DPI raster still displays at its intended CSS size', () => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+      this._ctx ??= { putImageData: jest.fn() }
+      return this._ctx
+    })
+    clearSymbolImageCache()
+    getOrCreateSymbolImage('symbol-pin-4x', { width: 176, height: 176 }) // 44 viewBox × pixelRatio 4
+
+    const feature = pointFeature([5, 5])
+    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-4x', symbolPixelRatio: 4 })
+
+    const style = styles.createFeatureStyle()(feature)[0]
+    expect(style.getImage().getScale()).toBe(0.25)
+  })
+
+  test('defaults to scale 1 when symbolPixelRatio is missing', () => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+      this._ctx ??= { putImageData: jest.fn() }
+      return this._ctx
+    })
+    clearSymbolImageCache()
+    getOrCreateSymbolImage('symbol-pin-no-ratio', { width: 44, height: 44 })
+
+    const feature = pointFeature([5, 5])
+    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-no-ratio' })
+
+    const style = styles.createFeatureStyle()(feature)[0]
+    expect(style.getImage().getScale()).toBe(1)
+  })
+
+  test('a Point feature whose symbolImageId has not been rasterised/cached yet falls back to the placeholder', () => {
+    clearSymbolImageCache()
+    const feature = pointFeature([5, 5])
+    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-not-cached' })
+
+    const style = styles.createFeatureStyle()(feature)[0]
+    expect(style.getImage()).not.toBeInstanceOf(Icon)
+    expect(style.getStroke()).toBeFalsy()
+    expect(style.getFill()).toBeFalsy()
   })
 })

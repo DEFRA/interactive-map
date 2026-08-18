@@ -2,9 +2,13 @@ import Style from 'ol/style/Style.js'
 import Fill from 'ol/style/Fill.js'
 import Stroke from 'ol/style/Stroke.js'
 import CircleStyle from 'ol/style/Circle.js'
+import Icon from 'ol/style/Icon.js'
 import MultiPoint from 'ol/geom/MultiPoint.js'
 import { SIZES } from '../defaults.js'
 import { getPlacedSketchCoords } from '../utils/sketchHelpers.js'
+import { getCachedSymbolImage } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
+import { getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
 
 const HALO_RADIUS_OFFSET = 3
 
@@ -74,6 +78,58 @@ const createSketchLineStyles = (colors) => ({
   })
 })
 
+// Placeholder for a committed point feature that has no symbol config, or whose symbol
+// image hasn't rasterised/cached yet (point/pointSymbolImages.js resolves it asynchronously
+// after the feature is added to the store — this is what renders in the gap, and what
+// permanently renders for a point with no symbol properties at all). Stroke/Fill styles
+// have no effect on a Point geometry, so without this branch a committed point renders
+// invisibly.
+const createPointPlaceholderStyle = (colors) => new Style({
+  image: new CircleStyle({
+    radius: SIZES.vertexRadius + HALO_RADIUS_OFFSET,
+    fill: new Fill({ color: colors.shapeFill }),
+    stroke: new Stroke({ color: colors.shapeStroke, width: 2 })
+  })
+})
+
+// ol/style/Icon defaults (anchorOrigin: 'top-left', anchorXUnits/anchorYUnits: 'fraction')
+// already match symbolAnchor's own [x,y]-fraction-from-top-left convention, so unlike the
+// MapLibre adapter (whose icon-anchor only has 9 discrete positions) no offset compensation
+// is needed here — the raw anchor is usable as-is. Icon style instances are cached per
+// imageId+anchor+pixelRatio so a style function running every render frame doesn't rebuild
+// one each time.
+const createPointStyles = (colors) => {
+  const pointStyle = createPointPlaceholderStyle(colors)
+  const iconStyleCache = new Map()
+
+  const getPointIconStyle = (properties) => {
+    const imageId = properties.symbolImageId
+    const canvas = imageId && getCachedSymbolImage(imageId)
+    if (!canvas) {
+      return null
+    }
+    const symbolDef = symbolRegistry.getSymbolDef(properties)
+    const [anchorX, anchorY] = getSymbolAnchor(properties, symbolDef)
+    // The cached canvas was rasterised at viewBox × pixelRatio device pixels for crispness
+    // (point/pointSymbolImages.js) — unlike MapLibre's map.addImage(id, data, {pixelRatio}),
+    // which uses the registered pixelRatio to auto-derive the displayed CSS size, ol/style/
+    // Icon draws its source at native pixel size by default, so `scale` has to cancel that
+    // back out here or the icon renders pixelRatio× too big.
+    const pixelRatio = properties.symbolPixelRatio || 1
+    const cacheKey = `${imageId}|${anchorX}|${anchorY}|${pixelRatio}`
+    let iconStyle = iconStyleCache.get(cacheKey)
+    if (!iconStyle) {
+      iconStyle = new Style({ image: new Icon({ img: canvas, anchor: [anchorX, anchorY], scale: 1 / pixelRatio }) })
+      iconStyleCache.set(cacheKey, iconStyle)
+    }
+    return iconStyle
+  }
+
+  return {
+    pointStyleFor: (feature) => getPointIconStyle(feature.getProperties()) ?? pointStyle
+  }
+}
+
 /**
  * Create all draw-ol style instances for the given resolved color set.
  *
@@ -130,7 +186,12 @@ export const createStyles = (colors) => {
     return type === geometryType ? [lineStyle, sketchVertexStyle] : [lineStyle]
   }
 
+  const { pointStyleFor } = createPointStyles(colors)
+
   const createFeatureStyle = () => (feature) => {
+    if (feature.getGeometry().getType() === 'Point') {
+      return [pointStyleFor(feature)]
+    }
     const p = feature.getProperties()
     const id = colors.mapStyleId
     const stroke = (id && p[`stroke${capitalize(id)}`]) || p.stroke || colors.shapeStroke

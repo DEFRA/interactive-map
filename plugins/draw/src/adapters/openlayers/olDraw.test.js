@@ -1,5 +1,6 @@
 import { createOLDraw } from './olDraw.js'
 import { OLDrawManager } from './core/OLDrawManager.js'
+import { refreshAllPointSymbols } from './point/pointSymbolImages.js'
 import { MAP_SIZE_SCALES } from './defaults.js'
 
 jest.mock('./core/OLDrawManager.js', () => ({
@@ -8,6 +9,7 @@ jest.mock('./core/OLDrawManager.js', () => ({
     this.remove = jest.fn()
   })
 }))
+jest.mock('./point/pointSymbolImages.js', () => ({ refreshAllPointSymbols: jest.fn() }))
 
 const events = { MAP_SET_SIZE: 'app:size', MAP_SET_STYLE: 'app:style' }
 
@@ -35,10 +37,11 @@ test('creates the manager for the map, exposes it as mapProvider.draw and applie
   expect(setup().manager.setMapStyle).not.toHaveBeenCalled() // no initial style
 })
 
-test('map size changes update the draw UI scale, defaulting to 1 for unknown sizes', () => {
-  const { eventBus, mapProvider } = setup()
+test('map size changes update the draw UI scale, defaulting to 1 for unknown sizes, and re-resolve point symbols', () => {
+  const { eventBus, mapProvider, manager } = setup()
   eventBus.emit(events.MAP_SET_SIZE, 'large')
   expect(mapProvider.drawScale).toBe(MAP_SIZE_SCALES.large)
+  expect(refreshAllPointSymbols).toHaveBeenCalledWith({ manager, mapProvider })
   eventBus.emit(events.MAP_SET_SIZE, 'enormous')
   expect(mapProvider.drawScale).toBe(1)
 })
@@ -54,10 +57,11 @@ test('pluginConfig and mapStyle are optional, defaulting to {} and no initial st
   olDraw.remove()
 })
 
-test('map style changes are forwarded to the manager', () => {
-  const { eventBus, manager } = setup()
+test('map style changes are forwarded to the manager and re-resolve point symbols', () => {
+  const { eventBus, manager, mapProvider } = setup()
   eventBus.emit(events.MAP_SET_STYLE, { id: 'dark' })
   expect(manager.setMapStyle).toHaveBeenCalledWith({ id: 'dark' })
+  expect(refreshAllPointSymbols).toHaveBeenCalledWith({ manager, mapProvider })
 })
 
 test('remove unsubscribes, destroys the manager and clears mapProvider.draw', () => {
