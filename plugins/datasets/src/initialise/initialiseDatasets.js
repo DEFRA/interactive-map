@@ -6,7 +6,6 @@ import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { setMenuState } from '../registry/isVisibleWhen.js'
 import { buildMenuState } from '../reducers/menuStateReducer.js'
 import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
-import globalEventBus from '../../../../src/services/eventBus.js'
 
 export const initialiseDatasets = ({
   adapter,
@@ -61,14 +60,14 @@ export const initialiseDatasets = ({
 
   // Emit onReady immediately, but also listen for requests for the registry, so that if the
   // datasets plugin is loaded after the map-key plugin, it will still be able to get the registry.
-  const requestDatasetRegistryReadyHandler = () => globalEventBus.emit('datasets:registryReady', datasetRegistry)
-  globalEventBus.on('datasets:requestRegistry', requestDatasetRegistryReadyHandler)
+  const requestDatasetRegistryReadyHandler = () => eventBus.emit('datasets:registryReady', datasetRegistry)
+  eventBus.on('datasets:requestRegistry', requestDatasetRegistryReadyHandler)
   requestDatasetRegistryReadyHandler()
 
   return {
     remove () {
       eventBus.off(events.MAP_SIZE_CHANGE, onMapSizeChange)
-      globalEventBus.off('datasets:requestRegistry', requestDatasetRegistryReadyHandler)
+      eventBus.off('datasets:requestRegistry', requestDatasetRegistryReadyHandler)
 
       // Clean up dynamic sources
       dynamicSources.forEach(source => source.destroy())
