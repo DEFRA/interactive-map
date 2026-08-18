@@ -15,6 +15,21 @@ describe('buildLayerConfigMap', () => {
 
     expect(buildLayerConfigMap([])).toEqual({})
   })
+
+  // mapbox-gl-draw (MapLibre only) moves a feature out of its `.cold` layer/source into a
+  // `.hot` sibling the instant any of its own properties change — a click landing on a feature
+  // that's since moved would otherwise silently fail to match any registered config at all.
+  it('also registers the .cold/.hot sibling id, pointing at the same config', () => {
+    const dataLayers = [{ layerId: 'point-symbol.cold', idProperty: 'id' }]
+    const result = buildLayerConfigMap(dataLayers)
+    expect(result['point-symbol.cold']).toBe(result['point-symbol.hot'])
+    expect(result['point-symbol.hot']).toEqual({ layerId: 'point-symbol.cold', idProperty: 'id' })
+  })
+
+  it('does not add a sibling for a layer id with no cold/hot suffix', () => {
+    const result = buildLayerConfigMap([{ layerId: 'field-parcels' }])
+    expect(Object.keys(result)).toEqual(['field-parcels'])
+  })
 })
 
 describe('getFeaturesAtPoint', () => {

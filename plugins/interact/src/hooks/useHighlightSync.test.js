@@ -7,19 +7,37 @@ jest.mock('../utils/buildStylesMap.js', () => ({
 }))
 
 const STYLE_CHANGE = 'map:stylechange'
+const SET_SIZE = 'map:setsize'
 const DATA_CHANGE = 'map:datachange'
 
+// A minimal real-ish event bus (mirrors src/services/eventBus.js's on/once/off contract)
+// rather than jest.fn() stubs — the re-arming logic under test depends on once() genuinely
+// self-removing and on() genuinely supporting multiple independent listeners, which a bare
+// mock can't exercise faithfully.
+const createEventBus = () => {
+  const listeners = {}
+  return {
+    on: jest.fn((event, handler) => { (listeners[event] ??= []).push(handler) }),
+    once: jest.fn((event, handler) => {
+      const wrapper = (...args) => { bus.off(event, wrapper); handler(...args) }
+      listeners[event] ??= []
+      listeners[event].push(wrapper)
+    }),
+    off: jest.fn((event, handler) => { listeners[event] = (listeners[event] ?? []).filter(h => h !== handler) }),
+    emit: (event, ...args) => { (listeners[event] ?? []).slice().forEach(h => h(...args)) },
+    _listenerCount: (event) => (listeners[event] ?? []).length
+  }
+}
+let bus
+
 let mockDeps
-let capturedStyleChangeHandler
-let capturedDataChangeHandler
 
 const render = (overrides = {}) =>
   renderHook(() => useHighlightSync({ ...mockDeps, ...overrides }))
 
 beforeEach(() => {
   jest.clearAllMocks()
-  capturedStyleChangeHandler = null
-  capturedDataChangeHandler = null
+  bus = createEventBus()
 
   mockDeps = {
     mapProvider: {
@@ -30,20 +48,8 @@ beforeEach(() => {
       layers: [{ layerId: 'layer1' }]
     },
     selectedFeatures: [],
-    events: { MAP_STYLE_CHANGE: STYLE_CHANGE, MAP_DATA_CHANGE: DATA_CHANGE },
-    eventBus: {
-      on: jest.fn((event, handler) => {
-        if (event === STYLE_CHANGE) {
-          capturedStyleChangeHandler = handler
-        }
-      }),
-      once: jest.fn((event, handler) => {
-        if (event === DATA_CHANGE) {
-          capturedDataChangeHandler = handler
-        }
-      }),
-      off: jest.fn()
-    }
+    events: { MAP_STYLE_CHANGE: STYLE_CHANGE, MAP_SET_SIZE: SET_SIZE, MAP_DATA_CHANGE: DATA_CHANGE },
+    eventBus: bus
   }
 })
 
@@ -95,28 +101,93 @@ describe('useHighlightSync — styles memoization', () => {
   })
 })
 
-// ─── useHighlightSync — style-change event ───────────────────────────────────
+// ─── useHighlightSync — style/size-change settle window ──────────────────────
 
-describe('useHighlightSync — style-change event', () => {
+describe('useHighlightSync — style/size-change settle window', () => {
   it('refreshes highlights after MAP_STYLE_CHANGE then MAP_DATA_CHANGE', () => {
     mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
 
     render()
     mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
 
-    act(() => capturedStyleChangeHandler())
-    act(() => capturedDataChangeHandler())
+    act(() => bus.emit(STYLE_CHANGE))
+    act(() => bus.emit(DATA_CHANGE))
 
-    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalled()
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledTimes(1)
   })
 
-  it('unsubscribes on unmount', () => {
+  it('also refreshes after MAP_SET_SIZE then MAP_DATA_CHANGE', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
+
+    render()
+    mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+
+    act(() => bus.emit(SET_SIZE))
+    act(() => bus.emit(DATA_CHANGE))
+
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledTimes(1)
+  })
+
+  // The whole reason for re-arming rather than a single listen-once: MAP_DATA_CHANGE
+  // typically fires more than once during a settle (basemap loading before a drawn
+  // feature's own symbol re-resolution has finished) — the second, later firing must
+  // still be caught, not missed because the first already consumed a one-shot listener.
+  it('keeps re-applying on every MAP_DATA_CHANGE within the settle window, not just the first', () => {
+    mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
+
+    render()
+    mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+
+    act(() => bus.emit(STYLE_CHANGE))
+    act(() => bus.emit(DATA_CHANGE)) // early, still-stale settle
+    act(() => bus.emit(DATA_CHANGE)) // later, real settle
+    act(() => bus.emit(DATA_CHANGE))
+
+    expect(mockDeps.mapProvider.updateHighlightedFeatures).toHaveBeenCalledTimes(3)
+  })
+
+  it('stops re-arming once the settle window has elapsed, so it does not listen forever', () => {
+    jest.useFakeTimers()
+    mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
+
+    render()
+    mockDeps.mapProvider.updateHighlightedFeatures.mockClear()
+
+    act(() => bus.emit(STYLE_CHANGE))
+    act(() => bus.emit(DATA_CHANGE)) // re-arms — within the window
+    expect(bus._listenerCount(DATA_CHANGE)).toBe(1)
+
+    jest.advanceTimersByTime(4000) // past the settle window
+    act(() => bus.emit(DATA_CHANGE)) // the last re-arm still fires once...
+    expect(bus._listenerCount(DATA_CHANGE)).toBe(0) // ...but does not re-arm again
+
+    jest.useRealTimers()
+  })
+
+  it('a second style/size change while still settling extends the window without double-registering', () => {
+    jest.useFakeTimers()
+    mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
+
+    render()
+
+    act(() => bus.emit(STYLE_CHANGE))
+    expect(bus._listenerCount(DATA_CHANGE)).toBe(1)
+    act(() => bus.emit(SET_SIZE)) // still armed — must not add a second listener
+    expect(bus._listenerCount(DATA_CHANGE)).toBe(1)
+
+    jest.useRealTimers()
+  })
+
+  it('unsubscribes MAP_STYLE_CHANGE/MAP_SET_SIZE/MAP_DATA_CHANGE listeners on unmount', () => {
     mockDeps.selectedFeatures = [{ featureId: 'F1', layerId: 'layer1' }]
 
     const { unmount } = render()
+    act(() => bus.emit(STYLE_CHANGE)) // arm the MAP_DATA_CHANGE re-apply listener too
     unmount()
 
-    expect(mockDeps.eventBus.off).toHaveBeenCalledWith(STYLE_CHANGE, expect.any(Function))
+    expect(bus._listenerCount(STYLE_CHANGE)).toBe(0)
+    expect(bus._listenerCount(SET_SIZE)).toBe(0)
+    expect(bus._listenerCount(DATA_CHANGE)).toBe(0)
   })
 })
 

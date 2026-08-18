@@ -19,13 +19,16 @@ export const createOLDraw = ({ mapProvider, events, eventBus, pluginConfig = {},
 
   mapProvider.draw = manager
 
-  // Unlike the MapLibre adapter, OL's pixel ratio (point/pointSymbolImages.js's
-  // getPixelRatio()) is computed directly from mapProvider.drawScale — there's no separate
-  // "carries the fresh value" event to wait for the way ML's MAP_SET_PIXEL_RATIO is needed
-  // for; drawScale is already updated by the time refreshAllPointSymbols runs below.
+  // Nudges useHighlightSync to re-apply the highlight overlay — OL's own MAP_DATA_CHANGE is
+  // driven purely by basemap 'tileloadend', unrelated to the draw source, so a resize/style
+  // change would otherwise never trigger a refresh at all.
+  const notifyPointSymbolsRefreshed = () => eventBus.emit(events.MAP_DATA_CHANGE)
+
+  // mapProvider.drawScale is already updated by the time refreshAllPointSymbols runs below,
+  // unlike MapLibre which needs to wait for a separate MAP_SET_PIXEL_RATIO event.
   const handleSetMapSize = (size) => {
     mapProvider.drawScale = MAP_SIZE_SCALES[size] ?? 1
-    refreshAllPointSymbols({ manager, mapProvider })
+    refreshAllPointSymbols({ manager, mapProvider }).then(notifyPointSymbolsRefreshed)
   }
   eventBus.on(events.MAP_SET_SIZE, handleSetMapSize)
 
@@ -33,7 +36,7 @@ export const createOLDraw = ({ mapProvider, events, eventBus, pluginConfig = {},
     manager.setMapStyle(newMapStyle)
     // Rasterised point symbol images are style-scoped (colours resolve per map style) —
     // re-resolve every drawn point's icon now the new style has been applied.
-    refreshAllPointSymbols({ manager, mapProvider })
+    refreshAllPointSymbols({ manager, mapProvider }).then(notifyPointSymbolsRefreshed)
   }
   eventBus.on(events.MAP_SET_STYLE, handleSetMapStyle)
 

@@ -8,7 +8,11 @@ import { anchorToMaplibre, anchorToMaplibreOffset } from '../../../../../provide
  * see src/config/symbolConfig.js), and writes the resolved image id/anchor/offset back onto
  * the feature as properties (symbolImageId/symbolIconAnchor/symbolIconOffset) so the
  * data-driven point-symbol layer (styles.js's pointSymbol()) can render it via
- * icon-image/icon-anchor/icon-offset expressions.
+ * icon-image/icon-anchor/icon-offset expressions. Also writes symbolActiveImageId/
+ * symbolSelectedImageId (the keyboard-cursor and click-selected variants of the same icon)
+ * so providers/maplibre/src/utils/highlightFeatures.js's selection ring can reference each
+ * point's own precomputed variant directly, since icon-image here is a per-feature
+ * data-driven expression rather than the single static id a dataset layer uses.
  *
  * A point feature's own properties ARE already the "style" object symbolRegistry expects —
  * newPoint.js passes symbol config options straight through, no transformation needed.
@@ -60,6 +64,14 @@ export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, pr
     if (!symbolImageId) {
       return
     }
+    // addSymbolsToMap() (just awaited above) already registered and mapped the active/selected
+    // variants for this exact symbolImageId into map._activeSymbolImageMap/
+    // _selectedSymbolImageMap — read them back rather than re-deriving, so a drawn point's
+    // highlight (providers/maplibre/src/utils/highlightFeatures.js) can reference its own
+    // precomputed id directly instead of reverse-mapping through those maps at highlight time
+    // (which breaks once icon-image is a per-feature data-driven expression, as it is here).
+    const symbolActiveImageId = map._activeSymbolImageMap?.[symbolImageId] ?? null
+    const symbolSelectedImageId = map._selectedSymbolImageMap?.[symbolImageId] ?? null
     const symbolDef = symbolRegistry.getSymbolDef(properties)
     const rawAnchor = getSymbolAnchor(properties, symbolDef)
     const anchor = anchorToMaplibre(rawAnchor)
@@ -80,7 +92,14 @@ export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, pr
     // replaces properties wholesale rather than merging.
     draw.add({
       ...feature,
-      properties: { ...properties, symbolImageId, symbolIconAnchor: anchor, symbolIconOffset: offset }
+      properties: {
+        ...properties,
+        symbolImageId,
+        symbolIconAnchor: anchor,
+        symbolIconOffset: offset,
+        symbolActiveImageId,
+        symbolSelectedImageId
+      }
     })
   } catch (err) {
     // A silent failure here means a point simply never gets/keeps an icon, with nothing in

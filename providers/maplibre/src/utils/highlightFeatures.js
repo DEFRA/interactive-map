@@ -1,3 +1,5 @@
+import { siblingDrawLayerId } from './drawLayerBuckets.js'
+
 const ICON_IMAGE = 'icon-image'
 
 const ACTIVE_PREFIX = 'active-highlight'
@@ -10,44 +12,55 @@ const usesSelectedStyle = (prefix) => prefix === SELECTED_PREFIX || prefix === A
 const getActiveImageId = (map, imageId) => map._activeSymbolImageMap?.[imageId] ?? null
 const getSelectedImageId = (map, imageId) => map._selectedSymbolImageMap?.[imageId] ?? null
 
-const groupFeaturesBySource = (map, selectedFeatures) => {
-  const featuresBySource = {}
+// Grouped by layerId, not sourceId: mapbox-gl-draw stores every geometry type in the same
+// cold/hot sources, so a point (symbol layer) and a polygon (fill layer) selected together
+// share a source — grouping by source would collapse them into one group that can only
+// resolve one geometry-type path, silently dropping the other's highlight.
+//
+// A selection's recorded layerId can also go stale if the feature later moves to its cold/hot
+// sibling bucket — see drawLayerBuckets.js.
+const addFeatureUnderLayer = (map, featuresByLayer, layerId, { featureId, idProperty, geometry }) => {
+  const layer = map.getLayer(layerId)
+  if (!layer) {
+    return
+  }
 
-  selectedFeatures?.forEach(({ featureId, layerId, idProperty, geometry }) => {
-    const layer = map.getLayer(layerId)
-
-    if (!layer) {
-      return
+  if (!featuresByLayer[layerId]) {
+    featuresByLayer[layerId] = {
+      ids: new Set(),
+      fillIds: new Set(),
+      idProperty,
+      sourceId: layer.source,
+      hasFillGeometry: false
     }
+  }
 
-    const sourceId = layer.source
+  if (geometry && (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')) {
+    featuresByLayer[layerId].hasFillGeometry = true
+    featuresByLayer[layerId].fillIds.add(featureId)
+  }
 
-    if (!featuresBySource[sourceId]) {
-      featuresBySource[sourceId] = {
-        ids: new Set(),
-        fillIds: new Set(),
-        idProperty,
-        layerId,
-        hasFillGeometry: false
-      }
-    }
-
-    // Track whether any feature on this source is a polygon
-    if (geometry && (geometry.type === 'Polygon' || geometry.type === 'MultiPolygon')) {
-      featuresBySource[sourceId].hasFillGeometry = true
-      featuresBySource[sourceId].fillIds.add(featureId)
-    }
-
-    featuresBySource[sourceId].ids.add(featureId)
-  })
-
-  return featuresBySource
+  featuresByLayer[layerId].ids.add(featureId)
 }
 
-const cleanupStaleSources = (map, previousSources, currentSources, prefix) => {
-  previousSources.forEach(src => {
-    if (!currentSources.has(src)) {
-      const base = `${prefix}-${src}`
+const groupFeaturesByLayer = (map, selectedFeatures) => {
+  const featuresByLayer = {}
+
+  selectedFeatures?.forEach((feature) => {
+    addFeatureUnderLayer(map, featuresByLayer, feature.layerId, feature)
+    const sibling = siblingDrawLayerId(feature.layerId)
+    if (sibling) {
+      addFeatureUnderLayer(map, featuresByLayer, sibling, feature)
+    }
+  })
+
+  return featuresByLayer
+}
+
+const cleanupStaleLayers = (map, previousLayerIds, currentLayerIds, prefix) => {
+  previousLayerIds.forEach(layerId => {
+    if (!currentLayerIds.has(layerId)) {
+      const base = `${prefix}-${layerId}`
       ;[`${base}-fill`, `${base}-line`, `${base}-symbol`].forEach(id => {
         if (map.getLayer(id)) {
           map.setFilter(id, ['==', 'id', ''])
@@ -57,9 +70,9 @@ const cleanupStaleSources = (map, previousSources, currentSources, prefix) => {
   })
 }
 
-const clearPrefixSources = (map, prefix) => {
+const clearPrefixLayers = (map, prefix) => {
   const key = `_${prefix.replaceAll('-', '')}Sources`
-  cleanupStaleSources(map, map[key] || new Set(), new Set(), prefix)
+  cleanupStaleLayers(map, map[key] || new Set(), new Set(), prefix)
   map[key] = new Set()
 }
 
@@ -82,6 +95,9 @@ const applyHighlightLayer = (map, id, type, sourceId, srcLayer, paint, filter) =
 }
 
 const applySymbolHighlightLayer = (map, id, sourceId, srcLayer, originalLayerId, imageId, filter) => {
+  // icon-offset only exists on layers needing anchor precision correction (draw's point-symbol
+  // layer) — read off the original layer, omitted when absent.
+  const iconOffset = map.getLayoutProperty(originalLayerId, 'icon-offset')
   if (!map.getLayer(id)) {
     map.addLayer({
       id,
@@ -91,11 +107,15 @@ const applySymbolHighlightLayer = (map, id, sourceId, srcLayer, originalLayerId,
       layout: {
         [ICON_IMAGE]: imageId,
         'icon-anchor': map.getLayoutProperty(originalLayerId, 'icon-anchor') ?? 'center',
+        ...(iconOffset !== undefined && { 'icon-offset': iconOffset }),
         'icon-allow-overlap': true
       }
     })
   }
   map.setLayoutProperty(id, ICON_IMAGE, imageId)
+  if (iconOffset !== undefined) {
+    map.setLayoutProperty(id, 'icon-offset', iconOffset)
+  }
   map.setFilter(id, filter)
   map.moveLayer(id)
 }
@@ -115,8 +135,16 @@ const calculateBounds = (LngLatBounds, renderedFeatures) => {
   return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
 }
 
+// Draw's point-symbol layer has a per-feature data-driven icon-image, so there's no single
+// shared image id to reverse-map — pointSymbolImages.js precomputes each point's own active/
+// selected variant as a property, and the highlight layer just reads that directly.
 const applySymbolGeomHighlight = (map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId) => {
   const imageId = map.getLayoutProperty(layerId, ICON_IMAGE)
+  if (Array.isArray(imageId)) {
+    const property = getSymbolImageId === getActiveImageId ? 'user_symbolActiveImageId' : 'user_symbolSelectedImageId'
+    applySymbolHighlightLayer(map, `${base}-symbol`, sourceId, srcLayer, layerId, ['get', property], filter)
+    return
+  }
   const symbolImageId = getSymbolImageId(map, imageId)
   if (symbolImageId) {
     applySymbolHighlightLayer(map, `${base}-symbol`, sourceId, srcLayer, layerId, symbolImageId, filter)
@@ -161,26 +189,23 @@ const applyLineHighlight = (map, base, sourceId, srcLayer, lineColor, lineWidth,
   applyHighlightLayer(map, `${base}-line`, 'line', sourceId, srcLayer, { 'line-color': lineColor, 'line-width': lineWidth }, filter)
 }
 
-const applySymbolHighlight = (map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId) => {
-  applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
-}
-
-// Orchestrates highlight layers for a single source. prefix drives which visual style is used:
+// Orchestrates highlight layers for a single layer. prefix drives which visual style is used:
 //   active-highlight        → yellow active ring (stroke only)
 //   active-highlight-inner  → black thin ring drawn on top of active
 //   selected-highlight      → black thin ring + fill for polygon features
-const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId) => {
-  const { ids, fillIds, idProperty, layerId, hasFillGeometry } = featuresBySource[sourceId]
+const applyLayerHighlight = (map, layerId, featuresByLayer, stylesMap, prefix, getSymbolImageId) => {
+  const { ids, fillIds, idProperty, sourceId, hasFillGeometry } = featuresByLayer[layerId]
   const baseLayer = map.getLayer(layerId)
+  // Only the recorded layerId is registered in stylesMap — falls back to its cold/hot sibling
+  // (same drawn layer, identical styling) rather than requiring both to be registered.
+  const style = stylesMap[layerId] ?? stylesMap[siblingDrawLayerId(layerId)]
 
-  if (!baseLayer || !stylesMap[layerId]) {
+  if (!baseLayer || !style) {
     return
   }
-
-  const style = stylesMap[layerId]
   const srcLayer = baseLayer.sourceLayer
   const geom = hasFillGeometry ? 'fill' : baseLayer.type
-  const base = `${prefix}-${sourceId}`
+  const base = `${prefix}-${layerId}`
   const { fill } = style
   const isSelected = prefix === SELECTED_PREFIX
   const selectedStyle = usesSelectedStyle(prefix)
@@ -202,7 +227,7 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
       applyLineHighlight(map, base, sourceId, srcLayer, lineColor, lineWidth, filter)
       break
     case 'symbol':
-      applySymbolHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
+      applySymbolGeomHighlight(map, base, sourceId, srcLayer, layerId, filter, getSymbolImageId)
       break
     default:
       break
@@ -210,16 +235,16 @@ const applySourceHighlight = (map, sourceId, featuresBySource, stylesMap, prefix
 }
 
 const applyFeatureHighlights = (map, features, stylesMap, prefix, getSymbolImageId) => {
-  const featuresBySource = groupFeaturesBySource(map, features)
-  const currentSources = new Set(Object.keys(featuresBySource))
+  const featuresByLayer = groupFeaturesByLayer(map, features)
+  const currentLayerIds = new Set(Object.keys(featuresByLayer))
   const storageKey = `_${prefix.replaceAll('-', '')}Sources`
-  const previousSources = map[storageKey] || new Set()
+  const previousLayerIds = map[storageKey] || new Set()
 
-  cleanupStaleSources(map, previousSources, currentSources, prefix)
-  map[storageKey] = currentSources
-  currentSources.forEach(sourceId => applySourceHighlight(map, sourceId, featuresBySource, stylesMap, prefix, getSymbolImageId))
+  cleanupStaleLayers(map, previousLayerIds, currentLayerIds, prefix)
+  map[storageKey] = currentLayerIds
+  currentLayerIds.forEach(layerId => applyLayerHighlight(map, layerId, featuresByLayer, stylesMap, prefix, getSymbolImageId))
 
-  return featuresBySource
+  return featuresByLayer
 }
 
 /**
@@ -247,21 +272,21 @@ export function updateHighlightedFeatures ({ LngLatBounds, map, selectedFeatures
     // Black selected stroke on top of yellow active (mirrors resolveActive for symbols)
     applyFeatureHighlights(map, activeFeatures, stylesMap, ACTIVE_INNER_PREFIX, getSelectedImageId)
   } else {
-    clearPrefixSources(map, ACTIVE_PREFIX)
-    clearPrefixSources(map, ACTIVE_INNER_PREFIX)
+    clearPrefixLayers(map, ACTIVE_PREFIX)
+    clearPrefixLayers(map, ACTIVE_INNER_PREFIX)
   }
 
   // Selection features
-  let featuresBySource = {}
+  let featuresByLayer = {}
   if (selectedFeatures?.length) {
-    featuresBySource = applyFeatureHighlights(map, selectedFeatures, stylesMap, SELECTED_PREFIX, getSelectedImageId)
+    featuresByLayer = applyFeatureHighlights(map, selectedFeatures, stylesMap, SELECTED_PREFIX, getSelectedImageId)
   } else {
-    clearPrefixSources(map, SELECTED_PREFIX)
+    clearPrefixLayers(map, SELECTED_PREFIX)
   }
 
   // Bounds only from selected features
   const renderedFeatures = []
-  Object.entries(featuresBySource).forEach(([, { ids, idProperty, layerId }]) => {
+  Object.entries(featuresByLayer).forEach(([layerId, { ids, idProperty }]) => {
     renderedFeatures.push(
       ...map
         .queryRenderedFeatures({ layers: [layerId] })

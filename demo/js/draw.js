@@ -32,12 +32,16 @@ const interactPlugin = createInteractPlugin({
   },{
     layerId: 'stroke-inactive.cold',
     idProperty: 'id'
+  },{
+    layerId: 'point-symbol.cold',
+    idProperty: 'id'
   }],
   // debug: true,
   interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
   multiSelect: true,
-  contiguous: true,
-  deselectOnClickOutside: true
+  contiguous: false,
+  deselectOnClickOutside: true,
+  debug: true
 })
 
 // Rough approximation of the England/Wales border as a line of longitude —
@@ -338,12 +342,17 @@ interactiveMap.on('draw:cancelled', function (e) {
 
 
 interactiveMap.on('interact:selectionchange', function (e) {
+  // editShape/mergeShapes deliberately exclude points — there's no edit_point mode yet, and
+  // merging is a polygon/line-only concept. Delete has no such restriction, so it gets its
+  // own, wider layer list.
   const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
+  const deletableLayers = drawLayers.concat(['point-symbol.cold'])
   const singleFeature = e.selectedFeatures.length === 1
   const anyFeature = e.selectedFeatures.length > 0
   const isDrawFeature = singleFeature && drawLayers.includes(e.selectedFeatures[0].layerId)
   const isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
   const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return drawLayers.includes(f.layerId) })
+  const canDelete = anyFeature && e.selectedFeatures.every(function (f) { return deletableLayers.includes(f.layerId) })
   const canMerge = allDrawFeatures && e.contiguous && e.selectedFeatures.length > 1
   selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
   interactiveMap.toggleButtonState('addPoint', 'disabled', !!anyFeature)
@@ -352,7 +361,7 @@ interactiveMap.on('interact:selectionchange', function (e) {
   interactiveMap.toggleButtonState('editShape', 'disabled', !isDrawFeature)
   interactiveMap.toggleButtonState('splitShape', 'disabled', !isPolygon)
   interactiveMap.toggleButtonState('mergeShapes', 'disabled', !canMerge)
-  interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
+  interactiveMap.toggleButtonState('deleteFeature', 'disabled', !canDelete)
 })
 
 interactiveMap.on('draw:split', function (e) {

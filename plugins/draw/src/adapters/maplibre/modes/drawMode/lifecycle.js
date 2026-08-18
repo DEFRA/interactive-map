@@ -70,7 +70,15 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
   onStop (state) {
     ParentMode.onStop.call(this, state)
     this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
-    this._hideCrossHair(state)
+    // A touch/keyboard session leaving draw mode is about to land in interact mode, which
+    // needs the same crosshair to select the just-placed feature — only a mouse session (which
+    // selects by direct click) has no further use for it. onCreate's mode change to 'disabled'
+    // is itself setTimeout-deferred, landing after interactPlugin's own re-enable has already
+    // re-shown the crosshair for touch/keyboard — hiding it here unconditionally would win that
+    // race and undo it.
+    if (!['touch', 'keyboard'].includes(state.interfaceType)) {
+      this._hideCrossHair(state)
+    }
     // Sync the final interfaceType from draw mode back to app state so crosshair
     // visibility is correct when exiting draw mode (e.g., if user switched from mouse to keyboard)
     this.map.fire('draw.interfacetypechange', { interfaceType: state.interfaceType })

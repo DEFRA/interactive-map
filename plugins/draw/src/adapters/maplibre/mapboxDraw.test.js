@@ -13,6 +13,12 @@ jest.mock('@mapbox/mapbox-gl-draw', () => {
   const MockDraw = jest.fn(function () {
     this.modes = {}
     this.changeMode = jest.fn()
+    // Mirrors mapbox-gl-draw's own index.js: `api.options = options` — the fully-processed
+    // (cold+hot-duplicated) styles array survives on the public instance regardless of any
+    // later map.setStyle() wiping the actual map layers built from it.
+    this.options = { styles: [{ id: 'fill-inactive.cold' }, { id: 'fill-inactive.hot' }] }
+    this.set = jest.fn()
+    this.getAll = jest.fn(() => ({ type: 'FeatureCollection', features: [{ type: 'Feature', id: 'f1' }] }))
   })
   MockDraw.constants = { classes: {} }
   MockDraw.modes = { existing_mode: { id: 'existing' } }
@@ -24,7 +30,7 @@ jest.mock('./modes/editVertexMode.js', () => ({ EditVertexMode: { id: 'edit_vert
 jest.mock('./modes/drawPolygonMode.js', () => ({ DrawPolygonMode: { id: 'draw_polygon' } }))
 jest.mock('./modes/drawLineMode.js', () => ({ DrawLineMode: { id: 'draw_line' } }))
 jest.mock('./modes/drawPointMode.js', () => ({ DrawPointMode: { id: 'draw_point' } }))
-jest.mock('./pointSymbolImages.js', () => ({ refreshAllPointSymbols: jest.fn() }))
+jest.mock('./pointSymbolImages.js', () => ({ refreshAllPointSymbols: jest.fn(() => Promise.resolve()) }))
 jest.mock('./styles.js', () => ({
   createDrawStyles: jest.fn(() => ['style']),
   updateDrawStyles: jest.fn()
@@ -41,21 +47,25 @@ jest.mock('./defaults.js', () => ({
   MAP_SIZE_SCALES: { medium: 1.5 }
 }))
 
-const EVENTS = { MAP_SET_STYLE: 'map:setstyle', MAP_SET_SIZE: 'map:setsize', MAP_SET_PIXEL_RATIO: 'map:setpixelratio' }
+const EVENTS = { MAP_SET_STYLE: 'map:setstyle', MAP_STYLE_CHANGE: 'map:stylechange', MAP_SET_SIZE: 'map:setsize', MAP_SET_PIXEL_RATIO: 'map:setpixelratio', MAP_DATA_CHANGE: 'map:datachange' }
 
 const handlerFor = (mockFn, eventName) =>
   mockFn.mock.calls.find(([name]) => name === eventName)?.[1]
 
-const createMap = () => ({
+const createMap = ({ hasDrawSource = true } = {}) => ({
   addControl: jest.fn(),
   once: jest.fn(),
   on: jest.fn(),
   off: jest.fn(),
-  fire: jest.fn()
+  fire: jest.fn(),
+  getSource: jest.fn(() => (hasDrawSource ? {} : undefined)),
+  addSource: jest.fn(),
+  addLayer: jest.fn(),
+  triggerRepaint: jest.fn()
 })
 
-const setup = ({ existingDraw, existingUndoStack, pluginConfig } = {}) => {
-  const map = createMap()
+const setup = ({ existingDraw, existingUndoStack, pluginConfig, hasDrawSource } = {}) => {
+  const map = createMap({ hasDrawSource })
   const mapProvider = {
     map,
     _mapboxDrawInstance: existingDraw,
@@ -204,14 +214,27 @@ describe('createMapboxDraw – setup side effects', () => {
 })
 
 describe('createMapboxDraw – event handlers', () => {
-  test('MAP_SET_STYLE updates the current style and restyles on idle', () => {
-    const { map, eventBus, mapProvider, result } = setup()
+  // MAP_SET_STYLE fires the instant a style change is *requested* — before map.setStyle()
+  // has necessarily even been called. Registering the idle/re-add work directly off it risks
+  // catching the map still idle from the *previous* style, no-opping, and consuming itself
+  // before the real wipe even happens. Only MAP_STYLE_CHANGE (which MapLibre only ever emits
+  // off the native 'style.load' event, i.e. strictly after setStyle() was actually called)
+  // should trigger the settle/idle work — this is the split under test throughout this block.
+  test('MAP_SET_STYLE alone only stashes the style — no idle listener registered yet', () => {
+    const { map, eventBus } = setup()
 
-    const styleHandler = handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)
-    map._drawEditContainer = { querySelector: jest.fn(() => 'svg-el') }
-    styleHandler('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
 
     expect(map._drawCurrentMapStyle).toBe('dark')
+    expect(map.once).not.toHaveBeenCalled()
+  })
+
+  test('MAP_STYLE_CHANGE updates the current style and restyles on idle', () => {
+    const { map, eventBus, mapProvider, result } = setup()
+
+    map._drawEditContainer = { querySelector: jest.fn(() => 'svg-el') }
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
 
     const idleCallback = handlerFor(map.once, 'idle')
     idleCallback()
@@ -221,20 +244,123 @@ describe('createMapboxDraw – event handlers', () => {
     expect(refreshAllPointSymbols).toHaveBeenCalledWith({ draw: result.draw, mapProvider, map })
   })
 
-  test('MAP_SET_STYLE idle handler tolerates a missing edit container', () => {
+  // MAP_STYLE_CHANGE genuinely fires twice per style change (mapEvents.js's permanent
+  // 'style.load' listener alongside appEvents.js's one-shot listener, both bound to the same
+  // native event) — without a dedupe guard the expensive settle work (idle-wait, re-rasterise
+  // every point, one full source rewrite) runs twice back to back, and the second cycle's
+  // completion can land after useHighlightSync's settle window has already closed.
+  test('MAP_STYLE_CHANGE fired twice in a row (both listeners reacting to the same style.load) only settles once', async () => {
     const { map, eventBus } = setup()
 
     handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+
+    expect(map.once).toHaveBeenCalledTimes(1)
+
+    handlerFor(map.once, 'idle')()
+    await Promise.resolve()
+    expect(refreshAllPointSymbols).toHaveBeenCalledTimes(1)
+    expect(eventBus.emit).toHaveBeenCalledTimes(1)
+
+    // Once the in-flight settle has fully completed (onDone fired), a genuinely new style
+    // change is free to trigger another one — the guard isn't stuck permanently latched.
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+    expect(map.once).toHaveBeenCalledTimes(2)
+  })
+
+  // MapLibre's own setStyle() discards the entire previous Style — including every
+  // programmatically-added source/layer, draw's included — and mapbox-gl-draw has no
+  // listener of its own to restore them. Without this, every drawn feature (not just a
+  // selected point) goes invisible and unqueryable after a style reload.
+  //
+  // draw.set() is asserted only after refreshAllPointSymbols resolves, not right after the
+  // idle callback fires: mapbox-gl-draw's own store.render() is requestAnimationFrame-
+  // debounced and bails out silently if the source doesn't exist yet, so pushing draw.getAll()
+  // back in *before* every point's image ids have been re-resolved for the new style would
+  // schedule a deferred render using the previous (already-wiped) style's ids — racing a
+  // still-in-flight worker tile parse of that stale data against the correct one moments
+  // later. Exactly one write, with final data, after refreshAllPointSymbols settles.
+  test('re-creates the sources and layers, then re-pushes every feature (only once symbols have re-resolved), when the draw source is missing after settling', async () => {
+    const { map, eventBus, result } = setup({ hasDrawSource: false })
+
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+    handlerFor(map.once, 'idle')()
+
+    expect(map.addSource).toHaveBeenCalledWith('mapbox-gl-draw-cold', { data: { type: 'FeatureCollection', features: [] }, type: 'geojson' })
+    expect(map.addSource).toHaveBeenCalledWith('mapbox-gl-draw-hot', { data: { type: 'FeatureCollection', features: [] }, type: 'geojson' })
+    // draw.options.styles (mirrors mapbox-gl-draw's own api.options = options) — the fully
+    // processed cold+hot layer pairs from construction time, not re-derived from scratch.
+    expect(map.addLayer).toHaveBeenCalledWith({ id: 'fill-inactive.cold' })
+    expect(map.addLayer).toHaveBeenCalledWith({ id: 'fill-inactive.hot' })
+    // Not yet — refreshAllPointSymbols (mocked as a pending promise below) hasn't resolved.
+    expect(result.draw.set).not.toHaveBeenCalled()
+
+    await Promise.resolve() // flush the refreshAllPointSymbols().then(...) microtask
+    // Sources start empty — every feature the draw control still holds (map-independent, in
+    // its own JS store) is pushed back through the public API to force a full render, now
+    // with every point's image ids already resolved for the new style.
+    expect(result.draw.set).toHaveBeenCalledWith(result.draw.getAll())
+  })
+
+  test('does nothing when the draw source survived the style reload', async () => {
+    const { map, eventBus, result } = setup({ hasDrawSource: true })
+
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+    handlerFor(map.once, 'idle')()
+    await Promise.resolve()
+
+    expect(map.addSource).not.toHaveBeenCalled()
+    expect(map.addLayer).not.toHaveBeenCalled()
+    expect(result.draw.set).not.toHaveBeenCalled()
+  })
+
+  // A selected point's highlight ring (plugins/interact's useHighlightSync) only re-applies
+  // on MAP_DATA_CHANGE — this nudges it explicitly once refreshAllPointSymbols has actually
+  // finished, rather than relying on 'styledata'/'sourcedata' firing it as a side effect.
+  test('emits MAP_DATA_CHANGE once point symbols have actually finished re-resolving after a style change', async () => {
+    const { map, eventBus } = setup()
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+    handlerFor(map.once, 'idle')()
+    await Promise.resolve() // flush the refreshAllPointSymbols().then(...) microtask
+    expect(eventBus.emit).toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
+  })
+
+  // The highlight ring is a standalone layer added from outside mapbox-gl-draw's own render
+  // cycle (unlike a vertex's active ring, which is just a filter on a layer mapbox-gl-draw
+  // itself always keeps painted) — nothing guarantees MapLibre schedules a real paint pass to
+  // pick it up right after settling. Confirmed by repro: the ring, and separately this app's
+  // own queryRenderedFeatures-based hover cursor (same painted-tile-buffer dependency), stayed
+  // stale until an unrelated map drag forced a render.
+  test('triggers a repaint once point symbols have finished re-resolving after a style change', async () => {
+    const { map, eventBus } = setup()
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+    handlerFor(map.once, 'idle')()
+    expect(map.triggerRepaint).not.toHaveBeenCalled()
+    await Promise.resolve()
+    expect(map.triggerRepaint).toHaveBeenCalled()
+  })
+
+  test('MAP_STYLE_CHANGE idle handler tolerates a missing edit container', () => {
+    const { map, eventBus } = setup()
+
+    handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
     handlerFor(map.once, 'idle')()
 
     expect(applyTouchVertexColors).toHaveBeenCalledWith(undefined, 'dark', {})
   })
 
-  test('MAP_SET_STYLE passes pluginConfig through to restyling and touch colours', () => {
+  test('MAP_STYLE_CHANGE passes pluginConfig through to restyling and touch colours', () => {
     const pluginConfig = { editStroke: '#custom' }
     const { map, eventBus } = setup({ pluginConfig })
 
     handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
     handlerFor(map.once, 'idle')()
 
     expect(updateDrawStyles).toHaveBeenCalledWith(map, 'dark', pluginConfig)
@@ -269,6 +395,21 @@ describe('createMapboxDraw – event handlers', () => {
     handlerFor(eventBus.on, EVENTS.MAP_SET_PIXEL_RATIO)(3)
     expect(refreshAllPointSymbols).toHaveBeenCalledWith({ draw: result.draw, mapProvider, map, pixelRatioOverride: 3 })
   })
+
+  test('MAP_SET_PIXEL_RATIO emits MAP_DATA_CHANGE once point symbols have actually finished re-resolving', async () => {
+    const { eventBus } = setup()
+    handlerFor(eventBus.on, EVENTS.MAP_SET_PIXEL_RATIO)(3)
+    await Promise.resolve()
+    expect(eventBus.emit).toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
+  })
+
+  test('MAP_SET_PIXEL_RATIO triggers a repaint once point symbols have finished re-resolving', async () => {
+    const { map, eventBus } = setup()
+    handlerFor(eventBus.on, EVENTS.MAP_SET_PIXEL_RATIO)(3)
+    expect(map.triggerRepaint).not.toHaveBeenCalled()
+    await Promise.resolve()
+    expect(map.triggerRepaint).toHaveBeenCalled()
+  })
 })
 
 describe('createMapboxDraw – cleanup', () => {
@@ -280,6 +421,7 @@ describe('createMapboxDraw – cleanup', () => {
 
     expect(removeWorkaround).toHaveBeenCalledTimes(1)
     expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_STYLE, expect.any(Function))
+    expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_STYLE_CHANGE, expect.any(Function))
     expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_SIZE, expect.any(Function))
     expect(eventBus.off).toHaveBeenCalledWith(EVENTS.MAP_SET_PIXEL_RATIO, expect.any(Function))
     expect(draw.changeMode).toHaveBeenCalledWith('disabled')

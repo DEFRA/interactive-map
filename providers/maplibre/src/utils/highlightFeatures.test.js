@@ -54,7 +54,7 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
       if (id.includes('stale')) { return {} }
       if (id === 'l1') { return { source: 's1', type: 'fill' } }
       if (id === 'l2') { return { source: 's2', type: 'line' } }
-      if (id === 'active-highlight-s2-fill') { return {} }
+      if (id === 'active-highlight-l2-fill') { return {} }
       return null
     })
 
@@ -62,19 +62,19 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
 
     expect(map.setFilter).toHaveBeenCalledWith('active-highlight-stale-fill', EMPTY_FILTER)
     expect(map.setFilter).toHaveBeenCalledWith(STALE_SYMBOL_LAYER, EMPTY_FILTER)
-    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-s2-fill', EMPTY_FILTER)
-    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-s2-line', expect.arrayContaining([['get', 'customId']]))
+    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-l2-fill', EMPTY_FILTER)
+    expect(map.setFilter).toHaveBeenCalledWith('active-highlight-l2-line', expect.arrayContaining([['get', 'customId']]))
   })
 
   test('null _activehighlightSources falls back to empty set; line geom skips absent fill layer', () => {
     map._activehighlightSources = null
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
     updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
-    expect(map.setFilter).not.toHaveBeenCalledWith('active-highlight-s1-fill', expect.anything())
+    expect(map.setFilter).not.toHaveBeenCalledWith('active-highlight-l1-fill', expect.anything())
   })
 
-  test('persistent source skips cleanup; missing stale layers skip setFilter', () => {
-    map._activehighlightSources = new Set(['stale', 's1'])
+  test('persistent layer skips cleanup; missing stale layers skip setFilter', () => {
+    map._activehighlightSources = new Set(['stale', 'l1'])
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
     updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap: { l1: { stroke: 'red' } } })
     expect(map.setFilter).not.toHaveBeenCalledWith(expect.stringContaining('stale'), expect.anything())
@@ -85,10 +85,10 @@ describe('Highlighting Utils — active (cursor) fill and line', () => {
     const stylesMap = { l1: { stroke: 'yellow', selectionStroke: 'black', strokeWidth: 3, activeStrokeWidth: 9 } }
     updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }], stylesMap })
 
-    const activeColorCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'active-highlight-s1-line' && c[1] === LINE_COLOR)
+    const activeColorCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'active-highlight-l1-line' && c[1] === LINE_COLOR)
     expect(activeColorCall?.[2]).toBe('yellow')
 
-    const overlayColorCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'active-highlight-inner-s1-line' && c[1] === LINE_COLOR)
+    const overlayColorCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'active-highlight-inner-l1-line' && c[1] === LINE_COLOR)
     expect(overlayColorCall?.[2]).toBe('black')
   })
 
@@ -123,8 +123,8 @@ describe('Highlighting Utils — selected fill and line', () => {
     })
     updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures: SELECTED_FEATURES, stylesMap: STYLES })
     expect(map.setFilter).toHaveBeenCalledWith(SEL_STALE_SYMBOL_LAYER, EMPTY_FILTER)
-    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'selected-highlight-s1-line' }))
-    const linePaintCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'selected-highlight-s1-line' && c[1] === LINE_COLOR)
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ id: 'selected-highlight-l1-line' }))
+    const linePaintCall = map.setPaintProperty.mock.calls.find(c => c[0] === 'selected-highlight-l1-line' && c[1] === LINE_COLOR)
     expect(linePaintCall).toBeTruthy()
     expect(linePaintCall[2]).toBe('#ffdd00')
   })
@@ -169,11 +169,11 @@ describe('Highlighting Utils — layer management', () => {
     map.getLayer.mockImplementation(id => { // NOSONAR
       if (id === 'l1') { return { source: 's1', type: 'line' } }
       if (id === 'l2') { return { source: 's2', type: 'line', sourceLayer: 'tiles' } }
-      if (id === 'active-highlight-s1-line') { return {} }
+      if (id === 'active-highlight-l1-line') { return {} }
       return null
     })
     updateHighlightedFeatures({ LngLatBounds, map, activeFeatures: [{ featureId: 1, layerId: 'l1' }, { featureId: 2, layerId: 'l2' }], stylesMap: { l1: { stroke: 'blue' }, l2: { stroke: 'green' } } })
-    // active-highlight-s1-line reused; active-highlight-s2-line, active-highlight-inner-s1-line, active-highlight-inner-s2-line are new
+    // active-highlight-l1-line reused; active-highlight-l2-line, active-highlight-inner-l1-line, active-highlight-inner-l2-line are new
     expect(map.addLayer).toHaveBeenCalledTimes(3)
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ 'source-layer': 'tiles' }))
   })
@@ -187,7 +187,7 @@ describe('Highlighting Utils — layer management', () => {
 
 describe('Highlighting Utils — symbol layers (active cursor)', () => {
   const ACTIVE_IMAGE = 'symbol-act-abc123'
-  const HIGHLIGHT_LAYER = 'active-highlight-s1-symbol'
+  const HIGHLIGHT_LAYER = 'active-highlight-l1-symbol'
   const ICON_IMAGE = 'icon-image'
   const ICON_ANCHOR = 'icon-anchor'
   const POINT_FEATURE = { featureId: 1, layerId: 'l1', geometry: { type: 'Point' } }
@@ -258,6 +258,41 @@ describe('Highlighting Utils — symbol layers (active cursor)', () => {
     expect(map.addLayer).not.toHaveBeenCalled()
   })
 
+  test('copies icon-offset from the original layer when present (draw points need it, datasets do not)', () => {
+    map.getLayoutProperty.mockImplementation((_id, prop) => { // NOSONAR
+      if (prop === ICON_IMAGE) { return SYMBOL_IMAGE }
+      if (prop === 'icon-offset') { return [0, 4.4] }
+      return null
+    })
+    run()
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      layout: expect.objectContaining({ 'icon-offset': [0, 4.4] })
+    }))
+    expect(map.setLayoutProperty).toHaveBeenCalledWith(HIGHLIGHT_LAYER, 'icon-offset', [0, 4.4])
+  })
+
+  test('omits icon-offset entirely when the original layer has none', () => {
+    map.getLayoutProperty.mockImplementation((_id, prop) => (prop === ICON_IMAGE ? SYMBOL_IMAGE : undefined)) // NOSONAR
+    run()
+    const call = map.addLayer.mock.calls[0][0]
+    expect(call.layout).not.toHaveProperty('icon-offset')
+    expect(map.setLayoutProperty).not.toHaveBeenCalledWith(HIGHLIGHT_LAYER, 'icon-offset', expect.anything())
+  })
+
+  // Draw's point-symbol layer has a per-feature data-driven icon-image (each point can carry
+  // a different symbol config) — the highlight layer must reference the SAME per-feature
+  // expression against the precomputed symbolActiveImageId/symbolSelectedImageId property
+  // (pointSymbolImages.js) rather than reverse-mapping a single shared id.
+  test('references the per-feature symbolActiveImageId property when icon-image is a data-driven expression', () => {
+    map.getLayoutProperty.mockImplementation((_id, prop) => // NOSONAR
+      prop === ICON_IMAGE ? ['get', 'user_symbolImageId'] : null)
+    run()
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      layout: expect.objectContaining({ [ICON_IMAGE]: ['get', 'user_symbolActiveImageId'] })
+    }))
+    expect(map.setLayoutProperty).toHaveBeenCalledWith(HIGHLIGHT_LAYER, ICON_IMAGE, ['get', 'user_symbolActiveImageId'])
+  })
+
   test('cleans up stale symbol highlight layer', () => {
     map._activehighlightSources = new Set(['stale'])
     map.getLayer.mockImplementation(id => id === STALE_SYMBOL_LAYER ? { type: 'symbol' } : null) // NOSONAR
@@ -268,7 +303,7 @@ describe('Highlighting Utils — symbol layers (active cursor)', () => {
 
 describe('Highlighting Utils — symbol layers (committed selection)', () => {
   const SELECTED_IMAGE = 'symbol-sel-abc123'
-  const SEL_HIGHLIGHT_LAYER = 'selected-highlight-s1-symbol'
+  const SEL_HIGHLIGHT_LAYER = 'selected-highlight-l1-symbol'
   const ICON_IMAGE = 'icon-image'
   const POINT_FEATURE = { featureId: 1, layerId: 'l1', geometry: { type: 'Point' } }
 
@@ -298,6 +333,15 @@ describe('Highlighting Utils — symbol layers (committed selection)', () => {
     run()
     expect(map.addLayer).not.toHaveBeenCalled()
   })
+
+  test('references the per-feature symbolSelectedImageId property when icon-image is a data-driven expression', () => {
+    map.getLayoutProperty.mockImplementation((_id, prop) => // NOSONAR
+      prop === ICON_IMAGE ? ['get', 'user_symbolImageId'] : null)
+    run()
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      layout: expect.objectContaining({ [ICON_IMAGE]: ['get', 'user_symbolSelectedImageId'] })
+    }))
+  })
 })
 
 // ─── fill-extrusion layers (3D buildings) ────────────────────────────────────
@@ -305,7 +349,7 @@ describe('Highlighting Utils — symbol layers (committed selection)', () => {
 describe('Highlighting Utils — fill-extrusion layers', () => {
   const LAYER_ID = 'buildings 3D'
   const STYLES = { [LAYER_ID]: { stroke: '#aaa', selectionStroke: '#0073cc', strokeWidth: 3, activeStrokeWidth: 6 } }
-  const LINE_LAYER_ID = 'selected-highlight-composite-line'
+  const LINE_LAYER_ID = 'selected-highlight-buildings 3D-line'
 
   let map
 
@@ -409,12 +453,12 @@ describe('Highlighting Utils — missing style entry', () => {
     const map = makeMap()
     let callCount = 0
     map.getLayer.mockImplementation((id) => {
-      // First call from groupFeaturesBySource - return a valid layer
+      // First call from groupFeaturesByLayer - return a valid layer
       if (id === 'l1' && callCount === 0) {
         callCount++
         return { source: 's1', type: 'line' }
       }
-      // Subsequent calls from applySourceHighlight - return null to trigger early return
+      // Subsequent calls from applyLayerHighlight - return null to trigger early return
       return null
     })
 
@@ -446,5 +490,100 @@ describe('Highlighting Utils — missing style entry', () => {
 
     // Should not throw and not apply any highlighting for unexpected type
     expect(map.addLayer).not.toHaveBeenCalled()
+  })
+})
+
+// mapbox-gl-draw duplicates every one of its own layers into a `.cold`/`.hot` sibling pair,
+// each backed by its own source — a feature moves out of cold and into hot the instant any of
+// its own properties change, only cooling back down on a later render with nothing changed.
+// A selection payload's layerId (e.g. 'point-symbol.cold') is captured once, at selection time
+// — if the feature later moves to the sibling bucket, the recorded layer still exists (so a
+// naive "does the layer exist" check looks fine) but its source no longer holds the feature.
+describe('Highlighting Utils — mapbox-gl-draw cold/hot sibling layers', () => {
+  test('highlights a selected feature that has moved from its recorded .cold layer into the sibling .hot bucket', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => { // NOSONAR
+      if (id === 'point-symbol.cold') { return { source: 'mapbox-gl-draw-cold', type: 'symbol' } }
+      if (id === 'point-symbol.hot') { return { source: 'mapbox-gl-draw-hot', type: 'symbol' } }
+      return null
+    })
+    map.getLayoutProperty.mockImplementation((id, prop) => // NOSONAR
+      prop === 'icon-image' ? SYMBOL_IMAGE : undefined)
+    map._selectedSymbolImageMap = { [SYMBOL_IMAGE]: 'symbol-sel-xyz' }
+
+    // The feature's own current geometry lives on the hot source (it moved there when its
+    // properties were last refreshed) — only stylesMap['point-symbol.cold'] is registered,
+    // matching how the demo only registers the .cold layerId for selectability.
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'p1', layerId: 'point-symbol.cold', geometry: { type: 'Point' } }],
+      stylesMap: { 'point-symbol.cold': { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 } }
+    })
+
+    // A highlight layer gets created/filtered for BOTH the recorded source and its sibling —
+    // whichever one the feature actually lives in right now, this finds it.
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ source: 'mapbox-gl-draw-cold' }))
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ source: 'mapbox-gl-draw-hot' }))
+  })
+
+  test('does not touch a non-draw layer id that happens to not end in .cold/.hot', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 1, layerId: 'l1' }],
+      stylesMap: { l1: { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 } }
+    })
+
+    expect(map.getLayer).not.toHaveBeenCalledWith('l1.hot')
+    expect(map.getLayer).not.toHaveBeenCalledWith('l1.cold')
+  })
+})
+
+// mapbox-gl-draw stores every geometry type (point, polygon, line) in the same cold/hot
+// sources — a point and a polygon selected together share a source, even though they're
+// rendered by different layers (point-symbol vs fill-inactive). Grouping by source alone would
+// collapse both into one group that can only resolve one geometry-type path, silently dropping
+// whichever feature's highlight didn't win.
+describe('Highlighting Utils — multi-select across geometry types sharing a source', () => {
+  test('a selected point and a selected polygon sharing the same mapbox-gl-draw source both get their own highlight', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => { // NOSONAR
+      if (id === 'point-symbol.cold') { return { source: 'mapbox-gl-draw-cold', type: 'symbol' } }
+      if (id === 'fill-inactive.cold') { return { source: 'mapbox-gl-draw-cold', type: 'fill' } }
+      return null
+    })
+    map.getLayoutProperty.mockImplementation((id, prop) => // NOSONAR
+      prop === 'icon-image' ? SYMBOL_IMAGE : undefined)
+    map._selectedSymbolImageMap = { [SYMBOL_IMAGE]: 'symbol-sel-xyz' }
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [
+        { featureId: 'pt1', layerId: 'point-symbol.cold', geometry: { type: 'Point' } },
+        { featureId: 'poly1', layerId: 'fill-inactive.cold', geometry: { type: 'Polygon' } }
+      ],
+      stylesMap: {
+        'point-symbol.cold': { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 },
+        'fill-inactive.cold': { stroke: 'red', selectionStroke: 'black', fill: 'blue', strokeWidth: 2 }
+      }
+    })
+
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'selected-highlight-point-symbol.cold-symbol',
+      type: 'symbol'
+    }))
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'selected-highlight-fill-inactive.cold-fill',
+      type: 'fill'
+    }))
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'selected-highlight-fill-inactive.cold-line',
+      type: 'line'
+    }))
   })
 })

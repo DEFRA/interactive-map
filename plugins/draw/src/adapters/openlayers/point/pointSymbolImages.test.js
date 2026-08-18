@@ -35,7 +35,9 @@ const createManager = ({ features = [] } = {}) => ({
 // getSymbolImageId's own id shape closely enough for assertions to key off it.
 const stubRasterise = () => jest.spyOn(symbolRegistry, 'rasteriseSymbolImage')
   .mockImplementation(async (style, ms, variant, pixelRatio) => ({
-    imageId: symbolRegistry.getSymbolImageId(style, ms, false, pixelRatio),
+    // variant folded into the id (mirroring the real act-/sel- prefixing) so normal/active/
+    // selected resolve to distinct ids, the way real symbol configs do.
+    imageId: `${variant}-${symbolRegistry.getSymbolImageId(style, ms, false, pixelRatio)}`,
     imageData: { width: 10, height: 10 }
   }))
 
@@ -99,12 +101,52 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ manager, mapProvider, olFeature })
 
     const pixelRatio = getPixelRatio(mapProvider)
-    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, pixelRatio)
-    expect(olFeature.set).toHaveBeenCalledWith('symbolImageId', expectedImageId)
+    const baseId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, pixelRatio)
+    expect(olFeature.set).toHaveBeenCalledWith('symbolImageId', `normal-${baseId}`)
     // symbolPixelRatio is what core/styles.js later uses to scale the (pixelRatio×-oversized)
     // cached canvas back down to its intended CSS display size.
     expect(olFeature.set).toHaveBeenCalledWith('symbolPixelRatio', pixelRatio)
-    expect(getCachedSymbolImage(expectedImageId)).toBeInstanceOf(HTMLCanvasElement)
+    expect(getCachedSymbolImage(`normal-${baseId}`)).toBeInstanceOf(HTMLCanvasElement)
+  })
+
+  it('also rasterises, caches and writes the active/selected variants — one image id each, keyed to the same symbol config', async () => {
+    const properties = { symbol: 'pin' }
+    const olFeature = createOlFeature(properties)
+    const manager = createManager({ features: [olFeature] })
+    const mapProvider = createMapProvider()
+
+    await resolvePointSymbol({ manager, mapProvider, olFeature })
+
+    const pixelRatio = getPixelRatio(mapProvider)
+    const baseId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, pixelRatio)
+    expect(olFeature.set).toHaveBeenCalledWith('symbolActiveImageId', `active-${baseId}`)
+    expect(olFeature.set).toHaveBeenCalledWith('symbolSelectedImageId', `selected-${baseId}`)
+    expect(getCachedSymbolImage(`active-${baseId}`)).toBeInstanceOf(HTMLCanvasElement)
+    expect(getCachedSymbolImage(`selected-${baseId}`)).toBeInstanceOf(HTMLCanvasElement)
+    // objectContaining, not the exact `properties` object — resolvePointSymbol's own
+    // property-write calls mutate that same (by-reference) object in place afterwards, and
+    // jest's mock.calls records the reference, not a snapshot at call time.
+    const symbolMatch = expect.objectContaining({ symbol: 'pin' })
+    expect(symbolRegistry.rasteriseSymbolImage).toHaveBeenCalledWith(symbolMatch, mapStyle, 'normal', pixelRatio)
+    expect(symbolRegistry.rasteriseSymbolImage).toHaveBeenCalledWith(symbolMatch, mapStyle, 'active', pixelRatio)
+    expect(symbolRegistry.rasteriseSymbolImage).toHaveBeenCalledWith(symbolMatch, mapStyle, 'selected', pixelRatio)
+  })
+
+  it('skips just the active/selected properties if only those variants resolve null (normal still succeeds)', async () => {
+    const properties = { symbol: 'pin' }
+    const olFeature = createOlFeature(properties)
+    const manager = createManager({ features: [olFeature] })
+    symbolRegistry.rasteriseSymbolImage
+      .mockImplementationOnce(async (style, ms, variant, pixelRatio) => // normal — real stub behaviour
+        ({ imageId: `${variant}-${symbolRegistry.getSymbolImageId(style, ms, false, pixelRatio)}`, imageData: { width: 10, height: 10 } }))
+      .mockResolvedValueOnce(null) // active
+      .mockResolvedValueOnce(null) // selected
+
+    await resolvePointSymbol({ manager, mapProvider: createMapProvider(), olFeature })
+
+    expect(olFeature.set).toHaveBeenCalledWith('symbolImageId', expect.any(String))
+    expect(olFeature.set).not.toHaveBeenCalledWith('symbolActiveImageId', expect.anything())
+    expect(olFeature.set).not.toHaveBeenCalledWith('symbolSelectedImageId', expect.anything())
   })
 
   it('does nothing when rasterisation resolves null (e.g. an unresolvable symbol id)', async () => {

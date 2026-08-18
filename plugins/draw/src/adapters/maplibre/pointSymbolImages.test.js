@@ -75,9 +75,39 @@ describe('resolvePointSymbol', () => {
         ...properties,
         symbolImageId: expectedImageId,
         symbolIconAnchor: 'bottom', // pin's default anchor [0.5, 0.9] snaps to icon-anchor 'bottom'
-        symbolIconOffset: [0, 4.4] // ...and icon-offset corrects the precision lost snapping 0.9 to 1.0 (44px viewBox)
+        symbolIconOffset: [0, 4.4], // ...and icon-offset corrects the precision lost snapping 0.9 to 1.0 (44px viewBox)
+        // Nothing registered in map._activeSymbolImageMap/_selectedSymbolImageMap here since
+        // addSymbolsToMap is mocked out (a no-op) in this test — see the dedicated test below
+        // for the case where it actually populates them.
+        symbolActiveImageId: null,
+        symbolSelectedImageId: null
       }
     })
+  })
+
+  it('reads the active/selected variant ids back from map._activeSymbolImageMap/_selectedSymbolImageMap once addSymbolsToMap has registered them', async () => {
+    const map = createMap()
+    const properties = { symbol: 'pin' }
+    const draw = createDraw([point('p1', properties)])
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    // Simulates what the real addSymbolsToMap (providers/maplibre/src/utils/symbolImages.js)
+    // does as a side effect: populate these maps, keyed by the normal variant's own id.
+    const mapProvider = {
+      addSymbolsToMap: jest.fn(() => {
+        map._activeSymbolImageMap = { [expectedImageId]: 'symbol-act-xyz' }
+        map._selectedSymbolImageMap = { [expectedImageId]: 'symbol-sel-xyz' }
+        return Promise.resolve()
+      })
+    }
+
+    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+
+    expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
+      properties: expect.objectContaining({
+        symbolActiveImageId: 'symbol-act-xyz',
+        symbolSelectedImageId: 'symbol-sel-xyz'
+      })
+    }))
   })
 
   it('does nothing when getSymbolImageId resolves null (e.g. an unresolvable symbol id)', async () => {

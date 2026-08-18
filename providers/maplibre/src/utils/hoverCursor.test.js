@@ -127,4 +127,39 @@ describe('setupHoverCursor', () => {
       { layers: ['hedge-stroke'] }
     )
   })
+
+  /* ------------------------------------------------------------------ */
+  /* mapbox-gl-draw cold/hot sibling layers                              */
+  /* ------------------------------------------------------------------ */
+
+  // mapbox-gl-draw moves a feature out of its `.cold` layer/source into a `.hot` sibling the
+  // instant any of its own properties change — only registering the config's recorded
+  // '.cold' id would otherwise mean the cursor stops recognising a feature the moment it's
+  // moved, only recovering once something else happens to settle it back.
+  it('queries a .cold layerId\'s .hot sibling too, and detects a hit that only the sibling has', () => {
+    const canvas = { style: { cursor: '' } }
+    const map = {
+      ...makeMap({ 'point-symbol.cold': 'symbol', 'point-symbol.hot': 'symbol' }, []),
+      getCanvas: () => canvas,
+      queryRenderedFeatures: jest.fn((_point, { layers }) =>
+        layers.includes('point-symbol.hot') ? [{ id: 'p1' }] : [])
+    }
+    const handler = setupHoverCursor(map, ['point-symbol.cold'], null)
+    move(handler)
+    expect(map.queryRenderedFeatures).toHaveBeenCalledWith(
+      expect.objectContaining({ x: 10, y: 10 }),
+      { layers: expect.arrayContaining(['point-symbol.cold', 'point-symbol.hot']) }
+    )
+    expect(canvas.style.cursor).toBe('pointer')
+  })
+
+  it('does not add a sibling for a layer id with no cold/hot suffix', () => {
+    const map = makeMap({ 'field-parcels': 'fill' }, [])
+    const handler = setupHoverCursor(map, ['field-parcels'], null)
+    move(handler)
+    expect(map.queryRenderedFeatures).toHaveBeenCalledWith(
+      expect.objectContaining({ x: 10, y: 10 }),
+      { layers: ['field-parcels'] }
+    )
+  })
 })
