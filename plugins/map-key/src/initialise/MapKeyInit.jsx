@@ -1,12 +1,13 @@
 import { useEffect } from 'react'
 import { createMapKey } from './createMapKey.js'
 
-export function MapKeyInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
+// additional possible params here are: pluginConfig, pluginState, appState, mapProvider,
+export function MapKeyInit ({ mapState, services }) {
   const { eventBus } = services
 
   useEffect(() => {
     if (!mapState.isMapReady) {
-      return
+      return () => {}
     }
     const { remove } = createMapKey({ eventBus })
     return remove
