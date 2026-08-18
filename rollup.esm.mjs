@@ -182,7 +182,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
         open: false,
         gzipSize: true
       })]
-      : [])
+        : [])
     ],
 
     output: {
@@ -303,6 +303,11 @@ const ALL_BUILDS = [
     entryPath: './plugins/beta/frame/src/index.js',
     outDir: 'plugins/beta/frame/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-frame-plugin' : undefined
+  },
+  {
+    entryPath: './plugins/map-key/src/index.js',
+    outDir: 'plugins/map-key/dist/esm',
+    manualChunks: (id) => id.includes('/manifest') ? 'im-map-key-plugin' : undefined
   }
 ]
 

@@ -108,7 +108,7 @@ export class Dataset {
   }
 
   get keyVisibility () {
-    return this.visibility === 'visible' && this.showInKey
+    return this.showInKey && this.visibility === 'visible'
   }
 
   get symbolAnchor () {
@@ -200,5 +200,17 @@ export class Dataset {
       return [...styleSymbols, ...this.sublayers.flatMap(sublayer => sublayer.symbolConfigs)]
     }
     return styleSymbols
+  }
+
+  get keyDefinition () {
+    return {
+      id: this.id,
+      type: 'dataset',
+      label: this.label,
+      hasSymbol: this.hasSymbol,
+      hasPattern: this.hasPattern,
+      style: this.style,
+      symbolDescription: this.symbolDescription
+    }
   }
 }

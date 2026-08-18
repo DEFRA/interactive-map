@@ -1,21 +1,22 @@
+
 // When groups are present, every direct child gets a border-top
-.im-c-datasets-key > *:first-child {
+.im-c-map-key > *:first-child {
   padding-top: 5px;
 
-  .im-c-datasets-key__group-heading {
+  .im-c-map-key__group-heading {
     padding-top: 0;
   }
 }
 
-.im-c-datasets-key--has-groups > *:not(:first-child) {
+.im-c-map-key--has-groups > *:not(:first-child) {
   border-top: 1px solid var(--button-hover-color);
 }
 
-.im-c-datasets-key__group:not(:last-child) {
+.im-c-map-key__group:not(:last-child) {
   padding-bottom: 5px;
 }
 
-.im-c-datasets-key__group-heading {
+.im-c-map-key__group-heading {
   padding-top: 15px;
   padding-bottom: 10px;
   margin: 0;
@@ -24,7 +25,7 @@
   color: var(--foreground-color);
 }
 
-.im-c-datasets-key__item {
+.im-c-map-key__item {
   display: flex;
   align-items: start;
   padding-top: 10px;
@@ -32,38 +33,38 @@
   font-size: 1rem;
 
   // First item inside a group — heading already provides top spacing
-  .im-c-datasets-key__group &:first-child {
+  .im-c-map-key__group &:first-child {
     padding-top: 0;
   }
 }
 
-.im-c-datasets-key--has-groups > .im-c-datasets-key__item:not(:first-child) {
+.im-c-map-key--has-groups > .im-c-map-key__item:not(:first-child) {
   padding-top: 15px;
 }
 
-.im-c-datasets-key--has-groups > .im-c-datasets-key__item {
+.im-c-map-key--has-groups > .im-c-map-key__item {
   padding-bottom: 15px;
 }
 
-.im-c-datasets-key__group .im-c-datasets-key__item {
+.im-c-map-key__group .im-c-map-key__item {
   padding-top: 10px;
   padding-bottom: 10px;
 }
 
 // Last item in all scenarios — flat or inside the last group
-.im-c-datasets-key > .im-c-datasets-key__item:last-child,
-.im-c-datasets-key__group:last-child .im-c-datasets-key__item:last-child {
+.im-c-map-key > .im-c-map-key__item:last-child,
+.im-c-map-key__group:last-child .im-c-map-key__item:last-child {
   padding-bottom: 5px;
 }
 
 // Symbol
 
-.am-c-datasets-key-symbol {
+.am-c-map-key-symbol {
   position: relative;
   flex-shrink: 0;
   margin: 0 13px 0 3px;
 }
 
-.am-c-datasets-key-symbol--point {
+.am-c-map-key-symbol--point {
   margin: -12px 1px -12px -9px;
 }
