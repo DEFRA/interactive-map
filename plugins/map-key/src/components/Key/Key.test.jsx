@@ -37,7 +37,7 @@ describe('Key', () => {
   })
 
   it('adds the groups class when hasGroups is true', () => {
-    const { container } = render(<Key mapStyle={mapStyle} keyGroups={[{ id: '1', keyDefinition: { id: '1' } }]} hasGroups={true} />)
+    const { container } = render(<Key mapStyle={mapStyle} keyGroups={[{ id: '1', keyDefinition: { id: '1' } }]} hasGroups />)
     expect(container.querySelector('.im-c-map-key--has-groups')).toBeTruthy()
   })
 
