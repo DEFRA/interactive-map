@@ -69,6 +69,7 @@
     "./plugins/draw-ml/css": "./plugins/beta/draw-ml/dist/css/index.css",
     "./plugins/scale-bar/css": "./plugins/beta/scale-bar/dist/css/index.css",
     "./plugins/datasets/css": "./plugins/datasets/dist/css/index.css",
+    "./plugins/map-key/css": "./plugins/map-key/dist/css/index.css",
     "./plugins/frame/css": "./plugins/beta/frame/dist/css/index.css",
     "./plugins/map-styles/css": "./plugins/beta/map-styles/dist/css/index.css",
     "./plugins/search/css": "./plugins/search/dist/css/index.css",

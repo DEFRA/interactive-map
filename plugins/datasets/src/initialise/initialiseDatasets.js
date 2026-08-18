@@ -58,9 +58,16 @@ export const initialiseDatasets = ({
 
   eventBus.on(events.MAP_SIZE_CHANGE, onMapSizeChange)
 
+  // Emit onReady immediately, but also listen for requests for the registry, so that if the
+  // datasets plugin is loaded after the map-key plugin, it will still be able to get the registry.
+  const requestDatasetRegistryReadyHandler = () => eventBus.emit('datasets:registryReady', datasetRegistry)
+  eventBus.on('datasets:requestRegistry', requestDatasetRegistryReadyHandler)
+  requestDatasetRegistryReadyHandler()
+
   return {
     remove () {
       eventBus.off(events.MAP_SIZE_CHANGE, onMapSizeChange)
+      eventBus.off('datasets:requestRegistry', requestDatasetRegistryReadyHandler)
 
       // Clean up dynamic sources
       dynamicSources.forEach(source => source.destroy())
