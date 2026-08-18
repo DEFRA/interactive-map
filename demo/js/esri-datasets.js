@@ -568,14 +568,7 @@ const interactiveMap = new InteractiveMap('map', {
   center: [481146,484971],
   zoom: 13,
   plugins: [
-    createMapKeyPlugin({
-      manifest: {
-        buttons: [{
-          id: 'mapKey',
-          label: 'Map Key',
-        }]
-      }
-    }),
+    createMapKeyPlugin(),
     datasetsPlugin,
     mapStylesPlugin({
       mapStyles: vtsMapStyles27700,

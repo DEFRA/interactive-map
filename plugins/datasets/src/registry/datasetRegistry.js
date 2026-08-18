@@ -1,6 +1,5 @@
 import { createDataset } from './createDataset.js'
 import { DatasetDefinitionCache } from './datasetDefinitionCache.js'
-import eventBus from '../../../../src/services/eventBus.js'
 
 const datasetRegistry = {
   attach (datasetsRef, orderedDatasetsRef, mapStyle) {
@@ -135,11 +134,5 @@ const datasetRegistry = {
 }
 
 Object.defineProperty(datasetRegistry, 'datasets', { get: () => datasetRegistry._datasets })
-
-// Emit onReady immediately, but also listen for requests for the registry, so that if the
-// datasets plugin is loaded after the map-key plugin, it will still be able to get the registry.
-const onReady = () => eventBus.emit('datasets:registryReady', datasetRegistry)
-eventBus.on('datasets:requestRegistry', onReady)
-onReady()
 
 export { datasetRegistry }

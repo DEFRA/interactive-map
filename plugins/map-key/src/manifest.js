@@ -1,11 +1,13 @@
 import { MapKey } from './components/Key/MapKey.jsx'
 import './registry/getDatasetRegistry.js'
+import { MapKeyInit } from './initialise/MapKeyInit.jsx'
 
 export const manifest = {
+  InitComponent: MapKeyInit,
   panels: [
     {
       id: 'mapKey',
-      label: 'MAP Key',
+      label: 'Key',
       mobile: { slot: 'drawer', modal: true },
       tablet: { slot: 'left-top', width: '260px' },
       desktop: { slot: 'left-top', width: '280px' },

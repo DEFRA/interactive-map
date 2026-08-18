@@ -8,7 +8,7 @@ export function MapKey ({
   pluginConfig: { noKeyItemText }
 }) {
   const datasetRegistry = getDatasetRegistry()
-  const { items: keyGroups, hasGroups } = datasetRegistry.keyItems()
+  const { items: keyGroups, hasGroups } = datasetRegistry ? datasetRegistry.keyItems() : { items: [], hasGroups: false }
   return (
     <Key
       noKeyItemText={noKeyItemText}
