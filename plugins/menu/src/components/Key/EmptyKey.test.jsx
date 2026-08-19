@@ -6,12 +6,12 @@ describe('EmptyKey', () => {
 
   it('renders the wrapper div with the correct class', async () => {
     const { container } = render(<EmptyKey text={text} />)
-    expect(container.querySelector('.im-c-map-key')).toBeTruthy()
+    expect(container.querySelector('.im-c-menu')).toBeTruthy()
   })
 
   it('renders the empty message paragraph with the correct class', async () => {
     const { container } = render(<EmptyKey text={text} />)
-    expect(container.querySelector('.im-c-map-key__empty-message')).toBeTruthy()
+    expect(container.querySelector('.im-c-menu__empty-message')).toBeTruthy()
   })
 
   it('renders the provided text', async () => {

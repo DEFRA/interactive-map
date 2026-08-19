@@ -3,8 +3,8 @@ import { EmptyKey } from './EmptyKey.jsx'
 import { KeyItem } from './KeyItem.jsx'
 import { KeyGroupItem } from './KeyGroupItem.jsx'
 
-const keyClassName = 'im-c-map-key'
-const keyGroupsClassName = 'im-c-map-key--has-groups'
+const keyClassName = 'im-c-menu'
+const keyGroupsClassName = 'im-c-menu--has-groups'
 
 const KeyItemWrapper = ({ item, mapStyle }) => {
   if (item.type === 'group') {
@@ -31,7 +31,7 @@ export const Key = ({
     return (<EmptyKey text={noKeyItemText} />)
   }
 
-  const [className, setClassName] = useState('im-c-map-key')
+  const [className, setClassName] = useState('im-c-menu')
   useEffect(() => setClassName(hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName), [hasGroups])
 
   return (

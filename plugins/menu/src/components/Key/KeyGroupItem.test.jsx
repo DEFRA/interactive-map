@@ -17,7 +17,7 @@ const baseProps = {
 describe('KeyGroupItem', () => {
   it('renders a section with the group class', () => {
     const { container } = render(<KeyGroupItem {...baseProps} />)
-    expect(container.querySelector('.im-c-map-key__group')).toBeTruthy()
+    expect(container.querySelector('.im-c-menu__group')).toBeTruthy()
   })
 
   it('sets aria-labelledby to headingId on the section', () => {
@@ -32,7 +32,7 @@ describe('KeyGroupItem', () => {
 
   it('renders the heading with the group-heading class', () => {
     const { container } = render(<KeyGroupItem {...baseProps} />)
-    expect(container.querySelector('.im-c-map-key__group-heading')).toBeTruthy()
+    expect(container.querySelector('.im-c-menu__group-heading')).toBeTruthy()
   })
 
   it('renders the label text in the heading', () => {

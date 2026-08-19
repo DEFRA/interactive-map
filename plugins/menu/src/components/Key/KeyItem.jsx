@@ -12,11 +12,11 @@ export const KeyItem = ({ keyDefinition, mapStyle }) => {
   }, [keyDefinition, mapStyle.id])
 
   return (
-    <dl className='im-c-map-key__item'>
-      <dt className='im-c-map-key__item-symbol'>
+    <dl className='im-c-menu__item'>
+      <dt className='im-c-menu__item-symbol'>
         <KeySvg keyDefinition={keyDefinition} mapStyle={mapStyle} />
       </dt>
-      <dd className='im-c-map-key__item-label'>
+      <dd className='im-c-menu__item-label'>
         {label}
         {symbolDescription && (
           <span className='govuk-visually-hidden'>

@@ -6,7 +6,7 @@ export default function createPlugin (options = {}) {
     ...options,
     id: 'menu',
     load: async () => {
-      const module = (await import(/* webpackChunkName: "im-map-key-plugin" */ './manifest.js')).manifest
+      const module = (await import(/* webpackChunkName: "im-menu-plugin" */ './manifest.js')).manifest
       return module
     }
   }

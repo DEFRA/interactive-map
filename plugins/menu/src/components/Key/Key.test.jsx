@@ -33,17 +33,17 @@ describe('Key', () => {
 
   it('renders the wrapper div with the base class', () => {
     const { container } = render(<Key mapStyle={mapStyle} keyGroups={[{ id: '1', keyDefinition: { id: '1' } }]} />)
-    expect(container.querySelector('.im-c-map-key')).toBeTruthy()
+    expect(container.querySelector('.im-c-menu')).toBeTruthy()
   })
 
   it('adds the groups class when hasGroups is true', () => {
     const { container } = render(<Key mapStyle={mapStyle} keyGroups={[{ id: '1', keyDefinition: { id: '1' } }]} hasGroups />)
-    expect(container.querySelector('.im-c-map-key--has-groups')).toBeTruthy()
+    expect(container.querySelector('.im-c-menu--has-groups')).toBeTruthy()
   })
 
   it('does not add the groups class when hasGroups is false', () => {
     const { container } = render(<Key mapStyle={mapStyle} keyGroups={[{ id: '1', keyDefinition: { id: '1' } }]} hasGroups={false} />)
-    expect(container.querySelector('.im-c-map-key--has-groups')).toBeNull()
+    expect(container.querySelector('.im-c-menu--has-groups')).toBeNull()
   })
 
   it('renders KeyItem for a non-group item', () => {

@@ -7,7 +7,7 @@ export const manifest = {
   panels: [
     {
       id: 'menu',
-      label: 'Key',
+      label: 'Menu Key',
       mobile: { slot: 'drawer', modal: true },
       tablet: { slot: 'left-top', width: '260px' },
       desktop: { slot: 'left-top', width: '280px' },
@@ -17,7 +17,7 @@ export const manifest = {
   buttons: [{
     id: 'menu',
     panelId: 'menu',
-    label: 'Key',
+    label: 'Menu Key',
     iconId: 'key',
     mobile: { slot: 'top-left', showLabel: false },
     tablet: { slot: 'top-left', showLabel: true },
