@@ -4,6 +4,7 @@ import esriProvider from '/providers/beta/esri/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import createMapKeyPlugin from '/plugins/map-key/src/index.js'
+import createMenuPlugin from '/plugins/menu/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
@@ -542,7 +543,7 @@ const datasetsPlugin = createDatasetsPlugin({
     opacity: 0.75,
     visible: true
   },
-  hasMenu: false,
+  // hasMenu: false,
   datasets,
   menu
 })
@@ -557,6 +558,9 @@ const interactiveMap = new InteractiveMap('map', {
   zoom: 13,
   plugins: [
     createMapKeyPlugin(),
+    createMenuPlugin({
+      menu
+    }),
     datasetsPlugin,
     mapStylesPlugin({
       mapStyles: vtsMapStyles27700,

@@ -1,9 +1,14 @@
 import { Menu } from './components/Key/Menu.jsx'
 import './registry/getDatasetRegistry.js'
 import { MenuInit } from './initialise/MenuInit.jsx'
+import { initialState, actions } from './reducers/pluginState.js'
 
 export const manifest = {
   InitComponent: MenuInit,
+  reducer: {
+    initialState,
+    actions
+  },
   panels: [
     {
       id: 'menu',

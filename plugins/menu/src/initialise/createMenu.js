@@ -1,6 +1,7 @@
 import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
 
-export const createMenu = ({ eventBus }) => {
+export const createMenu = ({ menu, eventBus, dispatch }) => {
+  dispatch({ type: 'SET_MENU', payload: { menu } })
   // The menu plugin, requires access to the datasets registry, so it can render the
   // datasets key items.
   // However, the order the plugins are added can affect whether the event is emitted
