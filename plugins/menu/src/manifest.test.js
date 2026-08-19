@@ -1,14 +1,14 @@
 import { manifest } from './manifest.js'
-import { MapKey } from './components/Key/MapKey.jsx'
-import { MapKeyInit } from './initialise/MapKeyInit.jsx'
+import { Menu } from './components/Key/Menu.jsx'
+import { MenuInit } from './initialise/MenuInit.jsx'
 
-jest.mock('./components/Key/MapKey.jsx', () => ({ MapKey: jest.fn() }))
-jest.mock('./initialise/MapKeyInit.jsx', () => ({ MapKeyInit: jest.fn() }))
+jest.mock('./components/Key/Menu.jsx', () => ({ Menu: jest.fn() }))
+jest.mock('./initialise/MenuInit.jsx', () => ({ MenuInit: jest.fn() }))
 jest.mock('./registry/getDatasetRegistry.js', () => ({}))
 
 describe('manifest', () => {
-  it('sets InitComponent to MapKeyInit', () => {
-    expect(manifest.InitComponent).toBe(MapKeyInit)
+  it('sets InitComponent to MenuInit', () => {
+    expect(manifest.InitComponent).toBe(MenuInit)
   })
 
   describe('panels', () => {
@@ -20,8 +20,8 @@ describe('manifest', () => {
       expect(manifest.panels[0].id).toBe('menu')
     })
 
-    it('panel render is MapKey', () => {
-      expect(manifest.panels[0].render).toBe(MapKey)
+    it('panel render is Menu', () => {
+      expect(manifest.panels[0].render).toBe(Menu)
     })
 
     it('panel defines mobile, tablet and desktop slots', () => {

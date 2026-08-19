@@ -3,7 +3,7 @@ import { getDatasetRegistry } from '../../registry/index.js'
 
 import { Key } from './Key.jsx'
 
-export function MapKey ({
+export function Menu ({
   mapState: { mapStyle },
   pluginConfig: { noKeyItemText }
 }) {

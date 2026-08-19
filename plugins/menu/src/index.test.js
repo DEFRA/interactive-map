@@ -1,7 +1,7 @@
 import createPlugin from './index.js'
 
 jest.mock('./menu.scss', () => {})
-jest.mock('./manifest.js', () => ({ manifest: { InitComponent: 'MapKeyInit', panels: [] } }))
+jest.mock('./manifest.js', () => ({ manifest: { InitComponent: 'MenuInit', panels: [] } }))
 
 describe('createPlugin', () => {
   it('returns the menu id', () => {
@@ -26,6 +26,6 @@ describe('createPlugin', () => {
 
   it('load() resolves to the manifest', async () => {
     const result = await createPlugin().load()
-    expect(result).toEqual({ InitComponent: 'MapKeyInit', panels: [] })
+    expect(result).toEqual({ InitComponent: 'MenuInit', panels: [] })
   })
 })

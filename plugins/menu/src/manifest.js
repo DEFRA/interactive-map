@@ -1,9 +1,9 @@
-import { MapKey } from './components/Key/MapKey.jsx'
+import { Menu } from './components/Key/Menu.jsx'
 import './registry/getDatasetRegistry.js'
-import { MapKeyInit } from './initialise/MapKeyInit.jsx'
+import { MenuInit } from './initialise/MenuInit.jsx'
 
 export const manifest = {
-  InitComponent: MapKeyInit,
+  InitComponent: MenuInit,
   panels: [
     {
       id: 'menu',
@@ -11,7 +11,7 @@ export const manifest = {
       mobile: { slot: 'drawer', modal: true },
       tablet: { slot: 'left-top', width: '260px' },
       desktop: { slot: 'left-top', width: '280px' },
-      render: MapKey
+      render: Menu
     }],
 
   buttons: [{

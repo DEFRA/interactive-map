@@ -1,6 +1,6 @@
 import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
 
-export const createMapKey = ({ eventBus }) => {
+export const createMenu = ({ eventBus }) => {
   // The menu plugin, requires access to the datasets registry, so it can render the
   // datasets key items.
   // However, the order the plugins are added can affect whether the event is emitted

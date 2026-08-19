@@ -1,15 +1,15 @@
 import { useEffect } from 'react'
-import { createMapKey } from './createMapKey.js'
+import { createMenu } from './createMenu.js'
 
 // additional possible params here are: pluginConfig, pluginState, appState, mapProvider,
-export function MapKeyInit ({ mapState, services }) {
+export function MenuInit ({ mapState, services }) {
   const { eventBus } = services
 
   useEffect(() => {
     if (!mapState.isMapReady) {
       return () => {}
     }
-    const { remove } = createMapKey({ eventBus })
+    const { remove } = createMenu({ eventBus })
     return remove
   }, [mapState.isMapReady])
 }

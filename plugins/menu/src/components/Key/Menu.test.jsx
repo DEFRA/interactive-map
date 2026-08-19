@@ -1,5 +1,5 @@
 import { render } from '@testing-library/react'
-import { MapKey } from './MapKey'
+import { Menu } from './Menu'
 import { getDatasetRegistry } from '../../registry/index.js'
 
 jest.mock('../../registry/index.js', () => ({
@@ -23,12 +23,12 @@ const baseProps = {
   pluginConfig: { noKeyItemText: 'No items' }
 }
 
-describe('MapKey', () => {
+describe('Menu', () => {
   it('passes keyGroups and hasGroups from the registry to Key', () => {
     getDatasetRegistry.mockReturnValue({
       keyItems: () => ({ items: [{ id: '1' }, { id: '2' }], hasGroups: true })
     })
-    const { getByTestId } = render(<MapKey {...baseProps} />)
+    const { getByTestId } = render(<Menu {...baseProps} />)
     const key = getByTestId('key')
     expect(key.dataset.keyGroupsLength).toBe('2')
     expect(key.dataset.hasGroups).toBe('true')
@@ -36,7 +36,7 @@ describe('MapKey', () => {
 
   it('passes empty items and hasGroups false when registry is null', () => {
     getDatasetRegistry.mockReturnValue(null)
-    const { getByTestId } = render(<MapKey {...baseProps} />)
+    const { getByTestId } = render(<Menu {...baseProps} />)
     const key = getByTestId('key')
     expect(key.dataset.keyGroupsLength).toBe('0')
     expect(key.dataset.hasGroups).toBe('false')
@@ -44,13 +44,13 @@ describe('MapKey', () => {
 
   it('passes noKeyItemText from pluginConfig to Key', () => {
     getDatasetRegistry.mockReturnValue(null)
-    const { getByTestId } = render(<MapKey {...baseProps} />)
+    const { getByTestId } = render(<Menu {...baseProps} />)
     expect(getByTestId('key').dataset.noKeyItemText).toBe('No items')
   })
 
   it('passes mapStyle from mapState to Key', () => {
     getDatasetRegistry.mockReturnValue(null)
-    const { getByTestId } = render(<MapKey {...baseProps} />)
+    const { getByTestId } = render(<Menu {...baseProps} />)
     expect(getByTestId('key').dataset.mapStyleId).toBe('default')
   })
 })
