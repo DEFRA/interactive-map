@@ -3,7 +3,7 @@ import { createDynamicSource } from '../fetch/createDynamicSource.js'
 import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { setMenuState } from '../registry/isVisibleWhen.js'
+import { isVisibleWhen, setMenuState } from '../registry/isVisibleWhen.js'
 import { buildMenuState } from '../reducers/menuStateReducer.js'
 import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
@@ -60,7 +60,7 @@ export const initialiseDatasets = ({
 
   // Emit onReady immediately, but also listen for requests for the registry, so that if the
   // datasets plugin is loaded after the map-key plugin, it will still be able to get the registry.
-  const requestDatasetRegistryReadyHandler = () => eventBus.emit('datasets:registryReady', datasetRegistry)
+  const requestDatasetRegistryReadyHandler = () => eventBus.emit('datasets:registryReady', datasetRegistry, isVisibleWhen)
   eventBus.on('datasets:requestRegistry', requestDatasetRegistryReadyHandler)
   requestDatasetRegistryReadyHandler()
 

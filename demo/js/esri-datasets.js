@@ -538,6 +538,19 @@ const menu = [
 ]
 
 const datasetsPlugin = createDatasetsPlugin({
+  manifest: {
+    panels: [{
+      id: 'datasetsLayers',
+      desktop: { slot: 'left-top', width: '280px', exclusive: false, },
+      tablet: { slot: 'left-top', width: '280px', modal: true }
+    }],
+    // buttons: [
+    //   {
+    //     id: 'datasetsLayers',
+    //     excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
+    //   }
+    // ]
+  },  
   globals: {
     opacityMode: 'global', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,
@@ -559,6 +572,19 @@ const interactiveMap = new InteractiveMap('map', {
   plugins: [
     createMapKeyPlugin(),
     createMenuPlugin({
+      manifest: {
+        panels: [{
+          id: 'menu',
+          desktop: { open: true, slot: 'side', width: '280px', dismissible: false, exclusive: false, },
+          tablet: { slot: 'side', width: '280px', modal: true }
+        }],
+        buttons: [
+          {
+            id: 'menuButton',
+            excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
+          }
+        ]
+      },
       menu
     }),
     datasetsPlugin,

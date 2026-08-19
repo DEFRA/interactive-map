@@ -1,5 +1,5 @@
 import React from 'react'
-import { setDatasetVisibility } from '../../api/setDatasetVisibility.js'
+// import { setDatasetVisibility } from '../../api/setDatasetVisibility.js'
 import { LayersMenuCheckbox } from './LayersMenuCheckbox.jsx'
 import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper.jsx'
 import { LayersMenuGroupWrapper } from './LayersMenuGroupWrapper.jsx'
@@ -9,7 +9,8 @@ export const LayersMenu = ({ pluginState }) => {
 
   const handleDatasetChange = (e) => {
     const { value, checked } = e.target
-    setDatasetVisibility({ pluginState }, checked, { datasetId: value })
+    console.log('On CHECK:', { value, checked })
+    // setDatasetVisibility({ pluginState }, checked, { datasetId: value })
   }
 
   const hasGroups = menu.some(item => item.groupLabel)

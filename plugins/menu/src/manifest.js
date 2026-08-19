@@ -1,4 +1,5 @@
 import { Menu } from './components/Key/Menu.jsx'
+import { LayersMenu } from './components/LayersMenu/LayersMenu.jsx'
 import './registry/getDatasetRegistry.js'
 import { MenuInit } from './initialise/MenuInit.jsx'
 import { initialState, actions } from './reducers/pluginState.js'
@@ -12,6 +13,29 @@ export const manifest = {
   panels: [
     {
       id: 'menu',
+      label: 'Menu - Layers',
+      mobile: {
+        slot: 'drawer',
+        modal: true,
+        dismissible: true
+      },
+      tablet: {
+        slot: 'left-top',
+        dismissible: true,
+        exclusive: true,
+        width: '260px'
+      },
+      desktop: {
+        slot: 'left-top',
+        modal: false,
+        dismissible: true,
+        exclusive: true,
+        width: '280px'
+      },
+      render: LayersMenu
+    },
+    {
+      id: 'menuKeyPanel',
       label: 'Menu Key',
       mobile: { slot: 'drawer', modal: true },
       tablet: { slot: 'left-top', width: '260px' },
@@ -20,8 +44,28 @@ export const manifest = {
     }],
 
   buttons: [{
-    id: 'menu',
+    id: 'menuButton',
+    label: 'Menu - Layers',
     panelId: 'menu',
+    iconId: 'layers',
+    // excludeWhen: ({ pluginConfig }) => !pluginConfig.menu && !pluginConfig.datasets.some(l =>
+    //   l.showInMenu || l.sublayers?.some(r => r.showInMenu)
+    // ),
+    mobile: {
+      slot: 'top-left',
+      showLabel: true
+    },
+    tablet: {
+      slot: 'top-left',
+      showLabel: true
+    },
+    desktop: {
+      slot: 'top-left',
+      showLabel: true
+    }
+  }, {
+    id: 'menuKeyButton',
+    panelId: 'menuKeyPanel',
     label: 'Menu Key',
     iconId: 'key',
     mobile: { slot: 'top-left', showLabel: false },
