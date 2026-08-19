@@ -156,15 +156,7 @@ const interactiveMap = new InteractiveMap('map', {
       osNamesURL: process.env.OS_NAMES_URL,
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
-      showMarker: false,
-      manifest: {
-        buttons: [{
-          id: 'search',
-          tablet: { slot: 'top-left', order: 3 },
-          desktop: { slot: 'top-left', order: 3 }
-        }]
-      },
-      // expanded: true
+      showMarker: false
     }),
     datasetsPlugin,
     mapStylesPlugin({
