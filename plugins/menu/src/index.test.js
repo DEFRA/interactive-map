@@ -1,15 +1,15 @@
 import createPlugin from './index.js'
 
-jest.mock('./mapKey.scss', () => {})
+jest.mock('./menu.scss', () => {})
 jest.mock('./manifest.js', () => ({ manifest: { InitComponent: 'MapKeyInit', panels: [] } }))
 
 describe('createPlugin', () => {
-  it('returns the mapKey id', () => {
-    expect(createPlugin().id).toBe('mapKey')
+  it('returns the menu id', () => {
+    expect(createPlugin().id).toBe('menu')
   })
 
   it('id cannot be overridden by options', () => {
-    expect(createPlugin({ id: 'other' }).id).toBe('mapKey')
+    expect(createPlugin({ id: 'other' }).id).toBe('menu')
   })
 
   it('returns the default noKeyItemText', () => {

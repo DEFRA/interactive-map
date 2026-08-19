@@ -16,8 +16,8 @@ describe('manifest', () => {
       expect(manifest.panels).toHaveLength(1)
     })
 
-    it('panel has id mapKey', () => {
-      expect(manifest.panels[0].id).toBe('mapKey')
+    it('panel has id menu', () => {
+      expect(manifest.panels[0].id).toBe('menu')
     })
 
     it('panel render is MapKey', () => {
@@ -37,9 +37,9 @@ describe('manifest', () => {
       expect(manifest.buttons).toHaveLength(1)
     })
 
-    it('button has id mapKey and links to the mapKey panel', () => {
-      expect(manifest.buttons[0].id).toBe('mapKey')
-      expect(manifest.buttons[0].panelId).toBe('mapKey')
+    it('button has id menu and links to the menu panel', () => {
+      expect(manifest.buttons[0].id).toBe('menu')
+      expect(manifest.buttons[0].panelId).toBe('menu')
     })
 
     it('button references the key icon', () => {

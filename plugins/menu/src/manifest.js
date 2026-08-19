@@ -6,7 +6,7 @@ export const manifest = {
   InitComponent: MapKeyInit,
   panels: [
     {
-      id: 'mapKey',
+      id: 'menu',
       label: 'Key',
       mobile: { slot: 'drawer', modal: true },
       tablet: { slot: 'left-top', width: '260px' },
@@ -15,8 +15,8 @@ export const manifest = {
     }],
 
   buttons: [{
-    id: 'mapKey',
-    panelId: 'mapKey',
+    id: 'menu',
+    panelId: 'menu',
     label: 'Key',
     iconId: 'key',
     mobile: { slot: 'top-left', showLabel: false },
