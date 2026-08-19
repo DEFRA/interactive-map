@@ -537,24 +537,12 @@ const menu = [
 ]
 
 const datasetsPlugin = createDatasetsPlugin({
-  manifest: {
-    panels: [{
-      id: 'datasetsLayers',
-      desktop: { open: true, slot: 'side', width: '280px', dismissible: false},
-      tablet: { slot: 'side', width: '280px', modal: true }
-    }],
-    buttons: [
-      {
-        id: 'datasetsLayers',
-        excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
-      }
-    ]
-  },
   globals: {
     opacityMode: 'global', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,
     visible: true
   },
+  hasMenu: false,
   datasets,
   menu
 })

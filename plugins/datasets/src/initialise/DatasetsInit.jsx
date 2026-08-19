@@ -12,6 +12,13 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
 
+  useEffect(() => {
+    if (pluginConfig.hasMenu === false) {
+      eventBus.emit(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
+      eventBus.emit(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
+    }
+  }, [pluginConfig.hasMenu])
+
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
   pluginStateRef.current = pluginState
