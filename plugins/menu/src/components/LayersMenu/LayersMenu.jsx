@@ -3,10 +3,8 @@ import React from 'react'
 import { LayersMenuCheckbox } from './LayersMenuCheckbox.jsx'
 import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper.jsx'
 import { LayersMenuGroupWrapper } from './LayersMenuGroupWrapper.jsx'
-
 export const LayersMenu = ({ pluginState }) => {
   const { menu = [] } = pluginState
-
   const handleDatasetChange = (e) => {
     const { value, checked } = e.target
     console.log('On CHECK:', { value, checked })

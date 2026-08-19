@@ -1,11 +1,9 @@
 import React from 'react'
-import { getIsVisibleWhen } from '../../registry/index.js'
-// import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
+import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 import { LayersMenuRadio } from './LayersMenuRadio.jsx'
 
 export const LayersRadioGroupWrapper = ({ pluginState, menuGroup }) => {
   const { id, items, visibleWhen } = menuGroup
-  const isVisibleWhen = getIsVisibleWhen()
   const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true
   if (!visible) {
     return null

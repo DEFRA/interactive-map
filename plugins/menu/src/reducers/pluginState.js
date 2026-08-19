@@ -7,6 +7,7 @@ const initialState = {
 }
 
 const updateMenuState = (state, payload) => {
+  console.log('updateMenuState', { ...state.menuState, ...payload })
   return {
     ...state,
     menuState: { ...state.menuState, ...payload }
@@ -17,7 +18,6 @@ const setMenu = (state, payload) => {
   const { menu } = payload
   // build the initial menuState for radios from the menu
   const menuState = buildMenuState(menu)
-  console.log('setMenu', menu, menuState)
   return {
     ...state,
     menu,
