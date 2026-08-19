@@ -88,6 +88,13 @@ describe('button handlers', () => {
     expect(mapProvider.activeMoveTarget).toBeNull()
   })
 
+  test('cancel re-adds the feature when cancelling a point edit too', () => {
+    const { buttonConfig, draw } = setup()
+    draw.getMode.mockReturnValue('edit_point')
+    buttonConfig.drawCancel.onClick()
+    expect(draw.add).toHaveBeenCalledWith({ id: 'F' })
+  })
+
   test('cancel does not re-add outside a vertex edit', () => {
     const { buttonConfig, draw } = setup()
     draw.getMode.mockReturnValue('draw_polygon')
@@ -306,6 +313,13 @@ describe('geometrychange validation', () => {
     draw.getMode.mockReturnValue('edit_vertex')
     drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-move', vertexIndex: 2 })
     expect(draw.setInvalid).toHaveBeenCalledWith(true)
+  })
+
+  test('drives the invalid stroke from committed validity in a point edit too', () => {
+    const { draw } = setup()
+    draw.getMode.mockReturnValue('edit_point')
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-move', vertexIndex: 0 })
+    expect(draw.setInvalid).toHaveBeenCalledWith(false)
   })
 
   test('a live validity flip (edit drag) drives the Done gate', () => {

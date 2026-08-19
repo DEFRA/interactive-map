@@ -334,14 +334,15 @@ interactiveMap.on('draw:cancelled', function (e) {
 
 
 interactiveMap.on('interact:selectionchange', function (e) {
-  // editShape/mergeShapes deliberately exclude points — there's no edit_point mode yet, and
-  // merging is a polygon/line-only concept. Delete has no such restriction, so it gets its
-  // own, wider layer list.
+  // mergeShapes deliberately excludes points — merging is a polygon/line-only concept.
+  // editShape and delete both apply to a point (edit_point relocates it; delete removes the
+  // whole feature), so they share the wider layer list.
   const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
-  const deletableLayers = drawLayers.concat(['point-symbol.cold'])
+  const editableLayers = drawLayers.concat(['point-symbol.cold'])
+  const deletableLayers = editableLayers
   const singleFeature = e.selectedFeatures.length === 1
   const anyFeature = e.selectedFeatures.length > 0
-  const isDrawFeature = singleFeature && drawLayers.includes(e.selectedFeatures[0].layerId)
+  const isDrawFeature = singleFeature && editableLayers.includes(e.selectedFeatures[0].layerId)
   const isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
   const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return drawLayers.includes(f.layerId) })
   const canDelete = anyFeature && e.selectedFeatures.every(function (f) { return deletableLayers.includes(f.layerId) })

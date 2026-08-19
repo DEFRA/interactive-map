@@ -1,6 +1,7 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import { DisabledMode } from './modes/disabledMode.js'
 import { EditVertexMode } from './modes/editVertexMode.js'
+import { EditPointMode } from './modes/editPointMode.js'
 import { DrawPolygonMode } from './modes/drawPolygonMode.js'
 import { DrawLineMode } from './modes/drawLineMode.js'
 import { DrawPointMode } from './modes/drawPointMode.js'
@@ -124,6 +125,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
     ...MapboxDraw.modes,
     disabled: DisabledMode,
     edit_vertex: EditVertexMode,
+    edit_point: EditPointMode,
     draw_polygon: DrawPolygonMode,
     draw_line: DrawLineMode,
     draw_point: DrawPointMode

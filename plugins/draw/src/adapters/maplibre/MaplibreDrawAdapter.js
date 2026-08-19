@@ -9,6 +9,7 @@ import { resolvePointSymbol } from './pointSymbolImages.js'
 
 const polygonFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates } })
 const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
+const pointFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Point', coordinates } })
 
 // The displayed feature + placed-vertex count for the live stroke check. MapLibre's
 // fire() copies the payload onto an Event whose `type` is the event name, so the
@@ -32,6 +33,10 @@ export const displayedShape = (mode, coordinates) => {
     return Array.isArray(ring?.[0])
       ? { feature: polygonFeature(coordinates), numVertices: ring.length }
       : { feature: lineFeature(coordinates), numVertices: coordinates?.length ?? 0 }
+  }
+  if (mode === 'edit_point') {
+    // A Point's coordinates are already flat ([lng, lat]) — no ring/segment shape to read.
+    return { feature: pointFeature(coordinates), numVertices: 1 }
   }
   return null
 }
@@ -82,7 +87,8 @@ export class MaplibreDrawAdapter {
     this._liveStroke = createLiveStroke({
       onChange: (invalid, reason) => {
         this._applyStrokeInvalid(invalid)
-        if (this._draw.getMode() === 'edit_vertex') {
+        const mode = this._draw.getMode()
+        if (mode === 'edit_vertex' || mode === 'edit_point') {
           this._bus.emit(ADAPTER_EVENTS.VALIDITY_CHANGE, { valid: !invalid, reason })
         }
       }
@@ -144,7 +150,7 @@ export class MaplibreDrawAdapter {
   }
 
   changeMode (name, options = {}) {
-    if (name === 'edit_vertex') {
+    if (name === 'edit_vertex' || name === 'edit_point') {
       this._editingFeatureId = options.featureId ?? null
     }
     // A fresh draw always starts with a solid stroke and a placeable crosshair;
@@ -200,8 +206,8 @@ export class MaplibreDrawAdapter {
   done () {
     this._mapProvider.undoStack?.clear()
     const mode = this._draw.getMode()
-    if (mode === 'edit_vertex' && this._editingFeatureId) {
-      // Leaving edit_vertex here — hide immediately rather than waiting on the
+    if ((mode === 'edit_vertex' || mode === 'edit_point') && this._editingFeatureId) {
+      // Leaving edit_vertex/edit_point here — hide immediately rather than waiting on the
       // async disable() the EDIT_FINISH handler fires later (see changeMode()).
       this._handleModeChange({ mode: 'disabled' })
       this._map.fire(CUSTOM_DRAW_EVENTS.EDIT_FINISH, { features: [this._draw.get(this._editingFeatureId)] })

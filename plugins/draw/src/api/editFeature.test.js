@@ -74,6 +74,22 @@ describe('editFeature', () => {
     expect(eventBus.emit).toHaveBeenCalledWith('draw:editstart', { mode: 'edit_line' })
   })
 
+  // A Point has no ring of vertices — editing one goes through edit_point (relocate the
+  // single coordinate), not edit_vertex, across every mode-name site this function touches.
+  test('uses edit_point mode for a point feature', () => {
+    const { context, dispatch, eventBus, draw } = makeContext()
+    draw.get.mockReturnValue({ id: 'f1', geometry: { type: 'Point', coordinates: [0, 0] } })
+
+    editFeature(context, 'f1')
+
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:editstart', { mode: 'edit_point' })
+    expect(draw.changeMode).toHaveBeenCalledWith('edit_point', expect.objectContaining({ featureId: 'f1' }))
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: 'edit_point' })
+    // Point geometry is always valid (validation/rules.js has no Point branch) — the gate
+    // opens immediately, unlike a self-intersecting/zero-area polygon.
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: true })
+  })
+
   test('stores a per-call onGeometryChange validator, overriding the plugin-level one', () => {
     const pluginOnGeometryChange = jest.fn()
     const onGeometryChange = jest.fn()

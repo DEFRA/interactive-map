@@ -189,6 +189,13 @@ describe('displayedShape helper', () => {
     expect(line?.feature?.geometry?.type).toBe('LineString')
   })
 
+  test('builds a point feature from edit_point mode, with a flat (unnested) coordinate', () => {
+    const result = displayedShape('edit_point', [5, 5])
+    expect(result?.feature?.type).toBe('Feature')
+    expect(result?.feature?.geometry).toEqual({ type: 'Point', coordinates: [5, 5] })
+    expect(result?.numVertices).toBe(1)
+  })
+
   test('returns null for an unknown mode', () => {
     expect(displayedShape('unknown_mode', [[0, 0], [10, 0]])).toBeNull()
   })
@@ -368,6 +375,18 @@ describe('live invalid stroke (edit mode)', () => {
     expect(bus.emit).not.toHaveBeenCalledWith('canplacechange', expect.anything())
   })
 
+  test('validity flips also gate the Done button while editing a point', () => {
+    jest.useFakeTimers()
+    const { map, draw, bus } = editSetup()
+    draw.getMode.mockReturnValue('edit_point')
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    map._drawGeometryValidator = () => ({ valid: false, reason: 'outside region' })
+    fire({ type: 'draw.geometrychange', coordinates: [5, 5] })
+    jest.runAllTimers()
+    expect(bus.emit).toHaveBeenCalledWith('validitychange', expect.objectContaining({ valid: false, reason: 'outside region' }))
+    jest.useRealTimers()
+  })
+
   test('lines never go dashed from the default rules while editing', () => {
     const { map } = editSetup()
     onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ type: 'draw.geometrychange', coordinates: [[0, 0], [10, 10], [10, 0], [0, 10]] })
@@ -404,6 +423,12 @@ describe('changeMode', () => {
     const { adapter, draw } = setup()
     adapter.changeMode('edit_vertex', { featureId: 'f9' })
     expect(draw.changeMode).toHaveBeenCalledWith('edit_vertex', { featureId: 'f9' })
+  })
+
+  test('records the editing feature id when entering edit_point', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_point', { featureId: 'f9' })
+    expect(draw.changeMode).toHaveBeenCalledWith('edit_point', { featureId: 'f9' })
   })
 
   test('defaults the editing feature id to null when omitted', () => {
@@ -613,6 +638,18 @@ describe('done', () => {
     adapter.done()
     expect(map.fire).not.toHaveBeenCalled()
     expect(draw.changeMode).not.toHaveBeenCalled()
+  })
+
+  test('clears the undo stack and fires editfinish when editing a point', () => {
+    const { adapter, map, draw, undoStack } = setup()
+    adapter.changeMode('edit_point', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_point')
+
+    adapter.done()
+
+    expect(undoStack.clear).toHaveBeenCalled()
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.EDIT_FINISH, { features: [{ id: 'f1' }] })
+    expect(draw.changeMode).not.toHaveBeenCalledWith('disabled')
   })
 })
 

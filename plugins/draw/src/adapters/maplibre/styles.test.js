@@ -22,10 +22,25 @@ describe('createDrawStyles', () => {
     const layers = createDrawStyles(mapStyle)
     const point = findLayer(layers, 'point-symbol')
     expect(point.filter).toEqual(['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']])
-    expect(point.layout['icon-image']).toEqual(['get', 'user_symbolImageId'])
     expect(point.layout['icon-anchor']).toEqual(['get', 'user_symbolIconAnchor'])
     expect(point.layout['icon-offset']).toEqual(['get', 'user_symbolIconOffset'])
     expect(point.layout['icon-allow-overlap']).toBe(true)
+  })
+
+  // While a point is the one being edited (edit_point mode's toDisplayFeatures sets
+  // active:'true' just for it), icon-image swaps to the same precomputed "selected" (black
+  // ring) variant the interact plugin's own selection highlight already uses — see
+  // pointSymbol()'s own comment — so the look persists for the whole edit session instead of
+  // disappearing when the interact plugin's selection gets cleared on entering edit mode.
+  test('the point-symbol layer swaps to the selected-variant icon while active, falling back to the normal one if no variant was resolved', () => {
+    const layers = createDrawStyles(mapStyle)
+    const point = findLayer(layers, 'point-symbol')
+    expect(point.layout['icon-image']).toEqual([
+      'case',
+      ['==', ['get', 'active'], 'true'],
+      ['coalesce', ['get', 'user_symbolSelectedImageId'], ['get', 'user_symbolImageId']],
+      ['get', 'user_symbolImageId']
+    ])
   })
 
   test('the invalid stroke layer is a hidden dashed line matching the active shape', () => {

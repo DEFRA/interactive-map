@@ -3,7 +3,7 @@ import {
   clearSnapState, clearSnapIndicator
 } from '../../utils/snapHelpers.js'
 import { coordPathToFlatIndex } from './geometryHelpers.js'
-import { isOnSVG } from './helpers.js'
+import { isOnSVG, scalePoint } from './helpers.js'
 import { createTouchTarget, applyTouchTargetColors } from '../../../../utils/touchTarget.js'
 import { resolveColors } from '../../../../utils/resolveColors.js'
 
@@ -61,6 +61,17 @@ export const touchHandlers = {
       state._moveStartPosition = null
       state._moveStartIndex = undefined
       state._touchMoved = false
+
+      // Re-sync the target to the vertex's actual final coordinate. Mid-drag it tracks the
+      // raw finger 1:1 from its touchstart-time offset (see onTouchmove) — a mid-drag snap
+      // moves the vertex without moving the target by the same amount, leaving them out of
+      // alignment. Left uncorrected, the next onTouchstart's delta math re-anchors off that
+      // drifted position, compounding a little further with every snapped drag (same fix as
+      // editPointMode's own onTouchend, for the same reason).
+      const vertex = state.vertecies[state.selectedVertexIndex]
+      if (vertex) {
+        this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
+      }
     }
   },
 

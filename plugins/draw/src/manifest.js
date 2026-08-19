@@ -12,6 +12,11 @@ import { isMac } from '../../../src/utils/isMac.js'
 
 const DRAW_ACTIONS_SLOT = 'top-middle'
 
+// edit_point behaves like edit_vertex for Done/Menu/Undo, but stays out of drawDeletePoint and mergeShapes (neither applies to a single coordinate).
+const EDIT_MODES = new Set(['edit_vertex', 'edit_point'])
+// .has(), not spread — [...aSet] can silently misbehave under a loose-mode Babel build (see OLDrawManager.js's emit()).
+const isEditMode = (mode) => EDIT_MODES.has(mode)
+
 // Show the platform-appropriate undo modifier (⌘ on macOS, Ctrl elsewhere).
 const undoCommand = isMac() ? '<kbd>Command</kbd> + <kbd>Z</kbd>' : '<kbd>Ctrl</kbd> + <kbd>Z</kbd>'
 
@@ -55,30 +60,30 @@ export const manifest = {
       label: 'Done',
       variant: 'primary',
       exclusiveSlot: true,
-      hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
+      hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
       enableWhen: ({ pluginState }) => {
         const { mode, geometryValid } = pluginState
         // Min-vertices, area and self-intersection are all enforced by the validation
         // rules via geometryValid, so the gate is simply "is the geometry valid now".
-        return ['draw_polygon', 'draw_line', 'edit_vertex'].includes(mode) && geometryValid
+        return (['draw_polygon', 'draw_line'].includes(mode) || isEditMode(mode)) && geometryValid
       },
       ...createButtonSlots(true)
     },
     {
       id: 'drawMenu',
-      label: ({ pluginState }) => pluginState.mode === 'edit_vertex' ? 'Edit actions' : 'Draw actions',
+      label: ({ pluginState }) => isEditMode(pluginState.mode) ? 'Edit actions' : 'Draw actions',
       iconId: 'menu',
       exclusiveSlot: true,
       // draw_point belongs here too — it has no Undo (nothing to undo before a single-click
       // commit, gated separately below) and no delete-vertex, but it DOES support snapping,
       // and the Snap toggle is a menuItem living inside this same button.
-      hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'draw_point', 'edit_vertex'].includes(pluginState.mode),
+      hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
       menuItems: [
         {
           id: 'drawUndo',
           label: 'Undo',
           iconId: 'undo',
-          hiddenWhen: ({ pluginState }) => !['draw_polygon', 'draw_line', 'edit_vertex'].includes(pluginState.mode),
+          hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
           enableWhen: ({ pluginState }) => {
             if (['draw_polygon', 'draw_line'].includes(pluginState.mode)) {
               return pluginState.numVertices > 0

@@ -55,6 +55,27 @@ describe('touchHandlers', () => {
     expect(map._undoStack.pop()).toMatchObject({ type: 'move_vertex', vertexIndex: 1 })
   })
 
+  // Regression: mid-drag the target tracks the raw finger 1:1 from its touchstart-time offset
+  // (see onTouchmove), so a mid-drag snap — which moves the vertex without moving the target
+  // by the same amount — leaves the two out of alignment. Re-syncing on touchend to the
+  // vertex's actual final coordinate stops that drift from compounding on the next drag.
+  test('onTouchend re-syncs the target to the selected vertex\'s actual final coordinate', () => {
+    const { ctx, state } = createHarness()
+    state.interfaceType = 'touch'
+    state.selectedVertexIndex = 1
+    ctx.moveVertex(state, { lng: 9, lat: 9 }) // as onTouchmove would have left it mid-drag
+    ctx.onTouchend(state)
+    expect(state.touchVertexTarget.style.display).toBe('block')
+    expect(state.touchVertexTarget.style.left).toBe(`${9 * 10}px`) // harness project(): coord * 10
+    expect(state.touchVertexTarget.style.top).toBe(`${9 * 10}px`)
+  })
+
+  test('onTouchend skips repositioning when nothing is selected', () => {
+    const { ctx, state } = createHarness()
+    state.selectedVertexIndex = -1
+    expect(() => ctx.onTouchend(state)).not.toThrow()
+  })
+
   test('onTouchstart captures move start state, ignoring taps off the vertex/target', () => {
     const { ctx, state } = createHarness()
     ctx.onTouchstart(state, { target: { parentNode: document.createElement('div') }, touches: [{ clientX: 1, clientY: 1 }] })

@@ -13,6 +13,12 @@ import { MAP_SIZE_SCALES } from './defaults.js'
 const EDIT_VERTEX_MODE = 'edit_vertex'
 const GEOMETRY_INVALID_EVENT = 'draw:geometryinvalid'
 
+// edit_point behaves like edit_vertex for the two checks below (restore-on-cancel, live
+// invalid-stroke gating) — a relocate session, just with one coordinate instead of a ring.
+// enterEditVertexMode (below) stays edit_vertex-only — it's only ever reached for a shape
+// that finished invalid, and Point geometry has no such failure mode (see rules.js).
+const EDIT_MODES = new Set([EDIT_VERTEX_MODE, 'edit_point'])
+
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
 // even though it's a genuine SOFT_RULES failure like any other.
@@ -86,7 +92,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     handleDone: () => { draw.done() },
     handleCancel: () => {
       const mode = draw.getMode()
-      if (mode === EDIT_VERTEX_MODE && tempFeature?.id) { draw.add(feature) }
+      if (EDIT_MODES.has(mode) && tempFeature?.id) { draw.add(feature) }
       pendingCreateId = null
       draw.cancel(); resetState()
       eventBus.emit('draw:cancelled', feature)
@@ -141,7 +147,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // The invalid stroke is committed-validity-driven in edit mode only; in draw
       // mode the adapters drive it live from the displayed geometry (placed
       // vertices + cursor) on every rubber-band move.
-      if (mode === EDIT_VERTEX_MODE) {
+      if (EDIT_MODES.has(mode)) {
         draw.setInvalid?.(!valid)
       }
       if (!valid) {

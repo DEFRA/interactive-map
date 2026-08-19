@@ -2,10 +2,7 @@
 import { SIZES } from './defaults.js'
 import { resolveColors } from '../../utils/resolveColors.js'
 
-// `defaultValue` is the already-resolved fallback (colors[defaultsKey] — the
-// plugin-config override if one was set, else the built-in default), not the
-// raw COLORS constant, so a shapeStroke/shapeFill override applies to every
-// feature that doesn't set its own stroke/fill property.
+// `defaultValue` is the already-resolved fallback (plugin-config override or built-in default), so a shapeStroke/shapeFill override applies to every feature without its own.
 const getUserProp = (mapStyle, prop, defaultValue) => [
   'coalesce',
   ['get', `user_${prop}${mapStyle.id.charAt(0).toUpperCase() + mapStyle.id.slice(1)}`],
@@ -48,9 +45,7 @@ const strokeActive = (editStrokeColor) => ({
   paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-opacity': 1 }
 })
 
-// Dashed stroke shown in place of stroke-active while the shape is invalid. Same
-// filter as stroke-active; the adapter's setInvalid() toggles the two layers'
-// visibility (line-dasharray can't be data-driven per feature in MapLibre).
+// Dashed stroke shown in place of stroke-active while invalid — the adapter's setInvalid() toggles the two layers' visibility (line-dasharray can't be data-driven per feature).
 const strokeActiveInvalid = (invalidStrokeColor) => ({
   id: 'stroke-active-invalid',
   type: 'line',
@@ -150,34 +145,24 @@ const circle = (editStrokeColor) => ({
   paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-opacity': 0.8 }
 })
 
-// A committed point feature, rendered as its resolved symbol-config icon rather than a
-// paint colour — icon-image/icon-anchor/icon-offset are data-driven per feature
-// (pointSymbolImages.js resolves and writes user_symbolImageId/user_symbolIconAnchor/
-// user_symbolIconOffset onto each point feature as its symbol config changes), so no
-// colour/size params are needed here at all; the image itself carries the styling.
-// icon-offset compensates for icon-anchor's 9-position precision limit — see
-// anchorToMaplibreOffset's own comment (providers/maplibre/src/utils/symbolImages.js).
-// Every mapbox-gl-draw feature carries a `meta` property, not just the internal
-// vertex/midpoint/touch-indicator handles — an ordinary committed feature gets
-// `meta: 'feature'` (Feature.prototype.internal() in the library itself), so this matches
-// that value directly rather than excluding features that merely have some `meta`.
-// Included via createDrawStyles() (not a manual map.addLayer() call) so MapboxDraw's own
-// style-injection duplicates it across both the cold and hot sources, same as every other
-// draw layer.
+// A committed point renders its resolved symbol-config icon (pointSymbolImages.js writes user_symbolImageId/user_symbolIconAnchor/user_symbolIconOffset onto each feature). While a point is being edited (active:'true'), icon-image swaps to its precomputed "selected" variant — the same one the interact plugin's own highlight uses — so the look persists for the whole edit session instead of disappearing when that highlight is cleared on entering edit mode.
 const pointSymbol = () => ({
   id: 'point-symbol',
   type: 'symbol',
   filter: ['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']],
   layout: {
-    'icon-image': ['get', 'user_symbolImageId'],
+    'icon-image': [
+      'case',
+      ['==', ['get', 'active'], 'true'],
+      ['coalesce', ['get', 'user_symbolSelectedImageId'], ['get', 'user_symbolImageId']],
+      ['get', 'user_symbolImageId']
+    ],
     'icon-anchor': ['get', 'user_symbolIconAnchor'],
     'icon-offset': ['get', 'user_symbolIconOffset'],
     'icon-allow-overlap': true,
     'icon-ignore-placement': true
   },
-  // No paint properties of its own (styling comes entirely from the resolved icon image),
-  // but updateDrawStyles() below iterates every layer's paint object unconditionally, so
-  // this still needs to exist, even empty.
+  // Empty but required — updateDrawStyles() below iterates every layer's paint object unconditionally.
   paint: {}
 })
 
@@ -188,9 +173,7 @@ const touchVertexIndicator = () => ({
   paint: { 'circle-radius': 30, 'circle-color': '#3bb2d0', 'circle-stroke-width': 3, 'circle-stroke-color': '#ffffff', 'circle-opacity': 0.9 }
 })
 
-// `pluginConfig` lets callers override any of these colours/strokeWidth — see
-// resolveColors() and the draw plugin's own options docs. Unaffected keys
-// still resolve to the built-in COLORS/SIZES defaults.
+// `pluginConfig` lets callers override any of these colours/strokeWidth (see resolveColors()); unaffected keys fall back to the built-in defaults.
 const createDrawStyles = (mapStyle, pluginConfig = {}) => {
   const colors = resolveColors(mapStyle, pluginConfig)
   const { vertexRadius, midpointRadius, vertexHaloRadius, midpointHaloRadius } = SIZES
