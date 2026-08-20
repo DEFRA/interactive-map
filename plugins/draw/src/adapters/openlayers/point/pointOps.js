@@ -27,10 +27,8 @@ export const undoMovePoint = (olFeature, op) => {
  * @returns {number} vertex index to re-select after undo (always 0), or -1 for none
  */
 export const applyPointUndo = (olFeature, op) => {
-  switch (op.type) {
-    case 'move_vertex':
-      return undoMovePoint(olFeature, op)
-    default:
-      return -1
+  if (op.type === 'move_vertex') {
+    return undoMovePoint(olFeature, op)
   }
+  return -1
 }

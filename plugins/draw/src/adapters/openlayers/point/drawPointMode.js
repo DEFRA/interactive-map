@@ -86,7 +86,7 @@ const buildPointInput = ({ drawInteraction, options, canPlace }) => {
     container,
     addVertexButtonId,
     olView: drawInteraction.getMap()?.getView(),
-    onUndo: undefined,
+    onUndo: null,
     getInterfaceType,
     setInterfaceType: applyInterfaceType,
     clearLastCoord: () => {},
