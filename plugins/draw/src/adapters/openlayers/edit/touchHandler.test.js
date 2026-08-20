@@ -70,6 +70,42 @@ test('the offset target hides when its vertex cannot be projected', () => {
   handler.destroy()
 })
 
+// The offset target is the drag handle under your finger and must track it exactly, even
+// while snap pulls the vertex itself elsewhere (mirrors the ML adapter) — the vertex is what
+// visibly "jumps" to the snap candidate, not the target. Once the drag actually ends, the
+// target re-syncs to the vertex's own final (possibly snapped) position, collapsing the gap.
+test('the offset target tracks the raw touch point while dragging, then snaps to the vertex on release', () => {
+  const snap = { apply: jest.fn((c) => [c[0] + 5, c[1]]), hideIndicator: jest.fn() }
+  const { container, handler, touch } = setup({}, { snap })
+  handler.updateTargetPosition()
+  touch('touchstart', 100, 0)
+  touch('touchmove', 120, 10) // raw touch → [120,10]; vertex snaps to [125,10]
+  const target = container.querySelector('[data-im-draw-touch-target]')
+  expect(target.style.left).toBe('120px') // tracks the finger…
+  expect(target.style.left).not.toBe('125px') // …not the snapped vertex, while still dragging
+
+  touch('touchend', 120, 10)
+  expect(target.style.left).toBe('125px') // re-synced to the vertex's actual final position
+  handler.destroy()
+})
+
+// touchcancel (the browser interrupting a gesture itself — a scroll takeover, app switch,
+// etc.) must resync the target exactly like touchend does — without this listener a
+// cancelled drag left the target stuck wherever the last touchmove put it.
+test('touchcancel resyncs the target the same way touchend does', () => {
+  const snap = { apply: jest.fn((c) => [c[0] + 5, c[1]]), hideIndicator: jest.fn() }
+  const { container, handler, touch, grip } = setup({}, { snap })
+  handler.updateTargetPosition()
+  touch('touchstart', 100, 0)
+  touch('touchmove', 120, 10) // raw touch → [120,10]; vertex snaps to [125,10]
+  const target = container.querySelector('[data-im-draw-touch-target]')
+  expect(target.style.left).toBe('120px') // tracking the finger mid-drag
+
+  grip.dispatchEvent(domEvent('touchcancel', { touches: [{ clientX: 120, clientY: 10 }], changedTouches: [{ clientX: 120, clientY: 10 }] }))
+  expect(target.style.left).toBe('125px') // re-synced to the vertex's actual final position
+  handler.destroy()
+})
+
 test('a drag applies snapping to the moved coordinate when a snap manager is active', () => {
   const snap = { apply: jest.fn((c) => [c[0] + 5, c[1]]), hideIndicator: jest.fn() }
   const { state, handler, touch } = setup({}, { snap })

@@ -290,6 +290,18 @@ interactiveMap.on('draw:ready', function () {
       symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
     }
   })
+  // ~100m NE of the pin above
+  drawPlugin.addFeature({
+    id: crypto.randomUUID(),
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [-2.9596434, 54.4296736] },
+    properties: {
+      symbol: 'square',
+      symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
+      symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
+      symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
+    }
+  })
   drawPlugin.addFeature({
     id: 'test1234',
     type: 'Feature',
