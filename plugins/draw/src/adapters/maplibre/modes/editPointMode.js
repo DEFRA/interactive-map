@@ -1,15 +1,13 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import doubleClickZoom from '../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/double_click_zoom.js' // NOSONAR
-import { getSnapInstance, clearSnapIndicator } from '../utils/snapHelpers.js'
+import { CUSTOM_DRAW_EVENTS } from '../drawEvents.js'
 import { scalePoint } from './editVertexMode/helpers.js'
+import { bindEditModeListeners, unbindEditModeListeners, clearActiveSnapIndicator } from '../utils/editModeEvents.js'
 import { undoHandlers } from './editPointMode/undoHandlers.js'
 import { touchHandlers } from './editPointMode/touchHandlers.js'
 import { pointOperations } from './editPointMode/pointOperations.js'
 import { keyboardHandlers } from './editPointMode/keyboardHandlers.js'
 import { pointerHandlers } from './editPointMode/pointerHandlers.js'
-
-const EVENT_VERTEX_SELECTION = 'draw.vertexselection'
-const EVENT_NUDGE_VERTEX = 'draw.nudgevertex'
 
 /**
  * Relocating an already-placed single-coordinate feature. Composed the same way
@@ -78,10 +76,7 @@ export const EditPointMode = {
     // that guard reads correctly from the first keypress, not just after an incidental click.
     state.container?.focus({ preventScroll: true })
 
-    const snap = getSnapInstance(this.map)
-    if (snap) {
-      clearSnapIndicator(snap, this.map)
-    }
+    clearActiveSnapIndicator(this.map)
 
     // Show the touch target if entering on a touch interface.
     if (state.interfaceType === 'touch') {
@@ -97,7 +92,7 @@ export const EditPointMode = {
     // numVertecies (misspelled) — MaplibreDrawAdapter.js's vertexselection handler only reads
     // that exact key when normalising to the adapter contract's numVertices; firing the
     // correctly-spelled key here would get silently clobbered to undefined instead.
-    this.map.fire(EVENT_VERTEX_SELECTION, { index: 0, numVertecies: 1 })
+    this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: 0, numVertecies: 1 })
 
     return state
   },
@@ -117,22 +112,10 @@ export const EditPointMode = {
       scalechange: bind(this.onScaleChange),
       move: bind(this.onMove),
       interfacetypechange: bind(this.onInterfaceTypeChange),
-      nudgepoint: bind(this.onNudgePoint)
+      nudge: bind(this.onNudgePoint)
     }
 
-    window.addEventListener('keydown', h.keydown, { capture: true })
-    window.addEventListener('keyup', h.keyup, { capture: true })
-    window.addEventListener('click', h.click)
-    state.container.addEventListener('pointerdown', h.pointerdown)
-    state.container.addEventListener('pointermove', h.pointermove)
-    state.container.addEventListener('pointerup', h.pointerup)
-    state.container.addEventListener('touchstart', h.touchstart, { passive: false })
-    state.container.addEventListener('touchmove', h.touchmove, { passive: false })
-    state.container.addEventListener('touchend', h.touchend, { passive: false })
-    this.map.on('draw.scalechange', h.scalechange)
-    this.map.on('move', h.move)
-    this.map.on('draw.interfacetypechange', h.interfacetypechange)
-    this.map.on(EVENT_NUDGE_VERTEX, h.nudgepoint)
+    bindEditModeListeners(state, this.map, h)
   },
 
   // active isn't cosmetic here — mapbox-gl-draw's own isActiveFeature()/isInactiveFeature()
@@ -178,21 +161,7 @@ export const EditPointMode = {
   onStop (state) {
     this.map._drawEditContainer = null
     this.map._editingFeatureId = null
-    const h = this.handlers
-    state.container.removeEventListener('pointerdown', h.pointerdown)
-    state.container.removeEventListener('pointermove', h.pointermove)
-    state.container.removeEventListener('pointerup', h.pointerup)
-    state.container.removeEventListener('touchstart', h.touchstart)
-    state.container.removeEventListener('touchmove', h.touchmove)
-    state.container.removeEventListener('touchend', h.touchend)
-    this.map.off('draw.scalechange', h.scalechange)
-    this.map.off('move', h.move)
-    this.map.off('draw.interfacetypechange', h.interfacetypechange)
-    this.map.off(EVENT_NUDGE_VERTEX, h.nudgepoint)
-    this.map.dragPan.enable()
-    window.removeEventListener('click', h.click)
-    window.removeEventListener('keydown', h.keydown, { capture: true })
-    window.removeEventListener('keyup', h.keyup, { capture: true })
+    unbindEditModeListeners(state, this.map, this.handlers)
     this.hideTouchPointIndicator(state)
   }
 }

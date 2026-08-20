@@ -16,8 +16,9 @@ describe('onSetup / onStop lifecycle', () => {
     expect(state.midpoints).toHaveLength(4)
     expect(map._lastEditFeatureId).toBe('feat-1')
     expect(map._drawEditContainer).toBe(state.container)
+    // draw.update is edit_vertex's own extra listener on top of the shared set (covered by
+    // editModeEvents.test.js).
     expect(ctx.map.on).toHaveBeenCalledWith('draw.update', expect.any(Function))
-    expect(ctx.map.on).toHaveBeenCalledWith('draw.nudgevertex', expect.any(Function))
   })
 
   test('does not clear the undo stack when re-entering the same feature', () => {
@@ -28,13 +29,14 @@ describe('onSetup / onStop lifecycle', () => {
     expect(map._undoStack.length).toBe(1)
   })
 
-  test('onStop removes listeners and clears editing container; DirectSelect touch stubs are inert', () => {
+  // Shared listener teardown is covered by editModeEvents.test.js; draw.update is edit_vertex's
+  // own extra listener.
+  test('onStop removes the draw.update listener and clears editing container; DirectSelect touch stubs are inert', () => {
     const { ctx, state, map } = createHarness()
     expect(() => { ctx.onTouchStart(); ctx.onTouchMove(); ctx.onTouchEnd() }).not.toThrow()
     ctx.onStop(state)
     expect(map._drawEditContainer).toBeNull()
     expect(map.off).toHaveBeenCalledWith('draw.update', expect.any(Function))
-    expect(map.off).toHaveBeenCalledWith('draw.nudgevertex', expect.any(Function))
   })
 
   test('onSetup edge cases: clears an active snap indicator, positions or skips the touch target, clears an explicit -1 selection', () => {

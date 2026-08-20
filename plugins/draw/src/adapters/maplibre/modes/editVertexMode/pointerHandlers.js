@@ -3,8 +3,7 @@ import {
   getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState
 } from '../../utils/snapHelpers.js'
 import { getCoords, coordPathToFlatIndex } from './geometryHelpers.js'
-
-const EVENT_VERTEX_SELECTION = 'draw.vertexselection'
+import { CUSTOM_DRAW_EVENTS } from '../../drawEvents.js'
 
 /**
  * Mouse/pointer interaction for the vertex-edit mode: vertex/midpoint mouse-down,
@@ -48,7 +47,7 @@ export const pointerHandlers = {
       state.selectedVertexIndex = this.getVertexIndexFromMidpoint(state, coordPath)
       state.selectedVertexType = 'vertex'
       state.coordPath = null // Clear coordPath for midpoints
-      this.map.fire(EVENT_VERTEX_SELECTION, { index: state.selectedVertexIndex, numVertecies: state.vertecies.length })
+      this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: state.selectedVertexIndex, numVertecies: state.vertecies.length })
     }
   },
 
@@ -61,7 +60,7 @@ export const pointerHandlers = {
       state.selectedVertexType = 'vertex'
       state._isInsertingVertex = false
       state._insertedVertexIndex = null
-      this.map.fire(EVENT_VERTEX_SELECTION, { index: insertedIndex, numVertecies: state.vertecies.length })
+      this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: insertedIndex, numVertecies: state.vertecies.length })
       return
     }
     DirectSelect.onClick.call(this, state, e)
@@ -116,7 +115,7 @@ export const pointerHandlers = {
     state._isInsertingVertex = false
     state._insertedVertexIndex = null
     // DirectSelect.onMouseUp fires draw.update but not draw.selectionchange, so broadcast the count here
-    this.map.fire(EVENT_VERTEX_SELECTION, { index: insertedIndex, numVertecies: state.vertecies.length })
+    this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: insertedIndex, numVertecies: state.vertecies.length })
   },
 
   _recordMoveUndo (state) {

@@ -39,10 +39,11 @@ describe('onSetup / onStop lifecycle', () => {
     expect(map.fire).not.toHaveBeenCalledWith('draw.vertexchange', expect.anything())
   })
 
-  test('registers the expected listeners, and none of the ring-only vertex/update events', () => {
-    const { ctx, map } = createHarness()
-    expect(ctx.map.on).toHaveBeenCalledWith('draw.scalechange', expect.any(Function))
-    expect(ctx.map.on).toHaveBeenCalledWith('draw.nudgevertex', expect.any(Function))
+  // Shared listener wiring (scalechange, nudge, pointer/touch/keyboard) is covered by
+  // editModeEvents.test.js — this only asserts what's specific to edit_point: no ring-only
+  // vertex/update events.
+  test("does not register the ring-only vertex/update events — those are edit_vertex's alone", () => {
+    const { map } = createHarness()
     expect(map.on).not.toHaveBeenCalledWith('draw.selectionchange', expect.any(Function))
     expect(map.on).not.toHaveBeenCalledWith('draw.update', expect.any(Function))
   })
@@ -55,13 +56,12 @@ describe('onSetup / onStop lifecycle', () => {
     expect(map._undoStack).toHaveLength(1)
   })
 
-  test('onStop removes listeners and clears the editing container; DirectSelect touch stubs are inert', () => {
+  // Listener teardown itself is covered by editModeEvents.test.js.
+  test('onStop clears the editing container; DirectSelect touch stubs are inert', () => {
     const { ctx, state, map } = createHarness()
     expect(() => { ctx.onTouchStart(); ctx.onTouchMove(); ctx.onTouchEnd() }).not.toThrow()
     ctx.onStop(state)
     expect(map._drawEditContainer).toBeNull()
-    expect(map.off).toHaveBeenCalledWith('draw.scalechange', expect.any(Function))
-    expect(map.off).toHaveBeenCalledWith('draw.nudgevertex', expect.any(Function))
   })
 
   test('clears an active snap indicator and positions the touch target when entering on touch', () => {
