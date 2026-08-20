@@ -37,6 +37,24 @@ test('creates the manager for the map, exposes it as mapProvider.draw and applie
   expect(setup().manager.setMapStyle).not.toHaveBeenCalled() // no initial style
 })
 
+// Regression: MAP_SET_SIZE only ever fires from the map-size UI control being clicked at
+// runtime, so a map that loads directly at medium/large left drawScale unset (defaulting to 1,
+// i.e. small) until the user happened to change size — rasterising the first symbol placed at
+// the wrong resolution. mapProvider.mapSize already holds the size the map actually loaded at.
+test('seeds drawScale from the provider\'s own starting map size, before any size-change event', () => {
+  const eventBus = { on: jest.fn(), off: jest.fn() }
+  const mapProvider = { map: { id: 'ol-map' }, mapSize: 'large' }
+  createOLDraw({ mapProvider, events, eventBus })
+  expect(mapProvider.drawScale).toBe(MAP_SIZE_SCALES.large)
+})
+
+test('defaults the seeded drawScale to 1 when the provider has no starting map size', () => {
+  const eventBus = { on: jest.fn(), off: jest.fn() }
+  const mapProvider = { map: { id: 'ol-map' } }
+  createOLDraw({ mapProvider, events, eventBus })
+  expect(mapProvider.drawScale).toBe(1)
+})
+
 test('map size changes update the draw UI scale, defaulting to 1 for unknown sizes, and re-resolve point symbols', async () => {
   const { eventBus, mapProvider, manager } = setup()
   eventBus.emit(events.MAP_SET_SIZE, 'large')
