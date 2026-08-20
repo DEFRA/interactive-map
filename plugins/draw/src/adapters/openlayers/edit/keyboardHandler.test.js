@@ -132,8 +132,15 @@ test('keyup does not hide the snap indicator', () => {
   }
   const setState = jest.fn((updates) => Object.assign(state, updates))
   const handler = createKeyboardHandler({
-    map, getState: () => state, setState, snap,
-    onVertexMoved: jest.fn(), onInserted: jest.fn(), onDeleted: jest.fn(), onUndo: jest.fn(), onKeyboardActive: jest.fn()
+    map,
+    getState: () => state,
+    setState,
+    snap,
+    onVertexMoved: jest.fn(),
+    onInserted: jest.fn(),
+    onDeleted: jest.fn(),
+    onUndo: jest.fn(),
+    onKeyboardActive: jest.fn()
   })
   liveHandlers.push(handler)
   key('keydown', { key: 'ArrowRight' })

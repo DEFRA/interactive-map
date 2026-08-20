@@ -126,7 +126,7 @@ const interactiveMap = new InteractiveMap('map', {
   maxZoom: 20,
   autoColorScheme: true,
   // center: [-2.938769, 54.893806],
-  bounds: [-2.989707, 54.864555, -2.878635, 54.937635],
+  bounds: [-2.971927, 54.417005, -2.949552, 54.441063],
   containerHeight: '600px',
   transformRequest: transformVtsRequest3857,
   enableZoomControls: true,
