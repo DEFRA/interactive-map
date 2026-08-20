@@ -26,7 +26,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   setInterfaceType(type)
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
- *   get(id) / add(feature) / delete(id) / deleteAll()
+ *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -99,6 +99,20 @@ export class OLDrawAdapter {
       resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
     }
     return olFeature
+  }
+
+  // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
+  // keys) and re-renders — setProperties() must not be called silently, since VectorSource
+  // only redraws in response to the propertychange event that triggers.
+  setStyle (id, properties) {
+    const olFeature = this._manager.store.getOL(id)
+    if (!olFeature) {
+      return
+    }
+    olFeature.setProperties(properties)
+    if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(olFeature.getProperties())) {
+      resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
+    }
   }
 
   delete (id) { return this._manager.delete(id) }

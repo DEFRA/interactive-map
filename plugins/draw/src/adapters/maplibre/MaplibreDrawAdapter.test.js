@@ -603,6 +603,48 @@ describe('simple delegations', () => {
     })
   })
 
+  describe('setStyle()', () => {
+    test('merges the patch into the existing feature and re-adds it', () => {
+      const { adapter, draw } = setup()
+      const feature = { id: 'a', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] }, properties: { stroke: 'red', name: 'x' } }
+      draw.get.mockReturnValue(feature)
+      draw.add.mockReturnValue(['a'])
+
+      adapter.setStyle('a', { stroke: 'blue' })
+
+      expect(draw.add).toHaveBeenCalledWith({
+        id: 'a',
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [[]] },
+        properties: { stroke: 'blue', name: 'x' }
+      })
+    })
+
+    // setStyle is routed through add() itself, so a Point patched with symbol properties gets
+    // its icon re-resolved the same way a directly-added one does.
+    test('re-resolves the icon for a Point patched with symbol properties', () => {
+      const { adapter, draw } = setup()
+      const feature = { id: 'p1', type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
+      draw.get.mockReturnValue(feature)
+      draw.add.mockReturnValue(['p1'])
+      hasSymbolStyle.mockReturnValue(true)
+
+      adapter.setStyle('p1', { symbolBackgroundColor: '#ca3535' })
+
+      expect(resolvePointSymbol).toHaveBeenCalledWith(expect.objectContaining({
+        featureId: 'p1',
+        properties: { symbol: 'pin', symbolBackgroundColor: '#ca3535' }
+      }))
+    })
+
+    test('does nothing for an id with no existing feature', () => {
+      const { adapter, draw } = setup()
+      draw.get.mockReturnValue(undefined)
+      adapter.setStyle('missing', { stroke: 'blue' })
+      expect(draw.add).not.toHaveBeenCalled()
+    })
+  })
+
   test('setDrawingPreviewProperty tags the in-progress feature and re-renders', () => {
     const { adapter, map } = setup()
     const render = jest.fn()

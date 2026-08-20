@@ -5,6 +5,7 @@ import { newLine } from './api/newLine.js'
 import { newPoint } from './api/newPoint.js'
 import { editFeature } from './api/editFeature.js'
 import { addFeature } from './api/addFeature.js'
+import { setStyle } from './api/setStyle.js'
 import { deleteFeature } from './api/deleteFeature.js'
 import { split } from './api/split.js'
 import { merge } from './api/merge.js'
@@ -173,6 +174,7 @@ export const manifest = {
     newPoint,
     editFeature,
     addFeature,
+    setStyle,
     deleteFeature,
     split,
     merge

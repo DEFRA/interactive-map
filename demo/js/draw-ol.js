@@ -196,9 +196,9 @@ interactiveMap.on('draw:ready', function () {
       symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
     }
   })
-  // ~100m NE of the pin above (BNG is metres, so a straight coordinate offset works)
+  const squarePointId = crypto.randomUUID()
   drawPlugin.addFeature({
-    id: crypto.randomUUID(),
+    id: squarePointId,
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [337841, 504230.5] },
     properties: {
@@ -208,6 +208,13 @@ interactiveMap.on('draw:ready', function () {
       symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
     }
   })
+  // setStyle smoke test: after 2s, swap the square point to a different background colour
+  setTimeout(() => {
+    drawPlugin.setStyle(squarePointId, {
+      symbol: 'pin',
+      symbolBackgroundColor: { outdoor: '#00897b', dark: '#4db6ac' }
+    })
+  }, 2000)
   // drawPlugin.addFeature({
   //   id: 'test1234',
   //   type: 'Feature',

@@ -53,7 +53,7 @@ export const displayedShape = (mode, coordinates) => {
  *   setInterfaceType(type)
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
- *   get(id) / add(feature) / delete(id) / deleteAll()
+ *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -304,6 +304,17 @@ export class MaplibreDrawAdapter {
       this._resolvePointSymbol(ids[0], feature.properties)
     }
     return ids
+  }
+
+  // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
+  // keys) and re-renders — routed through add() itself so a Point's icon gets re-resolved the
+  // same way a directly-added one does, for free.
+  setStyle (id, properties) {
+    const feature = this._draw.get(id)
+    if (!feature) {
+      return
+    }
+    this.add({ ...feature, properties: { ...feature.properties, ...properties } })
   }
 
   delete (id) { this._draw.delete(id) }
