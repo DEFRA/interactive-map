@@ -40,6 +40,14 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     }
   }, [mapState.isMapReady, appState.mode])
 
+  // Suppresses the accessible features list for the whole time a draw/edit session holds exclusive control of map interaction.
+  useEffect(() => {
+    eventBus.emit(EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: pluginState.mode !== null })
+    return () => {
+      eventBus.emit(EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false })
+    }
+  }, [pluginState.mode, eventBus])
+
   useEffect(() => {
     if (['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) && isTouchOrKeyboard) {
       const wasAlreadyVisible = crossHair.isVisible

@@ -147,6 +147,8 @@ export const EVENTS = {
   MAP_SET_SIZE: 'map:setsize',
   /** @internal Set the accessible features list. Payload: { items: { id: string, label: string }[] } */
   MAP_SET_FEATURES: 'map:setfeatures',
+  /** @internal Suppress/restore the accessible features list. Payload: { suppressed: boolean } */
+  MAP_SET_FEATURES_SUPPRESSED: 'map:setfeaturessuppressed',
   /** @internal Set the active feature in the accessible features list. Payload: { id: string | null } */
   MAP_SET_ACTIVE_FEATURE: 'map:setactivefeature',
   /** @internal Select the active listbox feature as the real selection (Enter key). Payload: none */

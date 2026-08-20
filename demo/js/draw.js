@@ -28,13 +28,14 @@ const interactPlugin = createInteractPlugin({
     idProperty: 'TOID'
   },{
     layerId: 'fill-inactive.cold',
-    idProperty: 'id'
+    idProperty: 'id',
   },{
     layerId: 'stroke-inactive.cold',
     idProperty: 'id'
   },{
     layerId: 'point-symbol.cold',
-    idProperty: 'id'
+    idProperty: 'id',
+    labelProperty: 'user_label'
   }],
   // debug: true,
   interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
@@ -287,7 +288,8 @@ interactiveMap.on('draw:ready', function () {
     geometry: { type: 'Point', coordinates: [-2.9607395, 54.4290358] },
     properties: {
       symbol: 'pin',
-      symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+      symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+      label: 'A pin'
     }
   })
   const squarePointId = crypto.randomUUID()
@@ -299,16 +301,10 @@ interactiveMap.on('draw:ready', function () {
       symbol: 'square',
       symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
       symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
-      symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
+      symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' },
+      label: 'A square point'
     }
   })
-  // setStyle smoke test: after 2s, swap the square point to a different background colour
-  setTimeout(() => {
-    drawPlugin.setStyle(squarePointId, {
-      symbol: 'pin',
-      symbolBackgroundColor: { outdoor: '#00897b', dark: '#4db6ac' }
-    })
-  }, 2000)
   drawPlugin.addFeature({
     id: 'test1234',
     type: 'Feature',

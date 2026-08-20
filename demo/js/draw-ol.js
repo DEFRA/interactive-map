@@ -16,7 +16,8 @@ const interactPlugin = createInteractPlugin({
   //   layerId: 'OS/NGD/lnd_fts_land/Arable Or Grazing Land'
   // }],
   layers: [{
-    layerId: 'draw'
+    layerId: 'draw',
+    labelProperty: 'label'
   },{
     layerId: 'OS/TopographicArea_1/Agricultural Land',
     idProperty: 'TOID'
@@ -208,13 +209,6 @@ interactiveMap.on('draw:ready', function () {
       symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
     }
   })
-  // setStyle smoke test: after 2s, swap the square point to a different background colour
-  setTimeout(() => {
-    drawPlugin.setStyle(squarePointId, {
-      symbol: 'pin',
-      symbolBackgroundColor: { outdoor: '#00897b', dark: '#4db6ac' }
-    })
-  }, 2000)
   // drawPlugin.addFeature({
   //   id: 'test1234',
   //   type: 'Feature',

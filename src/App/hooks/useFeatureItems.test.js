@@ -2,6 +2,7 @@ import { renderHook, act } from '@testing-library/react'
 import { useFeatureItems } from './useFeatureItems.js'
 
 const SET_FEATURES = 'map:setfeatures' // NOSONAR
+const SET_FEATURES_SUPPRESSED = 'map:setfeaturessuppressed' // NOSONAR
 
 const makeEventBus = () => {
   const listeners = {}
@@ -37,11 +38,18 @@ describe('useFeatureItems — event subscription', () => {
     expect(eb.on).toHaveBeenCalledWith(SET_FEATURES, expect.any(Function))
   })
 
+  it('subscribes to map:setfeaturessuppressed on mount', () => {
+    const eb = makeEventBus()
+    renderHook(() => useFeatureItems(eb))
+    expect(eb.on).toHaveBeenCalledWith(SET_FEATURES_SUPPRESSED, expect.any(Function))
+  })
+
   it('unsubscribes on unmount', () => {
     const eb = makeEventBus()
     const { unmount } = renderHook(() => useFeatureItems(eb))
     unmount()
     expect(eb.off).toHaveBeenCalledWith(SET_FEATURES, expect.any(Function))
+    expect(eb.off).toHaveBeenCalledWith(SET_FEATURES_SUPPRESSED, expect.any(Function))
   })
 
   it('does not subscribe when eventBus is undefined', () => {
@@ -94,5 +102,54 @@ describe('useFeatureItems — multiselectable updates', () => {
     const { result } = renderHook(() => useFeatureItems(eb))
     act(() => eb.emit(SET_FEATURES, { items: [] }))
     expect(result.current.multiselectable).toBe(false)
+  })
+})
+
+// ─── useFeatureItems — suppression ───────────────────────────────────────────
+
+describe('useFeatureItems — suppression', () => {
+  const items = [{ id: 'a', label: 'Feature A' }]
+
+  it('reports empty items while suppressed, regardless of what was last set', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items }))
+    act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: true }))
+    expect(result.current.items).toEqual([])
+  })
+
+  it('restores the last known items once suppression is lifted', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items }))
+    act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: true }))
+    act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: false }))
+    expect(result.current.items).toEqual(items)
+  })
+
+  it('defaults suppressed to false when the payload omits it', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items }))
+    act(() => eb.emit(SET_FEATURES_SUPPRESSED, {}))
+    expect(result.current.items).toEqual(items)
+  })
+
+  it('defaults suppressed to false when the event carries no payload at all', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items }))
+    act(() => eb.emit(SET_FEATURES_SUPPRESSED))
+    expect(result.current.items).toEqual(items)
+  })
+
+  it('a features update received while suppressed is still applied once restored', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureItems(eb))
+    act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: true }))
+    act(() => eb.emit(SET_FEATURES, { items }))
+    expect(result.current.items).toEqual([]) // still suppressed
+    act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: false }))
+    expect(result.current.items).toEqual(items)
   })
 })

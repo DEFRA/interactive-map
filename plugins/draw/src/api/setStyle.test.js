@@ -59,6 +59,13 @@ describe('setStyle', () => {
     expect(draw.setStyle).toHaveBeenCalledWith('a', { stroke: '#e6c700' })
   })
 
+  test('drops keys explicitly passed as undefined, from both style and symbol props', () => {
+    const draw = { get: jest.fn(() => ({ id: 'a' })), setStyle: jest.fn() }
+    const { context } = setup(draw)
+    setStyle(context, 'a', { stroke: 'red', fill: undefined, symbol: 'pin', symbolBackgroundColor: undefined })
+    expect(draw.setStyle).toHaveBeenCalledWith('a', { stroke: 'red', symbol: 'pin' })
+  })
+
   test('defaults styleChanges to {} and still resolves cleanly', () => {
     const draw = { get: jest.fn(() => ({ id: 'a' })), setStyle: jest.fn() }
     const { context } = setup(draw)

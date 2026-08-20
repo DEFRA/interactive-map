@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 
+const SET_FEATURES = 'map:setfeatures'
+const SET_FEATURES_SUPPRESSED = 'map:setfeaturessuppressed'
+
 /**
- * Subscribes to map:setfeatures and exposes the current listbox item list and multiselectable flag.
- * The list is produced by useMapItemList in the interact plugin and pushed via the event bus
- * whenever the visible set of markers or features changes.
+ * Subscribes to map:setfeatures for the listbox item list, and map:setfeaturessuppressed
+ * (any plugin can emit this) to report items as empty while suppressed regardless of what's
+ * actually visible — which is what drives <Features>'s own tabIndex/aria-hidden.
  *
  * @param {object} eventBus
  * @returns {{ items: Array<{ id: string, label: string }>, multiselectable: boolean }}
@@ -11,20 +14,26 @@ import { useState, useEffect } from 'react'
 export function useFeatureItems (eventBus) {
   const [items, setItems] = useState([])
   const [multiselectable, setMultiselectable] = useState(false)
+  const [suppressed, setSuppressed] = useState(false)
 
   useEffect(() => {
     if (!eventBus) {
       return undefined
     }
-    const handle = ({ items: next = [], multiselectable: nextMultiselectable = false }) => {
+    const handleSetFeatures = ({ items: next = [], multiselectable: nextMultiselectable = false }) => {
       setItems(next)
       setMultiselectable(nextMultiselectable)
     }
-    eventBus.on('map:setfeatures', handle)
+    const handleSuppressed = ({ suppressed: next = false } = {}) => {
+      setSuppressed(next)
+    }
+    eventBus.on(SET_FEATURES, handleSetFeatures)
+    eventBus.on(SET_FEATURES_SUPPRESSED, handleSuppressed)
     return () => {
-      eventBus.off('map:setfeatures', handle)
+      eventBus.off(SET_FEATURES, handleSetFeatures)
+      eventBus.off(SET_FEATURES_SUPPRESSED, handleSuppressed)
     }
   }, [eventBus])
 
-  return { items, multiselectable }
+  return { items: suppressed ? [] : items, multiselectable }
 }

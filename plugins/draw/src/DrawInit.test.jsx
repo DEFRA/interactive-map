@@ -108,6 +108,52 @@ describe('adapter lifecycle', () => {
   })
 })
 
+describe('features list suppression', () => {
+  test('suppresses the features list while a draw/edit mode is active', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
+    await renderInit(props)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: true }
+    )
+  })
+
+  test('leaves it unsuppressed when no mode is active', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: null } })
+    await renderInit(props)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+    )
+  })
+
+  test('re-suppresses/unsuppresses as the mode changes across re-renders', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    const result = await renderInit(props)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: true }
+    )
+
+    props.services.eventBus.emit.mockClear()
+    props.pluginState = { ...props.pluginState, mode: null }
+    await act(async () => { result.rerender(<DrawInit {...props} />) })
+
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+    )
+  })
+
+  test('releases the suppression on unmount, even mid-session', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_point' } })
+    const result = await renderInit(props)
+    props.services.eventBus.emit.mockClear()
+
+    await act(async () => { result.unmount() })
+
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+    )
+  })
+})
+
 describe('crosshair', () => {
   test('fixes the crosshair at centre while drawing on a touch interface', async () => {
     const { props } = makeProps({
