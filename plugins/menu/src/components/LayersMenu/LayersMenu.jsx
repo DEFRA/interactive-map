@@ -3,8 +3,9 @@ import React from 'react'
 import { LayersMenuCheckbox } from './LayersMenuCheckbox.jsx'
 import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper.jsx'
 import { LayersMenuGroupWrapper } from './LayersMenuGroupWrapper.jsx'
+
 export const LayersMenu = ({ pluginState }) => {
-  const { menu = [] } = pluginState
+  const { menu = [], dispatch } = pluginState
 
   const hasGroups = menu.some(item => item.groupLabel)
   const containerClass = `im-c-menu-layers${hasGroups ? ' im-c-menu-layers--has-groups' : ''}`
@@ -20,6 +21,7 @@ export const LayersMenu = ({ pluginState }) => {
                 menuGroup.items.map(menuGroupItem => (
                   <LayersMenuCheckbox
                     key={menuGroupItem.id}
+                    dispatch={dispatch}
                     menuGroupItem={menuGroupItem}
                     onChange={menuGroupItem.handleOnChange}
                   />)
