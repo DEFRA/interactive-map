@@ -335,7 +335,7 @@ interactiveMap.on('draw:editstart', function (e) {
 })
 
 interactiveMap.on('draw:created', function (e) {
-  // console.log('draw:created', e)
+  console.log('draw:created', e)
   interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
   interactPlugin.enable()
 })

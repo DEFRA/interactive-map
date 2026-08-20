@@ -1,12 +1,4 @@
-// The symbol-config schema addMarker and dataset point features already use (see
-// src/config/symbolConfig.js) — passed straight through as feature properties, no
-// transformation needed (unlike stroke/fill's {light,dark} flattening for lines/polygons,
-// these are already flat). symbolRegistry/pointSymbolImages.js read them directly off the
-// feature's properties by these same names.
-const SYMBOL_KEYS = [
-  'symbol', 'symbolSvgContent', 'symbolBackgroundColor', 'symbolForegroundColor',
-  'symbolHaloWidth', 'symbolGraphic', 'symbolViewBox', 'symbolAnchor'
-]
+import { SYMBOL_KEYS } from '../utils/symbolKeys.js'
 
 export const newPoint = ({ appState, appConfig, pluginConfig, pluginState, mapState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
