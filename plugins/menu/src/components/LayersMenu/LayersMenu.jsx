@@ -5,11 +5,6 @@ import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper.jsx'
 import { LayersMenuGroupWrapper } from './LayersMenuGroupWrapper.jsx'
 export const LayersMenu = ({ pluginState }) => {
   const { menu = [] } = pluginState
-  const handleDatasetChange = (e) => {
-    const { value, checked } = e.target
-    console.log('On CHECK:', { value, checked })
-    // setDatasetVisibility({ pluginState }, checked, { datasetId: value })
-  }
 
   const hasGroups = menu.some(item => item.groupLabel)
   const containerClass = `im-c-menu-layers${hasGroups ? ' im-c-menu-layers--has-groups' : ''}`
@@ -26,7 +21,7 @@ export const LayersMenu = ({ pluginState }) => {
                   <LayersMenuCheckbox
                     key={menuGroupItem.id}
                     menuGroupItem={menuGroupItem}
-                    onChange={handleDatasetChange}
+                    onChange={menuGroupItem.handleOnChange}
                   />)
                 )
               }

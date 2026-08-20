@@ -464,6 +464,8 @@ const datasets = [
   datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
 
+const getCheckboxOnChangeHandler = (datasetId) => (checked) => datasetsPlugin.setDatasetVisibility(checked, { datasetId })
+
 const menu = [
   {
     id: 'dataset',
@@ -530,9 +532,9 @@ const menu = [
     type: 'checkbox',
     visibleWhen: true,
     items: [
-      { id: 'waterstorage', label: 'Water storage' },
-      { id: 'flooddefence', label: 'Flood defence' },
-      { id: 'mainrivers', label: 'Main rivers' },
+      { id: 'waterstorage', label: 'Water storage', handleOnChange: getCheckboxOnChangeHandler('waterstorage') },
+      { id: 'flooddefence', label: 'Flood defence', handleOnChange: getCheckboxOnChangeHandler('flooddefence') },
+      { id: 'mainrivers', label: 'Main rivers', handleOnChange: getCheckboxOnChangeHandler('mainrivers') },
     ]
   }
 ]

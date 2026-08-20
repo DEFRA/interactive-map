@@ -20,9 +20,7 @@ export function MenuInit ({ pluginConfig, pluginState, mapState, services }) {
     return remove
   }, [mapState.isMapReady])
 
-  // useEffect(() => {
-  //   console.log('calling setMenuState')
-  //   setMenuState(pluginState.menuState)
-  //   // datasetRegistry.invalidateKeyItems()
-  // }, [pluginState.menuState])
+  // When the menuState changes, we need to trigger (in the datasets plugin):
+  //   invalidateKeyItems
+  //   applyGlobalVisibility
 }

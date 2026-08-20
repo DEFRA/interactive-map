@@ -9,6 +9,7 @@ export const LayersMenuCheckbox = ({ menuGroupItem, onChange }) => {
   const datasetId = registryDataset.isSublayer ? registryDataset.parentId : registryDataset.id
   const sublayerId = registryDataset.isSublayer ? registryDataset.id : undefined
   const itemClass = `im-c-menu-layers__item govuk-checkboxes govuk-checkboxes--small${registryDataset.visible ? '' : ' im-c-menu-layers__item--checked'}`
+  const handleOnChange = event => onChange(Boolean(event.target?.checked))
   return (
     <div key={registryDataset.id} className={itemClass} data-module='govuk-checkboxes'>
       <div className='govuk-checkboxes__item'>
@@ -21,7 +22,7 @@ export const LayersMenuCheckbox = ({ menuGroupItem, onChange }) => {
           type='checkbox'
           value={registryDataset.id}
           checked={registryDataset.isLocallyVisible}
-          onChange={onChange}
+          onChange={handleOnChange}
         />
         <label className='im-c-menu-layers__item-label govuk-label govuk-checkboxes__label' htmlFor={registryDataset.id}>
           {registryDataset.label}
