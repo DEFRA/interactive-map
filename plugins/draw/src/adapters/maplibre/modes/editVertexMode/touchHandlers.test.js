@@ -87,6 +87,9 @@ describe('touchHandlers', () => {
     expect(state._touchMoved).toBe(false)
   })
 
+  // resolveTouchDragCoord's own snap/fallback branches are covered by
+  // utils/touchDragMath.test.js — this checks onTouchmove ignores off-target moves and wires
+  // an active snap through to the selected vertex.
   test('onTouchmove moves the selected vertex, honouring snap, and ignores non-target moves', () => {
     const { ctx, state, map } = createHarness()
     state.selectedVertexIndex = 1
@@ -95,16 +98,12 @@ describe('touchHandlers', () => {
     ctx.onTouchmove(state, { target: { parentNode: document.createElement('div') }, touches: [{ clientX: 5, clientY: 5 }] })
     expect(state.vertecies[1]).toEqual([10, 0]) // off-target move ignored
     ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 30, clientY: 40 }] })
+    expect(state._touchMoved).toBe(true)
 
     state.getSnapEnabled = () => true
     map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
     ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 50, clientY: 60 }] })
     expect(state.vertecies[1]).toEqual([7, 8])
-
-    // Snap enabled but no snap point → falls back to the pointer position
-    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
-    ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 35, clientY: 45 }] })
-    expect(state._touchMoved).toBe(true)
   })
 
   test('onTap clears the snap indicator, then selects a vertex, inserts on a midpoint, or clears with no target', () => {

@@ -79,6 +79,9 @@ describe('touchHandlers', () => {
     expect(state._touchMoved).toBe(false)
   })
 
+  // resolveTouchDragCoord's own snap/fallback branches are covered by
+  // utils/touchDragMath.test.js — this checks onTouchmove ignores off-target moves and wires
+  // an active snap through to the point's coordinate.
   test('onTouchmove moves the point, honouring snap, and ignores non-target moves', () => {
     const { ctx, state, map } = createHarness()
     ctx.onTouchstart(state, { target: svgTarget(state), touches: [{ clientX: 50, clientY: 50 }] })
@@ -88,15 +91,11 @@ describe('touchHandlers', () => {
 
     ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 60, clientY: 70 }] })
     expect(state.feature.coordinates).not.toEqual([5, 5])
+    expect(state._touchMoved).toBe(true)
 
     state.getSnapEnabled = () => true
     map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
     ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 80, clientY: 90 }] })
     expect(state.feature.coordinates).toEqual([7, 8])
-
-    // Snap enabled but no snap point → falls back to the pointer position
-    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
-    ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 65, clientY: 75 }] })
-    expect(state._touchMoved).toBe(true)
   })
 })

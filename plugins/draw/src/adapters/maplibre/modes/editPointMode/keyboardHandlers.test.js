@@ -4,7 +4,9 @@ describe('keyboardHandlers', () => {
   const keydown = (ctx, state, key, extra = {}) => ctx.onKeydown(state, { key, preventDefault: jest.fn(), stopPropagation: jest.fn(), ...extra })
   const keyup = (ctx, state, key) => ctx.onKeyup(state, { key, stopPropagation: jest.fn() })
 
-  test('shortcuts are ignored outside the viewport (input, focusable non-input) and when the container is absent', () => {
+  // isInteractiveElementFocused's own branches are covered by utils/keyboardShortcuts.test.js
+  // — this just checks onKeydown/onKeyup actually consult it.
+  test('shortcuts are ignored while a form control outside the viewport has focus', () => {
     const { ctx, state } = createHarness()
     const input = document.createElement('input')
     document.body.appendChild(input)
@@ -12,29 +14,6 @@ describe('keyboardHandlers', () => {
     keydown(ctx, state, 'ArrowRight')
     keyup(ctx, state, 'ArrowRight')
     expect(state.interfaceType).not.toBe('keyboard')
-
-    const focusable = document.createElement('div')
-    focusable.tabIndex = 0
-    document.body.appendChild(focusable)
-    focusable.focus()
-    keydown(ctx, state, 'ArrowRight')
-    expect(state.interfaceType).not.toBe('keyboard')
-
-    input.focus()
-    const s = { ...state, container: undefined, interfaceType: 'mouse' }
-    keydown(ctx, s, 'ArrowRight')
-    expect(s.interfaceType).toBe('mouse')
-  })
-
-  // Regression: onSetup now claims focus on the container itself, so document.body is never
-  // naturally document.activeElement in any other test here — covering it explicitly keeps
-  // isInteractiveElementFocused's !el/=== document.body early-outs exercised.
-  test('shortcuts still work when focus has moved to document.body (e.g. after a blur)', () => {
-    const { ctx, state } = createHarness()
-    state.container.blur()
-    expect(document.activeElement).toBe(document.body)
-    keydown(ctx, state, 'ArrowRight')
-    expect(state.interfaceType).toBe('keyboard')
   })
 
   test('space prevents the page scrolling — there is nothing to select, the point already is', () => {
@@ -45,23 +24,18 @@ describe('keyboardHandlers', () => {
     expect(state.interfaceType).toBe('keyboard')
   })
 
-  test('an arrow key moves the point, snapping when active and using the raw coord otherwise', () => {
-    const { ctx, state, map } = createHarness()
+  // resolveSnapTarget's own snap/break-out-of-snap branches are covered by
+  // utils/snapMovement.test.js — this just checks onKeydown wires an arrow key through to it,
+  // records the starting position for undo on the first move, and leaves it fixed for the
+  // rest of a held-key sequence.
+  test('an arrow key moves the point and starts a keyboard-move undo sequence', () => {
+    const { ctx, state } = createHarness()
     keydown(ctx, state, 'ArrowRight')
     expect(state._keyboardMoveStartPosition).toEqual([5, 5])
+    expect(state.feature.coordinates).not.toEqual([5, 5])
 
-    state.getSnapEnabled = () => true
-    map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
-    keydown(ctx, state, 'ArrowUp')
-    expect(state._isSnapped).toBe(true)
-    expect(state.feature.coordinates).toEqual([7, 8])
-
-    keydown(ctx, state, 'ArrowLeft') // snapped already → break out of the snap radius
-    expect(state._isSnapped).toBe(false)
-
-    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
-    keydown(ctx, state, 'ArrowRight') // snap enabled but inactive → raw new coord
-    expect(state._isSnapped).toBe(false)
+    keydown(ctx, state, 'ArrowRight') // still held → start position isn't reset
+    expect(state._keyboardMoveStartPosition).toEqual([5, 5])
   })
 
   test('arrow key guards a missing feature', () => {
@@ -70,7 +44,10 @@ describe('keyboardHandlers', () => {
     expect(map._undoStack).toHaveLength(0)
   })
 
-  test('Cmd/Ctrl+Z undoes (ignoring shift and text fields); Alt+arrow and Escape are left unbound', () => {
+  // isUndoShortcut/handleUndoShortcut's own edge cases (shift, wrong key, text-field focus)
+  // are covered by utils/keyboardShortcuts.test.js — this just checks onKeydown wires
+  // Cmd/Ctrl+Z through to handleUndo, and that Alt+arrow and Escape are left unbound here.
+  test('Cmd/Ctrl+Z undoes; Alt+arrow and Escape are left unbound', () => {
     const { ctx, state } = createHarness()
     const moveSpy = jest.spyOn(ctx, 'movePointByKey').mockImplementation(() => {})
     keydown(ctx, state, 'ArrowRight', { altKey: true })
@@ -81,17 +58,7 @@ describe('keyboardHandlers', () => {
 
     const undoSpy = jest.spyOn(ctx, 'handleUndo').mockImplementation(() => {})
     keydown(ctx, state, 'z', { metaKey: true })
-    keydown(ctx, state, 'z', { ctrlKey: true })
-    expect(undoSpy).toHaveBeenCalledTimes(2)
-    keydown(ctx, state, 'z', { metaKey: true, shiftKey: true }) // shift → not undo
-    expect(undoSpy).toHaveBeenCalledTimes(2)
-
-    // Ignored while typing in a text field inside the viewport
-    const input = document.createElement('input')
-    state.container.appendChild(input)
-    input.focus()
-    keydown(ctx, state, 'z', { metaKey: true })
-    expect(undoSpy).toHaveBeenCalledTimes(2)
+    expect(undoSpy).toHaveBeenCalledTimes(1)
   })
 
   test('onKeyup pushes a move undo after a held-arrow sequence, no-ops otherwise, and allows viewport focus', () => {

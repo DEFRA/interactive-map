@@ -1,64 +1,14 @@
-import { KEYBOARD } from '../../defaults.js'
-import {
-  getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
-  getSnapRadius, triggerSnapAtPoint, clearSnapIndicator
-} from '../../utils/snapHelpers.js'
-
-// Duplicated from editVertexMode/vertexOperations.js rather than imported — same existing
-// convention as keyboardHandlers.js's own local copy (see that file's own comment).
-const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
+import { sharedSnapMovement } from '../../utils/snapMovement.js'
 
 // A Point has a single coordinate, always selected — no ring/segment/index bookkeeping the
 // way editVertexMode's vertexOperations.js needs. getOffset/getOffsetByDelta/resolveSnapTarget
-// are copied verbatim from there (they're already pure single-coordinate math with no ring
-// dependency); movePoint/nudgePointByDelta replace moveVertex/nudgeVertexByDelta with the
-// direct Point.prototype.updateCoordinate('', lng, lat) mutation mapbox-gl-draw's own Point
-// feature model already provides, instead of the toGeoJSON-mutate-api.add() ring round-trip.
+// come from the shared mixin (utils/snapMovement.js) — they're already pure single-coordinate
+// math with no ring dependency; movePoint/nudgePointByDelta replace moveVertex/
+// nudgeVertexByDelta with the direct Point.prototype.updateCoordinate('', lng, lat) mutation
+// mapbox-gl-draw's own Point feature model already provides, instead of the toGeoJSON-mutate-
+// api.add() ring round-trip.
 export const pointOperations = {
-  getOffset (coord, e) {
-    const pt = this.map.project(coord)
-    const offset = e?.shiftKey ? KEYBOARD.nudgeAmount : KEYBOARD.stepAmount
-    const [dx, dy] = e ? ARROW_OFFSETS[e.key].map(v => v * offset) : [0, 0]
-    return this.map.unproject({ x: pt.x + dx, y: pt.y + dy })
-  },
-
-  // Explicit-delta counterpart to getOffset, driven by a unit direction vector and
-  // MoveControls' own Precision toggle rather than a KeyboardEvent — used by
-  // nudgePointByDelta below.
-  getOffsetByDelta (coord, dx, dy, isLargeStep) {
-    const pt = this.map.project(coord)
-    const amount = isLargeStep ? KEYBOARD.stepAmount : KEYBOARD.nudgeAmount
-    return this.map.unproject({ x: pt.x + dx * amount, y: pt.y + dy * amount })
-  },
-
-  // Resolves the destination coordinate for a nudge by (dx, dy) unit direction, applying
-  // snap or breaking out of an already-active one — shared by the keyboard arrow-key path
-  // and MoveControls' explicit-delta path so both snap identically. dx/dy are only needed
-  // for the snap-escape offset; getCandidate computes the raw, un-snapped destination the
-  // caller would otherwise have used.
-  resolveSnapTarget (state, dx, dy, currentCoord, getCandidate) {
-    const snap = getSnapInstance(this.map)
-
-    // Break out of an active snap by moving beyond the snap radius
-    if (isSnapEnabled(state) && state._isSnapped && snap) {
-      const offset = getSnapRadius(snap) + 1
-      const pt = this.map.project(currentCoord)
-      state._isSnapped = false
-      clearSnapIndicator(snap, this.map)
-      return this.map.unproject({ x: pt.x + dx * offset, y: pt.y + dy * offset })
-    }
-
-    const newCoord = getCandidate()
-    if (isSnapEnabled(state) && snap) {
-      triggerSnapAtPoint(snap, this.map, this.map.project(newCoord))
-      if (isSnapActive(snap)) {
-        state._isSnapped = true
-        return getSnapLngLat(snap)
-      }
-    }
-    state._isSnapped = false
-    return newCoord
-  },
+  ...sharedSnapMovement,
 
   // The feature's own current coordinate — mapbox-gl-draw's Point model stores it flat as
   // `.coordinates`, no getCoords()/index lookup needed the way a ring feature requires.

@@ -1,18 +1,17 @@
-import {
-  getSnapInstance, isSnapEnabled, triggerSnapAtPoint, getSnapLngLat, clearSnapState
-} from '../../utils/snapHelpers.js'
+import { getSnapInstance, clearSnapState } from '../../utils/snapHelpers.js'
 import { isOnSVG, scalePoint } from '../editVertexMode/helpers.js'
 import { createTouchTarget } from '../../../../utils/touchTarget.js'
 // Reused, not redefined — mapboxDraw.js's style-reload path already imports this same symbol
 // and keys off map._drawEditContainer, which edit_point also sets, so the recolour-on-
 // style-change path works for the point's touch target with zero changes elsewhere.
 import { applyTouchVertexColors } from '../editVertexMode/touchHandlers.js'
+import { getTouchPoint, computeTouchDragAnchors, resolveTouchDragCoord } from '../../utils/touchDragMath.js'
 
-// The offset-drag delta math here is identical to editVertexMode/touchHandlers.js's
-// onTouchstart/onTouchmove — it's already single-coordinate, not ring-specific — just
-// sourced from the point's own coordinate instead of a vertex list index. onTap does NOT
-// relocate the point (a stray tap during a pan-ish gesture shouldn't silently move it —
-// the offset target drag and the D-pad are touch's two ways to move it).
+// The offset-drag delta math here (utils/touchDragMath.js) is shared with editVertexMode/
+// touchHandlers.js's onTouchstart/onTouchmove — it's already single-coordinate, not
+// ring-specific — just sourced from the point's own coordinate instead of a vertex list
+// index. onTap does NOT relocate the point (a stray tap during a pan-ish gesture shouldn't
+// silently move it — the offset target drag and the D-pad are touch's two ways to move it).
 export const touchHandlers = {
   addTouchPointTarget (state) {
     state.touchPointTarget = createTouchTarget(state.container)
@@ -75,11 +74,8 @@ export const touchHandlers = {
     state._moveStartPosition = [...vertex]
     state._touchMoved = false
 
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const style = window.getComputedStyle(state.touchPointTarget)
-    state.deltaTarget = { x: touch.x - Number.parseFloat(style.left), y: touch.y - Number.parseFloat(style.top) }
-    const vertexPt = this.map.project(vertex)
-    state.deltaVertex = { x: (touch.x / state.scale) - vertexPt.x, y: (touch.y / state.scale) - vertexPt.y }
+    const touch = getTouchPoint(e)
+    Object.assign(state, computeTouchDragAnchors(this.map, state.touchPointTarget, touch, vertex, state.scale))
   },
 
   onTouchmove (state, e) {
@@ -89,17 +85,8 @@ export const touchHandlers = {
 
     state._touchMoved = true
 
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const screenPt = { x: (touch.x / state.scale) - state.deltaVertex.x, y: (touch.y / state.scale) - state.deltaVertex.y }
-
-    let finalCoord = this.map.unproject(screenPt)
-    if (isSnapEnabled(state)) {
-      const snap = getSnapInstance(this.map)
-      triggerSnapAtPoint(snap, this.map, screenPt)
-      finalCoord = getSnapLngLat(snap) || finalCoord
-    }
-
-    this.movePoint(state, finalCoord)
+    const touch = getTouchPoint(e)
+    this.movePoint(state, resolveTouchDragCoord(this.map, state, touch))
     this.updateTouchPointTarget(state, { x: touch.x - state.deltaTarget.x, y: touch.y - state.deltaTarget.y })
   }
 }

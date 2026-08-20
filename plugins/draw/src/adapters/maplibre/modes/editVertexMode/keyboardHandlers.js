@@ -1,26 +1,14 @@
 import { getSnapInstance, clearSnapIndicator } from '../../utils/snapHelpers.js'
+import { ARROW_KEYS, ARROW_OFFSETS, isInteractiveElementFocused, isUndoShortcut, sharedKeyboardHandlers } from '../../utils/keyboardShortcuts.js'
 import { getCoords } from './geometryHelpers.js'
-
-const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
-const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
-const INTERACTIVE_TAGS = new Set(['INPUT', 'TEXTAREA', 'BUTTON', 'SELECT', 'A'])
-
-// Keyboard shortcuts are ignored while a form control outside the map viewport has
-// focus, but still work for elements inside the viewport (e.g. draw toolbar buttons).
-const isInteractiveElementFocused = (state) => {
-  const el = document.activeElement
-  if (!el || el === document.body) { return false }
-  if (state.container?.contains(el)) { return false }
-  return INTERACTIVE_TAGS.has(el.tagName) || el.isContentEditable || el.hasAttribute('tabindex')
-}
-
-const isUndoShortcut = (e) => e.key === 'z' && (e.metaKey || e.ctrlKey) && !e.shiftKey
 
 /**
  * Keyboard interaction for the vertex-edit mode: arrow-key vertex movement/insertion,
  * space-to-select, Escape, and Cmd/Ctrl+Z undo. Mixed into EditVertexMode.
  */
 export const keyboardHandlers = {
+  ...sharedKeyboardHandlers,
+
   onKeydown (state, e) {
     if (isInteractiveElementFocused(state)) {
       return
@@ -105,22 +93,11 @@ export const keyboardHandlers = {
   },
 
   // Resolve the destination coordinate for a keyboard nudge, applying or breaking
-  // snap — delegates to the shared resolver (vertexOperations.js) also used by
+  // snap — delegates to the shared resolver (utils/snapMovement.js) also used by
   // MoveControls' nudgeVertexByDelta, so both snap identically.
   _keyboardMoveTarget (state, e, currentCoord) {
     const [dx, dy] = ARROW_OFFSETS[e.key]
     return this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getNewCoord(state, e))
-  },
-
-  // Cmd/Ctrl+Z: undo the last edit, unless the user is typing in a text field.
-  handleUndoShortcut (state, e) {
-    const tag = document.activeElement?.tagName
-    if (tag === 'INPUT' || tag === 'TEXTAREA') {
-      return
-    }
-    e.preventDefault()
-    e.stopPropagation()
-    this.handleUndo(state)
   },
 
   onKeyup (state, e) {

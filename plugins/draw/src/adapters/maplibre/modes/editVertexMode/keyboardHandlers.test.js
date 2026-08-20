@@ -4,7 +4,9 @@ describe('keyboardHandlers', () => {
   const keydown = (ctx, state, key, extra = {}) => ctx.onKeydown(state, { key, preventDefault: jest.fn(), stopPropagation: jest.fn(), ...extra })
   const keyup = (ctx, state, key) => ctx.onKeyup(state, { key, stopPropagation: jest.fn() })
 
-  test('shortcuts are ignored outside the viewport (input, focusable non-input) and when the container is absent', () => {
+  // isInteractiveElementFocused's own branches are covered by utils/keyboardShortcuts.test.js
+  // — this just checks onKeydown/onKeyup actually consult it.
+  test('shortcuts are ignored while a form control outside the viewport has focus', () => {
     const { ctx, state } = createHarness()
     const input = document.createElement('input')
     document.body.appendChild(input)
@@ -12,18 +14,6 @@ describe('keyboardHandlers', () => {
     keydown(ctx, state, 'ArrowRight')
     keyup(ctx, state, 'ArrowRight')
     expect(state.interfaceType).not.toBe('keyboard')
-
-    const focusable = document.createElement('div')
-    focusable.tabIndex = 0
-    document.body.appendChild(focusable)
-    focusable.focus()
-    keydown(ctx, state, 'ArrowRight')
-    expect(state.interfaceType).not.toBe('keyboard')
-
-    input.focus()
-    const s = { ...state, container: undefined, interfaceType: 'mouse' }
-    keydown(ctx, s, 'ArrowRight')
-    expect(s.interfaceType).toBe('mouse')
   })
 
   test('space selects the first vertex, or does nothing when a vertex is selected or there are none', () => {
@@ -43,24 +33,21 @@ describe('keyboardHandlers', () => {
     expect(s.isPanEnabled).toBe(true)
   })
 
-  test('an arrow key moves the selected vertex, snapping when active and using the raw coord otherwise', () => {
-    const { ctx, state, map } = createHarness()
+  // resolveSnapTarget's own snap/break-out-of-snap branches are covered by
+  // utils/snapMovement.test.js — this just checks onKeydown wires an arrow key through to it,
+  // records the starting position/index for undo on the first move, and leaves it fixed for
+  // the rest of a held-key sequence.
+  test('an arrow key moves the selected vertex and starts a keyboard-move undo sequence', () => {
+    const { ctx, state } = createHarness()
     state.selectedVertexIndex = 1
     keydown(ctx, state, 'ArrowRight')
     expect(state._keyboardMoveStartIndex).toBe(1)
+    expect(state._keyboardMoveStartPosition).toEqual([10, 0])
+    expect(state.vertecies[1]).not.toEqual([10, 0])
 
-    state.getSnapEnabled = () => true
-    map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
-    keydown(ctx, state, 'ArrowUp')
-    expect(state._isSnapped).toBe(true)
-    expect(state.vertecies[1]).toEqual([7, 8])
-
-    keydown(ctx, state, 'ArrowLeft') // snapped already → break out of the snap radius
-    expect(state._isSnapped).toBe(false)
-
-    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
-    keydown(ctx, state, 'ArrowRight') // snap enabled but inactive → raw new coord
-    expect(state._isSnapped).toBe(false)
+    // Still held → start position isn't reset to the intermediate (already-moved) position
+    keydown(ctx, state, 'ArrowRight')
+    expect(state._keyboardMoveStartPosition).toEqual([10, 0])
   })
 
   test('an arrow key on a midpoint inserts a vertex; guards a missing feature or out-of-range vertex', () => {
@@ -74,7 +61,10 @@ describe('keyboardHandlers', () => {
     expect(ctx.map._undoStack.length).toBe(0)
   })
 
-  test('alt+arrow steps the selection, Escape clears it, and Cmd/Ctrl+Z undoes (ignoring shift and text fields)', () => {
+  // isUndoShortcut/handleUndoShortcut's own edge cases (shift, wrong key, text-field focus)
+  // are covered by utils/keyboardShortcuts.test.js — this just checks onKeydown wires
+  // Cmd/Ctrl+Z through to handleUndo, and the alt+arrow/Escape behaviour that's specific here.
+  test('alt+arrow steps the selection, Escape clears it, and Cmd/Ctrl+Z undoes', () => {
     const { ctx, state, api } = createHarness()
     state.selectedVertexIndex = 0
     const updateSpy = jest.spyOn(ctx, 'updateVertex').mockImplementation(() => {})
@@ -84,19 +74,14 @@ describe('keyboardHandlers', () => {
     keydown(ctx, state, 'Escape')
     expect(api.changeMode).toHaveBeenCalledWith('edit_vertex', expect.objectContaining({ isPanEnabled: true }))
 
+    // An unhandled key (not space/arrow/Escape/undo) falls all the way through harmlessly —
+    // unlike editPointMode, Escape returns early here, so this is the only path that reaches
+    // isUndoShortcut with a falsy result.
+    expect(() => keydown(ctx, state, 'x')).not.toThrow()
+
     const undoSpy = jest.spyOn(ctx, 'handleUndo').mockImplementation(() => {})
     keydown(ctx, state, 'z', { metaKey: true })
-    keydown(ctx, state, 'z', { ctrlKey: true })
-    expect(undoSpy).toHaveBeenCalledTimes(2)
-    keydown(ctx, state, 'z', { metaKey: true, shiftKey: true }) // shift → not undo
-    expect(undoSpy).toHaveBeenCalledTimes(2)
-
-    // Ignored while typing in a text field inside the viewport
-    const input = document.createElement('input')
-    state.container.appendChild(input)
-    input.focus()
-    keydown(ctx, state, 'z', { metaKey: true })
-    expect(undoSpy).toHaveBeenCalledTimes(2)
+    expect(undoSpy).toHaveBeenCalledTimes(1)
   })
 
   test('onKeyup pushes a move undo after a sequence, deletes on Delete, no-ops otherwise, and allows viewport focus', () => {
