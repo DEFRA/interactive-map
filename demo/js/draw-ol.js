@@ -187,6 +187,15 @@ interactiveMap.on('map:ready', function (e) {
 let selectedFeatureIds = []
 
 interactiveMap.on('draw:ready', function () {
+  drawPlugin.addFeature({
+    id: crypto.randomUUID(),
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [337770, 504159.5] },
+    properties: {
+      symbol: 'pin',
+      symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+    }
+  })
   // drawPlugin.addFeature({
   //   id: 'test1234',
   //   type: 'Feature',

@@ -1,7 +1,7 @@
 import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
-import { resolvePointSymbol } from './pointSymbolImages.js'
+import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
 
@@ -14,7 +14,8 @@ jest.mock('./utils/snapHelpers.js', () => ({
 jest.mock('../../utils/eventBus.js', () => ({ createEventBus: jest.fn() }))
 jest.mock('./pointSymbolImages.js', () => ({
   resolvePointSymbol: jest.fn(),
-  refreshAllPointSymbols: jest.fn()
+  refreshAllPointSymbols: jest.fn(),
+  hasSymbolStyle: jest.fn()
 }))
 
 const SNAP_LAYER = 'snap-helper-circle'
@@ -559,6 +560,49 @@ describe('simple delegations', () => {
     expect(draw.delete).toHaveBeenCalledWith('c')
     expect(draw.deleteAll).toHaveBeenCalled()
     expect(draw.setFeatureProperty).toHaveBeenCalledWith('d', 'p', 1)
+  })
+
+  // A directly-added Point (api/addFeature.js) never goes through draw_point's own drawend
+  // handler — without this, styles.js's point-symbol layer (keyed entirely off the resolved
+  // symbolImageId, no fallback) would render nothing for it.
+  describe('add() and point symbol resolution', () => {
+    test('resolves the symbol for a Point feature with symbol properties, using the id draw.add() returns', () => {
+      const { adapter, draw, map, mapProvider } = setup()
+      draw.add.mockReturnValue(['generated-id'])
+      hasSymbolStyle.mockReturnValue(true)
+      const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
+
+      const result = adapter.add(feature)
+
+      expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin' })
+      expect(resolvePointSymbol).toHaveBeenCalledWith({
+        draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin' }
+      })
+      expect(result).toEqual(['generated-id'])
+    })
+
+    test('does not attempt resolution for a Point with no symbol properties', () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['id-1'])
+      hasSymbolStyle.mockReturnValue(false)
+      adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+      expect(resolvePointSymbol).not.toHaveBeenCalled()
+    })
+
+    test('does not attempt resolution for a non-Point geometry', () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['id-1'])
+      adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
+      expect(hasSymbolStyle).not.toHaveBeenCalled()
+      expect(resolvePointSymbol).not.toHaveBeenCalled()
+    })
+
+    test('does not attempt resolution for a feature with no geometry', () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['id-1'])
+      adapter.add({ id: 'b' })
+      expect(resolvePointSymbol).not.toHaveBeenCalled()
+    })
   })
 
   test('setDrawingPreviewProperty tags the in-progress feature and re-renders', () => {

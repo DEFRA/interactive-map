@@ -10,6 +10,7 @@ export const addFeature = ({ mapProvider, services }, feature) => {
 
   const { stroke, fill, strokeWidth, properties, ...featureRest } = feature
   const flatFeature = {
+    type: 'Feature',
     ...featureRest,
     properties: {
       ...properties,
