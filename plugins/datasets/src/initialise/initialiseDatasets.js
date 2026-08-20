@@ -3,8 +3,7 @@ import { createDynamicSource } from '../fetch/createDynamicSource.js'
 import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { isVisibleWhen, setMenuState } from '../registry/isVisibleWhen.js'
-import { buildMenuState } from '../reducers/menuStateReducer.js'
+import { attachMenuStateRef } from '../registry/isVisibleWhen.js'
 import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
 export const initialiseDatasets = ({
@@ -31,7 +30,9 @@ export const initialiseDatasets = ({
   }
   datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
   const menu = pluginConfig.menu || datasetsToMenu({ datasets: processedDatasets })
-  setMenuState(buildMenuState(menu)) // Must be called before adapter.init so that menuState is set before any datasets are checked for visibility
+
+  eventBus.requestOnce('menu:state', attachMenuStateRef) // Request the menu state from the menu plugin
+
   dispatch({ type: 'SET_MENU', payload: { menu } })
   dispatch({ type: 'SET_DATASETS', payload: { mappedDatasets, orderedDatasets } })
 
@@ -62,6 +63,8 @@ export const initialiseDatasets = ({
   // whenever requested by other plugins, e.g. the menu and the mapKey plugin,
   // so they can access the dataset registry.
   const removeRegistryListener = eventBus.emitWhenRequested('datasets:registry', datasetRegistry)
+
+  eventBus.on('menu:changed', () => adapter.applyGlobalVisibility())
 
   return {
     remove () {

@@ -145,8 +145,10 @@ class EventBus {
   requestOnce (eventName, eventHandler) {
     const eventRequestedName = `${eventName}Requested`
     const eventReadyName = `${eventName}Ready`
-    this.emit(eventRequestedName)
+    // Note - must register the once listener before emitting the requested event,
+    // otherwise the event won't emit, as there are no listeners yet.
     this.once(eventReadyName, eventHandler)
+    this.emit(eventRequestedName, eventName)
     return this
   }
 

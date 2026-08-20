@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { setMenuState } from '../registry/isVisibleWhen.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 
@@ -58,7 +57,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   }, [isBaseMapReady, appState.mode])
 
   useEffect(() => {
-    setMenuState(pluginState.menuState)
     datasetRegistry.invalidateKeyItems()
   }, [pluginState.menuState])
 

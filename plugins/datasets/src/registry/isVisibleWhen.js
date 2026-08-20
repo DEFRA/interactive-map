@@ -1,11 +1,12 @@
 import { datasetRegistry } from './datasetRegistry.js'
 
-let _menuState = {}
-export const setMenuState = (menuState) => { _menuState = menuState }
+let _menuStateRef = {}
+export const attachMenuStateRef = (menuStateRef) => (_menuStateRef = menuStateRef)
 
 const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
+  const menuState = _menuStateRef?.current?.menuState || {}
   for (const [key, valueArray] of Object.entries(menuVisibleWhen)) {
-    const menuValue = _menuState[key]
+    const menuValue = menuState[key]
     if (!valueArray.includes(menuValue)) {
       return false
     }
