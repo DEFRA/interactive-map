@@ -1,19 +1,10 @@
 import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
 
-export const createMenu = ({ menu, eventBus, dispatch }) => {
+export const createMenu = ({ menu, eventBus, dispatch, pluginStateRef }) => {
   dispatch({ type: 'SET_MENU', payload: { menu } })
-  // The menu plugin, requires access to the datasets registry, so it can render the
-  // datasets key items.
-  // However, the order the plugins are added can affect whether the event is emitted
-  // before or after the menu plugin is loaded. So, if the datasets plugin is loaded
-  // first, it will emit the datasets:registryReady event, and the menu plugin will
-  // receive it. Otherwise, the menu plugin will emit the
-  // datasets:requestRegistry event, and the datasets plugin will respond.
-  eventBus.on('datasets:registryReady', setDatasetRegistry)
-  eventBus.emit('datasets:requestRegistry')
-  return {
-    remove: () => {
-      eventBus.off('datasets:registryReady', setDatasetRegistry)
-    }
-  }
+  // Request a handle on the datasetsRegistry singleton, so that the menu plugin can access it when needed
+  eventBus.requestOnce('datasets:registry', setDatasetRegistry)
+  // add a listener for the menu:state event, which will be emitted whenever requested by other plugins,
+  // e.g. the datasets plugin, so they can access the menu state.
+  return eventBus.emitWhenRequested('menu:state', pluginStateRef)
 }

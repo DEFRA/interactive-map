@@ -16,9 +16,11 @@ export function MenuInit ({ pluginConfig, pluginState, mapState, services }) {
     }
     attachPluginStateRef(pluginStateRef)
     const { menu } = pluginConfig
-    const { remove } = createMenu({ menu, eventBus, dispatch })
-    return remove
+    return createMenu({ menu, eventBus, dispatch, pluginStateRef })
   }, [mapState.isMapReady])
+
+  // Notify any plugins, that are listening to the menu's state
+  useEffect(() => eventBus.emit('menu:changed'), [pluginState.menuState])
 
   // When the menuState changes, we need to trigger (in the datasets plugin):
   //   invalidateKeyItems
