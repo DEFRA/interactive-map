@@ -2,7 +2,7 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import { CUSTOM_DRAW_EVENTS } from '../drawEvents.js'
 import { getCoords } from './editVertexMode/geometryHelpers.js'
 import { scalePoint } from './editVertexMode/helpers.js'
-import { bindEditModeListeners, unbindEditModeListeners, clearActiveSnapIndicator } from '../utils/editModeEvents.js'
+import { bindEditModeListeners, unbindEditModeListeners, clearActiveSnapIndicator, buildEditModeHandlers } from '../utils/editModeEvents.js'
 import { undoHandlers } from './editVertexMode/undoHandlers.js'
 import { touchHandlers } from './editVertexMode/touchHandlers.js'
 import { vertexOperations } from './editVertexMode/vertexOperations.js'
@@ -75,28 +75,15 @@ export const EditVertexMode = {
   },
 
   setupEventListeners (state) {
-    const bind = (fn) => (e) => fn.call(this, state, e)
-    const h = this.handlers = {
-      keydown: bind(this.onKeydown),
-      keyup: bind(this.onKeyup),
-      pointerdown: bind(this.onPointerevent),
-      pointermove: bind(this.onPointerevent),
-      pointerup: bind(this.onPointerevent),
-      click: bind(this.onButtonClick),
-      touchstart: bind(this.onTouchstart),
-      touchmove: bind(this.onTouchmove),
-      touchend: bind(this.onTouchend),
-      selectionchange: bind(this.onSelectionChange),
-      scalechange: bind(this.onScaleChange),
-      update: bind(this.onUpdate),
-      move: bind(this.onMove),
-      interfacetypechange: bind(this.onInterfaceTypeChange),
-      nudge: bind(this.onNudgeVertex)
-    }
+    const handlers = this.handlers = buildEditModeHandlers(this, state, {
+      nudge: this.onNudgeVertex,
+      selectionchange: this.onSelectionChange,
+      update: this.onUpdate
+    })
 
-    bindEditModeListeners(state, this.map, h)
-    this.map.on('draw.selectionchange', h.selectionchange)
-    this.map.on('draw.update', h.update)
+    bindEditModeListeners(state, this.map, handlers)
+    this.map.on('draw.selectionchange', handlers.selectionchange)
+    this.map.on('draw.update', handlers.update)
   },
 
   applyVertexSelection (state, options) {
@@ -116,17 +103,17 @@ export const EditVertexMode = {
     }
   },
 
-  onSelectionChange (state, e) {
+  onSelectionChange (state, event) {
     // Refresh vertex list so numVertecies reflects the latest geometry (e.g. after midpoint insertion)
     this.syncVertices(state)
 
-    const vertexCoord = e.points[e.points.length - 1]?.geometry.coordinates
+    const vertexCoord = event.points[event.points.length - 1]?.geometry.coordinates
 
     // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
     // For keyboard mode or when we have coordPath, trust the existing selectedVertexIndex
     if (state.interfaceType !== 'keyboard' && vertexCoord && !state.coordPath) {
       // No coordPath available - need to search for vertex by coordinates
-      const geom = e.features[0]?.geometry
+      const geom = event.features[0]?.geometry
       const coords = getCoords(geom)
       state.selectedVertexIndex = this.findVertexIndex(coords, vertexCoord, state.selectedVertexIndex)
     }
@@ -144,18 +131,18 @@ export const EditVertexMode = {
     this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
-  onScaleChange (state, e) {
-    state.scale = e.scale
+  onScaleChange (state, event) {
+    state.scale = event.scale
   },
 
-  onInterfaceTypeChange (state, e) {
-    state.interfaceType = e.interfaceType
+  onInterfaceTypeChange (state, event) {
+    state.interfaceType = event.interfaceType
     const vertex = state.selectedVertexIndex >= 0 ? state.vertecies[state.selectedVertexIndex] : null
     this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
   onUpdate (state) {
-    const prev = new Set(state.vertecies.map(c => JSON.stringify(c)))
+    const prev = new Set(state.vertecies.map(coordinate => JSON.stringify(coordinate)))
     if (prev.size === state.vertecies.length) {
       return
     }
@@ -178,19 +165,19 @@ export const EditVertexMode = {
   // onUpdate hook repositions the touch target for any vertex move), moveVertex
   // here has no equivalent hook, so the reposition has to happen explicitly —
   // same as onMove/onSelectionChange/onInterfaceTypeChange already do.
-  onNudgeVertex (state, e) {
-    this.nudgeVertexByDelta(state, e.dx, e.dy, e.isLargeStep)
+  onNudgeVertex (state, event) {
+    this.nudgeVertexByDelta(state, event.dx, event.dy, event.isLargeStep)
     const vertex = state.vertecies[state.selectedVertexIndex]
     if (vertex) {
       this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
     }
   },
 
-  onButtonClick (state, e) {
-    if (e.target.closest(`#${state.deleteVertexButtonId}`) && state.selectedVertexType === 'vertex') {
+  onButtonClick (state, event) {
+    if (event.target.closest(`#${state.deleteVertexButtonId}`) && state.selectedVertexType === 'vertex') {
       this.deleteVertex(state)
     }
-    if (e.target.closest(`#${state.undoButtonId}`)) {
+    if (event.target.closest(`#${state.undoButtonId}`)) {
       this.handleUndo(state)
     }
   },
@@ -210,10 +197,10 @@ export const EditVertexMode = {
   onStop (state) {
     this.map._drawEditContainer = null
     this.map._editingFeatureId = null
-    const h = this.handlers
-    this.map.off('draw.selectionchange', h.selectionchange)
-    this.map.off('draw.update', h.update)
-    unbindEditModeListeners(state, this.map, h)
+    const handlers = this.handlers
+    this.map.off('draw.selectionchange', handlers.selectionchange)
+    this.map.off('draw.update', handlers.update)
+    unbindEditModeListeners(state, this.map, handlers)
     this.hideTouchVertexIndicator(state)
   }
 }

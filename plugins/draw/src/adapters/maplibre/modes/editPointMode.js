@@ -2,7 +2,7 @@ import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import doubleClickZoom from '../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/double_click_zoom.js' // NOSONAR
 import { CUSTOM_DRAW_EVENTS } from '../drawEvents.js'
 import { scalePoint } from './editVertexMode/helpers.js'
-import { bindEditModeListeners, unbindEditModeListeners, clearActiveSnapIndicator } from '../utils/editModeEvents.js'
+import { bindEditModeListeners, unbindEditModeListeners, clearActiveSnapIndicator, buildEditModeHandlers } from '../utils/editModeEvents.js'
 import { undoHandlers } from './editPointMode/undoHandlers.js'
 import { touchHandlers } from './editPointMode/touchHandlers.js'
 import { pointOperations } from './editPointMode/pointOperations.js'
@@ -98,24 +98,8 @@ export const EditPointMode = {
   },
 
   setupEventListeners (state) {
-    const bind = (fn) => (e) => fn.call(this, state, e)
-    const h = this.handlers = {
-      keydown: bind(this.onKeydown),
-      keyup: bind(this.onKeyup),
-      pointerdown: bind(this.onPointerevent),
-      pointermove: bind(this.onPointerevent),
-      pointerup: bind(this.onPointerevent),
-      click: bind(this.onButtonClick),
-      touchstart: bind(this.onTouchstart),
-      touchmove: bind(this.onTouchmove),
-      touchend: bind(this.onTouchend),
-      scalechange: bind(this.onScaleChange),
-      move: bind(this.onMove),
-      interfacetypechange: bind(this.onInterfaceTypeChange),
-      nudge: bind(this.onNudgePoint)
-    }
-
-    bindEditModeListeners(state, this.map, h)
+    const handlers = this.handlers = buildEditModeHandlers(this, state, { nudge: this.onNudgePoint })
+    bindEditModeListeners(state, this.map, handlers)
   },
 
   // active isn't cosmetic here — mapbox-gl-draw's own isActiveFeature()/isInactiveFeature()
@@ -130,12 +114,12 @@ export const EditPointMode = {
     push(geojson)
   },
 
-  onScaleChange (state, e) {
-    state.scale = e.scale
+  onScaleChange (state, event) {
+    state.scale = event.scale
   },
 
-  onInterfaceTypeChange (state, e) {
-    state.interfaceType = e.interfaceType
+  onInterfaceTypeChange (state, event) {
+    state.interfaceType = event.interfaceType
     this.updateTouchPointTarget(state, scalePoint(this.map.project(state.feature.coordinates), state.scale))
   },
 
@@ -147,13 +131,13 @@ export const EditPointMode = {
   // all three interface types (see mapProvider.activeMoveTarget in events.js). Repositions
   // the touch target the same way onMove/onInterfaceTypeChange do, since nudgePointByDelta
   // has no equivalent hook of its own.
-  onNudgePoint (state, e) {
-    this.nudgePointByDelta(state, e.dx, e.dy, e.isLargeStep)
+  onNudgePoint (state, event) {
+    this.nudgePointByDelta(state, event.dx, event.dy, event.isLargeStep)
     this.updateTouchPointTarget(state, scalePoint(this.map.project(state.feature.coordinates), state.scale))
   },
 
-  onButtonClick (state, e) {
-    if (e.target.closest(`#${state.undoButtonId}`)) {
+  onButtonClick (state, event) {
+    if (event.target.closest(`#${state.undoButtonId}`)) {
       this.handleUndo(state)
     }
   },
