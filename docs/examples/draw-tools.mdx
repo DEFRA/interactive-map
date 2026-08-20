@@ -19,7 +19,7 @@ This example configures snapping (`snapLayers`) against the base map style's woo
       import InteractiveMap from '@defra/interactive-map'
       import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createInteractPlugin from '@defra/interactive-map/plugins/interact'
-      import createDrawPlugin from '@defra/interactive-map/plugins/draw-ml'
+      import createDrawPlugin from '@defra/interactive-map/plugins/draw'
 
       const DRAW_LAYERS = ['fill-inactive.cold', 'stroke-inactive.cold']
 
@@ -149,7 +149,7 @@ This example configures snapping (`snapLayers`) against the base map style's woo
       <script src="/your-assets-path/interactive-map/index.js"></script>
       <script src="/your-assets-path/maplibre-provider/index.js"></script>
       <script src="/your-assets-path/interact-plugin/index.js"></script>
-      <script src="/your-assets-path/draw-ml-plugin/index.js"></script>
+      <script src="/your-assets-path/draw-plugin/index.js"></script>
 
       <script>
       const DRAW_LAYERS = ['fill-inactive.cold', 'stroke-inactive.cold']
@@ -165,7 +165,7 @@ This example configures snapping (`snapLayers`) against the base map style's woo
       })
 
       // Snap new vertices to the woodland layer when drawing near one
-      const drawPlugin = defra.drawMLPlugin({
+      const drawPlugin = defra.drawPlugin({
         snapLayers: ['OS/Woodland:3/Local/1']
       })
 
