@@ -15,13 +15,9 @@ const TOUCH_INTERFACE = 'touch'
 // consumer's own onGeometryChange callback).
 const MOVE_VERTEX = 'commit-move'
 
-// buildModifyCondition's own fixed-radius hit-test (edit/modifyInteraction.js) is tuned for a
-// plain ~6px vertex dot — a symbol icon renders far bigger, so clicking anywhere that looks
-// like "on the pin" would miss. forEachFeatureAtPixel hit-tests against the icon's own
-// rendered pixels instead (plus a small PIXEL_TOLERANCE buffer for imprecise clicks),
-// matching how the ML adapter's own mousedown routing already respects the icon's real
-// bounding box. No touch check here — point/pointDragInteraction.js's handleDownEvent already
-// gates on interfaceType === 'touch' before ever calling this, so this never runs for touch.
+// A symbol icon renders far bigger than buildModifyCondition's fixed-radius hit-test (tuned
+// for a plain vertex dot), so this hit-tests the icon's own rendered pixels instead. No touch
+// check — pointDragInteraction.js's handleDownEvent already gates on that before calling this.
 const buildPointModifyCondition = ({ map, olFeature }) => (mapBrowserEvent) => {
   const pixel = map.getEventPixel(mapBrowserEvent.originalEvent)
   return !!map.forEachFeatureAtPixel(pixel, (feature) => feature === olFeature, { hitTolerance: PIXEL_TOLERANCE })

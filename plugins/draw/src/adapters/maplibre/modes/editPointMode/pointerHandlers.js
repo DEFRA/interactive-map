@@ -1,7 +1,7 @@
 import DirectSelect from '../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
 import { isActiveFeature } from '../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/lib/common_selectors.js' // NOSONAR
 import {
-  getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState
+  getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState, setAutoSnapSuspended
 } from '../../utils/snapHelpers.js'
 import { validatePlacement } from '../../../../validation/validateGeometry.js'
 
@@ -37,6 +37,12 @@ export const pointerHandlers = {
   onFeature (state, e) {
     if (!state.dragMoving) {
       state._moveStartPosition = [...state.feature.coordinates]
+      // Fixed lng/lat offset between the click and the anchor, captured once — onDrag adds it
+      // to the pointer's current position on every move so a click away from the anchor keeps
+      // its grab point for the whole drag.
+      state._grabOffset = [state.feature.coordinates[0] - e.lngLat.lng, state.feature.coordinates[1] - e.lngLat.lat]
+      // Silence the snap library's own auto-query for the drag — see setAutoSnapSuspended.
+      setAutoSnapSuspended(getSnapInstance(this.map), true)
     }
     DirectSelect.onFeature.call(this, state, e)
   },
@@ -64,7 +70,9 @@ export const pointerHandlers = {
   },
 
   onMouseUp (state, e) {
-    clearSnapState(getSnapInstance(this.map))
+    const snap = getSnapInstance(this.map)
+    clearSnapState(snap)
+    setAutoSnapSuspended(snap, false)
     if (this._didPointMove(state)) {
       this.pushUndo({ type: 'move_point', featureId: state.featureId, vertexIndex: 0, previousPosition: state._moveStartPosition })
     }
@@ -109,9 +117,17 @@ export const pointerHandlers = {
 
     state.dragMoving = true
     e.originalEvent.stopPropagation()
-    triggerSnapAtPoint(snap, this.map, e.point)
 
-    const finalLngLat = getSnapLngLat(snap) || e.lngLat
+    // Candidate = pointer's current absolute position + the fixed grab offset — not an
+    // incremental delta, which would compound onto an already-snapped position and leave the
+    // pin stuck on the same target no matter how far the mouse then moves.
+    const candidateLngLat = {
+      lng: e.lngLat.lng + state._grabOffset[0],
+      lat: e.lngLat.lat + state._grabOffset[1]
+    }
+    triggerSnapAtPoint(snap, this.map, this.map.project([candidateLngLat.lng, candidateLngLat.lat]))
+
+    const finalLngLat = getSnapLngLat(snap) || candidateLngLat
     state.feature.updateCoordinate('', finalLngLat.lng, finalLngLat.lat)
     state.dragMoveLocation = e.lngLat
   },

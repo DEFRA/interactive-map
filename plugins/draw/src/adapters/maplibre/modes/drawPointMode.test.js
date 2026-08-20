@@ -388,7 +388,7 @@ describe('DrawPointMode', () => {
       ctx.map._snapInstance = snap
       state.getSnapEnabled = () => true
       ctx.onMouseMove(state, { point: { x: 7, y: 8 } })
-      expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point: { x: 7, y: 8 }, lngLat: CENTER })
+      expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point: { x: 7, y: 8 }, lngLat: CENTER, _explicit: true })
     })
 
     it('onMouseMove does nothing while snapping is disabled', () => {
@@ -428,7 +428,7 @@ describe('DrawPointMode', () => {
       state.getSnapEnabled = () => true
 
       ctx.onMove(state)
-      expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point: expect.any(Object), lngLat: CENTER })
+      expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point: expect.any(Object), lngLat: CENTER, _explicit: true })
 
       snap.snapToClosestPoint.mockClear()
       state.interfaceType = 'mouse'

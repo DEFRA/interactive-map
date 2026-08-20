@@ -95,10 +95,15 @@ function patchColorMethods (proto, orig, colors) {
   }
 }
 
-// Skip when disabled or zooming; clean up internal arrays to prevent memory accumulation
+// Skip when disabled, zooming, or (for unmarked calls only, while suspended — see
+// snapHelpers.js's setAutoSnapSuspended) mid-drag; clean up internal arrays to prevent memory
+// accumulation
 function patchSnapMethod (proto, orig) {
   proto.snapToClosestPoint = function (e) {
     if (!this.status || this.map?._isZooming) {
+      return undefined
+    }
+    if (this._autoSnapSuspended && !e._explicit) {
       return undefined
     }
     try {

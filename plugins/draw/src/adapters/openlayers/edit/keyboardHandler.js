@@ -109,10 +109,8 @@ const buildKeyupHandler = ({ keyMove, onVertexMoved, onDeleted, isFocused }) => 
     return
   }
   if (ARROW_KEYS.has(e.key) && keyMove.start && keyMove.index != null) {
-    // Deliberately NOT hiding the snap indicator here — nudge.js's own snap.apply() already
-    // left it showing exactly if the vertex landed on a snap target, and it should stay that
-    // way after the key is released (mirrors the ML adapter, which never hides it on release
-    // either — see snap/snapInteraction.js's own comment on the matching mouse-drag case).
+    // Not hiding the snap indicator here — nudge.js's own snap.apply() already left it showing
+    // correctly, and it should stay that way after the key is released.
     onVertexMoved({ vertexIndex: keyMove.index, previousCoord: keyMove.start })
     keyMove.start = null
     keyMove.index = null

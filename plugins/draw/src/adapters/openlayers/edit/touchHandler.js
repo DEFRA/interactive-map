@@ -75,10 +75,8 @@ const handleTouchEnd = (e, ctx) => {
   if (vertices[drag.dragStartIndex] && drag.dragStartCoord) {
     onVertexMoved({ vertexIndex: drag.dragStartIndex, previousCoord: drag.dragStartCoord })
   }
-  // Deliberately NOT hiding the indicator here — handleTouchMove's snap.apply() already left it
-  // showing exactly if the vertex landed on a snap target, which is exactly right to keep
-  // showing now the drag has ended (mirrors the ML adapter, which never hides it on release
-  // either — see snap/snapInteraction.js's own comment on the matching mouse-drag case).
+  // Not hiding the indicator here — handleTouchMove's snap.apply() already left it showing
+  // correctly, and it should stay that way after the drag ends.
   drag.dragStartCoord = null; drag.dragStartIndex = null; drag.vertexTouchDelta = null; drag.targetTouchDelta = null
   e.preventDefault()
 }
