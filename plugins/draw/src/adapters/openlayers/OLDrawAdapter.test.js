@@ -1,5 +1,6 @@
 import { OLDrawAdapter } from './OLDrawAdapter.js'
 import { createOLDraw } from './olDraw.js'
+import { resolvePointSymbol, hasSymbolStyle } from './point/pointSymbolImages.js'
 
 // The literal split.js passes — see OLDrawAdapter.js's DRAW_OUTLINE_STYLE_LAYER comment.
 const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
@@ -30,6 +31,10 @@ const fakeManager = () => ({
 
 jest.mock('./olDraw.js', () => ({
   createOLDraw: jest.fn(({ mapProvider }) => ({ manager: mapProvider._testManager, remove: jest.fn() }))
+}))
+jest.mock('./point/pointSymbolImages.js', () => ({
+  resolvePointSymbol: jest.fn(),
+  hasSymbolStyle: jest.fn()
 }))
 
 const setup = () => {
@@ -130,6 +135,47 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   expect(manager.undo).toHaveBeenCalled()
   expect(manager.deleteVertex).toHaveBeenCalled()
   expect(manager.nudgeSelectedVertex).toHaveBeenCalledWith(1, 0, true)
+})
+
+// A directly-added Point skips draw_point's own icon-resolving drawend handler.
+describe('add() and point symbol resolution', () => {
+  test('resolves the symbol for a Point feature with symbol properties', () => {
+    const { manager, mapProvider, adapter } = setup()
+    const olFeature = {}
+    manager.add.mockReturnValue(olFeature)
+    hasSymbolStyle.mockReturnValue(true)
+    const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
+
+    const result = adapter.add(feature)
+
+    expect(manager.add).toHaveBeenCalledWith(feature)
+    expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin' })
+    expect(resolvePointSymbol).toHaveBeenCalledWith({ manager, mapProvider, olFeature })
+    expect(result).toBe(olFeature)
+  })
+
+  test('does not attempt resolution for a Point with no symbol properties', () => {
+    const { manager, adapter } = setup()
+    manager.add.mockReturnValue({})
+    hasSymbolStyle.mockReturnValue(false)
+    adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
+
+  test('does not attempt resolution for a non-Point geometry', () => {
+    const { manager, adapter } = setup()
+    manager.add.mockReturnValue({})
+    adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
+    expect(hasSymbolStyle).not.toHaveBeenCalled()
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
+
+  test('does not attempt resolution for a feature with no geometry', () => {
+    const { manager, adapter } = setup()
+    manager.add.mockReturnValue({})
+    adapter.add({ id: 'b' })
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
 })
 
 test('setGeometryValid records validity on the manager for finish gating', () => {

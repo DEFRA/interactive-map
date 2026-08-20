@@ -295,14 +295,9 @@ export class MaplibreDrawAdapter {
 
   get (id) { return this._draw.get(id) }
 
-  // A directly-added Point (e.g. the api/addFeature.js entry point, unlike newPoint.js's
-  // interactive placement) never goes through draw_point's own drawend handler, which is
-  // normally what resolves symbol/symbolSvgContent properties into an actual icon — without
-  // this it would sit in the store correctly but render nothing (styles.js's point-symbol
-  // layer is keyed entirely off the resolved symbolImageId, no fallback). Fires and forgets,
-  // matching drawPointMode.js's own call; refreshAllPointSymbols (mapboxDraw.js) already
-  // re-resolves every symbol-style point in the store on a later map size/style change
-  // regardless of how it was added, so this only needs to cover the immediate render.
+  // A directly-added Point (e.g. api/addFeature.js) skips draw_point's own icon-resolving
+  // drawend handler, so it must be resolved here instead — with no fallback, styles.js's
+  // point-symbol layer would otherwise render nothing at all.
   add (feature) {
     const ids = this._draw.add(feature)
     if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {

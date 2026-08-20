@@ -562,9 +562,7 @@ describe('simple delegations', () => {
     expect(draw.setFeatureProperty).toHaveBeenCalledWith('d', 'p', 1)
   })
 
-  // A directly-added Point (api/addFeature.js) never goes through draw_point's own drawend
-  // handler — without this, styles.js's point-symbol layer (keyed entirely off the resolved
-  // symbolImageId, no fallback) would render nothing for it.
+  // A directly-added Point skips draw_point's own icon-resolving drawend handler.
   describe('add() and point symbol resolution', () => {
     test('resolves the symbol for a Point feature with symbol properties, using the id draw.add() returns', () => {
       const { adapter, draw, map, mapProvider } = setup()
