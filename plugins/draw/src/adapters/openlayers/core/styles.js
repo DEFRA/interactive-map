@@ -102,8 +102,12 @@ const createPointStyles = (colors) => {
   const pointStyle = createPointPlaceholderStyle(colors)
   const iconStyleCache = new Map()
 
-  const getPointIconStyle = (properties) => {
-    const imageId = properties.symbolImageId
+  // imageIdProp lets edit_point's own per-feature style override (point/editPointMode.js)
+  // ask for the precomputed "selected" (black ring) variant instead of the normal one — the
+  // same variant the interact plugin's own highlight already uses, via the same
+  // symbolSelectedImageId point/pointSymbolImages.js resolves for every point.
+  const getPointIconStyle = (properties, imageIdProp = 'symbolImageId') => {
+    const imageId = properties[imageIdProp]
     const canvas = imageId && getCachedSymbolImage(imageId)
     if (!canvas) {
       return null
@@ -126,7 +130,13 @@ const createPointStyles = (colors) => {
   }
 
   return {
-    pointStyleFor: (feature) => getPointIconStyle(feature.getProperties()) ?? pointStyle
+    pointStyleFor: (feature) => getPointIconStyle(feature.getProperties()) ?? pointStyle,
+    // Falls back through selected → normal → placeholder, so edit_point still shows
+    // something sensible before the selected variant has resolved.
+    selectedPointStyleFor: (feature) => {
+      const properties = feature.getProperties()
+      return getPointIconStyle(properties, 'symbolSelectedImageId') ?? getPointIconStyle(properties) ?? pointStyle
+    }
   }
 }
 
@@ -135,7 +145,7 @@ const createPointStyles = (colors) => {
  *
  * @param {object} colors - Output of resolveColors()
  * @returns {{ vertexStyle, selectedVertexStyle, midpointStyle, selectedMidpointStyle,
- *             editFeatureStyle, createSketchStyle, createFeatureStyle }}
+ *             editFeatureStyle, selectedPointStyleFor, createSketchStyle, createFeatureStyle }}
  */
 export const createStyles = (colors) => {
   const { vertexImage, vertexStyle, selectedVertexStyle } = createVertexStyles(colors)
@@ -186,7 +196,7 @@ export const createStyles = (colors) => {
     return type === geometryType ? [lineStyle, sketchVertexStyle] : [lineStyle]
   }
 
-  const { pointStyleFor } = createPointStyles(colors)
+  const { pointStyleFor, selectedPointStyleFor } = createPointStyles(colors)
 
   const createFeatureStyle = () => (feature) => {
     if (feature.getGeometry().getType() === 'Point') {
@@ -210,6 +220,7 @@ export const createStyles = (colors) => {
     selectedMidpointStyle,
     editFeatureStyle,
     editFeatureStyleInvalid,
+    selectedPointStyleFor,
     createSketchStyle,
     createFeatureStyle
   }

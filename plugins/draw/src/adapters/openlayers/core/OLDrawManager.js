@@ -6,6 +6,7 @@ import { resolveColors } from '../../../utils/resolveColors.js'
 import { createSnapManager } from '../snap/snapManager.js'
 import { createDrawMode } from '../draw/DrawMode.js'
 import { createEditMode } from '../edit/EditMode.js'
+import { createEditPointMode } from '../point/editPointMode.js'
 import { createDrawPointMode } from '../point/drawPointMode.js'
 import { resolvePointSymbol } from '../point/pointSymbolImages.js'
 import { TOLERANCES } from '../defaults.js'
@@ -92,7 +93,7 @@ export class OLDrawManager {
     this._modeInstance = null
     this._mode = modeName
 
-    const isDrawMode = modeName === 'draw_polygon' || modeName === 'draw_line' || modeName === 'draw_point' || modeName === 'edit_vertex'
+    const isDrawMode = modeName === 'draw_polygon' || modeName === 'draw_line' || modeName === 'draw_point' || modeName === 'edit_vertex' || modeName === 'edit_point'
     this.snap?.setIndicatorActive(isDrawMode)
 
     const modeOptions = { ...options, snap: this.snap }
@@ -108,6 +109,8 @@ export class OLDrawManager {
       this._modeInstance = createDrawPointMode({ map: this._map, manager: this, options: pointOptions })
     } else if (modeName === 'edit_vertex') {
       this._modeInstance = createEditMode({ map: this._map, manager: this, options: modeOptions })
+    } else if (modeName === 'edit_point') {
+      this._modeInstance = createEditPointMode({ map: this._map, manager: this, options: modeOptions })
     } else {
       // disabled — no mode instance needed
     }

@@ -30,9 +30,12 @@ export const resolveSnappedCoord = (snap, map, current, nudgedCoord, snappedCoor
  * `keyMove` tracks the coordinate at the start of a nudge sequence so a single
  * move_vertex undo op can be pushed on keyup (see keyboardHandler).
  *
+ * @param {(olFeature, index: number, coord: number[]) => void} [options.moveCoord] - coordinate
+ *   writer, defaulting to moveVertex; point/editPointMode.js injects point/pointOps.js's
+ *   movePoint instead, since a Point has no ring index to address.
  * @returns {{ nudge: (e: KeyboardEvent) => void, keyMove: { start, index }, nudgeByDelta: (dx: number, dy: number, isLargeStep: boolean) => void }}
  */
-export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexMoved }) => {
+export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexMoved, moveCoord = moveVertex }) => {
   const keyMove = { start: null, index: null }
 
   // Shared core: moves the selected vertex by an already pixel-scaled delta,
@@ -45,10 +48,20 @@ export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexM
     }
     const current = vertices[selectedVertexIndex]
     const nudgedCoord = nudgeCoord(map, current, dx, dy)
+    // snap.apply() already shows/hides the indicator based on whether a candidate was found —
+    // left as-is once the vertex actually lands there (see edit/keyboardHandler.js's own
+    // comment on why keyup no longer clears it).
     const snappedCoord = snap ? snap.apply(nudgedCoord) : nudgedCoord
-    snap?.hideIndicator()
     const newCoord = resolveSnappedCoord(snap, map, current, nudgedCoord, snappedCoord, dx, dy)
-    moveVertex(olFeature, selectedVertexIndex, newCoord)
+    // resolveSnappedCoord can override snappedCoord with an escape jump clear of the snap
+    // radius — snapping straight back to the same point every press would otherwise block all
+    // further progress. When it does (a new array, not snappedCoord itself), the indicator
+    // snap.apply() just showed no longer matches where the vertex is actually about to land, so
+    // it needs correcting for real rather than being left to point at the target it just fled.
+    if (snap && newCoord !== snappedCoord) {
+      snap.hideIndicator()
+    }
+    moveCoord(olFeature, selectedVertexIndex, newCoord)
     setState({ vertices: vertices.map((c, i) => i === selectedVertexIndex ? newCoord : c) })
     return { previousCoord: current, vertexIndex: selectedVertexIndex }
   }

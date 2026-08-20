@@ -5,7 +5,16 @@
  *
  * Coordinate snapping applies to all pointer events (pointermove, pointerdown,
  * pointerup, singleclick) so that both rubberbanding and vertex placement are snapped.
- * The visual indicator is only updated on pointermove.
+ * The visual indicator updates on both pointermove (hover preview) and pointerdrag (an
+ * active OL Modify drag, e.g. edit_vertex's mouse-drag path in edit/modifyInteraction.js —
+ * point/pointDragInteraction.js's own drag calls snap.apply() itself instead, see its own
+ * comment) — so it stays visible for as long as the dragged vertex actually sits on a
+ * candidate, all the way through to release, instead of blanking out mid-drag only to
+ * reappear (or not) on the next idle hover. Left showing after release deliberately — nothing
+ * hides it there, matching the ML adapter, which never hides its own equivalent indicator on
+ * mouseup/keyup either; it clears only on a fresh drag/keyboard-move's own next snap query
+ * (whether that leaves it shown or hidden), a mode change, or snapping being switched off
+ * (see snap/snapManager.js's setIndicatorActive/setActive).
  *
  * Must be added to the map AFTER the Draw/Modify interaction so it is processed
  * first (OL iterates interactions in reverse-add order).
@@ -15,6 +24,7 @@
 import Interaction from 'ol/interaction/Interaction.js'
 
 const SNAP_EVENTS = new Set(['pointermove', 'pointerdrag', 'pointerdown', 'pointerup', 'singleclick', 'click'])
+const INDICATOR_EVENTS = new Set(['pointermove', 'pointerdrag'])
 
 const processSnapEvent = (mapBrowserEvent, engine, indicator, snapRadius, isIndicatorActive) => {
   const { type } = mapBrowserEvent
@@ -33,13 +43,9 @@ const processSnapEvent = (mapBrowserEvent, engine, indicator, snapRadius, isIndi
     mapBrowserEvent.coordinate = result.coord.slice()
   }
 
-  // Only update indicator during free mouse movement — hide during drag, no-op for clicks
-  if (type === 'pointermove' && isIndicatorActive()) {
+  // Hover preview and active drag both keep the indicator live; no update for click/down/up.
+  if (INDICATOR_EVENTS.has(type) && isIndicatorActive()) {
     result ? indicator.show(result.coord, result.type) : indicator.hide()
-  } else if (type === 'pointerdrag') {
-    indicator.hide()
-  } else {
-    // no indicator update for click/down/up events
   }
 }
 

@@ -42,6 +42,7 @@ export const createFakeMap = ({ center = [50, 50] } = {}) => {
     getCoordinateFromPixel: (p) => [p[0], p[1]],
     getEventPixel: (e) => [e.clientX, e.clientY],
     getView: () => view,
+    forEachFeatureAtPixel: jest.fn(() => undefined),
     render: jest.fn()
   }
 }
@@ -61,6 +62,7 @@ export const createFakeManager = () => {
       midpointStyle: new Style({}),
       selectedVertexStyle: new Style({}),
       selectedMidpointStyle: new Style({}),
+      selectedPointStyleFor: jest.fn(() => new Style({})),
       createSketchStyle: jest.fn(() => () => [])
     },
     colors: { editVertex: 'rgba(29,112,184,1)' },

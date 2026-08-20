@@ -77,8 +77,17 @@ test('a drag applies snapping to the moved coordinate when a snap manager is act
   touch('touchstart', 100, 0)
   touch('touchmove', 120, 10)
   expect(snap.apply).toHaveBeenCalled()
-  expect(snap.hideIndicator).toHaveBeenCalled()
   expect(state.vertices[1]).toEqual([125, 10]) // dragged to [120,10] then snapped +5 on x
+
+  // Regression: a stray hideIndicator() right after snap.apply() on every touchmove undid its
+  // own show, so the indicator could never actually be seen mid-drag — it's only meant to
+  // clear for real once the drag actually finishes.
+  expect(snap.hideIndicator).not.toHaveBeenCalled()
+  // And it must stay showing after the drag ends too — snap.apply()'s own last call already
+  // left it correctly reflecting the snapped position (mirrors the ML adapter, which never
+  // hides its own indicator on release either).
+  touch('touchend', 120, 10)
+  expect(snap.hideIndicator).not.toHaveBeenCalled()
   handler.destroy()
 })
 

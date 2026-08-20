@@ -30,20 +30,21 @@ const handleTouchStart = (e, { map, targetEl, cssToOl, getState, drag }) => {
   e.preventDefault()
 }
 
-const handleTouchMove = (e, { map, targetEl, olToCSS, getState, setState, snap, drag }) => {
+const handleTouchMove = (e, { map, targetEl, olToCSS, getState, setState, snap, drag, moveCoord }) => {
   if (!isOnTouchTarget(e.target) || drag.dragStartIndex == null) {
     return
   }
   e.preventDefault()
   const tOl = map.getEventPixel({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY })
   const rawCoord = pixelToCoord(map, { x: tOl[0] - drag.vertexTouchDelta.x, y: tOl[1] - drag.vertexTouchDelta.y })
+  // snap.apply() already shows/hides the indicator based on whether a candidate was found —
+  // it's cleared for real in handleTouchEnd, once the drag actually finishes.
   const newCoord = snap ? snap.apply(rawCoord) : rawCoord
-  snap?.hideIndicator()
   const { olFeature, vertices } = getState()
   if (!olFeature) {
     return
   }
-  moveVertex(olFeature, drag.dragStartIndex, newCoord)
+  moveCoord(olFeature, drag.dragStartIndex, newCoord)
   setState({ vertices: vertices.map((c, i) => i === drag.dragStartIndex ? newCoord : c) })
   showTouchTarget(targetEl, olToCSS({ x: tOl[0] - drag.targetTouchDelta.x, y: tOl[1] - drag.targetTouchDelta.y }))
 }
@@ -63,7 +64,7 @@ const handleTap = (e, { map, getState, onTap, drag }) => {
 }
 
 const handleTouchEnd = (e, ctx) => {
-  const { getState, onVertexMoved, snap, drag } = ctx
+  const { getState, onVertexMoved, drag } = ctx
   if (drag.dragStartIndex == null) {
     handleTap(e, ctx)
     drag.tapStart = null
@@ -74,7 +75,10 @@ const handleTouchEnd = (e, ctx) => {
   if (vertices[drag.dragStartIndex] && drag.dragStartCoord) {
     onVertexMoved({ vertexIndex: drag.dragStartIndex, previousCoord: drag.dragStartCoord })
   }
-  snap?.hideIndicator()
+  // Deliberately NOT hiding the indicator here — handleTouchMove's snap.apply() already left it
+  // showing exactly if the vertex landed on a snap target, which is exactly right to keep
+  // showing now the drag has ended (mirrors the ML adapter, which never hides it on release
+  // either — see snap/snapInteraction.js's own comment on the matching mouse-drag case).
   drag.dragStartCoord = null; drag.dragStartIndex = null; drag.vertexTouchDelta = null; drag.targetTouchDelta = null
   e.preventDefault()
 }
@@ -114,9 +118,12 @@ const wireTouchEvents = (deps) => {
  * without finger occlusion. Tap on a vertex or midpoint selects it via onTap.
  *
  * @param {{ map, container, getState, setState, onVertexMoved, onTap, colors }} options
+ * @param {(olFeature, index: number, coord: number[]) => void} [options.moveCoord] - coordinate
+ *   writer, defaulting to moveVertex; point/editPointMode.js injects point/pointOps.js's
+ *   movePoint instead, since a Point has no ring index to address.
  * @returns {{ updateTargetPosition, updateColors, hide, destroy }}
  */
-export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved, onTap, colors, snap }) => {
+export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved, onTap, colors, snap, moveCoord = moveVertex }) => {
   const targetEl = createTouchTarget(container)
   applyTouchTargetColors(targetEl, colors)
 
@@ -140,7 +147,7 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
     })
   }
 
-  const touchEvents = wireTouchEvents({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap })
+  const touchEvents = wireTouchEvents({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap, moveCoord })
 
   const updateTargetPosition = () => {
     const { selectedVertexIndex, vertices, interfaceType } = getState()

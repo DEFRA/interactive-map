@@ -2,6 +2,7 @@ import { OLDrawManager } from './OLDrawManager.js'
 import { STYLES_CHANGED_EVENT } from './internalEvents.js'
 import { createDrawMode } from '../draw/DrawMode.js'
 import { createEditMode } from '../edit/EditMode.js'
+import { createEditPointMode } from '../point/editPointMode.js'
 import { createDrawPointMode } from '../point/drawPointMode.js'
 import { resolvePointSymbol } from '../point/pointSymbolImages.js'
 import { createSnapManager } from '../snap/snapManager.js'
@@ -14,6 +15,9 @@ jest.mock('../draw/DrawMode.js', () => ({
 }))
 jest.mock('../edit/EditMode.js', () => ({
   createEditMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
+}))
+jest.mock('../point/editPointMode.js', () => ({
+  createEditPointMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
 }))
 jest.mock('../point/drawPointMode.js', () => ({
   createDrawPointMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), setInterfaceType: jest.fn() }))
@@ -60,7 +64,8 @@ describe('mode machine', () => {
   test.each([
     ['draw_polygon', createDrawMode],
     ['draw_line', createDrawMode],
-    ['edit_vertex', createEditMode]
+    ['edit_vertex', createEditMode],
+    ['edit_point', createEditPointMode]
   ])('%s creates its mode with snap injected, activates the indicator and reattaches snap last', async (name, factory) => {
     const { map, manager } = setup()
     await manager.changeMode(name, { featureId: 'f1' })

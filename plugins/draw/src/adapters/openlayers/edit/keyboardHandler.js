@@ -104,12 +104,15 @@ const buildKeydownHandler = ({ map, getState, setState, nudge, keyMove, onUndo, 
   }
 }
 
-const buildKeyupHandler = ({ snap, keyMove, onVertexMoved, onDeleted, isFocused }) => (e) => {
+const buildKeyupHandler = ({ keyMove, onVertexMoved, onDeleted, isFocused }) => (e) => {
   if (isFocused()) {
     return
   }
   if (ARROW_KEYS.has(e.key) && keyMove.start && keyMove.index != null) {
-    snap?.hideIndicator()
+    // Deliberately NOT hiding the snap indicator here — nudge.js's own snap.apply() already
+    // left it showing exactly if the vertex landed on a snap target, and it should stay that
+    // way after the key is released (mirrors the ML adapter, which never hides it on release
+    // either — see snap/snapInteraction.js's own comment on the matching mouse-drag case).
     onVertexMoved({ vertexIndex: keyMove.index, previousCoord: keyMove.start })
     keyMove.start = null
     keyMove.index = null
@@ -133,16 +136,19 @@ const buildKeyupHandler = ({ snap, keyMove, onVertexMoved, onDeleted, isFocused 
  * convert it. Only pressing a plain/Shift arrow converts it.
  *
  * @param {{ map, getState, setState, snap, onVertexMoved, onInserted, onDeleted, onUndo, onKeyboardActive }} options
+ * @param {(olFeature, index: number, coord: number[]) => void} [options.moveCoord] - coordinate
+ *   writer forwarded to wireNudge, defaulting there to moveVertex; point/editPointMode.js
+ *   injects point/pointOps.js's movePoint instead.
  * @returns {{ nudgeByDelta: (dx: number, dy: number, isLargeStep: boolean) => void, destroy: () => void }}
  */
 export const createKeyboardHandler = (options) => {
-  const { map, snap, getState, setState, onVertexMoved, onInserted, onDeleted, onUndo, onKeyboardActive } = options
-  const { nudge, keyMove, nudgeByDelta } = wireNudge({ map, snap, getState, setState, onInserted, onVertexMoved })
+  const { map, snap, getState, setState, onVertexMoved, onInserted, onDeleted, onUndo, onKeyboardActive, moveCoord } = options
+  const { nudge, keyMove, nudgeByDelta } = wireNudge({ map, snap, getState, setState, onInserted, onVertexMoved, moveCoord })
   const appViewport = map.getViewport().closest('[role="application"]') ?? map.getViewport()
   const isFocused = () => isInteractiveElementFocused(appViewport)
 
   const onKeydown = buildKeydownHandler({ map, getState, setState, nudge, keyMove, onUndo, onKeyboardActive, isFocused })
-  const onKeyup = buildKeyupHandler({ snap, keyMove, onVertexMoved, onDeleted, isFocused })
+  const onKeyup = buildKeyupHandler({ keyMove, onVertexMoved, onDeleted, isFocused })
 
   globalThis.addEventListener('keydown', onKeydown, { capture: true })
   globalThis.addEventListener('keyup', onKeyup, { capture: true })

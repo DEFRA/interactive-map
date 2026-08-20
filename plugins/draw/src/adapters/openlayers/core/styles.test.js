@@ -219,6 +219,36 @@ describe('createFeatureStyle (inactive shapes)', () => {
     expect(style.getImage().getScale()).toBe(1)
   })
 
+  // edit_point's per-feature style override (point/editPointMode.js) uses this to keep
+  // showing the same "selected" (black ring) look the interact plugin's own highlight
+  // already uses for the whole edit session — see selectedPointStyleFor's own comment.
+  test('selectedPointStyleFor renders the selected variant, falling back to normal then the placeholder', () => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+      this._ctx ??= { putImageData: jest.fn() }
+      return this._ctx
+    })
+    clearSymbolImageCache()
+    const selectedCanvas = getOrCreateSymbolImage('symbol-pin-selected', { width: 10, height: 10 })
+
+    const selected = pointFeature([5, 5])
+    selected.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-normal', symbolSelectedImageId: 'symbol-pin-selected' })
+    const selectedStyle = styles.selectedPointStyleFor(selected)
+    expect(selectedStyle.getImage()).toBeInstanceOf(Icon)
+    expect(selectedStyle.getImage().getImage(1)).toBe(selectedCanvas)
+
+    // No selected variant resolved yet → falls back to the normal icon
+    const normalCanvas = getOrCreateSymbolImage('symbol-pin-normal-only', { width: 10, height: 10 })
+    const normalOnly = pointFeature([5, 5])
+    normalOnly.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-normal-only' })
+    const fallbackStyle = styles.selectedPointStyleFor(normalOnly)
+    expect(fallbackStyle.getImage().getImage(1)).toBe(normalCanvas)
+
+    // Neither resolved → the placeholder circle
+    const placeholderStyle = styles.selectedPointStyleFor(pointFeature([5, 5]))
+    expect(placeholderStyle.getStroke()).toBeFalsy()
+    expect(placeholderStyle.getImage()).not.toBeInstanceOf(Icon)
+  })
+
   test('a Point feature whose symbolImageId has not been rasterised/cached yet falls back to the placeholder', () => {
     clearSymbolImageCache()
     const feature = pointFeature([5, 5])

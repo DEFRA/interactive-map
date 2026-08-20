@@ -115,6 +115,32 @@ test('a plain arrow nudges the selected vertex, and keyup commits a single move 
   expect(onVertexMoved).toHaveBeenCalledTimes(1)
 })
 
+// Regression: keyup used to force-hide the snap indicator unconditionally, so it vanished the
+// instant the key was released even when the vertex landed exactly on a snap target — making it
+// impossible to tell whether the nudge had actually snapped. nudge.js's own snap.apply() already
+// leaves the indicator correctly reflecting reality; keyup must leave it alone (mirrors the ML
+// adapter, which never hides its own indicator on keyup either).
+test('keyup does not hide the snap indicator', () => {
+  const snap = { apply: jest.fn((c) => c), hideIndicator: jest.fn(), snapRadius: 12 }
+  const map = createFakeMap({ center: [98, 98] })
+  const state = {
+    olFeature: polygonFeature(RING),
+    selectedVertexIndex: 1,
+    selectedVertexType: 'vertex',
+    vertices: [[0, 0], [100, 0], [100, 100]],
+    midpoints: [[50, 0], [100, 50], [50, 50]]
+  }
+  const setState = jest.fn((updates) => Object.assign(state, updates))
+  const handler = createKeyboardHandler({
+    map, getState: () => state, setState, snap,
+    onVertexMoved: jest.fn(), onInserted: jest.fn(), onDeleted: jest.fn(), onUndo: jest.fn(), onKeyboardActive: jest.fn()
+  })
+  liveHandlers.push(handler)
+  key('keydown', { key: 'ArrowRight' })
+  key('keyup', { key: 'ArrowRight' })
+  expect(snap.hideIndicator).not.toHaveBeenCalled()
+})
+
 test('arrows without a selection do nothing', () => {
   const { setState } = setup()
   key('keydown', { key: 'ArrowRight' })

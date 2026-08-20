@@ -35,7 +35,7 @@ test('rewrites the event coordinate to a copy of the snap candidate for all poin
   }
 })
 
-test('the indicator follows free mouse movement only', () => {
+test('the indicator follows both free mouse movement and an active drag', () => {
   const { engine, indicator, fire } = setup()
   fire('pointermove')
   expect(indicator.show).toHaveBeenCalledWith([9, 9], 'vertex')
@@ -44,17 +44,28 @@ test('the indicator follows free mouse movement only', () => {
   fire('pointermove')
   expect(indicator.hide).toHaveBeenCalledTimes(1)
 
+  // A drag (e.g. edit_vertex's mouse-drag path, edit/modifyInteraction.js) keeps it live too —
+  // it must stay visible for as long as the dragged vertex sits on a candidate, not just on a
+  // free hover. See snapInteraction.js's own comment for why: this used to force-hide it on
+  // every pointerdrag, so the indicator could never actually be seen mid-drag.
   engine.query.mockReturnValue({ type: 'edge', coord: [5, 5] })
   fire('pointerdrag')
-  expect(indicator.hide).toHaveBeenCalledTimes(2) // hidden during drags
+  expect(indicator.show).toHaveBeenCalledWith([5, 5], 'edge')
+
+  engine.query.mockReturnValue(null)
+  fire('pointerdrag')
+  expect(indicator.hide).toHaveBeenCalledTimes(2)
+
   fire('singleclick')
-  expect(indicator.show).toHaveBeenCalledTimes(1) // clicks never touch the indicator
+  expect(indicator.show).toHaveBeenCalledTimes(2) // clicks never touch the indicator
+  expect(indicator.hide).toHaveBeenCalledTimes(2)
 })
 
-test('the indicator stays untouched during pointermove when the indicator is gated off', () => {
+test('the indicator stays untouched during pointermove or a drag when the indicator is gated off', () => {
   const { indicator, fire } = setup({ indicatorActive: false })
   const { event } = fire('pointermove')
   expect(event.coordinate).toEqual([9, 9]) // snapping still applies
+  fire('pointerdrag')
   expect(indicator.show).not.toHaveBeenCalled()
   expect(indicator.hide).not.toHaveBeenCalled()
 })

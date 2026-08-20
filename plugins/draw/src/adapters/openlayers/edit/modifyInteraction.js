@@ -44,16 +44,18 @@ export const buildModifyCondition = ({ map, getState }) => (mapBrowserEvent) => 
  * each completed drag via `onModifyEnd(prevCoords)` with the vertices
  * snapshotted at drag start.
  *
+ * @param {(mapBrowserEvent) => boolean} [condition] - overrides buildModifyCondition's
+ *   fixed-radius vertex hit-test.
  * @returns {{ destroy: () => void }}
  */
-export const createModifyInteraction = ({ map, olFeature, getState, onModifyEnd }) => {
-  const condition = buildModifyCondition({ map, getState })
+export const createModifyInteraction = ({ map, olFeature, getState, onModifyEnd, condition }) => {
+  const modifyCondition = condition ?? buildModifyCondition({ map, getState })
 
   const modifyInteraction = new Modify({
     features: new Collection([olFeature]),
     style: () => [], // vertex circles rendered by vertexLayer instead
     pixelTolerance: PIXEL_TOLERANCE,
-    condition
+    condition: modifyCondition
   })
   map.addInteraction(modifyInteraction)
 
