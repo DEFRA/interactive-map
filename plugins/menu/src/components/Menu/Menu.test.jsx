@@ -21,8 +21,8 @@ jest.mock('./RadioGroupWrapper.jsx', () => ({
   )
 }))
 
-jest.mock('./MenuGroupWrapper.jsx', () => ({
-  MenuGroupWrapper: ({ menuGroup, children }) => (
+jest.mock('./GroupLegend.jsx', () => ({
+  GroupLegend: ({ menuGroup, children }) => (
     <div data-testid='layers-menu-group-wrapper' data-group-id={menuGroup.id}>
       {children}
     </div>
@@ -66,7 +66,7 @@ describe('Menu', () => {
   })
 
   describe('checkbox groups', () => {
-    it('renders a MenuGroupWrapper for each checkbox group', () => {
+    it('renders a GroupLegend for each checkbox group', () => {
       const pluginState = makePluginState([
         { id: 'g1', type: 'checkbox', items: [] },
         { id: 'g2', type: 'checkbox', items: [] }
@@ -83,7 +83,7 @@ describe('Menu', () => {
       expect(getAllByTestId('layers-menu-checkbox')).toHaveLength(2)
     })
 
-    it('passes the correct group to MenuGroupWrapper', () => {
+    it('passes the correct group to GroupLegend', () => {
       const group = { id: 'group-x', type: 'checkbox', items: [] }
       const pluginState = makePluginState([group])
       const { getByTestId } = render(<Menu pluginState={pluginState} />)
@@ -116,7 +116,7 @@ describe('Menu', () => {
       expect(getByTestId('layers-radio-group-wrapper').dataset.groupId).toBe('radio-group-1')
     })
 
-    it('does not render a MenuGroupWrapper for radio groups', () => {
+    it('does not render a GroupLegend for radio groups', () => {
       const pluginState = makePluginState([{ id: 'r1', type: 'radio', items: [] }])
       const { queryByTestId } = render(<Menu pluginState={pluginState} />)
       expect(queryByTestId('layers-menu-group-wrapper')).toBeNull()

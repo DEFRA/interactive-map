@@ -1,7 +1,7 @@
 import React from 'react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 import { MenuRadio } from './MenuRadio.jsx'
-import { MenuGroupWrapper } from './MenuGroupWrapper.jsx'
+import { GroupLegend } from './GroupLegend.jsx'
 export const RadioGroupWrapper = ({ menuState, dispatch, menuGroup }) => {
   const { id, items, visibleWhen } = menuGroup
   const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true
@@ -15,7 +15,7 @@ export const RadioGroupWrapper = ({ menuState, dispatch, menuGroup }) => {
   }
 
   return (
-    <MenuGroupWrapper menuGroup={menuGroup}>
+    <GroupLegend menuGroup={menuGroup}>
       <div className='govuk-radios govuk-radios--small' data-module='govuk-radios'>
         {items.map((menuGroupItem) =>
           <MenuRadio
@@ -27,6 +27,6 @@ export const RadioGroupWrapper = ({ menuState, dispatch, menuGroup }) => {
           />
         )}
       </div>
-    </MenuGroupWrapper>
+    </GroupLegend>
   )
 }

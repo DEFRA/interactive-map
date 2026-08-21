@@ -1,4 +1,4 @@
-export const MenuGroupWrapper = ({ menuGroup, children }) => {
+export const GroupLegend = ({ menuGroup, children }) => {
   const label = menuGroup.groupLabel || menuGroup.label
   if (!label) {
     return <>{children}</>
