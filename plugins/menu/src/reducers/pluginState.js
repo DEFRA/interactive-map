@@ -7,7 +7,6 @@ const initialState = {
 }
 
 const updateMenuState = (state, payload) => {
-  console.log('updateMenuState', { ...state.menuState, ...payload })
   return {
     ...state,
     menuState: { ...state.menuState, ...payload }

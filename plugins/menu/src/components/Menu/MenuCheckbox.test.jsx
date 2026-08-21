@@ -1,123 +1,93 @@
 import { render, screen, act } from '@testing-library/react'
-import { getDatasetRegistry } from '../../registry/index.js'
 import { MenuCheckbox } from './MenuCheckbox.jsx'
-
-jest.mock('../../registry/index.js', () => ({
-  getDatasetRegistry: jest.fn(),
-  patternRegistry: {},
-  symbolRegistry: {}
-}))
-
-const mockRegistry = { getDataset: jest.fn() }
-const datasetRegistry = mockRegistry
 
 const onChange = jest.fn()
 const dispatch = jest.fn()
-const menuGroupItem = { id: 'dataset-1' }
-
-const baseDataset = {
-  id: 'dataset-1',
-  label: 'Dataset One',
-  visible: true,
-  isLocallyVisible: true,
-  isSublayer: false,
-  parentId: undefined
-}
+const menuGroupItem = { id: 'dataset-1', label: 'Dataset One' }
 
 beforeEach(() => {
-  getDatasetRegistry.mockReturnValue(mockRegistry)
-  datasetRegistry.getDataset.mockReset()
   onChange.mockReset()
   dispatch.mockReset()
 })
 
-describe('MenuCheckbox', () => {
-  describe('when the dataset is not in the registry', () => {
-    it('returns null', () => {
-      datasetRegistry.getDataset.mockReturnValue(undefined)
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
-      expect(container.firstChild).toBeNull()
-    })
-  })
+const renderCheckbox = (props = {}) =>
+  render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} checked {...props} />)
 
-  describe('when the dataset exists', () => {
+describe('MenuCheckbox', () => {
+  describe('rendered output', () => {
     it('renders a checkbox input', () => {
-      datasetRegistry.getDataset.mockReturnValue(baseDataset)
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+      const { container } = renderCheckbox()
       expect(container.querySelector('input[type="checkbox"]')).toBeTruthy()
     })
 
-    it('renders the dataset label', () => {
-      datasetRegistry.getDataset.mockReturnValue(baseDataset)
-      render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+    it('renders the menuGroupItem label', () => {
+      renderCheckbox()
       expect(screen.getByText('Dataset One')).toBeTruthy()
     })
 
     it('associates the label with the input via htmlFor', () => {
-      datasetRegistry.getDataset.mockReturnValue(baseDataset)
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+      const { container } = renderCheckbox()
       const label = container.querySelector('label')
       const input = container.querySelector('input')
       expect(label.htmlFor).toBe(input.id)
     })
-
-    it('calls onChange when the checkbox changes', () => {
-      datasetRegistry.getDataset.mockReturnValue(baseDataset)
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
-      const input = container.querySelector('input')
-      const propsKey = Object.keys(input).find(k => k.startsWith('__reactProps'))
-      act(() => { input[propsKey].onChange({ target: { checked: true, value: input.value } }) })
-      expect(onChange).toHaveBeenCalledTimes(1)
-    })
   })
 
   describe('checked state', () => {
-    it('is checked when isLocallyVisible is true', () => {
-      datasetRegistry.getDataset.mockReturnValue({ ...baseDataset, isLocallyVisible: true })
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+    it('is checked when checked prop is true', () => {
+      const { container } = renderCheckbox({ checked: true })
       expect(container.querySelector('input').checked).toBe(true)
     })
 
-    it('is unchecked when isLocallyVisible is false', () => {
-      datasetRegistry.getDataset.mockReturnValue({ ...baseDataset, isLocallyVisible: false })
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+    it('is unchecked when checked prop is false', () => {
+      const { container } = renderCheckbox({ checked: false })
       expect(container.querySelector('input').checked).toBe(false)
     })
   })
 
   describe('item class', () => {
-    it('does not include the --checked modifier when visible is true', () => {
-      datasetRegistry.getDataset.mockReturnValue({ ...baseDataset, visible: true })
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+    it('does not include the --checked modifier when checked is true', () => {
+      const { container } = renderCheckbox({ checked: true })
       expect(container.firstChild.className).not.toContain('im-c-menu-layers__item--checked')
     })
 
-    it('includes the --checked modifier when visible is false', () => {
-      datasetRegistry.getDataset.mockReturnValue({ ...baseDataset, visible: false })
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+    it('includes the --checked modifier when checked is false', () => {
+      const { container } = renderCheckbox({ checked: false })
       expect(container.firstChild.className).toContain('im-c-menu-layers__item--checked')
     })
   })
 
-  describe('data attributes', () => {
-    it('uses the dataset id as data-dataset-id when not a sublayer', () => {
-      datasetRegistry.getDataset.mockReturnValue({ ...baseDataset, isSublayer: false })
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
+  describe('handleOnChange', () => {
+    const triggerChange = (container, checked) => {
       const input = container.querySelector('input')
-      expect(input.dataset.datasetId).toBe('dataset-1')
-      expect(input.dataset.sublayerId).toBeUndefined()
+      const propsKey = Object.keys(input).find(k => k.startsWith('__reactProps'))
+      act(() => { input[propsKey].onChange({ target: { checked, value: input.value } }) })
+    }
+
+    it('calls onChange with true when the checkbox is checked', () => {
+      const { container } = renderCheckbox()
+      triggerChange(container, true)
+      expect(onChange).toHaveBeenCalledWith(true)
     })
 
-    it('uses parentId as data-dataset-id when a sublayer', () => {
-      datasetRegistry.getDataset.mockReturnValue({ ...baseDataset, id: 'sub-1', isSublayer: true, parentId: 'parent-1' })
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
-      expect(container.querySelector('input').dataset.datasetId).toBe('parent-1')
+    it('calls onChange with false when the checkbox is unchecked', () => {
+      const { container } = renderCheckbox()
+      triggerChange(container, false)
+      expect(onChange).toHaveBeenCalledWith(false)
     })
 
-    it('uses the sublayer id as data-sublayer-id when a sublayer', () => {
-      datasetRegistry.getDataset.mockReturnValue({ ...baseDataset, id: 'sub-1', isSublayer: true, parentId: 'parent-1' })
-      const { container } = render(<MenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} dispatch={dispatch} />)
-      expect(container.querySelector('input').dataset.sublayerId).toBe('sub-1')
+    it('dispatches UPDATE_MENU_STATE with the item id and checked value', () => {
+      const { container } = renderCheckbox()
+      triggerChange(container, true)
+      expect(dispatch).toHaveBeenCalledWith({
+        type: 'UPDATE_MENU_STATE',
+        payload: { 'dataset-1': true }
+      })
+    })
+
+    it('does not throw when onChange is not provided', () => {
+      const { container } = renderCheckbox({ onChange: undefined })
+      expect(() => triggerChange(container, true)).not.toThrow()
     })
   })
 })

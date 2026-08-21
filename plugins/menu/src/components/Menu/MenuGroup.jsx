@@ -4,7 +4,7 @@ import { CheckboxGroupWrapper } from './CheckboxGroupWrapper.jsx'
 
 export const MenuGroup = ({ menuGroup, dispatch, menuState }) => {
   if (menuGroup.type === 'checkbox') {
-    return (<CheckboxGroupWrapper menuGroup={menuGroup} dispatch={dispatch} />)
+    return (<CheckboxGroupWrapper menuGroup={menuGroup} dispatch={dispatch} menuState={menuState} />)
   } else {
     return (<RadioGroupWrapper menuGroup={menuGroup} dispatch={dispatch} menuState={menuState} />)
   }

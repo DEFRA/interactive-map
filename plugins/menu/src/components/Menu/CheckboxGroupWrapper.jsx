@@ -2,7 +2,7 @@ import React from 'react'
 import { MenuCheckbox } from './MenuCheckbox.jsx'
 import { GroupLegend } from './GroupLegend.jsx'
 
-export const CheckboxGroupWrapper = ({ dispatch, menuGroup }) => {
+export const CheckboxGroupWrapper = ({ dispatch, menuGroup, menuState }) => {
   return (
     <GroupLegend menuGroup={menuGroup}> {
       // Each menuGroupItem
@@ -11,6 +11,7 @@ export const CheckboxGroupWrapper = ({ dispatch, menuGroup }) => {
           key={menuGroupItem.id}
           dispatch={dispatch}
           menuGroupItem={menuGroupItem}
+          checked={menuState[menuGroupItem.id]}
           onChange={menuGroupItem.handleOnChange}
         />)
       )
