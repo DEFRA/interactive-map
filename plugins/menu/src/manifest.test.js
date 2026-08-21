@@ -1,8 +1,8 @@
 import { manifest } from './manifest.js'
-import { Menu } from './components/Key/Menu.jsx'
+import { LayersMenu } from './components/LayersMenu/LayersMenu.jsx'
 import { MenuInit } from './initialise/MenuInit.jsx'
 
-jest.mock('./components/Key/Menu.jsx', () => ({ Menu: jest.fn() }))
+jest.mock('./components/LayersMenu/LayersMenu.jsx', () => ({ LayersMenu: jest.fn() }))
 jest.mock('./initialise/MenuInit.jsx', () => ({ MenuInit: jest.fn() }))
 jest.mock('./registry/getDatasetRegistry.js', () => ({}))
 
@@ -20,8 +20,8 @@ describe('manifest', () => {
       expect(manifest.panels[0].id).toBe('menu')
     })
 
-    it('panel render is Menu', () => {
-      expect(manifest.panels[0].render).toBe(Menu)
+    it('panel render is LayersMenu', () => {
+      expect(manifest.panels[0].render).toBe(LayersMenu)
     })
 
     it('panel defines mobile, tablet and desktop slots', () => {
@@ -37,13 +37,13 @@ describe('manifest', () => {
       expect(manifest.buttons).toHaveLength(1)
     })
 
-    it('button has id menu and links to the menu panel', () => {
-      expect(manifest.buttons[0].id).toBe('menu')
+    it('button has id menuButton and links to the menu panel', () => {
+      expect(manifest.buttons[0].id).toBe('menuButton')
       expect(manifest.buttons[0].panelId).toBe('menu')
     })
 
-    it('button references the key icon', () => {
-      expect(manifest.buttons[0].iconId).toBe('key')
+    it('button references the layers icon', () => {
+      expect(manifest.buttons[0].iconId).toBe('layers')
     })
   })
 
@@ -52,8 +52,8 @@ describe('manifest', () => {
       expect(manifest.icons).toHaveLength(1)
     })
 
-    it('icon id matches the button iconId', () => {
-      expect(manifest.icons[0].id).toBe(manifest.buttons[0].iconId)
+    it('icon id is key', () => {
+      expect(manifest.icons[0].id).toBe('key')
     })
 
     it('icon has svgContent', () => {

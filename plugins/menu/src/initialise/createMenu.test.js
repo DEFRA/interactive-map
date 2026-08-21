@@ -8,26 +8,30 @@ jest.mock('../registry/getDatasetRegistry.js', () => ({
 const makeEventBus = () => ({
   on: jest.fn(),
   off: jest.fn(),
-  emit: jest.fn()
+  emit: jest.fn(),
+  requestOnce: jest.fn(),
+  emitWhenRequested: jest.fn()
 })
 
 describe('createMenu', () => {
-  it('registers a listener for datasets:registryReady', () => {
+  it('dispatches SET_MENU with the menu', () => {
     const eventBus = makeEventBus()
-    createMenu({ eventBus })
-    expect(eventBus.on).toHaveBeenCalledWith('datasets:registryReady', setDatasetRegistry)
+    const dispatch = jest.fn()
+    const menu = [{ id: 'layer1' }]
+    createMenu({ menu, eventBus, dispatch, pluginStateRef: {} })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MENU', payload: { menu } })
   })
 
-  it('emits datasets:requestRegistry on creation', () => {
+  it('calls requestOnce for the datasets registry', () => {
     const eventBus = makeEventBus()
-    createMenu({ eventBus })
-    expect(eventBus.emit).toHaveBeenCalledWith('datasets:requestRegistry')
+    createMenu({ eventBus, dispatch: jest.fn(), pluginStateRef: {} })
+    expect(eventBus.requestOnce).toHaveBeenCalledWith('datasets:registry', setDatasetRegistry)
   })
 
-  it('remove() deregisters the datasets:registryReady listener', () => {
+  it('calls emitWhenRequested for menu:state', () => {
     const eventBus = makeEventBus()
-    const { remove } = createMenu({ eventBus })
-    remove()
-    expect(eventBus.off).toHaveBeenCalledWith('datasets:registryReady', setDatasetRegistry)
+    const pluginStateRef = { current: {} }
+    createMenu({ eventBus, dispatch: jest.fn(), pluginStateRef })
+    expect(eventBus.emitWhenRequested).toHaveBeenCalledWith('menu:state', pluginStateRef)
   })
 })

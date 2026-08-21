@@ -1,10 +1,5 @@
 import { render } from '@testing-library/react'
 import { LayersMenu } from './LayersMenu.jsx'
-import { setDatasetVisibility } from '../../api/setDatasetVisibility.js'
-
-jest.mock('../../api/setDatasetVisibility.js', () => ({
-  setDatasetVisibility: jest.fn()
-}))
 
 let capturedOnChange = null
 
@@ -41,10 +36,6 @@ const makePluginState = (menu = [], extra = {}) => ({
 })
 
 describe('LayersMenu', () => {
-  beforeEach(() => {
-    setDatasetVisibility.mockClear()
-  })
-
   describe('container class', () => {
     it('renders the base container class when no groups have a groupLabel', () => {
       const pluginState = makePluginState([{ id: 'g1', type: 'checkbox', items: [] }])
@@ -145,31 +136,21 @@ describe('LayersMenu', () => {
   })
 
   describe('handleDatasetChange', () => {
-    it('calls setDatasetVisibility with the correct arguments when a checkbox changes', () => {
+    it('passes handleOnChange from the config item as onChange', () => {
+      const handleOnChange = jest.fn()
+      const pluginState = makePluginState([
+        { id: 'g1', type: 'checkbox', items: [{ id: 'dataset-abc', handleOnChange }] }
+      ])
+      render(<LayersMenu pluginState={pluginState} />)
+      expect(capturedOnChange).toBe(handleOnChange)
+    })
+
+    it('onChange is undefined when the config item has no handleOnChange', () => {
       const pluginState = makePluginState([
         { id: 'g1', type: 'checkbox', items: [{ id: 'dataset-abc' }] }
       ])
       render(<LayersMenu pluginState={pluginState} />)
-      capturedOnChange({ target: { value: 'dataset-abc', checked: true } })
-      expect(setDatasetVisibility).toHaveBeenCalledTimes(1)
-      expect(setDatasetVisibility).toHaveBeenCalledWith(
-        { pluginState },
-        true,
-        { datasetId: 'dataset-abc' }
-      )
-    })
-
-    it('passes checked: false to setDatasetVisibility when unchecking', () => {
-      const pluginState = makePluginState([
-        { id: 'g1', type: 'checkbox', items: [{ id: 'dataset-xyz' }] }
-      ])
-      render(<LayersMenu pluginState={pluginState} />)
-      capturedOnChange({ target: { value: 'dataset-xyz', checked: false } })
-      expect(setDatasetVisibility).toHaveBeenCalledWith(
-        { pluginState },
-        false,
-        { datasetId: 'dataset-xyz' }
-      )
+      expect(capturedOnChange).toBeUndefined()
     })
   })
 })
