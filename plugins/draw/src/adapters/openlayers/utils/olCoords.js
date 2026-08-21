@@ -16,7 +16,7 @@ export const pixelToCoord = (map, pixel) => {
 }
 
 /** Pixel distance between two { x, y } points */
-export const pixelDist = (a, b) => Math.sqrt((a.x - b.x) ** 2 + (a.y - b.y) ** 2)
+export const pixelDist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
 
 /** OL pixel array [x, y] → { x, y } */
 export const arrayToPixel = ([x, y]) => ({ x, y })

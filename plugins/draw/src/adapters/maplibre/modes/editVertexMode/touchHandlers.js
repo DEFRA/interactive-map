@@ -48,7 +48,7 @@ export const touchHandlers = {
       this.syncVertices(state)
 
       // Push undo for the move if touch actually moved
-      if (state._touchMoved && state._moveStartPosition && state._moveStartIndex !== undefined) {
+      if (state._touchMoved && state._moveStartPosition && state._moveStartIndex != null) {
         this.pushUndo({
           type: 'move_vertex',
           featureId: state.featureId,
@@ -57,7 +57,7 @@ export const touchHandlers = {
         })
       }
       state._moveStartPosition = null
-      state._moveStartIndex = undefined
+      state._moveStartIndex = null
       state._touchMoved = false
 
       // Re-sync the target to the vertex's actual final coordinate. Mid-drag it tracks the
