@@ -200,11 +200,22 @@ describe('datasetRegistry', () => {
       expect(result1).toBe(result2)
     })
 
-    it('recalculates caches the cached result when invalidateKeyItems is called', () => {
+    it('recalculates the keyItems when invalidateKeyItemsOnMenuStateChange is called with new menuState', () => {
+      const menuState = { someMenuKey: 'someValue' }
+      datasetRegistry.invalidateKeyItemsOnMenuStateChange({})
       const result1 = datasetRegistry.keyItems()
-      datasetRegistry.invalidateKeyItems()
+      datasetRegistry.invalidateKeyItemsOnMenuStateChange(menuState)
       const result2 = datasetRegistry.keyItems()
       expect(result1).not.toBe(result2)
+    })
+
+    it('keeps the cached keyItems when invalidateKeyItemsOnMenuStateChange is called with the same menuState', () => {
+      const menuState = { someMenuKey: 'someOtherValue' }
+      datasetRegistry.invalidateKeyItemsOnMenuStateChange(menuState)
+      const result1 = datasetRegistry.keyItems()
+      datasetRegistry.invalidateKeyItemsOnMenuStateChange(menuState)
+      const result2 = datasetRegistry.keyItems()
+      expect(result1).toBe(result2)
     })
 
     it('recomputes when the datasets ref changes', () => {

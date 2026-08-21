@@ -109,6 +109,50 @@ class EventBus {
   }
 
   /**
+   * Like `emit`, but also registers a listener for the corresponding `Required` event.
+   *
+   * Use this for events that may be requested before or after the emitter side is ready
+   * e.g. called from plugins that require a state reference from a different plugin like this:
+   * const removeRegistryListener = eventBus.emitWhenRequested('datasets:registry', datasetRegistry)
+   *
+   * @param {string} eventName
+   * @param {...*} args
+   * @returns {Function} A function to remove the listener for the `Required` event.
+   */
+  emitWhenRequested (eventName, ...args) {
+    const eventRequestedName = `${eventName}Requested`
+    const eventReadyName = `${eventName}Ready`
+    const handleOnRequired = () => this.emit(eventReadyName, ...args)
+    // Add a listener that will emit the event whenever requested
+    this.on(eventRequestedName, handleOnRequired)
+    // Also emit the event immediately, in case a listener is already waiting for it
+    handleOnRequired()
+    return () => this.off(eventRequestedName, handleOnRequired)
+  }
+
+  /**
+   * Like `emit`, but appends `Requested` to the event.
+   * used for events that require a response from another plugin,
+   * e.g. `datasets:registryRequested` will be emitted by the menu plugin,
+   * via `eventBus.requestOnce('datasets:registry')`, and the datasets plugin will respond with `datasets:registryReady`.
+   * and the datasets plugin will respond with `datasets:registryReady`.
+   * via `eventBus.emitWhenRequested('datasets:registry', datasetRegistry)`.
+   *
+   * @param {string} eventName
+   * @param {Function} eventHandler
+   * @returns {this}
+   */
+  requestOnce (eventName, eventHandler) {
+    const eventRequestedName = `${eventName}Requested`
+    const eventReadyName = `${eventName}Ready`
+    // Note - must register the once listener before emitting the requested event,
+    // otherwise the event won't emit, as there are no listeners yet.
+    this.once(eventReadyName, eventHandler)
+    this.emit(eventRequestedName, eventName)
+    return this
+  }
+
+  /**
    * Remove all handlers and clear any queued events.
    */
   destroy () {

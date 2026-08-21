@@ -1,12 +1,8 @@
-import { datasetRegistry } from './datasetRegistry.js'
-
-let _menuStateRef = {}
-export const attachMenuStateRef = (menuStateRef) => {
-  _menuStateRef = menuStateRef
-}
+let _pluginStateRef = {}
+export const attachPluginStateRef = (pluginStateRef) => { _pluginStateRef = pluginStateRef }
 
 const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
-  const menuState = _menuStateRef?.current?.menuState || {}
+  const menuState = _pluginStateRef?.current?.menuState || {}
   for (const [key, valueArray] of Object.entries(menuVisibleWhen)) {
     const menuValue = menuState[key]
     if (!valueArray.includes(menuValue)) {
@@ -15,14 +11,6 @@ const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
   }
   return true
 }
-
-const _isVisibleWhenMapStyleCheck = (visibleWhenValue) => {
-  const mapStylesArray = Array.isArray(visibleWhenValue) ? visibleWhenValue : [visibleWhenValue]
-  return mapStylesArray.includes(_getMapStyleId())
-}
-
-// exported so it can be mocked and overridden when testing
-export const _getMapStyleId = () => datasetRegistry.mapStyle.id
 
 /**
  * receives a visibleWhen boolean or object
@@ -44,9 +32,6 @@ export const isVisibleWhen = (visibleWhen) => {
   if (typeof visibleWhen === 'object') {
     // check each property of the visibleWhen object against the relevant pluginState property
     for (const [visibleWhenKey, visibleWhenValue] of Object.entries(visibleWhen)) {
-      if (visibleWhenKey === 'mapStyleId' && !_isVisibleWhenMapStyleCheck(visibleWhenValue)) {
-        return false
-      }
       if (visibleWhenKey === 'menu' && !_isVisibleWhenMenuCheck(visibleWhenValue)) {
         return false
       }

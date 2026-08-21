@@ -1,5 +1,5 @@
 import { useEffect } from 'react'
-import { createMapKey } from './createMapKey.js'
+import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
 
 // additional possible params here are: pluginConfig, pluginState, appState, mapProvider,
 export function MapKeyInit ({ mapState, services }) {
@@ -7,9 +7,9 @@ export function MapKeyInit ({ mapState, services }) {
 
   useEffect(() => {
     if (!mapState.isMapReady) {
-      return () => {}
+      return
     }
-    const { remove } = createMapKey({ eventBus })
-    return remove
+    // Request a handle on the datasetsRegistry singleton
+    eventBus.requestOnce('datasets:registry', setDatasetRegistry)
   }, [mapState.isMapReady])
 }
