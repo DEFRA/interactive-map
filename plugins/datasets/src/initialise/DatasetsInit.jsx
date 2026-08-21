@@ -6,13 +6,19 @@ import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 
+const pluginConfigHasMenuItems = (pluginConfig) =>
+  pluginConfig.datasets
+    .some(dataset => dataset.showInMenu || dataset.sublayers?.some(sublayer => sublayer.showInMenu))
+
 export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
 
   useEffect(() => {
-    if (pluginConfig.hasMenu === false) {
+    const hasMenu = pluginConfig.hasMenu !== false && pluginConfigHasMenuItems(pluginConfig)
+
+    if (!hasMenu) {
       eventBus.emit(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
       eventBus.emit(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
     }

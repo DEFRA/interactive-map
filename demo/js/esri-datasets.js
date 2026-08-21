@@ -540,19 +540,6 @@ const menu = [
 ]
 
 const datasetsPlugin = createDatasetsPlugin({
-  manifest: {
-    panels: [{
-      id: 'datasetsLayers',
-      desktop: { slot: 'left-top', width: '280px', exclusive: false, },
-      tablet: { slot: 'left-top', width: '280px', modal: true }
-    }],
-    // buttons: [
-    //   {
-    //     id: 'datasetsLayers',
-    //     excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
-    //   }
-    // ]
-  },  
   globals: {
     opacityMode: 'global', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,

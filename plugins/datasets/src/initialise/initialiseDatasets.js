@@ -29,7 +29,7 @@ export const initialiseDatasets = ({
     datasetRegistry.attachCreateDataset(adapter.createDataset)
   }
   datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
-  const menu = pluginConfig.menu || datasetsToMenu({ datasets: processedDatasets })
+  const menu = datasetsToMenu({ datasets: processedDatasets })
 
   eventBus.requestOnce('menu:state', attachMenuStateRef) // Request the menu state from the menu plugin
 
