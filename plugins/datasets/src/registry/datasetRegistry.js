@@ -84,7 +84,7 @@ const datasetRegistry = {
   },
 
   _lastMenuState: {},
-  invalidateKeyItems (menuState) {
+  invalidateKeyItemsOnMenuStateChange (menuState) {
     if (menuState === this._lastMenuState) {
       return
     }

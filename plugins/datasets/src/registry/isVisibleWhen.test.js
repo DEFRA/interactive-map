@@ -1,5 +1,9 @@
-import { isVisibleWhen, setMenuState } from './isVisibleWhen.js'
+import { isVisibleWhen, attachMenuStateRef } from './isVisibleWhen.js'
 import { datasetRegistry } from './datasetRegistry.js'
+
+const setMenuState = (menuState) => {
+  attachMenuStateRef({ current: { menuState } })
+}
 
 describe('isVisibleWhen', () => {
   beforeEach(() => {
