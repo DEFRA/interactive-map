@@ -29,7 +29,7 @@ const makePluginState = (menuState = {}) => ({
 
 const baseGroup = {
   id: 'group-1',
-  label: 'My Group',
+  groupLabel: 'My Group',
   items: [{ id: 'opt-a' }, { id: 'opt-b' }]
 }
 

@@ -1,7 +1,7 @@
 import React from 'react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 import { MenuRadio } from './MenuRadio.jsx'
-
+import { CheckboxGroupWrapper } from './CheckboxGroupWrapper.jsx'
 export const RadioGroupWrapper = ({ pluginState, menuGroup }) => {
   const { id, items, visibleWhen } = menuGroup
   const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true
@@ -15,25 +15,19 @@ export const RadioGroupWrapper = ({ pluginState, menuGroup }) => {
     dispatch({ type: 'UPDATE_MENU_STATE', payload: { [id]: event.target.value } })
   }
 
-  const wrapperClass = 'govuk-form-group im-c-menu-layers-group'
   return (
-    <div key={menuGroup.id} className={wrapperClass}>
-      <fieldset className='im-c-menu-layers-group__fieldset'>
-        <legend className='im-c-menu-layers-group__legend'>
-          <h3> {menuGroup.label} </h3>
-        </legend>
-        <div className='govuk-radios govuk-radios--small' data-module='govuk-radios'>
-          {items.map((menuGroupItem) =>
-            <MenuRadio
-              key={menuGroupItem.id}
-              menuGroupItem={menuGroupItem}
-              name={id}
-              checked={menuGroupItem.id === value}
-              onChange={handleChange}
-            />
-          )}
-        </div>
-      </fieldset>
-    </div>
+    <CheckboxGroupWrapper key={menuGroup.id} menuGroup={menuGroup}>
+      <div className='govuk-radios govuk-radios--small' data-module='govuk-radios'>
+        {items.map((menuGroupItem) =>
+          <MenuRadio
+            key={menuGroupItem.id}
+            menuGroupItem={menuGroupItem}
+            name={id}
+            checked={menuGroupItem.id === value}
+            onChange={handleChange}
+          />
+        )}
+      </div>
+    </CheckboxGroupWrapper>
   )
 }
