@@ -558,9 +558,8 @@ const datasetsPlugin = createDatasetsPlugin({
     opacity: 0.75,
     visible: true
   },
-  // hasMenu: false,
-  datasets,
-  menu
+  hasMenu: false,
+  datasets
 })
 
 const interactiveMap = new InteractiveMap('map', {

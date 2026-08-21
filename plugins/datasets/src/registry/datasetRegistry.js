@@ -83,7 +83,12 @@ const datasetRegistry = {
     }, { patternConfigs: [], symbolConfigs: [] })
   },
 
-  invalidateKeyItems () {
+  _lastMenuState: {},
+  invalidateKeyItems (menuState) {
+    if (menuState === this._lastMenuState) {
+      return
+    }
+    this._lastMenuState = menuState
     this._lastKeyItemsDatasets = null
   },
   _lastKeyItems: {},

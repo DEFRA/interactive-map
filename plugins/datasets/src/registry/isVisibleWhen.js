@@ -1,7 +1,9 @@
 import { datasetRegistry } from './datasetRegistry.js'
 
 let _menuStateRef = {}
-export const attachMenuStateRef = (menuStateRef) => (_menuStateRef = menuStateRef)
+export const attachMenuStateRef = (menuStateRef) => {
+  _menuStateRef = menuStateRef
+}
 
 const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
   const menuState = _menuStateRef?.current?.menuState || {}

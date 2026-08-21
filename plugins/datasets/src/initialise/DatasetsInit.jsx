@@ -56,10 +56,6 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     initDatasets()
   }, [isBaseMapReady, appState.mode])
 
-  useEffect(() => {
-    datasetRegistry.invalidateKeyItems()
-  }, [pluginState.menuState])
-
   useEffect(() => datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets),
     [pluginState.mappedDatasets, pluginState.orderedDatasets])
 

@@ -64,7 +64,10 @@ export const initialiseDatasets = ({
   // so they can access the dataset registry.
   const removeRegistryListener = eventBus.emitWhenRequested('datasets:registry', datasetRegistry)
 
-  eventBus.on('menu:changed', () => adapter.applyGlobalVisibility())
+  eventBus.on('menu:changed', (menuState) => {
+    datasetRegistry.invalidateKeyItems(menuState)
+    adapter.applyGlobalVisibility()
+  })
 
   return {
     remove () {

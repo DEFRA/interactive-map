@@ -19,10 +19,6 @@ export function MenuInit ({ pluginConfig, pluginState, mapState, services }) {
     return createMenu({ menu, eventBus, dispatch, pluginStateRef })
   }, [mapState.isMapReady])
 
-  // Notify any plugins, that are listening to the menu's state
-  useEffect(() => eventBus.emit('menu:changed'), [pluginState.menuState])
-
-  // When the menuState changes, we need to trigger (in the datasets plugin):
-  //   invalidateKeyItems
-  //   applyGlobalVisibility
+  // Notify any plugins, that are listening, to the menu's state change
+  useEffect(() => eventBus.emit('menu:changed', pluginState.menuState), [pluginState.menuState])
 }
