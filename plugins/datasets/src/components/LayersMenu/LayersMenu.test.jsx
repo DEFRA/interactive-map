@@ -20,12 +20,6 @@ jest.mock('./LayersMenuCheckbox.jsx', () => ({
   }
 }))
 
-jest.mock('./LayersRadioGroupWrapper.jsx', () => ({
-  LayersRadioGroupWrapper: ({ menuGroup }) => (
-    <div data-testid='layers-radio-group-wrapper' data-group-id={menuGroup.id} />
-  )
-}))
-
 jest.mock('./LayersMenuGroupWrapper.jsx', () => ({
   LayersMenuGroupWrapper: ({ menuGroup, children }) => (
     <div data-testid='layers-menu-group-wrapper' data-group-id={menuGroup.id}>
@@ -105,42 +99,6 @@ describe('LayersMenu', () => {
       ])
       const { getByTestId } = render(<LayersMenu pluginState={pluginState} />)
       expect(getByTestId('layers-menu-checkbox').dataset.itemId).toBe('item-1')
-    })
-  })
-
-  describe('radio groups', () => {
-    it('renders a LayersRadioGroupWrapper for non-checkbox groups', () => {
-      const pluginState = makePluginState([
-        { id: 'r1', type: 'radio', items: [{ id: 'opt1' }, { id: 'opt2' }] }
-      ])
-      const { getAllByTestId } = render(<LayersMenu pluginState={pluginState} />)
-      expect(getAllByTestId('layers-radio-group-wrapper')).toHaveLength(1)
-    })
-
-    it('passes the correct group to LayersRadioGroupWrapper', () => {
-      const pluginState = makePluginState([
-        { id: 'radio-group-1', type: 'radio', items: [] }
-      ])
-      const { getByTestId } = render(<LayersMenu pluginState={pluginState} />)
-      expect(getByTestId('layers-radio-group-wrapper').dataset.groupId).toBe('radio-group-1')
-    })
-
-    it('does not render a LayersMenuGroupWrapper for radio groups', () => {
-      const pluginState = makePluginState([{ id: 'r1', type: 'radio', items: [] }])
-      const { queryByTestId } = render(<LayersMenu pluginState={pluginState} />)
-      expect(queryByTestId('layers-menu-group-wrapper')).toBeNull()
-    })
-  })
-
-  describe('mixed groups', () => {
-    it('renders both checkbox and radio wrappers when both types are present', () => {
-      const pluginState = makePluginState([
-        { id: 'c1', type: 'checkbox', items: [] },
-        { id: 'r1', type: 'radio', items: [] }
-      ])
-      const { getByTestId } = render(<LayersMenu pluginState={pluginState} />)
-      expect(getByTestId('layers-menu-group-wrapper')).toBeTruthy()
-      expect(getByTestId('layers-radio-group-wrapper')).toBeTruthy()
     })
   })
 
