@@ -118,6 +118,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
 
       {isDismissible && (
         <button
+          type='button'
           aria-label={`Close ${label}`}
           className='im-c-panel__close'
           onClick={handleClose}

@@ -29,11 +29,7 @@ const makeProps = (overrides = {}) => {
   return { props, adapter }
 }
 
-const renderInit = async (props) => {
-  let result
-  await act(async () => { result = render(<DrawInit {...props} />) })
-  return result
-}
+const renderInit = async (props) => render(<DrawInit {...props} />)
 
 beforeEach(() => jest.clearAllMocks())
 
@@ -86,7 +82,7 @@ describe('adapter lifecycle', () => {
     expect(props.mapProvider.draw).toBe(adapter)
     props.mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
 
-    await act(async () => { result.unmount() })
+    result.unmount()
 
     expect(adapter.remove).toHaveBeenCalled()
     expect(props.mapProvider.draw).toBeNull()
@@ -98,9 +94,8 @@ describe('adapter lifecycle', () => {
     let resolveAdapter
     loadDrawAdapter.mockReturnValue(new Promise((resolve) => { resolveAdapter = resolve }))
 
-    let result
-    await act(async () => { result = render(<DrawInit {...props} />) })
-    await act(async () => { result.unmount() })
+    const result = render(<DrawInit {...props} />)
+    result.unmount()
     await act(async () => { resolveAdapter(adapter); await Promise.resolve() })
 
     expect(props.mapProvider.draw).toBeNull()
@@ -134,7 +129,7 @@ describe('features list suppression', () => {
 
     props.services.eventBus.emit.mockClear()
     props.pluginState = { ...props.pluginState, mode: null }
-    await act(async () => { result.rerender(<DrawInit {...props} />) })
+    result.rerender(<DrawInit {...props} />)
 
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
       EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
@@ -146,7 +141,7 @@ describe('features list suppression', () => {
     const result = await renderInit(props)
     props.services.eventBus.emit.mockClear()
 
-    await act(async () => { result.unmount() })
+    result.unmount()
 
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
       EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
@@ -184,7 +179,7 @@ describe('crosshair', () => {
     // Switch away from touch/keyboard, then re-render so the crosshair effect's
     // cleanup runs — it reads the (mutated) interface type and hides the crosshair.
     props.appState.interfaceType = 'mouse'
-    await act(async () => { result.rerender(<DrawInit {...props} />) })
+    result.rerender(<DrawInit {...props} />)
 
     expect(props.mapState.crossHair.hide).toHaveBeenCalled()
   })
