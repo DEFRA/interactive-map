@@ -22,7 +22,7 @@ jest.mock('./MenuRadio.jsx', () => ({
   }
 }))
 
-const makePluginState = (menuState = {}) => ({
+const makeProps = (menuState = {}) => ({
   menuState,
   dispatch: jest.fn()
 })
@@ -44,46 +44,46 @@ describe('RadioGroupWrapper', () => {
     it('returns null when isVisibleWhen resolves to false', () => {
       isVisibleWhen.mockReturnValue(false)
       const { container } = render(
-        <RadioGroupWrapper pluginState={makePluginState()} menuGroup={{ ...baseGroup, visibleWhen: {} }} />
+        <RadioGroupWrapper {...makeProps()} menuGroup={{ ...baseGroup, visibleWhen: {} }} />
       )
       expect(container.firstChild).toBeNull()
     })
 
     it('renders when visibleWhen is not set', () => {
       const { container } = render(
-        <RadioGroupWrapper pluginState={makePluginState()} menuGroup={baseGroup} />
+        <RadioGroupWrapper {...makeProps()} menuGroup={baseGroup} />
       )
       expect(container.querySelector('.govuk-form-group')).toBeTruthy()
     })
 
     it('does not call isVisibleWhen when visibleWhen is not set', () => {
-      render(<RadioGroupWrapper pluginState={makePluginState()} menuGroup={baseGroup} />)
+      render(<RadioGroupWrapper {...makeProps()} menuGroup={baseGroup} />)
       expect(isVisibleWhen).not.toHaveBeenCalled()
     })
 
     it('calls isVisibleWhen with the visibleWhen value', () => {
       const visibleWhen = { menu: ['someValue'] }
-      render(<RadioGroupWrapper pluginState={makePluginState()} menuGroup={{ ...baseGroup, visibleWhen }} />)
+      render(<RadioGroupWrapper {...makeProps()} menuGroup={{ ...baseGroup, visibleWhen }} />)
       expect(isVisibleWhen).toHaveBeenCalledWith(visibleWhen)
     })
   })
 
   describe('rendered output', () => {
     it('renders the group label as the legend', () => {
-      render(<RadioGroupWrapper pluginState={makePluginState()} menuGroup={baseGroup} />)
+      render(<RadioGroupWrapper {...makeProps()} menuGroup={baseGroup} />)
       expect(screen.getByText('My Group')).toBeTruthy()
     })
 
     it('renders a MenuRadio for each item', () => {
       const { getAllByTestId } = render(
-        <RadioGroupWrapper pluginState={makePluginState()} menuGroup={baseGroup} />
+        <RadioGroupWrapper {...makeProps()} menuGroup={baseGroup} />
       )
       expect(getAllByTestId('layers-menu-radio')).toHaveLength(2)
     })
 
     it('passes the group id as the name to each radio item', () => {
       const { getAllByTestId } = render(
-        <RadioGroupWrapper pluginState={makePluginState()} menuGroup={baseGroup} />
+        <RadioGroupWrapper {...makeProps()} menuGroup={baseGroup} />
       )
       getAllByTestId('layers-menu-radio').forEach(radio => {
         expect(radio.dataset.name).toBe('group-1')
@@ -94,7 +94,7 @@ describe('RadioGroupWrapper', () => {
   describe('checked state', () => {
     it('marks the item matching menuState as checked', () => {
       const { getAllByTestId } = render(
-        <RadioGroupWrapper pluginState={makePluginState({ 'group-1': 'opt-a' })} menuGroup={baseGroup} />
+        <RadioGroupWrapper {...makeProps({ 'group-1': 'opt-a' })} menuGroup={baseGroup} />
       )
       const radios = getAllByTestId('layers-menu-radio')
       expect(radios[0].dataset.checked).toBe('true')
@@ -103,7 +103,7 @@ describe('RadioGroupWrapper', () => {
 
     it('marks no item as checked when menuState has no value for the group', () => {
       const { getAllByTestId } = render(
-        <RadioGroupWrapper pluginState={makePluginState({})} menuGroup={baseGroup} />
+        <RadioGroupWrapper {...makeProps({})} menuGroup={baseGroup} />
       )
       getAllByTestId('layers-menu-radio').forEach(radio => {
         expect(radio.dataset.checked).toBe('false')
@@ -113,10 +113,10 @@ describe('RadioGroupWrapper', () => {
 
   describe('handleChange', () => {
     it('dispatches UPDATE_MENU_STATE with the selected item id', () => {
-      const pluginState = makePluginState({ 'group-1': 'opt-a' })
-      render(<RadioGroupWrapper pluginState={pluginState} menuGroup={baseGroup} />)
+      const props = makeProps({ 'group-1': 'opt-a' })
+      render(<RadioGroupWrapper {...props} menuGroup={baseGroup} />)
       act(() => { capturedOnChange({ target: { value: 'opt-b' } }) })
-      expect(pluginState.dispatch).toHaveBeenCalledWith({
+      expect(props.dispatch).toHaveBeenCalledWith({
         type: 'UPDATE_MENU_STATE',
         payload: { 'group-1': 'opt-b' }
       })
@@ -124,10 +124,10 @@ describe('RadioGroupWrapper', () => {
 
     it('dispatches using the group id as the payload key', () => {
       const group = { ...baseGroup, id: 'another-group' }
-      const pluginState = makePluginState({ 'another-group': 'opt-a' })
-      render(<RadioGroupWrapper pluginState={pluginState} menuGroup={group} />)
+      const props = makeProps({ 'another-group': 'opt-a' })
+      render(<RadioGroupWrapper {...props} menuGroup={group} />)
       act(() => { capturedOnChange({ target: { value: 'opt-b' } }) })
-      expect(pluginState.dispatch).toHaveBeenCalledWith({
+      expect(props.dispatch).toHaveBeenCalledWith({
         type: 'UPDATE_MENU_STATE',
         payload: { 'another-group': 'opt-b' }
       })
