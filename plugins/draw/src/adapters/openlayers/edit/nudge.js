@@ -30,9 +30,12 @@ export const resolveSnappedCoord = (snap, map, current, nudgedCoord, snappedCoor
  * `keyMove` tracks the coordinate at the start of a nudge sequence so a single
  * move_vertex undo op can be pushed on keyup (see keyboardHandler).
  *
+ * @param {(olFeature, index: number, coord: number[]) => void} [options.moveCoord] - coordinate
+ *   writer, defaulting to moveVertex; point/editPointMode.js injects point/pointOps.js's
+ *   movePoint instead, since a Point has no ring index to address.
  * @returns {{ nudge: (e: KeyboardEvent) => void, keyMove: { start, index }, nudgeByDelta: (dx: number, dy: number, isLargeStep: boolean) => void }}
  */
-export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexMoved }) => {
+export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexMoved, moveCoord = moveVertex }) => {
   const keyMove = { start: null, index: null }
 
   // Shared core: moves the selected vertex by an already pixel-scaled delta,
@@ -46,9 +49,13 @@ export const wireNudge = ({ map, snap, getState, setState, onInserted, onVertexM
     const current = vertices[selectedVertexIndex]
     const nudgedCoord = nudgeCoord(map, current, dx, dy)
     const snappedCoord = snap ? snap.apply(nudgedCoord) : nudgedCoord
-    snap?.hideIndicator()
     const newCoord = resolveSnappedCoord(snap, map, current, nudgedCoord, snappedCoord, dx, dy)
-    moveVertex(olFeature, selectedVertexIndex, newCoord)
+    // resolveSnappedCoord can override snappedCoord with an escape jump clear of the snap
+    // radius — when it does, the indicator snap.apply() just showed is now stale, so correct it.
+    if (snap && newCoord !== snappedCoord) {
+      snap.hideIndicator()
+    }
+    moveCoord(olFeature, selectedVertexIndex, newCoord)
     setState({ vertices: vertices.map((c, i) => i === selectedVertexIndex ? newCoord : c) })
     return { previousCoord: current, vertexIndex: selectedVertexIndex }
   }

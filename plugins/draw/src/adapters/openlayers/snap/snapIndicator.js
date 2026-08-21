@@ -37,7 +37,9 @@ export const createSnapIndicator = (map, colors) => {
   const layer = new VectorLayer({
     source,
     style: (f) => styles[f.get('snapType')] ?? null,
-    zIndex: 200,
+    // Below the draw layer (zIndex 100) and its vertex/midpoint handles (101-103), matching
+    // the ML adapter — the indicator sits behind the symbols/vertices it's snapping to.
+    zIndex: 99,
     updateWhileAnimating: true,
     updateWhileInteracting: true
   })

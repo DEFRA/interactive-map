@@ -1,5 +1,6 @@
 import { OLDrawAdapter } from './OLDrawAdapter.js'
 import { createOLDraw } from './olDraw.js'
+import { resolvePointSymbol, hasSymbolStyle } from './point/pointSymbolImages.js'
 
 // The literal split.js passes — see OLDrawAdapter.js's DRAW_OUTLINE_STYLE_LAYER comment.
 const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
@@ -20,6 +21,7 @@ const fakeManager = () => ({
   setDrawingPreviewProperty: jest.fn(),
   get: jest.fn(() => 'feature'),
   add: jest.fn(),
+  store: { getOL: jest.fn() },
   delete: jest.fn(),
   deleteAll: jest.fn(),
   on: jest.fn(),
@@ -30,6 +32,10 @@ const fakeManager = () => ({
 
 jest.mock('./olDraw.js', () => ({
   createOLDraw: jest.fn(({ mapProvider }) => ({ manager: mapProvider._testManager, remove: jest.fn() }))
+}))
+jest.mock('./point/pointSymbolImages.js', () => ({
+  resolvePointSymbol: jest.fn(),
+  hasSymbolStyle: jest.fn()
 }))
 
 const setup = () => {
@@ -130,6 +136,93 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   expect(manager.undo).toHaveBeenCalled()
   expect(manager.deleteVertex).toHaveBeenCalled()
   expect(manager.nudgeSelectedVertex).toHaveBeenCalledWith(1, 0, true)
+})
+
+// A directly-added Point skips draw_point's own icon-resolving drawend handler.
+describe('add() and point symbol resolution', () => {
+  test('resolves the symbol for a Point feature with symbol properties', () => {
+    const { manager, mapProvider, adapter } = setup()
+    const olFeature = {}
+    manager.add.mockReturnValue(olFeature)
+    hasSymbolStyle.mockReturnValue(true)
+    const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
+
+    const result = adapter.add(feature)
+
+    expect(manager.add).toHaveBeenCalledWith(feature)
+    expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin' })
+    expect(resolvePointSymbol).toHaveBeenCalledWith({ manager, mapProvider, olFeature })
+    expect(result).toBe(olFeature)
+  })
+
+  test('does not attempt resolution for a Point with no symbol properties', () => {
+    const { manager, adapter } = setup()
+    manager.add.mockReturnValue({})
+    hasSymbolStyle.mockReturnValue(false)
+    adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
+
+  test('does not attempt resolution for a non-Point geometry', () => {
+    const { manager, adapter } = setup()
+    manager.add.mockReturnValue({})
+    adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
+    expect(hasSymbolStyle).not.toHaveBeenCalled()
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
+
+  test('does not attempt resolution for a feature with no geometry', () => {
+    const { manager, adapter } = setup()
+    manager.add.mockReturnValue({})
+    adapter.add({ id: 'b' })
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
+})
+
+describe('setStyle()', () => {
+  const fakeOLFeature = (geometryType) => ({
+    setProperties: jest.fn(),
+    getGeometry: jest.fn(() => ({ getType: () => geometryType })),
+    getProperties: jest.fn(() => ({}))
+  })
+
+  test('patches the feature\'s properties (not silently, so VectorSource still redraws)', () => {
+    const { manager, adapter } = setup()
+    const olFeature = fakeOLFeature('Polygon')
+    manager.store.getOL.mockReturnValue(olFeature)
+
+    adapter.setStyle('a', { stroke: 'blue' })
+
+    expect(manager.store.getOL).toHaveBeenCalledWith('a')
+    expect(olFeature.setProperties).toHaveBeenCalledWith({ stroke: 'blue' })
+  })
+
+  // setStyle re-resolves a Point's icon the same way add() does for a directly-added one.
+  test('re-resolves the icon for a Point patched with symbol properties', () => {
+    const { manager, mapProvider, adapter } = setup()
+    const olFeature = fakeOLFeature('Point')
+    manager.store.getOL.mockReturnValue(olFeature)
+    hasSymbolStyle.mockReturnValue(true)
+
+    adapter.setStyle('p1', { symbolBackgroundColor: '#ca3535' })
+
+    expect(resolvePointSymbol).toHaveBeenCalledWith({ manager, mapProvider, olFeature })
+  })
+
+  test('does not attempt resolution for a non-Point geometry', () => {
+    const { manager, adapter } = setup()
+    const olFeature = fakeOLFeature('Polygon')
+    manager.store.getOL.mockReturnValue(olFeature)
+    adapter.setStyle('a', { stroke: 'blue' })
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
+
+  test('does nothing for an id with no existing feature', () => {
+    const { manager, adapter } = setup()
+    manager.store.getOL.mockReturnValue(null)
+    expect(() => adapter.setStyle('missing', { stroke: 'blue' })).not.toThrow()
+    expect(resolvePointSymbol).not.toHaveBeenCalled()
+  })
 })
 
 test('setGeometryValid records validity on the manager for finish gating', () => {

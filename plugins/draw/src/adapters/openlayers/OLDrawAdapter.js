@@ -1,4 +1,5 @@
 import { createOLDraw } from './olDraw.js'
+import { resolvePointSymbol, hasSymbolStyle } from './point/pointSymbolImages.js'
 
 // split.js passes this literal — MapLibre's own always-present "already-drawn
 // shapes" style layer id — as a snapLayers entry so the split line snaps to the
@@ -25,7 +26,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   setInterfaceType(type)
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
- *   get(id) / add(feature) / delete(id) / deleteAll()
+ *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -89,7 +90,31 @@ export class OLDrawAdapter {
   setInvalid (invalid) { this._manager.setInvalid(invalid) }
 
   get (id) { return this._manager.get(id) }
-  add (feature) { return this._manager.add(feature) }
+
+  // A directly-added Point (e.g. api/addFeature.js) skips draw_point's own icon-resolving
+  // drawend handler, so it must be resolved here instead — mirrors MaplibreDrawAdapter.js.
+  add (feature) {
+    const olFeature = this._manager.add(feature)
+    if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {
+      resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
+    }
+    return olFeature
+  }
+
+  // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
+  // keys) and re-renders — setProperties() must not be called silently, since VectorSource
+  // only redraws in response to the propertychange event that triggers.
+  setStyle (id, properties) {
+    const olFeature = this._manager.store.getOL(id)
+    if (!olFeature) {
+      return
+    }
+    olFeature.setProperties(properties)
+    if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(olFeature.getProperties())) {
+      resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
+    }
+  }
+
   delete (id) { return this._manager.delete(id) }
   deleteAll () { return this._manager.deleteAll() }
 

@@ -1,7 +1,25 @@
+// mapbox-gl-draw (MapLibre only) splits every layer into a `.cold`/`.hot` sibling pair — see
+// providers/maplibre/src/utils/drawLayerBuckets.js. Inlined here (not imported) since this file
+// stays provider-agnostic and OpenLayers has no such split.
+const drawBucketSiblingSuffix = { '.cold': '.hot', '.hot': '.cold' }
+
+const siblingLayerId = (layerId) => {
+  for (const [suffix, sibling] of Object.entries(drawBucketSiblingSuffix)) {
+    if (layerId.endsWith(suffix)) {
+      return `${layerId.slice(0, -suffix.length)}${sibling}`
+    }
+  }
+  return null
+}
+
 export const buildLayerConfigMap = dataLayers => {
   const map = {}
   for (const layer of dataLayers) {
     map[layer.layerId] = layer
+    const sibling = siblingLayerId(layer.layerId)
+    if (sibling) {
+      map[sibling] = layer
+    }
   }
   return map
 }

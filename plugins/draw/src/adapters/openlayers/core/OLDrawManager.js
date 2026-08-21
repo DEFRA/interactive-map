@@ -6,6 +6,9 @@ import { resolveColors } from '../../../utils/resolveColors.js'
 import { createSnapManager } from '../snap/snapManager.js'
 import { createDrawMode } from '../draw/DrawMode.js'
 import { createEditMode } from '../edit/EditMode.js'
+import { createEditPointMode } from '../point/editPointMode.js'
+import { createDrawPointMode } from '../point/drawPointMode.js'
+import { resolvePointSymbol } from '../point/pointSymbolImages.js'
 import { TOLERANCES } from '../defaults.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from './internalEvents.js'
@@ -31,6 +34,11 @@ export class OLDrawManager {
     this.store = createFeatureStore()
     this.undoStack = createUndoStack((length) => this.emit(ADAPTER_EVENTS.UNDO_CHANGE, length))
 
+    // Tracked (not just derived into colors/styles) so point/pointSymbolImages.js has
+    // something to pass to symbolRegistry.rasteriseSymbolImage() when resolving a point's
+    // icon on demand, independent of whatever triggered the resolve.
+    this.mapStyle = null
+
     this.colors = resolveColors(null, pluginConfig)
     this.styles = createStyles(this.colors)
     this.snap = createSnapManager(map, pluginConfig.snapLayers ?? null, this.colors, pluginConfig.snapRadius ?? TOLERANCES.snapRadius)
@@ -47,6 +55,7 @@ export class OLDrawManager {
   // --- Color / style updates ---
 
   setMapStyle (mapStyle) {
+    this.mapStyle = mapStyle
     this.colors = resolveColors(mapStyle, this._pluginConfig)
     this.styles = createStyles(this.colors)
     this._layer.setStyle(this.styles.createFeatureStyle())
@@ -84,15 +93,24 @@ export class OLDrawManager {
     this._modeInstance = null
     this._mode = modeName
 
-    const isDrawMode = modeName === 'draw_polygon' || modeName === 'draw_line' || modeName === 'edit_vertex'
+    const isDrawMode = modeName === 'draw_polygon' || modeName === 'draw_line' || modeName === 'draw_point' || modeName === 'edit_vertex' || modeName === 'edit_point'
     this.snap?.setIndicatorActive(isDrawMode)
 
     const modeOptions = { ...options, snap: this.snap }
 
     if (modeName === 'draw_polygon' || modeName === 'draw_line') {
       this._modeInstance = createDrawMode({ map: this._map, manager: this, options: modeOptions })
+    } else if (modeName === 'draw_point') {
+      // Injected here (rather than imported directly by drawPointMode.js) so the mode only
+      // ever calls options.resolvePointSymbol(...) and stays free of a direct dependency on
+      // symbolRegistry/mapProvider — mirrors the ML adapter's own state.resolvePointSymbol
+      // convention (see MaplibreDrawAdapter.js's changeMode).
+      const pointOptions = { ...modeOptions, resolvePointSymbol: (olFeature) => resolvePointSymbol({ manager: this, mapProvider: options.mapProvider, olFeature }) }
+      this._modeInstance = createDrawPointMode({ map: this._map, manager: this, options: pointOptions })
     } else if (modeName === 'edit_vertex') {
       this._modeInstance = createEditMode({ map: this._map, manager: this, options: modeOptions })
+    } else if (modeName === 'edit_point') {
+      this._modeInstance = createEditPointMode({ map: this._map, manager: this, options: modeOptions })
     } else {
       // disabled — no mode instance needed
     }

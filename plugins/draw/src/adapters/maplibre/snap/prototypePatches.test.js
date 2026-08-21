@@ -235,4 +235,25 @@ describe('snapToClosestPoint', () => {
     expect(self.snapStatus).toBe(false)
     expect(self.snapCoords).toBeNull()
   })
+
+  // While an edit mode's own offset-aware drag has suspended it (setAutoSnapSuspended, see its
+  // own comment), the snap library's own uncontrolled mousemove-driven auto-query must be
+  // skipped — otherwise it re-queries at the raw cursor and fights the mode's own query, which
+  // is why the two used to visibly fall out of sync (the indicator tracking the cursor while
+  // the dragged feature snapped to a different, offset-corrected result).
+  test('skips an unmarked call while auto-snap is suspended', () => {
+    const self = { status: true, map: {}, _autoSnapSuspended: true }
+    expect(MapboxSnap.prototype.snapToClosestPoint.call(self, {})).toBeUndefined()
+    expect(MapboxSnap.__orig.snapToClosestPoint).not.toHaveBeenCalled()
+  })
+
+  test('still runs an explicit call while auto-snap is suspended', () => {
+    const self = { status: true, map: {}, _autoSnapSuspended: true }
+    expect(MapboxSnap.prototype.snapToClosestPoint.call(self, { _explicit: true })).toBe('orig-snap')
+  })
+
+  test('runs unmarked calls normally once auto-snap is no longer suspended', () => {
+    const self = { status: true, map: {}, _autoSnapSuspended: false }
+    expect(MapboxSnap.prototype.snapToClosestPoint.call(self, {})).toBe('orig-snap')
+  })
 })

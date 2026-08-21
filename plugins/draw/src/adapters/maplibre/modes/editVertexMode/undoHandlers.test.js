@@ -1,52 +1,19 @@
 import { createHarness } from './__helpers__/harness.js'
-import { createUndoStack } from '../../../../utils/undoStack.js'
 import { getRingSegments } from './geometryHelpers.js'
 
+// fireGeometryChange/emitGeometryValidation/pushUndo are the shared mixin from
+// utils/geometryValidation.js — their own behaviour is covered by
+// utils/geometryValidation.test.js. This file only tests what's specific to editVertexMode:
+// pushUndo's UNDO_OP_PHASE wiring, handleUndo's per-op-type dispatch, and the
+// undoMoveVertex/undoInsertVertex/undoDeleteVertex ring operations themselves.
 describe('undoHandlers', () => {
-  test('pushUndo is a no-op without a stack and pushes otherwise', () => {
-    const { ctx, map } = createHarness()
-    map._undoStack = null
-    expect(() => ctx.pushUndo({ type: 'move_vertex' })).not.toThrow()
-    map._undoStack = createUndoStack(() => {})
-    ctx.pushUndo({ type: 'move_vertex' })
-    expect(map._undoStack.length).toBe(1)
-  })
-
-  test('pushUndo emits a deferred commit-level geometrychange with the change phase', () => {
+  test('pushUndo maps each op type to its commit phase', () => {
     jest.useFakeTimers()
     const { ctx, map } = createHarness()
     map.fire.mockClear()
-
     ctx.pushUndo({ type: 'move_vertex', featureId: 'feat-1', vertexIndex: 2 })
-    // Deferred a tick to avoid re-entrancy — nothing fired synchronously.
-    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
-
     jest.runAllTimers()
-    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({
-      phase: 'commit-move',
-      vertexIndex: 2,
-      feature: expect.any(Object)
-    }))
-    jest.useRealTimers()
-  })
-
-  test('pushUndo does not emit a geometrychange for unmapped op types', () => {
-    jest.useFakeTimers()
-    const { ctx, map } = createHarness()
-    map.fire.mockClear()
-    ctx.pushUndo({ type: 'draw_vertex', featureId: 'feat-1' })
-    jest.runAllTimers()
-    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
-    jest.useRealTimers()
-  })
-
-  test('emitGeometryValidation does not fire once the feature is gone', () => {
-    jest.useFakeTimers()
-    const { ctx, map } = createHarness()
-    map.fire.mockClear()
-    ctx.emitGeometryValidation('commit-move', 0, 'missing-feature')
-    jest.runAllTimers()
-    expect(map.fire).not.toHaveBeenCalledWith('draw.geometrychange', expect.anything())
+    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-move', vertexIndex: 2 }))
     jest.useRealTimers()
   })
 
@@ -80,15 +47,6 @@ describe('undoHandlers', () => {
       feature: expect.any(Object)
     }))
     jest.useRealTimers()
-  })
-
-  test('fireGeometryChange fires draw.update only when the feature exists', () => {
-    const { ctx, state, map } = createHarness()
-    ctx.fireGeometryChange(state)
-    expect(map.fire).toHaveBeenCalledWith('draw.update', expect.objectContaining({ action: 'change_coordinates' }))
-    map.fire.mockClear()
-    ctx.fireGeometryChange({ featureId: 'missing' })
-    expect(map.fire).not.toHaveBeenCalled()
   })
 
   test('undoMoveVertex restores the previous position, guarding missing feature/segment', () => {

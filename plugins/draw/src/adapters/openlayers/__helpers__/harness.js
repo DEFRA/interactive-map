@@ -1,6 +1,7 @@
 import Feature from 'ol/Feature.js'
 import Polygon from 'ol/geom/Polygon.js'
 import LineString from 'ol/geom/LineString.js'
+import Point from 'ol/geom/Point.js'
 import Style from 'ol/style/Style.js'
 import { createUndoStack } from '../../../utils/undoStack.js'
 
@@ -41,6 +42,7 @@ export const createFakeMap = ({ center = [50, 50] } = {}) => {
     getCoordinateFromPixel: (p) => [p[0], p[1]],
     getEventPixel: (e) => [e.clientX, e.clientY],
     getView: () => view,
+    forEachFeatureAtPixel: jest.fn(() => undefined),
     render: jest.fn()
   }
 }
@@ -60,6 +62,7 @@ export const createFakeManager = () => {
       midpointStyle: new Style({}),
       selectedVertexStyle: new Style({}),
       selectedMidpointStyle: new Style({}),
+      selectedPointStyleFor: jest.fn(() => new Style({})),
       createSketchStyle: jest.fn(() => () => [])
     },
     colors: { editVertex: 'rgba(29,112,184,1)' },
@@ -75,6 +78,12 @@ export const polygonFeature = (ring, id = 'f1') => {
 
 export const lineFeature = (coords, id = 'f1') => {
   const feature = new Feature(new LineString(coords))
+  feature.setId(id)
+  return feature
+}
+
+export const pointFeature = (coord, id = 'f1') => {
+  const feature = new Feature(new Point(coord))
   feature.setId(id)
   return feature
 }

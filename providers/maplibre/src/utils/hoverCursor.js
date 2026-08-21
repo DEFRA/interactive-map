@@ -1,16 +1,19 @@
-/**
- * Attaches a mousemove listener that changes the map cursor to a pointer when
- * hovering over any of the specified layers.
- *
- * Line layers use a 10px tolerance bbox. Stroke layers that have a companion
- * fill layer are skipped — the fill handles hover. Fill and symbol layers use
- * exact point hit-testing.
- *
- * @param {Object} map - MapLibre map instance
- * @param {string[]} layerIds - Layer IDs to watch
- * @param {Function|null} prevHandler - Previous mousemove handler to remove
- * @returns {Function|null} The new handler, or null if layerIds is empty
- */
+import { siblingDrawLayerId } from './drawLayerBuckets.js'
+
+// layerIds is a config-derived list, built once and never refreshed as features move between
+// mapbox-gl-draw's cold/hot buckets (see drawLayerBuckets.js) — adding each sibling keeps a
+// query finding a feature that has since moved to the other bucket.
+const expandDrawLayerSiblings = (layerIds) => {
+  const expanded = new Set(layerIds)
+  layerIds.forEach(id => {
+    const sibling = siblingDrawLayerId(id)
+    if (sibling) {
+      expanded.add(sibling)
+    }
+  })
+  return [...expanded]
+}
+
 const splitLayers = (map, layerIds) => {
   const lineLayers = []
   const otherLayers = []
@@ -29,6 +32,19 @@ const splitLayers = (map, layerIds) => {
   return { lineLayers, otherLayers }
 }
 
+/**
+ * Attaches a mousemove listener that changes the map cursor to a pointer when
+ * hovering over any of the specified layers.
+ *
+ * Line layers use a 10px tolerance bbox. Stroke layers that have a companion
+ * fill layer are skipped — the fill handles hover. Fill and symbol layers use
+ * exact point hit-testing.
+ *
+ * @param {Object} map - MapLibre map instance
+ * @param {string[]} layerIds - Layer IDs to watch
+ * @param {Function|null} prevHandler - Previous mousemove handler to remove
+ * @returns {Function|null} The new handler, or null if layerIds is empty
+ */
 export const setupHoverCursor = (map, layerIds, prevHandler) => {
   const canvas = map.getCanvas()
 
@@ -42,7 +58,7 @@ export const setupHoverCursor = (map, layerIds, prevHandler) => {
   }
 
   const handler = (e) => {
-    const existingLayers = layerIds.filter(id => map.getLayer(id))
+    const existingLayers = expandDrawLayerSiblings(layerIds).filter(id => map.getLayer(id))
     if (existingLayers.length === 0) {
       canvas.style.cursor = ''
       return

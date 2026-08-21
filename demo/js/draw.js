@@ -28,24 +28,35 @@ const interactPlugin = createInteractPlugin({
     idProperty: 'TOID'
   },{
     layerId: 'fill-inactive.cold',
-    idProperty: 'id'
+    idProperty: 'id',
   },{
     layerId: 'stroke-inactive.cold',
     idProperty: 'id'
+  },{
+    layerId: 'point-symbol.cold',
+    idProperty: 'id',
+    labelProperty: 'user_label'
   }],
   // debug: true,
   interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
   multiSelect: true,
-  contiguous: true,
-  deselectOnClickOutside: true
+  contiguous: false,
+  deselectOnClickOutside: true,
+  debug: true
 })
 
 // Rough approximation of the England/Wales border as a line of longitude —
 // good enough for a demo, not for anything that actually needs to be accurate.
 const WALES_BORDER_LONGITUDE = -3.0
 
-const getAllCoordinates = (coordinates) =>
-  Array.isArray(coordinates[0][0]) ? coordinates.flatMap(getAllCoordinates) : coordinates
+const getAllCoordinates = (coordinates) => {
+  // A Point's coordinates are a single [lng, lat] pair, not a list of pairs like
+  // LineString/Polygon — wrap it so the .every(([lng]) => ...) below still works.
+  if (typeof coordinates[0] === 'number') {
+    return [coordinates]
+  }
+  return Array.isArray(coordinates[0][0]) ? coordinates.flatMap(getAllCoordinates) : coordinates
+}
 
 const isEastOfWalesBorder = (geometry) =>
   getAllCoordinates(geometry.coordinates).every(([lng]) => lng > WALES_BORDER_LONGITUDE)
@@ -116,7 +127,7 @@ const interactiveMap = new InteractiveMap('map', {
   maxZoom: 20,
   autoColorScheme: true,
   // center: [-2.938769, 54.893806],
-  bounds: [-2.989707, 54.864555, -2.878635, 54.937635],
+  bounds: [-2.971927, 54.417005, -2.949552, 54.441063],
   containerHeight: '600px',
   transformRequest: transformVtsRequest3857,
   enableZoomControls: true,
@@ -146,15 +157,7 @@ const interactiveMap = new InteractiveMap('map', {
       osNamesURL: process.env.OS_NAMES_URL,
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
-      showMarker: false,
-      manifest: {
-        buttons: [{
-          id: 'search',
-          tablet: { slot: 'top-left', order: 3 },
-          desktop: { slot: 'top-left', order: 3 }
-        }]
-      },
-      // expanded: true
+      showMarker: false
     }),
     datasetsPlugin,
     mapStylesPlugin({
@@ -185,6 +188,17 @@ interactiveMap.on('map:ready', function (e) {
     tablet: { slot: 'top-middle', order: 3 },
     desktop: { slot: 'top-middle', order: 3 },
     menuItems: [{
+      id: 'addPoint',
+      label: 'Add point',
+      iconSvgContent: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+      onClick: function (e) {
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        drawPlugin.newPoint(crypto.randomUUID(), {
+          symbol: 'pin',
+          symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+        })
+      }
+    },{
       id: 'drawPolygon',
       label: 'Draw polygon',
       iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',
@@ -208,7 +222,7 @@ interactiveMap.on('map:ready', function (e) {
       }
     },{
       id: 'editShape',
-      label: 'Edit shape',
+      label: 'Edit geometry',
       iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
       isDisabled: true,
       onClick: function (e) {
@@ -247,6 +261,7 @@ interactiveMap.on('map:ready', function (e) {
         interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
         drawPlugin.deleteFeature(selectedFeatureIds)
         interactPlugin.clear()
+        interactiveMap.toggleButtonState('addPoint', 'disabled', false)
         interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
         interactiveMap.toggleButtonState('drawLine', 'disabled', false)
         interactiveMap.toggleButtonState('editShape', 'disabled', true)
@@ -268,9 +283,32 @@ let selectedFeatureIds = []
 
 interactiveMap.on('draw:ready', function () {
   drawPlugin.addFeature({
+    id: crypto.randomUUID(),
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [-2.9607395, 54.4290358] },
+    properties: {
+      symbol: 'pin',
+      symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' },
+      label: 'A pin'
+    }
+  })
+  const squarePointId = crypto.randomUUID()
+  drawPlugin.addFeature({
+    id: squarePointId,
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [-2.9596434, 54.4296736] },
+    properties: {
+      symbol: 'square',
+      symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
+      symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
+      symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' },
+      label: 'A square point'
+    }
+  })
+  drawPlugin.addFeature({
     id: 'test1234',
     type: 'Feature',
-    geometry: {'type':'Polygon','coordinates':[[[-2.8792962,54.7095463],[-2.8773445,54.7089363],[-2.8755615,54.7080257],[-2.8750521,54.7079797],[-2.8740651,54.7079522],[-2.8734760,54.7086512],[-2.8739855,54.7091846],[-2.8748292,54.7098284],[-2.8752749,54.7103526],[-2.8762460,54.7104170],[-2.8765803,54.7103342],[-2.8783315,54.7105366],[-2.8784429,54.7101319],[-2.8786499,54.7099571],[-2.8791275,54.7099112],[-2.8792962,54.7095463]],[[-2.8779654,54.7097916],[-2.8768886,54.7094843],[-2.8758538,54.7094200],[-2.8754081,54.7096223],[-2.8754559,54.7099442],[-2.8756947,54.7102201],[-2.8761404,54.7102569],[-2.8767236,54.7101963],[-2.8774559,54.7102606],[-2.8778698,54.7101135],[-2.8779654,54.7097916]]]},
+    geometry: { type:'Polygon', coordinates: [[[-2.8792962,54.7095463],[-2.8773445,54.7089363],[-2.8755615,54.7080257],[-2.8750521,54.7079797],[-2.8740651,54.7079522],[-2.8734760,54.7086512],[-2.8739855,54.7091846],[-2.8748292,54.7098284],[-2.8752749,54.7103526],[-2.8762460,54.7104170],[-2.8765803,54.7103342],[-2.8783315,54.7105366],[-2.8784429,54.7101319],[-2.8786499,54.7099571],[-2.8791275,54.7099112],[-2.8792962,54.7095463]],[[-2.8779654,54.7097916],[-2.8768886,54.7094843],[-2.8758538,54.7094200],[-2.8754081,54.7096223],[-2.8754559,54.7099442],[-2.8756947,54.7102201],[-2.8761404,54.7102569],[-2.8767236,54.7101963],[-2.8774559,54.7102606],[-2.8778698,54.7101135],[-2.8779654,54.7097916]]]},
     // geometry: { type: 'Polygon', coordinates: [[[-2.9406643378873127,54.918060570259456],[-2.9092219779267054,54.91564249172612],[-2.904350626383433,54.90329530000005],[-2.909664828067463,54.89540129642464],[-2.9225074821353587,54.88979816151294],[-2.937121536764323,54.88826989853317],[-2.95682836800691,54.88916139231736],[-2.965463945742613,54.898966521920045],[-2.966349646023133,54.910805898763385],[-2.9406643378873127,54.918060570259456]]] },
     stroke: 'rgba(0,112,60,1)',
     fill: 'rgba(0,112,60,0.2)',
@@ -297,7 +335,7 @@ interactiveMap.on('draw:editstart', function (e) {
 })
 
 interactiveMap.on('draw:created', function (e) {
-  // console.log('draw:created', e)
+  console.log('draw:created', e)
   interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
   interactPlugin.enable()
 })
@@ -320,20 +358,27 @@ interactiveMap.on('draw:cancelled', function (e) {
 
 
 interactiveMap.on('interact:selectionchange', function (e) {
+  // mergeShapes deliberately excludes points — merging is a polygon/line-only concept.
+  // editShape and delete both apply to a point (edit_point relocates it; delete removes the
+  // whole feature), so they share the wider layer list.
   const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
+  const editableLayers = drawLayers.concat(['point-symbol.cold'])
+  const deletableLayers = editableLayers
   const singleFeature = e.selectedFeatures.length === 1
   const anyFeature = e.selectedFeatures.length > 0
-  const isDrawFeature = singleFeature && drawLayers.includes(e.selectedFeatures[0].layerId)
+  const isDrawFeature = singleFeature && editableLayers.includes(e.selectedFeatures[0].layerId)
   const isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
   const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return drawLayers.includes(f.layerId) })
+  const canDelete = anyFeature && e.selectedFeatures.every(function (f) { return deletableLayers.includes(f.layerId) })
   const canMerge = allDrawFeatures && e.contiguous && e.selectedFeatures.length > 1
   selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
-  interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
-  interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
+  interactiveMap.toggleButtonState('addPoint', 'disabled', !!anyFeature)
+  interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!anyFeature)
+  interactiveMap.toggleButtonState('drawLine', 'disabled', !!anyFeature)
   interactiveMap.toggleButtonState('editShape', 'disabled', !isDrawFeature)
   interactiveMap.toggleButtonState('splitShape', 'disabled', !isPolygon)
   interactiveMap.toggleButtonState('mergeShapes', 'disabled', !canMerge)
-  interactiveMap.toggleButtonState('deleteFeature', 'disabled', !allDrawFeatures)
+  interactiveMap.toggleButtonState('deleteFeature', 'disabled', !canDelete)
 })
 
 interactiveMap.on('draw:split', function (e) {

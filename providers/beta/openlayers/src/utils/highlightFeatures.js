@@ -6,7 +6,11 @@ import GeoJSON from 'ol/format/GeoJSON.js'
 import Style from 'ol/style/Style.js'
 import Stroke from 'ol/style/Stroke.js'
 import Fill from 'ol/style/Fill.js'
+import Icon from 'ol/style/Icon.js'
 import { collectTileFragments } from './vtTileFragments.js'
+import { getCachedSymbolImage } from './symbolImages.js'
+import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
 
 const CRS = 'EPSG:27700'
 const geoJsonFormat = new GeoJSON({ dataProjection: CRS, featureProjection: CRS })
@@ -32,6 +36,28 @@ const buildHighlightStyles = (styleEntry, isActive) => {
     styles.push(new Style({ fill: new Fill({ color: fill }), zIndex: HIGHLIGHT_Z }))
   }
   return styles
+}
+
+const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
+
+// A drawn point renders as a real symbol icon, not Stroke/Fill, so its selected/active ring is
+// the active/selected variant of that same icon instead. Returns null (not []) for a
+// non-symbol feature so the caller falls through to buildHighlightStyles.
+const buildSymbolHighlightStyle = (properties, isActive) => {
+  if (!hasSymbolStyle(properties)) {
+    return null
+  }
+  const imageId = isActive ? properties.symbolActiveImageId : properties.symbolSelectedImageId
+  const canvas = imageId && getCachedSymbolImage(imageId)
+  if (!canvas) {
+    return null
+  }
+  const symbolDef = symbolRegistry.getSymbolDef(properties)
+  const anchor = getSymbolAnchor(properties, symbolDef)
+  // The cached canvas is rasterised at symbolPixelRatio for crispness — ol/style/Icon draws
+  // it at native size, so the inverse scale keeps the displayed size correct.
+  const scale = 1 / (properties.symbolPixelRatio || 1)
+  return [new Style({ image: new Icon({ img: canvas, anchor, scale }), zIndex: HIGHLIGHT_Z })]
 }
 
 // ---------------------------------------------------------------------------
@@ -127,12 +153,33 @@ const getOrCreateHighlightLayer = (map) => {
   return layer
 }
 
-const addVectorHighlights = (source, features, isActive, stylesMap) => {
-  for (const { layerId, geometry } of features ?? []) {
+// interact's selectedFeatures carry a `properties` snapshot taken at selection time, which
+// goes stale for the symbol icon path once a map style change re-resolves the point's image
+// ids — reading straight off the live feature avoids showing the previous theme's variant.
+const getLiveProperties = (map, layerId, featureId) => {
+  if (featureId == null) {
+    return undefined
+  }
+  let properties
+  map.getLayers().forEach(l => {
+    if (properties || !(l instanceof VectorLayer) || l.get(HIGHLIGHT_MARKER) || l.get('layerId') !== layerId) {
+      return
+    }
+    const feature = l.getSource()?.getFeatureById(String(featureId))
+    if (feature) {
+      properties = feature.getProperties()
+    }
+  })
+  return properties
+}
+
+const addVectorHighlights = (map, source, features, isActive, stylesMap) => {
+  for (const { layerId, featureId, geometry } of features ?? []) {
     if (!geometry) {
       continue
     }
-    const styles = buildHighlightStyles(stylesMap?.[layerId], isActive)
+    const liveProperties = getLiveProperties(map, layerId, featureId)
+    const styles = buildSymbolHighlightStyle(liveProperties, isActive) ?? buildHighlightStyles(stylesMap?.[layerId], isActive)
     if (!styles.length) {
       continue
     }
@@ -236,8 +283,8 @@ export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures,
   const vecActive = (activeFeatures ?? []).filter(f => vectorLayerIds.has(f.layerId))
 
   // VT features are handled by style-wrap; only add vector features to overlay
-  addVectorHighlights(hlSource, vecActive, true, stylesMap)
-  addVectorHighlights(hlSource, vecSelected, false, stylesMap)
+  addVectorHighlights(map, hlSource, vecActive, true, stylesMap)
+  addVectorHighlights(map, hlSource, vecSelected, false, stylesMap)
 
   // Bounds from all tile fragments of selected features
   const allGeoms = (selectedFeatures ?? []).flatMap(feat => resolveGeometries(map, feat))

@@ -3,6 +3,7 @@ import OpenLayersProvider from './openlayersProvider.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getExtentFromGeoJSON, isGeometryObscured } from './utils/spatial.js'
+import View from 'ol/View.js'
 
 const mockAnimate = jest.fn()
 const mockGetCenter = jest.fn(() => [400000.126, 300000.455])
@@ -152,6 +153,23 @@ describe('OpenLayersProvider', () => {
       const { provider } = makeProvider()
       await provider.initMap(defaultInitConfig)
       expect(mockMapOnce).not.toHaveBeenCalled()
+    })
+
+    // Regression: a View with no center is never "defined" (ol/View#isDef), so the map can't
+    // render a single frame — meaning 'rendercomplete' (which is what applies bounds) never
+    // fires either, deadlocking on a permanently blank map for bounds-only config.
+    it('derives an initial center from bounds when no explicit center is given, so the map can render at all', async () => {
+      const { provider } = makeProvider()
+      const bounds = [100, 200, 300, 400]
+      await provider.initMap({ ...defaultInitConfig, center: undefined, bounds })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ center: [200, 300] }))
+    })
+
+    it('prefers an explicit center over one derived from bounds', async () => {
+      const { provider } = makeProvider()
+      const bounds = [100, 200, 300, 400]
+      await provider.initMap({ ...defaultInitConfig, center: [400000, 300000], bounds })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ center: [400000, 300000] }))
     })
 
     it('creates the initial layer from the map style', async () => {

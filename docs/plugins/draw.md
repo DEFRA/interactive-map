@@ -1,6 +1,6 @@
 # Draw Plugin
 
-The draw plugin lets users draw and edit polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure.
+The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure.
 
 ## ESM usage
 
@@ -54,7 +54,7 @@ Options are passed to the factory function when creating the plugin.
 
 **Type:** `string[]`
 
-Vector tile source-layer names to snap new and edited vertices against. Can be overridden per call — see `newPolygon`, `newLine`, `editFeature`, and `split` below.
+Vector tile source-layer names to snap new and edited vertices against. Can be overridden per call — see `newPolygon`, `newLine`, `newPoint`, `editFeature`, and `split` below.
 
 The layer names available depend entirely on your basemap style — there's no universal default, so check your style's vector tile source(s) for the source-layer names to use. The example below (`'OS/TopographicArea_1/Agricultural Land'`) is specific to an Ordnance Survey basemap style.
 
@@ -72,7 +72,7 @@ createDrawPlugin({
 
 **Type:** `Function`
 
-Plugin-level validation callback, called throughout the draw/edit lifecycle so you can enforce your own rules (e.g. "shapes must stay inside a boundary") alongside the built-in ones. Can be overridden per call — see [Validation](#validation) below for the full contract, and `newPolygon`, `newLine`, `editFeature` for the per-call override.
+Plugin-level validation callback, called throughout the draw/edit lifecycle so you can enforce your own rules (e.g. "shapes must stay inside a boundary") alongside the built-in ones. Can be overridden per call — see [Validation](#validation) below for the full contract, and `newPolygon`, `newLine`, `newPoint`, `editFeature` for the per-call override.
 
 ---
 
@@ -141,7 +141,7 @@ Rule failures gate the Done button (the shape can pass through interim invalid s
 
 ### `onGeometryChange` callback
 
-Set at the plugin level (`createDrawPlugin({ onGeometryChange })`) or per call (`newPolygon`/`newLine`/`editFeature`'s `options.onGeometryChange`, which takes precedence when given). Not used by `split` (which validates that the line actually bisects the shape) or `merge`/`addFeature` (no validation).
+Set at the plugin level (`createDrawPlugin({ onGeometryChange })`) or per call (`newPolygon`/`newLine`/`newPoint`/`editFeature`'s `options.onGeometryChange`, which takes precedence when given). Not used by `split` (which validates that the line actually bisects the shape) or `merge`/`addFeature`/`setStyle` (no validation). For a `Point`, only the `'place'` phase applies — placing or dragging a point can be vetoed, but there's no minimum-vertices/self-intersection/area check.
 
 **Signature:** `onGeometryChange(event) => boolean | { valid: boolean, reason?: string } | undefined`
 
@@ -157,7 +157,7 @@ Set at the plugin level (`createDrawPlugin({ onGeometryChange })`) or per call (
 |----------|------|-------------|
 | `feature` | `GeoJSON.Feature` | The shape at this point — the in-progress feature during `'preview'`, the committed/candidate feature at every other phase |
 | `phase` | `string` | See table below |
-| `mode` | `'draw_polygon' \| 'draw_line' \| 'edit_vertex'` | The active draw mode |
+| `mode` | `'draw_polygon' \| 'draw_line' \| 'draw_point' \| 'edit_vertex' \| 'edit_point'` | The active draw mode |
 | `vertexIndex` | `number` | Index of the vertex being placed/added/moved/inserted/deleted. Present on `'place'` and every `'commit-*'` phase |
 | `numVertices` | `number` | Count of already-committed vertices, excluding any in-progress cursor point. Present on every `'preview'` call |
 
@@ -185,7 +185,7 @@ createDrawPlugin({
 
 ## Methods
 
-Methods are called on the plugin instance. `newPolygon`, `newLine`, `editFeature`, `addFeature`, `deleteFeature`, `split`, and `merge` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
+Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `deleteFeature`, `split`, and `merge` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
 
 ---
 
@@ -225,9 +225,39 @@ drawPlugin.newLine(crypto.randomUUID(), {
 
 ---
 
+### `newPoint(featureId, options?)`
+
+Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as a point is placed — there's no Done step.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `featureId` | `string` | **Required.** ID to assign the finished feature |
+| `options.snapLayers` | `string[]` | Overrides the plugin-level `snapLayers` for this session |
+| `options.onGeometryChange` | `Function` | Overrides the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
+| `options.properties` | `Object` | Custom GeoJSON properties to set on the finished feature |
+| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, or `'square'` |
+| `options.symbolSvgContent` | `string` | Custom SVG markup, used instead of `symbol` |
+| `options.symbolBackgroundColor` | `string \| Record<string, string>` | Symbol background colour |
+| `options.symbolForegroundColor` | `string \| Record<string, string>` | Symbol foreground colour |
+| `options.symbolGraphic` | `string` | Overrides the symbol's inner graphic (built-in name or SVG path data) |
+| `options.symbolHaloWidth` | `number` | Symbol halo width |
+| `options.symbolViewBox` | `string` | SVG `viewBox`, for use with `symbolSvgContent` |
+| `options.symbolAnchor` | `[number, number]` | Normalised `[x, y]` anchor point |
+
+These mirror [MarkerOptions](../api/marker-config.md#markeroptions)' `symbol`-family properties (prefixed with `symbol` here to sit alongside other feature properties) — see [Symbol Config](../api/symbol-config.md) for the full resolution order and SVG token structure. Points with no symbol config render with the plugin's default marker.
+
+```js
+drawPlugin.newPoint(crypto.randomUUID(), {
+  symbol: 'pin',
+  symbolBackgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' }
+})
+```
+
+---
+
 ### `editFeature(featureId, options?)`
 
-Open an existing feature in vertex-edit mode. Returns `false` (without doing anything) if the feature doesn't exist or the plugin isn't ready yet — check the return value before assuming the edit session started.
+Open an existing feature in edit mode — vertex-edit for a `Polygon`/`LineString`, single-coordinate drag for a `Point`. Returns `false` (without doing anything) if the feature doesn't exist or the plugin isn't ready yet — check the return value before assuming the edit session started.
 
 | Argument | Type | Description |
 |----------|------|-------------|
@@ -246,16 +276,19 @@ if (!editSuccess) {
 
 ### `addFeature(feature)`
 
-Add a feature directly to the map without a draw session — e.g. loading in existing shapes on `draw:ready`.
+Add a `Point`, `LineString`, or `Polygon` feature directly to the map without a draw session — e.g. loading in existing shapes on `draw:ready`.
 
 | Argument | Type | Description |
 |----------|------|-------------|
 | `feature.id` | `string` | **Required.** Feature ID |
-| `feature.geometry` | `GeoJSON.Geometry` | **Required.** `Polygon` or `LineString` geometry |
-| `feature.stroke` | `string \| Record<string, string>` | Stroke colour |
-| `feature.fill` | `string \| Record<string, string>` | Fill colour |
-| `feature.strokeWidth` | `number` | Stroke width in pixels |
-| `feature.properties` | `Object` | Custom GeoJSON properties |
+| `feature.type` | `string` | Defaults to `'Feature'` if omitted |
+| `feature.geometry` | `GeoJSON.Geometry` | **Required.** `Point`, `LineString`, or `Polygon` geometry |
+| `feature.stroke` | `string \| Record<string, string>` | Stroke colour (`LineString`/`Polygon`) |
+| `feature.fill` | `string \| Record<string, string>` | Fill colour (`Polygon`) |
+| `feature.strokeWidth` | `number` | Stroke width in pixels (`LineString`/`Polygon`) |
+| `feature.properties` | `Object` | Custom GeoJSON properties — a `Point`'s `symbol`-family properties go here (see `newPoint` above) |
+
+A feature with a missing/unsupported `geometry.type` or no `geometry.coordinates` is logged as a warning and ignored.
 
 ```js
 interactiveMap.on('draw:ready', () => {
@@ -267,7 +300,29 @@ interactiveMap.on('draw:ready', () => {
     fill: 'rgba(0,112,60,0.2)',
     strokeWidth: 2
   })
+
+  drawPlugin.addFeature({
+    id: 'monument1',
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [-2.878, 54.709] },
+    properties: { symbol: 'square', symbolBackgroundColor: '#28a197' }
+  })
 })
+```
+
+---
+
+### `setStyle(featureId, styleChanges)`
+
+Update an existing feature's style — stroke/fill/strokeWidth or, for a `Point`, its `symbol`-family properties (see `newPoint` above). Only the keys you pass are changed; anything else the feature already has is left alone. Returns `false` if the feature doesn't exist.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `featureId` | `string` | **Required.** ID of the feature to update |
+| `styleChanges` | `Object` | **Required.** Any mix of `stroke`, `fill`, `strokeWidth`, or `symbol`-family properties |
+
+```js
+drawPlugin.setStyle('monument1', { symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' } })
 ```
 
 ---
@@ -371,9 +426,9 @@ Emitted once the draw plugin has initialised. Safe to call API methods from here
 
 ### `draw:started`
 
-Emitted when `newPolygon` or `newLine` starts a new draw session.
+Emitted when `newPolygon`, `newLine`, or `newPoint` starts a new draw session.
 
-**Payload:** `{ mode: 'draw_polygon' | 'draw_line' }`
+**Payload:** `{ mode: 'draw_polygon' | 'draw_line' | 'draw_point' }`
 
 ---
 
@@ -381,7 +436,7 @@ Emitted when `newPolygon` or `newLine` starts a new draw session.
 
 Emitted when `editFeature` opens an existing feature for editing.
 
-**Payload:** `{ mode: 'edit_polygon' | 'edit_line' }`
+**Payload:** `{ mode: 'edit_polygon' | 'edit_line' | 'edit_point' }`
 
 ---
 
@@ -454,6 +509,14 @@ Emitted after `addFeature` adds a feature to the map.
 Emitted after `deleteFeature` removes a feature.
 
 **Payload:** `{ featureId: string }`
+
+---
+
+### `draw:stylechange`
+
+Emitted after `setStyle` updates a feature's style.
+
+**Payload:** `{ featureId: string, properties: Object }` — the flattened style/symbol properties that were applied
 
 ---
 

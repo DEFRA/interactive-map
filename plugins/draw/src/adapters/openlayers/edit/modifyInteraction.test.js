@@ -77,4 +77,15 @@ describe('createModifyInteraction', () => {
     modify.destroy()
     expect(map.removeInteraction).toHaveBeenCalledWith(interaction)
   })
+
+  // point/editPointMode.js injects its own condition (built around map.forEachFeatureAtPixel)
+  // in place of buildModifyCondition's fixed-radius hit-test, since a symbol icon can render
+  // far bigger than PIXEL_TOLERANCE covers.
+  test('an injected condition overrides buildModifyCondition\'s own default', () => {
+    const map = createFakeMap()
+    const state = { interfaceType: 'mouse', vertices: [[0, 0]], midpoints: [] }
+    const customCondition = jest.fn(() => true)
+    createModifyInteraction({ map, olFeature: polygonFeature(RING), getState: () => state, onModifyEnd: jest.fn(), condition: customCondition })
+    expect(map.interactions[0].condition_).toBe(customCondition)
+  })
 })

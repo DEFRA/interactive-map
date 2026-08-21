@@ -40,8 +40,16 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     }
   }, [mapState.isMapReady, appState.mode])
 
+  // Suppresses the accessible features list for the whole time a draw/edit session holds exclusive control of map interaction.
   useEffect(() => {
-    if (['draw_polygon', 'draw_line'].includes(pluginState.mode) && isTouchOrKeyboard) {
+    eventBus.emit(EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: pluginState.mode !== null })
+    return () => {
+      eventBus.emit(EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false })
+    }
+  }, [pluginState.mode, eventBus])
+
+  useEffect(() => {
+    if (['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) && isTouchOrKeyboard) {
       const wasAlreadyVisible = crossHair.isVisible
       crossHair.fixAtCenter()
       return () => {
@@ -61,7 +69,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   // map, immediately when the input device changes mid-session (e.g. the user
   // starts drawing with the mouse then switches to touch and pans via MoveControls).
   useEffect(() => {
-    if (!['edit_vertex', 'draw_polygon', 'draw_line'].includes(pluginState.mode) || !mapProvider.draw) {
+    if (!['edit_vertex', 'edit_point', 'draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) || !mapProvider.draw) {
       return undefined
     }
     mapProvider.draw.setInterfaceType(appState.interfaceType)

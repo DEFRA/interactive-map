@@ -134,7 +134,17 @@ describe('snapping while nudging', () => {
     Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
     nudge({ key: 'ArrowRight' })
     expect(ring(olFeature)[1]).toEqual([16, 0])
-    expect(snap.hideIndicator).toHaveBeenCalled()
+  })
+
+  // Regression: a stray hideIndicator() right after snap.apply() undid its own show on every
+  // single nudge, so the indicator could never actually be seen. keyboardHandler.js's own keyup
+  // no longer hides it either — see its own comment — so once shown here, it stays shown.
+  test('does not hide the indicator mid-sequence — snap.apply() already shows/hides it', () => {
+    const snap = snapReturning((c) => [c[0] + 1, c[1]])
+    const { state, nudge } = setup({ snap })
+    Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
+    nudge({ key: 'ArrowRight' })
+    expect(snap.hideIndicator).not.toHaveBeenCalled()
   })
 
   test('escapes the snap radius when snapping blocks the nudge', () => {
@@ -143,6 +153,19 @@ describe('snapping while nudging', () => {
     Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
     nudge({ key: 'ArrowRight' })
     expect(ring(olFeature)[1]).toEqual([23, 0]) // snapRadius + 1 past the original position
+  })
+
+  // Regression: nudging away from a target you're sitting on escapes the snap radius (above),
+  // but snap.apply() had already shown the indicator at the target it's about to flee — left
+  // uncorrected, the indicator stayed pinned there for one extra press even though the vertex
+  // had already jumped clear, only catching up on the next press once querying from the
+  // escaped position genuinely found nothing.
+  test('hides the indicator when a nudge escapes the snap radius', () => {
+    const snap = snapReturning(() => [10, 0]) // snap holds the vertex in place
+    const { state, nudge } = setup({ snap })
+    Object.assign(state, { selectedVertexIndex: 1, selectedVertexType: 'vertex' })
+    nudge({ key: 'ArrowRight' })
+    expect(snap.hideIndicator).toHaveBeenCalled()
   })
 })
 

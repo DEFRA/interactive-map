@@ -1,11 +1,9 @@
-import {
-  getSnapInstance, isSnapEnabled, triggerSnapAtPoint, getSnapLngLat,
-  clearSnapState, clearSnapIndicator
-} from '../../utils/snapHelpers.js'
+import { getSnapInstance, clearSnapState, clearSnapIndicator } from '../../utils/snapHelpers.js'
 import { coordPathToFlatIndex } from './geometryHelpers.js'
-import { isOnSVG } from './helpers.js'
+import { isOnSVG, scalePoint } from './helpers.js'
 import { createTouchTarget, applyTouchTargetColors } from '../../../../utils/touchTarget.js'
 import { resolveColors } from '../../../../utils/resolveColors.js'
+import { getTouchPoint, computeTouchDragAnchors, resolveTouchDragCoord } from '../../utils/touchDragMath.js'
 
 export const applyTouchVertexColors = (el, mapStyle, pluginConfig = {}) => {
   if (!el) { return }
@@ -61,6 +59,17 @@ export const touchHandlers = {
       state._moveStartPosition = null
       state._moveStartIndex = undefined
       state._touchMoved = false
+
+      // Re-sync the target to the vertex's actual final coordinate. Mid-drag it tracks the
+      // raw finger 1:1 from its touchstart-time offset (see onTouchmove) — a mid-drag snap
+      // moves the vertex without moving the target by the same amount, leaving them out of
+      // alignment. Left uncorrected, the next onTouchstart's delta math re-anchors off that
+      // drifted position, compounding a little further with every snapped drag (same fix as
+      // editPointMode's own onTouchend, for the same reason).
+      const vertex = state.vertecies[state.selectedVertexIndex]
+      if (vertex) {
+        this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
+      }
     }
   },
 
@@ -103,11 +112,8 @@ export const touchHandlers = {
     state._moveStartIndex = state.selectedVertexIndex
     state._touchMoved = false
 
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const style = window.getComputedStyle(state.touchVertexTarget)
-    state.deltaTarget = { x: touch.x - Number.parseFloat(style.left), y: touch.y - Number.parseFloat(style.top) }
-    const vertexPt = this.map.project(vertex)
-    state.deltaVertex = { x: (touch.x / state.scale) - vertexPt.x, y: (touch.y / state.scale) - vertexPt.y }
+    const touch = getTouchPoint(e)
+    Object.assign(state, computeTouchDragAnchors(this.map, state.touchVertexTarget, touch, vertex, state.scale))
   },
 
   onTouchmove (state, e) {
@@ -117,17 +123,8 @@ export const touchHandlers = {
 
     state._touchMoved = true
 
-    const touch = { x: e.touches[0].clientX, y: e.touches[0].clientY }
-    const screenPt = { x: (touch.x / state.scale) - state.deltaVertex.x, y: (touch.y / state.scale) - state.deltaVertex.y }
-
-    let finalCoord = this.map.unproject(screenPt)
-    if (isSnapEnabled(state)) {
-      const snap = getSnapInstance(this.map)
-      triggerSnapAtPoint(snap, this.map, screenPt)
-      finalCoord = getSnapLngLat(snap) || finalCoord
-    }
-
-    this.moveVertex(state, finalCoord)
+    const touch = getTouchPoint(e)
+    this.moveVertex(state, resolveTouchDragCoord(this.map, state, touch))
     this.updateTouchVertexTarget(state, { x: touch.x - state.deltaTarget.x, y: touch.y - state.deltaTarget.y })
   }
 }

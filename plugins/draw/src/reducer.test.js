@@ -77,6 +77,13 @@ describe('SET_UNDO_STACK_LENGTH', () => {
   })
 })
 
+describe('SET_GEOMETRY_VALID', () => {
+  test('coerces the payload to a boolean', () => {
+    expect(actions.SET_GEOMETRY_VALID(initialState, false).geometryValid).toBe(false)
+    expect(actions.SET_GEOMETRY_VALID(initialState, 1).geometryValid).toBe(true)
+  })
+})
+
 describe('SET_CAN_ADD_POINT', () => {
   test('coerces the payload to a boolean', () => {
     expect(actions.SET_CAN_ADD_POINT(initialState, false).canAddPoint).toBe(false)

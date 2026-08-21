@@ -10,7 +10,8 @@ import {
   getSnapRadius,
   isSnapEnabled,
   createSnappedEvent,
-  createSnappedClickEvent
+  createSnappedClickEvent,
+  setAutoSnapSuspended
 } from './snapHelpers.js'
 import { TOLERANCES } from '../../../defaults.js'
 
@@ -87,7 +88,10 @@ describe('triggerSnapAtPoint', () => {
 
     expect(triggerSnapAtPoint(snap, map, point)).toBe(true)
     expect(map.unproject).toHaveBeenCalledWith(point)
-    expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point, lngLat })
+    // _explicit: true is what lets this call through snap/prototypePatches.js's suspend gate
+    // (see setAutoSnapSuspended) even while an edit mode's own offset-aware drag has silenced
+    // the snap library's own uncontrolled mousemove-driven auto-query.
+    expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point, lngLat, _explicit: true })
   })
 
   test('returns false when snap is missing', () => {
@@ -112,7 +116,7 @@ describe('triggerSnapAtCenter', () => {
 
     expect(triggerSnapAtCenter(snap, map)).toBe(true)
     expect(map.project).toHaveBeenCalledWith(center)
-    expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point, lngLat: center })
+    expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point, lngLat: center, _explicit: true })
   })
 
   test('returns false when snap is missing', () => {
@@ -193,6 +197,20 @@ describe('clearSnapState', () => {
     const snap = { snapStatus: true, snapCoords: [1, 2] }
     expect(() => clearSnapState(snap)).not.toThrow()
     expect(snap.snapCoords).toBeNull()
+  })
+})
+
+describe('setAutoSnapSuspended', () => {
+  test('sets the flag on the snap instance', () => {
+    const snap = {}
+    setAutoSnapSuspended(snap, true)
+    expect(snap._autoSnapSuspended).toBe(true)
+    setAutoSnapSuspended(snap, false)
+    expect(snap._autoSnapSuspended).toBe(false)
+  })
+
+  test('is a no-op when snap is nullish', () => {
+    expect(() => setAutoSnapSuspended(null, true)).not.toThrow()
   })
 })
 

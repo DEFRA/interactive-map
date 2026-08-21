@@ -4,16 +4,12 @@ import {
   getSegmentForIndex,
   getModifiableCoords
 } from './geometryHelpers.js'
-import { KEYBOARD } from '../../defaults.js'
-import {
-  getSnapInstance, isSnapActive, isSnapEnabled, getSnapLngLat,
-  getSnapRadius, triggerSnapAtPoint, clearSnapIndicator
-} from '../../utils/snapHelpers.js'
+import { sharedSnapMovement } from '../../utils/snapMovement.js'
 import { MIN_VERTICES } from '../../../../validation/rules.js'
 
-const ARROW_OFFSETS = { ArrowUp: [0, -1], ArrowDown: [0, 1], ArrowLeft: [-1, 0], ArrowRight: [1, 0] }
-
 export const vertexOperations = {
+  ...sharedSnapMovement,
+
   updateMidpoint (coordinates) {
     setTimeout(() => {
       this.map.getSource('mapbox-gl-draw-hot').setData({
@@ -32,54 +28,8 @@ export const vertexOperations = {
     this.changeMode(state, { selectedVertexIndex: idx, selectedVertexType: type, ...(type === 'vertex' && { coordPath: this.getCoordPath(state, idx) }) })
   },
 
-  getOffset (coord, e) {
-    const pt = this.map.project(coord)
-    const offset = e?.shiftKey ? KEYBOARD.nudgeAmount : KEYBOARD.stepAmount
-    const [dx, dy] = e ? ARROW_OFFSETS[e.key].map(v => v * offset) : [0, 0]
-    return this.map.unproject({ x: pt.x + dx, y: pt.y + dy })
-  },
-
   getNewCoord (state, e) {
     return this.getOffset(getCoords(this.getFeature(state.featureId))[state.selectedVertexIndex], e)
-  },
-
-  // Explicit-delta counterpart to getOffset, driven by a unit direction vector and
-  // MoveControls' own Precision toggle rather than a KeyboardEvent — used by
-  // nudgeVertexByDelta below.
-  getOffsetByDelta (coord, dx, dy, isLargeStep) {
-    const pt = this.map.project(coord)
-    const amount = isLargeStep ? KEYBOARD.stepAmount : KEYBOARD.nudgeAmount
-    return this.map.unproject({ x: pt.x + dx * amount, y: pt.y + dy * amount })
-  },
-
-  // Resolves the destination coordinate for a vertex nudge by (dx, dy) unit
-  // direction, applying snap or breaking out of an already-active one — shared by
-  // the keyboard arrow-key path (_keyboardMoveTarget) and MoveControls'
-  // explicit-delta path (nudgeVertexByDelta) so both snap identically. dx/dy are
-  // only needed for the snap-escape offset; getCandidate computes the raw,
-  // un-snapped destination the caller would otherwise have used.
-  resolveSnapTarget (state, dx, dy, currentCoord, getCandidate) {
-    const snap = getSnapInstance(this.map)
-
-    // Break out of an active snap by moving beyond the snap radius
-    if (isSnapEnabled(state) && state._isSnapped && snap) {
-      const offset = getSnapRadius(snap) + 1
-      const pt = this.map.project(currentCoord)
-      state._isSnapped = false
-      clearSnapIndicator(snap, this.map)
-      return this.map.unproject({ x: pt.x + dx * offset, y: pt.y + dy * offset })
-    }
-
-    const newCoord = getCandidate()
-    if (isSnapEnabled(state) && snap) {
-      triggerSnapAtPoint(snap, this.map, this.map.project(newCoord))
-      if (isSnapActive(snap)) {
-        state._isSnapped = true
-        return getSnapLngLat(snap)
-      }
-    }
-    state._isSnapped = false
-    return newCoord
   },
 
   // Moves the selected vertex by an explicit (dx, dy) unit direction — the entry

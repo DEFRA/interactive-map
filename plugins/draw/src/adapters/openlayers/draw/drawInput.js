@@ -3,7 +3,8 @@ import { createVertexPlacement } from './vertexPlacement.js'
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 
 // Mirrors DrawInit.jsx's fixAtCenter()/hide() gate, but reasserted on every interface-type transition this module detects — matching MapLibre's own onSetup/onInterfaceTypeChange redundancy.
-const applyCrossHairVisibility = (crossHair, type) => {
+// Exported alongside wireInputEvents for the same reason — point/drawPointMode.js reuses it directly.
+export const applyCrossHairVisibility = (crossHair, type) => {
   if (!crossHair) { return }
   if (['touch', 'keyboard'].includes(type)) {
     crossHair.fixAtCenter()
@@ -12,7 +13,12 @@ const applyCrossHairVisibility = (crossHair, type) => {
   }
 }
 
-const wireInputEvents = ({
+// Exported so point/drawPointMode.js can reuse this DOM-wiring layer directly — it's
+// already generic (crosshair/interface-type tracking, add-vertex-button/Enter/undo
+// listeners), parametrised entirely by the callbacks passed in, with no ring-shaped
+// assumptions baked in. draw_point supplies point-shaped versions of those callbacks
+// (no rubber band, no undo) rather than this file growing a second copy of the wiring.
+export const wireInputEvents = ({
   container, addVertexButtonId, olView, onUndo,
   getInterfaceType, setInterfaceType, clearLastCoord,
   updateRubberbanding, placeVertex

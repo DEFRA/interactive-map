@@ -16,14 +16,15 @@ const interactPlugin = createInteractPlugin({
   //   layerId: 'OS/NGD/lnd_fts_land/Arable Or Grazing Land'
   // }],
   layers: [{
-    layerId: 'draw'
+    layerId: 'draw',
+    labelProperty: 'label'
   },{
     layerId: 'OS/TopographicArea_1/Agricultural Land',
     idProperty: 'TOID'
   }],
   interactionModes: ['selectMarker', 'selectFeature'],
   multiSelect: true,
-  contiguous: true,
+  contiguous: false,
   deselectOnClickOutside: true,
   // debug: true
 })
@@ -32,8 +33,14 @@ const interactPlugin = createInteractPlugin({
 // good enough for a demo, not for anything that actually needs to be accurate.
 const WALES_BORDER_EASTING = 337300
 
-const getAllCoordinates = (coordinates) =>
-  Array.isArray(coordinates[0][0]) ? coordinates.flatMap(getAllCoordinates) : coordinates
+const getAllCoordinates = (coordinates) => {
+  // A Point's coordinates are a single [easting, northing] pair, not a list of pairs like
+  // LineString/Polygon — wrap it so the .every(([lng]) => ...) below still works.
+  if (typeof coordinates[0] === 'number') {
+    return [coordinates]
+  }
+  return Array.isArray(coordinates[0][0]) ? coordinates.flatMap(getAllCoordinates) : coordinates
+}
 
 const isEastOfWalesBorder = (geometry) =>
   getAllCoordinates(geometry.coordinates).every(([lng]) => lng > WALES_BORDER_EASTING)
@@ -59,8 +66,9 @@ const interactiveMap = new InteractiveMap('map', {
   minZoom: 6,
   maxZoom: 22,
   autoColorScheme: true,
-  center: [337584, 504538],
-  zoom: 14,
+  // center: [337584, 504538],
+  bounds: [337026, 502831, 338514, 505488],
+  // zoom: 14,
   containerHeight: '650px',
   transformRequest: transformVtsRequest27700,
   enableZoomControls: true,
@@ -92,6 +100,17 @@ interactiveMap.on('map:ready', function (e) {
     tablet: { slot: 'top-middle', order: 3 },
     desktop: { slot: 'top-middle', order: 3 },
     menuItems: [{
+      id: 'addPoint',
+      label: 'Add point',
+      iconSvgContent: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
+      onClick: function (e) {
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        drawPlugin.newPoint(crypto.randomUUID(), {
+          symbol: 'pin',
+          symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+        })
+      }
+    },{
       id: 'drawPolygon',
       label: 'Draw polygon',
       iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',
@@ -115,7 +134,7 @@ interactiveMap.on('map:ready', function (e) {
       }
     },{
       id: 'editShape',
-      label: 'Edit shape',
+      label: 'Edit geometry',
       iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
       isDisabled: true,
       onClick: function (e) {
@@ -154,6 +173,7 @@ interactiveMap.on('map:ready', function (e) {
         interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
         drawPlugin.deleteFeature(selectedFeatureIds)
         interactPlugin.clear()
+        interactiveMap.toggleButtonState('addPoint', 'disabled', false)
         interactiveMap.toggleButtonState('drawPolygon', 'disabled', false)
         interactiveMap.toggleButtonState('drawLine', 'disabled', false)
         interactiveMap.toggleButtonState('editShape', 'disabled', true)
@@ -168,6 +188,27 @@ interactiveMap.on('map:ready', function (e) {
 let selectedFeatureIds = []
 
 interactiveMap.on('draw:ready', function () {
+  drawPlugin.addFeature({
+    id: crypto.randomUUID(),
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [337770, 504159.5] },
+    properties: {
+      symbol: 'pin',
+      symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
+    }
+  })
+  const squarePointId = crypto.randomUUID()
+  drawPlugin.addFeature({
+    id: squarePointId,
+    type: 'Feature',
+    geometry: { type: 'Point', coordinates: [337841, 504230.5] },
+    properties: {
+      symbol: 'square',
+      symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
+      symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
+      symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
+    }
+  })
   // drawPlugin.addFeature({
   //   id: 'test1234',
   //   type: 'Feature',
@@ -250,8 +291,9 @@ interactiveMap.on('interact:selectionchange', function (e) {
   const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return f.layerId === 'draw' })
   const canMerge = allDrawFeatures && e.contiguous && e.selectedFeatures.length > 1
   selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
-  interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!singleFeature)
-  interactiveMap.toggleButtonState('drawLine', 'disabled', !!singleFeature)
+  interactiveMap.toggleButtonState('addPoint', 'disabled', !!anyFeature)
+  interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!anyFeature)
+  interactiveMap.toggleButtonState('drawLine', 'disabled', !!anyFeature)
   interactiveMap.toggleButtonState('editShape', 'disabled', !isDrawFeature)
   interactiveMap.toggleButtonState('splitShape', 'disabled', !isPolygon)
   interactiveMap.toggleButtonState('mergeShapes', 'disabled', !canMerge)

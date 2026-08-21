@@ -1,5 +1,8 @@
 import { createHarness, LINE } from './__helpers__/harness.js'
 
+// getOffset/getOffsetByDelta/resolveSnapTarget are the shared mixin from
+// utils/snapMovement.js — their own behaviour is covered by utils/snapMovement.test.js.
+// This file only tests what's specific to a ring/segment vertex.
 describe('vertexOperations', () => {
   test('updateMidpoint pushes point data to the hot source', () => {
     jest.useFakeTimers()
@@ -30,28 +33,10 @@ describe('vertexOperations', () => {
     expect(api.changeMode.mock.calls.at(-1)[1].coordPath).toBeUndefined()
   })
 
-  test('getOffset applies step/nudge amounts and returns the coord unchanged without an event', () => {
-    const { ctx } = createHarness()
-    const stepped = ctx.getOffset([5, 5], { key: 'ArrowRight', shiftKey: false })
-    const nudged = ctx.getOffset([5, 5], { key: 'ArrowRight', shiftKey: true })
-    expect(stepped.lng).not.toBe(5)
-    expect(Math.abs(nudged.lng - 5)).toBeLessThan(Math.abs(stepped.lng - 5))
-    expect(ctx.getOffset([5, 5], null)).toEqual({ lng: 5, lat: 5 })
-  })
-
   test('getNewCoord offsets the currently selected vertex', () => {
     const { ctx, state } = createHarness()
     state.selectedVertexIndex = 1
     expect(ctx.getNewCoord(state, { key: 'ArrowRight', shiftKey: false })).toHaveProperty('lng')
-  })
-
-  test('getOffsetByDelta applies step/nudge amounts along an explicit direction, mirroring getOffset\'s shiftKey polarity', () => {
-    const { ctx } = createHarness()
-    const large = ctx.getOffsetByDelta([5, 5], 1, 0, true)
-    const small = ctx.getOffsetByDelta([5, 5], 1, 0, false)
-    expect(large.lng).not.toBe(5)
-    expect(Math.abs(small.lng - 5)).toBeLessThan(Math.abs(large.lng - 5))
-    expect(ctx.getOffsetByDelta([5, 5], 0, 0, true)).toEqual({ lng: 5, lat: 5 })
   })
 
   test('nudgeVertexByDelta moves the selected vertex and pushes a single undo entry, or no-ops for a midpoint/no selection', () => {
@@ -73,29 +58,19 @@ describe('vertexOperations', () => {
     expect(map._undoStack).toHaveLength(0)
   })
 
-  test('nudgeVertexByDelta snaps to a nearby target, breaks out of an active snap, and falls back to the raw coord when snap is inactive — same as keyboard nudging (regression: MoveControls bypassed snap entirely before resolveSnapTarget was shared)', () => {
+  // resolveSnapTarget's own snap/break-out-of-snap branches are covered by
+  // utils/snapMovement.test.js — this just checks nudgeVertexByDelta wires a snap hit
+  // through to the moved vertex, same as keyboard nudging (regression: MoveControls
+  // bypassed snap entirely before resolveSnapTarget was shared).
+  test('nudgeVertexByDelta honours an active snap', () => {
     const { ctx, state, map } = createHarness()
     state.selectedVertexIndex = 1
     state.selectedVertexType = 'vertex'
     state.getSnapEnabled = () => true
-
     map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
     ctx.nudgeVertexByDelta(state, 0, -1, true)
     expect(state._isSnapped).toBe(true)
     expect(state.vertecies[1]).toEqual([7, 8])
-
-    ctx.nudgeVertexByDelta(state, -1, 0, true) // already snapped → breaks out of the snap radius
-    expect(state._isSnapped).toBe(false)
-
-    map._snapInstance = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
-    ctx.nudgeVertexByDelta(state, 1, 0, true) // snap enabled but inactive → raw offset coord
-    expect(state._isSnapped).toBe(false)
-  })
-
-  test('resolveSnapTarget is a no-op passthrough to the candidate coordinate when snap is disabled', () => {
-    const { ctx, state } = createHarness()
-    const candidate = { lng: 3, lat: 4 }
-    expect(ctx.resolveSnapTarget(state, 1, 0, [0, 0], () => candidate)).toEqual(candidate)
   })
 
   test('insertVertex splits a midpoint into a new vertex, records undo and selects it', () => {

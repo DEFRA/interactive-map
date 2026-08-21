@@ -30,21 +30,22 @@ const handleTouchStart = (e, { map, targetEl, cssToOl, getState, drag }) => {
   e.preventDefault()
 }
 
-const handleTouchMove = (e, { map, targetEl, olToCSS, getState, setState, snap, drag }) => {
+const handleTouchMove = (e, { map, targetEl, olToCSS, getState, setState, snap, drag, moveCoord }) => {
   if (!isOnTouchTarget(e.target) || drag.dragStartIndex == null) {
     return
   }
   e.preventDefault()
   const tOl = map.getEventPixel({ clientX: e.touches[0].clientX, clientY: e.touches[0].clientY })
   const rawCoord = pixelToCoord(map, { x: tOl[0] - drag.vertexTouchDelta.x, y: tOl[1] - drag.vertexTouchDelta.y })
+  // snap.apply() already shows/hides the indicator based on whether a candidate was found.
   const newCoord = snap ? snap.apply(rawCoord) : rawCoord
-  snap?.hideIndicator()
   const { olFeature, vertices } = getState()
   if (!olFeature) {
     return
   }
-  moveVertex(olFeature, drag.dragStartIndex, newCoord)
+  moveCoord(olFeature, drag.dragStartIndex, newCoord)
   setState({ vertices: vertices.map((c, i) => i === drag.dragStartIndex ? newCoord : c) })
+  // Tracks the raw touch point, not newCoord — the vertex is what jumps to the snap candidate.
   showTouchTarget(targetEl, olToCSS({ x: tOl[0] - drag.targetTouchDelta.x, y: tOl[1] - drag.targetTouchDelta.y }))
 }
 
@@ -63,7 +64,7 @@ const handleTap = (e, { map, getState, onTap, drag }) => {
 }
 
 const handleTouchEnd = (e, ctx) => {
-  const { getState, onVertexMoved, snap, drag } = ctx
+  const { getState, onVertexMoved, drag, updateTargetPosition } = ctx
   if (drag.dragStartIndex == null) {
     handleTap(e, ctx)
     drag.tapStart = null
@@ -74,8 +75,9 @@ const handleTouchEnd = (e, ctx) => {
   if (vertices[drag.dragStartIndex] && drag.dragStartCoord) {
     onVertexMoved({ vertexIndex: drag.dragStartIndex, previousCoord: drag.dragStartCoord })
   }
-  snap?.hideIndicator()
+  // Not hiding the indicator here — it should stay showing after the drag ends.
   drag.dragStartCoord = null; drag.dragStartIndex = null; drag.vertexTouchDelta = null; drag.targetTouchDelta = null
+  updateTargetPosition() // re-sync the target to the vertex's final position
   e.preventDefault()
 }
 
@@ -97,6 +99,8 @@ const wireTouchEvents = (deps) => {
   container.addEventListener('touchstart', onTouchstart, { passive: false })
   container.addEventListener('touchmove', onTouchmove, { passive: false })
   container.addEventListener('touchend', onTouchend, { passive: false })
+  // touchcancel fires instead of touchend when the browser itself interrupts the gesture.
+  container.addEventListener('touchcancel', onTouchend, { passive: false })
 
   return {
     isDragging: () => drag.dragStartIndex != null,
@@ -104,6 +108,7 @@ const wireTouchEvents = (deps) => {
       container.removeEventListener('touchstart', onTouchstart)
       container.removeEventListener('touchmove', onTouchmove)
       container.removeEventListener('touchend', onTouchend)
+      container.removeEventListener('touchcancel', onTouchend)
     }
   }
 }
@@ -114,15 +119,16 @@ const wireTouchEvents = (deps) => {
  * without finger occlusion. Tap on a vertex or midpoint selects it via onTap.
  *
  * @param {{ map, container, getState, setState, onVertexMoved, onTap, colors }} options
+ * @param {(olFeature, index: number, coord: number[]) => void} [options.moveCoord] - coordinate
+ *   writer, defaulting to moveVertex; point/editPointMode.js injects point/pointOps.js's
+ *   movePoint instead, since a Point has no ring index to address.
  * @returns {{ updateTargetPosition, updateColors, hide, destroy }}
  */
-export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved, onTap, colors, snap }) => {
+export const createTouchHandler = ({ map, container, getState, setState, onVertexMoved, onTap, colors, snap, moveCoord = moveVertex }) => {
   const targetEl = createTouchTarget(container)
   applyTouchTargetColors(targetEl, colors)
 
-  // OL pixel space is relative to ol-viewport at its pre-scale CSS size.
-  // Container CSS space is larger when a CSS transform scales up ol-viewport
-  // (e.g. scale(1.5) at medium map size makes OL pixels 1.5× smaller than CSS pixels).
+  // Converts between OL pixel space and CSS space, which differ when a CSS transform scales up ol-viewport.
   const cssTx = { scale: 1, ox: 0, oy: 0 }
   const olToCSS = (p) => ({ x: p.x * cssTx.scale + cssTx.ox, y: p.y * cssTx.scale + cssTx.oy })
   const cssToOl = (p) => ({ x: (p.x - cssTx.ox) / cssTx.scale, y: (p.y - cssTx.oy) / cssTx.scale })
@@ -140,8 +146,6 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
     })
   }
 
-  const touchEvents = wireTouchEvents({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap })
-
   const updateTargetPosition = () => {
     const { selectedVertexIndex, vertices, interfaceType } = getState()
     if (selectedVertexIndex < 0 || !vertices[selectedVertexIndex] || interfaceType !== 'touch') {
@@ -156,8 +160,9 @@ export const createTouchHandler = ({ map, container, getState, setState, onVerte
     showTouchTarget(targetEl, olToCSS(px))
   }
 
-  // Reposition on every render — keeps target anchored during pinch-zoom and pan.
-  // Skipped during drag since touchmove handles position directly.
+  const touchEvents = wireTouchEvents({ container, map, targetEl, olToCSS, cssToOl, getState, setState, onVertexMoved, onTap, snap, moveCoord, updateTargetPosition })
+
+  // Reposition on every render (skipped mid-drag, which handles position directly) to stay anchored during pinch-zoom and pan.
   const onPostrender = () => {
     const { selectedVertexIndex, interfaceType } = getState()
     if (selectedVertexIndex >= 0 && !touchEvents.isDragging() && interfaceType === 'touch') {

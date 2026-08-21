@@ -2,6 +2,7 @@ import { MapProvider } from '../../../mapProvider.js'
 import OlMap from 'ol/Map.js'
 import View from 'ol/View.js'
 import { defaults as defaultInteractions } from 'ol/interaction/defaults.js'
+import { getCenter as getExtentCenter } from 'ol/extent.js'
 import proj4 from 'proj4'
 import { register } from 'ol/proj/proj4.js'
 import { supportedShortcuts, DEFAULTS } from './defaults.js'
@@ -57,9 +58,11 @@ export default class OpenLayersProvider extends MapProvider {
 
     const viewResolutions = getViewResolutionConfig(this.zoomAlignment ?? ZOOM_ALIGNMENT.UK)
 
+    // A View with no center never renders a frame, so 'rendercomplete' below (which applies
+    // `bounds`) would never fire — fall back to the bounds' own center so it can.
     const view = new View({
       projection: CRS,
-      center,
+      center: center ?? (bounds ? getExtentCenter(bounds) : undefined),
       zoom: zoom ?? viewResolutions.defaultMinZoom,
       minZoom: Math.max(minZoom ?? viewResolutions.defaultMinZoom, viewResolutions.defaultMinZoom),
       maxZoom: maxZoom ?? viewResolutions.maxZoom,

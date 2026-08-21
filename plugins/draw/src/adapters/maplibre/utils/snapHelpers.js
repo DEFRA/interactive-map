@@ -52,7 +52,8 @@ export function getSnapCoords (snap) {
 }
 
 /**
- * Trigger snap detection at a given point
+ * Trigger snap detection at a given point. Marked `_explicit` so it still runs even while
+ * setAutoSnapSuspended (below) has silenced the library's own auto-query.
  * @param {MapboxSnap} snap - Snap instance
  * @param {maplibregl.Map} map - Map instance
  * @param {{ x: number, y: number }} point - Screen point
@@ -64,8 +65,20 @@ export function triggerSnapAtPoint (snap, map, point) {
   }
 
   const lngLat = map.unproject(point)
-  snap.snapToClosestPoint({ point, lngLat })
+  snap.snapToClosestPoint({ point, lngLat, _explicit: true })
   return true
+}
+
+/**
+ * Silences the snap library's own mousemove-driven auto-query (see prototypePatches.js), which
+ * otherwise re-snaps at the raw cursor and fights an edit mode's own offset-aware drag query.
+ * @param {MapboxSnap} snap - Snap instance
+ * @param {boolean} suspended
+ */
+export function setAutoSnapSuspended (snap, suspended) {
+  if (snap) {
+    snap._autoSnapSuspended = suspended
+  }
 }
 
 /**
@@ -82,7 +95,7 @@ export function triggerSnapAtCenter (snap, map) {
 
   const center = map.getCenter()
   const point = map.project(center)
-  snap.snapToClosestPoint({ point, lngLat: center })
+  snap.snapToClosestPoint({ point, lngLat: center, _explicit: true })
   return true
 }
 

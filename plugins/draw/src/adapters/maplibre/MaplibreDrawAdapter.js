@@ -5,9 +5,11 @@ import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './draw
 import { ADAPTER_EVENTS } from '../../adapterEvents.js'
 import { createLiveStroke } from '../../validation/liveStroke.js'
 import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
+import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
 
 const polygonFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates } })
 const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
+const pointFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Point', coordinates } })
 
 // The displayed feature + placed-vertex count for the live stroke check. MapLibre's
 // fire() copies the payload onto an Event whose `type` is the event name, so the
@@ -23,9 +25,18 @@ export const displayedShape = (mode, coordinates) => {
     return { feature: lineFeature(coordinates), numVertices: (coordinates?.length ?? 1) - 1 }
   }
   if (mode === 'edit_vertex') {
-    return Array.isArray(coordinates[0]?.[0])
-      ? { feature: polygonFeature(coordinates), numVertices: coordinates[0]?.length ?? 0 }
+    // Read the outer ring once — Array.isArray(ring?.[0]) already proves `ring` itself is
+    // non-nullish whenever it's true, so the polygon branch can use it directly with no
+    // second optional-chaining/fallback (which `coordinates[0]` re-read a second time,
+    // unreachably, used to need).
+    const ring = coordinates[0]
+    return Array.isArray(ring?.[0])
+      ? { feature: polygonFeature(coordinates), numVertices: ring.length }
       : { feature: lineFeature(coordinates), numVertices: coordinates?.length ?? 0 }
+  }
+  if (mode === 'edit_point') {
+    // A Point's coordinates are already flat ([lng, lat]) — no ring/segment shape to read.
+    return { feature: pointFeature(coordinates), numVertices: 1 }
   }
   return null
 }
@@ -42,7 +53,7 @@ export const displayedShape = (mode, coordinates) => {
  *   setInterfaceType(type)
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
- *   get(id) / add(feature) / delete(id) / deleteAll()
+ *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -76,7 +87,8 @@ export class MaplibreDrawAdapter {
     this._liveStroke = createLiveStroke({
       onChange: (invalid, reason) => {
         this._applyStrokeInvalid(invalid)
-        if (this._draw.getMode() === 'edit_vertex') {
+        const mode = this._draw.getMode()
+        if (mode === 'edit_vertex' || mode === 'edit_point') {
           this._bus.emit(ADAPTER_EVENTS.VALIDITY_CHANGE, { valid: !invalid, reason })
         }
       }
@@ -138,7 +150,7 @@ export class MaplibreDrawAdapter {
   }
 
   changeMode (name, options = {}) {
-    if (name === 'edit_vertex') {
+    if (name === 'edit_vertex' || name === 'edit_point') {
       this._editingFeatureId = options.featureId ?? null
     }
     // A fresh draw always starts with a solid stroke and a placeable crosshair;
@@ -147,11 +159,24 @@ export class MaplibreDrawAdapter {
       this._liveStroke.set(false)
       this._liveDrawChecks.reset()
     }
+    // draw_point has no direct dependency on symbolRegistry/mapProvider — the resolver is
+    // injected here so the mode only ever calls state.resolvePointSymbol(...) and stays
+    // decoupled from how a symbol image actually gets resolved/registered.
+    if (name === 'draw_point') {
+      options = { ...options, resolvePointSymbol: (featureId, properties) => this._resolvePointSymbol(featureId, properties) }
+    }
     this._draw.changeMode(name, options)
     // The underlying mapbox-gl-draw control's public changeMode API is silent by
     // default (it never fires 'draw.modechange'), so every mode change requested
     // through this adapter must drive the same cleanup manually.
     this._handleModeChange({ mode: name })
+  }
+
+  // Injected into draw_point's changeMode options as state.resolvePointSymbol — resolves and
+  // registers the feature's symbol-config icon, then writes the resolved image id/anchor back
+  // onto the feature so the data-driven point-symbol layer (styles.js) can render it.
+  _resolvePointSymbol (featureId, properties) {
+    return resolvePointSymbol({ draw: this._draw, mapProvider: this._mapProvider, map: this._map, featureId, properties })
   }
 
   // Live invalid-stroke driver: called on every rubber-band move (draw) and vertex
@@ -181,8 +206,8 @@ export class MaplibreDrawAdapter {
   done () {
     this._mapProvider.undoStack?.clear()
     const mode = this._draw.getMode()
-    if (mode === 'edit_vertex' && this._editingFeatureId) {
-      // Leaving edit_vertex here — hide immediately rather than waiting on the
+    if ((mode === 'edit_vertex' || mode === 'edit_point') && this._editingFeatureId) {
+      // Leaving edit_vertex/edit_point here — hide immediately rather than waiting on the
       // async disable() the EDIT_FINISH handler fires later (see changeMode()).
       this._handleModeChange({ mode: 'disabled' })
       this._map.fire(CUSTOM_DRAW_EVENTS.EDIT_FINISH, { features: [this._draw.get(this._editingFeatureId)] })
@@ -269,7 +294,29 @@ export class MaplibreDrawAdapter {
   }
 
   get (id) { return this._draw.get(id) }
-  add (feature) { return this._draw.add(feature) }
+
+  // A directly-added Point (e.g. api/addFeature.js) skips draw_point's own icon-resolving
+  // drawend handler, so it must be resolved here instead — with no fallback, styles.js's
+  // point-symbol layer would otherwise render nothing at all.
+  add (feature) {
+    const ids = this._draw.add(feature)
+    if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {
+      this._resolvePointSymbol(ids[0], feature.properties)
+    }
+    return ids
+  }
+
+  // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
+  // keys) and re-renders — routed through add() itself so a Point's icon gets re-resolved the
+  // same way a directly-added one does, for free.
+  setStyle (id, properties) {
+    const feature = this._draw.get(id)
+    if (!feature) {
+      return
+    }
+    this.add({ ...feature, properties: { ...feature.properties, ...properties } })
+  }
+
   delete (id) { this._draw.delete(id) }
   deleteAll () { this._draw.deleteAll() }
 
@@ -326,7 +373,7 @@ export class MaplibreDrawAdapter {
   }
 
   _handleModeChange (e) {
-    const DRAW_MODES = new Set(['draw_polygon', 'draw_line', 'edit_vertex'])
+    const DRAW_MODES = new Set(['draw_polygon', 'draw_line', 'draw_point', 'edit_vertex', 'edit_point'])
     if (!DRAW_MODES.has(e.mode)) {
       clearSnapIndicator(getSnapInstance(this._map), this._map)
     }

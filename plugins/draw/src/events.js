@@ -9,9 +9,16 @@ import { ADAPTER_EVENTS } from './adapterEvents.js'
 import { validateGeometry } from './validation/validateGeometry.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { MAP_SIZE_SCALES } from './defaults.js'
+import { stripInternalSymbolProperties } from './utils/stripInternalSymbolProperties.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
 const GEOMETRY_INVALID_EVENT = 'draw:geometryinvalid'
+
+// edit_point behaves like edit_vertex for the two checks below (restore-on-cancel, live
+// invalid-stroke gating) — a relocate session, just with one coordinate instead of a ring.
+// enterEditVertexMode (below) stays edit_vertex-only — it's only ever reached for a shape
+// that finished invalid, and Point geometry has no such failure mode (see rules.js).
+const EDIT_MODES = new Set([EDIT_VERTEX_MODE, 'edit_point'])
 
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
@@ -86,10 +93,10 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     handleDone: () => { draw.done() },
     handleCancel: () => {
       const mode = draw.getMode()
-      if (mode === EDIT_VERTEX_MODE && tempFeature?.id) { draw.add(feature) }
+      if (EDIT_MODES.has(mode) && tempFeature?.id) { draw.add(feature) }
       pendingCreateId = null
       draw.cancel(); resetState()
-      eventBus.emit('draw:cancelled', feature)
+      eventBus.emit('draw:cancelled', stripInternalSymbolProperties(feature))
     },
     handleUndo: () => draw.undo(),
     handleDeleteVertex: () => draw.deleteVertex(),
@@ -104,11 +111,11 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       const { valid, reason } = validateGeometry(f, { phase: 'create', mode: draw.getMode() }, { onGeometryChange: draw._geometryValidator })
       if (!valid) {
         pendingCreateId = f.id
-        emitGeometryInvalid({ feature: f, reason, phase: 'create', mode: EDIT_VERTEX_MODE })
+        emitGeometryInvalid({ feature: stripInternalSymbolProperties(f), reason, phase: 'create', mode: EDIT_VERTEX_MODE })
         setTimeout(() => enterEditVertexMode({ draw, appState, appConfig, mapState, dispatch }, f.id), 0)
         return
       }
-      resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', f)
+      resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', stripInternalSymbolProperties(f))
     },
     onEditFinish: (f) => {
       resetState()
@@ -116,15 +123,15 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // A shape that was drawn-then-fixed reports as a creation, not an edit.
       if (pendingCreateId && f.id === pendingCreateId) {
         pendingCreateId = null
-        eventBus.emit('draw:created', f)
+        eventBus.emit('draw:created', stripInternalSymbolProperties(f))
       } else {
-        eventBus.emit('draw:edited', f)
+        eventBus.emit('draw:edited', stripInternalSymbolProperties(f))
       }
     },
     onCancel: () => {},
     ...createVertexSelectionHandlers({ draw, pluginState, mapProvider, eventBus }),
     onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
-    onUpdate: (f) => { eventBus.emit('draw:updated', f) },
+    onUpdate: (f) => { eventBus.emit('draw:updated', stripInternalSymbolProperties(f)) },
     onGeometryChange: (e) => {
       // Only commit-level changes (commit-add/move/insert/delete) carry a `phase`.
       // Preview events (e.g. split's live preview) have none and are ignored.
@@ -141,17 +148,17 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // The invalid stroke is committed-validity-driven in edit mode only; in draw
       // mode the adapters drive it live from the displayed geometry (placed
       // vertices + cursor) on every rubber-band move.
-      if (mode === EDIT_VERTEX_MODE) {
+      if (EDIT_MODES.has(mode)) {
         draw.setInvalid?.(!valid)
       }
       if (!valid) {
-        emitGeometryInvalid({ reason, ...context, feature: e.feature })
+        emitGeometryInvalid({ reason, ...context, feature: stripInternalSymbolProperties(e.feature) })
       }
     },
     // A vertex placement was rejected (hard rule or user callback veto). Surface it
     // on the public bus with phase 'place', and as a hint toast, so the reason is visible.
     onPlacementBlocked: (e) => {
-      emitGeometryInvalid(e)
+      emitGeometryInvalid({ ...e, feature: stripInternalSymbolProperties(e.feature) })
     },
     // Live (mid-drag) validity flip while editing — the displayed shape is exactly
     // what Done finishes there, so it gates the Done button in real time. Emitted

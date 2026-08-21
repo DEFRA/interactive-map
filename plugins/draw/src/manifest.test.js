@@ -9,7 +9,7 @@ describe('manifest structure', () => {
     expect(manifest.reducer).toHaveProperty('actions')
     expect(manifest.InitComponent).toBeDefined()
     expect(Object.keys(manifest.api)).toEqual(expect.arrayContaining([
-      'newPolygon', 'newLine', 'editFeature', 'addFeature', 'deleteFeature', 'split', 'merge'
+      'newPolygon', 'newLine', 'newPoint', 'editFeature', 'addFeature', 'setStyle', 'deleteFeature', 'split', 'merge'
     ]))
   })
 })
@@ -44,12 +44,14 @@ describe('drawDone', () => {
   test('is hidden outside draw/edit modes', () => {
     expect(btn().hiddenWhen({ pluginState: { mode: null } })).toBe(true)
     expect(btn().hiddenWhen({ pluginState: { mode: 'draw_polygon' } })).toBe(false)
+    expect(btn().hiddenWhen({ pluginState: { mode: 'edit_point' } })).toBe(false)
   })
 
   test('enables in a draw/edit mode only when the geometry is valid', () => {
     expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', geometryValid: true } })).toBe(true)
     expect(btn().enableWhen({ pluginState: { mode: 'draw_line', geometryValid: true } })).toBe(true)
     expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', geometryValid: true } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_point', geometryValid: true } })).toBe(true)
     expect(btn().enableWhen({ pluginState: { mode: 'disabled', geometryValid: true } })).toBe(false)
   })
 
@@ -57,6 +59,7 @@ describe('drawDone', () => {
     expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', geometryValid: false } })).toBe(false)
     expect(btn().enableWhen({ pluginState: { mode: 'draw_line', geometryValid: false } })).toBe(false)
     expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', geometryValid: false } })).toBe(false)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_point', geometryValid: false } })).toBe(false)
   })
 })
 
@@ -66,10 +69,22 @@ describe('drawMenu', () => {
     expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_vertex' } })).toBe(false)
   })
 
+  // draw_point has no Undo and no delete-vertex, but it does support snapping, and Snap is
+  // a menuItem inside this same button — so the button itself must stay visible for it even
+  // though drawUndo/drawDeletePoint (below) correctly keep excluding it.
+  test('is visible during draw_point, for the Snap toggle, even though it has no undo/delete', () => {
+    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'draw_point' } })).toBe(false)
+  })
+
   test('labels "Edit actions" in edit mode, "Draw actions" otherwise', () => {
     expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_vertex' } })).toBe('Edit actions')
+    expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_point' } })).toBe('Edit actions')
     expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_polygon' } })).toBe('Draw actions')
     expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_line' } })).toBe('Draw actions')
+  })
+
+  test('is visible during edit_point', () => {
+    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_point' } })).toBe(false)
   })
 
   describe('drawUndo', () => {
@@ -80,11 +95,21 @@ describe('drawMenu', () => {
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line' } })).toBe(false)
     })
 
+    test('is visible in edit_point', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'edit_point' } })).toBe(false)
+    })
+
+    test('stays hidden for draw_point — nothing to undo before a single-click commit', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_point' } })).toBe(true)
+    })
+
     test('enables from vertex count while drawing and from the undo stack while editing', () => {
       expect(item().enableWhen({ pluginState: { mode: 'draw_polygon', numVertices: 1 } })).toBe(true)
       expect(item().enableWhen({ pluginState: { mode: 'draw_polygon', numVertices: 0 } })).toBe(false)
       expect(item().enableWhen({ pluginState: { mode: 'edit_vertex', undoStackLength: 2 } })).toBe(true)
       expect(item().enableWhen({ pluginState: { mode: 'edit_vertex', undoStackLength: 0 } })).toBe(false)
+      expect(item().enableWhen({ pluginState: { mode: 'edit_point', undoStackLength: 1 } })).toBe(true)
+      expect(item().enableWhen({ pluginState: { mode: 'edit_point', undoStackLength: 0 } })).toBe(false)
     })
   })
 
@@ -109,6 +134,12 @@ describe('drawMenu', () => {
     test('is hidden outside edit mode', () => {
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_polygon' } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'edit_vertex' } })).toBe(false)
+    })
+
+    // Deliberately excluded from edit_point — deleting a point's one coordinate is deleting
+    // the whole feature (deleteFeature's job), not a per-vertex action.
+    test('stays hidden for edit_point', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'edit_point' } })).toBe(true)
     })
 
     test('enables only with a selection and enough vertices (polygon vs line)', () => {

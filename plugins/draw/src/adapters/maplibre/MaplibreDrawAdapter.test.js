@@ -1,6 +1,7 @@
 import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
+import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
 
@@ -11,6 +12,11 @@ jest.mock('./utils/snapHelpers.js', () => ({
   clearSnapIndicator: jest.fn()
 }))
 jest.mock('../../utils/eventBus.js', () => ({ createEventBus: jest.fn() }))
+jest.mock('./pointSymbolImages.js', () => ({
+  resolvePointSymbol: jest.fn(),
+  refreshAllPointSymbols: jest.fn(),
+  hasSymbolStyle: jest.fn()
+}))
 
 const SNAP_LAYER = 'snap-helper-circle'
 
@@ -184,8 +190,40 @@ describe('displayedShape helper', () => {
     expect(line?.feature?.geometry?.type).toBe('LineString')
   })
 
+  test('builds a point feature from edit_point mode, with a flat (unnested) coordinate', () => {
+    const result = displayedShape('edit_point', [5, 5])
+    expect(result?.feature?.type).toBe('Feature')
+    expect(result?.feature?.geometry).toEqual({ type: 'Point', coordinates: [5, 5] })
+    expect(result?.numVertices).toBe(1)
+  })
+
   test('returns null for an unknown mode', () => {
     expect(displayedShape('unknown_mode', [[0, 0], [10, 0]])).toBeNull()
+  })
+
+  // A ring/coordinate array can transiently be empty/absent right as a sketch starts —
+  // the `?? …` fallbacks keep numVertices a sane number instead of crashing on `undefined.length`.
+  test('falls back to numVertices 0 for a draw_polygon sketch with no ring yet', () => {
+    expect(displayedShape('draw_polygon', [])?.numVertices).toBe(0)
+  })
+
+  test('falls back to numVertices 0 for a draw_line sketch with no coordinates yet', () => {
+    expect(displayedShape('draw_line', undefined)?.numVertices).toBe(0)
+  })
+
+  test('falls back to numVertices 0 for an edit_vertex polygon with no ring yet', () => {
+    const result = displayedShape('edit_vertex', [])
+    expect(result?.feature?.geometry?.type).toBe('LineString') // coordinates[0] undefined → not detected as a polygon ring
+    expect(result?.numVertices).toBe(0)
+  })
+
+  // A plain object (not an array) still satisfies edit_vertex's own coordinates[0]?.[0]
+  // access without throwing, but has no .length of its own — the line branch's `?? 0`
+  // fallback the case above can't reach (an empty array's .length is 0, not nullish).
+  test('falls back to numVertices 0 for an edit_vertex line whose coordinates have no length at all', () => {
+    const result = displayedShape('edit_vertex', {})
+    expect(result?.feature?.geometry?.type).toBe('LineString')
+    expect(result?.numVertices).toBe(0)
   })
 })
 
@@ -338,6 +376,18 @@ describe('live invalid stroke (edit mode)', () => {
     expect(bus.emit).not.toHaveBeenCalledWith('canplacechange', expect.anything())
   })
 
+  test('validity flips also gate the Done button while editing a point', () => {
+    jest.useFakeTimers()
+    const { map, draw, bus } = editSetup()
+    draw.getMode.mockReturnValue('edit_point')
+    const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
+    map._drawGeometryValidator = () => ({ valid: false, reason: 'outside region' })
+    fire({ type: 'draw.geometrychange', coordinates: [5, 5] })
+    jest.runAllTimers()
+    expect(bus.emit).toHaveBeenCalledWith('validitychange', expect.objectContaining({ valid: false, reason: 'outside region' }))
+    jest.useRealTimers()
+  })
+
   test('lines never go dashed from the default rules while editing', () => {
     const { map } = editSetup()
     onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ type: 'draw.geometrychange', coordinates: [[0, 0], [10, 10], [10, 0], [0, 10]] })
@@ -376,6 +426,12 @@ describe('changeMode', () => {
     expect(draw.changeMode).toHaveBeenCalledWith('edit_vertex', { featureId: 'f9' })
   })
 
+  test('records the editing feature id when entering edit_point', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_point', { featureId: 'f9' })
+    expect(draw.changeMode).toHaveBeenCalledWith('edit_point', { featureId: 'f9' })
+  })
+
   test('defaults the editing feature id to null when omitted', () => {
     const { adapter, draw } = setup()
     adapter.changeMode('edit_vertex', {})
@@ -389,6 +445,20 @@ describe('changeMode', () => {
     const { adapter, draw } = setup()
     adapter.changeMode('draw_polygon')
     expect(draw.changeMode).toHaveBeenCalledWith('draw_polygon', {})
+  })
+
+  test('draw_point gets a resolvePointSymbol hook injected, delegating to pointSymbolImages.js', () => {
+    const { adapter, draw, map, mapProvider } = setup()
+    adapter.changeMode('draw_point', { featureId: 'p1' })
+
+    expect(draw.changeMode).toHaveBeenCalledWith('draw_point', {
+      featureId: 'p1',
+      resolvePointSymbol: expect.any(Function)
+    })
+
+    const injected = draw.changeMode.mock.calls[0][1].resolvePointSymbol
+    injected('p1', { symbol: 'pin' })
+    expect(resolvePointSymbol).toHaveBeenCalledWith({ draw, mapProvider, map, featureId: 'p1', properties: { symbol: 'pin' } })
   })
 })
 
@@ -492,6 +562,89 @@ describe('simple delegations', () => {
     expect(draw.setFeatureProperty).toHaveBeenCalledWith('d', 'p', 1)
   })
 
+  // A directly-added Point skips draw_point's own icon-resolving drawend handler.
+  describe('add() and point symbol resolution', () => {
+    test('resolves the symbol for a Point feature with symbol properties, using the id draw.add() returns', () => {
+      const { adapter, draw, map, mapProvider } = setup()
+      draw.add.mockReturnValue(['generated-id'])
+      hasSymbolStyle.mockReturnValue(true)
+      const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
+
+      const result = adapter.add(feature)
+
+      expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin' })
+      expect(resolvePointSymbol).toHaveBeenCalledWith({
+        draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin' }
+      })
+      expect(result).toEqual(['generated-id'])
+    })
+
+    test('does not attempt resolution for a Point with no symbol properties', () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['id-1'])
+      hasSymbolStyle.mockReturnValue(false)
+      adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+      expect(resolvePointSymbol).not.toHaveBeenCalled()
+    })
+
+    test('does not attempt resolution for a non-Point geometry', () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['id-1'])
+      adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
+      expect(hasSymbolStyle).not.toHaveBeenCalled()
+      expect(resolvePointSymbol).not.toHaveBeenCalled()
+    })
+
+    test('does not attempt resolution for a feature with no geometry', () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['id-1'])
+      adapter.add({ id: 'b' })
+      expect(resolvePointSymbol).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('setStyle()', () => {
+    test('merges the patch into the existing feature and re-adds it', () => {
+      const { adapter, draw } = setup()
+      const feature = { id: 'a', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] }, properties: { stroke: 'red', name: 'x' } }
+      draw.get.mockReturnValue(feature)
+      draw.add.mockReturnValue(['a'])
+
+      adapter.setStyle('a', { stroke: 'blue' })
+
+      expect(draw.add).toHaveBeenCalledWith({
+        id: 'a',
+        type: 'Feature',
+        geometry: { type: 'Polygon', coordinates: [[]] },
+        properties: { stroke: 'blue', name: 'x' }
+      })
+    })
+
+    // setStyle is routed through add() itself, so a Point patched with symbol properties gets
+    // its icon re-resolved the same way a directly-added one does.
+    test('re-resolves the icon for a Point patched with symbol properties', () => {
+      const { adapter, draw } = setup()
+      const feature = { id: 'p1', type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
+      draw.get.mockReturnValue(feature)
+      draw.add.mockReturnValue(['p1'])
+      hasSymbolStyle.mockReturnValue(true)
+
+      adapter.setStyle('p1', { symbolBackgroundColor: '#ca3535' })
+
+      expect(resolvePointSymbol).toHaveBeenCalledWith(expect.objectContaining({
+        featureId: 'p1',
+        properties: { symbol: 'pin', symbolBackgroundColor: '#ca3535' }
+      }))
+    })
+
+    test('does nothing for an id with no existing feature', () => {
+      const { adapter, draw } = setup()
+      draw.get.mockReturnValue(undefined)
+      adapter.setStyle('missing', { stroke: 'blue' })
+      expect(draw.add).not.toHaveBeenCalled()
+    })
+  })
+
   test('setDrawingPreviewProperty tags the in-progress feature and re-renders', () => {
     const { adapter, map } = setup()
     const render = jest.fn()
@@ -569,6 +722,18 @@ describe('done', () => {
     adapter.done()
     expect(map.fire).not.toHaveBeenCalled()
     expect(draw.changeMode).not.toHaveBeenCalled()
+  })
+
+  test('clears the undo stack and fires editfinish when editing a point', () => {
+    const { adapter, map, draw, undoStack } = setup()
+    adapter.changeMode('edit_point', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_point')
+
+    adapter.done()
+
+    expect(undoStack.clear).toHaveBeenCalled()
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.EDIT_FINISH, { features: [{ id: 'f1' }] })
+    expect(draw.changeMode).not.toHaveBeenCalledWith('disabled')
   })
 })
 
