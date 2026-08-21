@@ -27,6 +27,7 @@ export function MapKey ({
     if (!datasetRegistry) {
       // 'datasets:registry' is only required when the key is opened before datasets:ready
       eventBus.requestOnce('datasets:registry', setDatasetRegistry)
+      return () => {}
     } else {
       getKeyItems() // populate the initial KeyItems from the datasetRegistry (which caches them)
       eventBus

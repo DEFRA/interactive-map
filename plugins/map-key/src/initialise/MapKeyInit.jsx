@@ -7,7 +7,7 @@ export function MapKeyInit ({ mapState, services }) {
 
   useEffect(() => {
     if (!mapState.isMapReady) {
-      return () => {}
+      return
     }
     // Request a handle on the datasetsRegistry singleton
     eventBus.requestOnce('datasets:registry', setDatasetRegistry)
