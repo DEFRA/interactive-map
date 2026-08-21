@@ -27,6 +27,15 @@ describe('createDrawStyles', () => {
     expect(point.layout['icon-allow-overlap']).toBe(true)
   })
 
+  // Drives predictable draw-order stacking within each shared layer (a later-drawn feature
+  // paints above an earlier one) — see MaplibreDrawAdapter.js's _nextSortKey/sortKey property.
+  test('fill/line/symbol layers sort by the per-feature user_sortKey property', () => {
+    const layers = createDrawStyles(mapStyle)
+    expect(findLayer(layers, 'fill-inactive').layout['fill-sort-key']).toEqual(['get', 'user_sortKey'])
+    expect(findLayer(layers, 'stroke-inactive').layout['line-sort-key']).toEqual(['get', 'user_sortKey'])
+    expect(findLayer(layers, 'point-symbol').layout['symbol-sort-key']).toEqual(['get', 'user_sortKey'])
+  })
+
   // While a point is the one being edited (edit_point mode's toDisplayFeatures sets
   // active:'true' just for it), icon-image swaps to the same precomputed "selected" (black
   // ring) variant the interact plugin's own selection highlight already uses — see

@@ -1,5 +1,5 @@
 import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
-import { stripInternalSymbolProperties } from '../utils/stripInternalSymbolProperties.js'
+import { stripInternalProperties } from '../utils/stripInternalProperties.js'
 import { logger } from '../../../../src/services/logger.js'
 
 const SUPPORTED_GEOMETRY_TYPES = new Set(['Point', 'LineString', 'Polygon'])
@@ -33,5 +33,5 @@ export const addFeature = ({ mapProvider, services }, feature) => {
   }
 
   draw.add(flatFeature)
-  eventBus.emit('draw:add', stripInternalSymbolProperties(flatFeature))
+  eventBus.emit('draw:add', stripInternalProperties(flatFeature))
 }

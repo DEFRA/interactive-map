@@ -9,7 +9,7 @@ import { ADAPTER_EVENTS } from './adapterEvents.js'
 import { validateGeometry } from './validation/validateGeometry.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { MAP_SIZE_SCALES } from './defaults.js'
-import { stripInternalSymbolProperties } from './utils/stripInternalSymbolProperties.js'
+import { stripInternalProperties } from './utils/stripInternalProperties.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
 const GEOMETRY_INVALID_EVENT = 'draw:geometryinvalid'
@@ -96,7 +96,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       if (EDIT_MODES.has(mode) && tempFeature?.id) { draw.add(feature) }
       pendingCreateId = null
       draw.cancel(); resetState()
-      eventBus.emit('draw:cancelled', stripInternalSymbolProperties(feature))
+      eventBus.emit('draw:cancelled', stripInternalProperties(feature))
     },
     handleUndo: () => draw.undo(),
     handleDeleteVertex: () => draw.deleteVertex(),
@@ -111,11 +111,11 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       const { valid, reason } = validateGeometry(f, { phase: 'create', mode: draw.getMode() }, { onGeometryChange: draw._geometryValidator })
       if (!valid) {
         pendingCreateId = f.id
-        emitGeometryInvalid({ feature: stripInternalSymbolProperties(f), reason, phase: 'create', mode: EDIT_VERTEX_MODE })
+        emitGeometryInvalid({ feature: stripInternalProperties(f), reason, phase: 'create', mode: EDIT_VERTEX_MODE })
         setTimeout(() => enterEditVertexMode({ draw, appState, appConfig, mapState, dispatch }, f.id), 0)
         return
       }
-      resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', stripInternalSymbolProperties(f))
+      resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', stripInternalProperties(f))
     },
     onEditFinish: (f) => {
       resetState()
@@ -123,15 +123,15 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // A shape that was drawn-then-fixed reports as a creation, not an edit.
       if (pendingCreateId && f.id === pendingCreateId) {
         pendingCreateId = null
-        eventBus.emit('draw:created', stripInternalSymbolProperties(f))
+        eventBus.emit('draw:created', stripInternalProperties(f))
       } else {
-        eventBus.emit('draw:edited', stripInternalSymbolProperties(f))
+        eventBus.emit('draw:edited', stripInternalProperties(f))
       }
     },
     onCancel: () => {},
     ...createVertexSelectionHandlers({ draw, pluginState, mapProvider, eventBus }),
     onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
-    onUpdate: (f) => { eventBus.emit('draw:updated', stripInternalSymbolProperties(f)) },
+    onUpdate: (f) => { eventBus.emit('draw:updated', stripInternalProperties(f)) },
     onGeometryChange: (e) => {
       // Only commit-level changes (commit-add/move/insert/delete) carry a `phase`.
       // Preview events (e.g. split's live preview) have none and are ignored.
@@ -152,13 +152,13 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
         draw.setInvalid?.(!valid)
       }
       if (!valid) {
-        emitGeometryInvalid({ reason, ...context, feature: stripInternalSymbolProperties(e.feature) })
+        emitGeometryInvalid({ reason, ...context, feature: stripInternalProperties(e.feature) })
       }
     },
     // A vertex placement was rejected (hard rule or user callback veto). Surface it
     // on the public bus with phase 'place', and as a hint toast, so the reason is visible.
     onPlacementBlocked: (e) => {
-      emitGeometryInvalid({ ...e, feature: stripInternalSymbolProperties(e.feature) })
+      emitGeometryInvalid({ ...e, feature: stripInternalProperties(e.feature) })
     },
     // Live (mid-drag) validity flip while editing — the displayed shape is exactly
     // what Done finishes there, so it gates the Done button in real time. Emitted

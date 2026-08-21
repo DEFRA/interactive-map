@@ -118,17 +118,59 @@ describe('construction', () => {
 })
 
 describe('map event normalisation', () => {
-  test('create/editfinish/update forward the first feature', () => {
+  test('editfinish/update forward the first feature', () => {
     const { map, bus } = setup()
     const feature = { id: 'f1' }
 
-    onHandler(map, MAPBOX_DRAW_EVENTS.CREATE)({ features: [feature] })
     onHandler(map, CUSTOM_DRAW_EVENTS.EDIT_FINISH)({ features: [feature] })
     onHandler(map, MAPBOX_DRAW_EVENTS.UPDATE)({ features: [feature] })
 
-    expect(bus.emit).toHaveBeenCalledWith('create', feature)
     expect(bus.emit).toHaveBeenCalledWith('editfinish', feature)
     expect(bus.emit).toHaveBeenCalledWith('update', feature)
+  })
+
+  // Drives fill/line/symbol-sort-key (styles.js) — a feature drawn interactively (not via the
+  // add() API) still needs a sort key assigned exactly once, at the point it's actually created.
+  // Deferred a tick: the owning draw mode's own 'draw.create' listener re-ids the feature to its
+  // final id in the same synchronous dispatch (see drawPointMode.js/clickHandlers.js), and this
+  // handler must run after that re-id, not before it.
+  test('create assigns an incrementing sortKey via setFeatureProperty before forwarding, after the mode\'s own re-id has run', () => {
+    jest.useFakeTimers()
+    const { map, draw, bus } = setup()
+    draw.get.mockImplementation((id) => ({ id, properties: { sortKey: id === 'f1' ? 1 : 2 } }))
+
+    onHandler(map, MAPBOX_DRAW_EVENTS.CREATE)({ features: [{ id: 'f1' }] })
+    onHandler(map, MAPBOX_DRAW_EVENTS.CREATE)({ features: [{ id: 'f2' }] })
+    expect(draw.setFeatureProperty).not.toHaveBeenCalled() // deferred past the mode's re-id
+    jest.runAllTimers()
+
+    expect(draw.setFeatureProperty).toHaveBeenNthCalledWith(1, 'f1', 'sortKey', 1)
+    expect(draw.setFeatureProperty).toHaveBeenNthCalledWith(2, 'f2', 'sortKey', 2)
+    // Forwards the freshly re-fetched feature (carrying the new property), not the stale event payload.
+    expect(bus.emit).toHaveBeenCalledWith('create', { id: 'f1', properties: { sortKey: 1 } })
+    expect(bus.emit).toHaveBeenCalledWith('create', { id: 'f2', properties: { sortKey: 2 } })
+    jest.useRealTimers()
+  })
+
+  // Reproduces the real integration hazard the deferral above guards against: a draw mode's
+  // 'draw.create' listener re-ids the feature (mutating the SAME event payload object) in the
+  // same synchronous dispatch, before this handler's deferred callback runs.
+  test('create picks up a feature id re-assigned synchronously by the owning draw mode', () => {
+    jest.useFakeTimers()
+    const { map, draw, bus } = setup()
+    draw.get.mockImplementation((id) => ({ id, properties: { sortKey: 1 } }))
+    const feature = { id: 'mapbox-temp-id' }
+
+    onHandler(map, MAPBOX_DRAW_EVENTS.CREATE)({ features: [feature] })
+    // Simulate the owning draw mode's own 'draw.create' listener re-idding this SAME feature
+    // object, synchronously, later in the same dispatch — before this handler's deferred
+    // callback below runs.
+    feature.id = 'caller-requested-id'
+    jest.runAllTimers()
+
+    expect(draw.setFeatureProperty).toHaveBeenCalledWith('caller-requested-id', 'sortKey', 1)
+    expect(bus.emit).toHaveBeenCalledWith('create', { id: 'caller-requested-id', properties: { sortKey: 1 } })
+    jest.useRealTimers()
   })
 
   test('cancel forwards with no payload', () => {
@@ -556,7 +598,7 @@ describe('simple delegations', () => {
     adapter.setFeatureProperty('d', 'p', 1)
 
     expect(draw.get).toHaveBeenCalledWith('a')
-    expect(draw.add).toHaveBeenCalledWith({ id: 'b' })
+    expect(draw.add).toHaveBeenCalledWith({ id: 'b', properties: { sortKey: 1 } })
     expect(draw.delete).toHaveBeenCalledWith('c')
     expect(draw.deleteAll).toHaveBeenCalled()
     expect(draw.setFeatureProperty).toHaveBeenCalledWith('d', 'p', 1)
@@ -572,9 +614,9 @@ describe('simple delegations', () => {
 
       const result = adapter.add(feature)
 
-      expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin' })
+      expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin', sortKey: 1 })
       expect(resolvePointSymbol).toHaveBeenCalledWith({
-        draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin' }
+        draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin', sortKey: 1 }
       })
       expect(result).toEqual(['generated-id'])
     })
@@ -603,6 +645,22 @@ describe('simple delegations', () => {
     })
   })
 
+  describe('add() sort key assignment', () => {
+    test('assigns an incrementing sortKey to each genuinely new feature', () => {
+      const { adapter, draw } = setup()
+      adapter.add({ id: 'a' })
+      adapter.add({ id: 'b' })
+      expect(draw.add).toHaveBeenNthCalledWith(1, { id: 'a', properties: { sortKey: 1 } })
+      expect(draw.add).toHaveBeenNthCalledWith(2, { id: 'b', properties: { sortKey: 2 } })
+    })
+
+    test('preserves an existing sortKey rather than assigning a new one', () => {
+      const { adapter, draw } = setup()
+      adapter.add({ id: 'a', properties: { sortKey: 5 } })
+      expect(draw.add).toHaveBeenCalledWith({ id: 'a', properties: { sortKey: 5 } })
+    })
+  })
+
   describe('setStyle()', () => {
     test('merges the patch into the existing feature and re-adds it', () => {
       const { adapter, draw } = setup()
@@ -616,8 +674,19 @@ describe('simple delegations', () => {
         id: 'a',
         type: 'Feature',
         geometry: { type: 'Polygon', coordinates: [[]] },
-        properties: { stroke: 'blue', name: 'x' }
+        properties: { stroke: 'blue', name: 'x', sortKey: 1 }
       })
+    })
+
+    test('preserves an existing sortKey rather than assigning a new one', () => {
+      const { adapter, draw } = setup()
+      const feature = { id: 'a', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] }, properties: { stroke: 'red', sortKey: 7 } }
+      draw.get.mockReturnValue(feature)
+      draw.add.mockReturnValue(['a'])
+
+      adapter.setStyle('a', { stroke: 'blue' })
+
+      expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({ properties: { stroke: 'blue', sortKey: 7 } }))
     })
 
     // setStyle is routed through add() itself, so a Point patched with symbol properties gets
@@ -633,7 +702,7 @@ describe('simple delegations', () => {
 
       expect(resolvePointSymbol).toHaveBeenCalledWith(expect.objectContaining({
         featureId: 'p1',
-        properties: { symbol: 'pin', symbolBackgroundColor: '#ca3535' }
+        properties: { symbol: 'pin', symbolBackgroundColor: '#ca3535', sortKey: 1 }
       }))
     })
 
