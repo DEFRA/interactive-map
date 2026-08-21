@@ -2,7 +2,7 @@ import React from 'react'
 // import { setDatasetVisibility } from '../../api/setDatasetVisibility.js'
 import { MenuCheckbox } from './MenuCheckbox.jsx'
 import { RadioGroupWrapper } from './RadioGroupWrapper.jsx'
-import { CheckboxGroupWrapper } from './CheckboxGroupWrapper.jsx'
+import { MenuGroupWrapper } from './MenuGroupWrapper.jsx'
 
 export const Menu = ({ pluginState }) => {
   const { menu = [], dispatch } = pluginState
@@ -16,7 +16,7 @@ export const Menu = ({ pluginState }) => {
           const { type } = menuGroup
           if (type === 'checkbox') {
             return (
-              <CheckboxGroupWrapper key={menuGroup.id} menuGroup={menuGroup}> {
+              <MenuGroupWrapper key={menuGroup.id} menuGroup={menuGroup}> {
                 // Each menuGroupItem
                 menuGroup.items.map(menuGroupItem => (
                   <MenuCheckbox
@@ -27,7 +27,7 @@ export const Menu = ({ pluginState }) => {
                   />)
                 )
               }
-              </CheckboxGroupWrapper>
+              </MenuGroupWrapper>
             )
           } else {
             return (

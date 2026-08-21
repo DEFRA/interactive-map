@@ -1,5 +1,6 @@
-export const CheckboxGroupWrapper = ({ menuGroup, children }) => {
-  if (!menuGroup.groupLabel) {
+export const MenuGroupWrapper = ({ menuGroup, children }) => {
+  const label = menuGroup.groupLabel || menuGroup.label
+  if (!label) {
     return <>{children}</>
   }
   const wrapperClass = 'govuk-form-group im-c-menu-layers-group'
@@ -7,7 +8,7 @@ export const CheckboxGroupWrapper = ({ menuGroup, children }) => {
     <div key={menuGroup.id} className={wrapperClass}>
       <fieldset className='im-c-menu-layers-group__fieldset'>
         <legend className='im-c-menu-layers-group__legend'>
-          <h3> {menuGroup.groupLabel} </h3>
+          <h3> {label} </h3>
         </legend>
         {children}
       </fieldset>
