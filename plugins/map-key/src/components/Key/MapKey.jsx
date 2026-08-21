@@ -13,7 +13,7 @@ export function MapKey ({
   const [datasetRegistry, setDatasetRegistry] = useState(getDatasetRegistry())
 
   const getKeyItems = () => {
-    const { items, hasGroups: _hasGroups } = datasetRegistry ? datasetRegistry.keyItems() : { items: [], hasGroups: false }
+    const { items, hasGroups: _hasGroups } = datasetRegistry.keyItems()
     setKeyGroups(items)
     setHasGroups(_hasGroups)
   }

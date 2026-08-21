@@ -1,47 +1,39 @@
 import { render } from '@testing-library/react'
 import { MapKeyInit } from './MapKeyInit.jsx'
-import { createMapKey } from './createMapKey.js'
+import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
 
-jest.mock('./createMapKey.js', () => ({
-  createMapKey: jest.fn()
+jest.mock('../registry/getDatasetRegistry.js', () => ({
+  setDatasetRegistry: jest.fn()
 }))
 
-const mockRemove = jest.fn()
-const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
+const eventBus = { requestOnce: jest.fn() }
 const services = { eventBus }
 
 beforeEach(() => {
   jest.clearAllMocks()
-  createMapKey.mockReturnValue({ remove: mockRemove })
 })
 
 describe('MapKeyInit', () => {
-  it('does not call createMapKey when map is not ready', () => {
+  it('does not call requestOnce when map is not ready', () => {
     render(<MapKeyInit mapState={{ isMapReady: false }} services={services} />)
-    expect(createMapKey).not.toHaveBeenCalled()
+    expect(eventBus.requestOnce).not.toHaveBeenCalled()
   })
 
-  it('calls createMapKey with eventBus when map is ready', () => {
+  it('calls requestOnce for datasets:registry when map is ready', () => {
     render(<MapKeyInit mapState={{ isMapReady: true }} services={services} />)
-    expect(createMapKey).toHaveBeenCalledWith({ eventBus })
+    expect(eventBus.requestOnce).toHaveBeenCalledWith('datasets:registry', setDatasetRegistry)
   })
 
-  it('calls remove on unmount when map was ready', () => {
-    const { unmount } = render(<MapKeyInit mapState={{ isMapReady: true }} services={services} />)
-    unmount()
-    expect(mockRemove).toHaveBeenCalled()
-  })
-
-  it('does not call remove on unmount when map was not ready', () => {
-    const { unmount } = render(<MapKeyInit mapState={{ isMapReady: false }} services={services} />)
-    unmount()
-    expect(mockRemove).not.toHaveBeenCalled()
-  })
-
-  it('calls createMapKey again when isMapReady changes to true', () => {
+  it('calls requestOnce when isMapReady changes to true', () => {
     const { rerender } = render(<MapKeyInit mapState={{ isMapReady: false }} services={services} />)
-    expect(createMapKey).not.toHaveBeenCalled()
+    expect(eventBus.requestOnce).not.toHaveBeenCalled()
     rerender(<MapKeyInit mapState={{ isMapReady: true }} services={services} />)
-    expect(createMapKey).toHaveBeenCalledTimes(1)
+    expect(eventBus.requestOnce).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not call requestOnce again on re-render when isMapReady stays true', () => {
+    const { rerender } = render(<MapKeyInit mapState={{ isMapReady: true }} services={services} />)
+    rerender(<MapKeyInit mapState={{ isMapReady: true }} services={services} />)
+    expect(eventBus.requestOnce).toHaveBeenCalledTimes(1)
   })
 })
