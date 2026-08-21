@@ -410,11 +410,15 @@ export class MaplibreDrawAdapter {
 
   // Keeps draw layers on top after MapLibre style reloads
   _handleStyleData () {
+    // A pending point-symbol resolution's map.addImage() call (pointSymbolImages.js) can fire
+    // 'styledata' after the map's been torn down — getStyle() returns undefined then; no-op.
+    const style = this._map.getStyle()
+    if (!style) { return }
     // A style reload re-adds the draw layers with their spec-default visibility
     // (solid stroke shown, dashed hidden) — re-assert the cached stroke state so
     // an invalid shape stays dashed across the reload.
     this._liveStroke.refresh()
-    const layers = this._map.getStyle().layers || []
+    const layers = style.layers || []
     if (!layers.length || layers[layers.length - 1].source?.startsWith('mapbox-gl-draw')) {
       return
     }

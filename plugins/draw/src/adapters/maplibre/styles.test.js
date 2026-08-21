@@ -23,7 +23,11 @@ describe('createDrawStyles', () => {
     const point = findLayer(layers, 'point-symbol')
     expect(point.filter).toEqual(['all', ['==', '$type', 'Point'], ['==', 'meta', 'feature']])
     expect(point.layout['icon-anchor']).toEqual(['get', 'user_symbolIconAnchor'])
-    expect(point.layout['icon-offset']).toEqual(['get', 'user_symbolIconOffset'])
+    // Static default — pointSymbolImages.js's registerSymbolIconOffset overwrites this via
+    // setLayoutProperty with a match expression once a point needs a non-zero offset (a raw
+    // per-feature `get` here would read back a JSON.stringify'd string, not the real array —
+    // see that function's comment).
+    expect(point.layout['icon-offset']).toEqual(['literal', [0, 0]])
     expect(point.layout['icon-allow-overlap']).toBe(true)
   })
 

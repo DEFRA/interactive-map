@@ -3,22 +3,49 @@ import { getSymbolAnchor, getSymbolViewBox } from '../../../../../src/utils/symb
 import { anchorToMaplibre, anchorToMaplibreOffset } from '../../../../../providers/maplibre/src/utils/symbolImages.js'
 
 /**
- * Resolves and registers a drawn point's symbol-config icon (the same schema addMarker
- * and dataset point features use — symbol/symbolSvgContent/symbolBackgroundColor/etc.,
- * see src/config/symbolConfig.js), and writes the resolved image id/anchor/offset back onto
- * the feature as properties (symbolImageId/symbolIconAnchor/symbolIconOffset) so the
- * data-driven point-symbol layer (styles.js's pointSymbol()) can render it via
- * icon-image/icon-anchor/icon-offset expressions. Also writes symbolActiveImageId/
- * symbolSelectedImageId (the keyboard-cursor and click-selected variants of the same icon)
- * so providers/maplibre/src/utils/highlightFeatures.js's selection ring can reference each
- * point's own precomputed variant directly, since icon-image here is a per-feature
- * data-driven expression rather than the single static id a dataset layer uses.
+ * Resolves and registers a drawn point's symbol-config icon (the same schema addMarker and
+ * dataset point features use — see src/config/symbolConfig.js), writing the resolved image
+ * id/anchor/active-variant/selected-variant back onto the feature so the data-driven
+ * point-symbol layer (styles.js's pointSymbol()) can render it. icon-offset is handled
+ * separately (see registerSymbolIconOffset below) since it can't safely be a per-feature
+ * property.
  *
  * A point feature's own properties ARE already the "style" object symbolRegistry expects —
  * newPoint.js passes symbol config options straight through, no transformation needed.
  */
 
 export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
+
+const POINT_SYMBOL_LAYER_ID = 'point-symbol'
+
+// icon-offset can't be a raw per-feature `get` on an array property — MapLibre's GeoJSON
+// sources silently JSON.stringify arrays/objects, so it reads back a string at render time
+// and MapLibre logs a type warning (see styles.js's pointSymbol() comment). Offset only
+// depends on a symbolImageId's own anchor/viewBox, so instead each id's offset is folded into
+// a `match` expression keyed on the (safe, string) user_symbolImageId property.
+const buildIconOffsetExpression = (offsetsByImageId) => {
+  const expression = ['match', ['get', 'user_symbolImageId']]
+  for (const [imageId, offset] of Object.entries(offsetsByImageId)) {
+    expression.push(imageId, ['literal', offset])
+  }
+  expression.push(['literal', [0, 0]]) // fallback for any id not yet registered
+  return expression
+}
+
+const registerSymbolIconOffset = (map, symbolImageId, offset) => {
+  map._symbolIconOffsetMap ??= {}
+  if (map._symbolIconOffsetMap[symbolImageId]) {
+    return // offset is deterministic per id — already registered, nothing changed
+  }
+  map._symbolIconOffsetMap[symbolImageId] = offset
+  const expression = buildIconOffsetExpression(map._symbolIconOffsetMap)
+  ;['hot', 'cold'].forEach((suffix) => {
+    const layerId = `${POINT_SYMBOL_LAYER_ID}.${suffix}`
+    if (map.getLayer(layerId)) {
+      map.setLayoutProperty(layerId, 'icon-offset', expression)
+    }
+  })
+}
 
 // map.getPixelRatio() is only ever set once, at map construction (MapController.jsx bakes
 // window.devicePixelRatio * scaleFactor[mapSize] into the initMap() call) — nothing in this
@@ -75,12 +102,12 @@ export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, pr
     const symbolDef = symbolRegistry.getSymbolDef(properties)
     const rawAnchor = getSymbolAnchor(properties, symbolDef)
     const anchor = anchorToMaplibre(rawAnchor)
-    // icon-anchor only has 9 discrete positions — pin's [0.5, 0.9] (and any other off-grid
-    // anchor) loses precision snapping to one of them ('bottom', here). icon-offset corrects
-    // it, so a drawn point lines up with the same anchor point a DOM marker using the same
-    // symbol config would (SymbolMarker.jsx positions those with the exact fraction, no
-    // snapping) — see anchorToMaplibreOffset's own comment for the maths.
+    // icon-anchor only has 9 discrete positions, so an off-grid anchor (e.g. pin's [0.5, 0.9])
+    // loses precision snapping to the nearest one — icon-offset corrects that gap (see
+    // anchorToMaplibreOffset's comment for the maths). Registered via registerSymbolIconOffset
+    // rather than written onto the feature.
     const offset = anchorToMaplibreOffset(rawAnchor, getSymbolViewBox(properties, symbolDef))
+    registerSymbolIconOffset(map, symbolImageId, offset)
 
     // draw.setFeatureProperty() only marks the feature dirty for mapbox-gl-draw's own
     // internal mode-dispatch loop to pick up and render later — it never renders itself.
@@ -96,7 +123,6 @@ export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, pr
         ...properties,
         symbolImageId,
         symbolIconAnchor: anchor,
-        symbolIconOffset: offset,
         symbolActiveImageId,
         symbolSelectedImageId
       }

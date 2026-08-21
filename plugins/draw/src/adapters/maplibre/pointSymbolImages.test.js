@@ -5,7 +5,11 @@ const mapStyle = { id: 'outdoor', mapColorScheme: 'light' }
 
 const createMap = ({ pixelRatio = 2 } = {}) => ({
   _drawCurrentMapStyle: mapStyle,
-  getPixelRatio: () => pixelRatio
+  getPixelRatio: () => pixelRatio,
+  // point-symbol.hot/.cold — registerSymbolIconOffset() looks these up to reapply the
+  // icon-offset match expression whenever a new symbolImageId's offset is registered.
+  getLayer: jest.fn(() => true),
+  setLayoutProperty: jest.fn()
 })
 
 const createMapProvider = () => ({
@@ -57,7 +61,7 @@ describe('resolvePointSymbol', () => {
     expect(draw.add).not.toHaveBeenCalled()
   })
 
-  it('registers the symbol image and re-adds the feature with symbolImageId/symbolIconAnchor/symbolIconOffset, forcing a render', async () => {
+  it('registers the symbol image and re-adds the feature with symbolImageId/symbolIconAnchor, forcing a render', async () => {
     const map = createMap()
     const mapProvider = createMapProvider()
     const properties = { symbol: 'pin', label: 'a point' }
@@ -75,7 +79,6 @@ describe('resolvePointSymbol', () => {
         ...properties,
         symbolImageId: expectedImageId,
         symbolIconAnchor: 'bottom', // pin's default anchor [0.5, 0.9] snaps to icon-anchor 'bottom'
-        symbolIconOffset: [0, 4.4], // ...and icon-offset corrects the precision lost snapping 0.9 to 1.0 (44px viewBox)
         // Nothing registered in map._activeSymbolImageMap/_selectedSymbolImageMap here since
         // addSymbolsToMap is mocked out (a no-op) in this test — see the dedicated test below
         // for the case where it actually populates them.
@@ -83,6 +86,43 @@ describe('resolvePointSymbol', () => {
         symbolSelectedImageId: null
       }
     })
+    // icon-offset corrects the precision lost snapping 0.9 to 1.0 against pin's 44px viewBox —
+    // registered into the point-symbol layers' icon-offset match expression instead of onto
+    // the feature (see registerSymbolIconOffset's comment for why).
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 4.4])
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.hot', 'icon-offset', [
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 4.4]], ['literal', [0, 0]]
+    ])
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.cold', 'icon-offset', [
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 4.4]], ['literal', [0, 0]]
+    ])
+  })
+
+  it('only applies the icon-offset expression to point-symbol layers that actually exist on the map', async () => {
+    const map = createMap()
+    map.getLayer.mockImplementation((layerId) => layerId === 'point-symbol.cold') // hot copy absent
+    const mapProvider = createMapProvider()
+    const properties = { symbol: 'pin' }
+    const draw = createDraw([point('p1', properties)])
+
+    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+
+    expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.cold', 'icon-offset', expect.anything())
+    expect(map.setLayoutProperty).not.toHaveBeenCalledWith('point-symbol.hot', 'icon-offset', expect.anything())
+  })
+
+  it('does not re-register or re-apply icon-offset for a symbolImageId already known (offset is deterministic per id)', async () => {
+    const map = createMap()
+    const mapProvider = createMapProvider()
+    const properties = { symbol: 'pin' }
+    const draw = createDraw([point('p1', properties), point('p2', properties)])
+
+    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    map.setLayoutProperty.mockClear()
+
+    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p2', properties })
+
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
   })
 
   it('reads the active/selected variant ids back from map._activeSymbolImageMap/_selectedSymbolImageMap once addSymbolsToMap has registered them', async () => {
@@ -146,8 +186,10 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
-      properties: expect.objectContaining({ symbolIconAnchor: 'top-left', symbolIconOffset: [0, 0] })
+      properties: expect.objectContaining({ symbolIconAnchor: 'top-left' })
     }))
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 0])
   })
 
   it('computes a non-zero icon-offset for an off-grid custom symbolAnchor', async () => {
@@ -160,8 +202,10 @@ describe('resolvePointSymbol', () => {
 
     // circle's viewBox is 44×44 — anchor 0.8 snaps to icon-anchor 'bottom' (1.0), offset corrects the gap
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
-      properties: expect.objectContaining({ symbolIconAnchor: 'bottom', symbolIconOffset: [0, 8.8] })
+      properties: expect.objectContaining({ symbolIconAnchor: 'bottom' })
     }))
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 8.8])
   })
 
   it('respects a custom symbolViewBox when computing the offset', async () => {
@@ -173,9 +217,8 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
     // pin's anchor [0.5, 0.9] against a 100×100 viewBox instead of the built-in 44×44
-    expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
-      properties: expect.objectContaining({ symbolIconOffset: [0, 10] })
-    }))
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 10])
   })
 
   it('surfaces (rather than swallows) a registration failure', async () => {

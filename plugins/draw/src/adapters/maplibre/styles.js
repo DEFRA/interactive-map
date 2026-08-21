@@ -152,7 +152,11 @@ const circle = (editStrokeColor) => ({
   paint: { 'line-color': editStrokeColor, 'line-width': 2, 'line-opacity': 0.8 }
 })
 
-// A committed point renders its resolved symbol-config icon (pointSymbolImages.js writes user_symbolImageId/user_symbolIconAnchor/user_symbolIconOffset onto each feature). While a point is being edited (active:'true'), icon-image swaps to its precomputed "selected" variant — the same one the interact plugin's own highlight uses — so the look persists for the whole edit session instead of disappearing when that highlight is cleared on entering edit mode.
+// A committed point renders its resolved symbol-config icon (pointSymbolImages.js writes user_symbolImageId/user_symbolIconAnchor onto each feature). While a point is being edited (active:'true'), icon-image swaps to its precomputed "selected" variant — the same one the interact plugin's own highlight uses — so the look persists for the whole edit session instead of disappearing when that highlight is cleared on entering edit mode.
+// icon-offset is deliberately NOT a per-feature `get` here — MapLibre's GeoJSON sources
+// silently JSON.stringify array properties, so it would read back a string, not an array.
+// pointSymbolImages.js's registerSymbolIconOffset overwrites this default via
+// setLayoutProperty with a `match` expression once a point needs a non-zero offset.
 const pointSymbol = () => ({
   id: 'point-symbol',
   type: 'symbol',
@@ -165,7 +169,7 @@ const pointSymbol = () => ({
       ['get', 'user_symbolImageId']
     ],
     'icon-anchor': ['get', 'user_symbolIconAnchor'],
-    'icon-offset': ['get', 'user_symbolIconOffset'],
+    'icon-offset': ['literal', [0, 0]],
     'icon-allow-overlap': true,
     'icon-ignore-placement': true,
     'symbol-sort-key': SORT_KEY_PROP
