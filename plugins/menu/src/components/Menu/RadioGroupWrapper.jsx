@@ -1,8 +1,8 @@
 import React from 'react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
-import { LayersMenuRadio } from './MenuRadio.jsx'
+import { MenuRadio } from './MenuRadio.jsx'
 
-export const LayersRadioGroupWrapper = ({ pluginState, menuGroup }) => {
+export const RadioGroupWrapper = ({ pluginState, menuGroup }) => {
   const { id, items, visibleWhen } = menuGroup
   const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true
   if (!visible) {
@@ -26,7 +26,7 @@ export const LayersRadioGroupWrapper = ({ pluginState, menuGroup }) => {
         </legend>
         <div className='govuk-radios govuk-radios--small' data-module='govuk-radios'>
           {items.map((menuGroupItem) =>
-            <LayersMenuRadio
+            <MenuRadio
               key={menuGroupItem.id}
               menuGroupItem={menuGroupItem}
               name={id}

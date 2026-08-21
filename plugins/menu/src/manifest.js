@@ -1,4 +1,4 @@
-import { LayersMenu } from './components/Menu/Menu.jsx'
+import { Menu } from './components/Menu/Menu.jsx'
 import './registry/getDatasetRegistry.js'
 import { MenuInit } from './initialise/MenuInit.jsx'
 import { initialState, actions } from './reducers/pluginState.js'
@@ -12,17 +12,17 @@ export const manifest = {
   panels: [
     {
       id: 'menu',
-      label: 'Menu - Layers',
+      label: 'Layers',
       mobile: { slot: 'drawer', modal: true, dismissible: true },
       tablet: { slot: 'left-top', dismissible: true, exclusive: true, width: '260px' },
       desktop: { slot: 'left-top', modal: false, dismissible: true, exclusive: true, width: '280px' },
-      render: LayersMenu
+      render: Menu
     }],
   buttons: [{
     id: 'menuButton',
-    label: 'Menu - Layers',
+    label: 'Layers',
     panelId: 'menu',
-    iconId: 'layers',
+    iconId: 'layersMenu',
     // excludeWhen: ({ pluginConfig }) => !pluginConfig.menu && !pluginConfig.datasets.some(l =>
     //   l.showInMenu || l.sublayers?.some(r => r.showInMenu)
     // ),
@@ -32,7 +32,7 @@ export const manifest = {
   }],
 
   icons: [{
-    id: 'key',
-    svgContent: '<path d="M3 5h.01"/><path d="M3 12h.01"/><path d="M3 19h.01"/><path d="M8 5h13"/><path d="M8 12h13"/><path d="M8 19h13"/>'
+    id: 'layersMenu',
+    svgContent: '<path d="M12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z"></path><path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12"></path><path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17"></path>'
   }]
 }

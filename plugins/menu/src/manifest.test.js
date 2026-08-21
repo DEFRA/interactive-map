@@ -1,8 +1,8 @@
 import { manifest } from './manifest.js'
-import { LayersMenu } from './components/Menu/Menu.jsx'
+import { Menu } from './components/Menu/Menu.jsx'
 import { MenuInit } from './initialise/MenuInit.jsx'
 
-jest.mock('./components/Menu/Menu.jsx', () => ({ LayersMenu: jest.fn() }))
+jest.mock('./components/Menu/Menu.jsx', () => ({ Menu: jest.fn() }))
 jest.mock('./initialise/MenuInit.jsx', () => ({ MenuInit: jest.fn() }))
 jest.mock('./registry/getDatasetRegistry.js', () => ({}))
 
@@ -20,8 +20,8 @@ describe('manifest', () => {
       expect(manifest.panels[0].id).toBe('menu')
     })
 
-    it('panel render is LayersMenu', () => {
-      expect(manifest.panels[0].render).toBe(LayersMenu)
+    it('panel render is Menu', () => {
+      expect(manifest.panels[0].render).toBe(Menu)
     })
 
     it('panel defines mobile, tablet and desktop slots', () => {
@@ -42,8 +42,8 @@ describe('manifest', () => {
       expect(manifest.buttons[0].panelId).toBe('menu')
     })
 
-    it('button references the layers icon', () => {
-      expect(manifest.buttons[0].iconId).toBe('layers')
+    it('button references the layersMenu icon', () => {
+      expect(manifest.buttons[0].iconId).toBe('layersMenu')
     })
   })
 

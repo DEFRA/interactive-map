@@ -1,4 +1,4 @@
-export const LayersMenuGroupWrapper = ({ menuGroup, children }) => {
+export const MenuGroupWrapper = ({ menuGroup, children }) => {
   if (!menuGroup.groupLabel) {
     return <>{children}</>
   }

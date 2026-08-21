@@ -1,10 +1,10 @@
 import React from 'react'
 // import { setDatasetVisibility } from '../../api/setDatasetVisibility.js'
-import { LayersMenuCheckbox } from './MenuCheckbox.jsx'
-import { LayersRadioGroupWrapper } from './RadioGroupWrapper.jsx'
-import { LayersMenuGroupWrapper } from './MenuGroupWrapper.jsx'
+import { MenuCheckbox } from './MenuCheckbox.jsx'
+import { RadioGroupWrapper } from './RadioGroupWrapper.jsx'
+import { MenuGroupWrapper } from './MenuGroupWrapper.jsx'
 
-export const LayersMenu = ({ pluginState }) => {
+export const Menu = ({ pluginState }) => {
   const { menu = [], dispatch } = pluginState
 
   const hasGroups = menu.some(item => item.groupLabel)
@@ -16,10 +16,10 @@ export const LayersMenu = ({ pluginState }) => {
           const { type } = menuGroup
           if (type === 'checkbox') {
             return (
-              <LayersMenuGroupWrapper key={menuGroup.id} menuGroup={menuGroup}> {
+              <MenuGroupWrapper key={menuGroup.id} menuGroup={menuGroup}> {
                 // Each menuGroupItem
                 menuGroup.items.map(menuGroupItem => (
-                  <LayersMenuCheckbox
+                  <MenuCheckbox
                     key={menuGroupItem.id}
                     dispatch={dispatch}
                     menuGroupItem={menuGroupItem}
@@ -27,11 +27,11 @@ export const LayersMenu = ({ pluginState }) => {
                   />)
                 )
               }
-              </LayersMenuGroupWrapper>
+              </MenuGroupWrapper>
             )
           } else {
             return (
-              <LayersRadioGroupWrapper
+              <RadioGroupWrapper
                 key={menuGroup.id}
                 menuGroup={menuGroup}
                 pluginState={pluginState}

@@ -1,6 +1,6 @@
 import { getDatasetRegistry } from '../../registry/index.js'
 
-export const LayersMenuCheckbox = ({ dispatch, menuGroupItem, onChange }) => {
+export const MenuCheckbox = ({ dispatch, menuGroupItem, onChange }) => {
   const datasetRegistry = getDatasetRegistry()
   const registryDataset = datasetRegistry ? datasetRegistry.getDataset(menuGroupItem.id) : null
   if (!registryDataset) {
