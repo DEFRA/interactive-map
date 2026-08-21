@@ -10,11 +10,18 @@ const getUserProp = (mapStyle, prop, defaultValue) => [
   defaultValue
 ]
 
+// Every feature gets an incrementing user_sortKey property when it's created (see
+// MaplibreDrawAdapter.js's _nextSortKey) — later-drawn features paint on top of earlier ones
+// within the same shared layer, instead of the order being incidental to which of mapbox-gl-
+// draw's cold/hot buckets a feature happens to be in.
+const SORT_KEY_PROP = ['get', 'user_sortKey']
+
 // Inactive lines and fills
 const fillInactive = (mapStyle, colors) => ({
   id: 'fill-inactive',
   type: 'fill',
   filter: ['all', ['==', '$type', 'Polygon'], ['==', 'active', 'false']],
+  layout: { 'fill-sort-key': SORT_KEY_PROP },
   paint: { 'fill-color': getUserProp(mapStyle, 'fill', colors.shapeFill) }
 })
 
@@ -22,7 +29,7 @@ const strokeInactive = (mapStyle, colors) => ({
   id: 'stroke-inactive',
   type: 'line',
   filter: ['all', ['any', ['==', '$type', 'Polygon'], ['==', '$type', 'LineString']], ['==', 'active', 'false'], ['!has', 'user_splitter']],
-  layout: { 'line-cap': 'round', 'line-join': 'round' },
+  layout: { 'line-cap': 'round', 'line-join': 'round', 'line-sort-key': SORT_KEY_PROP },
   paint: {
     'line-color': getUserProp(mapStyle, 'stroke', colors.shapeStroke),
     'line-width': colors.strokeWidth
@@ -160,7 +167,8 @@ const pointSymbol = () => ({
     'icon-anchor': ['get', 'user_symbolIconAnchor'],
     'icon-offset': ['get', 'user_symbolIconOffset'],
     'icon-allow-overlap': true,
-    'icon-ignore-placement': true
+    'icon-ignore-placement': true,
+    'symbol-sort-key': SORT_KEY_PROP
   },
   // Empty but required — updateDrawStyles() below iterates every layer's paint object unconditionally.
   paint: {}

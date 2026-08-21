@@ -46,6 +46,7 @@
 .im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle {
     grid-column: 2;
     grid-row: 2;
+    z-index: 1;
 }
 
 .im-c-move-controls__directions .im-c-map-button--pan-up svg {
@@ -66,24 +67,49 @@
 // express a plus-shaped grid where the centre button touches all four neighbours —
 // clip-path is set directly per button instead, clipping only the side(s) where it
 // touches another button and leaving the exposed side(s) showing the shadow as normal.
-.im-c-move-controls__directions .im-c-button-wrapper--pan-up .im-c-map-button::before {
-    clip-path: inset(-20px -20px 0 -20px); // touches nudge-step-toggle below
+.im-c-move-controls__directions .im-c-button-wrapper--pan-up .im-c-map-button {
+    border-bottom-left-radius: 0;
+    border-bottom-right-radius: 0;
+
+    &::before {
+        clip-path: inset(-20px -20px 0 -20px); // touches nudge-step-toggle below
+    }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-left .im-c-map-button::before {
-    clip-path: inset(-20px 0 -20px -20px); // touches nudge-step-toggle to the right
+.im-c-move-controls__directions .im-c-button-wrapper--pan-left .im-c-map-button {
+    border-top-right-radius: 0;
+    border-bottom-right-radius: 0;
+
+    &::before {
+        clip-path: inset(-20px 0 -20px -20px); // touches nudge-step-toggle to the right
+    }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-right .im-c-map-button::before {
-    clip-path: inset(-20px -20px -20px 0); // touches nudge-step-toggle to the left
+.im-c-move-controls__directions .im-c-button-wrapper--pan-right .im-c-map-button {
+    border-top-left-radius: 0;
+    border-bottom-left-radius: 0;
+
+    &::before {
+        clip-path: inset(-20px -20px -20px 0); // touches nudge-step-toggle to the left
+    }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-down .im-c-map-button::before {
-    clip-path: inset(0 -20px -20px -20px); // touches nudge-step-toggle above
+.im-c-move-controls__directions .im-c-button-wrapper--pan-down .im-c-map-button {
+    border-top-left-radius: 0;
+    border-top-right-radius: 0;
+
+    &::before {
+        clip-path: inset(0 -20px -20px -20px); // touches nudge-step-toggle above
+    }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button::before {
-    clip-path: inset(0); // touches all four neighbours
+.im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button {
+    border-radius: 0;
+    outline: 1px solid var(--button-hover-color);
+
+    &::before {
+        clip-path: inset(0); // touches all four neighbours
+    }
 }
 
 // Same inverted "pressed" treatment already used for actions-slot toggle buttons
@@ -128,4 +154,9 @@
 
 .im-c-move-controls__zoom .im-c-button-wrapper--nudge-zoom-out .im-c-map-button {
     @include tools.border-focus-corner-override($corners: 'right');
+}
+
+// App dark modifiers
+.im-o-app--dark-app .im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button {
+    outline-offset: -1px;
 }

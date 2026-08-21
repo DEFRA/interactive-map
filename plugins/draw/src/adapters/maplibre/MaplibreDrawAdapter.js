@@ -65,6 +65,11 @@ export class MaplibreDrawAdapter {
     this._map = mapProvider.map
     this._bus = createEventBus()
     this._editingFeatureId = null
+    // Assigned once per feature, on creation only — see styles.js's SORT_KEY_PROP. Drives
+    // fill/line/symbol-sort-key so a later-drawn feature reliably paints above an earlier one
+    // within the same shared layer, instead of the order being incidental to mapbox-gl-draw's
+    // internal cold/hot bucket placement.
+    this._sortKeyCounter = 0
 
     const { draw, remove } = createMapboxDraw({
       mapStyle: options.mapStyle,
@@ -109,7 +114,20 @@ export class MaplibreDrawAdapter {
     // Normalise ML map events → the shared adapter event contract (adapterEvents.js).
     // The OL adapter emits the same contract directly from OLDrawManager.
     this._mapHandlers = {
-      create: (e) => this._bus.emit(ADAPTER_EVENTS.CREATE, e.features[0]),
+      create: (e) => {
+        const feature = e.features[0]
+        // Every draw mode's own 'draw.create' listener (registered later, at that mode's
+        // onSetup, so it runs after this one in the same synchronous dispatch) re-ids a
+        // freshly-drawn feature to its caller-requested id via a delete+re-add (see
+        // drawPointMode.js's onCreate / drawMode/clickHandlers.js's reidCreatedFeature) —
+        // mutating this SAME `feature` object's `id` in place. Deferring a tick lets that
+        // re-id finish first, so `feature.id` is already final by the time this runs, and
+        // setFeatureProperty targets the feature that's actually still in the store.
+        setTimeout(() => {
+          this._draw.setFeatureProperty(feature.id, 'sortKey', this._nextSortKey())
+          this._bus.emit(ADAPTER_EVENTS.CREATE, this._draw.get(feature.id))
+        }, 0)
+      },
       editfinish: (e) => this._bus.emit(ADAPTER_EVENTS.EDIT_FINISH, e.features[0]),
       cancel: () => this._bus.emit(ADAPTER_EVENTS.CANCEL),
       // Normalise typo: the ML modes fire numVertecies, the contract uses numVertices
@@ -295,13 +313,24 @@ export class MaplibreDrawAdapter {
 
   get (id) { return this._draw.get(id) }
 
+  _nextSortKey () {
+    this._sortKeyCounter += 1
+    return this._sortKeyCounter
+  }
+
   // A directly-added Point (e.g. api/addFeature.js) skips draw_point's own icon-resolving
   // drawend handler, so it must be resolved here instead — with no fallback, styles.js's
   // point-symbol layer would otherwise render nothing at all.
   add (feature) {
-    const ids = this._draw.add(feature)
-    if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {
-      this._resolvePointSymbol(ids[0], feature.properties)
+    // Only a genuinely new feature gets a fresh sort key — setStyle() re-adds an existing one
+    // (via a shallow properties spread) to re-render it, and must not bump it back to the front.
+    const properties = feature.properties?.sortKey == null
+      ? { ...feature.properties, sortKey: this._nextSortKey() }
+      : feature.properties
+    const withSortKey = { ...feature, properties }
+    const ids = this._draw.add(withSortKey)
+    if (withSortKey.geometry?.type === 'Point' && hasSymbolStyle(properties)) {
+      this._resolvePointSymbol(ids[0], properties)
     }
     return ids
   }
