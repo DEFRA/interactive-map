@@ -10,11 +10,10 @@ export const stripInternalProperties = (feature) => {
   }
   const properties = {}
   for (const [key, value] of Object.entries(feature.properties)) {
-    if (key === 'sortKey') { continue }
-    if (key.startsWith('symbol') && !SYMBOL_KEYS.has(key)) {
-      continue
+    const isInternal = key === 'sortKey' || (key.startsWith('symbol') && !SYMBOL_KEYS.has(key))
+    if (!isInternal) {
+      properties[key] = value
     }
-    properties[key] = value
   }
   return { ...feature, properties }
 }

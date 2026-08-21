@@ -46,6 +46,7 @@
 .im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle {
     grid-column: 2;
     grid-row: 2;
+    z-index: 1;
 }
 
 .im-c-move-controls__directions .im-c-map-button--pan-up svg {
@@ -96,10 +97,6 @@
     &::before {
         clip-path: inset(0 -20px -20px -20px); // touches nudge-step-toggle above
     }
-}
-
-.im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle {
-    z-index: 1;
 }
 
 .im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button {
