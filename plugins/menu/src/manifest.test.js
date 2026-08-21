@@ -52,8 +52,8 @@ describe('manifest', () => {
       expect(manifest.icons).toHaveLength(1)
     })
 
-    it('icon id is key', () => {
-      expect(manifest.icons[0].id).toBe('key')
+    it('icon id is layersMenu', () => {
+      expect(manifest.icons[0].id).toBe('layersMenu')
     })
 
     it('icon has svgContent', () => {

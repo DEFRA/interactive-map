@@ -20,9 +20,7 @@ export const RadioGroupWrapper = ({ pluginState, menuGroup }) => {
     <div key={menuGroup.id} className={wrapperClass}>
       <fieldset className='im-c-menu-layers-group__fieldset'>
         <legend className='im-c-menu-layers-group__legend'>
-          <h3>
-            {menuGroup.label}
-          </h3>
+          <h3> {menuGroup.label} </h3>
         </legend>
         <div className='govuk-radios govuk-radios--small' data-module='govuk-radios'>
           {items.map((menuGroupItem) =>

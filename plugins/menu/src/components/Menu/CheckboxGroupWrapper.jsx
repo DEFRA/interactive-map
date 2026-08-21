@@ -1,4 +1,4 @@
-export const MenuGroupWrapper = ({ menuGroup, children }) => {
+export const CheckboxGroupWrapper = ({ menuGroup, children }) => {
   if (!menuGroup.groupLabel) {
     return <>{children}</>
   }
