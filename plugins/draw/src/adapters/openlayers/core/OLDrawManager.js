@@ -12,6 +12,11 @@ import { resolvePointSymbol } from '../point/pointSymbolImages.js'
 import { TOLERANCES } from '../defaults.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from './internalEvents.js'
+import {
+  pushIfNew, removeFromOrder,
+  moveToFront as moveIdToFront, moveToBack as moveIdToBack,
+  moveForward as moveIdForward, moveBackward as moveIdBackward
+} from '../../../utils/orderList.js'
 
 /**
  * Mode machine for the OL draw plugin.
@@ -34,6 +39,16 @@ export class OLDrawManager {
     this.store = createFeatureStore()
     this.undoStack = createUndoStack((length) => this.emit(ADAPTER_EVENTS.UNDO_CHANGE, length))
 
+    // Back-to-front paint order — drives the layer's renderOrder below instead of OL's default
+    // getUid-based order, which reorders a feature to the top on any remove+re-add (e.g. Cancel
+    // restoring a feature via store.add()). New features append via the CREATE event so both
+    // commit paths (draw/DrawMode.js, point/drawPointMode.js) are covered for free.
+    this._order = []
+    // id -> index, rebuilt only when _order mutates — keeps renderOrder's comparator O(1)
+    // instead of an O(n) indexOf per call, since it runs on every pan/zoom repaint.
+    this._orderIndex = new Map()
+    this.on(ADAPTER_EVENTS.CREATE, (f) => { pushIfNew(this._order, f.id); this._reindexOrder() })
+
     // Tracked (not just derived into colors/styles) so point/pointSymbolImages.js has
     // something to pass to symbolRegistry.rasteriseSymbolImage() when resolving a point's
     // icon on demand, independent of whatever triggered the resolve.
@@ -46,7 +61,8 @@ export class OLDrawManager {
     this._layer = new VectorLayer({
       source: this.store.source,
       style: this.styles.createFeatureStyle(),
-      zIndex: 100
+      zIndex: 100,
+      renderOrder: (f1, f2) => this._orderIndex.get(f1.getId()) - this._orderIndex.get(f2.getId())
     })
     this._layer.set('layerId', 'draw')
     map.addLayer(this._layer)
@@ -171,15 +187,55 @@ export class OLDrawManager {
   }
 
   add (geojsonFeature) {
-    return this.store.add(geojsonFeature)
+    const result = this.store.add(geojsonFeature)
+    pushIfNew(this._order, geojsonFeature.id)
+    this._reindexOrder()
+    return result
   }
 
   delete (id) {
-    return this.store.remove(id)
+    const result = this.store.remove(id)
+    removeFromOrder(this._order, id)
+    this._reindexOrder()
+    return result
   }
 
   deleteAll () {
-    return this.store.clear()
+    const result = this.store.clear()
+    this._order = []
+    this._reindexOrder()
+    return result
+  }
+
+  // --- Stacking order ---
+
+  _reindexOrder () {
+    this._orderIndex = new Map(this._order.map((id, index) => [id, index]))
+    this.store.source.changed()
+  }
+
+  getOrder () {
+    return [...this._order]
+  }
+
+  moveToFront (id) {
+    moveIdToFront(this._order, id)
+    this._reindexOrder()
+  }
+
+  moveToBack (id) {
+    moveIdToBack(this._order, id)
+    this._reindexOrder()
+  }
+
+  moveForward (id) {
+    moveIdForward(this._order, id)
+    this._reindexOrder()
+  }
+
+  moveBackward (id) {
+    moveIdBackward(this._order, id)
+    this._reindexOrder()
   }
 
   // --- Cleanup ---

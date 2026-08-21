@@ -587,3 +587,83 @@ describe('Highlighting Utils — multi-select across geometry types sharing a so
     }))
   })
 })
+
+// interactPlugin's 'draw' config entry is a logical wildcard — every draw-owned feature reports
+// back layerId: 'draw' rather than the concrete draw-{featureId}-* layer that actually exists on
+// the map (see featureLayerGroup.js). Highlighting resolves it from the feature's own id +
+// geometry type, and falls the wildcard's own style back in since only 'draw' is ever registered
+// in stylesMap.
+describe('Highlighting Utils — the "draw" wildcard entry (per-feature layers)', () => {
+  test('resolves a Polygon selection to its concrete draw-{featureId}-fill layer, using the wildcard style', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => // NOSONAR
+      id === 'draw-poly1-fill' ? { source: 'draw-poly1', type: 'fill' } : null)
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'poly1', layerId: 'draw', geometry: { type: 'Polygon' } }],
+      stylesMap: { draw: { stroke: 'red', selectionStroke: 'black', fill: 'blue', strokeWidth: 2 } }
+    })
+
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'selected-highlight-draw-poly1-fill-fill',
+      type: 'fill',
+      source: 'draw-poly1'
+    }))
+  })
+
+  test('resolves a LineString selection to its concrete draw-{featureId}-line layer', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => // NOSONAR
+      id === 'draw-l1-line' ? { source: 'draw-l1', type: 'line' } : null)
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'l1', layerId: 'draw', geometry: { type: 'LineString' } }],
+      stylesMap: { draw: { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 } }
+    })
+
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'selected-highlight-draw-l1-line-line',
+      type: 'line',
+      source: 'draw-l1'
+    }))
+  })
+
+  test('resolves a Point selection to its concrete draw-{featureId}-symbol layer', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => // NOSONAR
+      id === 'draw-pt1-symbol' ? { source: 'draw-pt1', type: 'symbol' } : null)
+    map.getLayoutProperty.mockImplementation((id, prop) => // NOSONAR
+      prop === 'icon-image' ? SYMBOL_IMAGE : undefined)
+    map._selectedSymbolImageMap = { [SYMBOL_IMAGE]: 'symbol-sel-xyz' }
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 'pt1', layerId: 'draw', geometry: { type: 'Point' } }],
+      stylesMap: { draw: { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 } }
+    })
+
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({
+      id: 'selected-highlight-draw-pt1-symbol-symbol',
+      layout: expect.objectContaining({ 'icon-image': 'symbol-sel-xyz' })
+    }))
+  })
+
+  test('a non-draw layerId is left untouched — no draw-owned layer is looked up', () => {
+    const map = makeMap()
+    map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'line' } : null) // NOSONAR
+
+    updateHighlightedFeatures({
+      LngLatBounds,
+      map,
+      selectedFeatures: [{ featureId: 1, layerId: 'l1', geometry: { type: 'LineString' } }],
+      stylesMap: { l1: { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 } }
+    })
+
+    expect(map.getLayer).not.toHaveBeenCalledWith(expect.stringMatching(/^draw-/))
+  })
+})

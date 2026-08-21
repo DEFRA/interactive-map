@@ -27,15 +27,16 @@ const interactPlugin = createInteractPlugin({
     layerId: 'OS/TopographicArea_1/Agricultural Land',
     idProperty: 'TOID'
   },{
-    layerId: 'fill-inactive.cold',
-    idProperty: 'id',
-  },{
-    layerId: 'stroke-inactive.cold',
-    idProperty: 'id'
-  },{
-    layerId: 'point-symbol.cold',
-    idProperty: 'id',
-    labelProperty: 'user_label'
+    // Matches every draw-owned layer (draw-{featureId}-fill/-line/-symbol), since the draw
+    // plugin now renders each committed feature through its own dynamically-created layers
+    // rather than one fixed layer id per geometry type. No idProperty: a committed feature's
+    // real id lives at the top level (feature.id), never copied onto properties.id the way
+    // mapbox-gl-draw's own store used to — omitting it falls back to the top-level id
+    // everywhere (selection, and the highlight layer's ['id'] filter). Unprefixed
+    // labelProperty — unlike mapbox-gl-draw's own layers, these hold plain GeoJSON, never
+    // user_-prefixed.
+    layerId: 'draw',
+    labelProperty: 'label'
   }],
   // debug: true,
   interactionModes: ['selectMarker', 'selectFeature'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
@@ -357,19 +358,24 @@ interactiveMap.on('draw:cancelled', function (e) {
 })
 
 
+// interactPlugin's 'draw' config entry is a wildcard matching every draw-owned layer
+// (draw-{featureId}-fill/-line/-symbol) — it always reports back as the single logical id
+// 'draw' (matching OL, whose single real layer already has that literal id; and matching how
+// a .cold/.hot sibling pair already collapses to one reported identity), never the concrete
+// underlying layer — so geometry type comes from geometryType, not the layer id.
+function isDrawFeatureRow (f) { return f.layerId === 'draw' }
+function isDrawShapeRow (f) { return f.layerId === 'draw' && f.geometryType !== 'Point' }
+
 interactiveMap.on('interact:selectionchange', function (e) {
   // mergeShapes deliberately excludes points — merging is a polygon/line-only concept.
   // editShape and delete both apply to a point (edit_point relocates it; delete removes the
   // whole feature), so they share the wider layer list.
-  const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
-  const editableLayers = drawLayers.concat(['point-symbol.cold'])
-  const deletableLayers = editableLayers
   const singleFeature = e.selectedFeatures.length === 1
   const anyFeature = e.selectedFeatures.length > 0
-  const isDrawFeature = singleFeature && editableLayers.includes(e.selectedFeatures[0].layerId)
+  const isDrawFeature = singleFeature && isDrawFeatureRow(e.selectedFeatures[0])
   const isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
-  const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return drawLayers.includes(f.layerId) })
-  const canDelete = anyFeature && e.selectedFeatures.every(function (f) { return deletableLayers.includes(f.layerId) })
+  const allDrawFeatures = anyFeature && e.selectedFeatures.every(isDrawShapeRow)
+  const canDelete = anyFeature && e.selectedFeatures.every(isDrawFeatureRow)
   const canMerge = allDrawFeatures && e.contiguous && e.selectedFeatures.length > 1
   selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
   interactiveMap.toggleButtonState('addPoint', 'disabled', !!anyFeature)

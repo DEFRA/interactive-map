@@ -19,6 +19,7 @@ const setup = (overrides = {}) => {
     setSnapEnabled: jest.fn(),
     isSnapEnabled: jest.fn(() => false),
     changeMode: jest.fn(),
+    commitFeature: jest.fn(),
     on: jest.fn(),
     off: jest.fn()
   }
@@ -133,26 +134,31 @@ describe('draw event handlers', () => {
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_SNAP', payload: false })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:created', { id: 'new' })
+    // Adapters that render committed features in their own layer system (ML) need telling a
+    // session has ended so it can move there — a no-op on adapters (OL) that don't implement it.
+    expect(draw.commitFeature).toHaveBeenCalledWith({ id: 'new' })
 
     jest.runAllTimers()
     expect(draw.changeMode).toHaveBeenCalledWith('disabled')
   })
 
-  test('editfinish resets state and emits draw:edited', () => {
+  test('editfinish resets state, emits draw:edited, and commits the feature', () => {
     const { draw, eventBus } = setup()
     drawHandler(draw, 'editfinish')({ id: 'edited' })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:edited', { id: 'edited' })
+    expect(draw.commitFeature).toHaveBeenCalledWith({ id: 'edited' })
     jest.runAllTimers()
     expect(draw.changeMode).toHaveBeenCalledWith('disabled')
   })
 
-  test('re-opens an invalid finished shape in edit mode instead of creating it', () => {
+  test('re-opens an invalid finished shape in edit mode instead of creating it — not committed', () => {
     const { draw, eventBus, hints } = setup()
     const bowtie = { id: 'bad', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] } }
     drawHandler(draw, 'create')(bowtie)
     expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', bowtie)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
     expect(hints.show).toHaveBeenCalledWith(expect.stringMatching(/intersect/i))
+    expect(draw.commitFeature).not.toHaveBeenCalled()
     jest.runAllTimers()
     const editCall = draw.changeMode.mock.calls.find(([mode]) => mode === 'edit_vertex')
     expect(editCall[1]).toEqual(expect.objectContaining({ featureId: 'bad' }))

@@ -2,6 +2,8 @@ import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
 import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
+import { createFeatureLayerGroup, removeFeatureLayerGroup, setFeatureLayerGroupData } from './featureLayerGroup.js'
+import { applyLayerOrder, ensureAnchorLayer } from './layerOrder.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
 
@@ -17,20 +19,47 @@ jest.mock('./pointSymbolImages.js', () => ({
   refreshAllPointSymbols: jest.fn(),
   hasSymbolStyle: jest.fn()
 }))
+// Own test coverage lives in featureLayerGroup.test.js / layerOrder.test.js — mocked here so
+// this file tests only the adapter's own orchestration of them.
+jest.mock('./featureLayerGroup.js', () => ({
+  createFeatureLayerGroup: jest.fn(),
+  removeFeatureLayerGroup: jest.fn(),
+  setFeatureLayerGroupData: jest.fn(),
+  getSourceId: jest.fn((id) => `draw-${id}`),
+  getFeatureLayerIds: jest.fn((id, geometryType) => {
+    if (geometryType === 'Polygon') { return [`draw-${id}-line`, `draw-${id}-fill`] }
+    if (geometryType === 'LineString') { return [`draw-${id}-line`] }
+    return [`draw-${id}-symbol`]
+  })
+}))
+jest.mock('./layerOrder.js', () => ({
+  applyLayerOrder: jest.fn(),
+  ensureAnchorLayer: jest.fn(),
+  isDrawOwnedLayerId: jest.fn((id) => id.startsWith('draw-')),
+  ANCHOR_ID: 'draw-anchor'
+}))
 
 const SNAP_LAYER = 'snap-helper-circle'
 
 const onHandler = (map, event) => map.on.mock.calls.find(([name]) => name === event)?.[1]
 
 const setup = () => {
+  const sources = new Map()
+  const layers = new Set()
   const map = {
     on: jest.fn(),
     off: jest.fn(),
     fire: jest.fn(),
-    getLayer: jest.fn(() => null),
+    getLayer: jest.fn((id) => layers.has(id) ? {} : null),
     setLayoutProperty: jest.fn(),
     getStyle: jest.fn(() => ({ layers: [] })),
-    moveLayer: jest.fn()
+    moveLayer: jest.fn(),
+    addSource: jest.fn((id, def) => sources.set(id, { setData: jest.fn(), _def: def })),
+    getSource: jest.fn((id) => sources.get(id)),
+    removeSource: jest.fn((id) => sources.delete(id)),
+    addLayer: jest.fn((layer) => layers.add(layer.id)),
+    removeLayer: jest.fn((id) => layers.delete(id)),
+    _drawCurrentMapStyle: { id: 'outdoor' }
   }
   const undoStack = { clear: jest.fn() }
   const mapProvider = { map, undoStack, snapEnabled: false }
@@ -38,6 +67,7 @@ const setup = () => {
     changeMode: jest.fn(),
     getMode: jest.fn(() => 'disabled'),
     get: jest.fn((id) => ({ id })),
+    getAll: jest.fn(() => ({ features: [] })),
     add: jest.fn(),
     delete: jest.fn(),
     deleteAll: jest.fn(),
@@ -74,7 +104,8 @@ describe('construction', () => {
       events: options.events,
       eventBus: options.eventBus,
       snapLayers: ['layer-a'],
-      pluginConfig: {}
+      pluginConfig: {},
+      pointStore: expect.any(Object)
     })
   })
 
@@ -441,6 +472,25 @@ describe('changeMode', () => {
     expect(draw.changeMode).toHaveBeenCalledWith('edit_vertex', {})
   })
 
+  test('entering edit_vertex/edit_point with a featureId pulls a committed feature into the draw control first', () => {
+    const { adapter, draw } = setup()
+    const feature = { id: 'f9', geometry: { type: 'Polygon', coordinates: [[]] }, properties: {} }
+    adapter.commitFeature(feature)
+
+    adapter.changeMode('edit_vertex', { featureId: 'f9' })
+
+    expect(draw.add).toHaveBeenCalledWith(feature)
+    // _order still holds its slot (so it resumes the same stacking position on return from
+    // edit) even though it's no longer in the committed registry during the session.
+    expect(adapter.getOrder()).toContain('f9')
+  })
+
+  test('a featureId that is not committed is a safe no-op', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_point', { featureId: 'missing' })
+    expect(draw.add).not.toHaveBeenCalled()
+  })
+
   test('passes through non-edit modes with default options', () => {
     const { adapter, draw } = setup()
     adapter.changeMode('draw_polygon')
@@ -458,7 +508,7 @@ describe('changeMode', () => {
 
     const injected = draw.changeMode.mock.calls[0][1].resolvePointSymbol
     injected('p1', { symbol: 'pin' })
-    expect(resolvePointSymbol).toHaveBeenCalledWith({ draw, mapProvider, map, featureId: 'p1', properties: { symbol: 'pin' } })
+    expect(resolvePointSymbol).toHaveBeenCalledWith({ store: adapter._pointStore, mapProvider, map, featureId: 'p1', properties: { symbol: 'pin' } })
   })
 })
 
@@ -550,13 +600,11 @@ describe('simple delegations', () => {
   test('feature store methods delegate to the draw control', () => {
     const { adapter, draw } = setup()
     adapter.get('a')
-    adapter.add({ id: 'b' })
     adapter.delete('c')
     adapter.deleteAll()
     adapter.setFeatureProperty('d', 'p', 1)
 
     expect(draw.get).toHaveBeenCalledWith('a')
-    expect(draw.add).toHaveBeenCalledWith({ id: 'b' })
     expect(draw.delete).toHaveBeenCalledWith('c')
     expect(draw.deleteAll).toHaveBeenCalled()
     expect(draw.setFeatureProperty).toHaveBeenCalledWith('d', 'p', 1)
@@ -564,42 +612,209 @@ describe('simple delegations', () => {
 
   // A directly-added Point skips draw_point's own icon-resolving drawend handler.
   describe('add() and point symbol resolution', () => {
-    test('resolves the symbol for a Point feature with symbol properties, using the id draw.add() returns', () => {
-      const { adapter, draw, map, mapProvider } = setup()
-      draw.add.mockReturnValue(['generated-id'])
+    test('resolves the symbol using the feature\'s own id, not one draw.add() would have assigned', () => {
+      const { adapter, map, mapProvider } = setup()
       hasSymbolStyle.mockReturnValue(true)
-      const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
+      const feature = { id: 'p1', geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
 
       const result = adapter.add(feature)
 
       expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin' })
       expect(resolvePointSymbol).toHaveBeenCalledWith({
-        draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin' }
+        store: adapter._pointStore, mapProvider, map, featureId: 'p1', properties: { symbol: 'pin' }
       })
-      expect(result).toEqual(['generated-id'])
+      expect(result).toEqual(['p1'])
     })
 
     test('does not attempt resolution for a Point with no symbol properties', () => {
-      const { adapter, draw } = setup()
-      draw.add.mockReturnValue(['id-1'])
+      const { adapter } = setup()
       hasSymbolStyle.mockReturnValue(false)
-      adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+      adapter.add({ id: 'p1', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
       expect(resolvePointSymbol).not.toHaveBeenCalled()
     })
 
     test('does not attempt resolution for a non-Point geometry', () => {
-      const { adapter, draw } = setup()
-      draw.add.mockReturnValue(['id-1'])
-      adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
+      const { adapter } = setup()
+      adapter.add({ id: 'a', geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
       expect(hasSymbolStyle).not.toHaveBeenCalled()
       expect(resolvePointSymbol).not.toHaveBeenCalled()
     })
 
     test('does not attempt resolution for a feature with no geometry', () => {
-      const { adapter, draw } = setup()
-      draw.add.mockReturnValue(['id-1'])
+      const { adapter } = setup()
       adapter.add({ id: 'b' })
       expect(resolvePointSymbol).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('commitFeature() — own layer group, deterministic stacking', () => {
+    test('creates the layer group, deletes any mapbox-gl-draw copy, and tracks it as committed', () => {
+      const { adapter, draw, map } = setup()
+      const feature = { id: 'a', geometry: { type: 'Polygon', coordinates: [[]] }, properties: {} }
+
+      adapter.commitFeature(feature)
+
+      expect(draw.delete).toHaveBeenCalledWith('a')
+      expect(createFeatureLayerGroup).toHaveBeenCalledWith(expect.objectContaining({ map, feature, beforeId: 'draw-anchor' }))
+      expect(adapter.get('a')).toBe(feature)
+      expect(adapter.getOrder()).toEqual(['a'])
+    })
+
+    // Regression test: the anchor is otherwise only ever created lazily by the debounced order
+    // resync — on the very first commit it doesn't exist yet, so inserting a layer before it
+    // (beforeId: 'draw-anchor') threw immediately in production. Must be created synchronously,
+    // before createFeatureLayerGroup runs, not after.
+    test('ensures the anchor layer exists before creating a feature\'s layer group, not after', () => {
+      const { adapter } = setup()
+      const callOrder = []
+      ensureAnchorLayer.mockImplementation(() => callOrder.push('ensureAnchorLayer'))
+      createFeatureLayerGroup.mockImplementation(() => callOrder.push('createFeatureLayerGroup'))
+
+      adapter.commitFeature({ id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+
+      expect(callOrder).toEqual(['ensureAnchorLayer', 'createFeatureLayerGroup'])
+    })
+
+    test('schedules a debounced resync — a burst of commits in one frame resyncs once', () => {
+      const raf = jest.spyOn(globalThis, 'requestAnimationFrame').mockImplementation((cb) => { raf.cb = cb; return 1 })
+      const { adapter } = setup()
+      adapter.commitFeature({ id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+      adapter.commitFeature({ id: 'b', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+      expect(raf).toHaveBeenCalledTimes(1)
+      raf.cb()
+      expect(applyLayerOrder).toHaveBeenCalledTimes(1)
+      raf.mockRestore()
+    })
+
+    test('removeCommittedFeature removes the layer group and untracks it; no-ops for an unknown id', () => {
+      const { adapter, map } = setup()
+      const feature = { id: 'a', geometry: { type: 'LineString', coordinates: [] }, properties: {} }
+      adapter.commitFeature(feature)
+
+      adapter.removeCommittedFeature('a')
+      expect(removeFeatureLayerGroup).toHaveBeenCalledWith({ map, featureId: 'a', geometryType: 'LineString' })
+      expect(adapter.getOrder()).toEqual([])
+
+      removeFeatureLayerGroup.mockClear()
+      adapter.removeCommittedFeature('missing')
+      expect(removeFeatureLayerGroup).not.toHaveBeenCalled()
+    })
+
+    test('get() checks the committed registry before falling back to the draw control', () => {
+      const { adapter, draw } = setup()
+      const committed = { id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+      adapter.commitFeature(committed)
+      draw.get.mockReturnValue({ id: 'mid-edit' })
+
+      expect(adapter.get('a')).toBe(committed)
+      expect(adapter.get('other')).toEqual({ id: 'mid-edit' })
+    })
+
+    // resolvePointSymbol/refreshAllPointSymbols are mocked elsewhere in this file, so this is
+    // the only place _pointStore's own methods (as opposed to the equivalent logic reachable
+    // via get()/setStyle()) actually get invoked.
+    test('_pointStore reads/writes whichever registry a feature is currently in', () => {
+      const { adapter, draw, map } = setup()
+      const committed = { id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+      adapter.commitFeature(committed)
+      draw.getAll.mockReturnValue({ features: [{ id: 'mid-edit' }] })
+
+      expect(adapter._pointStore.get('a')).toBe(committed)
+      expect(adapter._pointStore.getAll()).toEqual([committed, { id: 'mid-edit' }])
+
+      const updatedCommitted = { ...committed, properties: { symbol: 'pin' } }
+      adapter._pointStore.write(updatedCommitted)
+      expect(setFeatureLayerGroupData).toHaveBeenCalledWith({ map, featureId: 'a', feature: updatedCommitted })
+      expect(adapter.get('a')).toBe(updatedCommitted)
+
+      const midEditFeature = { id: 'mid-edit', properties: { symbol: 'pin' } }
+      adapter._pointStore.write(midEditFeature)
+      expect(draw.add).toHaveBeenCalledWith(midEditFeature)
+    })
+  })
+
+  describe('edit-session lifecycle for a committed feature', () => {
+    test('beginEditFromOwnLayers empties the source, un-commits it, and hands it to the draw control', () => {
+      const { adapter, draw, map } = setup()
+      const feature = { id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+      adapter.commitFeature(feature)
+      draw.get.mockReturnValue({ id: 'a', mid: 'edit' })
+
+      const result = adapter.beginEditFromOwnLayers('a')
+
+      expect(setFeatureLayerGroupData).toHaveBeenCalledWith({ map, featureId: 'a' })
+      expect(draw.add).toHaveBeenCalledWith(feature)
+      expect(result).toBe(true)
+      // No longer committed — get() must read the live, mid-edit copy from the draw control.
+      expect(adapter.get('a')).toEqual({ id: 'a', mid: 'edit' })
+    })
+
+    test('beginEditFromOwnLayers returns false for an id that is not committed', () => {
+      const { adapter } = setup()
+      expect(adapter.beginEditFromOwnLayers('missing')).toBe(false)
+    })
+
+    // Ending a session needs nothing ML-specific by name — events.js's existing Done/Cancel
+    // paths already just call the generic add(), which detects the still-existing (emptied,
+    // never removed) layer group and refreshes it instead of recreating it from scratch.
+    test('add() detects an existing layer group on return from edit and refreshes it instead of recreating it', () => {
+      const { adapter, draw, map } = setup()
+      const original = { id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+      map.addSource('draw-a', {}) // simulates the layer group createFeatureLayerGroup would have made
+      adapter.commitFeature(original)
+      createFeatureLayerGroup.mockClear()
+
+      const edited = { ...original, geometry: { type: 'Point', coordinates: [1, 1] } }
+      adapter.add(edited)
+
+      expect(createFeatureLayerGroup).not.toHaveBeenCalled()
+      expect(setFeatureLayerGroupData).toHaveBeenCalledWith({ map, featureId: 'a', feature: edited })
+      expect(draw.delete).toHaveBeenCalledWith('a')
+      expect(adapter.get('a')).toBe(edited)
+    })
+  })
+
+  describe('stacking order methods', () => {
+    test('getOrder returns a copy; each move method mutates order and resyncs synchronously', () => {
+      const { adapter } = setup()
+      const point = (id) => ({ id, geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+      adapter.commitFeature(point('a'))
+      adapter.commitFeature(point('b'))
+      adapter.commitFeature(point('c'))
+      applyLayerOrder.mockClear()
+
+      const order = adapter.getOrder()
+      order.push('intruder')
+      expect(adapter.getOrder()).toEqual(['a', 'b', 'c'])
+
+      adapter.moveToFront('a')
+      expect(adapter.getOrder()).toEqual(['b', 'c', 'a'])
+      adapter.moveToBack('c')
+      expect(adapter.getOrder()).toEqual(['c', 'b', 'a'])
+      adapter.moveForward('c')
+      expect(adapter.getOrder()).toEqual(['b', 'c', 'a'])
+      adapter.moveBackward('a')
+      expect(adapter.getOrder()).toEqual(['b', 'a', 'c'])
+      // Synchronous, not debounced — no requestAnimationFrame needed to observe it.
+      expect(applyLayerOrder).toHaveBeenCalledTimes(4)
+    })
+  })
+
+  describe('getCommittedFeatureLayerIds()', () => {
+    test('resolves every committed feature to its own concrete layer ids, by geometry type', () => {
+      const { adapter } = setup()
+      adapter.commitFeature({ id: 'poly1', geometry: { type: 'Polygon', coordinates: [] }, properties: {} })
+      adapter.commitFeature({ id: 'line1', geometry: { type: 'LineString', coordinates: [] }, properties: {} })
+      adapter.commitFeature({ id: 'pt1', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
+
+      expect(adapter.getCommittedFeatureLayerIds().sort()).toEqual([
+        'draw-line1-line', 'draw-poly1-fill', 'draw-poly1-line', 'draw-pt1-symbol'
+      ].sort())
+    })
+
+    test('returns an empty array when nothing is committed', () => {
+      const { adapter } = setup()
+      expect(adapter.getCommittedFeatureLayerIds()).toEqual([])
     })
   })
 
@@ -642,6 +857,20 @@ describe('simple delegations', () => {
       draw.get.mockReturnValue(undefined)
       adapter.setStyle('missing', { stroke: 'blue' })
       expect(draw.add).not.toHaveBeenCalled()
+    })
+
+    test('a committed feature routes through add(), not the draw control directly', () => {
+      const { adapter, draw } = setup()
+      const feature = { id: 'a', geometry: { type: 'Polygon', coordinates: [[]] }, properties: { stroke: 'red' } }
+      adapter.commitFeature(feature)
+
+      adapter.setStyle('a', { stroke: 'blue' })
+
+      expect(draw.add).not.toHaveBeenCalled()
+      expect(createFeatureLayerGroup).toHaveBeenCalledWith(expect.objectContaining({
+        feature: expect.objectContaining({ properties: { stroke: 'blue' } })
+      }))
+      expect(adapter.get('a').properties).toEqual({ stroke: 'blue' })
     })
   })
 
@@ -884,6 +1113,71 @@ describe('_handleModeChange', () => {
 })
 
 describe('_handleStyleData', () => {
+  test('rebuilds every committed feature\'s layer group when a reload has wiped the anchor', () => {
+    const { adapter, map } = setup()
+    const feature = { id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+    adapter.commitFeature(feature)
+    createFeatureLayerGroup.mockClear()
+    applyLayerOrder.mockClear()
+    map.getLayer.mockReturnValue(null) // simulate the reload having wiped the anchor
+    map.getStyle.mockReturnValue({ layers: [] })
+
+    onHandler(map, STYLE_DATA_EVENT)({ dataType: 'style' })
+
+    expect(createFeatureLayerGroup).toHaveBeenCalledWith(expect.objectContaining({ feature, beforeId: 'draw-anchor' }))
+    expect(applyLayerOrder).toHaveBeenCalled()
+  })
+
+  // Our own addSource/addLayer calls fire this same event tagged dataType: 'source', never
+  // 'style' — confirms they can never trigger a rebuild, regardless of whether the anchor
+  // happens to be transiently absent (e.g. during the very first commit, before the debounced
+  // order resync has had a chance to create it) — the actual root cause of the production bug,
+  // which the reentrancy guard alone (below) didn't fully cover.
+  test('a dataType: "source" event (our own addSource/addLayer) never triggers a rebuild', () => {
+    const { adapter, map } = setup()
+    const feature = { id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+    adapter.commitFeature(feature)
+    createFeatureLayerGroup.mockClear()
+    map.getLayer.mockReturnValue(null)
+    map.getStyle.mockReturnValue({ layers: [] })
+
+    onHandler(map, STYLE_DATA_EVENT)({ dataType: 'source' })
+
+    expect(createFeatureLayerGroup).not.toHaveBeenCalled()
+  })
+
+  // Regression test: MapLibre's own map.addSource()/addLayer() fire a synchronous styledata
+  // event of their own, re-entering this handler before the outer forEach loop has finished —
+  // without a reentrancy guard, the reentrant call also sees the anchor as still missing and
+  // tries to recreate the same feature's layer group a second time, throwing on the duplicate
+  // source (exactly the crash reported in production).
+  test('a styledata event fired synchronously by our own addSource call does not re-enter and double-create', () => {
+    const { adapter, map } = setup()
+    const featureA = { id: 'a', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+    const featureB = { id: 'b', geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} }
+    adapter.commitFeature(featureA)
+    adapter.commitFeature(featureB)
+    createFeatureLayerGroup.mockClear()
+    map.getLayer.mockReturnValue(null) // simulate the reload having wiped the anchor
+    map.getStyle.mockReturnValue({ layers: [] })
+
+    const handler = onHandler(map, STYLE_DATA_EVENT)
+    // Reentrant call carries dataType: 'source' (our own addSource), like the real bug —
+    // confirms the guard holds even when the dataType filter alone wouldn't have caught it.
+    createFeatureLayerGroup.mockImplementation(() => { handler({ dataType: 'source' }) })
+
+    expect(() => handler({ dataType: 'style' })).not.toThrow()
+    expect(createFeatureLayerGroup).toHaveBeenCalledTimes(2) // once per feature, not doubled
+  })
+
+  test('does not attempt a rebuild when nothing is committed, even on a genuine reload', () => {
+    const { map } = setup()
+    map.getLayer.mockReturnValue(null)
+    map.getStyle.mockReturnValue({ layers: [] })
+    onHandler(map, STYLE_DATA_EVENT)({ dataType: 'style' })
+    expect(createFeatureLayerGroup).not.toHaveBeenCalled()
+  })
+
   test('does nothing when there are no layers', () => {
     const { map } = setup()
     map.getStyle.mockReturnValue({ layers: undefined })

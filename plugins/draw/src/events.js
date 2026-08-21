@@ -115,9 +115,13 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
         setTimeout(() => enterEditVertexMode({ draw, appState, appConfig, mapState, dispatch }, f.id), 0)
         return
       }
+      // Adapters that render committed features in their own layer system (ML) need to be
+      // told a session has ended so it can move there — a no-op on adapters (OL) that don't.
+      draw.commitFeature?.(f)
       resetState(); setTimeout(() => draw.changeMode('disabled'), 0); eventBus.emit('draw:created', stripInternalSymbolProperties(f))
     },
     onEditFinish: (f) => {
+      draw.commitFeature?.(f)
       resetState()
       setTimeout(() => draw.changeMode('disabled'), 0)
       // A shape that was drawn-then-fixed reports as a creation, not an edit.

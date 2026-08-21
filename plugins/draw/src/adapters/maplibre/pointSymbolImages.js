@@ -34,7 +34,10 @@ export const getPixelRatio = (map) => map.getPixelRatio?.() || 1
  * A no-op for points with no symbol config (nothing to render as an icon).
  *
  * @param {Object} params
- * @param {Object} params.draw - the raw MapboxDraw instance (needs get/add)
+ * @param {Object} params.store - { get(id), write(feature) } — a point can be committed (its
+ *   own layer group) or mid-edit (mapbox-gl-draw's own store) by the time this settles, so
+ *   reads/writes must go wherever the feature currently actually is; see
+ *   MaplibreDrawAdapter.js's _pointStore.
  * @param {Object} params.mapProvider - MapLibreProvider (needs addSymbolsToMap)
  * @param {Object} params.map - MapLibre map instance (needs _drawCurrentMapStyle, getPixelRatio)
  * @param {string} params.featureId
@@ -43,7 +46,7 @@ export const getPixelRatio = (map) => map.getPixelRatio?.() || 1
  *   callers (map-size refresh) that already know the freshly computed value
  * @returns {Promise<void>}
  */
-export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, properties, pixelRatioOverride }) => {
+export const resolvePointSymbol = async ({ store, mapProvider, map, featureId, properties, pixelRatioOverride }) => {
   if (!hasSymbolStyle(properties)) {
     return
   }
@@ -55,7 +58,7 @@ export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, pr
     await mapProvider.addSymbolsToMap([properties], mapStyle, symbolRegistry)
 
     // The feature may have been deleted/cancelled while registration was in flight.
-    const feature = draw.get(featureId)
+    const feature = store.get(featureId)
     if (!feature) {
       return
     }
@@ -82,15 +85,10 @@ export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, pr
     // snapping) — see anchorToMaplibreOffset's own comment for the maths.
     const offset = anchorToMaplibreOffset(rawAnchor, getSymbolViewBox(properties, symbolDef))
 
-    // draw.setFeatureProperty() only marks the feature dirty for mapbox-gl-draw's own
-    // internal mode-dispatch loop to pick up and render later — it never renders itself.
-    // That loop only runs during an active interaction (a click, a drag...), so a property
-    // written from here (outside any mode dispatch) would sit invisible until the next
-    // unrelated interaction happened to trigger a render. draw.add() on an existing id
-    // updates its properties AND calls store.render() unconditionally, so it's used here
-    // instead — passing the full properties object (not just the new keys), since add()
-    // replaces properties wholesale rather than merging.
-    draw.add({
+    // store.write() re-renders unconditionally (setData for a committed feature, draw.add()
+    // for a mid-edit one) — passing the full properties object (not just the new keys), since
+    // both write paths replace properties wholesale rather than merging.
+    store.write({
       ...feature,
       properties: {
         ...properties,
@@ -113,17 +111,17 @@ export const resolvePointSymbol = async ({ draw, mapProvider, map, featureId, pr
  * since the rasterised image (colours, and pixel-ratio-scaled dimensions) depends on both.
  *
  * @param {Object} params
- * @param {Object} params.draw - the raw MapboxDraw instance (needs getAll)
+ * @param {Object} params.store - { get(id), getAll(), write(feature) } — see resolvePointSymbol
  * @param {Object} params.mapProvider
  * @param {Object} params.map
  * @param {number} [params.pixelRatioOverride] - see resolvePointSymbol
  * @returns {Promise<void>}
  */
-export const refreshAllPointSymbols = ({ draw, mapProvider, map, pixelRatioOverride }) => {
-  const points = draw.getAll().features.filter(
+export const refreshAllPointSymbols = ({ store, mapProvider, map, pixelRatioOverride }) => {
+  const points = store.getAll().filter(
     (f) => f.geometry.type === 'Point' && hasSymbolStyle(f.properties)
   )
   return Promise.all(points.map((f) =>
-    resolvePointSymbol({ draw, mapProvider, map, featureId: f.id, properties: f.properties, pixelRatioOverride })
+    resolvePointSymbol({ store, mapProvider, map, featureId: f.id, properties: f.properties, pixelRatioOverride })
   ))
 }

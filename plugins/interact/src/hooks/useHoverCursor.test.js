@@ -41,4 +41,30 @@ describe('useHoverCursor', () => {
   it('does not throw when setHoverCursor is absent', () => {
     expect(() => renderHook(() => useHoverCursor({}, true, ['selectFeature'], dataLayers))).not.toThrow()
   })
+
+  describe('the "draw" wildcard entry', () => {
+    it('expands to the adapter\'s concrete layer ids when getCommittedFeatureLayerIds exists', () => {
+      const mapProvider = {
+        setHoverCursor: jest.fn(),
+        draw: { getCommittedFeatureLayerIds: jest.fn(() => ['draw-a-fill', 'draw-a-line']) }
+      }
+      renderHook(() => useHoverCursor(mapProvider, true, ['selectFeature'], [{ layerId: 'draw' }]))
+      expect(mapProvider.setHoverCursor).toHaveBeenCalledWith(['draw-a-fill', 'draw-a-line'])
+    })
+
+    it('passes the literal id through when the adapter has no getCommittedFeatureLayerIds (e.g. OpenLayers)', () => {
+      const mapProvider = { setHoverCursor: jest.fn(), draw: {} }
+      renderHook(() => useHoverCursor(mapProvider, true, ['selectFeature'], [{ layerId: 'draw' }]))
+      expect(mapProvider.setHoverCursor).toHaveBeenCalledWith(['draw'])
+    })
+
+    it('leaves non-draw layer ids untouched alongside a resolved draw entry', () => {
+      const mapProvider = {
+        setHoverCursor: jest.fn(),
+        draw: { getCommittedFeatureLayerIds: jest.fn(() => ['draw-a-symbol']) }
+      }
+      renderHook(() => useHoverCursor(mapProvider, true, ['selectFeature'], [{ layerId: 'field-parcels' }, { layerId: 'draw' }]))
+      expect(mapProvider.setHoverCursor).toHaveBeenCalledWith(['field-parcels', 'draw-a-symbol'])
+    })
+  })
 })

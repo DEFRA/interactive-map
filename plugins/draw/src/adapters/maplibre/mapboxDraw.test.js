@@ -74,6 +74,7 @@ const setup = ({ existingDraw, existingUndoStack, pluginConfig, hasDrawSource } 
   const eventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
   const removeWorkaround = jest.fn()
   setupTouchClickWorkaround.mockReturnValue({ remove: removeWorkaround })
+  const pointStore = { get: jest.fn(), getAll: jest.fn(), write: jest.fn() }
 
   const result = createMapboxDraw({
     mapStyle: 'light',
@@ -81,10 +82,11 @@ const setup = ({ existingDraw, existingUndoStack, pluginConfig, hasDrawSource } 
     events: EVENTS,
     eventBus,
     snapLayers: ['layer-a'],
+    pointStore,
     ...(pluginConfig !== undefined ? { pluginConfig } : {})
   })
 
-  return { map, mapProvider, eventBus, removeWorkaround, result }
+  return { map, mapProvider, eventBus, removeWorkaround, result, pointStore }
 }
 
 beforeEach(() => {
@@ -230,7 +232,7 @@ describe('createMapboxDraw – event handlers', () => {
   })
 
   test('MAP_STYLE_CHANGE updates the current style and restyles on idle', () => {
-    const { map, eventBus, mapProvider, result } = setup()
+    const { map, eventBus, mapProvider, pointStore } = setup()
 
     map._drawEditContainer = { querySelector: jest.fn(() => 'svg-el') }
     handlerFor(eventBus.on, EVENTS.MAP_SET_STYLE)('dark')
@@ -241,7 +243,7 @@ describe('createMapboxDraw – event handlers', () => {
     expect(updateDrawStyles).toHaveBeenCalledWith(map, 'dark', {})
     expect(map._drawEditContainer.querySelector).toHaveBeenCalledWith('[data-im-draw-touch-target]')
     expect(applyTouchVertexColors).toHaveBeenCalledWith('svg-el', 'dark', {})
-    expect(refreshAllPointSymbols).toHaveBeenCalledWith({ draw: result.draw, mapProvider, map })
+    expect(refreshAllPointSymbols).toHaveBeenCalledWith({ store: pointStore, mapProvider, map })
   })
 
   // MAP_STYLE_CHANGE genuinely fires twice per style change (mapEvents.js's permanent
@@ -391,9 +393,9 @@ describe('createMapboxDraw – event handlers', () => {
   })
 
   test('MAP_SET_PIXEL_RATIO refreshes point symbols with the freshly computed pixel ratio', () => {
-    const { map, eventBus, mapProvider, result } = setup()
+    const { map, eventBus, mapProvider, pointStore } = setup()
     handlerFor(eventBus.on, EVENTS.MAP_SET_PIXEL_RATIO)(3)
-    expect(refreshAllPointSymbols).toHaveBeenCalledWith({ draw: result.draw, mapProvider, map, pixelRatioOverride: 3 })
+    expect(refreshAllPointSymbols).toHaveBeenCalledWith({ store: pointStore, mapProvider, map, pixelRatioOverride: 3 })
   })
 
   test('MAP_SET_PIXEL_RATIO emits MAP_DATA_CHANGE once point symbols have actually finished re-resolving', async () => {

@@ -24,6 +24,11 @@ const fakeManager = () => ({
   store: { getOL: jest.fn() },
   delete: jest.fn(),
   deleteAll: jest.fn(),
+  getOrder: jest.fn(() => ['f1']),
+  moveToFront: jest.fn(),
+  moveToBack: jest.fn(),
+  moveForward: jest.fn(),
+  moveBackward: jest.fn(),
   on: jest.fn(),
   off: jest.fn(),
   undoStack: { clear: jest.fn() },
@@ -136,6 +141,19 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   expect(manager.undo).toHaveBeenCalled()
   expect(manager.deleteVertex).toHaveBeenCalled()
   expect(manager.nudgeSelectedVertex).toHaveBeenCalledWith(1, 0, true)
+})
+
+test('stacking order methods delegate to the manager', () => {
+  const { manager, adapter } = setup()
+  expect(adapter.getOrder()).toEqual(['f1'])
+  adapter.moveToFront('f1')
+  adapter.moveToBack('f1')
+  adapter.moveForward('f1')
+  adapter.moveBackward('f1')
+  expect(manager.moveToFront).toHaveBeenCalledWith('f1')
+  expect(manager.moveToBack).toHaveBeenCalledWith('f1')
+  expect(manager.moveForward).toHaveBeenCalledWith('f1')
+  expect(manager.moveBackward).toHaveBeenCalledWith('f1')
 })
 
 // A directly-added Point skips draw_point's own icon-resolving drawend handler.

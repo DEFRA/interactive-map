@@ -30,6 +30,32 @@ describe('buildLayerConfigMap', () => {
     const result = buildLayerConfigMap([{ layerId: 'field-parcels' }])
     expect(Object.keys(result)).toEqual(['field-parcels'])
   })
+
+  describe('the "draw" entry', () => {
+    it('matches its own literal id — OpenLayers has one real, single "draw" layer', () => {
+      const config = { layerId: 'draw', idProperty: 'id' }
+      const result = buildLayerConfigMap([config])
+      expect(result.draw).toBe(config)
+    })
+
+    it('also matches any draw-prefixed id — MapLibre\'s dynamic per-feature layers', () => {
+      const config = { layerId: 'draw', idProperty: 'id' }
+      const result = buildLayerConfigMap([config])
+      expect(result['draw-f1-fill']).toBe(config)
+      expect(result['draw-f1-line']).toBe(config)
+      expect(result['draw-f2-symbol']).toBe(config)
+    })
+
+    it('does not match an unrelated id, and returns undefined for it as before', () => {
+      const result = buildLayerConfigMap([{ layerId: 'draw', idProperty: 'id' }])
+      expect(result['field-parcels']).toBeUndefined()
+    })
+
+    it('without a "draw" entry configured, a draw-prefixed id matches nothing (plain object, no wildcard)', () => {
+      const result = buildLayerConfigMap([{ layerId: 'field-parcels' }])
+      expect(result['draw-f1-fill']).toBeUndefined()
+    })
+  })
 })
 
 describe('getFeaturesAtPoint', () => {

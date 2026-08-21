@@ -15,13 +15,23 @@ const siblingLayerId = (layerId) => {
 export const buildLayerConfigMap = dataLayers => {
   const map = {}
   for (const layer of dataLayers) {
+    // 'draw' is OpenLayers' real, single, literal layer id — exact match handles it as-is.
+    // It's also the MapLibre draw plugin's wildcard, matching any of its dynamic per-feature
+    // layer ids (draw-{featureId}-fill/-line/-symbol) — no fixed id to key a plain lookup on,
+    // so that case is handled below via a Proxy fallback instead.
     map[layer.layerId] = layer
     const sibling = siblingLayerId(layer.layerId)
     if (sibling) {
       map[sibling] = layer
     }
   }
-  return map
+  const drawWildcard = map.draw
+  if (!drawWildcard) {
+    return map
+  }
+  return new Proxy(map, {
+    get: (target, prop) => target[prop] ?? (typeof prop === 'string' && prop.startsWith('draw-') ? drawWildcard : undefined)
+  })
 }
 
 export const getFeaturesAtPoint = (mapProvider, point, options) => {

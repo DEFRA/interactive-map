@@ -1,6 +1,28 @@
 import { siblingDrawLayerId } from './drawLayerBuckets.js'
 
 const ICON_IMAGE = 'icon-image'
+const DRAW_WILDCARD_LAYER_ID = 'draw'
+
+// interactPlugin's 'draw' config entry is a logical wildcard covering every draw-owned layer —
+// a selected feature always reports back the literal string 'draw', never the concrete
+// draw-{featureId}-fill/-line/-symbol layer that actually exists on the map (see
+// plugins/draw/src/adapters/maplibre/featureLayerGroup.js's getLayerId, which this mirrors).
+// Highlight rendering needs the real layer (source, type, paint) to draw against, so it's
+// resolved here from the feature's own id + geometry type rather than trusted as-is.
+const isDrawOwnedLayerId = (layerId) => layerId.startsWith('draw-')
+
+const resolveDrawLayerId = (layerId, featureId, geometryType) => {
+  if (layerId !== DRAW_WILDCARD_LAYER_ID) {
+    return layerId
+  }
+  if (geometryType === 'Polygon' || geometryType === 'MultiPolygon') {
+    return `draw-${featureId}-fill`
+  }
+  if (geometryType === 'LineString' || geometryType === 'MultiLineString') {
+    return `draw-${featureId}-line`
+  }
+  return `draw-${featureId}-symbol`
+}
 
 const ACTIVE_PREFIX = 'active-highlight'
 const ACTIVE_INNER_PREFIX = 'active-highlight-inner'
@@ -47,8 +69,9 @@ const groupFeaturesByLayer = (map, selectedFeatures) => {
   const featuresByLayer = {}
 
   selectedFeatures?.forEach((feature) => {
-    addFeatureUnderLayer(map, featuresByLayer, feature.layerId, feature)
-    const sibling = siblingDrawLayerId(feature.layerId)
+    const layerId = resolveDrawLayerId(feature.layerId, feature.featureId, feature.geometry?.type)
+    addFeatureUnderLayer(map, featuresByLayer, layerId, feature)
+    const sibling = siblingDrawLayerId(layerId)
     if (sibling) {
       addFeatureUnderLayer(map, featuresByLayer, sibling, feature)
     }
@@ -193,12 +216,18 @@ const applyLineHighlight = (map, base, sourceId, srcLayer, lineColor, lineWidth,
 //   active-highlight        → yellow active ring (stroke only)
 //   active-highlight-inner  → black thin ring drawn on top of active
 //   selected-highlight      → black thin ring + fill for polygon features
+// Only the recorded layerId is registered in stylesMap — falls back to its cold/hot sibling
+// (same drawn layer, identical styling) rather than requiring both to be registered. A
+// resolved draw-{featureId}-* layer is never itself registered (interactPlugin's config only
+// ever has the wildcard 'draw' entry), so that falls back to the wildcard's style instead.
+const resolveStyle = (stylesMap, layerId) =>
+  stylesMap[layerId] ?? stylesMap[siblingDrawLayerId(layerId)] ??
+    (isDrawOwnedLayerId(layerId) ? stylesMap[DRAW_WILDCARD_LAYER_ID] : undefined)
+
 const applyLayerHighlight = (map, layerId, featuresByLayer, stylesMap, prefix, getSymbolImageId) => {
   const { ids, fillIds, idProperty, sourceId, hasFillGeometry } = featuresByLayer[layerId]
   const baseLayer = map.getLayer(layerId)
-  // Only the recorded layerId is registered in stylesMap — falls back to its cold/hot sibling
-  // (same drawn layer, identical styling) rather than requiring both to be registered.
-  const style = stylesMap[layerId] ?? stylesMap[siblingDrawLayerId(layerId)]
+  const style = resolveStyle(stylesMap, layerId)
 
   if (!baseLayer || !style) {
     return

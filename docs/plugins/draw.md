@@ -185,7 +185,7 @@ createDrawPlugin({
 
 ## Methods
 
-Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `deleteFeature`, `split`, and `merge` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
+Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `reorderFeature`, `deleteFeature`, `split`, and `merge` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
 
 ---
 
@@ -323,6 +323,30 @@ Update an existing feature's style — stroke/fill/strokeWidth or, for a `Point`
 
 ```js
 drawPlugin.setStyle('monument1', { symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' } })
+```
+
+---
+
+### `reorderFeature(featureId, direction)`
+
+Change a feature's stacking position among features of the same geometry type — a new feature
+always renders at the front (on top) by default. Returns `false` if the feature doesn't exist or
+`direction` isn't recognised. `'forward'`/`'backward'` are no-ops when the feature is already at
+the front/back.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `featureId` | `string` | **Required.** ID of the feature to reorder |
+| `direction` | `'front' \| 'back' \| 'forward' \| 'backward'` | **Required.** |
+
+> [!NOTE]
+> Ordering only applies *within* one geometry type — a polygon, a line, and a point. It cannot
+> interleave across types: every point always renders above every polygon/line, and every
+> polygon's fill always renders below every stroke (its own and any other shape's). This is a
+> fixed property of how the underlying map engines render vector data, not a configurable option.
+
+```js
+drawPlugin.reorderFeature('monument1', 'front')
 ```
 
 ---
@@ -517,6 +541,14 @@ Emitted after `deleteFeature` removes a feature.
 Emitted after `setStyle` updates a feature's style.
 
 **Payload:** `{ featureId: string, properties: Object }` — the flattened style/symbol properties that were applied
+
+---
+
+### `draw:orderchange`
+
+Emitted after `reorderFeature` changes a feature's stacking position.
+
+**Payload:** `{ order: string[] }` — the full current feature-id order, back-to-front
 
 ---
 

@@ -27,6 +27,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
+ *   moveToFront(id) / moveForward(id) / moveBackward(id) / moveToBack(id) / getOrder()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -117,6 +118,12 @@ export class OLDrawAdapter {
 
   delete (id) { return this._manager.delete(id) }
   deleteAll () { return this._manager.deleteAll() }
+
+  getOrder () { return this._manager.getOrder() }
+  moveToFront (id) { this._manager.moveToFront(id) }
+  moveToBack (id) { this._manager.moveToBack(id) }
+  moveForward (id) { this._manager.moveForward(id) }
+  moveBackward (id) { this._manager.moveBackward(id) }
 
   setSnapEnabled (bool) {
     this._snapEnabled = bool

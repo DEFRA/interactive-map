@@ -6,6 +6,14 @@ import { ADAPTER_EVENTS } from '../../adapterEvents.js'
 import { createLiveStroke } from '../../validation/liveStroke.js'
 import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
 import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
+import { createFeatureLayerGroup, removeFeatureLayerGroup, setFeatureLayerGroupData, getSourceId, getFeatureLayerIds } from './featureLayerGroup.js'
+import { applyLayerOrder, ensureAnchorLayer, isDrawOwnedLayerId, ANCHOR_ID } from './layerOrder.js'
+import {
+  pushIfNew, removeFromOrder,
+  moveToFront as moveIdToFront, moveToBack as moveIdToBack,
+  moveForward as moveIdForward, moveBackward as moveIdBackward
+} from '../../utils/orderList.js'
+import { resolveColors } from '../../utils/resolveColors.js'
 
 const polygonFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates } })
 const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
@@ -54,6 +62,8 @@ export const displayedShape = (mode, coordinates) => {
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
+ *   moveToFront(id) / moveForward(id) / moveBackward(id) / moveToBack(id) / getOrder()
+ *   getCommittedFeatureLayerIds()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -65,6 +75,22 @@ export class MaplibreDrawAdapter {
     this._map = mapProvider.map
     this._bus = createEventBus()
     this._editingFeatureId = null
+    this._pluginConfig = options.pluginConfig ?? {}
+
+    // Every committed (not actively being drawn/edited) feature lives in its own dedicated
+    // source + layer(s) (featureLayerGroup.js), never mapbox-gl-draw's own store — that's
+    // what gives full, deterministic stacking (layerOrder.js), immune to mapbox-gl-draw's
+    // incidental hot/cold ordering. _order is back-to-front, same convention as OLDrawManager.
+    this._committedFeatures = new Map()
+    this._order = []
+    this._orderResyncPending = false
+
+    // A point can be committed (its own layer group) or mid-edit (mapbox-gl-draw's own store)
+    // by the time an async resolve settles — resolvePointSymbol/refreshAllPointSymbols read and
+    // write through this rather than assuming either store. Its methods read this._draw/
+    // this._committedFeatures fresh on every call, so it's safe to build before this._draw
+    // exists below.
+    this._pointStore = this._buildPointStore()
 
     const { draw, remove } = createMapboxDraw({
       mapStyle: options.mapStyle,
@@ -72,7 +98,8 @@ export class MaplibreDrawAdapter {
       events: options.events,
       eventBus: options.eventBus,
       snapLayers: options.snapLayers,
-      pluginConfig: options.pluginConfig ?? {}
+      pluginConfig: options.pluginConfig ?? {},
+      pointStore: this._pointStore
     })
 
     this._draw = draw
@@ -132,7 +159,7 @@ export class MaplibreDrawAdapter {
       placementblocked: (e) => this._bus.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, e),
       interfacetypechange: (e) => this._bus.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: e.interfaceType }),
       modechange: (e) => this._handleModeChange(e),
-      styledata: () => this._handleStyleData()
+      styledata: (e) => this._handleStyleData(e)
     }
 
     this._map.on(MAPBOX_DRAW_EVENTS.CREATE, this._mapHandlers.create)
@@ -149,9 +176,141 @@ export class MaplibreDrawAdapter {
     this._map.on(STYLE_DATA_EVENT, this._mapHandlers.styledata)
   }
 
+  _buildPointStore () {
+    return {
+      get: (id) => this.get(id),
+      getAll: () => [...this._committedFeatures.values(), ...this._draw.getAll().features],
+      write: (feature) => {
+        if (this._committedFeatures.has(feature.id)) {
+          this._committedFeatures.set(feature.id, feature)
+          setFeatureLayerGroupData({ map: this._map, featureId: feature.id, feature })
+        } else {
+          this._draw.add(feature)
+        }
+      }
+    }
+  }
+
+  // --- Committed features: own layer group, deterministic stacking ---
+
+  _getColors () {
+    return resolveColors(this._map._drawCurrentMapStyle, this._pluginConfig)
+  }
+
+  // Debounced — a burst of triggers in the same frame (a bulk addFeature reload, or a
+  // create immediately followed by its own point-symbol resolve settling) collapses into
+  // one resync pass instead of one per trigger. _order itself stays synchronous throughout;
+  // only the map actually reflecting it is deferred by at most one frame.
+  _scheduleApplyOrder () {
+    if (this._orderResyncPending) {
+      return
+    }
+    this._orderResyncPending = true
+    requestAnimationFrame(() => {
+      this._orderResyncPending = false
+      this._applyOrder()
+    })
+  }
+
+  _applyOrder () {
+    applyLayerOrder(this._map, this._order, (id) => this._committedFeatures.get(id)?.geometry?.type)
+  }
+
+  // Moves a feature into our own layer system — a fresh interactive creation (events.js,
+  // after validation passes), a direct addFeature call, or a feature returning from an edit
+  // session (events.js's Cancel-restore and Done both already just call the generic add(),
+  // unaware of any of this). Deletes it from mapbox-gl-draw's own store unconditionally (a
+  // safe no-op if it was never there) — a committed feature lives in exactly one place, never
+  // both, or it would render twice. If its layer group already exists (beginEditFromOwnLayers
+  // only ever empties it, never removes it) this refreshes that data instead of recreating it
+  // from scratch, which would otherwise throw on the duplicate source.
+  commitFeature (feature) {
+    this._draw.delete(feature.id)
+    this._committedFeatures.set(feature.id, feature)
+    pushIfNew(this._order, feature.id)
+    // The anchor is otherwise only ever created lazily, via the debounced order resync below —
+    // on the very first commit (or first few, in a synchronous burst) it doesn't exist yet,
+    // and inserting a layer before a beforeId that doesn't exist throws immediately.
+    ensureAnchorLayer(this._map)
+    if (this._map.getSource(getSourceId(feature.id))) {
+      setFeatureLayerGroupData({ map: this._map, featureId: feature.id, feature })
+    } else {
+      createFeatureLayerGroup({ map: this._map, feature, mapStyle: this._map._drawCurrentMapStyle, colors: this._getColors(), beforeId: ANCHOR_ID })
+    }
+    this._scheduleApplyOrder()
+  }
+
+  removeCommittedFeature (featureId) {
+    const feature = this._committedFeatures.get(featureId)
+    if (!feature) {
+      return
+    }
+    removeFeatureLayerGroup({ map: this._map, featureId, geometryType: feature.geometry.type })
+    this._committedFeatures.delete(featureId)
+    removeFromOrder(this._order, featureId)
+  }
+
+  // Begins an edit session for an already-committed feature: no longer committed (get() must
+  // read the live, mid-edit copy from mapbox-gl-draw's store instead), its rendered source
+  // emptied (genuinely absent from any query/selection/snap while being edited, not just
+  // paint-hidden — see featureLayerGroup.js) but its layer group left in place, and handed to
+  // mapbox-gl-draw's own store for the live session. Ending the session needs nothing
+  // ML-specific — events.js's existing Done/Cancel paths already just call the generic add().
+  beginEditFromOwnLayers (featureId) {
+    const feature = this._committedFeatures.get(featureId)
+    if (!feature) {
+      return false
+    }
+    this._committedFeatures.delete(featureId)
+    setFeatureLayerGroupData({ map: this._map, featureId })
+    this._draw.add(feature)
+    return true
+  }
+
+  getOrder () {
+    return [...this._order]
+  }
+
+  // Every concrete draw-{featureId}-* layer id currently on the map — interactPlugin's 'draw'
+  // config entry is a logical wildcard, not a real layer, so anything that needs to actually
+  // query or look up real layers (hover-cursor filtering, highlight rendering) resolves it
+  // through here rather than assuming a literal 'draw' layer exists.
+  getCommittedFeatureLayerIds () {
+    const ids = []
+    this._committedFeatures.forEach((feature, featureId) => {
+      ids.push(...getFeatureLayerIds(featureId, feature.geometry?.type))
+    })
+    return ids
+  }
+
+  moveToFront (id) {
+    moveIdToFront(this._order, id)
+    this._applyOrder()
+  }
+
+  moveToBack (id) {
+    moveIdToBack(this._order, id)
+    this._applyOrder()
+  }
+
+  moveForward (id) {
+    moveIdForward(this._order, id)
+    this._applyOrder()
+  }
+
+  moveBackward (id) {
+    moveIdBackward(this._order, id)
+    this._applyOrder()
+  }
+
   changeMode (name, options = {}) {
     if (name === 'edit_vertex' || name === 'edit_point') {
       this._editingFeatureId = options.featureId ?? null
+      // The feature must already be in mapbox-gl-draw's own store before its edit mode's own
+      // setup runs — a safe no-op if it isn't currently committed (e.g. already mid-edit).
+      if (options.featureId) {
+        this.beginEditFromOwnLayers(options.featureId)
+      }
     }
     // A fresh draw always starts with a solid stroke and a placeable crosshair;
     // the live checks own both from here.
@@ -176,7 +335,7 @@ export class MaplibreDrawAdapter {
   // registers the feature's symbol-config icon, then writes the resolved image id/anchor back
   // onto the feature so the data-driven point-symbol layer (styles.js) can render it.
   _resolvePointSymbol (featureId, properties) {
-    return resolvePointSymbol({ draw: this._draw, mapProvider: this._mapProvider, map: this._map, featureId, properties })
+    return resolvePointSymbol({ store: this._pointStore, mapProvider: this._mapProvider, map: this._map, featureId, properties })
   }
 
   // Live invalid-stroke driver: called on every rubber-band move (draw) and vertex
@@ -293,32 +452,55 @@ export class MaplibreDrawAdapter {
     // shared adapter interface.
   }
 
-  get (id) { return this._draw.get(id) }
+  // Checks our own committed-feature registry first, then mapbox-gl-draw's own store — a
+  // feature only ever lives in one or the other, never both, so this always finds it
+  // regardless of whether it's settled or currently mid-edit.
+  get (id) { return this._committedFeatures.get(id) ?? this._draw.get(id) }
 
   // A directly-added Point (e.g. api/addFeature.js) skips draw_point's own icon-resolving
   // drawend handler, so it must be resolved here instead — with no fallback, styles.js's
   // point-symbol layer would otherwise render nothing at all.
   add (feature) {
-    const ids = this._draw.add(feature)
+    this.commitFeature(feature)
     if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {
-      this._resolvePointSymbol(ids[0], feature.properties)
+      this._resolvePointSymbol(feature.id, feature.properties)
     }
-    return ids
+    return [feature.id]
   }
 
   // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
-  // keys) and re-renders — routed through add() itself so a Point's icon gets re-resolved the
-  // same way a directly-added one does, for free.
+  // keys) and re-renders. A committed feature routes through add() itself so a Point's icon
+  // gets re-resolved the same way a directly-added one does, for free. A feature currently
+  // mid-edit must NOT go through commitFeature() — that would pull it out of the live edit
+  // session's own store mid-session — so it's patched directly instead, exactly as add() used
+  // to unconditionally do; the edit session already owns its rendering until it ends.
   setStyle (id, properties) {
-    const feature = this._draw.get(id)
+    const feature = this.get(id)
     if (!feature) {
       return
     }
-    this.add({ ...feature, properties: { ...feature.properties, ...properties } })
+    const updated = { ...feature, properties: { ...feature.properties, ...properties } }
+    if (this._committedFeatures.has(id)) {
+      this.add(updated)
+      return
+    }
+    this._draw.add(updated)
+    if (updated.geometry?.type === 'Point' && hasSymbolStyle(updated.properties)) {
+      this._resolvePointSymbol(id, updated.properties)
+    }
   }
 
-  delete (id) { this._draw.delete(id) }
-  deleteAll () { this._draw.deleteAll() }
+  // Removes from whichever registry actually holds the id — both calls are safe no-ops
+  // against the one that doesn't.
+  delete (id) {
+    this.removeCommittedFeature(id)
+    this._draw.delete(id)
+  }
+
+  deleteAll () {
+    [...this._committedFeatures.keys()].forEach((id) => this.removeCommittedFeature(id))
+    this._draw.deleteAll()
+  }
 
   setSnapEnabled (bool) {
     this._mapProvider.snapEnabled = bool
@@ -380,17 +562,55 @@ export class MaplibreDrawAdapter {
   }
 
   // Keeps draw layers on top after MapLibre style reloads
-  _handleStyleData () {
+  _handleStyleData (e) {
+    // map.addSource/addLayer/moveLayer below all fire their own synchronous styledata event,
+    // re-entering this handler before the outer call has finished — without this guard, the
+    // reload-detection branch below could see its own in-progress work as "still missing" and
+    // try to recreate the same feature's layer group a second time, throwing on the duplicate
+    // source. A genuine, independent styledata event is never nested inside our own call stack
+    // (JS is single-threaded), so skipping while already running never drops one.
+    if (this._handlingStyleData) {
+      return
+    }
+    this._handlingStyleData = true
+    try {
+      this._handleStyleDataInner(e)
+    } finally {
+      this._handlingStyleData = false
+    }
+  }
+
+  _handleStyleDataInner (e) {
     // A style reload re-adds the draw layers with their spec-default visibility
     // (solid stroke shown, dashed hidden) — re-assert the cached stroke state so
     // an invalid shape stays dashed across the reload.
     this._liveStroke.refresh()
+
+    // A reload wipes every layer, including the anchor and every committed feature's own
+    // ones — rebuild them all from our own retained registry (the feature data itself is
+    // never lost, only its on-map rendering). Gated on dataType === 'style' (a genuine style
+    // reload), not just the anchor being absent — our own addSource/addLayer calls fire this
+    // same event tagged dataType: 'source', and the anchor is legitimately, transiently absent
+    // during the very first commit or two (created lazily, debounced) before any reload has
+    // ever happened — treating that as "reload, recreate everything" crashed on the source
+    // that was already being created one stack frame up.
+    if (e?.dataType === 'style' && this._committedFeatures.size && !this._map.getLayer(ANCHOR_ID)) {
+      // Must exist before any feature layer is inserted before it — otherwise the very first
+      // one throws immediately, since a beforeId that doesn't exist is invalid.
+      ensureAnchorLayer(this._map)
+      this._committedFeatures.forEach((feature) => {
+        createFeatureLayerGroup({ map: this._map, feature, mapStyle: this._map._drawCurrentMapStyle, colors: this._getColors(), beforeId: ANCHOR_ID })
+      })
+      this._applyOrder()
+    }
+
+    const isOwnLayer = (l) => l.source?.startsWith('mapbox-gl-draw') || isDrawOwnedLayerId(l.id)
     const layers = this._map.getStyle().layers || []
-    if (!layers.length || layers[layers.length - 1].source?.startsWith('mapbox-gl-draw')) {
+    if (!layers.length || isOwnLayer(layers[layers.length - 1])) {
       return
     }
     layers
-      .filter(l => l.source?.startsWith('mapbox-gl-draw'))
+      .filter(isOwnLayer)
       .forEach(l => this._map.moveLayer(l.id))
   }
 

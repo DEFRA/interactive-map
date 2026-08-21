@@ -184,3 +184,73 @@ test('remove tears everything down and silences the bus', async () => {
   manager.emit(STYLES_CHANGED_EVENT, {})
   expect(listener).not.toHaveBeenCalled()
 })
+
+describe('stacking order', () => {
+  const renderOrderOf = (map) => map.layers[0].getRenderOrder()
+
+  test('a new feature appends to the front via the CREATE event, covering both commit paths', () => {
+    const { manager } = setup()
+    manager.emit(ADAPTER_EVENTS.CREATE, { id: 'a' })
+    manager.emit(ADAPTER_EVENTS.CREATE, { id: 'b' })
+    expect(manager.getOrder()).toEqual(['a', 'b'])
+  })
+
+  test('addFeature appends a new id to the front', () => {
+    const { manager } = setup()
+    manager.add({ ...geojson, id: 'a' })
+    manager.add({ ...geojson, id: 'b' })
+    expect(manager.getOrder()).toEqual(['a', 'b'])
+  })
+
+  test('re-adding an existing id (Cancel restoring the original) does not perturb order', () => {
+    const { manager } = setup()
+    manager.add({ ...geojson, id: 'a' })
+    manager.add({ ...geojson, id: 'b' })
+    manager.add({ ...geojson, id: 'a' })
+    expect(manager.getOrder()).toEqual(['a', 'b'])
+  })
+
+  test('delete removes just that id; deleteAll clears everything', () => {
+    const { manager } = setup()
+    manager.add({ ...geojson, id: 'a' })
+    manager.add({ ...geojson, id: 'b' })
+    manager.delete('a')
+    expect(manager.getOrder()).toEqual(['b'])
+    manager.add({ ...geojson, id: 'c' })
+    manager.deleteAll()
+    expect(manager.getOrder()).toEqual([])
+  })
+
+  test.each([
+    ['moveToFront', ['b', 'c', 'a']],
+    ['moveToBack', ['a', 'b', 'c']],
+    ['moveForward', ['b', 'a', 'c']],
+    ['moveBackward', ['a', 'b', 'c']] // already at the back — no-op
+  ])('%s reorders as expected', (method, expected) => {
+    const { manager } = setup()
+    manager.add({ ...geojson, id: 'a' })
+    manager.add({ ...geojson, id: 'b' })
+    manager.add({ ...geojson, id: 'c' })
+    manager[method]('a')
+    expect(manager.getOrder()).toEqual(expected)
+  })
+
+  test('getOrder returns a copy, not the live array', () => {
+    const { manager } = setup()
+    manager.add({ ...geojson, id: 'a' })
+    const order = manager.getOrder()
+    order.push('intruder')
+    expect(manager.getOrder()).toEqual(['a'])
+  })
+
+  test('the layer renderOrder sorts real ol/Feature instances by _order, ascending', () => {
+    const { map, manager } = setup()
+    manager.add({ ...geojson, id: 'a' })
+    manager.add({ ...geojson, id: 'b' })
+    manager.moveToFront('a')
+    const order = renderOrderOf(map)
+    const featureA = { getId: () => 'a' }
+    const featureB = { getId: () => 'b' }
+    expect(order(featureB, featureA)).toBeLessThan(0)
+  })
+})
