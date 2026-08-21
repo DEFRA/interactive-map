@@ -1,4 +1,4 @@
-import { LayersMenu } from './components/LayersMenu/LayersMenu.jsx'
+import { LayersMenu } from './components/Menu/Menu.jsx'
 import './registry/getDatasetRegistry.js'
 import { MenuInit } from './initialise/MenuInit.jsx'
 import { initialState, actions } from './reducers/pluginState.js'

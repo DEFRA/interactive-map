@@ -1,5 +1,5 @@
 import { render, screen } from '@testing-library/react'
-import { LayersMenuGroupWrapper } from './LayersMenuGroupWrapper'
+import { LayersMenuGroupWrapper } from './MenuGroupWrapper.jsx'
 
 const child = <span data-testid='child'>Child content</span>
 

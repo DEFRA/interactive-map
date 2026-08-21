@@ -1,9 +1,9 @@
 import { render } from '@testing-library/react'
-import { LayersMenu } from './LayersMenu.jsx'
+import { LayersMenu } from './Menu.jsx'
 
 let capturedOnChange = null
 
-jest.mock('./LayersMenuCheckbox.jsx', () => ({
+jest.mock('./MenuCheckbox.jsx', () => ({
   LayersMenuCheckbox: ({ menuGroupItem, onChange }) => {
     capturedOnChange = onChange
     return (
@@ -15,13 +15,13 @@ jest.mock('./LayersMenuCheckbox.jsx', () => ({
   }
 }))
 
-jest.mock('./LayersRadioGroupWrapper.jsx', () => ({
+jest.mock('./RadioGroupWrapper.jsx', () => ({
   LayersRadioGroupWrapper: ({ menuGroup }) => (
     <div data-testid='layers-radio-group-wrapper' data-group-id={menuGroup.id} />
   )
 }))
 
-jest.mock('./LayersMenuGroupWrapper.jsx', () => ({
+jest.mock('./MenuGroupWrapper.jsx', () => ({
   LayersMenuGroupWrapper: ({ menuGroup, children }) => (
     <div data-testid='layers-menu-group-wrapper' data-group-id={menuGroup.id}>
       {children}

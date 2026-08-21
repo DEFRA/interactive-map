@@ -1,8 +1,8 @@
 import { manifest } from './manifest.js'
-import { LayersMenu } from './components/LayersMenu/LayersMenu.jsx'
+import { LayersMenu } from './components/Menu/Menu.jsx'
 import { MenuInit } from './initialise/MenuInit.jsx'
 
-jest.mock('./components/LayersMenu/LayersMenu.jsx', () => ({ LayersMenu: jest.fn() }))
+jest.mock('./components/Menu/Menu.jsx', () => ({ LayersMenu: jest.fn() }))
 jest.mock('./initialise/MenuInit.jsx', () => ({ MenuInit: jest.fn() }))
 jest.mock('./registry/getDatasetRegistry.js', () => ({}))
 

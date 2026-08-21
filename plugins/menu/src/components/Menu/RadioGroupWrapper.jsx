@@ -1,6 +1,6 @@
 import React from 'react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
-import { LayersMenuRadio } from './LayersMenuRadio.jsx'
+import { LayersMenuRadio } from './MenuRadio.jsx'
 
 export const LayersRadioGroupWrapper = ({ pluginState, menuGroup }) => {
   const { id, items, visibleWhen } = menuGroup

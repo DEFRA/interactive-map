@@ -1,8 +1,8 @@
 import React from 'react'
 // import { setDatasetVisibility } from '../../api/setDatasetVisibility.js'
-import { LayersMenuCheckbox } from './LayersMenuCheckbox.jsx'
-import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper.jsx'
-import { LayersMenuGroupWrapper } from './LayersMenuGroupWrapper.jsx'
+import { LayersMenuCheckbox } from './MenuCheckbox.jsx'
+import { LayersRadioGroupWrapper } from './RadioGroupWrapper.jsx'
+import { LayersMenuGroupWrapper } from './MenuGroupWrapper.jsx'
 
 export const LayersMenu = ({ pluginState }) => {
   const { menu = [], dispatch } = pluginState

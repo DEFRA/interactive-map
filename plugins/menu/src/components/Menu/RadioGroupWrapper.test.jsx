@@ -1,6 +1,6 @@
 import { render, screen, act } from '@testing-library/react'
 import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
-import { LayersRadioGroupWrapper } from './LayersRadioGroupWrapper.jsx'
+import { LayersRadioGroupWrapper } from './RadioGroupWrapper.jsx'
 
 jest.mock('../../registry/isVisibleWhen.js', () => ({
   isVisibleWhen: jest.fn()
@@ -8,7 +8,7 @@ jest.mock('../../registry/isVisibleWhen.js', () => ({
 
 let capturedOnChange = null
 
-jest.mock('./LayersMenuRadio.jsx', () => ({
+jest.mock('./MenuRadio.jsx', () => ({
   LayersMenuRadio: ({ menuGroupItem, checked, name, onChange }) => {
     capturedOnChange = onChange
     return (

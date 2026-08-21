@@ -25,7 +25,7 @@ export function MapKey ({
 
     // Ensure the keyItems are invalidated and refreshed when the menuChanges
     const onMenuChanged = (menuState) => {
-      datasetRegistry.invalidateKeyItems(menuState)
+      datasetRegistry.invalidateKeyItemsOnMenuStateChange(menuState)
       getKeyItems()
     }
     eventBus.on('menu:changed', onMenuChanged)
