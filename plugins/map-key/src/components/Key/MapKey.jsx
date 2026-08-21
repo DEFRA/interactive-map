@@ -10,27 +10,33 @@ export function MapKey ({
 }) {
   const [keyGroups, setKeyGroups] = useState([])
   const [hasGroups, setHasGroups] = useState(false)
+  const [datasetRegistry, setDatasetRegistry] = useState(getDatasetRegistry())
 
-  // Get the initial keyItems, and ensure they are refreshed if the menu plugin state changes
-  useEffect(() => {
-    const datasetRegistry = getDatasetRegistry()
+  const getKeyItems = () => {
+    const { items, hasGroups: _hasGroups } = datasetRegistry ? datasetRegistry.keyItems() : { items: [], hasGroups: false }
+    setKeyGroups(items)
+    setHasGroups(_hasGroups)
+  }
 
-    const getKeyItems = () => {
-      const { items, hasGroups: _hasGroups } = datasetRegistry ? datasetRegistry.keyItems() : { items: [], hasGroups: false }
-      setKeyGroups(items)
-      setHasGroups(_hasGroups)
-    }
-    // populate the initial KeyItems from the datasetRegistry (which caches them)
+  const onMenuChanged = (menuState) => {
+    datasetRegistry.invalidateKeyItemsOnMenuStateChange(menuState)
     getKeyItems()
+  }
 
-    // Ensure the keyItems are invalidated and refreshed when the menuChanges
-    const onMenuChanged = (menuState) => {
-      datasetRegistry.invalidateKeyItemsOnMenuStateChange(menuState)
-      getKeyItems()
+  useEffect(() => {
+    if (!datasetRegistry) {
+      // 'datasets:registry' is only required when the key is opened before datasets:ready
+      eventBus.requestOnce('datasets:registry', setDatasetRegistry)
+    } else {
+      getKeyItems() // populate the initial KeyItems from the datasetRegistry (which caches them)
+      eventBus
+        .on('menu:changed', onMenuChanged) // Ensure keyItems refresh when menu updates
+        .on('datasets:changed', getKeyItems) // Ensure keyItems refresh when datasets change
+      return () => eventBus
+        .off('menu:changed', onMenuChanged)
+        .off('datasets:changed', getKeyItems)
     }
-    eventBus.on('menu:changed', onMenuChanged)
-    return () => eventBus.off('menu:changed', onMenuChanged)
-  }, [])
+  }, [datasetRegistry])
 
   return (
     <Key
