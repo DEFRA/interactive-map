@@ -6,7 +6,7 @@ export const Menu = ({ pluginState, appConfig }) => {
   const { menu = [], dispatch, menuState } = pluginState
   const appId = appConfig?.id || 'map'
   const hasGroups = menu.some(item => item.groupLabel)
-  const containerClass = `im-c-menu-layers${hasGroups ? ' im-c-menu-layers--has-groups' : ''}`
+  const containerClass = `im-c-menu${hasGroups ? ' im-c-menu--has-groups' : ''}`
   return (
     <IdPrefixContext value={`${appId}-menu`}>
       <div className={containerClass}> {

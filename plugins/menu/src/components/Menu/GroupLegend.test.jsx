@@ -33,7 +33,7 @@ describe('GroupLegend', () => {
       const { container } = render(
         <GroupLegend menuGroup={{ id: 'g1', groupLabel: 'My Group' }}>{child}</GroupLegend>
       )
-      const wrapper = container.querySelector('.govuk-form-group.im-c-menu-layers-group')
+      const wrapper = container.querySelector('.govuk-form-group.im-c-menu-group')
       expect(wrapper).toBeTruthy()
     })
 
@@ -41,7 +41,7 @@ describe('GroupLegend', () => {
       const { container } = render(
         <GroupLegend menuGroup={{ id: 'g1', groupLabel: 'My Group' }}>{child}</GroupLegend>
       )
-      expect(container.querySelector('fieldset.im-c-menu-layers-group__fieldset')).toBeTruthy()
+      expect(container.querySelector('fieldset.im-c-menu-group__fieldset')).toBeTruthy()
     })
 
     it('renders the groupLabel as the legend text', () => {
@@ -55,7 +55,7 @@ describe('GroupLegend', () => {
       const { container } = render(
         <GroupLegend menuGroup={{ id: 'g1', groupLabel: 'My Group' }}>{child}</GroupLegend>
       )
-      expect(container.querySelector('legend.im-c-menu-layers-group__legend')).toBeTruthy()
+      expect(container.querySelector('legend.im-c-menu-group__legend')).toBeTruthy()
     })
 
     it('renders children inside the fieldset', () => {

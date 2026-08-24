@@ -2,7 +2,7 @@ import { isVisibleWhen } from '../../registry/isVisibleWhen.js'
 import { useIdPrefix } from './useIdPrefix.jsx'
 
 export const MenuRadio = ({ menuGroupItem, name, checked, onChange }) => {
-  const itemClass = 'im-c-menu-layers__item govuk-radios govuk-radios--small"'
+  const itemClass = 'im-c-menu__item govuk-radios govuk-radios--small"'
   const itemId = useIdPrefix(`radio-${menuGroupItem.id}`)
   const { visibleWhen } = menuGroupItem
   const visible = visibleWhen ? isVisibleWhen(visibleWhen) : true
@@ -21,7 +21,7 @@ export const MenuRadio = ({ menuGroupItem, name, checked, onChange }) => {
           checked={checked}
           onChange={onChange}
         />
-        <label className='im-c-menu-layers__item-label govuk-label govuk-radios__label' htmlFor={itemId}>
+        <label className='im-c-menu__item-label govuk-label govuk-radios__label' htmlFor={itemId}>
           {menuGroupItem.label}
         </label>
       </div>

@@ -1,34 +1,34 @@
 // When groups are present, every direct child except the first gets a border-top
 
-.im-c-menu-layers--has-groups > *:not(:first-child) {
+.im-c-menu--has-groups > *:not(:first-child) {
   border-top: 1px solid var(--button-hover-color);
 }
 
-.im-c-menu-layers > *:first-child {
+.im-c-menu > *:first-child {
   padding-top: 5px;
 }
 
-.im-c-menu-layers > *:last-child {
+.im-c-menu > *:last-child {
   margin-bottom: -5px;
 }
 
-.im-c-menu-layers-group:not(:last-child) {
+.im-c-menu-group:not(:last-child) {
   padding-bottom: 5px;
 }
 
-.im-c-menu-layers__item {
+.im-c-menu__item {
   padding-bottom: 5px;
 
   &:first-child {
     padding-top: 0;
   }
 
-  .im-c-menu-layers--has-groups > &:not(:first-child) {
+  .im-c-menu--has-groups > &:not(:first-child) {
     padding-top: 5px;
   }
 
   // Items inside a group have no individual padding or spacing between them
-  .im-c-menu-layers-group & {
+  .im-c-menu-group & {
     padding-top: 0;
     padding-bottom: 0;
 
@@ -37,7 +37,7 @@
     }
   }
 
-  .im-c-menu-layers__item-label {
+  .im-c-menu__item-label {
     width: 100%;
     max-width: none;
     align-items: start;
@@ -52,8 +52,8 @@
 }
 
 // GovUK style overide
-.im-c-menu-layers__item .govuk-checkboxes__item,
-.im-c-menu-layers__item .govuk-radios__item {
+.im-c-menu__item .govuk-checkboxes__item,
+.im-c-menu__item .govuk-radios__item {
   flex-wrap: nowrap;
 
   .govuk-checkboxes__input, .govuk-radios__input {
@@ -61,7 +61,7 @@
   }
 }
 
-.im-c-menu-layers-group__fieldset {
+.im-c-menu-group__fieldset {
   // Reset browser fieldset defaults
   border: none;
   padding: 0;
@@ -69,7 +69,7 @@
   min-width: 0;
 }
 
-.im-c-menu-layers-group__legend {
+.im-c-menu-group__legend {
   padding-top: 15px;
   padding-bottom: 10px;
   padding-inline: 0;
@@ -81,10 +81,10 @@
   }
 }
 
-.im-c-menu-layers-group:first-child .im-c-menu-layers-group__legend {
+.im-c-menu-group:first-child .im-c-menu-group__legend {
   padding-top: 0;
 }
 
-.im-c-menu-layers .govuk-checkboxes__input[aria-disabled="true"] + .govuk-checkboxes__label {
+.im-c-menu .govuk-checkboxes__input[aria-disabled="true"] + .govuk-checkboxes__label {
   opacity: 0.5;
 }
