@@ -130,21 +130,13 @@ const interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
-  interactiveMap.addPanel('banner', {
-    label: 'Hello',
-    html: 'Alert',
-    mobile: { slot: 'banner' },
-    tablet: { slot: 'banner' },
-    desktop: { slot: 'banner' }
-  })
-  // Demonstrates a control injected into another plugin's panel via the
-  // `<panelId>-panel` slot convention — see docs/api/slots.md#panel-injected-controls
-  interactiveMap.addControl('mapStylesNote', {
-    html: '<p>Injected into the map styles panel by the host app.</p>',
-    mobile: { slot: 'map-styles-panel', order: 1 },
-    tablet: { slot: 'map-styles-panel', order: 1 },
-    desktop: { slot: 'map-styles-panel', order: 1 }
-  })
+  // interactiveMap.addPanel('banner', {
+  //   label: 'Hello',
+  //   html: 'Alert',
+  //   mobile: { slot: 'banner' },
+  //   tablet: { slot: 'banner' },
+  //   desktop: { slot: 'banner' }
+  // })
   interactiveMap.addButton('help', {
     label: 'Help',
     href: 'https://google.co.uk',
