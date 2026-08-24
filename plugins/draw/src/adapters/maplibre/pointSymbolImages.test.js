@@ -258,4 +258,57 @@ describe('refreshAllPointSymbols', () => {
     await refreshAllPointSymbols({ draw, mapProvider, map })
     expect(mapProvider.addSymbolsToMap).not.toHaveBeenCalled()
   })
+
+  // A style change re-resolves every point concurrently; each one's addSymbolsToMap()
+  // settles on its own schedule. A single combined draw.add() (rather than one call per
+  // point) is what keeps mapbox-gl-draw's debounced render from ever painting one point's
+  // fresh data alongside another's still-stale, now-unregistered image id — see
+  // refreshAllPointSymbols's own comment.
+  it('batches every resolved point into a single draw.add() call, not one per point', async () => {
+    const map = createMap()
+    const p1 = point('p1', { symbol: 'pin' })
+    const p2 = point('p2', { symbol: 'square' }, [3, 4])
+    const draw = createDraw([p1, p2])
+    // Stagger completion — p2 resolves after p1 to simulate genuinely concurrent, unevenly
+    // timed rasterisation.
+    let resolveP1, resolveP2
+    const mapProvider = {
+      addSymbolsToMap: jest.fn((configs) => new Promise((resolve) => {
+        const target = configs[0].symbol === 'pin' ? (v) => { resolveP1 = v } : (v) => { resolveP2 = v }
+        target(resolve)
+      }))
+    }
+
+    const pending = refreshAllPointSymbols({ draw, mapProvider, map })
+    resolveP2()
+    await Promise.resolve()
+    resolveP1()
+    await pending
+
+    expect(draw.add).toHaveBeenCalledTimes(1)
+    const [{ type, features }] = draw.add.mock.calls[0]
+    expect(type).toBe('FeatureCollection')
+    expect(features.map((f) => f.id).sort()).toEqual(['p1', 'p2'])
+  })
+
+  it('logs and still applies the points that did resolve when one point fails', async () => {
+    const map = createMap()
+    const p1 = point('p1', { symbol: 'pin' })
+    const p2 = point('p2', { symbol: 'not-a-real-symbol' })
+    const draw = createDraw([p1, p2])
+    const mapProvider = {
+      addSymbolsToMap: jest.fn((configs) =>
+        configs[0].symbol === 'not-a-real-symbol' ? Promise.reject(new Error('rasterise failed')) : Promise.resolve()
+      )
+    }
+    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+
+    await refreshAllPointSymbols({ draw, mapProvider, map })
+
+    expect(consoleError).toHaveBeenCalledWith('[draw] failed to resolve point symbol', expect.any(Error))
+    expect(draw.add).toHaveBeenCalledTimes(1)
+    const [{ features }] = draw.add.mock.calls[0]
+    expect(features.map((f) => f.id)).toEqual(['p1'])
+    consoleError.mockRestore()
+  })
 })
