@@ -30,7 +30,6 @@ export const Key = ({
   if (!keyGroups?.length) {
     return (<EmptyKey text={noKeyItemText} />)
   }
-
   const [className, setClassName] = useState('im-c-map-key')
   useEffect(() => setClassName(hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName), [hasGroups])
 

@@ -4,6 +4,7 @@ import esriProvider from '/providers/beta/esri/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import createMapKeyPlugin from '/plugins/map-key/src/index.js'
+import createMenuPlugin from '/plugins/menu/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
@@ -463,6 +464,8 @@ const datasets = [
   datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
 
+const getCheckboxOnChangeHandler = (datasetId) => (checked) => datasetsPlugin.setDatasetVisibility(checked, { datasetId })
+
 const menu = [
   {
     id: 'dataset',
@@ -529,9 +532,9 @@ const menu = [
     type: 'checkbox',
     visibleWhen: true,
     items: [
-      { id: 'waterstorage', label: 'Water storage' },
-      { id: 'flooddefence', label: 'Flood defence' },
-      { id: 'mainrivers', label: 'Main rivers' },
+      { id: 'waterstorage', label: 'Water storage', handleOnChange: getCheckboxOnChangeHandler('waterstorage') },
+      { id: 'flooddefence', label: 'Flood defence', handleOnChange: getCheckboxOnChangeHandler('flooddefence') },
+      { id: 'mainrivers', label: 'Main rivers', handleOnChange: getCheckboxOnChangeHandler('mainrivers') },
     ]
   }
 ]
@@ -540,23 +543,23 @@ const datasetsPlugin = createDatasetsPlugin({
   manifest: {
     panels: [{
       id: 'datasetsLayers',
-      desktop: { open: true, slot: 'side', width: '280px', dismissible: false},
-      tablet: { slot: 'side', width: '280px', modal: true }
+      desktop: { slot: 'left-top', width: '280px', exclusive: false, },
+      tablet: { slot: 'left-top', width: '280px', modal: true }
     }],
-    buttons: [
-      {
-        id: 'datasetsLayers',
-        excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
-      }
-    ]
-  },
+    // buttons: [
+    //   {
+    //     id: 'datasetsLayers',
+    //     excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
+    //   }
+    // ]
+  },  
   globals: {
     opacityMode: 'global', // 'dataset', 'global' or 'multiply'
     opacity: 0.75,
     visible: true
   },
-  datasets,
-  menu
+  hasMenu: false,
+  datasets
 })
 
 const interactiveMap = new InteractiveMap('map', {
@@ -569,6 +572,22 @@ const interactiveMap = new InteractiveMap('map', {
   zoom: 13,
   plugins: [
     createMapKeyPlugin(),
+    createMenuPlugin({
+      manifest: {
+        panels: [{
+          id: 'menu',
+          desktop: { open: true, slot: 'side', width: '280px', dismissible: false, exclusive: false, },
+          tablet: { slot: 'side', width: '280px', modal: true }
+        }],
+        buttons: [
+          {
+            id: 'menuButton',
+            excludeWhen: ({ appState }) => (appState?.breakpoint === 'desktop'),
+          }
+        ]
+      },
+      menu
+    }),
     datasetsPlugin,
     mapStylesPlugin({
       mapStyles: vtsMapStyles27700,
