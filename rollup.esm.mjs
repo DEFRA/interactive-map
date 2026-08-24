@@ -308,6 +308,11 @@ const ALL_BUILDS = [
     entryPath: './plugins/map-key/src/index.js',
     outDir: 'plugins/map-key/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-map-key-plugin' : undefined
+  },
+  {
+    entryPath: './plugins/menu/src/index.js',
+    outDir: 'plugins/menu/dist/esm',
+    manualChunks: (id) => id.includes('/manifest') ? 'im-menu-plugin' : undefined
   }
 ]
 

@@ -145,6 +145,8 @@ const ALL_BUILDS = [
   { entryPath: './plugins/search/src/index.js', libraryPath: 'searchPlugin', outDir: 'plugins/search/dist/umd' },
   { entryPath: './plugins/interact/src/index.js', libraryPath: 'interactPlugin', outDir: 'plugins/interact/dist/umd' },
   { entryPath: './plugins/datasets/src/index.js', libraryPath: 'datasetsPlugin', outDir: 'plugins/datasets/dist/umd', cssOutDir: 'plugins/datasets/dist' },
+  { entryPath: './plugins/map-key/src/index.js', libraryPath: 'mapKeyPlugin', outDir: 'plugins/map-key/dist/umd', cssOutDir: 'plugins/map-key/dist' },
+  { entryPath: './plugins/menu/src/index.js', libraryPath: 'menuPlugin', outDir: 'plugins/menu/dist/umd', cssOutDir: 'plugins/menu/dist' },
   { entryPath: './plugins/beta/map-styles/src/index.js', libraryPath: 'mapStylesPlugin', outDir: 'plugins/beta/map-styles/dist/umd' },
   { entryPath: './plugins/draw/src/index.js', libraryPath: 'drawPlugin', outDir: 'plugins/draw/dist/umd' },
   { entryPath: './plugins/beta/draw-ml/src/index.js', libraryPath: 'drawMLPlugin', outDir: 'plugins/beta/draw-ml/dist/umd' },
