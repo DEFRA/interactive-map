@@ -494,4 +494,65 @@ describe('Dataset class', () => {
       expect(new Dataset(childDef).sourceLayer).toBe('parent_layer')
     })
   })
+
+  describe('isHiddenByInheritance', () => {
+    it('returns true for a sublayer whose parent is not visible', () => {
+      const parentDef = { id: 'parent', visible: false, style: {} }
+      const childDef = { id: 'child', parentId: 'parent', visible: true, style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).isHiddenByInheritance).toBe(true)
+    })
+
+    it('returns false for a sublayer whose parent is visible', () => {
+      const parentDef = { id: 'parent', visible: true, style: {} }
+      const childDef = { id: 'child', parentId: 'parent', visible: true, style: {} }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      expect(new Dataset(childDef).isHiddenByInheritance).toBe(false)
+    })
+
+    it('returns false for a top-level dataset when global visibility is true', () => {
+      const dataset = new Dataset({ id: 'top', visible: true, style: {} })
+      expect(dataset.isHiddenByInheritance).toBe(false)
+    })
+  })
+
+  describe('isLocallyVisible', () => {
+    it('returns the raw visible flag from the definition when not visible', () => {
+      const dataset = new Dataset({ visible: false })
+      expect(dataset.isLocallyVisible).toBe(false)
+    })
+
+    it('returns undefined when visible is not set and dataset is not visible', () => {
+      const dataset = new Dataset({})
+      expect(dataset.isLocallyVisible).toBeUndefined()
+    })
+
+    it('returns true when isVisible is truthy (subclass override scenario)', () => {
+      const dataset = new Dataset({ visible: false })
+      Object.defineProperty(dataset, 'isVisible', { get: () => true, configurable: true })
+      expect(dataset.isLocallyVisible).toBe(true)
+    })
+  })
+
+  describe('dynamicGeoJSON getter', () => {
+    it('returns a DynamicGeoJson with idProperty set', () => {
+      const dataset = new Dataset({
+        id: 'parcels',
+        dynamicGeoJSON: { url: 'http://example.com', idProperty: 'parcel_id' }
+      })
+      const dg = dataset.dynamicGeoJSON
+      expect(dg.source.promoteId).toBe('parcel_id')
+      expect(dg.source.generateId).toBeUndefined()
+    })
+
+    it('returns a DynamicGeoJson with generateId when no idProperty', () => {
+      const dataset = new Dataset({
+        id: 'parcels',
+        dynamicGeoJSON: { url: 'http://example.com' }
+      })
+      const dg = dataset.dynamicGeoJSON
+      expect(dg.source.generateId).toBe(true)
+      expect(dg.source.promoteId).toBeUndefined()
+    })
+  })
 })

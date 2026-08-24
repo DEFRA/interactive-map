@@ -172,6 +172,29 @@ describe('SET_DATASET_VISIBILITY', () => {
     expect(logger.error).toHaveBeenCalledWith(expect.stringContaining("'unknown'"))
     expect(result).toBe(state)
   })
+
+  it('returns unchanged state when visibility already matches', () => {
+    const state = makeStateWithDataset('roads')
+    const result = actions.SET_DATASET_VISIBILITY(state, { datasetId: 'roads', visible: true })
+    expect(result).toBe(state)
+  })
+})
+
+// ─── SET_MENU ────────────────────────────────────────────────────────────────
+
+describe('SET_MENU', () => {
+  it('sets menu from payload', () => {
+    const state = makeState()
+    const menu = [{ id: 'layers', items: [] }]
+    const result = actions.SET_MENU(state, { menu })
+    expect(result.menu).toBe(menu)
+  })
+
+  it('does not add to actionsArray', () => {
+    const state = makeState()
+    const result = actions.SET_MENU(state, { menu: [] })
+    expect(result.actionsArray).toEqual([])
+  })
 })
 
 // ─── SET_GLOBAL_VISIBILITY ────────────────────────────────────────────────────
