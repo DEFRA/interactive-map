@@ -10,7 +10,7 @@ import { unselectFeature } from './api/unselectFeature.js'
 import { selectMarker } from './api/selectMarker.js'
 import { unselectMarker } from './api/unselectMarker.js'
 
-const SELECT_FEATURES_GROUP = 'Select features'
+const SELECT_FEATURES_GROUP = 'Select'
 
 export const manifest = {
   InitComponent: InteractInit,

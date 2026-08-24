@@ -74,6 +74,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
         id: control.id,
         type: 'control',
         order: control[breakpoint]?.order ?? 0,
+        tab: control[breakpoint]?.tab,
         element
       }
     })

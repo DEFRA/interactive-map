@@ -170,6 +170,50 @@ describe('mapPanels', () => {
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('p1'))
   })
 
+  it('orders multiple injected controls even when the panel has no render (regression: previously returned mapControls output unordered)', () => {
+    mapControls.mockReturnValue([
+      { id: 'first', order: 2, element: <span>first</span> },
+      { id: 'second', order: 1, element: <span>second</span> }
+    ])
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    const result = map()
+    expect(result[0].element.props.items.map(i => i.id)).toEqual(['second', 'first'])
+  })
+
+  describe('tabs', () => {
+    it('does not build a tabs list when everything shares one (or no) tab', () => {
+      const renderFn = () => <div>child</div>
+      mapControls.mockReturnValue([{ id: 'injected1', order: 0, element: <span>injected</span> }])
+      defaultAppState.panelConfig = ({ p1: { ...baseConfig, render: renderFn } })
+      const result = map()
+      expect(result[0].element.props.tabs).toBeUndefined()
+      expect(result[0].element.props.items).toBeDefined()
+    })
+
+    it('groups the panel\'s own content and an injected control into separate tabs', () => {
+      const renderFn = () => <div>child</div>
+      mapControls.mockReturnValue([{ id: 'injected1', order: 0, tab: 'Injected', element: <span>injected</span> }])
+      defaultAppState.panelConfig = ({
+        p1: { ...baseConfig, render: renderFn, desktop: { slot: 'header', order: 1, tab: 'Own' } }
+      })
+      const result = map()
+      expect(result[0].element.props.items).toBeUndefined()
+      const tabNames = result[0].element.props.tabs.map(t => t.name)
+      expect(tabNames.sort()).toEqual(['Injected', 'Own'])
+    })
+
+    it('falls back to the panel\'s own label for its content\'s implicit tab', () => {
+      const renderFn = () => <div>child</div>
+      mapControls.mockReturnValue([{ id: 'injected1', order: 0, tab: 'Injected', element: <span>injected</span> }])
+      defaultAppState.panelConfig = ({
+        p1: { ...baseConfig, render: renderFn, label: 'Map styles' }
+      })
+      const result = map()
+      const tabNames = result[0].element.props.tabs.map(t => t.name)
+      expect(tabNames).toContain('Map styles')
+    })
+  })
+
   it('returns correct structure and defaults', () => {
     defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
     const result = map()

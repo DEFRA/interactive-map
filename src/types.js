@@ -40,6 +40,15 @@
  * different plugin. The panel's own content and every control targeting it are ordered together
  * via `order`. Only supported by panels with a `render` component — a panel using static `html`
  * can't host injected controls, since `dangerouslySetInnerHTML` owns its body's children.
+ *
+ * @property {string} [tab]
+ * Groups this item into a tab within its target panel. Two items share a tab by giving it the
+ * same `tab` string (case/whitespace-insensitive — compared kebab-cased); items with no `tab`
+ * share one implicit tab, labelled with the panel's own `label`. Tabs only render once this
+ * produces more than one distinct group — a panel with zero or one tab renders flat, with no
+ * tab UI at all. A tab's position and displayed label both come from whichever member ends up
+ * first once its own members are ordered by `order`, so there's no separate tab-order property
+ * to set. Like `order`, only respected for controls with a `render` component.
  */
 
 /**
@@ -66,6 +75,11 @@
  *
  * @property {string} slot
  * Slot identifier.
+ *
+ * @property {string} [tab]
+ * Groups the panel's own content into a tab alongside any controls injected into it — see
+ * `ControlBreakpointConfig.tab`. Optional even once tabs are active: the panel's own content
+ * falls back to an implicit tab labelled with the panel's `label` when omitted.
  *
  * @property {string} [width]
  * Panel width.

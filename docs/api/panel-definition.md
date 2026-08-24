@@ -133,3 +133,8 @@ Whether the panel is modal. A modal panel overlays the map and requires user int
 **Type:** `string`
 
 Panel width. Accepts any valid CSS width value (e.g., `'300px'`, `'50%'`).
+
+### `tab`
+**Type:** `string`
+
+Groups the panel's own content into a tab alongside any controls injected into it. Optional even once tabs are active — the panel's own content falls back to an implicit tab labelled with the panel's `label` when omitted. See [Panel Tabs](./slots.md#panel-tabs).

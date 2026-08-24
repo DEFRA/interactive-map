@@ -6,6 +6,7 @@ import { allowedSlots } from './slots.js'
 import { resolveTargetSlot, isModeAllowed, isConsumerHtml } from './slotHelpers.js'
 import { mapControls } from './mapControls.js'
 import { orderItems } from './orderItems.js'
+import { groupIntoTabs } from './groupIntoTabs.js'
 import { stringToKebab } from '../../utils/stringToKebab.js'
 import { logger } from '../../services/logger.js'
 
@@ -48,7 +49,7 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
     const cfg = panelConfig[panelId]?.[breakpoint]
     return cfg?.modal
   })
-  const allowedModalPanelId = modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null
+  const allowedModalPanelId = modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null // NOSONAR, .at() is only Chrome 90+
 
   return openPanelEntries.map(([panelId, { props, focusOnOpen }]) => {
     const config = panelConfig[panelId]
@@ -78,6 +79,7 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
     const pluginId = plugin?.id
 
     const html = pluginId ? evaluateProp(config.html, pluginId) : config.html
+    const label = evaluateProp(config.label, pluginId)
 
     return {
       id: panelId,
@@ -90,8 +92,8 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
           panelConfig={config}
           props={props}
           focusOnOpen={focusOnOpen}
-          items={buildPanelBodyItems({ panelId, config, props, plugin, pluginId, html, appState, evaluateProp })}
-          label={evaluateProp(config.label, pluginId)}
+          {...buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp })}
+          label={label}
           html={html}
         />
       )
@@ -101,12 +103,16 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
 }
 
 /**
- * Builds the ordered list of body items for a panel: its own render content (if any) plus
- * any controls registered against its `<panelId>-panel` slot by other plugins. Static-html
- * panels don't build an items list — dangerouslySetInnerHTML can't host injected controls,
+ * Builds a panel's body: its own render content (if any) plus any controls registered against
+ * its `<panelId>-panel` slot by other plugins, merged with `orderItems` — or, when two or more
+ * distinct `tab`s are present among them, grouped into tabs instead (see `groupIntoTabs`).
+ * Static-html panels don't build a body — dangerouslySetInnerHTML can't host injected content,
  * so any controls targeting one are silently skipped (with a dev warning).
+ *
+ * @returns {{ items?: object[], tabs?: object[] }} spread directly onto `<Panel>` — exactly one
+ *   of `items`/`tabs` is set (or neither, for a static-html panel).
  */
-function buildPanelBodyItems ({ panelId, config, props, plugin, pluginId, html, appState, evaluateProp }) {
+function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp }) {
   const injectedItems = mapControls({
     slot: `${stringToKebab(panelId)}-panel`,
     appState,
@@ -118,21 +124,22 @@ function buildPanelBodyItems ({ panelId, config, props, plugin, pluginId, html, 
     if (process.env.NODE_ENV !== 'production' && injectedItems.length > 0) {
       logger.warn(`Panel "${panelId}" uses static html — controls targeting its slot are not rendered.`)
     }
-    return undefined
+    return {}
   }
 
-  if (!config.render) {
-    return injectedItems
+  let ownItem = null
+  if (config.render) {
+    const WrappedChild = withPluginContexts(config.render, {
+      ...props,
+      pluginId,
+      pluginConfig: plugin?.config
+    })
+    ownItem = { id: panelId, order: 0, tab: bpConfig.tab, element: <WrappedChild {...props} /> }
   }
 
-  const WrappedChild = withPluginContexts(config.render, {
-    ...props,
-    pluginId,
-    pluginConfig: plugin?.config
-  })
+  const allItems = ownItem ? [ownItem, ...injectedItems] : injectedItems
 
-  return orderItems([
-    { id: panelId, order: 0, element: <WrappedChild {...props} /> },
-    ...injectedItems
-  ])
+  const tabs = groupIntoTabs({ items: allItems, fallbackLabel: label })
+
+  return tabs ? { tabs } : { items: orderItems(allItems) }
 }

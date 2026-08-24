@@ -5,6 +5,7 @@ import { stringToKebab } from '../../../utils/stringToKebab.js'
 import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 import { Icon } from '../Icon/Icon'
+import { Tabs } from '../Tabs/Tabs.jsx'
 
 const computePanelState = (bpConfig, triggeringElement, focus, focusOnOpen) => {
   const isAside = bpConfig.slot === 'side' && bpConfig.open && !bpConfig.modal
@@ -59,6 +60,8 @@ const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }
 // Renders the panel body's content: an ordered list of items (own content plus any
 // controls injected via the `<panelId>-panel` slot convention), or the legacy single
 // WrappedChild/children shape for callers that don't build an items list (e.g. HtmlElementHost).
+// Tabbed content is handled separately by Panel itself — see the tabs handling below — since
+// the tablist needs to render outside this component's scrollable body, not inside it.
 const BodyContent = ({ items, WrappedChild, props, children }) => { // NOSONAR
   if (items) {
     return items.map(item => <React.Fragment key={item.id}>{item.element}</React.Fragment>)
@@ -66,9 +69,44 @@ const BodyContent = ({ items, WrappedChild, props, children }) => { // NOSONAR
   return WrappedChild ? <WrappedChild {...props} /> : children
 }
 
+// Chooses between the three body shapes: static html, tabbed, or the flat BodyContent above.
+// .im-c-panel__body (bodyProps) always wraps everything, completely unchanged — same padding/
+// overflow/box role it's always had, which is also what the tablist and tabpanel need to pick
+// up their own inset from by simply being nested inside it. Only the scrollable-region
+// behaviour (ref/tabIndex/role/aria-labelledby) moves down onto <Tabs>' own tabpanel div via
+// panelProps when tabbed, since that's the part that should actually scroll/receive focus —
+// the tablist (rendered by <Tabs> itself, ahead of the tabpanel) stays outside that inner
+// scroll boundary so it can't scroll away with long tab content. The tabpanel's own focus ring
+// clearance (so it isn't flush against its content) is a CSS-only concern — see
+// Panel.module.scss's .im-c-tabs__panel override.
+const PanelBody = ({ innerHtmlProp, tabs, items, WrappedChild, props, children, bodyProps, panelBodySlot }) => { // NOSONAR
+  if (innerHtmlProp) {
+    return <div {...bodyProps} dangerouslySetInnerHTML={innerHtmlProp} /> // nosonar
+  }
+  const { className, ...scrollableProps } = bodyProps
+  if (tabs) {
+    return (
+      <div className={className} data-panel-slot={panelBodySlot}>
+        <Tabs
+          tabs={tabs.map(tab => ({
+            name: tab.name,
+            content: tab.items.map(item => <React.Fragment key={item.id}>{item.element}</React.Fragment>)
+          }))}
+          panelProps={scrollableProps}
+        />
+      </div>
+    )
+  }
+  return (
+    <div {...bodyProps} data-panel-slot={panelBodySlot}> {/* nosonar */}
+      <BodyContent items={items} WrappedChild={WrappedChild} props={props}>{children}</BodyContent>
+    </div>
+  )
+}
+
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, items, label, html, children, isOpen = true, rootRef }) => {
+export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, items, tabs, label, html, children, isOpen = true, rootRef }) => {
   const { id } = useConfig()
   const { dispatch, breakpoint, layoutRefs, interfaceType } = useApp()
 
@@ -141,13 +179,17 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
         </button>
       )}
 
-      {innerHtmlProp
-        ? <div {...bodyProps} dangerouslySetInnerHTML={innerHtmlProp} /> // nosonar
-        : (
-          <div {...bodyProps} data-panel-slot={panelBodySlot}> {/* nosonar */}
-            <BodyContent items={items} WrappedChild={WrappedChild} props={props}>{children}</BodyContent>
-          </div>
-          )}
+      <PanelBody
+        innerHtmlProp={innerHtmlProp}
+        tabs={tabs}
+        items={items}
+        WrappedChild={WrappedChild}
+        props={props}
+        bodyProps={bodyProps}
+        panelBodySlot={panelBodySlot}
+      >
+        {children}
+      </PanelBody>
     </div>
   )
 }

@@ -59,15 +59,39 @@
 .im-c-panel__body {
     padding: 0 var(--panel-margin) var(--panel-margin);
     overflow: auto;
+    // display: flex so a tabbed .im-c-tabs child (see Tabs.module.scss) has a flex context to
+    // size itself within — its tablist keeps its natural height, only its tabpanel grows and
+    // scrolls internally, rather than this whole element (tablist included) scrolling as one.
+    // A single non-tabbed child is unaffected — one flex item in a column sizes the same as a
+    // plain block child would.
+    display: flex;
+    flex-direction: column;
+}
 
-    &[data-focus-visible="true"] {
-        outline: var(--scrollable-outline);
-        outline-offset: var(--scrollable-outline-offset);
-        box-shadow: var(--scrollable-box-shadow);
+// The tabpanel (see Tabs.module.scss) is its own scroll/focus region nested inside this
+// already-padded wrapper — its content already sits correctly inset just by being nested, but
+// its own border box (where the focus ring is drawn, and where its own overflow: auto clips)
+// would otherwise sit tight against that content, with no room of its own. Reaching out with a
+// negative margin — matching this wrapper's own padding — and re-padding by the same amount
+// gives it that room without moving the content: the negative margin and the padding cancel
+// out visually, but the border box itself is now larger. This is a panel-specific override —
+// <Tabs> used anywhere else would need the same treatment if this clearance matters there too.
+.im-c-panel__body .im-c-tabs__panel {
+    margin: 0 calc(-1 * var(--panel-margin)) calc(-1 * var(--panel-margin));
+    padding: 0 var(--panel-margin) var(--panel-margin);
+}
 
-        @media (-ms-high-contrast:active), screen and (forced-colors: active) {
-            outline-width: 4px;
-        }
+// The scrollable-region focus ring — normally on .im-c-panel__body itself, but when tabbed,
+// the tabpanel (see Tabs.module.scss's .im-c-tabs__panel) is the element that's actually
+// focusable/scrollable instead (see Panel.jsx's PanelBody), so it needs the same treatment.
+.im-c-panel__body[data-focus-visible="true"],
+.im-c-tabs__panel[data-focus-visible="true"] {
+    outline: var(--scrollable-outline);
+    outline-offset: var(--scrollable-outline-offset);
+    box-shadow: var(--scrollable-box-shadow);
+
+    @media (-ms-high-contrast:active), screen and (forced-colors: active) {
+        outline-width: 4px;
     }
 }
 

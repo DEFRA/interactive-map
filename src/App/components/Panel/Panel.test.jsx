@@ -69,7 +69,7 @@ describe('Panel', () => {
       const { container } = renderPanel()
 
       // 2. Target by class to avoid role collision with the parent panel
-      const body = container.querySelector('.im-c-panel__body')
+      const body = container.querySelector('[data-panel-slot]')
 
       expect(body).toHaveAttribute('tabIndex', '0')
       expect(body).toHaveAttribute('role', 'region')
@@ -219,7 +219,7 @@ describe('Panel', () => {
 
     it('stamps data-panel-slot on the items-capable body, for controls DOM-projected via the JS API', () => {
       const { container } = renderPanel({}, { items: [{ id: 'a', element: <p>Item</p> }] })
-      const body = container.querySelector('.im-c-panel__body')
+      const body = container.querySelector('[data-panel-slot]')
       expect(body).toHaveAttribute('data-panel-slot', 'settings-panel')
     })
 
@@ -227,6 +227,85 @@ describe('Panel', () => {
       const { container } = renderPanel({}, { html: '<p>HTML content</p>' })
       const body = container.querySelector('.im-c-panel__body')
       expect(body).not.toHaveAttribute('data-panel-slot')
+    })
+
+    describe('tabs', () => {
+      const tabs = [
+        { name: 'First', items: [{ id: 'a', element: <p>First content</p> }] },
+        { name: 'Second', items: [{ id: 'b', element: <p>Second content</p> }] }
+      ]
+
+      it('renders items grouped into tabs when the tabs prop is provided', () => {
+        renderPanel({}, { tabs })
+        expect(screen.getByRole('tablist')).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: 'First' })).toBeInTheDocument()
+        expect(screen.getByRole('tab', { name: 'Second' })).toBeInTheDocument()
+        expect(screen.getByText('First content')).toBeInTheDocument()
+      })
+
+      it('switches tab content when a different tab is activated', () => {
+        renderPanel({}, { tabs })
+        fireEvent.click(screen.getByRole('tab', { name: 'Second' }))
+        expect(screen.getByText('Second content')).toBeVisible()
+        expect(screen.getByText('First content')).not.toBeVisible()
+      })
+
+      it('prefers tabs over items/WrappedChild/children when provided', () => {
+        renderPanel({}, {
+          tabs,
+          items: [{ id: 'x', element: <p>Flat item</p> }],
+          WrappedChild: () => <p>Wrapped</p>,
+          children: <p>Child content</p>
+        })
+        expect(screen.getByText('First content')).toBeInTheDocument()
+        expect(screen.queryByText('Flat item')).not.toBeInTheDocument()
+        expect(screen.queryByText('Wrapped')).not.toBeInTheDocument()
+        expect(screen.queryByText('Child content')).not.toBeInTheDocument()
+      })
+
+      it('keeps the panel body wrapper (padding, data-panel-slot) around the whole tabs block', () => {
+        const { container } = renderPanel({}, { tabs })
+        const body = container.querySelector('[data-panel-slot]')
+        expect(body).toHaveAttribute('data-panel-slot', 'settings-panel')
+        expect(body.querySelector('[role="tablist"]')).not.toBeNull()
+        expect(body.querySelector('[role="tabpanel"]')).not.toBeNull()
+      })
+
+      it('keeps the outer wrapper as the normal, unconditional im-c-panel__body — the tablist and tabpanel pick up their inset by being nested inside it, same as any other panel content', () => {
+        const { container } = renderPanel({}, { tabs })
+        const body = container.querySelector('[data-panel-slot]')
+        expect(body).toHaveClass('im-c-panel__body')
+      })
+
+      it('keeps the tablist outside the scrollable tabpanel, so it does not scroll away with long tab content', () => {
+        const { container } = renderPanel({}, { tabs })
+        const tabpanel = container.querySelector('[role="tabpanel"]')
+        expect(tabpanel.querySelector('[role="tablist"]')).toBeNull()
+      })
+
+      it('places the tablist before the tabpanel in DOM order, so keyboard focus reaches it first', () => {
+        const { container } = renderPanel({}, { tabs })
+        const tablist = container.querySelector('[role="tablist"]')
+        const tabpanel = container.querySelector('[role="tabpanel"]')
+        // DOCUMENT_POSITION_FOLLOWING (4) means `tabpanel` comes after `tablist`
+        // eslint-disable-next-line no-bitwise
+        expect(tablist.compareDocumentPosition(tabpanel) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+      })
+
+      it('moves the scrollable-region treatment onto the tabpanel itself, not the outer wrapper', () => {
+        useIsScrollable.mockReturnValue(true)
+
+        const { container } = renderPanel({}, { tabs })
+        const body = container.querySelector('[data-panel-slot]')
+        const tabpanel = screen.getByRole('tabpanel')
+
+        expect(tabpanel).toHaveAttribute('tabIndex', '0')
+        expect(body).not.toHaveAttribute('tabIndex')
+        expect(body).not.toHaveAttribute('role', 'region')
+        expect(tabpanel).not.toHaveAttribute('data-panel-slot')
+
+        useIsScrollable.mockReturnValue(false)
+      })
     })
   })
 })
