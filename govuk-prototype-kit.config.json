@@ -66,6 +66,8 @@
     "/plugins/draw/dist",
     "/providers/beta/open-names/dist",
     "/plugins/datasets/dist",
+    "/plugins/map-key/dist",
+    "/plugins/menu/dist",
     "/plugins/beta/map-styles/dist",
     "/plugins/beta/scale-bar/dist",
     "/plugins/beta/use-location/dist",
