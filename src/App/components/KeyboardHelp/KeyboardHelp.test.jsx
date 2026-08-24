@@ -116,11 +116,11 @@ describe('KeyboardHelp — tabs', () => {
     expect(screen.getByRole('tab', { name: 'Group A' })).toHaveAttribute('aria-selected', 'true')
   })
 
-  it('shows only the active tab panel content', () => {
+  it('shows only the active tab panel content — the inactive one stays in the DOM (so its aria-controls target exists) but hidden', () => {
     getKeyboardShortcuts.mockReturnValue(allShortcuts)
     render(<KeyboardHelp context='viewport' />)
-    expect(screen.getByText('Move')).toBeInTheDocument()
-    expect(screen.queryByText('Select')).not.toBeInTheDocument()
+    expect(screen.getByText('Move')).toBeVisible()
+    expect(screen.getByText('Select')).not.toBeVisible()
   })
 
   it('switches tab and content on click', () => {
@@ -128,8 +128,8 @@ describe('KeyboardHelp — tabs', () => {
     render(<KeyboardHelp context='viewport' />)
     fireEvent.click(screen.getByRole('tab', { name: SELECT_FEATURES_GROUP }))
     expect(screen.getByRole('tab', { name: SELECT_FEATURES_GROUP })).toHaveAttribute('aria-selected', 'true')
-    expect(screen.getByText('Select')).toBeInTheDocument()
-    expect(screen.queryByText('Move')).not.toBeInTheDocument()
+    expect(screen.getByText('Select')).toBeVisible()
+    expect(screen.getByText('Move')).not.toBeVisible()
   })
 
   it('ungrouped shortcuts default to Navigate group', () => {

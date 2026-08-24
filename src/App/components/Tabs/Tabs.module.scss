@@ -4,9 +4,18 @@
 // Component: Tabs
 // ===================================================
 
+// Lets a caller (e.g. Panel.jsx) give Tabs a bounded height — only .im-c-tabs__panel scrolls.
+.im-c-tabs {
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    flex: 1 1 auto;
+}
+
 .im-c-tabs__list {
     position: relative;
     display: flex;
+    flex: 0 0 auto;
     flex-wrap: wrap;
     padding: 0;
     margin: 0;
@@ -14,8 +23,14 @@
     z-index: 1;
 }
 
+.im-c-tabs__panel {
+    flex: 1 1 auto;
+    overflow: auto;
+}
+
 .im-c-tabs__tab {
     position: relative;
+    z-index: 0; // scopes the active tab's ::before (below) to this button's own stacking context
     appearance: none;
     background: var(--button-hover-color);
     border: 1px solid transparent;
@@ -42,12 +57,24 @@
         }
     }
 
+    // The selected tab looks taller via an absolutely-positioned ::before rather than changing
+    // the button's own box, so the label never moves and the tablist's height never shifts.
     &[aria-selected='true'] {
-        background: var(--background-color);
-        border-color: var(--app-border-color);
-        border-bottom-color: var(--background-color);
-        margin-top: 0;
-        margin-bottom: -1px;
+        z-index: 1; // sit above unselected siblings
+        background: transparent;
+
+        &::before {
+            content: '';
+            position: absolute;
+            z-index: -1;
+            top: -5px;
+            right: -1px;
+            bottom: -6px;
+            left: -1px;
+            background: var(--background-color);
+            border: 1px solid var(--app-border-color);
+            border-bottom-color: var(--background-color);
+        }
     }
 
     &:focus .im-c-tabs__label {

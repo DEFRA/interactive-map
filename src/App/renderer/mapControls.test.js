@@ -180,4 +180,20 @@ describe('mapControls', () => {
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result).toEqual([])
   })
+
+  it('passes through the tab field from the breakpoint config', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', tab: 'Styles' }, includeModes: ['view'] }
+    })
+    const result = mapControls({ slot: 'map-styles-panel', appState: defaultAppState, evaluateProp: (p) => p })
+    expect(result[0].tab).toBe('Styles')
+  })
+
+  it('leaves tab undefined when not set on the breakpoint config', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['view'] }
+    })
+    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
+    expect(result[0].tab).toBeUndefined()
+  })
 })

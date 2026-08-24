@@ -78,3 +78,11 @@ The [slot](./slots.md) where the control should appear at this breakpoint. Slots
 **Optional**
 
 Position within the slot (or, when targeting a panel, within that panel's body). See [Ordering](./slots.md#ordering).
+
+---
+
+### `tab`
+**Type:** `string`
+**Optional**
+
+Groups this control into a tab within its target panel, alongside the panel's own content and any other controls targeting it. See [Panel Tabs](./slots.md#panel-tabs).

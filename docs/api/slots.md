@@ -117,6 +117,29 @@ Rendering is flat: the framework doesn't wrap injected controls in any extra mar
 > [!NOTE]
 > Only supported by panels with a `render` component — a panel using static `html` can't host injected controls. `order` is only respected for controls with a `render` component; controls registered with static `html` via [`addControl()`](../api.md#addcontrolid-config) always render after everything else, in registration order.
 
+## Panel Tabs
+
+A panel's content — its own, and anything injected into it — can be split into tabs by giving items a `tab`:
+
+```js
+{
+  desktop: { slot: 'map-styles-panel', tab: 'Styles', order: 1 }
+}
+```
+
+Two items land in the same tab by giving it the same `tab` string (compared case/whitespace-insensitively). Items with no `tab` share one implicit tab, labelled with the panel's own `label`. This makes adding a tab and adding to an existing one the same operation — whichever happens falls out of whether that name is already in use, with no separate step to register the tab itself.
+
+Tabs only appear once this produces **more than one** distinct group — a panel with everything in one tab (or nothing tagged at all) renders exactly as it would without this section, flat, no tab strip. A tab's position among other tabs, and its displayed label, both come from whichever of its members ends up first once ordered by `order` — there's no separate property for ordering or naming a tab itself.
+
+```js
+// Two plugins contributing to the same panel, each in its own tab
+manifestA.controls = [{ id: 'styles', desktop: { slot: 'map-styles-panel', tab: 'Styles' } }]
+manifestB.controls = [{ id: 'sizes', desktop: { slot: 'map-styles-panel', tab: 'Map size' } }]
+```
+
+> [!NOTE]
+> `tab` follows the same support as `order` — only respected for controls with a `render` component. A panel's own content can set `tab` too (see [PanelDefinition](./panel-definition.md#breakpoint-configuration)), and a control can vary its `tab` per breakpoint like any other breakpoint property, so a panel can stay flat on mobile while tabbed on desktop.
+
 ## Modal Panels
 
 Setting `modal: true` in a panel's breakpoint config adds modal behaviour to the panel. Internally the panel is moved to a dedicated modal slot to ensure correct stacking order, but it is visually positioned to match its configured slot — for example, a button-adjacent panel will still appear next to its button — and gains a greyed-out backdrop, constrained keyboard focus, and other modal semantics.
