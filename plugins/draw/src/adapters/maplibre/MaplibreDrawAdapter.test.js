@@ -953,6 +953,14 @@ describe('_handleModeChange', () => {
 })
 
 describe('_handleStyleData', () => {
+  test('does nothing when the map has no style yet (removed, or mid-teardown)', () => {
+    const { map } = setup()
+    map.getStyle.mockReturnValue(undefined)
+    expect(() => onHandler(map, STYLE_DATA_EVENT)()).not.toThrow()
+    expect(map.moveLayer).not.toHaveBeenCalled()
+    expect(map.setLayoutProperty).not.toHaveBeenCalled()
+  })
+
   test('does nothing when there are no layers', () => {
     const { map } = setup()
     map.getStyle.mockReturnValue({ layers: undefined })
