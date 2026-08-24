@@ -48,12 +48,12 @@ describe('MenuCheckbox', () => {
   describe('item class', () => {
     it('does not include the --checked modifier when checked is true', () => {
       const { container } = renderCheckbox({ checked: true })
-      expect(container.firstChild.className).not.toContain('im-c-menu-layers__item--checked')
+      expect(container.firstChild.className).not.toContain('im-c-menu__item--checked')
     })
 
     it('includes the --checked modifier when checked is false', () => {
       const { container } = renderCheckbox({ checked: false })
-      expect(container.firstChild.className).toContain('im-c-menu-layers__item--checked')
+      expect(container.firstChild.className).toContain('im-c-menu__item--checked')
     })
   })
 

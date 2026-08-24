@@ -36,20 +36,24 @@ const makePluginState = (menu = [], extra = {}) => ({
   ...extra
 })
 
+const appConfig = {
+  id: 'map'
+}
+
 describe('Menu', () => {
   describe('container class', () => {
     it('renders the base container class when no groups have a groupLabel', () => {
       const pluginState = makePluginState([{ id: 'g1', type: 'checkbox', items: [] }])
-      const { container } = render(<Menu pluginState={pluginState} />)
+      const { container } = render(<Menu pluginState={pluginState} appConfig={appConfig} />)
       const div = container.firstChild
-      expect(div.className).toBe('im-c-menu-layers')
+      expect(div.className).toBe('im-c-menu')
     })
 
     it('adds the --has-groups modifier when at least one group has a groupLabel', () => {
       const pluginState = makePluginState([{ id: 'g1', type: 'checkbox', groupLabel: 'My Group', items: [] }])
       const { container } = render(<Menu pluginState={pluginState} />)
       const div = container.firstChild
-      expect(div.className).toBe('im-c-menu-layers im-c-menu-layers--has-groups')
+      expect(div.className).toBe('im-c-menu im-c-menu--has-groups')
     })
   })
 
