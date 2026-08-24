@@ -556,3 +556,17 @@ describe('onMapSizeChange', () => {
     expect(symbolUpdates).toHaveLength(0)
   })
 })
+
+// ─── onMapStyleChange – dynamic source reapply ────────────────────────────────
+
+describe('onMapStyleChange with dynamic sources', () => {
+  beforeEach(async () => { await adapter.init() })
+
+  it('calls reapply() on each attached dynamic source after style change', async () => {
+    const source = { reapply: jest.fn() }
+    const sources = new Map([['parcels', source]])
+    adapter.attachDynamicSources(sources)
+    await adapter.onMapStyleChange(MAP_STYLE, new Map())
+    expect(source.reapply).toHaveBeenCalled()
+  })
+})

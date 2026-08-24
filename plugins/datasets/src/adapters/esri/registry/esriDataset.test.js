@@ -70,4 +70,59 @@ describe('EsriDataset', () => {
       expect(datasetRegistry.getDataset('land-covers-other').useServerStyle).toBe(false)
     })
   })
+
+  // ─── renderer ───────────────────────────────────────────────────────────────
+
+  describe('renderer', () => {
+    beforeEach(() => {
+      datasetRegistry.mockExtend({
+        'fs-no-renderer': { id: 'fs-no-renderer', type: 'FeatureService' },
+        'fs-with-renderer': {
+          id: 'fs-with-renderer',
+          type: 'FeatureService',
+          style: { renderer: { type: 'simple', symbol: { type: 'simple-fill' } } }
+        },
+        'fs-with-color': {
+          id: 'fs-with-color',
+          type: 'FeatureService',
+          style: {
+            renderer: {
+              type: 'simple',
+              symbol: {
+                color: { outdoor: '#ff0000', dark: '#ffffff' },
+                outline: { color: { outdoor: '#000000', dark: '#888888' } }
+              }
+            }
+          }
+        },
+        'non-feature-service': { id: 'non-feature-service', type: 'VectorTileService' }
+      })
+    })
+
+    it('returns undefined for non-FeatureService datasets', () => {
+      expect(datasetRegistry.getDataset('non-feature-service').renderer).toBeUndefined()
+    })
+
+    it('returns undefined for FeatureService dataset with no renderer definition', () => {
+      expect(datasetRegistry.getDataset('fs-no-renderer').renderer).toBeUndefined()
+    })
+
+    it('returns cloned renderer object for dataset with renderer', () => {
+      const ds = datasetRegistry.getDataset('fs-with-renderer')
+      const renderer = ds.renderer
+      expect(renderer).toEqual({ type: 'simple', symbol: { type: 'simple-fill' } })
+    })
+
+    it('resolves symbol.color via getValueForStyle', () => {
+      const ds = datasetRegistry.getDataset('fs-with-color')
+      const renderer = ds.renderer
+      expect(renderer.symbol.color).toBe('#ff0000')
+    })
+
+    it('resolves symbol.outline.color via getValueForStyle', () => {
+      const ds = datasetRegistry.getDataset('fs-with-color')
+      const renderer = ds.renderer
+      expect(renderer.symbol.outline.color).toBe('#000000')
+    })
+  })
 })

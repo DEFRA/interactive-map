@@ -8,6 +8,7 @@ jest.mock('../registry/datasetRegistry.js', () => ({
     attach: jest.fn(),
     attachCreateDataset: jest.fn(),
     forEachDataset: jest.fn(),
+    invalidateKeyItemsOnMenuStateChange: jest.fn(),
     _invalidateCache: jest.fn()
   }
 }))
@@ -20,6 +21,7 @@ const makeAdapter = (overrides = {}) => ({
   onMapStyleChange: jest.fn(),
   onMapSizeChange: jest.fn(),
   setData: jest.fn(),
+  applyGlobalVisibility: jest.fn(),
   destroy: jest.fn(),
   createDataset: jest.fn(),
   ...overrides
@@ -253,5 +255,43 @@ describe('returned API', () => {
     const args = makeArgs()
     const instance = initialiseDatasets(args)
     expect(() => instance.clearDatasetCache('unknown')).not.toThrow()
+  })
+})
+
+// ─── onUpdate callback ────────────────────────────────────────────────────────
+
+describe('onUpdate callback', () => {
+  it('calls adapter.setData when the onUpdate callback fires', async () => {
+    const mockSource = { destroy: jest.fn(), refresh: jest.fn(), clear: jest.fn(), getFeatureCount: jest.fn() }
+    let capturedOnUpdate
+    createDynamicSource.mockImplementation(({ onUpdate }) => {
+      capturedOnUpdate = onUpdate
+      return mockSource
+    })
+    const mockDataset = { id: 'parcels', hasDynamicGeoJSON: true, dynamicGeoJSON: {} }
+    datasetRegistry.forEachDataset.mockImplementation(cb => cb(mockDataset))
+
+    const args = makeArgs()
+    initialiseDatasets(args)
+    await Promise.resolve()
+
+    const geojson = { type: 'FeatureCollection', features: [] }
+    capturedOnUpdate('parcels', geojson)
+    expect(args.adapter.setData).toHaveBeenCalledWith('parcels', geojson)
+  })
+})
+
+// ─── menu:changed handler ─────────────────────────────────────────────────────
+
+describe('menu:changed handler', () => {
+  it('calls invalidateKeyItemsOnMenuStateChange and applyGlobalVisibility', () => {
+    const args = makeArgs()
+    initialiseDatasets(args)
+
+    const menuState = { items: [{ id: 'roads', visible: true }] }
+    args.eventBus._handlers['menu:changed'](menuState)
+
+    expect(datasetRegistry.invalidateKeyItemsOnMenuStateChange).toHaveBeenCalledWith(menuState)
+    expect(args.adapter.applyGlobalVisibility).toHaveBeenCalled()
   })
 })

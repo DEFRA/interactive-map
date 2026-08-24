@@ -29,6 +29,12 @@ jest.mock('@arcgis/core/layers/GroupLayer.js', () =>
     }
   })
 )
+jest.mock('@arcgis/core/layers/FeatureLayer.js', () =>
+  jest.fn().mockImplementation((opts = {}) => ({
+    ...opts,
+    when: jest.fn().mockResolvedValue(undefined)
+  }))
+)
 
 // Uncovered: 124,145-149
 
@@ -288,6 +294,175 @@ describe('esriLayerAdapter', () => {
       const applyStyleLayerVisibilitySpy = jest.spyOn(adapter, '_applyStyleLayerVisibility')
       await adapter.applyGlobalVisibility()
       expect(applyStyleLayerVisibilitySpy.mock.calls).toHaveLength(7)
+    })
+  })
+
+  // ─── _reorderLayers with sketch layers ───────────────────────────────────────
+
+  describe('_reorderLayers', () => {
+    it('reorders sketch layers to the top when allLayers is present', () => {
+      const sketchLayer = { id: 'ketchLayer-0' }
+      const normalLayer = { id: 'roads' }
+      map.allLayers = { items: [normalLayer, sketchLayer] }
+      map.reorder = jest.fn()
+
+      adapter._reorderLayers()
+
+      expect(map.reorder).toHaveBeenCalledWith(sketchLayer, 2)
+      expect(map.reorder).not.toHaveBeenCalledWith(normalLayer, expect.anything())
+    })
+  })
+
+  // ─── _addFeatureLayers ────────────────────────────────────────────────────────
+
+  describe('_addFeatureLayers', () => {
+    beforeEach(() => {
+      datasetRegistry.mockExtend({
+        'feature-service': {
+          id: 'feature-service',
+          type: 'FeatureService',
+          tiles: 'https://example.com/featureserver/0',
+          visible: true,
+          style: {}
+        }
+      })
+    })
+
+    it('adds a FeatureLayer to the map and populates internal state', async () => {
+      const dataset = datasetRegistry.getDataset('feature-service')
+      await adapter._addFeatureLayers(dataset)
+      expect(adapter._mapVisibilityLayers['feature-service']).toBeDefined()
+      expect(adapter._mapOpacityLayers['feature-service']).toBeDefined()
+      expect(map.add).toHaveBeenCalled()
+    })
+
+    it('logs an error and returns null when map.add throws', async () => {
+      const { logger } = require('../../../../../src/services/logger.js')
+      const error = new Error('map add failed')
+      map.add = jest.fn().mockImplementation(() => { throw error })
+
+      const dataset = datasetRegistry.getDataset('feature-service')
+      const result = await adapter._addFeatureLayers(dataset)
+
+      expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('feature-service'), error)
+      expect(result).toBeNull()
+    })
+  })
+
+  // ─── _addLayers for FeatureService ───────────────────────────────────────────
+
+  describe('_addLayers for FeatureService type', () => {
+    it('delegates to _addFeatureLayers when dataset type is FeatureService', async () => {
+      datasetRegistry.mockExtend({
+        'fs-dataset': {
+          id: 'fs-dataset',
+          type: 'FeatureService',
+          tiles: 'https://example.com/fs/0',
+          visible: true,
+          style: {}
+        }
+      })
+      const addFeatureLayersSpy = jest.spyOn(adapter, '_addFeatureLayers')
+      const dataset = datasetRegistry.getDataset('fs-dataset')
+      await adapter._addLayers(dataset)
+      expect(addFeatureLayersSpy).toHaveBeenCalledWith(dataset)
+    })
+  })
+
+  // ─── _applyRegistryDatasetVisibility – visible=false branch ──────────────────
+
+  describe('_applyRegistryDatasetVisibility visible=false', () => {
+    it('sets vectorTileLayer.visible to false and skips sublayer style update', async () => {
+      const dataset = datasetRegistry.getDataset('esri-grouped')
+      await adapter._addLayers(dataset)
+      await adapter._applyRegistryDatasetVisibility(dataset)
+      expect(adapter._mapVisibilityLayers['esri-grouped'].visible).toBe(false)
+    })
+
+    it('returns early when the vector tile layer is not yet in the adapter', () => {
+      const dataset = datasetRegistry.getDataset('esri-standalone')
+      // No layers added — _mapVisibilityLayers is empty
+      expect(() => adapter._applyRegistryDatasetVisibility(dataset)).not.toThrow()
+    })
+  })
+
+  // ─── _addLayers – no tiles ────────────────────────────────────────────────────
+
+  describe('_addLayers with no tiles', () => {
+    it('returns null when the dataset has no tiles', async () => {
+      datasetRegistry.mockExtend({
+        'no-tiles': { id: 'no-tiles', visible: true, style: {} }
+      })
+      const result = await adapter._addLayers(datasetRegistry.getDataset('no-tiles'))
+      expect(result).toBeNull()
+    })
+  })
+
+  // ─── stub methods ─────────────────────────────────────────────────────────────
+
+  describe('stub adapter methods', () => {
+    it('applyFeatureFilter logs and resolves', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+      await adapter.applyFeatureFilter('roads')
+      expect(consoleSpy).toHaveBeenCalledWith('TODO: applyFeatureFilter', ['roads'])
+      consoleSpy.mockRestore()
+    })
+
+    it('setData logs and resolves', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+      await adapter.setData('roads', {})
+      expect(consoleSpy).toHaveBeenCalledWith('TODO: setData', ['roads', {}])
+      consoleSpy.mockRestore()
+    })
+
+    it('applyStyle logs and resolves', async () => {
+      const consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+      await adapter.applyStyle('roads', {})
+      expect(consoleSpy).toHaveBeenCalledWith('TODO: applyStyle', ['roads', {}])
+      consoleSpy.mockRestore()
+    })
+  })
+
+  // ─── _applyStyleLayerPaintProperties – null paint properties ─────────────────
+
+  describe('_applyStyleLayerPaintProperties', () => {
+    it('does nothing when getPaintProperties returns null', async () => {
+      await adapter._addLayers(datasetRegistry.getDataset('esri-standalone'))
+      const vtl = adapter._mapVisibilityLayers['esri-standalone']
+      vtl.getPaintProperties = jest.fn().mockReturnValue(null)
+
+      adapter._applyStyleLayerPaintProperties(datasetRegistry.getDataset('esri-standalone'), vtl)
+
+      expect(vtl.setPaintProperties).not.toHaveBeenCalled()
+    })
+  })
+
+  // ─── onMapStyleChange for FeatureService ─────────────────────────────────────
+
+  describe('onMapStyleChange for FeatureService', () => {
+    it('sets renderer on FeatureLayer instead of applying style layer visibility', async () => {
+      datasetRegistry.mockExtend({
+        'fs-style': {
+          id: 'fs-style',
+          type: 'FeatureService',
+          tiles: 'https://example.com/fs/0',
+          visible: true,
+          style: {}
+        }
+      })
+      await adapter._addLayers(datasetRegistry.getDataset('fs-style'))
+      const featureLayer = adapter._mapVisibilityLayers['fs-style']
+      const setStyleLayerVisibilitySpy = jest.spyOn(adapter, '_applyStyleLayerVisibility')
+
+      await adapter.onMapStyleChange()
+
+      // The renderer property should be set (even if undefined for no-renderer datasets)
+      expect(Object.prototype.hasOwnProperty.call(featureLayer, 'renderer')).toBe(true)
+      // _applyStyleLayerVisibility should not be called for the FeatureService dataset
+      const fsCall = setStyleLayerVisibilitySpy.mock.calls.find(
+        ([ds]) => ds?.id === 'fs-style'
+      )
+      expect(fsCall).toBeUndefined()
     })
   })
 })

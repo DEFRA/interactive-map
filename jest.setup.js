@@ -1,5 +1,10 @@
 import '@testing-library/jest-dom'
 
+// structuredClone is not exposed by jsdom; polyfill it using JSON round-trip
+if (typeof structuredClone === 'undefined') {
+  global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj))
+}
+
 // Global mock for window.matchMedia
 if (!window.matchMedia) {
   Object.defineProperty(window, 'matchMedia', {
