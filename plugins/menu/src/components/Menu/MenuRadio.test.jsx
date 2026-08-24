@@ -7,7 +7,7 @@ jest.mock('../../registry/isVisibleWhen.js', () => ({
 }))
 
 const onChange = jest.fn()
-const baseItem = { id: 'radio-1', label: 'Option One' }
+const baseItem = { id: 'option-1', label: 'Option One' }
 
 beforeEach(() => {
   isVisibleWhen.mockReturnValue(true)
@@ -82,14 +82,14 @@ describe('MenuRadio', () => {
       const { container } = render(
         <MenuRadio menuGroupItem={baseItem} name='group' checked={false} onChange={onChange} />
       )
-      expect(container.querySelector('input').value).toBe('radio-1')
+      expect(container.querySelector('input').value).toBe('option-1')
     })
 
     it('associates the label with the input via htmlFor', () => {
       const { container } = render(
         <MenuRadio menuGroupItem={baseItem} name='group' checked={false} onChange={onChange} />
       )
-      expect(container.querySelector('label').htmlFor).toBe('radio-1')
+      expect(container.querySelector('label').htmlFor).toBe('map-menu-radio-option-1')
     })
 
     it('calls onChange when the radio input changes', () => {
@@ -98,7 +98,7 @@ describe('MenuRadio', () => {
       )
       const input = container.querySelector('input')
       const propsKey = Object.keys(input).find(k => k.startsWith('__reactProps'))
-      act(() => { input[propsKey].onChange({ target: { value: 'radio-1' } }) })
+      act(() => { input[propsKey].onChange({ target: { value: 'option-1' } }) })
       expect(onChange).toHaveBeenCalledTimes(1)
     })
   })

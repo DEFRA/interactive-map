@@ -36,11 +36,15 @@ const makePluginState = (menu = [], extra = {}) => ({
   ...extra
 })
 
+const appConfig = {
+  id: 'map'
+}
+
 describe('Menu', () => {
   describe('container class', () => {
     it('renders the base container class when no groups have a groupLabel', () => {
       const pluginState = makePluginState([{ id: 'g1', type: 'checkbox', items: [] }])
-      const { container } = render(<Menu pluginState={pluginState} />)
+      const { container } = render(<Menu pluginState={pluginState} appConfig={appConfig} />)
       const div = container.firstChild
       expect(div.className).toBe('im-c-menu-layers')
     })

@@ -1,6 +1,8 @@
+import { useIdPrefix } from './useIdPrefix.jsx'
+
 export const MenuCheckbox = ({ dispatch, menuGroupItem, onChange, checked }) => {
   const itemClass = `im-c-menu-layers__item govuk-checkboxes govuk-checkboxes--small${checked ? '' : ' im-c-menu-layers__item--checked'}`
-  const itemId = `menu-checkbox-${menuGroupItem.id}`
+  const itemId = useIdPrefix(`checkbox-${menuGroupItem.id}`)
 
   const handleOnChange = event => {
     const _checked = Boolean(event.target?.checked)

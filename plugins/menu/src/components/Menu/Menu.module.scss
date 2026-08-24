@@ -1,4 +1,5 @@
 // When groups are present, every direct child except the first gets a border-top
+
 .im-c-menu-layers--has-groups > *:not(:first-child) {
   border-top: 1px solid var(--button-hover-color);
 }
