@@ -3,7 +3,6 @@ import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { setMenuState } from '../registry/isVisibleWhen.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 
@@ -11,6 +10,13 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
+
+  useEffect(() => {
+    if (pluginConfig.hasMenu === false) {
+      eventBus.emit(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
+      eventBus.emit(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
+    }
+  }, [pluginConfig.hasMenu])
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
@@ -51,12 +57,10 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   }, [isBaseMapReady, appState.mode])
 
   useEffect(() => {
-    setMenuState(pluginState.menuState)
-    datasetRegistry.invalidateKeyItems()
-  }, [pluginState.menuState])
-
-  useEffect(() => datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets),
-    [pluginState.mappedDatasets, pluginState.orderedDatasets])
+    datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets)
+    eventBus.emit('datasets:changed')
+  },
+  [pluginState.mappedDatasets, pluginState.orderedDatasets])
 
   useEffect(() => {
     datasetRegistry.attachMapStyle(mapState.mapStyle)

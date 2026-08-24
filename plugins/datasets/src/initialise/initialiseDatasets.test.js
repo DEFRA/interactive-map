@@ -29,6 +29,8 @@ const makeEventBus = () => {
   const handlers = {}
   return {
     on: jest.fn((event, handler) => { handlers[event] = handler }),
+    requestOnce: jest.fn((event, handler) => { handlers[event] = handler }),
+    emitWhenRequested: jest.fn(() => () => {}),
     off: jest.fn(),
     emit: jest.fn(),
     _handlers: handlers
