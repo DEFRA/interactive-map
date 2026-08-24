@@ -1,6 +1,9 @@
 # Datasets Plugin
 
-The datasets plugin renders GeoJSON and vector tile datasets on the map, with support for polygon, line, and symbol (point) layer types, sublayer style rules, layer visibility toggling, a key panel, and runtime style and data updates.
+The datasets plugin renders GeoJSON and vector tile datasets on the map, with support for polygon, line, and symbol (point) layer types, sublayer style rules, layer visibility toggling, and runtime style and data updates.
+
+> [!IMPORTANT]
+> **Upgrading?** This plugin no longer renders key of symbols itself — that button and panel have been removed. Add the [Map Key](./map-key.md) plugin to restore it. Your `showInKey` config is unaffected and needs no changes.
 
 ## ESM usage
 
@@ -282,6 +285,9 @@ Initial visibility of the dataset.
 
 When `true`, the dataset appears in the Key panel with its style symbol and label. Sublayers inherit this value — set `showInKey: false` on an individual sublayer to opt it out.
 
+> [!NOTE]
+> Rendering the Key panel requires the [Map Key](./map-key.md) plugin to be added alongside this one — `showInKey` has no visible effect on its own.
+
 ---
 
 ### `showInMenu`
@@ -303,9 +309,7 @@ Groups this dataset with others sharing the same `groupLabel` in the LayersMenu 
 
 ### `keySymbolShape`
 
-**Type:** `'polygon' | 'line'`
-
-Overrides the shape used to render the key symbol for this dataset. Defaults to a polygon shape.
+Set within [`style`](#style) — not a top-level dataset property. See [Map Key: `keySymbolShape`](./map-key.md#keysymbolshape).
 
 ---
 
@@ -340,20 +344,24 @@ Visual style for the dataset. All style properties must be nested within this ob
 
 Setting `symbol` or `symbolSvgContent` renders the dataset as a point layer instead of a polygon/line layer.
 
-| Property | Type | Description |
-|----------|------|-------------|
-| `symbol` | `string` | Registered symbol ID e.g. `'pin'`, `'circle'`, `'square'` |
-| `symbolSvgContent` | `string` | Inline SVG content for a fully custom symbol (no `<svg>` wrapper). Takes precedence over `symbol` |
-| `symbolViewBox` | `string` | SVG viewBox for the symbol e.g. `'0 0 38 38'`. Defaults to the registered symbol's viewBox |
-| `symbolAnchor` | `[number, number]` | Anchor point as a normalised `[x, y]` pair. Defaults to the registered symbol's anchor |
-| `symbolBackgroundColor` | `string \| Record<string, string>` | Background fill colour of the symbol |
-| `symbolForegroundColor` | `string \| Record<string, string>` | Foreground fill colour of the symbol (e.g. the inner dot) |
-| `symbolHaloWidth` | `string` | Stroke width of the halo in SVG units |
-| `symbolGraphic` | `string` | SVG `d` attribute for the foreground graphic path. Use named values (`'dot'`, `'cross'`, `'diamond'`, `'triangle'`, `'square'`) or supply your own path data |
+Each is documented in full in [Symbol Config](../api/symbol-config.md), under a `symbol` prefix here to distinguish them from the polygon/line properties in the same style object:
 
-Symbol colour properties use the `symbol` prefix to distinguish them from polygon/line properties in the same style object. They follow the same resolution order and support style-keyed colour objects in the same way as markers — see [Symbol Config](../api/symbol-config.md) for details.
+| Property | Symbol Config property |
+|----------|-------------------------|
+| `symbol` | [`symbol`](../api/symbol-config.md#symbol) |
+| `symbolSvgContent` | [`symbolSvgContent`](../api/symbol-config.md#symbolsvgcontent) |
+| `symbolViewBox` | [`viewBox`](../api/symbol-config.md#viewbox) |
+| `symbolAnchor` | [`anchor`](../api/symbol-config.md#anchor) |
+| `symbolBackgroundColor` | [`backgroundColor`](../api/symbol-config.md#backgroundcolor) |
+| `symbolForegroundColor` | [`foregroundColor`](../api/symbol-config.md#foregroundcolor) |
+| `symbolHaloWidth` | Stroke width of the halo in SVG units. Not currently documented in Symbol Config |
+| `symbolGraphic` | [`graphic`](../api/symbol-config.md#graphic) |
+
+They follow the same resolution order and support style-keyed colour objects in the same way as markers.
 
 `haloColor` and `selectedColor` are not settable here — they are basemap-level properties set on [`MapStyleConfig`](../api/map-style-config.md).
+
+`symbolDescription` and `keySymbolShape` only affect how an entry looks in the Key panel — see [Map Key: Key display properties](./map-key.md#key-display-properties) for details.
 
 ```js
 // Polygon/line dataset

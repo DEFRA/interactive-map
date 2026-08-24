@@ -30,7 +30,11 @@ The following plugins are in early development. APIs and features may change.
 
 ### [Datasets](./plugins/datasets.md)
 
-Add datasets to your map, configure the display, layer toggling and render a key of symbology.
+Render GeoJSON and vector tile datasets on the map, with a menu for toggling layer visibility. Pair with the [Map Key](./plugins/map-key.md) plugin to render a key of symbology.
+
+### [Map Key](./plugins/map-key.md)
+
+Renders a key panel of styled map symbols, currently sourced from the Datasets plugin.
 
 ### [Draw](./plugins/draw.md)
 
