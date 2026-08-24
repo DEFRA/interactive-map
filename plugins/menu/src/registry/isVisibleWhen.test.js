@@ -39,4 +39,10 @@ describe('isVisibleWhen', () => {
     const visibleWhen = 'incorrectly-configured'
     expect(isVisibleWhen(visibleWhen)).toBe(true)
   })
+
+  it('falls back to false if menu state is not attached', () => {
+    attachPluginStateRef(null)
+    const visibleWhen = { menu: { datasets: ['floodZones'], timeframe: ['climateChange'] } }
+    expect(isVisibleWhen(visibleWhen)).toBe(false)
+  })
 })
