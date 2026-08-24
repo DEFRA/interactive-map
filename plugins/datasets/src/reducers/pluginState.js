@@ -1,5 +1,4 @@
 import { addDatasetToMenu, removeDatasetsFromMenu } from './datasetsToMenu.js'
-import { buildMenuState } from './menuStateReducer.js'
 import { mappedDatasetsReducer } from './mappedDatasetsReducer.js'
 import { logger } from '../../../../src/services/logger.js'
 
@@ -19,8 +18,7 @@ const initialState = {
   mappedDatasets: {},
   orderedDatasets: [],
   actionsArray: [],
-  menu: [],
-  menuState: {}
+  menu: []
 }
 
 const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') => {
@@ -46,21 +44,11 @@ const setGlobalState = (state, payload) => {
   })
 }
 
-const updateMenuState = (state, payload) => {
-  return addAction('applyGlobalVisibility', [], {
-    ...state,
-    menuState: { ...state.menuState, ...payload }
-  })
-}
-
 const setMenu = (state, payload) => {
   const { menu } = payload
-  // build the initial menuState for radios from the menu
-  const menuState = buildMenuState(menu)
   return {
     ...state,
-    menu,
-    menuState
+    menu
   }
 }
 
@@ -223,8 +211,7 @@ const actions = {
   SHOW_FEATURES: showFeatures,
   REMOVE_ADAPTER_ACTIONS: removeAdapterActions,
   SET_GLOBAL_STATE: setGlobalState,
-  SET_MENU: setMenu,
-  UPDATE_MENU_STATE: updateMenuState
+  SET_MENU: setMenu
 }
 
 export {
