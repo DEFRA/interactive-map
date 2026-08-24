@@ -56,9 +56,19 @@ const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }
   'aria-labelledby': isBodyScrollable ? `${elementId}-label` : undefined
 })
 
+// Renders the panel body's content: an ordered list of items (own content plus any
+// controls injected via the `<panelId>-panel` slot convention), or the legacy single
+// WrappedChild/children shape for callers that don't build an items list (e.g. HtmlElementHost).
+const BodyContent = ({ items, WrappedChild, props, children }) => { // NOSONAR
+  if (items) {
+    return items.map(item => <React.Fragment key={item.id}>{item.element}</React.Fragment>)
+  }
+  return WrappedChild ? <WrappedChild {...props} /> : children
+}
+
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, label, html, children, isOpen = true, rootRef }) => {
+export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, items, label, html, children, isOpen = true, rootRef }) => {
   const { id } = useConfig()
   const { dispatch, breakpoint, layoutRefs, interfaceType } = useApp()
 
@@ -103,6 +113,10 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
 
   const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissible, isModal, width: bpConfig.width, panelClass, slot: bpConfig.slot })
   const bodyProps = buildBodyProps({ bodyRef, panelBodyClass, isBodyScrollable, elementId })
+  // DOM anchor for controls DOM-projected via the JS/consumer-HTML API — see HtmlElementHost.jsx.
+  // Only present on the items-capable body below: dangerouslySetInnerHTML owns the static-html
+  // body's children, so it can't also host controls injected via the panel-slot convention.
+  const panelBodySlot = `${stringToKebab(panelId)}-panel`
 
   return (
     <div // nosonar
@@ -130,8 +144,8 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
       {innerHtmlProp
         ? <div {...bodyProps} dangerouslySetInnerHTML={innerHtmlProp} /> // nosonar
         : (
-          <div {...bodyProps}> {/* nosonar */}
-            {WrappedChild ? <WrappedChild {...props} /> : children}
+          <div {...bodyProps} data-panel-slot={panelBodySlot}> {/* nosonar */}
+            <BodyContent items={items} WrappedChild={WrappedChild} props={props}>{children}</BodyContent>
           </div>
           )}
     </div>

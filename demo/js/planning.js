@@ -130,13 +130,13 @@ const interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('app:ready', function (e) {
-  interactiveMap.addPanel('banner', {
-    label: 'Hello',
-    html: 'Alert',
-    mobile: { slot: 'banner' },
-    tablet: { slot: 'banner' },
-    desktop: { slot: 'banner' }
-  })
+  // interactiveMap.addPanel('banner', {
+  //   label: 'Hello',
+  //   html: 'Alert',
+  //   mobile: { slot: 'banner' },
+  //   tablet: { slot: 'banner' },
+  //   desktop: { slot: 'banner' }
+  // })
   interactiveMap.addButton('help', {
     label: 'Help',
     href: 'https://google.co.uk',

@@ -171,6 +171,18 @@ describe('pluginRegistry', () => {
       pluginRegistry.registerPlugin(plugin)
       expect(console.warn).not.toHaveBeenCalled()
     })
+
+    it('does not warn for a control targeting a panel-body slot', () => {
+      const plugin = {
+        id: 'inject-plugin',
+        config: {},
+        manifest: {
+          controls: [{ id: 'ctrl1', desktop: { slot: 'map-styles-panel' } }]
+        }
+      }
+      pluginRegistry.registerPlugin(plugin)
+      expect(console.warn).not.toHaveBeenCalled()
+    })
   })
 
   it('clears all registered plugins', () => {

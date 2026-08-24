@@ -28,7 +28,9 @@ export function mapControls ({ slot, appState, evaluateProp }) {
         return false
       }
 
-      const slotAllowed = allowedSlots.control.includes(bpConfig.slot)
+      // A control may also target a panel's body directly via the `<panelId>-panel`
+      // slot convention (mirrors the `<buttonId>-button` convention panels already use).
+      const slotAllowed = allowedSlots.control.includes(bpConfig.slot) || bpConfig.slot?.endsWith('-panel')
       const inModeWhitelist = control.includeModes?.includes(mode) ?? true
       const inExcludeModes = control.excludeModes?.includes(mode) ?? false
 

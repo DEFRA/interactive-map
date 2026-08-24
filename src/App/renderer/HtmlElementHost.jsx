@@ -28,6 +28,10 @@ export const getSlotRef = (slot, layoutRefs) => {
     const el = document.querySelector(`[data-button-slot="${slot}"]`)
     return el ? { current: el } : null
   }
+  if (slot?.endsWith('-panel')) {
+    const el = document.querySelector(`[data-panel-slot="${slot}"]`)
+    return el ? { current: el } : null
+  }
 
   return slotRefMap[slot] || null
 }
@@ -37,8 +41,13 @@ export const getSlotRef = (slot, layoutRefs) => {
  * Moves the wrapper into the target slot when visible, hides it otherwise.
  * Depends on breakpoint to handle conditionally rendered slot containers
  * (e.g. the banner slot swaps DOM nodes between mobile and desktop).
+ *
+ * `anchorKey` is an optional extra dependency for anchors that aren't always present in the
+ * DOM — e.g. a `-panel` target only exists while that panel is open — so the projection is
+ * re-attempted whenever it changes, rather than only on mount. Stable/persistent anchors
+ * (named layout slots, `-button` targets) don't need it since they never come and go.
  */
-export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, breakpoint) => {
+export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, breakpoint, anchorKey) => {
   const layoutRefsRef = useRef(layoutRefs)
   layoutRefsRef.current = layoutRefs
 
@@ -66,7 +75,7 @@ export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, 
     return () => {
       wrapper.style.display = 'none'
     }
-  }, [isVisible, targetSlot, breakpoint, wrapperRef])
+  }, [isVisible, targetSlot, breakpoint, wrapperRef, anchorKey])
 }
 
 /**
@@ -126,13 +135,17 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen,
  */
 const PersistentControl = ({ control, appState }) => {
   const wrapperRef = useRef(null)
-  const { breakpoint, mode, isFullscreen, layoutRefs } = appState
+  const { breakpoint, mode, isFullscreen, layoutRefs, openPanels } = appState
 
   const bpConfig = control[breakpoint]
   const isVisible = isControlVisible(control, { breakpoint, mode, isFullscreen })
   const targetSlot = bpConfig?.slot || null
 
-  useDomProjection(wrapperRef, targetSlot, isVisible, layoutRefs, breakpoint)
+  // A control targeting a panel's body (`<panelId>-panel`) needs its DOM anchor re-resolved
+  // whenever panels open/close, since that anchor only exists while the target panel is open.
+  const anchorKey = targetSlot?.endsWith('-panel') ? Object.keys(openPanels || {}).sort((a, b) => a.localeCompare(b)).join(',') : null
+
+  useDomProjection(wrapperRef, targetSlot, isVisible, layoutRefs, breakpoint, anchorKey)
 
   const innerHtml = useMemo(() => ({ __html: control.html }), [control.html])
 
@@ -174,7 +187,7 @@ export const HtmlElementHost = () => {
       const cfg = panelConfig[panelId]?.[breakpoint]
       return cfg?.modal
     })
-    return modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null
+    return modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null // NOSONAR - .at() unsupported on Chrome < 92
   }, [openPanels, panelConfig, breakpoint])
 
   if (!htmlPanels.length && !htmlControls.length) {

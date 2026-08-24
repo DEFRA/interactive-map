@@ -2,10 +2,14 @@ import React from 'react'
 import { mapPanels } from './mapPanels.js'
 import { registeredPlugins } from '../registry/pluginRegistry.js'
 import { withPluginContexts } from './pluginWrapper.js'
+import { mapControls } from './mapControls.js'
+import { logger } from '../../services/logger.js'
 
+jest.mock('../../services/logger.js')
 jest.mock('../registry/panelRegistry.js')
 jest.mock('../registry/pluginRegistry.js', () => ({ registeredPlugins: [] }))
 jest.mock('./pluginWrapper.js', () => ({ withPluginContexts: jest.fn((c) => c) }))
+jest.mock('./mapControls.js', () => ({ mapControls: jest.fn(() => []) }))
 jest.mock('../components/Panel/Panel.jsx', () => ({ Panel: (props) => <div data-testid='panel' {...props} /> }))
 jest.mock('./slots.js', () => ({ allowedSlots: { panel: ['header', 'modal', 'left-top'] } }))
 
@@ -23,6 +27,7 @@ describe('mapPanels', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mapControls.mockReturnValue([])
     registeredPlugins.length = 0
     defaultAppState = {
       breakpoint: 'desktop',
@@ -116,9 +121,53 @@ describe('mapPanels', () => {
     )
   })
 
-  it('sets WrappedChild null if no render function', () => {
+  it('builds an empty items list if there is no render function and no injected controls', () => {
     const result = map()
-    expect(result[0].element.props.WrappedChild).toBeNull()
+    expect(result[0].element.props.items).toEqual([])
+  })
+
+  it('builds a single-item items list for a panel with its own render content', () => {
+    const renderFn = () => <div>child</div>
+    defaultAppState.panelConfig = ({ p1: { ...baseConfig, render: renderFn } })
+    const result = map()
+    expect(result[0].element.props.items).toEqual([
+      { id: 'p1', order: 0, element: expect.anything() }
+    ])
+  })
+
+  it('requests injected controls using the <panelId>-panel slot convention', () => {
+    map()
+    expect(mapControls).toHaveBeenCalledWith(expect.objectContaining({ slot: 'p1-panel' }))
+  })
+
+  it('merges and orders the panel\'s own content with controls injected via mapControls', () => {
+    const renderFn = () => <div>child</div>
+    mapControls.mockReturnValue([{ id: 'injected1', order: 1, element: <span>injected</span> }])
+    defaultAppState.panelConfig = ({ p1: { ...baseConfig, render: renderFn } })
+    const result = map()
+    // injected1 has order 1, so it's spliced ahead of the panel's own (unordered) content
+    expect(result[0].element.props.items.map(i => i.id)).toEqual(['injected1', 'p1'])
+  })
+
+  it('returns just the injected controls when the panel has neither render nor html', () => {
+    mapControls.mockReturnValue([{ id: 'injected1', order: 0, element: <span>injected</span> }])
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    const result = map()
+    expect(result[0].element.props.items.map(i => i.id)).toEqual(['injected1'])
+  })
+
+  it('does not build an items list for a static-html panel (dangerouslySetInnerHTML can\'t host injected controls)', () => {
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'], pluginId: 'plug1', html: '<p>Hi</p>' } })
+    const result = map()
+    expect(result[0].element.props.items).toBeUndefined()
+    expect(result[0].element.props.html).toBe('<p>Hi</p>')
+  })
+
+  it('warns in dev when controls target a static-html panel', () => {
+    mapControls.mockReturnValue([{ id: 'injected1', order: 0, element: <span>injected</span> }])
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'], pluginId: 'plug1', html: '<p>Hi</p>' } })
+    map()
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('p1'))
   })
 
   it('returns correct structure and defaults', () => {

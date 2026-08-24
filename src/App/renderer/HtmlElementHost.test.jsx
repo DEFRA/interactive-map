@@ -313,6 +313,60 @@ describe('HtmlElementHost', () => {
     expect(getSlotRef('nonexistent-button', {})).toBeNull()
   })
 
+  test('getSlotRef returns wrapped element for panel slot when element exists', () => {
+    const el = document.createElement('div')
+    el.dataset.panelSlot = 'map-styles-panel'
+    document.body.appendChild(el)
+    expect(getSlotRef('map-styles-panel', {})).toEqual({ current: el })
+    el.remove()
+  })
+
+  test('getSlotRef returns null for panel slot when no element found', () => {
+    expect(getSlotRef('nonexistent-panel', {})).toBeNull()
+  })
+
+  it('re-attempts DOM projection into a panel-body slot once its anchor appears (panel opens)', () => {
+    const controlConfig = {
+      mapStylesNote: { id: 'mapStylesNote', desktop: { slot: 'map-styles-panel' }, html: '<p>Injected note</p>' }
+    }
+
+    // A real React-rendered node, mimicking the real Panel.jsx body div — present in the DOM
+    // throughout, but only gains the data-panel-slot marker once the panel "opens".
+    const panelBodyRef = React.createRef()
+
+    mockApp({ controlConfig, openPanels: {} })
+    const { rerender } = render(
+      <div>
+        <div ref={panelBodyRef} />
+        <HtmlElementHost />
+      </div>
+    )
+
+    // Anchor isn't marked yet (panel closed) — nothing to project into
+    expect(panelBodyRef.current.querySelector('.im-c-control')).toBeNull()
+
+    // Panel opens: its body anchor is marked, and openPanels changes (two entries, so the
+    // anchorKey sort's localeCompare comparator actually runs)
+    panelBodyRef.current.setAttribute('data-panel-slot', 'map-styles-panel')
+    mockApp({ controlConfig, openPanels: { mapStyles: { props: {} }, other: { props: {} } } })
+    rerender(
+      <div>
+        <div ref={panelBodyRef} />
+        <HtmlElementHost />
+      </div>
+    )
+
+    expect(panelBodyRef.current.querySelector('.im-c-control')).toBeTruthy()
+  })
+
+  it('does not crash a panel-targeting control when appState.openPanels is missing', () => {
+    const controlConfig = {
+      mapStylesNote: { id: 'mapStylesNote', desktop: { slot: 'map-styles-panel' }, html: '<p>Injected note</p>' }
+    }
+    mockApp({ controlConfig, openPanels: undefined })
+    expect(() => render(<HtmlElementHost />)).not.toThrow()
+  })
+
   it('does not append child if slotRef exists but current is null', () => {
     // 1. Setup refs where the slot exists in the map but the DOM node (current) is null
     const incompleteRefs = {

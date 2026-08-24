@@ -1,10 +1,15 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { Actions } from './Actions.jsx'
+import { mapButtons } from '../../renderer/mapButtons.js'
 import * as AppContext from '../../store/appContext' // import the module to mock
 
 // Simple child component to handle isHidden
 const TestChild = ({ isHidden, children, ...props }) => <div {...props}>{children}</div>
+
+jest.mock('../MapButton/MapButton.jsx', () => ({
+  MapButton: ({ isHidden }) => <button data-testid='map-button' hidden={isHidden} />
+}))
 
 const ACTIONS_SELECTOR = '.im-c-actions'
 const HIDDEN_CLASS = 'im-c-actions--hidden'
@@ -79,5 +84,47 @@ describe('Actions component', () => {
     )
     const container = screen.getByTestId('child1').closest(ACTIONS_SELECTOR)
     expect(container).toHaveClass(HIDDEN_CLASS)
+  })
+
+  // Integration with the real mapButtons() output, not just the TestChild stand-in above —
+  // guards the isHidden/variant contract at the actual seam between the two modules, since
+  // mapButtons.js's own unit tests can't catch a break here on their own.
+  describe('with real mapButtons() output', () => {
+    const evaluateProp = (prop) => (typeof prop === 'function' ? prop() : prop)
+    const appConfig = { id: 'test' }
+    const baseAppState = {
+      breakpoint: 'desktop',
+      mode: 'view',
+      isFullscreen: true,
+      openPanels: {},
+      dispatch: jest.fn(),
+      disabledButtons: new Set(),
+      hiddenButtons: new Set(),
+      pressedButtons: new Set(),
+      expandedButtons: new Set(),
+      panelConfig: {},
+      layoutRefs: { viewportRef: { current: { focus: jest.fn() } } }
+    }
+
+    const renderActionsWith = (appState) => {
+      const items = mapButtons({ slot: 'actions', appState, appConfig, evaluateProp })
+      return render(<Actions slot='actions'>{items.map(i => i.element)}</Actions>)
+    }
+
+    it('shows the actions bar when a real mapButtons() button is visible', () => {
+      const appState = { ...baseAppState, buttonConfig: { cancel: { label: 'Cancel', desktop: { slot: 'actions' } } } }
+      renderActionsWith(appState)
+      expect(screen.getByTestId('map-button').closest(ACTIONS_SELECTOR)).not.toHaveClass(HIDDEN_CLASS)
+    })
+
+    it('hides the actions bar when the only real mapButtons() button is hidden', () => {
+      const appState = {
+        ...baseAppState,
+        hiddenButtons: new Set(['cancel']),
+        buttonConfig: { cancel: { label: 'Cancel', desktop: { slot: 'actions' } } }
+      }
+      renderActionsWith(appState)
+      expect(screen.getByTestId('map-button').closest(ACTIONS_SELECTOR)).toHaveClass(HIDDEN_CLASS)
+    })
   })
 })

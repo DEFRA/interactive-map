@@ -49,8 +49,7 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
   })
 }
 
-function createButtonClickHandler (btn, appState, evaluateProp) {
-  const [, config] = btn
+function createButtonClickHandler (config, appState, evaluateProp) {
   const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
   const isToggle = config.isPressed !== undefined || !!config.pressedWhen
 
@@ -134,15 +133,33 @@ function applySlotExclusivity (matching, appState) {
   return matching.filter(([_, config]) => config.pluginId === exclusivePluginId)
 }
 
-function renderButton ({ btn, appState, appConfig, evaluateProp }) {
-  const [buttonId, config] = btn
+/**
+ * Builds the props for a <SlotButton>. isHidden/variant are included here (not just derived
+ * inside SlotButton) because Actions.jsx also reads them directly off the 'actions' slot's
+ * immediate children via React.Children.toArray — they need to be top-level props on whatever
+ * element ends up there, not just used internally to build MapButton.
+ */
+const slotButtonProps = ({ buttonId, config, appState, appConfig, evaluateProp }) => ({
+  buttonId,
+  config,
+  appState,
+  appConfig,
+  evaluateProp,
+  isHidden: appState.hiddenButtons.has(buttonId),
+  variant: config.variant
+})
+
+/**
+ * Renders a single button's MapButton element for its slot, computing its click handler
+ * and derived state (panel-open, showLabel fallback, etc.) from its config and appState.
+ */
+function SlotButton ({ buttonId, config, appState, appConfig, evaluateProp }) {
   const bpConfig = config[appState.breakpoint] ?? {}
-  const handleClick = createButtonClickHandler(btn, appState, evaluateProp)
+  const handleClick = createButtonClickHandler(config, appState, evaluateProp)
   const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
 
   return (
     <MapButton
-      key={buttonId}
       buttonId={buttonId}
       iconId={evaluateProp(config.iconId, config.pluginId)}
       iconSvgContent={evaluateProp(config.iconSvgContent, config.pluginId)}
@@ -219,21 +236,20 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
       id: buttonId,
       type: 'button',
       order,
-      element: renderButton({ btn, appState, appConfig, evaluateProp })
+      element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, appState, appConfig, evaluateProp })} />
     })
   }
 
   for (const [groupName, { label, order: groupOrder, members }] of groupMap) {
     if (members.length < 2) {
       // Singleton group: degrade to a regular button using the group's slot order
-      const btn = members[0]
-      const [buttonId, config] = btn
+      const [buttonId, config] = members[0]
       const order = groupOrder || config[breakpoint]?.order || 0
       result.push({
         id: buttonId,
         type: 'button',
         order,
-        element: renderButton({ btn, appState, appConfig, evaluateProp })
+        element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, appState, appConfig, evaluateProp })} />
       })
       continue
     }
@@ -251,7 +267,7 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
       order: groupOrder,
       element: (
         <div key={`group-${groupName}`} role='group' aria-label={label} className='im-c-button-group'>{/* NOSONAR - div with role="group" is correct for a button group */}
-          {sorted.map(btn => renderButton({ btn, appState, appConfig, evaluateProp }))}
+          {sorted.map(([buttonId, config]) => <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, appState, appConfig, evaluateProp })} />)}
         </div>
       )
     })
@@ -264,7 +280,7 @@ export {
   mapButtons,
   getMatchingButtons,
   applySlotExclusivity,
-  renderButton,
+  SlotButton,
   resolveGroupName,
   resolveGroupLabel,
   resolveGroupOrder

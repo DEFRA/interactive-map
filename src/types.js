@@ -28,8 +28,18 @@
  *
  * @typedef {Object} ControlBreakpointConfig
  *
+ * @property {number} [order]
+ * The order the control appears within its slot (or, when targeting a panel, within that
+ * panel's body — see `slot` below).
+ *
  * @property {string} slot
- * Slot identifier.
+ * Slot identifier. In addition to the standard layout slots, a control may target a panel's
+ * body directly by setting this to `'<panelId>-panel'` (the panel id in kebab-case, suffixed
+ * with `-panel` — mirrors the `'<buttonId>-button'` convention panels use to render next to a
+ * specific button). Any plugin may target any panel this way, including one registered by a
+ * different plugin. The panel's own content and every control targeting it are ordered together
+ * via `order`. Only supported by panels with a `render` component — a panel using static `html`
+ * can't host injected controls, since `dangerouslySetInnerHTML` owns its body's children.
  */
 
 /**

@@ -65,6 +65,11 @@ describe('isControlVisible', () => {
   it('returns true when inline:false and fullscreen', () => {
     expect(isControlVisible({ ...base, inline: false }, { breakpoint: 'desktop', mode: 'view', isFullscreen: true })).toBe(true)
   })
+
+  it('returns true for a control targeting a panel-body slot via the <panelId>-panel convention', () => {
+    const panelTargeting = { desktop: { slot: 'map-styles-panel' } }
+    expect(isControlVisible(panelTargeting, { breakpoint: 'desktop', mode: 'view', isFullscreen: false })).toBe(true)
+  })
 })
 
 describe('isConsumerHtml', () => {

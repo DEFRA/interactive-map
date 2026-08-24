@@ -185,6 +185,14 @@ describe('ADD_CONTROL', () => {
     )
     expect(console.warn).not.toHaveBeenCalled()
   })
+
+  it('does not warn for a control targeting a panel-body slot', () => {
+    run(
+      { type: 'ADD_CONTROL', payload: { id: 'myCtrl', config: { desktop: { slot: 'map-styles-panel' } } } },
+      { breakpoint: 'desktop' }
+    )
+    expect(console.warn).not.toHaveBeenCalled()
+  })
 })
 
 describe('ADD_PANEL', () => {
