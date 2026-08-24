@@ -39,7 +39,9 @@ export const isControlVisible = (control, { breakpoint, mode, isFullscreen }) =>
   if (!bpConfig) {
     return false
   }
-  if (!allowedSlots.control.includes(bpConfig.slot)) {
+  // A control may also target a panel's body directly via the `<panelId>-panel`
+  // slot convention (mirrors the `<buttonId>-button` convention panels already use).
+  if (!allowedSlots.control.includes(bpConfig.slot) && !bpConfig.slot?.endsWith('-panel')) {
     return false
   }
   if (!isModeAllowed(control, mode)) {

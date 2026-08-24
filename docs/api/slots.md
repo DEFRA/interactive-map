@@ -100,6 +100,23 @@ A panel can be configured to appear adjacent to the button that opened it by usi
 
 The slot name is the button's `id` converted to kebab-case, followed by `-button`. For example, a button with `id: 'mapStyles'` uses the slot `map-styles-button`. The panel will be positioned next to the triggering button in the DOM.
 
+## Panel-Injected Controls
+
+A control can render inside another panel's body — including a panel registered by a different plugin — by targeting a panel-body slot name:
+
+```js
+{
+  desktop: { slot: 'map-styles-panel', order: 2 }
+}
+```
+
+The slot name is the panel's `id` converted to kebab-case, followed by `-panel`. For example, a panel with `id: 'mapStyles'` uses the slot `map-styles-panel`. The panel's own content and every control targeting it are ordered together using the standard `order` rules above — the panel's own content counts as an unordered item unless it opts into an explicit position.
+
+Rendering is flat: the framework doesn't wrap injected controls in any extra markup or headings. Each control's `render` component is responsible for its own internal structure — a control contributing a single button needs no heading, while one contributing a small form might reasonably wrap itself in its own `<section>`.
+
+> [!NOTE]
+> Only supported by panels with a `render` component — a panel using static `html` can't host injected controls. `order` is only respected for controls with a `render` component; controls registered with static `html` via [`addControl()`](../api.md#addcontrolid-config) always render after everything else, in registration order.
+
 ## Modal Panels
 
 Setting `modal: true` in a panel's breakpoint config adds modal behaviour to the panel. Internally the panel is moved to a dedicated modal slot to ensure correct stacking order, but it is visually positioned to match its configured slot — for example, a button-adjacent panel will still appear next to its button — and gains a greyed-out backdrop, constrained keyboard focus, and other modal semantics.

@@ -69,4 +69,12 @@ Each breakpoint (`mobile`, `tablet`, `desktop`) accepts the following properties
 **Type:** `string`
 **Required**
 
-The [slot](./slots.md) where the control should appear at this breakpoint. Slots are named regions in the UI layout.
+The [slot](./slots.md) where the control should appear at this breakpoint. Slots are named regions in the UI layout. A control can also target a panel's body directly — including a panel registered by a different plugin — see [Panel-Injected Controls](./slots.md#panel-injected-controls).
+
+---
+
+### `order`
+**Type:** `number`
+**Optional**
+
+Position within the slot (or, when targeting a panel, within that panel's body). See [Ordering](./slots.md#ordering).

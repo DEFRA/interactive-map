@@ -11,7 +11,7 @@ function validateSlots (item, type) {
   const allowed = allowedSlots[type]
   BREAKPOINTS.forEach(bp => {
     const slot = item[bp]?.slot
-    if (slot && !allowed.includes(slot) && !(type === 'panel' && slot.endsWith('-button'))) {
+    if (slot && !allowed.includes(slot) && !(type === 'panel' && slot.endsWith('-button')) && !(type === 'control' && slot.endsWith('-panel'))) {
       logger.warn(`${type} "${item.id}" has invalid slot "${slot}" at breakpoint "${bp}". Allowed slots: ${allowed.join(', ')}.`)
     }
   })

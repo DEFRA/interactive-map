@@ -164,4 +164,20 @@ describe('mapControls', () => {
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result.map(c => c.id)).toEqual(['ctrl1'])
   })
+
+  it('matches a control targeting a panel-body slot via the <panelId>-panel convention', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', order: 1 }, includeModes: ['view'] }
+    })
+    const result = mapControls({ slot: 'map-styles-panel', appState: defaultAppState, evaluateProp: (p) => p })
+    expect(result.map(c => c.id)).toEqual(['ctrl1'])
+  })
+
+  it('does not match a panel-body-targeting control against an unrelated slot', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', order: 1 }, includeModes: ['view'] }
+    })
+    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
+    expect(result).toEqual([])
+  })
 })

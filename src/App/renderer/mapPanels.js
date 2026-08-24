@@ -4,6 +4,10 @@ import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { allowedSlots } from './slots.js'
 import { resolveTargetSlot, isModeAllowed, isConsumerHtml } from './slotHelpers.js'
+import { mapControls } from './mapControls.js'
+import { orderItems } from './orderItems.js'
+import { stringToKebab } from '../../utils/stringToKebab.js'
+import { logger } from '../../services/logger.js'
 
 /**
  * Determines whether a panel should be rendered in the given slot.
@@ -73,13 +77,7 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
     const plugin = pluginRegistry.registeredPlugins.find(p => p.id === config.pluginId)
     const pluginId = plugin?.id
 
-    const WrappedChild = config.render
-      ? withPluginContexts(config.render, {
-        ...props,
-        pluginId,
-        pluginConfig: plugin?.config
-      })
-      : null
+    const html = pluginId ? evaluateProp(config.html, pluginId) : config.html
 
     return {
       id: panelId,
@@ -92,12 +90,49 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
           panelConfig={config}
           props={props}
           focusOnOpen={focusOnOpen}
-          WrappedChild={WrappedChild}
+          items={buildPanelBodyItems({ panelId, config, props, plugin, pluginId, html, appState, evaluateProp })}
           label={evaluateProp(config.label, pluginId)}
-          html={pluginId ? evaluateProp(config.html, pluginId) : config.html}
+          html={html}
         />
       )
     }
   })
     .filter(Boolean)
+}
+
+/**
+ * Builds the ordered list of body items for a panel: its own render content (if any) plus
+ * any controls registered against its `<panelId>-panel` slot by other plugins. Static-html
+ * panels don't build an items list — dangerouslySetInnerHTML can't host injected controls,
+ * so any controls targeting one are silently skipped (with a dev warning).
+ */
+function buildPanelBodyItems ({ panelId, config, props, plugin, pluginId, html, appState, evaluateProp }) {
+  const injectedItems = mapControls({
+    slot: `${stringToKebab(panelId)}-panel`,
+    appState,
+    evaluateProp
+  })
+
+  if (html) {
+    /* istanbul ignore next */
+    if (process.env.NODE_ENV !== 'production' && injectedItems.length > 0) {
+      logger.warn(`Panel "${panelId}" uses static html — controls targeting its slot are not rendered.`)
+    }
+    return undefined
+  }
+
+  if (!config.render) {
+    return injectedItems
+  }
+
+  const WrappedChild = withPluginContexts(config.render, {
+    ...props,
+    pluginId,
+    pluginConfig: plugin?.config
+  })
+
+  return orderItems([
+    { id: panelId, order: 0, element: <WrappedChild {...props} /> },
+    ...injectedItems
+  ])
 }

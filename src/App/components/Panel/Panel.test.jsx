@@ -194,5 +194,39 @@ describe('Panel', () => {
       renderPanel({}, { html: '<p>HTML content</p>' })
       expect(screen.getByText('HTML content')).toBeInTheDocument()
     })
+
+    it('renders each items entry in list order', () => {
+      const items = [
+        { id: 'a', element: <p>First</p> },
+        { id: 'b', element: <p>Second</p> }
+      ]
+      renderPanel({}, { items })
+      expect(screen.getByText('First')).toBeInTheDocument()
+      expect(screen.getByText('Second')).toBeInTheDocument()
+    })
+
+    it('prefers items over WrappedChild/children when provided', () => {
+      const Wrapped = () => <p>Wrapped</p>
+      renderPanel({}, {
+        items: [{ id: 'a', element: <p>Item</p> }],
+        WrappedChild: Wrapped,
+        children: <p>Child content</p>
+      })
+      expect(screen.getByText('Item')).toBeInTheDocument()
+      expect(screen.queryByText('Wrapped')).not.toBeInTheDocument()
+      expect(screen.queryByText('Child content')).not.toBeInTheDocument()
+    })
+
+    it('stamps data-panel-slot on the items-capable body, for controls DOM-projected via the JS API', () => {
+      const { container } = renderPanel({}, { items: [{ id: 'a', element: <p>Item</p> }] })
+      const body = container.querySelector('.im-c-panel__body')
+      expect(body).toHaveAttribute('data-panel-slot', 'settings-panel')
+    })
+
+    it('does not stamp data-panel-slot on a static-html body', () => {
+      const { container } = renderPanel({}, { html: '<p>HTML content</p>' })
+      const body = container.querySelector('.im-c-panel__body')
+      expect(body).not.toHaveAttribute('data-panel-slot')
+    })
   })
 })

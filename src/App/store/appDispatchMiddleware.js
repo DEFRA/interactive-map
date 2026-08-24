@@ -101,7 +101,7 @@ export function handleActionSideEffects (action, previousState, panelConfig, eve
     const mergedConfig = deepMerge(defaultControlConfig, config)
     BREAKPOINTS.forEach(bp => {
       const slot = mergedConfig[bp]?.slot
-      if (slot && !allowedSlots.control.includes(slot)) {
+      if (slot && !allowedSlots.control.includes(slot) && !slot.endsWith('-panel')) {
         logger.warn(`control "${id}" has invalid slot "${slot}" at breakpoint "${bp}". Allowed slots: ${allowedSlots.control.join(', ')}.`)
       }
     })
