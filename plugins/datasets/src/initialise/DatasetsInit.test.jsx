@@ -79,7 +79,7 @@ describe('DatasetsInit', () => {
       const props = makeProps({
         pluginConfig: { datasets: [{ id: 'roads', label: 'Roads' }] }
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(props.services.eventBus.emit).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
@@ -90,7 +90,7 @@ describe('DatasetsInit', () => {
 
     it('does not remove the panel when at least one dataset has showInMenu', async () => {
       const props = makeProps()
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
@@ -100,7 +100,7 @@ describe('DatasetsInit', () => {
       const props = makeProps({
         pluginConfig: { hasMenu: false, datasets: [{ id: 'roads', label: 'Roads', showInMenu: true }] }
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(props.services.eventBus.emit).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
@@ -116,7 +116,7 @@ describe('DatasetsInit', () => {
           }]
         }
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
@@ -128,7 +128,7 @@ describe('DatasetsInit', () => {
   describe('initialisation', () => {
     it('calls loadLayerAdapter and initialiseDatasets when base map is ready', async () => {
       const props = makeProps()
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(loadLayerAdapter).toHaveBeenCalledWith(
         props.mapProvider, props.services.symbolRegistry, props.services.patternRegistry
       )
@@ -139,7 +139,7 @@ describe('DatasetsInit', () => {
       const props = makeProps({
         mapProvider: { isBaseMapReady: jest.fn().mockReturnValue(false) }
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(loadLayerAdapter).not.toHaveBeenCalled()
     })
 
@@ -148,7 +148,7 @@ describe('DatasetsInit', () => {
         pluginConfig: { datasets: [], includeModes: ['edit'] },
         appState: { mode: 'default' }
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(loadLayerAdapter).not.toHaveBeenCalled()
     })
 
@@ -157,7 +157,7 @@ describe('DatasetsInit', () => {
         pluginConfig: { datasets: [], excludeModes: ['default'] },
         appState: { mode: 'default' }
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(loadLayerAdapter).not.toHaveBeenCalled()
     })
 
@@ -202,13 +202,13 @@ describe('DatasetsInit', () => {
       const props = makeProps({
         pluginState: makePluginState({ mappedDatasets, orderedDatasets })
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(datasetRegistry.attach).toHaveBeenCalledWith(mappedDatasets, orderedDatasets)
     })
 
     it('attaches the map style to the registry', async () => {
       const props = makeProps()
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(datasetRegistry.attachMapStyle).toHaveBeenCalledWith(props.mapState.mapStyle)
     })
 
@@ -216,7 +216,7 @@ describe('DatasetsInit', () => {
       const onMapStyleChange = jest.fn()
       Object.assign(layerAdapter, { onMapStyleChange })
       const props = makeProps()
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(onMapStyleChange).toHaveBeenCalled()
       delete layerAdapter.onMapStyleChange
     })
@@ -228,7 +228,7 @@ describe('DatasetsInit', () => {
     it('calls attachGlobalState with the current globals', async () => {
       const globals = { visible: false, opacity: 0.5 }
       const props = makeProps({ pluginState: makePluginState({ globals }) })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(attachGlobalState).toHaveBeenCalledWith(globals)
     })
   })
@@ -244,7 +244,7 @@ describe('DatasetsInit', () => {
       const props = makeProps({
         pluginState: makePluginState({ actionsArray: actions, dispatch })
       })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(applyStyle).toHaveBeenCalledWith('roads', {})
       expect(dispatch).toHaveBeenCalledWith({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actions })
       delete layerAdapter.applyStyle
@@ -253,7 +253,7 @@ describe('DatasetsInit', () => {
     it('skips dispatching when actionsArray is empty', async () => {
       const dispatch = jest.fn()
       const props = makeProps({ pluginState: makePluginState({ actionsArray: [], dispatch }) })
-      await act(async () => { render(<DatasetsInit {...props} />) })
+      await render(<DatasetsInit {...props} />)
       expect(dispatch).not.toHaveBeenCalledWith(
         expect.objectContaining({ type: 'REMOVE_ADAPTER_ACTIONS' })
       )
