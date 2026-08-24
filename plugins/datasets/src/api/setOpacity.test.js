@@ -28,4 +28,13 @@ describe('setOpacity', () => {
       payload: { opacity: 0.8 }
     })
   })
+
+  it('dispatches SET_GLOBAL_OPACITY when options argument is omitted', () => {
+    setOpacity({ pluginState: { dispatch } }, 0.5)
+
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'SET_GLOBAL_OPACITY',
+      payload: { opacity: 0.5 }
+    })
+  })
 })

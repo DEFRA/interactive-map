@@ -68,4 +68,10 @@ describe('isVisibleWhen', () => {
     const visibleWhen = 'incorrectly-configured'
     expect(isVisibleWhen(visibleWhen)).toBe(true)
   })
+
+  it('returns false when menu condition is checked and menuState has not been set up', () => {
+    attachMenuStateRef({}) // current is undefined — exercises the || {} fallback
+    const visibleWhen = { menu: { datasets: ['floodZones'] } }
+    expect(isVisibleWhen(visibleWhen)).toBe(false)
+  })
 })
