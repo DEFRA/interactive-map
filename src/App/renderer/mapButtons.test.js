@@ -1,5 +1,5 @@
 import React from 'react'
-import { mapButtons, getMatchingButtons, applySlotExclusivity, renderButton, resolveGroupName, resolveGroupLabel, resolveGroupOrder } from './mapButtons.js'
+import { mapButtons, getMatchingButtons, applySlotExclusivity, SlotButton, resolveGroupName, resolveGroupLabel, resolveGroupOrder } from './mapButtons.js'
 import { logger } from '../../services/logger.js'
 import { getPanelConfig } from '../registry/panelRegistry.js'
 
@@ -156,11 +156,11 @@ describe('mapButtons module', () => {
   })
 
   // -------------------------
-  // renderButton tests
+  // SlotButton tests
   // -------------------------
-  describe('renderButton', () => {
+  describe('SlotButton', () => {
     const render = (config, state = appState) =>
-      renderButton({ btn: ['id', config], appState: state, appConfig, evaluateProp })
+      SlotButton({ buttonId: 'id', config, appState: state, appConfig, evaluateProp })
 
     it('renders a MapButton with correct basic props', () => {
       const result = render(baseBtn)
@@ -403,6 +403,19 @@ describe('mapButtons module', () => {
       const result = map()
       expect(result).toHaveLength(1)
       expect(result[0].id).toBe('parent')
+    })
+
+    // Actions.jsx (the 'actions' slot wrapper) reads isHidden/variant directly off each slot
+    // item's top-level element props via React.Children.toArray — these two guard that contract.
+    it('carries isHidden as a top-level prop on the slot element, not just inside MapButton', () => {
+      appState.buttonConfig = ({ b1: baseBtn })
+      appState.hiddenButtons = new Set(['b1'])
+      expect(map()[0].element.props.isHidden).toBe(true)
+    })
+
+    it('carries variant as a top-level prop on the slot element, not just inside MapButton', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, variant: 'touch' } })
+      expect(map()[0].element.props.variant).toBe('touch')
     })
   })
 })

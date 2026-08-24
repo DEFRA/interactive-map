@@ -59,7 +59,7 @@ const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }
 // Renders the panel body's content: an ordered list of items (own content plus any
 // controls injected via the `<panelId>-panel` slot convention), or the legacy single
 // WrappedChild/children shape for callers that don't build an items list (e.g. HtmlElementHost).
-const renderBodyContent = ({ items, WrappedChild, props, children }) => {
+const BodyContent = ({ items, WrappedChild, props, children }) => { // NOSONAR
   if (items) {
     return items.map(item => <React.Fragment key={item.id}>{item.element}</React.Fragment>)
   }
@@ -145,7 +145,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
         ? <div {...bodyProps} dangerouslySetInnerHTML={innerHtmlProp} /> // nosonar
         : (
           <div {...bodyProps} data-panel-slot={panelBodySlot}> {/* nosonar */}
-            {renderBodyContent({ items, WrappedChild, props, children })}
+            <BodyContent items={items} WrappedChild={WrappedChild} props={props}>{children}</BodyContent>
           </div>
           )}
     </div>
