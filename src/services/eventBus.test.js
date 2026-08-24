@@ -175,6 +175,89 @@ describe('emitWhenReady', () => {
   })
 })
 
+describe('emitWhenRequested', () => {
+  let bus
+  beforeEach(() => { bus = createEventBus() })
+
+  it('immediately emits eventNameReady so an already-waiting listener receives the args', () => {
+    const handler = jest.fn()
+    bus.on('datasets:registryReady', handler)
+    bus.emitWhenRequested('datasets:registry', 'registryValue')
+    expect(handler).toHaveBeenCalledWith('registryValue')
+  })
+
+  it('emits eventNameReady with args whenever eventNameRequested fires after registration', () => {
+    const handler = jest.fn()
+    bus.on('datasets:registryReady', handler)
+    bus.emitWhenRequested('datasets:registry', 'registryValue')
+    handler.mockClear()
+    bus.emit('datasets:registryRequested')
+    expect(handler).toHaveBeenCalledWith('registryValue')
+  })
+
+  it('forwards multiple args to the Ready event', () => {
+    const handler = jest.fn()
+    bus.on('datasets:registryReady', handler)
+    bus.emitWhenRequested('datasets:registry', 'a', 'b')
+    expect(handler).toHaveBeenCalledWith('a', 'b')
+  })
+
+  it('returns a cleanup function that stops responding to future Requested events', () => {
+    const handler = jest.fn()
+    bus.on('datasets:registryReady', handler)
+    const remove = bus.emitWhenRequested('datasets:registry', 'registryValue')
+    handler.mockClear()
+    remove()
+    bus.emit('datasets:registryRequested')
+    expect(handler).not.toHaveBeenCalled()
+  })
+})
+
+describe('requestOnce', () => {
+  let bus
+  beforeEach(() => { bus = createEventBus() })
+
+  it('calls the handler when eventNameReady fires', () => {
+    const handler = jest.fn()
+    bus.requestOnce('datasets:registry', handler)
+    bus.emit('datasets:registryReady', 'registryValue')
+    expect(handler).toHaveBeenCalledWith('registryValue')
+  })
+
+  it('calls the handler only once even if eventNameReady fires multiple times', () => {
+    const handler = jest.fn()
+    bus.requestOnce('datasets:registry', handler)
+    bus.emit('datasets:registryReady', 'first')
+    bus.emit('datasets:registryReady', 'second')
+    expect(handler).toHaveBeenCalledTimes(1)
+  })
+
+  it('emits eventNameRequested so the provider side knows it is needed', () => {
+    const requestedHandler = jest.fn()
+    bus.on('datasets:registryRequested', requestedHandler)
+    bus.requestOnce('datasets:registry', jest.fn())
+    expect(requestedHandler).toHaveBeenCalled()
+  })
+
+  it('returns this for chaining', () => {
+    expect(bus.requestOnce('datasets:registry', jest.fn())).toBe(bus)
+  })
+
+  it('works with emitWhenRequested when requestOnce is called first', () => {
+    const handler = jest.fn()
+    bus.requestOnce('datasets:registry', handler)
+    bus.emitWhenRequested('datasets:registry', 'registryValue')
+    expect(handler).toHaveBeenCalledWith('registryValue')
+  })
+
+  it('works with emitWhenRequested when emitWhenRequested is called first', () => {
+    const handler = jest.fn()
+    bus.emitWhenRequested('datasets:registry', 'registryValue')
+    bus.requestOnce('datasets:registry', handler)
+    expect(handler).toHaveBeenCalledWith('registryValue')
+  })
+})
+
 describe('createEventBus factory', () => {
   /**
    * Test to ensure coverage for the factory function (Line 50).
