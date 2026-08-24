@@ -105,15 +105,19 @@ function MapInner () {
     Promise.all([
       import('../src/index.js'),
       import('../providers/maplibre/src/index.js'),
-      import('../plugins/datasets/src/index.js')
+      import('../plugins/datasets/src/index.js'),
+      import('../plugins/map-key/src/index.js')
     ]).then(([
       { default: InteractiveMap },
       { default: maplibreProvider },
-      { default: createDatasetsPlugin }
+      { default: createDatasetsPlugin },
+      { default: createMapKeyPlugin }
     ]) => {
       const datasetsPlugin = createDatasetsPlugin({
         datasets: [parcelsDataset]
       })
+
+      const mapKeyPlugin = createMapKeyPlugin()
 
       new InteractiveMap('demo-map-polygons', {
         behaviour: 'inline',
@@ -123,7 +127,7 @@ function MapInner () {
         center: [-2.464,54.5585475],
         zoom: 14,
         containerHeight: '516px',
-        plugins: [datasetsPlugin]
+        plugins: [datasetsPlugin, mapKeyPlugin]
       })
     })
   }, [])

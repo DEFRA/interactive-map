@@ -79,15 +79,19 @@ function MapInner () {
     Promise.all([
       import('../src/index.js'),
       import('../providers/maplibre/src/index.js'),
-      import('../plugins/datasets/src/index.js')
+      import('../plugins/datasets/src/index.js'),
+      import('../plugins/map-key/src/index.js')
     ]).then(([
       { default: InteractiveMap },
       { default: maplibreProvider },
-      { default: createDatasetsPlugin }
+      { default: createDatasetsPlugin },
+      { default: createMapKeyPlugin }
     ]) => {
       const datasetsPlugin = createDatasetsPlugin({
         datasets: [historicMonumentsDataset]
       })
+
+      const mapKeyPlugin = createMapKeyPlugin()
 
       new InteractiveMap('demo-map-symbols', {
         behaviour: 'inline',
@@ -97,7 +101,7 @@ function MapInner () {
         center: [-2.4608,54.5574],
         zoom: 14,
         containerHeight: '516px',
-        plugins: [datasetsPlugin]
+        plugins: [datasetsPlugin, mapKeyPlugin]
       })
     })
   }, [])
