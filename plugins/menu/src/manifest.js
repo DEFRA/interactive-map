@@ -23,9 +23,6 @@ export const manifest = {
     label: 'Layers',
     panelId: 'menu',
     iconId: 'layersMenu',
-    // excludeWhen: ({ pluginConfig }) => !pluginConfig.menu && !pluginConfig.datasets.some(l =>
-    //   l.showInMenu || l.sublayers?.some(r => r.showInMenu)
-    // ),
     mobile: { slot: 'top-left', showLabel: true },
     tablet: { slot: 'top-left', showLabel: true },
     desktop: { slot: 'top-left', showLabel: true }

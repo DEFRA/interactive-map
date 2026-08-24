@@ -1,6 +1,8 @@
+import { useIdPrefix } from './useIdPrefix.jsx'
+
 export const MenuCheckbox = ({ dispatch, menuGroupItem, onChange, checked }) => {
-  const itemClass = `im-c-menu-layers__item govuk-checkboxes govuk-checkboxes--small${checked ? '' : ' im-c-menu-layers__item--checked'}`
-  const itemId = `menu-checkbox-${menuGroupItem.id}`
+  const itemClass = `im-c-menu__item govuk-checkboxes govuk-checkboxes--small${checked ? '' : ' im-c-menu__item--checked'}`
+  const itemId = useIdPrefix(`checkbox-${menuGroupItem.id}`)
 
   const handleOnChange = event => {
     const _checked = Boolean(event.target?.checked)
@@ -24,7 +26,7 @@ export const MenuCheckbox = ({ dispatch, menuGroupItem, onChange, checked }) => 
           checked={checked}
           onChange={handleOnChange}
         />
-        <label className='im-c-menu-layers__item-label govuk-label govuk-checkboxes__label' htmlFor={itemId}>
+        <label className='im-c-menu__item-label govuk-label govuk-checkboxes__label' htmlFor={itemId}>
           {menuGroupItem.label}
         </label>
       </div>
