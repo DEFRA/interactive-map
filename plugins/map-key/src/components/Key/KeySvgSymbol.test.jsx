@@ -76,4 +76,16 @@ describe('KeySvgSymbol', () => {
     const callArg = mockResolve.mock.calls[0][2]
     expect(callArg.mapColorScheme).toBe('dark')
   })
+
+  it('renders nothing when resolve returns falsy', () => {
+    mockResolve.mockReturnValue(null)
+    const { container } = render(<KeySvgSymbol {...defaultProps} />)
+    expect(container.firstChild).toBeNull()
+  })
+
+  it('renders nothing when getSymbolViewBox returns falsy', () => {
+    getSymbolViewBox.mockReturnValue(null)
+    const { container } = render(<KeySvgSymbol {...defaultProps} />)
+    expect(container.firstChild).toBeNull()
+  })
 })

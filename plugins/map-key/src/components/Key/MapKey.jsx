@@ -8,9 +8,12 @@ export function MapKey ({
   pluginConfig: { noKeyItemText },
   services: { eventBus }
 }) {
-  const [keyGroups, setKeyGroups] = useState([])
-  const [hasGroups, setHasGroups] = useState(false)
   const [datasetRegistry, setDatasetRegistry] = useState(getDatasetRegistry())
+  // Lazily seed from the registry (already populated whenever the key is opened after
+  // datasets:ready) so the first paint shows real content instead of flashing the empty
+  // state while the effect below catches up on the next tick.
+  const [keyGroups, setKeyGroups] = useState(() => datasetRegistry?.keyItems().items ?? [])
+  const [hasGroups, setHasGroups] = useState(() => datasetRegistry?.keyItems().hasGroups ?? false)
 
   const getKeyItems = () => {
     const { items, hasGroups: _hasGroups } = datasetRegistry.keyItems()

@@ -8,6 +8,7 @@ import openNamesProvider from '/providers/beta/open-names/dist/esm/index.js'
 // Plugins
 import mapStylesPlugin from '/plugins/beta/map-styles/dist/esm/index.js'
 import createDatasetsPlugin from '/plugins/datasets/dist/esm/index.js'
+import createMapKeyPlugin from '/plugins/map-key/dist/esm/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/dist/esm/index.js'
 import searchPlugin from '/plugins/search/dist/esm/index.js'
 import createInteractPlugin from '/plugins/interact/dist/esm/index.js'
@@ -342,6 +343,7 @@ const interactiveMap = new InteractiveMap('map', {
       // expanded: true
     }),
     datasetsPlugin,
+    createMapKeyPlugin(),
     mapStylesPlugin({
       mapStyles: vtsMapStyles3857
     }),

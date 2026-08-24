@@ -1,18 +1,11 @@
-import { useEffect, useState } from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
 import { svgProps, SVG_SIZE } from './svgProperties.js'
 
 export const KeySvgRect = ({ mapStyle, keyDefinition }) => {
-  const [strokeWidth, setStrokeWidth] = useState(2)
-  const [fill, setFill] = useState('#ff0000')
-  const [stroke, setStroke] = useState('#ff0000')
-
-  useEffect(() => {
-    const { style } = keyDefinition
-    setStrokeWidth(style.strokeWidth)
-    setFill(getValueForStyle(style.fill, mapStyle.id))
-    setStroke(getValueForStyle(style.stroke, mapStyle.id))
-  }, [mapStyle.id, keyDefinition])
+  const { style } = keyDefinition
+  const strokeWidth = style.strokeWidth
+  const fill = getValueForStyle(style.fill, mapStyle.id)
+  const stroke = getValueForStyle(style.stroke, mapStyle.id)
 
   return (
     <svg {...svgProps}>

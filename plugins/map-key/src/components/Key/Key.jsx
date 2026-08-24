@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import { EmptyKey } from './EmptyKey.jsx'
 import { KeyItem } from './KeyItem.jsx'
 import { KeyGroupItem } from './KeyGroupItem.jsx'
@@ -30,8 +30,10 @@ export const Key = ({
   if (!keyGroups?.length) {
     return (<EmptyKey text={noKeyItemText} />)
   }
-  const [className, setClassName] = useState('im-c-map-key')
-  useEffect(() => setClassName(hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName), [hasGroups])
+  // Pure derivation of hasGroups — computed directly during render (see KeyItem.jsx for why:
+  // staging this through useState/useEffect meant a mount with groups briefly rendered without
+  // the --has-groups modifier, using flat spacing before the effect corrected it).
+  const className = hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName
 
   return (
     <div className={className}>

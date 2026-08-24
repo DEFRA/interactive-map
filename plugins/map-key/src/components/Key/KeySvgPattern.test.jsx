@@ -52,4 +52,10 @@ describe('KeySvgPattern', () => {
     const { container } = render(<KeySvgPattern {...defaultProps} />)
     expect(container.querySelector('#content-el')).toBeTruthy()
   })
+
+  it('renders nothing when getKeyPatternPaths returns falsy', () => {
+    getKeyPatternPaths.mockReturnValue(null)
+    const { container } = render(<KeySvgPattern {...defaultProps} />)
+    expect(container.firstChild).toBeNull()
+  })
 })
