@@ -1,0 +1,9 @@
+// /plugins/flood-menu/flood-menu.scss
+//
+// Thin entry point only — kept because index.js needs a single top-level
+// scss import so the plugin's CSS lands in the build's main output rather
+// than a lazily-chunked one (its manifest, and therefore each control, is
+// loaded async — see index.js's `load()`). The actual styles live colocated
+// next to each control's component, e.g. components/DrawMenu.scss; add a
+// `@use` line here for each new control as it's added.
+@use 'components/DrawMenu';

@@ -5,6 +5,9 @@ import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 import createMenuPlugin from '/plugins/menu/src/index.js'
+import createDrawPlugin from '/plugins/beta/draw-es/src/index.js'
+import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import createFloodMenuPlugin from '/plugins/flood-menu/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
@@ -549,6 +552,48 @@ const datasetsPlugin = createDatasetsPlugin({
   datasets
 })
 
+const boundaryFeatureId = 'boundary'
+// Set while editing a square: framePlugin.editFeature needs the feature removed from
+// drawPlugin's layer first (see onEdit below), so if that edit is cancelled we need to
+// know what to hand back to drawPlugin.addFeature to reinstate it.
+let pendingSquareFeature = null
+
+const drawPlugin = createDrawPlugin({
+  onGeometryChange: (event) => true
+})
+
+const framePlugin = createFramePlugin({
+  aspectRatio: 1
+})
+
+const floodMenuPlugin = createFloodMenuPlugin({
+  heading: 'Get a boundary report',
+  onDrawShape: () => {
+    drawPlugin.newPolygon(boundaryFeatureId, {
+      onGeometryChange: (event) => true
+    })
+  },
+  onDrawSquare: () => {
+    framePlugin.addFrame(boundaryFeatureId, {
+      aspectRatio: 1
+    })
+  },
+  onEdit: (feature, shape) => {
+    if (shape === 'square') {
+      pendingSquareFeature = feature
+      drawPlugin.deleteFeature(boundaryFeatureId)
+      framePlugin.editFeature(feature)
+    } else {
+      drawPlugin.editFeature(boundaryFeatureId, {
+        onGeometryChange: (event) => true
+      })
+    }
+  },
+  onDelete: () => {
+    drawPlugin.deleteFeature(boundaryFeatureId)
+  }
+})
+
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'mapOnly',
   mapProvider: esriProvider({ setupConfig: setupEsriConfig }),
@@ -576,6 +621,9 @@ const interactiveMap = new InteractiveMap('map', {
       menu
     }),
     datasetsPlugin,
+    drawPlugin,
+    framePlugin,
+    floodMenuPlugin,
     mapStylesPlugin({
       mapStyles: vtsMapStyles27700,
       manifest: {
@@ -592,6 +640,22 @@ const interactiveMap = new InteractiveMap('map', {
       }
     })
   ]
+})
+
+// framePlugin only computes the drawn rectangle and hands it back on `frame:done` —
+// it doesn't put anything on the map itself, so drawPlugin has to add it as a graphic.
+interactiveMap.on('frame:done', function (feature) {
+  drawPlugin.addFeature(feature)
+  pendingSquareFeature = null
+})
+
+// If editing a square is cancelled, reinstate the feature onEdit removed from drawPlugin's
+// layer (see onEdit above). No-op for a fresh "Draw square" (nothing was ever deleted).
+interactiveMap.on('frame:cancel', function () {
+  if (pendingSquareFeature) {
+    drawPlugin.addFeature(pendingSquareFeature)
+    pendingSquareFeature = null
+  }
 })
 
 const testGlobalVisibility = () => {

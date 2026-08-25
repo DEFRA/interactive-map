@@ -1,0 +1,65 @@
+// ===================================================
+// Component: DrawMenu (floodMenu plugin)
+// ===================================================
+
+.flood-c-draw-menu {
+  border-top: 1px solid var(--content-border-color);
+  padding-bottom: 15px;
+  margin-bottom: 15px;
+}
+
+.flood-c-draw-menu__heading {
+  margin-top: 15px;
+  color: var(--foreground-color);
+}
+
+.flood-c-draw-menu__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.flood-c-draw-menu__item {
+  display: flex;
+  margin-top: 20px;
+}
+
+.flood-c-draw-menu__button {
+  display: flex;
+  align-items: center;
+  position: relative;
+  padding: 0;
+  background-color: transparent;
+  border: 0;
+  cursor: pointer;
+  margin: 0;
+  outline: 3px solid transparent;
+  font: inherit;
+
+  svg {
+    color: var(--foreground-color);
+    flex-shrink: 0;
+  }
+
+  .flood-c-draw-menu__button-label {
+    margin-left: 7px;
+    color: var(--content-link-color);
+  }
+
+  &:hover:not(:disabled) > .flood-c-draw-menu__button-label,
+  &:focus-visible > .flood-c-draw-menu__button-label {
+    color: var(--foreground-color);
+  }
+
+  &:focus-visible {
+    color: var(--foreground-color);
+    background-color: var(--focus-outline-color);
+    box-shadow: 0 -2px var(--focus-outline-color), 0 4px var(--foreground-color);
+    text-decoration: none;
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.5;
+  }
+}
