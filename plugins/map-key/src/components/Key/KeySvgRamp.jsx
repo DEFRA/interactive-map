@@ -6,7 +6,7 @@ export const KeySvgRamp = ({ mapStyle, keyDefinition }) => {
   const stroke = getValueForStyle(style.fill, mapStyle.id)
 
   return (
-    <svg viewBox='0 0 5 5' preserveAspectRatio='none' fill={fill} stroke={stroke} stroke-width='1'>
+    <svg viewBox='0 0 5 5' preserveAspectRatio='none' fill={fill} stroke={stroke} strokeWidth='1'>
       <path d='M0 0h5v5H0z' />
     </svg>
   )
