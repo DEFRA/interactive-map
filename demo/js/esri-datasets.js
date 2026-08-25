@@ -210,7 +210,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     label: 'Surface Water Depth All',
     groupLabel: 'Surface Water',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
-    showInKey: true,
+    showInKey: false,
     sourceLayer,
     visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
     sublayers: [
@@ -272,7 +272,23 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       },
     ]
   }
-  return [extentsDataset, depthDataset]
+  // We only really need one of these with visibleWhen: { menu: {dataset: ['surfacewater'], depth: ['depthAll'] } },
+  const depthsKey = {
+    id: `${id}-depths-key`,
+    label: 'Surface water',
+    groupLabel: 'Surface water depth in millimetres',
+    groupStyle: 'ramp',
+    showInKey: true,
+    visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
+    sublayers: depthDataset.sublayers.map((sublayer) => {
+      return {
+        ...sublayer,
+        esriStyleLayerId: null,
+        label: sublayer.label.match(/[0-9]+/)[0],
+      }
+    })
+  }
+  return [extentsDataset, depthDataset, depthsKey]
 }
 
 const surfaceWaterExtentsKey = {
