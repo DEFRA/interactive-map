@@ -141,6 +141,23 @@ describe('KeyboardHelp — tabs', () => {
     fireEvent.click(screen.getByRole('tab', { name: DEFAULT_GROUP }))
     expect(screen.getByText('No group')).toBeInTheDocument()
   })
+
+  it('merges group names that differ only by case/whitespace into one tab (groupIntoTabs)', () => {
+    getKeyboardShortcuts.mockReturnValue([
+      { id: 'a', group: 'Select Features', context: 'listbox', title: 'Shortcut A', command: '<kbd>Ctrl+A</kbd>' },
+      { id: 'b', group: 'select features', context: 'listbox', title: 'Shortcut B', command: '<kbd>Ctrl+B</kbd>' },
+      ...VIEWPORT_SHORTCUTS
+    ])
+    render(<KeyboardHelp context='listbox' />)
+    // Two groups present (Select Features, Navigate) — not one, so tabs render at all
+    expect(screen.getAllByRole('tab')).toHaveLength(2)
+    // First-encountered member's raw group string wins as the tab's displayed name
+    const tab = screen.getByRole('tab', { name: 'Select Features' })
+    expect(tab).toBeInTheDocument()
+    fireEvent.click(tab)
+    expect(screen.getByText('Shortcut A')).toBeVisible()
+    expect(screen.getByText('Shortcut B')).toBeVisible()
+  })
 })
 
 // ─── listboxIsActive filtering ────────────────────────────────────────────────

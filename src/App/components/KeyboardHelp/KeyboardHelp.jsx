@@ -3,6 +3,9 @@ import React from 'react'
 import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext.js'
 import { Tabs } from '../Tabs/Tabs.jsx'
+import { groupIntoTabs } from '../../renderer/groupIntoTabs.js'
+
+const DEFAULT_GROUP = 'Navigate'
 
 const ShortcutList = ({ items }) => (
   <dl className='im-c-keyboard-help__list'>
@@ -15,26 +18,22 @@ const ShortcutList = ({ items }) => (
   </dl>
 )
 
-const buildGroupMap = (shortcuts) => shortcuts.reduce((acc, shortcut) => {
-  const group = shortcut.group || 'Navigate'
-  if (!acc[group]) {
-    acc[group] = []
-  }
-  acc[group].push(shortcut)
-  return acc
-}, {})
-
-const getDefaultTab = (groupEntries, context) => {
-  const exactMatch = groupEntries.find(([, items]) =>
-    items.some(s => (s.context ?? 'viewport') === context)
+/**
+ * Picks which tab should be active on open: the first tab containing a shortcut whose own
+ * context matches exactly, else the first tab containing a global-context shortcut, else
+ * just the first tab. Domain-specific to keyboard shortcuts — not part of groupIntoTabs.
+ */
+const getDefaultTab = (tabs, context) => {
+  const exactMatch = tabs.find(tab =>
+    tab.items.some(({ shortcut }) => (shortcut.context ?? 'viewport') === context)
   )
   if (exactMatch) {
-    return exactMatch[0]
+    return exactMatch.name
   }
-  const globalMatch = groupEntries.find(([, items]) =>
-    items.some(s => s.context === 'global')
+  const globalMatch = tabs.find(tab =>
+    tab.items.some(({ shortcut }) => shortcut.context === 'global')
   )
-  return globalMatch?.[0] ?? groupEntries[0][0]
+  return globalMatch?.name ?? tabs[0].name
 }
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
@@ -46,10 +45,13 @@ export const KeyboardHelp = ({ context = 'viewport' }) => { // NOSONAR: project 
   const shortcuts = listboxIsActive
     ? allShortcuts
     : allShortcuts.filter(s => s.context !== 'listbox')
-  const groupMap = buildGroupMap(shortcuts)
-  const groupEntries = Object.entries(groupMap)
 
-  if (groupEntries.length <= 1) {
+  const tabs = groupIntoTabs({
+    items: shortcuts.map(shortcut => ({ id: shortcut.id, order: 0, tab: shortcut.group, shortcut })),
+    fallbackLabel: DEFAULT_GROUP
+  })
+
+  if (!tabs) {
     return (
       <div className='im-c-keyboard-help'>
         <ShortcutList items={shortcuts} />
@@ -57,14 +59,14 @@ export const KeyboardHelp = ({ context = 'viewport' }) => { // NOSONAR: project 
     )
   }
 
-  const tabs = groupEntries.map(([name, items]) => ({
-    name,
-    content: <ShortcutList items={items} />
+  const tabProps = tabs.map(tab => ({
+    name: tab.name,
+    content: <ShortcutList items={tab.items.map(({ shortcut }) => shortcut)} />
   }))
 
   return (
     <div className='im-c-keyboard-help'>
-      <Tabs tabs={tabs} defaultTab={getDefaultTab(groupEntries, context)} />
+      <Tabs tabs={tabProps} defaultTab={getDefaultTab(tabs, context)} />
     </div>
   )
 }
