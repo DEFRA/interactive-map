@@ -19,6 +19,7 @@ import openNamesProvider from '/providers/beta/open-names/src/index.js'
 import useLocationPlugin from '/plugins/beta/use-location/src/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
+import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 // import createDrawPlugin from '/plugins/beta/draw-ml/src/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
@@ -315,6 +316,7 @@ const interactiveMap = new InteractiveMap('map', {
       showLabel: true
     }),
     datasetsPlugin,
+    createMapKeyPlugin(),
     mapStylesPlugin({
       mapStyles: vtsMapStyles3857
     }),

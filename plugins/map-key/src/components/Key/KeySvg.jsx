@@ -1,32 +1,31 @@
-import { useEffect, useState } from 'react'
 import { KeySvgPattern } from './KeySvgPattern.jsx'
 import { KeySvgSymbol } from './KeySvgSymbol.jsx'
 import { KeySvgLine } from './KeySvgLine.jsx'
 import { KeySvgRect } from './KeySvgRect.jsx'
 import { symbolRegistry } from '../../registry/index.js'
 
-export const KeySvg = ({ keyDefinition, mapStyle }) => {
-  const [symbolShape, setSymbolShape] = useState(null)
-  const [symbolDef, setSymbolDef] = useState(null)
+// Pure derivation of keyDefinition — computed directly during render (see KeyItem.jsx for why:
+// staging this through useState/useEffect meant every fresh mount painted a blank symbol first).
+const getSymbolShape = (keyDefinition) => {
+  if (!keyDefinition) {
+    return { symbolShape: null, symbolDef: null }
+  }
+  const { hasSymbol, hasPattern, style } = keyDefinition
+  if (hasSymbol) {
+    const symbolDef = symbolRegistry.getSymbolDef(style)
+    return { symbolShape: symbolDef ? 'symbol' : 'rect', symbolDef }
+  }
+  if (hasPattern) {
+    return { symbolShape: 'pattern', symbolDef: null }
+  }
+  if (style.keySymbolShape === 'line') {
+    return { symbolShape: 'line', symbolDef: null }
+  }
+  return { symbolShape: 'rect', symbolDef: null }
+}
 
-  useEffect(() => {
-    if (!keyDefinition) {
-      setSymbolShape(null)
-      return
-    }
-    const { hasSymbol, hasPattern, style } = keyDefinition
-    if (hasSymbol) {
-      const _symbolDef = symbolRegistry.getSymbolDef(style)
-      setSymbolDef(_symbolDef)
-      setSymbolShape(_symbolDef ? 'symbol' : 'rect')
-    } else if (hasPattern) {
-      setSymbolShape('pattern')
-    } else if (style.keySymbolShape === 'line') {
-      setSymbolShape('line')
-    } else {
-      setSymbolShape('rect')
-    }
-  }, [keyDefinition])
+export const KeySvg = ({ keyDefinition, mapStyle }) => {
+  const { symbolShape, symbolDef } = getSymbolShape(keyDefinition)
 
   if (!symbolShape) {
     return null
