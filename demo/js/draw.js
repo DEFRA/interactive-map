@@ -131,6 +131,7 @@ const interactiveMap = new InteractiveMap('map', {
   containerHeight: '600px',
   transformRequest: transformVtsRequest3857,
   enableZoomControls: true,
+  enableMoveControls: false,
   readMapText: true,
   // enableFullscreen: true,
   // hasExitButton: true,

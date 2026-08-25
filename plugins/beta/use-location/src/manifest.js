@@ -18,7 +18,7 @@ export const manifest = {
 
   buttons: [{
     id: 'useLocation',
-    group: { name: 'location', label: 'Location', order: 0 },
+    group: { label: 'Location', slotOrder: 0 },
     label: 'Use your location',
     iconId: 'locateFixed',
     keepFocus: true,

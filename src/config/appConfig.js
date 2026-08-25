@@ -74,7 +74,7 @@ export const defaultAppConfig = {
     desktop: buttonSlots
   }, {
     id: 'zoomIn',
-    group: { name: 'zoom', label: 'Zoom controls', order: 0 },
+    group: { label: 'Zoom controls', slotOrder: 0 },
     label: 'Zoom in',
     iconId: 'plus',
     keepFocus: true,
@@ -86,7 +86,7 @@ export const defaultAppConfig = {
     desktop: buttonSlots
   }, {
     id: 'zoomOut',
-    group: { name: 'zoom', label: 'Zoom controls', order: 0 },
+    group: { label: 'Zoom controls', slotOrder: 0 },
     label: 'Zoom out',
     iconId: 'minus',
     keepFocus: true,
