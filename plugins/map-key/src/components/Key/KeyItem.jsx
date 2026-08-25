@@ -13,7 +13,7 @@ export const KeyItem = ({ keyDefinition, mapStyle }) => {
       <dt className='im-c-map-key-list__item-symbol'>
         <KeySvg keyDefinition={keyDefinition} mapStyle={mapStyle} />
       </dt>
-      <dd className='im-c-map-key__item-label'>
+      <dd className='im-c-map-key-list__item-label'>
         {label}
         {symbolDescription && (
           <span className='govuk-visually-hidden'>

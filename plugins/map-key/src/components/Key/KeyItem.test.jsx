@@ -25,12 +25,12 @@ beforeEach(() => {
 describe('KeyItem', () => {
   it('renders a dl with the item class', () => {
     const { container } = render(<KeyItem keyDefinition={baseKeyDefinition} mapStyle={mapStyle} />)
-    expect(container.querySelector('.im-c-map-key__item')).toBeTruthy()
+    expect(container.querySelector('.im-c-map-key-list__item')).toBeTruthy()
   })
 
   it('renders the symbol dt with the correct class', () => {
     const { container } = render(<KeyItem keyDefinition={baseKeyDefinition} mapStyle={mapStyle} />)
-    expect(container.querySelector('.im-c-map-key__item-symbol')).toBeTruthy()
+    expect(container.querySelector('.im-c-map-key-list__item-symbol')).toBeTruthy()
   })
 
   it('renders KeySvg inside the symbol dt', () => {
@@ -40,7 +40,7 @@ describe('KeyItem', () => {
 
   it('renders the label dd with the correct class', () => {
     const { container } = render(<KeyItem keyDefinition={baseKeyDefinition} mapStyle={mapStyle} />)
-    expect(container.querySelector('.im-c-map-key__item-label')).toBeTruthy()
+    expect(container.querySelector('.im-c-map-key-list__item-label')).toBeTruthy()
   })
 
   it('renders the label text', () => {
