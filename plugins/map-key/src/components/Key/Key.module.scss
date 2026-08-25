@@ -72,7 +72,7 @@
 
 .im-c-map-key-list-ramp {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(43px, auto));
+  grid-template-columns: repeat(auto-fit, minmax(47px, auto));
   direction: rtl;
   .im-c-map-key-list__item {
     padding: 0 !important;
@@ -90,8 +90,14 @@
       background-color: pink;
       width: 100%;
       direction: ltr;
+      margin-top: 10px;
+      // Offset the label, so it sits below the border with the next box
+      white-space: nowrap;
+      text-align: center;
+      transform: translateX(-40%);
     }
-    &:last-child {
+
+    &:last-child { // Hide the last child (ie the left-most one as the order is rtl)
       .im-c-map-key-list__item-label {
           display: none;
         }
