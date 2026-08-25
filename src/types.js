@@ -170,8 +170,12 @@
  * @property {(context: PluginContext) => boolean} [excludeWhen]
  * Callback to determine if the button should be excluded from rendering.
  *
- * @property {string} [group]
- * Button group label for grouping related buttons.
+ * @property {{ label: string, slotOrder?: number }} [group]
+ * Groups this button with any other button sharing the same `label` (kebab-cased) into one
+ * `role="group"` container, rendered as a single item in the slot. `label` is also the
+ * group's accessible name (aria-label) — buttons whose labels differ only by case/whitespace
+ * still merge into one group. `slotOrder` positions the group itself within the slot (defaults
+ * to 0); each button's own breakpoint `order` controls its position *within* the group.
  *
  * @property {(context: PluginContext) => boolean} [hiddenWhen]
  * Callback to determine if the button should be hidden. Sets display: none if true.

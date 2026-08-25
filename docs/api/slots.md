@@ -86,7 +86,7 @@ Multiple elements can share the same slot. Panels and controls render in the ord
 > [!NOTE]
 > Order values are clamped to the valid range. If you specify an order larger than the number of buttons in the slot, the button is placed last.
 
-When buttons belong to a group, `order` controls position within the group. The group itself is positioned in the slot using `group.order`.
+When buttons belong to a group, `order` controls position within the group. The group itself is positioned in the slot using `group.slotOrder`.
 
 ## Button-Adjacent Panels
 

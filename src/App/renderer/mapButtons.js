@@ -1,6 +1,8 @@
 // src/core/renderers/mapButtons.js
 import { MapButton } from '../components/MapButton/MapButton.jsx'
 import { allowedSlots } from './slots.js'
+import { groupByKey } from './groupByKey.js'
+import { orderItems } from './orderItems.js'
 import { logger } from '../../services/logger.js'
 
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
@@ -74,47 +76,6 @@ function createButtonClickHandler (config, appState, evaluateProp) {
   }
 }
 
-/**
- * Resolves the group name from a button config's group property.
- * Accepts either the new object form `{ name, label?, order? }` or a deprecated plain string.
- * @param {string|{name: string, label?: string, order?: number}|null|undefined} group
- * @returns {string|null}
- */
-function resolveGroupName (group) {
-  if (group == null) {
-    return null
-  }
-  return typeof group === 'string' ? group : (group.name ?? null)
-}
-
-/**
- * Resolves the accessible label for a group.
- * Uses `label` if provided, otherwise falls back to `name`.
- * @param {string|{name: string, label?: string, order?: number}|null|undefined} group
- * @returns {string}
- */
-function resolveGroupLabel (group) {
-  if (!group) {
-    return ''
-  }
-  if (typeof group === 'string') {
-    return group
-  }
-  return group.label ?? group.name ?? ''
-}
-
-/**
- * Resolves the slot-level order for a group.
- * @param {string|{name: string, label?: string, order?: number}|null|undefined} group
- * @returns {number}
- */
-function resolveGroupOrder (group) {
-  if (!group || typeof group === 'string') {
-    return 0
-  }
-  return group.order ?? 0
-}
-
 function applySlotExclusivity (matching, appState) {
   let exclusivePluginId = null
 
@@ -181,6 +142,69 @@ function SlotButton ({ buttonId, config, appState, appConfig, evaluateProp }) {
   )
 }
 
+/**
+ * Ungrouped buttons — one result item per button, ordered by its own breakpoint-level
+ * slot position.
+ */
+function buildUngroupedItems (members, ctx) {
+  return members.map(([buttonId, config]) => ({
+    id: buttonId,
+    type: 'button',
+    order: config[ctx.breakpoint]?.order ?? 0,
+    element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, ...ctx })} />
+  }))
+}
+
+/**
+ * A named group's own slot order/label come from whichever member is encountered first —
+ * unlike panel tabs (see groupIntoTabs.js), this is never derived from members' own order:
+ * groups render simultaneously (not one-at-a-time like tabs), so an unspecified order
+ * defaults to 0, same as every other slot item, rather than borrowing a member's position.
+ * A single-member group still degrades to a plain button (no wrapping container), but keeps
+ * the group's own slot order rather than falling back to its own breakpoint-level order.
+ */
+function buildGroupItem (key, members, ctx) {
+  const [, firstConfig] = members[0]
+  const order = firstConfig.group.slotOrder ?? 0
+
+  /* istanbul ignore next */
+  if (process.env.NODE_ENV !== 'production') {
+    const distinctOrders = new Set(members.map(([, config]) => config.group?.slotOrder ?? 0))
+    if (distinctOrders.size > 1) {
+      logger.warn(`Button group "${firstConfig.group.label}" has inconsistent slotOrder values (${[...distinctOrders].join(', ')}) across its members — using ${order} (the first member's).`)
+    }
+  }
+
+  if (members.length < 2) {
+    const [buttonId, config] = members[0]
+    return {
+      id: buttonId,
+      type: 'button',
+      order,
+      element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, ...ctx })} />
+    }
+  }
+
+  // Order members within the group the same way panel/control content orders within a tab
+  const sorted = orderItems(members.map(([buttonId, config]) => ({
+    id: buttonId,
+    order: config[ctx.breakpoint]?.order ?? 0,
+    buttonId,
+    config
+  })))
+
+  return {
+    id: `group-${key}`,
+    type: 'group',
+    order,
+    element: (
+      <div key={`group-${key}`} role='group' aria-label={firstConfig.group.label} className='im-c-button-group'>{/* NOSONAR - div with role="group" is correct for a button group */}
+        {sorted.map(({ buttonId, config }) => <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, ...ctx })} />)}
+      </div>
+    )
+  }
+}
+
 function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
   const { buttonConfig, breakpoint } = appState
 
@@ -191,86 +215,17 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
     return []
   }
 
-  // Partition matching buttons into named groups and ungrouped singletons
-  const groupMap = new Map() // name -> { label, order, members: [[buttonId, config]] }
-  const singletons = []
-
-  matching.forEach(([buttonId, config]) => {
-    const { group } = config
-
-    if (group == null) {
-      singletons.push([buttonId, config])
-      return
-    }
-
-    /* istanbul ignore next */
-    if (process.env.NODE_ENV !== 'production' && typeof group === 'string') {
-      logger.warn(`Button "${buttonId}": group should be an object { name, label?, order? } — string groups are deprecated.`)
-    }
-
-    const name = resolveGroupName(group)
-    const label = resolveGroupLabel(group)
-    const order = resolveGroupOrder(group)
-
-    if (groupMap.has(name)) {
-      const existing = groupMap.get(name)
-      /* istanbul ignore next */
-      if (process.env.NODE_ENV !== 'production' && existing.order !== order) {
-        logger.warn(`Group "${name}" has inconsistent order values (${existing.order} vs ${order}). Using the lower value.`)
-        existing.order = Math.min(existing.order, order)
-      }
-    } else {
-      groupMap.set(name, { label, order, members: [] })
-    }
-
-    groupMap.get(name).members.push([buttonId, config])
-  })
+  // Partition into named groups (keyed by kebab-cased group.label) plus one ungrouped bucket
+  const buckets = groupByKey({ items: matching, keyFn: ([, config]) => config.group?.label })
+  const ctx = { breakpoint, appState, appConfig, evaluateProp }
 
   const result = []
-
-  // Ungrouped buttons — order is the breakpoint-level slot position
-  for (const btn of singletons) {
-    const [buttonId, config] = btn
-    const order = config[breakpoint]?.order ?? 0
-    result.push({
-      id: buttonId,
-      type: 'button',
-      order,
-      element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, appState, appConfig, evaluateProp })} />
-    })
-  }
-
-  for (const [groupName, { label, order: groupOrder, members }] of groupMap) {
-    if (members.length < 2) {
-      // Singleton group: degrade to a regular button using the group's slot order
-      const [buttonId, config] = members[0]
-      const order = groupOrder || config[breakpoint]?.order || 0
-      result.push({
-        id: buttonId,
-        type: 'button',
-        order,
-        element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, appState, appConfig, evaluateProp })} />
-      })
-      continue
+  for (const [key, members] of buckets) {
+    if (key === null) {
+      result.push(...buildUngroupedItems(members, ctx))
+    } else {
+      result.push(buildGroupItem(key, members, ctx))
     }
-
-    // Sort group members by their intra-group order (breakpoint-level order prop)
-    const sorted = [...members].sort((a, b) => {
-      const orderA = a[1][breakpoint]?.order ?? 0
-      const orderB = b[1][breakpoint]?.order ?? 0
-      return orderA - orderB
-    })
-
-    result.push({
-      id: `group-${groupName}`,
-      type: 'group',
-      order: groupOrder,
-      element: (
-        <div key={`group-${groupName}`} role='group' aria-label={label} className='im-c-button-group'>{/* NOSONAR - div with role="group" is correct for a button group */}
-          {sorted.map(([buttonId, config]) => <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, appState, appConfig, evaluateProp })} />)}
-        </div>
-      )
-    })
   }
 
   return result
@@ -280,8 +235,5 @@ export {
   mapButtons,
   getMatchingButtons,
   applySlotExclusivity,
-  SlotButton,
-  resolveGroupName,
-  resolveGroupLabel,
-  resolveGroupOrder
+  SlotButton
 }

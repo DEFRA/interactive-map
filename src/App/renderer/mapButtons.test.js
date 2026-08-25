@@ -1,5 +1,5 @@
 import React from 'react'
-import { mapButtons, getMatchingButtons, applySlotExclusivity, SlotButton, resolveGroupName, resolveGroupLabel, resolveGroupOrder } from './mapButtons.js'
+import { mapButtons, getMatchingButtons, applySlotExclusivity, SlotButton } from './mapButtons.js'
 import { logger } from '../../services/logger.js'
 import { getPanelConfig } from '../registry/panelRegistry.js'
 
@@ -45,52 +45,6 @@ describe('mapButtons module', () => {
     }
     appState.buttonConfig = ({})
     getPanelConfig.mockReturnValue({})
-  })
-
-  // -------------------------
-  // resolveGroup* helper tests
-  // -------------------------
-  describe('resolveGroupName', () => {
-    it('returns null when group is null or undefined', () => {
-      expect(resolveGroupName(null)).toBeNull()
-      expect(resolveGroupName(undefined)).toBeNull()
-    })
-    it('returns the string when group is a string', () => {
-      expect(resolveGroupName('g1')).toBe('g1')
-    })
-    it('returns group.name when group is an object', () => {
-      expect(resolveGroupName({ name: 'g1' })).toBe('g1')
-      expect(resolveGroupName({ name: undefined })).toBeNull()
-    })
-  })
-
-  describe('resolveGroupLabel', () => {
-    it('returns empty string when group is falsy', () => {
-      expect(resolveGroupLabel(null)).toBe('')
-      expect(resolveGroupLabel(undefined)).toBe('')
-    })
-    it('returns the string itself when group is a string', () => {
-      expect(resolveGroupLabel('My Group')).toBe('My Group')
-    })
-    it('returns group.label when provided, else group.name, else empty string', () => {
-      expect(resolveGroupLabel({ name: 'g1', label: 'Group One' })).toBe('Group One')
-      expect(resolveGroupLabel({ name: 'g1' })).toBe('g1')
-      expect(resolveGroupLabel({ order: 5 })).toBe('')
-    })
-  })
-
-  describe('resolveGroupOrder', () => {
-    it('returns 0 when group is falsy', () => {
-      expect(resolveGroupOrder(null)).toBe(0)
-      expect(resolveGroupOrder(undefined)).toBe(0)
-    })
-    it('returns 0 when group is a string', () => {
-      expect(resolveGroupOrder('g1')).toBe(0)
-    })
-    it('returns group.order when provided, else 0', () => {
-      expect(resolveGroupOrder({ name: 'g1', order: 5 })).toBe(5)
-      expect(resolveGroupOrder({ name: 'g1' })).toBe(0)
-    })
   })
 
   // -------------------------
@@ -283,68 +237,85 @@ describe('mapButtons module', () => {
       expect(result[0]).toMatchObject({ id: 'b1', type: 'button', order: 1 })
     })
 
-    it('renders grouped buttons as a single group item with role=group', () => {
+    it('renders grouped buttons as a single group item with role=group, keyed by kebab-cased label', () => {
       appState.buttonConfig = ({
-        b1: { ...baseBtn, group: { name: 'g1', label: 'Group 1', order: 2 } },
-        b2: { ...baseBtn, desktop: { slot: 'header', order: 2 }, group: { name: 'g1', label: 'Group 1', order: 2 } }
+        b1: { ...baseBtn, group: { label: 'Group 1', slotOrder: 2 } },
+        b2: { ...baseBtn, desktop: { slot: 'header', order: 2 }, group: { label: 'Group 1', slotOrder: 2 } }
       })
       const result = map()
       expect(result).toHaveLength(1)
-      expect(result[0]).toMatchObject({ id: 'group-g1', type: 'group', order: 2 })
+      // stringToKebab only hyphenates camelCase boundaries, not spaces — this id is an internal
+      // React key/identifier only, never rendered as a literal DOM id, so that's harmless here.
+      expect(result[0]).toMatchObject({ id: 'group-group 1', type: 'group', order: 2 })
       expect(result[0].element.props.role).toBe('group')
       expect(result[0].element.props['aria-label']).toBe('Group 1')
     })
 
-    it('uses group name as aria-label when no explicit label is provided', () => {
+    it('merges group labels that differ only by case/whitespace into one group', () => {
       appState.buttonConfig = ({
-        b1: { ...baseBtn, group: { name: 'g1', order: 0 } },
-        b2: { ...baseBtn, group: { name: 'g1', order: 0 } }
-      })
-      const result = map()
-      expect(result[0].element.props['aria-label']).toBe('g1')
-    })
-
-    it('sorts group members by intra-group order', () => {
-      appState.buttonConfig = ({
-        b1: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 3 } },
-        b2: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 1 } },
-        b3: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 2 } }
+        b1: { ...baseBtn, group: { label: 'Zoom Controls' } },
+        b2: { ...baseBtn, group: { label: 'zoom controls' } }
       })
       const result = map()
       expect(result).toHaveLength(1)
-      const children = result[0].element.props.children
-      expect(children[0].props.buttonId).toBe('b2')
-      expect(children[1].props.buttonId).toBe('b3')
-      expect(children[2].props.buttonId).toBe('b1')
+      // First-encountered member's raw label wins, same convention as panel tabs (groupIntoTabs.js)
+      expect(result[0].element.props['aria-label']).toBe('Zoom Controls')
     })
 
-    it('renders singleton groups as regular buttons using group slot order', () => {
-      appState.buttonConfig = ({ b1: { ...baseBtn, group: { name: 'g1', label: 'Group 1', order: 3 } } })
+    it('orders group members via orderItems — unordered members keep natural sequence, an ordered one splices in by position', () => {
+      appState.buttonConfig = ({
+        b1: { ...baseBtn, group: { label: 'g1' }, desktop: { slot: 'header' } },
+        b2: { ...baseBtn, group: { label: 'g1' }, desktop: { slot: 'header', order: 1 } },
+        b3: { ...baseBtn, group: { label: 'g1' }, desktop: { slot: 'header' } }
+      })
+      const children = map()[0].element.props.children
+      expect(children.map(c => c.props.buttonId)).toEqual(['b2', 'b1', 'b3'])
+    })
+
+    it('renders singleton groups as regular buttons using the group\'s slot order', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, group: { label: 'Group 1', slotOrder: 3 } } })
       const result = map()
       expect(result).toHaveLength(1)
       expect(result[0]).toMatchObject({ id: 'b1', type: 'button', order: 3 })
     })
 
-    it('falls back to breakpoint order for singleton group when group order is 0', () => {
-      appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header', order: 4 }, group: { name: 'g1', order: 0 } } })
-      expect(map()[0].order).toBe(4)
-    })
-
-    it('falls back to 0 for singleton group when both group order and breakpoint order are absent', () => {
-      appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header' }, group: { name: 'g1', order: 0 } } })
+    it('does not fall back to the button\'s own breakpoint order when group slotOrder is explicitly 0', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header', order: 4 }, group: { label: 'g1', slotOrder: 0 } } })
       expect(map()[0].order).toBe(0)
     })
 
-    it('sorts group members treating missing breakpoint order as 0', () => {
+    it('falls back to 0 for singleton group when group slotOrder is absent', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, desktop: { slot: 'header' }, group: { label: 'g1' } } })
+      expect(map()[0].order).toBe(0)
+    })
+
+    it('warns in dev mode when group members declare inconsistent slotOrder values, using the first one encountered', () => {
       appState.buttonConfig = ({
-        b1: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 2 } },
-        b2: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header' } },
-        b3: { ...baseBtn, group: { name: 'g1', order: 0 }, desktop: { slot: 'header', order: 1 } }
+        b1: { ...baseBtn, group: { label: 'g1', slotOrder: 2 } },
+        b2: { ...baseBtn, desktop: { slot: 'header', order: 1 }, group: { label: 'g1', slotOrder: 5 } }
       })
-      const children = map()[0].element.props.children
-      expect(children[0].props.buttonId).toBe('b2')
-      expect(children[1].props.buttonId).toBe('b3')
-      expect(children[2].props.buttonId).toBe('b1')
+      const result = map()
+      expect(result[0].order).toBe(2)
+      expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('inconsistent slotOrder values'))
+    })
+
+    it('does not warn when group members agree on slotOrder', () => {
+      appState.buttonConfig = ({
+        b1: { ...baseBtn, group: { label: 'g1', slotOrder: 2 } },
+        b2: { ...baseBtn, desktop: { slot: 'header', order: 1 }, group: { label: 'g1', slotOrder: 2 } }
+      })
+      map()
+      expect(logger.warn).not.toHaveBeenCalled()
+    })
+
+    it('mixes grouped and ungrouped buttons in the same slot', () => {
+      appState.buttonConfig = ({
+        solo: { ...baseBtn, desktop: { slot: 'header', order: 1 } },
+        b1: { ...baseBtn, group: { label: 'g1' }, desktop: { slot: 'header' } },
+        b2: { ...baseBtn, group: { label: 'g1' }, desktop: { slot: 'header' } }
+      })
+      const result = map()
+      expect(result.map(r => r.id).sort()).toEqual(['group-g1', 'solo'])
     })
 
     it('falls back to order 0 when order is not specified in breakpoint config', () => {
