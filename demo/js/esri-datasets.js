@@ -574,7 +574,15 @@ const interactiveMap = new InteractiveMap('map', {
   center: [481146,484971],
   zoom: 13,
   plugins: [
-    createMapKeyPlugin(),
+    createMapKeyPlugin({
+      manifest: {
+        panels: [{
+          id: 'mapKey',
+          tablet: { slot: 'left-top', width: '360px' },
+          desktop: { slot: 'left-top', width: '360px' },
+        }]
+      },
+    }),
     createMenuPlugin({
       manifest: {
         panels: [{

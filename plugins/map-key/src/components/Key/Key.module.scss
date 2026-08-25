@@ -69,3 +69,32 @@
 .im-c-map-key-symbol--point {
   margin: -12px 1px -12px -9px;
 }
+
+.im-c-map-key-list-ramp {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(43px, auto));
+  direction: rtl;
+  .im-c-map-key-list__item {
+    padding: 0 !important;
+    position: relative !important;
+    display: flex;
+    flex-direction: column;
+
+    .im-c-map-key-list__item-symbol {
+      margin: 0 !important;
+      width: 100%;
+      direction: ltr;
+      background-color: yellow;
+    }
+    .im-c-map-key-list__item-label {
+      background-color: pink;
+      width: 100%;
+      direction: ltr;
+    }
+    &:last-child {
+      .im-c-map-key-list__item-label {
+          display: none;
+        }
+    }
+  }
+}

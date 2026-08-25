@@ -12,6 +12,7 @@ const KeyItemWrapper = ({ item, mapStyle }) => {
       <KeyGroupItem
         headingId={`key-heading-${item.id}`}
         label={item.groupLabel}
+        groupStyle={item.groupStyle}
         keyDefinitions={item.keyDefinitions}
         mapStyle={mapStyle}
       />
