@@ -127,7 +127,7 @@ const datasetRegistry = {
       }
 
       const groupLabel = dataset.groupLabel || dataset.label
-      const groupStyle = dataset._datasetDefinition.groupStyle
+      const groupStyle = dataset.groupStyle
       const groupObject = getOrCreateGroup(groupLabel, groupStyle)
       if (!dataset.hasSublayers) {
         groupObject.keyDefinitions.push(dataset.keyDefinition)

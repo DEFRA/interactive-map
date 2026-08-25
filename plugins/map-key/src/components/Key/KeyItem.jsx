@@ -1,7 +1,7 @@
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
 import { KeySvg } from './KeySvg.jsx'
 
-export const KeyItem = ({ keyDefinition, mapStyle, groupStyle }) => {
+export const KeyItem = ({ keyDefinition, mapStyle }) => {
   // Pure derivations of props — computed directly on every render rather than staged through
   // useState/useEffect, so there's no post-mount frame where the label/description are blank
   // (every panel reopen mounts this fresh, so that frame was visible as a flicker).
@@ -11,7 +11,7 @@ export const KeyItem = ({ keyDefinition, mapStyle, groupStyle }) => {
   return (
     <div className='im-c-map-key-list__item'>
       <dt className='im-c-map-key-list__item-symbol'>
-        <KeySvg keyDefinition={keyDefinition} mapStyle={mapStyle} groupStyle={groupStyle} />
+        <KeySvg keyDefinition={keyDefinition} mapStyle={mapStyle} />
       </dt>
       <dd className='im-c-map-key-list__item-label'>
         {label}
