@@ -12,10 +12,6 @@
   border-top: 1px solid var(--button-hover-color);
 }
 
-.im-c-map-key__group:not(:last-child) {
-  padding-bottom: 5px;
-}
-
 .im-c-map-key__empty-message {
   margin: 0;
   font-size: 1rem;
@@ -31,7 +27,7 @@
   color: var(--foreground-color);
 }
 
-.im-c-map-key__item {
+.im-c-map-key-list__item {
   display: flex;
   align-items: start;
   padding-top: 10px;
@@ -39,27 +35,27 @@
   font-size: 1rem;
 
   // First item inside a group — heading already provides top spacing
-  .im-c-map-key__group &:first-child {
+  .im-c-map-key__group > .im-c-map-key-list &:first-child {
     padding-top: 0;
   }
 }
 
-.im-c-map-key--has-groups > .im-c-map-key__item:not(:first-child) {
+.im-c-map-key--has-groups > .im-c-map-key-list__item:not(:first-child) {
   padding-top: 15px;
 }
 
-.im-c-map-key--has-groups > .im-c-map-key__item {
+.im-c-map-key--has-groups > .im-c-map-key-list__item {
   padding-bottom: 15px;
 }
 
-.im-c-map-key__group .im-c-map-key__item {
+.im-c-map-key__group > .im-c-map-key-list .im-c-map-key-list__item {
   padding-top: 10px;
   padding-bottom: 10px;
 }
 
 // Last item in all scenarios — flat or inside the last group
-.im-c-map-key > .im-c-map-key__item:last-child,
-.im-c-map-key__group:last-child .im-c-map-key__item:last-child {
+.im-c-map-key > .im-c-map-key-list__item:last-child,
+.im-c-map-key__group > .im-c-map-key-list:last-child .im-c-map-key-list__item:last-child {
   padding-bottom: 5px;
 }
 

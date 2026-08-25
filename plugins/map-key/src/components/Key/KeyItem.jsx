@@ -9,8 +9,8 @@ export const KeyItem = ({ keyDefinition, mapStyle }) => {
   const symbolDescription = getValueForStyle(keyDefinition.symbolDescription, mapStyle.id)
 
   return (
-    <dl className='im-c-map-key__item'>
-      <dt className='im-c-map-key__item-symbol'>
+    <div className='im-c-map-key-list__item'>
+      <dt className='im-c-map-key-list__item-symbol'>
         <KeySvg keyDefinition={keyDefinition} mapStyle={mapStyle} />
       </dt>
       <dd className='im-c-map-key__item-label'>
@@ -21,6 +21,6 @@ export const KeyItem = ({ keyDefinition, mapStyle }) => {
           </span>
         )}
       </dd>
-    </dl>
+    </div>
   )
 }
