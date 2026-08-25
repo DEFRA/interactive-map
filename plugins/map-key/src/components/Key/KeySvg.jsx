@@ -24,7 +24,7 @@ const getSymbolShape = (keyDefinition) => {
   return { symbolShape: 'rect', symbolDef: null }
 }
 
-export const KeySvg = ({ keyDefinition, mapStyle }) => {
+export const KeySvg = ({ keyDefinition, mapStyle, groupStyle }) => {
   const { symbolShape, symbolDef } = getSymbolShape(keyDefinition)
 
   if (!symbolShape) {
@@ -36,6 +36,6 @@ export const KeySvg = ({ keyDefinition, mapStyle }) => {
   } else if (symbolShape === 'line') {
     return <KeySvgLine mapStyle={mapStyle} keyDefinition={keyDefinition} />
   } else {
-    return <KeySvgRect mapStyle={mapStyle} keyDefinition={keyDefinition} />
+    return <KeySvgRect mapStyle={mapStyle} keyDefinition={keyDefinition} groupStyle={groupStyle} />
   }
 }

@@ -11,6 +11,7 @@ export const KeyGroupItem = ({ headingId, label, groupStyle, keyDefinitions, map
             key={`${keyDefinition.id}`}
             keyDefinition={keyDefinition}
             mapStyle={mapStyle}
+            groupStyle={groupStyle}
           />
         )}
       </dl>

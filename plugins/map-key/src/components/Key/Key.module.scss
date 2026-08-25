@@ -84,17 +84,15 @@
       margin: 0 !important;
       width: 100%;
       direction: ltr;
-      background-color: yellow;
     }
     .im-c-map-key-list__item-label {
-      background-color: pink;
       width: 100%;
       direction: ltr;
       margin-top: 10px;
       // Offset the label, so it sits below the border with the next box
       white-space: nowrap;
       text-align: center;
-      transform: translateX(-40%);
+      transform: translateX(-50%);
     }
 
     &:last-child { // Hide the last child (ie the left-most one as the order is rtl)

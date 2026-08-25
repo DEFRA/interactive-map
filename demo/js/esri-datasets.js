@@ -220,6 +220,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 2300mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
         }
       },
       {
@@ -228,6 +229,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 1200mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
         }
       },
       {
@@ -236,6 +238,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 900mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
         }
       },
       {
@@ -244,6 +247,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 600mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
         }
       },
       {
@@ -252,6 +256,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 300mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
         }
       },
       {
@@ -260,6 +265,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
         }
       },
       {
@@ -268,6 +274,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent up to 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
         }
       },
     ]
