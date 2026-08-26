@@ -100,7 +100,7 @@ const datasetRegistry = {
     const _items = []
     const groups = new Map()
 
-    const getOrCreateGroup = (groupLabel) => {
+    const getOrCreateGroup = (groupLabel, groupStyle) => {
       if (groups.has(groupLabel)) {
         return groups.get(groupLabel)
       }
@@ -108,6 +108,7 @@ const datasetRegistry = {
         type: 'group',
         id: groupLabel.toLowerCase().replaceAll(/\s+/g, '-'),
         groupLabel,
+        groupStyle,
         keyDefinitions: []
       }
       groups.set(groupLabel, groupObject)
@@ -126,7 +127,8 @@ const datasetRegistry = {
       }
 
       const groupLabel = dataset.groupLabel || dataset.label
-      const groupObject = getOrCreateGroup(groupLabel)
+      const groupStyle = dataset.groupStyle
+      const groupObject = getOrCreateGroup(groupLabel, groupStyle)
       if (!dataset.hasSublayers) {
         groupObject.keyDefinitions.push(dataset.keyDefinition)
       }
