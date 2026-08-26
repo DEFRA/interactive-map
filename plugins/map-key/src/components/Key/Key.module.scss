@@ -69,3 +69,55 @@
 .im-c-map-key-symbol--point {
   margin: -12px 1px -12px -9px;
 }
+
+.im-c-map-key-list-ramp {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(47px, auto));
+  direction: rtl;
+  .im-c-map-key-list__item {
+    padding: 0 !important;
+    position: relative !important;
+    display: flex;
+    flex-direction: column;
+
+    .im-c-map-key-list__item-symbol {
+      margin: 0 !important;
+      width: 100%;
+      direction: ltr;
+      svg {
+        display: block;
+      }
+
+    }
+    .im-c-map-key-list__item-label {
+      width: 100%;
+      direction: ltr;
+      margin-top: 10px;
+      // Offset the label, so it sits below the border with the next box
+      white-space: nowrap;
+      text-align: center;
+      transform: translateX(-50%);
+    }
+
+    &:first-child {  // rightmost visual cell (rtl) - add a curved corner
+      .im-c-map-key-list__item-symbol {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+        overflow: hidden;
+      }
+    }
+
+    &:last-child {   // leftmost visual cell (rtl)
+      // Hide the last child's label (ie the left-most one as the order is rtl)
+      .im-c-map-key-list__item-label {
+          display: none;
+      }
+
+      .im-c-map-key-list__item-symbol { // add a curved corner
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+        overflow: hidden;
+      }
+    }
+  }
+}

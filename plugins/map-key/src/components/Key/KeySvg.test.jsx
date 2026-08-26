@@ -21,6 +21,10 @@ jest.mock('./KeySvgRect.jsx', () => ({
   KeySvgRect: () => <svg data-testid='key-svg-rect' />
 }))
 
+jest.mock('./KeySvgRamp.jsx', () => ({
+  KeySvgRamp: () => <svg data-testid='key-svg-ramp' />
+}))
+
 const baseKeyDefinition = {
   hasSymbol: false,
   hasPattern: false,
@@ -85,5 +89,10 @@ describe('KeySvg', () => {
   it('should return null if keyDefinition is undefined', () => {
     const { container } = render(<KeySvg {...baseProps} keyDefinition={null} />)
     expect(container.firstChild).toBeNull()
+  })
+
+  it('renders KeySvgRamp when hasRampStyleKey is true', () => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasRampStyleKey: true }} />)
+    expect(getByTestId('key-svg-ramp')).toBeTruthy()
   })
 })

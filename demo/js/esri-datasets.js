@@ -211,7 +211,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     label: 'Surface Water Depth All',
     groupLabel: 'Surface Water',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
-    showInKey: true,
+    showInKey: false,
     sourceLayer,
     visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
     sublayers: [
@@ -221,6 +221,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 2300mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
         }
       },
       {
@@ -229,6 +230,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 1200mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
         }
       },
       {
@@ -237,6 +239,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 900mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
         }
       },
       {
@@ -245,6 +248,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 600mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
         }
       },
       {
@@ -253,6 +257,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 300mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
         }
       },
       {
@@ -261,6 +266,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
         }
       },
       {
@@ -269,11 +275,28 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent up to 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
         }
       },
     ]
   }
-  return [extentsDataset, depthDataset]
+  // We only really need one of these with visibleWhen: { menu: {dataset: ['surfacewater'], depth: ['depthAll'] } },
+  const depthsKey = {
+    id: `${id}-depths-key`,
+    label: 'Surface water',
+    groupLabel: 'Surface water depth in millimetres',
+    groupStyle: 'ramp',
+    showInKey: true,
+    visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
+    sublayers: depthDataset.sublayers.map((sublayer) => {
+      return {
+        ...sublayer,
+        esriStyleLayerId: null,
+        label: sublayer.label.match(/[0-9]+/)[0],
+      }
+    })
+  }
+  return [extentsDataset, depthDataset, depthsKey]
 }
 
 const surfaceWaterExtentsKey = {
@@ -561,7 +584,15 @@ const interactiveMap = new InteractiveMap('map', {
   plugins: [
     drawPlugin,
     framePlugin,
-    createMapKeyPlugin(),
+    createMapKeyPlugin({
+      manifest: {
+        panels: [{
+          id: 'mapKey',
+          tablet: { slot: 'left-top', width: '360px' },
+          desktop: { slot: 'left-top', width: '360px' },
+        }]
+      },
+    }),
     createMenuPlugin({
       manifest: {
         panels: [{
