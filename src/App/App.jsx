@@ -19,7 +19,7 @@ export const App = (props) => {
   return (
     <AppProvider options={props}>
       <MapProvider options={props}>
-        <ServiceProvider eventBus={props.eventBus}>
+        <ServiceProvider eventBus={props.eventBus} pluginRegistry={props.pluginRegistry}>
           <PluginProvider>
             <PluginInits />
             <Layout />

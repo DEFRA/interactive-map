@@ -73,9 +73,22 @@ export function createPluginRegistry ({ registerButton, registerPanel, registerC
     registeredPlugins.length = 0
   }
 
+  /**
+   * Look up another registered plugin's instance by id. Returns `undefined`
+   * if not registered; found doesn't mean ready to call — see services.getPlugin
+   * in docs/api/context.md.
+   *
+   * @param {string} id - Plugin id, e.g. `'draw'`.
+   * @returns {object|undefined}
+   */
+  function getPlugin (id) {
+    return registeredPlugins.find(plugin => plugin.id === id)?._originalPlugin
+  }
+
   return {
     registeredPlugins,
     registerPlugin,
+    getPlugin,
     clear
   }
 }

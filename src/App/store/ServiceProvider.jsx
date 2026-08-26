@@ -10,7 +10,7 @@ import { patternRegistry } from '../../services/patternRegistry.js'
 
 export const ServiceContext = createContext(null)
 
-export const ServiceProvider = ({ eventBus, children }) => {
+export const ServiceProvider = ({ eventBus, pluginRegistry, children }) => {
   const { id, handleExitClick, symbolDefaults: constructorSymbolDefaults } = useConfig()
   const mapStatusRef = useRef(null)
   const announce = useMemo(() => createAnnouncer(mapStatusRef), [])
@@ -26,8 +26,10 @@ export const ServiceProvider = ({ eventBus, children }) => {
     mapStatusRef,
     closeApp: () => closeApp(id, handleExitClick, eventBus),
     symbolRegistry,
-    patternRegistry
-  }), [announce, hints])
+    patternRegistry,
+    // See pluginRegistry.js's getPlugin() for what this does and doesn't guarantee.
+    getPlugin: (pluginId) => pluginRegistry?.getPlugin(pluginId)
+  }), [announce, hints, pluginRegistry])
 
   return (
     <ServiceContext.Provider value={services}>

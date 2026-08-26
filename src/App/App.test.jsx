@@ -70,7 +70,8 @@ describe('App', () => {
   })
 
   test('renders component hierarchy with props', () => {
-    const props = { mapProvider: 'test', extraProp: 'value', eventBus: mockEventBus }
+    const mockPluginRegistry = { getPlugin: jest.fn() }
+    const props = { mapProvider: 'test', extraProp: 'value', eventBus: mockEventBus, pluginRegistry: mockPluginRegistry }
 
     render(<App {...props} />)
 
@@ -98,6 +99,10 @@ describe('App', () => {
     // Verify eventBus exists
     expect(appProviderProps.options.eventBus).toBe(mockEventBus)
     expect(mapProviderProps.options.eventBus).toBe(mockEventBus)
+
+    // Verify pluginRegistry reaches ServiceProvider
+    const serviceProviderProps = ServiceProvider.mock.calls[0][0]
+    expect(serviceProviderProps.pluginRegistry).toBe(mockPluginRegistry)
   })
 
   test('calls removeLoadingState and emits APP_READY on mount', () => {
