@@ -5,6 +5,12 @@ set -e
 VERSION_PATTERN="^v([0-9]{1,}.[0-9]{1,}.[0-9]{1,})(-[0-9A-Za-z-].*)?$"
 PRE_RELEASE_PATTERN="(-[0-9A-Za-z-].*)$"
 
+# Prerelease labels (case-insensitive) that share the "pre-release" npm dist-tag.
+# Any other label (e.g. an experimental feature slug) gets isolated to its own
+# dist-tag instead — see determine_release_tag(). Add to this list if another
+# shared-channel convention (e.g. "rc") is adopted.
+SHARED_PRERELEASE_LABELS=("alpha" "beta")
+
 validate_arguments() {
   if [ -z "$TAG_NAME" ]; then
     echo "ERROR: TAG_NAME is required"
@@ -52,10 +58,32 @@ validate_version_bump() {
   echo "✓ Version check passed"
 }
 
+is_shared_prerelease_label() {
+  local candidate_lower
+  candidate_lower=$(echo "$1" | tr '[:upper:]' '[:lower:]')
+
+  local shared_label
+  for shared_label in "${SHARED_PRERELEASE_LABELS[@]}"; do
+    if [[ "$candidate_lower" == "$shared_label" ]]; then
+      return 0
+    fi
+  done
+  return 1
+}
+
 determine_release_tag() {
-  if [[ "$TAG_NAME" =~ -([a-zA-Z0-9-]+)\. ]]; then
+  # Extract the first prerelease identifier: semver splits identifiers on '.',
+  # so this stops at the first dot if there is one ("-fmp.2" -> "fmp"), or runs
+  # to the end of the string if there isn't ("-fmp-2" -> "fmp-2", since hyphens
+  # are legal inside a single identifier). Anything not in
+  # SHARED_PRERELEASE_LABELS (matched case-insensitively) gets isolated to its
+  # own npm dist-tag either way — this is what prevents a mistyped experimental
+  # tag from silently landing in the shared "pre-release" channel, regardless
+  # of whether a dot or hyphen was used before the build number, or how the
+  # label happens to be capitalised.
+  if [[ "$TAG_NAME" =~ -([^.]+) ]]; then
     local label="${BASH_REMATCH[1]}"
-    if [[ "$label" != "alpha" && "$label" != "beta" ]]; then
+    if ! is_shared_prerelease_label "$label"; then
       echo "$label"
       return
     fi
