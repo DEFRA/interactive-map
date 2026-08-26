@@ -53,6 +53,14 @@ validate_version_bump() {
 }
 
 determine_release_tag() {
+  if [[ "$TAG_NAME" =~ -([a-zA-Z0-9-]+)\. ]]; then
+    local label="${BASH_REMATCH[1]}"
+    if [[ "$label" != "alpha" && "$label" != "beta" ]]; then
+      echo "$label"
+      return
+    fi
+  fi
+
   if [[ "$IS_PRE_RELEASE" == "true" ]] || [[ "$TAG_NAME" =~ $PRE_RELEASE_PATTERN ]]; then
     echo "pre-release"
   else
