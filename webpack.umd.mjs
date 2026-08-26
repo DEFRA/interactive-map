@@ -3,6 +3,7 @@ import { fileURLToPath } from 'url'
 import fs from 'fs'
 
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
+import CssMinimizerPlugin from 'css-minimizer-webpack-plugin'
 import RemoveEmptyScriptsPlugin from 'webpack-remove-empty-scripts'
 import RemoveFilesPlugin from 'remove-files-webpack-plugin'
 
@@ -124,7 +125,11 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 
     optimization: {
       splitChunks: { chunks: () => false },
-      removeEmptyChunks: true
+      removeEmptyChunks: true,
+      // '...' keeps webpack's default JS minimizer (Terser); CssMinimizerPlugin
+      // is added alongside it since setting `minimizer` explicitly replaces the
+      // defaults otherwise.
+      minimizer: ['...', new CssMinimizerPlugin()]
     }
   }
 }

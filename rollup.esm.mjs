@@ -166,7 +166,8 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       // (rootDir) → "css/index.css" — no ".." in the emitted fileName.
       postcss({
         extract: path.resolve(cssDir, 'index.css'),
-        use: ['sass']
+        use: ['sass'],
+        minimize: true
       }),
 
       terser(),
