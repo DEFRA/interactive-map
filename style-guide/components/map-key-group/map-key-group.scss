@@ -1,0 +1,9 @@
+// Specimen: Map key — with a section title (im-c-map-key--has-groups)
+//
+// The sibling map-key specimen already duplicated every group-related rule from
+// Key.module.scss (--has-groups, __group, __group-heading) even though its own flat
+// markup doesn't use them, plus the dark-mode symbol-colour prototype addition. Reusing
+// that stylesheet here rather than duplicating it a second time — this is reuse within
+// the style guide, not a dependency on src/ or plugins/, so it doesn't break the
+// standalone rule (see style-guide/README.md).
+@use '../map-key/map-key';

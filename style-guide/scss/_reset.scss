@@ -1,0 +1,54 @@
+// .im-o-app context — a duplicated snapshot, not a live import.
+//
+// Copied verbatim from src/scss/generic/_app-reset.scss and src/scss/elements/_app-base.scss
+// (see _tokens.scss for why this style guide duplicates rather than @uses production files).
+// Every real component always renders inside this wrapper, so specimens need it too — without
+// it, margins/fonts fall back to browser defaults instead of the app's actual ones.
+//
+// Rules specific to the app shell itself (.im-is-fullscreen, .im-o-app__overlay/__modal) are
+// left out as not relevant to a specimen stage; see _app-base.scss if a future specimen needs them.
+.im-o-app {
+  visibility: visible;
+  font-family: var(--font-family);
+  font-size: var(--font-size);
+  line-height: var(--line-height);
+  -moz-osx-font-smoothing: grayscale;
+  -webkit-font-smoothing: antialiased;
+  color: var(--foreground-color);
+  background-color: var(--background-color);
+
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  * {
+    margin: 0;
+  }
+
+  img,
+  picture,
+  video,
+  canvas,
+  svg {
+    display: block;
+  }
+
+  input,
+  button,
+  textarea,
+  select {
+    font: inherit;
+  }
+
+  p,
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    overflow-wrap: break-word;
+  }
+}

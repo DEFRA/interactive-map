@@ -1,0 +1,199 @@
+// Specimen: Map key ramp — horizontal presentation of the existing list/item pattern
+//
+// A ramp turned out not to need a new BEM block. Its content — a symbol paired with a
+// label, wrapped in a group with a heading — is exactly what im-c-map-key-list__item /
+// im-c-map-key__group already are; only the layout differs (a fixed 20x20 icon beside
+// text vs. a stretched band above centred text). Naming and structure here follow the real
+// (unmerged) IM-482 branch, which already has this exact feature underway:
+//   - im-c-map-key-list — the single <dl> wrapping every item in a group (see map-key.scss
+//     for the bug this fixed: a <dl> per item, which broke :first-child under a group)
+//   - im-c-map-key-list-<groupStyle> — KeyGroupItem.jsx appends this modifier class when a
+//     group carries a groupStyle prop. On the branch this actually renders as
+//     im-c-map-key-list-ramp (single hyphen, and with no orientation concept at all) —
+//     the single hyphen is a plain oversight going by every other modifier in this
+//     codebase (im-c-map-key--has-groups, im-c-map-key-symbol--point, im-o-app--dark-app
+//     all double-hyphen), not a deliberate convention. The lack of an orientation isn't a
+//     bug the same way, just unfinished: a vertical ramp turns out not to be the same as
+//     the standard list either — symbols stretched vertically to butt against each other
+//     needs its own ruleset, the same way the horizontal one does — so this is named
+//     im-c-map-key-list--ramp-horizontal (double-hyphen, orientation included) rather than
+//     plain --ramp, leaving a clean im-c-map-key-list--ramp-vertical slot for that sibling
+//   - styling scoped by nesting under that modifier (.im-c-map-key-list--ramp-horizontal
+//     .im-c-map-key-list__item-symbol {...}), not a symbol-level BEM modifier — that's
+//     their established convention here, so this follows it rather than introducing one
+//
+// What's NOT brought in from that branch: its im-c-map-key-list-ramp CSS uses display: grid
+// + direction: rtl (to curve the visually-rightmost cell without reversing DOM order) +
+// !important overrides, labels only mark boundaries BETWEEN bands (last label hidden), and
+// KeySvgRamp.jsx is solid-fill only — no hatch/stroke support, and its stroke is read from
+// style.fill rather than style.stroke. The mechanics below are mine (flexbox, no
+// !important, no RTL trick, each band keeps its own label) specifically because they
+// already handle hatch + stroke without distortion — see the note on dropping viewBox
+// further down — which was the whole reason this specimen exists. Worth reviewing against
+// the real branch once ramps are actually being built, not treating this as the final word
+// on the visual design (e.g. boundary labels vs. per-band labels is a real, undecided
+// choice, not just a naming difference).
+@use '../map-key/map-key';
+
+// Matches KeyGroupItem.jsx's groupStyle -> im-c-map-key-list-<groupStyle> convention.
+.im-c-map-key-list--ramp-horizontal {
+  display: flex;
+  gap: 4px;
+}
+
+// Overrides the vertical rhythm/row layout im-c-map-key-list__item gets by default — a
+// ramp's items sit side by side, each an equal share of the row. align-items: stretch
+// (rather than the default start) is what makes the symbol span the item's full width; the
+// label is centred via text-align instead, since flex alignment here is about the column's
+// cross-axis (width), not the text itself.
+.im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item {
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: stretch;
+  min-width: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item-symbol {
+  margin: 0; // overrides the default symbol's `margin: 0 13px 0 3px`
+}
+
+.im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item-label {
+  margin-top: 4px;
+  text-align: center;
+}
+
+// Slightly more rounded than the existing pattern/point symbols' rounded-rect border
+// (KEY_BORDER_PATH in src/utils/patternUtils.js draws ~1.86 units of radius in a 20-unit
+// box, i.e. ~2px at this size) — a deliberate choice for the ramp, not a mismatch. Only the
+// ramp's outer ends are rounded.
+$map-key-symbol-ramp-radius: 3px;
+
+// --- The symbol itself ---
+//
+// A real, hardcoded inline SVG — not a CSS background-image/border standing in for one. A
+// ramp has to print (backgrounds are routinely dropped when "print backgrounds" is off)
+// and survive forced-colors mode (background-image is one of the first things that mode
+// strips), and genuine SVG fill/stroke content is foreground paint, not decoration, so it
+// survives both.
+//
+// Deliberately no viewBox on these <svg>s (unlike KeySvgRamp.jsx on the real branch, which
+// uses viewBox="0 0 5 5" preserveAspectRatio="none"). A viewBox establishes a fixed internal
+// coordinate grid that then gets stretched to fit whatever box the element renders at —
+// fine for a flat fill (a stretched rectangle is still a rectangle, which is why the real
+// branch's solid-fill-only version gets away with it), but a hatch pattern's tile geometry
+// or a stroke's width would distort non-uniformly along with it. Without a viewBox there's
+// no separate grid to distort: percentage-sized shapes (width="100%") and pattern tiles
+// declared via patternUnits="userSpaceOnUse" resolve directly against the element's real
+// rendered pixel box, at any width, with no scaling transform involved at all — see
+// map-key-ramp-fills.scss for the patterned case this actually matters for.
+//
+// Corner rounding is the one thing that's still plain CSS (border-radius + overflow:
+// hidden clips the SVG's rendered content, the same mechanism used for rounding an <img>)
+// — that's a foreground clip, not a background, so it isn't implicated in either concern.
+.im-c-map-key-list--ramp-horizontal .im-c-map-key-symbol {
+  display: block;
+  width: 100%;
+  // Same height as the default im-c-map-key-symbol (SVG_SIZE) — keeps hatch/dot patterns
+  // rendering at the same scale as the map-key/map-key-group specimens' symbols.
+  height: 20px;
+  overflow: hidden;
+}
+
+// A stroked rect is drawn flush with the SVG's own edge (0,0 to 100%,100%), and a stroke is
+// centred on its path by default — half its width lands outside the nominal edge, which for
+// a flush rect means outside the SVG's own box too, so overflow: hidden above clips it away,
+// leaving only the inner half visible (a "2px" stroke reading as ~1px). Insetting the rect
+// by half the stroke width moves its edge inward so the full stroke lands inside the box
+// instead of straddling it. 1px assumes a 2px stroke (matching KEY_BORDER_PATH's own
+// stroke-width) — a different width would need a matching inset. Geometry properties like
+// these are unaffected by print/forced-colors (only fill/stroke colour is), so this is safe
+// alongside everything else here.
+.im-c-map-key-list--ramp-horizontal .im-c-map-key-symbol rect[stroke] {
+  x: 1px;
+  y: 1px;
+  width: calc(100% - 2px);
+  height: calc(100% - 2px);
+}
+
+.im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:first-child .im-c-map-key-symbol {
+  border-top-left-radius: $map-key-symbol-ramp-radius;
+  border-bottom-left-radius: $map-key-symbol-ramp-radius;
+}
+
+.im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:last-child .im-c-map-key-symbol {
+  border-top-right-radius: $map-key-symbol-ramp-radius;
+  border-bottom-right-radius: $map-key-symbol-ramp-radius;
+}
+
+// --- Sequential ramp tokens (this specimen's sample data) ---
+//
+// Single-hue sequential blue, generated and verified with the dataviz skill's
+// scripts/validate_palette.js in --ordinal mode (monotone lightness, >=0.06 OKLab
+// lightness gap between every adjacent band, light-end contrast >=2:1 against the
+// surface). Light and dark panels use different step sets along the same hue — same
+// approach the skill's reference categorical palette uses for its own dark column — so
+// the darkest dark-panel step still clears contrast against the dark surface instead of
+// reusing the light panel's darkest (near-black-on-near-black) step. This is a data
+// ramp, not a category swatch, so unlike map-key.scss's symbols it does NOT flatten to
+// white in dark mode — that would destroy the gradient the colour exists to encode.
+:root {
+  --map-key-ramp-1: #86b6ef;
+  --map-key-ramp-2: #719fd8;
+  --map-key-ramp-3: #5c89c1;
+  --map-key-ramp-4: #4874ab;
+  --map-key-ramp-5: #345f95;
+  --map-key-ramp-6: #214a80;
+  --map-key-ramp-7: #0d366b;
+}
+
+:root .im-o-app--dark-app {
+  --map-key-ramp-1: #cde2fb;
+  --map-key-ramp-2: #aec9ea;
+  --map-key-ramp-3: #90b0d9;
+  --map-key-ramp-4: #7297c9;
+  --map-key-ramp-5: #557fb8;
+  --map-key-ramp-6: #3867a6;
+  --map-key-ramp-7: #184f95;
+}
+
+// Fill per band. CSS (not an inline fill="" attribute) specifically so it can reference
+// the light/dark tokens above; genuine SVG fill painted via a stylesheet rule is exactly
+// as print/forced-colors-safe as one written directly into the markup — this isn't the
+// same thing as the background-image/border a plain CSS box would have needed.
+//
+// Scoped to [data-ramp="elevation"] (the sample data's own hook — see map-key-ramp.html),
+// not just .im-c-map-key-list--ramp-horizontal: that class is the shared mechanism, reused
+// by every ramp instance (map-key-ramp-fills included), so nth-child selectors keyed off it
+// alone matched ANY ramp's items by position, not just this specimen's — the map-key-ramp-
+// fills items were silently getting these tokens' fill instead of their own solid colour/
+// pattern, since both specimens' items land on the same positions 1-4. Confirmed via actual
+// computed styles in the browser, not guessed — see the conversation this was fixed in.
+[data-ramp='elevation'].im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:nth-child(1) rect {
+  fill: var(--map-key-ramp-1);
+}
+
+[data-ramp='elevation'].im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:nth-child(2) rect {
+  fill: var(--map-key-ramp-2);
+}
+
+[data-ramp='elevation'].im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:nth-child(3) rect {
+  fill: var(--map-key-ramp-3);
+}
+
+[data-ramp='elevation'].im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:nth-child(4) rect {
+  fill: var(--map-key-ramp-4);
+}
+
+[data-ramp='elevation'].im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:nth-child(5) rect {
+  fill: var(--map-key-ramp-5);
+}
+
+[data-ramp='elevation'].im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:nth-child(6) rect {
+  fill: var(--map-key-ramp-6);
+}
+
+[data-ramp='elevation'].im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:nth-child(7) rect {
+  fill: var(--map-key-ramp-7);
+}

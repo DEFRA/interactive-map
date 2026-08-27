@@ -1,0 +1,18 @@
+// Style guide entry point.
+//
+// Deliberately does not @use anything from src/ or plugins/ — this folder stands on its
+// own so components can be iterated on here without touching, or depending on, the real
+// map. Tokens and the .im-o-app context are duplicated snapshots (see _tokens.scss /
+// _reset.scss); component specimens duplicate their production css/html the same way
+// (see each style-guide/components/<name>/ folder). Once a specimen's design is approved,
+// its markup/css get ported back into the real plugin by hand — this file is the source
+// for that copy, not a live link to it.
+@use './tokens';
+@use './reset';
+@use './gallery';
+
+// Component specimens — one @use per style-guide/components/<name>/<name>.scss
+@use '../components/map-key/map-key';
+@use '../components/map-key-group/map-key-group';
+@use '../components/map-key-ramp/map-key-ramp';
+@use '../components/map-key-ramp-fills/map-key-ramp-fills';

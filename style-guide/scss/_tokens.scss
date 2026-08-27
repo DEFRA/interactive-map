@@ -1,0 +1,93 @@
+// Design tokens — a duplicated snapshot, not a live import.
+//
+// This style guide must stand on its own: it should never @use anything from src/ or
+// plugins/, so it can be built and iterated on without needing (or being able to affect)
+// the real map. These custom properties are copied verbatim from
+// src/scss/settings/_colors.scss and src/scss/settings/_fonts.scss.
+//
+// They will drift from production over time — that's expected, not a bug. If a specimen
+// looks wrong against the real app, re-diff this file against its source rather than
+// assuming the specimen's own markup/css is at fault.
+
+:root {
+  --foreground-color: #0b0c0c;
+  --background-color: #ffffff;
+
+  // Button and panel focus colors
+  --focus-border-color: #0b0c0c;
+  --focus-outline-color: #ffdd00;
+
+  // MapButtons
+  --button-background-color: #ffffff;
+  --button-hover-color: #f3f2f1;
+  --primary-button-color: #00703c;
+  --primary-button-hover-color: #005a30;
+  --primary-button-box-shadow: inset 0 -2px 0 #002d18;
+  --tertiary-button-border-color: #505a5f;
+  --disabled-button-opacity: 0.4;
+  --pressed-button-foreground-color: #ffffff;
+  --pressed-button-border-color: #0b0c0c;
+  --pressed-button-background-color: #0b0c0c;
+
+  // Scrollable content
+  --scrollable-outline: 3px solid #ffdd00;
+  --scrollable-outline-offset: -3px;
+  --scrollable-box-shadow: inset 0 0 0 7px #002d18;
+
+  // Tooltips
+  --tooltip-background-color: #383F43;
+  --tooltip-foreground-color: #ffffff;
+  --tooltip-hover-color: #505a5f;
+
+  // Modals
+  --modal-background-color: #0b0c0c;
+  --modal-backdrop-opacity: 0.4;
+
+  // Attributions
+  --attributions-foreground-color: #0b0c0c;
+  --attributions-background-color: #ffffff80;
+
+  // Fixed colours (Dont chnage with dark mode)
+  --fixed-foreground-color: #0b0c0c;
+
+  // Content
+  --app-border-color: #cecece;
+  --content-border-color: #f3f2f1;
+  --secondary-text-color: #505a5f;
+  --image-placeholder-color: #b1b4b6;
+  --content-link-color: #1d70b8;
+
+}
+
+:root .im-o-app--dark-app {
+  --foreground-color: #ffffff;
+  --background-color: #383F43;
+
+  // Button and panel focus colors
+  --focus-border-color: #0b0c0c;
+  --focus-outline-color: #ffdd00;
+
+  // MapButtons
+  --button-background-color: #383F43;
+  --button-hover-color: #505a5f;
+  --primary-button-color: #ffffff;
+  --primary-button-hover-color: #b1b4b6;
+  --primary-button-box-shadow: none;
+  --tertiary-button-border-color: #f3f2f1;
+  --tertiary-button-box-shadow: none;
+  --disabled-button-opacity: 0.4;
+  --pressed-button-foreground-color: #0b0c0c;
+  --pressed-button-border-color: #ffffff;
+  --pressed-button-background-color: #ffffff;
+
+  // Content
+  --content-border-color: #505a5f;
+  --secondary-text-color: #f3f2f1;
+  --content-link-color: #ffffff;
+}
+
+:root {
+  --font-family: gds transport,arial,sans-serif;
+  --font-size: 16px;
+  --line-height: 1.25em;
+}

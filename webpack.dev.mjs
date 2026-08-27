@@ -27,7 +27,8 @@ export default {
     'ml-datasets': path.join(__dirname, 'demo/js/ml-datasets.js'),
     'esri-datasets': path.join(__dirname, 'demo/js/esri-datasets.js'),
     esm: path.join(__dirname, 'demo/js/esm.js'),
-    multimap: path.join(__dirname, 'demo/js/multimap.js')
+    multimap: path.join(__dirname, 'demo/js/multimap.js'),
+    'style-guide': path.join(__dirname, 'style-guide/js/style-guide.js')
   },
   output: {
     path: path.resolve(__dirname, 'public'),
@@ -131,6 +132,10 @@ export default {
       {
         directory: path.join(__dirname, 'assets'),
         publicPath: '/assets' // Images served from here as used in both demo and prototype kit plugin
+      },
+      {
+        directory: path.join(__dirname, 'style-guide'),
+        publicPath: '/style-guide' // Own mount so its index.html doesn't collide with demo/index.html at '/'
       },
       {
         directory: __dirname,

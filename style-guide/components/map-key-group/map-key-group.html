@@ -1,0 +1,48 @@
+<!--
+  Specimen: Map key — with a section title (im-c-map-key--has-groups)
+
+  Mirrors what Key.jsx + KeyGroupItem.jsx render when keyGroups contains a 'group' item, on
+  the (unmerged) IM-482 branch: the outer container gets the --has-groups modifier, and each
+  group is a <section> with its own heading, followed by ONE shared
+  <dl class="im-c-map-key-list"> wrapping all its items — each item now a plain
+  <div class="im-c-map-key-list__item"> (see map-key.scss for why: this replaces what used
+  to be a separate <dl> per item, which broke :first-child rules scoped under a group).
+  Same three items/patterns as the flat map-key specimen — see that specimen's header
+  comment for where the colours/patterns come from. This is a duplicated snapshot, not a
+  live import — see map-key-group.scss and style-guide/README.md for the
+  duplicate → approve → port-back workflow.
+-->
+<div class="im-c-map-key im-c-map-key--has-groups">
+  <section class="im-c-map-key__group" aria-labelledby="key-heading-land-use">
+    <h3 id="key-heading-land-use" class="im-c-map-key__group-heading">Land use</h3>
+    <dl class="im-c-map-key-list">
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" class="im-c-map-key-symbol" aria-hidden="true" focusable="false">
+            <g><path d="M19 2.862v14.275c0 1.028-.835 1.862-1.862 1.862H2.863c-1.028 0-1.862-.835-1.862-1.862V2.862C1.001 1.834 1.836 1 2.863 1h14.275C18.166 1 19 1.835 19 2.862z" fill="transparent" stroke="#6D4C41" stroke-width="2"/></g>
+            <g transform="translate(2, 2)"><path d="M0 4.5V3.499h15.999V4.5H0zm0 7h15.999V12.5H0v-1.001z" fill="#6D4C41"/></g>
+          </svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">Arable</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" class="im-c-map-key-symbol" aria-hidden="true" focusable="false">
+            <g><path d="M19 2.862v14.275c0 1.028-.835 1.862-1.862 1.862H2.863c-1.028 0-1.862-.835-1.862-1.862V2.862C1.001 1.834 1.836 1 2.863 1h14.275C18.166 1 19 1.835 19 2.862z" fill="transparent" stroke="#00897B" stroke-width="2"/></g>
+            <g transform="translate(2, 2)"><path d="M0 8.707V7.293L7.293 0h1.414L16 7.293v1.414L8.707 16H7.293L0 8.707zM.707 8L8 15.293 15.293 8 8 .707.707 8z" fill="#00897B"/></g>
+          </svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">Permanent grassland</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20" class="im-c-map-key-symbol" aria-hidden="true" focusable="false">
+            <g><path d="M19 2.862v14.275c0 1.028-.835 1.862-1.862 1.862H2.863c-1.028 0-1.862-.835-1.862-1.862V2.862C1.001 1.834 1.836 1 2.863 1h14.275C18.166 1 19 1.835 19 2.862z" fill="transparent" stroke="#2E7D32" stroke-width="2"/></g>
+            <g transform="translate(2, 2)"><path d="M3.999 2A2 2 0 0 1 6 3.999C6 5.103 5.103 6 3.999 6a2 2 0 0 1-1.999-2.001A2 2 0 0 1 3.999 2zm0 7.999C5.103 10 6 10.897 6 12.001A2 2 0 0 1 3.999 14a2 2 0 0 1-1.999-1.999A2 2 0 0 1 3.999 10zM11.999 2A2 2 0 0 1 14 3.999C14 5.103 13.103 6 11.999 6S10 5.103 10 3.999A2 2 0 0 1 11.999 2zm0 7.999c1.104 0 2.001.897 2.001 2.001A2 2 0 0 1 11.999 14 2 2 0 0 1 10 12.001c0-1.104.897-2.001 1.999-2.001z" fill="#2E7D32"/></g>
+          </svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">Woodland</dd>
+      </div>
+    </dl>
+  </section>
+</div>

@@ -1,0 +1,107 @@
+// Specimen: Map key — base component (im-c-map-key)
+//
+// Duplicated snapshot of plugins/map-key/src/components/Key/Key.module.scss as it stands
+// on the (unmerged) IM-482 branch, not main — that branch's "corrected the dl list markup
+// in the map-key" commit (ddce2a5) fixes a real bug this style guide inherited too: each
+// item used to be its own separate <dl>, which meant :first-child rules scoped under a
+// group (`.im-c-map-key__group &:first-child` in the old CSS) could never match, since a
+// group's actual first child is its <h3> heading, not the first item. The fix removes the
+// per-item <dl> entirely — items are plain <div>s — and, only when grouped, wraps them all
+// in one shared <dl class="im-c-map-key-list">, which is what the (kept) :first-child rules
+// below now correctly target. Also renamed on that branch: am-c-map-key-symbol ->
+// im-c-map-key-symbol (dropped the am- prefix), im-c-map-key__item(-symbol/-label) ->
+// im-c-map-key-list__item(-symbol/-label).
+//
+// Everything below is copied verbatim from that branch's version of the file; see
+// style-guide/README.md for why this style guide duplicates rather than @uses production.
+
+// When groups are present, every direct child gets a border-top
+.im-c-map-key > *:first-child {
+  padding-top: 5px;
+
+  .im-c-map-key__group-heading {
+    padding-top: 0;
+  }
+}
+
+.im-c-map-key--has-groups > *:not(:first-child) {
+  border-top: 1px solid var(--button-hover-color);
+}
+
+.im-c-map-key__group:not(:last-child) {
+  padding-bottom: 5px;
+}
+
+.im-c-map-key__empty-message {
+  margin: 0;
+  font-size: 1rem;
+  color: var(--foreground-color);
+}
+
+.im-c-map-key__group-heading {
+  padding-top: 15px;
+  padding-bottom: 10px;
+  margin: 0;
+  font-size: 1rem;
+  font-weight: bold;
+  color: var(--foreground-color);
+}
+
+.im-c-map-key-list__item {
+  display: flex;
+  align-items: start;
+  padding-top: 10px;
+  padding-bottom: 10px;
+  font-size: 1rem;
+}
+
+.im-c-map-key--has-groups > .im-c-map-key-list__item:not(:first-child) {
+  padding-top: 15px;
+}
+
+.im-c-map-key--has-groups > .im-c-map-key-list__item {
+  padding-bottom: 15px;
+}
+
+.im-c-map-key__group > .im-c-map-key-list .im-c-map-key-list__item {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+// Last item in all scenarios — flat or inside the last group
+.im-c-map-key > .im-c-map-key-list__item:last-child,
+.im-c-map-key__group:last-child > .im-c-map-key-list .im-c-map-key-list__item:last-child {
+  padding-bottom: 5px;
+}
+
+// Symbol
+
+.im-c-map-key-symbol {
+  position: relative;
+  flex-shrink: 0;
+  margin: 0 13px 0 3px;
+}
+
+.im-c-map-key-symbol--point {
+  margin: -12px 1px -12px -9px;
+}
+
+// --- Prototype addition: not yet in production ---
+//
+// Pattern/border symbol colours are baked in as literal SVG fill/stroke attributes (see
+// patternRegistry.getKeyPatternPaths), so unlike text they don't pick up the app's dark-mode
+// foreground colour automatically. Forcing them to the dark-mode foreground (white) here so
+// they stay legible on a dark background.
+//
+// Left alone: the border path's fill, which stays transparent so the symbol reads as an
+// outline rather than a solid block — hence :not([fill='transparent']) on the fill rule,
+// and a separate rule for stroke (only the border path carries one).
+.im-o-app--dark-app .im-c-map-key-symbol {
+  path:not([fill='transparent']) {
+    fill: var(--foreground-color);
+  }
+
+  path[stroke] {
+    stroke: var(--foreground-color);
+  }
+}

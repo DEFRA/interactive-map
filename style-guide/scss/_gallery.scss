@@ -1,0 +1,35 @@
+// Chrome for the style guide shell. Page-level layout/typography (container, headings,
+// body text, section breaks) comes from govuk-frontend — see index.html — so all that's
+// left here is the light/dark two-up layout, which has no govuk equivalent: GOV.UK is a
+// light-only design system, and this is specifically for checking specimens against the
+// app's own dark-mode tokens from src/scss/settings.
+
+.sg-specimen__variants {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+.sg-specimen__variant {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 12px;
+  background-color: var(--background-color);
+  border-radius: 4px;
+}
+
+// govuk-heading-s is grabbed for the type scale only — govuk has no light/dark concept of
+// its own, so colour is tied to the app's own tokens (which resolve to the same black/white
+// govuk itself uses) and flips correctly per panel via the .im-o-app--dark-app ancestor.
+.sg-specimen__variant-label {
+  color: var(--foreground-color);
+}
+
+// .im-o-app (see src/scss/generic/_app-reset.scss + elements/_app-base.scss) supplies the
+// real margin reset, font-family, and foreground/background colour — everything here is
+// just the harness's own visual scaffolding around that real context.
+.sg-specimen__stage {
+  padding: 16px;
+  border: 1px dashed var(--app-border-color);
+  border-radius: 4px;
+}

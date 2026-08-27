@@ -1,0 +1,21 @@
+// Specimen: Map key ramp — Risk example (Low / Medium / High), hatch + stroke
+//
+// The band mechanism (layout, rounding, the viewBox-less <svg> approach) lives in the
+// sibling map-key-ramp specimen — reusing it here rather than duplicating it. @use'ing it
+// also carries in map-key.scss's dark-mode rule that flattens .im-c-map-key-symbol's
+// <path> fills to white under .im-o-app--dark-app — which already covers each pattern's
+// foreground <path> here for free, since it's still a real <path> element even nested
+// inside a <defs><pattern>. It does NOT cover the border stroke, though: that rule targets
+// path[stroke] (production's hand-drawn KEY_BORDER_PATH), but the border here is a plain
+// <rect stroke="">, so that needs its own equivalent rule below — same as the previous
+// (DemoMapPolygons-patterned) version of this specimen needed.
+@use '../map-key-ramp/map-key-ramp';
+
+.im-o-app--dark-app .im-c-map-key-list--ramp-horizontal .im-c-map-key-symbol rect[stroke] {
+  stroke: var(--foreground-color);
+}
+
+// A note on the <pattern> ids in map-key-ramp-fills.html: SVG/HTML id attributes must be
+// unique across the whole document, not just within one inline <svg> root, so each pattern
+// gets a fully-qualified id (map-key-ramp-risk-low, etc.) rather than something generic
+// like "hatch" that could collide with a pattern defined in some other specimen's markup.

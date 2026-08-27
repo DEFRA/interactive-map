@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Interactive Map — Style Guide</title>
+        <link href="/assets/govuk-frontend.min.css" rel="stylesheet" media="all">
+        <link href="/style-guide.css" rel="stylesheet" media="all">
+    </head>
+    <body style="padding: 20px">
+        <div class="govuk-width-container">
+            <main class="govuk-main-wrapper">
+                <h1 class="govuk-heading-xl">Map key style guide</h1>
+
+                <section class="sg-specimen" data-fragment="components/map-key/map-key.html">
+                    <h2 class="govuk-heading-m">Map key — base component (im-c-map-key)</h2>
+                    <p class="govuk-body">
+                        A flat key with three pattern-fill items, mirroring the field-parcel
+                        sublayers in <code>demo/DemoMapPolygons.js</code>. This is a duplicated
+                        snapshot of <code>KeyItem</code> + <code>KeySvgPattern</code>'s output and
+                        of the production stylesheet, as corrected on the (unmerged) IM-482
+                        branch — each item is a plain <code>im-c-map-key-list__item</code>, not
+                        its own <code>&lt;dl&gt;</code> — see <code>map-key.scss</code> and the
+                        project <code>README.md</code> for the duplicate → approve → port-back
+                        workflow. Not imported from <code>plugins/map-key</code>, so it's safe
+                        to edit here freely.
+                    </p>
+                    <div class="sg-specimen__variants">
+                        <div class="sg-specimen__variant">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Light</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                        <div class="sg-specimen__variant im-o-app--dark-app">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Dark</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                    </div>
+                    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+                </section>
+
+                <section class="sg-specimen" data-fragment="components/map-key-group/map-key-group.html">
+                    <h2 class="govuk-heading-m">Map key — with a section title</h2>
+                    <p class="govuk-body">
+                        The same three items, wrapped in a group with a heading
+                        (<code>im-c-map-key--has-groups</code>) — mirroring what
+                        <code>KeyGroupItem</code> renders on the IM-482 branch: one shared
+                        <code>&lt;dl class="im-c-map-key-list"&gt;</code> wrapping all the
+                        group's items, rather than a separate <code>&lt;dl&gt;</code> per item.
+                        Reuses the base map-key specimen's stylesheet — see
+                        <code>map-key-group.scss</code>.
+                    </p>
+                    <div class="sg-specimen__variants">
+                        <div class="sg-specimen__variant">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Light</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                        <div class="sg-specimen__variant im-o-app--dark-app">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Dark</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                    </div>
+                    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+                </section>
+
+                <section class="sg-specimen" data-fragment="components/map-key-ramp/map-key-ramp.html">
+                    <h2 class="govuk-heading-m">Map key ramp — horizontal presentation</h2>
+                    <p class="govuk-body">
+                        Not a new component after all — <code>im-c-map-key-list--ramp-horizontal</code>
+                        is a modifier on the standard key/group/item, matching
+                        <code>KeyGroupItem.jsx</code>'s real <code>groupStyle</code> →
+                        <code>im-c-map-key-list-&lt;groupStyle&gt;</code> convention on the
+                        IM-482 branch (the same branch that also fixes the group's items to
+                        share one <code>&lt;dl&gt;</code> — see the specimen above), corrected
+                        here to a proper double-hyphen BEM modifier — every other modifier in
+                        this codebase is double-hyphen
+                        (<code>im-c-map-key--has-groups</code>,
+                        <code>im-c-map-key-symbol--point</code>) — and given an orientation
+                        suffix, since a vertical ramp turns out to need its own ruleset too
+                        (symbols stretched vertically to butt against each other), not just the
+                        standard list. Laying the same dt/dd items out as an equal-width row
+                        instead of a block-stacked column. Sample data is 7 items labelled 1-7;
+                        the layout works for anywhere from 3 to 7. Colours are a single-hue
+                        sequential ramp, verified
+                        with the dataviz skill's <code>validate_palette.js --ordinal</code>. No
+                        viewBox on the symbol SVGs — see <code>map-key-ramp.scss</code> for why
+                        that matters once patterns/strokes are involved, and for how this differs
+                        from that branch's own (solid-fill-only, grid/RTL-based) WIP ramp CSS.
+                    </p>
+                    <div class="sg-specimen__variants">
+                        <div class="sg-specimen__variant">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Light</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                        <div class="sg-specimen__variant im-o-app--dark-app">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Dark</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                    </div>
+                    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+                </section>
+
+                <section class="sg-specimen" data-fragment="components/map-key-ramp-fills/map-key-ramp-fills.html">
+                    <h2 class="govuk-heading-m">Map key ramp — Risk example</h2>
+                    <p class="govuk-body">
+                        Same mechanism as the ramp above, three bands (Low/Medium/High) using the
+                        dataviz skill's fixed status palette (good/warning/critical), not literal
+                        green/yellow/red — those exact steps are already contrast-validated for
+                        state communication like this. Each band reuses one of the same three
+                        DemoMapPolygons patterns as the map-key specimens
+                        (horizontal-hatch/diagonal-cross-hatch/dot), so this tests the ramp's border,
+                        rounding, and hatching together. Border stroke is the same colour as the
+                        band's own pattern on light backgrounds — matching the real DemoMapPolygons
+                        sublayers, whose stroke and pattern foreground are the same value — at 2px,
+                        matching <code>KEY_BORDER_PATH</code>'s own stroke-width; flips to white on
+                        dark backgrounds.
+                    </p>
+                    <div class="sg-specimen__variants">
+                        <div class="sg-specimen__variant">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Light</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                        <div class="sg-specimen__variant im-o-app--dark-app">
+                            <p class="govuk-heading-s sg-specimen__variant-label">Dark</p>
+                            <div class="sg-specimen__stage im-o-app"></div>
+                        </div>
+                    </div>
+                    <hr class="govuk-section-break govuk-section-break--l govuk-section-break--visible">
+                </section>
+            </main>
+        </div>
+
+        <script src="/style-guide.js"></script>
+    </body>
+</html>

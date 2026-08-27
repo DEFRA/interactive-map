@@ -1,0 +1,75 @@
+<!--
+  Specimen: Map key ramp — horizontal presentation of the standard key
+  (im-c-map-key-list__item)
+
+  A ramp always arrives inside a group with a section title — same im-c-map-key__group /
+  im-c-map-key__group-heading shell as the map-key-group specimen (see KeyGroupItem.jsx) —
+  with im-c-map-key-list--ramp-horizontal switching the shared <dl>'s items from a block-stacked column
+  to a row (see map-key-ramp.scss for the naming — matches KeyGroupItem.jsx's real
+  groupStyle -> im-c-map-key-list-<groupStyle> convention on the IM-482 branch, corrected to
+  a proper double-hyphen BEM modifier). Each item is
+  the same dt (symbol) / dd (label) pair as the vertical presentation; only the layout
+  differs. The layout is band-count agnostic (each item is an equal flex share of the row),
+  so this same shape covers anywhere from 3 to 7 bands — add or remove items, nothing else
+  changes. Sample data below uses 7, labelled 1-7.
+
+  Each item's fill colour comes from --map-key-ramp-1..7 (map-key-ramp.scss), which flips to
+  a separate dark-mode-safe step set under .im-o-app--dark-app the same way every other
+  token in this style guide does. No viewBox on the <svg>s — see map-key-ramp.scss for why —
+  so the <rect> just fills 100% of whatever width its flex column computes to.
+
+  data-ramp="elevation" on the <dl> is this specimen's own scoping hook — the fill rules are
+  keyed off it, not just im-c-map-key-list--ramp-horizontal, because that class is the shared
+  mechanism every ramp reuses (map-key-ramp-fills included); without this hook, nth-child
+  selectors matched ANY ramp's items by position, so map-key-ramp-fills' items were silently
+  picking up this specimen's tokens instead of their own colours/patterns.
+-->
+<div class="im-c-map-key im-c-map-key--has-groups">
+  <section class="im-c-map-key__group" aria-labelledby="key-heading-elevation">
+    <h3 id="key-heading-elevation" class="im-c-map-key__group-heading">Elevation</h3>
+    <dl class="im-c-map-key-list im-c-map-key-list--ramp-horizontal" data-ramp="elevation">
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg class="im-c-map-key-symbol" aria-hidden="true" focusable="false"><rect width="100%" height="100%"/></svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">1</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg class="im-c-map-key-symbol" aria-hidden="true" focusable="false"><rect width="100%" height="100%"/></svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">2</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg class="im-c-map-key-symbol" aria-hidden="true" focusable="false"><rect width="100%" height="100%"/></svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">3</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg class="im-c-map-key-symbol" aria-hidden="true" focusable="false"><rect width="100%" height="100%"/></svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">4</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg class="im-c-map-key-symbol" aria-hidden="true" focusable="false"><rect width="100%" height="100%"/></svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">5</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg class="im-c-map-key-symbol" aria-hidden="true" focusable="false"><rect width="100%" height="100%"/></svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">6</dd>
+      </div>
+      <div class="im-c-map-key-list__item">
+        <dt class="im-c-map-key-list__item-symbol">
+          <svg class="im-c-map-key-symbol" aria-hidden="true" focusable="false"><rect width="100%" height="100%"/></svg>
+        </dt>
+        <dd class="im-c-map-key-list__item-label">7</dd>
+      </div>
+    </dl>
+  </section>
+</div>
