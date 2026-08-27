@@ -34,7 +34,10 @@ jest.mock('../store/configContext.js', () => ({
 
 describe('ServiceProvider', () => {
   const mockEventBus = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
-  const wrapper = ({ children }) => <ServiceProvider eventBus={mockEventBus}>{children}</ServiceProvider>
+  const mockPluginRegistry = { getPlugin: jest.fn(() => ({ newPolygon: jest.fn() })) }
+  const wrapper = ({ children }) => (
+    <ServiceProvider eventBus={mockEventBus} pluginRegistry={mockPluginRegistry}>{children}</ServiceProvider>
+  )
 
   test('provides announce, reverseGeocode, eventBus, and closeApp via context', () => {
     const { result } = renderHook(() => React.useContext(ServiceContext), { wrapper })
@@ -66,6 +69,22 @@ describe('ServiceProvider', () => {
     const { result } = renderHook(() => React.useContext(ServiceContext), { wrapper })
     result.current.hints.show('<b>test</b>', { duration: 2000 })
     expect(mockShow).toHaveBeenCalledWith('<b>test</b>', { duration: 2000 })
+  })
+
+  test('getPlugin delegates to pluginRegistry.getPlugin', () => {
+    const { result } = renderHook(() => React.useContext(ServiceContext), { wrapper })
+
+    const plugin = result.current.getPlugin('draw')
+
+    expect(mockPluginRegistry.getPlugin).toHaveBeenCalledWith('draw')
+    expect(plugin).toEqual({ newPolygon: expect.any(Function) })
+  })
+
+  test('getPlugin returns undefined when no pluginRegistry is provided', () => {
+    const noRegistryWrapper = ({ children }) => <ServiceProvider eventBus={mockEventBus}>{children}</ServiceProvider>
+    const { result } = renderHook(() => React.useContext(ServiceContext), { wrapper: noRegistryWrapper })
+
+    expect(result.current.getPlugin('draw')).toBeUndefined()
   })
 
   test('closeApp calls closeApp service with id and handleExitClick', () => {

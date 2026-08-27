@@ -168,3 +168,27 @@ eventBus.emit('my-plugin:custom-event', { data: 'value' })
 ```
 
 See [Events](../api.md#events) for available event name constants.
+
+---
+
+#### `getPlugin`
+
+Looks up another registered plugin by id and returns its instance — the same
+object its factory returned (e.g. what `createDrawPlugin()` gave the host
+app), so you can call its API methods directly.
+
+```js
+const drawPlugin = context.services.getPlugin('draw')
+drawPlugin?.newPolygon('boundary', { onGeometryChange: () => true })
+```
+
+Returns `undefined` if no plugin with that id is registered — a host app is
+always free to omit an optional dependency, so treat the result as possibly
+absent rather than erroring.
+
+> [!NOTE]
+> Finding a plugin isn't the same as it being safe to call — its methods bind
+> once that plugin has mounted, and some need further setup after that. Hold
+> onto the reference early if you like, but gate the actual call on that
+> plugin's own readiness convention where one exists, e.g. `draw:ready` on
+> `eventBus` before calling anything on `getPlugin('draw')`.

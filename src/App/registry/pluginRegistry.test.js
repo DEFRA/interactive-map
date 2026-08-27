@@ -185,6 +185,21 @@ describe('pluginRegistry', () => {
     })
   })
 
+  describe('getPlugin', () => {
+    it('returns the _originalPlugin reference for a registered plugin id', () => {
+      const originalPlugin = { newPolygon: jest.fn() }
+      const plugin = { id: 'draw', config: {}, manifest: {}, _originalPlugin: originalPlugin }
+
+      pluginRegistry.registerPlugin(plugin)
+
+      expect(pluginRegistry.getPlugin('draw')).toBe(originalPlugin)
+    })
+
+    it('returns undefined for an id that is not registered', () => {
+      expect(pluginRegistry.getPlugin('does-not-exist')).toBeUndefined()
+    })
+  })
+
   it('clears all registered plugins', () => {
     const pluginA = { id: 'A', config: {}, manifest: {} }
     const pluginB = { id: 'B', config: {}, manifest: {} }
