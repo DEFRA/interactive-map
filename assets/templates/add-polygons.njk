@@ -8,6 +8,7 @@
   <link href="/public/stylesheets/application.css" rel="stylesheet" type="text/css">
   <link href="/plugin-assets/%40defra%2Finteractive-map/dist/css/index.css" rel="stylesheet" type="text/css">
   <link href="/plugin-assets/%40defra%2Finteractive-map/plugins/datasets/dist/css/index.css" rel="stylesheet" type="text/css">
+  <link href="/plugin-assets/%40defra%2Finteractive-map/plugins/map-key/dist/css/index.css" rel="stylesheet" type="text/css">
 {% endblock %}
 
 {% block bodyStart %}
@@ -40,6 +41,7 @@
   <script src="/plugin-assets/%40defra%2Finteractive-map/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/providers/maplibre/dist/umd/index.js"></script>
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/datasets/dist/umd/index.js"></script>
+  <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/map-key/dist/umd/index.js"></script>
 
   <script>
     // GeoJSON can also be loaded from a URL; use the tiles property for vector tile sources
@@ -126,6 +128,8 @@
       }]
     })
 
+    const mapKeyPlugin = defra.mapKeyPlugin()
+
     new defra.InteractiveMap('map', {
       behaviour: 'inline',
       mapProvider: defra.maplibreProvider(),
@@ -137,7 +141,7 @@
       center: [-2.464, 54.558],
       zoom: 14,
       containerHeight: '516px',
-      plugins: [datasetsPlugin]
+      plugins: [datasetsPlugin, mapKeyPlugin]
     })
   </script>
 {% endblock %}
