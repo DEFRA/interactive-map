@@ -149,8 +149,15 @@ const datasetFloodZones = {
   ]
 }
 
+let depthsKey = null
+const extentsStyle = { 
+  fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, 
+  stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, 
+}
+
 const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep}) => {
   const visibleWhenMenu = { dataset: ['surfacewater'], timeframe, aep }
+
   const extentsDataset = {
     id: `${id}-extents`,
     label: 'Surface Water',
@@ -158,49 +165,57 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
     showInKey: true,
     sourceLayer,
-    style: { fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, },
+    style: extentsStyle,
     visibleWhen: { menu: visibleWhenMenu },
     sublayers: [
       {
         id: 'depthOver2300',
         esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300', 'depthOver2300'] } },
+
       },
       {
         id: 'depth2300',
         esriStyleLayerId: `${sourceLayer}/1200-2300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300'] } },
       },
       {
         id: 'depth1200',
         esriStyleLayerId: `${sourceLayer}/900-1200mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200'] } },
       },
       {
         id: 'depth900',
         esriStyleLayerId: `${sourceLayer}/600-900mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900'] } },
       },
       {
         id: 'depth600',
         esriStyleLayerId: `${sourceLayer}/300-600mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600'] } },
       },
       {
         id: 'depth300',
         esriStyleLayerId: `${sourceLayer}/150-300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300'] } },
       },
       {
         id: 'depth150',
         esriStyleLayerId: `${sourceLayer}/<150mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150'] } },
       },
     ]
@@ -218,7 +233,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       {
         id: 'depthOver2300',
         esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
-        label: 'Extent over 2300mm',
+        label: 'Extent over 2300mm X',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
           stroke: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
@@ -280,14 +295,17 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       },
     ]
   }
+  if (depthsKey) {
+    return [extentsDataset, depthDataset]
+  }
   // We only really need one of these with visibleWhen: { menu: {dataset: ['surfacewater'], depth: ['depthAll'] } },
-  const depthsKey = {
-    id: `${id}-depths-key`,
+  depthsKey = {
+    id: `depths-key`,
     label: 'Surface water',
     groupLabel: 'Surface water depth in millimetres',
     groupStyle: 'ramp',
     showInKey: true,
-    visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
+    visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthAll'] } },
     sublayers: depthDataset.sublayers.map((sublayer) => {
       return {
         ...sublayer,
@@ -296,7 +314,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       }
     })
   }
-  return [extentsDataset, depthDataset, depthsKey]
+  return [depthsKey, extentsDataset, depthDataset]
 }
 
 const surfaceWaterExtentsKey = {
@@ -304,51 +322,55 @@ const surfaceWaterExtentsKey = {
   label: 'Surface Water',
   groupLabel: 'Surface Water',
   showInKey: true,
-  style: {
-    stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-    fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-  },
+  style: extentsStyle,
   sublayers: [
     {
       id: 'key-150',
       label: 'Full extend of flooding',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth150'] } }
     },
     {
       id: 'key-300',
       label: 'Extent over 150mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth300'] } }
     },
     {
       id: 'key-600',
       label: 'Extent over 300mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth600'] } }
     },
     {
       id: 'key-900',
       label: 'Extent over 600mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth900'] } }
     },
     {
       id: 'key-1200',
       label: 'Extent over 900mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth1200'] } }
     },
     {
       id: 'key-2300',
       label: 'Extent over 1200mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth2300'] } }
     },
     {
       id: 'key-over-2300',
       label: 'Extent over 2300mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthOver2300'] } }
     }
   ]
@@ -588,6 +610,7 @@ const interactiveMap = new InteractiveMap('map', {
       manifest: {
         panels: [{
           id: 'mapKey',
+          mobile: { slot: 'drawer', modal: false },
           tablet: { slot: 'left-top', width: '360px' },
           desktop: { slot: 'left-top', width: '360px' },
         }]
