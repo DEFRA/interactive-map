@@ -7,6 +7,7 @@ import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 import createMenuPlugin from '/plugins/menu/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
+import { drawPlugin, framePlugin, attachDrawPlugin } from './planning/drawPlugin.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
 
 const nonFloodZoneLight = '#2b8cbe'
@@ -558,6 +559,8 @@ const interactiveMap = new InteractiveMap('map', {
   center: [481146,484971],
   zoom: 13,
   plugins: [
+    drawPlugin,
+    framePlugin,
     createMapKeyPlugin(),
     createMenuPlugin({
       manifest: {
@@ -594,6 +597,27 @@ const interactiveMap = new InteractiveMap('map', {
   ]
 })
 
+const onEditPolygon = (isEditing) => {
+    // toggleKeyWhenEditing(isEditing)
+    if (isEditing) {
+      // interactiveMap.removePanel(interactPlugin.panelId)
+      interactiveMap.removeMarker('search')
+      interactiveMap.hidePanel('menu')
+      // Disable the selectAtTarget (infoPanel) button
+      interactiveMap.toggleButtonState('selectAtTarget', 'disabled', true)
+      if (datasetsPlugin.ready) { // hide layers
+        datasetsPlugin.setDatasetVisibility(false)
+      }
+    } else {
+      interactiveMap.showPanel('menu')
+      if (datasetsPlugin.ready) {
+        datasetsPlugin.setDatasetVisibility(true)
+      }
+      // interactPlugin.triggerHitTest()
+    }
+  }
+attachDrawPlugin(interactiveMap, onEditPolygon)
+
 const testGlobalVisibility = () => {
   setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 3000)
   setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 6000)
@@ -610,6 +634,7 @@ interactiveMap.on('datasets:ready', function () {
   // testAddRemoveDataset()
   updateVisibleLayers()
   initPointerMove(mapState.view)
+  datasetsPlugin.ready = true
 })
 
 const mapState = {}
