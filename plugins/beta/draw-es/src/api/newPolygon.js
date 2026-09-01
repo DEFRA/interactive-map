@@ -34,4 +34,5 @@ export const newPolygon = ({ mapState, pluginState, mapProvider, services }, fea
   sketchViewModel.create('polygon')
 
   dispatch({ type: 'SET_MODE', payload: 'new-polygon' })
+  dispatch({ type: 'SET_FEATURE_ID', payload: featureId })
 }

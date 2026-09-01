@@ -140,11 +140,27 @@ export function attachEvents ({ pluginState, mapProvider, events, eventBus, butt
   }
 
   const handleDone = () => {
+    if (!sketchViewModel?.layer?.graphics?.items?.length) {
+      // Done has been pressed but the graphic hasn't been finalised,
+      // so we need to add pluginState.tempFeature
+      addFeature(pluginState.tempFeature)
+    }
     sketchViewModel.cancel()
     sketchViewModel.layer = emptySketchLayer
     dispatch({ type: 'SET_MODE', payload: null })
     dispatch({ type: 'SET_FEATURE', payload: { feature: null, tempFeature: null } })
     eventBus.emit('draw:done', { newFeature: pluginState.tempFeature })
+  }
+
+  const addFeature = (feature) => {
+    const graphic = createGraphic(
+      feature.id || feature.properties.id || pluginState.featureId,
+      feature.geometry.coordinates,
+      mapColorScheme
+    )
+    if (graphic) {
+      sketchLayer.add(graphic)
+    }
   }
 
   const handleCancel = () => {
@@ -155,14 +171,7 @@ export function attachEvents ({ pluginState, mapProvider, events, eventBus, butt
 
     // Reinstate initial feature
     if (feature) {
-      const graphic = createGraphic(
-        feature.id || feature.properties.id,
-        feature.geometry.coordinates,
-        mapColorScheme
-      )
-      if (graphic) {
-        sketchLayer.add(graphic)
-      }
+      addFeature(feature)
     }
 
     // Prevent selection
