@@ -152,13 +152,13 @@ describe('drawMenu', () => {
   })
 })
 
-describe('drawUndo keyboard shortcut (platform-specific command)', () => {
-  const loadUndoCommand = (mac) => {
+describe('platform-specific keyboard shortcut commands', () => {
+  const loadCommand = (mac, id) => {
     let command
     jest.isolateModules(() => {
       jest.doMock('../../../src/utils/isMac.js', () => ({ isMac: () => mac }))
       const { manifest: reloaded } = require('./manifest.js')
-      command = reloaded.keyboardShortcuts.find((s) => s.id === 'drawUndo').command
+      command = reloaded.keyboardShortcuts.find((s) => s.id === id).command
     })
     return command
   }
@@ -168,11 +168,23 @@ describe('drawUndo keyboard shortcut (platform-specific command)', () => {
     jest.resetModules()
   })
 
-  test('uses Command on macOS', () => {
-    expect(loadUndoCommand(true)).toBe('<kbd>Command</kbd> + <kbd>Z</kbd>')
+  describe('drawUndo', () => {
+    test('uses Command on macOS', () => {
+      expect(loadCommand(true, 'drawUndo')).toBe('<kbd>Command</kbd> + <kbd>Z</kbd>')
+    })
+
+    test('uses Ctrl on non-mac platforms', () => {
+      expect(loadCommand(false, 'drawUndo')).toBe('<kbd>Ctrl</kbd> + <kbd>Z</kbd>')
+    })
   })
 
-  test('uses Ctrl on non-mac platforms', () => {
-    expect(loadUndoCommand(false)).toBe('<kbd>Ctrl</kbd> + <kbd>Z</kbd>')
+  describe('drawSelectAdjacentPoint', () => {
+    test('uses Option on macOS', () => {
+      expect(loadCommand(true, 'drawSelectAdjacentPoint')).toBe('<kbd>Option</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>')
+    })
+
+    test('uses Alt on non-mac platforms', () => {
+      expect(loadCommand(false, 'drawSelectAdjacentPoint')).toBe('<kbd>Alt</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>')
+    })
   })
 })

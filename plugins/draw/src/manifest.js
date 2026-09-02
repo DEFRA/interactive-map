@@ -20,6 +20,9 @@ const isEditMode = (mode) => EDIT_MODES.has(mode)
 
 // Show the platform-appropriate undo modifier (⌘ on macOS, Ctrl elsewhere).
 const undoCommand = isMac() ? '<kbd>Command</kbd> + <kbd>Z</kbd>' : '<kbd>Ctrl</kbd> + <kbd>Z</kbd>'
+// Show the platform-appropriate label for the Alt modifier — macOS keyboards and
+// menus call it Option, not Alt.
+const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 
 const createButtonSlots = (showLabel) => ({
   mobile: { slot: 'actions', showLabel },
@@ -131,7 +134,7 @@ export const manifest = {
     id: 'drawSelectAdjacentPoint',
     group: 'Drawing',
     title: 'Select adjacent point (edit)',
-    command: '<kbd>Alt</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>'
+    command: `${altKeyHtml} + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>`
   }, {
     id: 'drawMovePoint',
     group: 'Drawing',

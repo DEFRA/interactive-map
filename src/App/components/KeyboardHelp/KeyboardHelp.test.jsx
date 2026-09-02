@@ -68,6 +68,23 @@ describe('KeyboardHelp — flat list', () => {
     render(<KeyboardHelp />)
     expect(screen.getByText('↑')).toBeInTheDocument()
   })
+
+  it('visually hides a shortcut flagged visuallyHidden but keeps it in the DOM for assistive tech', () => {
+    getKeyboardShortcuts.mockReturnValue([
+      ...VIEWPORT_SHORTCUTS,
+      { id: 'sr', context: 'viewport', title: 'Get info', command: '<kbd>Alt</kbd> + <kbd>I</kbd>', visuallyHidden: true }
+    ])
+    render(<KeyboardHelp />)
+    const item = screen.getByText('Get info').closest('.im-c-keyboard-help__item')
+    expect(item).toHaveClass('im-u-visually-hidden')
+  })
+
+  it('does not visually hide a regular shortcut', () => {
+    getKeyboardShortcuts.mockReturnValue(VIEWPORT_SHORTCUTS)
+    render(<KeyboardHelp />)
+    const item = screen.getByText('Move').closest('.im-c-keyboard-help__item')
+    expect(item).not.toHaveClass('im-u-visually-hidden')
+  })
 })
 
 // ─── tab UI (multiple groups) ─────────────────────────────────────────────────

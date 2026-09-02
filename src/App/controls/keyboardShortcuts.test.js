@@ -21,4 +21,25 @@ describe('keyboardShortcuts', () => {
       expect(s.command).toContain('<kbd>Alt</kbd>')
     })
   })
+
+  it('marks getInfo as visuallyHidden, map-provider-agnostic and requiring reverseGeocodeProvider', () => {
+    const shortcuts = load()
+    const getInfo = shortcuts.find(s => s.id === 'getInfo')
+    expect(getInfo).toMatchObject({
+      visuallyHidden: true,
+      mapProviderAgnostic: true,
+      requiredConfig: ['reverseGeocodeProvider']
+    })
+  })
+
+  it('uses Ctrl for getInfo on non-Mac and Option on Mac', () => {
+    Object.defineProperty(navigator, 'platform', { value: 'MacIntel', configurable: true })
+    let getInfo = load().find(s => s.id === 'getInfo')
+    expect(getInfo.command).toContain('<kbd>Option</kbd>')
+
+    jest.resetModules()
+    Object.defineProperty(navigator, 'platform', { value: 'Win32', configurable: true })
+    getInfo = load().find(s => s.id === 'getInfo')
+    expect(getInfo.command).toContain('<kbd>Ctrl</kbd>')
+  })
 })
