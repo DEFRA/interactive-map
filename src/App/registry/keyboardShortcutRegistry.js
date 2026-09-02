@@ -19,8 +19,8 @@ const _setProviderSupportedShortcuts = (state, ids = []) => {
 
 const _getKeyboardShortcuts = (state, appConfig = {}) => {
   const filteredCore = coreShortcuts.filter(s => {
-    // Must be supported by provider
-    if (!state.providerSupportedIds.has(s.id)) {
+    // Must be supported by the map provider, unless the shortcut is map-provider-agnostic (no capability dependency, so no adapter needs to declare it).
+    if (!s.mapProviderAgnostic && !state.providerSupportedIds.has(s.id)) {
       return false
     }
     // Check requiredConfig - all specified config values must be truthy

@@ -630,6 +630,43 @@
  */
 
 /**
+ * Describes a single row in the keyboard shortcuts help panel (opened via Shift+?).
+ * Plugins register these via `PluginManifest.keyboardShortcuts`; core (built-in)
+ * shortcuts share this same shape internally.
+ *
+ * @typedef {Object} KeyboardShortcutDefinition
+ *
+ * @property {string} command
+ * HTML string describing the key combination, rendered as markup — wrap keys in
+ * `<kbd>` tags, e.g. `'<kbd>Shift</kbd> + <kbd>K</kbd>'`. If it uses the Alt key,
+ * label it per platform (macOS calls it Option, not Alt) — see the shared `isMac()`
+ * helper and its use in the app's own core shortcuts.
+ *
+ * @property {'viewport' | 'listbox' | 'global'} [context='viewport']
+ * Which help-panel context this shortcut applies to. Used only to choose the panel's
+ * default open tab — it doesn't affect whether the row is shown.
+ *
+ * @property {string} [group='Navigate']
+ * Tab label the shortcut is grouped under in the help panel. Shortcuts sharing a group
+ * (case/whitespace-insensitive) appear together under one tab; if every visible shortcut
+ * shares one group, the panel renders as a flat list with no tabs.
+ *
+ * @property {string} id
+ * Unique shortcut identifier.
+ *
+ * @property {string[]} [requiredConfig]
+ * App config keys that must all be truthy for the shortcut to appear in the help panel.
+ *
+ * @property {string} title
+ * Accessible title shown in the help panel.
+ *
+ * @property {boolean} [visuallyHidden=false]
+ * When true, the row is hidden from sighted users but stays in the DOM and remains
+ * discoverable by assistive technology. Use for a shortcut with no visual affordance to
+ * discover it by otherwise — e.g. one whose only effect is a screen reader announcement.
+ */
+
+/**
  * Manifest defining a plugin's buttons, panels, controls, API methods, and state.
  *
  * @typedef {Object} PluginManifest
@@ -648,6 +685,9 @@
  *
  * @property {ComponentType} [InitComponent]
  * Initialization component.
+ *
+ * @property {KeyboardShortcutDefinition[]} [keyboardShortcuts]
+ * Keyboard shortcut definitions shown in the keyboard shortcuts help panel.
  *
  * @property {PanelDefinition[]} [panels]
  * Panel definitions.

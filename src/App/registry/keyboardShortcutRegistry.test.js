@@ -93,6 +93,22 @@ describe('createKeyboardShortcutRegistry', () => {
     ])
   })
 
+  test('a mapProviderAgnostic core shortcut is included even when no provider declares support for it', () => {
+    jest.resetModules()
+    jest.doMock('../controls/keyboardShortcuts.js', () => ({
+      coreShortcuts: [
+        { id: 'ordinary', description: 'Ordinary' },
+        { id: 'agnostic', description: 'Agnostic', mapProviderAgnostic: true }
+      ]
+    }))
+    const registry = require('./keyboardShortcutRegistry.js').createKeyboardShortcutRegistry()
+    registry.setProviderSupportedShortcuts([]) // no provider support declared at all
+
+    expect(registry.getKeyboardShortcuts()).toEqual([
+      { id: 'agnostic', description: 'Agnostic', mapProviderAgnostic: true }
+    ])
+  })
+
   test('two registry instances are fully isolated from each other', () => {
     // This is the multi-map-on-a-page scenario: a shortcut registered by one map
     // (e.g. a plugin) must never leak into another map's help panel, and each map's
