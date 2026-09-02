@@ -5,30 +5,15 @@ import { stringToKebab } from '../../../utils/stringToKebab.js'
 import { getPanelElementId } from '../../../utils/getPanelElementId.js'
 import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
+import { classifyPanel, getPanelRole } from '../../../utils/getPanelRole.js'
 import { Icon } from '../Icon/Icon'
 import { Tabs } from '../Tabs/Tabs.jsx'
 
-// WCAG requires a modal to always be dismissible, so modal:true forces it regardless of config.
-const resolveIsDismissible = (bpConfig, isModal) => isModal || bpConfig.dismissible !== false
-
 const computePanelState = (bpConfig, triggeringElement, focus, focusOnOpen) => {
-  const isModal = bpConfig.modal === true
-  const isAside = bpConfig.slot === 'side' && bpConfig.open && !isModal
-  const isDismissible = resolveIsDismissible(bpConfig, isModal)
-  const isDialog = !isAside && isDismissible
+  const { isModal, isAside, isDismissible, isDialog } = classifyPanel(bpConfig)
   const shouldFocus = isModal || focusOnOpen === true || (focusOnOpen !== false && focus !== false && (focus === true || Boolean(triggeringElement)))
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
   return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
-}
-
-const getPanelRole = (isDialog, isDismissible) => {
-  if (isDialog) {
-    return 'dialog'
-  }
-  if (isDismissible) {
-    return 'complementary'
-  }
-  return 'region'
 }
 
 const buildPanelClassNames = (slot, showLabel) => [
@@ -46,7 +31,7 @@ const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissible, isMo
   id: elementId,
   'aria-labelledby': `${elementId}-label`,
   tabIndex: shouldFocus ? -1 : undefined, // nosonar
-  role: getPanelRole(isDialog, isDismissible),
+  role: getPanelRole({ isDialog, isDismissible }),
   'aria-modal': isDialog && isModal ? 'true' : undefined,
   style: width ? { width } : undefined,
   className: panelClass,

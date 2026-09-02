@@ -83,7 +83,18 @@ describe('MapButton', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false')
     expect(button).not.toHaveAttribute('aria-pressed')
     expect(button).toHaveAttribute('aria-controls', 'prefix-panel-settings')
+    expect(button).not.toHaveAttribute('aria-haspopup')
     expect(screen.getByTestId('slot')).toHaveAttribute('data-slot', 'test-button')
+  })
+
+  it('sets aria-haspopup="dialog" when the controlled panel is a dialog', () => {
+    renderButton({ panelId: 'Settings', idPrefix: 'prefix', panelRole: 'dialog' })
+    expect(getButton()).toHaveAttribute('aria-haspopup', 'dialog')
+  })
+
+  it.each(['complementary', 'region'])('sets no aria-haspopup when the controlled panel role is %s', (panelRole) => {
+    renderButton({ panelId: 'Settings', idPrefix: 'prefix', panelRole })
+    expect(getButton()).not.toHaveAttribute('aria-haspopup')
   })
 
   it.each([

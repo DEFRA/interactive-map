@@ -170,6 +170,26 @@ describe('mapButtons module', () => {
       expect(result.props).toMatchObject({ isDisabled: true, isHidden: true, isPressed: true, isExpanded: true })
     })
 
+    it.each([
+      [{ slot: 'right-top', open: false }, 'dialog'],
+      [{ slot: 'right-top', open: false, dismissible: false }, 'region'],
+      [{ slot: 'side', open: true }, 'complementary']
+    ])('derives panelRole %j -> %s from the target panel\'s breakpoint config', (panelBpConfig, expectedRole) => {
+      const state = { ...appState, panelConfig: { p1: { desktop: panelBpConfig } } }
+      const result = render({ ...baseBtn, panelId: 'p1' }, state)
+      expect(result.props.panelRole).toBe(expectedRole)
+    })
+
+    it('leaves panelRole undefined when the button has no panelId', () => {
+      const result = render(baseBtn)
+      expect(result.props.panelRole).toBeUndefined()
+    })
+
+    it('leaves panelRole undefined when the target panel has no config at this breakpoint', () => {
+      const result = render({ ...baseBtn, panelId: 'missing' })
+      expect(result.props.panelRole).toBeUndefined()
+    })
+
     it('uses empty object fallback for missing breakpoint config', () => {
       const result = render(baseBtn, { ...appState, breakpoint: 'mobile' })
       expect(result.props.showLabel).toBe(true)
