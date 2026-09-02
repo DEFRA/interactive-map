@@ -46,7 +46,15 @@ export function useKeyboardShortcuts (containerRef) {
         // No action
       }
 
-      return e.altKey ? `Alt+${key}` : key
+      // Check altKey first: AltGr (used on many non-US keyboards) reports both altKey
+      // and ctrlKey as true, and should still resolve to the Alt+ binding, not Ctrl+.
+      if (e.altKey) {
+        return `Alt+${key}`
+      }
+      if (e.ctrlKey) {
+        return `Ctrl+${key}`
+      }
+      return key
     }
 
     const handle = (type) => (e) => {

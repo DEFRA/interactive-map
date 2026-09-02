@@ -138,6 +138,29 @@ describe('useKeyboardShortcuts', () => {
     expect(actions.stopPan).toHaveBeenCalled()
   })
 
+  test('normalizes Ctrl+key combinations', () => {
+    const { containerRef, actions } = setup({
+      keydown: { 'Ctrl+I': 'getInfo' },
+      actions: { getInfo: jest.fn() }
+    })
+    renderHook(() => useKeyboardShortcuts(containerRef))
+
+    containerRef.current.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i', ctrlKey: true }))
+    expect(actions.getInfo).toHaveBeenCalled()
+  })
+
+  test('treats AltGr (altKey + ctrlKey both true) as Alt+, not Ctrl+', () => {
+    const { containerRef, actions } = setup({
+      keydown: { 'Alt+I': 'getInfo', 'Ctrl+I': 'zoomIn' },
+      actions: { getInfo: jest.fn(), zoomIn: jest.fn() }
+    })
+    renderHook(() => useKeyboardShortcuts(containerRef))
+
+    containerRef.current.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i', altKey: true, ctrlKey: true }))
+    expect(actions.getInfo).toHaveBeenCalled()
+    expect(actions.zoomIn).not.toHaveBeenCalled()
+  })
+
   test('prevents default when action exists, does nothing otherwise', () => {
     const { containerRef } = setup({ keydown: { I: 'zoomIn', X: 'nonExistent' } })
     renderHook(() => useKeyboardShortcuts(containerRef))

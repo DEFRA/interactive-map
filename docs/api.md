@@ -478,6 +478,8 @@ Whether map text labels can be selected and read aloud by assistive technologies
 
 A function that returns a reverse geocode provider used to convert map coordinates to a place name, for example when announcing the current map position to screen reader users. Like the map provider, it is only called when the map is opened so the provider code is not sent to the user unless needed.
 
+When set, this also enables a <kbd>Option</kbd>/<kbd>Alt</kbd> + <kbd>I</kbd> (<kbd>Ctrl</kbd> + <kbd>I</kbd> on Windows/Linux — Alt+letter is reserved there for browser/OS menu mnemonics) keyboard shortcut that announces the place name at the map's current centre along with the visible area's dimensions. It has no visual affordance, so its keyboard shortcuts help panel entry is screen-reader-only.
+
 ```js
 new InteractiveMap('map', {
   reverseGeocodeProvider: openNamesProvider()
