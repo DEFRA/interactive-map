@@ -284,7 +284,7 @@ const interactiveMap = new InteractiveMap('map', {
   containerHeight: '650px',
   transformRequest: transformVtsRequest3857,
   enableZoomControls: false,
-  // readMapText: true,
+  readMapText: true,
   // urlPosition: 'none',
   enableFullscreen: true,
   // hasExitButton: true,

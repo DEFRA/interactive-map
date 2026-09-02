@@ -49,16 +49,33 @@ export function useKeyboardShortcuts (containerRef) {
       return e.altKey ? `Alt+${key}` : key
     }
 
-    const handle = (type) => (e) => {
-      const actionName = keyboardMappings[type][normalizeKey(e)]
-      if (actionName && actions[actionName]) {
+    const resolveAction = (type, key) => {
+      const actionName = keyboardMappings[type][key]
+      return actionName && actions[actionName] ? actionName : null
+    }
+
+    const handleKeyDown = (e) => {
+      const key = normalizeKey(e)
+      const actionName = resolveAction('keydown', key)
+      if (actionName) {
         actions[actionName](e)
+        e.preventDefault()
+        return
+      }
+      // A keyup-bound shortcut (e.g. Alt+Arrow label navigation) still acts on release,
+      // but its browser default (e.g. arrow-key scroll) must be suppressed now or it's too late.
+      if (resolveAction('keyup', key)) {
         e.preventDefault()
       }
     }
 
-    const handleKeyDown = handle('keydown')
-    const handleKeyUp = handle('keyup')
+    const handleKeyUp = (e) => {
+      const actionName = resolveAction('keyup', normalizeKey(e))
+      if (actionName) {
+        actions[actionName](e)
+        e.preventDefault()
+      }
+    }
 
     // keydown (pan/zoom) stays on the viewport so arrows only fire when the map has focus.
     // keyup (Alt+K and other global shortcuts) attaches to the app container so it fires
