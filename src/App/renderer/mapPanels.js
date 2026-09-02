@@ -15,6 +15,28 @@ import { logger } from '../../services/logger.js'
  * <Panel> (hidden when closed). buildPanelBody only runs while open, so nothing expensive mounts
  * before then.
  */
+// Consumer HTML panels are managed by HtmlElementHost; the rest need a breakpoint config and to
+// be eligible for this slot. Returns null (skip) or the pieces the caller needs.
+const getEligiblePanelConfig = (panelId, panelConfig, breakpoint, { slot, mode, isFullscreen }) => {
+  const config = panelConfig[panelId]
+  if (!config || isConsumerHtml(config)) {
+    return null
+  }
+  const bpConfig = config[breakpoint]
+  if (!bpConfig) {
+    return null
+  }
+  const targetSlot = resolveTargetSlot(bpConfig, breakpoint)
+  if (!isPanelSlotEligible(config, { targetSlot, slot, mode, isFullscreen })) {
+    return null
+  }
+  return { config, bpConfig }
+}
+
+// A losing modal panel (see getAllowedModalPanelId) still gets a shell — it's just not open.
+const resolveIsOpen = (openEntry, bpConfig, panelId, allowedModalPanelId) =>
+  Boolean(openEntry) && (!bpConfig.modal || panelId === allowedModalPanelId)
+
 export function mapPanels ({ slot, appState, evaluateProp }) {
   const { breakpoint, pluginRegistry, panelConfig, mode, openPanels } = appState
 
@@ -22,29 +44,14 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
   const allowedModalPanelId = getAllowedModalPanelId(openPanels, panelConfig, breakpoint)
 
   return Object.keys(panelConfig).map((panelId) => {
-    const config = panelConfig[panelId]
-    if (!config) {
+    const eligible = getEligiblePanelConfig(panelId, panelConfig, breakpoint, { slot, mode, isFullscreen: appState.isFullscreen })
+    if (!eligible) {
       return null
     }
-
-    // Consumer HTML panels are managed by HtmlElementHost
-    if (isConsumerHtml(config)) {
-      return null
-    }
-
-    const bpConfig = config[breakpoint]
-    if (!bpConfig) {
-      return null
-    }
-
-    const targetSlot = resolveTargetSlot(bpConfig, breakpoint)
-
-    if (!isPanelSlotEligible(config, { targetSlot, slot, mode, isFullscreen: appState.isFullscreen })) {
-      return null
-    }
+    const { config, bpConfig } = eligible
 
     const openEntry = openPanels[panelId]
-    const isOpen = Boolean(openEntry) && (!bpConfig.modal || panelId === allowedModalPanelId)
+    const isOpen = resolveIsOpen(openEntry, bpConfig, panelId, allowedModalPanelId)
     const { props = {}, focusOnOpen } = openEntry ?? {}
 
     const plugin = pluginRegistry.registeredPlugins.find(p => p.id === config.pluginId)
