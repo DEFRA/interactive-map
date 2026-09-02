@@ -275,12 +275,14 @@ const createMenuKeyDownHandler = ({ items, visibleIndices, index, setIndex, disa
  * @param {object}   params.menuRef          - Ref to the menu UL element.
  * @param {Function} params.setIsOpen        - Callback to open/close the menu.
  * @param {DOMRect}  params.buttonRect       - Bounding rect of the trigger button for positioning.
+ * @param {boolean}  [params.isOpen]         - Whether the menu is currently open (PopupMenu stays
+ *   mounted; this just toggles visibility, so setup/teardown here is keyed on isOpen, not mount).
  * @returns {{ index: number, handleMenuKeyDown: Function, handleItemClick: Function,
  *             menuStyle: object, menuDirection: string, menuHAlign: string }}
  */
 export const usePopupMenu = ({
   items, hiddenButtons, startIndex, startPos, instigator, instigatorKey,
-  buttonRefs, buttonConfig, disabledButtons, pluginId, evaluateProp, id, menuRef, setIsOpen, buttonRect
+  buttonRefs, buttonConfig, disabledButtons, pluginId, evaluateProp, id, menuRef, setIsOpen, buttonRect, isOpen
 }) => {
   const { dispatch, layoutRefs } = useApp()
   const viewportRef = layoutRefs.viewportRef
@@ -329,15 +331,14 @@ export const usePopupMenu = ({
     }
   }
 
+  // Keyed on isOpen (not mount) since PopupMenu stays mounted; resolveInitialIndex re-runs each
+  // open so selection resets instead of carrying over from a previous open.
   useEffect(() => {
-    menuRef.current?.focus()
-    if (startPos === 'first') {
-      setIndex(visibleIndices[0] ?? -1)
-    } else if (startPos === 'last') {
-      setIndex(visibleIndices[visibleIndices.length - 1] ?? -1) // NOSONAR .length - 1 used instead of .at(-1) for wider browser support
-    } else {
-      // No action
+    if (!isOpen) {
+      return undefined
     }
+    menuRef.current?.focus()
+    setIndex(resolveInitialIndex(startIndex, startPos, visibleIndices))
     const handleResize = () => setIsOpen(false)
     document.addEventListener('focusin', handleOutside)
     document.addEventListener('pointerdown', handleOutside)
@@ -347,7 +348,7 @@ export const usePopupMenu = ({
       document.removeEventListener('pointerdown', handleOutside)
       window.removeEventListener('resize', handleResize)
     }
-  }, [])
+  }, [isOpen])
 
   const { style: menuStyle, direction: menuDirection, halign: menuHAlign } = getMenuStyle(buttonRect)
   return { index, handleMenuKeyDown, handleItemClick, menuStyle, menuDirection, menuHAlign }

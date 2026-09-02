@@ -102,6 +102,20 @@ describe('Panel', () => {
       expect(dialog).toHaveAttribute('aria-modal', 'true')
       expect(dialog).toHaveAttribute('tabIndex', '-1')
     })
+
+    it('renders dialog role and aria-modal for a modal panel even when dismissible is left unset (WCAG requires a modal to be dismissible)', () => {
+      renderPanel({ desktop: { slot: 'overlay', modal: true } })
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toHaveAttribute('aria-modal', 'true')
+      expect(screen.getByRole('button', { name: 'Close Settings' })).toBeInTheDocument()
+    })
+
+    it('renders dialog role and aria-modal for a modal panel even when dismissible: false is set (a non-dismissible modal would trap keyboard/AT users)', () => {
+      renderPanel({ desktop: { slot: 'overlay', modal: true, dismissible: false } })
+      const dialog = screen.getByRole('dialog')
+      expect(dialog).toHaveAttribute('aria-modal', 'true')
+      expect(screen.getByRole('button', { name: 'Close Settings' })).toBeInTheDocument()
+    })
   })
 
   describe('focus behaviour', () => {
@@ -306,6 +320,35 @@ describe('Panel', () => {
 
         useIsScrollable.mockReturnValue(false)
       })
+    })
+  })
+
+  describe('isOpen (always-mounted, hidden-toggle)', () => {
+    it('renders hidden (not unmounted) when isOpen is false, so its id stays a real element', () => {
+      renderPanel({}, { isOpen: false })
+      const panel = document.getElementById('app-panel-settings')
+      expect(panel).toBeInTheDocument()
+      expect(panel).toHaveAttribute('hidden')
+    })
+
+    it('does not focus a closed panel, even one that would otherwise auto-focus (modal)', () => {
+      renderPanel({ desktop: { slot: 'overlay', dismissible: true, modal: true } }, { isOpen: false })
+      const panel = document.getElementById('app-panel-settings')
+      expect(document.activeElement).not.toBe(panel)
+    })
+
+    it('keeps the same DOM node (no swap/remount) across an isOpen transition, and un-hides it once open', () => {
+      const panelConfig = { desktop: { slot: 'side', open: true, dismissible: false, modal: false, showLabel: true } }
+      const { rerender } = render(<Panel panelId='Settings' panelConfig={panelConfig} label='Settings' isOpen={false} />)
+      const panelWhileClosed = document.getElementById('app-panel-settings')
+      expect(panelWhileClosed).toHaveAttribute('hidden')
+
+      rerender(<Panel panelId='Settings' panelConfig={panelConfig} label='Settings' isOpen items={[{ id: 'a', element: <p>Item</p> }]} />)
+
+      const panelWhileOpen = document.getElementById('app-panel-settings')
+      expect(panelWhileOpen).toBe(panelWhileClosed)
+      expect(panelWhileOpen).not.toHaveAttribute('hidden')
+      expect(screen.getByText('Item')).toBeInTheDocument()
     })
   })
 })

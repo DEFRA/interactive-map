@@ -40,12 +40,34 @@ describe('mapPanels', () => {
     defaultAppState.panelConfig = ({ p1: baseConfig })
   })
 
-  it('returns empty array when no panels are open', () => {
-    expect(map({ ...defaultAppState, openPanels: {} })).toEqual([])
+  it('renders a closed shell (not nothing) for an eligible panel that is not open', () => {
+    const result = map({ ...defaultAppState, openPanels: {} })
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ id: 'p1', type: 'panel', order: 1 })
+    expect(result[0].element.props.isOpen).toBe(false)
+  })
+
+  it('does not build a closed panel\'s body before it opens', () => {
+    const renderFn = jest.fn(() => <div>child</div>)
+    defaultAppState.panelConfig = ({ p1: { ...baseConfig, render: renderFn } })
+    const result = map({ ...defaultAppState, openPanels: {} })
+    expect(mapControls).not.toHaveBeenCalled()
+    expect(withPluginContexts).not.toHaveBeenCalled()
+    expect(result[0].element.props.items).toBeUndefined()
+    expect(result[0].element.props.tabs).toBeUndefined()
+  })
+
+  it('returns an empty array only when there is nothing eligible for the slot at all', () => {
+    expect(map({ ...defaultAppState, panelConfig: {} })).toEqual([])
   })
 
   it('skips panel if config is missing', () => {
     defaultAppState.panelConfig = ({})
+    expect(map()).toEqual([])
+  })
+
+  it('skips a registered panelId whose config is falsy', () => {
+    defaultAppState.panelConfig = ({ p1: null })
     expect(map()).toEqual([])
   })
 
@@ -92,7 +114,7 @@ describe('mapPanels', () => {
     expect(result).toEqual([])
   })
 
-  it('only allows last opened modal panel', () => {
+  it('renders both modal panels\' shells but only marks the last-opened one as open', () => {
     defaultAppState.panelConfig = ({
       p1: { desktop: { modal: true }, includeModes: ['view'] },
       p2: { desktop: { modal: true }, includeModes: ['view'] }
@@ -101,7 +123,10 @@ describe('mapPanels', () => {
       ...defaultAppState,
       openPanels: { p1: { props: {} }, p2: { props: {} } }
     }
-    expect(map(state, 'modal').map(r => r.id)).toEqual(['p2'])
+    const result = map(state, 'modal')
+    expect(result.map(r => r.id).sort()).toEqual(['p1', 'p2'])
+    expect(result.find(r => r.id === 'p1').element.props.isOpen).toBe(false)
+    expect(result.find(r => r.id === 'p2').element.props.isOpen).toBe(true)
   })
 
   it('wraps render function with plugin context', () => {

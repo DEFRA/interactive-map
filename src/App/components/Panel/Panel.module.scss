@@ -20,6 +20,11 @@
     pointer-events: auto;
     color: var(--foreground-color);
     background-color: var(--background-color);
+
+    // Override needed: display: flex above beats the browser's default [hidden] rule otherwise.
+    &[hidden] {
+        display: none;
+    }
 }
 
 // 2. Elements

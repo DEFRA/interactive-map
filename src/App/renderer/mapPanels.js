@@ -2,8 +2,7 @@
 import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
-import { allowedSlots } from './slots.js'
-import { resolveTargetSlot, isModeAllowed, isConsumerHtml } from './slotHelpers.js'
+import { resolveTargetSlot, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
 import { mapControls } from './mapControls.js'
 import { orderItems } from './orderItems.js'
 import { groupIntoTabs } from './groupIntoTabs.js'
@@ -11,47 +10,18 @@ import { stringToKebab } from '../../utils/stringToKebab.js'
 import { logger } from '../../services/logger.js'
 
 /**
- * Determines whether a panel should be rendered in the given slot.
- * Checks slot eligibility, mode restrictions, inline/fullscreen constraints,
- * and ensures only the topmost modal panel is shown.
- */
-const isPanelVisible = (panelId, config, bpConfig, { targetSlot, slot, mode, isFullscreen, allowedModalPanelId }) => {
-  const isNextToButton = targetSlot.endsWith('-button')
-  if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
-    return false
-  }
-  if (!isModeAllowed(config, mode)) {
-    return false
-  }
-  if (config.inline === false && !isFullscreen) {
-    return false
-  }
-  if (targetSlot !== slot) {
-    return false
-  }
-  if (bpConfig.modal && panelId !== allowedModalPanelId) {
-    return false
-  }
-  return true
-}
-
-/**
- * Maps open panels to renderable entries for a given layout slot.
- * Filters panels by slot, breakpoint, mode, and modal state, then wraps
- * each panel's render function with the appropriate plugin contexts.
+ * Maps every configured panel eligible for the given layout slot to a renderable entry — open or
+ * closed alike, so a button's aria-controls id always resolves to a stable, permanently-mounted
+ * <Panel> (hidden when closed). buildPanelBody only runs while open, so nothing expensive mounts
+ * before then.
  */
 export function mapPanels ({ slot, appState, evaluateProp }) {
   const { breakpoint, pluginRegistry, panelConfig, mode, openPanels } = appState
 
-  const openPanelEntries = Object.entries(openPanels)
+  // Only the most-recently-opened modal panel is ever actually shown — see isOpen below.
+  const allowedModalPanelId = getAllowedModalPanelId(openPanels, panelConfig, breakpoint)
 
-  const modalPanels = openPanelEntries.filter(([panelId]) => {
-    const cfg = panelConfig[panelId]?.[breakpoint]
-    return cfg?.modal
-  })
-  const allowedModalPanelId = modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null // NOSONAR, .at() is only Chrome 90+
-
-  return openPanelEntries.map(([panelId, { props, focusOnOpen }]) => {
+  return Object.keys(panelConfig).map((panelId) => {
     const config = panelConfig[panelId]
     if (!config) {
       return null
@@ -69,11 +39,13 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
 
     const targetSlot = resolveTargetSlot(bpConfig, breakpoint)
 
-    if (!isPanelVisible(panelId, config, bpConfig, {
-      targetSlot, slot, mode, isFullscreen: appState.isFullscreen, allowedModalPanelId
-    })) {
+    if (!isPanelSlotEligible(config, { targetSlot, slot, mode, isFullscreen: appState.isFullscreen })) {
       return null
     }
+
+    const openEntry = openPanels[panelId]
+    const isOpen = Boolean(openEntry) && (!bpConfig.modal || panelId === allowedModalPanelId)
+    const { props = {}, focusOnOpen } = openEntry ?? {}
 
     const plugin = pluginRegistry.registeredPlugins.find(p => p.id === config.pluginId)
     const pluginId = plugin?.id
@@ -92,7 +64,8 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
           panelConfig={config}
           props={props}
           focusOnOpen={focusOnOpen}
-          {...buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp })}
+          isOpen={isOpen}
+          {...(isOpen ? buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp }) : {})}
           label={label}
           html={html}
         />
