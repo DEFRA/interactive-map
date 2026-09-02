@@ -12,11 +12,15 @@ const createFeatureHandler = (mapState, getPluginState) => (args, addToExisting)
   })
 }
 
+// A modified Enter (Alt+Enter, Ctrl+Enter, etc.) is a different shortcut, not a
+// select-at-target trigger — e.g. Alt+Enter is core's highlightLabelAtCenter.
+const isPlainEnter = (event) => event.key === 'Enter' && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey
+
 const createKeyboardHandlers = (viewportRef, onSelectAtTarget) => {
   let enterOnViewport = false
-  const handleKeydown = (event) => { enterOnViewport = event.key === 'Enter' && viewportRef.current === event.target }
+  const handleKeydown = (event) => { enterOnViewport = isPlainEnter(event) && viewportRef.current === event.target }
   const handleKeyup = (event) => {
-    if (event.key === 'Enter' && enterOnViewport) {
+    if (isPlainEnter(event) && enterOnViewport) {
       event.preventDefault()
       onSelectAtTarget()
     }
