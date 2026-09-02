@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useLayoutEffect } from 'react'
 import { useResizeObserver } from './useResizeObserver.js'
 import { constrainKeyboardFocus } from '../../utils/constrainKeyboardFocus.js'
 import { toggleInertElements } from '../../utils/toggleInertElements.js'
@@ -60,6 +60,44 @@ const setSlotCSSVar = (slot, layoutRefs, primaryMargin) => {
 
   root.style.setProperty(MODAL_INSET, `${relTop}px auto auto ${relLeft}px`)
   root.style.setProperty(MODAL_MAX_HEIGHT, `${mainRect.height - relTop - primaryMargin}px`)
+}
+
+// Computes and applies --modal-inset/--modal-max-height for the panel's current slot. Shared by
+// the resize observer (keeps position correct across later layout changes while open) and the
+// open-triggered layout effect below (panels stay permanently mounted — see mapPanels.js — so
+// opening one doesn't itself resize mainRef and wouldn't otherwise trigger a recalc).
+const recalcModalPosition = ({ isModal, mainRef, panelRef, buttonContainerEl, layoutRefs }) => {
+  if (!isModal || !mainRef.current) {
+    return
+  }
+
+  const root = document.documentElement
+  const styles = getComputedStyle(root)
+  const dividerGap = Number.parseInt(styles.getPropertyValue('--divider-gap'), 10)
+  const primaryMargin = Number.parseInt(styles.getPropertyValue('--primary-gap'), 10)
+  const slot = panelRef.current.dataset.slot
+
+  // Button-adjacent panels: position next to the controlling button.
+  // Use slot name (not buttonContainerEl) as the gate — buttonContainerEl may be undefined
+  // when there is no triggeringElement (e.g. panel opened programmatically).
+  // Dynamically query via aria-controls to handle stale triggeringElement after breakpoint changes.
+  if (slot?.endsWith('-button')) {
+    const panelElId = panelRef.current?.id
+    const currentButtonEl = panelElId ? document.querySelector(`[aria-controls="${panelElId}"]`) : null
+    const effectiveContainer = currentButtonEl?.parentElement ??
+      (buttonContainerEl?.isConnected ? buttonContainerEl : null) ??
+      document.querySelector(`[data-button-slot="${slot}"]`)
+
+    if (!effectiveContainer) {
+      return
+    }
+
+    setButtonCSSVar(effectiveContainer, mainRef, dividerGap)
+    return
+  }
+
+  // Slot-based panels: derive position from the slot container element
+  setSlotCSSVar(slot, layoutRefs, primaryMargin)
 }
 
 const useModalKeyHandler = (panelRef, isModal, handleClose) => {
@@ -131,40 +169,16 @@ export function useModalPanelBehaviour ({
 
   useModalKeyHandler(panelRef, isModal, handleClose)
 
-  // === Set --modal-inset and --modal-max-height, recalculate on mainRef resize === //
-  useResizeObserver([mainRef], () => {
-    if (!isModal || !mainRef.current) {
-      return
-    }
+  // === Recalculate on mainRef resize (keeps position correct while already open) === //
+  useResizeObserver([mainRef], () => recalcModalPosition({ isModal, mainRef, panelRef, buttonContainerEl, layoutRefs }))
 
-    const root = document.documentElement
-    const styles = getComputedStyle(root)
-    const dividerGap = Number.parseInt(styles.getPropertyValue('--divider-gap'), 10)
-    const primaryMargin = Number.parseInt(styles.getPropertyValue('--primary-gap'), 10)
-    const slot = panelRef.current.dataset.slot
-
-    // Button-adjacent panels: position next to the controlling button.
-    // Use slot name (not buttonContainerEl) as the gate — buttonContainerEl may be undefined
-    // when there is no triggeringElement (e.g. panel opened programmatically).
-    // Dynamically query via aria-controls to handle stale triggeringElement after breakpoint changes.
-    if (slot?.endsWith('-button')) {
-      const panelElId = panelRef.current?.id
-      const currentButtonEl = panelElId ? document.querySelector(`[aria-controls="${panelElId}"]`) : null
-      const effectiveContainer = currentButtonEl?.parentElement ??
-        (buttonContainerEl?.isConnected ? buttonContainerEl : null) ??
-        document.querySelector(`[data-button-slot="${slot}"]`)
-
-      if (!effectiveContainer) {
-        return
-      }
-
-      setButtonCSSVar(effectiveContainer, mainRef, dividerGap)
-      return
-    }
-
-    // Slot-based panels: derive position from the slot container element
-    setSlotCSSVar(slot, layoutRefs, primaryMargin)
-  })
+  // === Recalculate the moment the panel opens === //
+  // The resize observer above won't fire on its own here: its size cache persists across
+  // opens/closes (the panel no longer mounts fresh each time), and opening a panel doesn't
+  // itself resize mainRef. This is what actually positions the panel at open time.
+  useLayoutEffect(() => {
+    recalcModalPosition({ isModal, mainRef, panelRef, buttonContainerEl, layoutRefs })
+  }, [isModal, mainRef, panelRef, buttonContainerEl, layoutRefs])
 
   // === Click on modal backdrop to close === //
   useEffect(() => {
