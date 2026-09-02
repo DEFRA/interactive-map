@@ -363,7 +363,13 @@
     z-index: 1000;
   }
 
-  .im-c-panel + .im-o-app__modal-backdrop {
+  // Visibility is JS-driven (Layout.jsx) since multiple panels can share this slot.
+  .im-o-app__modal-backdrop {
+    display: none;
+  }
+
+  .im-o-app__modal-backdrop--visible {
+    display: block;
     position: absolute;
     top: 0;
     left: 0;

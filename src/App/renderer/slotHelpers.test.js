@@ -1,6 +1,6 @@
-import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml } from './slotHelpers.js'
+import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, hasOpenModalPanel } from './slotHelpers.js'
 
-jest.mock('./slots.js', () => ({ allowedSlots: { control: ['inset', 'banner', 'actions'] } }))
+jest.mock('./slots.js', () => ({ allowedSlots: { control: ['inset', 'banner', 'actions'], panel: ['header', 'modal', 'left-top'] } }))
 
 describe('resolveTargetSlot', () => {
   it('returns modal for modal panels', () => {
@@ -83,5 +83,82 @@ describe('isConsumerHtml', () => {
 
   it('returns false when no html', () => {
     expect(isConsumerHtml({ render: () => {} })).toBe(false)
+  })
+})
+
+describe('isPanelSlotEligible', () => {
+  const base = { includeModes: ['view'] }
+  const ctx = { targetSlot: 'header', mode: 'view', isFullscreen: false }
+
+  it('returns true for a panel in an allowed slot', () => {
+    expect(isPanelSlotEligible(base, ctx)).toBe(true)
+  })
+
+  it('returns false when the target slot is not an allowed panel slot', () => {
+    expect(isPanelSlotEligible(base, { ...ctx, targetSlot: 'invalid' })).toBe(false)
+  })
+
+  it('allows a target slot next to a button even though it is not a named panel slot', () => {
+    expect(isPanelSlotEligible(base, { ...ctx, targetSlot: 'my-button-button' })).toBe(true)
+  })
+
+  it('returns false when mode is not allowed', () => {
+    expect(isPanelSlotEligible({ includeModes: ['edit'] }, ctx)).toBe(false)
+  })
+
+  it('returns false when inline:false and not fullscreen', () => {
+    expect(isPanelSlotEligible({ ...base, inline: false }, ctx)).toBe(false)
+  })
+
+  it('returns true when inline:false and fullscreen', () => {
+    expect(isPanelSlotEligible({ ...base, inline: false }, { ...ctx, isFullscreen: true })).toBe(true)
+  })
+
+  it('returns false when a specific requested slot is given and the target slot does not match it', () => {
+    expect(isPanelSlotEligible(base, { ...ctx, slot: 'left-top' })).toBe(false)
+  })
+
+  it('returns true when a specific requested slot is given and matches the target slot', () => {
+    expect(isPanelSlotEligible(base, { ...ctx, slot: 'header' })).toBe(true)
+  })
+
+  it('skips the requested-slot check entirely when slot is omitted (HtmlElementHost usage)', () => {
+    expect(isPanelSlotEligible(base, { targetSlot: 'header', mode: 'view', isFullscreen: false })).toBe(true)
+  })
+})
+
+describe('getAllowedModalPanelId', () => {
+  const panelConfig = {
+    p1: { desktop: { modal: true } },
+    p2: { desktop: { modal: true } },
+    p3: { desktop: {} }
+  }
+
+  it('returns null when no modal panel is open', () => {
+    expect(getAllowedModalPanelId({ p3: { props: {} } }, panelConfig, 'desktop')).toBeNull()
+  })
+
+  it('returns the only open modal panel', () => {
+    expect(getAllowedModalPanelId({ p1: { props: {} } }, panelConfig, 'desktop')).toBe('p1')
+  })
+
+  it('returns the most recently opened modal panel when more than one is open', () => {
+    expect(getAllowedModalPanelId({ p1: { props: {} }, p2: { props: {} } }, panelConfig, 'desktop')).toBe('p2')
+  })
+
+  it('returns null when there are no open panels at all', () => {
+    expect(getAllowedModalPanelId({}, panelConfig, 'desktop')).toBeNull()
+  })
+})
+
+describe('hasOpenModalPanel', () => {
+  const panelConfig = { p1: { desktop: { modal: true } }, p2: { desktop: {} } }
+
+  it('returns false when no modal panel is open', () => {
+    expect(hasOpenModalPanel({ p2: { props: {} } }, panelConfig, 'desktop')).toBe(false)
+  })
+
+  it('returns true when a modal panel is open', () => {
+    expect(hasOpenModalPanel({ p1: { props: {} } }, panelConfig, 'desktop')).toBe(true)
   })
 })

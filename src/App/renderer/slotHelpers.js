@@ -60,3 +60,36 @@ export const isControlVisible = (control, { breakpoint, mode, isFullscreen }) =>
 export const isConsumerHtml = (config) => {
   return typeof config.html === 'string' && !config.pluginId
 }
+
+/**
+ * Whether a panel is eligible for a target slot (slot type, mode, inline/fullscreen) —
+ * independent of open state and modal exclusivity (see getAllowedModalPanelId). `slot`, if
+ * given, also requires an exact match to the panel's resolved targetSlot.
+ */
+export const isPanelSlotEligible = (config, { targetSlot, slot, mode, isFullscreen }) => {
+  const isNextToButton = targetSlot.endsWith('-button')
+  if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
+    return false
+  }
+  if (!isModeAllowed(config, mode)) {
+    return false
+  }
+  if (config.inline === false && !isFullscreen) {
+    return false
+  }
+  if (slot !== undefined && targetSlot !== slot) {
+    return false
+  }
+  return true
+}
+
+// The id of the most-recently-opened modal panel — the only one actually allowed to show.
+export const getAllowedModalPanelId = (openPanels, panelConfig, breakpoint) => {
+  const openModalPanelIds = Object.keys(openPanels).filter(panelId => panelConfig[panelId]?.[breakpoint]?.modal)
+  return openModalPanelIds.length > 0 ? openModalPanelIds[openModalPanelIds.length - 1] : null // NOSONAR, .at() is only Chrome 90+
+}
+
+// Whether any modal-configured panel is open — drives the modal backdrop's visibility.
+export const hasOpenModalPanel = (openPanels, panelConfig, breakpoint) => {
+  return getAllowedModalPanelId(openPanels, panelConfig, breakpoint) !== null
+}

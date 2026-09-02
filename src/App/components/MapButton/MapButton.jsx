@@ -1,6 +1,7 @@
 // components/MapButton.jsx
 import React, { useState, useRef, useCallback } from 'react'
 import { stringToKebab } from '../../../utils/stringToKebab'
+import { getPanelElementId } from '../../../utils/getPanelElementId.js'
 import { Tooltip } from '../Tooltip/Tooltip'
 import { Icon } from '../Icon/Icon'
 import { SlotRenderer } from '../../renderer/SlotRenderer'
@@ -99,7 +100,7 @@ const getButtonSlot = (panelId, buttonId) =>
  */
 const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu }) => {
   if (panelId) {
-    return { id: `${idPrefix}-panel-${stringToKebab(panelId)}`, type: 'panel' }
+    return { id: getPanelElementId(idPrefix, panelId), type: 'panel' }
   }
   if (hasMenu) {
     return { id: `${idPrefix}-popup-${stringToKebab(buttonId)}`, type: 'popup' }
@@ -301,7 +302,10 @@ export const MapButton = ({
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
       {buttonSlot && <SlotRenderer slot={buttonSlot} />}
-      {isPopupOpen && <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} buttonRect={menuRect} />}
+      {/* Mounted permanently, not just while open, so its aria-controls id stays a stable node. */}
+      {controlledElement?.type === 'popup' && (
+        <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} buttonRect={menuRect} isOpen={isPopupOpen} />
+      )}
     </div>
   )
 }
