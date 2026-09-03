@@ -402,7 +402,7 @@ The plugin registers its own toolbar buttons automatically — Cancel, Add point
 |----------|--------|
 | <kbd>Enter</kbd> | Add point (draw) |
 | <kbd>Spacebar</kbd> | Select nearest point (edit) |
-| <kbd>Alt</kbd> + <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Select adjacent point (edit) |
+| <kbd>Option</kbd>/<kbd>Alt</kbd> + <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Select adjacent point (edit) |
 | <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Move point (edit) |
 | <kbd>Shift</kbd> + <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Nudge point, fine step (edit) |
 | <kbd>Delete</kbd> | Delete point (edit) |

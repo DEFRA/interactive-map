@@ -1,6 +1,9 @@
 // src/controls/keyboardShortcuts.js
-const isMac = /mac/i.test(navigator.userAgentData?.platform ?? navigator.platform)
-const altKeyHtml = isMac ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
+import { isMac } from '../../utils/isMac.js'
+
+const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
+// getInfo uses Ctrl on Windows/Linux instead of Alt, which is reserved there for menu mnemonics.
+const infoKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Ctrl</kbd>'
 
 export const coreShortcuts = [
   {
@@ -9,6 +12,17 @@ export const coreShortcuts = [
     command: '<kbd>Shift</kbd> + <kbd>?</kbd>',
     context: 'global',
     enabled: true
+  },
+  {
+    id: 'getInfo',
+    title: 'Get current location and visible area',
+    command: `${infoKeyHtml} + <kbd>I</kbd>`,
+    enabled: true,
+    // No visual equivalent, so hide the row from sighted users but keep it discoverable via assistive tech.
+    visuallyHidden: true,
+    // Only needs getCenter/getZoom, which every map provider implements, so no adapter needs to declare it.
+    mapProviderAgnostic: true,
+    requiredConfig: ['reverseGeocodeProvider']
   },
   {
     id: 'moveLarge',

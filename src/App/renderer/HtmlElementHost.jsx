@@ -2,8 +2,7 @@
 import React, { useRef, useLayoutEffect, useMemo } from 'react'
 import { useApp } from '../store/appContext.js'
 import { Panel } from '../components/Panel/Panel.jsx'
-import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml } from './slotHelpers.js'
-import { allowedSlots } from './slots.js'
+import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
 
 /**
  * Maps slot names to their corresponding layout refs.
@@ -90,28 +89,13 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen,
   const bpConfig = config[breakpoint]
   const targetSlot = bpConfig ? resolveTargetSlot(bpConfig, breakpoint) : null
 
-  // Determine visibility using the same logic as mapPanels
-  const isVisible = (() => {
-    // 1. Initial Guard: Basic requirements
-    if (!isOpen || !bpConfig || !targetSlot) {
-      return false
-    }
-
-    // 2. Slot Validation
-    const isNextToButton = targetSlot.endsWith('-button')
-    const isSlotAllowed = allowedSlots.panel.includes(targetSlot) || isNextToButton
-
-    if (!isSlotAllowed) {
-      return false
-    }
-
-    // 3. Business Logic: Combine remaining conditions into a single "fail" check
-    const isForbiddenModal = bpConfig.modal && panelId !== allowedModalPanelId
-    const isForbiddenInline = config.inline === false && !isFullscreen
-    const isInvalidMode = !isModeAllowed(config, mode)
-
-    return !(isForbiddenModal || isForbiddenInline || isInvalidMode)
-  })()
+  // Same eligibility/modal-exclusivity rules as mapPanels.js (see slotHelpers.js), combined into
+  // one boolean since isVisible alone decides whether useDomProjection shows it.
+  const isVisible = Boolean(
+    isOpen && bpConfig && targetSlot &&
+    isPanelSlotEligible(config, { targetSlot, mode, isFullscreen }) &&
+    (!bpConfig.modal || panelId === allowedModalPanelId)
+  )
 
   useDomProjection(panelRootRef, targetSlot, isVisible, layoutRefs, breakpoint)
 
@@ -181,14 +165,10 @@ export const HtmlElementHost = () => {
   )
 
   // Determine which modal panel is allowed (topmost open modal)
-  const allowedModalPanelId = useMemo(() => {
-    const openPanelEntries = Object.entries(openPanels)
-    const modalPanels = openPanelEntries.filter(([panelId]) => {
-      const cfg = panelConfig[panelId]?.[breakpoint]
-      return cfg?.modal
-    })
-    return modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null // NOSONAR - .at() unsupported on Chrome < 92
-  }, [openPanels, panelConfig, breakpoint])
+  const allowedModalPanelId = useMemo(
+    () => getAllowedModalPanelId(openPanels, panelConfig, breakpoint),
+    [openPanels, panelConfig, breakpoint]
+  )
 
   if (!htmlPanels.length && !htmlControls.length) {
     return null

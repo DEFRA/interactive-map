@@ -28,12 +28,7 @@ const attachUpdateDrawStateMethod = (interactiveMap, onEditPolygon) => () => {
     onEditPolygon(isEditing)
   }
 
-  if (isEditing) {
-    if (isSquare) {
-      siteBoundary.zoomOnSquare() // Zoom in to avoid huge frames being requested by default
-    }
-  } else {
-    siteBoundary.resetZoom()
+  if (!isEditing) {
     // Disable the edit and delete buttons when there is no polygon
     interactiveMap.toggleButtonState('editShape', 'disabled', !isComplete)
     interactiveMap.toggleButtonState('deleteShape', 'disabled', !isComplete)
@@ -47,7 +42,6 @@ const drawMenuItems = {
   addPolygon: {
     iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',
     onClick: () => {
-      siteBoundary.temporaryFeature = null
       drawPlugin.newPolygon(siteBoundary.id)
       siteBoundary.state = SiteBoundary.EDITING
       siteBoundary.type = SiteBoundary.POLYGON
@@ -57,7 +51,6 @@ const drawMenuItems = {
   addSquare: {
     iconSvgContent: '<rect width="18" height="18" x="3" y="3" rx="2"/>',
     onClick: () => {
-      siteBoundary.temporaryFeature = null
       framePlugin.addFrame(siteBoundary.id, { aspectRatio: 1 })
       siteBoundary.state = SiteBoundary.EDITING
       siteBoundary.type = SiteBoundary.SQUARE
@@ -72,7 +65,6 @@ const drawMenuItems = {
     iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
     isDisabled: true,
     onClick: () => {
-      siteBoundary.temporaryFeature = null
       if (siteBoundary.isSquare) {
         drawPlugin.deleteFeature(siteBoundary.id)
         framePlugin.editFeature(siteBoundary.feature)
@@ -87,7 +79,6 @@ const drawMenuItems = {
     iconSvgContent: '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
     isDisabled: true,
     onClick: () => {
-      siteBoundary.temporaryFeature = null
       drawPlugin.deleteFeature(siteBoundary.id)
       siteBoundary.feature = null
       updateDrawState()
@@ -141,9 +132,6 @@ export const attachDrawPlugin = (interactiveMap, onEditPolygon) => {
   })
 
   interactiveMap.on('draw:done', ({ newFeature: feature }) => {
-    // if (!featureAdded) {
-    //   drawPlugin.addFeature({...feature, id: siteBoundary.id})
-    // }
     siteBoundary.feature = feature
     siteBoundary.type = SiteBoundary.POLYGON
     updateDrawState()
@@ -151,13 +139,12 @@ export const attachDrawPlugin = (interactiveMap, onEditPolygon) => {
 
   interactiveMap.on('draw:updated', (feature) => {
     console.log('draw:updated', feature)
-    siteBoundary.temporaryFeature = feature
     // check the size here and warn the user if it is too big
   })
-
-  // I don't think we need this event, but left in so we know it is available
-  // It is fired when the user completes a polygon, but hasn't yet clicked the "Done" button
-  // interactiveMap.on('draw:created', (feature) => console.log('draw:created', feature))
+  interactiveMap.on('frame:updated', (feature) => {
+    console.log('frame:updated', feature?.geometry?.coordinates?.[0])
+    // check the size here and warn the user if it is too big
+  })
 
   interactiveMap.on('draw:cancelled', onCancelEditing)
   interactiveMap.on('frame:cancel', () => {

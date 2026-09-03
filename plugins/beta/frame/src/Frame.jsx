@@ -1,7 +1,7 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { computeInset } from './utils.js'
+import { computeInset, convertFrameToFeature } from './utils.js'
 
-export function Frame ({ appState, mapState, pluginState, mapProvider }) {
+export function Frame ({ appState, mapState, pluginState, mapProvider, services }) {
   const { actionsRef, mainRef, bottomRef, viewportRef } = appState.layoutRefs
   const { dispatch } = pluginState
   const elRef = useRef(null)
@@ -9,6 +9,7 @@ export function Frame ({ appState, mapState, pluginState, mapProvider }) {
   const fittedBoundsRef = useRef(null)
   const [parentInset, setParentInset] = useState('65px')
   const [childStyle, setChildStyle] = useState(null)
+  const { eventBus } = services
 
   // Store refs in pluginState for use in FrameInit (only once on mount)
   useEffect(() => {
@@ -100,6 +101,31 @@ export function Frame ({ appState, mapState, pluginState, mapProvider }) {
     mapProvider.setPadding(padding)
     mapProvider.fitToBounds(pluginState.frame.bounds, true)
   }, [pluginState.frame?.bounds, childStyle, mapProvider, displayRef, viewportRef])
+
+  // Emits 'frame:updated' whenever the frame geometry changes (map zoom/pan/resize),
+  // tracking the last emitted coordinates so re-renders with unchanged geometry don't re-emit
+  const lastCoordinatesRef = useRef(null)
+  useEffect(() => {
+    if (!pluginState.frame || !(displayRef.current)) {
+      return
+    }
+
+    const feature = convertFrameToFeature({
+      frameEl: displayRef.current,
+      viewportEl: viewportRef.current,
+      featureId: pluginState?.frame?.featureId,
+      scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
+      mapProvider
+    })
+
+    const coordinates = JSON.stringify(feature.geometry.coordinates)
+    if (coordinates === lastCoordinatesRef.current) {
+      return
+    }
+    lastCoordinatesRef.current = coordinates
+
+    eventBus.emit('frame:updated', feature)
+  }, [pluginState.frame, childStyle, mapState.center, mapState.mapSize, mapState.zoom])
 
   if (!pluginState.frame) {
     return null

@@ -2,29 +2,18 @@ import React, { useRef, useEffect, useMemo } from 'react'
 import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
+import { getPanelElementId } from '../../../utils/getPanelElementId.js'
 import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
+import { classifyPanel, getPanelRole } from '../../../utils/getPanelRole.js'
 import { Icon } from '../Icon/Icon'
 import { Tabs } from '../Tabs/Tabs.jsx'
 
 const computePanelState = (bpConfig, triggeringElement, focus, focusOnOpen) => {
-  const isAside = bpConfig.slot === 'side' && bpConfig.open && !bpConfig.modal
-  const isDialog = !isAside && bpConfig.dismissible
-  const isModal = bpConfig.modal === true
-  const isDismissible = bpConfig.dismissible !== false
+  const { isModal, isAside, isDismissible, isDialog } = classifyPanel(bpConfig)
   const shouldFocus = isModal || focusOnOpen === true || (focusOnOpen !== false && focus !== false && (focus === true || Boolean(triggeringElement)))
   const buttonContainerEl = bpConfig.slot.endsWith('button') ? triggeringElement?.parentNode : undefined
   return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
-}
-
-const getPanelRole = (isDialog, isDismissible) => {
-  if (isDialog) {
-    return 'dialog'
-  }
-  if (isDismissible) {
-    return 'complementary'
-  }
-  return 'region'
 }
 
 const buildPanelClassNames = (slot, showLabel) => [
@@ -38,15 +27,17 @@ const buildPanelBodyClassNames = (showLabel, isDismissible) => [
   !showLabel && isDismissible && 'im-c-panel__body--offset'
 ].filter(Boolean).join(' ')
 
-const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissible, isModal, width, panelClass, slot }) => ({
+const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissible, isModal, width, panelClass, slot, isOpen }) => ({
   id: elementId,
   'aria-labelledby': `${elementId}-label`,
   tabIndex: shouldFocus ? -1 : undefined, // nosonar
-  role: getPanelRole(isDialog, isDismissible),
+  role: getPanelRole({ isDialog, isDismissible }),
   'aria-modal': isDialog && isModal ? 'true' : undefined,
   style: width ? { width } : undefined,
   className: panelClass,
-  'data-slot': slot
+  'data-slot': slot,
+  // Panel is mounted permanently (see mapPanels.js); hidden is what actually opens/closes it.
+  hidden: !isOpen
 })
 
 const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }) => ({
@@ -112,7 +103,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
 
   const rootEl = document.getElementById(`${id}-im-app`)
   const bpConfig = panelConfig[breakpoint]
-  const elementId = `${id}-panel-${stringToKebab(panelId)}`
+  const elementId = getPanelElementId(id, panelId)
 
   const { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl } = computePanelState(bpConfig, props?.triggeringElement, panelConfig.focus, focusOnOpen) // nosonar
 
@@ -149,7 +140,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
   const panelBodyClass = buildPanelBodyClassNames(bpConfig.showLabel ?? true, isDismissible)
   const innerHtmlProp = useMemo(() => html ? { __html: html } : null, [html])
 
-  const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissible, isModal, width: bpConfig.width, panelClass, slot: bpConfig.slot })
+  const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissible, isModal, width: bpConfig.width, panelClass, slot: bpConfig.slot, isOpen })
   const bodyProps = buildBodyProps({ bodyRef, panelBodyClass, isBodyScrollable, elementId })
   // DOM anchor for controls DOM-projected via the JS/consumer-HTML API — see HtmlElementHost.jsx.
   // Only present on the items-capable body below: dangerouslySetInnerHTML owns the static-html

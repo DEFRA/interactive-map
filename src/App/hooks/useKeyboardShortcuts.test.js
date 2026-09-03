@@ -138,6 +138,58 @@ describe('useKeyboardShortcuts', () => {
     expect(actions.stopPan).toHaveBeenCalled()
   })
 
+  test('does nothing on keyup when the key has no mapped action', () => {
+    const { appContainerRef, actions } = setup({ keyup: { ArrowUp: 'stopPan' }, actions: { stopPan: jest.fn() } })
+    renderHook(() => useKeyboardShortcuts({ current: document.createElement('div') }))
+
+    const evt = new KeyboardEvent('keyup', { key: 'Z' })
+    const spy = jest.spyOn(evt, 'preventDefault')
+    appContainerRef.current.dispatchEvent(evt)
+
+    expect(spy).not.toHaveBeenCalled()
+    expect(actions.stopPan).not.toHaveBeenCalled()
+  })
+
+  test('suppresses the browser default on keydown for a keyup-bound shortcut, without firing the action early', () => {
+    const { containerRef, appContainerRef, actions } = setup({
+      keyup: { 'Alt+ArrowUp': 'highlightNextLabel' },
+      actions: { highlightNextLabel: jest.fn() }
+    })
+    renderHook(() => useKeyboardShortcuts(containerRef))
+
+    const keydownEvt = new KeyboardEvent('keydown', { key: 'ArrowUp', altKey: true })
+    const keydownSpy = jest.spyOn(keydownEvt, 'preventDefault')
+    containerRef.current.dispatchEvent(keydownEvt)
+    expect(keydownSpy).toHaveBeenCalled()
+    expect(actions.highlightNextLabel).not.toHaveBeenCalled()
+
+    appContainerRef.current.dispatchEvent(new KeyboardEvent('keyup', { key: 'ArrowUp', altKey: true }))
+    expect(actions.highlightNextLabel).toHaveBeenCalled()
+  })
+
+  test('normalizes Ctrl+key combinations', () => {
+    const { containerRef, actions } = setup({
+      keydown: { 'Ctrl+I': 'getInfo' },
+      actions: { getInfo: jest.fn() }
+    })
+    renderHook(() => useKeyboardShortcuts(containerRef))
+
+    containerRef.current.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i', ctrlKey: true }))
+    expect(actions.getInfo).toHaveBeenCalled()
+  })
+
+  test('treats AltGr (altKey + ctrlKey both true) as Alt+, not Ctrl+', () => {
+    const { containerRef, actions } = setup({
+      keydown: { 'Alt+I': 'getInfo', 'Ctrl+I': 'zoomIn' },
+      actions: { getInfo: jest.fn(), zoomIn: jest.fn() }
+    })
+    renderHook(() => useKeyboardShortcuts(containerRef))
+
+    containerRef.current.dispatchEvent(new KeyboardEvent('keydown', { code: 'KeyI', key: 'i', altKey: true, ctrlKey: true }))
+    expect(actions.getInfo).toHaveBeenCalled()
+    expect(actions.zoomIn).not.toHaveBeenCalled()
+  })
+
   test('prevents default when action exists, does nothing otherwise', () => {
     const { containerRef } = setup({ keydown: { I: 'zoomIn', X: 'nonExistent' } })
     renderHook(() => useKeyboardShortcuts(containerRef))

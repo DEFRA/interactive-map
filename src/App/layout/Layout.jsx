@@ -11,14 +11,16 @@ import { layoutSlots } from '../renderer/slots'
 import { SlotRenderer } from '../renderer/SlotRenderer'
 import { HtmlElementHost } from '../renderer/HtmlElementHost'
 import { Hints } from '../components/Hints/Hints.jsx'
+import { hasOpenModalPanel } from '../renderer/slotHelpers.js'
 import { getMapThemeVars } from '../../config/mapTheme.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Layout = () => {
   const { id, mapLabel, mapHintText } = useConfig()
-  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen } = useApp()
+  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen, openPanels, panelConfig } = useApp()
   const { mapStyle } = useMap()
+  const showModalBackdrop = hasOpenModalPanel(openPanels ?? {}, panelConfig ?? {}, breakpoint)
 
   useLayoutMeasurements()
   useFocusVisible()
@@ -108,7 +110,7 @@ export const Layout = () => {
           </div>
           <div className='im-o-app__modal' ref={layoutRefs.modalRef}>
             <SlotRenderer slot={layoutSlots.MODAL} />
-            <div className='im-o-app__modal-backdrop' />
+            <div className={`im-o-app__modal-backdrop${showModalBackdrop ? ' im-o-app__modal-backdrop--visible' : ''}`} />
           </div>
         </div>
       </div>

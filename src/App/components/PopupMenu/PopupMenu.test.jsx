@@ -651,4 +651,75 @@ describe('PopupMenu', () => {
     window.dispatchEvent(new Event('resize'))
     expect(mockSetIsOpen).toHaveBeenCalledWith(false)
   })
+
+  describe('isOpen (always-mounted, hidden-toggle)', () => {
+    it('renders a hidden, empty menu when isOpen is false, without grabbing focus or item content', () => {
+      renderMenu({ isOpen: false })
+      const ul = screen.getByRole('menu', { hidden: true })
+      expect(ul).toHaveAttribute('hidden')
+      expect(screen.queryByText('Item 1')).not.toBeInTheDocument()
+      expect(document.activeElement).not.toBe(ul)
+    })
+
+    it('keeps the same ul node across an isOpen transition (no swap/remount) and un-hides it once open', () => {
+      const { rerender } = renderMenu({ isOpen: false })
+      const ulWhileClosed = screen.getByRole('menu', { hidden: true })
+
+      rerender(
+        <PopupMenu
+          id='menu'
+          pluginId='plugin1'
+          instigatorId='instigator'
+          startPos='first'
+          menuRef={menuRef}
+          items={items}
+          setIsOpen={mockSetIsOpen}
+          isOpen
+        />
+      )
+
+      const ulWhileOpen = screen.getByRole('menu')
+      expect(ulWhileOpen).toBe(ulWhileClosed)
+      expect(ulWhileOpen).not.toHaveAttribute('hidden')
+      expect(screen.getByText('Item 1')).toBeInTheDocument()
+      expect(document.activeElement).toBe(ulWhileOpen)
+    })
+
+    it('resets selection on every open rather than carrying over a stale index from a previous open', () => {
+      const { rerender } = renderMenu({ startPos: 'first', startIndex: undefined })
+      expectSelected('Item 1')
+
+      // Close, then reopen via a plain click — selection should reset, not carry over.
+      rerender(
+        <PopupMenu
+          id='menu'
+          pluginId='plugin1'
+          instigatorId='instigator'
+          menuRef={menuRef}
+          items={items}
+          setIsOpen={mockSetIsOpen}
+          isOpen={false}
+        />
+      )
+      rerender(
+        <PopupMenu
+          id='menu'
+          pluginId='plugin1'
+          instigatorId='instigator'
+          menuRef={menuRef}
+          items={items}
+          setIsOpen={mockSetIsOpen}
+          isOpen
+        />
+      )
+      expectNotSelected('Item 1')
+      expectNotSelected('Item 2')
+    })
+
+    it('defaults isOpen to true for direct/standalone usage', () => {
+      renderMenu()
+      expect(screen.getByRole('menu')).not.toHaveAttribute('hidden')
+      expect(screen.getByText('Item 1')).toBeInTheDocument()
+    })
+  })
 })

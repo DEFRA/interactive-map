@@ -1,6 +1,7 @@
 // components/MapButton.jsx
 import React, { useState, useRef, useCallback } from 'react'
 import { stringToKebab } from '../../../utils/stringToKebab'
+import { getPanelElementId } from '../../../utils/getPanelElementId.js'
 import { Tooltip } from '../Tooltip/Tooltip'
 import { Icon } from '../Icon/Icon'
 import { SlotRenderer } from '../../renderer/SlotRenderer'
@@ -88,6 +89,10 @@ const makePopupKeyUpHandler = (hasMenu, buttonRefs, buttonId, setMenuStartPos, s
 const getButtonSlot = (panelId, buttonId) =>
   panelId ? `${stringToKebab(buttonId)}-button` : undefined
 
+// aria-haspopup only accepts these role-shaped tokens (plus 'true', unused here) — any other
+// controlled-element role (e.g. a panel's 'complementary'/'region') means no aria-haspopup.
+const HASPOPUP_ROLES = new Set(['menu', 'listbox', 'tree', 'grid', 'dialog'])
+
 /**
  * Determines the controlled element (panel or popup menu) for ARIA attributes.
  * @param {Object} options - Configuration options
@@ -95,14 +100,16 @@ const getButtonSlot = (panelId, buttonId) =>
  * @param {string} options.panelId - ID of the controlled panel (if applicable)
  * @param {string} options.buttonId - Unique button identifier
  * @param {boolean} options.hasMenu - Whether the button has a popup menu
- * @returns {Object|null} Object with id and type ('panel' or 'popup'), or null if no controlled element
+ * @param {string} [options.panelRole] - The controlled panel's own ARIA role (see getPanelRole.js),
+ *   used for aria-haspopup on the button — undefined when no panel is controlled.
+ * @returns {Object|null} Object with id, type ('panel' or 'popup') and role, or null if no controlled element
  */
-const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu }) => {
+const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu, panelRole }) => {
   if (panelId) {
-    return { id: `${idPrefix}-panel-${stringToKebab(panelId)}`, type: 'panel' }
+    return { id: getPanelElementId(idPrefix, panelId), type: 'panel', role: panelRole }
   }
   if (hasMenu) {
-    return { id: `${idPrefix}-popup-${stringToKebab(buttonId)}`, type: 'popup' }
+    return { id: `${idPrefix}-popup-${stringToKebab(buttonId)}`, type: 'popup', role: 'menu' }
   }
   return null
 }
@@ -168,7 +175,7 @@ const buildButtonProps = ({
     'aria-expanded': ariaExpanded,
     'aria-pressed': typeof isPressed === 'boolean' ? isPressed : undefined,
     'aria-controls': controlledElement?.id ?? ariaControls,
-    'aria-haspopup': controlledElement?.type === 'popup' ? 'menu' : undefined,
+    'aria-haspopup': HASPOPUP_ROLES.has(controlledElement?.role) ? controlledElement.role : undefined,
     ...(href
       ? { href, target: '_blank', onKeyUp: handleKeyUp, role: 'button' }
       : { type: 'button' })
@@ -191,6 +198,7 @@ const buildButtonProps = ({
  * @param {boolean} [props.isExpanded] - Whether content controlled by the button is expanded
  * @param {boolean} [props.isHidden=false] - Whether to hide the button (CSS display: none)
  * @param {boolean} [props.isPanelOpen=false] - Whether the controlled panel is open
+ * @param {string} [props.panelRole] - The controlled panel's own ARIA role, used for aria-haspopup
  * @param {string} [props.variant] - CSS variant class for styling (e.g., 'primary')
  * @param {Function} [props.onClick] - Custom click handler
  * @param {string} [props.panelId] - ID of the panel controlled by this button
@@ -212,6 +220,7 @@ export const MapButton = ({
   isExpanded,
   isHidden,
   isPanelOpen,
+  panelRole,
   variant,
   onClick,
   panelId,
@@ -239,7 +248,7 @@ export const MapButton = ({
   const hasMenu = menuItems?.length >= 1
   const showIcon = iconId || iconSvgContent || hasMenu
   const buttonSlot = getButtonSlot(panelId, buttonId)
-  const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu })
+  const controlledElement = getControlledElement({ idPrefix, panelId, buttonId, hasMenu, panelRole })
 
   /**
    * Handles button click events.
@@ -301,7 +310,10 @@ export const MapButton = ({
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
       {buttonSlot && <SlotRenderer slot={buttonSlot} />}
-      {isPopupOpen && <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} buttonRect={menuRect} />}
+      {/* Mounted permanently, not just while open, so its aria-controls id stays a stable node. */}
+      {controlledElement?.type === 'popup' && (
+        <PopupMenu popupMenuId={controlledElement.id} buttonId={buttonId} startPos={menuStartPos} menuRef={menuRef} items={menuItems} setIsOpen={setIsPopupOpen} buttonRect={menuRect} isOpen={isPopupOpen} />
+      )}
     </div>
   )
 }

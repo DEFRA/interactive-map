@@ -21,7 +21,8 @@ const MenuItem = ({ item, isSelected, hiddenButtons, disabledButtons, pressedBut
   </li>
 )
 
-export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, startPos, startIndex, menuRef, items, setIsOpen, buttonRect }) => {
+// isOpen defaults to true so direct/standalone usage doesn't need to pass it.
+export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, startPos, startIndex, menuRef, items, setIsOpen, buttonRect, isOpen = true }) => {
   const { id } = useConfig()
   const { buttonRefs, buttonConfig, hiddenButtons, disabledButtons, pressedButtons, layoutRefs } = useApp()
   const instigatorKey = buttonId ?? instigatorId
@@ -43,7 +44,8 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
     id,
     menuRef,
     setIsOpen,
-    buttonRect
+    buttonRect,
+    isOpen
   })
 
   return createPortal(
@@ -56,11 +58,13 @@ export const PopupMenu = ({ popupMenuId, buttonId, instigatorId, pluginId, start
       style={menuStyle}
       role='menu' // NOSONAR
       tabIndex='-1'
+      hidden={!isOpen}
       aria-labelledby={instigatorKey}
       aria-activedescendant={index >= 0 ? `${id}-${stringToKebab(items[index].id)}` : undefined}
       onKeyDown={handleMenuKeyDown}
     >
-      {items.map((item, i) => (
+      {/* Items only mount once open — the <ul> above stays in the DOM either way. */}
+      {isOpen && items.map((item, i) => (
         <MenuItem
           key={item.id}
           item={item}

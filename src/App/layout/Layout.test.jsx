@@ -95,6 +95,27 @@ describe('Layout', () => {
     expect(screen.getByTestId('slot-top-left')).toBeInTheDocument()
     expect(screen.getByTestId('slot-bottom-right')).toBeInTheDocument()
     expect(screen.getByTestId('slot-modal')).toBeInTheDocument()
+
+    const backdrop = root.querySelector('.im-o-app__modal-backdrop')
+    expect(backdrop).toBeInTheDocument()
+    expect(backdrop).not.toHaveClass('im-o-app__modal-backdrop--visible')
+  })
+
+  test('shows the modal backdrop only while a modal-configured panel is open', () => {
+    useApp.mockReturnValue({
+      breakpoint: 'mobile',
+      interfaceType: 'map',
+      preferredColorScheme: 'dark',
+      layoutRefs: mockRefs,
+      isLayoutReady: true,
+      hasExclusiveControl: false,
+      isFullscreen: true,
+      openPanels: { settings: { props: {} } },
+      panelConfig: { settings: { mobile: { modal: true } } }
+    })
+    render(<Layout />)
+    const root = document.getElementById('myApp-im-app')
+    expect(root.querySelector('.im-o-app__modal-backdrop')).toHaveClass('im-o-app__modal-backdrop--visible')
   })
 
   test('applies "not-ready" class when layout is not ready', () => {

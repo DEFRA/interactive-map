@@ -1,37 +1,18 @@
-// import { getQueryParam, setQueryParam } from './queryParams.js'
-// import { checkParamsForPolygon, encodePolygon } from '../../../../server/services/shape-utils.js'
-
 const WEST = 0
 const SOUTH = 1
 const EAST = 2
 const NORTH = 3
 
-// const getPolygonFromUrl = () => {
-//   try {
-//     const encodedPolygon = getQueryParam('encodedPolygon')
-//     const queryStringPolygon = getQueryParam('polygon')
-//     if (!(encodedPolygon || queryStringPolygon)) {
-//       return null
-//     }
-//     const { polygon: polygonString } = checkParamsForPolygon({ encodedPolygon, polygon: queryStringPolygon, encode: false })
-//     return [JSON.parse(polygonString)]
-//   } catch (_error) {
-//     return null
-//   }
-// }
 const FRAME_MAX_ZOOM = 22
 
 export class SiteBoundary {
   constructor (id = 'boundary') {
     this._feature = null
-    this._temporaryFeature = null
     this._id = id
     this._state = SiteBoundary.EMPTY
     this._type = null
     this._maxZoom = 20
     this._mapView = null
-    // initialise the feature from the coordinates in the url, if there is one
-    //this.coordinates = getPolygonFromUrl()
     this.coordinates = null
   }
 
@@ -82,11 +63,9 @@ export class SiteBoundary {
 
   get feature () { return this._feature }
   set feature (feature) {
-    // setQueryParam('polygon', null)
     if (!feature?.geometry?.coordinates) {
       this._feature = null
       this.state = SiteBoundary.EMPTY
-      // setQueryParam('encodedPolygon', null)
       return
     }
     // round the coordinates to 2 decimal places
@@ -96,28 +75,15 @@ export class SiteBoundary {
     const { id } = this
     const properties = { ...feature.properties, id }
 
-    // set the feature and update the state and query param
+    // set the feature and update the state
     this._feature = { ...feature, id, properties }
     this.state = SiteBoundary.COMPLETE
-    // setQueryParam('encodedPolygon', this.encodedPolygon)
   }
 
-  get temporaryFeature () { return this._temporaryFeature }
-  set temporaryFeature (feature) {
-    if (!feature?.geometry?.coordinates) {
-      this._temporaryFeature = null
-      return
-    }
-    this._temporaryFeature = feature
-  }
 
   get coordinates () {
     return this._feature?.geometry?.coordinates
   }
-
-  // get encodedPolygon () {
-  //   return this.coordinates ? encodePolygon(this.coordinates[0]) : null
-  // }
 
   get extents () {
     const { coordinates } = this

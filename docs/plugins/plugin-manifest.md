@@ -87,6 +87,15 @@ const InitComponent = ({ context }) => {
 
 ---
 
+### `keyboardShortcuts`
+**Type:** `KeyboardShortcutDefinition[]`
+
+Keyboard shortcut definitions shown in the keyboard shortcuts help panel (opened via <kbd>Shift</kbd> + <kbd>?</kbd>). Registering one only adds a row to the help panel — bind the actual key handling separately, e.g. in your plugin's `InitComponent`.
+
+See [KeyboardShortcutDefinition](../api/keyboard-shortcut-definition.md) for full details.
+
+---
+
 ### `panels`
 **Type:** `PanelDefinition[]`
 

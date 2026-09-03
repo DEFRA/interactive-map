@@ -23,7 +23,8 @@ jest.mock('../../renderer/SlotRenderer', () => ({
 }))
 
 jest.mock('../PopupMenu/PopupMenu', () => ({
-  PopupMenu: ({ startPos, items, buttonRect }) => {
+  // Mirrors the real component: always mounted, hidden/children gated by isOpen.
+  PopupMenu: ({ popupMenuId, isOpen, startPos, items, buttonRect }) => {
     let selectedIndex = -1
     if (startPos === 'first' && items?.length > 0) {
       selectedIndex = 0
@@ -31,7 +32,11 @@ jest.mock('../PopupMenu/PopupMenu', () => ({
     if (startPos === 'last' && items?.length > 0) {
       selectedIndex = items.length - 1
     }
-    return <div data-testid='popup-menu' data-start-pos={String(startPos)} data-selected-index={String(selectedIndex)} data-has-rect={String(!!buttonRect)}>{items?.map((item, i) => <div key={i} data-testid={`menu-item-${i}`}>{item.label}</div>)}</div>
+    return (
+      <div id={popupMenuId} hidden={!isOpen} data-testid='popup-menu' data-start-pos={String(startPos)} data-selected-index={String(selectedIndex)} data-has-rect={String(!!buttonRect)}>
+        {isOpen && items?.map((item, i) => <div key={i} data-testid={`menu-item-${i}`}>{item.label}</div>)}
+      </div>
+    )
   }
 }))
 
@@ -78,7 +83,18 @@ describe('MapButton', () => {
     expect(button).toHaveAttribute('aria-expanded', 'false')
     expect(button).not.toHaveAttribute('aria-pressed')
     expect(button).toHaveAttribute('aria-controls', 'prefix-panel-settings')
+    expect(button).not.toHaveAttribute('aria-haspopup')
     expect(screen.getByTestId('slot')).toHaveAttribute('data-slot', 'test-button')
+  })
+
+  it('sets aria-haspopup="dialog" when the controlled panel is a dialog', () => {
+    renderButton({ panelId: 'Settings', idPrefix: 'prefix', panelRole: 'dialog' })
+    expect(getButton()).toHaveAttribute('aria-haspopup', 'dialog')
+  })
+
+  it.each(['complementary', 'region'])('sets no aria-haspopup when the controlled panel role is %s', (panelRole) => {
+    renderButton({ panelId: 'Settings', idPrefix: 'prefix', panelRole })
+    expect(getButton()).not.toHaveAttribute('aria-haspopup')
   })
 
   it.each([
@@ -118,7 +134,7 @@ describe('MapButton', () => {
     renderButton({ isDisabled: true, menuItems: [{ label: 'Item' }], onClick })
     fireEvent.click(getButton())
     expect(onClick).not.toHaveBeenCalled()
-    expect(screen.queryByTestId('popup-menu')).not.toBeInTheDocument()
+    expect(screen.getByTestId('popup-menu')).not.toBeVisible()
   })
 
   it('stores button refs correctly', () => {
@@ -136,6 +152,28 @@ describe('MapButton', () => {
     const button = getButton()
     expect(button).toHaveAttribute('aria-controls', 'prefix-popup-test')
     expect(button).toHaveAttribute('aria-haspopup', 'menu')
+  })
+
+  it('reserves the aria-controls id as a stable, hidden node before the popup has ever been opened', () => {
+    renderButton({ idPrefix: 'prefix', menuItems: [{ label: 'Item' }] })
+    const menu = document.getElementById('prefix-popup-test')
+    expect(menu).toBeInTheDocument()
+    expect(menu).not.toBeVisible()
+  })
+
+  it('keeps the same DOM node (no swap/remount) when opening and closing the popup', () => {
+    renderButton({ idPrefix: 'prefix', menuItems: [{ label: 'Item' }] })
+    const menuBeforeOpen = document.getElementById('prefix-popup-test')
+
+    fireEvent.click(getButton())
+    const menuWhileOpen = document.getElementById('prefix-popup-test')
+    expect(menuWhileOpen).toBe(menuBeforeOpen)
+    expect(menuWhileOpen).toBeVisible()
+
+    fireEvent.click(getButton())
+    const menuAfterClose = document.getElementById('prefix-popup-test')
+    expect(menuAfterClose).toBe(menuBeforeOpen)
+    expect(menuAfterClose).not.toBeVisible()
   })
 
   it('toggles popup aria-expanded and startPos', () => {
@@ -224,7 +262,7 @@ describe('MapButton', () => {
   it('does nothing for unrelated keys', () => {
     renderButton({ menuItems: [{ label: 'Item' }] })
     fireEvent.keyUp(getButton(), { key: 'Enter' })
-    expect(screen.queryByTestId('popup-menu')).not.toBeInTheDocument()
+    expect(screen.getByTestId('popup-menu')).not.toBeVisible()
   })
 
   it.each([
