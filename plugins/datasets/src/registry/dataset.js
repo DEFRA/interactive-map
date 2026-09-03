@@ -44,6 +44,13 @@ export class Dataset {
   // A sublayer effectively has a groupLabel, even if it or its parent doesn't,
   // as it will be grouped with its siblings under the parents label if it doesn't.
   get groupLabel () { return this._datasetDefinition.groupLabel || this.parent?.groupLabel || this.parent?.label }
+  get groupId () {
+    const groupId = this._datasetDefinition.groupId || this.parent?.groupId
+    if (groupId) {
+      return groupId
+    }
+    return this.groupLabel.toLowerCase().replace(/\s+/g, '-')
+  }
 
   get opacity () {
     const myOpacity = this.style?.opacity

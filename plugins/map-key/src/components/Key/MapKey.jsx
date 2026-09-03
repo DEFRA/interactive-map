@@ -5,7 +5,7 @@ import { Key } from './Key.jsx'
 
 export function MapKey ({
   mapState: { mapStyle },
-  pluginConfig: { noKeyItemText },
+  pluginConfig: { noKeyItemText, groups = {} },
   services: { eventBus }
 }) {
   const [datasetRegistry, setDatasetRegistry] = useState(getDatasetRegistry())
@@ -17,7 +17,15 @@ export function MapKey ({
 
   const getKeyItems = () => {
     const { items, hasGroups: _hasGroups } = datasetRegistry.keyItems()
-    setKeyGroups(items)
+    // Post Process the items - based on the map-key pluginConfig adding any groupConfigs
+    const groupItems = items.map((item) => {
+      const { id } = item
+      if (groups[id]) {
+        return { ...item, ...groups[id] }
+      }
+      return item
+    })
+    setKeyGroups(groupItems)
     setHasGroups(_hasGroups)
   }
 
