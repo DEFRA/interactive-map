@@ -72,7 +72,8 @@
 
 .im-c-map-key-list-ramp {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(47px, auto));
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   direction: rtl;
   .im-c-map-key-list__item {
     padding: 0 !important;
@@ -83,7 +84,9 @@
     .im-c-map-key-list__item-symbol {
       margin: 0 !important;
       width: 100%;
+      max-height: var(--line-height);
       direction: ltr;
+      overflow-y: hidden;
       svg {
         display: block;
       }
@@ -96,7 +99,6 @@
       // Offset the label, so it sits below the border with the next box
       white-space: nowrap;
       text-align: center;
-      transform: translateX(-50%);
     }
 
     &:first-child {  // rightmost visual cell (rtl) - add a curved corner
@@ -108,11 +110,6 @@
     }
 
     &:last-child {   // leftmost visual cell (rtl)
-      // Hide the last child's label (ie the left-most one as the order is rtl)
-      .im-c-map-key-list__item-label {
-          display: none;
-      }
-
       .im-c-map-key-list__item-symbol { // add a curved corner
         border-top-left-radius: 4px;
         border-bottom-left-radius: 4px;

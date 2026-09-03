@@ -314,7 +314,17 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       }
     })
   }
-  return [depthsKey, extentsDataset, depthDataset]
+  const extraDepthKeys = []
+  for(let i = 3; i <= depthsKey.sublayers.length; i++) {
+    extraDepthKeys.push({
+      ...depthsKey, 
+      groupLabel: `${depthsKey.groupLabel} [${i}]`,
+      id: `${depthsKey.id}-${i}`,
+      sublayers: depthsKey.sublayers.slice(0, i).map((sublayer) => ({ ...sublayer, label: `${i}.${sublayer.label}`.replaceAll('0', '') })),
+    })
+  }
+  // return [depthsKey, extentsDataset, depthDataset]
+  return [...extraDepthKeys, extentsDataset, depthDataset]
 }
 
 const surfaceWaterExtentsKey = {
