@@ -1,20 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { getDatasetRegistry } from '../../registry/index.js'
-
+import { mergeKeyGroupItems } from '../../utils/mergeKeyGroupItems.js'
 import { Key } from './Key.jsx'
-
-const mergeKeyGroupItems = (groups, items) => {
-  if (!groups) {
-    return items
-  }
-  return items.map((item) => {
-    const { id } = item
-    if (groups[id]) {
-      return { ...item, ...groups[id] }
-    }
-    return item
-  })
-}
 
 export function MapKey ({
   mapState: { mapStyle },

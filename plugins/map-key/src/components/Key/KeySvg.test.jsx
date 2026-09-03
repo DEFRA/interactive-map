@@ -92,7 +92,7 @@ describe('KeySvg', () => {
   })
 
   it('renders KeySvgRamp when groupStyle is horizontal-ramp', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasRampStyleKey: true }} groupStyle="horizontal-ramp" />)
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasRampStyleKey: true }} groupStyle='horizontal-ramp' />)
     expect(getByTestId('key-svg-horizontal-ramp')).toBeTruthy()
   })
 })
