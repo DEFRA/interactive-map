@@ -1,6 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react'
-import { computeInset } from './utils.js'
-import { convertFrameToFeature } from './utils.js'
+import { computeInset, convertFrameToFeature } from './utils.js'
 
 export function Frame ({ appState, mapState, pluginState, mapProvider, services }) {
   const { actionsRef, mainRef, bottomRef, viewportRef } = appState.layoutRefs
