@@ -1,7 +1,8 @@
 import React, { useRef, useEffect, useState } from 'react'
 import { computeInset } from './utils.js'
+import { convertFrameToFeature } from './utils.js'
 
-export function Frame ({ appState, mapState, pluginState, mapProvider }) {
+export function Frame ({ appState, mapState, pluginState, mapProvider, services }) {
   const { actionsRef, mainRef, bottomRef, viewportRef } = appState.layoutRefs
   const { dispatch } = pluginState
   const elRef = useRef(null)
@@ -9,6 +10,7 @@ export function Frame ({ appState, mapState, pluginState, mapProvider }) {
   const fittedBoundsRef = useRef(null)
   const [parentInset, setParentInset] = useState('65px')
   const [childStyle, setChildStyle] = useState(null)
+  const { eventBus } = services
 
   // Store refs in pluginState for use in FrameInit (only once on mount)
   useEffect(() => {
@@ -104,6 +106,20 @@ export function Frame ({ appState, mapState, pluginState, mapProvider }) {
   if (!pluginState.frame) {
     return null
   }
+  // console.log('pluginState', pluginState)
+  useEffect(() => {
+    if (!(displayRef.current)) {
+      return
+    }
+    const feature = convertFrameToFeature({
+      frameEl: displayRef.current,
+      viewportEl: viewportRef.current,
+      featureId: pluginState?.frame?.featureId,
+      scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
+      mapProvider
+    })
+    eventBus.emit('frame:updated', feature)
+  }, [childStyle, mapState.center, mapState.mapSize, mapState.zoom])
 
   return (
     <>

@@ -29,11 +29,11 @@ const attachUpdateDrawStateMethod = (interactiveMap, onEditPolygon) => () => {
   }
 
   if (isEditing) {
-    if (isSquare) {
-      siteBoundary.zoomOnSquare() // Zoom in to avoid huge frames being requested by default
-    }
+    // if (isSquare) {
+    //   siteBoundary.zoomOnSquare() // Zoom in to avoid huge frames being requested by default
+    // }
   } else {
-    siteBoundary.resetZoom()
+    // siteBoundary.resetZoom()
     // Disable the edit and delete buttons when there is no polygon
     interactiveMap.toggleButtonState('editShape', 'disabled', !isComplete)
     interactiveMap.toggleButtonState('deleteShape', 'disabled', !isComplete)
@@ -151,6 +151,11 @@ export const attachDrawPlugin = (interactiveMap, onEditPolygon) => {
 
   interactiveMap.on('draw:updated', (feature) => {
     console.log('draw:updated', feature)
+    siteBoundary.temporaryFeature = feature
+    // check the size here and warn the user if it is too big
+  })
+  interactiveMap.on('frame:updated', (feature) => {
+    console.log('frame:updated', feature?.geometry?.coordinates?.[0])
     siteBoundary.temporaryFeature = feature
     // check the size here and warn the user if it is too big
   })
