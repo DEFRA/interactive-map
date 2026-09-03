@@ -84,7 +84,7 @@
     .im-c-map-key-list__item-symbol {
       margin: 0 !important;
       width: 100%;
-      max-height: 18px;
+      max-height: var(--line-height);
       direction: ltr;
       overflow-y: hidden;
       svg {
