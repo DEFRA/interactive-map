@@ -106,11 +106,15 @@ export function Frame ({ appState, mapState, pluginState, mapProvider, services 
   if (!pluginState.frame) {
     return null
   }
-  // console.log('pluginState', pluginState)
+
+  // Add an effect, that will emit 'frame:updated' whenever the map is zoomed/panned, which tracks 
+  // the last emitted coordinates so re-renders with unchanged geometry don't re-emit the event
+  const lastCoordinatesRef = useRef(null)
   useEffect(() => {
     if (!(displayRef.current)) {
       return
     }
+
     const feature = convertFrameToFeature({
       frameEl: displayRef.current,
       viewportEl: viewportRef.current,
@@ -118,6 +122,13 @@ export function Frame ({ appState, mapState, pluginState, mapProvider, services 
       scale: { small: 1, medium: 1.5, large: 2 }[mapState.mapSize],
       mapProvider
     })
+
+    const coordinates = JSON.stringify(feature.geometry.coordinates)
+    if (coordinates === lastCoordinatesRef.current) {
+      return
+    }
+    lastCoordinatesRef.current = coordinates
+
     eventBus.emit('frame:updated', feature)
   }, [childStyle, mapState.center, mapState.mapSize, mapState.zoom])
 
