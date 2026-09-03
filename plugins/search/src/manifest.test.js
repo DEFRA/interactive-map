@@ -24,6 +24,11 @@ describe('search manifest', () => {
     expect(getButton().ariaControls({ appConfig: { id: 'map' } })).toBe('map-search-form')
   })
 
+  it('mirrors pluginState.isExpanded for aria-expanded', () => {
+    expect(getButton().expandedWhen({ pluginState: { isExpanded: true } })).toBe(true)
+    expect(getButton().expandedWhen({ pluginState: { isExpanded: false } })).toBe(false)
+  })
+
   it('excludes the trigger in default-expanded mode', () => {
     expect(getButton().excludeWhen({ pluginConfig: { expanded: true } })).toBe(true)
     expect(getButton().excludeWhen({ pluginConfig: { expanded: false } })).toBe(false)

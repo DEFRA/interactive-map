@@ -3,6 +3,7 @@ import { MapButton } from '../components/MapButton/MapButton.jsx'
 import { allowedSlots } from './slots.js'
 import { groupByKey } from './groupByKey.js'
 import { orderItems } from './orderItems.js'
+import { classifyPanel, getPanelRole } from '../../utils/getPanelRole.js'
 import { logger } from '../../services/logger.js'
 
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
@@ -118,6 +119,8 @@ function SlotButton ({ buttonId, config, appState, appConfig, evaluateProp }) {
   const bpConfig = config[appState.breakpoint] ?? {}
   const handleClick = createButtonClickHandler(config, appState, evaluateProp)
   const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
+  const panelBpConfig = config.panelId ? appState.panelConfig?.[config.panelId]?.[appState.breakpoint] : undefined
+  const panelRole = panelBpConfig ? getPanelRole(classifyPanel(panelBpConfig)) : undefined
 
   return (
     <MapButton
@@ -133,6 +136,7 @@ function SlotButton ({ buttonId, config, appState, appConfig, evaluateProp }) {
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
       isExpanded={(config.isExpanded !== undefined || config.expandedWhen) ? appState.expandedButtons.has(buttonId) : undefined}
       isPanelOpen={isPanelOpen}
+      panelRole={panelRole}
       onClick={handleClick}
       panelId={config.panelId}
       menuItems={config.menuItems}
