@@ -35,7 +35,6 @@ export const Key = ({
   // staging this through useState/useEffect meant a mount with groups briefly rendered without
   // the --has-groups modifier, using flat spacing before the effect corrected it).
   const className = hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName
-  console.log('keyGroups', keyGroups)
   return (
     <div className={className}>
       {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} groupStyle={item.groupStyle} />)}
