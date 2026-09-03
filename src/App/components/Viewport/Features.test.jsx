@@ -168,7 +168,7 @@ describe('Features + useFeatureFocus — roving tabindex real focus events', () 
     const { container } = render(<RovingHarness eventBus={eb} />)
     act(() => container.querySelector('[data-id="f1"]').focus())
     eb.emit.mockClear()
-    act(() => { fireEvent.keyDown(container.querySelector(LISTBOX), { key: 'ArrowDown' }) }) // NOSONAR
+    fireEvent.keyDown(container.querySelector(LISTBOX), { key: 'ArrowDown' }) // NOSONAR
     expect(eb.emit).toHaveBeenCalledTimes(1)
     expect(eb.emit).toHaveBeenCalledWith('map:setactivefeature', { id: 'f2' })
   })
@@ -177,7 +177,7 @@ describe('Features + useFeatureFocus — roving tabindex real focus events', () 
     const eb = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
     const { container } = render(<RovingHarness eventBus={eb} />)
     act(() => container.querySelector('[data-id="f1"]').focus())
-    act(() => { fireEvent.keyDown(container.querySelector(LISTBOX), { key: 'ArrowDown' }) }) // NOSONAR
+    fireEvent.keyDown(container.querySelector(LISTBOX), { key: 'ArrowDown' }) // NOSONAR
     expect(document.activeElement.dataset.id).toBe('f2')
   })
 
@@ -206,8 +206,8 @@ describe('Features + useFeatureFocus — roving tabindex real focus events', () 
     const { container } = render(<RovingHarness eventBus={eb} />)
     act(() => container.querySelector('[data-id="f1"]').focus())
     const listbox = container.querySelector(LISTBOX)
-    act(() => { fireEvent.keyDown(listbox, { key: 'ArrowDown' }) }) // NOSONAR — moves to f2
-    act(() => { fireEvent.keyDown(listbox, { key: 'Enter' }) })
+    fireEvent.keyDown(listbox, { key: 'ArrowDown' }) // NOSONAR — moves to f2
+    fireEvent.keyDown(listbox, { key: 'Enter' })
     const options = container.querySelectorAll(OPTION)
     expect(options[0]).toHaveAttribute(ARIA_SELECTED, 'false') // f1 — must not be the one selected
     expect(options[1]).toHaveAttribute(ARIA_SELECTED, 'true') // f2 — the one actually focused
@@ -218,9 +218,9 @@ describe('Features + useFeatureFocus — roving tabindex real focus events', () 
     const { container } = render(<RovingHarness eventBus={eb} />)
     act(() => container.querySelector('[data-id="f1"]').focus())
     const listbox = container.querySelector(LISTBOX)
-    act(() => { fireEvent.keyDown(listbox, { key: 'ArrowDown' }) }) // NOSONAR — f1 -> f2
-    act(() => { fireEvent.keyDown(listbox, { key: 'Enter' }) }) // select f2
-    act(() => { fireEvent.keyDown(listbox, { key: 'ArrowUp' }) }) // f2 -> f1
+    fireEvent.keyDown(listbox, { key: 'ArrowDown' }) // NOSONAR — f1 -> f2
+    fireEvent.keyDown(listbox, { key: 'Enter' }) // select f2
+    fireEvent.keyDown(listbox, { key: 'ArrowUp' }) // f2 -> f1
     expect(document.activeElement.dataset.id).toBe('f1')
     expect(container.querySelectorAll(OPTION)[0].tabIndex).toBe(0)
   })
