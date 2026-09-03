@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
+import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { buildLayerConfigMap } from '../utils/featureQueries.js'
 
 const getFeatureId = (feature, config) =>
@@ -17,13 +18,24 @@ const isInViewport = (el) => {
     bottom > containerRect.top && top < containerRect.bottom
 }
 
-const collectVisibleMarkers = (markers) => {
+// x/y are the marker's own screen position (see useMarkersAPI.js's projectCoords) — computed
+// fresh here rather than read off marker.x/marker.y, which only reflect where the marker was
+// when added/last updated, not the current pan position. Used to position the corresponding
+// accessible list item so touch/voice AT overlays (e.g. macOS Voice Control's "Show Numbers")
+// land on the actual feature instead of stacking at the top-left of the viewport.
+const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
   const items = []
   for (const marker of markers.items) {
     if (!marker.label) { continue }
     const el = markers.markerRefs?.get(marker.id)
     if (!isStandaloneLabel(marker) && el && isInViewport(el)) {
-      items.push({ id: marker.id, label: marker.label })
+      const item = { id: marker.id, label: marker.label }
+      if (marker.coords) {
+        const { x, y } = mapProvider.mapToScreen(marker.coords)
+        item.x = x * scaleFactor[mapSize]
+        item.y = y * scaleFactor[mapSize]
+      }
+      items.push(item)
     }
   }
   return items
@@ -75,12 +87,12 @@ const findFeatureById = (features, layerConfigMap, targetId) => {
  * Collects visible markers (by DOM visibility) and visible features (by viewport query),
  * then emits MAP_SET_FEATURES so the listbox stays in sync with what the user can see.
  */
-function useItemListSync ({ markers, interactionModes, layers, mapProvider, multiSelect, eventBus }) {
+function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus }) {
   useEffect(() => {
     const handleMoveEnd = () => {
       const items = []
       if (interactionModes?.includes('selectMarker')) {
-        items.push(...collectVisibleMarkers(markers))
+        items.push(...collectVisibleMarkers(markers, mapProvider, mapSize))
       }
       if (interactionModes?.includes('selectFeature') && layers.length > 0) {
         items.push(...collectVisibleFeatures(mapProvider, layers))
@@ -94,7 +106,7 @@ function useItemListSync ({ markers, interactionModes, layers, mapProvider, mult
       eventBus.off(EVENTS.MAP_MOVE_END, handleMoveEnd)
       eventBus.off(EVENTS.MAP_DATA_CHANGE, handleMoveEnd)
     }
-  }, [markers, interactionModes, layers, mapProvider, multiSelect, eventBus])
+  }, [markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus])
 }
 
 /**
@@ -177,11 +189,11 @@ function useSelectItemHandler ({ eventBus, dispatch, listboxActiveItemRef, multi
  * @param {{ mapState: object, pluginState: object, services: object, mapProvider: object }} params
  */
 export function useMapItemList ({ mapState, pluginState, services, mapProvider }) {
-  const { markers } = mapState
+  const { markers, mapSize } = mapState
   const { dispatch, interactionModes, layers, multiSelect } = pluginState
   const { eventBus } = services
   const listboxActiveItemRef = useRef(null)
-  useItemListSync({ markers, interactionModes, layers, mapProvider, multiSelect, eventBus })
+  useItemListSync({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus })
   useActiveItemHandler({ markers, interactionModes, layers, mapProvider, eventBus, dispatch, listboxActiveItemRef })
   useSelectItemHandler({ eventBus, dispatch, listboxActiveItemRef, multiSelect })
 }

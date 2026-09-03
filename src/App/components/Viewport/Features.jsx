@@ -29,6 +29,14 @@ export const Features = forwardRef(({ activeFeatureId, tabbableId, selectedIds =
           data-id={item.id}
           tabIndex={item.id === currentId ? 0 : -1}
           aria-selected={selectedIds.includes(item.id)}
+          // Positions the (visually clipped) option over its on-map feature — item.x/item.y are
+          // screen coordinates from the interact plugin (see useMapItemList.js). Without this,
+          // every option collapses to the CSS static-position default (~top-left of the
+          // viewport), which is invisible to sighted users but misaligns coordinate-based AT
+          // overlays, e.g. macOS Voice Control's "Show Numbers", which numbers items at their
+          // real position on screen. Items without a resolved position (not yet supported for
+          // dataset/polygon features) fall back to that same default.
+          style={item.x != null ? { left: item.x, top: item.y } : undefined}
           onClick={() => onSelectItem?.(item.id)}
         >
           {item.label}

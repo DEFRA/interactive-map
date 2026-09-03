@@ -45,6 +45,21 @@ describe('Features — rendering', () => {
     expect(options[1].textContent).toBe('Feature Two')
   })
 
+  it('positions an option at its x/y when provided, for coordinate-based AT overlays (e.g. Voice Control)', () => {
+    const itemsWithPosition = [{ id: 'f1', label: 'Feature One', x: 120, y: 340 }]
+    const { container } = render(<Features items={itemsWithPosition} />)
+    const option = container.querySelector(OPTION)
+    expect(option.style.left).toBe('120px')
+    expect(option.style.top).toBe('340px')
+  })
+
+  it('does not set left/top when an item has no x/y', () => {
+    const { container } = render(<Features items={ITEMS} />)
+    const option = container.querySelector(OPTION)
+    expect(option.style.left).toBe('')
+    expect(option.style.top).toBe('')
+  })
+
   it('sets aria-selected on items present in selectedIds', () => {
     const { container } = render(<Features items={ITEMS} selectedIds={['f1']} />)
     const options = container.querySelectorAll(OPTION)
