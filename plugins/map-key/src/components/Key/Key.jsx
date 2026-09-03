@@ -6,13 +6,13 @@ import { KeyGroupItem } from './KeyGroupItem.jsx'
 const keyClassName = 'im-c-map-key'
 const keyGroupsClassName = 'im-c-map-key--has-groups'
 
-const KeyItemWrapper = ({ item, mapStyle }) => {
+const KeyItemWrapper = ({ item, groupStyle, mapStyle }) => {
   if (item.type === 'group') {
     return (
       <KeyGroupItem
         headingId={`key-heading-${item.id}`}
         label={item.groupLabel}
-        groupStyle={item.groupStyle}
+        groupStyle={groupStyle}
         keyDefinitions={item.keyDefinitions}
         mapStyle={mapStyle}
       />
@@ -38,7 +38,7 @@ export const Key = ({
   console.log('keyGroups', keyGroups)
   return (
     <div className={className}>
-      {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} />)}
+      {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} groupStyle={item.groupStyle} />)}
     </div>
   )
 }

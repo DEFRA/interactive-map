@@ -52,8 +52,8 @@ describe('KeyGroupItem', () => {
   })
 
   it('appends the groupStyle modifier class to the dl when groupStyle is provided', () => {
-    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='ramp' />)
-    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list-ramp')
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='horizontal-ramp' />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list-horizontal-ramp')
   })
 
   it('uses the base dl class when groupStyle is not provided', () => {

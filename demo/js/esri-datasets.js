@@ -303,8 +303,6 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     id: 'depths-key',
     label: 'Surface water',
     groupId: 'surface-water-depth-in-millimetres',
-    // groupLabel: 'Surface water depth in millimetres',
-    // groupStyle: 'ramp',
     showInKey: true,
     visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthAll'] } },
     sublayers: depthDataset.sublayers.map((sublayer) => {
@@ -621,8 +619,7 @@ const interactiveMap = new InteractiveMap('map', {
       groups: {
         'surface-water-depth-in-millimetres': {
           groupLabel: 'Surface water depth in millimetres',
-          groupStyle: 'ramp', // TODO change to horizontal-ramp
-          // groupStyle: 'horizontal-ramp',
+          groupStyle: 'horizontal-ramp'
         }
       },
       manifest: {
