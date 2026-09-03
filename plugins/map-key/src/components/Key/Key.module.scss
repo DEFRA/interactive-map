@@ -96,7 +96,6 @@
       // Offset the label, so it sits below the border with the next box
       white-space: nowrap;
       text-align: center;
-      transform: translateX(-50%);
     }
 
     &:first-child {  // rightmost visual cell (rtl) - add a curved corner
@@ -108,11 +107,6 @@
     }
 
     &:last-child {   // leftmost visual cell (rtl)
-      // Hide the last child's label (ie the left-most one as the order is rtl)
-      .im-c-map-key-list__item-label {
-          display: none;
-      }
-
       .im-c-map-key-list__item-symbol { // add a curved corner
         border-top-left-radius: 4px;
         border-bottom-left-radius: 4px;
