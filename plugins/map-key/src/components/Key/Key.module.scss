@@ -72,7 +72,8 @@
 
 .im-c-map-key-list-ramp {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(47px, auto));
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
   direction: rtl;
   .im-c-map-key-list__item {
     padding: 0 !important;
