@@ -16,10 +16,6 @@
     $is-inset: true
   );
 
-  &[data-focus-visible="true"][aria-activedescendant]::after {
-    opacity: 0;
-  }
-
   [role="option"] {
     position: absolute;
     width: 1px;
@@ -27,5 +23,9 @@
     overflow: hidden;
     clip-path: inset(50%);
     white-space: nowrap;
+    // Roving tabindex moves real focus (and click activation) onto individual options, so they
+    // need pointer events re-enabled — overridden off .im-c-features's pointer-events: none,
+    // which otherwise lets mouse interaction pass through to the map everywhere else.
+    pointer-events: auto;
   }
 }
