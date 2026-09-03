@@ -17,6 +17,7 @@ const parcelsDataset = {
   geojson,
   minZoom: 10,
   maxZoom: 24,
+  showInMenu: true,
   style: {
     fill: 'rgba(29, 112, 184, 0.1)',
     stroke: '#1d70b8',
