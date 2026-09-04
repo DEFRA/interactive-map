@@ -193,6 +193,7 @@ interactiveMap.on('draw:ready', function () {
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [337770, 504159.5] },
     properties: {
+      label: 'Monument',
       symbol: 'pin',
       symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' }
     }
@@ -203,6 +204,7 @@ interactiveMap.on('draw:ready', function () {
     type: 'Feature',
     geometry: { type: 'Point', coordinates: [337841, 504230.5] },
     properties: {
+      label: 'Castle',
       symbol: 'square',
       symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
       symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
