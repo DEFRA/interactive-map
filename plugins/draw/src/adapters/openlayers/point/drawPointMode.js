@@ -96,10 +96,21 @@ const buildPointInput = ({ drawInteraction, options, canPlace }) => {
 
   applyCrossHairVisibility(crossHair, interfaceType)
 
+  // Single shared "commit here" entry point for the crosshair button's own onClick
+  // (CrossHair.jsx) — the same action Enter/the touch add-vertex button already trigger via
+  // placeVertex, so a click (real, touch, or Voice Control's "Click Target") does exactly
+  // what those already do.
+  if (crossHair) {
+    crossHair.activate = placePoint
+  }
+
   return {
     getInterfaceType,
     setInterfaceType: applyInterfaceType,
-    destroy () { events.destroy() }
+    destroy () {
+      if (crossHair?.activate === placePoint) { crossHair.activate = null }
+      events.destroy()
+    }
   }
 }
 

@@ -16,24 +16,32 @@ export const CrossHair = () => {
   const { isVisible, isPinnedToMap, state } = crossHair
 
   return (
-    <svg
-      id={`${id}-cross-hair`}
+    <button
+      tabIndex='-1'
       ref={crossHairRef}
-      className='im-c-cross-hair'
-      width='38'
-      height='38'
-      viewBox='0 0 38 38'
-      fillRule='evenodd'
-      fill='currentColor'
+      id={`${id}-cross-hair`}
+      className='im-c-cross-hair-button'
+      onClick={() => crossHair.activate?.()}
       style={{
         position: 'absolute',
         left: isPinnedToMap ? 0 : '50%',
         top: isPinnedToMap ? 0 : '50%',
-        pointerEvents: 'none',
         display: isVisible ? 'block' : 'none'
       }}
     >
-      <path d={paths[state || 'active']} />
-    </svg>
+      <svg
+        width='38'
+        height='38'
+        viewBox='0 0 38 38'
+        fillRule='evenodd'
+        fill='currentColor'
+      >
+        <path d={paths[state || 'active']} />
+      </svg>
+      {/* "Target" — shorter and easier for Voice Control users to say than "Cross hair"
+          ("Click Target"); a general-purpose map is unlikely to already have a feature/marker
+          named "Target" that this would collide with. */}
+      <span className='im-u-visually-hidden'>Target</span>
+    </button>
   )
 }

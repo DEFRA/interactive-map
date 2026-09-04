@@ -242,5 +242,23 @@ describe('createDrawPointMode', () => {
       expect(emitted().some((e) => e.type === ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE)).toBe(true)
       expect(removeSpy).toHaveBeenCalledWith(interaction)
     })
+
+    test('wires crossHair.activate to the same placeVertex callback given to wireInputEvents — the crosshair button\'s own onClick (CrossHair.jsx) does exactly what Enter/the touch add-vertex button already do', () => {
+      const crossHair = {}
+      const { wireArgs } = setup({ crossHair })
+      expect(crossHair.activate).toBe(wireArgs.placeVertex)
+    })
+
+    test('does not wire crossHair.activate when no crossHair is provided', () => {
+      expect(() => setup({ crossHair: null })).not.toThrow()
+    })
+
+    test('destroy clears crossHair.activate so a stale closure cannot fire after the mode has gone', () => {
+      const crossHair = {}
+      const { mode } = setup({ crossHair })
+      expect(typeof crossHair.activate).toBe('function')
+      mode.destroy()
+      expect(crossHair.activate).toBeNull()
+    })
   })
 })
