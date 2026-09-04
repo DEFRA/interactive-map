@@ -45,6 +45,14 @@ export class Dataset {
   // as it will be grouped with its siblings under the parents label if it doesn't.
   get groupLabel () { return this._datasetDefinition.groupLabel || this.parent?.groupLabel || this.parent?.label }
 
+  get groupId () {
+    const groupId = this._datasetDefinition.groupId || this.parent?.groupId
+    if (groupId) {
+      return groupId
+    }
+    return this.groupLabel ? this.groupLabel.toLowerCase().replace(/\s+/g, '-') : null
+  }
+
   get opacity () {
     const myOpacity = this.style?.opacity
     const parentOpacity = this.parent?.style?.opacity

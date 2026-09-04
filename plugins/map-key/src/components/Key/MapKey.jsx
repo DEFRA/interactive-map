@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react'
 import { getDatasetRegistry } from '../../registry/index.js'
-
+import { mergeKeyGroupItems } from '../../utils/mergeKeyGroupItems.js'
 import { Key } from './Key.jsx'
 
 export function MapKey ({
   mapState: { mapStyle },
-  pluginConfig: { noKeyItemText },
+  pluginConfig: { noKeyItemText, groups },
   services: { eventBus }
 }) {
   const [datasetRegistry, setDatasetRegistry] = useState(getDatasetRegistry())
@@ -17,7 +17,9 @@ export function MapKey ({
 
   const getKeyItems = () => {
     const { items, hasGroups: _hasGroups } = datasetRegistry.keyItems()
-    setKeyGroups(items)
+    // Post Process the items - based on the map-key pluginConfig adding any groupConfigs
+    const groupItems = mergeKeyGroupItems(groups, items)
+    setKeyGroups(groupItems)
     setHasGroups(_hasGroups)
   }
 
