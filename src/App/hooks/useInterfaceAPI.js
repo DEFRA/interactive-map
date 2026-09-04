@@ -58,7 +58,8 @@ export const useInterfaceAPI = () => {
     const handleAppClosed = () => dispatchRef.current({ type: 'TOGGLE_APP_VISIBLE', payload: false })
     const handleAddPanel = ({ id, config }) => dispatchRef.current({ type: 'ADD_PANEL', payload: { id, config } })
     const handleRemovePanel = (id) => dispatchRef.current({ type: 'REMOVE_PANEL', payload: id })
-    const handleShowPanel = ({ id, focus = true }) => dispatchRef.current({ type: 'OPEN_PANEL', payload: { panelId: id, focusOnOpen: focus } })
+    const handleShowPanel = ({ id, focus = true, triggeringElement }) =>
+      dispatchRef.current({ type: 'OPEN_PANEL', payload: { panelId: id, focusOnOpen: focus, props: triggeringElement ? { triggeringElement } : undefined } })
     const handleHidePanel = (id) => dispatchRef.current({ type: 'CLOSE_PANEL', payload: id })
     const handleAddControl = ({ id, config }) => dispatchRef.current({ type: 'ADD_CONTROL', payload: { id, config } })
 

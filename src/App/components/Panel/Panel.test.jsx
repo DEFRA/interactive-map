@@ -156,9 +156,18 @@ describe('Panel', () => {
   })
 
   describe('close functionality', () => {
+    // document.contains() needs a real Node — a plain { focus: jest.fn() } mock object throws
+    // ("parameter 1 is not of type 'Node'"), so triggeringElement here is a real element, spied
+    // on and attached to the document, matching what production always passes
+    // (e.currentTarget / document.activeElement).
+    const makeAttachedTriggeringElement = () => {
+      const el = document.createElement('button')
+      document.body.appendChild(el)
+      return { el, focusMock: jest.spyOn(el, 'focus') }
+    }
+
     it('focuses triggeringElement on close for button slots', () => {
-      const focusMock = jest.fn()
-      const triggeringElement = { focus: focusMock, parentNode: document.createElement('div') }
+      const { el: triggeringElement, focusMock } = makeAttachedTriggeringElement()
 
       renderPanel(
         { desktop: { slot: 'top-button', dismissible: true, open: false } },
@@ -171,8 +180,7 @@ describe('Panel', () => {
     })
 
     it('handles close for non-button slots', () => {
-      const focusMock = jest.fn()
-      const triggeringElement = { focus: focusMock, parentNode: document.createElement('div') }
+      const { el: triggeringElement, focusMock } = makeAttachedTriggeringElement()
 
       renderPanel(
         { desktop: { slot: 'overlay', dismissible: true, modal: true } },
@@ -189,6 +197,20 @@ describe('Panel', () => {
       fireEvent.click(screen.getByRole('button', { name: 'Close Settings' }))
       expect(layoutRefs.viewportRef.current.focus).toHaveBeenCalled()
       expect(dispatch).toHaveBeenCalledWith({ type: 'CLOSE_PANEL', payload: 'Settings' })
+    })
+
+    it('falls back to viewportRef focus when triggeringElement has been removed from the DOM', () => {
+      const triggeringElement = document.createElement('button') // never attached
+      const focusMock = jest.spyOn(triggeringElement, 'focus')
+
+      renderPanel(
+        { desktop: { slot: 'side', dismissible: true, open: false } },
+        { props: { triggeringElement } }
+      )
+
+      fireEvent.click(screen.getByRole('button', { name: 'Close Settings' }))
+      expect(focusMock).not.toHaveBeenCalled()
+      expect(layoutRefs.viewportRef.current.focus).toHaveBeenCalled()
     })
   })
 
