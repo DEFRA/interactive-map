@@ -1,5 +1,4 @@
 const initialState = {
-  actionsArray: [],
   menu: [],
   menuState: {}
 }
