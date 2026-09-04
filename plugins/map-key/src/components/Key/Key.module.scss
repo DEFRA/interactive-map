@@ -70,11 +70,12 @@
   margin: -12px 1px -12px -9px;
 }
 
-.im-c-map-key-list-ramp {
+.im-c-map-key-list-horizontal-ramp {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: 1fr;
   direction: rtl;
+  margin-bottom: 10px;
   .im-c-map-key-list__item {
     padding: 0 !important;
     position: relative !important;
@@ -117,4 +118,8 @@
       }
     }
   }
+}
+
+.im-c-map-key .im-c-map-key__group:last-child .im-c-map-key-list-horizontal-ramp {
+  margin-bottom: 0;
 }

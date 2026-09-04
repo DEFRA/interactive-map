@@ -300,10 +300,9 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
   }
   // We only really need one of these with visibleWhen: { menu: {dataset: ['surfacewater'], depth: ['depthAll'] } },
   depthsKey = {
-    id: `depths-key`,
+    id: 'depths-key',
     label: 'Surface water',
-    groupLabel: 'Surface water depth in millimetres',
-    groupStyle: 'ramp',
+    groupId: 'surface-water-depth-in-millimetres',
     showInKey: true,
     visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthAll'] } },
     sublayers: depthDataset.sublayers.map((sublayer) => {
@@ -323,8 +322,8 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       sublayers: depthsKey.sublayers.slice(0, i).map((sublayer) => ({ ...sublayer, label: `${i}.${sublayer.label}`.replaceAll('0', '') })),
     })
   }
-  // return [depthsKey, extentsDataset, depthDataset]
-  return [...extraDepthKeys, extentsDataset, depthDataset]
+  return [depthsKey, extentsDataset, depthDataset]
+  // return [...extraDepthKeys, extentsDataset, depthDataset]
 }
 
 const surfaceWaterExtentsKey = {
@@ -617,6 +616,12 @@ const interactiveMap = new InteractiveMap('map', {
     drawPlugin,
     framePlugin,
     createMapKeyPlugin({
+      groups: {
+        'surface-water-depth-in-millimetres': {
+          groupLabel: 'Surface water depth in millimetres',
+          groupStyle: 'horizontal-ramp'
+        }
+      },
       manifest: {
         panels: [{
           id: 'mapKey',

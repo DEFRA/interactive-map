@@ -555,4 +555,21 @@ describe('Dataset class', () => {
       expect(dg.source.promoteId).toBeUndefined()
     })
   })
+
+  describe('groupId', () => {
+    it('returns the groupId from the dataset definition', () => {
+      const dataset = new Dataset({ id: 'dataset', groupId: 'group-1' })
+      expect(dataset.groupId).toBe('group-1')
+    })
+
+    it('builds a groupId from the dataset definitions groupLabel', () => {
+      const dataset = new Dataset({ id: 'dataset', groupLabel: 'Roast Potatoes' })
+      expect(dataset.groupId).toBe('roast-potatoes')
+    })
+
+    it('returns null if no groupId is set', () => {
+      const dataset = new Dataset({ id: 'dataset' })
+      expect(dataset.groupId).toBeNull()
+    })
+  })
 })

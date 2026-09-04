@@ -45,6 +45,14 @@ export class Dataset {
   // as it will be grouped with its siblings under the parents label if it doesn't.
   get groupLabel () { return this._datasetDefinition.groupLabel || this.parent?.groupLabel || this.parent?.label }
 
+  get groupId () {
+    const groupId = this._datasetDefinition.groupId || this.parent?.groupId
+    if (groupId) {
+      return groupId
+    }
+    return this.groupLabel ? this.groupLabel.toLowerCase().replace(/\s+/g, '-') : null
+  }
+
   get opacity () {
     const myOpacity = this.style?.opacity
     const parentOpacity = this.parent?.style?.opacity
@@ -202,17 +210,6 @@ export class Dataset {
     return styleSymbols
   }
 
-  get groupStyle () {
-    if (this._datasetDefinition.groupStyle) {
-      return this._datasetDefinition.groupStyle
-    }
-    return this.parent?.groupStyle
-  }
-
-  get hasRampStyleKey () {
-    return this.groupStyle === 'ramp'
-  }
-
   get keyDefinition () {
     return {
       id: this.id,
@@ -220,7 +217,6 @@ export class Dataset {
       label: this.label,
       hasSymbol: this.hasSymbol,
       hasPattern: this.hasPattern,
-      hasRampStyleKey: this.hasRampStyleKey,
       style: this.style,
       symbolDescription: this.symbolDescription
     }
