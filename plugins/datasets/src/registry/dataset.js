@@ -210,17 +210,6 @@ export class Dataset {
     return styleSymbols
   }
 
-  get groupStyle () {
-    if (this._datasetDefinition.groupStyle) {
-      return this._datasetDefinition.groupStyle
-    }
-    return this.parent?.groupStyle
-  }
-
-  get hasRampStyleKey () {
-    return this.groupStyle === 'ramp'
-  }
-
   get keyDefinition () {
     return {
       id: this.id,
@@ -228,7 +217,6 @@ export class Dataset {
       label: this.label,
       hasSymbol: this.hasSymbol,
       hasPattern: this.hasPattern,
-      hasRampStyleKey: this.hasRampStyleKey,
       style: this.style,
       symbolDescription: this.symbolDescription
     }
