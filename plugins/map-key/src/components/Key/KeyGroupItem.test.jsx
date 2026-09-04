@@ -50,4 +50,14 @@ describe('KeyGroupItem', () => {
     render(<KeyGroupItem {...baseProps} keyDefinitions={[]} />)
     expect(screen.queryAllByTestId('key-item')).toHaveLength(0)
   })
+
+  it('appends the groupStyle modifier class to the dl when groupStyle is provided', () => {
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='horizontal-ramp' />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list-horizontal-ramp')
+  })
+
+  it('uses the base dl class when groupStyle is not provided', () => {
+    const { container } = render(<KeyGroupItem {...baseProps} />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list')
+  })
 })

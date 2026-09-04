@@ -18,7 +18,7 @@ export const manifest = {
     panelId: 'mapKey',
     label: 'Key',
     iconId: 'key',
-    mobile: { slot: 'top-left', showLabel: false },
+    mobile: { slot: 'top-left', showLabel: true },
     tablet: { slot: 'top-left', showLabel: true },
     desktop: { slot: 'top-left', showLabel: true }
   }],

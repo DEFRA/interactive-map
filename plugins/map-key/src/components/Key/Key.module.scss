@@ -31,46 +31,95 @@
   color: var(--foreground-color);
 }
 
-.im-c-map-key__item {
+.im-c-map-key-list__item {
   display: flex;
   align-items: start;
   padding-top: 10px;
   padding-bottom: 10px;
   font-size: 1rem;
-
-  // First item inside a group — heading already provides top spacing
-  .im-c-map-key__group &:first-child {
-    padding-top: 0;
-  }
 }
 
-.im-c-map-key--has-groups > .im-c-map-key__item:not(:first-child) {
+.im-c-map-key--has-groups > .im-c-map-key-list__item:not(:first-child) {
   padding-top: 15px;
 }
 
-.im-c-map-key--has-groups > .im-c-map-key__item {
+.im-c-map-key--has-groups > .im-c-map-key-list__item {
   padding-bottom: 15px;
 }
 
-.im-c-map-key__group .im-c-map-key__item {
+.im-c-map-key__group > .im-c-map-key-list .im-c-map-key-list__item {
   padding-top: 10px;
   padding-bottom: 10px;
 }
 
 // Last item in all scenarios — flat or inside the last group
-.im-c-map-key > .im-c-map-key__item:last-child,
-.im-c-map-key__group:last-child .im-c-map-key__item:last-child {
+.im-c-map-key > .im-c-map-key-list__item:last-child,
+.im-c-map-key__group:last-child > .im-c-map-key-list .im-c-map-key-list__item:last-child {
   padding-bottom: 5px;
 }
 
 // Symbol
 
-.am-c-map-key-symbol {
+.im-c-map-key-symbol {
   position: relative;
   flex-shrink: 0;
   margin: 0 13px 0 3px;
 }
 
-.am-c-map-key-symbol--point {
+.im-c-map-key-symbol--point {
   margin: -12px 1px -12px -9px;
+}
+
+.im-c-map-key-list-horizontal-ramp {
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: 1fr;
+  direction: rtl;
+  margin-bottom: 10px;
+  .im-c-map-key-list__item {
+    padding: 0 !important;
+    position: relative !important;
+    display: flex;
+    flex-direction: column;
+
+    .im-c-map-key-list__item-symbol {
+      margin: 0 !important;
+      width: 100%;
+      max-height: var(--line-height);
+      direction: ltr;
+      overflow-y: hidden;
+      svg {
+        display: block;
+      }
+
+    }
+    .im-c-map-key-list__item-label {
+      width: 100%;
+      direction: ltr;
+      margin-top: 10px;
+      // Offset the label, so it sits below the border with the next box
+      white-space: nowrap;
+      text-align: center;
+    }
+
+    &:first-child {  // rightmost visual cell (rtl) - add a curved corner
+      .im-c-map-key-list__item-symbol {
+        border-top-right-radius: 4px;
+        border-bottom-right-radius: 4px;
+        overflow: hidden;
+      }
+    }
+
+    &:last-child {   // leftmost visual cell (rtl)
+      .im-c-map-key-list__item-symbol { // add a curved corner
+        border-top-left-radius: 4px;
+        border-bottom-left-radius: 4px;
+        overflow: hidden;
+      }
+    }
+  }
+}
+
+.im-c-map-key .im-c-map-key__group:last-child .im-c-map-key-list-horizontal-ramp {
+  margin-bottom: 0;
 }

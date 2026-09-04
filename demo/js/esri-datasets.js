@@ -149,8 +149,15 @@ const datasetFloodZones = {
   ]
 }
 
+let depthsKey = null
+const extentsStyle = { 
+  fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, 
+  stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, 
+}
+
 const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep}) => {
   const visibleWhenMenu = { dataset: ['surfacewater'], timeframe, aep }
+
   const extentsDataset = {
     id: `${id}-extents`,
     label: 'Surface Water',
@@ -158,49 +165,57 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
     showInKey: true,
     sourceLayer,
-    style: { fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, },
+    style: extentsStyle,
     visibleWhen: { menu: visibleWhenMenu },
     sublayers: [
       {
         id: 'depthOver2300',
         esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300', 'depthOver2300'] } },
+
       },
       {
         id: 'depth2300',
         esriStyleLayerId: `${sourceLayer}/1200-2300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300'] } },
       },
       {
         id: 'depth1200',
         esriStyleLayerId: `${sourceLayer}/900-1200mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200'] } },
       },
       {
         id: 'depth900',
         esriStyleLayerId: `${sourceLayer}/600-900mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900'] } },
       },
       {
         id: 'depth600',
         esriStyleLayerId: `${sourceLayer}/300-600mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600'] } },
       },
       {
         id: 'depth300',
         esriStyleLayerId: `${sourceLayer}/150-300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300'] } },
       },
       {
         id: 'depth150',
         esriStyleLayerId: `${sourceLayer}/<150mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150'] } },
       },
     ]
@@ -211,16 +226,17 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     label: 'Surface Water Depth All',
     groupLabel: 'Surface Water',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
-    showInKey: true,
+    showInKey: false,
     sourceLayer,
     visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
     sublayers: [
       {
         id: 'depthOver2300',
         esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
-        label: 'Extent over 2300mm',
+        label: 'Extent over 2300mm X',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
         }
       },
       {
@@ -229,6 +245,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 1200mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
         }
       },
       {
@@ -237,6 +254,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 900mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
         }
       },
       {
@@ -245,6 +263,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 600mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
         }
       },
       {
@@ -253,6 +272,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 300mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
         }
       },
       {
@@ -261,6 +281,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
         }
       },
       {
@@ -269,11 +290,40 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent up to 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
         }
       },
     ]
   }
-  return [extentsDataset, depthDataset]
+  if (depthsKey) {
+    return [extentsDataset, depthDataset]
+  }
+  // We only really need one of these with visibleWhen: { menu: {dataset: ['surfacewater'], depth: ['depthAll'] } },
+  depthsKey = {
+    id: 'depths-key',
+    label: 'Surface water',
+    groupId: 'surface-water-depth-in-millimetres',
+    showInKey: true,
+    visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthAll'] } },
+    sublayers: depthDataset.sublayers.map((sublayer) => {
+      return {
+        ...sublayer,
+        esriStyleLayerId: null,
+        label: sublayer.label.match(/[0-9]+/)[0],
+      }
+    })
+  }
+  const extraDepthKeys = []
+  for(let i = 3; i <= depthsKey.sublayers.length; i++) {
+    extraDepthKeys.push({
+      ...depthsKey, 
+      groupLabel: `${depthsKey.groupLabel} [${i}]`,
+      id: `${depthsKey.id}-${i}`,
+      sublayers: depthsKey.sublayers.slice(0, i).map((sublayer) => ({ ...sublayer, label: `${i}.${sublayer.label}`.replaceAll('0', '') })),
+    })
+  }
+  return [depthsKey, extentsDataset, depthDataset]
+  // return [...extraDepthKeys, extentsDataset, depthDataset]
 }
 
 const surfaceWaterExtentsKey = {
@@ -281,51 +331,55 @@ const surfaceWaterExtentsKey = {
   label: 'Surface Water',
   groupLabel: 'Surface Water',
   showInKey: true,
-  style: {
-    stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-    fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-  },
+  style: extentsStyle,
   sublayers: [
     {
       id: 'key-150',
       label: 'Full extend of flooding',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth150'] } }
     },
     {
       id: 'key-300',
       label: 'Extent over 150mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth300'] } }
     },
     {
       id: 'key-600',
       label: 'Extent over 300mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth600'] } }
     },
     {
       id: 'key-900',
       label: 'Extent over 600mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth900'] } }
     },
     {
       id: 'key-1200',
       label: 'Extent over 900mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth1200'] } }
     },
     {
       id: 'key-2300',
       label: 'Extent over 1200mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth2300'] } }
     },
     {
       id: 'key-over-2300',
       label: 'Extent over 2300mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthOver2300'] } }
     }
   ]
@@ -561,7 +615,22 @@ const interactiveMap = new InteractiveMap('map', {
   plugins: [
     drawPlugin,
     framePlugin,
-    createMapKeyPlugin(),
+    createMapKeyPlugin({
+      groups: {
+        'surface-water-depth-in-millimetres': {
+          groupLabel: 'Surface water depth in millimetres',
+          groupStyle: 'horizontal-ramp'
+        }
+      },
+      manifest: {
+        panels: [{
+          id: 'mapKey',
+          mobile: { slot: 'drawer', modal: false },
+          tablet: { slot: 'left-top', width: '360px' },
+          desktop: { slot: 'left-top', width: '360px' },
+        }]
+      },
+    }),
     createMenuPlugin({
       manifest: {
         panels: [{

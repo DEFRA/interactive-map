@@ -7,7 +7,7 @@ export const svgProps = {
   width: SVG_SIZE,
   height: SVG_SIZE,
   viewBox: `0 0 ${SVG_SIZE} ${SVG_SIZE}`,
-  className: 'am-c-map-key-symbol',
+  className: 'im-c-map-key-symbol',
   'aria-hidden': 'true',
   focusable: 'false'
 }
@@ -16,5 +16,5 @@ export const svgSymbolProps = {
   ...svgProps,
   width: SVG_SYMBOL_SIZE,
   height: SVG_SYMBOL_SIZE,
-  className: 'am-c-map-key-symbol am-c-map-key-symbol--point'
+  className: 'im-c-map-key-symbol im-c-map-key-symbol--point'
 }
