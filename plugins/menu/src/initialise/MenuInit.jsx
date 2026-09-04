@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react'
 import { createMenu } from './createMenu.js'
 import { attachPluginStateRef } from '../registry/isVisibleWhen.js'
+import { updateUrl } from '../urlParser.js'
 
 // additional possible params here are: appState, mapProvider,
 export function MenuInit ({ pluginConfig, pluginState, mapState, services }) {
@@ -20,5 +21,8 @@ export function MenuInit ({ pluginConfig, pluginState, mapState, services }) {
   }, [mapState.isMapReady])
 
   // Notify any plugins, that are listening, to the menu's state change
-  useEffect(() => eventBus.emit('menu:changed', pluginState.menuState), [pluginState.menuState])
+  useEffect(() => {
+    eventBus.emit('menu:changed', pluginState.menuState)
+    updateUrl(pluginState)
+  }, [pluginState.menuState])
 }
