@@ -1,7 +1,4 @@
-import { buildMenuState } from './menuStateReducer.js'
-
 const initialState = {
-  actionsArray: [],
   menu: [],
   menuState: {}
 }
@@ -14,9 +11,7 @@ const updateMenuState = (state, payload) => {
 }
 
 const setMenu = (state, payload) => {
-  const { menu } = payload
-  // build the initial menuState for radios from the menu
-  const menuState = buildMenuState(menu)
+  const { menu, menuState } = payload
   return {
     ...state,
     menu,

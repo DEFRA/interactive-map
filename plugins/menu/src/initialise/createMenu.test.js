@@ -14,24 +14,39 @@ const makeEventBus = () => ({
 })
 
 describe('createMenu', () => {
-  it('dispatches SET_MENU with the menu', () => {
+  const menu = [{ id: 'datasets', type: 'radio', value: 'floodZones' }]
+
+  it('dispatches SET_MENU with the menu and the built menu state', () => {
     const eventBus = makeEventBus()
     const dispatch = jest.fn()
-    const menu = [{ id: 'layer1' }]
     createMenu({ menu, eventBus, dispatch, pluginStateRef: {} })
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MENU', payload: { menu } })
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'SET_MENU',
+      payload: { menu, menuState: { datasets: 'floodZones' } }
+    })
+  })
+
+  it('builds the menu state from the URL search params', () => {
+    window.history.replaceState({}, '', '?datasets=other')
+    const dispatch = jest.fn()
+    createMenu({ menu, eventBus: makeEventBus(), dispatch, pluginStateRef: {} })
+    expect(dispatch).toHaveBeenCalledWith({
+      type: 'SET_MENU',
+      payload: { menu, menuState: { datasets: 'other' } }
+    })
+    window.history.replaceState({}, '', window.location.pathname)
   })
 
   it('calls requestOnce for the datasets registry', () => {
     const eventBus = makeEventBus()
-    createMenu({ eventBus, dispatch: jest.fn(), pluginStateRef: {} })
+    createMenu({ menu, eventBus, dispatch: jest.fn(), pluginStateRef: {} })
     expect(eventBus.requestOnce).toHaveBeenCalledWith('datasets:registry', setDatasetRegistry)
   })
 
   it('calls emitWhenRequested for menu:state', () => {
     const eventBus = makeEventBus()
     const pluginStateRef = { current: {} }
-    createMenu({ eventBus, dispatch: jest.fn(), pluginStateRef })
+    createMenu({ menu, eventBus, dispatch: jest.fn(), pluginStateRef })
     expect(eventBus.emitWhenRequested).toHaveBeenCalledWith('menu:state', pluginStateRef)
   })
 })
