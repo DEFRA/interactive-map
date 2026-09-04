@@ -50,7 +50,7 @@ export class Dataset {
     if (groupId) {
       return groupId
     }
-    return this.groupLabel.toLowerCase().replace(/\s+/g, '-')
+    return this.groupLabel ? this.groupLabel.toLowerCase().replace(/\s+/g, '-') : null
   }
 
   get opacity () {
