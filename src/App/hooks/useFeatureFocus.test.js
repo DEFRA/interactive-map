@@ -154,6 +154,14 @@ describe('useFeatureFocus — onBlur', () => {
     const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
     expect(() => act(() => result.current.onBlur())).not.toThrow()
   })
+
+  // The "moving between sibling options shouldn't count as a real blur/focus" behavior is
+  // driven by an internal isInternalFocusMoveRef, set only while focusOption()'s own .focus()
+  // call is synchronously in flight — not observable by calling onFocus/onBlur directly here,
+  // since that requires a real DOM focus transition bubbling through React. See the
+  // "Features + useFeatureFocus — roving tabindex real focus events" suite in Features.test.jsx,
+  // which renders the real markup and is the only level this can be faithfully exercised at
+  // (and is where the regression this guards against was actually found).
 })
 
 // ─── useFeatureFocus — keydown listener lifecycle ────────────────────────────
@@ -344,6 +352,70 @@ describe('useFeatureFocus — ArrowUp navigation', () => {
     fireKey(el, 'ArrowUp')
     fireKey(el, 'ArrowUp')
     expect(result.current.activeFeatureId).toBe('a')
+    unmount(); el.remove()
+  })
+})
+
+// ─── useFeatureFocus — Home/End navigation ───────────────────────────────────
+
+describe('useFeatureFocus — Home/End navigation', () => {
+  const setup = () => {
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    return { result, el, unmount }
+  }
+
+  it('jumps to the first item on Home from anywhere in the list', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    fireKey(el, 'ArrowDown')
+    fireKey(el, 'Home')
+    expect(result.current.activeFeatureId).toBe('a')
+    unmount(); el.remove()
+  })
+
+  it('jumps to the last item on End from anywhere in the list', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    fireKey(el, 'End')
+    expect(result.current.activeFeatureId).toBe('c')
+    unmount(); el.remove()
+  })
+
+  it('does nothing when items is empty', () => {
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus(refs))
+    fireKey(el, 'Home')
+    fireKey(el, 'End')
+    expect(result.current.activeFeatureId).toBeNull()
+    unmount(); el.remove()
+  })
+
+  it('stops propagation on Home/End so the viewport keyboard handler does not also handle it', () => {
+    const { el, unmount } = setup()
+    for (const key of ['Home', 'End']) {
+      const event = new KeyboardEvent('keydown', { key, bubbles: true, cancelable: true })
+      const stopSpy = jest.spyOn(event, 'stopPropagation')
+      act(() => el.dispatchEvent(event))
+      expect(stopSpy).toHaveBeenCalled()
+    }
+    unmount()
+  })
+
+  it('emits map:setactivefeature with the boundary id', () => {
+    const eb = makeEventBus()
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+    act(() => result.current.onFocus())
+    eb.emit.mockClear()
+    fireKey(el, 'End')
+    expect(eb.emit).toHaveBeenCalledWith(SET_ACTIVE, { id: 'c' })
     unmount(); el.remove()
   })
 })
@@ -631,5 +703,100 @@ describe('useFeatureFocus — items change while focused', () => {
     expect(result.current.activeFeatureId).toBeNull()
     expect(eb.emit).toHaveBeenCalledWith('map:setactivefeature', { id: null })
     unmount()
+  })
+})
+
+// ─── useFeatureFocus — tabbableId (roving tabindex resting position) ─────────
+
+describe('useFeatureFocus — tabbableId', () => {
+  it('is null when items is empty', () => {
+    const { result } = renderHook(() => useFeatureFocus(makeRefs()))
+    expect(result.current.tabbableId).toBeNull()
+  })
+
+  it('defaults to the first item before the list has ever been focused', () => {
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    expect(result.current.tabbableId).toBe('a')
+  })
+
+  // Unlike onFocus's own resolution, tabbableId deliberately ignores selection — "prefer the
+  // selected item" is a real-Tab-in-only concern. If tabbableId also preferred it, selecting a
+  // single marker by clicking it on the map (which never touches lastActiveIdRef) would relocate
+  // tabIndex to match it on every click.
+  it('is not influenced by a selection change before any position is established', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'b', layerId: 'roads' }] }))
+    expect(result.current.tabbableId).toBe('a')
+  })
+
+  it('does not chase a single item toggled selected/deselected purely via mouse clicks, with no keyboard interaction at all', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['a'] }))
+    expect(result.current.tabbableId).toBe('a')
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['b'] })) // clicked a different marker
+    expect(result.current.tabbableId).toBe('a') // still the structural first item — never moved
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['c'] }))
+    expect(result.current.tabbableId).toBe('a')
+  })
+
+  it('stays on the established position when a selection change arrives from elsewhere (e.g. clicking a marker on the map)', () => {
+    const eb = makeEventBus()
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+    act(() => result.current.onFocus()) // establishes position at 'a'
+    fireKey(el, 'ArrowDown') // establishes position at 'b'
+    act(() => result.current.onBlur())
+    // A selection made outside the list (e.g. a mouse click on a map marker) never touches
+    // lastActiveIdRef — it only changes selectedIds via interact:selectionchange.
+    act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['c'] }))
+    expect(result.current.tabbableId).toBe('b') // stays put — does not jump to the newly-selected 'c'
+    unmount(); el.remove()
+  })
+})
+
+// ─── useFeatureFocus — selectItem (click / touch / voice-control activation) ─
+
+describe('useFeatureFocus — selectItem', () => {
+  afterEach(() => { document.body.innerHTML = '' })
+
+  it('sets activeFeatureId to the clicked item', () => {
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    act(() => result.current.selectItem('b'))
+    expect(result.current.activeFeatureId).toBe('b')
+  })
+
+  it('emits map:setactivefeature then map:selectfeature for the clicked item', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    act(() => result.current.selectItem('b'))
+    expect(eb.emit).toHaveBeenNthCalledWith(1, SET_ACTIVE, { id: 'b' })
+    expect(eb.emit).toHaveBeenNthCalledWith(2, SELECT)
+  })
+
+  it('moves real DOM focus to the clicked option', () => {
+    const refs = makeRefs()
+    const option = document.createElement('li')
+    option.dataset.id = 'b'
+    option.focus = jest.fn()
+    refs.featuresRef.current.appendChild(option)
+    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    act(() => result.current.selectItem('b'))
+    expect(option.focus).toHaveBeenCalledWith({ preventScroll: true })
+  })
+
+  it('does not throw when eventBus is not provided', () => {
+    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    expect(() => act(() => result.current.selectItem('b'))).not.toThrow()
+  })
+
+  it('does not throw when featuresRef.current is null (e.g. unmounted)', () => {
+    const refs = { ...makeRefs(), featuresRef: { current: null } }
+    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    expect(() => act(() => result.current.selectItem('b'))).not.toThrow()
+    expect(result.current.activeFeatureId).toBe('b') // state still updates even though there's no element to focus
   })
 })

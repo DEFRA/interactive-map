@@ -58,7 +58,7 @@ function MapInner () {
         interactionModes: ['selectFeature'],
         deselectOnClickOutside: true,
         layers: [
-          { layerId: 'field-parcels', idProperty: 'name' }
+          { layerId: 'field-parcels', idProperty: 'name', labelProperty: 'name' }
         ]
       })
 

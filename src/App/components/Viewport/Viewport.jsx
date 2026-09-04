@@ -27,7 +27,7 @@ export const Viewport = () => {
   const featuresRef = useRef(null)
 
   const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
-  const { activeFeatureId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus, hints })
+  const { activeFeatureId, tabbableId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur, selectItem } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus, hints })
 
   useEffect(() => {
     const handler = () => dispatch({ type: 'SET_LISTBOX_ACTIVE' })
@@ -94,7 +94,7 @@ export const Viewport = () => {
           <Markers />
         </div>
       </div>
-      <Features ref={featuresRef} activeFeatureId={activeFeatureId} selectedIds={selectedIds} multiselectable={multiselectable} items={featureItems} onFocus={onFeaturesFocus} onBlur={onFeaturesBlur} />
+      <Features ref={featuresRef} activeFeatureId={activeFeatureId} tabbableId={tabbableId} selectedIds={selectedIds} multiselectable={multiselectable} items={featureItems} onFocus={onFeaturesFocus} onBlur={onFeaturesBlur} onSelectItem={selectItem} />
     </>
   )
 }
