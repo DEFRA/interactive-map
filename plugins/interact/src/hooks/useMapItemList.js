@@ -3,6 +3,7 @@ import { EVENTS } from '../../../../src/config/events.js'
 import { isStandaloneLabel } from '../../../../src/utils/symbolUtils.js'
 import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { buildLayerConfigMap } from '../utils/featureQueries.js'
+import { getGeometryCenter } from '../utils/spatial.js'
 
 const getFeatureId = (feature, config) =>
   config ? (feature.properties?.[config.idProperty] ?? feature.id) : null
@@ -18,11 +19,21 @@ const isInViewport = (el) => {
     bottom > containerRect.top && top < containerRect.bottom
 }
 
-// x/y are the marker's own screen position (see useMarkersAPI.js's projectCoords) — computed
-// fresh here rather than read off marker.x/marker.y, which only reflect where the marker was
-// when added/last updated, not the current pan position. Used to position the corresponding
-// accessible list item so touch/voice AT overlays (e.g. macOS Voice Control's "Show Numbers")
-// land on the actual feature instead of stacking at the top-left of the viewport.
+// Screen position for a [lng, lat] point, scaled for the current mapSize — same correction
+// useMarkersAPI.js's projectCoords applies (the map canvas itself is rendered at a different
+// resolution per mapSize; nothing to do with CSS transforms). mapProvider.mapToScreen is a
+// provider-agnostic method (implemented by every provider, including OpenLayers/Esri), so this
+// helper works unchanged once OpenLayers' getVisibleFeatures stops being a stub.
+const projectToScreen = (mapProvider, mapSize, coords) => {
+  const { x, y } = mapProvider.mapToScreen(coords)
+  return { x: x * scaleFactor[mapSize], y: y * scaleFactor[mapSize] }
+}
+
+// x/y are the marker's own screen position — computed fresh here rather than read off
+// marker.x/marker.y, which only reflect where the marker was when added/last updated, not the
+// current pan position. Used to position the corresponding accessible list item so touch/voice
+// AT overlays (e.g. macOS Voice Control's "Show Numbers") land on the actual feature instead of
+// stacking at the top-left of the viewport.
 const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
   const items = []
   for (const marker of markers.items) {
@@ -31,9 +42,7 @@ const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
     if (!isStandaloneLabel(marker) && el && isInViewport(el)) {
       const item = { id: marker.id, label: marker.label }
       if (marker.coords) {
-        const { x, y } = mapProvider.mapToScreen(marker.coords)
-        item.x = x * scaleFactor[mapSize]
-        item.y = y * scaleFactor[mapSize]
+        Object.assign(item, projectToScreen(mapProvider, mapSize, marker.coords))
       }
       items.push(item)
     }
@@ -41,7 +50,7 @@ const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
   return items
 }
 
-const toFeatureItem = (feature, layerConfigMap, seenIds) => {
+const toFeatureItem = (feature, layerConfigMap, seenIds, mapProvider, mapSize) => {
   const config = layerConfigMap[feature.layer?.id]
   if (!config?.labelProperty) {
     return null
@@ -53,17 +62,25 @@ const toFeatureItem = (feature, layerConfigMap, seenIds) => {
   }
   seenIds.add(stringId)
   const label = feature.properties?.[config.labelProperty] ?? stringId
-  return { id: stringId, label }
+  const item = { id: stringId, label }
+  // Bbox-centre of the feature's geometry (polygon or line) — see getGeometryCenter's own doc
+  // for why a bbox centre rather than a true centroid. null when the feature carries no usable
+  // geometry (e.g. OpenLayers' getVisibleFeatures, currently a stub returning [] — see PR notes).
+  const center = getGeometryCenter(feature)
+  if (center) {
+    Object.assign(item, projectToScreen(mapProvider, mapSize, center))
+  }
+  return item
 }
 
-const collectVisibleFeatures = (mapProvider, layers) => {
+const collectVisibleFeatures = (mapProvider, layers, mapSize) => {
   const items = []
   const seenIds = new Set()
   const layerIds = layers.map(layer => layer.layerId)
   const layerConfigMap = buildLayerConfigMap(layers)
   const features = mapProvider.getVisibleFeatures(layerIds)
   for (const feature of features) {
-    const item = toFeatureItem(feature, layerConfigMap, seenIds)
+    const item = toFeatureItem(feature, layerConfigMap, seenIds, mapProvider, mapSize)
     if (item) {
       items.push(item)
     }
@@ -95,7 +112,7 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
         items.push(...collectVisibleMarkers(markers, mapProvider, mapSize))
       }
       if (interactionModes?.includes('selectFeature') && layers.length > 0) {
-        items.push(...collectVisibleFeatures(mapProvider, layers))
+        items.push(...collectVisibleFeatures(mapProvider, layers, mapSize))
       }
       eventBus.emit(EVENTS.MAP_SET_FEATURES, { items, multiselectable: multiSelect })
     }

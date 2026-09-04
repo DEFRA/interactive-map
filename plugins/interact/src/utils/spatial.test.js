@@ -1,4 +1,4 @@
-import { toTurfGeometry, isContiguousWithAny, areAllContiguous } from './spatial.js'
+import { toTurfGeometry, isContiguousWithAny, areAllContiguous, getGeometryCenter } from './spatial.js'
 import { polygon, multiPolygon, lineString, multiLineString, point, multiPoint } from '@turf/helpers'
 
 describe('toTurfGeometry', () => {
@@ -95,5 +95,30 @@ describe('areAllContiguous', () => {
     // a line crossing a polygon's interior the same as a shared boundary.
     expect(isContiguousWithAny(lineThroughA, [A])).toBe(true)
     expect(areAllContiguous([A, lineThroughA])).toBe(false)
+  })
+})
+
+describe('getGeometryCenter', () => {
+  it('returns the bbox centre of a polygon', () => {
+    const feature = { geometry: { type: 'Polygon', coordinates: [[[0, 0], [4, 0], [4, 2], [0, 2], [0, 0]]] } }
+    expect(getGeometryCenter(feature)).toEqual([2, 1])
+  })
+
+  it('returns the bbox centre of a line', () => {
+    const feature = { geometry: { type: 'LineString', coordinates: [[0, 0], [4, 2]] } }
+    expect(getGeometryCenter(feature)).toEqual([2, 1])
+  })
+
+  it('accepts a raw geometry object, not just a Feature', () => {
+    const geom = { type: 'Polygon', coordinates: [[[0, 0], [2, 0], [2, 2], [0, 2], [0, 0]]] }
+    expect(getGeometryCenter(geom)).toEqual([1, 1])
+  })
+
+  it('returns null when geometry is missing', () => {
+    expect(getGeometryCenter({})).toBeNull()
+  })
+
+  it('returns null for an unsupported geometry type', () => {
+    expect(getGeometryCenter({ geometry: { type: 'Circle', coordinates: [] } })).toBeNull()
   })
 })

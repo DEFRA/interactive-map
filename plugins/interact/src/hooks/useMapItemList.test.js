@@ -317,6 +317,37 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
       items: [{ id: '1', label: 'High Street' }], multiselectable: false
     })
   })
+
+  it('includes x/y at the bbox centre of the feature geometry, scaled for mapSize', () => {
+    const features = [{
+      layer: { id: 'roads' },
+      properties: { road_id: '1', road_name: 'High Street' },
+      geometry: { type: 'Polygon', coordinates: [[[0, 0], [4, 0], [4, 2], [0, 2], [0, 0]]] }
+    }]
+    const mp = makeMapProvider(features)
+    mp.mapToScreen.mockReturnValue({ x: 100, y: 200 })
+
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: mp, mapSize: 'medium' })
+    act(() => eb.emit(MOVE_END, {}))
+
+    expect(mp.mapToScreen).toHaveBeenCalledWith([2, 1]) // bbox centre of the polygon above
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: '1', label: 'High Street', x: 150, y: 300 }], multiselectable: false // scaleFactor.medium = 1.5
+    })
+  })
+
+  it('omits x/y when the feature has no geometry, without calling mapToScreen', () => {
+    const features = [{ layer: { id: 'roads' }, properties: { road_id: '1', road_name: 'High Street' } }]
+    const mp = makeMapProvider(features)
+
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: mp })
+    act(() => eb.emit(MOVE_END, {}))
+
+    expect(mp.mapToScreen).not.toHaveBeenCalled()
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: '1', label: 'High Street' }], multiselectable: false
+    })
+  })
 })
 
 // ─── useMapItemList — selectFeature mode: guards ─────────────────────────

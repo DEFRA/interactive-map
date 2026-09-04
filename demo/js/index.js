@@ -54,23 +54,23 @@ const interactPlugin = createInteractPlugin({
     layerId: 'historic-monuments-medieval',
   }, {
     layerId: 'land-covers-110',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-130-131',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-332',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-379',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-other',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },
   // {

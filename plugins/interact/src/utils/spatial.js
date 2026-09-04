@@ -1,5 +1,6 @@
 import { polygon, multiPolygon, lineString, multiLineString, point, multiPoint } from '@turf/helpers'
 import booleanDisjoint from '@turf/boolean-disjoint'
+import bbox from '@turf/bbox'
 
 /**
  * Convert a GeoJSON Feature or geometry-like object into a Turf geometry.
@@ -39,6 +40,27 @@ function toTurfGeometry (featureOrGeom) {
  */
 function isContiguousWithAny (feature, features) {
   return features.some(f => !booleanDisjoint(toTurfGeometry(f), toTurfGeometry(feature)))
+}
+
+/**
+ * A representative [lng, lat] centre point for a feature's geometry — the centre of its bounding
+ * box. Used to position a polygon/line feature's entry in the accessible Features list (see
+ * useMapItemList.js) so coordinate-based AT overlays (e.g. macOS Voice Control's Show Numbers)
+ * land somewhere on the feature rather than off in a corner of the viewport. Deliberately a
+ * bbox centre, not a true centroid/centre-of-mass — works uniformly for polygons and lines with
+ * no extra dependency beyond what this file already uses, at the cost of being able to land
+ * outside a very concave shape (same trade-off a true centroid has anyway).
+ *
+ * @param {Object} featureOrGeom - Either a Feature with a `.geometry` property or a raw GeoJSON geometry object.
+ * @returns {[number, number]|null} [lng, lat], or null if the geometry is missing/unsupported.
+ */
+function getGeometryCenter (featureOrGeom) {
+  try {
+    const [minX, minY, maxX, maxY] = bbox(toTurfGeometry(featureOrGeom))
+    return [(minX + maxX) / 2, (minY + maxY) / 2]
+  } catch {
+    return null
+  }
 }
 
 const isPolygonal = (type) => type === 'Polygon' || type === 'MultiPolygon'
@@ -86,5 +108,6 @@ function areAllContiguous (features) {
 export {
   toTurfGeometry,
   isContiguousWithAny,
-  areAllContiguous
+  areAllContiguous,
+  getGeometryCenter
 }
