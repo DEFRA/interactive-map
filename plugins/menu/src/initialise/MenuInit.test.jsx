@@ -1,9 +1,14 @@
 import { render } from '@testing-library/react'
 import { MenuInit } from './MenuInit.jsx'
 import { createMenu } from './createMenu.js'
+import { updateUrl } from './updateUrl.js'
 
 jest.mock('./createMenu.js', () => ({
   createMenu: jest.fn()
+}))
+
+jest.mock('./updateUrl.js', () => ({
+  updateUrl: jest.fn()
 }))
 
 const mockRemove = jest.fn()
@@ -46,5 +51,25 @@ describe('MenuInit', () => {
     expect(createMenu).not.toHaveBeenCalled()
     rerender(<MenuInit mapState={{ isMapReady: true }} services={services} pluginState={pluginState} pluginConfig={pluginConfig} />)
     expect(createMenu).toHaveBeenCalledTimes(1)
+  })
+
+  it('emits menu:changed with the current menu state', () => {
+    const menuState = { datasets: 'floodZones' }
+    render(<MenuInit mapState={{ isMapReady: true }} services={services} pluginState={{ ...pluginState, menuState }} pluginConfig={pluginConfig} />)
+    expect(eventBus.emit).toHaveBeenCalledWith('menu:changed', menuState)
+  })
+
+  it('does not update the url before the url has been parsed', () => {
+    render(<MenuInit mapState={{ isMapReady: false }} services={services} pluginState={pluginState} pluginConfig={pluginConfig} />)
+    expect(updateUrl).not.toHaveBeenCalled()
+  })
+
+  it('updates the url when the menu state changes after the url has been parsed', () => {
+    const { rerender } = render(<MenuInit mapState={{ isMapReady: true }} services={services} pluginState={pluginState} pluginConfig={pluginConfig} />)
+    expect(updateUrl).not.toHaveBeenCalled()
+
+    const changedState = { ...pluginState, menuState: { datasets: 'coastalErosion' } }
+    rerender(<MenuInit mapState={{ isMapReady: true }} services={services} pluginState={changedState} pluginConfig={pluginConfig} />)
+    expect(updateUrl).toHaveBeenCalledWith(changedState)
   })
 })
