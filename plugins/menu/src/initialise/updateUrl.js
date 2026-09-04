@@ -1,4 +1,4 @@
-import { isVisibleWhen } from './registry/isVisibleWhen.js'
+import { isVisibleWhen } from '../registry/isVisibleWhen.js'
 
 const _setRadioParam = (item, menuState, searchParams) => {
   const { id: paramId } = item
