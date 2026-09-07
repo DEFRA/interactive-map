@@ -356,6 +356,112 @@ describe('useFeatureFocus — ArrowUp navigation', () => {
   })
 })
 
+// ─── useFeatureFocus — Alt+Arrow spatial navigation ──────────────────────────
+
+describe('useFeatureFocus — Alt+Arrow spatial navigation', () => {
+  const POSITIONED_ITEMS = [
+    { id: 'center', label: 'Center', x: 0, y: 0 },
+    { id: 'up', label: 'Up', x: 0, y: -10 },
+    { id: 'right', label: 'Right', x: 10, y: 0 }
+  ]
+
+  const setup = (items = POSITIONED_ITEMS) => {
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items }))
+    return { result, el, unmount }
+  }
+
+  const fireAltKey = (el, key, type = 'keydown') => {
+    let event
+    act(() => {
+      event = new KeyboardEvent(type, { key, altKey: true, bubbles: true, cancelable: true })
+      el.dispatchEvent(event)
+    })
+    return event
+  }
+
+  it('moves to the item spatially nearest in the pressed direction, not the next item in list order', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus()) // resolves to 'center', the first item
+    fireAltKey(el, 'ArrowRight')
+    expect(result.current.activeFeatureId).toBe('right')
+    unmount(); el.remove()
+  })
+
+  it('emits map:setactivefeature for the spatially-found item', () => {
+    const refs = makeRefs()
+    const el = refs.featuresRef.current
+    document.body.appendChild(el)
+    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: POSITIONED_ITEMS, eventBus: makeEventBus() }))
+    act(() => result.current.onFocus())
+    fireAltKey(el, 'ArrowUp')
+    expect(result.current.activeFeatureId).toBe('up')
+    unmount(); el.remove()
+  })
+
+  it('prevents the browser default (e.g. Alt+Arrow history navigation) on keydown', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    let event
+    act(() => {
+      event = new KeyboardEvent('keydown', { key: 'ArrowRight', altKey: true, bubbles: true, cancelable: true })
+    })
+    const preventSpy = jest.spyOn(event, 'preventDefault')
+    act(() => el.dispatchEvent(event))
+    expect(preventSpy).toHaveBeenCalled()
+    unmount(); el.remove()
+  })
+
+  it('stops the matching keyup from bubbling to the viewport label-navigation binding on a shared ancestor', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    let event
+    act(() => {
+      event = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, bubbles: true, cancelable: true })
+    })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).toHaveBeenCalled()
+    unmount(); el.remove()
+  })
+
+  it('leaves a plain (non-Alt) arrow keyup alone — sequential navigation has already handled it on keydown', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    let event
+    act(() => {
+      event = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: false, bubbles: true, cancelable: true })
+    })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).not.toHaveBeenCalled()
+    unmount(); el.remove()
+  })
+
+  it('leaves an Alt+<non-arrow> keyup alone — nothing else uses this modifier here', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    let event
+    act(() => {
+      event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, bubbles: true, cancelable: true })
+    })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).not.toHaveBeenCalled()
+    unmount(); el.remove()
+  })
+
+  it('is a no-op when no item lies in the pressed direction — stays on the current item', () => {
+    const { result, el, unmount } = setup([{ id: 'only', label: 'Only', x: 0, y: 0 }])
+    act(() => result.current.onFocus())
+    fireAltKey(el, 'ArrowRight')
+    expect(result.current.activeFeatureId).toBe('only')
+    unmount(); el.remove()
+  })
+})
+
 // ─── useFeatureFocus — Home/End navigation ───────────────────────────────────
 
 describe('useFeatureFocus — Home/End navigation', () => {

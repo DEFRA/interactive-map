@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react'
 import { EVENTS } from '../../config/events.js'
+import { findNearestItemInDirection } from '../../utils/findNearestItemInDirection.js'
+
+const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
 
 const getNavigatedId = (id, key, items) => {
   if (!items.length) {
@@ -99,8 +102,10 @@ function useItemsRevalidation ({ items, eventBus, isFocusedRef, featuresRef, isI
 }
 
 /**
- * Attaches a keydown listener to the listbox element for ARIA keyboard navigation:
- * - ArrowUp/ArrowDown — move the active item, moving real focus to it (roving tabindex)
+ * Attaches keydown/keyup listeners to the listbox element for ARIA keyboard navigation:
+ * - ArrowUp/ArrowDown — move the active item sequentially, moving real focus (roving tabindex)
+ * - Alt+Arrow (any of the four) — move the active item spatially, to whichever item is
+ *   nearest in the pressed direction on screen, same roving-tabindex move as above
  * - Home/End — jump the active item to the first/last option
  * - Enter/Space — confirm selection, emitting MAP_SELECT_FEATURE
  * - Escape — return focus to the map viewport
@@ -111,23 +116,42 @@ function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, act
     if (!listboxEl) {
       return undefined
     }
+    const moveTo = (newId) => {
+      lastActiveIdRef.current = newId
+      setActiveFeatureId(newId)
+      eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: newId })
+      focusOption(listboxEl, newId, isInternalFocusMoveRef)
+    }
+    const handleEscape = () => {
+      if (currentHintRef.current) {
+        hints.dismiss()
+      } else {
+        viewportRef.current?.focus()
+      }
+    }
+    // Same modifier as the map's own label navigation (see useKeyboardShortcuts.js), but the
+    // subject depends on what's focused: labels on the map when the viewport has focus, list
+    // items spatially when this listbox does. The matching keyup listener below stops this
+    // from also bubbling up to the viewport's label-navigation binding, which listens on a
+    // shared ancestor.
+    const handleSpatialMove = (event) => {
+      moveTo(findNearestItemInDirection(items, activeFeatureIdRef.current, event.key))
+    }
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
         event.preventDefault()
         event.stopPropagation()
-        if (currentHintRef.current) {
-          hints.dismiss()
-        } else {
-          viewportRef.current?.focus()
-        }
+        handleEscape()
+      } else if (event.altKey && ARROW_KEYS.has(event.key)) {
+        // preventDefault here (on keydown) suppresses the browser's own Alt+Arrow
+        // history-navigation default.
+        event.preventDefault()
+        event.stopPropagation()
+        handleSpatialMove(event)
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End') {
         event.preventDefault()
         event.stopPropagation()
-        const newId = getNavigatedId(activeFeatureIdRef.current, event.key, items)
-        lastActiveIdRef.current = newId
-        setActiveFeatureId(newId)
-        eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: newId })
-        focusOption(listboxEl, newId, isInternalFocusMoveRef)
+        moveTo(getNavigatedId(activeFeatureIdRef.current, event.key, items))
       } else if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault()
         event.stopPropagation()
@@ -136,8 +160,23 @@ function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, act
         // No action
       }
     }
+    // Alt+Arrow's keyup (not keydown) is what the map's label navigation listens for, on an
+    // ancestor shared with this listbox (see useKeyboardShortcuts.js's own comment on why:
+    // "fires from anywhere within the app, including the features listbox"). Stopping it here
+    // keeps that binding scoped to genuine viewport focus, without needing to change it or make
+    // it focus-aware itself. altKey may already be false by the time this fires if the user
+    // released Alt before the arrow key — a narrow, acceptable edge case.
+    const handleKeyUp = (event) => {
+      if (event.altKey && ARROW_KEYS.has(event.key)) {
+        event.stopPropagation()
+      }
+    }
     listboxEl.addEventListener('keydown', handleKeyDown)
-    return () => { listboxEl.removeEventListener('keydown', handleKeyDown) }
+    listboxEl.addEventListener('keyup', handleKeyUp)
+    return () => {
+      listboxEl.removeEventListener('keydown', handleKeyDown)
+      listboxEl.removeEventListener('keyup', handleKeyUp)
+    }
   }, [viewportRef, featuresRef, items, eventBus])
 }
 
