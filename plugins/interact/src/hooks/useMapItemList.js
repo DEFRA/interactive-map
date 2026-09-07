@@ -109,7 +109,7 @@ const collectVisibleFeatures = (mapProvider, layers, mapSize) => {
  * visible markers (by DOM visibility) and visible features (by viewport query), keeps the
  * result in itemsRef for useActiveItemHandler to resolve against later, and tells
  * spatialListRegistry its items have changed so the shared listbox stays in sync with what's
- * visible. Features.jsx/useFeatureItems.js only ever render id/label/x/y from each item — the
+ * visible. SpatialList.jsx/useSpatialListItems.js only ever render id/label/x/y from each item — the
  * rest (isMarker, geometry, properties, layer config) rides along unused there, but is what
  * lets useActiveItemHandler resolve "what is this" from the same object later, with nothing to
  * re-derive and no separate lean/rich shape to keep in sync.

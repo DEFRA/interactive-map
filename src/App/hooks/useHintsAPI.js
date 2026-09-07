@@ -32,9 +32,9 @@ export const useHintsAPI = () => {
   }, [eventBus, hints])
 
   // Escape dismisses the active hint when the keypress originates inside this
-  // map instance. The viewport and features listbox already dismiss hints on
+  // map instance. The viewport and spatial listbox already dismiss hints on
   // Escape within their own narrower focus scope (useKeyboardHint.js /
-  // useFeatureFocus.js) — this covers hints shown via the public showHint()
+  // useSpatialListFocus.js) — this covers hints shown via the public showHint()
   // API from anywhere else in the same map's UI (e.g. a plugin button).
   //
   // Listening on document (rather than the map's own container) and checking
