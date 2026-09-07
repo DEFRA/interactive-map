@@ -393,7 +393,7 @@ const datasetMainRivers = {
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Statutory_Main_River_Map/FeatureServer',
   showInKey: true,
   sourceLayer: 'Statutory_Main_River_Map',
-  visible: false,
+  visibleWhen: {menu: { mainrivers: [true] }},
   style: {
     renderer: {
       type: 'simple',
@@ -411,6 +411,7 @@ const datasetMainRivers = {
   }
 }
 
+
 const datasetWaterStorageAreas = {
   id: 'waterstorage',
   label: 'Water Storage',
@@ -419,7 +420,7 @@ const datasetWaterStorageAreas = {
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Storage_Areas_NON_PRODUCTION/FeatureServer',
   showInKey: true,
   sourceLayer: 'Flood_Storage_Areas',
-  visible: false,
+  visibleWhen: {menu: { waterstorage: [true] }},
   style: {
     renderer: {
       type: 'simple',
@@ -449,7 +450,7 @@ const datasetFloodDefences = {
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Defences_NON_PRODUCTION/FeatureServer',
   showInKey: true,
   sourceLayer: 'Defences',
-  visible: false,
+  visibleWhen: {menu: { flooddefence: [true] }},
   style: {
     renderer: {
       type: 'simple',
@@ -519,8 +520,6 @@ const datasets = [
   datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
 
-const getCheckboxOnChangeHandler = (datasetId) => (checked) => datasetsPlugin.setDatasetVisibility(checked, { datasetId })
-
 const menu = [
   {
     id: 'dataset',
@@ -587,12 +586,13 @@ const menu = [
     type: 'checkbox',
     visibleWhen: true,
     items: [
-      { id: 'waterstorage', label: 'Water storage', handleOnChange: getCheckboxOnChangeHandler('waterstorage') },
-      { id: 'flooddefence', label: 'Flood defence', handleOnChange: getCheckboxOnChangeHandler('flooddefence') },
-      { id: 'mainrivers', label: 'Main rivers', handleOnChange: getCheckboxOnChangeHandler('mainrivers') },
+      { id: 'waterstorage', label: 'Water storage' },
+      { id: 'flooddefence', label: 'Flood defence' },
+      { id: 'mainrivers', label: 'Main rivers', checked: true },
     ]
   }
 ]
+
 
 const datasetsPlugin = createDatasetsPlugin({
   globals: {
