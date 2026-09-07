@@ -1,14 +1,35 @@
-.im-c-cross-hair {
-  position: absolute;
-  top: 0;
-  left: 0;
-  pointer-events: none;
-  margin: -19px 0 0 -19px;
-}
+// The crosshair is wrapped in a real <button> (tabIndex="-1") so it's a genuine, accessibility-
+// focusable target for coordinate-based AT (e.g. macOS Voice Control's Show Numbers/Names) —
+// see CrossHair.jsx — without being a Tab stop.
+.im-c-cross-hair-button {
+  // Reset native chrome to zero: default padding/border/background otherwise shift and
+  // decorate the crosshair icon, since position/margin below assumes the content-box starts
+  // exactly at the border-box edge.
+  appearance: none;
+  border: 0;
+  background: none;
+  padding: 0;
+  font: inherit;
+  cursor: inherit;
 
-.im-c-cross-hair path {
-  stroke-width: 3;
-  stroke: var(--map-overlay-halo-color);
-  fill: var(--map-overlay-foreground-color);
-  paint-order: stroke fill;
+  // Explicit size, matching the SVG's own width/height, plus the negative margin that shifts
+  // the box by half its own size — so the button's *own* geometry, not just its child SVG's, is
+  // centred on wherever CrossHair.jsx's inline top/left positions it. This is what a coordinate-
+  // based AT overlay (e.g. Voice Control) reads to place its badge — without it, the button's
+  // content-box collapses to 0×0 (its only child is position:absolute, contributing nothing to
+  // normal-flow sizing), so the badge would land at the anchor point's corner, not on the icon.
+  width: 38px;
+  height: 38px;
+  margin: -19px 0 0 -19px;
+
+  svg {
+    display: block;
+  }
+
+  path {
+    stroke-width: 3;
+    stroke: var(--map-overlay-halo-color);
+    fill: var(--map-overlay-foreground-color);
+    paint-order: stroke fill;
+  }
 }

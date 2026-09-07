@@ -11,7 +11,7 @@ import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
-import { queryFeatures } from './utils/queryFeatures.js'
+import { queryFeatures, getVisibleFeatures } from './utils/queryFeatures.js'
 import { collectTileFragments } from './utils/vtTileFragments.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
 import { applyOpenLayersFixes } from './utils/openLayersFixes.js'
@@ -223,8 +223,8 @@ export default class OpenLayersProvider extends MapProvider {
     this._onHoverMove = setupHoverCursor(this.map, layerIds, this._onHoverMove)
   }
 
-  getVisibleFeatures (_layerIds) {
-    return []
+  getVisibleFeatures (layerIds) {
+    return getVisibleFeatures(this.map, layerIds)
   }
 
   updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {

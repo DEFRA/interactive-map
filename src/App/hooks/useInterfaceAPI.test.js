@@ -92,6 +92,15 @@ describe('useInterfaceAPI', () => {
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'OPEN_PANEL', payload: { panelId: 'panel1', focusOnOpen: false } })
   })
 
+  it('dispatches OPEN_PANEL with props.triggeringElement when one is given, so Panel can return focus to it on close', () => {
+    const triggeringElement = document.createElement('button')
+    renderHook(() => useInterfaceAPI())
+    act(() => mockEventBus.emit('app:showpanel', { id: 'panel1', triggeringElement }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'OPEN_PANEL', payload: { panelId: 'panel1', focusOnOpen: true, props: { triggeringElement } }
+    })
+  })
+
   it('dispatches CLOSE_PANEL on app:hidepanel', () => {
     renderHook(() => useInterfaceAPI())
     act(() => mockEventBus.emit('app:hidepanel', 'panel1'))

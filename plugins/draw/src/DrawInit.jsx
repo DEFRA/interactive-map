@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
@@ -7,6 +7,16 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   const { eventBus, hints } = services
   const { crossHair } = mapState
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
+
+  // Mirrored directly in the render body (not a separate effect — matches useVisibleGeometry.js's
+  // own latestRef convention) so the crosshair effect's cleanup below can read the CURRENT
+  // shouldShowCrosshair decision rather than the stale one captured when that effect last ran.
+  // Without this, closing MoveControls (or leaving touch/keyboard) would fail to hide it: React
+  // runs the old effect's cleanup with its original closure, which still sees the OLD
+  // expandedButtons/interfaceType that made it visible in the first place.
+  const shouldShowCrosshairRef = useRef(false)
+  shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
+    (isTouchOrKeyboard || appState.expandedButtons?.has('moveControls'))
 
   useEffect(() => {
     const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
@@ -49,20 +59,20 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   }, [pluginState.mode, eventBus])
 
   useEffect(() => {
-    if (['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) && isTouchOrKeyboard) {
-      const wasAlreadyVisible = crossHair.isVisible
-      crossHair.fixAtCenter()
-      return () => {
-        // Only hide crosshair if it wasn't visible before drawing AND we're not currently
-        // in keyboard/touch mode (user might have switched input devices during drawing).
-        // This ensures crosshair stays visible if user switched to keyboard mid-drawing.
-        if (!wasAlreadyVisible && !['touch', 'keyboard'].includes(appState.interfaceType)) {
-          crossHair.hide()
-        }
+    if (!shouldShowCrosshairRef.current) {
+      return undefined
+    }
+    const wasAlreadyVisible = crossHair.isVisible
+    crossHair.fixAtCenter()
+    return () => {
+      // Only hide the crosshair if it wasn't visible before drawing AND it's not still needed
+      // now (re-checked live via the ref, not this closure's original values — the user might
+      // have switched input devices, or opened/closed MoveControls, since this effect last ran).
+      if (!wasAlreadyVisible && !shouldShowCrosshairRef.current) {
+        crossHair.hide()
       }
     }
-    return undefined
-  }, [pluginState.mode, appState.interfaceType])
+  }, [pluginState.mode, appState.interfaceType, appState.expandedButtons])
 
   // Keep the active draw/edit session in sync with the global interface type so
   // the touch offset target shows/hides, and the rubber band keeps following the

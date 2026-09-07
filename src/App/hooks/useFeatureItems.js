@@ -9,7 +9,7 @@ const SET_FEATURES_SUPPRESSED = 'map:setfeaturessuppressed'
  * actually visible — which is what drives <Features>'s own tabIndex/aria-hidden.
  *
  * @param {object} eventBus
- * @returns {{ items: Array<{ id: string, label: string }>, multiselectable: boolean }}
+ * @returns {{ items: Array<{ id: string, label: string, x?: number, y?: number }>, multiselectable: boolean }}
  */
 export function useFeatureItems (eventBus) {
   const [items, setItems] = useState([])

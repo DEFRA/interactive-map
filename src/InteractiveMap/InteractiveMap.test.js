@@ -580,6 +580,39 @@ describe('InteractiveMap — Public API Methods', () => {
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:togglebuttonstate', { id: 'btn-1', prop: 'disabled', value: true })
   })
 
+  describe('showPanel — triggeringElement', () => {
+    afterEach(() => { document.body.innerHTML = '' })
+
+    it('passes an explicit triggeringElement through unchanged', () => {
+      const el = document.createElement('button')
+      map.showPanel('panel1', { triggeringElement: el })
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: el })
+    })
+
+    it('auto-captures the currently focused element when none is given', () => {
+      const el = document.createElement('button')
+      document.body.appendChild(el)
+      el.focus()
+      map.showPanel('panel1')
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: el })
+    })
+
+    it('does not fall back to document.body as a triggeringElement', () => {
+      document.body.focus?.() // no-op in jsdom, but document.activeElement defaults to body regardless
+      map.showPanel('panel1')
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: undefined })
+    })
+
+    it('an explicit triggeringElement takes priority over the currently focused element', () => {
+      const focused = document.createElement('button')
+      document.body.appendChild(focused)
+      focused.focus()
+      const explicit = document.createElement('button')
+      map.showPanel('panel1', { triggeringElement: explicit })
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: explicit })
+    })
+  })
+
   it('setContinueEnabled enables and disables the journey continue button', () => {
     map.setContinueEnabled(true)
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:togglebuttonstate', { id: 'journeyContinue', prop: 'disabled', value: false })

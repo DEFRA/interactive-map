@@ -42,15 +42,16 @@ const makeMarkers = (overrides = []) => {
 }
 
 const makeMapProvider = (features = []) => ({
-  getVisibleFeatures: jest.fn(() => features)
+  getVisibleFeatures: jest.fn(() => features),
+  mapToScreen: jest.fn(() => ({ x: 10, y: 20 }))
 })
 
-const setup = ({ interactionModes = [], markers, layers = [], mapProvider, eventBus, dispatch, multiSelect = false } = {}) => {
+const setup = ({ interactionModes = [], markers, layers = [], mapProvider, eventBus, dispatch, multiSelect = false, mapSize = 'small' } = {}) => {
   const eb = eventBus ?? makeEventBus()
   const mp = mapProvider ?? makeMapProvider()
   const dp = dispatch ?? jest.fn()
   const { result, unmount } = renderHook(() => useMapItemList({
-    mapState: { markers: markers ?? makeMarkers() },
+    mapState: { markers: markers ?? makeMarkers(), mapSize },
     pluginState: { interactionModes, layers, dispatch: dp, multiSelect },
     services: { eventBus: eb },
     mapProvider: mp
@@ -195,6 +196,39 @@ describe('useMapItemList — selectMarker mode', () => {
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
     container.remove()
   })
+
+  it('includes x/y screen position, scaled for mapSize, when the marker has coords', () => {
+    const { el, container } = makeMarkerEl({ inViewport: true })
+    const markers = makeMarkers([{ id: 'm1', label: MARKER_LABEL, symbol: 'pin', isVisible: true, coords: [-2.4, 54.5] }])
+    markers.markerRefs.set('m1', el)
+    const mp = makeMapProvider()
+    mp.mapToScreen.mockReturnValue({ x: 100, y: 200 })
+
+    const { eb } = setup({ interactionModes: ['selectMarker'], markers, mapProvider: mp, mapSize: 'medium' })
+    act(() => eb.emit(MOVE_END, {}))
+
+    expect(mp.mapToScreen).toHaveBeenCalledWith([-2.4, 54.5])
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: 'm1', label: MARKER_LABEL, x: 150, y: 300 }], multiselectable: false // scaleFactor.medium = 1.5
+    })
+    container.remove()
+  })
+
+  it('omits x/y when the marker has no coords, without calling mapToScreen', () => {
+    const { el, container } = makeMarkerEl({ inViewport: true })
+    const markers = makeMarkers([{ id: 'm1', label: MARKER_LABEL, symbol: 'pin', isVisible: true }])
+    markers.markerRefs.set('m1', el)
+    const mp = makeMapProvider()
+
+    const { eb } = setup({ interactionModes: ['selectMarker'], markers, mapProvider: mp })
+    act(() => eb.emit(MOVE_END, {}))
+
+    expect(mp.mapToScreen).not.toHaveBeenCalled()
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: 'm1', label: MARKER_LABEL }], multiselectable: false
+    })
+    container.remove()
+  })
 })
 
 // ─── useMapItemList — selectFeature mode: label resolution ───────────────
@@ -279,6 +313,37 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
       mapProvider: makeMapProvider(features)
     })
     act(() => eb.emit(MOVE_END, {}))
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: '1', label: 'High Street' }], multiselectable: false
+    })
+  })
+
+  it('includes x/y at the bbox centre of the feature geometry, scaled for mapSize', () => {
+    const features = [{
+      layer: { id: 'roads' },
+      properties: { road_id: '1', road_name: 'High Street' },
+      geometry: { type: 'Polygon', coordinates: [[[0, 0], [4, 0], [4, 2], [0, 2], [0, 0]]] }
+    }]
+    const mp = makeMapProvider(features)
+    mp.mapToScreen.mockReturnValue({ x: 100, y: 200 })
+
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: mp, mapSize: 'medium' })
+    act(() => eb.emit(MOVE_END, {}))
+
+    expect(mp.mapToScreen).toHaveBeenCalledWith([2, 1]) // bbox centre of the polygon above
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
+      items: [{ id: '1', label: 'High Street', x: 150, y: 300 }], multiselectable: false // scaleFactor.medium = 1.5
+    })
+  })
+
+  it('omits x/y when the feature has no geometry, without calling mapToScreen', () => {
+    const features = [{ layer: { id: 'roads' }, properties: { road_id: '1', road_name: 'High Street' } }]
+    const mp = makeMapProvider(features)
+
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: mp })
+    act(() => eb.emit(MOVE_END, {}))
+
+    expect(mp.mapToScreen).not.toHaveBeenCalled()
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
       items: [{ id: '1', label: 'High Street' }], multiselectable: false
     })

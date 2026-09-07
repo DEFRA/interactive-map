@@ -120,7 +120,15 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
   const panelRef = rootRef || internalPanelRef
 
   const handleClose = () => {
-    requestAnimationFrame(() => { (props?.triggeringElement || layoutRefs.viewportRef.current).focus?.({ preventScroll: interfaceType !== 'keyboard' }) })
+    requestAnimationFrame(() => {
+      // Re-checked here, not at handleClose-call time — the triggering element (a button, a
+      // Features-list item, ...) may have been removed from the DOM while the panel was open
+      // (e.g. the map panned and the feature it came from dropped out of the current list).
+      // document.contains() on a detached node is false, not a throw, so this is a plain check.
+      const triggeringElement = props?.triggeringElement
+      const focusTarget = triggeringElement && document.contains(triggeringElement) ? triggeringElement : layoutRefs.viewportRef.current
+      focusTarget?.focus?.({ preventScroll: interfaceType !== 'keyboard' })
+    })
     dispatch({ type: 'CLOSE_PANEL', payload: panelId })
   }
 

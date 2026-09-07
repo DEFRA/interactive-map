@@ -30,6 +30,24 @@ describe('setup and crosshair', () => {
     expect(state.line).toBeDefined()
     expect(state.featureId).toBe('shape-1')
   })
+
+  test('crossHair.activate() delegates to the mode\'s own _placeAtCrossHair — the crosshair button\'s own onClick (CrossHair.jsx) does exactly what Enter/the touch add-vertex button already do', () => {
+    const crossHair = { show: jest.fn(), hide: jest.fn() }
+    const { ctx, state } = setup(DrawPolygonMode, { interfaceType: 'keyboard', crossHair })
+    ctx._placeAtCrossHair = jest.fn()
+    state.crossHair.activate()
+    expect(ctx._placeAtCrossHair).toHaveBeenCalledWith(state)
+  })
+
+  test('crossHair.activate() is a safe no-op for a mode that defines no _placeAtCrossHair', () => {
+    const crossHair = { show: jest.fn(), hide: jest.fn() }
+    const { state } = setup(DrawPolygonMode, { interfaceType: 'keyboard', crossHair })
+    expect(() => state.crossHair.activate()).not.toThrow()
+  })
+
+  test('no crossHair provided: nothing to assign activate() on', () => {
+    expect(() => setup(DrawPolygonMode, { interfaceType: 'keyboard' })).not.toThrow()
+  })
 })
 
 describe('onStop', () => {

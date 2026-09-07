@@ -87,7 +87,7 @@ export const Viewport = () => {
       >
         <div className='im-c-viewport__map-container' ref={mapContainerRef} aria-hidden='true' />
         <MapStatus />
-        <div className='im-c-viewport__safezone' style={safeZoneInset} ref={layoutRefs.safeZoneRef} aria-hidden='true'>
+        <div className='im-c-viewport__safezone' style={safeZoneInset} ref={layoutRefs.safeZoneRef}>
           <CrossHair />
         </div>
         <div className='im-c-viewport__markers' aria-hidden='true'>

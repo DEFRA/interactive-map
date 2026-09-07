@@ -31,6 +31,15 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
       this._hideCrossHair(state)
     }
 
+    // A single, shared "commit here" entry point for the crosshair button's own onClick
+    // (CrossHair.jsx) — the same action Enter/the touch add-vertex button already trigger via
+    // _placeAtCrossHair, so a click (real, touch, or Voice Control's "Click Target") does
+    // exactly what those already do rather than needing its own separate implementation.
+    // Optional chaining: not every mode built on this lifecycle defines _placeAtCrossHair.
+    if (state.crossHair) {
+      state.crossHair.activate = () => this._placeAtCrossHair?.(state)
+    }
+
     // Bind all handlers once
     const bind = (name, fn) => (this[name] = fn.bind(this, state))
     const handlers = {
@@ -70,6 +79,12 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
   onStop (state) {
     ParentMode.onStop.call(this, state)
     this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
+    // Don't leave a stale closure over this mode's state on the shared crossHair object once
+    // it's gone — the next owner (e.g. interact re-enabling) assigns its own before this one
+    // could ever be invoked again, but this avoids relying on that ordering.
+    if (state.crossHair?.activate) {
+      state.crossHair.activate = null
+    }
     // A touch/keyboard session leaving draw mode is about to land in interact mode, which
     // needs the same crosshair to select the just-placed feature — only a mouse session (which
     // selects by direct click) has no further use for it. onCreate's mode change to 'disabled'

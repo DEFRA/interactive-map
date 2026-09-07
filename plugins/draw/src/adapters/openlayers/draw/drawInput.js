@@ -130,6 +130,14 @@ export const createDrawInput = ({ drawInteraction, options }) => {
   // Sync on creation too (mirrors MapLibre's own onSetup), so the crosshair reflects the mode's starting interface type immediately.
   applyCrossHairVisibility(crossHair, interfaceType)
 
+  // Single shared "commit here" entry point for the crosshair button's own onClick
+  // (CrossHair.jsx) — the same action Enter/the touch add-vertex button already trigger via
+  // placeVertex, so a click (real, touch, or Voice Control's "Click Target") places the
+  // next vertex exactly as those already do.
+  if (crossHair) {
+    crossHair.activate = placement.placeVertex
+  }
+
   // change:center fires once when a keyboard pan animation starts; postrender tracks each frame.
   const onMapRender = () => {
     if (interfaceType !== 'mouse' && olView?.getAnimating()) {
@@ -152,6 +160,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
       }
     },
     destroy () {
+      if (crossHair?.activate === placement.placeVertex) { crossHair.activate = null }
       events.destroy()
       map?.un('postrender', onMapRender)
     }

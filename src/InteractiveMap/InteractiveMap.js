@@ -461,12 +461,23 @@ export default class InteractiveMap {
    * Focus is moved to the panel by default. Set `focus: false` in options to
    * suppress this — useful when showing a panel and you want focus to remain on the button.
    *
+   * When the panel is later closed, focus returns to `triggeringElement` if one is given or
+   * can be inferred, falling back to the map viewport otherwise. If `triggeringElement` isn't
+   * passed explicitly, whatever currently has real DOM focus is captured automatically (e.g. a
+   * selected item in the map features list) — this only needs to be passed explicitly when the
+   * panel is opened from something that doesn't hold focus at the time (e.g a timer, or a
+   * genuine mouse click, which doesn't reliably focus its target in every browser).
+   *
    * @param {string} id - Panel identifier to show.
    * @param {object} [options]
    * @param {boolean} [options.focus=true] - Whether to move focus to the panel.
+   * @param {HTMLElement} [options.triggeringElement] - Element to return focus to on close.
+   *   Defaults to the currently focused element, if any.
    */
-  showPanel (id, { focus = true } = {}) {
-    this.eventBus.emit(events.APP_SHOW_PANEL, { id, focus })
+  showPanel (id, { focus = true, triggeringElement } = {}) {
+    const resolvedTriggeringElement = triggeringElement ??
+      (document.activeElement && document.activeElement !== document.body ? document.activeElement : undefined)
+    this.eventBus.emit(events.APP_SHOW_PANEL, { id, focus, triggeringElement: resolvedTriggeringElement })
   }
 
   /**

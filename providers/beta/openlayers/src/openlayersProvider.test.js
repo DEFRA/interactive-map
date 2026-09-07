@@ -26,13 +26,15 @@ const mockMapGetSize = jest.fn(() => [800, 600])
 const mockMapSetTarget = jest.fn()
 const mockMapGetPixel = jest.fn(() => [100, 200])
 const mockMapGetCoord = jest.fn(() => [400000, 300000])
+const mockMapGetLayers = jest.fn(() => ({ forEach: jest.fn() }))
 const mockMapInstance = {
   once: mockMapOnce,
   getSize: mockMapGetSize,
   setTarget: mockMapSetTarget,
   getPixelFromCoordinate: mockMapGetPixel,
   getCoordinateFromPixel: mockMapGetCoord,
-  getView: jest.fn(() => mockViewInstance)
+  getView: jest.fn(() => mockViewInstance),
+  getLayers: mockMapGetLayers
 }
 
 const mockSource = {}
@@ -329,8 +331,9 @@ describe('OpenLayersProvider', () => {
       expect(provider.getBounds()).toEqual([1.13, 2.46, 3.99, 4])
     })
 
-    it('getVisibleFeatures returns empty array', () => {
-      expect(provider.getVisibleFeatures()).toEqual([])
+    it('getVisibleFeatures delegates to the map (no layers registered here — see queryFeatures.test.js)', () => {
+      expect(provider.getVisibleFeatures(['draw'])).toEqual([])
+      expect(mockMapGetLayers).toHaveBeenCalled()
     })
 
     it('getResolution delegates to view.getResolution', () => {

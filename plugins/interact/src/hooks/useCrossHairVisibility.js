@@ -17,16 +17,21 @@ export function useCrossHairVisibility ({ crossHair, enabled, selectMarkerOnly, 
     const type = interfaceTypeRef.current
     const keyboardCanOperateMap = type === 'keyboard' && mapKeyboardScopedRef.current
     const touchCanOperateMap = type === 'touch' && !selectMarkerOnlyRef.current && !listboxFocusRef.current
-    if (enabledRef.current && (keyboardCanOperateMap || touchCanOperateMap)) {
+    // MoveControls being open is an explicit "I can't drag/pinch this map" signal from the
+    // user — same audience this crosshair already exists for — so it counts as its own reason
+    // to show it, independent of the currently-inferred interface type (which, for a Voice
+    // Control user, will never register as anything but the default 'mouse').
+    const moveControlsOpen = appState.expandedButtons?.has('moveControls')
+    if (enabledRef.current && (keyboardCanOperateMap || touchCanOperateMap || moveControlsOpen)) {
       crossHairRef.current.fixAtCenter()
     } else {
       crossHairRef.current.hide()
     }
-  }, [])
+  }, [appState.expandedButtons])
 
   useEffect(() => {
     updateCrossHair()
-  }, [enabled, selectMarkerOnly, appState.interfaceType, updateCrossHair])
+  }, [enabled, selectMarkerOnly, appState.interfaceType, appState.expandedButtons, updateCrossHair])
 
   useEffect(() => {
     const container = appState.layoutRefs?.appContainerRef?.current
