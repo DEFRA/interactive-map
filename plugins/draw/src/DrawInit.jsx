@@ -52,9 +52,9 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
 
   // Suppresses the accessible features list for the whole time a draw/edit session holds exclusive control of map interaction.
   useEffect(() => {
-    eventBus.emit(EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: pluginState.mode !== null })
+    eventBus.emit(EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: pluginState.mode !== null })
     return () => {
-      eventBus.emit(EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false })
+      eventBus.emit(EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false })
     }
   }, [pluginState.mode, eventBus])
 

@@ -33,7 +33,7 @@ export const InteractInit = ({
 
   const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
 
-  useMapItemList({ mapState, pluginState, services, mapProvider })
+  useMapItemList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry })
 
   // Core interaction logic (click > select/marker)
   const { handleInteraction } = useInteractionHandlers({

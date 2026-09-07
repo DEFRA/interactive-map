@@ -1,6 +1,6 @@
 import React, { useRef, useEffect } from 'react'
-import { useFeatureFocus } from '../../hooks/useFeatureFocus.js'
-import { useFeatureItems } from '../../hooks/useFeatureItems.js'
+import { useSpatialListFocus } from '../../hooks/useSpatialListFocus.js'
+import { useSpatialListItems } from '../../hooks/useSpatialListItems.js'
 import { EVENTS as events } from '../../../config/events.js'
 import { useConfig } from '../../store/configContext.js'
 import { useApp } from '../../store/appContext.js'
@@ -12,7 +12,7 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts.js'
 import { useMapEvents } from '../../hooks/useMapEvents.js'
 import { MapStatus } from './MapStatus.jsx'
 import { CrossHair } from '../CrossHair/CrossHair'
-import { Features } from './Features'
+import { SpatialList } from './SpatialList'
 import { Markers } from '../Markers/Markers'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
@@ -24,10 +24,10 @@ export const Viewport = () => {
   const { eventBus, hints } = useService()
 
   const mapContainerRef = useRef(null)
-  const featuresRef = useRef(null)
+  const spatialListRef = useRef(null)
 
-  const { items: featureItems, multiselectable } = useFeatureItems(eventBus)
-  const { activeFeatureId, tabbableId, selectedIds, onFocus: handleFeaturesFocus, onBlur: handleFeaturesBlur, selectItem } = useFeatureFocus({ viewportRef: layoutRefs.viewportRef, featuresRef, items: featureItems, eventBus, hints })
+  const { items: spatialListItems, multiselectable, label: spatialListLabel } = useSpatialListItems(eventBus)
+  const { activeItemId, tabbableId, selectedIds, onFocus: handleSpatialListFocus, onBlur: handleSpatialListBlur, selectItem } = useSpatialListFocus({ viewportRef: layoutRefs.viewportRef, spatialListRef, items: spatialListItems, eventBus, hints })
 
   useEffect(() => {
     const handler = () => dispatch({ type: 'SET_LISTBOX_ACTIVE' })
@@ -35,8 +35,8 @@ export const Viewport = () => {
     return () => eventBus.off('interact:listboxcapable', handler)
   }, [eventBus])
 
-  const onFeaturesFocus = () => { handleFeaturesFocus(); hints.show(keyboardHintText, { duration: 0 }) }
-  const onFeaturesBlur = () => { handleFeaturesBlur(); hints.dismiss() }
+  const onSpatialListFocus = () => { handleSpatialListFocus(); hints.show(keyboardHintText, { duration: 0 }) }
+  const onSpatialListBlur = () => { handleSpatialListBlur(); hints.dismiss() }
 
   useKeyboardShortcuts(layoutRefs.viewportRef)
 
@@ -94,7 +94,7 @@ export const Viewport = () => {
           <Markers />
         </div>
       </div>
-      <Features ref={featuresRef} activeFeatureId={activeFeatureId} tabbableId={tabbableId} selectedIds={selectedIds} multiselectable={multiselectable} items={featureItems} onFocus={onFeaturesFocus} onBlur={onFeaturesBlur} onSelectItem={selectItem} />
+      <SpatialList ref={spatialListRef} activeItemId={activeItemId} tabbableId={tabbableId} selectedIds={selectedIds} multiselectable={multiselectable} items={spatialListItems} label={spatialListLabel} onFocus={onSpatialListFocus} onBlur={onSpatialListBlur} onSelectItem={selectItem} />
     </>
   )
 }

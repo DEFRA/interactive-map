@@ -1,13 +1,14 @@
 import { renderHook, act } from '@testing-library/react'
 import { useMapItemList } from './useMapItemList.js'
+import { createSpatialListRegistry } from '../../../../src/App/registry/spatialListRegistry.js'
 
 const MARKER_LABEL = 'Marker One'
 
 const MOVE_END = 'map:moveend'
 const DATA_CHANGE = 'map:datachange'
-const SET_FEATURES = 'map:setfeatures'
-const SET_ACTIVE = 'map:setactivefeature'
-const CONFIRM = 'map:selectfeature'
+const SET_FEATURES = 'map:setspatiallist'
+const SET_ACTIVE = 'map:setactiveitem'
+const CONFIRM = 'map:selectitem'
 
 // Items now carry more than id/label/x/y (isMarker, and for features: featureId/layerId/
 // idProperty/geometry/properties) — see useMapItemList.js's own comment on why. These two
@@ -57,13 +58,20 @@ const setup = ({ interactionModes = [], markers, layers = [], mapProvider, event
   const eb = eventBus ?? makeEventBus()
   const mp = mapProvider ?? makeMapProvider()
   const dp = dispatch ?? jest.fn()
+  // A real registry, not a mock — with only interact registered (additive, the default) it
+  // behaves exactly like the old direct-emit code did (same items, same multiselectable), so
+  // every existing eb.emit(SET_FEATURES, ...) assertion below still holds unchanged. The
+  // registry's own aggregation/exclusive-claim logic is covered separately, in
+  // spatialListRegistry.test.js.
+  const spatialListRegistry = createSpatialListRegistry({ eventBus: eb })
   const { result, unmount } = renderHook(() => useMapItemList({
     mapState: { markers: markers ?? makeMarkers(), mapSize },
     pluginState: { interactionModes, layers, dispatch: dp, multiSelect },
     services: { eventBus: eb },
-    mapProvider: mp
+    mapProvider: mp,
+    spatialListRegistry
   }))
-  return { eb, mp, dp, result, unmount }
+  return { eb, mp, dp, result, unmount, spatialListRegistry }
 }
 
 // A marker "matching" an id now requires it to actually have made it into the built item list
@@ -82,6 +90,36 @@ describe('useMapItemList — lifecycle', () => {
   it('subscribes to map:moveend on mount', () => {
     const { eb } = setup()
     expect(eb.on).toHaveBeenCalledWith(MOVE_END, expect.any(Function))
+  })
+
+  it('registers an "interact" item provider with spatialListRegistry on mount', () => {
+    const eb = makeEventBus()
+    const spatialListRegistry = createSpatialListRegistry({ eventBus: eb })
+    const registerSpy = jest.spyOn(spatialListRegistry, 'registerItemProvider')
+    const { unmount } = renderHook(() => useMapItemList({
+      mapState: { markers: makeMarkers(), mapSize: 'small' },
+      pluginState: { interactionModes: [], layers: [], dispatch: jest.fn(), multiSelect: false },
+      services: { eventBus: eb },
+      mapProvider: makeMapProvider(),
+      spatialListRegistry
+    }))
+    expect(registerSpy).toHaveBeenCalledWith('interact', { getItems: expect.any(Function) })
+    unmount()
+  })
+
+  it('unregisters the "interact" item provider on unmount', () => {
+    const { spatialListRegistry, unmount } = setup()
+    const unregisterSpy = jest.spyOn(spatialListRegistry, 'unregisterItemProvider')
+    unmount()
+    expect(unregisterSpy).toHaveBeenCalledWith('interact')
+  })
+
+  it('does not re-register the provider just because the map moves — it registers once for the hook\'s lifetime', () => {
+    const { eb, spatialListRegistry } = setup({ interactionModes: ['selectMarker'] })
+    const registerSpy = jest.spyOn(spatialListRegistry, 'registerItemProvider')
+    act(() => eb.emit(MOVE_END, {}))
+    act(() => eb.emit(DATA_CHANGE, {}))
+    expect(registerSpy).not.toHaveBeenCalled()
   })
 
   it('subscribes to map:datachange on mount', () => {
@@ -115,14 +153,14 @@ describe('useMapItemList — initial population', () => {
     const { eb } = setup({ interactionModes: ['selectMarker'], markers })
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false, label: 'Map features'
     })
     container.remove()
   })
 
   it('emits empty items immediately when no markers are in viewport', () => {
     const { eb } = setup({ interactionModes: ['selectMarker'] })
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
   })
 })
 
@@ -140,7 +178,7 @@ describe('useMapItemList — datachange trigger', () => {
     act(() => eb.emit(DATA_CHANGE, {}))
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false, label: 'Map features'
     })
     container.remove()
   })
@@ -160,7 +198,7 @@ describe('useMapItemList — selectMarker mode', () => {
     act(() => eb.emit(MOVE_END, {}))
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false, label: 'Map features'
     })
     container.remove()
   })
@@ -174,7 +212,7 @@ describe('useMapItemList — selectMarker mode', () => {
     const { eb } = setup({ interactionModes: ['selectMarker'], markers })
     act(() => eb.emit(MOVE_END, {}))
 
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
     el.remove()
   })
 
@@ -186,7 +224,7 @@ describe('useMapItemList — selectMarker mode', () => {
     const { eb } = setup({ interactionModes: ['selectMarker'], markers })
     act(() => eb.emit(MOVE_END, {}))
 
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
     container.remove()
   })
 
@@ -198,7 +236,7 @@ describe('useMapItemList — selectMarker mode', () => {
     const { eb } = setup({ interactionModes: ['selectMarker'], markers })
     act(() => eb.emit(MOVE_END, {}))
 
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
     container.remove()
   })
 
@@ -210,7 +248,7 @@ describe('useMapItemList — selectMarker mode', () => {
     const { eb } = setup({ interactionModes: ['selectMarker'], markers })
     act(() => eb.emit(MOVE_END, {}))
 
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
     container.remove()
   })
 
@@ -226,7 +264,7 @@ describe('useMapItemList — selectMarker mode', () => {
 
     expect(mp.mapToScreen).toHaveBeenCalledWith([-2.4, 54.5])
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [markerItem({ id: 'm1', label: MARKER_LABEL, x: 150, y: 300 })], multiselectable: false // scaleFactor.medium = 1.5
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL, x: 150, y: 300 })], multiselectable: false, label: 'Map features' // scaleFactor.medium = 1.5
     })
     container.remove()
   })
@@ -242,7 +280,7 @@ describe('useMapItemList — selectMarker mode', () => {
 
     expect(mp.mapToScreen).not.toHaveBeenCalled()
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false, label: 'Map features'
     })
     container.remove()
   })
@@ -268,7 +306,8 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     expect(mp.getVisibleFeatures).toHaveBeenCalledWith(['roads'])
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
       items: [featureItem({ id: '1', label: 'High Street', featureId: '1', layerId: 'roads', idProperty: 'road_id' })],
-      multiselectable: false
+      multiselectable: false,
+      label: 'Map features'
     })
   })
 
@@ -277,7 +316,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '2', label: '2' })], multiselectable: false
+      items: [featureItem({ id: '2', label: '2' })], multiselectable: false, label: 'Map features'
     })
   })
 
@@ -290,7 +329,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [], multiselectable: false
+      items: [], multiselectable: false, label: 'Map features'
     })
   })
 
@@ -299,7 +338,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '42', label: 'Oak Ave' })], multiselectable: false
+      items: [featureItem({ id: '42', label: 'Oak Ave' })], multiselectable: false, label: 'Map features'
     })
   })
 
@@ -307,7 +346,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     const features = [{ layer: { id: 'roads' }, properties: { road_name: 'Lost Lane' } }]
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
   })
 
   it('falls back to stringId label when feature has no properties object', () => {
@@ -316,7 +355,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '99', label: '99' })], multiselectable: false
+      items: [featureItem({ id: '99', label: '99' })], multiselectable: false, label: 'Map features'
     })
   })
 
@@ -332,7 +371,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '1', label: 'High Street' })], multiselectable: false
+      items: [featureItem({ id: '1', label: 'High Street' })], multiselectable: false, label: 'Map features'
     })
   })
 
@@ -350,7 +389,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
 
     expect(mp.mapToScreen).toHaveBeenCalledWith([2, 1]) // bbox centre of the polygon above
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '1', label: 'High Street', x: 150, y: 300 })], multiselectable: false // scaleFactor.medium = 1.5
+      items: [featureItem({ id: '1', label: 'High Street', x: 150, y: 300 })], multiselectable: false, label: 'Map features' // scaleFactor.medium = 1.5
     })
   })
 
@@ -363,7 +402,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
 
     expect(mp.mapToScreen).not.toHaveBeenCalled()
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '1', label: 'High Street' })], multiselectable: false
+      items: [featureItem({ id: '1', label: 'High Street' })], multiselectable: false, label: 'Map features'
     })
   })
 })
@@ -377,13 +416,13 @@ describe('useMapItemList — selectFeature mode: guards', () => {
     const features = [{ layer: { id: 'unknown-layer' }, properties: { road_id: '4' } }]
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
   })
 
   it('emits empty items when layers array is empty', () => {
     const { eb } = setup({ interactionModes: ['selectFeature'], layers: [] })
     act(() => eb.emit(MOVE_END, {}))
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
   })
 
   it('includes multiselectable: true in payload when multiSelect is enabled', () => {
@@ -396,7 +435,7 @@ describe('useMapItemList — selectFeature mode: guards', () => {
     })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '1', label: 'High St' })], multiselectable: true
+      items: [featureItem({ id: '1', label: 'High St' })], multiselectable: true, label: 'Map features'
     })
   })
 })
@@ -425,7 +464,8 @@ describe('useMapItemList — combined modes', () => {
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
       items: [markerItem({ id: 'm1', label: 'A Marker' }), featureItem({ id: '1', label: 'Main Rd' })],
-      multiselectable: false
+      multiselectable: false,
+      label: 'Map features'
     })
     container.remove()
   })
@@ -433,7 +473,7 @@ describe('useMapItemList — combined modes', () => {
   it('emits empty items when no interaction modes are active', () => {
     const { eb } = setup({ interactionModes: [] })
     act(() => eb.emit(MOVE_END, {}))
-    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false })
+    expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, { items: [], multiselectable: false, label: 'Map features' })
   })
 })
 

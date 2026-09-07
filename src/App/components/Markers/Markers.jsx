@@ -67,11 +67,11 @@ export const Markers = () => {
     const handleSetActive = ({ id: markerId }) => setActiveMarkerId(markerId)
     eventBus.on('interact:active', handleActive)
     eventBus.on('interact:selectionchange', handleSelectionChange)
-    eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
+    eventBus.on(EVENTS.MAP_SET_ACTIVE_ITEM, handleSetActive)
     return () => {
       eventBus.off('interact:active', handleActive)
       eventBus.off('interact:selectionchange', handleSelectionChange)
-      eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
+      eventBus.off(EVENTS.MAP_SET_ACTIVE_ITEM, handleSetActive)
     }
   }, [eventBus])
 

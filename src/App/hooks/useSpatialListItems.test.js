@@ -1,8 +1,8 @@
 import { renderHook, act } from '@testing-library/react'
-import { useFeatureItems } from './useFeatureItems.js'
+import { useSpatialListItems } from './useSpatialListItems.js'
 
-const SET_FEATURES = 'map:setfeatures' // NOSONAR
-const SET_FEATURES_SUPPRESSED = 'map:setfeaturessuppressed' // NOSONAR
+const SET_FEATURES = 'map:setspatiallist' // NOSONAR
+const SET_FEATURES_SUPPRESSED = 'map:setspatiallistsuppressed' // NOSONAR
 
 const makeEventBus = () => {
   const listeners = {}
@@ -13,40 +13,40 @@ const makeEventBus = () => {
   }
 }
 
-// ─── useFeatureItems — initial state ─────────────────────────────────────────
+// ─── useSpatialListItems — initial state ─────────────────────────────────────────
 
-describe('useFeatureItems — initial state', () => {
+describe('useSpatialListItems — initial state', () => {
   it('returns empty items and multiselectable false before any event', () => {
-    const { result } = renderHook(() => useFeatureItems(makeEventBus()))
+    const { result } = renderHook(() => useSpatialListItems(makeEventBus()))
     expect(result.current.items).toEqual([])
     expect(result.current.multiselectable).toBe(false)
   })
 
   it('returns empty items and multiselectable false when eventBus is undefined', () => {
-    const { result } = renderHook(() => useFeatureItems(undefined))
+    const { result } = renderHook(() => useSpatialListItems(undefined))
     expect(result.current.items).toEqual([])
     expect(result.current.multiselectable).toBe(false)
   })
 })
 
-// ─── useFeatureItems — event subscription ────────────────────────────────────
+// ─── useSpatialListItems — event subscription ────────────────────────────────────
 
-describe('useFeatureItems — event subscription', () => {
+describe('useSpatialListItems — event subscription', () => {
   it('subscribes to map:setfeatures on mount', () => {
     const eb = makeEventBus()
-    renderHook(() => useFeatureItems(eb))
+    renderHook(() => useSpatialListItems(eb))
     expect(eb.on).toHaveBeenCalledWith(SET_FEATURES, expect.any(Function))
   })
 
   it('subscribes to map:setfeaturessuppressed on mount', () => {
     const eb = makeEventBus()
-    renderHook(() => useFeatureItems(eb))
+    renderHook(() => useSpatialListItems(eb))
     expect(eb.on).toHaveBeenCalledWith(SET_FEATURES_SUPPRESSED, expect.any(Function))
   })
 
   it('unsubscribes on unmount', () => {
     const eb = makeEventBus()
-    const { unmount } = renderHook(() => useFeatureItems(eb))
+    const { unmount } = renderHook(() => useSpatialListItems(eb))
     unmount()
     expect(eb.off).toHaveBeenCalledWith(SET_FEATURES, expect.any(Function))
     expect(eb.off).toHaveBeenCalledWith(SET_FEATURES_SUPPRESSED, expect.any(Function))
@@ -54,18 +54,18 @@ describe('useFeatureItems — event subscription', () => {
 
   it('does not subscribe when eventBus is undefined', () => {
     const spy = jest.spyOn(console, 'error').mockImplementation(() => {})
-    renderHook(() => useFeatureItems(undefined))
+    renderHook(() => useSpatialListItems(undefined))
     expect(spy).not.toHaveBeenCalled()
     spy.mockRestore()
   })
 })
 
-// ─── useFeatureItems — items updates ─────────────────────────────────────────
+// ─── useSpatialListItems — items updates ─────────────────────────────────────────
 
-describe('useFeatureItems — items updates', () => {
+describe('useSpatialListItems — items updates', () => {
   it('updates items when map:setfeatures is emitted', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     const items = [{ id: 'a', label: 'Feature A' }, { id: 'b', label: 'Feature B' }]
     act(() => eb.emit(SET_FEATURES, { items }))
     expect(result.current.items).toEqual(items)
@@ -73,7 +73,7 @@ describe('useFeatureItems — items updates', () => {
 
   it('clears items when emitted with an empty array', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, { items: [{ id: 'a', label: 'A' }] }))
     act(() => eb.emit(SET_FEATURES, { items: [] }))
     expect(result.current.items).toEqual([])
@@ -81,38 +81,69 @@ describe('useFeatureItems — items updates', () => {
 
   it('defaults items to empty array when items key is missing from payload', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, {}))
+    expect(result.current.items).toEqual([])
+  })
+
+  it('defaults items to empty array when the event carries no payload at all', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useSpatialListItems(eb))
+    act(() => eb.emit(SET_FEATURES))
     expect(result.current.items).toEqual([])
   })
 })
 
-// ─── useFeatureItems — multiselectable updates ───────────────────────────────
+// ─── useSpatialListItems — label updates ─────────────────────────────────────────
 
-describe('useFeatureItems — multiselectable updates', () => {
+describe('useSpatialListItems — label updates', () => {
+  it('returns undefined label before any event', () => {
+    const { result } = renderHook(() => useSpatialListItems(makeEventBus()))
+    expect(result.current.label).toBeUndefined()
+  })
+
+  it('returns whatever label the current provider declared', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useSpatialListItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items: [], label: 'Shape points' }))
+    expect(result.current.label).toBe('Shape points')
+  })
+
+  it('updates the label when a later event declares a different one', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useSpatialListItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items: [], label: 'Map features' }))
+    act(() => eb.emit(SET_FEATURES, { items: [], label: 'Shape points' }))
+    expect(result.current.label).toBe('Shape points')
+  })
+})
+
+// ─── useSpatialListItems — multiselectable updates ───────────────────────────────
+
+describe('useSpatialListItems — multiselectable updates', () => {
   it('sets multiselectable true when emitted with multiselectable: true', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, { items: [], multiselectable: true }))
     expect(result.current.multiselectable).toBe(true)
   })
 
   it('defaults multiselectable to false when not present in payload', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, { items: [] }))
     expect(result.current.multiselectable).toBe(false)
   })
 })
 
-// ─── useFeatureItems — suppression ───────────────────────────────────────────
+// ─── useSpatialListItems — suppression ───────────────────────────────────────────
 
-describe('useFeatureItems — suppression', () => {
+describe('useSpatialListItems — suppression', () => {
   const items = [{ id: 'a', label: 'Feature A' }]
 
   it('reports empty items while suppressed, regardless of what was last set', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, { items }))
     act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: true }))
     expect(result.current.items).toEqual([])
@@ -120,7 +151,7 @@ describe('useFeatureItems — suppression', () => {
 
   it('restores the last known items once suppression is lifted', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, { items }))
     act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: true }))
     act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: false }))
@@ -129,7 +160,7 @@ describe('useFeatureItems — suppression', () => {
 
   it('defaults suppressed to false when the payload omits it', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, { items }))
     act(() => eb.emit(SET_FEATURES_SUPPRESSED, {}))
     expect(result.current.items).toEqual(items)
@@ -137,7 +168,7 @@ describe('useFeatureItems — suppression', () => {
 
   it('defaults suppressed to false when the event carries no payload at all', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES, { items }))
     act(() => eb.emit(SET_FEATURES_SUPPRESSED))
     expect(result.current.items).toEqual(items)
@@ -145,7 +176,7 @@ describe('useFeatureItems — suppression', () => {
 
   it('a features update received while suppressed is still applied once restored', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureItems(eb))
+    const { result } = renderHook(() => useSpatialListItems(eb))
     act(() => eb.emit(SET_FEATURES_SUPPRESSED, { suppressed: true }))
     act(() => eb.emit(SET_FEATURES, { items }))
     expect(result.current.items).toEqual([]) // still suppressed

@@ -108,7 +108,7 @@ describe('features list suppression', () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
     await renderInit(props)
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: true }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: true }
     )
   })
 
@@ -116,7 +116,7 @@ describe('features list suppression', () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: null } })
     await renderInit(props)
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
     )
   })
 
@@ -124,7 +124,7 @@ describe('features list suppression', () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
     const result = await renderInit(props)
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: true }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: true }
     )
 
     props.services.eventBus.emit.mockClear()
@@ -132,7 +132,7 @@ describe('features list suppression', () => {
     result.rerender(<DrawInit {...props} />)
 
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
     )
   })
 
@@ -144,7 +144,7 @@ describe('features list suppression', () => {
     result.unmount()
 
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
     )
   })
 })

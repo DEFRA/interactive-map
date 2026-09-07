@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import { useFeatureFocus } from './useFeatureFocus.js'
+import { useSpatialListFocus } from './useSpatialListFocus.js'
 
 const ITEMS = [
   { id: 'a', label: 'Feature A' },
@@ -7,8 +7,8 @@ const ITEMS = [
   { id: 'c', label: 'Feature C' }
 ]
 
-const SET_ACTIVE = 'map:setactivefeature' // NOSONAR
-const SELECT = 'map:selectfeature'
+const SET_ACTIVE = 'map:setactiveitem' // NOSONAR
+const SELECT = 'map:selectitem'
 const SELECTION_CHANGE = 'interact:selectionchange'
 
 const makeEventBus = () => {
@@ -26,7 +26,7 @@ const makeRefs = ({ viewportFocus } = {}) => {
   viewportEl.focus = viewportFocus ?? jest.fn()
   return {
     viewportRef: { current: viewportEl },
-    featuresRef: { current: document.createElement('ul') },
+    spatialListRef: { current: document.createElement('ul') },
     hints: { subscribe: jest.fn(() => jest.fn()), dismiss: jest.fn() }
   }
 }
@@ -40,83 +40,83 @@ const fireKey = (el, key) => {
   return event
 }
 
-// ─── useFeatureFocus — initial state ─────────────────────────────────────────
+// ─── useSpatialListFocus — initial state ─────────────────────────────────────────
 
-describe('useFeatureFocus — initial state', () => {
-  it('activeFeatureId starts as null', () => {
-    const { result } = renderHook(() => useFeatureFocus(makeRefs()))
-    expect(result.current.activeFeatureId).toBeNull()
+describe('useSpatialListFocus — initial state', () => {
+  it('activeItemId starts as null', () => {
+    const { result } = renderHook(() => useSpatialListFocus(makeRefs()))
+    expect(result.current.activeItemId).toBeNull()
   })
 
   it('exposes onFocus function', () => {
-    const { result } = renderHook(() => useFeatureFocus(makeRefs()))
+    const { result } = renderHook(() => useSpatialListFocus(makeRefs()))
     expect(typeof result.current.onFocus).toBe('function')
   })
 
   it('exposes onBlur function', () => {
-    const { result } = renderHook(() => useFeatureFocus(makeRefs()))
+    const { result } = renderHook(() => useSpatialListFocus(makeRefs()))
     expect(typeof result.current.onBlur).toBe('function')
   })
 })
 
-// ─── useFeatureFocus — onFocus ────────────────────────────────────────────────
+// ─── useSpatialListFocus — onFocus ────────────────────────────────────────────────
 
-describe('useFeatureFocus — onFocus', () => {
-  it('sets activeFeatureId to first item on first focus (no previous, no selected)', () => {
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+describe('useSpatialListFocus — onFocus', () => {
+  it('sets activeItemId to first item on first focus (no previous, no selected)', () => {
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS }))
     act(() => result.current.onFocus())
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
   })
 
   it('does nothing when items is empty', () => {
-    const { result } = renderHook(() => useFeatureFocus(makeRefs()))
+    const { result } = renderHook(() => useSpatialListFocus(makeRefs()))
     act(() => result.current.onFocus())
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
   })
 
   it('sets active to first selected item (highest priority)', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'b', layerId: 'roads' }] }))
     act(() => result.current.onFocus())
-    expect(result.current.activeFeatureId).toBe('b')
+    expect(result.current.activeItemId).toBe('b')
   })
 
   it('selected item takes priority over last active position', () => {
     const eb = makeEventBus()
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS, eventBus: eb }))
     act(() => result.current.onFocus())
     fireKey(el, 'ArrowDown') // last active = 'b'
     act(() => result.current.onBlur())
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'c', layerId: 'roads' }] }))
     act(() => result.current.onFocus())
-    expect(result.current.activeFeatureId).toBe('c') // selected beats last-active
+    expect(result.current.activeItemId).toBe('c') // selected beats last-active
     unmount(); el.remove()
   })
 
   it('restores last active position when nothing is selected', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'ArrowDown') // last active = 'b'
     act(() => result.current.onBlur())
     act(() => result.current.onFocus())
-    expect(result.current.activeFeatureId).toBe('b')
+    expect(result.current.activeItemId).toBe('b')
     unmount(); el.remove()
   })
 
   it('falls back to first item when previous active is no longer in the list', () => {
     const eb = makeEventBus()
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
     const { result, rerender, unmount } = renderHook(
-      ({ items }) => useFeatureFocus({ ...refs, items, eventBus: eb }),
+      ({ items }) => useSpatialListFocus({ ...refs, items, eventBus: eb }),
       { initialProps: { items: ITEMS } }
     )
     act(() => result.current.onFocus())
@@ -125,25 +125,25 @@ describe('useFeatureFocus — onFocus', () => {
     const NEW_ITEMS = [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }]
     rerender({ items: NEW_ITEMS })
     act(() => result.current.onFocus())
-    expect(result.current.activeFeatureId).toBe('x')
+    expect(result.current.activeItemId).toBe('x')
     unmount(); el.remove()
   })
 })
 
-// ─── useFeatureFocus — onBlur ─────────────────────────────────────────────────
+// ─── useSpatialListFocus — onBlur ─────────────────────────────────────────────────
 
-describe('useFeatureFocus — onBlur', () => {
-  it('clears activeFeatureId when focus leaves the listbox', () => {
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+describe('useSpatialListFocus — onBlur', () => {
+  it('clears activeItemId when focus leaves the listbox', () => {
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS }))
     act(() => result.current.onFocus())
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
     act(() => result.current.onBlur())
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
   })
 
   it('emits map:setactivefeature with null on blur', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
     act(() => result.current.onFocus())
     eb.emit.mockClear()
     act(() => result.current.onBlur())
@@ -151,7 +151,7 @@ describe('useFeatureFocus — onBlur', () => {
   })
 
   it('does not throw when eventBus is not provided', () => {
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS }))
     expect(() => act(() => result.current.onBlur())).not.toThrow()
   })
 
@@ -159,63 +159,63 @@ describe('useFeatureFocus — onBlur', () => {
   // driven by an internal isInternalFocusMoveRef, set only while focusOption()'s own .focus()
   // call is synchronously in flight — not observable by calling onFocus/onBlur directly here,
   // since that requires a real DOM focus transition bubbling through React. See the
-  // "Features + useFeatureFocus — roving tabindex real focus events" suite in Features.test.jsx,
+  // "SpatialList + useSpatialListFocus — roving tabindex real focus events" suite in SpatialList.test.jsx,
   // which renders the real markup and is the only level this can be faithfully exercised at
   // (and is where the regression this guards against was actually found).
 })
 
-// ─── useFeatureFocus — keydown listener lifecycle ────────────────────────────
+// ─── useSpatialListFocus — keydown listener lifecycle ────────────────────────────
 
-describe('useFeatureFocus — keydown listener lifecycle', () => {
-  it('does not attach listener when featuresRef.current is null', () => {
+describe('useSpatialListFocus — keydown listener lifecycle', () => {
+  it('does not attach listener when spatialListRef.current is null', () => {
     const refs = makeRefs()
-    refs.featuresRef = { current: null }
+    refs.spatialListRef = { current: null }
     const spy = jest.spyOn(document.body, 'addEventListener')
-    renderHook(() => useFeatureFocus(refs))
+    renderHook(() => useSpatialListFocus(refs))
     expect(spy).not.toHaveBeenCalledWith('keydown', expect.any(Function))
     spy.mockRestore()
   })
 
   it('attaches and removes keydown listener on the features element', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     const addSpy = jest.spyOn(el, 'addEventListener')
     const removeSpy = jest.spyOn(el, 'removeEventListener')
-    const { unmount } = renderHook(() => useFeatureFocus(refs))
+    const { unmount } = renderHook(() => useSpatialListFocus(refs))
     expect(addSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
     unmount()
     expect(removeSpy).toHaveBeenCalledWith('keydown', expect.any(Function))
   })
 })
 
-// ─── useFeatureFocus — unhandled keys ────────────────────────────────────────
+// ─── useSpatialListFocus — unhandled keys ────────────────────────────────────────
 
-describe('useFeatureFocus — unhandled keys', () => {
+describe('useSpatialListFocus — unhandled keys', () => {
   it('does nothing for keys that are not Escape or Arrow', () => {
     const viewportFocus = jest.fn()
     const refs = makeRefs({ viewportFocus })
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     fireKey(el, 'Tab')
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
     expect(viewportFocus).not.toHaveBeenCalled()
     el.remove()
   })
 })
 
-// ─── useFeatureFocus — Escape key ────────────────────────────────────────────
+// ─── useSpatialListFocus — Escape key ────────────────────────────────────────────
 
-describe('useFeatureFocus — Escape key', () => {
+describe('useSpatialListFocus — Escape key', () => {
   it('dismisses hint on Escape when hint is visible', () => {
     const refs = makeRefs()
     refs.hints.subscribe.mockImplementation((fn) => {
       fn({ html: 'test' })
       return jest.fn()
     })
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'Escape')
     expect(refs.hints.dismiss).toHaveBeenCalled()
@@ -226,9 +226,9 @@ describe('useFeatureFocus — Escape key', () => {
   it('focuses the viewport on Escape when no hint is visible', () => {
     const viewportFocus = jest.fn()
     const refs = makeRefs({ viewportFocus })
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'Escape')
     expect(refs.hints.dismiss).not.toHaveBeenCalled()
@@ -237,19 +237,19 @@ describe('useFeatureFocus — Escape key', () => {
   })
 
   it('does not throw when viewportRef.current is null', () => {
-    const refs = { viewportRef: { current: null }, featuresRef: { current: document.createElement('ul') }, hints: { subscribe: jest.fn(() => jest.fn()), dismiss: jest.fn() } }
-    const el = refs.featuresRef.current
+    const refs = { viewportRef: { current: null }, spatialListRef: { current: document.createElement('ul') }, hints: { subscribe: jest.fn(() => jest.fn()), dismiss: jest.fn() } }
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    renderHook(() => useFeatureFocus(refs))
+    renderHook(() => useSpatialListFocus(refs))
     expect(() => fireKey(el, 'Escape')).not.toThrow()
     el.remove()
   })
 
   it('stops propagation on Escape so the viewport keyboard handler does not also handle it', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     const event = new KeyboardEvent('keydown', { key: 'Escape', bubbles: true, cancelable: true })
     const stopSpy = jest.spyOn(event, 'stopPropagation')
     act(() => el.dispatchEvent(event))
@@ -258,21 +258,21 @@ describe('useFeatureFocus — Escape key', () => {
   })
 })
 
-// ─── useFeatureFocus — ArrowDown navigation ───────────────────────────────────
+// ─── useSpatialListFocus — ArrowDown navigation ───────────────────────────────────
 
-describe('useFeatureFocus — ArrowDown navigation', () => {
+describe('useSpatialListFocus — ArrowDown navigation', () => {
   const setup = () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     return { result, el, unmount }
   }
 
   it('selects first item when no item is active', () => {
     const { result, el, unmount } = setup()
     fireKey(el, 'ArrowDown')
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
     unmount(); el.remove()
   })
 
@@ -280,30 +280,30 @@ describe('useFeatureFocus — ArrowDown navigation', () => {
     const { result, el, unmount } = setup()
     act(() => result.current.onFocus())
     fireKey(el, 'ArrowDown')
-    expect(result.current.activeFeatureId).toBe('b')
+    expect(result.current.activeItemId).toBe('b')
     unmount(); el.remove()
   })
 
   it('clamps at last item', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'ArrowDown')
     fireKey(el, 'ArrowDown')
     fireKey(el, 'ArrowDown')
-    expect(result.current.activeFeatureId).toBe('c')
+    expect(result.current.activeItemId).toBe('c')
     unmount(); el.remove()
   })
 
   it('does nothing when items is empty', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus(refs))
+    const { result, unmount } = renderHook(() => useSpatialListFocus(refs))
     fireKey(el, 'ArrowDown')
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
     unmount(); el.remove()
   })
 
@@ -318,47 +318,47 @@ describe('useFeatureFocus — ArrowDown navigation', () => {
   })
 })
 
-// ─── useFeatureFocus — ArrowUp navigation ────────────────────────────────────
+// ─── useSpatialListFocus — ArrowUp navigation ────────────────────────────────────
 
-describe('useFeatureFocus — ArrowUp navigation', () => {
+describe('useSpatialListFocus — ArrowUp navigation', () => {
   it('selects last item when no item is active', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     fireKey(el, 'ArrowUp')
-    expect(result.current.activeFeatureId).toBe('c')
+    expect(result.current.activeItemId).toBe('c')
     unmount(); el.remove()
   })
 
   it('moves to previous item', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'ArrowDown')
     fireKey(el, 'ArrowUp')
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
     unmount(); el.remove()
   })
 
   it('clamps at first item', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     fireKey(el, 'ArrowUp')
     fireKey(el, 'ArrowUp')
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
     unmount(); el.remove()
   })
 })
 
-// ─── useFeatureFocus — Alt+Arrow spatial navigation ──────────────────────────
+// ─── useSpatialListFocus — Alt+Arrow spatial navigation ──────────────────────────
 
-describe('useFeatureFocus — Alt+Arrow spatial navigation', () => {
+describe('useSpatialListFocus — Alt+Arrow spatial navigation', () => {
   const POSITIONED_ITEMS = [
     { id: 'center', label: 'Center', x: 0, y: 0 },
     { id: 'up', label: 'Up', x: 0, y: -10 },
@@ -367,9 +367,9 @@ describe('useFeatureFocus — Alt+Arrow spatial navigation', () => {
 
   const setup = (items = POSITIONED_ITEMS) => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items }))
     return { result, el, unmount }
   }
 
@@ -386,18 +386,18 @@ describe('useFeatureFocus — Alt+Arrow spatial navigation', () => {
     const { result, el, unmount } = setup()
     act(() => result.current.onFocus()) // resolves to 'center', the first item
     fireAltKey(el, 'ArrowRight')
-    expect(result.current.activeFeatureId).toBe('right')
+    expect(result.current.activeItemId).toBe('right')
     unmount(); el.remove()
   })
 
   it('emits map:setactivefeature for the spatially-found item', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: POSITIONED_ITEMS, eventBus: makeEventBus() }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: POSITIONED_ITEMS, eventBus: makeEventBus() }))
     act(() => result.current.onFocus())
     fireAltKey(el, 'ArrowUp')
-    expect(result.current.activeFeatureId).toBe('up')
+    expect(result.current.activeItemId).toBe('up')
     unmount(); el.remove()
   })
 
@@ -457,19 +457,19 @@ describe('useFeatureFocus — Alt+Arrow spatial navigation', () => {
     const { result, el, unmount } = setup([{ id: 'only', label: 'Only', x: 0, y: 0 }])
     act(() => result.current.onFocus())
     fireAltKey(el, 'ArrowRight')
-    expect(result.current.activeFeatureId).toBe('only')
+    expect(result.current.activeItemId).toBe('only')
     unmount(); el.remove()
   })
 })
 
-// ─── useFeatureFocus — Home/End navigation ───────────────────────────────────
+// ─── useSpatialListFocus — Home/End navigation ───────────────────────────────────
 
-describe('useFeatureFocus — Home/End navigation', () => {
+describe('useSpatialListFocus — Home/End navigation', () => {
   const setup = () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     return { result, el, unmount }
   }
 
@@ -478,7 +478,7 @@ describe('useFeatureFocus — Home/End navigation', () => {
     act(() => result.current.onFocus())
     fireKey(el, 'ArrowDown')
     fireKey(el, 'Home')
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
     unmount(); el.remove()
   })
 
@@ -486,18 +486,18 @@ describe('useFeatureFocus — Home/End navigation', () => {
     const { result, el, unmount } = setup()
     act(() => result.current.onFocus())
     fireKey(el, 'End')
-    expect(result.current.activeFeatureId).toBe('c')
+    expect(result.current.activeItemId).toBe('c')
     unmount(); el.remove()
   })
 
   it('does nothing when items is empty', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus(refs))
+    const { result, unmount } = renderHook(() => useSpatialListFocus(refs))
     fireKey(el, 'Home')
     fireKey(el, 'End')
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
     unmount(); el.remove()
   })
 
@@ -515,9 +515,9 @@ describe('useFeatureFocus — Home/End navigation', () => {
   it('emits map:setactivefeature with the boundary id', () => {
     const eb = makeEventBus()
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS, eventBus: eb }))
     act(() => result.current.onFocus())
     eb.emit.mockClear()
     fireKey(el, 'End')
@@ -526,43 +526,43 @@ describe('useFeatureFocus — Home/End navigation', () => {
   })
 })
 
-// ─── useFeatureFocus — eventBus integration ───────────────────────────────────
+// ─── useSpatialListFocus — eventBus integration ───────────────────────────────────
 
-describe('useFeatureFocus — eventBus: map:setactivefeature listener', () => {
+describe('useSpatialListFocus — eventBus: map:setactivefeature listener', () => {
   it('subscribes to map:setactivefeature on mount and unsubscribes on unmount', () => {
     const eb = makeEventBus()
-    const { unmount } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { unmount } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     expect(eb.on).toHaveBeenCalledWith(SET_ACTIVE, expect.any(Function))
     unmount()
     expect(eb.off).toHaveBeenCalledWith(SET_ACTIVE, expect.any(Function))
   })
 
-  it('updates activeFeatureId when map:setactivefeature is received', () => {
+  it('updates activeItemId when map:setactivefeature is received', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     act(() => eb.trigger(SET_ACTIVE, { id: 'a' }))
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
   })
 
-  it('clears activeFeatureId when map:setactivefeature is received with null', () => {
+  it('clears activeItemId when map:setactivefeature is received with null', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
     act(() => eb.trigger(SET_ACTIVE, { id: 'a' }))
     act(() => eb.trigger(SET_ACTIVE, { id: null }))
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
   })
 })
 
 const setupWithBus = () => {
   const eb = makeEventBus()
   const refs = makeRefs()
-  const el = refs.featuresRef.current
+  const el = refs.spatialListRef.current
   document.body.appendChild(el)
-  const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+  const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS, eventBus: eb }))
   return { eb, el, result, unmount }
 }
 
-describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
+describe('useSpatialListFocus — eventBus: map:setactivefeature emit', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('emits map:setactivefeature with first item id on onFocus', () => {
@@ -582,9 +582,9 @@ describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
 
   it('does not emit when eventBus is not provided', () => {
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     expect(() => {
       act(() => result.current.onFocus())
       fireKey(el, 'ArrowDown')
@@ -593,12 +593,12 @@ describe('useFeatureFocus — eventBus: map:setactivefeature emit', () => {
   })
 })
 
-// ─── useFeatureFocus — interact:selectionchange listener ─────────────────────
+// ─── useSpatialListFocus — interact:selectionchange listener ─────────────────────
 
-describe('useFeatureFocus — interact:selectionchange listener', () => {
+describe('useSpatialListFocus — interact:selectionchange listener', () => {
   it('subscribes to interact:selectionchange on mount and unsubscribes on unmount', () => {
     const eb = makeEventBus()
-    const { unmount } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { unmount } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     expect(eb.on).toHaveBeenCalledWith(SELECTION_CHANGE, expect.any(Function))
     unmount()
     expect(eb.off).toHaveBeenCalledWith(SELECTION_CHANGE, expect.any(Function))
@@ -606,51 +606,51 @@ describe('useFeatureFocus — interact:selectionchange listener', () => {
 
   it('sets selectedIds from selected features', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 27665979, layerId: 'hedges' }] }))
     expect(result.current.selectedIds).toEqual(['27665979'])
   })
 
   it('sets selectedIds from multiple selected features', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'f1', layerId: 'roads' }, { featureId: 'f2', layerId: 'roads' }] }))
     expect(result.current.selectedIds).toEqual(['f1', 'f2'])
   })
 
   it('sets selectedIds from selected markers', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['m1', 'm2'] }))
     expect(result.current.selectedIds).toEqual(['m1', 'm2'])
   })
 
   it('sets selectedIds from both features and markers when both are selected', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'f1', layerId: 'roads' }], selectedMarkers: ['m1'] }))
     expect(result.current.selectedIds).toEqual(['f1', 'm1'])
   })
 
   it('clears selectedIds when selection becomes empty', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'f1', layerId: 'roads' }] }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [], selectedMarkers: [] }))
     expect(result.current.selectedIds).toEqual([])
   })
 
-  it('does not move activeFeatureId when selectionchange fires (cursor is keyboard-only)', () => {
+  it('does not move activeItemId when selectionchange fires (cursor is keyboard-only)', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'a', layerId: 'roads' }] }))
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
   })
 })
 
-// ─── useFeatureFocus — map interaction returns focus to viewport ──────────────
+// ─── useSpatialListFocus — map interaction returns focus to viewport ──────────────
 
-describe('useFeatureFocus — map pointerdown returns focus to viewport', () => {
+describe('useSpatialListFocus — map pointerdown returns focus to viewport', () => {
   const pointerDown = (target) => act(() => {
     target.dispatchEvent(new Event('pointerdown', { bubbles: true, cancelable: true }))
   })
@@ -661,7 +661,7 @@ describe('useFeatureFocus — map pointerdown returns focus to viewport', () => 
     document.body.appendChild(refs.viewportRef.current)
     const mapCanvas = document.createElement('canvas')
     refs.viewportRef.current.appendChild(mapCanvas)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     viewportFocus.mockClear()
     pointerDown(mapCanvas)
@@ -673,10 +673,10 @@ describe('useFeatureFocus — map pointerdown returns focus to viewport', () => 
     const viewportFocus = jest.fn()
     const refs = makeRefs({ viewportFocus })
     document.body.appendChild(refs.viewportRef.current)
-    refs.viewportRef.current.appendChild(refs.featuresRef.current)
+    refs.viewportRef.current.appendChild(refs.spatialListRef.current)
     const option = document.createElement('li')
-    refs.featuresRef.current.appendChild(option)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    refs.spatialListRef.current.appendChild(option)
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.onFocus())
     viewportFocus.mockClear()
     pointerDown(option)
@@ -690,7 +690,7 @@ describe('useFeatureFocus — map pointerdown returns focus to viewport', () => 
     document.body.appendChild(refs.viewportRef.current)
     const mapCanvas = document.createElement('canvas')
     refs.viewportRef.current.appendChild(mapCanvas)
-    const { unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    const { unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     pointerDown(mapCanvas)
     expect(viewportFocus).not.toHaveBeenCalled()
     unmount()
@@ -699,9 +699,9 @@ describe('useFeatureFocus — map pointerdown returns focus to viewport', () => 
   afterEach(() => { document.body.innerHTML = '' })
 })
 
-// ─── useFeatureFocus — Enter and Space keys ───────────────────────────────────
+// ─── useSpatialListFocus — Enter and Space keys ───────────────────────────────────
 
-describe('useFeatureFocus — Enter and Space keys', () => {
+describe('useSpatialListFocus — Enter and Space keys', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('emits map:selectfeature on Enter', () => {
@@ -743,17 +743,17 @@ describe('useFeatureFocus — Enter and Space keys', () => {
   })
 })
 
-// ─── useFeatureFocus — items change while focused ─────────────────────────────
+// ─── useSpatialListFocus — items change while focused ─────────────────────────────
 
-describe('useFeatureFocus — items change while focused', () => {
+describe('useSpatialListFocus — items change while focused', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   const setupRerender = (initialItems) => {
     const eb = makeEventBus()
     const refs = makeRefs()
-    document.body.appendChild(refs.featuresRef.current)
+    document.body.appendChild(refs.spatialListRef.current)
     const { result, rerender, unmount } = renderHook(
-      ({ items }) => useFeatureFocus({ ...refs, items, eventBus: eb }),
+      ({ items }) => useSpatialListFocus({ ...refs, items, eventBus: eb }),
       { initialProps: { items: initialItems } }
     )
     return { eb, result, rerender, unmount }
@@ -763,7 +763,7 @@ describe('useFeatureFocus — items change while focused', () => {
     const { result, rerender, unmount } = setupRerender(ITEMS)
     act(() => result.current.onFocus()) // active = 'a'
     act(() => { rerender({ items: [{ id: 'a', label: 'A updated' }, { id: 'd', label: 'D' }] }) })
-    expect(result.current.activeFeatureId).toBe('a')
+    expect(result.current.activeItemId).toBe('a')
     unmount()
   })
 
@@ -772,7 +772,7 @@ describe('useFeatureFocus — items change while focused', () => {
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'c', layerId: 'l' }] }))
     act(() => result.current.onFocus()) // active = 'a' (first, no prev)
     act(() => { rerender({ items: [{ id: 'c', label: 'C' }, { id: 'd', label: 'D' }] }) }) // 'a' gone
-    expect(result.current.activeFeatureId).toBe('c') // first selected
+    expect(result.current.activeItemId).toBe('c') // first selected
     unmount()
   })
 
@@ -780,7 +780,7 @@ describe('useFeatureFocus — items change while focused', () => {
     const { result, rerender, unmount } = setupRerender(ITEMS)
     act(() => result.current.onFocus()) // active = 'a'
     act(() => { rerender({ items: [{ id: 'x', label: 'X' }, { id: 'y', label: 'Y' }] }) })
-    expect(result.current.activeFeatureId).toBe('x')
+    expect(result.current.activeItemId).toBe('x')
     unmount()
   })
 
@@ -788,7 +788,7 @@ describe('useFeatureFocus — items change while focused', () => {
     const { result, rerender, unmount } = setupRerender(ITEMS)
     // never called onFocus — isFocusedRef stays false
     act(() => { rerender({ items: [{ id: 'x', label: 'X' }] }) })
-    expect(result.current.activeFeatureId).toBeNull()
+    expect(result.current.activeItemId).toBeNull()
     unmount()
   })
 
@@ -797,7 +797,7 @@ describe('useFeatureFocus — items change while focused', () => {
     act(() => result.current.onFocus())
     eb.emit.mockClear()
     act(() => { rerender({ items: [{ id: 'x', label: 'X' }] }) }) // 'a' gone
-    expect(eb.emit).toHaveBeenCalledWith('map:setactivefeature', { id: 'x' })
+    expect(eb.emit).toHaveBeenCalledWith('map:setactiveitem', { id: 'x' })
     unmount()
   })
 
@@ -806,22 +806,22 @@ describe('useFeatureFocus — items change while focused', () => {
     act(() => result.current.onFocus())
     eb.emit.mockClear()
     act(() => { rerender({ items: [] }) })
-    expect(result.current.activeFeatureId).toBeNull()
-    expect(eb.emit).toHaveBeenCalledWith('map:setactivefeature', { id: null })
+    expect(result.current.activeItemId).toBeNull()
+    expect(eb.emit).toHaveBeenCalledWith('map:setactiveitem', { id: null })
     unmount()
   })
 })
 
-// ─── useFeatureFocus — tabbableId (roving tabindex resting position) ─────────
+// ─── useSpatialListFocus — tabbableId (roving tabindex resting position) ─────────
 
-describe('useFeatureFocus — tabbableId', () => {
+describe('useSpatialListFocus — tabbableId', () => {
   it('is null when items is empty', () => {
-    const { result } = renderHook(() => useFeatureFocus(makeRefs()))
+    const { result } = renderHook(() => useSpatialListFocus(makeRefs()))
     expect(result.current.tabbableId).toBeNull()
   })
 
   it('defaults to the first item before the list has ever been focused', () => {
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS }))
     expect(result.current.tabbableId).toBe('a')
   })
 
@@ -831,14 +831,14 @@ describe('useFeatureFocus — tabbableId', () => {
   // tabIndex to match it on every click.
   it('is not influenced by a selection change before any position is established', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedFeatures: [{ featureId: 'b', layerId: 'roads' }] }))
     expect(result.current.tabbableId).toBe('a')
   })
 
   it('does not chase a single item toggled selected/deselected purely via mouse clicks, with no keyboard interaction at all', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
     act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['a'] }))
     expect(result.current.tabbableId).toBe('a')
     act(() => eb.trigger(SELECTION_CHANGE, { selectedMarkers: ['b'] })) // clicked a different marker
@@ -850,9 +850,9 @@ describe('useFeatureFocus — tabbableId', () => {
   it('stays on the established position when a selection change arrives from elsewhere (e.g. clicking a marker on the map)', () => {
     const eb = makeEventBus()
     const refs = makeRefs()
-    const el = refs.featuresRef.current
+    const el = refs.spatialListRef.current
     document.body.appendChild(el)
-    const { result, unmount } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS, eventBus: eb }))
+    const { result, unmount } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS, eventBus: eb }))
     act(() => result.current.onFocus()) // establishes position at 'a'
     fireKey(el, 'ArrowDown') // establishes position at 'b'
     act(() => result.current.onBlur())
@@ -864,20 +864,20 @@ describe('useFeatureFocus — tabbableId', () => {
   })
 })
 
-// ─── useFeatureFocus — selectItem (click / touch / voice-control activation) ─
+// ─── useSpatialListFocus — selectItem (click / touch / voice-control activation) ─
 
-describe('useFeatureFocus — selectItem', () => {
+describe('useSpatialListFocus — selectItem', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
-  it('sets activeFeatureId to the clicked item', () => {
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+  it('sets activeItemId to the clicked item', () => {
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS }))
     act(() => result.current.selectItem('b'))
-    expect(result.current.activeFeatureId).toBe('b')
+    expect(result.current.activeItemId).toBe('b')
   })
 
   it('emits map:setactivefeature then map:selectfeature for the clicked item', () => {
     const eb = makeEventBus()
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, eventBus: eb }))
     act(() => result.current.selectItem('b'))
     expect(eb.emit).toHaveBeenNthCalledWith(1, SET_ACTIVE, { id: 'b' })
     expect(eb.emit).toHaveBeenNthCalledWith(2, SELECT)
@@ -888,21 +888,21 @@ describe('useFeatureFocus — selectItem', () => {
     const option = document.createElement('li')
     option.dataset.id = 'b'
     option.focus = jest.fn()
-    refs.featuresRef.current.appendChild(option)
-    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+    refs.spatialListRef.current.appendChild(option)
+    const { result } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     act(() => result.current.selectItem('b'))
     expect(option.focus).toHaveBeenCalledWith({ preventScroll: true })
   })
 
   it('does not throw when eventBus is not provided', () => {
-    const { result } = renderHook(() => useFeatureFocus({ ...makeRefs(), items: ITEMS }))
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS }))
     expect(() => act(() => result.current.selectItem('b'))).not.toThrow()
   })
 
-  it('does not throw when featuresRef.current is null (e.g. unmounted)', () => {
-    const refs = { ...makeRefs(), featuresRef: { current: null } }
-    const { result } = renderHook(() => useFeatureFocus({ ...refs, items: ITEMS }))
+  it('does not throw when spatialListRef.current is null (e.g. unmounted)', () => {
+    const refs = { ...makeRefs(), spatialListRef: { current: null } }
+    const { result } = renderHook(() => useSpatialListFocus({ ...refs, items: ITEMS }))
     expect(() => act(() => result.current.selectItem('b'))).not.toThrow()
-    expect(result.current.activeFeatureId).toBe('b') // state still updates even though there's no element to focus
+    expect(result.current.activeItemId).toBe('b') // state still updates even though there's no element to focus
   })
 })

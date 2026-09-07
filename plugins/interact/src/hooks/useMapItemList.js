@@ -67,7 +67,7 @@ const toFeatureItem = (feature, layerConfigMap, seenIds, mapProvider, mapSize) =
   // Keeps the full resolved shape (raw id, layer config, geometry, properties) alongside the
   // listbox-facing id/label — not just for building the item, but so useActiveItemHandler below
   // can resolve "what is this" from this same object later, without re-querying the map engine.
-  // Only id/label/x/y ever reach MAP_SET_FEATURES itself (see toPublicItem) — the rest stays
+  // Only id/label/x/y ever reach MAP_SET_SPATIAL_LIST itself (see toPublicItem) — the rest stays
   // internal, in itemsRef.
   const item = {
     id: stringId,
@@ -107,14 +107,21 @@ const collectVisibleFeatures = (mapProvider, layers, mapSize) => {
 /**
  * Rebuilds the keyboard-navigable item list whenever the map moves or data changes. Collects
  * visible markers (by DOM visibility) and visible features (by viewport query), keeps the
- * result in itemsRef for useActiveItemHandler to resolve against later, and emits the same
- * items via MAP_SET_FEATURES so the listbox stays in sync with what's visible. Features.jsx/
- * useFeatureItems.js only ever render id/label/x/y from each item — the rest (isMarker,
- * geometry, properties, layer config) rides along unused there, but is what lets
- * useActiveItemHandler resolve "what is this" from the same object later, with nothing to
+ * result in itemsRef for useActiveItemHandler to resolve against later, and tells
+ * spatialListRegistry its items have changed so the shared listbox stays in sync with what's
+ * visible. Features.jsx/useFeatureItems.js only ever render id/label/x/y from each item — the
+ * rest (isMarker, geometry, properties, layer config) rides along unused there, but is what
+ * lets useActiveItemHandler resolve "what is this" from the same object later, with nothing to
  * re-derive and no separate lean/rich shape to keep in sync.
+ *
+ * interact no longer emits MAP_SET_SPATIAL_LIST directly — spatialListRegistry owns that (see its
+ * own doc comment for why: a single "whoever emits last wins" event doesn't scale once more
+ * than one plugin, e.g. draw mid-edit, needs to contribute to or take over the same list).
  */
-function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus, itemsRef }) {
+function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef }) {
+  const multiSelectRef = useRef(multiSelect)
+  multiSelectRef.current = multiSelect // always-current for the provider's getItems below, same convention as itemsRef
+
   useEffect(() => {
     const handleMoveEnd = () => {
       const items = []
@@ -125,7 +132,7 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
         items.push(...collectVisibleFeatures(mapProvider, layers, mapSize))
       }
       itemsRef.current = items
-      eventBus.emit(EVENTS.MAP_SET_FEATURES, { items, multiselectable: multiSelect })
+      spatialListRegistry.notifyItemsChanged('interact')
     }
     handleMoveEnd()
     eventBus.on(EVENTS.MAP_MOVE_END, handleMoveEnd)
@@ -134,11 +141,24 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
       eventBus.off(EVENTS.MAP_MOVE_END, handleMoveEnd)
       eventBus.off(EVENTS.MAP_DATA_CHANGE, handleMoveEnd)
     }
-  }, [markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus, itemsRef])
+  }, [markers, mapSize, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef])
+
+  // Registers once, for the lifetime of the hook — getItems reads itemsRef/multiSelectRef
+  // fresh on every call, so there's never a need to re-register just because a prop changed;
+  // the effect above already pushes fresh data out via notifyItemsChanged. Declared after
+  // that effect so this registration's own immediate recompute (inside the registry) already
+  // sees whatever the effect above just computed on this same mount, rather than momentarily
+  // registering with empty items and correcting a moment later.
+  useEffect(() => {
+    spatialListRegistry.registerItemProvider('interact', {
+      getItems: () => ({ items: itemsRef.current, multiselectable: multiSelectRef.current, label: 'Map features' })
+    })
+    return () => { spatialListRegistry.unregisterItemProvider('interact') }
+  }, [spatialListRegistry, itemsRef])
 }
 
 /**
- * Listens for MAP_SET_ACTIVE_FEATURE and resolves the active item to its full feature/marker data,
+ * Listens for MAP_SET_ACTIVE_ITEM and resolves the active item to its full feature/marker data,
  * storing it in both a ref (for synchronous access) and plugin state (for highlight rendering).
  * Shows the keyboard cursor ring without firing interact:selectionchange — committing the item
  * to the real selection only happens when the user presses Enter/Space.
@@ -177,13 +197,13 @@ function useActiveItemHandler ({ itemsRef, eventBus, dispatch, listboxActiveItem
       listboxActiveItemRef.current = { id, isMarker: false, ...payload, properties: item.properties }
       dispatch({ type: 'SET_LISTBOX_ACTIVE', payload })
     }
-    eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handle)
-    return () => { eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handle) }
+    eventBus.on(EVENTS.MAP_SET_ACTIVE_ITEM, handle)
+    return () => { eventBus.off(EVENTS.MAP_SET_ACTIVE_ITEM, handle) }
   }, [itemsRef, eventBus, dispatch, listboxActiveItemRef])
 }
 
 /**
- * Handles MAP_SELECT_FEATURE (Enter/Space keypress) by promoting the currently active
+ * Handles MAP_SELECT_ITEM (Enter/Space keypress) by promoting the currently active
  * listbox item to a confirmed selection, dispatching TOGGLE_SELECTED_FEATURES or
  * TOGGLE_SELECTED_MARKERS and triggering interact:selectionchange downstream.
  */
@@ -204,8 +224,8 @@ function useSelectItemHandler ({ eventBus, dispatch, listboxActiveItemRef, multi
         })
       }
     }
-    eventBus.on(EVENTS.MAP_SELECT_FEATURE, handleConfirm)
-    return () => { eventBus.off(EVENTS.MAP_SELECT_FEATURE, handleConfirm) }
+    eventBus.on(EVENTS.MAP_SELECT_ITEM, handleConfirm)
+    return () => { eventBus.off(EVENTS.MAP_SELECT_ITEM, handleConfirm) }
   }, [eventBus, dispatch, listboxActiveItemRef, multiSelect])
 }
 
@@ -217,15 +237,15 @@ function useSelectItemHandler ({ eventBus, dispatch, listboxActiveItemRef, multi
  * - Active item resolution — translates a listbox cursor position into full feature/marker data
  * - Selection confirmation — commits the active item to the selection on Enter/Space
  *
- * @param {{ mapState: object, pluginState: object, services: object, mapProvider: object }} params
+ * @param {{ mapState: object, pluginState: object, services: object, mapProvider: object, spatialListRegistry: object }} params
  */
-export function useMapItemList ({ mapState, pluginState, services, mapProvider }) {
+export function useMapItemList ({ mapState, pluginState, services, mapProvider, spatialListRegistry }) {
   const { markers, mapSize } = mapState
   const { dispatch, interactionModes, layers, multiSelect } = pluginState
   const { eventBus } = services
   const listboxActiveItemRef = useRef(null)
   const itemsRef = useRef([])
-  useItemListSync({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus, itemsRef })
+  useItemListSync({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, spatialListRegistry, eventBus, itemsRef })
   useActiveItemHandler({ itemsRef, eventBus, dispatch, listboxActiveItemRef })
   useSelectItemHandler({ eventBus, dispatch, listboxActiveItemRef, multiSelect })
 }

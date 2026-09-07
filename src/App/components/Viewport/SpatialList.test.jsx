@@ -1,7 +1,7 @@
 import React, { useRef } from 'react'
 import { render, fireEvent, act } from '@testing-library/react'
-import { Features } from './Features.jsx'
-import { useFeatureFocus } from '../../hooks/useFeatureFocus.js'
+import { SpatialList } from './SpatialList.jsx'
+import { useSpatialListFocus } from '../../hooks/useSpatialListFocus.js'
 import { useConfig } from '../../store/configContext.js'
 
 jest.mock('../../store/configContext.js', () => ({ useConfig: jest.fn() }))
@@ -19,145 +19,155 @@ beforeEach(() => {
   useConfig.mockReturnValue({ id: APP_ID })
 })
 
-// ─── Features — rendering ─────────────────────────────────────────────────────
+// ─── SpatialList — rendering ─────────────────────────────────────────────────────
 
-describe('Features — rendering', () => {
+describe('SpatialList — rendering', () => {
   it('renders a listbox with the correct id', () => {
-    const { container } = render(<Features />)
-    expect(container.querySelector(`#${APP_ID}-features`)).toBeTruthy()
+    const { container } = render(<SpatialList />)
+    expect(container.querySelector(`#${APP_ID}-spatial-list`)).toBeTruthy()
     expect(container.querySelector(LISTBOX)).toBeTruthy() // NOSONAR
   })
 
   it('renders no options when items is empty', () => {
-    const { container } = render(<Features />)
+    const { container } = render(<SpatialList />)
     expect(container.querySelectorAll('[role="option"]')).toHaveLength(0) // NOSONAR
   })
 
+  it('defaults aria-label to "Map features" when no label prop is given', () => {
+    const { container } = render(<SpatialList />)
+    expect(container.querySelector(LISTBOX).getAttribute('aria-label')).toBe('Map features')
+  })
+
+  it('uses whatever label prop is given, e.g. for draw\'s edit-mode vertices', () => {
+    const { container } = render(<SpatialList label='Shape points' />)
+    expect(container.querySelector(LISTBOX).getAttribute('aria-label')).toBe('Shape points')
+  })
+
   it('renders one option per item with correct id, data-id and label', () => {
-    const { container } = render(<Features items={ITEMS} />)
+    const { container } = render(<SpatialList items={ITEMS} />)
     const options = container.querySelectorAll(OPTION)
     expect(options).toHaveLength(2)
-    expect(options[0].getAttribute('id')).toBe(`${APP_ID}-feature-f1`)
+    expect(options[0].getAttribute('id')).toBe(`${APP_ID}-spatial-list-item-f1`)
     expect(options[0].dataset.id).toBe('f1')
     expect(options[0].textContent).toBe('Feature One')
-    expect(options[1].getAttribute('id')).toBe(`${APP_ID}-feature-f2`)
+    expect(options[1].getAttribute('id')).toBe(`${APP_ID}-spatial-list-item-f2`)
     expect(options[1].dataset.id).toBe('f2')
     expect(options[1].textContent).toBe('Feature Two')
   })
 
   it('positions an option at its x/y when provided, for coordinate-based AT overlays (e.g. Voice Control)', () => {
     const itemsWithPosition = [{ id: 'f1', label: 'Feature One', x: 120, y: 340 }]
-    const { container } = render(<Features items={itemsWithPosition} />)
+    const { container } = render(<SpatialList items={itemsWithPosition} />)
     const option = container.querySelector(OPTION)
     expect(option.style.left).toBe('120px')
     expect(option.style.top).toBe('340px')
   })
 
   it('does not set left/top when an item has no x/y', () => {
-    const { container } = render(<Features items={ITEMS} />)
+    const { container } = render(<SpatialList items={ITEMS} />)
     const option = container.querySelector(OPTION)
     expect(option.style.left).toBe('')
     expect(option.style.top).toBe('')
   })
 
   it('sets aria-selected on items present in selectedIds', () => {
-    const { container } = render(<Features items={ITEMS} selectedIds={['f1']} />)
+    const { container } = render(<SpatialList items={ITEMS} selectedIds={['f1']} />)
     const options = container.querySelectorAll(OPTION)
     expect(options[0]).toHaveAttribute(ARIA_SELECTED, 'true')
     expect(options[1]).toHaveAttribute(ARIA_SELECTED, 'false')
   })
 
   it('sets aria-selected on multiple items when selectedIds has multiple entries', () => {
-    const { container } = render(<Features items={ITEMS} selectedIds={['f1', 'f2']} />)
+    const { container } = render(<SpatialList items={ITEMS} selectedIds={['f1', 'f2']} />)
     const options = container.querySelectorAll(OPTION)
     expect(options[0]).toHaveAttribute(ARIA_SELECTED, 'true')
     expect(options[1]).toHaveAttribute(ARIA_SELECTED, 'true')
   })
 
-  it('does not set aria-selected from activeFeatureId alone', () => {
-    const { container } = render(<Features items={ITEMS} activeFeatureId='f1' />)
+  it('does not set aria-selected from activeItemId alone', () => {
+    const { container } = render(<SpatialList items={ITEMS} activeItemId='f1' />)
     const options = container.querySelectorAll(OPTION)
     expect(options[0]).toHaveAttribute(ARIA_SELECTED, 'false')
     expect(options[1]).toHaveAttribute(ARIA_SELECTED, 'false')
   })
 
   it('gives the active item tabIndex 0 and every other item tabIndex -1 (roving tabindex)', () => {
-    const { container } = render(<Features items={ITEMS} activeFeatureId='f2' />)
+    const { container } = render(<SpatialList items={ITEMS} activeItemId='f2' />)
     const options = container.querySelectorAll(OPTION)
     expect(options[0].getAttribute('tabIndex')).toBe('-1')
     expect(options[1].getAttribute('tabIndex')).toBe('0')
   })
 
-  it('falls back to tabbableId for roving tabindex when activeFeatureId is absent', () => {
-    const { container } = render(<Features items={ITEMS} tabbableId='f1' />)
+  it('falls back to tabbableId for roving tabindex when activeItemId is absent', () => {
+    const { container } = render(<SpatialList items={ITEMS} tabbableId='f1' />)
     const options = container.querySelectorAll(OPTION)
     expect(options[0].getAttribute('tabIndex')).toBe('0')
     expect(options[1].getAttribute('tabIndex')).toBe('-1')
   })
 
   it('sets aria-multiselectable when multiselectable is true', () => {
-    const { container } = render(<Features items={ITEMS} multiselectable />)
+    const { container } = render(<SpatialList items={ITEMS} multiselectable />)
     expect(container.querySelector(LISTBOX).getAttribute('aria-multiselectable')).toBe('true') // NOSONAR
   })
 
   it('omits aria-multiselectable when multiselectable is false', () => {
-    const { container } = render(<Features items={ITEMS} />)
+    const { container } = render(<SpatialList items={ITEMS} />)
     expect(container.querySelector(LISTBOX).getAttribute('aria-multiselectable')).toBeNull() // NOSONAR
   })
 
   it('is not aria-hidden when items are present', () => {
-    const { container } = render(<Features items={ITEMS} />)
+    const { container } = render(<SpatialList items={ITEMS} />)
     const ul = container.querySelector(LISTBOX) // NOSONAR
     expect(ul.getAttribute('aria-hidden')).toBeNull()
   })
 
   it('is aria-hidden and has no options when items is empty', () => {
-    const { container } = render(<Features />)
+    const { container } = render(<SpatialList />)
     const ul = container.querySelector(LISTBOX) // NOSONAR
     expect(ul.getAttribute('aria-hidden')).toBe('true')
     expect(container.querySelectorAll(OPTION)).toHaveLength(0) // NOSONAR
   })
 
   it('sets aria-describedby to the shared hints container id', () => {
-    const { container } = render(<Features />)
+    const { container } = render(<SpatialList />)
     expect(container.querySelector(LISTBOX).getAttribute('aria-describedby')).toBe(`${APP_ID}-keyboard-desc`) // NOSONAR
   })
 })
 
-// ─── Features — interactions ──────────────────────────────────────────────────
+// ─── SpatialList — interactions ──────────────────────────────────────────────────
 
-describe('Features — interactions', () => {
+describe('SpatialList — interactions', () => {
   it('calls onFocus when the listbox receives focus', () => {
     const onFocus = jest.fn()
-    const { container } = render(<Features onFocus={onFocus} />)
+    const { container } = render(<SpatialList onFocus={onFocus} />)
     fireEvent.focus(container.querySelector(LISTBOX)) // NOSONAR
     expect(onFocus).toHaveBeenCalled()
   })
 
   it('calls onBlur when the listbox loses focus', () => {
     const onBlur = jest.fn()
-    const { container } = render(<Features onBlur={onBlur} />)
+    const { container } = render(<SpatialList onBlur={onBlur} />)
     fireEvent.blur(container.querySelector(LISTBOX)) // NOSONAR
     expect(onBlur).toHaveBeenCalled()
   })
 
   it('calls onSelectItem with the clicked item id', () => {
     const onSelectItem = jest.fn()
-    const { container } = render(<Features items={ITEMS} onSelectItem={onSelectItem} />)
+    const { container } = render(<SpatialList items={ITEMS} onSelectItem={onSelectItem} />)
     fireEvent.click(container.querySelectorAll(OPTION)[1]) // NOSONAR
     expect(onSelectItem).toHaveBeenCalledWith('f2')
   })
 
   it('does not throw on click when onSelectItem is not provided', () => {
-    const { container } = render(<Features items={ITEMS} />)
+    const { container } = render(<SpatialList items={ITEMS} />)
     expect(() => fireEvent.click(container.querySelectorAll(OPTION)[0])).not.toThrow() // NOSONAR
   })
 })
 
-// ─── Features + useFeatureFocus — roving tabindex wired together for real ────
+// ─── SpatialList + useSpatialListFocus — roving tabindex wired together for real ────
 //
-// The tests above exercise Features in isolation (mocked onFocus/onBlur), and
-// useFeatureFocus.test.js exercises the hook in isolation (onFocus/onBlur called
+// The tests above exercise SpatialList in isolation (mocked onFocus/onBlur), and
+// useSpatialListFocus.test.js exercises the hook in isolation (onFocus/onBlur called
 // directly, not via real DOM events). Neither can catch a bug where moving real focus
 // between sibling options — which roving tabindex does on every arrow key — fires a
 // genuine native focusin that bubbles up and re-triggers React's onFocus on the <ul>.
@@ -165,19 +175,19 @@ describe('Features — interactions', () => {
 
 const RovingHarness = ({ eventBus }) => {
   const viewportRef = useRef(document.createElement('div'))
-  const featuresRef = useRef(null)
-  const { activeFeatureId, tabbableId, selectedIds, onFocus, onBlur, selectItem } = useFeatureFocus({
-    viewportRef, featuresRef, items: ITEMS, eventBus, hints: { subscribe: () => () => {}, dismiss: () => {} }
+  const spatialListRef = useRef(null)
+  const { activeItemId, tabbableId, selectedIds, onFocus, onBlur, selectItem } = useSpatialListFocus({
+    viewportRef, spatialListRef, items: ITEMS, eventBus, hints: { subscribe: () => () => {}, dismiss: () => {} }
   })
   return (
-    <Features
-      ref={featuresRef} activeFeatureId={activeFeatureId} tabbableId={tabbableId} selectedIds={selectedIds}
+    <SpatialList
+      ref={spatialListRef} activeItemId={activeItemId} tabbableId={tabbableId} selectedIds={selectedIds}
       items={ITEMS} onFocus={onFocus} onBlur={onBlur} onSelectItem={selectItem}
     />
   )
 }
 
-describe('Features + useFeatureFocus — roving tabindex real focus events', () => {
+describe('SpatialList + useSpatialListFocus — roving tabindex real focus events', () => {
   it('emits map:setactivefeature exactly once when arrowing to the next option', () => {
     const eb = { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
     const { container } = render(<RovingHarness eventBus={eb} />)
@@ -185,7 +195,7 @@ describe('Features + useFeatureFocus — roving tabindex real focus events', () 
     eb.emit.mockClear()
     fireEvent.keyDown(container.querySelector(LISTBOX), { key: 'ArrowDown' }) // NOSONAR
     expect(eb.emit).toHaveBeenCalledTimes(1)
-    expect(eb.emit).toHaveBeenCalledWith('map:setactivefeature', { id: 'f2' })
+    expect(eb.emit).toHaveBeenCalledWith('map:setactiveitem', { id: 'f2' })
   })
 
   it('moves real DOM focus to the next option on ArrowDown', () => {
@@ -209,8 +219,8 @@ describe('Features + useFeatureFocus — roving tabindex real focus events', () 
       off: (event, fn) => { listeners[event] = (listeners[event] ?? []).filter(f => f !== fn) },
       emit: (event, payload) => { (listeners[event] ?? []).forEach(fn => fn(payload)) }
     }
-    bus.on('map:setactivefeature', ({ id }) => { lastActiveId = id })
-    bus.on('map:selectfeature', () => {
+    bus.on('map:setactiveitem', ({ id }) => { lastActiveId = id })
+    bus.on('map:selectitem', () => {
       bus.emit('interact:selectionchange', { selectedMarkers: lastActiveId ? [lastActiveId] : [] })
     })
     return bus

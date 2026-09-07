@@ -51,9 +51,9 @@ const focusOption = (listboxEl, id, isInternalFocusMoveRef) => {
 
 /**
  * Keeps local selectedIds in sync with interact:selectionchange, and mirrors
- * MAP_SET_ACTIVE_FEATURE back into React state so the roving tabindex position stays current.
+ * MAP_SET_ACTIVE_ITEM back into React state so the roving tabindex position stays current.
  */
-function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveFeatureId, setSelectedIds }) {
+function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveItemId, setSelectedIds }) {
   useEffect(() => {
     if (!eventBus) {
       return undefined
@@ -62,15 +62,15 @@ function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveFeatureId, 
       if (id !== null) {
         lastActiveIdRef.current = id
       }
-      setActiveFeatureId(id)
+      setActiveItemId(id)
     }
     const handleSelectionChange = ({ selectedFeatures = [], selectedMarkers = [] }) => {
       setSelectedIds([...selectedFeatures.map(f => String(f.featureId)), ...selectedMarkers])
     }
-    eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
+    eventBus.on(EVENTS.MAP_SET_ACTIVE_ITEM, handleSetActive)
     eventBus.on('interact:selectionchange', handleSelectionChange)
     return () => {
-      eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handleSetActive)
+      eventBus.off(EVENTS.MAP_SET_ACTIVE_ITEM, handleSetActive)
       eventBus.off('interact:selectionchange', handleSelectionChange)
     }
   }, [eventBus])
@@ -80,24 +80,24 @@ function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveFeatureId, 
  * Re-picks the active item (ARIA priority order) when it drops out of the item list while
  * focused — e.g. panned off screen — and moves real focus to it.
  */
-function useItemsRevalidation ({ items, eventBus, isFocusedRef, featuresRef, isInternalFocusMoveRef, lastActiveIdRef, activeFeatureIdRef, selectedIdsRef, setActiveFeatureId }) {
+function useItemsRevalidation ({ items, eventBus, isFocusedRef, spatialListRef, isInternalFocusMoveRef, lastActiveIdRef, activeItemIdRef, selectedIdsRef, setActiveItemId }) {
   useEffect(() => {
     if (!isFocusedRef.current) {
       return
     }
     if (!items.length) {
-      setActiveFeatureId(null)
-      eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: null })
+      setActiveItemId(null)
+      eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id: null })
       return
     }
-    if (items.some(item => item.id === activeFeatureIdRef.current)) {
+    if (items.some(item => item.id === activeItemIdRef.current)) {
       return
     }
     const nextId = resolveEntryId(items, lastActiveIdRef.current, selectedIdsRef.current)
     lastActiveIdRef.current = nextId
-    setActiveFeatureId(nextId)
-    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: nextId })
-    focusOption(featuresRef.current, nextId, isInternalFocusMoveRef)
+    setActiveItemId(nextId)
+    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id: nextId })
+    focusOption(spatialListRef.current, nextId, isInternalFocusMoveRef)
   }, [items]) // NOSONAR — eventBus/selectedIds consumed via refs to avoid spurious re-runs on selection change
 }
 
@@ -107,19 +107,19 @@ function useItemsRevalidation ({ items, eventBus, isFocusedRef, featuresRef, isI
  * - Alt+Arrow (any of the four) — move the active item spatially, to whichever item is
  *   nearest in the pressed direction on screen, same roving-tabindex move as above
  * - Home/End — jump the active item to the first/last option
- * - Enter/Space — confirm selection, emitting MAP_SELECT_FEATURE
+ * - Enter/Space — confirm selection, emitting MAP_SELECT_ITEM
  * - Escape — return focus to the map viewport
  */
-function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId, isInternalFocusMoveRef, hints, currentHintRef }) {
+function useKeyboardNavigation ({ spatialListRef, viewportRef, items, eventBus, activeItemIdRef, lastActiveIdRef, setActiveItemId, isInternalFocusMoveRef, hints, currentHintRef }) {
   useEffect(() => {
-    const listboxEl = featuresRef.current
+    const listboxEl = spatialListRef.current
     if (!listboxEl) {
       return undefined
     }
     const moveTo = (newId) => {
       lastActiveIdRef.current = newId
-      setActiveFeatureId(newId)
-      eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: newId })
+      setActiveItemId(newId)
+      eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id: newId })
       focusOption(listboxEl, newId, isInternalFocusMoveRef)
     }
     const handleEscape = () => {
@@ -135,7 +135,7 @@ function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, act
     // from also bubbling up to the viewport's label-navigation binding, which listens on a
     // shared ancestor.
     const handleSpatialMove = (event) => {
-      moveTo(findNearestItemInDirection(items, activeFeatureIdRef.current, event.key))
+      moveTo(findNearestItemInDirection(items, activeItemIdRef.current, event.key))
     }
     const handleKeyDown = (event) => {
       if (event.key === 'Escape') {
@@ -151,11 +151,11 @@ function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, act
       } else if (event.key === 'ArrowDown' || event.key === 'ArrowUp' || event.key === 'Home' || event.key === 'End') {
         event.preventDefault()
         event.stopPropagation()
-        moveTo(getNavigatedId(activeFeatureIdRef.current, event.key, items))
+        moveTo(getNavigatedId(activeItemIdRef.current, event.key, items))
       } else if (event.key === 'Enter' || event.key === ' ') {
         event.preventDefault()
         event.stopPropagation()
-        eventBus?.emit(EVENTS.MAP_SELECT_FEATURE)
+        eventBus?.emit(EVENTS.MAP_SELECT_ITEM)
       } else {
         // No action
       }
@@ -177,44 +177,44 @@ function useKeyboardNavigation ({ featuresRef, viewportRef, items, eventBus, act
       listboxEl.removeEventListener('keydown', handleKeyDown)
       listboxEl.removeEventListener('keyup', handleKeyUp)
     }
-  }, [viewportRef, featuresRef, items, eventBus])
+  }, [viewportRef, spatialListRef, items, eventBus])
 }
 
 /**
  * Returns focus to the viewport when the user interacts with the map via pointer while the
  * listbox is focused — clears its focus ring without dropping focus to nowhere.
  */
-function useMapInteractionBlur ({ viewportRef, featuresRef, isFocusedRef }) {
+function useMapInteractionBlur ({ viewportRef, spatialListRef, isFocusedRef }) {
   useEffect(() => {
     const el = viewportRef.current
     if (!el) {
       return undefined
     }
     const handlePointerDown = (event) => {
-      if (isFocusedRef.current && !featuresRef.current?.contains(event.target)) {
+      if (isFocusedRef.current && !spatialListRef.current?.contains(event.target)) {
         viewportRef.current?.focus()
       }
     }
     el.addEventListener('pointerdown', handlePointerDown)
     return () => { el.removeEventListener('pointerdown', handlePointerDown) }
-  }, [viewportRef, featuresRef])
+  }, [viewportRef, spatialListRef])
 }
 
 /**
  * Manages roving-tabindex focus state for the keyboard-accessible feature list. On focus, sets
- * activeFeatureId via ARIA priority order (see resolveEntryId); on blur, clears it. Revalidates
+ * activeItemId via ARIA priority order (see resolveEntryId); on blur, clears it. Revalidates
  * when the item list changes (e.g. after a map pan) so it never points to a stale item.
  *
- * @param {{ viewportRef: React.RefObject, featuresRef: React.RefObject, items: Array, eventBus: object }} params
- * @returns {{ activeFeatureId: string|null, tabbableId: string|null, selectedIds: string[], onFocus: Function, onBlur: Function, selectItem: Function }}
+ * @param {{ viewportRef: React.RefObject, spatialListRef: React.RefObject, items: Array, eventBus: object }} params
+ * @returns {{ activeItemId: string|null, tabbableId: string|null, selectedIds: string[], onFocus: Function, onBlur: Function, selectItem: Function }}
  */
-export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBus, hints }) {
-  const [activeFeatureId, setActiveFeatureId] = useState(null)
+export function useSpatialListFocus ({ viewportRef, spatialListRef, items = [], eventBus, hints }) {
+  const [activeItemId, setActiveItemId] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
 
   const isFocusedRef = useRef(false)
   const lastActiveIdRef = useRef(null) // preserved across blur; restores position on re-focus
-  const activeFeatureIdRef = useRef(null) // always-current for keydown closure
+  const activeItemIdRef = useRef(null) // always-current for keydown closure
   const selectedIdsRef = useRef([]) // always-current for items-change effect
   const currentHintRef = useRef(null)
   const isInternalFocusMoveRef = useRef(false) // true only while focusOption()'s own .focus() call is in flight
@@ -227,16 +227,16 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
 
   // Always-current mirrors for values read from event-listener closures (not React re-renders) —
   // assigned directly during render, same convention as useVisibleGeometry.js's latestRef.
-  activeFeatureIdRef.current = activeFeatureId
+  activeItemIdRef.current = activeItemId
   selectedIdsRef.current = selectedIds
 
-  useEventBusListeners({ eventBus, lastActiveIdRef, setActiveFeatureId, setSelectedIds })
-  useItemsRevalidation({ items, eventBus, isFocusedRef, featuresRef, isInternalFocusMoveRef, lastActiveIdRef, activeFeatureIdRef, selectedIdsRef, setActiveFeatureId })
-  useKeyboardNavigation({ featuresRef, viewportRef, items, eventBus, activeFeatureIdRef, lastActiveIdRef, setActiveFeatureId, isInternalFocusMoveRef, hints, currentHintRef })
-  useMapInteractionBlur({ viewportRef, featuresRef, isFocusedRef })
+  useEventBusListeners({ eventBus, lastActiveIdRef, setActiveItemId, setSelectedIds })
+  useItemsRevalidation({ items, eventBus, isFocusedRef, spatialListRef, isInternalFocusMoveRef, lastActiveIdRef, activeItemIdRef, selectedIdsRef, setActiveItemId })
+  useKeyboardNavigation({ spatialListRef, viewportRef, items, eventBus, activeItemIdRef, lastActiveIdRef, setActiveItemId, isInternalFocusMoveRef, hints, currentHintRef })
+  useMapInteractionBlur({ viewportRef, spatialListRef, isFocusedRef })
 
   // Resting roving-tabindex position — where Tab lands before the list has ever had real focus.
-  // activeFeatureId takes priority once the list is actually focused. Deliberately never
+  // activeItemId takes priority once the list is actually focused. Deliberately never
   // selection-driven (unlike onFocus's own resolution below) — sticks to the last established
   // keyboard position, or the first item if there isn't one yet. "Prefer the selected item" is
   // an onFocus-only concern (a real Tab-in); if it applied here too, any selection change made
@@ -264,13 +264,13 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
     // the remembered position, ignoring selection) once one is established.
     const id = resolveEntryId(items, lastActiveIdRef.current, selectedIds)
     lastActiveIdRef.current = id
-    setActiveFeatureId(id)
-    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id })
+    setActiveItemId(id)
+    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id })
     // Real focus may have landed on a different option than this resolves to — tabbableId (which
     // decided where Tab lands) can legitimately disagree with resolveEntryId's own priority (e.g.
     // Tab lands on the structural first item, but a different item is selected and takes
-    // priority here). Move real focus to match so it never disagrees with activeFeatureId.
-    focusOption(featuresRef.current, id, isInternalFocusMoveRef)
+    // priority here). Move real focus to match so it never disagrees with activeItemId.
+    focusOption(spatialListRef.current, id, isInternalFocusMoveRef)
   }
 
   const onBlur = () => {
@@ -279,18 +279,18 @@ export function useFeatureFocus ({ viewportRef, featuresRef, items = [], eventBu
       return
     }
     isFocusedRef.current = false
-    setActiveFeatureId(null)
-    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id: null })
+    setActiveItemId(null)
+    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id: null })
   }
 
   // Mirrors keyboard Enter/Space: make the clicked item active, focus it, then confirm selection.
   const selectItem = (id) => {
     lastActiveIdRef.current = id
-    setActiveFeatureId(id)
-    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_FEATURE, { id })
-    focusOption(featuresRef.current, id, isInternalFocusMoveRef)
-    eventBus?.emit(EVENTS.MAP_SELECT_FEATURE)
+    setActiveItemId(id)
+    eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id })
+    focusOption(spatialListRef.current, id, isInternalFocusMoveRef)
+    eventBus?.emit(EVENTS.MAP_SELECT_ITEM)
   }
 
-  return { activeFeatureId, tabbableId, selectedIds, onFocus, onBlur, selectItem }
+  return { activeItemId, tabbableId, selectedIds, onFocus, onBlur, selectItem }
 }

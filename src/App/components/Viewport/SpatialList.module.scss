@@ -1,10 +1,10 @@
 @use '../../../scss/tools/index' as tools;
 
 // ===================================================
-// Component: Features
+// Component: SpatialList
 // ===================================================
 
-.im-c-features {
+.im-c-spatial-list {
   position: absolute;
   inset: 0;
   pointer-events: none;
@@ -24,7 +24,7 @@
     clip-path: inset(50%);
     white-space: nowrap;
     // Roving tabindex moves real focus (and click activation) onto individual options, so they
-    // need pointer events re-enabled — overridden off .im-c-features's pointer-events: none,
+    // need pointer events re-enabled — overridden off .im-c-spatial-list's pointer-events: none,
     // which otherwise lets mouse interaction pass through to the map everywhere else.
     pointer-events: auto;
   }
