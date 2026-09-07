@@ -1,4 +1,5 @@
 import { createVertexPlacement } from './vertexPlacement.js'
+import { stopIfGlobalAltKey } from '../../../../../../src/utils/globalAltShortcuts.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
 
@@ -78,6 +79,9 @@ export const wireInputEvents = ({
   container.addEventListener('pointerdown', onPointerdown)
   container.addEventListener('touchstart', onTouchstart, { passive: true })
   container.addEventListener('pointermove', onPointerMove)
+  // Capture phase, separate from onKeydown above — shadows global Alt+<key> shortcuts
+  // (src/utils/globalAltShortcuts.js) unconditionally while drawing.
+  globalThis.addEventListener('keyup', stopIfGlobalAltKey, { capture: true })
 
   return {
     destroy () {
@@ -87,6 +91,7 @@ export const wireInputEvents = ({
       container.removeEventListener('pointerdown', onPointerdown)
       container.removeEventListener('touchstart', onTouchstart)
       container.removeEventListener('pointermove', onPointerMove)
+      globalThis.removeEventListener('keyup', stopIfGlobalAltKey, { capture: true })
     }
   }
 }

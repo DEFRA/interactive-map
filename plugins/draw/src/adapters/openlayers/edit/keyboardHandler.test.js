@@ -178,6 +178,30 @@ test('Delete deletes, ctrl/cmd+z undoes — but not while typing in an input ins
   expect(onUndo).toHaveBeenCalledTimes(1)
 })
 
+test('Alt+Enter keyup stops propagation — never reaches the app-wide "highlight label at center" shortcut', () => {
+  setup()
+  const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+  const stopSpy = jest.spyOn(event, 'stopPropagation')
+  window.dispatchEvent(event)
+  expect(stopSpy).toHaveBeenCalled()
+})
+
+test('Alt+Arrow keyup stops propagation too — never reaches the app-wide "highlight next label" shortcut, even with nothing selected', () => {
+  setup() // no selection made — navigateTo's own no-op guard must not skip the shadowing
+  const event = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, cancelable: true, bubbles: true })
+  const stopSpy = jest.spyOn(event, 'stopPropagation')
+  window.dispatchEvent(event)
+  expect(stopSpy).toHaveBeenCalled()
+})
+
+test('a plain Enter keyup (no Alt) is left alone', () => {
+  setup()
+  const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: false, cancelable: true, bubbles: true })
+  const stopSpy = jest.spyOn(event, 'stopPropagation')
+  window.dispatchEvent(event)
+  expect(stopSpy).not.toHaveBeenCalled()
+})
+
 test('keys are ignored while an interactive element outside the viewport has focus', () => {
   const { onDeleted, onKeyboardActive } = setup()
   const button = document.createElement('button')

@@ -1,4 +1,5 @@
 import { ARROW_KEYS, ARROW_OFFSETS, isInteractiveElementFocused, isUndoShortcut, sharedKeyboardHandlers } from '../../utils/keyboardShortcuts.js'
+import { stopIfGlobalAltKey } from '../../../../../../../src/utils/globalAltShortcuts.js'
 
 /**
  * Keyboard interaction for the point-edit mode: arrow-key/Shift+arrow nudge and Cmd/Ctrl+Z
@@ -69,6 +70,7 @@ export const keyboardHandlers = {
     }
 
     state.interfaceType = 'keyboard'
+    stopIfGlobalAltKey(e)
     if (ARROW_KEYS.has(e.key)) {
       e.stopPropagation()
 

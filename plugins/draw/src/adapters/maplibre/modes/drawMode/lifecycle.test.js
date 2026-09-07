@@ -50,6 +50,41 @@ describe('setup and crosshair', () => {
   })
 })
 
+describe('global Alt+<key> shortcut shadowing', () => {
+  test('Alt+Enter keyup stops propagation while drawing — never reaches the app-wide "highlight label at center" shortcut', () => {
+    setup(DrawPolygonMode)
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  test('Alt+Arrow keyup stops propagation too — never reaches the app-wide "highlight next label" shortcut', () => {
+    setup(DrawPolygonMode)
+    const event = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  test('a plain Enter keyup (no Alt) is left alone', () => {
+    setup(DrawPolygonMode)
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: false, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).not.toHaveBeenCalled()
+  })
+
+  test('the shadow listener is removed on onStop — Alt+Enter bubbles normally again', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    ctx.onStop(state)
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).not.toHaveBeenCalled()
+  })
+})
+
 describe('onStop', () => {
   test('mouse session: removes listeners, hides the crosshair and reports the final interface type', () => {
     const { ctx, state, marker, container } = setup(DrawPolygonMode, { interfaceType: 'mouse' })

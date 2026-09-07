@@ -1,5 +1,6 @@
 import { coordToPixel } from '../utils/olCoords.js'
 import { spatialNavigate } from '../../../../../../src/utils/spatialNavigate.js'
+import { stopIfGlobalAltKey } from '../../../../../../src/utils/globalAltShortcuts.js'
 import { wireNudge } from './nudge.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
@@ -108,6 +109,9 @@ const buildKeyupHandler = ({ keyMove, onVertexMoved, onDeleted, isFocused }) => 
   if (isFocused()) {
     return
   }
+  // Registered with capture:true below, so this runs first — shadows global Alt+<key>
+  // shortcuts (src/utils/globalAltShortcuts.js) unconditionally while editing.
+  stopIfGlobalAltKey(e)
   if (ARROW_KEYS.has(e.key) && keyMove.start && keyMove.index != null) {
     // Not hiding the snap indicator here — nudge.js's own snap.apply() already left it showing
     // correctly, and it should stay that way after the key is released.

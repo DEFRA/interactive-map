@@ -56,6 +56,41 @@ test('arrow keys switch to the keyboard interface without placing', () => {
   expect(placement.placeVertex).not.toHaveBeenCalled()
 })
 
+describe('global Alt+<key> shortcut shadowing', () => {
+  test('Alt+Enter keyup stops propagation while drawing — never reaches the app-wide "highlight label at center" shortcut', () => {
+    setup()
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  test('Alt+Arrow keyup stops propagation too — never reaches the app-wide "highlight next label" shortcut', () => {
+    setup()
+    const event = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  test('a plain Enter keyup (no Alt) is left alone', () => {
+    setup()
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: false, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).not.toHaveBeenCalled()
+  })
+
+  test('the shadow listener is removed on destroy — Alt+Enter bubbles normally again', () => {
+    const { input } = setup()
+    input.destroy()
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).not.toHaveBeenCalled()
+  })
+})
+
 test('ctrl/cmd+z triggers undo', () => {
   const { container, onUndo } = setup()
   container.focus()

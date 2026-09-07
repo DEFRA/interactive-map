@@ -1,6 +1,7 @@
 import { getSnapInstance, clearSnapIndicator } from '../../utils/snapHelpers.js'
 import { ARROW_KEYS, ARROW_OFFSETS, isInteractiveElementFocused, isUndoShortcut, sharedKeyboardHandlers } from '../../utils/keyboardShortcuts.js'
 import { getCoords } from './geometryHelpers.js'
+import { stopIfGlobalAltKey } from '../../../../../../../src/utils/globalAltShortcuts.js'
 
 /**
  * Keyboard interaction for the vertex-edit mode: arrow-key vertex movement/insertion,
@@ -106,6 +107,7 @@ export const keyboardHandlers = {
     }
 
     state.interfaceType = 'keyboard'
+    stopIfGlobalAltKey(e)
     if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.stopPropagation()
 

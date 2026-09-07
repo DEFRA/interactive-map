@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { EVENTS } from '../../config/events.js'
 import { findNearestItemInDirection } from '../../utils/findNearestItemInDirection.js'
+import { stopIfGlobalAltKey } from '../../utils/globalAltShortcuts.js'
 
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
 
@@ -160,17 +161,10 @@ function useKeyboardNavigation ({ spatialListRef, viewportRef, items, eventBus, 
         // No action
       }
     }
-    // Alt+Arrow's and Alt+Enter's keyup (not keydown) is what the map's label navigation
-    // (highlightNextLabel) and center-label shortcut (highlightLabelAtCenter) listen for, on an
-    // ancestor shared with this listbox (see useKeyboardShortcuts.js's own comment on why:
-    // "fires from anywhere within the app, including the features listbox"). Stopping it here
-    // keeps those bindings scoped to genuine viewport focus, without needing to change them or
-    // make them focus-aware themselves. altKey may already be false by the time this fires if
-    // the user released Alt before the other key — a narrow, acceptable edge case.
+    // Shadows global Alt+<key> shortcuts (src/utils/globalAltShortcuts.js) from bubbling to
+    // the app-wide handler while this listbox has focus.
     const handleKeyUp = (event) => {
-      if (event.altKey && (ARROW_KEYS.has(event.key) || event.key === 'Enter')) {
-        event.stopPropagation()
-      }
+      stopIfGlobalAltKey(event)
     }
     listboxEl.addEventListener('keydown', handleKeyDown)
     listboxEl.addEventListener('keyup', handleKeyUp)
