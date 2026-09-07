@@ -160,14 +160,15 @@ function useKeyboardNavigation ({ spatialListRef, viewportRef, items, eventBus, 
         // No action
       }
     }
-    // Alt+Arrow's keyup (not keydown) is what the map's label navigation listens for, on an
+    // Alt+Arrow's and Alt+Enter's keyup (not keydown) is what the map's label navigation
+    // (highlightNextLabel) and center-label shortcut (highlightLabelAtCenter) listen for, on an
     // ancestor shared with this listbox (see useKeyboardShortcuts.js's own comment on why:
     // "fires from anywhere within the app, including the features listbox"). Stopping it here
-    // keeps that binding scoped to genuine viewport focus, without needing to change it or make
-    // it focus-aware itself. altKey may already be false by the time this fires if the user
-    // released Alt before the arrow key — a narrow, acceptable edge case.
+    // keeps those bindings scoped to genuine viewport focus, without needing to change them or
+    // make them focus-aware themselves. altKey may already be false by the time this fires if
+    // the user released Alt before the other key — a narrow, acceptable edge case.
     const handleKeyUp = (event) => {
-      if (event.altKey && ARROW_KEYS.has(event.key)) {
+      if (event.altKey && (ARROW_KEYS.has(event.key) || event.key === 'Enter')) {
         event.stopPropagation()
       }
     }

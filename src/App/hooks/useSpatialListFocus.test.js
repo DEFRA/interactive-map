@@ -440,12 +440,25 @@ describe('useSpatialListFocus — Alt+Arrow spatial navigation', () => {
     unmount(); el.remove()
   })
 
-  it('leaves an Alt+<non-arrow> keyup alone — nothing else uses this modifier here', () => {
+  it('stops an Alt+Enter keyup from bubbling to the viewport center-label binding on a shared ancestor', () => {
     const { result, el, unmount } = setup()
     act(() => result.current.onFocus())
     let event
     act(() => {
       event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, bubbles: true, cancelable: true })
+    })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    act(() => el.dispatchEvent(event))
+    expect(stopSpy).toHaveBeenCalled()
+    unmount(); el.remove()
+  })
+
+  it('leaves an Alt+<other> keyup alone — nothing else uses this modifier here', () => {
+    const { result, el, unmount } = setup()
+    act(() => result.current.onFocus())
+    let event
+    act(() => {
+      event = new KeyboardEvent('keyup', { key: 'i', altKey: true, bubbles: true, cancelable: true })
     })
     const stopSpy = jest.spyOn(event, 'stopPropagation')
     act(() => el.dispatchEvent(event))
