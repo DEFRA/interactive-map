@@ -1,5 +1,5 @@
 import { coordToPixel } from '../utils/olCoords.js'
-import { spatialNavigate } from '../../../utils/spatial.js'
+import { spatialNavigate } from '../../../../../../src/utils/spatialNavigate.js'
 import { wireNudge } from './nudge.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])

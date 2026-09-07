@@ -1,4 +1,4 @@
-import { spatialNavigate } from './spatial.js'
+import { spatialNavigate } from '../../../../src/utils/spatialNavigate.js'
 import { calculateLinearTextSize } from './calculateLinearTextSize.js'
 
 const HIGHLIGHT_SCALE_FACTOR = 1.5
@@ -166,7 +166,7 @@ export function navigateToNextLabel (direction, state) {
     return null
   }
   const pixelArray = filtered.map(l => l.pixel)
-  let nextFilteredIndex = spatialNavigate(direction, [state.currentPixel.x, state.currentPixel.y], pixelArray)
+  let nextFilteredIndex = spatialNavigate([state.currentPixel.x, state.currentPixel.y], pixelArray, direction)
   if (nextFilteredIndex == null || nextFilteredIndex < 0 || nextFilteredIndex >= filtered.length) {
     nextFilteredIndex = 0
   }

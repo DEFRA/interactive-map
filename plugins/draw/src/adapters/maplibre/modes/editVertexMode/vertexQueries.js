@@ -3,7 +3,7 @@ import {
   getRingSegments,
   getSegmentForIndex
 } from './geometryHelpers.js'
-import { spatialNavigate } from '../../../../utils/spatial.js'
+import { spatialNavigate } from '../../../../../../../src/utils/spatialNavigate.js'
 
 export const vertexQueries = {
   findVertexIndex (coords, targetCoord, currentIdx) {

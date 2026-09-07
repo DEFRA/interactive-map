@@ -106,62 +106,6 @@ const getCardinalMove = (from, to) => {
   return moves.join(', ')
 }
 
-/**
- * Find the index of the nearest pixel in a given cardinal direction.
- *
- * The function:
- * - Filters candidate points that lie in the specified direction
- *   (up, down, left, right) relative to a start pixel.
- * - Selects the nearest valid candidate using Euclidean distance.
- * - Falls back to returning the start pixel index if no candidate exists.
- *
- * Example:
- *   spatialNavigate('up', [100, 200], [[100, 100], [150, 250], [90, 180]])
- *   → returns the index of [100, 100]
- *
- * @param {'ArrowUp'|'ArrowDown'|'ArrowLeft'|'ArrowRight'} direction - The direction to search.
- * @param {[number, number]} start - The starting pixel coordinate [x, y].
- * @param {Array<[number, number]>} pixels - Array of pixel coordinates.
- * @returns {number} Index of the closest pixel in the given direction.
- */
-const isInDirection = (direction, dx, dy) => {
-  switch (direction) {
-    case 'ArrowUp': return dy < 0 && Math.abs(dy) >= Math.abs(dx)
-    case 'ArrowDown': return dy > 0 && Math.abs(dy) >= Math.abs(dx)
-    case 'ArrowLeft': return dx < 0 && Math.abs(dx) > Math.abs(dy)
-    case 'ArrowRight': return dx > 0 && Math.abs(dx) > Math.abs(dy)
-    default: return false
-  }
-}
-
-const spatialNavigate = (direction, start, pixels) => {
-  const [sx, sy] = start
-
-  // Direction filters
-  const candidates = pixels.filter(([x, y]) =>
-    (x !== sx || y !== sy) && isInDirection(direction, x - sx, y - sy)
-  )
-
-  if (!candidates.length) {
-    return pixels.findIndex(p => p[0] === sx && p[1] === sy)
-  }
-
-  // Choose the closest by Euclidean distance
-  let closestIndex = -1
-  let minDist = Infinity
-  candidates.forEach(c => {
-    const dx = c[0] - sx
-    const dy = c[1] - sy
-    const dist = dx * dx + dy * dy // squared distance is enough
-    if (dist < minDist) {
-      minDist = dist
-      closestIndex = pixels.indexOf(c)
-    }
-  })
-
-  return closestIndex
-}
-
 const getResolution = (center, zoom) => {
   const EARTH_CIRCUMFERENCE = 40075016.686
   const TILE_SIZE = 512
@@ -239,7 +183,6 @@ export {
   getCardinalMove,
   getBboxFromGeoJSON,
   isGeometryObscured,
-  spatialNavigate,
   getResolution,
   getPaddedBounds,
   formatDimension

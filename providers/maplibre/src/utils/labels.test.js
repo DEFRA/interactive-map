@@ -5,10 +5,10 @@ import {
   navigateToNextLabel, createMapLabelNavigator
 } from './labels.js'
 
-import { spatialNavigate } from './spatial.js'
+import { spatialNavigate } from '../../../../src/utils/spatialNavigate.js'
 import { calculateLinearTextSize } from './calculateLinearTextSize.js'
 
-jest.mock('./spatial.js', () => ({ spatialNavigate: jest.fn() }))
+jest.mock('../../../../src/utils/spatialNavigate.js', () => ({ spatialNavigate: jest.fn() }))
 jest.mock('./calculateLinearTextSize.js', () => ({ calculateLinearTextSize: jest.fn(() => 12) }))
 
 describe('labels utils', () => {
