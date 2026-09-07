@@ -8,6 +8,10 @@ const SET_FEATURES_SUPPRESSED = 'map:setfeaturessuppressed'
  * (any plugin can emit this) to report items as empty while suppressed regardless of what's
  * actually visible — which is what drives <Features>'s own tabIndex/aria-hidden.
  *
+ * Items always carry at least { id, label, x?, y? } — Features.jsx/useFeatureFocus.js only
+ * ever read those. Whichever plugin emits map:setfeatures (interact today) may include further
+ * fields of its own on each item; those simply ride along unused here.
+ *
  * @param {object} eventBus
  * @returns {{ items: Array<{ id: string, label: string, x?: number, y?: number }>, multiselectable: boolean }}
  */

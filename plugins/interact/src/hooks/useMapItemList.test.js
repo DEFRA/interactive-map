@@ -9,6 +9,13 @@ const SET_FEATURES = 'map:setfeatures'
 const SET_ACTIVE = 'map:setactivefeature'
 const CONFIRM = 'map:selectfeature'
 
+// Items now carry more than id/label/x/y (isMarker, and for features: featureId/layerId/
+// idProperty/geometry/properties) — see useMapItemList.js's own comment on why. These two
+// helpers assert only the fields each test actually cares about, rather than retyping the full
+// object everywhere a marker/feature item shows up.
+const markerItem = (overrides) => expect.objectContaining({ isMarker: true, ...overrides })
+const featureItem = (overrides) => expect.objectContaining({ isMarker: false, ...overrides })
+
 const makeEventBus = () => {
   const listeners = {}
   return {
@@ -59,6 +66,16 @@ const setup = ({ interactionModes = [], markers, layers = [], mapProvider, event
   return { eb, mp, dp, result, unmount }
 }
 
+// A marker "matching" an id now requires it to actually have made it into the built item list
+// (visible, labelled, in-viewport) — not just exist in markers.items — since useActiveItemHandler
+// resolves purely by looking the id up in that same list. This helper builds one that will.
+const setupVisibleMarker = (overrides = {}) => {
+  const { el, container } = makeMarkerEl({ inViewport: true })
+  const markers = makeMarkers([{ id: 'm1', label: 'Marker', symbol: 'pin', isVisible: true, ...overrides }])
+  markers.markerRefs.set('m1', el)
+  return { markers, container }
+}
+
 // ─── useMapItemList — lifecycle ──────────────────────────────────────────
 
 describe('useMapItemList — lifecycle', () => {
@@ -98,7 +115,7 @@ describe('useMapItemList — initial population', () => {
     const { eb } = setup({ interactionModes: ['selectMarker'], markers })
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: 'm1', label: MARKER_LABEL }], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
     })
     container.remove()
   })
@@ -123,7 +140,7 @@ describe('useMapItemList — datachange trigger', () => {
     act(() => eb.emit(DATA_CHANGE, {}))
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: 'm1', label: MARKER_LABEL }], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
     })
     container.remove()
   })
@@ -143,7 +160,7 @@ describe('useMapItemList — selectMarker mode', () => {
     act(() => eb.emit(MOVE_END, {}))
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: 'm1', label: MARKER_LABEL }], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
     })
     container.remove()
   })
@@ -209,7 +226,7 @@ describe('useMapItemList — selectMarker mode', () => {
 
     expect(mp.mapToScreen).toHaveBeenCalledWith([-2.4, 54.5])
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: 'm1', label: MARKER_LABEL, x: 150, y: 300 }], multiselectable: false // scaleFactor.medium = 1.5
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL, x: 150, y: 300 })], multiselectable: false // scaleFactor.medium = 1.5
     })
     container.remove()
   })
@@ -225,7 +242,7 @@ describe('useMapItemList — selectMarker mode', () => {
 
     expect(mp.mapToScreen).not.toHaveBeenCalled()
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: 'm1', label: MARKER_LABEL }], multiselectable: false
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL })], multiselectable: false
     })
     container.remove()
   })
@@ -250,7 +267,8 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
 
     expect(mp.getVisibleFeatures).toHaveBeenCalledWith(['roads'])
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '1', label: 'High Street' }], multiselectable: false
+      items: [featureItem({ id: '1', label: 'High Street', featureId: '1', layerId: 'roads', idProperty: 'road_id' })],
+      multiselectable: false
     })
   })
 
@@ -259,7 +277,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '2', label: '2' }], multiselectable: false
+      items: [featureItem({ id: '2', label: '2' })], multiselectable: false
     })
   })
 
@@ -281,7 +299,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '42', label: 'Oak Ave' }], multiselectable: false
+      items: [featureItem({ id: '42', label: 'Oak Ave' })], multiselectable: false
     })
   })
 
@@ -293,12 +311,12 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
   })
 
   it('falls back to stringId label when feature has no properties object', () => {
-    // Line 45: feature.properties is undefined → ?. short-circuits → ?? stringId used
+    // feature.properties is undefined → ?. short-circuits → ?? stringId used
     const features = [{ layer: { id: 'roads' }, id: 99 }]
     const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: makeMapProvider(features) })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '99', label: '99' }], multiselectable: false
+      items: [featureItem({ id: '99', label: '99' })], multiselectable: false
     })
   })
 
@@ -314,7 +332,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
     })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '1', label: 'High Street' }], multiselectable: false
+      items: [featureItem({ id: '1', label: 'High Street' })], multiselectable: false
     })
   })
 
@@ -332,7 +350,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
 
     expect(mp.mapToScreen).toHaveBeenCalledWith([2, 1]) // bbox centre of the polygon above
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '1', label: 'High Street', x: 150, y: 300 }], multiselectable: false // scaleFactor.medium = 1.5
+      items: [featureItem({ id: '1', label: 'High Street', x: 150, y: 300 })], multiselectable: false // scaleFactor.medium = 1.5
     })
   })
 
@@ -345,7 +363,7 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
 
     expect(mp.mapToScreen).not.toHaveBeenCalled()
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '1', label: 'High Street' }], multiselectable: false
+      items: [featureItem({ id: '1', label: 'High Street' })], multiselectable: false
     })
   })
 })
@@ -378,7 +396,7 @@ describe('useMapItemList — selectFeature mode: guards', () => {
     })
     act(() => eb.emit(MOVE_END, {}))
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: '1', label: 'High St' }], multiselectable: true
+      items: [featureItem({ id: '1', label: 'High St' })], multiselectable: true
     })
   })
 })
@@ -406,7 +424,8 @@ describe('useMapItemList — combined modes', () => {
     act(() => eb.emit(MOVE_END, {}))
 
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [{ id: 'm1', label: 'A Marker' }, { id: '1', label: 'Main Rd' }], multiselectable: false
+      items: [markerItem({ id: 'm1', label: 'A Marker' }), featureItem({ id: '1', label: 'Main Rd' })],
+      multiselectable: false
     })
     container.remove()
   })
@@ -437,10 +456,11 @@ describe('useMapItemList — map:setactivefeature listener', () => {
   })
 
   it('dispatches SET_LISTBOX_ACTIVE null when id matches a marker (ring handled by Markers.jsx)', () => {
-    const markers = makeMarkers([{ id: 'm1', label: 'Marker', symbol: 'pin', isVisible: true }])
+    const { markers, container } = setupVisibleMarker()
     const { eb, dp } = setup({ interactionModes: ['selectMarker'], markers })
     act(() => eb.emit(SET_ACTIVE, { id: 'm1' })) // NOSONAR
     expect(dp).toHaveBeenCalledWith({ type: 'SET_LISTBOX_ACTIVE', payload: null })
+    container.remove()
   })
 
   it('dispatches SET_LISTBOX_ACTIVE with feature payload when id matches a feature', () => {
@@ -466,9 +486,9 @@ describe('useMapItemList — map:setactivefeature listener', () => {
   })
 
   it('preserves raw numeric featureId in SET_LISTBOX_ACTIVE payload (MapLibre filter type-strictness)', () => {
-    const layers = [{ layerId: 'hedges', idProperty: 'id' }]
+    const layers = [{ layerId: 'hedges', idProperty: 'id', labelProperty: 'name' }]
     const features = [
-      { layer: { id: 'hedges' }, properties: { id: 27665979 }, geometry: { type: 'LineString' } }
+      { layer: { id: 'hedges' }, properties: { id: 27665979, name: 'Hedge' }, geometry: { type: 'LineString' } }
     ]
     const { eb, dp } = setup({
       interactionModes: ['selectFeature'],
@@ -487,8 +507,8 @@ describe('useMapItemList — map:setactivefeature listener', () => {
     })
   })
 
-  it('does not dispatch when feature id is not found in visible features', () => {
-    const layers = [{ layerId: 'roads', idProperty: 'road_id' }]
+  it('does not dispatch when the id was never part of the built item list', () => {
+    const layers = [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }]
     const { eb, dp } = setup({
       interactionModes: ['selectFeature'],
       layers,
@@ -498,8 +518,7 @@ describe('useMapItemList — map:setactivefeature listener', () => {
     expect(dp).not.toHaveBeenCalled()
   })
 
-  it('skips features from unknown layers when searching by id', () => {
-    // Line 69: getFeatureId returns null for unknown layer → rawId != null is false
+  it('does not dispatch for a feature from an unknown layer — it was never built into an item', () => {
     const layers = [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }]
     const features = [{ layer: { id: 'unknown' }, properties: { some_id: '1' }, geometry: { type: 'Point' } }]
     const { eb, dp } = setup({
@@ -511,8 +530,7 @@ describe('useMapItemList — map:setactivefeature listener', () => {
     expect(dp).not.toHaveBeenCalled()
   })
 
-  it('does not search features when interactionModes excludes selectFeature', () => {
-    // Line 114: interactionModes.includes('selectFeature') → false → block skipped
+  it('does not dispatch for a feature id when interactionModes excludes selectFeature — no feature items were built', () => {
     const features = [{ layer: { id: 'roads' }, properties: { road_id: '1' }, geometry: { type: 'Point' } }]
     const { eb, dp } = setup({
       interactionModes: ['selectMarker'],
@@ -523,11 +541,32 @@ describe('useMapItemList — map:setactivefeature listener', () => {
     expect(dp).not.toHaveBeenCalled()
   })
 
-  it('does not search features when layers is empty', () => {
-    // Line 114: layers.length > 0 → false → block skipped
+  it('does not dispatch for a feature id when layers is empty — no feature items were built', () => {
     const { eb, dp } = setup({ interactionModes: ['selectFeature'], layers: [] })
     act(() => eb.emit(SET_ACTIVE, { id: '1' }))
     expect(dp).not.toHaveBeenCalled()
+  })
+
+  it('resolves the active item from the already-built list, without re-querying the map engine', () => {
+    const layers = [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }]
+    const features = [
+      { layer: { id: 'roads' }, properties: { road_id: '1', road_name: 'High St' }, geometry: { type: 'Point' } },
+      { layer: { id: 'roads' }, properties: { road_id: '2', road_name: 'Low St' }, geometry: { type: 'Point' } }
+    ]
+    const mp = makeMapProvider(features)
+    const { eb, dp } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: mp })
+
+    expect(mp.getVisibleFeatures).toHaveBeenCalledTimes(1) // once, building the list on mount
+
+    act(() => eb.emit(SET_ACTIVE, { id: '1' }))
+    act(() => eb.emit(SET_ACTIVE, { id: '2' }))
+    act(() => eb.emit(SET_ACTIVE, { id: '1' }))
+
+    expect(mp.getVisibleFeatures).toHaveBeenCalledTimes(1) // still just the once
+    expect(dp).toHaveBeenLastCalledWith({
+      type: 'SET_LISTBOX_ACTIVE',
+      payload: { featureId: '1', layerId: 'roads', idProperty: 'road_id', geometry: { type: 'Point' } }
+    })
   })
 })
 
@@ -548,13 +587,14 @@ describe('useMapItemList — confirm: lifecycle and guards', () => {
   })
 
   it('keeps the active item after confirm so repeated confirms dispatch again', () => {
-    const markers = makeMarkers([{ id: 'm1', label: 'Marker', symbol: 'pin', isVisible: true }])
+    const { markers, container } = setupVisibleMarker()
     const { eb, dp } = setup({ interactionModes: ['selectMarker'], markers })
     act(() => eb.emit(SET_ACTIVE, { id: 'm1' }))
     act(() => eb.emit(CONFIRM))
     dp.mockClear()
     act(() => eb.emit(CONFIRM))
     expect(dp).toHaveBeenCalledWith({ type: 'TOGGLE_SELECTED_MARKERS', payload: { markerId: 'm1', multiSelect: false } })
+    container.remove()
   })
 })
 
@@ -564,7 +604,7 @@ describe('useMapItemList — confirm: marker dispatches', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('dispatches TOGGLE_SELECTED_MARKERS after activating a marker', () => {
-    const markers = makeMarkers([{ id: 'm1', label: 'Marker', symbol: 'pin', isVisible: true }])
+    const { markers, container } = setupVisibleMarker()
     const { eb, dp } = setup({ interactionModes: ['selectMarker'], markers })
     act(() => eb.emit(SET_ACTIVE, { id: 'm1' }))
     act(() => eb.emit(CONFIRM))
@@ -572,6 +612,7 @@ describe('useMapItemList — confirm: marker dispatches', () => {
       type: 'TOGGLE_SELECTED_MARKERS',
       payload: { markerId: 'm1', multiSelect: false }
     })
+    container.remove()
   })
 })
 
@@ -622,9 +663,9 @@ describe('useMapItemList — confirm: feature dispatches', () => {
   })
 
   it('preserves raw numeric featureId in TOGGLE_SELECTED_FEATURES payload', () => {
-    const layers = [{ layerId: 'hedges', idProperty: 'id' }]
+    const layers = [{ layerId: 'hedges', idProperty: 'id', labelProperty: 'name' }]
     const features = [
-      { layer: { id: 'hedges' }, properties: { id: 27665979 }, geometry: { type: 'LineString' } }
+      { layer: { id: 'hedges' }, properties: { id: 27665979, name: 'Hedge' }, geometry: { type: 'LineString' } }
     ]
     const { eb, dp } = setup({
       interactionModes: ['selectFeature'],
@@ -641,7 +682,7 @@ describe('useMapItemList — confirm: feature dispatches', () => {
         replaceAll: true,
         layerId: 'hedges',
         idProperty: 'id',
-        properties: { id: 27665979 },
+        properties: { id: 27665979, name: 'Hedge' },
         geometry: { type: 'LineString' }
       }
     })

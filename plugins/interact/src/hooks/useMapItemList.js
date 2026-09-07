@@ -5,8 +5,10 @@ import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { buildLayerConfigMap } from '../utils/featureQueries.js'
 import { getGeometryCenter } from '../utils/spatial.js'
 
-const getFeatureId = (feature, config) =>
-  config ? (feature.properties?.[config.idProperty] ?? feature.id) : null
+// Only called after toFeatureItem's own `config?.labelProperty` guard, so config is always
+// truthy here — no defensive null-config branch needed (that was only for findFeatureById's own
+// direct-lookup path, since removed along with the mapProvider.getVisibleFeatures re-query it did).
+const getFeatureId = (feature, config) => feature.properties?.[config.idProperty] ?? feature.id
 
 const isInViewport = (el) => {
   const container = el.closest('.im-c-viewport__markers')
@@ -40,7 +42,7 @@ const collectVisibleMarkers = (markers, mapProvider, mapSize) => {
     if (!marker.label) { continue }
     const el = markers.markerRefs?.get(marker.id)
     if (!isStandaloneLabel(marker) && el && isInViewport(el)) {
-      const item = { id: marker.id, label: marker.label }
+      const item = { id: marker.id, label: marker.label, isMarker: true }
       if (marker.coords) {
         Object.assign(item, projectToScreen(mapProvider, mapSize, marker.coords))
       }
@@ -55,14 +57,28 @@ const toFeatureItem = (feature, layerConfigMap, seenIds, mapProvider, mapSize) =
   if (!config?.labelProperty) {
     return null
   }
-  const id = getFeatureId(feature, config)
-  const stringId = id == null ? null : String(id)
+  const rawId = getFeatureId(feature, config)
+  const stringId = rawId == null ? null : String(rawId)
   if (stringId == null || seenIds.has(stringId)) {
     return null
   }
   seenIds.add(stringId)
   const label = feature.properties?.[config.labelProperty] ?? stringId
-  const item = { id: stringId, label }
+  // Keeps the full resolved shape (raw id, layer config, geometry, properties) alongside the
+  // listbox-facing id/label — not just for building the item, but so useActiveItemHandler below
+  // can resolve "what is this" from this same object later, without re-querying the map engine.
+  // Only id/label/x/y ever reach MAP_SET_FEATURES itself (see toPublicItem) — the rest stays
+  // internal, in itemsRef.
+  const item = {
+    id: stringId,
+    label,
+    isMarker: false,
+    featureId: rawId,
+    layerId: config.layerId,
+    idProperty: config.idProperty,
+    geometry: feature.geometry,
+    properties: feature.properties
+  }
   // Bbox-centre of the feature's geometry (polygon or line) — see getGeometryCenter's own doc
   // for why a bbox centre rather than a true centroid. null when the feature carries no usable
   // geometry (e.g. OpenLayers' getVisibleFeatures, currently a stub returning [] — see PR notes).
@@ -88,23 +104,17 @@ const collectVisibleFeatures = (mapProvider, layers, mapSize) => {
   return items
 }
 
-const findFeatureById = (features, layerConfigMap, targetId) => {
-  for (const feature of features) {
-    const config = layerConfigMap[feature.layer?.id]
-    const rawId = getFeatureId(feature, config)
-    if (rawId != null && String(rawId) === String(targetId)) {
-      return { feature, config, rawId }
-    }
-  }
-  return null
-}
-
 /**
- * Rebuilds the keyboard-navigable item list whenever the map moves or data changes.
- * Collects visible markers (by DOM visibility) and visible features (by viewport query),
- * then emits MAP_SET_FEATURES so the listbox stays in sync with what the user can see.
+ * Rebuilds the keyboard-navigable item list whenever the map moves or data changes. Collects
+ * visible markers (by DOM visibility) and visible features (by viewport query), keeps the
+ * result in itemsRef for useActiveItemHandler to resolve against later, and emits the same
+ * items via MAP_SET_FEATURES so the listbox stays in sync with what's visible. Features.jsx/
+ * useFeatureItems.js only ever render id/label/x/y from each item — the rest (isMarker,
+ * geometry, properties, layer config) rides along unused there, but is what lets
+ * useActiveItemHandler resolve "what is this" from the same object later, with nothing to
+ * re-derive and no separate lean/rich shape to keep in sync.
  */
-function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus }) {
+function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus, itemsRef }) {
   useEffect(() => {
     const handleMoveEnd = () => {
       const items = []
@@ -114,6 +124,7 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
       if (interactionModes?.includes('selectFeature') && layers.length > 0) {
         items.push(...collectVisibleFeatures(mapProvider, layers, mapSize))
       }
+      itemsRef.current = items
       eventBus.emit(EVENTS.MAP_SET_FEATURES, { items, multiselectable: multiSelect })
     }
     handleMoveEnd()
@@ -123,7 +134,7 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
       eventBus.off(EVENTS.MAP_MOVE_END, handleMoveEnd)
       eventBus.off(EVENTS.MAP_DATA_CHANGE, handleMoveEnd)
     }
-  }, [markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus])
+  }, [markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus, itemsRef])
 }
 
 /**
@@ -131,8 +142,16 @@ function useItemListSync ({ markers, mapSize, interactionModes, layers, mapProvi
  * storing it in both a ref (for synchronous access) and plugin state (for highlight rendering).
  * Shows the keyboard cursor ring without firing interact:selectionchange — committing the item
  * to the real selection only happens when the user presses Enter/Space.
+ *
+ * Resolves purely by looking the id up in itemsRef (the same list useItemListSync just built) —
+ * deliberately not a fresh mapProvider.getVisibleFeatures() query. This fires on every roving-
+ * tabindex move (every arrow-key press while browsing the list), so re-querying the map engine
+ * here — as an earlier version of this hook did — meant every keystroke re-ran the same query
+ * useItemListSync had just run moments before, plus a second linear scan through the result, to
+ * re-derive data already computed once and discarded. A stale/out-of-range id (e.g. the map
+ * panned since the list was built) simply resolves to nothing, same as before.
  */
-function useActiveItemHandler ({ markers, interactionModes, layers, mapProvider, eventBus, dispatch, listboxActiveItemRef }) {
+function useActiveItemHandler ({ itemsRef, eventBus, dispatch, listboxActiveItemRef }) {
   useEffect(() => {
     const handle = ({ id }) => {
       if (id === null) {
@@ -140,32 +159,27 @@ function useActiveItemHandler ({ markers, interactionModes, layers, mapProvider,
         dispatch({ type: 'SET_LISTBOX_ACTIVE', payload: null })
         return
       }
-      const hasMarkerMatch = markers.items.some(m => m.id === id)
-      if (hasMarkerMatch) {
+      const item = itemsRef.current.find(i => i.id === id)
+      if (!item) {
+        return
+      }
+      if (item.isMarker) {
         listboxActiveItemRef.current = { id, isMarker: true }
         dispatch({ type: 'SET_LISTBOX_ACTIVE', payload: null })
         return
       }
-      if (interactionModes?.includes('selectFeature') && layers.length > 0) {
-        const layerIds = layers.map(layer => layer.layerId)
-        const layerConfigMap = buildLayerConfigMap(layers)
-        const features = mapProvider.getVisibleFeatures(layerIds)
-        const match = findFeatureById(features, layerConfigMap, id)
-        if (match) {
-          const payload = {
-            featureId: match.rawId,
-            layerId: match.config.layerId,
-            idProperty: match.config.idProperty,
-            geometry: match.feature.geometry
-          }
-          listboxActiveItemRef.current = { id, isMarker: false, ...payload, properties: match.feature.properties }
-          dispatch({ type: 'SET_LISTBOX_ACTIVE', payload })
-        }
+      const payload = {
+        featureId: item.featureId,
+        layerId: item.layerId,
+        idProperty: item.idProperty,
+        geometry: item.geometry
       }
+      listboxActiveItemRef.current = { id, isMarker: false, ...payload, properties: item.properties }
+      dispatch({ type: 'SET_LISTBOX_ACTIVE', payload })
     }
     eventBus.on(EVENTS.MAP_SET_ACTIVE_FEATURE, handle)
     return () => { eventBus.off(EVENTS.MAP_SET_ACTIVE_FEATURE, handle) }
-  }, [markers, interactionModes, layers, mapProvider, eventBus, dispatch, listboxActiveItemRef])
+  }, [itemsRef, eventBus, dispatch, listboxActiveItemRef])
 }
 
 /**
@@ -210,7 +224,8 @@ export function useMapItemList ({ mapState, pluginState, services, mapProvider }
   const { dispatch, interactionModes, layers, multiSelect } = pluginState
   const { eventBus } = services
   const listboxActiveItemRef = useRef(null)
-  useItemListSync({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus })
-  useActiveItemHandler({ markers, interactionModes, layers, mapProvider, eventBus, dispatch, listboxActiveItemRef })
+  const itemsRef = useRef([])
+  useItemListSync({ markers, mapSize, interactionModes, layers, mapProvider, multiSelect, eventBus, itemsRef })
+  useActiveItemHandler({ itemsRef, eventBus, dispatch, listboxActiveItemRef })
   useSelectItemHandler({ eventBus, dispatch, listboxActiveItemRef, multiSelect })
 }
