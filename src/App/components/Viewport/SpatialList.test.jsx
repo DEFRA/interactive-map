@@ -207,7 +207,7 @@ describe('SpatialList + useSpatialListFocus — roving tabindex real focus event
   })
 
   // A real pub/sub bus, with a minimal fake "interact plugin" listening on it — mirroring what
-  // useMapItemList.js actually does: track the last map:setactivefeature id, and on
+  // useSpatialList.js actually does: track the last map:setactivefeature id, and on
   // map:selectfeature, mark THAT id selected and fire interact:selectionchange back. This is
   // the closest reproduction of the real reported bug: Enter only ever selecting the first item
   // because every arrow move was clobbering the active id back to a stale value.

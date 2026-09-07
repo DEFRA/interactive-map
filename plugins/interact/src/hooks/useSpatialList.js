@@ -239,7 +239,7 @@ function useSelectItemHandler ({ eventBus, dispatch, listboxActiveItemRef, multi
  *
  * @param {{ mapState: object, pluginState: object, services: object, mapProvider: object, spatialListRegistry: object }} params
  */
-export function useMapItemList ({ mapState, pluginState, services, mapProvider, spatialListRegistry }) {
+export function useSpatialList ({ mapState, pluginState, services, mapProvider, spatialListRegistry }) {
   const { markers, mapSize } = mapState
   const { dispatch, interactionModes, layers, multiSelect } = pluginState
   const { eventBus } = services

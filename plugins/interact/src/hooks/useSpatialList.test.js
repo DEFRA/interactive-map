@@ -1,5 +1,5 @@
 import { renderHook, act } from '@testing-library/react'
-import { useMapItemList } from './useMapItemList.js'
+import { useSpatialList } from './useSpatialList.js'
 import { createSpatialListRegistry } from '../../../../src/App/registry/spatialListRegistry.js'
 
 const MARKER_LABEL = 'Marker One'
@@ -11,7 +11,7 @@ const SET_ACTIVE = 'map:setactiveitem'
 const CONFIRM = 'map:selectitem'
 
 // Items now carry more than id/label/x/y (isMarker, and for features: featureId/layerId/
-// idProperty/geometry/properties) — see useMapItemList.js's own comment on why. These two
+// idProperty/geometry/properties) — see useSpatialList.js's own comment on why. These two
 // helpers assert only the fields each test actually cares about, rather than retyping the full
 // object everywhere a marker/feature item shows up.
 const markerItem = (overrides) => expect.objectContaining({ isMarker: true, ...overrides })
@@ -64,7 +64,7 @@ const setup = ({ interactionModes = [], markers, layers = [], mapProvider, event
   // registry's own aggregation/exclusive-claim logic is covered separately, in
   // spatialListRegistry.test.js.
   const spatialListRegistry = createSpatialListRegistry({ eventBus: eb })
-  const { result, unmount } = renderHook(() => useMapItemList({
+  const { result, unmount } = renderHook(() => useSpatialList({
     mapState: { markers: markers ?? makeMarkers(), mapSize },
     pluginState: { interactionModes, layers, dispatch: dp, multiSelect },
     services: { eventBus: eb },
@@ -84,9 +84,9 @@ const setupVisibleMarker = (overrides = {}) => {
   return { markers, container }
 }
 
-// ─── useMapItemList — lifecycle ──────────────────────────────────────────
+// ─── useSpatialList — lifecycle ──────────────────────────────────────────
 
-describe('useMapItemList — lifecycle', () => {
+describe('useSpatialList — lifecycle', () => {
   it('subscribes to map:moveend on mount', () => {
     const { eb } = setup()
     expect(eb.on).toHaveBeenCalledWith(MOVE_END, expect.any(Function))
@@ -96,7 +96,7 @@ describe('useMapItemList — lifecycle', () => {
     const eb = makeEventBus()
     const spatialListRegistry = createSpatialListRegistry({ eventBus: eb })
     const registerSpy = jest.spyOn(spatialListRegistry, 'registerItemProvider')
-    const { unmount } = renderHook(() => useMapItemList({
+    const { unmount } = renderHook(() => useSpatialList({
       mapState: { markers: makeMarkers(), mapSize: 'small' },
       pluginState: { interactionModes: [], layers: [], dispatch: jest.fn(), multiSelect: false },
       services: { eventBus: eb },
@@ -140,9 +140,9 @@ describe('useMapItemList — lifecycle', () => {
   })
 })
 
-// ─── useMapItemList — initial population ─────────────────────────────────
+// ─── useSpatialList — initial population ─────────────────────────────────
 
-describe('useMapItemList — initial population', () => {
+describe('useSpatialList — initial population', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('emits visible markers immediately on mount without waiting for moveend', () => {
@@ -164,9 +164,9 @@ describe('useMapItemList — initial population', () => {
   })
 })
 
-// ─── useMapItemList — datachange trigger ─────────────────────────────────
+// ─── useSpatialList — datachange trigger ─────────────────────────────────
 
-describe('useMapItemList — datachange trigger', () => {
+describe('useSpatialList — datachange trigger', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('re-emits items on map:datachange the same as map:moveend', () => {
@@ -184,9 +184,9 @@ describe('useMapItemList — datachange trigger', () => {
   })
 })
 
-// ─── useMapItemList — selectMarker mode ───────────────────────────────────
+// ─── useSpatialList — selectMarker mode ───────────────────────────────────
 
-describe('useMapItemList — selectMarker mode', () => {
+describe('useSpatialList — selectMarker mode', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('emits visible markers as items on moveend', () => {
@@ -286,9 +286,9 @@ describe('useMapItemList — selectMarker mode', () => {
   })
 })
 
-// ─── useMapItemList — selectFeature mode: label resolution ───────────────
+// ─── useSpatialList — selectFeature mode: label resolution ───────────────
 
-describe('useMapItemList — selectFeature mode: label resolution', () => {
+describe('useSpatialList — selectFeature mode: label resolution', () => {
   const layers = [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }]
 
   it('emits layer features as items on moveend', () => {
@@ -407,9 +407,9 @@ describe('useMapItemList — selectFeature mode: label resolution', () => {
   })
 })
 
-// ─── useMapItemList — selectFeature mode: guards ─────────────────────────
+// ─── useSpatialList — selectFeature mode: guards ─────────────────────────
 
-describe('useMapItemList — selectFeature mode: guards', () => {
+describe('useSpatialList — selectFeature mode: guards', () => {
   const layers = [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }]
 
   it('skips features with no matching layer config', () => {
@@ -440,9 +440,9 @@ describe('useMapItemList — selectFeature mode: guards', () => {
   })
 })
 
-// ─── useMapItemList — combined modes ─────────────────────────────────────
+// ─── useSpatialList — combined modes ─────────────────────────────────────
 
-describe('useMapItemList — combined modes', () => {
+describe('useSpatialList — combined modes', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('emits both markers and features when both modes are active', () => {
@@ -477,9 +477,9 @@ describe('useMapItemList — combined modes', () => {
   })
 })
 
-// ─── useMapItemList — map:setactivefeature listener ──────────────────────
+// ─── useSpatialList — map:setactivefeature listener ──────────────────────
 
-describe('useMapItemList — map:setactivefeature listener', () => {
+describe('useSpatialList — map:setactivefeature listener', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('subscribes to map:setactivefeature on mount and unsubscribes on unmount', () => {
@@ -610,9 +610,9 @@ describe('useMapItemList — map:setactivefeature listener', () => {
   })
 })
 
-// ─── useMapItemList — confirm: lifecycle and guards ──────────────────────
+// ─── useSpatialList — confirm: lifecycle and guards ──────────────────────
 
-describe('useMapItemList — confirm: lifecycle and guards', () => {
+describe('useSpatialList — confirm: lifecycle and guards', () => {
   it('subscribes to map:confirmfeature on mount and unsubscribes on unmount', () => {
     const { eb, unmount } = setup()
     expect(eb.on).toHaveBeenCalledWith(CONFIRM, expect.any(Function))
@@ -638,9 +638,9 @@ describe('useMapItemList — confirm: lifecycle and guards', () => {
   })
 })
 
-// ─── useMapItemList — confirm: dispatches ────────────────────────────────
+// ─── useSpatialList — confirm: dispatches ────────────────────────────────
 
-describe('useMapItemList — confirm: marker dispatches', () => {
+describe('useSpatialList — confirm: marker dispatches', () => {
   afterEach(() => { document.body.innerHTML = '' })
 
   it('dispatches TOGGLE_SELECTED_MARKERS after activating a marker', () => {
@@ -656,7 +656,7 @@ describe('useMapItemList — confirm: marker dispatches', () => {
   })
 })
 
-describe('useMapItemList — confirm: feature dispatches', () => {
+describe('useSpatialList — confirm: feature dispatches', () => {
   it('dispatches TOGGLE_SELECTED_FEATURES after activating a feature', () => {
     const layers = [{ layerId: 'roads', idProperty: 'road_id', labelProperty: 'road_name' }]
     const features = [

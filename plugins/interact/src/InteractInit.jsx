@@ -1,7 +1,7 @@
 import { useEffect } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
-import { useMapItemList } from './hooks/useMapItemList.js'
+import { useSpatialList } from './hooks/useSpatialList.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
 import { useCrossHairVisibility } from './hooks/useCrossHairVisibility.js'
@@ -33,7 +33,7 @@ export const InteractInit = ({
 
   const selectMarkerOnly = isSelectMarkerOnly(interactionModes)
 
-  useMapItemList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry })
+  useSpatialList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry })
 
   // Core interaction logic (click > select/marker)
   const { handleInteraction } = useInteractionHandlers({

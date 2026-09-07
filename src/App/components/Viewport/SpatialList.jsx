@@ -36,7 +36,7 @@ export const SpatialList = forwardRef(({ activeItemId, tabbableId, selectedIds =
           tabIndex={item.id === currentId ? 0 : -1}
           aria-selected={selectedIds.includes(item.id)}
           // Positions the (visually clipped) option over its on-map feature — item.x/item.y are
-          // screen coordinates from the interact plugin (see useMapItemList.js). Without this,
+          // screen coordinates from the interact plugin (see useSpatialList.js). Without this,
           // every option collapses to the CSS static-position default (~top-left of the
           // viewport), which is invisible to sighted users but misaligns coordinate-based AT
           // overlays, e.g. macOS Voice Control's "Show Numbers", which numbers items at their
