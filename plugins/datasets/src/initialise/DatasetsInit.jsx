@@ -19,8 +19,8 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     const hasMenu = pluginConfig.hasMenu !== false && pluginConfigHasMenuItems(pluginConfig)
 
     if (!hasMenu) {
-      eventBus.emit(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
-      eventBus.emit(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
+      eventBus.emitWhenReady(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
+      eventBus.emitWhenReady(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
     }
   }, [pluginConfig.hasMenu])
 

@@ -24,6 +24,7 @@ jest.mock('./initialiseDatasets.js')
 
 const makeEventBus = () => ({
   emit: jest.fn(),
+  emitWhenReady: jest.fn(),
   on: jest.fn(),
   off: jest.fn()
 })
@@ -80,10 +81,10 @@ describe('DatasetsInit', () => {
         pluginConfig: { datasets: [{ id: 'roads', label: 'Roads' }] }
       })
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
-      expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true }
       )
     })
@@ -91,7 +92,7 @@ describe('DatasetsInit', () => {
     it('does not remove the panel when at least one dataset has showInMenu', async () => {
       const props = makeProps()
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).not.toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
     })
@@ -101,7 +102,7 @@ describe('DatasetsInit', () => {
         pluginConfig: { hasMenu: false, datasets: [{ id: 'roads', label: 'Roads', showInMenu: true }] }
       })
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
     })
@@ -117,7 +118,7 @@ describe('DatasetsInit', () => {
         }
       })
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).not.toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
     })
