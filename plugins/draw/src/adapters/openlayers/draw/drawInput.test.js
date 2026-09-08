@@ -147,11 +147,11 @@ test('pointer moves and map pans update the rubber band except for the mouse int
 })
 
 // Voice Control's simulated clicks report pointerType 'mouse' (interfaceType never leaves
-// 'mouse') and produce no real pointermove, so panning via MoveControls needs its own
-// fallback: getAnimating() is true for MoveControls' own panBy/zoomIn/zoomOut (both animate
+// 'mouse') and produce no real pointermove, so panning via MapControls needs its own
+// fallback: getAnimating() is true for MapControls' own panBy/zoomIn/zoomOut (both animate
 // the view) but not for a live mouse drag (which sets the center directly), so it's a safe
 // signal to also track even while interfaceType is 'mouse'.
-test('a programmatic move (e.g. MoveControls panBy) still updates the rubber band while interfaceType is mouse', () => {
+test('a programmatic move (e.g. MapControls panBy) still updates the rubber band while interfaceType is mouse', () => {
   const { view, placement } = setup('mouse')
   view.getAnimating.mockReturnValue(true)
   view.emit('change:center')
@@ -165,7 +165,7 @@ test('postrender tracks an animated move for the mouse interface too, same as ke
   expect(placement.updateRubberbanding).toHaveBeenCalledTimes(1)
 })
 
-test('setInterfaceType updates the interface and refreshes the rubber band immediately for non-mouse types, e.g. switching to touch and panning via MoveControls mid-session', () => {
+test('setInterfaceType updates the interface and refreshes the rubber band immediately for non-mouse types, e.g. switching to touch and panning via MapControls mid-session', () => {
   const { input, placement } = setup('mouse')
   input.setInterfaceType('touch')
   expect(input.getInterfaceType()).toBe('touch')

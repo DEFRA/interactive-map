@@ -51,7 +51,7 @@ describe('CrossHair', () => {
 
   // Fully removed from the layout/accessibility tree when hidden, not just faded — so Voice
   // Control's Show Names never puts a "Target" label over nothing. Its real route back is
-  // opening MoveControls (a normal, always-visible button), not re-discovering this element.
+  // opening MapControls (a normal, always-visible button), not re-discovering this element.
   it('hides marker when not visible', () => {
     const { button } = renderWith({ isVisible: false })
     expect(button).toHaveStyle({ display: 'none' })

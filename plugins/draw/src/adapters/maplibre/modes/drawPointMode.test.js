@@ -437,7 +437,7 @@ describe('DrawPointMode', () => {
     })
 
     // Voice Control's simulated clicks report pointerType 'mouse' (interfaceType never
-    // leaves 'mouse') and produce no mousemove, so panning via MoveControls needs its own
+    // leaves 'mouse') and produce no mousemove, so panning via MapControls needs its own
     // fallback: a real map 'move' event with no originalEvent (a programmatic move, unlike a
     // live mouse drag/scroll) still refreshes the indicator even with interfaceType 'mouse'.
     it('a programmatic map move still refreshes the indicator while interfaceType is mouse', () => {

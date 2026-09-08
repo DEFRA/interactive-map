@@ -60,7 +60,7 @@ describe('vertexOperations', () => {
 
   // resolveSnapTarget's own snap/break-out-of-snap branches are covered by
   // utils/snapMovement.test.js — this just checks nudgeVertexByDelta wires a snap hit
-  // through to the moved vertex, same as keyboard nudging (regression: MoveControls
+  // through to the moved vertex, same as keyboard nudging (regression: MapControls
   // bypassed snap entirely before resolveSnapTarget was shared).
   test('nudgeVertexByDelta honours an active snap', () => {
     const { ctx, state, map } = createHarness()

@@ -197,16 +197,24 @@ The button is only displayed when the map is rendered inline.
 
 ---
 
-### `enableMoveControls`
+### `enableMapControls`
 **Type:** `boolean`
 **Default:** `true`
 
-Whether the move controls are displayed — a button that reveals directional pan, zoom,
-and step-size buttons, providing a non-dragging alternative to panning and zooming the
-map ([WCAG 2.5.7](https://www.w3.org/WAI/WCAG21/Understanding/dragging-movements.html)).
-Unlike the standard zoom control buttons, the move controls remain visible when the
-interface type is 'touch'. When enabled, the standard zoom control buttons
-(`enableZoomControls`) are hidden to avoid duplicating zoom controls.
+Whether the map controls are displayed — a button that reveals on-screen move, zoom,
+and precision buttons, plus a target point, typically used to place or select features
+on the map without a drag gesture.
+
+This gives a non-dragging way to operate the map, for anyone who can't perform a drag
+or pinch gesture (e.g. switch access users) and for voice interfaces such as Voice
+Control, which can trigger a button click but not a drag. When enabled, the standard
+zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
+
+> [!CAUTION]
+> Disabling this leaves dragging as the only way to pan or reposition the map/features,
+> which can fail [WCAG 2.5.7 (Dragging Movements)](https://www.w3.org/WAI/WCAG21/Understanding/dragging-movements.html)
+> and make the map unusable for the users described above. Only disable it if you provide
+> an equivalent non-dragging alternative elsewhere.
 
 ---
 
@@ -216,7 +224,7 @@ interface type is 'touch'. When enabled, the standard zoom control buttons
 
 Whether zoom control buttons are displayed.
 Zoom controls are not displayed when the interface type is 'touch', or when
-`enableMoveControls` is enabled.
+`enableMapControls` is enabled.
 
 ---
 

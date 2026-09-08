@@ -250,7 +250,7 @@ export const createEditPointMode = ({ map, manager, options }) => {
     // Matches MaplibreDrawAdapter.deleteVertex's existing no-op precedent.
     deleteVertex () {},
 
-    // MoveControls' D-pad, routed here via mapProvider.activeMoveTarget (events.js) — claimed
+    // MapControls' D-pad, routed here via mapProvider.activeMoveTarget (events.js) — claimed
     // once at construction (pointSelectionState's VERTEX_SELECTION) and held for the session.
     nudgeSelectedVertex: keyboardHandler.nudgeByDelta,
 

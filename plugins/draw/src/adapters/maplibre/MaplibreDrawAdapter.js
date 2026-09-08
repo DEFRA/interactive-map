@@ -241,7 +241,7 @@ export class MaplibreDrawAdapter {
     this._map.fire(CUSTOM_DRAW_EVENTS.UNDO)
   }
 
-  // MoveControls' D-pad, routed here via mapProvider.activeMoveTarget once a vertex is
+  // MapControls' D-pad, routed here via mapProvider.activeMoveTarget once a vertex is
   // selected — bridged into the mode via event, same as setInterfaceType.
   nudgeSelectedVertex (dx, dy, isLargeStep) {
     this._map.fire(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, { dx, dy, isLargeStep })

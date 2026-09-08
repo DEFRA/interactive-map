@@ -1,5 +1,5 @@
 import { KeyboardHelp } from '../App/components/KeyboardHelp/KeyboardHelp.jsx'
-import { MoveControls } from '../App/components/MoveControls/MoveControls.jsx'
+import { MapControls } from '../App/components/MapControls/MapControls.jsx'
 
 const keyboardBasePanelSlots = {
   slot: 'middle',
@@ -13,7 +13,7 @@ const buttonSlots = {
   showLabel: false
 }
 
-const moveControlsSlot = {
+const mapControlsSlot = {
   slot: 'right-bottom'
 }
 
@@ -79,7 +79,7 @@ export const defaultAppConfig = {
     iconId: 'plus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControls || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMapControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMaxZoom,
     mobile: buttonSlots,
     tablet: buttonSlots,
@@ -91,23 +91,23 @@ export const defaultAppConfig = {
     iconId: 'minus',
     keepFocus: true,
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
-    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMoveControls || appState.interfaceType === 'touch',
+    excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMapControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMinZoom,
     mobile: buttonSlots,
     tablet: buttonSlots,
     desktop: buttonSlots
   }, {
-    id: 'moveControls',
+    id: 'mapControls',
     label: 'Map controls',
     iconId: 'move',
     keepFocus: true,
     isExpanded: false,
-    ariaControls: ({ appConfig }) => `${appConfig.id}-move-controls-content`,
+    ariaControls: ({ appConfig }) => `${appConfig.id}-map-controls-content`,
     onClick: (_e, { appState }) => appState.dispatch({
       type: 'TOGGLE_BUTTON_EXPANDED',
-      payload: { id: 'moveControls', isExpanded: !appState.expandedButtons.has('moveControls') }
+      payload: { id: 'mapControls', isExpanded: !appState.expandedButtons.has('mapControls') }
     }),
-    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControls,
+    excludeWhen: ({ appConfig }) => !appConfig.enableMapControls,
     mobile: buttonSlots,
     tablet: buttonSlots,
     desktop: buttonSlots
@@ -131,13 +131,13 @@ export const defaultAppConfig = {
   }],
 
   controls: [{
-    id: 'moveControls',
+    id: 'mapControls',
     label: 'Move and zoom',
-    excludeWhen: ({ appConfig }) => !appConfig.enableMoveControls,
-    mobile: moveControlsSlot,
-    tablet: moveControlsSlot,
-    desktop: moveControlsSlot,
-    render: MoveControls
+    excludeWhen: ({ appConfig }) => !appConfig.enableMapControls,
+    mobile: mapControlsSlot,
+    tablet: mapControlsSlot,
+    desktop: mapControlsSlot,
+    render: MapControls
   }],
 
   icons: [{
