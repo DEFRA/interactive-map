@@ -38,15 +38,24 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // ensure the datasets are added in order
     for (const registryDataset of topLevelDatasets) {
       await this._addLayers(registryDataset)
+      console.log('Applying visibility for dataset:', registryDataset.id)
+      this.applyDatasetVisibility(registryDataset.id)
+      const mapLayer = this._mapVisibilityLayers[registryDataset.id]
+      registryDataset.sublayers?.forEach(sublayer => {
+        this._applyStyleLayerPaintProperties(sublayer, mapLayer)
+      })
     }
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
     // and updating the paint properties of the layers based on the dataset/mapStyle style
+    console.log('Calling this.onMapStyleChange')
     await this.onMapStyleChange()
 
-    // Apply opacity to all layers
-    await this.applyGlobalOpacity()
+    // console.log('Calling this.applyGlobalOpacity')
+    // // Apply opacity to all layers
+    // await this.applyGlobalOpacity()
 
+    console.log('Calling show all layers')
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
     this._reorderLayers()
@@ -84,7 +93,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
       url: registryDataset.tiles,
       renderer: registryDataset.renderer,
       opacity: 1,
-      visible: false
+      visible: true
     })
     this._mapVisibilityLayers[registryDataset.id] = featureLayer
     this._mapOpacityLayers[registryDataset.id] = featureLayer
@@ -108,6 +117,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
 
     const vectorTileParent = esriGroupId ? this._addGroupLayer(esriGroupId) : this._map
+    // const visible = registryDataset.visibility === 'visible'
     const vectorTileLayer = new VectorTileLayer({
       id: registryDataset.id,
       url: registryDataset.tiles,
@@ -166,6 +176,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // if this is a top level dataset, we need to apply the visibility to the vectorTileLayer/ groupLayer itself
     const { id, isSublayer, parentId } = registryDataset
     const visible = registryDataset.visibility === 'visible'
+    console.log('Applying visibility for dataset:', id, 'visible:', visible)
     const vectorTileLayer = this._mapVisibilityLayers[isSublayer ? parentId : id]
     if (!vectorTileLayer) {
       return
@@ -228,7 +239,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
     const layerPaintProperties = vectorTileLayer.getPaintProperties(esriStyleLayerId)
     if (layerPaintProperties) {
-      registryDataset.applyLayerPaintProperties(layerPaintProperties)
+      const _layerPaintProperties = registryDataset.applyLayerPaintProperties(layerPaintProperties)
+      // console.log('Applying paint properties for dataset:', registryDataset.id, esriStyleLayerId, _layerPaintProperties)
       vectorTileLayer.setPaintProperties(esriStyleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
     }
   }

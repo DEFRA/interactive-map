@@ -581,7 +581,7 @@ const menu = [
     items: [
       { id: 'waterstorage', label: 'Water storage' },
       { id: 'flooddefence', label: 'Flood defence' },
-      { id: 'mainrivers', label: 'Main rivers', checked: true },
+      { id: 'mainrivers', label: 'Main rivers', checked: false },
     ]
   }
 ]
@@ -595,6 +595,7 @@ const datasetsPlugin = createDatasetsPlugin({
   },
   hasMenu: false,
   datasets
+  // datasets: [datasetFloodZonesCC, datasetFloodZones]
 })
 
 const interactPlugin = createInteractPlugin({
