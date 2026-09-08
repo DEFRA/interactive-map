@@ -107,7 +107,13 @@ export const keyboardHandlers = {
     }
 
     state.interfaceType = 'keyboard'
-    stopIfGlobalAltKey(e)
+    // Only shadow while a vertex/midpoint is actually selected — that's the same condition
+    // gating this mode's own local Alt+Arrow handling below (and there's no local Enter
+    // meaning here at all, selected or not), so with nothing selected there's no local
+    // conflict to protect and the global map-label shortcuts should keep working.
+    if (state.selectedVertexIndex >= 0) {
+      stopIfGlobalAltKey(e)
+    }
     if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.stopPropagation()
 

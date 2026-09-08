@@ -118,6 +118,37 @@ describe('useSpatialListItems — label updates', () => {
   })
 })
 
+// ─── useSpatialListItems — focusable updates ─────────────────────────────────────
+
+describe('useSpatialListItems — focusable updates', () => {
+  it('defaults to focusable: true before any event', () => {
+    const { result } = renderHook(() => useSpatialListItems(makeEventBus()))
+    expect(result.current.focusable).toBe(true)
+  })
+
+  it('defaults to focusable: true when the event omits it', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useSpatialListItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items: [] }))
+    expect(result.current.focusable).toBe(true)
+  })
+
+  it('reflects an explicit focusable: false from the current provider', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useSpatialListItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items: [], focusable: false }))
+    expect(result.current.focusable).toBe(false)
+  })
+
+  it('reverts to true once a later event omits it again (e.g. draw released its claim)', () => {
+    const eb = makeEventBus()
+    const { result } = renderHook(() => useSpatialListItems(eb))
+    act(() => eb.emit(SET_FEATURES, { items: [], focusable: false }))
+    act(() => eb.emit(SET_FEATURES, { items: [] }))
+    expect(result.current.focusable).toBe(true)
+  })
+})
+
 // ─── useSpatialListItems — multiselectable updates ───────────────────────────────
 
 describe('useSpatialListItems — multiselectable updates', () => {

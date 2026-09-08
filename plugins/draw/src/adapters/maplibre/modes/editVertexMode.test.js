@@ -1,4 +1,5 @@
 import { createHarness, POLYGON } from './editVertexMode/__helpers__/harness.js'
+import { CUSTOM_DRAW_EVENTS } from '../drawEvents.js'
 
 /**
  * Tests for EditVertexMode's own methods: setup/teardown lifecycle, selection/scale/update
@@ -156,5 +157,72 @@ describe('move, button and changeMode routing', () => {
     const { ctx, api } = createHarness()
     ctx.changeMode({ featureId: null }, { selectedVertexIndex: -1 })
     expect(api.changeMode).not.toHaveBeenCalled()
+  })
+})
+
+// onSelectVertex/onInsertVertexAtMidpoint bridge MaplibreDrawAdapter.selectVertex/
+// insertVertexAtMidpoint into the running mode (see drawEvents.js's SELECT_VERTEX/
+// INSERT_VERTEX_AT_MIDPOINT) for the shared spatial listbox.
+describe('onSelectVertex / onInsertVertexAtMidpoint (spatial listbox bridge)', () => {
+  test('registers the select-vertex/insert-vertex-at-midpoint listeners on setup', () => {
+    const { map } = createHarness()
+    expect(map.on).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, expect.any(Function))
+    expect(map.on).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, expect.any(Function))
+  })
+
+  test('onSelectVertex moves the cursor to a real vertex, including its coordPath', () => {
+    const { ctx, state } = createHarness()
+    const changeModeSpy = jest.spyOn(ctx, 'changeMode')
+    ctx.onSelectVertex(state, { index: 2 })
+    expect(changeModeSpy).toHaveBeenCalledWith(state, {
+      selectedVertexIndex: 2,
+      selectedVertexType: 'vertex',
+      coordPath: expect.any(String)
+    })
+  })
+
+  test('onSelectVertex moves the cursor to a midpoint, without a coordPath', () => {
+    const { ctx, state } = createHarness()
+    const changeModeSpy = jest.spyOn(ctx, 'changeMode')
+    const midpointIndex = state.vertecies.length
+    ctx.onSelectVertex(state, { index: midpointIndex })
+    expect(changeModeSpy).toHaveBeenCalledWith(state, {
+      selectedVertexIndex: midpointIndex,
+      selectedVertexType: 'midpoint'
+    })
+  })
+
+  test('onSelectVertex lazily (re)populates vertecies/midpoints when not already cached', () => {
+    const { ctx, state } = createHarness()
+    state.vertecies = []
+    state.midpoints = []
+    const changeModeSpy = jest.spyOn(ctx, 'changeMode')
+    ctx.onSelectVertex(state, { index: 0 })
+    expect(state.vertecies.length).toBeGreaterThan(0)
+    expect(changeModeSpy).toHaveBeenCalled()
+  })
+
+  test('onInsertVertexAtMidpoint commits a new vertex exactly at the midpoint — no directional offset', () => {
+    const { ctx, state } = createHarness()
+    const midpointFlatIndex = state.vertecies.length // first midpoint, between vertex 0 and 1
+    const expectedCoord = state.midpoints[0]
+    ctx.onInsertVertexAtMidpoint(state, { index: midpointFlatIndex })
+    const updated = ctx.getVerticies(state.featureId)
+    expect(updated).toHaveLength(state.vertecies.length + 1)
+    expect(updated[1]).toEqual(expectedCoord)
+  })
+
+  test('onInsertVertexAtMidpoint lazily (re)populates vertecies/midpoints when not already cached', () => {
+    const { ctx, state } = createHarness()
+    state.vertecies = []
+    state.midpoints = []
+    expect(() => ctx.onInsertVertexAtMidpoint(state, { index: 4 })).not.toThrow()
+  })
+
+  test('unregisters the select-vertex/insert-vertex-at-midpoint listeners on stop', () => {
+    const { ctx, state, map } = createHarness()
+    ctx.onStop(state)
+    expect(map.off).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, expect.any(Function))
+    expect(map.off).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, expect.any(Function))
   })
 })

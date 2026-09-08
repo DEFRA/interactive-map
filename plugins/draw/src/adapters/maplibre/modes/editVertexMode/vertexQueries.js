@@ -1,5 +1,6 @@
 import {
   getCoords,
+  getMidpointCoords,
   getRingSegments,
   getSegmentForIndex
 } from './geometryHelpers.js'
@@ -49,28 +50,7 @@ export const vertexQueries = {
   },
 
   getMidpoints (featureId) {
-    const feature = this.getFeature(featureId)
-    const coords = getCoords(feature)
-    const segments = getRingSegments(feature)
-    if (!coords?.length || !segments.length) {
-      return []
-    }
-
-    const midpoints = []
-    // Create midpoints within each segment, respecting boundaries
-    for (const seg of segments) {
-      // For closed rings, create midpoint between every vertex including last→first
-      // For open lines, create midpoints only between consecutive vertices (no wrap-around)
-      const count = seg.closed ? seg.length : seg.length - 1
-      for (let i = 0; i < count; i++) {
-        const idx = seg.start + i
-        const nextIdx = seg.start + ((i + 1) % seg.length)
-        const [x1, y1] = coords[idx]
-        const [x2, y2] = coords[nextIdx]
-        midpoints.push([(x1 + x2) / 2, (y1 + y2) / 2])
-      }
-    }
-    return midpoints
+    return getMidpointCoords(this.getFeature(featureId))
   },
 
   getVertexOrMidpoint (state, direction) {

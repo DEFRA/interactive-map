@@ -146,6 +146,19 @@ export class OLDrawManager {
     this._modeInstance?.nudgeSelectedVertex?.(dx, dy, isLargeStep)
   }
 
+  // Read-only vertex/midpoint coordinates for the shared spatial listbox.
+  getVertexItems () {
+    return this._modeInstance?.getVertexItems?.() ?? { vertices: [], midpoints: [] }
+  }
+
+  selectVertex (index) {
+    this._modeInstance?.selectVertex?.(index)
+  }
+
+  insertVertexAtMidpoint (index) {
+    this._modeInstance?.insertVertexAtMidpoint?.(index)
+  }
+
   // Show/hide the dashed invalid stroke on the active draw sketch or edit feature.
   setInvalid (invalid) {
     this._modeInstance?.setInvalid?.(invalid)

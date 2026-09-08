@@ -35,8 +35,7 @@ export const EditVertexMode = {
       scale: options.scale ?? 1
     })
 
-    // Clear undo stack only on initial entry to edit mode for a feature
-    // Only clear if we're starting a new editing session (not already editing)
+    // Clear the undo stack only when starting a new editing session for this feature.
     if (this.map._lastEditFeatureId !== state.featureId) {
       this.map._undoStack?.clear()
       this.map._lastEditFeatureId = state.featureId
@@ -78,12 +77,16 @@ export const EditVertexMode = {
     const handlers = this.handlers = buildEditModeHandlers(this, state, {
       nudge: this.onNudgeVertex,
       selectionchange: this.onSelectionChange,
-      update: this.onUpdate
+      update: this.onUpdate,
+      selectvertex: this.onSelectVertex,
+      insertvertexatmidpoint: this.onInsertVertexAtMidpoint
     })
 
     bindEditModeListeners(state, this.map, handlers)
     this.map.on('draw.selectionchange', handlers.selectionchange)
     this.map.on('draw.update', handlers.update)
+    this.map.on(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, handlers.selectvertex)
+    this.map.on(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, handlers.insertvertexatmidpoint)
   },
 
   applyVertexSelection (state, options) {
@@ -109,8 +112,7 @@ export const EditVertexMode = {
 
     const vertexCoord = event.points[event.points.length - 1]?.geometry.coordinates
 
-    // Only update selectedVertexIndex from event if not keyboard mode AND event has valid vertex
-    // For keyboard mode or when we have coordPath, trust the existing selectedVertexIndex
+    // For keyboard mode or when coordPath is set, trust the existing selectedVertexIndex.
     if (state.interfaceType !== 'keyboard' && vertexCoord && !state.coordPath) {
       // No coordPath available - need to search for vertex by coordinates
       const geom = event.features[0]?.geometry
@@ -159,18 +161,40 @@ export const EditVertexMode = {
     }
   },
 
-  // Inbound signal from MaplibreDrawAdapter.nudgeSelectedVertex — bridges into the
-  // running mode the same way onInterfaceTypeChange does, since the adapter has no
-  // direct reference to this mode's live state. Unlike OL (where setState's shared
-  // onUpdate hook repositions the touch target for any vertex move), moveVertex
-  // here has no equivalent hook, so the reposition has to happen explicitly —
-  // same as onMove/onSelectionChange/onInterfaceTypeChange already do.
+  // Inbound signal from MaplibreDrawAdapter.nudgeSelectedVertex — bridges into the running
+  // mode since the adapter has no direct reference to its live state.
   onNudgeVertex (state, event) {
     this.nudgeVertexByDelta(state, event.dx, event.dy, event.isLargeStep)
     const vertex = state.vertecies[state.selectedVertexIndex]
     if (vertex) {
       this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
     }
+  },
+
+  // Inbound signal from MaplibreDrawAdapter.selectVertex — previews a vertex/midpoint by flat
+  // index (no geometry change) for the spatial listbox's roving move.
+  onSelectVertex (state, event) {
+    if (!state.vertecies?.length) { // lazy-populate guard, same as startKeyboardSelection
+      state.vertecies = this.getVerticies(state.featureId)
+      state.midpoints = this.getMidpoints(state.featureId)
+    }
+    const type = event.index < state.vertecies.length ? 'vertex' : 'midpoint'
+    this.changeMode(state, {
+      selectedVertexIndex: event.index,
+      selectedVertexType: type,
+      ...(type === 'vertex' && { coordPath: this.getCoordPath(state, event.index) })
+    })
+  },
+
+  // Inbound signal from MaplibreDrawAdapter.insertVertexAtMidpoint — commits a new vertex at
+  // midpoint `event.index` for the spatial listbox's confirm, landing exactly on the midpoint
+  // (no offset), same as touchHandlers.js's onTap does for a midpoint tap.
+  onInsertVertexAtMidpoint (state, event) {
+    if (!state.vertecies?.length) {
+      state.vertecies = this.getVerticies(state.featureId)
+      state.midpoints = this.getMidpoints(state.featureId)
+    }
+    this.insertVertex({ ...state, selectedVertexIndex: event.index, selectedVertexType: 'midpoint' })
   },
 
   onButtonClick (state, event) {
@@ -200,6 +224,8 @@ export const EditVertexMode = {
     const handlers = this.handlers
     this.map.off('draw.selectionchange', handlers.selectionchange)
     this.map.off('draw.update', handlers.update)
+    this.map.off(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, handlers.selectvertex)
+    this.map.off(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, handlers.insertvertexatmidpoint)
     unbindEditModeListeners(state, this.map, handlers)
     this.hideTouchVertexIndicator(state)
   }

@@ -128,6 +128,33 @@ describe('useSpatialListFocus — onFocus', () => {
     expect(result.current.activeItemId).toBe('x')
     unmount(); el.remove()
   })
+
+  it('prefers the item nearest the map center over the structurally-first one', () => {
+    const items = [
+      { id: 'a', label: 'A', x: 0, y: 0 },
+      { id: 'b', label: 'B', x: 100, y: 100 },
+      { id: 'c', label: 'C', x: 500, y: 500 }
+    ]
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items, centerScreenPoint: { x: 90, y: 90 } }))
+    act(() => result.current.onFocus())
+    expect(result.current.activeItemId).toBe('b')
+  })
+
+  it('falls back to the first item when no centerScreenPoint is given, even with positioned items', () => {
+    const items = [
+      { id: 'a', label: 'A', x: 0, y: 0 },
+      { id: 'b', label: 'B', x: 100, y: 100 }
+    ]
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items }))
+    act(() => result.current.onFocus())
+    expect(result.current.activeItemId).toBe('a')
+  })
+
+  it('falls back to the first item when centerScreenPoint is given but no item carries a screen position', () => {
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items: ITEMS, centerScreenPoint: { x: 90, y: 90 } }))
+    act(() => result.current.onFocus())
+    expect(result.current.activeItemId).toBe('a')
+  })
 })
 
 // ─── useSpatialListFocus — onBlur ─────────────────────────────────────────────────
@@ -831,6 +858,15 @@ describe('useSpatialListFocus — tabbableId', () => {
   it('is null when items is empty', () => {
     const { result } = renderHook(() => useSpatialListFocus(makeRefs()))
     expect(result.current.tabbableId).toBeNull()
+  })
+
+  it('defaults to the item nearest the map center before the list has ever been focused', () => {
+    const items = [
+      { id: 'a', label: 'A', x: 0, y: 0 },
+      { id: 'b', label: 'B', x: 100, y: 100 }
+    ]
+    const { result } = renderHook(() => useSpatialListFocus({ ...makeRefs(), items, centerScreenPoint: { x: 90, y: 90 } }))
+    expect(result.current.tabbableId).toBe('b')
   })
 
   it('defaults to the first item before the list has ever been focused', () => {

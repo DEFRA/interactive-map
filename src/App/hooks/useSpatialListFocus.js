@@ -1,9 +1,25 @@
 import { useState, useEffect, useRef } from 'react'
 import { EVENTS } from '../../config/events.js'
 import { findNearestItemInDirection } from '../../utils/findNearestItemInDirection.js'
+import { spatialNavigate } from '../../utils/spatialNavigate.js'
 import { stopIfGlobalAltKey } from '../../utils/globalAltShortcuts.js'
 
 const ARROW_KEYS = new Set(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'])
+
+// Whichever item is nearest the map's own center point on screen — the entry-point fallback
+// below prefers this over the structurally-first item.
+const findNearestToCenter = (items, centerScreenPoint) => {
+  if (!centerScreenPoint) {
+    return null
+  }
+  const positioned = items.filter(item => item.x != null && item.y != null)
+  if (!positioned.length) {
+    return null
+  }
+  const pixels = positioned.map(item => [item.x, item.y])
+  const idx = spatialNavigate([centerScreenPoint.x, centerScreenPoint.y], pixels, undefined)
+  return positioned[idx].id
+}
 
 const getNavigatedId = (id, key, items) => {
   if (!items.length) {
@@ -22,8 +38,9 @@ const getNavigatedId = (id, key, items) => {
   return idx === -1 ? items[items.length - 1].id : items[Math.max(idx - 1, 0)].id
 }
 
-// ARIA listbox entry priority: first selected → last active (if still in list) → first item
-const resolveEntryId = (items, lastActiveId, selectedIds) => {
+// ARIA listbox entry priority: first selected → last active (if still in list) → nearest the
+// map center → first item (last resort, e.g. no items carry a screen position at all)
+const resolveEntryId = (items, lastActiveId, selectedIds, centerScreenPoint) => {
   const firstSelected = items.find(item => selectedIds.includes(item.id))
   if (firstSelected) {
     return firstSelected.id
@@ -31,15 +48,12 @@ const resolveEntryId = (items, lastActiveId, selectedIds) => {
   if (lastActiveId && items.some(item => item.id === lastActiveId)) {
     return lastActiveId
   }
-  return items[0].id
+  return findNearestToCenter(items, centerScreenPoint) ?? items[0].id
 }
 
-// Roving tabindex: moves real focus to the option matching id, found via data-id (avoids
-// CSS-escaping issues a querySelector would have with arbitrary ids). Flags
-// isInternalFocusMoveRef around the .focus() call so onFocus/onBlur can ignore this as an
-// internal move, not a real widget entry/exit — event.relatedTarget can't be used for that:
-// preact/compat (react is aliased to it in this app's build) doesn't populate it on synthetic
-// focus/blur events, so it's silently unreliable outside tests (real React + jsdom).
+// Roving tabindex: moves real focus to the option matching id (via data-id, avoiding
+// querySelector's CSS-escaping issues with arbitrary ids). Flags isInternalFocusMoveRef around
+// the .focus() call so onFocus/onBlur can tell this apart from a real widget entry/exit.
 const focusOption = (listboxEl, id, isInternalFocusMoveRef) => {
   const el = Array.from(listboxEl?.children ?? []).find(li => li.dataset.id === String(id))
   if (!el) {
@@ -81,7 +95,7 @@ function useEventBusListeners ({ eventBus, lastActiveIdRef, setActiveItemId, set
  * Re-picks the active item (ARIA priority order) when it drops out of the item list while
  * focused — e.g. panned off screen — and moves real focus to it.
  */
-function useItemsRevalidation ({ items, eventBus, isFocusedRef, spatialListRef, isInternalFocusMoveRef, lastActiveIdRef, activeItemIdRef, selectedIdsRef, setActiveItemId }) {
+function useItemsRevalidation ({ items, eventBus, isFocusedRef, spatialListRef, isInternalFocusMoveRef, lastActiveIdRef, activeItemIdRef, selectedIdsRef, setActiveItemId, centerScreenPoint }) {
   useEffect(() => {
     if (!isFocusedRef.current) {
       return
@@ -94,7 +108,7 @@ function useItemsRevalidation ({ items, eventBus, isFocusedRef, spatialListRef, 
     if (items.some(item => item.id === activeItemIdRef.current)) {
       return
     }
-    const nextId = resolveEntryId(items, lastActiveIdRef.current, selectedIdsRef.current)
+    const nextId = resolveEntryId(items, lastActiveIdRef.current, selectedIdsRef.current, centerScreenPoint)
     lastActiveIdRef.current = nextId
     setActiveItemId(nextId)
     eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id: nextId })
@@ -130,11 +144,8 @@ function useKeyboardNavigation ({ spatialListRef, viewportRef, items, eventBus, 
         viewportRef.current?.focus()
       }
     }
-    // Same modifier as the map's own label navigation (see useKeyboardShortcuts.js), but the
-    // subject depends on what's focused: labels on the map when the viewport has focus, list
-    // items spatially when this listbox does. The matching keyup listener below stops this
-    // from also bubbling up to the viewport's label-navigation binding, which listens on a
-    // shared ancestor.
+    // Same modifier as the map's own label navigation, but moves list items instead of labels
+    // while this listbox has focus — the keyup listener below stops it bubbling to that binding.
     const handleSpatialMove = (event) => {
       moveTo(findNearestItemInDirection(items, activeItemIdRef.current, event.key))
     }
@@ -200,10 +211,10 @@ function useMapInteractionBlur ({ viewportRef, spatialListRef, isFocusedRef }) {
  * activeItemId via ARIA priority order (see resolveEntryId); on blur, clears it. Revalidates
  * when the item list changes (e.g. after a map pan) so it never points to a stale item.
  *
- * @param {{ viewportRef: React.RefObject, spatialListRef: React.RefObject, items: Array, eventBus: object }} params
+ * @param {{ viewportRef: React.RefObject, spatialListRef: React.RefObject, items: Array, eventBus: object, centerScreenPoint: {x: number, y: number}|null }} params
  * @returns {{ activeItemId: string|null, tabbableId: string|null, selectedIds: string[], onFocus: Function, onBlur: Function, selectItem: Function }}
  */
-export function useSpatialListFocus ({ viewportRef, spatialListRef, items = [], eventBus, hints }) {
+export function useSpatialListFocus ({ viewportRef, spatialListRef, items = [], eventBus, hints, centerScreenPoint }) {
   const [activeItemId, setActiveItemId] = useState(null)
   const [selectedIds, setSelectedIds] = useState([])
 
@@ -226,21 +237,18 @@ export function useSpatialListFocus ({ viewportRef, spatialListRef, items = [], 
   selectedIdsRef.current = selectedIds
 
   useEventBusListeners({ eventBus, lastActiveIdRef, setActiveItemId, setSelectedIds })
-  useItemsRevalidation({ items, eventBus, isFocusedRef, spatialListRef, isInternalFocusMoveRef, lastActiveIdRef, activeItemIdRef, selectedIdsRef, setActiveItemId })
+  useItemsRevalidation({ items, eventBus, isFocusedRef, spatialListRef, isInternalFocusMoveRef, lastActiveIdRef, activeItemIdRef, selectedIdsRef, setActiveItemId, centerScreenPoint })
   useKeyboardNavigation({ spatialListRef, viewportRef, items, eventBus, activeItemIdRef, lastActiveIdRef, setActiveItemId, isInternalFocusMoveRef, hints, currentHintRef })
   useMapInteractionBlur({ viewportRef, spatialListRef, isFocusedRef })
 
   // Resting roving-tabindex position — where Tab lands before the list has ever had real focus.
-  // activeItemId takes priority once the list is actually focused. Deliberately never
-  // selection-driven (unlike onFocus's own resolution below) — sticks to the last established
-  // keyboard position, or the first item if there isn't one yet. "Prefer the selected item" is
-  // an onFocus-only concern (a real Tab-in); if it applied here too, any selection change made
-  // elsewhere (e.g. clicking a marker on the map, which never touches lastActiveIdRef) would
-  // keep relocating tabIndex to follow it, even though nothing about keyboard state changed.
+  // Deliberately never selection-driven (unlike onFocus's own resolution below): sticks to the
+  // last established keyboard position so an unrelated selection change elsewhere doesn't
+  // relocate it.
   let tabbableId = null
   if (items.length) {
     const hasEstablishedPosition = lastActiveIdRef.current && items.some(item => item.id === lastActiveIdRef.current)
-    tabbableId = hasEstablishedPosition ? lastActiveIdRef.current : items[0].id
+    tabbableId = hasEstablishedPosition ? lastActiveIdRef.current : (findNearestToCenter(items, centerScreenPoint) ?? items[0].id)
   }
 
   const onFocus = () => {
@@ -254,17 +262,14 @@ export function useSpatialListFocus ({ viewportRef, spatialListRef, items = [], 
     if (!items.length) {
       return
     }
-    // A real Tab-in always prefers a selected item over the remembered position (native listbox
-    // behaviour) — can't reuse tabbableId here, which deliberately does the opposite (sticks to
-    // the remembered position, ignoring selection) once one is established.
-    const id = resolveEntryId(items, lastActiveIdRef.current, selectedIds)
+    // A real Tab-in prefers a selected item over the remembered position (native listbox
+    // behaviour) — unlike tabbableId, which deliberately ignores selection.
+    const id = resolveEntryId(items, lastActiveIdRef.current, selectedIds, centerScreenPoint)
     lastActiveIdRef.current = id
     setActiveItemId(id)
     eventBus?.emit(EVENTS.MAP_SET_ACTIVE_ITEM, { id })
-    // Real focus may have landed on a different option than this resolves to — tabbableId (which
-    // decided where Tab lands) can legitimately disagree with resolveEntryId's own priority (e.g.
-    // Tab lands on the structural first item, but a different item is selected and takes
-    // priority here). Move real focus to match so it never disagrees with activeItemId.
+    // Real focus may have landed on a different option than this resolves to (tabbableId and
+    // resolveEntryId can legitimately disagree) — move it to match so it never disagrees with activeItemId.
     focusOption(spatialListRef.current, id, isInternalFocusMoveRef)
   }
 

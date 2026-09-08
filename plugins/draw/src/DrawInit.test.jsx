@@ -3,16 +3,18 @@ import { EVENTS } from '../../../src/config/events.js'
 import { DrawInit } from './DrawInit.jsx'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
+import { useSpatialList } from './hooks/useSpatialList.js'
 
 jest.mock('./adapters/loadDrawAdapter.js', () => ({ loadDrawAdapter: jest.fn() }))
 jest.mock('./events.js', () => ({ attachEvents: jest.fn(() => jest.fn()) }))
+jest.mock('./hooks/useSpatialList.js', () => ({ useSpatialList: jest.fn() }))
 
 const makeProps = (overrides = {}) => {
   const adapter = { remove: jest.fn(), setInterfaceType: jest.fn() }
   loadDrawAdapter.mockResolvedValue(adapter)
 
   const props = {
-    appState: { interfaceType: 'mouse', mode: null },
+    appState: { interfaceType: 'mouse', mode: null, spatialListRegistry: { registerItemProvider: jest.fn() }, layoutRefs: { viewportRef: { current: null } } },
     appConfig: { id: 'app' },
     mapState: {
       isMapReady: true,
@@ -60,7 +62,7 @@ describe('adapter lifecycle', () => {
 
   test('does not load when the app mode is excluded', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'mouse', mode: 'measure' },
+      appState: { interfaceType: 'mouse', mode: 'measure', layoutRefs: { viewportRef: { current: null } } },
       pluginConfig: { snapLayers: [], excludeModes: ['measure'] }
     })
     await renderInit(props)
@@ -69,7 +71,7 @@ describe('adapter lifecycle', () => {
 
   test('does not load when the app mode is outside the include list', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'mouse', mode: 'other' },
+      appState: { interfaceType: 'mouse', mode: 'other', layoutRefs: { viewportRef: { current: null } } },
       pluginConfig: { snapLayers: [], includeModes: ['draw'] }
     })
     await renderInit(props)
@@ -112,6 +114,16 @@ describe('features list suppression', () => {
     )
   })
 
+  // edit_vertex is the one exception — useSpatialList.js supplies its own list there
+  // (claimed exclusively via the registry) instead of hiding it.
+  test('does not suppress during edit_vertex', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    await renderInit(props)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
+    )
+  })
+
   test('leaves it unsuppressed when no mode is active', async () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: null } })
     await renderInit(props)
@@ -121,7 +133,7 @@ describe('features list suppression', () => {
   })
 
   test('re-suppresses/unsuppresses as the mode changes across re-renders', async () => {
-    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
     const result = await renderInit(props)
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
       EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: true }
@@ -133,6 +145,22 @@ describe('features list suppression', () => {
 
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
       EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
+    )
+  })
+
+  test('unsuppresses on entering edit_vertex, then re-suppresses leaving it for another mode', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    const result = await renderInit(props)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
+    )
+
+    props.services.eventBus.emit.mockClear()
+    props.pluginState = { ...props.pluginState, mode: 'draw_polygon' }
+    result.rerender(<DrawInit {...props} />)
+
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: true }
     )
   })
 
@@ -149,10 +177,25 @@ describe('features list suppression', () => {
   })
 })
 
+describe('useSpatialList wiring', () => {
+  test('is called with the plugin state/services/mapProvider, the app-level spatialListRegistry, and the viewport ref', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    await renderInit(props)
+    expect(useSpatialList).toHaveBeenCalledWith({
+      mapState: props.mapState,
+      pluginState: props.pluginState,
+      services: props.services,
+      mapProvider: props.mapProvider,
+      spatialListRegistry: props.appState.spatialListRegistry,
+      viewportRef: props.appState.layoutRefs.viewportRef
+    })
+  })
+})
+
 describe('crosshair', () => {
   test('fixes the crosshair at centre while drawing on a touch interface', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'touch', mode: null },
+      appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },
       pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' }
     })
     await renderInit(props)
@@ -161,7 +204,7 @@ describe('crosshair', () => {
 
   test('leaves the crosshair alone when not drawing', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'touch', mode: null },
+      appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },
       pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' }
     })
     await renderInit(props)
@@ -170,7 +213,7 @@ describe('crosshair', () => {
 
   test('hides the crosshair on cleanup when it was hidden before and the interface has left touch/keyboard', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'touch', mode: null },
+      appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },
       pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' }
     })
     const result = await renderInit(props)

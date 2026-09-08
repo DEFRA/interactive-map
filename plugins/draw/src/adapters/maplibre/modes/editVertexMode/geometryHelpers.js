@@ -30,6 +30,37 @@ export const getCoords = (feature) => {
 }
 
 /**
+ * Get the midpoint coordinate between every pair of adjacent vertices, one per segment
+ * boundary — closed rings (Polygon) also include the last→first midpoint, open lines
+ * (LineString) don't wrap around. Pure function of the geometry alone (no live mode state),
+ * so both the live mode (vertexQueries.js's getMidpoints) and read-only consumers (e.g. the
+ * adapter's getVertexItems) share one implementation.
+ *
+ * @param {Object} feature - GeoJSON geometry object
+ * @returns {Array<[number, number]>} Flat array of midpoint coordinates, same ordering/segment
+ *   boundaries as getCoords/getRingSegments
+ */
+export const getMidpointCoords = (feature) => {
+  const coords = getCoords(feature)
+  const segments = getRingSegments(feature)
+  if (!coords.length || !segments.length) {
+    return []
+  }
+  const midpoints = []
+  for (const seg of segments) {
+    const count = seg.closed ? seg.length : seg.length - 1
+    for (let i = 0; i < count; i++) {
+      const idx = seg.start + i
+      const nextIdx = seg.start + ((i + 1) % seg.length)
+      const [x1, y1] = coords[idx]
+      const [x2, y2] = coords[nextIdx]
+      midpoints.push([(x1 + x2) / 2, (y1 + y2) / 2])
+    }
+  }
+  return midpoints
+}
+
+/**
  * Get segment metadata for multi-ring/multi-part geometries.
  * Each segment represents a ring (for Polygon) or part (for Multi*).
  *

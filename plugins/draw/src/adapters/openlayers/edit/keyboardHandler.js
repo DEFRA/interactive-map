@@ -105,13 +105,19 @@ const buildKeydownHandler = ({ map, getState, setState, nudge, keyMove, onUndo, 
   }
 }
 
-const buildKeyupHandler = ({ keyMove, onVertexMoved, onDeleted, isFocused }) => (e) => {
+const buildKeyupHandler = ({ getState, keyMove, onVertexMoved, onDeleted, isFocused }) => (e) => {
   if (isFocused()) {
     return
   }
   // Registered with capture:true below, so this runs first — shadows global Alt+<key>
-  // shortcuts (src/utils/globalAltShortcuts.js) unconditionally while editing.
-  stopIfGlobalAltKey(e)
+  // shortcuts (src/utils/globalAltShortcuts.js) only while something is actually selected —
+  // the same condition navigateTo/nudge already require locally. edit_point's state always
+  // reports selectedVertexIndex: 0 (a point is "always selected" — see pointSelectionState.js),
+  // so this naturally stays unconditional for that mode while genuinely gating on selection
+  // for edit_vertex, without needing to special-case either.
+  if (getState().selectedVertexIndex >= 0) {
+    stopIfGlobalAltKey(e)
+  }
   if (ARROW_KEYS.has(e.key) && keyMove.start && keyMove.index != null) {
     // Not hiding the snap indicator here — nudge.js's own snap.apply() already left it showing
     // correctly, and it should stay that way after the key is released.
@@ -150,7 +156,7 @@ export const createKeyboardHandler = (options) => {
   const isFocused = () => isInteractiveElementFocused(appViewport)
 
   const onKeydown = buildKeydownHandler({ map, getState, setState, nudge, keyMove, onUndo, onKeyboardActive, isFocused })
-  const onKeyup = buildKeyupHandler({ keyMove, onVertexMoved, onDeleted, isFocused })
+  const onKeyup = buildKeyupHandler({ getState, keyMove, onVertexMoved, onDeleted, isFocused })
 
   globalThis.addEventListener('keydown', onKeydown, { capture: true })
   globalThis.addEventListener('keyup', onKeyup, { capture: true })

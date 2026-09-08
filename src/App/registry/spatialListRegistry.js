@@ -1,30 +1,19 @@
 import { EVENTS as events } from '../../config/events.js'
 
 /**
- * Central registry for plugins that contribute items to the shared spatial list
- * (see SpatialList.jsx/useSpatialListFocus.js). Replaces the old "whoever emits
- * map:setspatiallist last wins" convention that interact alone used to own directly —
- * plugins register a live item provider instead of emitting the event themselves, so
- * ownership (exclusive takeover, e.g. draw mid-edit) and participation (additive, e.g.
- * interact's features/markers) are both explicit, and safe with more than two
- * contributors rather than relying on a single suppression boolean and an unwritten
- * "the other plugin is responsible for it while I'm not" convention.
+ * Central registry for plugins that contribute items to the shared spatial list (see
+ * SpatialList.jsx). Plugins register a live item provider — `{ getItems, exclusive? }` —
+ * instead of emitting the list event themselves, so exclusive takeover (draw mid-edit) and
+ * additive participation (interact's features/markers) both work safely with any number of
+ * contributors.
  *
- * A provider is `{ getItems, exclusive? }`:
- * - `getItems()` returns `{ items, multiselectable, label }` — called fresh on every
- *   recompute, not snapshotted at registration time, so it should read from whatever
- *   ref/state the caller already keeps current (the same pattern useSpatialListFocus.js's
- *   own refs already use), not close over stale values. `label` is this provider's own
- *   name for what the list currently represents (e.g. "Map features", or "Shape points"
- *   for draw's edit-mode vertices) — becomes the listbox's aria-label; see SpatialList.jsx.
- * - `exclusive: true` means this provider wants sole ownership while its claim is
- *   held (draw's edit modes) — see claimExclusive/releaseExclusive. Everything else
- *   is additive by default: with no exclusive claim held, every registered provider's
- *   items are concatenated together (interact's features/markers today).
- *
- * Providers call notifyItemsChanged whenever their own items would be different (a map
- * move, a mode change, an edit) — the registry doesn't poll on any schedule of its own,
- * it only ever recomputes in direct response to a caller telling it something changed.
+ * `getItems()` returns `{ items, multiselectable, label, focusable }`, called fresh on every
+ * recompute rather than snapshotted at registration. `label` becomes the listbox's aria-label;
+ * `focusable: false` (draw's vertex/midpoint items) keeps every item out of the Tab order —
+ * see SpatialList.jsx. `exclusive: true` claims sole ownership while held (see
+ * claimExclusive/releaseExclusive); everything else is additive and gets concatenated
+ * together. Providers call notifyItemsChanged whenever their own items would differ — the
+ * registry never polls, it only recomputes in response to a caller flagging a change.
  */
 export function createSpatialListRegistry ({ eventBus }) {
   const providers = new Map() // pluginId -> { getItems, exclusive }
@@ -34,12 +23,14 @@ export function createSpatialListRegistry ({ eventBus }) {
     let items = []
     let multiselectable = false
     let label
+    let focusable
 
     if (exclusiveOwner && providers.has(exclusiveOwner)) {
       const result = providers.get(exclusiveOwner).getItems() ?? {}
       items = result.items ?? []
       multiselectable = !!result.multiselectable
       label = result.label
+      focusable = result.focusable
     } else {
       // Exclusive-capable providers only ever contribute while actually holding the
       // claim (the branch above) — not just whenever nobody happens to hold it.
@@ -48,14 +39,16 @@ export function createSpatialListRegistry ({ eventBus }) {
         const result = provider.getItems() ?? {}
         items = items.concat(result.items ?? [])
         multiselectable = multiselectable || !!result.multiselectable
-        // First additive provider (in registration order) with a label wins — there's
-        // no principled way to merge two different labels, and today only interact
-        // ever contributes additively, so this is just "whatever it declares".
+        // First additive provider (in registration order) with a label/focusable value
+        // wins — there's no principled way to merge two different values, and today
+        // only interact ever contributes additively, so this is just "whatever it
+        // declares".
         label = label ?? result.label
+        focusable = focusable ?? result.focusable
       })
     }
 
-    eventBus.emit(events.MAP_SET_SPATIAL_LIST, { items, multiselectable, label })
+    eventBus.emit(events.MAP_SET_SPATIAL_LIST, { items, multiselectable, label, focusable })
   }
 
   function registerItemProvider (pluginId, { getItems, exclusive = false }) {

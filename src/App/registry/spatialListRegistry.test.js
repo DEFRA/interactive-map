@@ -151,6 +151,44 @@ describe('createSpatialListRegistry', () => {
     })
   })
 
+  describe('focusable', () => {
+    test('passes through the exclusive claimant\'s own focusable: false while its claim is held', () => {
+      const eventBus = makeEventBus()
+      const registry = createSpatialListRegistry({ eventBus })
+      registry.registerItemProvider('interact', { getItems: () => ({ items: [] }) }) // focusable defaults true
+      registry.registerItemProvider('draw', { getItems: () => ({ items: [], focusable: false }), exclusive: true })
+
+      registry.claimExclusive('draw')
+      expect(lastEmit(eventBus)).toEqual({ items: [], multiselectable: false, focusable: false })
+    })
+
+    test('reverts to undefined (consumer default: focusable) once the claim is released', () => {
+      const eventBus = makeEventBus()
+      const registry = createSpatialListRegistry({ eventBus })
+      registry.registerItemProvider('interact', { getItems: () => ({ items: [] }) })
+      registry.registerItemProvider('draw', { getItems: () => ({ items: [], focusable: false }), exclusive: true })
+      registry.claimExclusive('draw')
+
+      registry.releaseExclusive('draw')
+      expect(lastEmit(eventBus)).toEqual({ items: [], multiselectable: false })
+    })
+
+    test('uses the first additive provider\'s explicit focusable value when more than one contributes', () => {
+      const eventBus = makeEventBus()
+      const registry = createSpatialListRegistry({ eventBus })
+      registry.registerItemProvider('a', { getItems: () => ({ items: [] }) }) // no explicit value
+      registry.registerItemProvider('b', { getItems: () => ({ items: [], focusable: false }) })
+      expect(lastEmit(eventBus)).toEqual({ items: [], multiselectable: false, focusable: false })
+    })
+
+    test('focusable is undefined when nothing declares it', () => {
+      const eventBus = makeEventBus()
+      const registry = createSpatialListRegistry({ eventBus })
+      registry.registerItemProvider('a', { getItems: () => ({ items: [] }) })
+      expect(lastEmit(eventBus)).toEqual({ items: [], multiselectable: false })
+    })
+  })
+
   test('clear removes every provider and any exclusive claim', () => {
     const eventBus = makeEventBus()
     const registry = createSpatialListRegistry({ eventBus })

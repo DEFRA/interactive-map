@@ -2,18 +2,17 @@ import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
+import { useSpatialList } from './hooks/useSpatialList.js'
 
 export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
   const { eventBus, hints } = services
   const { crossHair } = mapState
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
 
-  // Mirrored directly in the render body (not a separate effect — matches useVisibleGeometry.js's
-  // own latestRef convention) so the crosshair effect's cleanup below can read the CURRENT
-  // shouldShowCrosshair decision rather than the stale one captured when that effect last ran.
-  // Without this, closing MoveControls (or leaving touch/keyboard) would fail to hide it: React
-  // runs the old effect's cleanup with its original closure, which still sees the OLD
-  // expandedButtons/interfaceType that made it visible in the first place.
+  useSpatialList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry, viewportRef: appState.layoutRefs.viewportRef })
+
+  // Mirrored in the render body so the crosshair effect's cleanup below can read the CURRENT
+  // shouldShowCrosshair decision, not the stale one its closure captured when it last ran.
   const shouldShowCrosshairRef = useRef(false)
   shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
     (isTouchOrKeyboard || appState.expandedButtons?.has('moveControls'))
@@ -50,9 +49,12 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     }
   }, [mapState.isMapReady, appState.mode])
 
-  // Suppresses the accessible features list for the whole time a draw/edit session holds exclusive control of map interaction.
+  // Suppresses the accessible spatial list for every draw/edit mode except edit_vertex, which
+  // supplies its own list instead (useSpatialList.js above, claimed exclusively via the
+  // registry) — every other mode still has nothing meaningful to show.
   useEffect(() => {
-    eventBus.emit(EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: pluginState.mode !== null })
+    const suppressed = pluginState.mode !== null && pluginState.mode !== 'edit_vertex'
+    eventBus.emit(EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed })
     return () => {
       eventBus.emit(EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false })
     }
@@ -65,19 +67,16 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     const wasAlreadyVisible = crossHair.isVisible
     crossHair.fixAtCenter()
     return () => {
-      // Only hide the crosshair if it wasn't visible before drawing AND it's not still needed
-      // now (re-checked live via the ref, not this closure's original values — the user might
-      // have switched input devices, or opened/closed MoveControls, since this effect last ran).
+      // Only hide it if it wasn't visible before AND isn't still needed now (checked live via
+      // the ref, since input device or MoveControls state may have changed since this ran).
       if (!wasAlreadyVisible && !shouldShowCrosshairRef.current) {
         crossHair.hide()
       }
     }
   }, [pluginState.mode, appState.interfaceType, appState.expandedButtons])
 
-  // Keep the active draw/edit session in sync with the global interface type so
-  // the touch offset target shows/hides, and the rubber band keeps following the
-  // map, immediately when the input device changes mid-session (e.g. the user
-  // starts drawing with the mouse then switches to touch and pans via MoveControls).
+  // Keep the active draw/edit session's interface type in sync so the touch offset target and
+  // rubber band update immediately if the input device changes mid-session.
   useEffect(() => {
     if (!['edit_vertex', 'edit_point', 'draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) || !mapProvider.draw) {
       return undefined

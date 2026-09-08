@@ -17,22 +17,24 @@ const SET_SPATIAL_LIST_SUPPRESSED = 'map:setspatiallistsuppressed'
  * an exclusive claim) — see spatialListRegistry.js.
  *
  * @param {object} eventBus
- * @returns {{ items: Array<{ id: string, label: string, x?: number, y?: number }>, multiselectable: boolean, label: string|undefined }}
+ * @returns {{ items: Array<{ id: string, label: string, x?: number, y?: number }>, multiselectable: boolean, label: string|undefined, focusable: boolean }}
  */
 export function useSpatialListItems (eventBus) {
   const [items, setItems] = useState([])
   const [multiselectable, setMultiselectable] = useState(false)
   const [label, setLabel] = useState(undefined)
+  const [focusable, setFocusable] = useState(true)
   const [suppressed, setSuppressed] = useState(false)
 
   useEffect(() => {
     if (!eventBus) {
       return undefined
     }
-    const handleSetSpatialList = ({ items: next = [], multiselectable: nextMultiselectable = false, label: nextLabel } = {}) => {
+    const handleSetSpatialList = ({ items: next = [], multiselectable: nextMultiselectable = false, label: nextLabel, focusable: nextFocusable = true } = {}) => {
       setItems(next)
       setMultiselectable(nextMultiselectable)
       setLabel(nextLabel)
+      setFocusable(nextFocusable)
     }
     const handleSuppressed = ({ suppressed: next = false } = {}) => {
       setSuppressed(next)
@@ -45,5 +47,5 @@ export function useSpatialListItems (eventBus) {
     }
   }, [eventBus])
 
-  return { items: suppressed ? [] : items, multiselectable, label }
+  return { items: suppressed ? [] : items, multiselectable, label, focusable }
 }

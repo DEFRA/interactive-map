@@ -14,7 +14,19 @@ jest.mock('../draw/DrawMode.js', () => ({
   createDrawMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn(), setDrawingPreviewProperty: jest.fn() }))
 }))
 jest.mock('../edit/EditMode.js', () => ({
-  createEditMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
+  createEditMode: jest.fn(() => ({
+    destroy: jest.fn(),
+    done: jest.fn(),
+    cancel: jest.fn(),
+    undo: jest.fn(),
+    deleteVertex: jest.fn(),
+    nudgeSelectedVertex: jest.fn(),
+    setInterfaceType: jest.fn(),
+    setInvalid: jest.fn(),
+    getVertexItems: jest.fn(() => ({ vertices: [[0, 0]], midpoints: [] })),
+    selectVertex: jest.fn(),
+    insertVertexAtMidpoint: jest.fn()
+  }))
 }))
 jest.mock('../point/editPointMode.js', () => ({
   createEditPointMode: jest.fn(() => ({ destroy: jest.fn(), done: jest.fn(), cancel: jest.fn(), undo: jest.fn(), deleteVertex: jest.fn(), nudgeSelectedVertex: jest.fn(), setInterfaceType: jest.fn(), setInvalid: jest.fn() }))
@@ -109,6 +121,8 @@ describe('mode machine', () => {
     const { manager } = setup()
     manager.done(); manager.undo(); manager.deleteVertex(); manager.nudgeSelectedVertex(1, 0, true); manager.setInterfaceType('touch'); manager.setInvalid(true) // no mode — no throw
     manager.setDrawingPreviewProperty('splitter', 'valid') // no mode — no throw
+    expect(manager.getVertexItems()).toEqual({ vertices: [], midpoints: [] }) // no mode — safe default
+    manager.selectVertex(1); manager.insertVertexAtMidpoint(1) // no mode — no throw
 
     await manager.changeMode('draw_polygon')
     const instance = createDrawMode.mock.results[0].value
@@ -134,6 +148,18 @@ describe('mode machine', () => {
     manager.cancel()
     expect(instance.cancel).toHaveBeenCalled()
     expect(manager.getMode()).toBe('disabled')
+  })
+
+  test('getVertexItems/selectVertex/insertVertexAtMidpoint delegate to the edit_vertex mode instance', async () => {
+    const { manager } = setup()
+    await manager.changeMode('edit_vertex', { featureId: 'f1' })
+    const instance = createEditMode.mock.results[0].value
+
+    expect(manager.getVertexItems()).toEqual({ vertices: [[0, 0]], midpoints: [] })
+    manager.selectVertex(2)
+    manager.insertVertexAtMidpoint(3)
+    expect(instance.selectVertex).toHaveBeenCalledWith(2)
+    expect(instance.insertVertexAtMidpoint).toHaveBeenCalledWith(3)
   })
 })
 

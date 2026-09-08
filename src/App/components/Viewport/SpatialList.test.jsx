@@ -105,6 +105,13 @@ describe('SpatialList — rendering', () => {
     expect(options[1].getAttribute('tabIndex')).toBe('-1')
   })
 
+  it('gives every item tabIndex -1 when focusable is false, even the active one — never a real Tab stop', () => {
+    const { container } = render(<SpatialList items={ITEMS} activeItemId='f2' focusable={false} />)
+    const options = container.querySelectorAll(OPTION)
+    expect(options[0].getAttribute('tabIndex')).toBe('-1')
+    expect(options[1].getAttribute('tabIndex')).toBe('-1')
+  })
+
   it('sets aria-multiselectable when multiselectable is true', () => {
     const { container } = render(<SpatialList items={ITEMS} multiselectable />)
     expect(container.querySelector(LISTBOX).getAttribute('aria-multiselectable')).toBe('true') // NOSONAR
