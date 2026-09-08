@@ -14,9 +14,9 @@ const midpointItem = (overrides) => expect.objectContaining({ isMidpoint: true, 
 const makeEventBus = () => {
   const listeners = {}
   return {
-    on: jest.fn((e, fn) => { listeners[e] = fn }),
+    on: jest.fn((eventName, fn) => { listeners[eventName] = fn }),
     off: jest.fn(),
-    emit: jest.fn((e, payload) => listeners[e]?.(payload))
+    emit: jest.fn((eventName, payload) => listeners[eventName]?.(payload))
   }
 }
 
@@ -28,7 +28,7 @@ const makeDrawAdapter = ({ vertices = [], midpoints = [] } = {}) => {
     getVertexItems: jest.fn(() => ({ vertices, midpoints })),
     selectVertex: jest.fn(),
     insertVertexAtMidpoint: jest.fn(),
-    on: jest.fn((e, fn) => { listeners[e] = fn }),
+    on: jest.fn((eventName, fn) => { listeners[eventName] = fn }),
     off: jest.fn(),
     fireUpdate: () => listeners[ADAPTER_EVENTS.UPDATE]?.()
   }

@@ -33,7 +33,7 @@ describe('touch and pointer interface', () => {
     clickAt(ctx, state, 0, 0)
     ctx.map.fire.mockClear()
     ctx.pointerupHandler({})
-    expect(firedWith(ctx.map, 'draw.vertexchange')).toEqual([{ numVertecies: 1 }])
+    expect(firedWith(ctx.map, 'draw.vertexchange')).toEqual([{ numVertices: 1 }])
   })
 
   test('blur away from the container hides the crosshair; blur on the container does not', () => {

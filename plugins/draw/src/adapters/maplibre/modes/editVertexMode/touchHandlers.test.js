@@ -96,14 +96,14 @@ describe('touchHandlers', () => {
     ctx.onTouchstart(state, { target: svgTarget(state), touches: [{ clientX: 20, clientY: 20 }] })
 
     ctx.onTouchmove(state, { target: { parentNode: document.createElement('div') }, touches: [{ clientX: 5, clientY: 5 }] })
-    expect(state.vertecies[1]).toEqual([10, 0]) // off-target move ignored
+    expect(state.vertices[1]).toEqual([10, 0]) // off-target move ignored
     ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 30, clientY: 40 }] })
     expect(state._touchMoved).toBe(true)
 
     state.getSnapEnabled = () => true
     map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
     ctx.onTouchmove(state, { target: svgTarget(state), touches: [{ clientX: 50, clientY: 60 }] })
-    expect(state.vertecies[1]).toEqual([7, 8])
+    expect(state.vertices[1]).toEqual([7, 8])
   })
 
   test('onTap clears the snap indicator, then selects a vertex, inserts on a midpoint, or clears with no target', () => {

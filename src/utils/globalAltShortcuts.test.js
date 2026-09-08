@@ -8,20 +8,20 @@ describe('GLOBAL_ALT_KEYS', () => {
 
 describe('stopIfGlobalAltKey', () => {
   test.each(['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Enter'])('stops propagation for Alt+%s', (key) => {
-    const e = { altKey: true, key, stopPropagation: jest.fn() }
-    stopIfGlobalAltKey(e)
-    expect(e.stopPropagation).toHaveBeenCalled()
+    const event = { altKey: true, key, stopPropagation: jest.fn() }
+    stopIfGlobalAltKey(event)
+    expect(event.stopPropagation).toHaveBeenCalled()
   })
 
   test('leaves the same keys alone without Alt held', () => {
-    const e = { altKey: false, key: 'ArrowUp', stopPropagation: jest.fn() }
-    stopIfGlobalAltKey(e)
-    expect(e.stopPropagation).not.toHaveBeenCalled()
+    const event = { altKey: false, key: 'ArrowUp', stopPropagation: jest.fn() }
+    stopIfGlobalAltKey(event)
+    expect(event.stopPropagation).not.toHaveBeenCalled()
   })
 
   test('leaves an Alt+<other key> alone — nothing global uses this combo', () => {
-    const e = { altKey: true, key: 'i', stopPropagation: jest.fn() }
-    stopIfGlobalAltKey(e)
-    expect(e.stopPropagation).not.toHaveBeenCalled()
+    const event = { altKey: true, key: 'i', stopPropagation: jest.fn() }
+    stopIfGlobalAltKey(event)
+    expect(event.stopPropagation).not.toHaveBeenCalled()
   })
 })

@@ -20,9 +20,9 @@ const SVG_SEL = 'svg'
 const makeEventBus = () => {
   const listeners = {}
   return {
-    on: jest.fn((e, fn) => { listeners[e] = fn }),
+    on: jest.fn((eventName, fn) => { listeners[eventName] = fn }),
     off: jest.fn(),
-    emit: (e, payload) => listeners[e]?.(payload)
+    emit: (eventName, payload) => listeners[eventName]?.(payload)
   }
 }
 

@@ -28,7 +28,7 @@ export const pointerHandlers = {
         state.selectedVertexIndex = vertexIndex
         state.selectedVertexType = 'vertex'
         state.coordPath = coordPath
-        const vertex = state.vertecies?.[vertexIndex]
+        const vertex = state.vertices?.[vertexIndex]
         if (vertex) {
           state._moveStartPosition = [...vertex]
           state._moveStartIndex = vertexIndex
@@ -47,7 +47,7 @@ export const pointerHandlers = {
       state.selectedVertexIndex = this.getVertexIndexFromMidpoint(state, coordPath)
       state.selectedVertexType = 'vertex'
       state.coordPath = null // Clear coordPath for midpoints
-      this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: state.selectedVertexIndex, numVertecies: state.vertecies.length })
+      this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: state.selectedVertexIndex, numVertices: state.vertices.length })
     }
   },
 
@@ -60,7 +60,7 @@ export const pointerHandlers = {
       state.selectedVertexType = 'vertex'
       state._isInsertingVertex = false
       state._insertedVertexIndex = null
-      this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: insertedIndex, numVertecies: state.vertecies.length })
+      this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: insertedIndex, numVertices: state.vertices.length })
       return
     }
     DirectSelect.onClick.call(this, state, e)
@@ -91,7 +91,7 @@ export const pointerHandlers = {
   },
 
   // Did the selected vertex actually change position during this interaction?
-  // Reads the live feature (not the cached state.vertecies) for reliability.
+  // Reads the live feature (not the cached state.vertices) for reliability.
   _didVertexMove (state) {
     if (!state._moveStartPosition || state._moveStartIndex == null) {
       return false
@@ -115,7 +115,7 @@ export const pointerHandlers = {
     state._isInsertingVertex = false
     state._insertedVertexIndex = null
     // DirectSelect.onMouseUp fires draw.update but not draw.selectionchange, so broadcast the count here
-    this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: insertedIndex, numVertecies: state.vertecies.length })
+    this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: insertedIndex, numVertices: state.vertices.length })
   },
 
   _recordMoveUndo (state) {

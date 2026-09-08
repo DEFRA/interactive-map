@@ -62,8 +62,8 @@ const pointHandlers = {
   // after the re-id (not before) so it writes to the feature under its final id — the
   // resolver itself is injected by the adapter via changeMode's options so this mode has
   // no direct dependency on symbolRegistry/mapProvider.
-  onCreate (state, e) {
-    const feature = e.features[0]
+  onCreate (state, event) {
+    const feature = event.features[0]
     this._ctx.api.delete(feature.id)
     feature.id = state.featureId
     this._ctx.api.add(feature, { userProperties: true })
@@ -84,52 +84,52 @@ const pointHandlers = {
   // this the indicator would never refresh while panning that way; a real map 'move' event's
   // `originalEvent` is only set for a live mouse/touch/wheel interaction, not a programmatic
   // one like MoveControls' panBy.
-  onMove (state, e) {
-    const isProgrammaticMapMove = e?.type === 'move' && !e.originalEvent
+  onMove (state, event) {
+    const isProgrammaticMapMove = event?.type === 'move' && !event.originalEvent
     if ((['touch', 'keyboard'].includes(state.interfaceType) || isProgrammaticMapMove) && isSnapEnabled(state)) {
       triggerSnapAtCenter(getSnapInstance(this.map), this.map)
     }
   },
 
-  onBlur (state, e) {
-    if (e.target !== state.container) { this._hideCrossHair(state) }
+  onBlur (state, event) {
+    if (event.target !== state.container) { this._hideCrossHair(state) }
   },
 
-  onPointerdown (state, e) {
-    if (e.pointerType !== 'touch') { this._setInterface(state, 'mouse', false) }
+  onPointerdown (state, event) {
+    if (event.pointerType !== 'touch') { this._setInterface(state, 'mouse', false) }
   },
 
-  onPointermove (state, e) {
-    if (e.pointerType !== 'touch') { this._hideCrossHair(state) }
+  onPointermove (state, event) {
+    if (event.pointerType !== 'touch') { this._hideCrossHair(state) }
   },
 
   onTouchStart (state) { this._setInterface(state, 'touch'); this.onMove(state) },
   onTouchEnd (state) { this._setInterface(state, 'touch'); this.onMove(state) },
 
-  onInterfaceTypeChange (state, e) {
-    this._setInterface(state, e.interfaceType, ['touch', 'keyboard'].includes(e.interfaceType))
+  onInterfaceTypeChange (state, event) {
+    this._setInterface(state, event.interfaceType, ['touch', 'keyboard'].includes(event.interfaceType))
     this.onMove(state)
   },
 
   // Continuously track a snap candidate under the real cursor (mouse only — touch/keyboard
   // placement tracks the crosshair instead, triggered once at commit time in _placeAtCrossHair).
-  onMouseMove (state, e) {
+  onMouseMove (state, event) {
     if (isSnapEnabled(state)) {
-      triggerSnapAtPoint(getSnapInstance(this.map), this.map, e.point)
+      triggerSnapAtPoint(getSnapInstance(this.map), this.map, event.point)
     }
   },
 
-  onVertexButtonClick (state, e) {
-    if (state.addVertexButtonId && !this.map._undoInProgress && e.target.closest(`#${state.addVertexButtonId}`)) {
+  onVertexButtonClick (state, event) {
+    if (state.addVertexButtonId && !this.map._undoInProgress && event.target.closest(`#${state.addVertexButtonId}`)) {
       this._placeAtCrossHair(state)
     }
   },
 
-  onKeydown (state, e) {
+  onKeydown (state, event) {
     if (document.activeElement !== state.container) { return }
-    if (e.key === 'Escape') { e.preventDefault(); return }
-    if (e.key === 'Enter') { state.isActive = true }
-    if (!INTERFACE_KEYS.has(e.key)) { return }
+    if (event.key === 'Escape') { event.preventDefault(); return }
+    if (event.key === 'Enter') { state.isActive = true }
+    if (!INTERFACE_KEYS.has(event.key)) { return }
     this._setInterface(state, 'keyboard')
     this.onMove(state)
   },
@@ -138,26 +138,26 @@ const pointHandlers = {
   // Escape a pending placement without ever focusing the map, and keyboard users placing via
   // crosshair can commit with Enter. A point has no partial ring to reinitialize the way
   // line/polygon's Escape does, so Escape always routes to draw.cancel, keyboard-focused or not.
-  onKeyup (state, e) {
-    if (e.key === 'Escape') {
+  onKeyup (state, event) {
+    if (event.key === 'Escape') {
       this.map.fire('draw.cancel')
       return
     }
     if (document.activeElement !== state.container) { return }
-    if (!INTERFACE_KEYS.has(e.key)) { return }
+    if (!INTERFACE_KEYS.has(event.key)) { return }
     this._setInterface(state, 'keyboard')
     this.onMove(state)
-    if (e.key === 'Enter' && state.isActive) { this._placeAtCrossHair(state) }
+    if (event.key === 'Enter' && state.isActive) { this._placeAtCrossHair(state) }
   },
 
-  onClick (state, e) {
-    if (e.originalEvent.button > 0 || e.originalEvent.target !== this.map.getCanvas()) { return }
+  onClick (state, event) {
+    if (event.originalEvent.button > 0 || event.originalEvent.target !== this.map.getCanvas()) { return }
     const snap = getSnapInstance(this.map)
     const snapped = isSnapEnabled(state) && isSnapActive(snap) ? getSnapLngLat(snap) : null
-    this._commit(state, snapped || e.lngLat)
+    this._commit(state, snapped || event.lngLat)
   },
 
-  onTap (state, e) { this.onClick(state, e) },
+  onTap (state, event) { this.onClick(state, event) },
 
   // Touch "Add point" button and keyboard Enter both place at the crosshair (map centre),
   // snapping to a candidate under it if one exists. Deliberately bypasses onClick — its

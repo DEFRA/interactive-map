@@ -45,7 +45,7 @@ export const EditVertexMode = {
     const feature = this.getFeature(state.featureId)
     state.featureType = feature?.type
 
-    state.vertecies = this.getVerticies(state.featureId)
+    state.vertices = this.getVertices(state.featureId)
     state.midpoints = this.getMidpoints(state.featureId)
     this.setupEventListeners(state)
 
@@ -58,7 +58,7 @@ export const EditVertexMode = {
 
     // Show touch target if entering with a selected vertex on touch interface
     if (state.interfaceType === 'touch' && state.selectedVertexIndex >= 0 && state.selectedVertexType === 'vertex') {
-      const vertex = state.vertecies[state.selectedVertexIndex]
+      const vertex = state.vertices[state.selectedVertexIndex]
       if (vertex) {
         setTimeout(() => {
           this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
@@ -95,7 +95,7 @@ export const EditVertexMode = {
       this.clearSelectedCoordinates()
       state.feature.changed()
       this._ctx.store.render()
-      this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertecies.length])
+      this.updateMidpoint(state.midpoints[options.selectedVertexIndex - state.vertices.length])
       return
     }
     if (options.selectedVertexIndex === -1) {
@@ -107,7 +107,7 @@ export const EditVertexMode = {
   },
 
   onSelectionChange (state, event) {
-    // Refresh vertex list so numVertecies reflects the latest geometry (e.g. after midpoint insertion)
+    // Refresh vertex list so numVertices reflects the latest geometry (e.g. after midpoint insertion)
     this.syncVertices(state)
 
     const vertexCoord = event.points[event.points.length - 1]?.geometry.coordinates
@@ -125,11 +125,11 @@ export const EditVertexMode = {
 
     this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, {
       index: state.selectedVertexType === 'vertex' ? state.selectedVertexIndex : -1,
-      numVertecies: state.vertecies.length
+      numVertices: state.vertices.length
     })
 
     // Use vertex from event if available, otherwise fall back to state
-    const vertex = vertexCoord || (state.selectedVertexIndex >= 0 ? state.vertecies[state.selectedVertexIndex] : null)
+    const vertex = vertexCoord || (state.selectedVertexIndex >= 0 ? state.vertices[state.selectedVertexIndex] : null)
     this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
@@ -139,13 +139,13 @@ export const EditVertexMode = {
 
   onInterfaceTypeChange (state, event) {
     state.interfaceType = event.interfaceType
-    const vertex = state.selectedVertexIndex >= 0 ? state.vertecies[state.selectedVertexIndex] : null
+    const vertex = state.selectedVertexIndex >= 0 ? state.vertices[state.selectedVertexIndex] : null
     this.updateTouchVertexTarget(state, vertex ? scalePoint(this.map.project(vertex), state.scale) : null)
   },
 
   onUpdate (state) {
-    const prev = new Set(state.vertecies.map(coordinate => JSON.stringify(coordinate)))
-    if (prev.size === state.vertecies.length) {
+    const prev = new Set(state.vertices.map(coordinate => JSON.stringify(coordinate)))
+    if (prev.size === state.vertices.length) {
       return
     }
     // Duplicate coordinates exist (e.g. a self-touching ring). Comparing the list
@@ -155,7 +155,7 @@ export const EditVertexMode = {
   },
 
   onMove (state) {
-    const vertex = state.vertecies[state.selectedVertexIndex]
+    const vertex = state.vertices[state.selectedVertexIndex]
     if (vertex) {
       this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
     }
@@ -165,7 +165,7 @@ export const EditVertexMode = {
   // mode since the adapter has no direct reference to its live state.
   onNudgeVertex (state, event) {
     this.nudgeVertexByDelta(state, event.dx, event.dy, event.isLargeStep)
-    const vertex = state.vertecies[state.selectedVertexIndex]
+    const vertex = state.vertices[state.selectedVertexIndex]
     if (vertex) {
       this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
     }
@@ -174,11 +174,11 @@ export const EditVertexMode = {
   // Inbound signal from MaplibreDrawAdapter.selectVertex — previews a vertex/midpoint by flat
   // index (no geometry change) for the spatial listbox's roving move.
   onSelectVertex (state, event) {
-    if (!state.vertecies?.length) { // lazy-populate guard, same as startKeyboardSelection
-      state.vertecies = this.getVerticies(state.featureId)
+    if (!state.vertices?.length) { // lazy-populate guard, same as startKeyboardSelection
+      state.vertices = this.getVertices(state.featureId)
       state.midpoints = this.getMidpoints(state.featureId)
     }
-    const type = event.index < state.vertecies.length ? 'vertex' : 'midpoint'
+    const type = event.index < state.vertices.length ? 'vertex' : 'midpoint'
     this.changeMode(state, {
       selectedVertexIndex: event.index,
       selectedVertexType: type,
@@ -190,8 +190,8 @@ export const EditVertexMode = {
   // midpoint `event.index` for the spatial listbox's confirm, landing exactly on the midpoint
   // (no offset), same as touchHandlers.js's onTap does for a midpoint tap.
   onInsertVertexAtMidpoint (state, event) {
-    if (!state.vertecies?.length) {
-      state.vertecies = this.getVerticies(state.featureId)
+    if (!state.vertices?.length) {
+      state.vertices = this.getVertices(state.featureId)
       state.midpoints = this.getMidpoints(state.featureId)
     }
     this.insertVertex({ ...state, selectedVertexIndex: event.index, selectedVertexType: 'midpoint' })

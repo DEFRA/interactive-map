@@ -183,7 +183,7 @@ describe('labels utils', () => {
       expect(nav.highlightNextLabel('ArrowRight')).toBeNull()
 
       // Zoom handler: no active highlight → no-op
-      const zoomHandler = map.on.mock.calls.find(([e]) => e === 'zoom')[1]
+      const zoomHandler = map.on.mock.calls.find(([eventName]) => eventName === 'zoom')[1]
       map.setLayoutProperty.mockClear()
       zoomHandler()
       expect(map.setLayoutProperty).not.toHaveBeenCalled()
@@ -222,10 +222,10 @@ describe('labels utils', () => {
       // Fire MAP_SET_STYLE → styledata → idle → setLineCenterPlacement + initLabelSource
       const styleHandler = eventBus.on.mock.calls[0][1]
       styleHandler({ mapColorScheme: 'dark' })
-      const styleDataHandler = map.once.mock.calls.find(([e]) => e === 'styledata')[1]
+      const styleDataHandler = map.once.mock.calls.find(([eventName]) => eventName === 'styledata')[1]
       styleDataHandler()
       map.setLayoutProperty.mockClear()
-      const idleHandler = map.once.mock.calls.find(([e]) => e === 'idle')[1]
+      const idleHandler = map.once.mock.calls.find(([eventName]) => eventName === 'idle')[1]
       idleHandler()
       expect(map.setLayoutProperty).toHaveBeenCalledWith('s1', 'symbol-placement', 'line-center')
     })

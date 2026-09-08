@@ -89,10 +89,10 @@ export const EditPointMode = {
     // every vertex selection change), a point never emits draw.vertexchange — that event
     // unconditionally releases mapProvider.activeMoveTarget, so it must never fire here.
     // attachEvents' resetState() (events.js) is the release point, on Done/Cancel/edit-finish.
-    // numVertecies (misspelled) — MaplibreDrawAdapter.js's vertexselection handler only reads
+    // numVertices (misspelled) — MaplibreDrawAdapter.js's vertexselection handler only reads
     // that exact key when normalising to the adapter contract's numVertices; firing the
     // correctly-spelled key here would get silently clobbered to undefined instead.
-    this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: 0, numVertecies: 1 })
+    this.map.fire(CUSTOM_DRAW_EVENTS.VERTEX_SELECTION, { index: 0, numVertices: 1 })
 
     return state
   },

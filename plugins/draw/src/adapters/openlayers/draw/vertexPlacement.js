@@ -99,7 +99,7 @@ export const createVertexPlacement = ({ drawInteraction, mapProvider, snap, canF
     sketchFeature = feature
     lastPlacedCoord = null
   }
-  drawInteraction.on('drawstart', (e) => resetSketch(e.feature))
+  drawInteraction.on('drawstart', (event) => resetSketch(event.feature))
   drawInteraction.on('drawend', () => resetSketch())
   drawInteraction.on('drawabort', () => resetSketch())
 

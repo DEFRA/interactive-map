@@ -41,11 +41,11 @@ export const vertexQueries = {
   },
 
   syncVertices (state) {
-    state.vertecies = this.getVerticies(state.featureId)
+    state.vertices = this.getVertices(state.featureId)
     state.midpoints = this.getMidpoints(state.featureId)
   },
 
-  getVerticies (featureId) {
+  getVertices (featureId) {
     return getCoords(this.getFeature(featureId))
   },
 
@@ -55,21 +55,21 @@ export const vertexQueries = {
 
   getVertexOrMidpoint (state, direction) {
     // Ensure vertices and midpoints are populated
-    if (!state.vertecies?.length) {
-      state.vertecies = this.getVerticies(state.featureId)
+    if (!state.vertices?.length) {
+      state.vertices = this.getVertices(state.featureId)
       state.midpoints = this.getMidpoints(state.featureId)
     }
-    if (!state.vertecies?.length) {
+    if (!state.vertices?.length) {
       return [-1, null]
     }
     const project = (p) => p ? Object.values(this.map.project(p)) : null
-    const pixels = [...state.vertecies.map(project), ...state.midpoints.map(project)].filter(Boolean)
+    const pixels = [...state.vertices.map(project), ...state.midpoints.map(project)].filter(Boolean)
     if (!pixels.length) {
       return [-1, null]
     }
     const start = pixels[state.selectedVertexIndex] || Object.values(this.map.project(this.map.getCenter()))
     const idx = spatialNavigate(start, pixels, direction)
-    return [idx, idx < state.vertecies.length ? 'vertex' : 'midpoint']
+    return [idx, idx < state.vertices.length ? 'vertex' : 'midpoint']
   },
 
   getVertexIndexFromMidpoint (state, coordPath) {
@@ -88,7 +88,7 @@ export const vertexQueries = {
         const insertionIdx = parts[parts.length - 1]
         const localMidpointIdx = insertionIdx > 0 ? insertionIdx - 1 : seg.length - 2
         // Midpoints are indexed after all vertices
-        return state.vertecies.length + midpointOffset + localMidpointIdx
+        return state.vertices.length + midpointOffset + localMidpointIdx
       }
       // Count midpoints in this segment (must match getMidpoints calculation)
       const segMidpoints = seg.closed ? seg.length : seg.length - 1
@@ -96,6 +96,6 @@ export const vertexQueries = {
     }
 
     // Fallback
-    return state.vertecies.length
+    return state.vertices.length
   }
 }

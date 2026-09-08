@@ -14,10 +14,10 @@ const SELECTION_CHANGE = 'interact:selectionchange'
 const makeEventBus = () => {
   const listeners = {}
   return {
-    on: jest.fn((e, fn) => { listeners[e] = fn }),
+    on: jest.fn((eventName, fn) => { listeners[eventName] = fn }),
     off: jest.fn(),
     emit: jest.fn(),
-    trigger: (e, payload) => listeners[e]?.(payload)
+    trigger: (eventName, payload) => listeners[eventName]?.(payload)
   }
 }
 
