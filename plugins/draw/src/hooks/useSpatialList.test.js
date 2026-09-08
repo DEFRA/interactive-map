@@ -93,12 +93,6 @@ describe('useSpatialList — lifecycle', () => {
     expect(adapter.off).toHaveBeenCalledWith(ADAPTER_EVENTS.UPDATE, expect.any(Function))
   })
 
-  it('does not subscribe to the adapter\'s UPDATE event outside edit_vertex', () => {
-    setup({ mode: 'draw_polygon' })
-    // draw_polygon still calls getVertexItems() defensively (mode gate happens first, so it
-    // never actually needs to), but should not itself throw when mapProvider.draw exists.
-  })
-
   it('is safe when mapProvider.draw does not exist yet', () => {
     const eb = makeEventBus()
     const mp = { draw: null, mapToScreen: jest.fn() }

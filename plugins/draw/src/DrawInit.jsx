@@ -4,19 +4,9 @@ import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
 
-export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
-  const { eventBus, hints } = services
-  const { crossHair } = mapState
-  const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
-
-  useSpatialList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry, viewportRef: appState.layoutRefs.viewportRef })
-
-  // Mirrored in the render body so the crosshair effect's cleanup below can read the CURRENT
-  // shouldShowCrosshair decision, not the stale one its closure captured when it last ran.
-  const shouldShowCrosshairRef = useRef(false)
-  shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
-    (isTouchOrKeyboard || appState.expandedButtons?.has('moveControls'))
-
+// Loads the draw adapter once the map is ready and this plugin instance is in scope for the
+// current app mode; tears it down (and releases MoveControls' D-pad) on cleanup.
+function useLoadDrawAdapter ({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus }) {
   useEffect(() => {
     const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
     const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
@@ -48,6 +38,22 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       mapProvider.activeMoveTarget = null
     }
   }, [mapState.isMapReady, appState.mode])
+}
+
+export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
+  const { eventBus, hints } = services
+  const { crossHair } = mapState
+  const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
+
+  useSpatialList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry, viewportRef: appState.layoutRefs.viewportRef })
+
+  // Mirrored in the render body so the crosshair effect's cleanup below can read the CURRENT
+  // shouldShowCrosshair decision, not the stale one its closure captured when it last ran.
+  const shouldShowCrosshairRef = useRef(false)
+  shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
+    (isTouchOrKeyboard || appState.expandedButtons?.has('moveControls'))
+
+  useLoadDrawAdapter({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus })
 
   // Suppresses the accessible spatial list for every draw/edit mode except edit_vertex, which
   // supplies its own list instead (useSpatialList.js above, claimed exclusively via the
