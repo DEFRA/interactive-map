@@ -197,16 +197,16 @@ describe('map event normalisation', () => {
 
   test('geometrychange forwards the raw event', () => {
     const { map, bus } = setup()
-    const e = { type: 'Polygon' }
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(e)
-    expect(bus.emit).toHaveBeenCalledWith('geometrychange', e)
+    const event = { type: 'Polygon' }
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(event)
+    expect(bus.emit).toHaveBeenCalledWith('geometrychange', event)
   })
 
   test('placementblocked forwards the raw event', () => {
     const { map, bus } = setup()
-    const e = { phase: 'place', reason: 'outside region' }
-    onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)(e)
-    expect(bus.emit).toHaveBeenCalledWith('placementblocked', e)
+    const event = { phase: 'place', reason: 'outside region' }
+    onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)(event)
+    expect(bus.emit).toHaveBeenCalledWith('placementblocked', event)
   })
 })
 

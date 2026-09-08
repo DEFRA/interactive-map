@@ -77,14 +77,14 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
       [map, 'draw.undo', this.undoHandler],
       [map, 'draw.interfacetypechange', this.interfaceTypeChangeHandler]
     ]
-    this._listeners.forEach(([t, e, h, opts]) => t.addEventListener ? t.addEventListener(e, h, opts) : t.on(e, h))
+    this._listeners.forEach(([t, eventName, h, opts]) => t.addEventListener ? t.addEventListener(eventName, h, opts) : t.on(eventName, h))
 
     return state
   },
 
   onStop (state) {
     ParentMode.onStop.call(this, state)
-    this._listeners.forEach(([t, e, h, opts]) => t.removeEventListener ? t.removeEventListener(e, h, opts) : t.off(e, h))
+    this._listeners.forEach(([t, eventName, h, opts]) => t.removeEventListener ? t.removeEventListener(eventName, h, opts) : t.off(eventName, h))
     // Don't leave a stale closure over this mode's state on the shared crossHair object once
     // it's gone — the next owner (e.g. interact re-enabling) assigns its own before this one
     // could ever be invoked again, but this avoids relying on that ordering.

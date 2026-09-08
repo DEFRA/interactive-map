@@ -38,33 +38,33 @@ export const wireInputEvents = ({
   }
   olView?.on('change:center', onCenterChange)
 
-  const onKeydown = (e) => {
+  const onKeydown = (event) => {
     if (!container.contains(document.activeElement)) {
       return
     }
-    if (ARROW_KEYS.has(e.key)) {
+    if (ARROW_KEYS.has(event.key)) {
       setInterfaceType('keyboard')
       return
     }
-    if (e.key === 'Enter') {
-      e.preventDefault()
+    if (event.key === 'Enter') {
+      event.preventDefault()
       setInterfaceType('keyboard')
       placeVertex()
     }
-    if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
-      e.preventDefault()
+    if (event.key === 'z' && (event.metaKey || event.ctrlKey)) {
+      event.preventDefault()
       onUndo?.()
     }
   }
 
-  const onButtonClick = (e) => {
-    if (addVertexButtonId && e.target.closest(`#${addVertexButtonId}`)) {
+  const onButtonClick = (event) => {
+    if (addVertexButtonId && event.target.closest(`#${addVertexButtonId}`)) {
       placeVertex()
     }
   }
 
-  const onPointerdown = (e) => {
-    if (e.pointerType !== 'touch') {
+  const onPointerdown = (event) => {
+    if (event.pointerType !== 'touch') {
       setInterfaceType('mouse')
       clearLastCoord()
     }

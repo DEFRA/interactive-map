@@ -10,7 +10,7 @@ import { stopIfGlobalAltKey } from '../../../../../../../src/utils/globalAltShor
 export const keyboardHandlers = {
   ...sharedKeyboardHandlers,
 
-  onKeydown (state, e) {
+  onKeydown (state, event) {
     if (isInteractiveElementFocused(state)) {
       return
     }
@@ -18,40 +18,40 @@ export const keyboardHandlers = {
     state.interfaceType = 'keyboard'
     this.hideTouchVertexIndicator(state)
 
-    if (e.key === ' ') {
-      this.handleSpace(state, e)
+    if (event.key === ' ') {
+      this.handleSpace(state, event)
       return
     }
-    if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
-      this.handleArrowKey(state, e)
+    if (ARROW_KEYS.has(event.key) && state.selectedVertexIndex >= 0) {
+      this.handleArrowKey(state, event)
       return
     }
-    if (e.key === 'Escape') {
+    if (event.key === 'Escape') {
       this.changeMode(state, { isPanEnabled: true, selectedVertexIndex: -1, selectedVertexType: null })
       return
     }
-    if (isUndoShortcut(e)) {
-      this.handleUndoShortcut(state, e)
+    if (isUndoShortcut(event)) {
+      this.handleUndoShortcut(state, event)
     }
   },
 
   // Space always cancels the default; with no active selection it starts keyboard editing.
-  handleSpace (state, e) {
-    e.preventDefault()
+  handleSpace (state, event) {
+    event.preventDefault()
     if (state.selectedVertexIndex < 0) {
       this.startKeyboardSelection(state)
     }
   },
 
   // Alt+arrow steps to the next vertex/midpoint; a plain arrow nudges the selected vertex.
-  handleArrowKey (state, e) {
-    e.preventDefault()
-    e.stopPropagation()
-    if (e.altKey) {
-      this.updateVertex(state, e.key)
+  handleArrowKey (state, event) {
+    event.preventDefault()
+    event.stopPropagation()
+    if (event.altKey) {
+      this.updateVertex(state, event.key)
       return
     }
-    this.moveVertexByKey(state, e)
+    this.moveVertexByKey(state, event)
   },
 
   // Space with no active selection: select the first vertex for keyboard editing.
@@ -72,9 +72,9 @@ export const keyboardHandlers = {
   },
 
   // Arrow key with a selected vertex: insert (midpoint) or nudge the vertex, honouring snap.
-  moveVertexByKey (state, e) {
+  moveVertexByKey (state, event) {
     if (state.selectedVertexType === 'midpoint') {
-      this.insertVertex(state, e)
+      this.insertVertex(state, event)
       return
     }
 
@@ -90,18 +90,18 @@ export const keyboardHandlers = {
       state._keyboardMoveStartIndex = state.selectedVertexIndex
     }
 
-    this.moveVertex(state, this._keyboardMoveTarget(state, e, currentCoord))
+    this.moveVertex(state, this._keyboardMoveTarget(state, event, currentCoord))
   },
 
   // Resolve the destination coordinate for a keyboard nudge, applying or breaking
   // snap — delegates to the shared resolver (utils/snapMovement.js) also used by
   // MoveControls' nudgeVertexByDelta, so both snap identically.
-  _keyboardMoveTarget (state, e, currentCoord) {
-    const [dx, dy] = ARROW_OFFSETS[e.key]
-    return this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getNewCoord(state, e))
+  _keyboardMoveTarget (state, event, currentCoord) {
+    const [dx, dy] = ARROW_OFFSETS[event.key]
+    return this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getNewCoord(state, event))
   },
 
-  onKeyup (state, e) {
+  onKeyup (state, event) {
     if (isInteractiveElementFocused(state)) {
       return
     }
@@ -112,10 +112,10 @@ export const keyboardHandlers = {
     // meaning here at all, selected or not), so with nothing selected there's no local
     // conflict to protect and the global map-label shortcuts should keep working.
     if (state.selectedVertexIndex >= 0) {
-      stopIfGlobalAltKey(e)
+      stopIfGlobalAltKey(event)
     }
-    if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
-      e.stopPropagation()
+    if (ARROW_KEYS.has(event.key) && state.selectedVertexIndex >= 0) {
+      event.stopPropagation()
 
       // Push undo for keyboard move sequence
       if (state._keyboardMoveStartPosition && state._keyboardMoveStartIndex != null) {
@@ -129,7 +129,7 @@ export const keyboardHandlers = {
         state._keyboardMoveStartIndex = null
       }
     }
-    if (e.key === 'Delete') {
+    if (event.key === 'Delete') {
       this.deleteVertex(state)
     }
   }

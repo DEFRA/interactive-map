@@ -31,7 +31,7 @@ const createMap = () => {
     getCenter: () => ({ ...CENTER }),
     project: jest.fn(() => ({ x: 50, y: 50 })),
     unproject: jest.fn(() => ({ ...CENTER })),
-    fire: jest.fn(function (type, e) { (listeners[type] ?? []).forEach((h) => h(e)) }),
+    fire: jest.fn(function (type, event) { (listeners[type] ?? []).forEach((h) => h(event)) }),
     on: jest.fn((type, h) => {
       listeners[type] ??= []
       listeners[type].push(h)
@@ -73,8 +73,8 @@ const createModeContext = (mode) => {
 
 // Remove window/container/map listeners registered by onSetup so tests don't leak into each other
 const contexts = []
-const removeListeners = (ctx) => ctx._listeners?.forEach(([t, e, h, opts]) =>
-  t.removeEventListener ? t.removeEventListener(e, h, opts) : t.off(e, h))
+const removeListeners = (ctx) => ctx._listeners?.forEach(([t, eventName, h, opts]) =>
+  t.removeEventListener ? t.removeEventListener(eventName, h, opts) : t.off(eventName, h))
 
 const createContainer = () => {
   const container = document.createElement('div')
@@ -113,7 +113,7 @@ export const clickEvent = (ctx, lng, lat, overrides = {}) => ({
 
 export const clickAt = (ctx, state, lng, lat) => ctx.onClick(state, clickEvent(ctx, lng, lat))
 
-export const firedWith = (map, type) => map.fire.mock.calls.filter(([t]) => t === type).map(([, e]) => e)
+export const firedWith = (map, type) => map.fire.mock.calls.filter(([t]) => t === type).map(([, event]) => event)
 
 export const activeSnap = () => ({ status: true, snapStatus: true, snapCoords: SNAP_TARGET, snapToClosestPoint: jest.fn() })
 

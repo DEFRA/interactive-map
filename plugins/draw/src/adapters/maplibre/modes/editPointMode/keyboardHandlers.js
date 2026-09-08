@@ -11,7 +11,7 @@ import { stopIfGlobalAltKey } from '../../../../../../../src/utils/globalAltShor
 export const keyboardHandlers = {
   ...sharedKeyboardHandlers,
 
-  onKeydown (state, e) {
+  onKeydown (state, event) {
     if (isInteractiveElementFocused(state)) {
       return
     }
@@ -19,30 +19,30 @@ export const keyboardHandlers = {
     state.interfaceType = 'keyboard'
     this.hideTouchPointIndicator(state)
 
-    if (e.key === ' ') {
+    if (event.key === ' ') {
       // Prevent the page from scrolling; there's nothing to select, the point already is.
-      e.preventDefault()
+      event.preventDefault()
       return
     }
-    if (ARROW_KEYS.has(e.key)) {
-      this.handleArrowKey(state, e)
+    if (ARROW_KEYS.has(event.key)) {
+      this.handleArrowKey(state, event)
       return
     }
-    if (isUndoShortcut(e)) {
-      this.handleUndoShortcut(state, e)
+    if (isUndoShortcut(event)) {
+      this.handleUndoShortcut(state, event)
     }
   },
 
   // A plain or Shift+arrow nudges the point (Shift's finer-step-vs-coarse-step distinction
   // lives in pointOperations.js's getOffset). Alt+arrow is left unhandled — nothing to
   // navigate to with a single coordinate.
-  handleArrowKey (state, e) {
-    e.preventDefault()
-    e.stopPropagation()
-    this.movePointByKey(state, e)
+  handleArrowKey (state, event) {
+    event.preventDefault()
+    event.stopPropagation()
+    this.movePointByKey(state, event)
   },
 
-  movePointByKey (state, e) {
+  movePointByKey (state, event) {
     const currentCoord = this.getPointCoord(state)
     if (!currentCoord) {
       return
@@ -53,26 +53,26 @@ export const keyboardHandlers = {
       state._keyboardMoveStartPosition = [...currentCoord]
     }
 
-    this.movePoint(state, this._keyboardMoveTarget(state, e, currentCoord))
+    this.movePoint(state, this._keyboardMoveTarget(state, event, currentCoord))
   },
 
   // Resolve the destination coordinate for a keyboard nudge, applying or breaking snap —
   // delegates to the shared resolver (utils/snapMovement.js) also used by MoveControls'
   // nudgePointByDelta, so both snap identically.
-  _keyboardMoveTarget (state, e, currentCoord) {
-    const [dx, dy] = ARROW_OFFSETS[e.key]
-    return this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getNewCoord(state, e))
+  _keyboardMoveTarget (state, event, currentCoord) {
+    const [dx, dy] = ARROW_OFFSETS[event.key]
+    return this.resolveSnapTarget(state, dx, dy, currentCoord, () => this.getNewCoord(state, event))
   },
 
-  onKeyup (state, e) {
+  onKeyup (state, event) {
     if (isInteractiveElementFocused(state)) {
       return
     }
 
     state.interfaceType = 'keyboard'
-    stopIfGlobalAltKey(e)
-    if (ARROW_KEYS.has(e.key)) {
-      e.stopPropagation()
+    stopIfGlobalAltKey(event)
+    if (ARROW_KEYS.has(event.key)) {
+      event.stopPropagation()
 
       // Push undo for the whole held-key move sequence as one step
       if (state._keyboardMoveStartPosition) {

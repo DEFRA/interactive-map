@@ -56,7 +56,7 @@ describe('createDrawPointMode', () => {
     const { interaction, manager, emitted } = setup()
     interaction.dispatchEvent({ type: 'drawend', feature: pointFeature([1, 2], 'ol-generated-id') })
 
-    const created = emitted().filter((e) => e.type === ADAPTER_EVENTS.CREATE)
+    const created = emitted().filter((event) => event.type === ADAPTER_EVENTS.CREATE)
     expect(created).toHaveLength(1)
     expect(created[0].payload.id).toBe('point-1') // re-id'd, not the OL-generated one
     expect(created[0].payload.geometry.coordinates).toEqual([1, 2])
@@ -82,7 +82,7 @@ describe('createDrawPointMode', () => {
   test('defaults properties to {} when none are supplied', () => {
     const { interaction, manager, emitted } = setup({ properties: undefined })
     interaction.dispatchEvent({ type: 'drawend', feature: pointFeature([1, 2], 'ol-generated-id') })
-    const created = emitted().filter((e) => e.type === ADAPTER_EVENTS.CREATE)
+    const created = emitted().filter((event) => event.type === ADAPTER_EVENTS.CREATE)
     // OL's GeoJSON writer reports no properties as null (not {}) — the meaningful
     // assertion is what setProperties() was actually called with, on the stored feature.
     expect(created[0].payload.properties).toBeNull()
@@ -96,7 +96,7 @@ describe('createDrawPointMode', () => {
     const condition = interaction.condition_
     const allowed = condition({ coordinate: [1, 2], originalEvent: {} })
     expect(allowed).toBe(false)
-    const blocked = emitted().filter((e) => e.type === ADAPTER_EVENTS.PLACEMENT_BLOCKED)
+    const blocked = emitted().filter((event) => event.type === ADAPTER_EVENTS.PLACEMENT_BLOCKED)
     expect(blocked).toHaveLength(1)
     expect(blocked[0].payload).toMatchObject({ reason: 'not allowed here', phase: 'place', mode: 'draw_point' })
   })
@@ -116,7 +116,7 @@ describe('createDrawPointMode', () => {
   test('drawabort emits CANCEL', () => {
     const { interaction, emitted } = setup()
     interaction.dispatchEvent({ type: 'drawabort' })
-    expect(emitted().some((e) => e.type === ADAPTER_EVENTS.CANCEL)).toBe(true)
+    expect(emitted().some((event) => event.type === ADAPTER_EVENTS.CANCEL)).toBe(true)
   })
 
   describe('touch/keyboard placement (via the wired placeVertex callback)', () => {
@@ -158,7 +158,7 @@ describe('createDrawPointMode', () => {
       wireArgs.placeVertex()
       expect(append).not.toHaveBeenCalled()
       expect(finish).not.toHaveBeenCalled()
-      expect(emitted().filter((e) => e.type === ADAPTER_EVENTS.PLACEMENT_BLOCKED)).toHaveLength(1)
+      expect(emitted().filter((event) => event.type === ADAPTER_EVENTS.PLACEMENT_BLOCKED)).toHaveLength(1)
     })
 
     test('updateRubberbanding shows the snap indicator at the crosshair for touch/keyboard, not mouse', () => {
@@ -240,7 +240,7 @@ describe('createDrawPointMode', () => {
       const { mode, map, interaction, emitted } = setup()
       const removeSpy = jest.spyOn(map, 'removeInteraction')
       mode.destroy()
-      expect(emitted().some((e) => e.type === ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE)).toBe(true)
+      expect(emitted().some((event) => event.type === ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE)).toBe(true)
       expect(removeSpy).toHaveBeenCalledWith(interaction)
     })
 

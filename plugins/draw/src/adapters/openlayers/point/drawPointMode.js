@@ -119,11 +119,11 @@ export const createDrawPointMode = ({ map, manager, options }) => {
     // meaningful to preview since this commits on the first click.
     style: () => [],
     snapTolerance: TOLERANCES.snapRadius,
-    condition: (e) => noModifierKeys(e) && canPlace(e.coordinate)
+    condition: (event) => noModifierKeys(event) && canPlace(event.coordinate)
   })
   map.addInteraction(drawInteraction)
 
-  drawInteraction.on('drawend', (e) => finalizeDrawnFeature(manager, options.resolvePointSymbol, e.feature, featureId, properties))
+  drawInteraction.on('drawend', (event) => finalizeDrawnFeature(manager, options.resolvePointSymbol, event.feature, featureId, properties))
   drawInteraction.on('drawabort', () => { manager.emit(ADAPTER_EVENTS.CANCEL) })
 
   const input = buildPointInput({ drawInteraction, options, canPlace })

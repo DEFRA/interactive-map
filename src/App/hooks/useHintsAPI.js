@@ -51,12 +51,12 @@ export const useHintsAPI = () => {
   }, [hints])
 
   useEffect(() => {
-    const handleKeyDown = (e) => {
-      if (e.key !== 'Escape' || !isHintActiveRef.current) {
+    const handleKeyDown = (event) => {
+      if (event.key !== 'Escape' || !isHintActiveRef.current) {
         return
       }
       const container = layoutRefs.appContainerRef?.current
-      if (container && !container.contains(e.target)) {
+      if (container && !container.contains(event.target)) {
         return
       }
       hints.dismiss()

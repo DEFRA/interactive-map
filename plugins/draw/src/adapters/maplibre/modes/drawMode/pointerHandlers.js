@@ -7,14 +7,14 @@ import {
  * switching, rubber-band movement (with snapping) and blur. Part of createDrawMode.
  */
 export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => ({
-  onTouchStart (state, e) {
+  onTouchStart (state, event) {
     this._setInterface(state, 'touch')
-    this.onMove(state, e)
+    this.onMove(state, event)
   },
 
-  onTouchEnd (state, e) {
+  onTouchEnd (state, event) {
     this._setInterface(state, 'touch')
-    this.onMove(state, e)
+    this.onMove(state, event)
   },
 
   // The global interface type (e.g. switching to touch and panning via MoveControls)
@@ -25,29 +25,29 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
   // draw_polygon/draw_line starts), so this must only show the crosshair for
   // touch/keyboard — same as onSetup/onMove — not unconditionally like touch's own
   // onTouchStart/onTouchEnd, or a mouse-driven session would flash it on every entry.
-  onInterfaceTypeChange (state, e) {
-    this._setInterface(state, e.interfaceType, ['touch', 'keyboard'].includes(e.interfaceType))
+  onInterfaceTypeChange (state, event) {
+    this._setInterface(state, event.interfaceType, ['touch', 'keyboard'].includes(event.interfaceType))
     this.onMove(state)
   },
 
-  onBlur (state, e) {
-    if (e.target !== state.container) {
+  onBlur (state, event) {
+    if (event.target !== state.container) {
       this._hideCrossHair(state)
     }
   },
 
-  onMouseMove (state, e) {
+  onMouseMove (state, event) {
     if (isSnapEnabled(state)) {
       const snap = getSnapInstance(this.map)
-      triggerSnapAtPoint(snap, this.map, e.point)
+      triggerSnapAtPoint(snap, this.map, event.point)
 
       const snappedLngLat = getSnapLngLat(snap)
       if (snappedLngLat) {
-        e = { ...e, lngLat: snappedLngLat }
+        event = { ...event, lngLat: snappedLngLat }
       }
     }
 
-    ParentMode.onMouseMove.call(this, state, e)
+    ParentMode.onMouseMove.call(this, state, event)
 
     // Fired after the parent updates the rubber band so the payload (and the live
     // invalid-stroke check driven by it) reflects the current cursor position.
@@ -63,8 +63,8 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
   // `originalEvent` is only set for a live mouse/touch/wheel interaction (dragPan,
   // scrollZoom, ...) — absent for a programmatic move like MoveControls' panBy, which
   // is exactly the case that needs this fallback.
-  onMove (state, e) {
-    const isProgrammaticMapMove = e?.type === 'move' && !e.originalEvent
+  onMove (state, event) {
+    const isProgrammaticMapMove = event?.type === 'move' && !event.originalEvent
     if (['touch', 'keyboard'].includes(state.interfaceType) || isProgrammaticMapMove) {
       if (isSnapEnabled(state)) {
         triggerSnapAtCenter(getSnapInstance(this.map), this.map)
@@ -95,14 +95,14 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
     }
   },
 
-  onPointerdown (state, e) {
-    if (e.pointerType !== 'touch') {
+  onPointerdown (state, event) {
+    if (event.pointerType !== 'touch') {
       this._setInterface(state, 'mouse', false)
     }
   },
 
-  onPointermove (state, e) {
-    if (e.pointerType !== 'touch') {
+  onPointermove (state, event) {
+    if (event.pointerType !== 'touch') {
       this._hideCrossHair(state)
     }
   },

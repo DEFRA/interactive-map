@@ -20,9 +20,9 @@ const featureItem = (overrides) => expect.objectContaining({ isMarker: false, ..
 const makeEventBus = () => {
   const listeners = {}
   return {
-    on: jest.fn((e, fn) => { listeners[e] = fn }),
+    on: jest.fn((eventName, fn) => { listeners[eventName] = fn }),
     off: jest.fn(),
-    emit: jest.fn((e, payload) => listeners[e]?.(payload))
+    emit: jest.fn((eventName, payload) => listeners[eventName]?.(payload))
   }
 }
 

@@ -175,12 +175,12 @@ const interactiveMap = new InteractiveMap('map', {
   // search
 })
 
-interactiveMap.on('app:ready', function (e) {
+interactiveMap.on('app:ready', function (event) {
   // console.log('app:ready')
 })
 
 
-interactiveMap.on('map:ready', function (e) {
+interactiveMap.on('map:ready', function (event) {
   // framePlugin.addFrame('test', {
   //   aspectRatio: 1
   // })
@@ -194,7 +194,7 @@ interactiveMap.on('map:ready', function (e) {
       id: 'addPoint',
       label: 'Add point',
       iconSvgContent: '<path d="M20 10c0 4.993-5.539 10.193-7.399 11.799a1 1 0 0 1-1.202 0C9.539 20.193 4 14.993 4 10a8 8 0 0 1 16 0"/><circle cx="12" cy="10" r="3"/>',
-      onClick: function (e) {
+      onClick: function (event) {
         interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
         drawPlugin.newPoint(crypto.randomUUID(), {
           symbol: 'pin',
@@ -205,7 +205,7 @@ interactiveMap.on('map:ready', function (e) {
       id: 'drawPolygon',
       label: 'Draw polygon',
       iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',
-      onClick: function (e) {
+      onClick: function (event) {
         interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
         drawPlugin.newPolygon(crypto.randomUUID(), {
           stroke: '#e6c700',
@@ -216,7 +216,7 @@ interactiveMap.on('map:ready', function (e) {
       id: 'drawLine',
       label: 'Draw line',
       iconSvgContent: '<path d="M5.706 16.294L16.294 5.706"/><path d="M21 2v3c0 .549-.451 1-1 1h-3c-.549 0-1-.451-1-1V2c0-.549.451-1 1-1h3c.549 0 1 .451 1 1zM6 17v3c0 .549-.451 1-1 1H2c-.549 0-1-.451-1-1v-3c0-.549.451-1 1-1h3c.549 0 1 .451 1 1z"/>',
-      onClick: function (e) {
+      onClick: function (event) {
         interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
         drawPlugin.newLine(crypto.randomUUID(), {
           stroke: { outdoor: '#99704a', dark: '#ffffff' },
@@ -228,7 +228,7 @@ interactiveMap.on('map:ready', function (e) {
       label: 'Edit geometry',
       iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
       isDisabled: true,
-      onClick: function (e) {
+      onClick: function (event) {
         const editSuccess = drawPlugin.editFeature(selectedFeatureIds[0])
         if (!editSuccess) {
           return
@@ -241,7 +241,7 @@ interactiveMap.on('map:ready', function (e) {
       label: 'Split shape',
       iconSvgContent: '<path d="M8 19H5c-1 0-2-1-2-2V7c0-1 1-2 2-2h3"/><path d="M16 5h3c1 0 2 1 2 2v10c0 1-1 2-2 2h-3"/><line x1="12" x2="12" y1="4" y2="20"/>',
       isDisabled: true,
-      onClick: function (e) {
+      onClick: function (event) {
         drawPlugin.split(selectedFeatureIds[0])
         interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
         interactPlugin.disable()
@@ -251,7 +251,7 @@ interactiveMap.on('map:ready', function (e) {
       label: 'Merge shapes',
       iconSvgContent: '<path d="M4 16a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v3a1 1 0 0 0 1 1h3a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H10a2 2 0 0 1-2-2v-3a1 1 0 0 0-1-1z"/>',
       isDisabled: true,
-      onClick: function (e) {
+      onClick: function (event) {
         drawPlugin.merge(selectedFeatureIds)
         interactPlugin.clear()
       }
@@ -260,7 +260,7 @@ interactiveMap.on('map:ready', function (e) {
       label: 'Delete feature',
       iconSvgContent: '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
       isDisabled: true,
-      onClick: function (e) {
+      onClick: function (event) {
         interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
         drawPlugin.deleteFeature(selectedFeatureIds)
         interactPlugin.clear()
@@ -328,53 +328,53 @@ interactiveMap.on('draw:ready', function () {
   // })
 })
 
-interactiveMap.on('draw:started', function (e) {
+interactiveMap.on('draw:started', function (event) {
   // console.log('draw:started')
   interactPlugin.disable()
 })
 
-interactiveMap.on('draw:editstart', function (e) {
-  console.log('draw:editstart', e)
+interactiveMap.on('draw:editstart', function (event) {
+  console.log('draw:editstart', event)
 })
 
-interactiveMap.on('draw:created', function (e) {
-  console.log('draw:created', e)
+interactiveMap.on('draw:created', function (event) {
+  console.log('draw:created', event)
   interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
   interactPlugin.enable()
 })
 
-interactiveMap.on('draw:updated', function (e) {
-  console.log('draw:updated', e)
+interactiveMap.on('draw:updated', function (event) {
+  console.log('draw:updated', event)
 })
 
-interactiveMap.on('draw:edited', function (e) {
-  // console.log('draw:edited', e)
+interactiveMap.on('draw:edited', function (event) {
+  // console.log('draw:edited', event)
   interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
   interactPlugin.enable()
 })
 
-interactiveMap.on('draw:cancelled', function (e) {
-  console.log('draw:cancelled', e)
+interactiveMap.on('draw:cancelled', function (event) {
+  console.log('draw:cancelled', event)
   interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
   interactPlugin.enable()
 })
 
 
-interactiveMap.on('interact:selectionchange', function (e) {
+interactiveMap.on('interact:selectionchange', function (event) {
   // mergeShapes deliberately excludes points — merging is a polygon/line-only concept.
   // editShape and delete both apply to a point (edit_point relocates it; delete removes the
   // whole feature), so they share the wider layer list.
   const drawLayers = ['stroke-inactive.cold', 'fill-inactive.cold']
   const editableLayers = drawLayers.concat(['point-symbol.cold'])
   const deletableLayers = editableLayers
-  const singleFeature = e.selectedFeatures.length === 1
-  const anyFeature = e.selectedFeatures.length > 0
-  const isDrawFeature = singleFeature && editableLayers.includes(e.selectedFeatures[0].layerId)
-  const isPolygon = singleFeature && e.selectedFeatures[0].geometryType === 'Polygon'
-  const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return drawLayers.includes(f.layerId) })
-  const canDelete = anyFeature && e.selectedFeatures.every(function (f) { return deletableLayers.includes(f.layerId) })
-  const canMerge = allDrawFeatures && e.contiguous && e.selectedFeatures.length > 1
-  selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
+  const singleFeature = event.selectedFeatures.length === 1
+  const anyFeature = event.selectedFeatures.length > 0
+  const isDrawFeature = singleFeature && editableLayers.includes(event.selectedFeatures[0].layerId)
+  const isPolygon = singleFeature && event.selectedFeatures[0].geometryType === 'Polygon'
+  const allDrawFeatures = anyFeature && event.selectedFeatures.every(function (f) { return drawLayers.includes(f.layerId) })
+  const canDelete = anyFeature && event.selectedFeatures.every(function (f) { return deletableLayers.includes(f.layerId) })
+  const canMerge = allDrawFeatures && event.contiguous && event.selectedFeatures.length > 1
+  selectedFeatureIds = event.selectedFeatures.map(function (f) { return f.featureId })
   interactiveMap.toggleButtonState('addPoint', 'disabled', !!anyFeature)
   interactiveMap.toggleButtonState('drawPolygon', 'disabled', !!anyFeature)
   interactiveMap.toggleButtonState('drawLine', 'disabled', !!anyFeature)
@@ -384,15 +384,15 @@ interactiveMap.on('interact:selectionchange', function (e) {
   interactiveMap.toggleButtonState('deleteFeature', 'disabled', !canDelete)
 })
 
-interactiveMap.on('draw:split', function (e) {
-  // console.log('draw:split', { originalFeatureId: e.originalFeatureId, newFeatures: e.featureCollection.features })
+interactiveMap.on('draw:split', function (event) {
+  // console.log('draw:split', { originalFeatureId: event.originalFeatureId, newFeatures: event.featureCollection.features })
 
   // Delete the original polygon
-  drawPlugin.deleteFeature([e.originalFeatureId])
+  drawPlugin.deleteFeature([event.originalFeatureId])
 
   // Add the two new split features with IDs based on the original
-  e.featureCollection.features.forEach(function (feature, index) {
-    const newId = e.originalFeatureId + (index === 0 ? '-a' : '-b')
+  event.featureCollection.features.forEach(function (feature, index) {
+    const newId = event.originalFeatureId + (index === 0 ? '-a' : '-b')
     drawPlugin.addFeature({
       id: newId,
       type: feature.type,
@@ -404,39 +404,39 @@ interactiveMap.on('draw:split', function (e) {
   interactPlugin.clear()
 })
 
-interactiveMap.on('draw:merge', function (e) {
-  // console.log('draw:merge', { originalFeatureIds: e.originalFeatureIds, feature: e.feature })
+interactiveMap.on('draw:merge', function (event) {
+  // console.log('draw:merge', { originalFeatureIds: event.originalFeatureIds, feature: event.feature })
 
   // Delete the original polygons
-  drawPlugin.deleteFeature(e.originalFeatureIds)
+  drawPlugin.deleteFeature(event.originalFeatureIds)
 
   // Add the single merged feature, keeping the first original's id
   drawPlugin.addFeature({
-    id: e.originalFeatureIds[0],
-    type: e.feature.type,
-    geometry: e.feature.geometry,
-    properties: e.feature.properties
+    id: event.originalFeatureIds[0],
+    type: event.feature.type,
+    geometry: event.feature.geometry,
+    properties: event.feature.properties
   })
 })
 
-interactiveMap.on('interact:markerchange', function (e) {
-  // console.log('interact:markerchange', e)
+interactiveMap.on('interact:markerchange', function (event) {
+  // console.log('interact:markerchange', event)
 })
 
 // Update selected feature
-interactiveMap.on('search:match', function (e) {
-  if (e.type !== 'parcel') {
+interactiveMap.on('search:match', function (event) {
+  if (event.type !== 'parcel') {
     return
   }
   interactPlugin.selectFeature({
     idProperty: 'id',
-    featureId: e.properties.ngc,
+    featureId: event.properties.ngc,
     layerId: 'linked-parcels'
   })
 })
 
 // Hide selected feature
-interactiveMap.on('search:clear', function (e) {
+interactiveMap.on('search:clear', function (event) {
   // console.log('Search clear')
 })
 
