@@ -21,6 +21,12 @@ export const CrossHair = () => {
       ref={crossHairRef}
       id={`${id}-cross-hair`}
       className='im-c-cross-hair-button'
+      // "Target" — shorter and easier for Voice Control users to say than "Cross hair" ("Click
+      // Target"); a general-purpose map is unlikely to already have a feature/marker named
+      // "Target" that this would collide with. aria-label (not a hidden child <span>) so the
+      // name comes purely from an attribute, with no separate text node for Chrome's AX tree
+      // to expose as its own identity alongside the button.
+      aria-label='Target'
       onClick={() => crossHair.activate?.()}
       style={{
         position: 'absolute',
@@ -29,19 +35,19 @@ export const CrossHair = () => {
         display: isVisible ? 'block' : 'none'
       }}
     >
+      {/* aria-hidden: without it, WebKit exposes the <path> as its own accessibility node —
+          Voice Control's "Click Target" then invokes press on that node directly rather than
+          dispatching a real bubbling click, so it never reaches this button's onClick. */}
       <svg
         width='38'
         height='38'
         viewBox='0 0 38 38'
         fillRule='evenodd'
         fill='currentColor'
+        aria-hidden='true'
       >
         <path d={paths[state || 'active']} />
       </svg>
-      {/* "Target" — shorter and easier for Voice Control users to say than "Cross hair"
-          ("Click Target"); a general-purpose map is unlikely to already have a feature/marker
-          named "Target" that this would collide with. */}
-      <span className='im-u-visually-hidden'>Target</span>
     </button>
   )
 }

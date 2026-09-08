@@ -55,6 +55,11 @@ export function attachEvents ({
   eventBus.on('interact:selectFeature', handleSelect)
   eventBus.on('interact:unselectFeature', handleUnselect)
   selectAtTarget.onClick = handleSelectAtTarget
+  // The crosshair's own "Click Target" (Voice Control) is wired separately, in
+  // useAttachEvents.js — mapState.crossHair is dispatch-managed state that gets replaced by a
+  // new object on almost every render, which a plain assignment made only once here (this
+  // function only re-runs when pluginState.enabled/buttonConfig/eventBus change, not when
+  // crossHair itself does) can't keep up with.
 
   return () => {
     selectAtTarget.onClick = null

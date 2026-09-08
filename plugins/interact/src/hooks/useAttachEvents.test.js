@@ -18,7 +18,7 @@ beforeEach(() => {
   props = {
     pluginState: { enabled: true },
     appState: { interfaceType: 'mouse' },
-    mapState: { mapStyle: {} },
+    mapState: { mapStyle: {}, crossHair: { getDetail: jest.fn(() => ({ point: {}, coords: [] })) } },
     buttonConfig: {},
     eventBus: { emit: jest.fn() },
     handleInteraction: handleInteractionMock
@@ -62,5 +62,48 @@ describe('useAttachEvents', () => {
   it('does not attach events if plugin not enabled', () => {
     renderHook(() => useAttachEvents({ ...props, pluginState: { enabled: false } }))
     expect(attachEvents).not.toHaveBeenCalled()
+  })
+
+  describe('crossHair.activate — re-wired whenever mapState.crossHair is replaced', () => {
+    it('wires crossHair.activate on mount, calling handleInteraction with the live getDetail() result', () => {
+      renderHook(() => useAttachEvents(props))
+      expect(typeof props.mapState.crossHair.activate).toBe('function')
+
+      props.mapState.crossHair.activate()
+      expect(handleInteractionMock).toHaveBeenCalledWith({ point: {}, coords: [] })
+    })
+
+    it('re-wires onto a new crossHair object — mapReducer.js replaces it wholesale on every UPDATE_CROSS_HAIR dispatch', () => {
+      const { rerender } = renderHook((p) => useAttachEvents(p), { initialProps: props })
+      const staleCrossHair = props.mapState.crossHair
+
+      const nextProps = { ...props, mapState: { ...props.mapState, crossHair: { getDetail: jest.fn(() => ({ point: {}, coords: [] })) } } }
+      rerender(nextProps)
+
+      expect(staleCrossHair.activate).toBeNull() // guarded cleanup nulled the old one
+      expect(typeof nextProps.mapState.crossHair.activate).toBe('function')
+    })
+
+    it('nulls activate on unmount, guarded — leaves a newer owner alone', () => {
+      const { unmount } = renderHook(() => useAttachEvents(props))
+      const ownActivate = props.mapState.crossHair.activate
+      expect(typeof ownActivate).toBe('function')
+
+      unmount()
+      expect(props.mapState.crossHair.activate).toBeNull()
+    })
+
+    it('does not wire crossHair.activate when the plugin is not enabled', () => {
+      renderHook(() => useAttachEvents({ ...props, pluginState: { enabled: false } }))
+      expect(props.mapState.crossHair.activate).toBeUndefined()
+    })
+
+    it('leaves a newer owner\'s crossHair.activate alone on unmount — guarded, not unconditional', () => {
+      const { unmount } = renderHook(() => useAttachEvents(props))
+      const laterOwnersActivate = () => {}
+      props.mapState.crossHair.activate = laterOwnersActivate
+      unmount()
+      expect(props.mapState.crossHair.activate).toBe(laterOwnersActivate)
+    })
   })
 })
