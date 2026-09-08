@@ -27,8 +27,8 @@ export const wireInputEvents = ({
   // Normally gated to touch/keyboard — a real mouse cursor drives the candidate via its own
   // pointermove instead. But Voice Control's simulated clicks report pointerType 'mouse' (so
   // interfaceType never leaves 'mouse') and produce no pointermove at all, so panning via
-  // MoveControls while interfaceType is 'mouse' would otherwise leave the candidate stale.
-  // olView.getAnimating() is also true for MoveControls' own panBy/zoomIn/zoomOut (both use
+  // MapControls while interfaceType is 'mouse' would otherwise leave the candidate stale.
+  // olView.getAnimating() is also true for MapControls' own panBy/zoomIn/zoomOut (both use
   // view.animate) but not for a live mouse drag (which sets the center directly, no
   // animation) — the same fallback signal used below in onMapRender.
   const onCenterChange = () => {
@@ -163,7 +163,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
   return {
     getInterfaceType,
     // Called when the global interface type changes without any pointer/touch/key
-    // event landing on the map container (e.g. panning via MoveControls after
+    // event landing on the map container (e.g. panning via MapControls after
     // switching to touch) — refresh the rubber band immediately rather than
     // waiting for the next incidental change:center/postrender event.
     setInterfaceType (type) {

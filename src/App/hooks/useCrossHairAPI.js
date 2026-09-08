@@ -36,13 +36,13 @@ const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition
   // tree while invisible. An earlier version kept it ax-tree-present here so Voice Control
   // could re-summon it by name, but that made "Show Names" put a "Target" label over
   // nothing whenever it was genuinely hidden, which is more confusing than helpful. Voice
-  // Control's real route back is opening MoveControls (a normal, always-visible, always-named
-  // button) — see isMoveControlsOpen below — so the crosshair itself doesn't need to stay
-  // discoverable while it's not actually there. Blocked outright while MoveControls is open:
+  // Control's real route back is opening MapControls (a normal, always-visible, always-named
+  // button) — see isMapControlsOpen below — so the crosshair itself doesn't need to stay
+  // discoverable while it's not actually there. Blocked outright while MapControls is open:
   // that panel is a deliberate, explicit "I can't drag/pinch this map" signal from the user,
   // which should win over whatever mouse-vs-touch/keyboard inference would otherwise decide.
   crossHair.hide = () => {
-    if (crossHair.isMoveControlsOpen) {
+    if (crossHair.isMapControlsOpen) {
       return
     }
     el.style.display = 'none'
@@ -124,7 +124,7 @@ export const useCrossHair = () => {
   // read the stale value and incorrectly block itself. Setting it directly in the render body
   // (matches DrawInit.jsx's shouldShowCrosshairRef convention) guarantees it's current before
   // ANY component's effects run, since React finishes rendering the whole tree first.
-  crossHair.isMoveControlsOpen = expandedButtons?.has('moveControls')
+  crossHair.isMapControlsOpen = expandedButtons?.has('mapControls')
 
   return {
     crossHair,

@@ -64,7 +64,7 @@ export function createSpatialListRegistry ({ eventBus }) {
     recompute()
   }
 
-  // Mirrors mapProvider.activeMoveTarget's single-claim contract (MoveControls.jsx),
+  // Mirrors mapProvider.activeMoveTarget's single-claim contract (MapControls.jsx),
   // generalised to however many participants are registered rather than always
   // exactly two — only one exclusive claim can be held at a time, and holding it
   // means every other registered provider is ignored until it's released.

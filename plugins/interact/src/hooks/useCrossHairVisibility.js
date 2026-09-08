@@ -8,7 +8,7 @@ export function useCrossHairVisibility ({ crossHair, enabled, selectMarkerOnly, 
   const crossHairRef = useRef(crossHair)
   crossHairRef.current = crossHair
   const listboxFocusRef = useRef(false)
-  // True while focus is inside an element (marked `data-map-keyboard-scope`) that actually routes cursor keys to the map, e.g. the viewport or MoveControl's D-pad.
+  // True while focus is inside an element (marked `data-map-keyboard-scope`) that actually routes cursor keys to the map, e.g. the viewport or MapControl's D-pad.
   const mapKeyboardScopedRef = useRef(false)
   const interfaceTypeRef = useRef(appState.interfaceType)
   interfaceTypeRef.current = appState.interfaceType
@@ -17,12 +17,12 @@ export function useCrossHairVisibility ({ crossHair, enabled, selectMarkerOnly, 
     const type = interfaceTypeRef.current
     const keyboardCanOperateMap = type === 'keyboard' && mapKeyboardScopedRef.current
     const touchCanOperateMap = type === 'touch' && !selectMarkerOnlyRef.current && !listboxFocusRef.current
-    // MoveControls being open is an explicit "I can't drag/pinch this map" signal from the
+    // MapControls being open is an explicit "I can't drag/pinch this map" signal from the
     // user — same audience this crosshair already exists for — so it counts as its own reason
     // to show it, independent of the currently-inferred interface type (which, for a Voice
     // Control user, will never register as anything but the default 'mouse').
-    const moveControlsOpen = appState.expandedButtons?.has('moveControls')
-    if (enabledRef.current && (keyboardCanOperateMap || touchCanOperateMap || moveControlsOpen)) {
+    const mapControlsOpen = appState.expandedButtons?.has('mapControls')
+    if (enabledRef.current && (keyboardCanOperateMap || touchCanOperateMap || mapControlsOpen)) {
       crossHairRef.current.fixAtCenter()
     } else {
       crossHairRef.current.hide()

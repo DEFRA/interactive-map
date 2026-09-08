@@ -5,7 +5,7 @@ import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
 
 // Loads the draw adapter once the map is ready and this plugin instance is in scope for the
-// current app mode; tears it down (and releases MoveControls' D-pad) on cleanup.
+// current app mode; tears it down (and releases MapControls' D-pad) on cleanup.
 function useLoadDrawAdapter ({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus }) {
   useEffect(() => {
     const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
@@ -34,7 +34,7 @@ function useLoadDrawAdapter ({ mapState, appState, pluginConfig, pluginState, ma
       isMounted = false
       mapProvider.draw?.remove()
       mapProvider.draw = null
-      // Release MoveControls' D-pad if this plugin instance still held it.
+      // Release MapControls' D-pad if this plugin instance still held it.
       mapProvider.activeMoveTarget = null
     }
   }, [mapState.isMapReady, appState.mode])
@@ -51,7 +51,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   // shouldShowCrosshair decision, not the stale one its closure captured when it last ran.
   const shouldShowCrosshairRef = useRef(false)
   shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
-    (isTouchOrKeyboard || appState.expandedButtons?.has('moveControls'))
+    (isTouchOrKeyboard || appState.expandedButtons?.has('mapControls'))
 
   useLoadDrawAdapter({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus })
 
@@ -74,7 +74,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     crossHair.fixAtCenter()
     return () => {
       // Only hide it if it wasn't visible before AND isn't still needed now (checked live via
-      // the ref, since input device or MoveControls state may have changed since this ran).
+      // the ref, since input device or MapControls state may have changed since this ran).
       if (!wasAlreadyVisible && !shouldShowCrosshairRef.current) {
         crossHair.hide()
       }

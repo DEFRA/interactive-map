@@ -208,7 +208,7 @@ describe('mouse hit-testing respects the icon\'s own rendered pixels, not a fixe
   })
 })
 
-test('nudgeSelectedVertex (MoveControls D-pad) moves the point and is undoable', () => {
+test('nudgeSelectedVertex (MapControls D-pad) moves the point and is undoable', () => {
   const { manager, mode, coord } = setup()
   mode.nudgeSelectedVertex(1, 0, true)
   expect(coord()).not.toEqual([5, 5])

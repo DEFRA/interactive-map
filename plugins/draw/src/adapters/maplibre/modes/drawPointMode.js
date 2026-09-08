@@ -80,10 +80,10 @@ const pointHandlers = {
   // explicitly below wherever the interface type switches to touch/keyboard, so the
   // indicator appears immediately rather than waiting for the first pan. Also runs for a
   // programmatic move with interfaceType still 'mouse' — Voice Control's simulated clicks
-  // (e.g. on MoveControls) report pointerType 'mouse' and produce no mousemove, so without
+  // (e.g. on MapControls) report pointerType 'mouse' and produce no mousemove, so without
   // this the indicator would never refresh while panning that way; a real map 'move' event's
   // `originalEvent` is only set for a live mouse/touch/wheel interaction, not a programmatic
-  // one like MoveControls' panBy.
+  // one like MapControls' panBy.
   onMove (state, event) {
     const isProgrammaticMapMove = event?.type === 'move' && !event.originalEvent
     if ((['touch', 'keyboard'].includes(state.interfaceType) || isProgrammaticMapMove) && isSnapEnabled(state)) {

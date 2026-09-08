@@ -33,7 +33,7 @@ export const vertexOperations = {
   },
 
   // Moves the selected vertex by an explicit (dx, dy) unit direction — the entry
-  // point for MoveControls' D-pad (see mapProvider.activeMoveTarget in events.js),
+  // point for MapControls' D-pad (see mapProvider.activeMoveTarget in events.js),
   // as opposed to moveVertexByKey's KeyboardEvent-driven path. Each call is treated
   // as one complete, undoable action (no held-key sequencing, since a button click
   // has no "held" state to batch the way arrow keys do) — but still honours snap

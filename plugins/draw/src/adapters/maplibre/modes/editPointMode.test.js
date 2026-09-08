@@ -124,7 +124,7 @@ describe('scale, move and interface-type events', () => {
     expect(state.touchPointTarget.style.display).toBe('block')
   })
 
-  test('draw.nudgevertex moves the point and repositions the touch target — the inbound bridge for MoveControls.mapProvider.activeMoveTarget', () => {
+  test('draw.nudgevertex moves the point and repositions the touch target — the inbound bridge for MapControls.mapProvider.activeMoveTarget', () => {
     jest.useFakeTimers()
     const { state, map } = createHarness(undefined, { interfaceType: 'touch' })
     jest.runAllTimers() // flush onSetup's deferred initial touch-target positioning

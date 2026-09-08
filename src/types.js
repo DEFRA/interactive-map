@@ -765,16 +765,18 @@
  * @property {boolean} [enableFullscreen=false]
  * Whether a toggle fullscreen button is displayed.
  *
- * @property {boolean} [enableMoveControls=true]
- * Whether the move controls are displayed — a button that reveals directional pan,
- * zoom, and step-size buttons, providing a non-dragging alternative to panning
- * and zooming the map (WCAG 2.5.7). Unlike enableZoomControls, it remains visible
- * when the interface type is 'touch'. When enabled, enableZoomControls' buttons
- * are hidden to avoid duplicating zoom controls.
+ * @property {boolean} [enableMapControls=true]
+ * Whether the map controls are displayed — a button that reveals on-screen move,
+ * zoom, and precision buttons, plus a target point, typically used to place or
+ * select features on the map without a drag gesture. This gives a non-dragging way
+ * to operate the map, for anyone who can't perform a drag/pinch gesture (e.g.
+ * switch access users) and for voice interfaces such as Voice Control, which can
+ * trigger a button click but not a drag. When enabled, enableZoomControls' buttons
+ * are hidden to avoid duplication.
  *
  * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed. Not displayed when the interface
- * type is 'touch', or when enableMoveControls is enabled.
+ * type is 'touch', or when enableMapControls is enabled.
  *
  * @property {[number, number, number, number]} [extent]
  * Initial extent [minX, minY, maxX, maxY]. Equivalent to bounds; use whichever matches your map provider's terminology.
@@ -806,8 +808,8 @@
  * @property {string} [mapLabel='Interactive map']
  * Accessible label for the map, announced by screen readers. Also prefixed onto mapHintText, so give each map on a page a distinct label.
  *
- * @property {string} [moveControlsHintText]
- * Visually hidden text describing the move controls button, appended to keyboardHintText when enableMoveControls is true.
+ * @property {string} [mapControlsHintText]
+ * Visually hidden text describing the map controls button, appended to keyboardHintText when enableMapControls is true.
  *
  * @property {MapProviderDescriptor} [mapProvider]
  * A factory function that returns a map provider instance (e.g. maplibreProvider()).

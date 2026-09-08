@@ -1,63 +1,63 @@
 @use '../../../scss/tools/index' as tools;
 
 // ===================================================
-// Component: MoveControls
+// Component: MapControls
 // ===================================================
 
 // 1. Base styles
-.im-c-move-controls {
+.im-c-map-controls {
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: var(--divider-gap);
 }
 
-.im-c-move-controls.im-c-move-controls--collapsed {
+.im-c-map-controls.im-c-map-controls--collapsed {
     display: none;
 }
 
 // 2. Elements
-.im-c-move-controls__directions {
+.im-c-map-controls__directions {
     display: grid;
     grid-template-columns: repeat(3, var(--button-size));
     grid-template-rows: repeat(3, var(--button-size));
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-up {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-up {
     grid-column: 2;
     grid-row: 1;
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-left {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-left {
     grid-column: 1;
     grid-row: 2;
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-right {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-right {
     grid-column: 3;
     grid-row: 2;
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-down {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-down {
     grid-column: 2;
     grid-row: 3;
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle {
+.im-c-map-controls__directions .im-c-button-wrapper--nudge-step-toggle {
     grid-column: 2;
     grid-row: 2;
     z-index: 1;
 }
 
-.im-c-move-controls__directions .im-c-map-button--pan-up svg {
+.im-c-map-controls__directions .im-c-map-button--pan-up svg {
     transform: rotate(180deg);
 }
 
-.im-c-move-controls__directions .im-c-map-button--pan-left svg {
+.im-c-map-controls__directions .im-c-map-button--pan-left svg {
     transform: rotate(90deg);
 }
 
-.im-c-move-controls__directions .im-c-map-button--pan-right svg {
+.im-c-map-controls__directions .im-c-map-button--pan-right svg {
     transform: rotate(-90deg);
 }
 
@@ -67,7 +67,7 @@
 // express a plus-shaped grid where the centre button touches all four neighbours —
 // clip-path is set directly per button instead, clipping only the side(s) where it
 // touches another button and leaving the exposed side(s) showing the shadow as normal.
-.im-c-move-controls__directions .im-c-button-wrapper--pan-up .im-c-map-button {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-up .im-c-map-button {
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
 
@@ -76,7 +76,7 @@
     }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-left .im-c-map-button {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-left .im-c-map-button {
     border-top-right-radius: 0;
     border-bottom-right-radius: 0;
 
@@ -85,7 +85,7 @@
     }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-right .im-c-map-button {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-right .im-c-map-button {
     border-top-left-radius: 0;
     border-bottom-left-radius: 0;
 
@@ -94,7 +94,7 @@
     }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--pan-down .im-c-map-button {
+.im-c-map-controls__directions .im-c-button-wrapper--pan-down .im-c-map-button {
     border-top-left-radius: 0;
     border-top-right-radius: 0;
 
@@ -103,7 +103,7 @@
     }
 }
 
-.im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button {
+.im-c-map-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button {
     border-radius: 0;
     outline: 1px solid var(--button-hover-color);
 
@@ -114,13 +114,13 @@
 
 // Same inverted "pressed" treatment already used for actions-slot toggle buttons
 // (e.g. draw's Snap toggle) — reused here so Nudge mode reads consistently active.
-.im-c-move-controls .im-c-map-button[aria-pressed="true"] {
+.im-c-map-controls .im-c-map-button[aria-pressed="true"] {
     color: var(--pressed-button-foreground-color);
     border-color: var(--pressed-button-border-color);
     background-color: var(--pressed-button-background-color);
 }
 
-// The trigger lives in the right-top slot, outside .im-c-move-controls, so this is
+// The trigger lives in the right-top slot, outside .im-c-map-controls, so this is
 // its own top-level rule. Same colour treatment as above, but keyed off
 // aria-expanded rather than aria-pressed — the trigger is correctly a disclosure
 // button (it reveals the control below), not a toggle button, so it doesn't carry
@@ -132,31 +132,31 @@
 // hovering the expanded trigger button was a coin-flip decided by cascade order —
 // one cssnano mergeRules reshuffle in production and hover started winning,
 // showing the hover tint instead of the pressed colours. The sibling
-// .im-c-move-controls .im-c-map-button[aria-pressed="true"] rule above never had
+// .im-c-map-controls .im-c-map-button[aria-pressed="true"] rule above never had
 // this problem (it's already (0,3,0), safely ahead of hover); this one needed the
 // same headroom.
-.im-c-map-button.im-c-map-button--move-controls[aria-expanded="true"] {
+.im-c-map-button.im-c-map-button--map-controls[aria-expanded="true"] {
     color: var(--pressed-button-foreground-color);
     border-color: var(--pressed-button-border-color);
     background-color: var(--pressed-button-background-color);
 }
 
-.im-c-move-controls__zoom {
+.im-c-map-controls__zoom {
     display: flex;
     flex-direction: row;
 }
 
 // A simple two-item linear row, so the standard button-group corner/shadow treatment
 // applies directly (matches .im-o-app__top's first/last-child pattern).
-.im-c-move-controls__zoom .im-c-button-wrapper--nudge-zoom-in .im-c-map-button {
+.im-c-map-controls__zoom .im-c-button-wrapper--nudge-zoom-in .im-c-map-button {
     @include tools.border-focus-corner-override($corners: 'left');
 }
 
-.im-c-move-controls__zoom .im-c-button-wrapper--nudge-zoom-out .im-c-map-button {
+.im-c-map-controls__zoom .im-c-button-wrapper--nudge-zoom-out .im-c-map-button {
     @include tools.border-focus-corner-override($corners: 'right');
 }
 
 // App dark modifiers
-.im-o-app--dark-app .im-c-move-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button {
+.im-o-app--dark-app .im-c-map-controls__directions .im-c-button-wrapper--nudge-step-toggle .im-c-map-button {
     outline-offset: -1px;
 }

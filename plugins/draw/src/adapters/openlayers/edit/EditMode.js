@@ -291,7 +291,7 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
 
     undo: actions.doUndo,
     deleteVertex: actions.doDeleteVertex,
-    // MoveControls' D-pad, routed here via mapProvider.activeMoveTarget (see
+    // MapControls' D-pad, routed here via mapProvider.activeMoveTarget (see
     // events.js) once a vertex is selected.
     nudgeSelectedVertex: parts.keyboardHandler.nudgeByDelta,
 

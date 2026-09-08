@@ -17,7 +17,7 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
     this.onMove(state, event)
   },
 
-  // The global interface type (e.g. switching to touch and panning via MoveControls)
+  // The global interface type (e.g. switching to touch and panning via MapControls)
   // can change mid-session without any touch/pointer/key event ever landing on the
   // map container, so this can't rely on onTouchStart/onPointerdown alone — refresh
   // the rubber band immediately rather than waiting for the next incidental 'move'.
@@ -58,10 +58,10 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
   // touch/keyboard interfaceType, since a real mouse cursor already drives it via
   // onMouseMove. But Voice Control's simulated clicks report pointerType 'mouse' (so
   // interfaceType never leaves 'mouse') and produce no mousemove at all — panning via
-  // MoveControls while interfaceType is 'mouse' would otherwise leave the candidate
+  // MapControls while interfaceType is 'mouse' would otherwise leave the candidate
   // stale. `map.on('move', ...)` fires this with the real MapLibre move event, whose
   // `originalEvent` is only set for a live mouse/touch/wheel interaction (dragPan,
-  // scrollZoom, ...) — absent for a programmatic move like MoveControls' panBy, which
+  // scrollZoom, ...) — absent for a programmatic move like MapControls' panBy, which
   // is exactly the case that needs this fallback.
   onMove (state, event) {
     const isProgrammaticMapMove = event?.type === 'move' && !event.originalEvent

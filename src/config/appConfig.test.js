@@ -19,7 +19,7 @@ describe('defaultAppConfig', () => {
   const journeyContinueBtn = buttons.find(b => b.id === 'journeyContinue')
   const zoomInBtn = buttons.find(b => b.id === 'zoomIn')
   const zoomOutBtn = buttons.find(b => b.id === 'zoomOut')
-  const moveControlsBtn = buttons.find(b => b.id === 'moveControls')
+  const mapControlsBtn = buttons.find(b => b.id === 'mapControls')
 
   // --- UI RENDER TESTS ---
   it('renders KeyboardHelp panel', () => {
@@ -144,21 +144,21 @@ describe('defaultAppConfig', () => {
         appState: { interfaceType: 'mouse' }
       })).toBe(true)
 
-      // Branch B: Second part of OR is true (enableMoveControls)
+      // Branch B: Second part of OR is true (enableMapControls)
       expect(btn.excludeWhen({
-        appConfig: { enableZoomControls: true, enableMoveControls: true },
+        appConfig: { enableZoomControls: true, enableMapControls: true },
         appState: { interfaceType: 'mouse' }
       })).toBe(true)
 
       // Branch C: Third part of OR is true (interfaceType === 'touch')
       expect(btn.excludeWhen({
-        appConfig: { enableZoomControls: true, enableMoveControls: false },
+        appConfig: { enableZoomControls: true, enableMapControls: false },
         appState: { interfaceType: 'touch' }
       })).toBe(true)
 
       // Branch D: All parts are false (Result: false)
       expect(btn.excludeWhen({
-        appConfig: { enableZoomControls: true, enableMoveControls: false },
+        appConfig: { enableZoomControls: true, enableMapControls: false },
         appState: { interfaceType: 'mouse' }
       })).toBe(false)
     })
@@ -183,37 +183,37 @@ describe('defaultAppConfig', () => {
   })
 
   // --- MOVE CONTROLS TOGGLE BUTTON ---
-  it('covers all branches of moveControls excludeWhen', () => {
-    expect(moveControlsBtn.excludeWhen({ appConfig: { enableMoveControls: false } })).toBe(true)
-    expect(moveControlsBtn.excludeWhen({ appConfig: { enableMoveControls: true } })).toBe(false)
+  it('covers all branches of mapControls excludeWhen', () => {
+    expect(mapControlsBtn.excludeWhen({ appConfig: { enableMapControls: false } })).toBe(true)
+    expect(mapControlsBtn.excludeWhen({ appConfig: { enableMapControls: true } })).toBe(false)
   })
 
-  it('moveControls ariaControls resolves the control element id', () => {
-    expect(moveControlsBtn.ariaControls({ appConfig: { id: 'im' } })).toBe('im-move-controls-content')
+  it('mapControls ariaControls resolves the control element id', () => {
+    expect(mapControlsBtn.ariaControls({ appConfig: { id: 'im' } })).toBe('im-map-controls-content')
   })
 
-  it('moveControls onClick toggles TOGGLE_BUTTON_EXPANDED based on current state', () => {
+  it('mapControls onClick toggles TOGGLE_BUTTON_EXPANDED based on current state', () => {
     const dispatch = jest.fn()
 
-    moveControlsBtn.onClick({}, { appState: { dispatch, expandedButtons: new Set() } })
+    mapControlsBtn.onClick({}, { appState: { dispatch, expandedButtons: new Set() } })
     expect(dispatch).toHaveBeenCalledWith({
       type: 'TOGGLE_BUTTON_EXPANDED',
-      payload: { id: 'moveControls', isExpanded: true }
+      payload: { id: 'mapControls', isExpanded: true }
     })
 
     dispatch.mockClear()
-    moveControlsBtn.onClick({}, { appState: { dispatch, expandedButtons: new Set(['moveControls']) } })
+    mapControlsBtn.onClick({}, { appState: { dispatch, expandedButtons: new Set(['mapControls']) } })
     expect(dispatch).toHaveBeenCalledWith({
       type: 'TOGGLE_BUTTON_EXPANDED',
-      payload: { id: 'moveControls', isExpanded: false }
+      payload: { id: 'mapControls', isExpanded: false }
     })
   })
 
   // --- MOVE CONTROLS ---
-  it('covers all branches of moveControls control excludeWhen', () => {
-    const control = defaultAppConfig.controls.find(c => c.id === 'moveControls')
-    expect(control.excludeWhen({ appConfig: { enableMoveControls: false } })).toBe(true)
-    expect(control.excludeWhen({ appConfig: { enableMoveControls: true } })).toBe(false)
+  it('covers all branches of mapControls control excludeWhen', () => {
+    const control = defaultAppConfig.controls.find(c => c.id === 'mapControls')
+    expect(control.excludeWhen({ appConfig: { enableMapControls: false } })).toBe(true)
+    expect(control.excludeWhen({ appConfig: { enableMapControls: true } })).toBe(false)
   })
 
   // --- SUPPLEMENTARY CONFIGS ---
