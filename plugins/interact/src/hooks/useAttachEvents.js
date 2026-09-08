@@ -42,4 +42,24 @@ export function useAttachEvents ({ pluginState, appState, mapState, buttonConfig
 
     return cleanupEvents
   }, [pluginState.enabled, buttonConfig, eventBus])
+
+  // crossHair is dispatch-managed state (mapReducer.js's UPDATE_CROSS_HAIR spreads into a NEW
+  // object every time — see updateCrossHair in mapActionsMap.js, which fires constantly, e.g.
+  // on every fixAtCenter()/hide()), so a `.activate` assignment made only once (inside the
+  // effect above, whose deps don't include it) would silently end up on a stale, discarded
+  // object the moment the next dispatch replaces it — exactly what CrossHair.jsx's onClick
+  // would then find nothing on. Keyed on mapState.crossHair itself, separate from the effect
+  // above, so this re-wires onto the current object every time it's replaced, not just once.
+  useEffect(() => {
+    if (!pluginState.enabled) {
+      return undefined
+    }
+    const activate = () => handleInteractionRef.current(mapState.crossHair.getDetail())
+    mapState.crossHair.activate = activate
+    return () => {
+      if (mapState.crossHair.activate === activate) {
+        mapState.crossHair.activate = null
+      }
+    }
+  }, [pluginState.enabled, mapState.crossHair])
 }

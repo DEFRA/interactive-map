@@ -1,8 +1,10 @@
 import { DrawPolygonMode } from '../../drawPolygonMode.js'
 import { DrawLineMode } from '../../drawLineMode.js'
 import { createUndoStack } from '../../../../../utils/undoStack.js'
-import PolygonFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/polygon.js'
-import LineStringFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/line_string.js'
+// Real mapbox-gl-draw Feature classes, not exported from its package entrypoint — needed here
+// so this harness can construct the actual objects mapbox-gl-draw itself hands to a mode.
+import PolygonFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/polygon.js' // NOSONAR
+import LineStringFeature from '../../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/feature_types/line_string.js' // NOSONAR
 
 /**
  * Shared test harness for the createDrawMode handler modules. Exercises the real
@@ -12,6 +14,10 @@ import LineStringFeature from '../../../../../../../../node_modules/@mapbox/mapb
 
 export { DrawPolygonMode, DrawLineMode }
 export const CENTER = { lng: 5, lat: 5 }
+// Fixed point a mock-active snap resolves to, distinct from CENTER so tests can tell whether
+// a click landed at the real coordinate or was pulled onto the snap target — the value itself
+// is arbitrary, just needs to differ from CENTER.
+export const SNAP_TARGET = [9, 9] // NOSONAR
 
 const createMap = () => {
   const canvas = document.createElement('canvas')
@@ -26,7 +32,10 @@ const createMap = () => {
     project: jest.fn(() => ({ x: 50, y: 50 })),
     unproject: jest.fn(() => ({ ...CENTER })),
     fire: jest.fn(function (type, e) { (listeners[type] ?? []).forEach((h) => h(e)) }),
-    on: jest.fn((type, h) => { (listeners[type] ??= []).push(h) }),
+    on: jest.fn((type, h) => {
+      listeners[type] ??= []
+      listeners[type].push(h)
+    }),
     off: jest.fn((type, h) => { listeners[type] = (listeners[type] ?? []).filter((x) => x !== h) })
   }
 }
@@ -64,8 +73,8 @@ const createModeContext = (mode) => {
 
 // Remove window/container/map listeners registered by onSetup so tests don't leak into each other
 const contexts = []
-const removeListeners = (ctx) => ctx._listeners?.forEach(([t, e, h]) =>
-  t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
+const removeListeners = (ctx) => ctx._listeners?.forEach(([t, e, h, opts]) =>
+  t.removeEventListener ? t.removeEventListener(e, h, opts) : t.off(e, h))
 
 const createContainer = () => {
   const container = document.createElement('div')
@@ -106,7 +115,7 @@ export const clickAt = (ctx, state, lng, lat) => ctx.onClick(state, clickEvent(c
 
 export const firedWith = (map, type) => map.fire.mock.calls.filter(([t]) => t === type).map(([, e]) => e)
 
-export const activeSnap = () => ({ status: true, snapStatus: true, snapCoords: [9, 9], snapToClosestPoint: jest.fn() })
+export const activeSnap = () => ({ status: true, snapStatus: true, snapCoords: SNAP_TARGET, snapToClosestPoint: jest.fn() })
 
 afterEach(() => {
   contexts.splice(0).forEach(removeListeners)

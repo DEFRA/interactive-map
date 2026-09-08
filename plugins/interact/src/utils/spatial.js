@@ -45,7 +45,7 @@ function isContiguousWithAny (feature, features) {
 /**
  * A representative [lng, lat] centre point for a feature's geometry — the centre of its bounding
  * box. Used to position a polygon/line feature's entry in the accessible Features list (see
- * useMapItemList.js) so coordinate-based AT overlays (e.g. macOS Voice Control's Show Numbers)
+ * useSpatialList.js) so coordinate-based AT overlays (e.g. macOS Voice Control's Show Numbers)
  * land somewhere on the feature rather than off in a corner of the viewport. Deliberately a
  * bbox centre, not a true centroid/centre-of-mass — works uniformly for polygons and lines with
  * no extra dependency beyond what this file already uses, at the cost of being able to land

@@ -10,7 +10,7 @@ import { useMediaQueryDispatch } from '../hooks/useMediaQueryDispatch.js'
 export const AppContext = createContext(null)
 
 export const AppProvider = ({ options, children }) => {
-  const { pluginRegistry, buttonRegistry, panelRegistry, controlRegistry, keyboardShortcutRegistry, eventBus, breakpointDetector } = options
+  const { pluginRegistry, buttonRegistry, panelRegistry, controlRegistry, keyboardShortcutRegistry, spatialListRegistry, eventBus, breakpointDetector } = options
 
   const layoutRefs = {
     appContainerRef: useRef(null),
@@ -96,7 +96,8 @@ export const AppProvider = ({ options, children }) => {
     buttonRegistry,
     panelRegistry,
     controlRegistry,
-    keyboardShortcutRegistry
+    keyboardShortcutRegistry,
+    spatialListRegistry
   }), [state, dispatch])
 
   return (

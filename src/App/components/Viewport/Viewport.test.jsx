@@ -21,7 +21,13 @@ jest.mock('../Markers/Markers', () => ({ Markers: jest.fn(() => <div data-testid
 
 const KEYBOARD_HINT_TEXT = 'Test keyboad hint text'
 
-const mockMapProvider = { initMap: jest.fn(), updateMap: jest.fn(), clearHighlightedLabel: jest.fn() }
+const mockMapProvider = {
+  initMap: jest.fn(),
+  updateMap: jest.fn(),
+  clearHighlightedLabel: jest.fn(),
+  getCenter: jest.fn(() => [0, 0]),
+  mapToScreen: jest.fn(() => ({ x: 100, y: 100 }))
+}
 
 function setupHookMocks (mainEl, viewportEl) {
   useConfig.mockReturnValue({
@@ -38,7 +44,7 @@ function setupHookMocks (mainEl, viewportEl) {
     safeZoneInset: {},
     dispatch: jest.fn()
   })
-  useMap.mockReturnValue({ mapSize: 'medium', dispatch: jest.fn() })
+  useMap.mockReturnValue({ mapSize: 'medium', isMapReady: true, dispatch: jest.fn() })
   useService.mockReturnValue({
     announce: jest.fn(),
     hints: { show: jest.fn(), dismiss: jest.fn(), subscribe: jest.fn(() => jest.fn()) },
@@ -87,6 +93,16 @@ describe('Viewport rendering', () => {
     expect(safeZone).toBeInTheDocument()
     expect(crossHair).toBeInTheDocument()
     expect(markers).toBeInTheDocument()
+  })
+
+  // Regression: Viewport (and MapController, which kicks off map creation) render before the
+  // underlying map engine actually exists — mapProvider.getCenter()/mapToScreen() throw until
+  // then, so the spatial listbox's "nearest to center" entry point must not call them yet.
+  it('does not throw, and skips mapProvider.getCenter/mapToScreen, before the map is ready', () => {
+    useMap.mockReturnValue({ mapSize: 'medium', isMapReady: false, dispatch: jest.fn() })
+    expect(() => renderViewport()).not.toThrow()
+    expect(mockMapProvider.getCenter).not.toHaveBeenCalled()
+    expect(mockMapProvider.mapToScreen).not.toHaveBeenCalled()
   })
 
   it('renders viewport with correct id and class based on mapSize', () => {

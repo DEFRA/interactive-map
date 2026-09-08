@@ -84,7 +84,14 @@ const tryClose = ({ drawInteraction, canFinish, geom, sketchCoords, coord, lastP
  *
  * @returns {{ placeVertex, updateRubberbanding, clearLastCoord }}
  */
-export const createVertexPlacement = ({ drawInteraction, mapProvider, snap, canFinish, canPlace, getInterfaceType }) => {
+// Both snappedCenter and updateRubberbanding are only ever reached via the crosshair path
+// (Enter, the add-vertex button, or the crosshair's own click) — never a real mouse click,
+// which goes through OL's own Draw interaction and its separate snap interaction instead.
+// So there's no interfaceType to gate on here: whenever these run, the target is by
+// definition the crosshair, and snap (when available) should always apply. Callers decide
+// *when* to call updateRubberbanding at all (see draw/drawInput.js's onCenterChange etc.),
+// not this file.
+export const createVertexPlacement = ({ drawInteraction, mapProvider, snap, canFinish, canPlace }) => {
   let sketchFeature = null
   let lastPlacedCoord = null
 
@@ -98,15 +105,14 @@ export const createVertexPlacement = ({ drawInteraction, mapProvider, snap, canF
 
   const snappedCenter = () => {
     const raw = mapProvider.getCenter()
-    return (getInterfaceType() !== 'mouse' && snap) ? snap.apply(raw) : raw
+    return snap ? snap.apply(raw) : raw
   }
 
   const updateRubberbanding = () => {
     if (!sketchFeature) {
-      // No sketch yet — update snap indicator at crosshair position so targets are
-      // visible before the first vertex is placed (touch/keyboard only; mouse uses
-      // the OL snap interaction's pointermove handler instead).
-      if (getInterfaceType() !== 'mouse' && snap) {
+      // No sketch yet — update the snap indicator at the crosshair so targets are visible
+      // before the first vertex is placed.
+      if (snap) {
         snap.apply(mapProvider.getCenter())
       }
       return

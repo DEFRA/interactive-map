@@ -145,14 +145,14 @@ export const EVENTS = {
   MAP_SET_STYLE: 'map:setstyle',
   /** @internal Set map size. Payload: { width, height } */
   MAP_SET_SIZE: 'map:setsize',
-  /** @internal Set the accessible features list. Payload: { items: { id: string, label: string }[] } */
-  MAP_SET_FEATURES: 'map:setfeatures',
-  /** @internal Suppress/restore the accessible features list. Payload: { suppressed: boolean } */
-  MAP_SET_FEATURES_SUPPRESSED: 'map:setfeaturessuppressed',
-  /** @internal Set the active feature in the accessible features list. Payload: { id: string | null } */
-  MAP_SET_ACTIVE_FEATURE: 'map:setactivefeature',
-  /** @internal Select the active listbox feature as the real selection (Enter key). Payload: none */
-  MAP_SELECT_FEATURE: 'map:selectfeature',
+  /** @internal Set the accessible spatial list's items. Payload: { items: { id: string, label: string }[], multiselectable: boolean, label?: string } */
+  MAP_SET_SPATIAL_LIST: 'map:setspatiallist',
+  /** @internal Suppress/restore the accessible spatial list. Payload: { suppressed: boolean } */
+  MAP_SET_SPATIAL_LIST_SUPPRESSED: 'map:setspatiallistsuppressed',
+  /** @internal Set the active item in the accessible spatial list (roving tabindex position). Payload: { id: string | null } */
+  MAP_SET_ACTIVE_ITEM: 'map:setactiveitem',
+  /** @internal Select the active spatial list item as the real selection (Enter key). Payload: none */
+  MAP_SELECT_ITEM: 'map:selectitem',
   /** @internal Set pixel ratio. Payload: pixelRatio */
   MAP_SET_PIXEL_RATIO: 'map:setpixelratio',
   /** @internal Fit the map to a bounding box. Payload: [west, south, east, north] */

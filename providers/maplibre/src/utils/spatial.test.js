@@ -50,33 +50,6 @@ describe('spatial utils', () => {
     expect(spatial.getCardinalMove([0, 0], [0.00001, 0.00001])).toBe('')
   })
 
-  test('spatialNavigate all directions and fallback', () => {
-    const pixels = [[0, 0], [0, -1], [1, 0], [0, 1], [-1, 0]]
-    expect(spatial.spatialNavigate('ArrowUp', [0, 0], pixels)).toBe(1)
-    expect(spatial.spatialNavigate('ArrowDown', [0, 0], pixels)).toBe(3)
-    expect(spatial.spatialNavigate('ArrowLeft', [0, 0], pixels)).toBe(4)
-    expect(spatial.spatialNavigate('ArrowRight', [0, 0], pixels)).toBe(2)
-    expect(spatial.spatialNavigate('InvalidDir', [0, 0], pixels)).toBe(0)
-  })
-
-  test('spatialNavigate finds closer candidates (hits dist < minDist)', () => {
-    const start = [0, 0]
-    const pixels = [[0, 0], [10, 0], [2, 0]]
-    expect(spatial.spatialNavigate('ArrowRight', start, pixels)).toBe(2)
-  })
-
-  test('spatialNavigate skips farther candidate (dist >= minDist false branch)', () => {
-    // Closer candidate first → second candidate fails dist < minDist
-    const pixels = [[0, 0], [2, 0], [10, 0]]
-    expect(spatial.spatialNavigate('ArrowRight', [0, 0], pixels)).toBe(1)
-  })
-
-  test('spatialNavigate diagonal with dx>dy', () => {
-    const start = [0, 0]
-    const pixels = [[0, 0], [3, 1], [1, 0]] // dx>dy
-    expect(spatial.spatialNavigate('ArrowRight', start, pixels)).toBe(2)
-  })
-
   test('getResolution returns positive value', () => {
     expect(spatial.getResolution({ lat: 0 }, 1)).toBeGreaterThan(0)
   })

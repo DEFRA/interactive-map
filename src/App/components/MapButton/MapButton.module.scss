@@ -30,8 +30,7 @@
     justify-content: center;
     align-items: center;
 
-    padding-left: var(--button-padding);
-    padding-right: var(--button-padding);
+    padding: 0 var(--button-padding) 0 var(--button-padding);
 
     pointer-events: auto;
     color: var(--foreground-color);

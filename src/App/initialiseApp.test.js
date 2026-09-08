@@ -50,6 +50,10 @@ jest.mock('./registry/keyboardShortcutRegistry.js', () => ({
   createKeyboardShortcutRegistry: jest.fn(() => mockRegistries.keyboardShortcutRegistry)
 }))
 
+jest.mock('./registry/spatialListRegistry.js', () => ({
+  createSpatialListRegistry: jest.fn(() => mockRegistries.spatialListRegistry)
+}))
+
 jest.mock('./registry/mergeManifests.js', () => ({
   mergeManifests: jest.fn((base, override) => ({ ...base, ...override }))
 }))
@@ -192,5 +196,12 @@ describe('initialiseApp', () => {
 
     const rendered = createRoot.mock.results[0].value.render.mock.calls[0][0]
     expect(rendered.props.keyboardShortcutRegistry).toBe(mockRegistries.keyboardShortcutRegistry)
+  })
+
+  test('passes spatialListRegistry through to the rendered App', async () => {
+    await initApp()
+
+    const rendered = createRoot.mock.results[0].value.render.mock.calls[0][0]
+    expect(rendered.props.spatialListRegistry).toBe(mockRegistries.spatialListRegistry)
   })
 })

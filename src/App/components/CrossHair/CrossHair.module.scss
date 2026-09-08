@@ -2,6 +2,12 @@
 // focusable target for coordinate-based AT (e.g. macOS Voice Control's Show Numbers/Names) —
 // see CrossHair.jsx — without being a Tab stop.
 .im-c-cross-hair-button {
+  // Its ancestor (.im-c-viewport__safezone) is pointer-events:none — a pure positioning
+  // reference, not meant to intercept clicks meant for the map underneath — so this has to
+  // opt back in itself, or a click here (real, touch, or Voice Control's "Click Target")
+  // passes straight through to the map canvas instead of ever reaching this button.
+  pointer-events: auto;
+
   // Reset native chrome to zero: default padding/border/background otherwise shift and
   // decorate the crosshair icon, since position/margin below assumes the content-box starts
   // exactly at the border-box edge.
@@ -24,6 +30,11 @@
 
   svg {
     display: block;
+    // Purely decorative (aria-hidden in CrossHair.jsx) — without this it's still its own
+    // hit-testable target, so a real click or AT activation can resolve to the icon rather
+    // than the button around it. This guarantees every click at this element resolves to the
+    // button itself, with nothing nested underneath it to compete for.
+    pointer-events: none;
   }
 
   path {

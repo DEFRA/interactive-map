@@ -6,7 +6,7 @@ import { createFakeMap, createEmitter, polygonFeature, lineFeature } from '../__
 
 const CENTER = [5, 5]
 
-const setup = ({ interfaceType = 'touch', snap = null, canFinish = () => true, canPlace } = {}) => {
+const setup = ({ snap = null, canFinish = () => true, canPlace } = {}) => {
   const map = createFakeMap()
   const bus = createEmitter()
   const drawInteraction = {
@@ -21,8 +21,7 @@ const setup = ({ interfaceType = 'touch', snap = null, canFinish = () => true, c
     mapProvider: { getCenter: () => CENTER },
     snap,
     canFinish,
-    canPlace,
-    getInterfaceType: () => interfaceType
+    canPlace
   })
   const startSketch = (feature) => { bus.emit('drawstart', { feature }); return feature }
   return { drawInteraction, placement, startSketch, bus }
@@ -57,13 +56,6 @@ describe('placing vertices', () => {
     allow = false
     placement.placeVertex() // same spot again → a finish attempt, not a placement
     expect(drawInteraction.finishDrawing).toHaveBeenCalledTimes(1)
-  })
-
-  test('the mouse interface ignores snapping (the OL snap interaction covers it)', () => {
-    const snap = { apply: jest.fn(() => [9, 9]), hideIndicator: jest.fn() }
-    const { placement, drawInteraction } = setup({ interfaceType: 'mouse', snap })
-    placement.placeVertex()
-    expect(drawInteraction.appendCoordinates).toHaveBeenCalledWith([CENTER])
   })
 
   test('a second tap at the same spot finishes the shape instead of duplicating — when finishable', () => {
@@ -152,16 +144,16 @@ describe('rubber-banding', () => {
     expect(feature.getGeometry().getCoordinates()[1]).toEqual(hole) // inner rings untouched
   })
 
-  test('without a sketch it only refreshes the snap indicator at the crosshair (non-mouse)', () => {
+  test('without a sketch it refreshes the snap indicator at the crosshair — the caller decides when it\'s worth calling this at all', () => {
     const snap = { apply: jest.fn((c) => c), hideIndicator: jest.fn() }
     const { placement } = setup({ snap })
     placement.updateRubberbanding()
     expect(snap.apply).toHaveBeenCalledWith(CENTER)
+  })
 
-    const mouse = setup({ interfaceType: 'mouse', snap })
-    snap.apply.mockClear()
-    mouse.placement.updateRubberbanding()
-    expect(snap.apply).not.toHaveBeenCalled()
+  test('without a sketch and no snap manager, updateRubberbanding is a harmless no-op', () => {
+    const { placement } = setup()
+    expect(() => placement.updateRubberbanding()).not.toThrow()
   })
 
   test('an empty sketch geometry is left alone', () => {

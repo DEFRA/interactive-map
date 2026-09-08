@@ -170,7 +170,7 @@ describe('Markers — selection', () => {
   })
 
   it('calls resolveActive when the marker is the active listbox item', () => {
-    const SET_ACTIVE = 'map:setactivefeature'
+    const SET_ACTIVE = 'map:setactiveitem'
     const sr = makeSymbolRegistry({ resolveActive: jest.fn(() => '<circle class="active"/>') })
     const { eb } = setup({ markers: [makeMarker()], symbolRegistry: sr })
     act(() => eb.emit(SET_ACTIVE, { id: MARKER_ID }))

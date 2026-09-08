@@ -258,8 +258,8 @@ const wireMapSync = ({ map, manager, layers, selection, touchHandler, live }) =>
 }
 
 // The mode interface consumed by OLDrawManager
-const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selection, actions, parts }) => {
-  const { state } = selection
+const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selection, actions, parts, undoStack }) => {
+  const { state, setState, syncGeom, emitGeometryValidation } = selection
   const { touchHandler } = parts
 
   return {
@@ -295,6 +295,37 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
     // events.js) once a vertex is selected.
     nudgeSelectedVertex: parts.keyboardHandler.nudgeByDelta,
 
+    // Read-only vertex/midpoint coordinates for the shared spatial listbox
+    // (plugins/draw/src/hooks/useSpatialList.js) — already kept live and correctly indexed
+    // by syncGeom()/updateLayersFromGeom() (selectionState.js), so nothing to recompute here.
+    getVertexItems: () => ({ vertices: state.vertices, midpoints: state.midpoints }),
+
+    // Moves the live cursor to a vertex or midpoint by flat index — preview only, no geometry
+    // change — for the spatial listbox's roving-tabindex move. Same shape as the local
+    // selectVertex closure in wireTouchHandler above, promoted here since buildModeApi needs
+    // its own entry point too.
+    selectVertex (index) {
+      setState({ selectedVertexIndex: index, selectedVertexType: index < state.vertices.length ? VERTEX_TYPE : 'midpoint' })
+      touchHandler.updateTargetPosition()
+    },
+
+    // Commits a new vertex exactly at midpoint `index` (no directional offset) — the
+    // destructive counterpart to selectVertex's preview-only move, for the spatial listbox's
+    // Enter/Space confirm on a midpoint item. Mirrors onTap's own midpoint-insert handling
+    // above exactly (insertAtMidpoint already inserts with no offset — that's how tap-to-insert
+    // already works, no keyboard-style directional nudge to strip).
+    insertVertexAtMidpoint (index) {
+      const result = insertAtMidpoint(olFeature, state.midpoints, index, state.vertices.length)
+      if (!result) {
+        return
+      }
+      undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
+      syncGeom()
+      emitGeometryValidation(INSERT_VERTEX, result.insertedIndex)
+      setState({ selectedVertexIndex: result.insertedIndex, selectedVertexType: VERTEX_TYPE })
+      touchHandler.updateTargetPosition()
+    },
+
     destroy () {
       parts.live.destroy()
       olFeature.setStyle(originalFeatureStyle)
@@ -312,7 +343,7 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
 }
 
 /**
- * @returns {{ setInterfaceType, done, cancel, undo, deleteVertex, nudgeSelectedVertex, destroy } | null}
+ * @returns {{ setInterfaceType, done, cancel, undo, deleteVertex, nudgeSelectedVertex, getVertexItems, selectVertex, insertVertexAtMidpoint, destroy } | null}
  */
 export const createEditMode = ({ map, manager, options }) => {
   const { featureId, container, interfaceType, deleteVertexButtonId, snap } = options
@@ -380,6 +411,7 @@ export const createEditMode = ({ map, manager, options }) => {
     originalFeatureStyle,
     selection,
     actions,
+    undoStack,
     parts: { touchHandler, keyboardHandler, pointerHandlers, modify, mapSync, layers, live }
   })
 }

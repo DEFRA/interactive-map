@@ -582,6 +582,18 @@ describe('simple delegations', () => {
     expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, { dx: 1, dy: 0, isLargeStep: true })
   })
 
+  test('selectVertex fires the select-vertex event with the given index', () => {
+    const { adapter, map } = setup()
+    adapter.selectVertex(3)
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, { index: 3 })
+  })
+
+  test('insertVertexAtMidpoint fires the insert-vertex-at-midpoint event with the given index', () => {
+    const { adapter, map } = setup()
+    adapter.insertVertexAtMidpoint(4)
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, { index: 4 })
+  })
+
   test('deleteVertex is a no-op', () => {
     const { adapter, draw, map } = setup()
     expect(() => adapter.deleteVertex()).not.toThrow()
@@ -758,6 +770,67 @@ describe('simple delegations', () => {
     expect(adapter.isSnapEnabled()).toBe(false)
     mapProvider.snapEnabled = true
     expect(adapter.isSnapEnabled()).toBe(true)
+  })
+})
+
+describe('getVertexItems', () => {
+  test('returns empty vertices/midpoints when not in edit_vertex mode', () => {
+    const { adapter, draw } = setup()
+    draw.getMode.mockReturnValue('draw_polygon')
+    expect(adapter.getVertexItems()).toEqual({ vertices: [], midpoints: [] })
+  })
+
+  test('returns empty vertices/midpoints when in edit_vertex but no editing feature id is set', () => {
+    const { adapter, draw } = setup()
+    draw.getMode.mockReturnValue('edit_vertex')
+    expect(adapter.getVertexItems()).toEqual({ vertices: [], midpoints: [] })
+  })
+
+  test('returns empty vertices/midpoints when the editing feature no longer exists', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue(undefined)
+    expect(adapter.getVertexItems()).toEqual({ vertices: [], midpoints: [] })
+  })
+
+  test('flattens a LineString — no closing duplicate to strip', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue({ geometry: { type: 'LineString', coordinates: [[0, 0], [10, 0], [10, 10]] } })
+    const result = adapter.getVertexItems()
+    expect(result.vertices).toEqual([[0, 0], [10, 0], [10, 10]])
+    expect(result.midpoints).toEqual([[5, 0], [10, 5]])
+  })
+
+  test('strips the closing duplicate coordinate for a Polygon ring — index-aligned with the mode\'s own selectedVertexIndex', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue({ geometry: { type: 'Polygon', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 0]]] } })
+    const result = adapter.getVertexItems()
+    expect(result.vertices).toEqual([[0, 0], [10, 0], [10, 10]])
+  })
+
+  test('strips the closing duplicate for every ring/part of a MultiPolygon, keeping index continuity across parts', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue({
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [[[0, 0], [10, 0], [10, 10], [0, 0]]],
+          [[[20, 20], [30, 20], [30, 30], [20, 20]]]
+        ]
+      }
+    })
+    const result = adapter.getVertexItems()
+    expect(result.vertices).toEqual([
+      [0, 0], [10, 0], [10, 10],
+      [20, 20], [30, 20], [30, 30]
+    ])
   })
 })
 

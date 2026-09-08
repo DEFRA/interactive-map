@@ -56,6 +56,41 @@ test('arrow keys switch to the keyboard interface without placing', () => {
   expect(placement.placeVertex).not.toHaveBeenCalled()
 })
 
+describe('global Alt+<key> shortcut shadowing', () => {
+  test('Alt+Enter keyup stops propagation while drawing — never reaches the app-wide "highlight label at center" shortcut', () => {
+    setup()
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  test('Alt+Arrow keyup stops propagation too — never reaches the app-wide "highlight next label" shortcut', () => {
+    setup()
+    const event = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).toHaveBeenCalled()
+  })
+
+  test('a plain Enter keyup (no Alt) is left alone', () => {
+    setup()
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: false, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).not.toHaveBeenCalled()
+  })
+
+  test('the shadow listener is removed on destroy — Alt+Enter bubbles normally again', () => {
+    const { input } = setup()
+    input.destroy()
+    const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+    const stopSpy = jest.spyOn(event, 'stopPropagation')
+    window.dispatchEvent(event)
+    expect(stopSpy).not.toHaveBeenCalled()
+  })
+})
+
 test('ctrl/cmd+z triggers undo', () => {
   const { container, onUndo } = setup()
   container.focus()
@@ -109,6 +144,25 @@ test('pointer moves and map pans update the rubber band except for the mouse int
   mouse.container.dispatchEvent(new Event('pointermove'))
   mouse.view.emit('change:center')
   expect(mouse.placement.updateRubberbanding).not.toHaveBeenCalled()
+})
+
+// Voice Control's simulated clicks report pointerType 'mouse' (interfaceType never leaves
+// 'mouse') and produce no real pointermove, so panning via MoveControls needs its own
+// fallback: getAnimating() is true for MoveControls' own panBy/zoomIn/zoomOut (both animate
+// the view) but not for a live mouse drag (which sets the center directly), so it's a safe
+// signal to also track even while interfaceType is 'mouse'.
+test('a programmatic move (e.g. MoveControls panBy) still updates the rubber band while interfaceType is mouse', () => {
+  const { view, placement } = setup('mouse')
+  view.getAnimating.mockReturnValue(true)
+  view.emit('change:center')
+  expect(placement.updateRubberbanding).toHaveBeenCalledTimes(1)
+})
+
+test('postrender tracks an animated move for the mouse interface too, same as keyboard', () => {
+  const { map, view, placement } = setup('mouse')
+  view.getAnimating.mockReturnValue(true)
+  map.emit('postrender')
+  expect(placement.updateRubberbanding).toHaveBeenCalledTimes(1)
 })
 
 test('setInterfaceType updates the interface and refreshes the rubber band immediately for non-mouse types, e.g. switching to touch and panning via MoveControls mid-session', () => {

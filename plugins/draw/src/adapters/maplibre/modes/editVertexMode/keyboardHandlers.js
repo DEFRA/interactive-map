@@ -1,6 +1,7 @@
 import { getSnapInstance, clearSnapIndicator } from '../../utils/snapHelpers.js'
 import { ARROW_KEYS, ARROW_OFFSETS, isInteractiveElementFocused, isUndoShortcut, sharedKeyboardHandlers } from '../../utils/keyboardShortcuts.js'
 import { getCoords } from './geometryHelpers.js'
+import { stopIfGlobalAltKey } from '../../../../../../../src/utils/globalAltShortcuts.js'
 
 /**
  * Keyboard interaction for the vertex-edit mode: arrow-key vertex movement/insertion,
@@ -106,6 +107,13 @@ export const keyboardHandlers = {
     }
 
     state.interfaceType = 'keyboard'
+    // Only shadow while a vertex/midpoint is actually selected — that's the same condition
+    // gating this mode's own local Alt+Arrow handling below (and there's no local Enter
+    // meaning here at all, selected or not), so with nothing selected there's no local
+    // conflict to protect and the global map-label shortcuts should keep working.
+    if (state.selectedVertexIndex >= 0) {
+      stopIfGlobalAltKey(e)
+    }
     if (ARROW_KEYS.has(e.key) && state.selectedVertexIndex >= 0) {
       e.stopPropagation()
 

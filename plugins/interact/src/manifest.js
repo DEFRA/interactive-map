@@ -9,8 +9,12 @@ import { selectFeature } from './api/selectFeature.js'
 import { unselectFeature } from './api/unselectFeature.js'
 import { selectMarker } from './api/selectMarker.js'
 import { unselectMarker } from './api/unselectMarker.js'
+import { isMac } from '../../../src/utils/isMac.js'
 
 const SELECT_FEATURES_GROUP = 'Select'
+// Matches the map's own label-navigation shortcut (src/App/controls/keyboardShortcuts.js) —
+// same modifier, same Mac-aware label, different subject depending on what has focus.
+const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 
 export const manifest = {
   InitComponent: InteractInit,
@@ -56,8 +60,15 @@ export const manifest = {
       id: 'navigateFeatures',
       group: SELECT_FEATURES_GROUP,
       context: 'listbox',
-      title: 'Navigate features',
+      title: 'Highlight next feature',
       command: '<kbd>↑</kbd> or <kbd>↓</kbd>'
+    },
+    {
+      id: 'navigateFeaturesSpatially',
+      group: SELECT_FEATURES_GROUP,
+      context: 'listbox',
+      title: 'Highlight nearby feature',
+      command: `${altKeyHtml} + <kbd>↑</kbd>, <kbd>↓</kbd>, <kbd>←</kbd> or <kbd>→</kbd>`
     },
     {
       id: 'selectFeature',

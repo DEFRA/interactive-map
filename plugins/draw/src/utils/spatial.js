@@ -202,35 +202,6 @@ const isValidClick = (coords) => {
   return coords[0].length <= 1 || isNewCoordinate(coords)
 }
 
-const spatialNavigate = (start, pixels, direction) => {
-  const quadrant = pixels.filter((p) => {
-    const offsetX = Math.abs(p[0] - start[0])
-    const offsetY = Math.abs(p[1] - start[1])
-    let isQuadrant = false
-    if (direction === 'ArrowUp') {
-      isQuadrant = p[1] <= start[1] && offsetY >= offsetX
-    } else if (direction === 'ArrowDown') {
-      isQuadrant = p[1] > start[1] && offsetY >= offsetX
-    } else if (direction === 'ArrowLeft') {
-      isQuadrant = p[0] <= start[0] && offsetY < offsetX
-    } else if (direction === 'ArrowRight') {
-      isQuadrant = p[0] > start[0] && offsetY < offsetX
-    } else {
-      isQuadrant = true
-    }
-    return isQuadrant && (JSON.stringify(p) !== JSON.stringify(start))
-  })
-
-  if (!quadrant.length) {
-    quadrant.push(start)
-  }
-
-  const pythagorean = (a, b) => Math.sqrt(Math.pow(a, 2) + Math.pow(b, 2))
-  const distances = quadrant.map(p => pythagorean(Math.abs(start[0] - p[0]), Math.abs(start[1] - p[1])))
-  const closest = quadrant[distances.indexOf(Math.min(...distances))]
-  return pixels.findIndex(i => JSON.stringify(i) === JSON.stringify(closest))
-}
-
 export {
   toTurfGeometry,
   splitPolygon,
@@ -238,6 +209,5 @@ export {
   extendLine,
   isNewCoordinate,
   isValidClick,
-  isValidLineClick,
-  spatialNavigate
+  isValidLineClick
 }

@@ -178,6 +178,44 @@ test('Delete deletes, ctrl/cmd+z undoes — but not while typing in an input ins
   expect(onUndo).toHaveBeenCalledTimes(1)
 })
 
+test('Alt+Enter keyup stops propagation while a vertex is selected — never reaches the app-wide "highlight label at center" shortcut', () => {
+  const { state } = setup()
+  state.selectedVertexIndex = 1
+  const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+  const stopSpy = jest.spyOn(event, 'stopPropagation')
+  window.dispatchEvent(event)
+  expect(stopSpy).toHaveBeenCalled()
+})
+
+test('Alt+Arrow keyup stops propagation too, while a vertex is selected — never reaches the app-wide "highlight next label" shortcut', () => {
+  const { state } = setup()
+  state.selectedVertexIndex = 1
+  const event = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, cancelable: true, bubbles: true })
+  const stopSpy = jest.spyOn(event, 'stopPropagation')
+  window.dispatchEvent(event)
+  expect(stopSpy).toHaveBeenCalled()
+})
+
+test('leaves Alt+Enter/Alt+Arrow alone with nothing selected — no local meaning to protect, so map-label selection still works', () => {
+  setup() // default state.selectedVertexIndex is -1 — nothing selected
+  const enterEvent = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+  const arrowEvent = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, cancelable: true, bubbles: true })
+  const enterSpy = jest.spyOn(enterEvent, 'stopPropagation')
+  const arrowSpy = jest.spyOn(arrowEvent, 'stopPropagation')
+  window.dispatchEvent(enterEvent)
+  window.dispatchEvent(arrowEvent)
+  expect(enterSpy).not.toHaveBeenCalled()
+  expect(arrowSpy).not.toHaveBeenCalled()
+})
+
+test('a plain Enter keyup (no Alt) is left alone', () => {
+  setup()
+  const event = new KeyboardEvent('keyup', { key: 'Enter', altKey: false, cancelable: true, bubbles: true })
+  const stopSpy = jest.spyOn(event, 'stopPropagation')
+  window.dispatchEvent(event)
+  expect(stopSpy).not.toHaveBeenCalled()
+})
+
 test('keys are ignored while an interactive element outside the viewport has focus', () => {
   const { onDeleted, onKeyboardActive } = setup()
   const button = document.createElement('button')

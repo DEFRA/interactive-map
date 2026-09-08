@@ -81,7 +81,7 @@ export const queryFeatures = (map, point, options = {}) => {
  * Returns every currently visible feature for the given layer ids, in the same
  * { id, layer: { id }, geometry, properties } shape queryFeatures() above uses — mirrors
  * MapLibre's map.queryRenderedFeatures(undefined, { layers }). Used by the interact plugin's
- * Features list (collectVisibleFeatures in useMapItemList.js) to find selectable/labelled
+ * Features list (collectVisibleFeatures in useSpatialList.js) to find selectable/labelled
  * features without requiring a click.
  *
  * VectorTileLayer features come from currently-loaded tiles, the same source

@@ -1,3 +1,5 @@
+import { stopIfGlobalAltKey } from '../../../../../../../src/utils/globalAltShortcuts.js'
+
 /**
  * Setup / teardown for the shared draw mode: binds the window/container/map event
  * handlers on entry and removes them on exit. Part of createDrawMode.
@@ -61,6 +63,10 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
     this._listeners = [
       [window, 'keydown', this.keydownHandler],
       [window, 'keyup', this.keyupHandler],
+      // Capture phase (unlike keyupHandler above) so it runs before the event ever bubbles to
+      // useKeyboardShortcuts.js's app-wide listener — shadows global Alt+<key> shortcuts
+      // (src/utils/globalAltShortcuts.js) unconditionally while drawing.
+      [window, 'keyup', stopIfGlobalAltKey, { capture: true }],
       [window, 'click', this.vertexButtonClickHandler],
       [container, 'blur', this.blurHandler],
       [container, 'pointermove', this.pointermoveHandler],
@@ -71,14 +77,14 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
       [map, 'draw.undo', this.undoHandler],
       [map, 'draw.interfacetypechange', this.interfaceTypeChangeHandler]
     ]
-    this._listeners.forEach(([t, e, h]) => t.addEventListener ? t.addEventListener(e, h) : t.on(e, h))
+    this._listeners.forEach(([t, e, h, opts]) => t.addEventListener ? t.addEventListener(e, h, opts) : t.on(e, h))
 
     return state
   },
 
   onStop (state) {
     ParentMode.onStop.call(this, state)
-    this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
+    this._listeners.forEach(([t, e, h, opts]) => t.removeEventListener ? t.removeEventListener(e, h, opts) : t.off(e, h))
     // Don't leave a stale closure over this mode's state on the shared crossHair object once
     // it's gone — the next owner (e.g. interact re-enabling) assigns its own before this one
     // could ever be invoked again, but this avoids relying on that ordering.

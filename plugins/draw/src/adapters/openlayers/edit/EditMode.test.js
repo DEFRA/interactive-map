@@ -165,6 +165,46 @@ test('nudgeSelectedVertex (MoveControls D-pad) moves the selected vertex and is 
   expect(ring()[1]).toEqual([100, 0])
 })
 
+// getVertexItems/selectVertex/insertVertexAtMidpoint feed the shared spatial listbox
+// (plugins/draw/src/hooks/useSpatialList.js).
+describe('getVertexItems / selectVertex / insertVertexAtMidpoint (spatial listbox bridge)', () => {
+  test('getVertexItems reads the live vertices/midpoints kept in sync by selectionState', () => {
+    const { mode } = setup()
+    const { vertices, midpoints } = mode.getVertexItems()
+    expect(vertices).toEqual([[0, 0], [100, 0], [100, 100], [0, 100]])
+    expect(midpoints).toHaveLength(4)
+  })
+
+  test('selectVertex moves the cursor to a real vertex, without changing the geometry', () => {
+    const { manager, mode, ring } = setup()
+    mode.selectVertex(1)
+    expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_SELECTION, expect.objectContaining({ index: 1 }))
+    expect(ring()).toHaveLength(5) // unchanged
+  })
+
+  test('selectVertex moves the cursor to a midpoint (flat index past the real vertices) — reports index: -1', () => {
+    const { manager, mode } = setup()
+    mode.selectVertex(4) // first midpoint, between vertex 0 and 1
+    expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_SELECTION, expect.objectContaining({ index: -1 }))
+  })
+
+  test('insertVertexAtMidpoint commits a new vertex exactly at the midpoint, selects it, and is undoable', () => {
+    const { manager, mode, ring } = setup()
+    mode.insertVertexAtMidpoint(4) // first midpoint, between vertex 0 and 1
+    expect(ring()).toHaveLength(6)
+    expect(ring()[1]).toEqual([50, 0]) // exactly the midpoint — no directional offset
+    expect(manager.undoStack.pop()).toEqual({ type: 'insert_vertex', vertexIndex: 1 })
+    expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_SELECTION, expect.objectContaining({ index: 1 }))
+  })
+
+  test('insertVertexAtMidpoint is a no-op for an out-of-range index', () => {
+    const { manager, mode, ring } = setup()
+    mode.insertVertexAtMidpoint(999)
+    expect(ring()).toHaveLength(5)
+    expect(manager.undoStack.length).toBe(0)
+  })
+})
+
 test('undo re-validates with the inverse change phase (undo of a delete re-inserts)', () => {
   jest.useFakeTimers()
   const { container, manager, mode } = setup()

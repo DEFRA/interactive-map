@@ -19,8 +19,8 @@ describe('SymbolMarker', () => {
     expect(container.querySelector('svg').getAttribute('id')).toBe('my-map-marker-marker-1')
   })
 
-  // Decorative: the ancestor markers layer is aria-hidden, and Features (the accessible
-  // features listbox) is the sole accessible surface for a marker's label — see Features.jsx.
+  // Decorative: the ancestor markers layer is aria-hidden, and SpatialList (the accessible
+  // spatial listbox) is the sole accessible surface for a marker's label — see SpatialList.jsx.
   it('is aria-hidden', () => {
     const { container } = render(<SymbolMarker marker={makeMarker()} mapId='map' markerRef={markerRef} isSelected={false} symbolProps={makeSymbolProps()} />)
     expect(container.querySelector('svg').getAttribute('aria-hidden')).toBe('true')
