@@ -69,6 +69,12 @@ describe('CrossHair', () => {
     expect(() => fireEvent.click(button)).not.toThrow()
   })
 
+  it('prevents the default mousedown so a real click never gives it focus (or the resulting outline)', () => {
+    const { button } = renderWith()
+    const event = fireEvent.mouseDown(button)
+    expect(event).toBe(false) // fireEvent returns false when preventDefault() was called
+  })
+
   it('is not a Tab stop, but is a real button for coordinate-based AT (e.g. Voice Control) to find', () => {
     const { button } = renderWith()
     expect(button.tabIndex).toBe(-1)

@@ -132,6 +132,16 @@ describe('add-vertex button and doClick', () => {
     expect(ctx.map._undoStack.length).toBe(1)
   })
 
+  // Regression: lifecycle.js's shared crosshair.activate wiring calls this._placeAtCrossHair
+  // for every create mode — drawPointMode.js defines its own, but polygon/line only had
+  // doClick under a different name, so "Click Target" (Voice Control) silently no-opped.
+  test('_placeAtCrossHair aliases doClick — Voice Control\'s "Click Target" places a vertex too', () => {
+    const { ctx, state } = setup(DrawPolygonMode, { interfaceType: 'keyboard' })
+    ctx._placeAtCrossHair(state)
+    expect(state.polygon.coordinates[0][0]).toEqual([CENTER.lng, CENTER.lat])
+    expect(ctx.map._undoStack.length).toBe(1)
+  })
+
   test('does not finish a line via doClick while the geometry is invalid', () => {
     const { ctx, state } = setup(DrawLineMode)
     clickAt(ctx, state, 0, 0)

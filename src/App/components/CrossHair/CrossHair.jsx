@@ -27,6 +27,11 @@ export const CrossHair = () => {
       // name comes purely from an attribute, with no separate text node for Chrome's AX tree
       // to expose as its own identity alongside the button.
       aria-label='Target'
+      // Stops the browser's default "focus the clicked element" — this button is tabIndex="-1"
+      // and never meant to take real focus at all (only programmatic .focus() for coordinate-
+      // based AT). A real mouse/Voice-Control click still fires normally; only the resulting
+      // focus (and its visible outline) is suppressed.
+      onMouseDown={(event) => event.preventDefault()}
       onClick={() => crossHair.activate?.()}
       style={{
         position: 'absolute',

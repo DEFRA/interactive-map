@@ -28,6 +28,8 @@
   height: 38px;
   margin: -19px 0 0 -19px;
 
+  outline: 3px solid transparent;
+
   svg {
     display: block;
     // Purely decorative (aria-hidden in CrossHair.jsx) — without this it's still its own
