@@ -82,8 +82,8 @@ export class OLDrawManager {
     // Array.from, not [...handlers] — see the comment in utils/eventBus.js:
     // under a loose-mode Babel build (Docusaurus's docs site), spreading a Set
     // compiles to [].concat(handlers), which doesn't flatten it — it appends
-    // the whole Set as one non-function element, and h(...) throws.
-    if (handlers) { Array.from(handlers).forEach(h => h(detail)) }
+    // the whole Set as one non-function element, and handler(...) throws.
+    if (handlers) { Array.from(handlers).forEach(handler => handler(detail)) }
   }
 
   // --- Mode machine ---

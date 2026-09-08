@@ -27,7 +27,7 @@ const setup = () => {
 
 const liveHandlers = []
 afterEach(() => {
-  liveHandlers.splice(0).forEach((h) => h.destroy())
+  liveHandlers.splice(0).forEach((handler) => handler.destroy())
   document.body.innerHTML = ''
 })
 

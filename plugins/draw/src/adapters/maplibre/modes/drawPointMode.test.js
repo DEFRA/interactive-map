@@ -16,15 +16,15 @@ const createMap = () => {
     getCenter: () => ({ ...CENTER }),
     project: jest.fn(() => ({ x: 50, y: 50 })),
     unproject: jest.fn(() => ({ ...CENTER })),
-    fire: jest.fn(function (type, event) { (listeners[type] ?? []).forEach((h) => h(event)) }),
-    on: jest.fn((type, h) => { (listeners[type] ??= []).push(h) }),
-    off: jest.fn((type, h) => { listeners[type] = (listeners[type] ?? []).filter((x) => x !== h) })
+    fire: jest.fn(function (type, event) { (listeners[type] ?? []).forEach((handler) => handler(event)) }),
+    on: jest.fn((type, handler) => { (listeners[type] ??= []).push(handler) }),
+    off: jest.fn((type, handler) => { listeners[type] = (listeners[type] ?? []).filter((x) => x !== handler) })
   }
 }
 
 const contexts = []
-const removeListeners = (ctx) => ctx._listeners?.forEach(([t, eventName, h]) =>
-  t.removeEventListener ? t.removeEventListener(eventName, h) : t.off(eventName, h))
+const removeListeners = (ctx) => ctx._listeners?.forEach(([target, eventName, handler]) =>
+  target.removeEventListener ? target.removeEventListener(eventName, handler) : target.off(eventName, handler))
 
 const createModeContext = () => {
   const map = createMap()
@@ -90,7 +90,7 @@ const clickEvent = (ctx, lng, lat, overrides = {}) => ({
   originalEvent: { button: 0, target: ctx.map.getCanvas(), ...overrides }
 })
 
-const firedWith = (map, type) => map.fire.mock.calls.filter(([t]) => t === type).map(([, event]) => event)
+const firedWith = (map, type) => map.fire.mock.calls.filter(([eventType]) => eventType === type).map(([, event]) => event)
 
 afterEach(() => {
   contexts.splice(0).forEach(removeListeners)

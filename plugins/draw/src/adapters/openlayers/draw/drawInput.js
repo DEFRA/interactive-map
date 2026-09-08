@@ -132,7 +132,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     olView,
     onUndo,
     getInterfaceType,
-    setInterfaceType: (t) => { interfaceType = t; applyCrossHairVisibility(crossHair, t) },
+    setInterfaceType: (type) => { interfaceType = type; applyCrossHairVisibility(crossHair, type) },
     clearLastCoord: placement.clearLastCoord,
     updateRubberbanding: placement.updateRubberbanding,
     placeVertex: placement.placeVertex
