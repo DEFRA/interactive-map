@@ -6,6 +6,7 @@
 // whose specificity and load order we don't control. Deliberately-coloured components (tags,
 // error/warning text, buttons, .govuk-link--inverse/--text-colour/--muted) are left untouched so
 // their built-in contrast pairing isn't broken.
+// stylelint-disable declaration-no-important -- resetting a third-party stylesheet's own colours, see comment above
 @mixin govuk-content-fallback-colors {
     :is(
         .govuk-body, .govuk-body-l, .govuk-body-m, .govuk-body-s, .govuk-body-xs,
@@ -25,3 +26,4 @@
         color: var(--content-link-color) !important;
     }
 }
+// stylelint-enable declaration-no-important
