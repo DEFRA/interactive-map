@@ -142,13 +142,13 @@ describe('createDrawPointMode', () => {
       expect(finish).toHaveBeenCalled()
     })
 
-    test('does not snap on mouse interface', () => {
-      const snap = { apply: jest.fn(), hideIndicator: jest.fn() }
+    test('still snaps with interfaceType mouse — placeVertex is only ever reached via the crosshair path (Enter, the add-vertex button, or the crosshair\'s own click), never a real mouse click', () => {
+      const snap = { apply: jest.fn(() => [9, 9]), hideIndicator: jest.fn() }
       const { wireArgs, interaction } = setup({ snap, interfaceType: 'mouse' })
       const { append } = spyOnCommit(interaction)
       wireArgs.placeVertex()
-      expect(snap.apply).not.toHaveBeenCalled()
-      expect(append).toHaveBeenCalledWith([[5, 5]])
+      expect(snap.apply).toHaveBeenCalledWith([5, 5])
+      expect(append).toHaveBeenCalledWith([[9, 9]])
     })
 
     test('a vetoed crosshair placement never commits', () => {
@@ -169,11 +169,12 @@ describe('createDrawPointMode', () => {
       expect(snap.apply).toHaveBeenCalledWith([7, 7])
     })
 
-    test('updateRubberbanding does nothing on mouse interface', () => {
+    test('updateRubberbanding still refreshes the indicator regardless of interfaceType — the caller decides when it\'s worth calling this at all', () => {
       const snap = { apply: jest.fn(), hideIndicator: jest.fn() }
-      const { wireArgs } = setup({ snap, interfaceType: 'mouse' })
+      const mapProvider = { getCenter: () => [7, 7] }
+      const { wireArgs } = setup({ snap, mapProvider, interfaceType: 'mouse' })
       wireArgs.updateRubberbanding()
-      expect(snap.apply).not.toHaveBeenCalled()
+      expect(snap.apply).toHaveBeenCalledWith([7, 7])
     })
 
     // Regression: without this, switching to touch/keyboard left the indicator hidden until

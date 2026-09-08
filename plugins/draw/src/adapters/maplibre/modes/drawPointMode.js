@@ -78,9 +78,15 @@ const pointHandlers = {
   // update (nothing to rubber-band for a single coordinate). Bound to MapLibre's own 'move'
   // event by createLifecycle, so this fires continuously while panning; also called
   // explicitly below wherever the interface type switches to touch/keyboard, so the
-  // indicator appears immediately rather than waiting for the first pan.
-  onMove (state) {
-    if (['touch', 'keyboard'].includes(state.interfaceType) && isSnapEnabled(state)) {
+  // indicator appears immediately rather than waiting for the first pan. Also runs for a
+  // programmatic move with interfaceType still 'mouse' — Voice Control's simulated clicks
+  // (e.g. on MoveControls) report pointerType 'mouse' and produce no mousemove, so without
+  // this the indicator would never refresh while panning that way; a real map 'move' event's
+  // `originalEvent` is only set for a live mouse/touch/wheel interaction, not a programmatic
+  // one like MoveControls' panBy.
+  onMove (state, e) {
+    const isProgrammaticMapMove = e?.type === 'move' && !e.originalEvent
+    if ((['touch', 'keyboard'].includes(state.interfaceType) || isProgrammaticMapMove) && isSnapEnabled(state)) {
       triggerSnapAtCenter(getSnapInstance(this.map), this.map)
     }
   },

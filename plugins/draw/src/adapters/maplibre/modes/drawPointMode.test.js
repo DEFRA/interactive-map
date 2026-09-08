@@ -436,6 +436,24 @@ describe('DrawPointMode', () => {
       expect(snap.snapToClosestPoint).not.toHaveBeenCalled()
     })
 
+    // Voice Control's simulated clicks report pointerType 'mouse' (interfaceType never
+    // leaves 'mouse') and produce no mousemove, so panning via MoveControls needs its own
+    // fallback: a real map 'move' event with no originalEvent (a programmatic move, unlike a
+    // live mouse drag/scroll) still refreshes the indicator even with interfaceType 'mouse'.
+    it('a programmatic map move still refreshes the indicator while interfaceType is mouse', () => {
+      const { ctx, state } = setup()
+      const snap = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
+      ctx.map._snapInstance = snap
+      state.getSnapEnabled = () => true
+
+      ctx.onMove(state, { type: 'move' })
+      expect(snap.snapToClosestPoint).toHaveBeenCalledWith({ point: expect.any(Object), lngLat: CENTER, _explicit: true })
+
+      snap.snapToClosestPoint.mockClear()
+      ctx.onMove(state, { type: 'move', originalEvent: new MouseEvent('mousemove') })
+      expect(snap.snapToClosestPoint).not.toHaveBeenCalled()
+    })
+
     it('switching to touch or keyboard shows the snap indicator immediately, not just on the first pan', () => {
       const snap = { status: true, snapStatus: false, snapCoords: null, snapToClosestPoint: jest.fn() }
 

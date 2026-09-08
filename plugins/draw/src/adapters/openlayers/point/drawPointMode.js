@@ -7,10 +7,8 @@ import { TOLERANCES } from '../defaults.js'
 
 const MODE = 'draw_point'
 
-// A point has no ring/rubber-band to build a candidate from — just the coordinate about to
-// be placed. Mirrors validateGeometry.js's attemptPlacement, but that helper hardcodes
-// Polygon/LineString via MODE_BY_GEOMETRY, so a Point candidate is built and validated
-// directly (same approach as the MapLibre adapter's drawPointMode.js).
+// A point has no ring/rubber-band to build a candidate from, so it's built and validated
+// directly rather than via validateGeometry.js's Polygon/LineString-only attemptPlacement.
 const canPlaceVertex = (manager) => (coordinate) => {
   const candidate = { type: 'Feature', geometry: { type: 'Point', coordinates: coordinate }, properties: {} }
   const { valid, reason } = validatePlacement(
@@ -24,14 +22,9 @@ const canPlaceVertex = (manager) => (coordinate) => {
   return valid
 }
 
-// Commit a finished point to the store under the requested id and emit CREATE — mirrors
-// draw/DrawMode.js's finalizeDrawnFeature (identical shape, kept separate rather than
-// imported since draw/DrawMode.js isn't otherwise a shared dependency of this mode).
-// Symbol resolution runs after the feature is in the store (not before), matching the
-// MapLibre adapter's own ordering. The resolver itself is injected by OLDrawManager via
-// changeMode's options (mirrors the ML adapter's state.resolvePointSymbol convention — see
-// MaplibreDrawAdapter.js's changeMode) so this mode has no direct dependency on
-// symbolRegistry/mapProvider/pointSymbolImages.js.
+// Commit a finished point to the store under the requested id and emit CREATE. Symbol
+// resolution runs after the feature is in the store, and the resolver itself is injected by
+// OLDrawManager (mirrors the MapLibre adapter's own ordering and resolvePointSymbol convention).
 const finalizeDrawnFeature = (manager, resolvePointSymbol, olFeature, featureId, properties) => {
   olFeature.setId(String(featureId))
   olFeature.setProperties(properties)
@@ -41,45 +34,41 @@ const finalizeDrawnFeature = (manager, resolvePointSymbol, olFeature, featureId,
 }
 
 /**
- * Touch/keyboard/"Add point" input for draw_point — the same concerns as
- * draw/drawInput.js (crosshair, interface-type tracking, add-vertex-button/Enter), reused
- * directly, but with a much smaller placement step: a point has no rubber band to update
- * while positioning (the crosshair itself already shows where it'll land) and nothing to
- * undo before a single-click commit, so those callbacks are no-ops here.
+ * Touch/keyboard/"Add point" input for draw_point — reuses draw/drawInput.js's crosshair and
+ * interface-type wiring, but with no rubber band or undo since a point commits on one click.
  */
 const buildPointInput = ({ drawInteraction, options, canPlace }) => {
   const { container, addVertexButtonId, mapProvider, snap, crossHair } = options
   let interfaceType = options.interfaceType ?? 'mouse'
   const getInterfaceType = () => interfaceType
 
-  // appendCoordinates() only builds up LineString/Polygon rings — for a Point-type Draw
-  // interaction it does nothing beyond starting the sketch (confirmed by reading OL's own
-  // source), so finishDrawing() has to be called explicitly right after to actually commit.
+  // appendCoordinates() only starts the sketch for a Point-type Draw interaction, so
+  // finishDrawing() must be called explicitly to commit. Only ever reached via the crosshair
+  // path (Enter, the add-vertex button, or the crosshair's own click), never a real mouse
+  // click, so snap always applies here when available.
   const placePoint = () => {
     const raw = mapProvider.getCenter()
-    const coord = (getInterfaceType() !== 'mouse' && snap) ? snap.apply(raw) : raw
+    const coord = snap ? snap.apply(raw) : raw
     snap?.hideIndicator()
     if (!canPlace(coord)) { return }
     drawInteraction.appendCoordinates([coord])
     drawInteraction.finishDrawing()
   }
 
-  // Keeps the snap indicator visible at the crosshair while positioning via touch/keyboard
-  // (mouse hover is handled by the separate OL snap interaction already attached by
-  // OLDrawManager) — the closest point-shaped equivalent of updateRubberbanding.
+  // Keeps the snap indicator visible at the crosshair — the point-shaped equivalent of
+  // updateRubberbanding. Callers decide when this is worth calling (see applyInterfaceType
+  // below and draw/drawInput.js's onCenterChange).
   const updateSnapIndicator = () => {
-    if (getInterfaceType() !== 'mouse' && snap) { snap.apply(mapProvider.getCenter()) }
+    if (snap) { snap.apply(mapProvider.getCenter()) }
   }
 
-  // Mirrors draw/drawInput.js's createDrawInput: an interface-type switch to touch/keyboard
-  // must refresh the snap indicator immediately at the crosshair, not wait for the next
-  // pointermove/change:center — otherwise it stays hidden until the user first pans or drags
-  // after entering the mode (the same gap the MapLibre adapter's onInterfaceTypeChange already
-  // guards against by calling onMove(state) right after _setInterface).
+  // Mirrors draw/drawInput.js's createDrawInput: a switch to touch/keyboard refreshes the
+  // snap indicator immediately rather than waiting for the next pan. Switching back to mouse
+  // has no crosshair target to refresh.
   const applyInterfaceType = (type) => {
     interfaceType = type
     applyCrossHairVisibility(crossHair, type)
-    updateSnapIndicator()
+    if (type !== 'mouse') { updateSnapIndicator() }
   }
 
   const events = wireInputEvents({
@@ -96,10 +85,8 @@ const buildPointInput = ({ drawInteraction, options, canPlace }) => {
 
   applyCrossHairVisibility(crossHair, interfaceType)
 
-  // Single shared "commit here" entry point for the crosshair button's own onClick
-  // (CrossHair.jsx) — the same action Enter/the touch add-vertex button already trigger via
-  // placeVertex, so a click (real, touch, or Voice Control's "Click Target") does exactly
-  // what those already do.
+  // Shared "commit here" entry point for the crosshair button's own onClick — same action as
+  // Enter/the touch add-vertex button.
   if (crossHair) {
     crossHair.activate = placePoint
   }
@@ -115,21 +102,12 @@ const buildPointInput = ({ drawInteraction, options, canPlace }) => {
 }
 
 /**
- * Draw mode for placing a single point: mouse click, or crosshair + Enter/"Add point"
- * button for touch/keyboard. Commits immediately on the first placement — unlike
- * draw_line/draw_polygon, there is no rubber band, no multi-vertex undo, and no "Done"
- * step (mirrors the MapLibre adapter's drawPointMode.js decision).
- *
- * OL's own Draw({type:'Point'}) interaction already finishes a real mouse click
- * immediately (confirmed by reading its handleUpEvent — mode 'Point' always attempts
- * finishDrawing() on pointer-up, no second click needed), so the mouse path needs no
- * extra wiring beyond the placement-veto condition every mode already has. Deliberately
- * NOT built via draw/DrawMode.js's createDrawMode()/createVertexPlacement() — those are
- * parametrised around a ring of placed vertices + a trailing rubber-band coordinate,
- * which a single-click commit doesn't have (mirrors the same decision already made for
- * the MapLibre adapter, and the OL EditMode/DrawMode split noted in
- * feedback_adapter_parity.md: don't force point through machinery shaped for lines/polygons
- * just because they happen to share a file).
+ * Draw mode for placing a single point: mouse click, or crosshair + Enter/"Add point" button
+ * for touch/keyboard. Commits immediately, with no rubber band, undo, or "Done" step. OL's own
+ * Draw({type:'Point'}) interaction already finishes a real mouse click on pointer-up, so the
+ * mouse path needs no extra wiring. Deliberately not built via draw/DrawMode.js's
+ * createDrawMode()/createVertexPlacement() — those assume a ring of vertices plus a trailing
+ * rubber-band coordinate, which a single-click commit doesn't have.
  */
 export const createDrawPointMode = ({ map, manager, options }) => {
   const { featureId, properties = {} } = options
@@ -137,11 +115,8 @@ export const createDrawPointMode = ({ map, manager, options }) => {
 
   const drawInteraction = new Draw({
     type: 'Point',
-    // Without an explicit style, OL renders its own default sketch style (a blue circle)
-    // following the cursor before commit — core/styles.js's createSketchStyle() already
-    // suppresses this same default for the "ghost" Point sketch OL renders alongside a
-    // Polygon/LineString sketch (see its own comment); a real Point sketch needs the same
-    // treatment, since it commits on the very first click with nothing meaningful to preview.
+    // Suppresses OL's default sketch style (a blue circle following the cursor) — nothing
+    // meaningful to preview since this commits on the first click.
     style: () => [],
     snapTolerance: TOLERANCES.snapRadius,
     condition: (e) => noModifierKeys(e) && canPlace(e.coordinate)

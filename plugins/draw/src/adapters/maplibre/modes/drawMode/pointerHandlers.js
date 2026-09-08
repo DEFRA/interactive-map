@@ -54,8 +54,18 @@ export const createPointerHandlers = ({ ParentMode, getFeature, getCoords }) => 
     this.map.fire('draw.geometrychange', state.polygon || state.line)
   },
 
-  onMove (state) {
-    if (['touch', 'keyboard'].includes(state.interfaceType)) {
+  // The crosshair/rubber-band candidate normally only tracks the map centre for
+  // touch/keyboard interfaceType, since a real mouse cursor already drives it via
+  // onMouseMove. But Voice Control's simulated clicks report pointerType 'mouse' (so
+  // interfaceType never leaves 'mouse') and produce no mousemove at all — panning via
+  // MoveControls while interfaceType is 'mouse' would otherwise leave the candidate
+  // stale. `map.on('move', ...)` fires this with the real MapLibre move event, whose
+  // `originalEvent` is only set for a live mouse/touch/wheel interaction (dragPan,
+  // scrollZoom, ...) — absent for a programmatic move like MoveControls' panBy, which
+  // is exactly the case that needs this fallback.
+  onMove (state, e) {
+    const isProgrammaticMapMove = e?.type === 'move' && !e.originalEvent
+    if (['touch', 'keyboard'].includes(state.interfaceType) || isProgrammaticMapMove) {
       if (isSnapEnabled(state)) {
         triggerSnapAtCenter(getSnapInstance(this.map), this.map)
       }

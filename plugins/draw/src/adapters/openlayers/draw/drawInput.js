@@ -24,8 +24,15 @@ export const wireInputEvents = ({
   getInterfaceType, setInterfaceType, clearLastCoord,
   updateRubberbanding, placeVertex
 }) => {
+  // Normally gated to touch/keyboard — a real mouse cursor drives the candidate via its own
+  // pointermove instead. But Voice Control's simulated clicks report pointerType 'mouse' (so
+  // interfaceType never leaves 'mouse') and produce no pointermove at all, so panning via
+  // MoveControls while interfaceType is 'mouse' would otherwise leave the candidate stale.
+  // olView.getAnimating() is also true for MoveControls' own panBy/zoomIn/zoomOut (both use
+  // view.animate) but not for a live mouse drag (which sets the center directly, no
+  // animation) — the same fallback signal used below in onMapRender.
   const onCenterChange = () => {
-    if (getInterfaceType() !== 'mouse') {
+    if (getInterfaceType() !== 'mouse' || olView?.getAnimating()) {
       updateRubberbanding()
     }
   }
@@ -113,8 +120,7 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     mapProvider,
     snap,
     canFinish,
-    canPlace,
-    getInterfaceType
+    canPlace
   })
 
   const map = drawInteraction.getMap()
@@ -143,9 +149,12 @@ export const createDrawInput = ({ drawInteraction, options }) => {
     crossHair.activate = placement.placeVertex
   }
 
-  // change:center fires once when a keyboard pan animation starts; postrender tracks each frame.
+  // change:center fires once when an animated pan starts; postrender tracks each frame.
+  // getAnimating() alone (not also gated on interfaceType, unlike onCenterChange above) is
+  // enough here: it's already only true for an animated move, which is what needs a
+  // per-frame follow-up regardless of what interfaceType happens to be.
   const onMapRender = () => {
-    if (interfaceType !== 'mouse' && olView?.getAnimating()) {
+    if (olView?.getAnimating()) {
       placement.updateRubberbanding()
     }
   }
