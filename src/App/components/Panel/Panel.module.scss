@@ -71,6 +71,10 @@
     // plain block child would.
     display: flex;
     flex-direction: column;
+
+    // A panel's `html` config (see Panel.jsx) commonly uses GOV.UK Frontend classes, which set
+    // colour explicitly rather than inheriting it — see tools/_govuk-content.scss.
+    @include tools.govuk-content-fallback-colors;
 }
 
 // The tabpanel (see Tabs.module.scss) is its own scroll/focus region nested inside this

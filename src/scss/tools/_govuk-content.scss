@@ -1,0 +1,27 @@
+// ===================================================
+// Tool: govuk-content-fallback-colors
+// ===================================================
+// Resets GOV.UK Frontend's own text-colour classes back onto our theme tokens, since they set
+// colour explicitly rather than inheriting it. !important wins against a third-party stylesheet
+// whose specificity and load order we don't control. Deliberately-coloured components (tags,
+// error/warning text, buttons, .govuk-link--inverse/--text-colour/--muted) are left untouched so
+// their built-in contrast pairing isn't broken.
+@mixin govuk-content-fallback-colors {
+    :is(
+        .govuk-body, .govuk-body-l, .govuk-body-m, .govuk-body-s, .govuk-body-xs,
+        .govuk-heading-xl, .govuk-heading-l, .govuk-heading-m, .govuk-heading-s,
+        .govuk-list, .govuk-label, .govuk-fieldset__legend,
+        .govuk-table, .govuk-table__cell, .govuk-table__header
+    ) {
+        color: var(--foreground-color) !important;
+    }
+
+    // GOV.UK Frontend renders these as its muted grey, matching our --secondary-text-color.
+    :is(.govuk-hint, .govuk-caption-xl, .govuk-caption-l, .govuk-caption-m, .govuk-caption-s) {
+        color: var(--secondary-text-color) !important;
+    }
+
+    .govuk-link:is(:link, :visited) {
+        color: var(--content-link-color) !important;
+    }
+}
