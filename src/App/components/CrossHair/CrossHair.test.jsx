@@ -9,9 +9,8 @@ jest.mock('../../store/configContext', () => ({ useConfig: jest.fn(() => ({ id: 
 describe('CrossHair', () => {
   const crossHairRef = React.createRef()
 
-  // Positioning/visibility/sizing all live on the outer <button> (tabIndex="-1" — a real,
-  // accessibility-focusable-but-not-Tab-stop element, so coordinate-based AT like Voice Control
-  // can find it, at the right geometry); the SVG itself is a plain, unstyled child.
+  // Positioning/visibility/sizing all live on the outer <button> (tabIndex="-1", discoverable
+  // by AT like Voice Control without being a Tab stop); the SVG itself is a plain, unstyled child.
   const renderWith = (overrides = {}) => {
     useCrossHair.mockReturnValue({
       crossHairRef,

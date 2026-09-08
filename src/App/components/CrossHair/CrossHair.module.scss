@@ -1,16 +1,12 @@
-// The crosshair is wrapped in a real <button> (tabIndex="-1") so it's a genuine, accessibility-
-// focusable target for coordinate-based AT (e.g. macOS Voice Control's Show Numbers/Names) —
-// see CrossHair.jsx — without being a Tab stop.
+// A real <button> (tabIndex="-1") so it's a discoverable target for AT (Voice Control, a screen
+// reader's virtual cursor) without being a Tab stop or ever taking real DOM focus.
 .im-c-cross-hair-button {
-  // Its ancestor (.im-c-viewport__safezone) is pointer-events:none — a pure positioning
-  // reference, not meant to intercept clicks meant for the map underneath — so this has to
-  // opt back in itself, or a click here (real, touch, or Voice Control's "Click Target")
-  // passes straight through to the map canvas instead of ever reaching this button.
+  // Its ancestor (.im-c-viewport__safezone) is pointer-events:none, so this has to opt back in
+  // itself or clicks here pass straight through to the map canvas underneath.
   pointer-events: auto;
 
-  // Reset native chrome to zero: default padding/border/background otherwise shift and
-  // decorate the crosshair icon, since position/margin below assumes the content-box starts
-  // exactly at the border-box edge.
+  // Reset native chrome to zero — position/margin below assumes the content-box starts exactly
+  // at the border-box edge.
   appearance: none;
   border: 0;
   background: none;
@@ -18,12 +14,9 @@
   font: inherit;
   cursor: inherit;
 
-  // Explicit size, matching the SVG's own width/height, plus the negative margin that shifts
-  // the box by half its own size — so the button's *own* geometry, not just its child SVG's, is
-  // centred on wherever CrossHair.jsx's inline top/left positions it. This is what a coordinate-
-  // based AT overlay (e.g. Voice Control) reads to place its badge — without it, the button's
-  // content-box collapses to 0×0 (its only child is position:absolute, contributing nothing to
-  // normal-flow sizing), so the badge would land at the anchor point's corner, not on the icon.
+  // Explicit size plus the negative margin centre the button's own geometry (not just its SVG
+  // child's) on wherever CrossHair.jsx's inline top/left positions it — without it, an AT
+  // overlay's badge would land at the anchor point's corner, not on the icon.
   width: 38px;
   height: 38px;
   margin: -19px 0 0 -19px;
@@ -33,9 +26,7 @@
   svg {
     display: block;
     // Purely decorative (aria-hidden in CrossHair.jsx) — without this it's still its own
-    // hit-testable target, so a real click or AT activation can resolve to the icon rather
-    // than the button around it. This guarantees every click at this element resolves to the
-    // button itself, with nothing nested underneath it to compete for.
+    // hit-testable target, so a click could resolve to the icon instead of the button.
     pointer-events: none;
   }
 
