@@ -55,7 +55,7 @@ export const vertexOperations = {
   },
 
   insertVertex (state, e) {
-    const midIdx = state.selectedVertexIndex - state.vertecies.length
+    const midIdx = state.selectedVertexIndex - state.vertices.length
     const newCoord = this.getOffset(state.midpoints[midIdx], e)
     const feature = this.getFeature(state.featureId)
     const geojson = feature.toGeoJSON()
@@ -107,7 +107,7 @@ export const vertexOperations = {
     const coords = getModifiableCoords(geojson, result.segment.path)
     coords[result.localIdx] = [coord.lng, coord.lat]
     this._ctx.api.add(geojson)
-    state.vertecies = this.getVerticies(state.featureId)
+    state.vertices = this.getVertices(state.featureId)
 
     this.map.fire('draw.geometrychange', state.feature)
   },
@@ -134,7 +134,7 @@ export const vertexOperations = {
     }
 
     // Save position for undo before deletion
-    const deletedPosition = [...state.vertecies[state.selectedVertexIndex]]
+    const deletedPosition = [...state.vertices[state.selectedVertexIndex]]
     const deletedIndex = state.selectedVertexIndex
 
     // Remove the coordinate directly rather than via this._ctx.api.trash(), which routes through

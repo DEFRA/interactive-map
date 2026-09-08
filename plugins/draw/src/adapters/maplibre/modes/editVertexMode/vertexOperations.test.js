@@ -21,7 +21,7 @@ describe('vertexOperations', () => {
     }))
 
     api.changeMode.mockClear()
-    ctx.updateVertex({ featureId: 'missing', vertecies: [], selectedVertexIndex: -1 }, 'ArrowRight')
+    ctx.updateVertex({ featureId: 'missing', vertices: [], selectedVertexIndex: -1 }, 'ArrowRight')
     expect(api.changeMode).not.toHaveBeenCalled()
 
     // A vertex target carries a coordPath; a midpoint target does not
@@ -43,9 +43,9 @@ describe('vertexOperations', () => {
     const { ctx, state, map } = createHarness()
     state.selectedVertexIndex = 0
     state.selectedVertexType = 'vertex'
-    const before = [...state.vertecies[0]]
+    const before = [...state.vertices[0]]
     ctx.nudgeVertexByDelta(state, 1, 0, true)
-    expect(state.vertecies[0]).not.toEqual(before)
+    expect(state.vertices[0]).not.toEqual(before)
     expect(map._undoStack.pop()).toMatchObject({ type: 'move_vertex', vertexIndex: 0, previousPosition: before })
 
     map._undoStack.clear()
@@ -70,12 +70,12 @@ describe('vertexOperations', () => {
     map._snapInstance = { status: true, snapStatus: true, snapCoords: [7, 8], snapToClosestPoint: jest.fn() }
     ctx.nudgeVertexByDelta(state, 0, -1, true)
     expect(state._isSnapped).toBe(true)
-    expect(state.vertecies[1]).toEqual([7, 8])
+    expect(state.vertices[1]).toEqual([7, 8])
   })
 
   test('insertVertex splits a midpoint into a new vertex, records undo and selects it', () => {
     const { ctx, state, api } = createHarness()
-    ctx.insertVertex({ ...state, selectedVertexIndex: state.vertecies.length, selectedVertexType: 'midpoint' }, { key: 'ArrowRight', shiftKey: false })
+    ctx.insertVertex({ ...state, selectedVertexIndex: state.vertices.length, selectedVertexType: 'midpoint' }, { key: 'ArrowRight', shiftKey: false })
     expect(api.add).toHaveBeenCalled()
     expect(state.map ?? ctx.map._undoStack.length).toBeGreaterThan(0)
     expect(api.changeMode).toHaveBeenCalledWith('edit_vertex', expect.objectContaining({
@@ -84,14 +84,14 @@ describe('vertexOperations', () => {
 
     // Also works for an open line segment
     const line = createHarness(LINE())
-    line.ctx.insertVertex({ ...line.state, selectedVertexIndex: line.state.vertecies.length, selectedVertexType: 'midpoint' }, { key: 'ArrowRight', shiftKey: false })
+    line.ctx.insertVertex({ ...line.state, selectedVertexIndex: line.state.vertices.length, selectedVertexType: 'midpoint' }, { key: 'ArrowRight', shiftKey: false })
     expect(line.api.add).toHaveBeenCalled()
   })
 
   test('insertVertex bails out when the midpoint maps to no segment', () => {
     const { ctx, state, api } = createHarness()
     // midIdx beyond the segment's midpoint count, but with a defined midpoint coord
-    const badState = { ...state, selectedVertexIndex: state.vertecies.length + 4, midpoints: [...state.midpoints, [5, 5]] }
+    const badState = { ...state, selectedVertexIndex: state.vertices.length + 4, midpoints: [...state.midpoints, [5, 5]] }
     api.add.mockClear()
     ctx.insertVertex(badState, { key: 'ArrowRight', shiftKey: false })
     expect(api.add).not.toHaveBeenCalled()
@@ -101,20 +101,20 @@ describe('vertexOperations', () => {
     const { ctx, state, map } = createHarness()
     state.selectedVertexIndex = 0
     ctx.moveVertex(state, { lng: 1, lat: 2 })
-    expect(state.vertecies[0]).toEqual([1, 2])
+    expect(state.vertices[0]).toEqual([1, 2])
 
     map._snapInstance = { snapStatus: true, snapCoords: [7, 8] }
     ctx.moveVertex(state, { lng: 1, lat: 2 }, { checkSnap: true })
-    expect(state.vertecies[0]).toEqual([7, 8])
+    expect(state.vertices[0]).toEqual([7, 8])
 
-    const before = [...state.vertecies]
+    const before = [...state.vertices]
     ctx.moveVertex({ ...state, selectedVertexIndex: 99 }, { lng: 3, lat: 3 })
-    expect(ctx.getVerticies('feat-1')).toEqual(before)
+    expect(ctx.getVertices('feat-1')).toEqual(before)
 
     // checkSnap requested but no active snap → coordinate used as-is
     const h = createHarness()
     h.ctx.moveVertex({ ...h.state, selectedVertexIndex: 0 }, { lng: 1, lat: 2 }, { checkSnap: true })
-    expect(h.ctx.getVerticies('feat-1')[0]).toEqual([1, 2])
+    expect(h.ctx.getVertices('feat-1')[0]).toEqual([1, 2])
   })
 
   test('deleteVertex removes a vertex, or no-ops for missing feature / bad index / minimum size', () => {
@@ -137,6 +137,6 @@ describe('vertexOperations', () => {
     const line = createHarness(LINE())
     line.state.selectedVertexIndex = 1
     line.ctx.deleteVertex(line.state)
-    expect(line.ctx.getVerticies('feat-1')).toHaveLength(2)
+    expect(line.ctx.getVertices('feat-1')).toHaveLength(2)
   })
 })

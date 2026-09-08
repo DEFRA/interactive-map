@@ -126,9 +126,8 @@ export class MaplibreDrawAdapter {
       },
       editfinish: (event) => this._bus.emit(ADAPTER_EVENTS.EDIT_FINISH, event.features[0]),
       cancel: () => this._bus.emit(ADAPTER_EVENTS.CANCEL),
-      // Normalise typo: the ML modes fire numVertecies, the contract uses numVertices
-      vertexselection: (event) => this._bus.emit(ADAPTER_EVENTS.VERTEX_SELECTION, { ...event, numVertices: event.numVertecies }),
-      vertexchange: (event) => this._bus.emit(ADAPTER_EVENTS.VERTEX_CHANGE, { ...event, numVertices: event.numVertecies }),
+      vertexselection: (event) => this._bus.emit(ADAPTER_EVENTS.VERTEX_SELECTION, event),
+      vertexchange: (event) => this._bus.emit(ADAPTER_EVENTS.VERTEX_CHANGE, event),
       undochange: (event) => this._bus.emit(ADAPTER_EVENTS.UNDO_CHANGE, event.length),
       update: (event) => this._bus.emit(ADAPTER_EVENTS.UPDATE, event.features[0]),
       geometrychange: (event) => {

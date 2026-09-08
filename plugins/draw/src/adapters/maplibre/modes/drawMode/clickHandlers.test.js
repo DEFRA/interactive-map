@@ -10,7 +10,7 @@ describe('mouse clicks (polygon)', () => {
     expect(state.polygon.coordinates[0]).toHaveLength(3)
     expect(state.polygon.coordinates[0][0]).toEqual([0, 0])
     expect(state.polygon.coordinates[0][1]).toEqual([10, 0])
-    expect(firedWith(ctx.map, 'draw.vertexchange').pop()).toEqual({ numVertecies: 2 })
+    expect(firedWith(ctx.map, 'draw.vertexchange').pop()).toEqual({ numVertices: 2 })
     expect(ctx.map._undoStack.length).toBe(2)
   })
 

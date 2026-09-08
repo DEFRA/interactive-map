@@ -179,11 +179,11 @@ describe('map event normalisation', () => {
     expect(bus.emit).toHaveBeenCalledWith('cancel')
   })
 
-  test('vertexselection/vertexchange normalise the numVertecies typo', () => {
+  test('vertexselection/vertexchange forward the raw event', () => {
     const { map, bus } = setup()
 
-    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_SELECTION)({ numVertecies: 3, index: 1 })
-    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_CHANGE)({ numVertecies: 2 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_SELECTION)({ numVertices: 3, index: 1 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_CHANGE)({ numVertices: 2 })
 
     expect(bus.emit).toHaveBeenCalledWith('vertexselection', expect.objectContaining({ numVertices: 3, index: 1 }))
     expect(bus.emit).toHaveBeenCalledWith('vertexchange', expect.objectContaining({ numVertices: 2 }))

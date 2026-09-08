@@ -33,9 +33,9 @@ describe('onSetup / onStop lifecycle', () => {
 
   test('claims the D-pad exactly once at setup, never followed by draw.vertexchange', () => {
     const { map } = createHarness()
-    // numVertecies (misspelled) — MaplibreDrawAdapter.js's vertexselection handler only reads
+    // numVertices (misspelled) — MaplibreDrawAdapter.js's vertexselection handler only reads
     // that exact key when normalising to the adapter contract's numVertices.
-    expect(map.fire).toHaveBeenCalledWith('draw.vertexselection', { index: 0, numVertecies: 1 })
+    expect(map.fire).toHaveBeenCalledWith('draw.vertexselection', { index: 0, numVertices: 1 })
     expect(map.fire).not.toHaveBeenCalledWith('draw.vertexchange', expect.anything())
   })
 

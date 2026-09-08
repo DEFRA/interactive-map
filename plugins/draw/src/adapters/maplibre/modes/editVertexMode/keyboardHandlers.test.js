@@ -45,7 +45,7 @@ describe('keyboardHandlers', () => {
     expect(updateSpy).toHaveBeenCalledTimes(1)
 
     map._snapInstance = null // no snap indicator to clear
-    const s = { ...state, featureId: 'missing', vertecies: [], selectedVertexIndex: -1, isPanEnabled: true }
+    const s = { ...state, featureId: 'missing', vertices: [], selectedVertexIndex: -1, isPanEnabled: true }
     keydown(ctx, s, ' ')
     expect(s.isPanEnabled).toBe(true)
   })
@@ -60,7 +60,7 @@ describe('keyboardHandlers', () => {
     keydown(ctx, state, 'ArrowRight')
     expect(state._keyboardMoveStartIndex).toBe(1)
     expect(state._keyboardMoveStartPosition).toEqual([10, 0])
-    expect(state.vertecies[1]).not.toEqual([10, 0])
+    expect(state.vertices[1]).not.toEqual([10, 0])
 
     // Still held → start position isn't reset to the intermediate (already-moved) position
     keydown(ctx, state, 'ArrowRight')
@@ -70,7 +70,7 @@ describe('keyboardHandlers', () => {
   test('an arrow key on a midpoint inserts a vertex; guards a missing feature or out-of-range vertex', () => {
     const { ctx, state } = createHarness()
     const insertSpy = jest.spyOn(ctx, 'insertVertex').mockImplementation(() => {})
-    keydown(ctx, { ...state, selectedVertexIndex: state.vertecies.length, selectedVertexType: 'midpoint' }, 'ArrowRight')
+    keydown(ctx, { ...state, selectedVertexIndex: state.vertices.length, selectedVertexType: 'midpoint' }, 'ArrowRight')
     expect(insertSpy).toHaveBeenCalled()
 
     keydown(ctx, { ...state, featureId: 'missing', selectedVertexIndex: 0 }, 'ArrowRight')

@@ -13,7 +13,7 @@ describe('onSetup / onStop lifecycle', () => {
     const { ctx, state, map } = createHarness()
     expect(state.featureId).toBe('feat-1')
     // Real PolygonFeature stores rings without the duplicate closing coordinate
-    expect(state.vertecies).toHaveLength(4)
+    expect(state.vertices).toHaveLength(4)
     expect(state.midpoints).toHaveLength(4)
     expect(map._lastEditFeatureId).toBe('feat-1')
     expect(map._drawEditContainer).toBe(state.container)
@@ -74,7 +74,7 @@ describe('selection, scale and update events', () => {
     const geom = ctx.getFeature('feat-1').toGeoJSON().geometry
     ctx.onSelectionChange(state, { points: [{ geometry: { coordinates: [10, 0] } }], features: [{ geometry: geom }] })
     expect(state.selectedVertexIndex).toBe(1)
-    expect(map.fire).toHaveBeenCalledWith('draw.vertexselection', expect.objectContaining({ numVertecies: 4 }))
+    expect(map.fire).toHaveBeenCalledWith('draw.vertexselection', expect.objectContaining({ numVertices: 4 }))
 
     state.coordPath = '0.2'
     state.selectedVertexIndex = 2
@@ -106,10 +106,10 @@ describe('selection, scale and update events', () => {
     jest.useFakeTimers()
     const { state, map } = createHarness(POLYGON(), { interfaceType: 'touch', selectedVertexIndex: 0, selectedVertexType: 'vertex' })
     jest.runAllTimers() // flush onSetup's deferred initial touch-target positioning
-    const before = [...state.vertecies[0]]
+    const before = [...state.vertices[0]]
     const targetBefore = { top: state.touchVertexTarget.style.top, left: state.touchVertexTarget.style.left }
     map.fire('draw.nudgevertex', { dx: 1, dy: 0, isLargeStep: true })
-    expect(state.vertecies[0]).not.toEqual(before)
+    expect(state.vertices[0]).not.toEqual(before)
     expect({ top: state.touchVertexTarget.style.top, left: state.touchVertexTarget.style.left }).not.toEqual(targetBefore)
   })
 
@@ -121,7 +121,7 @@ describe('selection, scale and update events', () => {
   test('onUpdate re-selects a changed vertex only when the vertex count is ambiguous', () => {
     const { ctx, state } = createHarness()
     ctx.onUpdate(state) // unique coords → no change
-    state.vertecies = [[0, 0], [0, 0], [1, 1]]
+    state.vertices = [[0, 0], [0, 0], [1, 1]]
     ctx.onUpdate(state)
     expect(state.selectedVertexIndex).toBe(-1)
   })
@@ -184,7 +184,7 @@ describe('onSelectVertex / onInsertVertexAtMidpoint (spatial listbox bridge)', (
   test('onSelectVertex moves the cursor to a midpoint, without a coordPath', () => {
     const { ctx, state } = createHarness()
     const changeModeSpy = jest.spyOn(ctx, 'changeMode')
-    const midpointIndex = state.vertecies.length
+    const midpointIndex = state.vertices.length
     ctx.onSelectVertex(state, { index: midpointIndex })
     expect(changeModeSpy).toHaveBeenCalledWith(state, {
       selectedVertexIndex: midpointIndex,
@@ -192,29 +192,29 @@ describe('onSelectVertex / onInsertVertexAtMidpoint (spatial listbox bridge)', (
     })
   })
 
-  test('onSelectVertex lazily (re)populates vertecies/midpoints when not already cached', () => {
+  test('onSelectVertex lazily (re)populates vertices/midpoints when not already cached', () => {
     const { ctx, state } = createHarness()
-    state.vertecies = []
+    state.vertices = []
     state.midpoints = []
     const changeModeSpy = jest.spyOn(ctx, 'changeMode')
     ctx.onSelectVertex(state, { index: 0 })
-    expect(state.vertecies.length).toBeGreaterThan(0)
+    expect(state.vertices.length).toBeGreaterThan(0)
     expect(changeModeSpy).toHaveBeenCalled()
   })
 
   test('onInsertVertexAtMidpoint commits a new vertex exactly at the midpoint — no directional offset', () => {
     const { ctx, state } = createHarness()
-    const midpointFlatIndex = state.vertecies.length // first midpoint, between vertex 0 and 1
+    const midpointFlatIndex = state.vertices.length // first midpoint, between vertex 0 and 1
     const expectedCoord = state.midpoints[0]
     ctx.onInsertVertexAtMidpoint(state, { index: midpointFlatIndex })
-    const updated = ctx.getVerticies(state.featureId)
-    expect(updated).toHaveLength(state.vertecies.length + 1)
+    const updated = ctx.getVertices(state.featureId)
+    expect(updated).toHaveLength(state.vertices.length + 1)
     expect(updated[1]).toEqual(expectedCoord)
   })
 
-  test('onInsertVertexAtMidpoint lazily (re)populates vertecies/midpoints when not already cached', () => {
+  test('onInsertVertexAtMidpoint lazily (re)populates vertices/midpoints when not already cached', () => {
     const { ctx, state } = createHarness()
-    state.vertecies = []
+    state.vertices = []
     state.midpoints = []
     expect(() => ctx.onInsertVertexAtMidpoint(state, { index: 4 })).not.toThrow()
   })

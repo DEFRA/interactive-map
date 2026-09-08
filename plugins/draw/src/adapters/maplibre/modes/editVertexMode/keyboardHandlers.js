@@ -60,11 +60,11 @@ export const keyboardHandlers = {
     if (snap) {
       clearSnapIndicator(snap, this.map)
     }
-    if (!state.vertecies?.length) {
-      state.vertecies = this.getVerticies(state.featureId)
+    if (!state.vertices?.length) {
+      state.vertices = this.getVertices(state.featureId)
       state.midpoints = this.getMidpoints(state.featureId)
     }
-    if (!state.vertecies?.length) {
+    if (!state.vertices?.length) {
       return
     }
     state.isPanEnabled = false
