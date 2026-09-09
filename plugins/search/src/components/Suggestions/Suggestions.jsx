@@ -10,7 +10,7 @@ export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
     >
       {pluginState.suggestions.map((suggestion, i) => (
         <li // NOSONAR
-          key={suggestion.id}
+          key={`${id}-${suggestion.type}-${suggestion.id}`}
           id={`${id}-search-suggestion-${i}`}
           className='im-c-search-suggestions__item'
           role='option' // NOSONAR
