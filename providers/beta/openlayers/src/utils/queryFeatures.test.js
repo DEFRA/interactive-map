@@ -24,7 +24,7 @@ const makeMap = (hits = []) => ({
   })
 })
 
-const makeVTLayer = () => Object.assign(new VectorTileLayer(), { get: () => undefined })
+const makeVTLayer = () => Object.assign(new VectorTileLayer(), { get: (key) => key === 'layerType' ? 'vectorTile' : undefined })
 
 const makeVTFeature = ({ id = undefined, styleLayerId = 'roads', type = 'fill', props = {} } = {}) => ({
   getId: () => id,
@@ -37,6 +37,7 @@ const makeVTFeature = ({ id = undefined, styleLayerId = 'roads', type = 'fill', 
 
 const makeVectorLayer = (layerId, isHighlight = false) => Object.assign(new VectorLayer(), {
   get: (key) => {
+    if (key === 'layerType') return 'vector'
     if (key === 'layerId') return layerId
     if (key === '_highlight') return isHighlight || undefined
     return undefined
@@ -170,7 +171,7 @@ describe('queryFeatures', () => {
 
   it('skips features from other layer types', () => {
     const feature = makeVectorFeature('f1')
-    const map = makeMap([[feature, {}]]) // plain object, not VectorTileLayer or VectorLayer
+    const map = makeMap([[feature, { get: () => undefined }]]) // untagged, not a vector/vectorTile layer
     expect(queryFeatures(map, { x: 0, y: 0 })).toEqual([])
   })
 
@@ -199,6 +200,7 @@ describe('getVisibleFeatures', () => {
   })
 
   const makeVTLayerWithTiles = (tiles) => Object.assign(new VectorTileLayer(), {
+    get: (key) => key === 'layerType' ? 'vectorTile' : undefined,
     getSource: () => ({ sourceTiles_: tiles })
   })
 
@@ -206,6 +208,7 @@ describe('getVisibleFeatures', () => {
     const source = { getFeaturesInExtent: jest.fn(() => features) }
     return Object.assign(new VectorLayer(), {
       get: (key) => {
+        if (key === 'layerType') return 'vector'
         if (key === 'layerId') return layerId
         if (key === '_highlight') return isHighlight || undefined
         return undefined
@@ -290,7 +293,7 @@ describe('getVisibleFeatures', () => {
   /* ------------------------------------------------------------------ */
 
   it('skips layers that are neither VectorTileLayer nor VectorLayer', () => {
-    expect(getVisibleFeatures(makeExtentMap([{}]), ['draw'])).toEqual([])
+    expect(getVisibleFeatures(makeExtentMap([{ get: () => undefined }]), ['draw'])).toEqual([])
   })
 
   it('returns results from both VT and Vector layers in one call', () => {

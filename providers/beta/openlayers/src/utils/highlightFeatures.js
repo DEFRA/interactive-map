@@ -1,4 +1,3 @@
-import VectorTileLayer from 'ol/layer/VectorTile.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorSource from 'ol/source/Vector.js'
 import Feature from 'ol/Feature.js'
@@ -17,6 +16,11 @@ const geoJsonFormat = new GeoJSON({ dataProjection: CRS, featureProjection: CRS 
 
 const HIGHLIGHT_MARKER = '_highlight'
 const HIGHLIGHT_Z = 999
+
+// Layers are classified by a `layerType` tag ('vector' | 'vectorTile') set at creation,
+// not `instanceof VectorLayer`/`VectorTileLayer` — a UMD consumer loads this provider and
+// other plugins (e.g. draw) as independently-bundled scripts, each with its own copy of
+// ol, so a class reference from this bundle never matches an instance built by another.
 
 const buildHighlightStyles = (styleEntry, isActive) => {
   if (!styleEntry) {
@@ -39,6 +43,13 @@ const buildHighlightStyles = (styleEntry, isActive) => {
 }
 
 const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
+
+const toStyleArray = (style) => {
+  if (!style) {
+    return []
+  }
+  return Array.isArray(style) ? style : [style]
+}
 
 // A drawn point renders as a real symbol icon, not Stroke/Fill, so its selected/active ring is
 // the active/selected variant of that same icon instead. Returns null (not []) for a
@@ -83,7 +94,7 @@ const buildFeatureKeyIndex = (features) => {
 
 const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
   map.getLayers().forEach(layer => {
-    if (!(layer instanceof VectorTileLayer)) {
+    if (layer.get('layerType') !== 'vectorTile') {
       return
     }
 
@@ -124,8 +135,7 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
         return base
       }
 
-      const baseArr = base ? (Array.isArray(base) ? base : [base]) : []
-      return [...baseArr, ...highlightStyles]
+      return [...toStyleArray(base), ...highlightStyles]
     })
     // setStyle() calls layer.changed() internally — no source.changed() needed
     // (source.changed() works but causes a visible flicker on selection)
@@ -148,6 +158,7 @@ const getOrCreateHighlightLayer = (map) => {
   if (!layer) {
     layer = new VectorLayer({ source: new VectorSource(), zIndex: HIGHLIGHT_Z + 2 })
     layer.set(HIGHLIGHT_MARKER, true)
+    layer.set('layerType', 'vector')
     map.addLayer(layer)
   }
   return layer
@@ -162,7 +173,7 @@ const getLiveProperties = (map, layerId, featureId) => {
   }
   let properties
   map.getLayers().forEach(l => {
-    if (properties || !(l instanceof VectorLayer) || l.get(HIGHLIGHT_MARKER) || l.get('layerId') !== layerId) {
+    if (properties || l.get('layerType') !== 'vector' || l.get(HIGHLIGHT_MARKER) || l.get('layerId') !== layerId) {
       return
     }
     const feature = l.getSource()?.getFeatureById(String(featureId))
@@ -180,12 +191,11 @@ const addVectorHighlights = (map, source, features, isActive, stylesMap) => {
     }
     const liveProperties = getLiveProperties(map, layerId, featureId)
     const styles = buildSymbolHighlightStyle(liveProperties, isActive) ?? buildHighlightStyles(stylesMap?.[layerId], isActive)
-    if (!styles.length) {
-      continue
+    if (styles.length) {
+      const olFeature = new Feature({ geometry: geoJsonFormat.readGeometry(geometry) })
+      olFeature.setStyle(styles)
+      source.addFeature(olFeature)
     }
-    const olFeature = new Feature({ geometry: geoJsonFormat.readGeometry(geometry) })
-    olFeature.setStyle(styles)
-    source.addFeature(olFeature)
   }
 }
 
@@ -206,6 +216,8 @@ const expandBoundsFromGeometry = (geometry, cb) => {
     coordinates.forEach(visitRing)
   } else if (type === 'MultiPolygon') {
     coordinates.forEach(poly => poly.forEach(visitRing))
+  } else {
+    // unsupported/unrecognised geometry type — nothing to expand bounds by
   }
 }
 
@@ -260,7 +272,7 @@ export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures,
   // Determine which layerIds belong to plain VectorLayers vs VT layers
   const vectorLayerIds = new Set()
   map.getLayers().forEach(l => {
-    if (l instanceof VectorLayer && !l.get(HIGHLIGHT_MARKER)) {
+    if (l.get('layerType') === 'vector' && !l.get(HIGHLIGHT_MARKER)) {
       const id = l.get('layerId')
       if (id) {
         vectorLayerIds.add(id)

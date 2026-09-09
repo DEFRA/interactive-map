@@ -35,6 +35,7 @@ const renderFeature = (type, flat, ends = null, mapboxLayer = { id: 'boundaries'
 const setupVT = ({ features, withTileGrid = true, fillNeighbour = false }) => {
   const map = createEngineMap()
   const vtLayer = new VectorTileLayer({})
+  vtLayer.set('layerType', 'vectorTile') // mirrors the provider's own tagging in tileLayers.js
   if (withTileGrid) {
     jest.spyOn(vtLayer, 'getSource').mockReturnValue({ getTileGrid: () => tileGrid, getProjection: () => null })
   }
