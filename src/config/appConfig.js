@@ -53,7 +53,7 @@ export const defaultAppConfig = {
     desktop: journeyContinueSlots
   }, {
     id: 'exit',
-    label: 'Exit',
+    label: 'Close map view',
     iconId: 'close',
     onClick: (_e, { services }) => services.closeApp(),
     excludeWhen: ({ appConfig, appState }) => !appConfig.hasExitButton || !appState.isFullscreen,

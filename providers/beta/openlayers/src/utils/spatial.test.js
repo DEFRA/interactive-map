@@ -14,8 +14,12 @@ jest.mock('ol/proj.js', () => ({
 }))
 
 describe('formatDimension', () => {
-  it('formats sub-mile distances in meters', () => {
-    expect(formatDimension(400)).toBe('400m')
+  it('formats sub-mile distances in metres', () => {
+    expect(formatDimension(400)).toBe('400 metres')
+  })
+
+  it('formats a single metre as singular', () => {
+    expect(formatDimension(1)).toBe('1 metre')
   })
 
   it('formats exactly 1 mile', () => {
@@ -38,7 +42,7 @@ describe('getAreaDimensions', () => {
 
   it('returns height by width as formatted strings', () => {
     // 1609m height (~1 mile), 804m width (sub-mile)
-    expect(getAreaDimensions([0, 0, 804, 1609])).toBe('1 mile by 804m')
+    expect(getAreaDimensions([0, 0, 804, 1609])).toBe('1 mile by 804 metres')
   })
 })
 
@@ -48,15 +52,15 @@ describe('getCardinalMove', () => {
   })
 
   it('describes north and east movement', () => {
-    expect(getCardinalMove([0, 0], [100, 100])).toBe('north 100m, east 100m')
+    expect(getCardinalMove([0, 0], [100, 100])).toBe('north 100 metres, east 100 metres')
   })
 
   it('describes south and west movement', () => {
-    expect(getCardinalMove([100, 100], [0, 0])).toBe('south 100m, west 100m')
+    expect(getCardinalMove([100, 100], [0, 0])).toBe('south 100 metres, west 100 metres')
   })
 
   it('describes single-axis movement', () => {
-    expect(getCardinalMove([0, 0], [0, 100])).toBe('north 100m')
+    expect(getCardinalMove([0, 0], [0, 100])).toBe('north 100 metres')
   })
 })
 

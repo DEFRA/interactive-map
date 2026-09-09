@@ -17,7 +17,9 @@ const formatDimension = (meters) => {
   const miles = meters / METERS_PER_MILE
 
   if (miles < MILE_THRESHOLD / METERS_PER_MILE) {
-    return `${Math.round(meters)}m`
+    const roundedMeters = Math.round(meters)
+    const units = roundedMeters === 1 ? 'metre' : 'metres'
+    return `${roundedMeters} ${units}`
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {

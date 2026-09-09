@@ -12,7 +12,10 @@ jest.mock('@turf/bbox', () => jest.fn(() => [-1, 50, 1, 52]))
 describe('spatial utils', () => {
   test('formatDimension hits all branches', () => {
     // < 0.5 miles
-    expect(spatial.formatDimension(500)).toMatch(/m$/)
+    expect(spatial.formatDimension(500)).toMatch(/metres?$/)
+
+    // Singular metre (exactly 1) - hits roundedMeters === 1 branch
+    expect(spatial.formatDimension(1)).toBe('1 metre')
 
     // Singular mile (exactly 1.0) - hits value === 1 branch
     expect(spatial.formatDimension(1609.344)).toBe('1 mile')

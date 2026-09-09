@@ -31,7 +31,9 @@ const formatDimension = (meters) => {
 
   // Check if we are under the half-mile threshold
   if (miles < MILE_THRESHOLD) {
-    return `${Math.round(meters)}m`
+    const roundedMeters = Math.round(meters)
+    const units = roundedMeters === 1 ? 'metre' : 'metres'
+    return `${roundedMeters} ${units}`
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {
