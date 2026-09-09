@@ -377,7 +377,7 @@ export default class MapLibreProvider extends MapProvider {
   }
 
   /**
-   * Get map resolution in meters per pixel.
+   * Get map resolution in metres per pixel.
    *
    * @returns {number}
    */
