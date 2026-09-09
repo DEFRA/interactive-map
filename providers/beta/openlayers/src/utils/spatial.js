@@ -1,19 +1,19 @@
 import turfBbox from '@turf/bbox'
 import { transformExtent } from 'ol/proj.js'
 
-// In EPSG:27700 coordinates are projected meters — distances are Pythagorean, no geodesy needed
+// In EPSG:27700 coordinates are projected metres — distances are Pythagorean, no geodesy needed
 
-const formatDimension = (meters) => {
+const formatDimension = (metres) => {
   const WHOLE_MILE_THRESHOLD = 10
   const MILE_THRESHOLD = 0.5
-  const METERS_PER_MILE = 1609.344
+  const METRES_PER_MILE = 1609.344
 
-  const miles = meters / METERS_PER_MILE
+  const miles = metres / METRES_PER_MILE
 
   if (miles < MILE_THRESHOLD) {
-    const roundedMeters = Math.round(meters)
-    const units = roundedMeters === 1 ? 'metre' : 'metres'
-    return `${roundedMeters} ${units}`
+    const roundedMetres = Math.round(metres)
+    const units = roundedMetres === 1 ? 'metre' : 'metres'
+    return `${roundedMetres} ${units}`
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {
@@ -27,35 +27,35 @@ const formatDimension = (meters) => {
 }
 
 /**
- * Returns "400m by 1.4 miles" for the visible (padded) map area.
- * extent: [xmin, ymin, xmax, ymax] in EPSG:27700 meters
+ * Returns "400 metres by 1.4 miles" for the visible (padded) map area.
+ * extent: [xmin, ymin, xmax, ymax] in EPSG:27700 metres
  */
 const getAreaDimensions = (extent) => {
   if (!extent) {
     return ''
   }
   const [xmin, ymin, xmax, ymax] = extent
-  const widthMeters = xmax - xmin
-  const heightMeters = ymax - ymin
-  return `${formatDimension(heightMeters)} by ${formatDimension(widthMeters)}`
+  const widthMetres = xmax - xmin
+  const heightMetres = ymax - ymin
+  return `${formatDimension(heightMetres)} by ${formatDimension(widthMetres)}`
 }
 
 /**
- * Returns "north 400m, east 750m" for moves between two EPSG:27700 [easting, northing] coords.
+ * Returns "north 400 metres, east 750 metres" for moves between two EPSG:27700 [easting, northing] coords.
  */
 const getCardinalMove = (from, to) => {
-  const THRESHOLD_METERS = 1
+  const THRESHOLD_METRES = 1
 
   const dEasting = to[0] - from[0]
   const dNorthing = to[1] - from[1]
 
   const moves = []
 
-  if (Math.abs(dNorthing) > THRESHOLD_METERS) {
+  if (Math.abs(dNorthing) > THRESHOLD_METRES) {
     moves.push(`${dNorthing > 0 ? 'north' : 'south'} ${formatDimension(Math.abs(dNorthing))}`)
   }
 
-  if (Math.abs(dEasting) > THRESHOLD_METERS) {
+  if (Math.abs(dEasting) > THRESHOLD_METRES) {
     moves.push(`${dEasting > 0 ? 'east' : 'west'} ${formatDimension(Math.abs(dEasting))}`)
   }
 

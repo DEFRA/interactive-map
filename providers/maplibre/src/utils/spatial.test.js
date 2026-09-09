@@ -14,19 +14,19 @@ describe('spatial utils', () => {
     // < 0.5 miles
     expect(spatial.formatDimension(500)).toMatch(/metres?$/)
 
-    // Singular metre (exactly 1) - hits roundedMeters === 1 branch
+    // Singular metre (exactly 1) - hits roundedMetres === 1 branch
     expect(spatial.formatDimension(1)).toBe('1 metre')
 
     // Singular mile (exactly 1.0) - hits value === 1 branch
     expect(spatial.formatDimension(1609.344)).toBe('1 mile')
 
     // 5 miles
-    const metersSmallMiles = 5 * 1609.344
-    expect(spatial.formatDimension(metersSmallMiles)).toMatch(/^5\s*miles$/)
+    const metresSmallMiles = 5 * 1609.344
+    expect(spatial.formatDimension(metresSmallMiles)).toMatch(/^5\s*miles$/)
 
     // >= WHOLE_MILE_THRESHOLD
-    const metersLarge = 15 * 1609.344
-    expect(spatial.formatDimension(metersLarge)).toBe('15 miles')
+    const metresLarge = 15 * 1609.344
+    expect(spatial.formatDimension(metresLarge)).toBe('15 miles')
   })
 
   test('array bounds triggers all branches', () => {

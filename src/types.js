@@ -306,10 +306,10 @@
  * Get the dimensions of the visible map area as a formatted string (e.g., '400m by 750m').
  *
  * @property {(from: [number, number], to: [number, number]) => string} getCardinalMove
- * Get cardinal direction and distance between two coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider). Returns a formatted string (e.g., 'north 400m' or 'south 400m, west 750m').
+ * Get cardinal direction and distance between two coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider). Returns a formatted string (e.g., 'north 400 metres' or 'south 400 metres, west 750 metres').
  *
  * @property {() => number} getResolution
- * Get map resolution in meters per pixel.
+ * Get map resolution in metres per pixel.
  *
  * @property {(coords: [number, number]) => { x: number, y: number }} mapToScreen
  * Convert map coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider) to screen pixel position (x from left edge, y from top edge of viewport).
