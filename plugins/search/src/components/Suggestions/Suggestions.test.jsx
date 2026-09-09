@@ -25,7 +25,7 @@ describe('Suggestions', () => {
     render(<Suggestions {...baseProps} />)
     const listbox = screen.getByRole('listbox')
     expect(listbox).toHaveAttribute('id', 'test-search-suggestions')
-    expect(listbox).toHaveAttribute('aria-labelledby', 'test-search')
+    expect(listbox).toHaveAttribute('aria-labelledby', 'test-search-input')
     expect(listbox.className).toContain('im-c-search-suggestions')
   })
 
