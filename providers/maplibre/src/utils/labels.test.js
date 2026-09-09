@@ -191,7 +191,7 @@ describe('labels utils', () => {
       // One feat: highlightNext without currentPixel falls back to highlightCenter (lines 249-251)
       const feat1 = { layer: { id: 's2' }, properties: { name: 'City1' }, geometry: { type: 'Point', coordinates: [1, 2] } }
       map.queryRenderedFeatures.mockReturnValue([feat1])
-      expect(nav.highlightNextLabel('ArrowRight')).toContain('City1')
+      expect(nav.highlightNextLabel('ArrowRight')).toBe('City1')
 
       // Single label at currentPixel → navigateToNextLabel → null (lines 253-255)
       expect(nav.highlightNextLabel('ArrowRight')).toBeNull()
@@ -205,7 +205,7 @@ describe('labels utils', () => {
       const feat2 = { layer: { id: 's2' }, properties: { name: 'City2' }, geometry: { type: 'Point', coordinates: [3, 4] } }
       map.queryRenderedFeatures.mockReturnValue([feat1, feat2])
       spatialNavigate.mockReturnValue(0)
-      expect(nav.highlightNextLabel('ArrowRight')).toContain('City2')
+      expect(nav.highlightNextLabel('ArrowRight')).toBe('City2')
 
       // clearHighlightedLabel removes layer
       map.getLayer.mockReturnValue(true)

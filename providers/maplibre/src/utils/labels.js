@@ -47,7 +47,7 @@ export function evalInterpolate (expr, zoom) {
       return v0 + (v1 - v0) * ((zoom - z0) / (z1 - z0))
     }
   }
-  return stops[stops.length - 1]
+  return stops[stops.length - 1] // NOSONAR array.at() would exclude pre Chrome 92
 }
 
 export function getHighlightColors (isDarkStyle) {
@@ -235,7 +235,7 @@ export function createMapLabelNavigator (map, mapColorScheme, events, eventBus) 
     const closest = findClosestLabel(state.labels, centerPoint)
     state.currentPixel = { x: closest.x, y: closest.y }
     applyHighlight(map, closest, state)
-    return `${closest.text} (${closest.layer.id})`
+    return closest.text
   }
 
   function highlightNext (direction) {
@@ -252,7 +252,7 @@ export function createMapLabelNavigator (map, mapColorScheme, events, eventBus) 
     }
     state.currentPixel = { x: labelData.x, y: labelData.y }
     applyHighlight(map, labelData, state)
-    return `${labelData.text} (${labelData.layer.id})`
+    return labelData.text
   }
 
   setSymbolTextOpacity(map)
