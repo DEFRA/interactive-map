@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
-import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, OS_LOGO_URLS, OS_LOGO_ALT, useOsTransformRequest } from './osMapStyle.js'
 
 const MAP_STYLE = {
   id: 'outdoor',
   url: OS_VTS_STYLE_URLS.outdoor,
+  logo: OS_LOGO_URLS.outdoor,
+  logoAltText: OS_LOGO_ALT,
   attribution: OS_ATTRIBUTION,
   backgroundColor: '#f5f5f0'
 }
@@ -64,9 +66,9 @@ const parcelsDataset = {
     label: 'Arable',
     filter: ['==', ['get', 'land_use'], 'Arable'],
     style: {
-      stroke: '#6D4C41',
+      stroke: '#573C34',
       fillPattern: 'horizontal-hatch',
-      fillPatternForegroundColor: '#6D4C41',
+      fillPatternForegroundColor: '#573C34',
       fillPatternBackgroundColor: 'transparent'
     }
   },{
@@ -74,9 +76,9 @@ const parcelsDataset = {
     label: 'Permanent grassland',
     filter: ['==', ['get', 'land_use'], 'Permanent grassland'],
     style: {
-      stroke: '#00897B',
+      stroke: '#005149',
       fillPattern: 'diagonal-cross-hatch',
-      fillPatternForegroundColor: '#00897B',
+      fillPatternForegroundColor: '#005149',
       fillPatternBackgroundColor: 'transparent'
     }
   },{
@@ -84,9 +86,9 @@ const parcelsDataset = {
     label: 'Woodland',
     filter: ['==', ['get', 'land_use'], 'Woodland'],
     style: {
-      stroke: '#2E7D32',
+      stroke: '#1E5020',
       fillPattern: 'dot',
-      fillPatternForegroundColor: '#2E7D32',
+      fillPatternForegroundColor: '#1E5020',
       fillPatternBackgroundColor: 'transparent'
     }
   }]

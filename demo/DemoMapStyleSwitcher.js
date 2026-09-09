@@ -3,7 +3,7 @@ import BrowserOnly from '@docusaurus/BrowserOnly'
 import outdoorThumb from '../docs/assets/images/outdoor-map-thumb.jpg'
 import darkThumb from '../docs/assets/images/dark-map-thumb.jpg'
 import blackWhiteThumb from '../docs/assets/images/black-and-white-map-thumb.jpg'
-import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, OS_LOGO_URLS, OS_LOGO_ALT, useOsTransformRequest } from './osMapStyle.js'
 
 const MAP_STYLES = [
   {
@@ -11,6 +11,8 @@ const MAP_STYLES = [
     label: 'Outdoor',
     url: OS_VTS_STYLE_URLS.outdoor,
     thumbnail: outdoorThumb,
+    logo: OS_LOGO_URLS.outdoor,
+    logoAltText: OS_LOGO_ALT,
     attribution: OS_ATTRIBUTION,
     backgroundColor: '#f5f5f0'
   },
@@ -19,6 +21,8 @@ const MAP_STYLES = [
     label: 'Dark',
     url: OS_VTS_STYLE_URLS.dark,
     thumbnail: darkThumb,
+    logo: OS_LOGO_URLS.dark,
+    logoAltText: OS_LOGO_ALT,
     attribution: OS_ATTRIBUTION,
     mapColorScheme: 'dark',
     appColorScheme: 'dark'
@@ -28,6 +32,8 @@ const MAP_STYLES = [
     label: 'Black/White',
     url: OS_VTS_STYLE_URLS.blackWhite,
     thumbnail: blackWhiteThumb,
+    logo: OS_LOGO_URLS.blackWhite,
+    logoAltText: OS_LOGO_ALT,
     attribution: OS_ATTRIBUTION,
     backgroundColor: '#f5f5f0'
   }

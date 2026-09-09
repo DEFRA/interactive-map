@@ -1,10 +1,12 @@
 import { useEffect, useRef } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
-import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, OS_LOGO_URLS, OS_LOGO_ALT, useOsTransformRequest } from './osMapStyle.js'
 import { geojson } from './DemoMapPolygons.js'
 
 const MAP_STYLE = {
   url: OS_VTS_STYLE_URLS.outdoor,
+  logo: OS_LOGO_URLS.outdoor,
+  logoAltText: OS_LOGO_ALT,
   attribution: OS_ATTRIBUTION,
   backgroundColor: '#f5f5f0'
 }

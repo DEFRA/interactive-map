@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react'
 import BrowserOnly from '@docusaurus/BrowserOnly'
-import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, useOsTransformRequest } from './osMapStyle.js'
+import { OS_VTS_STYLE_URLS, OS_ATTRIBUTION, OS_LOGO_URLS, OS_LOGO_ALT, useOsTransformRequest } from './osMapStyle.js'
 
 const CENTER = [-2.9631008, 54.432306]
 const ZOOM = 15
 
 const MAP_STYLE = {
   url: OS_VTS_STYLE_URLS.outdoor,
+  logo: OS_LOGO_URLS.outdoor,
+  logoAltText: OS_LOGO_ALT,
   attribution: OS_ATTRIBUTION,
   backgroundColor: '#f5f5f0'
 }
