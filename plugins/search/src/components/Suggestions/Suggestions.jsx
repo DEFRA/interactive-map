@@ -4,7 +4,7 @@ export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
     <ul // NOSONAR
       id={`${id}-search-suggestions`}
       role='listbox' // NOSONAR
-      aria-labelledby={`${id}-search`} // Option A: label from input
+      aria-labelledby={`${id}-search-input`} // Option A: label from input
       className='im-c-search-suggestions'
       style={!pluginState.areSuggestionsVisible || !pluginState.suggestions.length ? { display: 'none' } : undefined}
     >
