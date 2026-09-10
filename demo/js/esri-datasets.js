@@ -11,6 +11,7 @@ import { drawPlugin, framePlugin, attachDrawPlugin } from './planning/drawPlugin
 import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
+import createInteractPlugin from '/plugins/interact/src/index.js'
 
 const nonFloodZoneLight = '#2b8cbe'
 const nonFloodZoneDark = '#7fcdbb'
@@ -606,6 +607,15 @@ const datasetsPlugin = createDatasetsPlugin({
   datasets
 })
 
+const interactPlugin = createInteractPlugin({
+  marker: {
+    symbol: 'pin',
+    backgroundColor: { outdoor: '#0b0c0c', dark: '#ffffff' },
+    foregroundColor: { outdoor: '#ffff', dark: '#0b0c0c' }
+  },
+  interactionModes: ['placeMarker'],
+})
+
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'mapOnly',
   mapProvider: esriProvider({ setupConfig: setupEsriConfig }),
@@ -615,6 +625,7 @@ const interactiveMap = new InteractiveMap('map', {
   center: [481146,484971],
   zoom: 13,
   plugins: [
+    interactPlugin,
     searchPlugin({
       transformRequest: transformGeocodeRequest,
       placeholder: 'Search for a place in England',
@@ -684,6 +695,15 @@ const interactiveMap = new InteractiveMap('map', {
   ]
 })
 
+interactiveMap.on('interact:markerchange', function (e) {
+  interactiveMap.addPanel('info', {
+    label: 'Info',
+    html: '<p>Some info</p>',
+    visibleGeometry: {type: 'Feature', geometry: {type: 'Point', coordinates: e.coords}}
+  })
+})
+
+
 const onEditPolygon = (isEditing) => {
     // toggleKeyWhenEditing(isEditing)
     if (isEditing) {
@@ -730,6 +750,7 @@ interactiveMap.on('map:ready', function ({ map, view, mapStyleId, mapSize, crs }
   // console.log('map:ready', { map, view, mapStyleId, mapSize, crs })
   mapState.map = map
   mapState.view = view
+  interactPlugin.enable()
 })
 
 let visibleLayers = null
