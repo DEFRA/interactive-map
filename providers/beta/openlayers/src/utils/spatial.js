@@ -1,5 +1,4 @@
 import turfBbox from '@turf/bbox'
-import { transformExtent } from 'ol/proj.js'
 
 // In EPSG:27700 coordinates are projected metres — distances are Pythagorean, no geodesy needed
 
@@ -63,18 +62,11 @@ const getCardinalMove = (from, to) => {
 }
 
 /**
- * Get a flat bbox [west, south, east, north] in WGS84 from any GeoJSON object.
+ * Get a flat extent [xmin, ymin, xmax, ymax] from any GeoJSON object.
+ * GeoJSON fed into the OL provider is already in EPSG:27700 (the view's native
+ * CRS), not WGS84, so this is a straight bbox — no reprojection.
  */
-const getBboxFromGeoJSON = (geojson) => turfBbox(geojson)
-
-/**
- * Get a flat extent [xmin, ymin, xmax, ymax] in EPSG:27700 from any GeoJSON object.
- * GeoJSON is always WGS84, so this transforms the bbox.
- */
-const getExtentFromGeoJSON = (geojson) => {
-  const wgs84Bbox = turfBbox(geojson)
-  return transformExtent(wgs84Bbox, 'EPSG:4326', 'EPSG:27700')
-}
+const getExtentFromGeoJSON = (geojson) => turfBbox(geojson)
 
 /**
  * Returns the visible (padded) extent [xmin, ymin, xmax, ymax] in EPSG:27700.
@@ -114,9 +106,9 @@ const isGeometryObscured = (geojson, panelRect, map) => {
   const scaleX = viewportRect.width / containerRect.width
   const scaleY = viewportRect.height / containerRect.height
 
-  const [west, south, east, north] = getBboxFromGeoJSON(geojson)
+  const [xmin, ymin, xmax, ymax] = getExtentFromGeoJSON(geojson)
 
-  const corners = [[west, south], [west, north], [east, south], [east, north]].map(coord => {
+  const corners = [[xmin, ymin], [xmin, ymax], [xmax, ymin], [xmax, ymax]].map(coord => {
     return map.getPixelFromCoordinate(coord)
   }).filter(Boolean)
 
@@ -140,7 +132,6 @@ const isGeometryObscured = (geojson, panelRect, map) => {
 export {
   getAreaDimensions,
   getCardinalMove,
-  getBboxFromGeoJSON,
   getExtentFromGeoJSON,
   getPaddedExtent,
   isGeometryObscured,

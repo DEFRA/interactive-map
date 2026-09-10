@@ -7,12 +7,6 @@ import {
   isGeometryObscured
 } from './spatial.js'
 
-jest.mock('ol/proj.js', () => ({
-  __esModule: true,
-  transform: (coord) => coord,
-  transformExtent: (extent) => extent
-}))
-
 describe('formatDimension', () => {
   it('formats sub-mile distances in metres', () => {
     expect(formatDimension(400)).toBe('400 metres')
@@ -65,9 +59,9 @@ describe('getCardinalMove', () => {
 })
 
 describe('getExtentFromGeoJSON', () => {
-  it('returns a 4-element extent from a GeoJSON point', () => {
-    const point = { type: 'Feature', geometry: { type: 'Point', coordinates: [0, 51] } }
-    expect(getExtentFromGeoJSON(point)).toEqual([0, 51, 0, 51])
+  it('returns a 4-element extent from a GeoJSON point, unchanged (no reprojection)', () => {
+    const point = { type: 'Feature', geometry: { type: 'Point', coordinates: [432500, 250000] } }
+    expect(getExtentFromGeoJSON(point)).toEqual([432500, 250000, 432500, 250000])
   })
 })
 
