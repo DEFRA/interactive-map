@@ -1,12 +1,17 @@
 import { createSymbol, graphicToGeoJSON } from '../graphic.js'
+import { removeSafeZone } from './removeSafeZone.js'
 
-export const newPolygon = ({ mapState, pluginState, mapProvider, services }, featureId) => {
+export const newPolygon = ({ appState, mapState, pluginState, mapProvider, services }, featureId) => {
   const { dispatch } = pluginState
-  const { sketchViewModel, sketchLayer } = mapProvider
+  const { sketchViewModel, sketchLayer, view } = mapProvider
   const { eventBus } = services
 
   // Set layer
   sketchViewModel.layer = sketchLayer
+
+  // Reset view padding to avoid a dead zone around the feature that can't be edited.
+  // Ensure that the safe zone inset is updated too, as they need to remain in sync.
+  removeSafeZone(view, appState.dispatch)
 
   // One time event listener
   const handleCreateComplete = sketchViewModel.on('create', (e) => {

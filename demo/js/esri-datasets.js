@@ -8,6 +8,8 @@ import createMenuPlugin from '/plugins/menu/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { drawPlugin, framePlugin, attachDrawPlugin } from './planning/drawPlugin.js'
+import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import searchPlugin from '/plugins/search/src/index.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
 
 const nonFloodZoneLight = '#2b8cbe'
@@ -613,6 +615,22 @@ const interactiveMap = new InteractiveMap('map', {
   center: [481146,484971],
   zoom: 13,
   plugins: [
+    searchPlugin({
+      transformRequest: transformGeocodeRequest,
+      placeholder: 'Search for a place in England',
+      manifest: {
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-left', showLabel: true },
+          desktop: { slot: 'top-left', showLabel: true }
+        }]
+      },
+      osNamesURL: process.env.OS_NAMES_URL,
+      regions: ['england'],
+      width: '300px',
+      showMarker: true,
+    }),
+    scaleBarPlugin({ units: 'metric' }),
     drawPlugin,
     framePlugin,
     createMapKeyPlugin({
