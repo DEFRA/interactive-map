@@ -394,6 +394,11 @@
  * @property {string} [attribution]
  * Attribution text.
  *
+ * @property {boolean} [showAttributionOnMobile]
+ * Some basemap providers' terms require attribution to remain visible on all devices, while
+ * others are content for it to be hidden on mobile to save space. Attribution is hidden on
+ * mobile by default; set to `true` to keep it visible on mobile for this style.
+ *
  * @property {string} [backgroundColor]
  * CSS background color. Allows the viewport background to matche the background layer of the style.
  *

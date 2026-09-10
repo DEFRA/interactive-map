@@ -12,8 +12,10 @@ export const Attributions = () => {
     return null
   }
 
+  const isMobile = breakpoint === 'mobile'
+
   return (
-    breakpoint !== 'mobile' && (
+    (!isMobile || mapStyle.showAttributionOnMobile) && (
       <div className='im-c-attributions' dangerouslySetInnerHTML={{ __html: mapStyle.attribution }} />
     )
   )

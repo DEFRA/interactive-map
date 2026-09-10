@@ -42,4 +42,12 @@ describe('Attributions', () => {
     const { container } = render(<Attributions />)
     expect(container.firstChild).toBeNull()
   })
+
+  it('renders on mobile when the style opts in via showAttributionOnMobile', () => {
+    useApp.mockReturnValue({ breakpoint: 'mobile' })
+    useMap.mockReturnValue({ mapStyle: { attribution: '<span>© Test</span>', showAttributionOnMobile: true } })
+
+    render(<Attributions />)
+    expect(screen.getByText('© Test')).toBeInTheDocument()
+  })
 })

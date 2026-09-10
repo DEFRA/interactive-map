@@ -10,11 +10,21 @@ jest.mock('../store/appContext.js')
 jest.mock('../store/mapContext.js')
 jest.mock('../../utils/getSafeZoneInset.js')
 
-const el = (props = {}) => {
+const el = ({ rect, ...props } = {}) => {
   const e = document.createElement('div')
   e.style.setProperty = jest.fn()
   Object.entries(props).forEach(([k, v]) => Object.defineProperty(e, k, { value: v, configurable: true }))
+  if (rect) {
+    e.getBoundingClientRect = () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, ...rect })
+  }
   return e
+}
+
+// For firstElementChild-based reads (logo column width, attribution text natural width).
+const appendChild = (parent, props = {}) => {
+  const child = el(props)
+  parent.appendChild(child)
+  return child
 }
 
 const refs = (o = {}) => ({
@@ -105,19 +115,19 @@ describe('useLayoutMeasurements', () => {
 
   test.each([
     [
-      'no actions (height 0) — uses base gap',
+      'no actions (height 0) — clears the bottom row',
       { main: { offsetHeight: 500 }, bottom: { offsetTop: 400 }, actions: { offsetTop: 450, offsetHeight: 0 } },
-      '100px' // baseBottom = 500 - 400 - 0 = 100
+      '108px' // clearsBottomRow = 500 - 400 + dividerGap (8) = 108
     ],
     [
-      'actions floating above base gap (tablet/desktop) — uses actionsOffset + dividerGap',
+      'actions floating above the row (tablet/desktop) — uses actionsOffset + dividerGap',
       { main: { offsetHeight: 500 }, bottom: { offsetTop: 440, offsetHeight: 20 }, actions: { offsetTop: 408, offsetHeight: 60 } },
-      '100px' // actionsOffset = 500 - 408 = 92, 92 + 8 = 100 > baseBottom (40)
+      '100px' // actionsOffset = 500 - 408 = 92, 92 + 8 = 100 > clearsBottomRow (68)
     ],
     [
-      'base gap already larger than actionsOffset (mobile in-flow) — base gap wins',
+      'row clearance already larger than actionsOffset (mobile in-flow) — row clearance wins',
       { main: { offsetHeight: 500 }, bottom: { offsetTop: 350 }, actions: { offsetTop: 430, offsetHeight: 40 } },
-      '150px' // baseBottom = 150 > actionsOffset (70) + dividerGap (8) = 78
+      '158px' // clearsBottomRow = 500 - 350 + 8 = 158 > actionsOffset (70) + dividerGap (8) = 78
     ]
   ])('calculates --hint-bottom for %s', (_, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
@@ -129,8 +139,8 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     layoutRefs.actionsRef.current = null
     renderHook(() => useLayoutMeasurements())
-    // actionsHeight = 0, falls back to baseBottom = 500 - 400 - 0 = 100
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '100px')
+    // actionsHeight = 0, falls back to clearsBottomRow = 500 - 400 + dividerGap (8) = 108
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '108px')
   })
 
   test.each([
@@ -198,6 +208,41 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--banner-top', '10px')
     // stacked: left column pushed below the banner (bannerTop 10 + bannerHeight 30 + dividerGap 8)
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-top', '48px')
+  })
+
+  test('keeps attributions docked beside the logo when the natural text width fits', () => {
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } } } })
+    appendChild(layoutRefs.bottomRef.current, {}) // logo column
+    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
+    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 150 }) // attribution text, fits
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(false)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--attributions-left', '115px')
+    // docked: attributions.offsetHeight (16) + dividerGap (8) - primaryGap (8) = 16 — the
+    // bled attribution creeps 16px back up into the row, so bottom-right needs pushing clear
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '16px')
+  })
+
+  test('stacks attributions onto their own row when the text is wider than the space beside the logo', () => {
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } } } })
+    appendChild(layoutRefs.bottomRef.current, {}) // logo column
+    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
+    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // attribution text, too wide to fit
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
+    // stacked already has its own clearance (the stacked rule's own margin-top), so none needed here
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
+  })
+
+  test('never gives bottom-right negative clearance when attributions is shorter than the bleed', () => {
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } }, attributions: { offsetHeight: 0 } } })
+    appendChild(layoutRefs.bottomRef.current, {}) // logo column
+    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
+    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
   })
 
   test('uses 0 when bottomRightRef current is null', () => {
@@ -324,7 +369,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.attributionsRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()

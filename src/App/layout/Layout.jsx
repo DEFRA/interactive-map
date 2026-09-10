@@ -97,9 +97,13 @@ export const Layout = () => {
               <div className='im-o-app__bottom-right' ref={layoutRefs.bottomRightRef}>
                 <SlotRenderer slot={layoutSlots.BOTTOM_RIGHT} />
               </div>
-              <div className='im-o-app__attributions' ref={layoutRefs.attributionsRef}>
-                <Attributions />
-              </div>
+            </div>
+            {/* A sibling of both bottom-cols (not nested in one) so a stacked attribution
+                (useLayoutMeasurements) can wrap onto its own full row and genuinely grow
+                .im-o-app__bottom, pushing the logo up — nesting it in a column can't do that,
+                since only .im-o-app__bottom's own flex-wrap can force a new line. */}
+            <div className='im-o-app__attributions' ref={layoutRefs.attributionsRef}>
+              <Attributions />
             </div>
           </div>
           <div className='im-o-app__drawer' ref={layoutRefs.drawerRef}>

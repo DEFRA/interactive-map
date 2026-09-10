@@ -261,7 +261,9 @@
 // ---------------------------------------------------
 
 .im-o-app__bottom {
+  position: relative; // anchor for the docked (absolutely-positioned) attributions
   display: flex;
+  flex-wrap: wrap; // lets a stacked attributions row wrap onto its own line
   justify-content: space-between;
   align-items: flex-end;
   z-index: -2; // Support masking the viewport
@@ -279,7 +281,9 @@
   gap: var(--divider-gap);
 }
 
-.im-o-app__bottom-col:last-child {
+// :nth-child, not :last-child — .im-o-app__attributions (Layout.jsx) is a third sibling
+// after both bottom-cols, so this is no longer literally the last child.
+.im-o-app__bottom-col:nth-child(2) {
   position: relative; // anchor for absolutely-positioned attributions
   flex: 1 1 auto;
   flex-direction: column;
@@ -297,18 +301,43 @@
 
 .im-o-app__bottom-right {
   justify-content: flex-end;
+  // Docked attributions (below) bleeds past the row's own bottom edge and can grow back up
+  // into it — --bottom-right-clearance (useLayoutMeasurements) keeps this content clear.
+  margin-bottom: var(--bottom-right-clearance, 0);
 }
 
 // ---------------------------------------------------
 // Attributions:
 // ---------------------------------------------------
+//
+// Docked (default): absolutely positioned against .im-o-app__bottom (not the bottom-right
+// column it's a DOM sibling of — see Layout.jsx), so it can bleed flush into the corner
+// past .im-o-app__main's padding on bottom/right. `left` (--attributions-left, computed in
+// useLayoutMeasurements from the bottom-right column's own measured position) caps it to
+// that column's width, so it never overlaps the logo — long text wraps within that width.
+//
+// Stacked (im-o-app__attributions--stacked, toggled in useLayoutMeasurements when the
+// copyright text no longer fits beside the logo at its natural width): back in normal flex
+// flow as .im-o-app__bottom's third (wrapped) item, `flex-basis` forces it onto its own
+// full-width row below both columns — genuinely growing .im-o-app__bottom's height, which
+// (being bottom-pinned) pushes the logo and bottom-right buttons up rather than squeezing
+// the text into an ever-narrower column. The oversized flex-basis plus negative
+// right/bottom/left margin bleeds that row flush to the true edges the same way the docked
+// box's absolute offsets do above.
 
 .im-o-app__attributions:not(:empty) {
   position: absolute;
   bottom: calc(var(--primary-gap) * -1);
   right: calc(var(--primary-gap) * -1);
+  left: var(--attributions-left, 0);
   display: flex;
   justify-content: flex-end;
+}
+
+.im-o-app__attributions--stacked:not(:empty) {
+  position: static;
+  flex-basis: calc(100% + var(--primary-gap) * 2);
+  margin: var(--divider-gap) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1);
 }
 
 // ---------------------------------------------------
