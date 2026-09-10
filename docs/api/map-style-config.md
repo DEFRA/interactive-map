@@ -150,6 +150,13 @@ Attribution text for the map style.
 
 ---
 
+### `showAttributionOnMobile`
+**Type:** `boolean`
+
+Attribution is hidden on mobile by default, to save space. Some basemap providers' terms require it to remain visible on all devices — set this to `true` to keep it visible on mobile for this style.
+
+---
+
 ### `logo`
 **Type:** `string`
 
