@@ -14,7 +14,7 @@ const mockWMSSourceInstance = {}
 const mockTileLayerInstance = {}
 const mockVectorTileSourceInstance = {}
 const mockOGCVectorTileSourceInstance = { supportedMediaTypes: [] }
-const mockVectorTileLayerInstance = {}
+const mockVectorTileLayerInstance = { set: jest.fn() }
 const mockMVTInstance = { supportedMediaTypes: [] }
 
 jest.mock('ol/source/XYZ.js', () => ({ __esModule: true, default: jest.fn(() => mockSourceInstance) }))

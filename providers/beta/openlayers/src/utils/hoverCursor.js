@@ -1,15 +1,16 @@
-import VectorTileLayer from 'ol/layer/VectorTile.js'
-import VectorLayer from 'ol/layer/Vector.js'
-
 const HIGHLIGHT_MARKER = '_highlight'
 const HIT_TOLERANCE = 8
 
+// Layers are classified by a `layerType` tag ('vector' | 'vectorTile') set at creation,
+// not `instanceof VectorLayer`/`VectorTileLayer` — a UMD consumer loads this provider and
+// other plugins (e.g. draw) as independently-bundled scripts, each with its own copy of
+// ol, so a class reference from this bundle never matches an instance built by another.
 const isInteractiveFeature = (feature, layer, layerSet) => {
-  if (layer instanceof VectorTileLayer) {
+  if (layer.get('layerType') === 'vectorTile') {
     const styleLayerId = feature.get('mapbox-layer')?.id
     return Boolean(styleLayerId && layerSet.has(styleLayerId))
   }
-  if (layer instanceof VectorLayer && !layer.get(HIGHLIGHT_MARKER)) {
+  if (layer.get('layerType') === 'vector' && !layer.get(HIGHLIGHT_MARKER)) {
     const layerId = layer.get('layerId')
     return Boolean(layerId && layerSet.has(layerId))
   }

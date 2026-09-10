@@ -1,5 +1,3 @@
-import VectorTileLayer from 'ol/layer/VectorTile.js'
-import VectorLayer from 'ol/layer/Vector.js'
 import GeoJSON from 'ol/format/GeoJSON.js'
 import TileState from 'ol/TileState.js'
 import { renderFeatureToGeoJSON } from './vtTileFragments.js'
@@ -7,6 +5,11 @@ import { renderFeatureToGeoJSON } from './vtTileFragments.js'
 const CRS = 'EPSG:27700'
 
 const geoJsonFormat = new GeoJSON({ dataProjection: CRS, featureProjection: CRS })
+
+// Layers are classified by a `layerType` tag ('vector' | 'vectorTile') set at creation,
+// not `instanceof VectorLayer`/`VectorTileLayer` — a UMD consumer loads this provider and
+// other plugins (e.g. draw) as independently-bundled scripts, each with its own copy of
+// ol, so a class reference from this bundle never matches an instance built by another.
 
 // Mirror MapLibre's fallback: use property hash when feature has no explicit MVT ID.
 // This deduplicates tile-split fragments that share the same properties.
@@ -32,7 +35,7 @@ export const queryFeatures = (map, point, options = {}) => {
   map.forEachFeatureAtPixel(
     pixel,
     (feature, layer) => {
-      if (layer instanceof VectorTileLayer) {
+      if (layer.get('layerType') === 'vectorTile') {
         const mapboxLayer = feature.get('mapbox-layer')
         const styleLayerId = mapboxLayer?.id
         // background-type layers have no features in MapLibre — skip to match behaviour
@@ -50,7 +53,7 @@ export const queryFeatures = (map, point, options = {}) => {
           geometry: renderFeatureToGeoJSON(feature),
           properties: feature.getProperties()
         })
-      } else if (layer instanceof VectorLayer) {
+      } else if (layer.get('layerType') === 'vector') {
         const layerId = layer.get('layerId')
         if (!layerId || layer.get('_highlight')) {
           return
@@ -98,7 +101,7 @@ export const getVisibleFeatures = (map, layerIds) => {
   const extent = map.getView().calculateExtent(map.getSize())
 
   map.getLayers().forEach(mapLayer => {
-    if (mapLayer instanceof VectorTileLayer) {
+    if (mapLayer.get('layerType') === 'vectorTile') {
       const sourceTiles = mapLayer.getSource()?.sourceTiles_
       if (!sourceTiles) {
         return
@@ -127,7 +130,7 @@ export const getVisibleFeatures = (map, layerIds) => {
           })
         })
       })
-    } else if (mapLayer instanceof VectorLayer) {
+    } else if (mapLayer.get('layerType') === 'vector') {
       const layerId = mapLayer.get('layerId')
       if (!layerId || !wanted.has(layerId) || mapLayer.get('_highlight')) {
         return

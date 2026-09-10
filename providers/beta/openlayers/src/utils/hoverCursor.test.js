@@ -26,13 +26,14 @@ const makeVectorFeature = () => ({ get: () => undefined })
 
 const makeVTLayer = () => {
   const layer = new VectorTileLayer()
-  layer.get = () => undefined
+  layer.get = (key) => key === 'layerType' ? 'vectorTile' : undefined
   return layer
 }
 
 const makeVectorLayer = (layerId, isHighlight = false) => {
   const layer = new VectorLayer()
   layer.get = (key) => {
+    if (key === 'layerType') return 'vector'
     if (key === '_highlight') return isHighlight ? true : undefined
     if (key === 'layerId') return layerId
     return undefined

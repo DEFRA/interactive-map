@@ -38,6 +38,7 @@ const drawLayer = (features = []) => {
   })
   const layer = new VectorLayer({ source })
   layer.set('layerId', 'draw')
+  layer.set('layerType', 'vector') // mirrors OLDrawManager.js's own tagging
   return layer
 }
 
@@ -170,6 +171,7 @@ describe('updateHighlightedFeatures', () => {
 describe('VectorTileLayer style-wrap (smoke test — pre-existing, undocumented path)', () => {
   test('does not throw when a VT layer is present alongside a draw VectorLayer', () => {
     const vt = new VectorTileLayer({})
+    vt.set('layerType', 'vectorTile')
     const map = createFakeMap([vt, drawLayer()])
     expect(() => updateHighlightedFeatures(map, [], [], {})).not.toThrow()
   })

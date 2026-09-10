@@ -49,6 +49,11 @@ export class OLDrawManager {
       zIndex: 100
     })
     this._layer.set('layerId', 'draw')
+    // Tagged rather than left to `instanceof VectorLayer` on the reading side — a UMD
+    // consumer loads the provider and this plugin as independently-bundled scripts, each
+    // with its own copy of ol, so a class reference from one bundle never matches an
+    // instance from another.
+    this._layer.set('layerType', 'vector')
     map.addLayer(this._layer)
   }
 

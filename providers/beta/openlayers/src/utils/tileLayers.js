@@ -139,6 +139,10 @@ export async function createVectorTileLayer (url, transformRequest, { renderMode
     tileGrid
   })
   const layer = new VectorTileLayer({ source, declutter: true, ...(renderMode && { renderMode }) })
+  // Tagged rather than left to `instanceof VectorTileLayer` — a UMD consumer loads this
+  // provider and other plugins as independently-bundled scripts, each with its own copy
+  // of ol, so a class reference from one bundle never matches an instance from another.
+  layer.set('layerType', 'vectorTile')
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 
@@ -171,6 +175,7 @@ export async function createOGCVectorTileLayer (url, transformRequest, { renderM
   const tileGrid = new TileGrid({ resolutions, origin, tileSize })
   const source = new OGCVectorTile({ url: tilesUrl, format, tileGrid, projection: CRS })
   const layer = new VectorTileLayer({ source, declutter: true, ...(renderMode && { renderMode }) })
+  layer.set('layerType', 'vectorTile')
 
   stylefunction(layer, styleJson, sourceId, resolutions, spritesJson, sprite.pngUrl)
 
