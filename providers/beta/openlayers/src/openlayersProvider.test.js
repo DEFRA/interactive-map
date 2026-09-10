@@ -174,6 +174,28 @@ describe('OpenLayersProvider', () => {
       expect(View).toHaveBeenCalledWith(expect.objectContaining({ center: [400000, 300000] }))
     })
 
+    it('passes minZoom and maxZoom through to the View unchanged', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: 8, maxZoom: 12 })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 8, maxZoom: 12 }))
+    })
+
+    // Regression: minZoom used to be floored at the zoom alignment's default via Math.max(),
+    // silently overriding any caller-supplied minZoom that was more permissive (lower) than
+    // that default — e.g. a consumer trying to let people zoom out further than the 'world'
+    // alignment's default minZoom of 6 had their config ignored.
+    it('does not clamp a minZoom below the zoom alignment default', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: 0 })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 0 }))
+    })
+
+    it('falls back to the zoom alignment defaults when minZoom/maxZoom are not provided', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: null, maxZoom: null })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 6, maxZoom: 20 }))
+    })
+
     it('creates the initial layer from the map style', async () => {
       const { provider } = makeProvider()
       await provider.initMap(defaultInitConfig)
