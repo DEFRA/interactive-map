@@ -64,7 +64,7 @@ export default class OpenLayersProvider extends MapProvider {
       projection: CRS,
       center: center ?? (bounds ? getExtentCenter(bounds) : undefined),
       zoom: zoom ?? viewResolutions.defaultMinZoom,
-      minZoom: Math.max(minZoom ?? viewResolutions.defaultMinZoom, viewResolutions.defaultMinZoom),
+      minZoom: minZoom ?? viewResolutions.defaultMinZoom,
       maxZoom: maxZoom ?? viewResolutions.maxZoom,
       resolutions: viewResolutions.resolutions,
       constrainResolution: false,
