@@ -64,14 +64,13 @@ const isEastOfWalesBorder = (geometry) =>
 
 const drawPlugin = createDrawPlugin({
   snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
-  // onGeometryChange: (event) => ({
-  //   valid: isEastOfWalesBorder(event.feature.geometry),
-  //   reason: 'Points must be placed east of the England/Wales border'
-  // })
-  onGeometryChange: (event) => { console.log(event.phase); return {
+  onGeometryChange: (event) => ({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
-  }}
+  }),
+  manifest: {
+    buttons: [{ id: 'drawMenu', mobile: { slot: 'bottom-right' }}]
+  }
 })
 
 const datasetsPlugin = createDatasetsPlugin({
@@ -187,7 +186,7 @@ interactiveMap.on('map:ready', function (event) {
   interactPlugin.enable()
   interactiveMap.addButton('geometryActions', {
     label: 'Draw tools',
-    mobile: { slot: 'top-middle', order: 3 },
+    mobile: { slot: 'bottom-right', order: 3 },
     tablet: { slot: 'top-middle', order: 3 },
     desktop: { slot: 'top-middle', order: 3 },
     menuItems: [{
