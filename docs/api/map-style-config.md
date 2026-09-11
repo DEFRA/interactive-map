@@ -100,13 +100,34 @@ URL that returns a Mapbox GL style document (Mapbox Style Specification).
 ### `params`
 **Type:** `Object`
 
-WMS request parameters. Passed directly to the OpenLayers `TileWMS` source when `type` is `'wms'`. Most WMS GetMap requests should include `LAYERS`.
+> [!NOTE]
+> This property is only relevant when using the **OpenLayers provider** with `type: 'wms'`. It is ignored by other providers and by other `type` values.
+
+WMS request parameters. Passed directly to the OpenLayers `TileWMS` source. Most WMS GetMap requests should include `LAYERS`.
 
 ```js
 {
   type: 'wms',
   url: 'https://www.getmapping.com/GmWMS/YOUR_MEMBER_GUID/ApgbBng.wmsx',
   params: { LAYERS: 'APGB_Latest_UK_125mm' }
+}
+```
+
+---
+
+### `extent`
+**Type:** `[number, number, number, number]`
+
+> [!NOTE]
+> This property is only relevant when using the **OpenLayers provider** with `type: 'raster'`. A bare XYZ tile URL template has no capabilities document to determine real coverage from, so the consumer configuring the style must supply it directly. It is ignored by other providers and by other `type` values.
+
+Bounding box `[minX, minY, maxX, maxY]` in EPSG:27700 — the units the OpenLayers provider's tile grid is built in. When set, no tiles outside this area are requested, avoiding failed tile requests where the basemap has no coverage. Omit to request tiles across the whole tile grid regardless of real coverage (the default). Only limits which tiles are *requested* — panning and zooming outside the extent is unaffected.
+
+```js
+{
+  type: 'raster',
+  url: 'https://api.os.uk/maps/raster/v1/zxy/Outdoor_27700/{z}/{x}/{y}.png?key=YOUR_API_KEY',
+  extent: [-238375, 0, 700000, 1300000] // OS National Grid coverage
 }
 ```
 

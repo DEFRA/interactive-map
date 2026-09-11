@@ -127,6 +127,26 @@ describe('createTileSource', () => {
     const { tileLoadFunction } = XYZ.mock.calls[0][0]
     expect(typeof tileLoadFunction).toBe('function')
   })
+
+  it('does not set a TileGrid extent when none is given, so tiles across the whole grid can be requested', () => {
+    createTileSource('https://tiles.example.com/{z}/{x}/{y}', null)
+    expect(TileGrid).toHaveBeenCalledWith({
+      resolutions: TILE_GRID_RESOLUTIONS,
+      origin: TILE_GRID_ORIGIN,
+      tileSize: TILE_SIZE
+    })
+  })
+
+  it('passes a given extent through to the TileGrid, so out-of-coverage tiles are never requested', () => {
+    const extent = [0, 0, 700000, 1300000]
+    createTileSource('https://tiles.example.com/{z}/{x}/{y}', null, extent)
+    expect(TileGrid).toHaveBeenCalledWith({
+      resolutions: TILE_GRID_RESOLUTIONS,
+      origin: TILE_GRID_ORIGIN,
+      tileSize: TILE_SIZE,
+      extent
+    })
+  })
 })
 
 describe('createWMSTileSource', () => {
@@ -242,6 +262,12 @@ describe('createMapStyleLayer', () => {
     const result = await createMapStyleLayer({ url: 'https://tiles.example.com/{z}/{x}/{y}', type: 'raster' }, null)
     expect(TileLayer).toHaveBeenCalledWith({ source: mockSourceInstance })
     expect(result).toEqual({ layer: mockTileLayerInstance, source: mockSourceInstance })
+  })
+
+  it('passes mapStyle.extent through to the raster TileGrid', async () => {
+    const extent = [-233752.41, -4325.11, 609472.1, 1278448.84]
+    await createMapStyleLayer({ url: 'https://tiles.example.com/{z}/{x}/{y}', type: 'raster', extent }, null)
+    expect(TileGrid).toHaveBeenCalledWith(expect.objectContaining({ extent }))
   })
 
   it('creates an OGC vector tile layer and source when mapStyle.type is ogc-vt', async () => {
