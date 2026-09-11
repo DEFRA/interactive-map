@@ -25,7 +25,14 @@ const buildTileBoundaryState = (layer, map) => {
 const getClipContext = (state, coord) => {
   if (!state) { return null }
   const { tileGrid, viewProj, sourceProj, zoom } = state
-  const toSource = (c) => c ? projTransform(c, viewProj, sourceProj) : null
+  // Same-code projections need no reprojection — skipping the call also avoids depending
+  // on ol/proj's registry having a transform for the pair, which can be missing when the
+  // draw plugin and the map provider ship as separate bundles each with their own ol/proj4.
+  const codeOf = (projection) => (typeof projection === 'string' ? projection : projection.getCode())
+  const toSource = (coordinate) => {
+    if (!coordinate) { return null }
+    return codeOf(sourceProj) === codeOf(viewProj) ? coordinate : projTransform(coordinate, viewProj, sourceProj)
+  }
   const anchor = toSource(coord)
   const tileCoord = tileGrid.getTileCoordForCoordAndZ(anchor, zoom)
   const extent = tileGrid.getTileCoordExtent(tileCoord)
