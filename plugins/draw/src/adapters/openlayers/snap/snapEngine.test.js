@@ -1,6 +1,7 @@
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import VectorSource from 'ol/source/Vector.js'
+import { Projection, addProjection, addCoordinateTransforms } from 'ol/proj.js'
 import { createSnapEngine } from './snapEngine.js'
 import { polygonFeature } from '../__helpers__/harness.js'
 
@@ -175,6 +176,22 @@ describe('vector-tile layers', () => {
   test('non-tile layers present on the map are ignored when gathering tile layers', () => {
     const { engine, map } = setupVT({ features: [renderFeature('LineString', [500, 2000, 1500, 2000])] })
     map.layers.unshift(new VectorLayer({})) // a non-tile layer sits in the stack
+    expect(engine.query([600, 2005], 12)).toEqual({ type: 'edge', coord: [600, 2000] })
+  })
+
+  test('reprojects the query coordinate when the tile source has a genuinely different projection', () => {
+    // Real ol/proj Projection objects (not the bare code strings the other tests use), with
+    // different codes and an identity transform between them, so toSource actually calls
+    // transform() instead of short-circuiting, while leaving the mocked tileGrid's numbers valid.
+    const viewProj = new Projection({ code: 'x-test-view', units: 'm' })
+    const sourceProj = new Projection({ code: 'x-test-source', units: 'm' })
+    addProjection(viewProj)
+    addProjection(sourceProj)
+    addCoordinateTransforms(viewProj, sourceProj, (c) => c, (c) => c)
+
+    const { engine, map } = setupVT({ features: [renderFeature('LineString', [500, 2000, 1500, 2000])] })
+    map.getView = () => ({ getResolution: () => 1, getProjection: () => viewProj })
+    map.layers[0].getSource().getProjection = () => sourceProj
     expect(engine.query([600, 2005], 12)).toEqual({ type: 'edge', coord: [600, 2000] })
   })
 })
