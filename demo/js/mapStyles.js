@@ -11,6 +11,12 @@ const AERIAL_THUMBNAIL = '/assets/images/aerial-map-thumb.jpg'
 const BW_ID = 'black-and-white'
 const BW_LABEL = 'Black/White'
 
+// Real OS National Grid coverage extent [minX, minY, maxX, maxY], EPSG:27700 — captured from
+// OS's own VTS capabilities response (matches the TILE_GRID_ORIGIN corner already baked into
+// providers/beta/openlayers/src/defaults.js). Used to stop the raster styles below requesting
+// tiles for areas OS has no coverage for.
+const OS_NATIONAL_GRID_EXTENT_27700 = [-238375, 0, 700000, 1300000]
+
 const openMapStyles = [{
   id: 'outdoor',
   label: 'Outdoor',
@@ -120,7 +126,7 @@ const vtsMapStyles27700 = [{
 
 const apgbAerialStyle = {
   id: 'apgb-aerial-125mm',
-  label: 'Aerial 12.5cm',
+  label: 'Aerial',
   type: 'wms',
   url: process.env.APGB_WMS_URL,
   params: { LAYERS: 'APGB_Latest_UK_125mm', BGCOLOR: '0x1E3448', TRANSPARENT: false },
@@ -160,7 +166,9 @@ const ngdMapStyles27700 = [{
 const mapsRasterStyles27700 = [{
   id: 'outdoor',
   label: 'Outdoor',
+  type: 'raster',
   url: `${process.env.MAPS_OUTDOOR_URL}?key=${process.env.OS_CLIENT_ID}`,
+  extent: OS_NATIONAL_GRID_EXTENT_27700,
   thumbnail: '/assets/images/outdoor-raster-thumb.jpg',
   logo: OS_LOGO,
   logoAltText: OS_LOGO_ALT,
@@ -171,7 +179,9 @@ const mapsRasterStyles27700 = [{
 }, {
   id: 'road',
   label: 'Road',
+  type: 'raster',
   url: `${process.env.MAPS_ROAD_URL}?key=${process.env.OS_CLIENT_ID}`,
+  extent: OS_NATIONAL_GRID_EXTENT_27700,
   thumbnail: '/assets/images/road-raster-thumb.jpg',
   logo: OS_LOGO,
   logoAltText: OS_LOGO_ALT,
@@ -182,7 +192,9 @@ const mapsRasterStyles27700 = [{
 }, {
   id: 'light',
   label: 'Light',
+  type: 'raster',
   url: `${process.env.MAPS_LIGHT_URL}?key=${process.env.OS_CLIENT_ID}`,
+  extent: OS_NATIONAL_GRID_EXTENT_27700,
   thumbnail: '/assets/images/light-raster-thumb.jpg',
   logo: OS_LOGO,
   logoAltText: OS_LOGO_ALT,

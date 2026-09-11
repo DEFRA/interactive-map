@@ -15,7 +15,7 @@ import { TILE_GRID_RESOLUTIONS, TILE_GRID_ORIGIN, TILE_SIZE } from '../defaults.
 recordStyleLayer(true)
 
 const CRS = 'EPSG:27700'
-const SUPPORTED_MAP_STYLE_TYPES = ['vector', 'raster', 'wms', 'ogc-vt']
+const SUPPORTED_MAP_STYLE_TYPES = new Set(['vector', 'raster', 'wms', 'ogc-vt'])
 
 export function fetchWithTransform (url, resourceType, transformRequest) {
   const result = transformRequest ? (transformRequest(url, resourceType) || {}) : {}
@@ -32,11 +32,12 @@ const createTileLoadFunction = (transformRequest) => (tile, src) => {
     .catch(() => tile.setState(TileState.ERROR))
 }
 
-function createTileGrid () {
+function createTileGrid (extent) {
   return new TileGrid({
     resolutions: TILE_GRID_RESOLUTIONS,
     origin: TILE_GRID_ORIGIN,
-    tileSize: TILE_SIZE
+    tileSize: TILE_SIZE,
+    ...(extent && { extent })
   })
 }
 
@@ -52,8 +53,12 @@ export function createWMSTileSource (url, params, transformRequest) {
   })
 }
 
-export function createTileSource (url, transformRequest) {
-  const tileGrid = createTileGrid()
+// `extent` has no discovery protocol to fetch it from for a bare XYZ template — unlike the
+// other map style types, only the consumer configuring this particular tile service can supply
+// it, via `mapStyle.extent` ([minX, minY, maxX, maxY] in EPSG:27700). Omitted → no extent, same
+// as before: OL requests tiles for the whole tile grid regardless of real coverage.
+export function createTileSource (url, transformRequest, extent) {
+  const tileGrid = createTileGrid(extent)
 
   const tileUrlFunction = ([z, x, y]) => url
     .replace('{z}', z)
@@ -69,7 +74,7 @@ export function createTileSource (url, transformRequest) {
 }
 
 export async function createMapStyleLayer (mapStyle, transformRequest) {
-  if (mapStyle.type && !SUPPORTED_MAP_STYLE_TYPES.includes(mapStyle.type)) {
+  if (mapStyle.type && !SUPPORTED_MAP_STYLE_TYPES.has(mapStyle.type)) {
     throw new Error(`Unsupported map style type: '${mapStyle.type}'`)
   }
 
@@ -79,7 +84,7 @@ export async function createMapStyleLayer (mapStyle, transformRequest) {
   }
 
   if (mapStyle.type === 'raster') {
-    const source = createTileSource(mapStyle.url, transformRequest)
+    const source = createTileSource(mapStyle.url, transformRequest, mapStyle.extent)
     return { layer: new TileLayer({ source }), source }
   }
 

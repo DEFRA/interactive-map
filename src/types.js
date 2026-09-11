@@ -462,6 +462,15 @@
  * @property {Object} [params]
  * WMS request parameters. Passed directly to the OpenLayers `TileWMS` source when `type` is `'wms'`.
  * Most WMS GetMap requests should include `LAYERS`. Example: `{ LAYERS: 'MyLayer', FORMAT: 'image/jpeg' }`.
+ *
+ * @property {[number, number, number, number]} [extent]
+ * Bounding box [minX, minY, maxX, maxY] in EPSG:27700, the units the OpenLayers provider's
+ * tile grid is built in. When set, no tiles outside this area are requested — a plain XYZ tile
+ * URL template has no capabilities document to determine real coverage from, so the consumer
+ * configuring the style must supply it directly. **Currently only supported by the OpenLayers
+ * provider's `'raster'` type.** Omit to request tiles across the whole tile grid regardless of
+ * real coverage. Panning/zooming outside the extent is unaffected;
+ * only tile requests are limited.
  */
 
 /**
