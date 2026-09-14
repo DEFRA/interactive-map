@@ -6,7 +6,8 @@ import { Key } from './Key.jsx'
 
 export function MapKey ({
   mapState: { mapStyle },
-  pluginConfig: { noKeyItemText, groups: pluginConfigGroups },
+  pluginConfig: { noKeyItemText },
+  pluginState,
   services: { eventBus }
 }) {
   const [datasetRegistry, setDatasetRegistry] = useState(getDatasetRegistry())
@@ -45,7 +46,12 @@ export function MapKey ({
     }
   }, [datasetRegistry])
 
-  console.log('keyGroups', keyGroups)
+  useEffect(() => {
+    if (!datasetRegistry) {
+      return
+    }
+    getKeyItems()
+  }, [pluginState])
 
   return (
     <Key

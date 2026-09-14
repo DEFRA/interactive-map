@@ -16,7 +16,7 @@ export const getAddedKeyGroups = () => {
     if (group.type === 'flat') {
       return {
         ...group,
-        keyDefinition: keyDefinitions.find(item => item.groupId === group.id)
+        keyDefinition: keyDefinitions.find(item => item.id === group.id)
       }
     }
 

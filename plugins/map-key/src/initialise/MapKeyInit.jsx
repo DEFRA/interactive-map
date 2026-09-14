@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
-import { attachPluginStateRef, getAddedKeyGroups } from '../reducers/getAddedKeys.js'
+import { attachPluginStateRef } from '../reducers/getAddedKeys.js'
 
 // additional possible params here are: pluginConfig, appState, mapProvider,
 export function MapKeyInit ({ pluginConfig, pluginState, mapState, services }) {
@@ -13,7 +13,6 @@ export function MapKeyInit ({ pluginConfig, pluginState, mapState, services }) {
     if (!mapState.isMapReady) {
       return
     }
-    console.log('attachPluginStateRef', pluginStateRef)
     attachPluginStateRef(pluginStateRef)
     // Request a handle on the datasetsRegistry singleton
     eventBus.requestOnce('datasets:registry', setDatasetRegistry)
@@ -24,10 +23,7 @@ export function MapKeyInit ({ pluginConfig, pluginState, mapState, services }) {
       return
     }
     const groups = Object.entries(pluginConfig.groups).map(([id, group]) => ({ ...group, id, label: group.groupLabel }))
-    console.log('dispatching', groups)
 
     dispatch({ type: 'ADD_KEY_GROUPS', payload: groups })
   }, [pluginConfig.groups])
-
-  console.log('groups', getAddedKeyGroups())
 }
