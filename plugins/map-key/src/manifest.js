@@ -1,8 +1,10 @@
 import { MapKey } from './components/Key/MapKey.jsx'
 import { MapKeyInit } from './initialise/MapKeyInit.jsx'
+import { initialState, actions } from './reducers/pluginState.js'
 
 export const manifest = {
   InitComponent: MapKeyInit,
+  reducer: { initialState, actions },
   panels: [
     {
       id: 'mapKey',
