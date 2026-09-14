@@ -6,7 +6,7 @@ jest.mock('../registry/getDatasetRegistry.js', () => ({
   setDatasetRegistry: jest.fn()
 }))
 
-const eventBus = { requestOnce: jest.fn() }
+const eventBus = { requestOnce: jest.fn(), emit: jest.fn() }
 const pluginState = { dispatch: jest.fn() }
 const pluginConfig = {
   groups: {

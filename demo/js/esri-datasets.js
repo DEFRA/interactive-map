@@ -714,6 +714,11 @@ siteBoundary.onSetFeature = (feature) => {
   }
 }
 
+  interactiveMap.on('map-key:ready', function () {
+    siteBoundary.onSetFeature(true)
+  })
+
+
 const onEditPolygon = (isEditing) => {
     // toggleKeyWhenEditing(isEditing)
     if (isEditing) {

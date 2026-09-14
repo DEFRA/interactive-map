@@ -16,6 +16,7 @@ export function MapKeyInit ({ pluginConfig, pluginState, mapState, services }) {
     attachPluginStateRef(pluginStateRef)
     // Request a handle on the datasetsRegistry singleton
     eventBus.requestOnce('datasets:registry', setDatasetRegistry)
+    eventBus.emit('map-key:ready')
   }, [mapState.isMapReady])
 
   useEffect(() => {
