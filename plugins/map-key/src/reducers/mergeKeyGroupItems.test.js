@@ -19,6 +19,27 @@ describe('mergeKeyGroupItems', () => {
     expect(mergeKeyGroupItems(items)).toEqual(items)
   })
 
+  it('uses default empty state values and empty arguments when no groups or items are supplied', () => {
+    attachPluginStateRef({ current: {} })
+
+    expect(mergeKeyGroupItems()).toEqual([])
+  })
+
+  it('merges a matched group even when the state group has no keyDefinitions array', () => {
+    attachPluginStateRef({
+      current: {
+        groups: [{ id: 'dataset-1', type: 'group', groupLabel: 'Dataset 1' }],
+        keyDefinitions: []
+      }
+    })
+
+    const items = [{ id: 'dataset-1', keyDefinitions: [{ id: 'd1' }] }]
+
+    expect(mergeKeyGroupItems(items)).toEqual([
+      { id: 'dataset-1', type: 'group', groupLabel: 'Dataset 1', keyDefinitions: [{ id: 'd1' }] }
+    ])
+  })
+
   it('reuses the cached plugin-state groups when the ref object is unchanged', () => {
     const ref = { current: { groups: [{ id: 'group-1', type: 'group', groupLabel: 'Group 1' }], keyDefinitions: [{ id: 'k1', groupId: 'group-1' }] } }
     attachPluginStateRef(ref)
