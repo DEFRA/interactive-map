@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { getDatasetRegistry } from '../../registry/index.js'
-// import { mergeKeyGroupItems } from '../../utils/mergeKeyGroupItems.js'
-import { mergeKeyGroupItems } from '../../reducers/getAddedKeys.js'
+import { mergeKeyGroupItems } from '../../reducers/mergeKeyGroupItems.js'
 import { Key } from './Key.jsx'
 
 export function MapKey ({

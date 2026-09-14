@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
-import { attachPluginStateRef } from '../reducers/getAddedKeys.js'
+import { attachPluginStateRef } from '../reducers/mergeKeyGroupItems.js'
 
 // additional possible params here are: pluginConfig, appState, mapProvider,
 export function MapKeyInit ({ pluginConfig, pluginState, mapState, services }) {
