@@ -50,7 +50,7 @@ export const mergeKeyGroupItems = (keyGroupItemsToMerge = []) => {
       ...keyGroupItem,
       ...group,
       keyDefinitions: [
-        ...group.keyDefinitions,
+        ...(group.keyDefinitions || []),
         ...(keyGroupItem.keyDefinitions || [])
       ]
     }
