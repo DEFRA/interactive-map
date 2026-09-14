@@ -5,12 +5,12 @@ let previousRef = null
 let addedKeyGroups = []
 
 const getStateKeyGroups = () => {
-  if (!_pluginStateRef?.current) return null
+  if (!_pluginStateRef?.current) return []
   if (previousRef === _pluginStateRef.current) {
     return addedKeyGroups
   }
   previousRef = _pluginStateRef.current
-  const { groups, keyDefinitions } = _pluginStateRef.current
+  const { groups = [], keyDefinitions = [] } = _pluginStateRef.current
 
   addedKeyGroups = groups.map(group => {
     if (group.type === 'flat') {
@@ -30,11 +30,11 @@ const getStateKeyGroups = () => {
 
 // Merges the state key group items with items provided by another plugin,
 // specifically the datasets plugin
-export const mergeKeyGroupItems = (keyGroupItemsToMerge) => {
+export const mergeKeyGroupItems = (keyGroupItemsToMerge = []) => {
   // Clone the current state key groups from the plugin state reference
   // to avoid mutating the original array
   const stateKeyGroups = [...getStateKeyGroups()]
-  if (stateKeyGroups?.length === 0) {
+  if (stateKeyGroups.length === 0) {
     // if there is nothing in the state key groups, just return the items that were passed in
     return keyGroupItemsToMerge
   }
