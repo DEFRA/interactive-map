@@ -5,7 +5,9 @@ let previousRef = null
 let addedKeyGroups = []
 
 const getStateKeyGroups = () => {
-  if (!_pluginStateRef?.current) return []
+  if (!_pluginStateRef?.current) {
+    return []
+  }
   if (previousRef === _pluginStateRef.current) {
     return addedKeyGroups
   }
