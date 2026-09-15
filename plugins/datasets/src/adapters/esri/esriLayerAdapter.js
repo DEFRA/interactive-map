@@ -6,6 +6,17 @@ import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { EsriDataset } from './registry/esriDataset.js'
 import { logger } from '../../../../../src/services/logger.js'
 
+const getLayerSortOrder = (layer) => {
+  if (layer.id === 'baseLayer') {
+    return -Infinity
+  }
+  if (layer.id.includes('ketchLayer')) {
+    return Infinity
+  }
+  const layerId = layer.type === 'group' ? layer.layers?.items?.[0]?.id : layer.id
+  return datasetRegistry._orderedDatasets.indexOf(layerId)
+}
+
 export default class EsriLayerAdapter extends LayerAdapter {
   constructor (mapProvider) {
     super()
@@ -48,6 +59,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
         this.applyDatasetVisibility(registryDataset.id)
       })
     }
+
     // Add the visible datasets first - to speed up rendering
     for (const registryDataset of topLevelDatasets) {
       if (registryDataset.visibility === 'visible') {
@@ -63,14 +75,11 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
     // and updating the paint properties of the layers based on the dataset/mapStyle style
-    console.log('Calling this.onMapStyleChange')
     await this.onMapStyleChange()
 
-    // console.log('Calling this.applyGlobalOpacity')
     // Apply opacity to all layers
     await this.applyGlobalOpacity()
 
-    console.log('Calling show all layers')
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
     await Promise.all(topLevelDatasets.map(registryDataset => this.applyDatasetVisibility(registryDataset.id)))
     this._reorderLayers()
@@ -86,19 +95,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
 
     const topLevelLayers = allLayers.filter(layer => layer.parent?.type !== 'group')
-
-    const sortKey = (layer) => {
-      if (layer.id === 'baseLayer') {
-        return -Infinity
-      }
-      if (layer.id.includes('ketchLayer')) {
-        return Infinity
-      }
-      const layerId = layer.type === 'group' ? layer.layers?.items?.[0]?.id : layer.id
-      return datasetRegistry._orderedDatasets.indexOf(layerId)
-    }
-
-    const orderedLayers = [...topLevelLayers].sort((a, b) => sortKey(a) - sortKey(b))
+    const orderedLayers = [...topLevelLayers].sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))
     orderedLayers.forEach((layer, index) => this._map.reorder(layer, index))
   }
 

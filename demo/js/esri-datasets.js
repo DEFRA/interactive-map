@@ -54,7 +54,7 @@ const datasetFloodZonesCC =   {
   showInKey: true,
   visible: true,
   sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea CCP1',
-  visibleWhen: { menu: { dataset: ['floodzones'] } },
+  visibleWhen: { menu: { dataset: ['floodzones'], timeframe: ['climatechange'] } },
   sublayers: [
     {
       id: 'climate-change',
@@ -325,6 +325,7 @@ const surfaceWaterExtentsKey = {
   groupLabel: 'Surface Water',
   showInKey: true,
   style: extentsStyle,
+  visibleWhen: { menu: { dataset: ['surfacewater'] } },
   sublayers: [
     {
       id: 'key-150',
