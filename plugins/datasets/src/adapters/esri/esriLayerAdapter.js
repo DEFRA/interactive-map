@@ -35,6 +35,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
+    for (const registryDataset of topLevelDatasets) {
+      console.log('Top level dataset:', registryDataset.id, registryDataset.visibility)
+    }
     // ensure the datasets are added in order
     for (const registryDataset of topLevelDatasets) {
       await this._addLayers(registryDataset)
