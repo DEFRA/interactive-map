@@ -78,29 +78,28 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   _reorderLayers () {
-    // Ensure that all sketch layers are on top of the map, so that they are not obscured by other layers
-    // Only applicable when the draw plugin is in use, but safe to call regardless
-    const layersLength = this._map?.allLayers?.items?.length
-    if (layersLength) {
-      this._map.allLayers.items.forEach((layer, index) => {
-        const isBaseLayer = layer.id === 'baseLayer'
-        const isSketchLayer = layer.id.includes('ketchLayer')
-        const isGroupLayer = layer.type === 'group'
-        const isChildLayer = layer.parent?.type === 'group'
-        const layerId = isGroupLayer ? (layer?.layers?.items?.[0]?.id) : layer.id
-        if (isGroupLayer) {
-          console.log(`Group layer found: ${layer.id}`, layer)
-        }
-
-        const expectedOrder = datasetRegistry._orderedDatasets.indexOf(layer.id)
-        console.log(`Layer ${index}:[${expectedOrder}]`, layer.id, layerId)
-      })
-
-      // console.log('this._map.allLayers.items', this._map.allLayers.items)
-      // this._map.allLayers.items
-      //   .filter((layer) => layer.id.includes('ketchLayer'))
-      //   .forEach((layer) => this._map.reorder(layer, layersLength))
+    // Order: baseLayer first, then datasets by their registry order, then sketch layers last
+    // Layers within a group layer are not reordered individually - they keep their existing relative order
+    const allLayers = this._map?.allLayers?.items
+    if (!allLayers?.length) {
+      return
     }
+
+    const topLevelLayers = allLayers.filter(layer => layer.parent?.type !== 'group')
+
+    const sortKey = (layer) => {
+      if (layer.id === 'baseLayer') {
+        return -Infinity
+      }
+      if (layer.id.includes('ketchLayer')) {
+        return Infinity
+      }
+      const layerId = layer.type === 'group' ? layer.layers?.items?.[0]?.id : layer.id
+      return datasetRegistry._orderedDatasets.indexOf(layerId)
+    }
+
+    const orderedLayers = [...topLevelLayers].sort((a, b) => sortKey(a) - sortKey(b))
+    orderedLayers.forEach((layer, index) => this._map.reorder(layer, index))
   }
 
   _addGroupLayer (esriGroupId) {
