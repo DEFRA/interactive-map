@@ -49,7 +49,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // ensure the datasets are added in order
     const _add = async (registryDataset) => {
       return this._addLayers(registryDataset).then(() => {
-      // console.log('Applying visibility for dataset:', registryDataset.id)
         const mapLayer = this._mapVisibilityLayers[registryDataset.id]
         registryDataset.sublayers?.forEach(sublayer => {
           if (sublayer.visibility === 'visible') {
@@ -143,13 +142,11 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
 
     const vectorTileParent = esriGroupId ? this._addGroupLayer(esriGroupId) : this._map
-    // const visible = registryDataset.visibility === 'visible'
     const vectorTileLayer = new VectorTileLayer({
       id: registryDataset.id,
       url: registryDataset.tiles,
       opacity: 1,
       visible: false
-      // visible: registryDataset.visibility === 'visible'
     })
     this._mapVisibilityLayers[registryDataset.id] = vectorTileLayer
     this._mapOpacityLayers[registryDataset.id] = esriGroupId ? vectorTileParent : vectorTileLayer
@@ -203,7 +200,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // if this is a top level dataset, we need to apply the visibility to the vectorTileLayer/ groupLayer itself
     const { id, isSublayer, parentId } = registryDataset
     const visible = registryDataset.visibility === 'visible'
-    // console.log('Applying visibility for dataset:', id, 'visible:', visible)
     const vectorTileLayer = this._mapVisibilityLayers[isSublayer ? parentId : id]
     if (!vectorTileLayer) {
       return
@@ -266,9 +262,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
     const layerPaintProperties = vectorTileLayer.getPaintProperties(esriStyleLayerId)
     if (layerPaintProperties) {
-      const _layerPaintProperties = registryDataset.applyLayerPaintProperties(layerPaintProperties)
-      // console.log('Applying paint properties for dataset:', registryDataset.id, esriStyleLayerId, _layerPaintProperties)
-      vectorTileLayer.setPaintProperties(esriStyleLayerId, _layerPaintProperties)
+      vectorTileLayer.setPaintProperties(esriStyleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
     }
   }
 
