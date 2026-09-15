@@ -1,7 +1,7 @@
-import { addKeyItem } from './addKeyItem.js'
-import { removeKeyItem } from './removeKeyItem.js'
+import { addSymbol } from './addSymbol.js'
+import { removeSymbol } from './removeSymbol.js'
 
 export const api = {
-  addKeyItem,
-  removeKeyItem
+  addSymbol,
+  removeSymbol
 }

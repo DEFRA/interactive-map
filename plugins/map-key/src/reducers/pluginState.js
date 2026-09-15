@@ -17,7 +17,7 @@ const findGroup = (state, id, groupId) => {
   })
 }
 
-const addKeyItem = (state, keyDefinition) => {
+const addSymbol = (state, keyDefinition) => {
   const { id, groupLabel } = keyDefinition
   const groupId = keyDefinition.groupId || labelToId(groupLabel)
   // Check for an existingGroup
@@ -41,7 +41,7 @@ const addKeyItem = (state, keyDefinition) => {
   }
 }
 
-const removeKeyItem = (state, keyDefinition) => {
+const removeSymbol = (state, keyDefinition) => {
   const { id } = keyDefinition
   return {
     ...state,
@@ -57,8 +57,8 @@ const addKeyGroups = (state, groups) => {
 }
 
 const actions = {
-  ADD_KEY_ITEM: addKeyItem,
-  REMOVE_KEY_ITEM: removeKeyItem,
+  ADD_KEY_SYMBOL: addSymbol,
+  REMOVE_KEY_SYMBOL: removeSymbol,
   ADD_KEY_GROUPS: addKeyGroups
 }
 

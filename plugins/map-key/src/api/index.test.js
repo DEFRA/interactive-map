@@ -1,13 +1,13 @@
 import { api } from './index.js'
-import { addKeyItem } from './addKeyItem.js'
-import { removeKeyItem } from './removeKeyItem.js'
+import { addSymbol } from './addSymbol.js'
+import { removeSymbol } from './removeSymbol.js'
 
 describe('api/index', () => {
-  it('exports the addKeyItem API', () => {
-    expect(api.addKeyItem).toBe(addKeyItem)
+  it('exports the addSymbol API', () => {
+    expect(api.addSymbol).toBe(addSymbol)
   })
 
-  it('exports the removeKeyItem API', () => {
-    expect(api.removeKeyItem).toBe(removeKeyItem)
+  it('exports the removeSymbol API', () => {
+    expect(api.removeSymbol).toBe(removeSymbol)
   })
 })

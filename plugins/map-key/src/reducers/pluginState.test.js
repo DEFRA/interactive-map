@@ -6,7 +6,7 @@ describe('pluginState reducer helpers', () => {
   })
 
   it('adds a flat key item and creates a flat group when needed', () => {
-    const nextState = actions.ADD_KEY_ITEM(initialState, { id: 'flat-key', label: 'Flat key' })
+    const nextState = actions.ADD_KEY_SYMBOL(initialState, { id: 'flat-key', label: 'Flat key' })
 
     expect(nextState).toEqual({
       keyDefinitions: [{ id: 'flat-key', label: 'Flat key', type: 'manual' }],
@@ -15,7 +15,7 @@ describe('pluginState reducer helpers', () => {
   })
 
   it('adds a grouped key item when the label can be converted to a group id', () => {
-    const nextState = actions.ADD_KEY_ITEM(initialState, { id: 'group-key', groupLabel: 'Group Label', label: 'Group key' })
+    const nextState = actions.ADD_KEY_SYMBOL(initialState, { id: 'group-key', groupLabel: 'Group Label', label: 'Group key' })
 
     expect(nextState).toEqual({
       keyDefinitions: [{
@@ -35,7 +35,7 @@ describe('pluginState reducer helpers', () => {
       groups: [{ id: 'existing-item', type: 'flat' }]
     }
 
-    expect(actions.ADD_KEY_ITEM(state, { id: 'existing-item', label: 'Existing item' })).toEqual({
+    expect(actions.ADD_KEY_SYMBOL(state, { id: 'existing-item', label: 'Existing item' })).toEqual({
       keyDefinitions: [
         { id: 'existing-item' },
         { id: 'existing-item', label: 'Existing item', type: 'manual' }
@@ -50,7 +50,7 @@ describe('pluginState reducer helpers', () => {
       groups: [{ id: 'group-1', type: 'group', groupLabel: 'Group 1' }]
     }
 
-    expect(actions.ADD_KEY_ITEM(state, { id: 'new-item', groupId: 'group-1', groupLabel: 'Group 1', label: 'New item' })).toEqual({
+    expect(actions.ADD_KEY_SYMBOL(state, { id: 'new-item', groupId: 'group-1', groupLabel: 'Group 1', label: 'New item' })).toEqual({
       keyDefinitions: [
         { id: 'existing-group-item', groupId: 'group-1' },
         { id: 'new-item', groupId: 'group-1', groupLabel: 'Group 1', label: 'New item', type: 'manual' }
@@ -65,7 +65,7 @@ describe('pluginState reducer helpers', () => {
       groups: [{ id: 'a', type: 'flat' }]
     }
 
-    expect(actions.REMOVE_KEY_ITEM(state, { id: 'a' })).toEqual({
+    expect(actions.REMOVE_KEY_SYMBOL(state, { id: 'a' })).toEqual({
       keyDefinitions: [{ id: 'b' }],
       groups: [{ id: 'a', type: 'flat' }]
     })
