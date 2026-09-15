@@ -88,9 +88,11 @@ describe('useLayoutMeasurements', () => {
   test.each([
     ['right-offset-top', { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } }, '95px'],
     ['right-offset-bottom', { main: { offsetHeight: 600 }, bottom: { offsetTop: 500 } }, '116px'],
-    // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
+    // leftColumnHeight = 400 - (50+10) - 8 = 332
+    // rightColumnHeight: rightEffectiveBottom = 400 - 0 (bottomRightHeight) - 16 (bottom-right-clearance,
+    // since default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8 = 16) = 384; 384 - 50 - 8 = 326
     ['left-top-max-height', {}, '332px'],
-    ['right-top-max-height', {}, '342px']
+    ['right-top-max-height', {}, '326px']
   ])('calculates %s correctly', (name, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
@@ -103,10 +105,11 @@ describe('useLayoutMeasurements', () => {
     ['--left-top-panel-max-height', { leftBottom: { offsetHeight: 50 } }, '274px'], // 332 - 50 - 8
     ['--left-bottom-panel-max-height', {}, '332px'],
     ['--left-bottom-panel-max-height', { leftTop: { offsetHeight: 40 } }, '284px'], // 332 - 40 - 8
-    ['--right-top-panel-max-height', {}, '342px'],
-    ['--right-top-panel-max-height', { rightBottom: { offsetHeight: 60 } }, '274px'], // 342 - 60 - 8
-    ['--right-bottom-panel-max-height', {}, '342px'],
-    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '304px'] // 342 - 30 - 8
+    // rightColumnHeight is 326 by default here (see the right-top-max-height case above)
+    ['--right-top-panel-max-height', {}, '326px'],
+    ['--right-top-panel-max-height', { rightBottom: { offsetHeight: 60 } }, '258px'], // 326 - 60 - 8
+    ['--right-bottom-panel-max-height', {}, '326px'],
+    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '288px'] // 326 - 30 - 8
   ])('calculates %s with sibling buttons=%o correctly', (varName, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
@@ -260,9 +263,25 @@ describe('useLayoutMeasurements', () => {
     })
     renderHook(() => useLayoutMeasurements())
     // bottomContainerPad = 500 - 400 - 0 = 100
-    // expected = 100 + (20 + 8) = 128
+    // bottom-right-clearance = 16 (default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8)
+    // expected = 100 + (20 + 16 + 8) = 144
     expect(layoutRefs.appContainerRef.current.style.setProperty)
-      .toHaveBeenCalledWith('--right-offset-bottom', '128px')
+      .toHaveBeenCalledWith('--right-offset-bottom', '144px')
+  })
+
+  test('adds bottom-right-clearance into right-offset-bottom so .im-o-app__right does not overlap a bottom-right box pushed up by tall attributions', () => {
+    const { layoutRefs } = setup({
+      refs: {
+        bottomRight: { offsetHeight: 20 },
+        attributions: { offsetHeight: 40 } // clearance = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
+      }
+    })
+    renderHook(() => useLayoutMeasurements())
+    // bottomContainerPad = 500 - 400 - 0 = 100; expected = 100 + (20 + 40 + 8) = 168
+    // Without the clearance term this regressed to 128px, letting .im-o-app__right's
+    // bottom offset sit below the (margin-bottom-raised) bottom-right box's real top edge.
+    expect(layoutRefs.appContainerRef.current.style.setProperty)
+      .toHaveBeenCalledWith('--right-offset-bottom', '168px')
   })
 
   test('uses 0 when sub-slot refs have null current', () => {
@@ -274,7 +293,7 @@ describe('useLayoutMeasurements', () => {
     renderHook(() => useLayoutMeasurements())
     // With all sub-slot refs null, buttons = 0 ?? 0 = 0, so max-heights equal full column height
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-top-panel-max-height', '332px')
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-bottom-panel-max-height', '342px')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-bottom-panel-max-height', '326px')
   })
 
   test('dispatches safe zone inset on desktop (post-batch RAF read only)', () => {

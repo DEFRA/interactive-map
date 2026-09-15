@@ -17,8 +17,12 @@ const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 
 const subSlotMaxHeight = (columnHeight, siblingButtons, gap) => columnHeight - (siblingButtons ? siblingButtons + gap : 0)
 
 // bottomRightHeight is 0 when empty, falling back to the attributions' own height for spacing.
-const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, gap) =>
-  containerPad + (bottomRightHeight > 0 ? bottomRightHeight + gap : attributionsHeight)
+// clearance is how far docked attributions have pushed .im-o-app__bottom-right up via
+// --bottom-right-clearance (see attributionsBottomRightClearance below) — without adding it
+// here, .im-o-app__right's computed bottom offset stays at the box's un-pushed position and
+// the floating right column overlaps the now-raised bottom-right buttons.
+const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, clearance, gap) =>
+  containerPad + (bottomRightHeight > 0 ? bottomRightHeight + clearance + gap : attributionsHeight)
 
 // Clears the bottom row's own TOP edge (not just its trailing gap below), so the hint
 // never overlaps the logo/attribution row itself, plus a gap above it. That trivially
@@ -127,6 +131,7 @@ function applyAttributionsLayout ({ appContainer, bottom, attributions, dividerG
   appContainer.style.setProperty('--attributions-left', `${left}px`)
   const clearance = attributionsBottomRightClearance(isStacked, attributions.offsetHeight, dividerGap, primaryGap)
   appContainer.style.setProperty('--bottom-right-clearance', `${clearance}px`)
+  return { clearance }
 }
 
 /**
@@ -174,7 +179,7 @@ function calculateLayout (layoutRefs, breakpoint) {
     ? bannerTop + bannerHeight + dividerGap
     : colHeight + top.offsetTop
 
-  applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
+  const { clearance: bottomRightClearance } = applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
 
   // === Left container offsets ===
   const leftOffsetTop = sideOffsetTop(topLeftCol.offsetHeight)
@@ -187,10 +192,10 @@ function calculateLayout (layoutRefs, breakpoint) {
   const bottomRightHeight = buttonHeight(bottomRightRef)
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const rightOffsetTop = sideOffsetTop(topRightCol.offsetHeight)
-  const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight
+  const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - bottomRightClearance
   const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
   appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, dividerGap)}px`)
+  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, bottomRightClearance, dividerGap)}px`)
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
   // === Keyboard hint bottom offset ===
