@@ -12,6 +12,7 @@ import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
+import { siteBoundary } from './planning/siteBoundary.js'
 
 const nonFloodZoneLight = '#2b8cbe'
 const nonFloodZoneDark = '#7fcdbb'
@@ -301,10 +302,9 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
   if (depthsKey) {
     return [extentsDataset, depthDataset]
   }
-  // We only really need one of these with visibleWhen: { menu: {dataset: ['surfacewater'], depth: ['depthAll'] } },
+  // We only need one depthsKey, so we only return it here if it isn't already defined
   depthsKey = {
     id: 'depths-key',
-    label: 'Surface water',
     groupId: 'surface-water-depth-in-millimetres',
     showInKey: true,
     visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthAll'] } },
@@ -316,17 +316,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
       }
     })
   }
-  const extraDepthKeys = []
-  for(let i = 3; i <= depthsKey.sublayers.length; i++) {
-    extraDepthKeys.push({
-      ...depthsKey, 
-      groupLabel: `${depthsKey.groupLabel} [${i}]`,
-      id: `${depthsKey.id}-${i}`,
-      sublayers: depthsKey.sublayers.slice(0, i).map((sublayer) => ({ ...sublayer, label: `${i}.${sublayer.label}`.replaceAll('0', '') })),
-    })
-  }
   return [depthsKey, extentsDataset, depthDataset]
-  // return [...extraDepthKeys, extentsDataset, depthDataset]
 }
 
 const surfaceWaterExtentsKey = {
@@ -616,6 +606,23 @@ const interactPlugin = createInteractPlugin({
   interactionModes: ['placeMarker'],
 })
 
+const mapKeyPlugin = createMapKeyPlugin({
+  groups: {
+    'surface-water-depth-in-millimetres': {
+      groupLabel: 'Surface water depth in millimetres',
+      groupStyle: 'horizontal-ramp'
+    }
+  },
+  manifest: {
+    panels: [{
+      id: 'mapKey',
+      mobile: { slot: 'drawer', modal: false },
+      tablet: { slot: 'left-top', width: '360px' },
+      desktop: { slot: 'left-top', width: '360px' },
+    }]
+  },
+})
+
 const interactiveMap = new InteractiveMap('map', {
   behaviour: 'mapOnly',
   mapProvider: esriProvider({ setupConfig: setupEsriConfig }),
@@ -644,22 +651,7 @@ const interactiveMap = new InteractiveMap('map', {
     scaleBarPlugin({ units: 'metric' }),
     drawPlugin,
     framePlugin,
-    createMapKeyPlugin({
-      groups: {
-        'surface-water-depth-in-millimetres': {
-          groupLabel: 'Surface water depth in millimetres',
-          groupStyle: 'horizontal-ramp'
-        }
-      },
-      manifest: {
-        panels: [{
-          id: 'mapKey',
-          mobile: { slot: 'drawer', modal: false },
-          tablet: { slot: 'left-top', width: '360px' },
-          desktop: { slot: 'left-top', width: '360px' },
-        }]
-      },
-    }),
+    mapKeyPlugin,
     createMenuPlugin({
       manifest: {
         panels: [{
@@ -702,6 +694,29 @@ interactiveMap.on('interact:markerchange', function (e) {
     visibleGeometry: {type: 'Feature', geometry: {type: 'Point', coordinates: e.coords}}
   })
 })
+
+const siteBoundaryKeyDefinition = {
+    id: 'site-boundary',
+    label: 'Location boundary',
+    // groupLabel: 'Other features',
+    style: {
+      strokeWidth: 2,
+      fill: 'none',
+      stroke: { outdoor: '#D4351D', dark: '#ffffff' }
+    },
+}
+
+siteBoundary.onSetFeature = (feature) => {
+  if (feature) {
+    mapKeyPlugin.addSymbol(siteBoundaryKeyDefinition)
+  } else {
+    mapKeyPlugin.removeSymbol(siteBoundaryKeyDefinition)
+  }
+}
+
+  interactiveMap.on('map-key:ready', function () {
+    siteBoundary.onSetFeature(true)
+  })
 
 
 const onEditPolygon = (isEditing) => {

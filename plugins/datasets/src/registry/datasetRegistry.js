@@ -101,16 +101,16 @@ const datasetRegistry = {
     const groups = new Map()
 
     const getOrCreateGroup = (groupLabel, groupId) => {
-      if (groups.has(groupLabel)) {
-        return groups.get(groupLabel)
+      if (groups.has(groupId)) {
+        return groups.get(groupId)
       }
       const groupObject = {
         type: 'group',
-        id: groupId, // groupLabel.toLowerCase().replaceAll(/\s+/g, '-'),
+        id: groupId,
         groupLabel,
         keyDefinitions: []
       }
-      groups.set(groupLabel, groupObject)
+      groups.set(groupId, groupObject)
       _items.push(groupObject)
       return groupObject
     }
@@ -119,14 +119,14 @@ const datasetRegistry = {
       if (!dataset.keyVisibility) {
         return
       }
-      const isGroup = dataset.hasSublayers || dataset.groupLabel
+      const isGroup = dataset.hasSublayers || dataset.groupId || dataset.groupLabel
       if (!isGroup) {
         _items.push({ type: 'flat', id: dataset.id, keyDefinition: dataset.keyDefinition })
         return
       }
 
       const groupId = dataset.groupId
-      const groupLabel = dataset.groupLabel || dataset.label
+      const groupLabel = dataset.groupLabel || groupId || dataset.label
       const groupObject = getOrCreateGroup(groupLabel, groupId)
       if (!dataset.hasSublayers) {
         groupObject.keyDefinitions.push(dataset.keyDefinition)
