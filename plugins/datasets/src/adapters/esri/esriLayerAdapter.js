@@ -35,18 +35,30 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
-    for (const registryDataset of topLevelDatasets) {
-      console.log('Top level dataset:', registryDataset.id, registryDataset.visibility)
-    }
     // ensure the datasets are added in order
-    for (const registryDataset of topLevelDatasets) {
-      await this._addLayers(registryDataset)
-      console.log('Applying visibility for dataset:', registryDataset.id)
-      this.applyDatasetVisibility(registryDataset.id)
-      const mapLayer = this._mapVisibilityLayers[registryDataset.id]
-      registryDataset.sublayers?.forEach(sublayer => {
-        this._applyStyleLayerPaintProperties(sublayer, mapLayer)
+    const _add = async (registryDataset) => {
+      return this._addLayers(registryDataset).then(() => {
+      // console.log('Applying visibility for dataset:', registryDataset.id)
+        const mapLayer = this._mapVisibilityLayers[registryDataset.id]
+        registryDataset.sublayers?.forEach(sublayer => {
+          if (sublayer.visibility === 'visible') {
+            this._applyStyleLayerPaintProperties(sublayer, mapLayer)
+          }
+        })
+        this.applyDatasetVisibility(registryDataset.id)
       })
+    }
+    // Add the visible datasets first - to speed up rendering
+    for (const registryDataset of topLevelDatasets) {
+      if (registryDataset.visibility === 'visible') {
+        await _add(registryDataset)
+      }
+    }
+    // Add the non-visible datasets next
+    for (const registryDataset of topLevelDatasets) {
+      if (registryDataset.visibility !== 'visible') {
+        await _add(registryDataset)
+      }
     }
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
@@ -55,8 +67,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
     await this.onMapStyleChange()
 
     // console.log('Calling this.applyGlobalOpacity')
-    // // Apply opacity to all layers
-    // await this.applyGlobalOpacity()
+    // Apply opacity to all layers
+    await this.applyGlobalOpacity()
 
     console.log('Calling show all layers')
     // Finally show all layers that are visible based on the dataset/mapStyle visibility
@@ -70,9 +82,24 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // Only applicable when the draw plugin is in use, but safe to call regardless
     const layersLength = this._map?.allLayers?.items?.length
     if (layersLength) {
-      this._map.allLayers.items
-        .filter((layer) => layer.id.includes('ketchLayer'))
-        .forEach((layer) => this._map.reorder(layer, layersLength))
+      this._map.allLayers.items.forEach((layer, index) => {
+        const isBaseLayer = layer.id === 'baseLayer'
+        const isSketchLayer = layer.id.includes('ketchLayer')
+        const isGroupLayer = layer.type === 'group'
+        const isChildLayer = layer.parent?.type === 'group'
+        const layerId = isGroupLayer ? (layer?.layers?.items?.[0]?.id) : layer.id
+        if (isGroupLayer) {
+          console.log(`Group layer found: ${layer.id}`, layer)
+        }
+
+        const expectedOrder = datasetRegistry._orderedDatasets.indexOf(layer.id)
+        console.log(`Layer ${index}:[${expectedOrder}]`, layer.id, layerId)
+      })
+
+      // console.log('this._map.allLayers.items', this._map.allLayers.items)
+      // this._map.allLayers.items
+      //   .filter((layer) => layer.id.includes('ketchLayer'))
+      //   .forEach((layer) => this._map.reorder(layer, layersLength))
     }
   }
 
@@ -96,7 +123,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
       url: registryDataset.tiles,
       renderer: registryDataset.renderer,
       opacity: 1,
-      visible: true
+      visible: false
     })
     this._mapVisibilityLayers[registryDataset.id] = featureLayer
     this._mapOpacityLayers[registryDataset.id] = featureLayer
@@ -126,6 +153,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
       url: registryDataset.tiles,
       opacity: 1,
       visible: false
+      // visible: registryDataset.visibility === 'visible'
     })
     this._mapVisibilityLayers[registryDataset.id] = vectorTileLayer
     this._mapOpacityLayers[registryDataset.id] = esriGroupId ? vectorTileParent : vectorTileLayer
@@ -179,7 +207,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // if this is a top level dataset, we need to apply the visibility to the vectorTileLayer/ groupLayer itself
     const { id, isSublayer, parentId } = registryDataset
     const visible = registryDataset.visibility === 'visible'
-    console.log('Applying visibility for dataset:', id, 'visible:', visible)
+    // console.log('Applying visibility for dataset:', id, 'visible:', visible)
     const vectorTileLayer = this._mapVisibilityLayers[isSublayer ? parentId : id]
     if (!vectorTileLayer) {
       return
@@ -244,7 +272,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     if (layerPaintProperties) {
       const _layerPaintProperties = registryDataset.applyLayerPaintProperties(layerPaintProperties)
       // console.log('Applying paint properties for dataset:', registryDataset.id, esriStyleLayerId, _layerPaintProperties)
-      vectorTileLayer.setPaintProperties(esriStyleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
+      vectorTileLayer.setPaintProperties(esriStyleLayerId, _layerPaintProperties)
     }
   }
 
