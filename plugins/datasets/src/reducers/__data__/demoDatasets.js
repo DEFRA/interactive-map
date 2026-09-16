@@ -101,8 +101,8 @@ export const datasets = [
     id: 'existing-fields', // NOSONAR
     label: 'Existing fields',
     filter: ['all', ['==', ['get', 'sbi'], '106223377'], ['==', ['get', 'is_dominant_land_cover'], true]],
-    tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}',
-    sourceLayer: 'field_parcels_filtered',
+    tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}',
+    sourceLayer: 'field_parcels_wgs84',
     minZoom: 10,
     maxZoom: 24,
     showInKey: true,
@@ -158,7 +158,7 @@ export const datasets = [
   }, {
     id: 'hedge-control', // NOSONAR
     label: 'Hedge control',
-    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}'],
     sourceLayer: 'hedge_control',
     minZoom: 10,
     maxZoom: 24,

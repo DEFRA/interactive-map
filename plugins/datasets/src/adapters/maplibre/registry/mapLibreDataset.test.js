@@ -212,12 +212,12 @@ describe('MapLibreDataset', () => {
 
     it('returns a tiles-based id for a tile dataset (array tiles)', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-3delfuv')
+      expect(dataset.sourceId).toBe('tiles-35m5lrb')
     })
 
     it('returns a tiles-based id when tiles is a plain string (line 76 non-array branch)', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-3delfuv')
+      expect(dataset.sourceId).toBe('tiles-35m5lrb')
     })
 
     it('returns geojson-dynamic-{id} for a dynamic geojson source', () => {
@@ -242,7 +242,7 @@ describe('MapLibreDataset', () => {
     it('returns a vector source for a tile dataset', () => {
       expect(datasetRegistry.getDataset('existing-fields').source).toEqual({
         type: 'vector',
-        tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}',
+        tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}',
         minzoom: 10,
         maxzoom: 24
       })
@@ -395,8 +395,8 @@ describe('MapLibreDataset', () => {
       expect(datasetRegistry.getDataset('existing-fields').getFillSource({})).toEqual({
         id: 'existing-fields',
         type: 'fill',
-        source: 'tiles-3delfuv',
-        'source-layer': 'field_parcels_filtered',
+        source: 'tiles-35m5lrb',
+        'source-layer': 'field_parcels_wgs84',
         minzoom: 10,
         maxzoom: 24,
         layout: { visibility: 'visible' },
@@ -413,7 +413,7 @@ describe('MapLibreDataset', () => {
         .toEqual({
           id: 'hedge-control',
           type: 'line',
-          source: 'tiles-3delfuv',
+          source: 'tiles-35m5lrb',
           'source-layer': 'hedge_control',
           minzoom: 10,
           maxzoom: 24,
@@ -428,8 +428,8 @@ describe('MapLibreDataset', () => {
         .toEqual({
           id: 'existing-fields-stroke',
           type: 'line',
-          source: 'tiles-3delfuv',
-          'source-layer': 'field_parcels_filtered',
+          source: 'tiles-35m5lrb',
+          'source-layer': 'field_parcels_wgs84',
           minzoom: 10,
           maxzoom: 24,
           layout: { visibility: 'visible' },
