@@ -242,7 +242,7 @@ describe('MapLibreDataset', () => {
     it('returns a vector source for a tile dataset', () => {
       expect(datasetRegistry.getDataset('existing-fields').source).toEqual({
         type: 'vector',
-        tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}',
+        tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}',
         minzoom: 10,
         maxzoom: 24
       })
@@ -396,7 +396,7 @@ describe('MapLibreDataset', () => {
         id: 'existing-fields',
         type: 'fill',
         source: 'tiles-3delfuv',
-        'source-layer': 'field_parcels_filtered',
+        'source-layer': 'field_parcels_wgs84',
         minzoom: 10,
         maxzoom: 24,
         layout: { visibility: 'visible' },
@@ -429,7 +429,7 @@ describe('MapLibreDataset', () => {
           id: 'existing-fields-stroke',
           type: 'line',
           source: 'tiles-3delfuv',
-          'source-layer': 'field_parcels_filtered',
+          'source-layer': 'field_parcels_wgs84',
           minzoom: 10,
           maxzoom: 24,
           layout: { visibility: 'visible' },
