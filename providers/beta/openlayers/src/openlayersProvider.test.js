@@ -127,6 +127,19 @@ describe('OpenLayersProvider', () => {
     })
   })
 
+  describe('isBaseMapReady', () => {
+    it('returns false before initMap has run', () => {
+      const { provider } = makeProvider()
+      expect(provider.isBaseMapReady()).toBe(false)
+    })
+
+    it('returns true once initMap has set this.map', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(provider.isBaseMapReady()).toBe(true)
+    })
+  })
+
   describe('initMap', () => {
     it('creates vector tile layer, OL objects, and emits MAP_READY by default', async () => {
       const { provider, eventBus } = makeProvider()

@@ -1,50 +1,11 @@
-import { injectColors, getEffectivePixelRatio } from '../../../../src/utils/patternUtils.js'
-import { getValueForStyle } from '../../../../src/utils/getValueForStyle.js'
-import { rasteriseToImageData } from '../../../../src/utils/rasteriseToImageData.js'
-
-// Module-level cache: imageId → ImageData. Avoids re-rasterising identical patterns.
-const imageDataCache = new Map()
-
-/**
- * Rasterises a dataset's pattern SVG to ImageData, using an in-memory cache
- * to avoid re-rasterising identical patterns.
- *
- * @param {Object} dataset
- * @param {string} mapStyleId
- * @param {Object} patternRegistry
- * @param {number} pixelRatio
- * @returns {Promise<{ imageId: string, imageData: ImageData }|null>}
- */
-const rasterisePattern = async (dataset, mapStyleId, patternRegistry, pixelRatio) => {
-  const innerContent = patternRegistry.getPatternInnerContent(dataset)
-  if (!innerContent) {
-    return null
-  }
-
-  const imageId = patternRegistry.getPatternImageId(dataset, mapStyleId, pixelRatio)
-  if (!imageId) {
-    return null
-  }
-
-  let imageData = imageDataCache.get(imageId)
-  if (!imageData) {
-    const fg = getValueForStyle(dataset.fillPatternForegroundColor, mapStyleId) || 'black'
-    const bg = getValueForStyle(dataset.fillPatternBackgroundColor, mapStyleId) || 'transparent'
-    const colored = injectColors(innerContent, fg, bg)
-    const bgRect = `<rect width="16" height="16" fill="${bg}"/>`
-    const effectiveRatio = getEffectivePixelRatio(pixelRatio)
-    const physicalSize = Math.round(8 * effectiveRatio)
-    const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${physicalSize}" height="${physicalSize}" viewBox="0 0 16 16">${bgRect}${colored}</svg>`
-    imageData = await rasteriseToImageData(svgString, physicalSize, physicalSize)
-    imageDataCache.set(imageId, imageData)
-  }
-
-  return { imageId, imageData }
-}
+import { getEffectivePixelRatio } from '../../../../src/utils/patternUtils.js'
 
 /**
  * Register pattern images for the given pre-resolved pattern configs.
  * Skips images that are already registered (safe to call on style change).
+ * Rasterisation itself (and its own ImageData cache) lives in patternRegistry.rasterisePatternImage,
+ * shared with the OpenLayers provider's own pattern util — this only owns the MapLibre-specific
+ * "last mile" of registering the result via map.addImage().
  *
  * @param {Object} map - MapLibre map instance
  * @param {Object[]} styleArray - an array of pattern style configs
@@ -64,7 +25,7 @@ export const addPatternsToMap = async (map, styleArray, mapStyleId, patternRegis
     const imageId = patternRegistry.getPatternImageId(style, mapStyleId, pixelRatio)
     if (imageId && !imagesToAdd[imageId] && !map.hasImage(imageId)) {
       imagesToAdd[imageId] = async () => {
-        const result = await rasterisePattern(style, mapStyleId, patternRegistry, pixelRatio)
+        const result = await patternRegistry.rasterisePatternImage(style, mapStyleId, pixelRatio)
         if (result && !map.hasImage(result.imageId)) {
           map.addImage(result.imageId, result.imageData, { pixelRatio: effectiveRatio })
         }

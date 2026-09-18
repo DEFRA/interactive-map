@@ -3,8 +3,7 @@ import OlMap from 'ol/Map.js'
 import View from 'ol/View.js'
 import { defaults as defaultInteractions } from 'ol/interaction/defaults.js'
 import { getCenter as getExtentCenter } from 'ol/extent.js'
-import proj4 from 'proj4'
-import { register } from 'ol/proj/proj4.js'
+import { BNG_CRS } from './utils/bngProjection.js'
 import { supportedShortcuts, DEFAULTS } from './defaults.js'
 import { getViewResolutionConfig, ZOOM_ALIGNMENT } from './utils/zoom.js'
 import { attachMapEvents } from './mapEvents.js'
@@ -18,7 +17,7 @@ import { applyOpenLayersFixes } from './utils/openLayersFixes.js'
 
 applyOpenLayersFixes()
 
-const CRS = 'EPSG:27700'
+const CRS = BNG_CRS
 
 const toPaddingArray = (padding) => {
   if (!padding) {
@@ -27,10 +26,6 @@ const toPaddingArray = (padding) => {
   const { top = 0, right = 0, bottom = 0, left = 0 } = padding
   return [top, right, bottom, left]
 }
-
-// Register British National Grid with proj4 so OL can use it
-proj4.defs(CRS, '+proj=tmerc +lat_0=49 +lon_0=-2 +k=0.9996012717 +x_0=400000 +y_0=-100000 +ellps=airy +towgs84=446.448,-125.157,542.06,0.15,0.247,0.842,-20.489 +units=m +no_defs')
-register(proj4)
 
 export default class OpenLayersProvider extends MapProvider {
   constructor ({ mapProviderConfig = {}, events, eventBus }) {
@@ -46,6 +41,14 @@ export default class OpenLayersProvider extends MapProvider {
 
   get name () {
     return 'OpenLayersProvider'
+  }
+
+  // Unlike MapLibre (whose style loads asynchronously after the map object exists, so
+  // isBaseMapReady checks map.getStyle() specifically), initMap() awaits the OL style/sprite
+  // fetch itself before constructing the OlMap — by the time this.map is set, the base map is
+  // already showing its loaded style. See initMap's own "MAP_READY is synchronous" comment.
+  isBaseMapReady () {
+    return Boolean(this.map)
   }
 
   async initMap (config) {

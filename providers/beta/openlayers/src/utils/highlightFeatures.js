@@ -7,7 +7,7 @@ import Stroke from 'ol/style/Stroke.js'
 import Fill from 'ol/style/Fill.js'
 import Icon from 'ol/style/Icon.js'
 import { collectTileFragments } from './vtTileFragments.js'
-import { getCachedSymbolImage } from './symbolImages.js'
+import { getCachedSymbolImage, getActiveSymbolImageId, getSelectedSymbolImageId, SYMBOL_RASTER_PIXEL_RATIO } from './symbolImages.js'
 import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
 
@@ -108,14 +108,25 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
       return
     }
 
-    if (!layer._highlightOriginalStyle) {
+    // A restyle made directly through layer.setStyle() while a selection stays active (e.g.
+    // _setLayerStyle on a map style/theme switch, or applyFeatureFilter) replaces our wrap with
+    // a fresh, unwrapped style function — OL preserves function identity through setStyle/
+    // getStyleFunction for a plain function style (confirmed against ol/layer/BaseVector.js's
+    // toStyleLike/toFunction, both no-ops for an already-function style), so comparing against
+    // our own last-installed wrap detects this and re-captures the new live style, rather than
+    // wrapping a stale pre-restyle one until the selection is next fully cleared.
+    if (!layer._highlightOriginalStyle || layer.getStyleFunction() !== layer._highlightWrappedStyle) {
       layer._highlightOriginalStyle = layer.getStyleFunction()
     }
     const orig = layer._highlightOriginalStyle
 
-    layer.setStyle((feature, resolution) => {
+    const wrappedStyle = (feature, resolution) => {
       const base = orig(feature, resolution)
-      const styleLayerId = feature.get('mapbox-layer')?.id
+      // Two different vector-tile producers share the 'vectorTile' tag this wrap targets:
+      // draw-ol's basemap MVT tiles (a 'mapbox-layer' object per feature) and the datasets
+      // plugin's own tiles-backed datasets (no 'mapbox-layer' — the id lives on the OL layer
+      // itself instead, as 'layerId'). See layerBuilders.js's createDatasetLayer.
+      const styleLayerId = feature.get('mapbox-layer')?.id ?? layer.get('layerId')
       if (!styleLayerId) {
         return base
       }
@@ -136,7 +147,9 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
       }
 
       return [...toStyleArray(base), ...highlightStyles]
-    })
+    }
+    layer._highlightWrappedStyle = wrappedStyle
+    layer.setStyle(wrappedStyle)
     // setStyle() calls layer.changed() internally — no source.changed() needed
     // (source.changed() works but causes a visible flicker on selection)
   })
@@ -164,6 +177,16 @@ const getOrCreateHighlightLayer = (map) => {
   return layer
 }
 
+const findVectorLayer = (map, layerId) => {
+  let found
+  map.getLayers().forEach(l => {
+    if (!found && l.get('layerType') === 'vector' && !l.get(HIGHLIGHT_MARKER) && l.get('layerId') === layerId) {
+      found = l
+    }
+  })
+  return found
+}
+
 // interact's selectedFeatures carry a `properties` snapshot taken at selection time, which
 // goes stale for the symbol icon path once a map style change re-resolves the point's image
 // ids — reading straight off the live feature avoids showing the previous theme's variant.
@@ -171,17 +194,25 @@ const getLiveProperties = (map, layerId, featureId) => {
   if (featureId == null) {
     return undefined
   }
-  let properties
-  map.getLayers().forEach(l => {
-    if (properties || l.get('layerType') !== 'vector' || l.get(HIGHLIGHT_MARKER) || l.get('layerId') !== layerId) {
-      return
-    }
-    const feature = l.getSource()?.getFeatureById(String(featureId))
-    if (feature) {
-      properties = feature.getProperties()
-    }
-  })
-  return properties
+  const feature = findVectorLayer(map, layerId)?.getSource()?.getFeatureById(String(featureId))
+  return feature?.getProperties()
+}
+
+// A dataset symbol point (unlike a drawn one) has no symbolActiveImageId/symbolSelectedImageId
+// of its own — every feature in the layer shares the one base imageId layerBuilders.js tagged
+// the layer with (see OpenLayersDataset.symbolMeta), so the active/selected variant is resolved
+// from that shared id via symbolImages.js's reverse-map instead of a per-feature property.
+const buildDatasetSymbolHighlightStyle = (map, layerId, isActive) => {
+  const symbolMeta = findVectorLayer(map, layerId)?.get('symbolMeta')
+  if (!symbolMeta) {
+    return null
+  }
+  const targetId = isActive ? getActiveSymbolImageId(symbolMeta.imageId) : getSelectedSymbolImageId(symbolMeta.imageId)
+  const canvas = targetId && getCachedSymbolImage(targetId)
+  if (!canvas) {
+    return null
+  }
+  return [new Style({ image: new Icon({ img: canvas, anchor: symbolMeta.anchor, scale: 1 / SYMBOL_RASTER_PIXEL_RATIO }), zIndex: HIGHLIGHT_Z })]
 }
 
 const addVectorHighlights = (map, source, features, isActive, stylesMap) => {
@@ -190,7 +221,9 @@ const addVectorHighlights = (map, source, features, isActive, stylesMap) => {
       continue
     }
     const liveProperties = getLiveProperties(map, layerId, featureId)
-    const styles = buildSymbolHighlightStyle(liveProperties, isActive) ?? buildHighlightStyles(stylesMap?.[layerId], isActive)
+    const styles = buildSymbolHighlightStyle(liveProperties, isActive) ??
+      buildDatasetSymbolHighlightStyle(map, layerId, isActive) ??
+      buildHighlightStyles(stylesMap?.[layerId], isActive)
     if (styles.length) {
       const olFeature = new Feature({ geometry: geoJsonFormat.readGeometry(geometry) })
       olFeature.setStyle(styles)
