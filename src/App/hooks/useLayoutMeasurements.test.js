@@ -235,7 +235,7 @@ describe('useLayoutMeasurements', () => {
     appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // attribution text, too wide to fit
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
-    // stacked is lifted by its own extra flex line, not a margin, so no clearance is needed here
+    // stacked already has its own clearance (the stacked rule's own margin-top), so none needed here
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
   })
 
@@ -263,53 +263,25 @@ describe('useLayoutMeasurements', () => {
     })
     renderHook(() => useLayoutMeasurements())
     // bottomContainerPad = 500 - 400 - 0 = 100
-    // attributions lift = 16 (default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8)
+    // bottom-right-clearance = 16 (default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8)
     // expected = 100 + (20 + 16 + 8) = 144
     expect(layoutRefs.appContainerRef.current.style.setProperty)
       .toHaveBeenCalledWith('--right-offset-bottom', '144px')
   })
 
-  test('adds the attributions lift into right-offset-bottom so .im-o-app__right does not overlap a bottom-right box pushed up by tall docked attributions', () => {
+  test('adds bottom-right-clearance into right-offset-bottom so .im-o-app__right does not overlap a bottom-right box pushed up by tall attributions', () => {
     const { layoutRefs } = setup({
       refs: {
         bottomRight: { offsetHeight: 20 },
-        attributions: { offsetHeight: 40 } // lift = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
+        attributions: { offsetHeight: 40 } // clearance = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
       }
     })
     renderHook(() => useLayoutMeasurements())
     // bottomContainerPad = 500 - 400 - 0 = 100; expected = 100 + (20 + 40 + 8) = 168
-    // Without the lift term this regressed to 128px, letting .im-o-app__right's
+    // Without the clearance term this regressed to 128px, letting .im-o-app__right's
     // bottom offset sit below the (margin-bottom-raised) bottom-right box's real top edge.
     expect(layoutRefs.appContainerRef.current.style.setProperty)
       .toHaveBeenCalledWith('--right-offset-bottom', '168px')
-  })
-
-  // Stacked attributions takes a flex line of its own BELOW the bottom-right row, lifting the
-  // row by the same amount the docked box's margin-bottom does — but as part of
-  // .im-o-app__bottom's own grown height, not as a margin, so --bottom-right-clearance is 0.
-  // Reading the clearance here (rather than the mode-independent lift) left the right column's
-  // bottom offset at the un-lifted position, so a right-bottom scale bar overlapped a
-  // bottom-right draw menu on mobile — the breakpoint where attributions always stacks.
-  test('adds the attributions lift into right-offset-bottom when attributions is stacked, not just docked', () => {
-    const { layoutRefs } = setup({
-      refs: {
-        bottom: { rect: { left: 0 } },
-        bottomRight: { offsetHeight: 20 },
-        attributions: { offsetHeight: 40 } // lift = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
-      }
-    })
-    appendChild(layoutRefs.bottomRef.current, {}) // logo column
-    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
-    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
-    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // too wide to fit beside the logo
-    renderHook(() => useLayoutMeasurements())
-    const spy = layoutRefs.appContainerRef.current.style.setProperty
-    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
-    expect(spy).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
-    // Same 168px as the docked case above, despite the 0px clearance.
-    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '168px')
-    // rightEffectiveBottom = 400 + 0 - 20 - 40 = 340; 340 - 50 (rightOffsetTop) - 8 = 282
-    expect(spy).toHaveBeenCalledWith('--right-top-max-height', '282px')
   })
 
   test('uses 0 when sub-slot refs have null current', () => {

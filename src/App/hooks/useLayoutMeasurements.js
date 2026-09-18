@@ -17,12 +17,12 @@ const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 
 const subSlotMaxHeight = (columnHeight, siblingButtons, gap) => columnHeight - (siblingButtons ? siblingButtons + gap : 0)
 
 // bottomRightHeight is 0 when empty, falling back to the attributions' own height for spacing.
-// rise is how far attributions has lifted .im-o-app__bottom-right above .im-o-app__bottom's
-// own bottom edge (see attributionsRise below) — without adding it here, .im-o-app__right's
-// computed bottom offset stays at the box's un-lifted position and the floating right column
-// overlaps the now-raised bottom-right buttons.
-const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, rise, gap) =>
-  containerPad + (bottomRightHeight > 0 ? bottomRightHeight + rise + gap : attributionsHeight)
+// clearance is how far docked attributions have pushed .im-o-app__bottom-right up via
+// --bottom-right-clearance (see attributionsBottomRightClearance below) — without adding it
+// here, .im-o-app__right's computed bottom offset stays at the box's un-pushed position and
+// the floating right column overlaps the now-raised bottom-right buttons.
+const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, clearance, gap) =>
+  containerPad + (bottomRightHeight > 0 ? bottomRightHeight + clearance + gap : attributionsHeight)
 
 // Clears the bottom row's own TOP edge (not just its trailing gap below), so the hint
 // never overlaps the logo/attribution row itself, plus a gap above it. That trivially
@@ -78,22 +78,13 @@ const attributionsNaturalWidth = (attributionsEl) => {
 // longer fits, at its natural width, in the space beside the logo column.
 const isAttributionsStacked = (naturalWidth, availableWidth) => naturalWidth > availableWidth
 
-// How far attributions lifts .im-o-app__bottom-right above .im-o-app__bottom's own bottom
-// edge. The same figure covers both modes, because both bleed primaryGap past that edge and
-// then take attributionsHeight (plus a dividerGap) back up from there:
-//  - docked: the box grows upward from the bleed into the row itself, where
-//    .im-o-app__bottom-right shares the same horizontal space, so the row needs an explicit
-//    margin-bottom (--bottom-right-clearance) to stay clear of it;
-//  - stacked: the box is an extra flex line *below* the row, so it lifts the row by exactly
-//    that much on its own — no margin needed, hence bottomRightClearance's isStacked branch.
-// Either way .im-o-app__right must clear the lift, so the offsets below use this, not the
-// clearance. Clamped at 0: a box shorter than its own bleed lifts nothing.
-const attributionsRise = (attributionsHeight, dividerGap, primaryGap) =>
-  Math.max(0, attributionsHeight + dividerGap - primaryGap)
-
-// Stacked gets its lift from the extra flex line itself (see attributionsRise above), so only
-// docked needs the row pushed up by a margin.
-const bottomRightClearance = (isStacked, rise) => isStacked ? 0 : rise
+// Docked, attributions bleeds primaryGap below the row's bottom edge then grows upward from
+// there by its own height — once that height exceeds primaryGap, it creeps back up into the
+// row itself, where .im-o-app__bottom-right shares the same horizontal space. This is how far
+// that needs pushing up to stay clear. Stacked already has its own clearance (the stacked
+// rule's margin-top), so none is needed there.
+const attributionsBottomRightClearance = (isStacked, attributionsHeight, dividerGap, primaryGap) =>
+  isStacked ? 0 : Math.max(0, attributionsHeight + dividerGap - primaryGap)
 
 // Docks centred between the side columns when there's room, otherwise stacks full-width
 // (mobile always stacks). Sets the banner's own CSS vars and returns what the side-column
@@ -138,9 +129,9 @@ function applyAttributionsLayout ({ appContainer, bottom, attributions, dividerG
   // space-between` gap between the two columns isn't a fixed value (unlike `gap`) to reconstruct.
   const left = attributionsCol ? Math.round(attributionsCol.getBoundingClientRect().left - bottom.getBoundingClientRect().left) : 0
   appContainer.style.setProperty('--attributions-left', `${left}px`)
-  const rise = attributionsRise(attributions.offsetHeight, dividerGap, primaryGap)
-  appContainer.style.setProperty('--bottom-right-clearance', `${bottomRightClearance(isStacked, rise)}px`)
-  return { rise }
+  const clearance = attributionsBottomRightClearance(isStacked, attributions.offsetHeight, dividerGap, primaryGap)
+  appContainer.style.setProperty('--bottom-right-clearance', `${clearance}px`)
+  return { clearance }
 }
 
 /**
@@ -188,7 +179,7 @@ function calculateLayout (layoutRefs, breakpoint) {
     ? bannerTop + bannerHeight + dividerGap
     : colHeight + top.offsetTop
 
-  const { rise: attributionsLift } = applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
+  const { clearance: bottomRightClearance } = applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
 
   // === Left container offsets ===
   const leftOffsetTop = sideOffsetTop(topLeftCol.offsetHeight)
@@ -201,10 +192,10 @@ function calculateLayout (layoutRefs, breakpoint) {
   const bottomRightHeight = buttonHeight(bottomRightRef)
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const rightOffsetTop = sideOffsetTop(topRightCol.offsetHeight)
-  const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - attributionsLift
+  const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - bottomRightClearance
   const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
   appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, attributionsLift, dividerGap)}px`)
+  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, bottomRightClearance, dividerGap)}px`)
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
   // === Keyboard hint bottom offset ===

@@ -150,7 +150,6 @@ const interactiveMap = new InteractiveMap('map', {
     logo: '/assets/images/os-logo.svg',
     logoAltText: 'Ordnance survey logo',
     attribution: `Contains OS data ${String.fromCharCode(169)} Crown copyright and database rights ${(new Date()).getFullYear()}`,
-    showAttributionOnMobile: true,
     backgroundColor: '#f5f5f0'
   },
   plugins: [
