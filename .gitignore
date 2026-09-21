@@ -51,3 +51,6 @@ stats.json
 .docusaurus
 build
 .playwright-mcp
+
+# Local git worktrees (scratch checkouts, not part of the project)
+.worktrees/

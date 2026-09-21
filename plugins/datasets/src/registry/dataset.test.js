@@ -563,16 +563,68 @@ describe('Dataset class', () => {
     })
   })
 
-  describe('getLayersWithOpacity', () => {
-    it('skips a sublayer that contributes no leaf layers, rather than pushing undefined', () => {
-      // Models an adapter (like OpenLayersDataset today) where some styles aren't renderable
-      // yet — such a sublayer's leafLayerIds is empty, and that must not surface as an
-      // undefined entry in the result.
-      class FakeAdapterDataset extends Dataset {
-        get leafLayerIds () { return this.style?.renderable ? [this.id] : [] }
-      }
-      try {
-        datasetRegistry.attachCreateDataset(def => new FakeAdapterDataset(def))
+  // getLayersWithValue's recursion/condition-gating/aggregation logic is shared by all three
+  // methods below and adapter-agnostic — leafLayerIds itself is the one adapter-specific
+  // override point (see leafLayerIds/layerIds tests above), so a minimal one-id-per-leaf
+  // FakeAdapterDataset is enough to exercise it directly, without depending on a real adapter's
+  // test suite (e.g. MapLibreDataset's) to incidentally cover this base-class behaviour.
+  describe('getLayersWithVisibility / getLayersWithOpacity / getLayersWithFilters', () => {
+    class FakeAdapterDataset extends Dataset {
+      get leafLayerIds () { return this.hasSublayers ? [] : [this.id] }
+    }
+
+    beforeEach(() => {
+      // visibility/opacity both fold in global state (see globalDataset.js) — set explicitly
+      // here rather than relying on whatever an earlier test in this file last left it as.
+      attachGlobalState(globalState)
+      datasetRegistry.attachCreateDataset(def => new FakeAdapterDataset(def))
+    })
+
+    afterEach(() => {
+      datasetRegistry.attachCreateDataset(def => new Dataset(def))
+    })
+
+    describe('getLayersWithVisibility', () => {
+      it('returns an entry with layerIds and visibility for each sublayer', () => {
+        // A sublayer's own visible getter requires the parent to also be visible (see
+        // dataset.js's visible getter) — visible: true here is the parent's own, needed for
+        // childA to end up genuinely visible below.
+        const parentDef = { id: 'parent', visible: true, sublayerIds: ['child-a', 'child-b'] }
+        const childA = { id: 'child-a', parentId: 'parent', visible: true }
+        const childB = { id: 'child-b', parentId: 'parent', visible: false }
+        datasetRegistry.attach({ parent: parentDef, 'child-a': childA, 'child-b': childB })
+        expect(datasetRegistry.getDataset('parent').getLayersWithVisibility()).toEqual([
+          { layerIds: ['child-a'], visibility: 'visible' },
+          { layerIds: ['child-b'], visibility: 'none' }
+        ])
+      })
+    })
+
+    describe('getLayersWithOpacity', () => {
+      it('returns layerIds and opacity for a top-level dataset with no sublayers', () => {
+        const dataset = new FakeAdapterDataset({ id: 'ds', style: { opacity: 0.4 } })
+        expect(dataset.getLayersWithOpacity()).toEqual([{ layerIds: ['ds'], opacity: 0.4 }])
+      })
+
+      it('returns layerIds and opacity for each sublayer', () => {
+        const parentDef = { id: 'parent', sublayerIds: ['child-a', 'child-b'] }
+        const childA = { id: 'child-a', parentId: 'parent', style: { opacity: 0.75 } }
+        const childB = { id: 'child-b', parentId: 'parent' }
+        datasetRegistry.attach({ parent: parentDef, 'child-a': childA, 'child-b': childB })
+        expect(datasetRegistry.getDataset('parent').getLayersWithOpacity()).toEqual([
+          { layerIds: ['child-a'], opacity: 0.75 },
+          { layerIds: ['child-b'], opacity: 1 }
+        ])
+      })
+
+      it('skips a sublayer that contributes no leaf layers, rather than pushing undefined', () => {
+        // Models an adapter (like OpenLayersDataset today) where some styles aren't renderable
+        // yet — such a sublayer's leafLayerIds is empty, and that must not surface as an
+        // undefined entry in the result.
+        class UnevenAdapterDataset extends Dataset {
+          get leafLayerIds () { return this.style?.renderable ? [this.id] : [] }
+        }
+        datasetRegistry.attachCreateDataset(def => new UnevenAdapterDataset(def))
         const parentDef = { id: 'parent', sublayerIds: ['child-renderable', 'child-unsupported'] }
         const childRenderable = { id: 'child-renderable', parentId: 'parent', style: { renderable: true, opacity: 0.5 } }
         const childUnsupported = { id: 'child-unsupported', parentId: 'parent', style: { opacity: 0.9 } }
@@ -580,9 +632,39 @@ describe('Dataset class', () => {
         expect(datasetRegistry.getDataset('parent').getLayersWithOpacity()).toEqual([
           { layerIds: ['child-renderable'], opacity: 0.5 }
         ])
-      } finally {
-        datasetRegistry.attachCreateDataset(def => new Dataset(def))
-      }
+      })
+    })
+
+    describe('getLayersWithFilters', () => {
+      it('returns an empty array when there are no hidden features and no sublayers', () => {
+        const dataset = new FakeAdapterDataset({ id: 'ds' })
+        expect(dataset.getLayersWithFilters()).toEqual([])
+      })
+
+      it('returns an entry with layerIds and filter when the dataset has hidden features', () => {
+        const dataset = new FakeAdapterDataset({ id: 'ds', hiddenFeatures: [1, 2] })
+        expect(dataset.getLayersWithFilters()).toEqual([{
+          layerIds: ['ds'],
+          filter: ['!', ['in', ['to-string', ['id']], ['literal', ['1', '2']]]]
+        }])
+      })
+
+      it('includes sublayer entries when a sublayer has hidden features', () => {
+        const parentDef = { id: 'parent', sublayerIds: ['child'] }
+        const childDef = { id: 'child', parentId: 'parent', hiddenFeatures: [7] }
+        datasetRegistry.attach({ parent: parentDef, child: childDef })
+        expect(datasetRegistry.getDataset('parent').getLayersWithFilters()).toEqual([{
+          layerIds: ['child'],
+          filter: ['!', ['in', ['to-string', ['id']], ['literal', ['7']]]]
+        }])
+      })
+
+      it('returns an empty array when sublayers exist but none have hidden features', () => {
+        const parentDef = { id: 'parent', sublayerIds: ['child'] }
+        const childDef = { id: 'child', parentId: 'parent' }
+        datasetRegistry.attach({ parent: parentDef, child: childDef })
+        expect(datasetRegistry.getDataset('parent').getLayersWithFilters()).toEqual([])
+      })
     })
   })
 

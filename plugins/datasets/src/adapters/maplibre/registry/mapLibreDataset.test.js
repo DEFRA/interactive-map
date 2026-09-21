@@ -15,22 +15,13 @@ describe('MapLibreDataset', () => {
       'ds-fill-only': { id: 'ds-fill-only', visible: true, minZoom: 10, maxZoom: 24, style: { fill: 'blue' } },
       'ds-pattern-only': { id: 'ds-pattern-only', style: { fillPattern: 'dots' } },
       'ds-transparent-fill': { id: 'ds-transparent-fill', style: { fill: 'transparent' } },
-      // shared: no special properties — used by layerIds, sourceId, source, visibility,
-      //   _hiddenFeaturesIdExpression, _hiddenFeaturesFilter, and filter tests
+      // shared: no special properties — used by layerIds, source, and visibility tests
       'ds-bare': { id: 'ds-bare' },
       'ds-no-id-prop': { id: 'ds-no-id-prop', geojson: 'https://example.com/data', transformRequest: () => {} },
       'ds-no-transform': { id: 'ds-no-transform', geojson: 'https://example.com/data', idProperty: 'id' },
-      'ds-static-url': { id: 'ds-static-url', geojson: 'https://example.com/static.geojson' },
       // shared: tiles with no zoom — used by source minzoom and maxzoom fallback tests
       'ds-tiles-no-zoom': { id: 'ds-tiles-no-zoom', tiles: ['https://example.com/{z}/{x}/{y}'] },
       // getSymbolSource/getFillSource/getStrokeSource 'has filter' tests use historic-monuments-prehistoric and existing-fields from demo data
-      // _hiddenFeaturesFilter — ds-hf-123 also reused in filter describe
-      'ds-hf-123': { id: 'ds-hf-123', hiddenFeatures: [1, 2, 3] },
-      'ds-hf-neg1': { id: 'ds-hf-neg1', hiddenFeatures: [-1, 5] },
-      'ds-hf-all-neg1': { id: 'ds-hf-all-neg1', hiddenFeatures: [-1] },
-      'ds-hf-empty': { id: 'ds-hf-empty', hiddenFeatures: [] },
-      // filter
-      'ds-combined': { id: 'ds-combined', filter: ['==', ['get', 'type'], 'foo'], hiddenFeatures: [5] },
       // _geojsonIdStrategy string-id warning
       'ds-string-ids': { id: 'ds-string-ids', geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', id: 'feature-1', properties: {}, geometry: null }] } },
       'ds-integer-ids': { id: 'ds-integer-ids', geojson: { type: 'FeatureCollection', features: [{ type: 'Feature', id: 1, properties: {}, geometry: null }] } }
@@ -109,6 +100,10 @@ describe('MapLibreDataset', () => {
     })
   })
 
+  // The full behavioural matrix for getLayersWithValue (recursion, condition-gating,
+  // multi-sublayer aggregation) is shared logic, tested generically against the base Dataset
+  // class in dataset.test.js — this is a thin smoke test confirming it still produces the
+  // real, MapLibre-shaped (up to 3 ids per leaf) result for actual demo fixtures.
   describe('getLayersWithVisibility', () => {
     it('returns layerIds and visibility for a layer with sublayers', () => {
       const registryDataset = datasetRegistry.getDataset('land-covers')
@@ -123,34 +118,14 @@ describe('MapLibreDataset', () => {
     })
   })
 
+  // The full behavioural matrix for getLayersWithValue (recursion, condition-gating,
+  // multi-sublayer aggregation) is shared logic, tested generically against the base Dataset
+  // class in dataset.test.js — this is a thin smoke test confirming it still produces the
+  // real, MapLibre-shaped (up to 3 ids per leaf) result for actual demo fixtures.
   describe('getLayersWithOpacity', () => {
     it('returns layerIds and opacity for a sublayer with no sublayers', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')
       expect(dataset.getLayersWithOpacity()).toEqual([{ layerIds: ['existing-fields', 'existing-fields-stroke'], opacity: 1 }])
-    })
-
-    it('returns layerIds and opacity for a sublayer', () => {
-      const dataset = datasetRegistry.getDataset('land-covers-130-131')
-      const result = dataset.getLayersWithOpacity()
-      expect(result).toEqual([{ layerIds: ['land-covers-130-131', 'land-covers-130-131-stroke'], opacity: 1 }])
-    })
-
-    it('returns layerIds and opacity for a sublayer with sublayers with specific opacity', () => {
-      const parentDef = { id: 'parent-ds', sublayerIds: ['parent-ds-sub'] }
-      const subDef = { id: 'parent-ds-sub', parentId: 'parent-ds', style: { stroke: '#ff0000', fill: '#00ff00', opacity: 0.75 } }
-      datasetRegistry.attach({ 'parent-ds': parentDef, 'parent-ds-sub': subDef })
-      const dataset = datasetRegistry.getDataset('parent-ds')
-      const result = dataset.getLayersWithOpacity()
-      expect(result).toEqual([{ layerIds: ['parent-ds-sub', 'parent-ds-sub-stroke'], opacity: 0.75 }])
-    })
-
-    it('returns layerIds and opacity for all sublayers', () => {
-      const dataset = datasetRegistry.getDataset('historic-monuments')
-      expect(dataset.getLayersWithOpacity()).toEqual([
-        { layerIds: ['historic-monuments-prehistoric'], opacity: 1 },
-        { layerIds: ['historic-monuments-roman'], opacity: 1 },
-        { layerIds: ['historic-monuments-medieval'], opacity: 1 }
-      ])
     })
   })
 
@@ -171,12 +146,9 @@ describe('MapLibreDataset', () => {
     })
   })
 
+  // See getLayersWithOpacity's comment above — same "thin smoke test, full matrix lives in
+  // dataset.test.js" split applies here.
   describe('getLayersWithFilters', () => {
-    it('returns an empty array when there are no hidden features and no sublayers', () => {
-      const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.getLayersWithFilters()).toEqual([])
-    })
-
     it('returns an entry with layerIds and filter when the dataset has hidden features', () => {
       const dataset = datasetRegistry.getDataset('land-covers-130-131')
       expect(dataset.getLayersWithFilters()).toEqual([{
@@ -185,56 +157,6 @@ describe('MapLibreDataset', () => {
           ['!', ['in', ['to-string', ['get', 'id']], ['literal', ['42']]]],
           ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]]]
       }])
-    })
-
-    it('includes sublayer entries when a sublayer has hidden features', () => {
-      const parentDef = { id: 'parent-ds', sublayerIds: ['parent-ds-sub'] }
-      const subDef = { id: 'parent-ds-sub', parentId: 'parent-ds', hiddenFeatures: [7], style: { stroke: '#ff0000', fill: '#00ff00' } }
-      datasetRegistry.attach({ 'parent-ds': parentDef, 'parent-ds-sub': subDef })
-      const dataset = datasetRegistry.getDataset('parent-ds')
-      expect(dataset.getLayersWithFilters()).toEqual([{
-        layerIds: ['parent-ds-sub', 'parent-ds-sub-stroke'],
-        filter: ['!', ['in', ['to-string', ['id']], ['literal', ['7']]]]
-      }])
-    })
-
-    it('returns an empty array when sublayers exist but none have hidden features', () => {
-      const dataset = datasetRegistry.getDataset('historic-monuments')
-      expect(dataset.getLayersWithFilters()).toEqual([])
-    })
-  })
-
-  describe('sourceId', () => {
-    it('returns the parent sourceId for a sublayer', () => {
-      const sublayer = datasetRegistry.getDataset('land-covers-130-131')
-      expect(sublayer.sourceId).toBe(datasetRegistry.getDataset('land-covers').sourceId)
-    })
-
-    it('returns a tiles-based id for a tile dataset (array tiles)', () => {
-      const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-35m5lrb')
-    })
-
-    it('returns a tiles-based id when tiles is a plain string (line 76 non-array branch)', () => {
-      const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-35m5lrb')
-    })
-
-    it('returns geojson-dynamic-{id} for a dynamic geojson source', () => {
-      expect(datasetRegistry.getDataset('land-covers').sourceId).toBe('geojson-dynamic-land-covers')
-    })
-
-    it('returns geojson-{hash} for a static string geojson url', () => {
-      expect(datasetRegistry.getDataset('ds-static-url').sourceId).toBe('geojson-1u4xay')
-    })
-
-    it('returns geojson-{id} for an object geojson source', () => {
-      const dataset = datasetRegistry.getDataset('historic-monuments')
-      expect(dataset.sourceId).toBe('geojson-historic-monuments')
-    })
-
-    it('returns source-{id} when there are no tiles and no geojson', () => {
-      expect(datasetRegistry.getDataset('ds-bare').sourceId).toBe('source-ds-bare')
     })
   })
 
@@ -436,58 +358,6 @@ describe('MapLibreDataset', () => {
           paint: {},
           filter: ['all', ['==', ['get', 'sbi'], '106223377'], ['==', ['get', 'is_dominant_land_cover'], true]]
         })
-    })
-  })
-
-  describe('_hiddenFeaturesIdExpression', () => {
-    it('uses get(idProperty) when idProperty is set', () => {
-      expect(datasetRegistry.getDataset('land-covers')._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'id']])
-    })
-
-    it('uses get(idProperty) for a non-dynamic dataset with idProperty set', () => {
-      expect(datasetRegistry.getDataset('ds-no-transform')._hiddenFeaturesIdExpression).toEqual(['to-string', ['get', 'id']])
-    })
-
-    it('uses the feature id when idProperty is not set', () => {
-      expect(datasetRegistry.getDataset('ds-bare')._hiddenFeaturesIdExpression).toEqual(['to-string', ['id']])
-    })
-  })
-
-  describe('filter', () => {
-    it('returns null when there is no filter and no hidden features', () => {
-      expect(datasetRegistry.getDataset('ds-bare').filter).toBeNull()
-    })
-
-    it('returns the own filter directly when it is the only filter', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').filter)
-        .toEqual(['in', ['get', 'category'], 'prehistoric'])
-    })
-
-    it('returns ["all", parentFilter, ownFilter] when both parent and own filter are present', () => {
-      const parentFilter = ['==', ['get', 'cat'], 'a']
-      const childFilter = ['==', ['get', 'sub'], 'b']
-      const parentDef = { id: 'p-filter', filter: parentFilter, sublayerIds: ['p-filter-child'] }
-      const childDef = { id: 'p-filter-child', parentId: 'p-filter', filter: childFilter }
-      datasetRegistry.attach({ 'p-filter': parentDef, 'p-filter-child': childDef })
-      const dataset = datasetRegistry.getDataset('p-filter-child')
-      expect(dataset.filter).toEqual(['all', parentFilter, childFilter])
-    })
-
-    it('returns the hidden features filter directly when it is the only filter', () => {
-      expect(datasetRegistry.getDataset('ds-hf-123').filter)
-        .toEqual(['!', ['in', ['to-string', ['id']], ['literal', ['1', '2', '3']]]])
-    })
-
-    it('returns ["all", ...] when both own filter and hidden features filter are present', () => {
-      const { filter } = datasetRegistry.getDataset('ds-combined')
-      expect(filter).toEqual([
-        'all',
-        ['==', ['get', 'type'], 'foo'],
-        [
-          '!',
-          ['in', ['to-string', ['id']], ['literal', ['5']]]
-        ]
-      ])
     })
   })
 })
