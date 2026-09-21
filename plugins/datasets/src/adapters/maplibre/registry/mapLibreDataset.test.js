@@ -360,5 +360,4 @@ describe('MapLibreDataset', () => {
         })
     })
   })
-
 })
