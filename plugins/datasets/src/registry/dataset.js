@@ -1,7 +1,7 @@
 import { datasetRegistry } from './datasetRegistry.js'
 import { isVisibleWhen } from './isVisibleWhen.js'
 import { hasCustomVisualStyle } from '../initialise/defaults.js'
-import { hasPattern } from '../../../../src/utils/patternUtils.js'
+import { hasPattern, hashString } from '../../../../src/utils/patternUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
 import { calculateOpacity, getGlobalVisibility } from './globalDataset.js'
 
@@ -74,8 +74,99 @@ export class Dataset {
   get hiddenFeatures () { return this._datasetDefinition.hiddenFeatures }
   get hasHiddenFeatures () { return Boolean(this.hiddenFeatures?.length > 0 || this.parent?.hasHiddenFeatures) }
 
+  // Expression shape (get/in/literal/to-string/all/!) is shared by every adapter that speaks
+  // Mapbox-style filter expressions — both MapLibre and OL's ol/expr use the same operator names.
+  get _hiddenFeaturesIdExpression () {
+    if (this.hasDynamicGeoJSON) {
+      return this.dynamicGeoJSON.hiddenFeaturesIdExpression
+    }
+    if (this.idProperty) {
+      return ['to-string', ['get', this.idProperty]]
+    }
+    return ['to-string', ['id']]
+  }
+
+  get _hiddenFeaturesFilter () {
+    const hiddenFeatures = this.hiddenFeatures?.filter(id => id !== -1)
+    if (!hiddenFeatures?.length) {
+      return null
+    }
+    return ['!', ['in', this._hiddenFeaturesIdExpression, ['literal', hiddenFeatures.map(String)]]]
+  }
+
   get filter () {
-    return null
+    const filter = ['all']
+    if (this.parent?.filter) {
+      filter.push(this.parent.filter)
+    }
+    if (this._datasetDefinition.filter) {
+      filter.push(this._datasetDefinition.filter)
+    }
+    const hiddenFeaturesFilter = this._hiddenFeaturesFilter
+    if (hiddenFeaturesFilter) {
+      filter.push(hiddenFeaturesFilter)
+    }
+    if (filter.length === 1) {
+      return null
+    }
+    return filter.length > 2 ? filter : filter[1]
+  }
+
+  /**
+   * Sourced-map-layer ids this dataset renders to, for a dataset/sublayer with no sublayers
+   * of its own. Adapter-specific: MapLibre needs up to three (fill/stroke/symbol are separate
+   * layers); OL needs at most one (a single style can combine fill+stroke or an icon).
+   * Base implementation returns none — override in an adapter's Dataset subclass to enable
+   * layerIds/getLayersWith*.
+   * @returns {string[]}
+   */
+  get leafLayerIds () {
+    return []
+  }
+
+  get layerIds () {
+    if (this.hasSublayers) {
+      return this.sublayers.flatMap(sublayer => sublayer.layerIds).filter(Boolean)
+    }
+    return this.leafLayerIds
+  }
+
+  getLayersWithValue (valueName, condition = false) {
+    const response = []
+    if (condition === false || this[condition]) {
+      const layerIds = this.leafLayerIds
+      if (layerIds.length) {
+        const value = this[valueName]
+        response.push({ layerIds, [valueName]: value })
+      }
+    }
+
+    if (this.hasSublayers) {
+      this.sublayers.forEach((sublayer) => {
+        if (condition === false || sublayer[condition]) {
+          // A sublayer can legitimately contribute nothing — e.g. an OL sublayer whose only
+          // style is a symbol, which isn't renderable there yet (leafLayerIds is empty) —
+          // so don't assume [0] is always a real entry.
+          const [entry] = sublayer.getLayersWithValue(valueName)
+          if (entry) {
+            response.push(entry)
+          }
+        }
+      })
+    }
+    return response
+  }
+
+  getLayersWithVisibility () {
+    return this.getLayersWithValue('visibility')
+  }
+
+  getLayersWithOpacity () {
+    return this.getLayersWithValue('opacity')
+  }
+
+  getLayersWithFilters () {
+    return this.getLayersWithValue('filter', 'hasHiddenFeatures')
   }
 
   // Returns true if either the parent (if it has one) or global visibility is hidden , otherwise returns true.
@@ -161,6 +252,20 @@ export class Dataset {
       return datasetRegistry.getDataset(this._datasetDefinition.parentId)
     }
     return undefined
+  }
+
+  get sourceId () {
+    if (this.isSublayer) { return this.parent.sourceId }
+    if (this.hasDynamicGeoJSON) { return this.dynamicGeoJSON.sourceId }
+    if (this.tiles) {
+      const tilesKey = Array.isArray(this.tiles) ? this.tiles.join(',') : this.tiles
+      return `tiles-${hashString(tilesKey)}`
+    }
+    if (this.geojson) {
+      if (typeof this.geojson === 'string') { return `geojson-${hashString(this.geojson)}` }
+      return `geojson-${this.id}`
+    }
+    return `source-${this.id}`
   }
 
   get style () {
