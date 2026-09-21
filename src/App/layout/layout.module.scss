@@ -266,6 +266,12 @@
   flex-wrap: wrap; // lets a stacked attributions row wrap onto its own line
   justify-content: space-between;
   align-items: flex-end;
+  // No effect on a single line (the common case), only between wrapped lines — covers both
+  // a too-wide .im-o-app__bottom-right dropping below the logo/bottom-left column, and the
+  // stacked attributions row below that (see its own comment further down: this same gap
+  // replaces what used to be its one-off margin-top, so a doubly-wrapped bottom stays evenly
+  // spaced rather than gapping only at the line the margin happened to be declared on).
+  row-gap: var(--divider-gap);
   z-index: -2; // Support masking the viewport
 }
 
@@ -323,7 +329,9 @@
 // (being bottom-pinned) pushes the logo and bottom-right buttons up rather than squeezing
 // the text into an ever-narrower column. The oversized flex-basis plus negative
 // right/bottom/left margin bleeds that row flush to the true edges the same way the docked
-// box's absolute offsets do above.
+// box's absolute offsets do above; the gap above it comes from .im-o-app__bottom's own
+// row-gap (not a margin-top here), so it stays exactly one gap even if .im-o-app__bottom-right
+// has also wrapped onto a line of its own above it.
 
 .im-o-app__attributions:not(:empty) {
   position: absolute;
@@ -337,7 +345,7 @@
 .im-o-app__attributions--stacked:not(:empty) {
   position: static;
   flex-basis: calc(100% + var(--primary-gap) * 2);
-  margin: var(--divider-gap) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1);
+  margin: 0 calc(var(--primary-gap) * -1) calc(var(--primary-gap) * -1);
 }
 
 // ---------------------------------------------------
