@@ -633,6 +633,10 @@ const interactiveMap = new InteractiveMap('map', {
   autoColorScheme: true,
   center: [481146,484971],
   zoom: 13,
+  maxMobileWidth: 795,
+  minDesktopWidth: 796,
+  enableMapControls: false,
+  enableZoomControls: true,
   plugins: [
     interactPlugin,
     searchPlugin({
@@ -659,7 +663,8 @@ const interactiveMap = new InteractiveMap('map', {
         panels: [{
           id: 'menu',
           desktop: { open: true, slot: 'side', width: '280px', dismissible: false, exclusive: false, },
-          tablet: { slot: 'side', width: '280px', modal: true }
+          tablet: { open: false, slot: 'side', width: '280px', dismissible: true, exclusive: true },
+          mobile: { open: false, slot: 'drawer', modal: false, dismissible: true },
         }],
         buttons: [
           {
@@ -720,6 +725,11 @@ siteBoundary.onSetFeature = (feature) => {
     siteBoundary.onSetFeature(true)
   })
 
+  const getBreakpoint = () => {
+    const mapElement = document.getElementById('map')
+    return mapElement?.getAttribute('data-breakpoint') || 'desktop'
+  }
+
 
 const onEditPolygon = (isEditing) => {
     // toggleKeyWhenEditing(isEditing)
@@ -733,7 +743,9 @@ const onEditPolygon = (isEditing) => {
         datasetsPlugin.setDatasetVisibility(false)
       }
     } else {
-      interactiveMap.showPanel('menu')
+      if (getBreakpoint === 'desktop') {
+        interactiveMap.showPanel('menu')
+      }
       if (datasetsPlugin.ready) {
         datasetsPlugin.setDatasetVisibility(true)
       }
