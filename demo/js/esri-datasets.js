@@ -743,7 +743,7 @@ const onEditPolygon = (isEditing) => {
         datasetsPlugin.setDatasetVisibility(false)
       }
     } else {
-      if (getBreakpoint === 'desktop') {
+      if (getBreakpoint() === 'desktop') {
         interactiveMap.showPanel('menu')
       }
       if (datasetsPlugin.ready) {
