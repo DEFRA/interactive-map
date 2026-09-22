@@ -14,7 +14,25 @@ export class SiteBoundary {
     this._type = null
     this._maxZoom = 20
     this._mapView = null
-    this.coordinates = null
+    // this.coordinates = null
+    this.coordinates = [
+        [
+            479693.69646258274,
+            483327.60389187
+        ],
+        [
+            481031.34445757297,
+            481569.5522413114
+        ],
+        [
+            478508.9225241628,
+            481550.44298424013
+        ],
+        [
+            479693.69646258274,
+            483327.60389187
+        ]
+    ]
   }
 
   // possible states

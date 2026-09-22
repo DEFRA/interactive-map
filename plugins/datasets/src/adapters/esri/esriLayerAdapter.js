@@ -104,7 +104,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   _reorderGroupLayers () {
     const groupLayers = Object.values(this._groupLayers)
     groupLayers.forEach((groupLayer) => {
-      const children = groupLayer?.allLayers?.items || groupLayer?.layers?.items || []
+      const children = groupLayer?.allLayers?.items || []
       const orderedChildren = [...children]
         .filter(Boolean)
         .sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))

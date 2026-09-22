@@ -363,18 +363,39 @@ describe('esriLayerAdapter', () => {
       const roads = { id: 'roads' }
       const schools = { id: 'schools' }
       const sketch = { id: 'ketchLayer-0' }
+      const baseLayer = { id: 'baseLayer' }
       const groupLayer = {
         id: 'group-1',
         type: 'group',
         allLayers: { items: [schools, sketch, roads] },
         reorder: jest.fn()
       }
+      adapter._groupLayers[groupLayer.id] = groupLayer
+      map.allLayers = { items: [groupLayer, baseLayer] }
+      map.reorder = jest.fn()
 
-      adapter._reorderGroupLayers([groupLayer])
+      adapter._reorderLayers()
 
       expect(groupLayer.reorder).toHaveBeenNthCalledWith(1, roads, 0)
       expect(groupLayer.reorder).toHaveBeenNthCalledWith(2, schools, 1)
       expect(groupLayer.reorder).toHaveBeenNthCalledWith(3, sketch, 2)
+    })
+
+    it('Copes when a groupLayer has no items', () => {
+      datasetRegistry._orderedDatasets = ['roads', 'schools']
+      const baseLayer = { id: 'baseLayer' }
+      const groupLayer = {
+        id: 'group-1',
+        type: 'group',
+        reorder: jest.fn()
+      }
+      adapter._groupLayers[groupLayer.id] = groupLayer
+      map.allLayers = { items: [groupLayer, baseLayer] }
+      map.reorder = jest.fn()
+
+      adapter._reorderLayers()
+
+      expect(groupLayer.reorder).not.toHaveBeenCalled()
     })
   })
 

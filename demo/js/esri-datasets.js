@@ -595,8 +595,8 @@ const datasetsPlugin = createDatasetsPlugin({
     visible: true
   },
   hasMenu: false,
-  datasets
-  // datasets: [datasetFloodZonesCC, datasetFloodZones]
+  // datasets
+  datasets: [datasetFloodZonesCC, datasetFloodZones]
 })
 
 const interactPlugin = createInteractPlugin({
