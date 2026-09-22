@@ -1,8 +1,6 @@
 /**
- * Get the current viewport bbox from a map provider.
- * Both MapLibreProvider and OpenLayersProvider's getBounds() already return this exact
- * [minX, minY, maxX, maxY] shape (in their own projection — WGS84 lon/lat for MapLibre,
- * EPSG:27700 easting/northing for OpenLayers) — this just names that call for callers here.
+ * Get the current viewport bbox from a map provider — both providers' getBounds() already
+ * return this exact [minX, minY, maxX, maxY] shape in their own projection.
  * @param {Object} mapProvider - Map provider instance (not the raw map)
  * @returns {number[]} bbox as [west, south, east, north] (or [minX, minY, maxX, maxY])
  */
