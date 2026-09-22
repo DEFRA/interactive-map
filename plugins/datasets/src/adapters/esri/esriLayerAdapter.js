@@ -287,6 +287,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
       // mapLayer could be a VectorTileLayer or a FeatureLayer, depending on the dataset type
       const mapLayer = this._mapVisibilityLayers[isSublayer ? parent.id : id]
+      if (!mapLayer) {
+        return
+      }
       if (registryDataset.type === 'FeatureService') {
         // FeatureLayers don't have style layers, so we don't need to apply style layer visibility or paint properties
         mapLayer.renderer = registryDataset.renderer
