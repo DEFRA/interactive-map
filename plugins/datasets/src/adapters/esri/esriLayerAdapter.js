@@ -65,6 +65,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
         await _add(registryDataset)
       }
     }
+    // Reorder layers after adding the initially visible datasets
+    this._reorderLayers()
     // Add the non-visible datasets next
     for (const registryDataset of topLevelDatasets) {
       if (registryDataset.visibility !== 'visible') {
@@ -87,7 +89,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   _reorderLayers () {
     // Order: baseLayer first, then datasets by their registry order, then sketch layers last
-    // Layers within a group layer are not reordered individually - they keep their existing relative order
     const allLayers = this._map?.allLayers?.items
     if (!allLayers?.length) {
       return
@@ -96,6 +97,20 @@ export default class EsriLayerAdapter extends LayerAdapter {
     const topLevelLayers = allLayers.filter(layer => layer.parent?.type !== 'group')
     const orderedLayers = [...topLevelLayers].sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))
     orderedLayers.forEach((layer, index) => this._map.reorder(layer, index))
+    // Finally reorder the items within the group layers
+    this._reorderGroupLayers()
+  }
+
+  _reorderGroupLayers () {
+    const groupLayers = Object.values(this._groupLayers)
+    groupLayers.forEach((groupLayer) => {
+      const children = groupLayer?.allLayers?.items || []
+      const orderedChildren = [...children]
+        .filter(Boolean)
+        .sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))
+
+      orderedChildren.forEach((layer, index) => groupLayer?.reorder?.(layer, index))
+    })
   }
 
   _addGroupLayer (esriGroupId) {
