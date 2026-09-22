@@ -1,10 +1,9 @@
-import { Dataset } from '../../../registry/dataset.js'
-import { hashString } from '../../../../../../src/utils/patternUtils.js'
+import { MapboxStyleDataset } from '../../../registry/mapboxStyleDataset.js'
 import { anchorToMaplibre } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
 import { logger } from '../../../../../../src/services/logger.js'
 const MAX_TILE_ZOOM = 22
 
-export class MapLibreDataset extends Dataset {
+export class MapLibreDataset extends MapboxStyleDataset {
   get fillLayerId () {
     if (this.hasSublayers) {
       return null
@@ -41,57 +40,8 @@ export class MapLibreDataset extends Dataset {
     return null
   }
 
-  get layerIds () {
-    if (this.hasSublayers) {
-      return this.sublayers.flatMap(sublayer => sublayer.layerIds).filter(Boolean)
-    }
+  get leafLayerIds () {
     return [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
-  }
-
-  getLayersWithValue (valueName, condition = false) {
-    const response = []
-    if (condition === false || this[condition]) {
-      const layerIds = [this.symbolLayerId, this.fillLayerId, this.strokeLayerId].filter(Boolean)
-      if (layerIds.length) {
-        const value = this[valueName]
-        response.push({ layerIds, [valueName]: value })
-      }
-    }
-
-    if (this.hasSublayers) {
-      this.sublayers.forEach((sublayer) => {
-        if (condition === false || sublayer[condition]) {
-          response.push(sublayer.getLayersWithValue(valueName)[0])
-        }
-      })
-    }
-    return response
-  }
-
-  getLayersWithVisibility () {
-    return this.getLayersWithValue('visibility')
-  }
-
-  getLayersWithOpacity () {
-    return this.getLayersWithValue('opacity')
-  }
-
-  getLayersWithFilters () {
-    return this.getLayersWithValue('filter', 'hasHiddenFeatures')
-  }
-
-  get sourceId () {
-    if (this.isSublayer) { return this.parent.sourceId }
-    if (this.hasDynamicGeoJSON) { return this.dynamicGeoJSON.sourceId }
-    if (this.tiles) {
-      const tilesKey = Array.isArray(this.tiles) ? this.tiles.join(',') : this.tiles
-      return `tiles-${hashString(tilesKey)}`
-    }
-    if (this.geojson) {
-      if (typeof this.geojson === 'string') { return `geojson-${hashString(this.geojson)}` }
-      return `geojson-${this.id}`
-    }
-    return `source-${this.id}`
   }
 
   _geojsonIdStrategy () {
@@ -167,41 +117,5 @@ export class MapLibreDataset extends Dataset {
       paint,
       ...(this.filter ? { filter: this.filter } : {})
     }
-  }
-
-  get _hiddenFeaturesIdExpression () {
-    if (this.hasDynamicGeoJSON) {
-      return this.dynamicGeoJSON.hiddenFeaturesIdExpression
-    }
-    if (this.idProperty) {
-      return ['to-string', ['get', this.idProperty]]
-    }
-    return ['to-string', ['id']]
-  }
-
-  get _hiddenFeaturesFilter () {
-    const hiddenFeatures = this.hiddenFeatures?.filter(id => id !== -1)
-    if (!hiddenFeatures?.length) {
-      return null
-    }
-    return ['!', ['in', this._hiddenFeaturesIdExpression, ['literal', hiddenFeatures.map(String)]]]
-  }
-
-  get filter () {
-    const filter = ['all']
-    if (this.parent?.filter) {
-      filter.push(this.parent.filter)
-    }
-    if (this._datasetDefinition.filter) {
-      filter.push(this._datasetDefinition.filter)
-    }
-    const hiddenFeaturesFilter = this._hiddenFeaturesFilter
-    if (hiddenFeaturesFilter) {
-      filter.push(hiddenFeaturesFilter)
-    }
-    if (filter.length === 1) {
-      return null
-    }
-    return filter.length > 2 ? filter : filter[1]
   }
 }
