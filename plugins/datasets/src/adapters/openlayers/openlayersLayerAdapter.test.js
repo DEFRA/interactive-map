@@ -376,7 +376,6 @@ describe('pattern registration', () => {
     await adapter.onMapSizeChange()
     expect(setStyleSpy).not.toHaveBeenCalled()
   })
-
 })
 
 describe('symbol registration', () => {
@@ -420,7 +419,6 @@ describe('symbol registration', () => {
     await adapter.onMapStyleChange()
     expect(setSpy).toHaveBeenCalledWith('symbolMeta', expect.objectContaining({ imageId: before?.imageId }))
   })
-
 })
 
 describe('destroy', () => {

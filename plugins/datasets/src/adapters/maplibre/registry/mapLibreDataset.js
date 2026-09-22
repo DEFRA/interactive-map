@@ -1,9 +1,9 @@
-import { Dataset } from '../../../registry/dataset.js'
+import { MapboxStyleDataset } from '../../../registry/mapboxStyleDataset.js'
 import { anchorToMaplibre } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
 import { logger } from '../../../../../../src/services/logger.js'
 const MAX_TILE_ZOOM = 22
 
-export class MapLibreDataset extends Dataset {
+export class MapLibreDataset extends MapboxStyleDataset {
   get fillLayerId () {
     if (this.hasSublayers) {
       return null

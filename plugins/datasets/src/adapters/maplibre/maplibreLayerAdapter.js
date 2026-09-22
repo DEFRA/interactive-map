@@ -1,7 +1,7 @@
-import { LayerAdapter } from '../layerAdapter.js'
 import { addDatasetLayers } from './layerBuilders.js'
 import { MapLibreDataset } from './registry/mapLibreDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
+import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 
 /**
  * MapLibre GL JS implementation of the LayerAdapter interface for the datasets plugin.
@@ -15,18 +15,14 @@ import { datasetRegistry } from '../../registry/datasetRegistry.js'
  * Symbol image rasterisation is delegated to the map provider via
  * `mapProvider.addSymbolsToMap()`, keeping this adapter free of provider internals.
  */
-export default class MaplibreLayerAdapter extends LayerAdapter {
+export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
   /**
    * @param {Object} mapProvider - Map provider instance (e.g. MapLibreProvider)
    * @param {Object} symbolRegistry
    * @param {Object} patternRegistry
    */
   constructor (mapProvider, symbolRegistry, patternRegistry) {
-    super()
-    this._mapProvider = mapProvider
-    this._map = mapProvider.map
-    this._symbolRegistry = symbolRegistry
-    this._patternRegistry = patternRegistry
+    super(mapProvider, symbolRegistry, patternRegistry)
     // datasetId → sourceId, used by setData to update the correct source
     this._datasetSourceMap = new Map()
     window._datasetSourceMap = this._datasetSourceMap // Expose for debugging
@@ -137,14 +133,10 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
 
   // ─── Dataset operations ─────────────────────────────────────────────────────
 
-  /**
-   * Add a single dataset's source and layers to the map.
-   * @param {string} datasetId
-   */
-  async addDataset (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
-    await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs)
-    this._addLayers(registryDataset)
+  // addDataset is inherited from MapboxStyleLayerAdapter, which now guards an unknown
+  // datasetId (previously this threw here, matching OpenLayersLayerAdapter's behaviour).
+  _registerPatternsAndSymbols (registryDataset) {
+    return this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs)
   }
 
   /**
@@ -196,38 +188,11 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
   async applyStyle (datasetId) {
     const registryDataset = datasetRegistry.getDataset(datasetId)
     registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
-    await this.addPatternsAndSymbolsToMap(registryDataset.patternConfigs, registryDataset.symbolConfigs)
+    await this._registerPatternsAndSymbols(registryDataset)
     this._addLayers(registryDataset)
   }
 
-  /**
-   * Apply opacity for all layers with datasetId
-   * @param {string} datasetId
-   */
-  applyDatasetOpacity (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
-    if (registryDataset) {
-      this._applyRegistryDatasetOpacity(registryDataset)
-    }
-  }
-
-  /**
-   * Apply opacity for all layers belonging to a registryDataset.
-   * Uses setPaintProperty directly — safe to call on every slider tick.
-   * @param {Object} registryDataset
-   */
-  _applyRegistryDatasetOpacity (registryDataset) {
-    registryDataset.getLayersWithOpacity().forEach(({ layerIds, opacity }) => {
-      layerIds.forEach(layerId => this._setPaintOpacity(layerId, opacity))
-    })
-  }
-
-  /**
-   * Apply opacity for all layers
-   */
-  applyGlobalOpacity () {
-    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetOpacity(registryDataset))
-  }
+  // Opacity/visibility methods are inherited from MapboxStyleLayerAdapter.
 
   /**
    * Update the GeoJSON data for a dataset's source.
@@ -247,10 +212,6 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
 
   // ─── Private ─────────────────────────────────────────────────────────────────
 
-  get _pixelRatio () {
-    return this._mapProvider.map.getPixelRatio()
-  }
-
   _addLayers (registryDataset) {
     const { mapStyle } = datasetRegistry
     const sourceId = addDatasetLayers(this._map, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, this._pixelRatio)
@@ -263,7 +224,7 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
     if (!style?.layers) {
       return null
     }
-    const layer = style.layers.find(l => this._symbolLayerIds.has(l.id))
+    const layer = style.layers.find(styleLayer => this._symbolLayerIds.has(styleLayer.id))
     return layer?.id ?? null
   }
 
@@ -288,36 +249,10 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
     })
   }
 
-  /**
-   * Apply visibility for all layers with datasetId
-   * @param {string} datasetId
-   */
-  applyDatasetVisibility (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
-    if (registryDataset) {
-      this._applyRegistryDatasetVisibility(registryDataset)
+  _setLayerVisibility (layerId, visibility) {
+    if (this._map.getLayer(layerId)) {
+      this._map.setLayoutProperty(layerId, 'visibility', visibility)
     }
-  }
-
-  /**
-   * Apply visibility for all layers belonging to a registryDataset.
-   * @param {Object} registryDataset
-   */
-  _applyRegistryDatasetVisibility (registryDataset) {
-    registryDataset.getLayersWithVisibility().forEach(({ layerIds, visibility }) => {
-      layerIds.forEach(layerId => {
-        if (this._map.getLayer(layerId)) {
-          this._map.setLayoutProperty(layerId, 'visibility', visibility)
-        }
-      })
-    })
-  }
-
-  /**
-   * Apply visibility for all layers
-   */
-  applyGlobalVisibility () {
-    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
   }
 
   _applyFeatureFilter (registryDataset) {
@@ -331,7 +266,7 @@ export default class MaplibreLayerAdapter extends LayerAdapter {
     })
   }
 
-  _setPaintOpacity (layerId, opacity) {
+  _setLayerOpacity (layerId, opacity) {
     const layer = this._map.getLayer(layerId)
     if (!layer) {
       return

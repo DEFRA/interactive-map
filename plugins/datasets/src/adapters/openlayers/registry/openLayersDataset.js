@@ -1,4 +1,4 @@
-import { Dataset } from '../../../registry/dataset.js'
+import { MapboxStyleDataset } from '../../../registry/mapboxStyleDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 import { getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
@@ -20,7 +20,7 @@ const DEFAULT_STROKE_WIDTH = 1
  * the adapter, not baked into the style — so, unlike MapLibre's getFillSource/getStrokeSource/
  * getSymbolSource paint objects, flatStyle carries no opacity/visibility properties.
  */
-export class OpenLayersDataset extends Dataset {
+export class OpenLayersDataset extends MapboxStyleDataset {
   get leafLayerIds () {
     if (this.hasSublayers) {
       return []

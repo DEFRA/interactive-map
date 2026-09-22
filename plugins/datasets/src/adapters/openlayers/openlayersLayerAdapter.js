@@ -1,6 +1,6 @@
-import { LayerAdapter } from '../layerAdapter.js'
 import { OpenLayersDataset } from './registry/openLayersDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
+import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 import { createDatasetSource, createDatasetLayer, resolveLayerStyle, readGeoJSONFeatures } from './layerBuilders.js'
 import { registerSymbols, SYMBOL_RASTER_PIXEL_RATIO } from '../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 import { registerCrispCanvasPatterns } from './canvasPatternStyle.js'
@@ -18,18 +18,14 @@ import { logger } from '../../../../../src/services/logger.js'
  * single layer. Sublayers of the same parent share one OL source (tracked by sourceId), each
  * with its own layer + filter-scoped style, mirroring how MapLibre sublayers share one source.
  */
-export default class OpenLayersLayerAdapter extends LayerAdapter {
+export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   /**
    * @param {Object} mapProvider - Map provider instance (e.g. OpenLayersProvider)
    * @param {Object} symbolRegistry
    * @param {Object} patternRegistry
    */
   constructor (mapProvider, symbolRegistry, patternRegistry) {
-    super()
-    this._mapProvider = mapProvider
-    this._map = mapProvider.map
-    this._symbolRegistry = symbolRegistry
-    this._patternRegistry = patternRegistry
+    super(mapProvider, symbolRegistry, patternRegistry)
     // sourceId → OL source, shared across sublayers of the same dataset
     this._sourcesById = new Map()
     // leaf layer id (== dataset/sublayer id) → OL layer
@@ -42,13 +38,6 @@ export default class OpenLayersLayerAdapter extends LayerAdapter {
 
   createDataset (datasetDefinition) {
     return new OpenLayersDataset(datasetDefinition)
-  }
-
-  // Live, mutable — the OL provider updates the map's own pixelRatio on resize (see
-  // providers/beta/openlayers/src/appEvents.js's handleSetPixelRatio), so this always reflects
-  // the map's current rendering density, not just whatever it was when the adapter was built.
-  get _pixelRatio () {
-    return this._map.getPixelRatio()
   }
 
   get _styleContext () {
@@ -94,14 +83,10 @@ export default class OpenLayersLayerAdapter extends LayerAdapter {
   }
 
   // ─── Dataset operations ─────────────────────────────────────────────────────
+  // addDataset is inherited from MapboxStyleLayerAdapter.
 
-  async addDataset (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
-    if (!registryDataset) {
-      return
-    }
-    await Promise.all([this._registerPatterns([registryDataset]), this._registerSymbols([registryDataset])])
-    this._addLayers(registryDataset)
+  _registerPatternsAndSymbols (registryDataset) {
+    return Promise.all([this._registerPatterns([registryDataset]), this._registerSymbols([registryDataset])])
   }
 
   removeDataset (datasetId) {
@@ -131,7 +116,7 @@ export default class OpenLayersLayerAdapter extends LayerAdapter {
       return
     }
     // A style change can introduce a pattern/symbol that wasn't previously configured.
-    await Promise.all([this._registerPatterns([registryDataset]), this._registerSymbols([registryDataset])])
+    await this._registerPatternsAndSymbols(registryDataset)
     this._forEachLeafDataset(registryDataset, leaf => {
       if (this._layersById.has(leaf.id)) {
         this._setLayerStyle(leaf)
@@ -142,39 +127,14 @@ export default class OpenLayersLayerAdapter extends LayerAdapter {
   }
 
   // ─── Feature operations ─────────────────────────────────────────────────────
+  // Opacity/visibility methods are inherited from MapboxStyleLayerAdapter.
 
-  applyDatasetOpacity (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
-    if (registryDataset) {
-      this._applyRegistryDatasetOpacity(registryDataset)
-    }
+  _setLayerOpacity (layerId, opacity) {
+    this._layersById.get(layerId)?.setOpacity(opacity)
   }
 
-  _applyRegistryDatasetOpacity (registryDataset) {
-    registryDataset.getLayersWithOpacity().forEach(({ layerIds, opacity }) => {
-      layerIds.forEach(layerId => this._layersById.get(layerId)?.setOpacity(opacity))
-    })
-  }
-
-  applyGlobalOpacity () {
-    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetOpacity(registryDataset))
-  }
-
-  applyDatasetVisibility (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
-    if (registryDataset) {
-      this._applyRegistryDatasetVisibility(registryDataset)
-    }
-  }
-
-  _applyRegistryDatasetVisibility (registryDataset) {
-    registryDataset.getLayersWithVisibility().forEach(({ layerIds, visibility }) => {
-      layerIds.forEach(layerId => this._layersById.get(layerId)?.setVisible(visibility === 'visible'))
-    })
-  }
-
-  applyGlobalVisibility () {
-    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
+  _setLayerVisibility (layerId, visibility) {
+    this._layersById.get(layerId)?.setVisible(visibility === 'visible')
   }
 
   // Hidden features are baked into flatStyle's filter (see OpenLayersDataset), so applying the
