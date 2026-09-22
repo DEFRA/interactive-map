@@ -3,9 +3,8 @@ import { getEffectivePixelRatio } from '../../../../src/utils/patternUtils.js'
 /**
  * Register pattern images for the given pre-resolved pattern configs.
  * Skips images that are already registered (safe to call on style change).
- * Rasterisation itself (and its own ImageData cache) lives in patternRegistry.rasterisePatternImage,
- * shared with the OpenLayers provider's own pattern util — this only owns the MapLibre-specific
- * "last mile" of registering the result via map.addImage().
+ * Rasterisation itself lives in patternRegistry.rasterisePatternImage, shared with OpenLayers —
+ * this only owns the MapLibre-specific "last mile" of registering via map.addImage().
  *
  * @param {Object} map - MapLibre map instance
  * @param {Object[]} styleArray - an array of pattern style configs

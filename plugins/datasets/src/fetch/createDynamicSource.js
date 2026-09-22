@@ -141,10 +141,8 @@ const fetchViewportData = async (state, { mapProvider, dynamicGeoJSON, onUpdate 
   }
 }
 
-// mapProvider.getBounds()/getZoom() are already provider-normalized (see bbox.js), but the raw
-// map's event API isn't: mapbox-gl has on()/off(), OL's Observable only has on()/once()/un() —
-// no off(). Both accept the same (type, handler) signature for subscribing/unsubscribing, so
-// duck-type the removal call rather than adding a third map-provider abstraction just for this.
+// mapbox-gl has on()/off(), but OL's Observable only has on()/once()/un() — duck-type the
+// removal call rather than adding a map-provider abstraction just for this one method.
 const offMoveEnd = (map, handler) => (map.off || map.un).call(map, 'moveend', handler)
 
 /**

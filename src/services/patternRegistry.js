@@ -112,19 +112,10 @@ export const patternRegistry = {
   },
 
   /**
-   * Rasterise a pattern to ImageData for use as a provider-native pattern image — MapLibre's
-   * map.addImage() (see providers/maplibre/src/utils/patternImages.js) or a real CanvasPattern
-   * for OpenLayers (see plugins/datasets/src/adapters/openlayers/canvasPatternStyle.js — OL has
-   * no flat-style pattern path that can hold more source detail than its display size, so it
-   * bypasses flat-style entirely for this). Results are cached by imageId so identical patterns
-   * are only rendered once, mirroring symbolRegistry.rasteriseSymbolImage.
-   *
-   * The rendered tile is always 8×8 logical/CSS pixels for MapLibre, which hints its own
-   * pixelRatio to addImage. OpenLayers' CanvasPattern instead divides back down by the raw
-   * pixelRatio at display time (see canvasPatternStyle.js's module doc), which nets out to a
-   * constant 16×16 logical/CSS pixels instead — i.e. the same style renders at a different
-   * on-screen pattern-tile size per adapter. Not yet confirmed whether that's acceptable or
-   * needs aligning; check both renderers side by side before relying on either constant.
+   * Rasterise a pattern to ImageData, cached by imageId — shared by MapLibre's map.addImage()
+   * and OpenLayers' CanvasPattern (canvasPatternStyle.js). Note: the two currently render the
+   * pattern tile at different on-screen sizes (8px vs 16px CSS) — not yet confirmed if that
+   * needs aligning.
    *
    * @param {Object} style - Dataset or marker config with fillPattern* properties
    * @param {string} mapStyleId - Current style/theme identifier
