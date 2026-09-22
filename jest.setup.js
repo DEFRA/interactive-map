@@ -6,10 +6,8 @@ if (typeof structuredClone === 'undefined') {
   global.structuredClone = (obj) => JSON.parse(JSON.stringify(obj))
 }
 
-// TextEncoder/TextDecoder aren't exposed by jsdom either — ol/webgl/LabelsArray.js (new in
-// OL 10.10, for WebGL text rendering) references TextEncoder at module load time, so importing
-// any WebGL layer at all now throws in tests without this, even for code paths that never
-// render text. Real browsers all have this natively; Node's own util module does too.
+// TextEncoder/TextDecoder aren't exposed by jsdom either — OL 10.10's WebGL text rendering
+// module references TextEncoder at load time, so importing any WebGL layer throws without this.
 if (!global.TextEncoder) {
   global.TextEncoder = TextEncoder
   global.TextDecoder = TextDecoder

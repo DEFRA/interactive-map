@@ -43,10 +43,8 @@ export default class OpenLayersProvider extends MapProvider {
     return 'OpenLayersProvider'
   }
 
-  // Unlike MapLibre (whose style loads asynchronously after the map object exists, so
-  // isBaseMapReady checks map.getStyle() specifically), initMap() awaits the OL style/sprite
-  // fetch itself before constructing the OlMap — by the time this.map is set, the base map is
-  // already showing its loaded style. See initMap's own "MAP_READY is synchronous" comment.
+  // Unlike MapLibre, initMap() awaits the OL style/sprite fetch before constructing the map, so
+  // the base map is already loaded by the time this.map is set.
   isBaseMapReady () {
     return Boolean(this.map)
   }
