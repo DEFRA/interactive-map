@@ -1,29 +1,17 @@
 /**
  * The OL "last mile" for symbolRegistry's rasterised symbol images: turns the ImageData
- * rasteriseSymbolImage() produces into something OL can render, and caches it by the same
- * content-hash imageId symbolRegistry already computes — so repeated resolves of the same
- * style/theme/pixel-ratio combination are free after the first. Unlike MapLibre
- * (map.addImage), OL has no map-level image registry of its own, so this cache lives at the
- * module level here instead.
+ * rasteriseSymbolImage() produces into something OL can render, cached by the same imageId
+ * symbolRegistry computes. OL has no map-level image registry like MapLibre's map.addImage,
+ * so this cache lives at the module level instead.
  *
- * Two consumers, two shapes cached from the same ImageData:
- * - highlightFeatures.js's symbol-ring overlay builds its own ol/style/Icon directly, so it
- *   wants a raw <canvas> (getOrCreateSymbolImage/getCachedSymbolImage).
- * - OpenLayersDataset.flatStyle's icon-src needs a data URI string instead — both Canvas and
- *   WebGL read flat-style icon-src as a URL, not a raw canvas object (unlike fill-pattern-src,
- *   OL's icon-scale genuinely does decouple native pixel detail from on-screen size for both
- *   renderers — see canvasPatternStyle.js's module doc for why that's *not* true for patterns).
+ * Two consumers need two different shapes from the same ImageData: highlightFeatures.js builds
+ * its own ol/style/Icon directly, so it wants a raw <canvas> (getOrCreateSymbolImage/
+ * getCachedSymbolImage); OpenLayersDataset.flatStyle's icon-src needs a data URI string instead.
  */
 
-// Fixed oversampling ratio for symbol rasterisation, unrelated to the map's actual pixelRatio
-// — unlike patterns, icon-scale genuinely lets a display size be smaller than a texture's
-// native pixel count (confirmed against ol/render/webgl/style.js's icon-scale handling, which
-// multiplies the symbol quad size and samples the texture with normalised UVs, unlike
-// fill-pattern's pixel-indexed sampling — see canvasPatternStyle.js's doc for that contrast).
-// So a single fixed high-detail raster, scaled down via icon-scale (1 / this ratio), stays
-// crisp at any map pixelRatio with no re-rasterisation needed on resize, the same way patterns
-// settled on a fixed PATTERN_RASTER_PIXEL_RATIO baseline — but for icons this constant can
-// actually be exploited for genuine resolution independence, not just a display-size no-op.
+// Fixed oversampling ratio, unrelated to the map's actual pixelRatio — icon-scale genuinely
+// decouples a symbol's on-screen size from its native pixel detail, so one fixed high-detail
+// raster stays crisp at any pixelRatio with no re-rasterisation needed on resize.
 export const SYMBOL_RASTER_PIXEL_RATIO = 3
 
 const imageCache = new Map() // imageId → HTMLCanvasElement
@@ -36,12 +24,9 @@ const selectedImageMap = new Map() // normalId → selectedId
 export const getCachedSymbolImage = (imageId) => imageCache.get(imageId)
 
 /**
- * Reverse-map a symbol's normal (base) imageId to its active/selected variant — mirrors
- * MapLibre's map._activeSymbolImageMap/_selectedSymbolImageMap (see
- * providers/maplibre/src/utils/symbolImages.js's addSymbolsToMap). Used by highlightFeatures.js
- * to build a select/active highlight for a dataset symbol point, which (unlike a drawn point)
- * has no symbolActiveImageId/symbolSelectedImageId of its own on the feature — only the dataset's
- * own style resolves to one shared base imageId, resolved once here instead.
+ * Reverse-map a symbol's normal (base) imageId to its active/selected variant, mirroring
+ * MapLibre's own active/selected image maps. Used by highlightFeatures.js to highlight a
+ * dataset symbol point, which (unlike a drawn point) has no active/selected id of its own.
  */
 export const getActiveSymbolImageId = (normalId) => activeImageMap.get(normalId) ?? null
 export const getSelectedSymbolImageId = (normalId) => selectedImageMap.get(normalId) ?? null
@@ -72,13 +57,9 @@ export const getOrCreateSymbolImage = (imageId, imageData) => {
 export const getCachedSymbolDataUri = (imageId) => dataUriCache.get(imageId)
 
 /**
- * Rasterise-once-cache-forever: resolves and caches one symbol's data URI, for flatStyle's
- * icon-src. Reuses the same cached canvas getOrCreateSymbolImage builds, so a symbol used both
- * as a real map layer and as a highlight ring only rasterises once.
- * Also rasterises and caches the active/selected variants (see getActiveSymbolImageId/
- * getSelectedSymbolImageId above) — mirrors MapLibre's addSymbolsToMap, so highlightFeatures.js
- * can build a select/active highlight for a dataset symbol point the same way it already does
- * for a drawn one.
+ * Rasterise-once-cache-forever: resolves and caches one symbol's data URI for flatStyle's
+ * icon-src, plus its active/selected variants so highlightFeatures.js can highlight a dataset
+ * symbol point the same way it already does for a drawn one.
  * @param {Object} style - Dataset style with symbol/symbolSvgContent properties
  * @param {Object} mapStyle - Current map style config
  * @param {Object} symbolRegistry

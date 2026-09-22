@@ -108,13 +108,9 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
       return
     }
 
-    // A restyle made directly through layer.setStyle() while a selection stays active (e.g.
-    // _setLayerStyle on a map style/theme switch, or applyFeatureFilter) replaces our wrap with
-    // a fresh, unwrapped style function — OL preserves function identity through setStyle/
-    // getStyleFunction for a plain function style (confirmed against ol/layer/BaseVector.js's
-    // toStyleLike/toFunction, both no-ops for an already-function style), so comparing against
-    // our own last-installed wrap detects this and re-captures the new live style, rather than
-    // wrapping a stale pre-restyle one until the selection is next fully cleared.
+    // A restyle made directly via layer.setStyle() while a selection stays active (e.g. a
+    // theme switch) replaces our wrap with a fresh style function — comparing against our own
+    // last-installed wrap detects this and re-captures the new live style instead of going stale.
     if (!layer._highlightOriginalStyle || layer.getStyleFunction() !== layer._highlightWrappedStyle) {
       layer._highlightOriginalStyle = layer.getStyleFunction()
     }
@@ -122,10 +118,8 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
 
     const wrappedStyle = (feature, resolution) => {
       const base = orig(feature, resolution)
-      // Two different vector-tile producers share the 'vectorTile' tag this wrap targets:
-      // draw-ol's basemap MVT tiles (a 'mapbox-layer' object per feature) and the datasets
-      // plugin's own tiles-backed datasets (no 'mapbox-layer' — the id lives on the OL layer
-      // itself instead, as 'layerId'). See layerBuilders.js's createDatasetLayer.
+      // draw-ol's MVT tiles carry a 'mapbox-layer' object; tiles-backed datasets tag the OL
+      // layer itself with 'layerId' instead.
       const styleLayerId = feature.get('mapbox-layer')?.id ?? layer.get('layerId')
       if (!styleLayerId) {
         return base
@@ -179,9 +173,9 @@ const getOrCreateHighlightLayer = (map) => {
 
 const findVectorLayer = (map, layerId) => {
   let found
-  map.getLayers().forEach(l => {
-    if (!found && l.get('layerType') === 'vector' && !l.get(HIGHLIGHT_MARKER) && l.get('layerId') === layerId) {
-      found = l
+  map.getLayers().forEach(mapLayer => {
+    if (!found && mapLayer.get('layerType') === 'vector' && !mapLayer.get(HIGHLIGHT_MARKER) && mapLayer.get('layerId') === layerId) {
+      found = mapLayer
     }
   })
   return found
@@ -198,10 +192,8 @@ const getLiveProperties = (map, layerId, featureId) => {
   return feature?.getProperties()
 }
 
-// A dataset symbol point (unlike a drawn one) has no symbolActiveImageId/symbolSelectedImageId
-// of its own — every feature in the layer shares the one base imageId layerBuilders.js tagged
-// the layer with (see OpenLayersDataset.symbolMeta), so the active/selected variant is resolved
-// from that shared id via symbolImages.js's reverse-map instead of a per-feature property.
+// A dataset symbol point (unlike a drawn one) has no active/selected id of its own — every
+// feature in the layer shares one base imageId, so the variant is resolved from that instead.
 const buildDatasetSymbolHighlightStyle = (map, layerId, isActive) => {
   const symbolMeta = findVectorLayer(map, layerId)?.get('symbolMeta')
   if (!symbolMeta) {

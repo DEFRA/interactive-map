@@ -24,18 +24,14 @@ const getVtFeatureId = (feature) => {
   return JSON.stringify(props)
 }
 
-// Shared result shape for a real ol/Feature identified by an OL *layer's* own layerId — used by
-// plain 'vector' layers and by 'vectorTile' layers backed by the datasets plugin's own tiles
-// (see layerBuilders.js's createDatasetLayer), as opposed to draw-ol's basemap MVT tiles, which
-// are RenderFeatures identified per-feature via a MapLibre-style 'mapbox-layer' object instead.
+// Shared result shape for a real ol/Feature identified by an OL layer's own layerId — used by
+// plain 'vector' layers and by tiles-backed datasets, as opposed to draw-ol's basemap MVT tiles
+// (RenderFeatures identified via a 'mapbox-layer' object instead).
 const pushLayerIdResult = (results, seenKeys, layerId, feature) => {
   if (!layerId) {
     return
   }
-  // getVtFeatureId's property-hash fallback (not raw feature.getId(), which is often undefined
-  // for a plain geojson dataset with no id/idProperty) — same convention pushMapboxLayerResult
-  // uses, needed so distinct id-less features sharing a source/layer don't collide onto the
-  // same key and wrongly dedupe away.
+  // Property-hash fallback so distinct id-less features sharing a source don't collide.
   const key = `${layerId}:${getVtFeatureId(feature)}`
   if (seenKeys.has(key)) {
     return
@@ -69,9 +65,7 @@ const pushMapboxLayerResult = (results, seenKeys, mapboxLayer, feature) => {
 }
 
 // Two different vector-tile producers share the 'vectorTile' layerType tag: draw-ol's basemap
-// MVT tiles (a RenderFeature carrying a MapLibre-style 'mapbox-layer' object) and the datasets
-// plugin's own tiles-backed datasets (a real ol/Feature with no 'mapbox-layer' at all, but the
-// same 'layerId' tag plain 'vector' layers carry — see layerBuilders.js's createDatasetLayer).
+// MVT tiles (carry a 'mapbox-layer' object) and tiles-backed datasets (carry 'layerId' instead).
 const pushVectorTileResult = (results, seenKeys, layer, feature) => {
   const mapboxLayer = feature.get('mapbox-layer')
   if (mapboxLayer) {
@@ -121,10 +115,9 @@ export const queryFeatures = (map, point, options = {}) => {
  * fragments are deduplicated the same way queryFeatures() does above.
  * VectorLayer features come directly from the source's current-viewport extent.
  *
- * Both branches apply each layer's own tagged filter (see buildFilterEvaluator) — unlike
- * queryFeatures() above, this reads straight off the source/tiles rather than off rendered
- * pixels, so it has no other way to know which of a shared source's features actually belong
- * to a given sibling sublayer.
+ * Both branches also apply each layer's own tagged filter (see buildFilterEvaluator), since
+ * reading straight off the source/tiles has no other way to isolate a shared source's sibling
+ * sublayers.
  */
 export const getVisibleFeatures = (map, layerIds) => {
   const wanted = new Set(layerIds)

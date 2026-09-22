@@ -51,11 +51,8 @@ export const renderFeatureToGeoJSON = (feature) => {
   return { type, coordinates: toPairs(flat, 0, flat.length) }
 }
 
-// Two different vector-tile producers reach this code: draw-ol's basemap MVT tiles
-// (RenderFeature carrying a MapLibre-style 'mapbox-layer' object, no ol/Feature.getGeometry)
-// and the datasets plugin's own tiles-backed datasets (a real ol/Feature — see
-// plugins/datasets/src/adapters/openlayers/layerBuilders.js's createDatasetSource — with no
-// 'mapbox-layer' at all, but a real getGeometry()). Branch on which shape this actually is.
+// draw-ol's basemap MVT tiles are RenderFeatures (no getGeometry()); tiles-backed datasets use
+// real ol/Feature instances instead — branch on which shape this actually is.
 const fragmentToGeoJSON = (feature) =>
   feature.getGeometry ? geoJsonFormat.writeGeometryObject(feature.getGeometry()) : renderFeatureToGeoJSON(feature)
 
@@ -69,11 +66,8 @@ export const collectTileFragments = (map, layerId, featureId, idProperty) => {
   const fragments = []
 
   map.getLayers().forEach(mapLayer => {
-    // Not `instanceof VectorTileLayer`: a UMD consumer loads this provider and other plugins
-    // as independently-bundled scripts, each with its own copy of ol, so a class reference
-    // from this bundle never matches an instance built by another — see queryFeatures.js's
-    // own comment. This also covers WebGLVectorTileLayer, which instanceof VectorTileLayer
-    // (the Canvas renderer's class) never matched at all, on any bundle.
+    // Tagged with a 'layerType' property rather than checked via `instanceof VectorTileLayer`,
+    // since a UMD consumer's independently-bundled ol copy would never match this one's class.
     if (mapLayer.get('layerType') !== 'vectorTile') {
       return
     }
