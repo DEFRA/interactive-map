@@ -148,7 +148,7 @@ function applyAttributionsLayout ({ appContainer, bottom, attributions, dividerG
  * for `fitBounds`/`setView`. Waits for `arePluginsEvaluated` so the inset reflects final
  * button visibility rather than a mid-evaluation state, which would make the map jump.
  */
-function calculateLayout (layoutRefs, breakpoint) {
+export function calculateLayout (layoutRefs, breakpoint) {
   const {
     appContainerRef, mainRef, topRef, topLeftColRef, topRightColRef,
     bottomRef, attributionsRef, bottomRightRef, leftTopRef, leftBottomRef,

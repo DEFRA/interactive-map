@@ -6,6 +6,7 @@ function createSymbol (mapColorScheme) {
   return {
     type: 'simple-fill',
     color: [0, 120, 255, 0.2],
+    style: 'none',
     outline: {
       color: mapColorScheme === 'dark' ? '#ffffff' : '#d4351c',
       width: 2
