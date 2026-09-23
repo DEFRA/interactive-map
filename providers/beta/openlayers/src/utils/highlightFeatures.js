@@ -156,12 +156,7 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
 // ---------------------------------------------------------------------------
 
 const getOrCreateHighlightLayer = (map) => {
-  let layer = null
-  map.getLayers().forEach(l => {
-    if (l.get(HIGHLIGHT_MARKER)) {
-      layer = l
-    }
-  })
+  let layer = map.getLayers().getArray().find(mapLayer => mapLayer.get(HIGHLIGHT_MARKER))
   if (!layer) {
     layer = new VectorLayer({ source: new VectorSource(), zIndex: HIGHLIGHT_Z + 2 })
     layer.set(HIGHLIGHT_MARKER, true)
@@ -171,15 +166,10 @@ const getOrCreateHighlightLayer = (map) => {
   return layer
 }
 
-const findVectorLayer = (map, layerId) => {
-  let found
-  map.getLayers().forEach(mapLayer => {
-    if (!found && mapLayer.get('layerType') === 'vector' && !mapLayer.get(HIGHLIGHT_MARKER) && mapLayer.get('layerId') === layerId) {
-      found = mapLayer
-    }
-  })
-  return found
-}
+const findVectorLayer = (map, layerId) =>
+  map.getLayers().getArray().find(mapLayer =>
+    mapLayer.get('layerType') === 'vector' && !mapLayer.get(HIGHLIGHT_MARKER) && mapLayer.get('layerId') === layerId
+  )
 
 // interact's selectedFeatures carry a `properties` snapshot taken at selection time, which
 // goes stale for the symbol icon path once a map style change re-resolves the point's image
