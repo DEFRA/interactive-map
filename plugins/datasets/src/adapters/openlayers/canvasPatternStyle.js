@@ -9,30 +9,15 @@ const DEFAULT_STROKE_WIDTH = 1
 /**
  * The Canvas-only escape hatch for genuinely crisp fill patterns, at any pixelRatio.
  *
- * ol/style/flat's declarative `fill-pattern-src`/`fill-pattern-size` cannot decouple a pattern's
- * native pixel count from its on-screen CSS size — confirmed directly from ol/render/webgl/
- * style.js's sampleFillPattern shader (which divides by the texture's raw native size, not a
- * requested display size) and from ol/style/Fill.js's identical crop-only behaviour on the
- * Canvas side. Neither renderer's flat-style path can hold more source detail than its display
- * footprint.
+ * ol/style/flat's declarative fill-pattern-src/fill-pattern-size crops a pattern to its display
+ * size rather than scaling it, so it can't hold more source detail than it shows on screen. But
+ * ol/style/Fill also accepts a raw CanvasPattern as its colour, built directly from a
+ * pixelRatio-scaled source image with no further transform — genuinely resolution-independent,
+ * since OL's pattern coordinate space is physical-pixel-equivalent (confirmed empirically).
  *
- * But `ol/style/Fill` also accepts a raw `CanvasPattern` object as its colour (not just a flat
- * style descriptor) — and `CanvasPattern` is a genuinely richer JS API than flat-style exposes:
- * it can be built from a native-pixelRatio-scaled source image and used as-is with no further
- * transform, because patternRegistry.rasterisePatternImage(style, mapStyleId, pixelRatio) already
- * rasterises at exactly `16 × pixelRatio` physical pixels for a given pixelRatio — the same
- * MapLibre-style "physical pixels ÷ pixelRatio = logical/CSS size" convention MapLibre's own
- * map.addImage(id, data, {pixelRatio}) relies on. Used directly as a CanvasPattern's source
- * with no scaling, that image occupies exactly `16 × pixelRatio` of OL's own pattern coordinate
- * space (confirmed empirically: that space is physical-backing-store-pixel equivalent, not CSS
- * pixel equivalent), which is exactly 16 CSS pixels once divided back down by pixelRatio at
- * display time — i.e. genuinely resolution-independent, with no cropping and no manual
- * setTransform maths required.
- *
- * This only works building actual ol/style/Style objects (a style function, since sublayer
- * filters still need evaluating per-feature) — ol/layer/WebGLVector requires flat-style JSON
- * only (everything is compiled to GLSL ahead of time), so this module is Canvas-only. See
- * layerBuilders.js's resolveLayerStyle for where this is picked over the shared flatStyle path.
+ * Building actual ol/style/Style objects only works on Canvas — WebGLVector requires flat-style
+ * JSON (compiled to GLSL ahead of time), so this module is Canvas-only. See layerBuilders.js's
+ * resolveLayerStyle for where this is picked over the shared flatStyle path.
  */
 
 const crispPatternCache = new Map() // imageId (already pixelRatio-scoped, see patternRegistry) → Fill
@@ -52,14 +37,12 @@ const buildPatternFill = (imageData) => {
 }
 
 /**
- * Rasterise-once-cache-forever, mirroring providers/beta/openlayers/src/utils/patternImages.js's
- * registerPattern — a synchronous cache lookup at style-build time needs this already resolved.
+ * Rasterise-once-cache-forever — a synchronous cache lookup at style-build time needs this
+ * already resolved.
  * @param {Object} style - Dataset style with fillPattern* properties
  * @param {string} mapStyleId
  * @param {Object} patternRegistry
- * @param {number} pixelRatio - the map's actual current pixelRatio (not a fixed constant) —
- *   re-called from onMapSizeChange whenever this changes, so the cached Fill always matches
- *   the map's current rendering density.
+ * @param {number} pixelRatio - the map's current pixelRatio; re-called on resize
  * @returns {Promise<void>}
  */
 export const registerCrispCanvasPattern = async (style, mapStyleId, patternRegistry, pixelRatio) => {
@@ -102,9 +85,8 @@ const buildStroke = (registryDataset, mapStyleId) => {
 }
 
 /**
- * Builds an OL style function for a Canvas-rendered, pattern-bearing dataset/sublayer — the
- * Fill uses a real CanvasPattern (see module doc) rather than flat-style's fill-pattern-src, so
- * this bypasses OpenLayersDataset.flatStyle entirely for this one case.
+ * Builds an OL style function for a Canvas-rendered, pattern-bearing dataset/sublayer — uses a
+ * real CanvasPattern (see module doc), bypassing OpenLayersDataset.flatStyle for this one case.
  * @param {Object} registryDataset - an OpenLayersDataset with hasPattern true
  * @param {string} mapStyleId
  * @param {number} pixelRatio - must match what registerCrispCanvasPattern was last called with
