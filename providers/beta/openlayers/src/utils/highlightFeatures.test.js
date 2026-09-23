@@ -5,20 +5,18 @@ import OlFeature from 'ol/Feature.js'
 import Point from 'ol/geom/Point.js'
 import Icon from 'ol/style/Icon.js'
 import { updateHighlightedFeatures } from './highlightFeatures.js'
-import { getOrCreateSymbolImage, clearSymbolImageCache } from './symbolImages.js'
+import { getOrCreateSymbolImage, getCachedSymbolImage, clearSymbolImageCache, registerSymbol } from './symbolImages.js'
 
 const HIGHLIGHT_MARKER = '_highlight'
 
-// Mirrors the map interface this module actually calls: getLayers().forEach(...) to find/
-// enumerate real ol/layer instances, and addLayer() to register new ones. Layers passed in
-// (or added during a test) are real ol/layer/Vector or ol/layer/VectorTile instances, same as
-// the rest of this codebase's OL tests use real ol classes over mocks for anything the
-// module under test actually instantiates or type-checks (instanceof).
+// Mirrors the map interface this module actually calls: getLayers().forEach(...)/getArray()
+// to find/enumerate real ol/layer instances, and addLayer() to register new ones. Layers
+// passed in (or added during a test) are real ol/layer/Vector or ol/layer/VectorTile instances.
 const createFakeMap = (layers = []) => {
   const list = [...layers]
   return {
     _layers: list,
-    getLayers: () => ({ forEach: (cb) => list.forEach(cb) }),
+    getLayers: () => ({ forEach: (cb) => list.forEach(cb), getArray: () => list }),
     addLayer: jest.fn((l) => list.push(l))
   }
 }
@@ -166,13 +164,160 @@ describe('updateHighlightedFeatures', () => {
       expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
     })
   })
+
+  describe('symbol-styled points (dataset)', () => {
+    const LAYER_ID = 'historic-monuments-prehistoric'
+
+    // A dataset symbol point has no symbolSelectedImageId/symbolActiveImageId of its own (see
+    // symbolProperties above) — the layer itself is tagged with the one base imageId every
+    // feature shares instead (see layerBuilders.js's createDatasetLayer / OpenLayersDataset.
+    // symbolMeta), and the variant is resolved from that via symbolImages.js's reverse-map.
+    const datasetSymbolLayer = (features, symbolMeta) => {
+      const source = new VectorSource()
+      features.forEach(([id, properties]) => {
+        const f = new OlFeature({ geometry: new Point([1, 2]), ...properties })
+        f.setId(id)
+        source.addFeature(f)
+      })
+      const layer = new VectorLayer({ source })
+      layer.set('layerId', LAYER_ID)
+      layer.set('layerType', 'vector')
+      if (symbolMeta) {
+        layer.set('symbolMeta', symbolMeta)
+      }
+      return layer
+    }
+
+    const registerDatasetSymbol = async () => {
+      const symbolRegistry = {
+        getSymbolImageId: jest.fn((style, mapStyle, active) => (active ? 'ds-symbol-active' : 'ds-symbol-normal')),
+        rasteriseSymbolImage: jest.fn(async (style, mapStyle, variant) => ({
+          imageId: variant === 'active' ? 'ds-symbol-active' : variant === 'selected' ? 'ds-symbol-selected' : 'ds-symbol-normal',
+          imageData: { width: 30, height: 30 }
+        }))
+      }
+      await registerSymbol({ symbol: 'square' }, {}, symbolRegistry, 3)
+    }
+
+    test('renders the selected-variant Icon for a dataset symbol point', async () => {
+      await registerDatasetSymbol()
+      const selectedCanvas = getCachedSymbolImage('ds-symbol-selected')
+      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1] })])
+
+      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
+      const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
+      const [style] = hlFeature.getStyle()
+      expect(style.getImage()).toBeInstanceOf(Icon)
+      expect(style.getImage().getImage(1)).toBe(selectedCanvas)
+    })
+
+    test('renders the active-variant Icon for the keyboard-cursor item', async () => {
+      await registerDatasetSymbol()
+      const activeCanvas = getCachedSymbolImage('ds-symbol-active')
+      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1] })])
+
+      updateHighlightedFeatures(map, [], [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], {})
+      const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
+      const [style] = hlFeature.getStyle()
+      expect(style.getImage().getImage(1)).toBe(activeCanvas)
+    })
+
+    test('falls back to no highlight when the layer has no symbolMeta (not a symbol dataset)', () => {
+      const map = createFakeMap([datasetSymbolLayer([['f1', {}]])])
+      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
+      expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
+    })
+
+    test('falls back to no highlight when the variant has not been rasterised/cached yet', () => {
+      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-never-registered', anchor: [0.5, 1] })])
+      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
+      expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
+    })
+  })
 })
 
-describe('VectorTileLayer style-wrap (smoke test — pre-existing, undocumented path)', () => {
+describe('VectorTileLayer style-wrap', () => {
   test('does not throw when a VT layer is present alongside a draw VectorLayer', () => {
     const vt = new VectorTileLayer({})
     vt.set('layerType', 'vectorTile')
     const map = createFakeMap([vt, drawLayer()])
     expect(() => updateHighlightedFeatures(map, [], [], {})).not.toThrow()
+  })
+
+  const vtStylesMap = { 'existing-fields': { stroke: '#000', selectionStroke: '#111', fill: 'transparent', strokeWidth: 2, activeStrokeWidth: 2 } }
+
+  // Two different vector-tile producers share the 'vectorTile' layerType tag: draw-ol's
+  // basemap MVT tiles (a 'mapbox-layer' object per feature) and the datasets plugin's own
+  // tiles-backed datasets (no 'mapbox-layer' at all — the id lives on the OL layer itself, as
+  // 'layerId'). This feature has neither a mapbox-layer property nor any live 'get' beyond the
+  // default, matching a real datasets-plugin MVT feature.
+  const datasetVtFeature = (id) => {
+    const feature = new OlFeature({ geometry: new Point([1, 2]) })
+    feature.setId(id)
+    return feature
+  }
+
+  test('highlights a datasets-plugin tiles-backed feature via the layer\'s own layerId', () => {
+    const vt = new VectorTileLayer({ style: { 'fill-color': '#0000ff' } })
+    vt.set('layerType', 'vectorTile')
+    vt.set('layerId', 'existing-fields')
+    const map = createFakeMap([vt])
+    const feature = datasetVtFeature('f1')
+
+    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap)
+
+    const styles = vt.getStyle()(feature, 1)
+    expect(Array.isArray(styles)).toBe(true)
+    expect(styles.some(s => s.getStroke()?.getColor() === '#111')).toBe(true) // selectionStroke applied
+  })
+
+  test('leaves a non-matching datasets-plugin tiles-backed feature unhighlighted', () => {
+    const vt = new VectorTileLayer({ style: { 'fill-color': '#0000ff' } })
+    vt.set('layerType', 'vectorTile')
+    vt.set('layerId', 'existing-fields')
+    const map = createFakeMap([vt])
+    const feature = datasetVtFeature('f2') // not the selected f1
+
+    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap)
+
+    const base = vt._highlightOriginalStyle(feature, 1)
+    const styled = vt.getStyle()(feature, 1)
+    expect(styled).toEqual(base)
+  })
+
+  test('picks up a restyle made while a selection stays active, instead of wrapping a stale pre-restyle style forever', () => {
+    // Simulates a map style/theme switch: _setLayerStyle calls layer.setStyle(...) directly on
+    // a dataset layer while a feature on it is still selected (e.g. via useHighlightSync's
+    // re-apply after MAP_STYLE_CHANGE) — the highlight wrap must notice its own wrap was
+    // replaced and re-capture the new live style, not keep calling the old one underneath.
+    const vt = new VectorTileLayer({ style: { 'fill-color': '#0000ff' } })
+    vt.set('layerType', 'vectorTile')
+    vt.set('layerId', 'existing-fields')
+    const map = createFakeMap([vt])
+    const selection = [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }]
+
+    updateHighlightedFeatures(map, selection, [], vtStylesMap)
+
+    // Something outside the highlight module (a theme switch) restyles the layer directly.
+    vt.setStyle({ 'fill-color': '#ff0000' })
+
+    updateHighlightedFeatures(map, selection, [], vtStylesMap)
+
+    const otherFeature = datasetVtFeature('not-selected')
+    const [styled] = vt.getStyle()(otherFeature, 1)
+    expect(styled.getFill().getColor()).toEqual([255, 0, 0, 1])
+  })
+
+  test('restores the original style function once nothing is selected/active', () => {
+    const vt = new VectorTileLayer({ style: { 'fill-color': '#0000ff' } })
+    vt.set('layerType', 'vectorTile')
+    vt.set('layerId', 'existing-fields')
+    const map = createFakeMap([vt])
+
+    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap)
+    expect(vt._highlightOriginalStyle).toBeDefined()
+
+    updateHighlightedFeatures(map, [], [], vtStylesMap)
+    expect(vt._highlightOriginalStyle).toBeUndefined()
   })
 })

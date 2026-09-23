@@ -7,7 +7,11 @@ const HIT_TOLERANCE = 8
 // ol, so a class reference from this bundle never matches an instance built by another.
 const isInteractiveFeature = (feature, layer, layerSet) => {
   if (layer.get('layerType') === 'vectorTile') {
-    const styleLayerId = feature.get('mapbox-layer')?.id
+    // Two different vector-tile producers share this tag: draw-ol's basemap MVT tiles (a
+    // 'mapbox-layer' object per feature) and the datasets plugin's own tiles-backed datasets
+    // (no 'mapbox-layer' — the id lives on the OL layer itself, as 'layerId'). See
+    // plugins/datasets/src/adapters/openlayers/layerBuilders.js's createDatasetLayer.
+    const styleLayerId = feature.get('mapbox-layer')?.id ?? layer.get('layerId')
     return Boolean(styleLayerId && layerSet.has(styleLayerId))
   }
   if (layer.get('layerType') === 'vector' && !layer.get(HIGHLIGHT_MARKER)) {
