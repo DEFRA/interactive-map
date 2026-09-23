@@ -10,52 +10,37 @@ import { logger } from '../../../../../src/services/logger.js'
 import { BNG_CRS } from '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
 import { buildCanvasPatternStyle } from './canvasPatternStyle.js'
 
-// No coordinate transformation: data and map both use BNG, matching draw-ol's featureStore.js.
-// Importing bngProjection.js (rather than just using the string) also registers EPSG:27700 with
-// proj4/OL as a side effect — needed for VectorTileSource's projection option below to resolve
-// to a real projection, not just for GeoJSON's dataProjection/featureProjection (which never
-// actually need to resolve one here, since both are set to the same string).
+// Data and map both use BNG, so no coordinate transformation is needed. Importing bngProjection.js
+// (rather than just the string) also registers EPSG:27700 with proj4/OL, needed for
+// VectorTileSource's projection option below to resolve to a real projection.
 const PROJECTION = BNG_CRS
 const format = new GeoJSON({ dataProjection: PROJECTION, featureProjection: PROJECTION })
 
-// MapLibre/the Mapbox style spec's minzoom/maxzoom are inclusive-min, exclusive-max: a layer
-// with minzoom:6 shows AT zoom 6 (only hidden below it), and one with maxzoom:20 hides AT zoom
-// 20 (only shown below it). OL's own semantics are the exact opposite — confirmed directly from
-// ol/layer/Layer.js's own visibility check, `zoom > layerState.minZoom && zoom <= maxZoom`
-// (exclusive-min, inclusive-max). Passing registryDataset.minZoom/maxZoom straight through was a
-// real, user-visible bug: the shared minZoom:6 dataset default (initialise/defaults.js) exactly
-// matches this demo's own map minZoom:6, so every dataset without its own override vanished
-// right at the map's minimum zoom (`6 > 6` is false) — something MapLibre never did, since its
-// minzoom is inclusive. Shifting both bounds down by a tiny epsilon reproduces ML's inclusive-
-// min/exclusive-max behaviour using OL's opposite-sense comparison, for any zoom (not just
-// integers) — leaves unrestricted (undefined) bounds alone.
+// The Mapbox style spec's minzoom/maxzoom are inclusive-min, exclusive-max; OL's own semantics
+// are the exact opposite (exclusive-min, inclusive-max — see ol/layer/Layer.js's visibility
+// check). Passing registryDataset.minZoom/maxZoom straight through was a real bug: every dataset
+// at the shared default minZoom:6 vanished exactly at the map's own minZoom:6. Shifting both
+// bounds down by a tiny epsilon reproduces the Mapbox-style semantics using OL's opposite sense.
 const ZOOM_EPSILON = 1e-6
 const toOlMinZoom = (minZoom) => (minZoom === undefined ? undefined : minZoom - ZOOM_EPSILON)
 const toOlMaxZoom = (maxZoom) => (maxZoom === undefined ? undefined : maxZoom - ZOOM_EPSILON)
 
-// Symbol (icon) layers always render above fill/stroke layers, regardless of add/remove order
-// — mirrors MapLibreLayerAdapter's _maintainSymbolOrdering, which keeps moving non-symbol
-// layers below the first symbol layer on every _addLayers call. OL's zIndex is simpler: layers
-// are sorted by zIndex (default 0) then insertion order, so a fixed higher zIndex for symbol
-// layers achieves the same ordering guarantee with no imperative re-ordering step needed at all.
+// Symbol (icon) layers always render above fill/stroke layers, regardless of add/remove order —
+// mirrors MapLibreLayerAdapter's _maintainSymbolOrdering, but OL's zIndex sorting achieves the
+// same guarantee with no imperative re-ordering step needed.
 const SYMBOL_Z_INDEX = 1
 const DEFAULT_Z_INDEX = 0
 
 // Must stay in sync with the ST_MakeEnvelope(0, 0, 1300000, 1300000, 27700) bounds hardcoded in
-// the farming-tiles server's field_parcels_osgb36 / field_parcels_with_hedges_osgb36 sources —
-// confirmed directly against that project, since guessing tile grid parameters wrong silently
-// misplaces or fails to load every tile. This is a different, independent tile pyramid from the
-// existing ArcGIS-hosted OSGB36 vector tiles used in planning/layers-ol.js (which fetches its own
-// tileGrid from that service's tileInfo at runtime) — both happen to use EPSG:27700 coordinates,
-// but their origin/resolutions/tileSize are otherwise unrelated (confirmed by querying the
-// ArcGIS service directly: 512px tiles, origin [-87487, 791072], resolution[0] ≈1792, vs this
-// grid's 256px tiles, origin [0, 1300000], resolution[0] = 5078.125).
+// the farming-tiles server's own vector tile sources — a wrong tile grid silently misplaces or
+// fails to load every tile. Independent of the ArcGIS-hosted OSGB36 tiles used elsewhere, which
+// use a different origin/resolution/tileSize despite sharing the same EPSG:27700 projection.
 const BNG_TILE_GRID_EXTENT = [0, 0, 1300000, 1300000]
 const BNG_TILE_SIZE = 256
 const BNG_TILE_GRID = new TileGrid({
   extent: BNG_TILE_GRID_EXTENT,
   origin: [BNG_TILE_GRID_EXTENT[0], BNG_TILE_GRID_EXTENT[3]],
-  resolutions: Array.from({ length: 25 }, (_, z) => (BNG_TILE_GRID_EXTENT[2] - BNG_TILE_GRID_EXTENT[0]) / (BNG_TILE_SIZE * 2 ** z)),
+  resolutions: Array.from({ length: 25 }, (_, zoom) => (BNG_TILE_GRID_EXTENT[2] - BNG_TILE_GRID_EXTENT[0]) / (BNG_TILE_SIZE * 2 ** zoom)),
   tileSize: BNG_TILE_SIZE
 })
 
