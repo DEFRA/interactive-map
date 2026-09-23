@@ -221,6 +221,26 @@ describe('DatasetsInit', () => {
       expect(onMapStyleChange).toHaveBeenCalled()
       delete layerAdapter.onMapStyleChange
     })
+
+    // MapLibre gets this re-apply for free (map.addImage()/setPaintProperty() naturally
+    // re-trigger its own MAP_DATA_CHANGE via the GL engine's styledata event) — OL doesn't (its
+    // MAP_DATA_CHANGE is tied only to the basemap tile source's tileloadend, see appEvents.js),
+    // so this emit is what lets the interact plugin's settle-window re-apply pick up newly
+    // re-resolved symbols/patterns after a style change, instead of a stale highlight sticking.
+    it('emits MAP_DATA_CHANGE once onMapStyleChange resolves, so highlights re-resolve for the new theme', async () => {
+      let resolveOnMapStyleChange
+      const onMapStyleChange = jest.fn(() => new Promise(resolve => { resolveOnMapStyleChange = resolve }))
+      Object.assign(layerAdapter, { onMapStyleChange })
+      const props = makeProps()
+      await render(<DatasetsInit {...props} />)
+      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
+      await act(async () => {
+        resolveOnMapStyleChange()
+        await Promise.resolve()
+      })
+      expect(props.services.eventBus.emit).toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
+      delete layerAdapter.onMapStyleChange
+    })
   })
 
   // ─── globals effect ──────────────────────────────────────────────────────────
