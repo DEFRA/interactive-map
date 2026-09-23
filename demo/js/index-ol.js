@@ -20,12 +20,9 @@ const HIGHLIGHTED_SBI = '106223377' // Same farm as demo/js/index.js's existing-
 // converted to EPSG:27700 via this same API's /convert-to-osgb36 endpoint.
 const BOUNDS = [370945, 518391, 374023, 525049]
 
-// Same 3 points as index.js's pointData, converted from its WGS84 coordinates to EPSG:27700
-// via proj4 with the exact same definition bngProjection.js registers (confirmed against
-// BOUNDS's own /convert-to-osgb36 conversion above — matches within ~2m).
-// No id/idProperty on the dataset itself — click-to-select instead reads the interact plugin's
-// own per-layer idProperty: 'name' (see interactPlugin below), since 'name' is already unique
-// per feature here and needs no synthetic id added to the source data.
+// Same 3 points as index.js's pointData, converted from WGS84 to EPSG:27700.
+// No id/idProperty here — click-to-select instead reads the interact plugin's own per-layer
+// idProperty: 'name' (see interactPlugin below), since 'name' is already unique per feature.
 const POINT_DATA = {
   type: 'FeatureCollection',
   features: [
