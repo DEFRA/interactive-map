@@ -1,6 +1,7 @@
 import createPlugin from './index.js'
 import { manifest } from './manifest.js'
 
+jest.mock('./draw.scss', () => {})
 jest.mock('./manifest.js', () => ({ manifest: { id: 'draw-manifest' } }))
 
 describe('createPlugin', () => {
