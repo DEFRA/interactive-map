@@ -26,32 +26,28 @@ import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
 
-const pointData = {
+const POINT_DATA = {
   type: 'FeatureCollection',
-  features: [{
-    type: 'Feature',
-    properties:  { category:'prehistoric', name: 'Prehistoric feature' }, 
-    geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }
-  },
-  { 
-    type: 'Feature', 
-    properties: { category: 'roman', name: 'Roman feature' }, 
-    geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }
-  },
-  { 
-    type: 'Feature', 
-    properties: { category:'medieval', name: 'Medieval feature' }, 
-    geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} 
-  }]
+  features: [
+    {type: 'Feature', properties:  { category:'prehistoric', name: 'Prehistoric feature' }, geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }},
+    { type: 'Feature', properties: { category: 'roman', name: 'Roman feature' }, geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }},
+    { type: 'Feature', properties: { category:'medieval', name: 'Medieval feature' }, geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} }
+  ]
 }
 
 const interactPlugin = createInteractPlugin({
   layers: [{
     layerId: 'historic-monuments-prehistoric',
+    idProperty: 'name',
+    labelProperty: 'name'
   }, {
     layerId: 'historic-monuments-roman',
+    idProperty: 'name',
+    labelProperty: 'name'
   }, {
     layerId: 'historic-monuments-medieval',
+    idProperty: 'name',
+    labelProperty: 'name'
   }, {
     layerId: 'land-covers-110',
     labelProperty: 'ngc'
@@ -206,7 +202,7 @@ const datasetsPlugin = createDatasetsPlugin({
   },{
     id: 'historic-monuments',
     label: 'Historic monuments',
-    geojson: pointData,
+    geojson: POINT_DATA,
     minZoom: 10,
     maxZoom: 24,
     showInKey: true,
