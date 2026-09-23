@@ -71,7 +71,19 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useEffect(() => {
     datasetRegistry.attachMapStyle(mapState.mapStyle)
     if (layerAdapter?.onMapStyleChange) {
-      layerAdapter.onMapStyleChange()
+      // MapLibre's own map.addImage()/setPaintProperty() calls (made while re-registering
+      // symbols/patterns below) naturally re-trigger MAP_DATA_CHANGE via the GL engine's own
+      // styledata event — nothing extra needed there. OL has no such generic signal (its
+      // MAP_DATA_CHANGE is tied only to the basemap tile source's own tileloadend — see
+      // providers/beta/openlayers/src/appEvents.js's comment), so re-registering a symbol on a
+      // plain ol/layer/Vector never fires it. Emitting it explicitly once re-registration
+      // genuinely finishes lets the interact plugin's settle-window re-apply (armed by
+      // MAP_STYLE_CHANGE, see useHighlightSync.js) pick up the new theme's selected/active
+      // symbol images, instead of a highlight staying stuck on whatever was cached moments
+      // before the switch.
+      Promise.resolve(layerAdapter.onMapStyleChange()).then(() => {
+        eventBus.emit(EVENTS.MAP_DATA_CHANGE)
+      })
     }
   },
   [mapState.mapStyle])

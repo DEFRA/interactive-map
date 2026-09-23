@@ -214,6 +214,10 @@ describe('addDataset', () => {
     await adapter.addDataset('existing-fields')
     expect(map.moveLayer).not.toHaveBeenCalled()
   })
+
+  it('is a no-op for an unknown dataset id (inherited from MapboxStyleLayerAdapter)', async () => {
+    await expect(adapter.addDataset('does-not-exist')).resolves.toBeUndefined()
+  })
 })
 
 // ─── removeDataset ────────────────────────────────────────────────────────────

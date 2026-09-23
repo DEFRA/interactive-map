@@ -265,6 +265,8 @@ const ALL_BUILDS = [
     manualChunks: (id) => {
       if (id.includes('/manifest')) { return 'im-datasets-plugin' }
       if (id.includes('maplibreLayerAdapter')) { return 'im-datasets-ml-adapter' }
+      if (id.includes('openlayersLayerAdapter')) { return 'im-datasets-ol-adapter' }
+      if (id.includes('esriLayerAdapter')) { return 'im-datasets-esri-adapter' }
       return undefined
     }
   },

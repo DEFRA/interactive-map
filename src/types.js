@@ -357,6 +357,17 @@
  */
 
 /**
+ * Configuration options for the OpenLayers provider.
+ *
+ * @typedef {Object} OpenLayersProviderConfig
+ *
+ * @property {'uk' | 'world'} [zoomAlignment='uk']
+ * Which zoom-level sequence the map's view resolutions follow. 'uk' uses the OS tile
+ * grid zoom levels (0–13, zoom 0 shows all of Great Britain). 'world' uses the ESRI LOD
+ * sequence, for zoom levels that match the ESRI SDK (full UK visible around zoom 7).
+ */
+
+/**
  * Descriptor for lazy-loading a map provider.
  *
  * @typedef {Object} MapProviderDescriptor

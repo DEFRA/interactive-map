@@ -88,6 +88,20 @@ An alternative provider with specific advantages:
   </tr>
 </table>
 
+### OpenLayers (Experimental)
+Another alternative provider, also BNG-native:
+
+<table>
+  <tr>
+    <td><strong>British National Grid</strong></td>
+    <td>Native support for BNG coordinate systems (EPSG:27700)</td>
+  </tr>
+  <tr>
+    <td><strong>UMD and ESM</strong></td>
+    <td>Unlike Esri, available to both UMD and ESM consumers</td>
+  </tr>
+</table>
+
 ## 4. Plugin System 
 
 ### Declarative by Design 

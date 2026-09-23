@@ -1,12 +1,10 @@
 /**
- * Get bbox from map as array [west, south, east, north]
- * @param {Object} map - Map instance
- * @returns {number[]} bbox as [west, south, east, north]
+ * Get the current viewport bbox from a map provider — both providers' getBounds() already
+ * return this exact [minX, minY, maxX, maxY] shape in their own projection.
+ * @param {Object} mapProvider - Map provider instance (not the raw map)
+ * @returns {number[]} bbox as [west, south, east, north] (or [minX, minY, maxX, maxY])
  */
-export const getBboxArray = (map) => {
-  const bounds = map.getBounds()
-  return [bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth()]
-}
+export const getBboxArray = (mapProvider) => mapProvider.getBounds()
 
 /**
  * Check if inner bbox is fully contained within outer bbox

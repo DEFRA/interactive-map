@@ -30,6 +30,20 @@ const makeVTLayer = () => {
   return layer
 }
 
+// A datasets-plugin tiles-backed layer: 'vectorTile' layerType, but no 'mapbox-layer' on the
+// feature — its layerId lives on the layer itself instead.
+const makeDatasetVTLayer = (layerId) => {
+  const layer = new VectorTileLayer()
+  layer.get = (key) => {
+    if (key === 'layerType') return 'vectorTile'
+    if (key === 'layerId') return layerId
+    return undefined
+  }
+  return layer
+}
+
+const makeDatasetVTFeature = () => ({ get: () => undefined })
+
 const makeVectorLayer = (layerId, isHighlight = false) => {
   const layer = new VectorLayer()
   layer.get = (key) => {
@@ -150,6 +164,32 @@ describe('setupHoverCursor', () => {
     map.forEachFeatureAtPixel.mockImplementation((pixel, cb) => cb(feature, layer))
 
     const handler = setupHoverCursor(map, ['roads'], null)
+    move(handler)
+    expect(map.getViewport().style.cursor).toBe('')
+  })
+
+  /* ------------------------------------------------------------------ */
+  /* Feature matching — datasets-plugin tiles-backed VT layer            */
+  /* ------------------------------------------------------------------ */
+
+  it('matches a dataset tiles-backed feature via the layer\'s own layerId', () => {
+    const map = makeMap()
+    const feature = makeDatasetVTFeature()
+    const layer = makeDatasetVTLayer('existing-fields')
+    map.forEachFeatureAtPixel.mockImplementation((pixel, cb) => cb(feature, layer))
+
+    const handler = setupHoverCursor(map, ['existing-fields'], null)
+    move(handler)
+    expect(map.getViewport().style.cursor).toBe('pointer')
+  })
+
+  it('does not match a dataset tiles-backed feature whose layerId is not watched', () => {
+    const map = makeMap()
+    const feature = makeDatasetVTFeature()
+    const layer = makeDatasetVTLayer('existing-fields')
+    map.forEachFeatureAtPixel.mockImplementation((pixel, cb) => cb(feature, layer))
+
+    const handler = setupHoverCursor(map, ['hedge-control'], null)
     move(handler)
     expect(map.getViewport().style.cursor).toBe('')
   })

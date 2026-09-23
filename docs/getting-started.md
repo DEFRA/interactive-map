@@ -44,6 +44,16 @@ The ESRI provider is available for ESM projects only. Install `@arcgis/core` sep
 npm install @arcgis/core
 ```
 
+### OpenLayers provider (optional)
+
+An alternative to MapLibre with native support for British National Grid (EPSG:27700) coordinates. Install `ol` and `proj4` separately:
+
+```shell
+npm install ol proj4
+```
+
+**UMD:** `ol` and `proj4` are bundled — no separate install needed.
+
 ## Basic usage
 
 **ESM** — add a container element to your HTML and initialise the map in your JavaScript:

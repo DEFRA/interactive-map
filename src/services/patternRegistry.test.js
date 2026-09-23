@@ -1,5 +1,24 @@
 import { patternRegistry } from './patternRegistry.js'
 import { KEY_BORDER_PATH } from '../utils/patternUtils.js'
+
+beforeAll(() => {
+  globalThis.Image = class {
+    constructor (w, h) {
+      this.width = w
+      this.height = h
+      this._src = ''
+    }
+
+    get src () { return this._src }
+    set src (val) { this._src = val; this.onload?.() }
+  }
+
+  HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
+    drawImage: jest.fn(),
+    getImageData: jest.fn((_x, _y, w, h) => ({ width: w, height: h }))
+  }))
+})
+
 describe('patternRegistry', () => {
   describe('built-in patterns', () => {
     test.each([
@@ -154,6 +173,48 @@ describe('patternRegistry', () => {
         'style-a'
       )
       expect(id).toBe(idExplicit)
+    })
+  })
+
+  describe('rasterisePatternImage', () => {
+    beforeEach(() => {
+      patternRegistry.register('rasterise-test', '<path d="M0 0 L8 8"/>')
+    })
+
+    test('returns null when the pattern has no inner content', async () => {
+      const result = await patternRegistry.rasterisePatternImage({ fillPattern: 'unknown' }, 'style-a')
+      expect(result).toBeNull()
+    })
+
+    test('returns null when getPatternImageId cannot resolve an id even though inner content exists', async () => {
+      // Defensive: getPatternImageId re-derives its own innerContent internally, so this
+      // shouldn't diverge from the check above in practice — but a consumer (see
+      // providers/maplibre/src/utils/patternImages.test.js's equivalent case) still relies on
+      // this guard rather than assuming the two calls can never disagree.
+      const getPatternImageId = jest.spyOn(patternRegistry, 'getPatternImageId').mockReturnValue(null)
+      const result = await patternRegistry.rasterisePatternImage({ fillPattern: 'rasterise-test' }, 'style-a')
+      expect(result).toBeNull()
+      getPatternImageId.mockRestore()
+    })
+
+    test('returns imageId and imageData for a valid pattern', async () => {
+      const result = await patternRegistry.rasterisePatternImage({ fillPattern: 'rasterise-test' }, 'style-a')
+      expect(result.imageId).toBe(patternRegistry.getPatternImageId({ fillPattern: 'rasterise-test' }, 'style-a'))
+      expect(result.imageData).toBeDefined()
+    })
+
+    test('rasterises at 8 * effectivePixelRatio physical pixels', async () => {
+      const result = await patternRegistry.rasterisePatternImage({ fillPattern: 'rasterise-test' }, 'style-a', 2)
+      // effectivePixelRatio(2) = max(2, 2*2) = 4 -> 8 * 4 = 32
+      expect(result.imageData.width).toBe(32)
+      expect(result.imageData.height).toBe(32)
+    })
+
+    test('returns the same cached ImageData object on a second call with identical inputs', async () => {
+      const style = { fillPattern: 'rasterise-test', fillPatternForegroundColor: '#unique-cache-key' }
+      const first = await patternRegistry.rasterisePatternImage(style, 'style-a')
+      const second = await patternRegistry.rasterisePatternImage(style, 'style-a')
+      expect(second.imageData).toBe(first.imageData)
     })
   })
 })

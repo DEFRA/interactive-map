@@ -26,6 +26,23 @@ const makeMap = (hits = []) => ({
 
 const makeVTLayer = () => Object.assign(new VectorTileLayer(), { get: (key) => key === 'layerType' ? 'vectorTile' : undefined })
 
+// A datasets-plugin tiles-backed layer: 'vectorTile' layerType, but a real ol/Feature with no
+// 'mapbox-layer' property, and a layerId set on the layer itself (not the feature).
+const makeDatasetVTLayer = (layerId) => Object.assign(new VectorTileLayer(), {
+  get: (key) => {
+    if (key === 'layerType') return 'vectorTile'
+    if (key === 'layerId') return layerId
+    return undefined
+  }
+})
+
+const makeDatasetVTFeature = (id, geom = { type: 'Point' }, props = {}) => ({
+  getId: () => id,
+  get: () => undefined, // no 'mapbox-layer'
+  getGeometry: () => geom,
+  getProperties: () => props
+})
+
 const makeVTFeature = ({ id = undefined, styleLayerId = 'roads', type = 'fill', props = {} } = {}) => ({
   getId: () => id,
   get: (key) => {
@@ -46,6 +63,16 @@ const makeVectorLayer = (layerId, isHighlight = false) => Object.assign(new Vect
 
 const makeVectorFeature = (id = 'f1', geom = { type: 'Point' }, props = {}) => ({
   getId: () => id,
+  getGeometry: () => geom,
+  getProperties: () => props
+})
+
+// A feature with no native id, e.g. a plain geojson dataset with no id/idProperty — getId()
+// genuinely returns undefined for these, not a default like makeVectorFeature('f1', ...) would.
+// getType() is real ol/geom/Geometry API — needed here (unlike makeVectorFeature's plain shape
+// object) since these features are used with a filter, and buildFilterEvaluator's context reads it.
+const makeIdlessVectorFeature = (props, geom = { getType: () => 'Point' }) => ({
+  getId: () => undefined,
   getGeometry: () => geom,
   getProperties: () => props
 })
@@ -136,6 +163,31 @@ describe('queryFeatures', () => {
   })
 
   /* ------------------------------------------------------------------ */
+  /* Datasets-plugin tiles-backed VectorTile layer features             */
+  /* ------------------------------------------------------------------ */
+
+  it('returns a result for a dataset tiles-backed feature, keyed by the layer\'s own layerId', () => {
+    const feature = makeDatasetVTFeature('f1', { type: 'Point' }, { sbi: 123 })
+    const map = makeMap([[feature, makeDatasetVTLayer('existing-fields')]])
+    const results = queryFeatures(map, { x: 0, y: 0 })
+    expect(results).toHaveLength(1)
+    expect(results[0]).toMatchObject({ id: 'f1', layer: { id: 'existing-fields' }, properties: { sbi: 123 } })
+    expect(renderFeatureToGeoJSON).not.toHaveBeenCalled()
+  })
+
+  it('skips a dataset tiles-backed feature when the layer has no layerId', () => {
+    const feature = makeDatasetVTFeature('f1')
+    const map = makeMap([[feature, makeDatasetVTLayer(undefined)]])
+    expect(queryFeatures(map, { x: 0, y: 0 })).toEqual([])
+  })
+
+  it('deduplicates dataset tiles-backed features with the same layerId and feature id', () => {
+    const feature = makeDatasetVTFeature('f1')
+    const map = makeMap([[feature, makeDatasetVTLayer('existing-fields')], [feature, makeDatasetVTLayer('existing-fields')]])
+    expect(queryFeatures(map, { x: 0, y: 0 })).toHaveLength(1)
+  })
+
+  /* ------------------------------------------------------------------ */
   /* Vector layer features                                              */
   /* ------------------------------------------------------------------ */
 
@@ -204,13 +256,14 @@ describe('getVisibleFeatures', () => {
     getSource: () => ({ sourceTiles_: tiles })
   })
 
-  const makeVectorLayerWithFeatures = (layerId, features, isHighlight = false) => {
+  const makeVectorLayerWithFeatures = (layerId, features, isHighlight = false, filter = undefined) => {
     const source = { getFeaturesInExtent: jest.fn(() => features) }
     return Object.assign(new VectorLayer(), {
       get: (key) => {
         if (key === 'layerType') return 'vector'
         if (key === 'layerId') return layerId
         if (key === '_highlight') return isHighlight || undefined
+        if (key === 'filter') return filter
         return undefined
       },
       getSource: () => source
@@ -259,6 +312,48 @@ describe('getVisibleFeatures', () => {
   })
 
   /* ------------------------------------------------------------------ */
+  /* Datasets-plugin tiles-backed VectorTile layer features             */
+  /* ------------------------------------------------------------------ */
+
+  const makeDatasetVTLayerWithTiles = (layerId, tiles, filter = undefined) => Object.assign(new VectorTileLayer(), {
+    get: (key) => {
+      if (key === 'layerType') return 'vectorTile'
+      if (key === 'layerId') return layerId
+      if (key === 'filter') return filter
+      return undefined
+    },
+    getSource: () => ({ sourceTiles_: tiles })
+  })
+
+  it('returns a loaded dataset tiles-backed feature matching the layer\'s own layerId', () => {
+    const feature = makeDatasetVTFeature('f1')
+    const layer = makeDatasetVTLayerWithTiles('existing-fields', { a: makeTile([feature]) })
+    const results = getVisibleFeatures(makeExtentMap([layer]), ['existing-fields'])
+    expect(results).toHaveLength(1)
+    expect(results[0]).toMatchObject({ id: 'f1', layer: { id: 'existing-fields' } })
+  })
+
+  it('skips a dataset tiles-backed layer whose layerId is not requested', () => {
+    const feature = makeDatasetVTFeature('f1')
+    const layer = makeDatasetVTLayerWithTiles('existing-fields', { a: makeTile([feature]) })
+    expect(getVisibleFeatures(makeExtentMap([layer]), ['hedge-control'])).toEqual([])
+  })
+
+  it('applies the layer\'s own filter when reading a shared VT source (e.g. sibling sourceLayers)', () => {
+    const geom = { getType: () => 'Point' }
+    const matching = makeDatasetVTFeature('f1', geom, { layer: 'field_parcels_osgb36' })
+    const other = makeDatasetVTFeature('f2', geom, { layer: 'hedge_control' })
+    const layer = makeDatasetVTLayerWithTiles(
+      'existing-fields',
+      { a: makeTile([matching, other]) },
+      ['==', ['get', 'layer'], 'field_parcels_osgb36']
+    )
+    const results = getVisibleFeatures(makeExtentMap([layer]), ['existing-fields'])
+    expect(results).toHaveLength(1)
+    expect(results[0].id).toBe('f1')
+  })
+
+  /* ------------------------------------------------------------------ */
   /* Vector layer features                                              */
   /* ------------------------------------------------------------------ */
 
@@ -286,6 +381,53 @@ describe('getVisibleFeatures', () => {
   it('skips highlight overlay Vector layers', () => {
     const layer = makeVectorLayerWithFeatures('draw', [makeVectorFeature('f1')], true)
     expect(getVisibleFeatures(makeExtentMap([layer]), ['draw'])).toEqual([])
+  })
+
+  // Regression coverage for a real bug: sibling sublayers of one dataset (e.g. a symbol
+  // dataset's per-category sublayers) share one OL source — reading straight off it, with no
+  // rendering step involved, previously ignored each sublayer's own filter entirely, so every
+  // sibling reported every feature in the shared source. Combined with id-less features (no
+  // id/idProperty configured, common for demo/small datasets) all colliding on the same
+  // `${layerId}:undefined` dedup key, this collapsed every sibling down to whichever feature
+  // happened to be first in the source, regardless of which one it actually was.
+  it('applies each sibling sublayer\'s own filter when reading one shared Vector source', () => {
+    const prehistoric = makeIdlessVectorFeature({ category: 'prehistoric', name: 'Prehistoric feature' })
+    const roman = makeIdlessVectorFeature({ category: 'roman', name: 'Roman feature' })
+    const medieval = makeIdlessVectorFeature({ category: 'medieval', name: 'Medieval feature' })
+    const sharedSourceFeatures = [prehistoric, roman, medieval]
+
+    const layers = ['prehistoric', 'roman', 'medieval'].map(category =>
+      makeVectorLayerWithFeatures(
+        `historic-monuments-${category}`,
+        sharedSourceFeatures,
+        false,
+        ['==', ['get', 'category'], category]
+      )
+    )
+    const layerIds = layers.map(l => l.get('layerId'))
+
+    const results = getVisibleFeatures(makeExtentMap(layers), layerIds)
+
+    expect(results).toHaveLength(3)
+    layers.forEach((layer, i) => {
+      const layerId = layerIds[i]
+      const own = results.find(r => r.layer.id === layerId)
+      expect(own?.properties.name).toBe(sharedSourceFeatures[i].getProperties().name)
+    })
+  })
+
+  it('does not dedupe distinct id-less features sharing a layer/source', () => {
+    const a = makeIdlessVectorFeature({ name: 'A' })
+    const b = makeIdlessVectorFeature({ name: 'B' })
+    const layer = makeVectorLayerWithFeatures('draw', [a, b])
+    const results = getVisibleFeatures(makeExtentMap([layer]), ['draw'])
+    expect(results).toHaveLength(2)
+    expect(results.map(r => r.properties.name).sort()).toEqual(['A', 'B'])
+  })
+
+  it('a Vector layer with no filter tag still returns every feature in the source (untagged = unfiltered)', () => {
+    const layer = makeVectorLayerWithFeatures('draw', [makeVectorFeature('f1'), makeVectorFeature('f2')])
+    expect(getVisibleFeatures(makeExtentMap([layer]), ['draw'])).toHaveLength(2)
   })
 
   /* ------------------------------------------------------------------ */

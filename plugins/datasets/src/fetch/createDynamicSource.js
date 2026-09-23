@@ -93,15 +93,15 @@ const mergeFetchedFeatures = (features, data, idProperty) => {
  * Fetch data for the current viewport and merge it into the feature cache.
  * Mutates state.fetchedBbox / state.currentController as a side effect.
  */
-const fetchViewportData = async (state, { map, dynamicGeoJSON, onUpdate }) => {
+const fetchViewportData = async (state, { mapProvider, dynamicGeoJSON, onUpdate }) => {
   const { url: baseUrl, idProperty, transformRequest, maxFeatures, minZoom = 0 } = dynamicGeoJSON
 
-  const zoom = map.getZoom()
+  const zoom = mapProvider.getZoom()
   if (zoom < minZoom) {
     return
   }
 
-  const currentBbox = getBboxArray(map)
+  const currentBbox = getBboxArray(mapProvider)
 
   // Skip if current viewport is already covered
   if (state.fetchedBbox && bboxContains(state.fetchedBbox, currentBbox)) {
@@ -141,15 +141,19 @@ const fetchViewportData = async (state, { map, dynamicGeoJSON, onUpdate }) => {
   }
 }
 
+// mapbox-gl has on()/off(), but OL's Observable only has on()/once()/un() — duck-type the
+// removal call rather than adding a map-provider abstraction just for this one method.
+const offMoveEnd = (map, handler) => (map.off || map.un).call(map, 'moveend', handler)
+
 /**
  * Create a dynamic GeoJSON source that fetches data based on viewport
  * @param {Object} options
  * @param {Object} options.dynamicGeoJSON - dynamicGeoJSON config from the registry dataset
- * @param {Object} options.map - Map instance
+ * @param {Object} options.mapProvider - Map provider instance (e.g. MapLibreProvider/OpenLayersProvider)
  * @param {Function} options.onUpdate - Callback when source data should be updated
  * @returns {Object} { destroy, clear, refresh, getFeatureCount, reapply }
  */
-export const createDynamicSource = ({ dynamicGeoJSON, map, onUpdate }) => {
+export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate }) => {
   // state.features: id → { feature, bbox, lastSeenAt }
   const state = {
     features: new Map(),
@@ -157,7 +161,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, map, onUpdate }) => {
     currentController: null
   }
 
-  const fetchData = () => fetchViewportData(state, { map, dynamicGeoJSON, onUpdate })
+  const fetchData = () => fetchViewportData(state, { mapProvider, dynamicGeoJSON, onUpdate })
 
   // Debounced fetch handler
   const debouncedFetch = debounce(fetchData, DEBOUNCE_DELAY)
@@ -167,7 +171,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, map, onUpdate }) => {
     debouncedFetch()
   }
 
-  map.on('moveend', handleMoveEnd)
+  mapProvider.map.on('moveend', handleMoveEnd)
 
   // Initial fetch
   fetchData()
@@ -177,7 +181,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, map, onUpdate }) => {
      * Clean up event listeners and cancel any in-flight request
      */
     destroy () {
-      map.off('moveend', handleMoveEnd)
+      offMoveEnd(mapProvider.map, handleMoveEnd)
       debouncedFetch.cancel()
       if (state.currentController) {
         state.currentController.abort()

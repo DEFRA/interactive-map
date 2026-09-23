@@ -202,7 +202,7 @@ The layer name within the vector tile source to render. Required when using `til
 
 **Type:** `string`
 
-Property name used to uniquely identify features in a static `geojson` source. When set, the plugin promotes this property to the MapLibre feature ID (`promoteId`) so that feature IDs are stable and derived from your data rather than auto-generated.
+Property name used to uniquely identify features in a static `geojson` source. When set, the plugin promotes this property to the underlying engine's feature ID (MapLibre's `promoteId`; OpenLayers' `ol/Feature` id) so that feature IDs are stable and derived from your data rather than auto-generated.
 
 Required for `setFeatureVisibility` to work correctly — the IDs you pass must match the values of this property in your data.
 
@@ -227,6 +227,9 @@ Required for `setFeatureVisibility` to work correctly — the IDs you pass must 
 When `true`, MapLibre auto-generates integer IDs for GeoJSON features by their array index position (0-based). Use this when your features have no natural unique ID property and you need `setFeatureVisibility` to work.
 
 > [!NOTE]
+> MapLibre only. The OpenLayers provider has no equivalent auto-generated ID concept — use `idProperty` instead.
+
+> [!NOTE]
 > Auto-generated IDs are positional and reset on every `setData` call. If your data changes between calls, the same integer ID may refer to a different feature. Prefer `idProperty` whenever your data has a stable unique field.
 
 ```js
@@ -243,7 +246,10 @@ When `true`, MapLibre auto-generates integer IDs for GeoJSON features by their a
 
 **Type:** `FilterExpression`
 
-A MapLibre filter expression applied to the dataset's map layers. Features not matching the filter are not rendered.
+A MapLibre-style filter expression applied to the dataset's map layers (also evaluated by the OpenLayers provider's own expression engine). Features not matching the filter are not rendered.
+
+> [!NOTE]
+> OpenLayers' expression parser is stricter than MapLibre's in places — e.g. `in`'s second argument must be a real array (`['literal', [...]]`), where MapLibre also accepts a bare scalar.
 
 ```js
 filter: ['==', ['get', 'status'], 'active']
@@ -410,7 +416,7 @@ Sublayer styles merge over the parent's — the sublayer wins on any property it
 |----------|------|-------------|
 | `id` | `string` | **Required.** Unique identifier within the dataset |
 | `label` | `string` | Human-readable name shown in the LayersMenu and Key panels |
-| `filter` | `FilterExpression` | MapLibre filter expression to match features for this sublayer |
+| `filter` | `FilterExpression` | MapLibre-style filter expression to match features for this sublayer |
 | `style` | `Object` | Style overrides. Accepts the same properties as the dataset `style` object |
 | `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from the dataset when not set; explicit `false` overrides a dataset-level `true` |
 | `showInMenu` | `boolean` | Shows this sublayer in the LayersMenu panel. Inherits from the dataset when not set; explicit `false` overrides a dataset-level `true` |

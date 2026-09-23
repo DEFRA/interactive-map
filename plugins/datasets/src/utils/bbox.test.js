@@ -3,16 +3,9 @@ import { getBboxArray, bboxContains, expandBbox, bboxIntersects, getGeometryBbox
 // ─── getBboxArray ─────────────────────────────────────────────────────────────
 
 describe('getBboxArray', () => {
-  it('returns [west, south, east, north] from a map bounds object', () => {
-    const map = {
-      getBounds: () => ({
-        getWest: () => -1,
-        getSouth: () => 50,
-        getEast: () => 1,
-        getNorth: () => 52
-      })
-    }
-    expect(getBboxArray(map)).toEqual([-1, 50, 1, 52])
+  it('returns the mapProvider.getBounds() array as-is', () => {
+    const mapProvider = { getBounds: () => [-1, 50, 1, 52] }
+    expect(getBboxArray(mapProvider)).toEqual([-1, 50, 1, 52])
   })
 })
 
