@@ -35,12 +35,13 @@ const DEFAULT_Z_INDEX = 0
 // the farming-tiles server's own vector tile sources — a wrong tile grid silently misplaces or
 // fails to load every tile. Independent of the ArcGIS-hosted OSGB36 tiles used elsewhere, which
 // use a different origin/resolution/tileSize despite sharing the same EPSG:27700 projection.
-const BNG_TILE_GRID_EXTENT = [0, 0, 1300000, 1300000]
+const BNG_TILE_GRID_SIZE = 1300000
+const BNG_TILE_GRID_EXTENT = [0, 0, BNG_TILE_GRID_SIZE, BNG_TILE_GRID_SIZE]
 const BNG_TILE_SIZE = 256
 const BNG_TILE_GRID = new TileGrid({
   extent: BNG_TILE_GRID_EXTENT,
-  origin: [BNG_TILE_GRID_EXTENT[0], BNG_TILE_GRID_EXTENT[3]],
-  resolutions: Array.from({ length: 25 }, (_, zoom) => (BNG_TILE_GRID_EXTENT[2] - BNG_TILE_GRID_EXTENT[0]) / (BNG_TILE_SIZE * 2 ** zoom)),
+  origin: [BNG_TILE_GRID_EXTENT[0], BNG_TILE_GRID_EXTENT[3]], // NOSONAR: bbox [west, south, east, north] coords
+  resolutions: Array.from({ length: 25 }, (_, zoom) => (BNG_TILE_GRID_EXTENT[2] - BNG_TILE_GRID_EXTENT[0]) / (BNG_TILE_SIZE * 2 ** zoom)), // NOSONAR: bbox coords
   tileSize: BNG_TILE_SIZE
 })
 
@@ -108,6 +109,8 @@ export const createDatasetSource = (registryDataset) => {
       populateFromUrl(olSource, source.data, idStrategy, id)
     } else if (source.data?.features?.length) {
       olSource.addFeatures(readGeoJSONFeatures(source.data, idStrategy))
+    } else {
+      // dynamicGeoJSON sources start empty and are populated later via setData
     }
     return olSource
   }
