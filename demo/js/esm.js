@@ -9,6 +9,7 @@ import openNamesProvider from '/providers/beta/open-names/dist/esm/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/dist/esm/index.js'
 import createDatasetsPlugin from '/plugins/datasets/dist/esm/index.js'
 import createMapKeyPlugin from '/plugins/map-key/dist/esm/index.js'
+import createDrawPlugin from '/plugins/draw/dist/esm/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/dist/esm/index.js'
 import searchPlugin from '/plugins/search/dist/esm/index.js'
 import createInteractPlugin from '/plugins/interact/dist/esm/index.js'
@@ -106,6 +107,12 @@ const interactPlugin = createInteractPlugin({
 })
 
 const framePlugin = createFramePlugin({ aspectRatio: 1.5 })
+
+const drawPlugin = createDrawPlugin({
+  manifest: {
+    buttons: [{ id: 'drawMenu', mobile: { slot: 'bottom-right' } }]
+  }
+})
 
 const landCoversDataset = {
   id: 'land-covers',
@@ -351,7 +358,8 @@ const interactiveMap = new InteractiveMap('map', {
       units: 'metric'
     }),
     interactPlugin,
-    framePlugin
+    framePlugin,
+    drawPlugin
   ]
 })
 
@@ -361,6 +369,57 @@ interactiveMap.on('app:ready', function (e) {
 
 interactiveMap.on('map:ready', function (e) {
   interactPlugin.enable()
+  interactiveMap.addButton('geometryActions', {
+    label: 'Draw tools',
+    mobile: { slot: 'bottom-right', order: 3 },
+    tablet: { slot: 'top-middle', order: 3 },
+    desktop: { slot: 'top-middle', order: 3 },
+    menuItems: [{
+      id: 'drawPolygon',
+      label: 'Draw polygon',
+      iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',
+      onClick: function () {
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        drawPlugin.newPolygon(crypto.randomUUID(), {
+          stroke: '#e6c700',
+          fill: 'rgba(255, 221, 0, 0.1)'
+        })
+      }
+    }, {
+      id: 'drawLine',
+      label: 'Draw line',
+      iconSvgContent: '<path d="M5.706 16.294L16.294 5.706"/><path d="M21 2v3c0 .549-.451 1-1 1h-3c-.549 0-1-.451-1-1V2c0-.549.451-1 1-1h3c.549 0 1 .451 1 1zM6 17v3c0 .549-.451 1-1 1H2c-.549 0-1-.451-1-1v-3c0-.549.451-1 1-1h3c.549 0 1 .451 1 1z"/>',
+      onClick: function () {
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        drawPlugin.newLine(crypto.randomUUID(), {
+          stroke: { outdoor: '#99704a', dark: '#ffffff' },
+          strokeWidth: 6
+        })
+      }
+    }, {
+      id: 'editFeature',
+      label: 'Edit geometry',
+      iconSvgContent: '<path d="M21.174 6.812a1 1 0 0 0-3.986-3.987L3.842 16.174a2 2 0 0 0-.5.83l-1.321 4.352a.5.5 0 0 0 .623.622l4.353-1.32a2 2 0 0 0 .83-.497z"/><path d="m15 5 4 4"/>',
+      isDisabled: true,
+      onClick: function () {
+        const editSuccess = drawPlugin.editFeature(selectedFeatureIds[0])
+        if (!editSuccess) {
+          return
+        }
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        interactPlugin.disable()
+      }
+    }, {
+      id: 'deleteFeature',
+      label: 'Delete feature',
+      iconSvgContent: '<path d="M10 11v6"/><path d="M14 11v6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6"/><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
+      isDisabled: true,
+      onClick: function () {
+        drawPlugin.deleteFeature(selectedFeatureIds)
+        interactPlugin.clear()
+      }
+    }]
+  })
 })
 
 // Datasets apiTests
@@ -524,6 +583,27 @@ interactiveMap.on('search:match', function (e) {
 // Hide selected feature
 interactiveMap.on('search:clear', function (e) {
   // console.log('Search clear')
+})
+
+// Draw events
+interactiveMap.on('draw:started', function (e) {
+  interactPlugin.disable()
+})
+
+interactiveMap.on('draw:created', function (e) {
+  console.log('draw:created', e)
+  interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+  interactPlugin.enable()
+})
+
+interactiveMap.on('draw:edited', function (e) {
+  interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+  interactPlugin.enable()
+})
+
+interactiveMap.on('draw:cancelled', function (e) {
+  interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+  interactPlugin.enable()
 })
 
 // Frame events
