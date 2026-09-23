@@ -324,6 +324,25 @@ maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
 defra.maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
 ```
 
+#### OpenLayers provider options
+
+`openLayersProvider()` accepts an optional config object. The provider renders in British National Grid (EPSG:27700) — this isn't configurable.
+
+##### `zoomAlignment`
+**Type:** `string`
+**Default:** `'uk'`
+
+Which zoom-level sequence the map's view resolutions follow.
+
+| Possible values | Description |
+| :--- | :--- |
+| `'uk'` | OS tile grid zoom levels (0–13); zoom 0 shows all of Great Britain. |
+| `'world'` | ESRI LOD sequence, for zoom levels that match the ESRI SDK; full UK visible around zoom 7. |
+
+```js
+openLayersProvider({ zoomAlignment: 'world' })
+```
+
 ---
 
 ### `mapSize`
