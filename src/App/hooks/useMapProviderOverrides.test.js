@@ -4,6 +4,7 @@ import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
 import { getSafeZoneInset } from '../../utils/getSafeZoneInset.js'
+import { calculateLayout } from './useLayoutMeasurements.js'
 import { scalePoints } from '../../utils/scalePoints.js'
 import { scaleFactor } from '../../config/appConfig.js'
 
@@ -11,6 +12,7 @@ jest.mock('../store/configContext.js')
 jest.mock('../store/appContext.js')
 jest.mock('../store/mapContext.js')
 jest.mock('../../utils/getSafeZoneInset.js')
+jest.mock('./useLayoutMeasurements.js')
 jest.mock('../../utils/scalePoints.js')
 
 const setup = (overrides = {}) => {
@@ -30,7 +32,7 @@ const setup = (overrides = {}) => {
   }
 
   useConfig.mockReturnValue({ mapProvider, eventBus, ...overrides.config })
-  useApp.mockReturnValue({ dispatch, layoutRefs, ...overrides.app })
+  useApp.mockReturnValue({ dispatch, layoutRefs, breakpoint: 'mobile', ...overrides.app })
   useMap.mockReturnValue({ mapSize: 'md', ...overrides.map })
 
   getSafeZoneInset.mockReturnValue({ top: 10, right: 5, bottom: 15, left: 5 })
@@ -40,7 +42,13 @@ const setup = (overrides = {}) => {
 }
 
 describe('useMapProviderOverrides', () => {
-  beforeEach(jest.clearAllMocks)
+  beforeEach(() => {
+    jest.clearAllMocks()
+    jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => cb())
+  })
+  afterEach(() => {
+    global.requestAnimationFrame.mockRestore()
+  })
 
   test('early returns when mapProvider is null', () => {
     setup({ config: { mapProvider: null } })
@@ -57,6 +65,7 @@ describe('useMapProviderOverrides', () => {
 
     mapProvider.fitToBounds([0, 0, 1, 1])
 
+    expect(calculateLayout).toHaveBeenCalledWith(layoutRefs, 'mobile')
     expect(getSafeZoneInset).toHaveBeenCalledWith(layoutRefs)
     expect(scalePoints).toHaveBeenCalledWith(safeZone, scaleFactor.lg)
     expect(dispatch).toHaveBeenCalledWith({

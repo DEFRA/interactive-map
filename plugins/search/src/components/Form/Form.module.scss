@@ -58,3 +58,12 @@
   width: 100%;
   left: 0;
 }
+
+// Tap-to-open mobile search reflows the header otherwise, inflating the safe zone while suggestions are open.
+.im-o-app--mobile .im-c-search-form:not(.im-c-search-form--default-expanded) .im-c-search-suggestions {
+  position: absolute;
+  top: 100%;
+  width: 100%;
+  left: 0;
+  z-index: 1;
+}
