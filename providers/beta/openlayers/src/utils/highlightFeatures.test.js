@@ -9,16 +9,14 @@ import { getOrCreateSymbolImage, getCachedSymbolImage, clearSymbolImageCache, re
 
 const HIGHLIGHT_MARKER = '_highlight'
 
-// Mirrors the map interface this module actually calls: getLayers().forEach(...) to find/
-// enumerate real ol/layer instances, and addLayer() to register new ones. Layers passed in
-// (or added during a test) are real ol/layer/Vector or ol/layer/VectorTile instances, same as
-// the rest of this codebase's OL tests use real ol classes over mocks for anything the
-// module under test actually instantiates or type-checks (instanceof).
+// Mirrors the map interface this module actually calls: getLayers().forEach(...)/getArray()
+// to find/enumerate real ol/layer instances, and addLayer() to register new ones. Layers
+// passed in (or added during a test) are real ol/layer/Vector or ol/layer/VectorTile instances.
 const createFakeMap = (layers = []) => {
   const list = [...layers]
   return {
     _layers: list,
-    getLayers: () => ({ forEach: (cb) => list.forEach(cb) }),
+    getLayers: () => ({ forEach: (cb) => list.forEach(cb), getArray: () => list }),
     addLayer: jest.fn((l) => list.push(l))
   }
 }
