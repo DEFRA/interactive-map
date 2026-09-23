@@ -67,12 +67,17 @@
     "./plugins/draw-es": {
       "import": "./plugins/beta/draw-es/dist/esm/index.js"
     },
+    "./plugins/draw": {
+      "import": "./plugins/draw/dist/esm/index.js",
+      "require": "./plugins/draw/dist/umd/index.js"
+    },
     "./plugins/frame": {
       "import": "./plugins/beta/frame/dist/esm/index.js",
       "require": "./plugins/beta/frame/dist/umd/index.js"
     },
     "./css": "./dist/css/index.css",
     "./plugins/draw-ml/css": "./plugins/beta/draw-ml/dist/css/index.css",
+    "./plugins/draw/css": "./plugins/draw/dist/css/index.css",
     "./plugins/scale-bar/css": "./plugins/beta/scale-bar/dist/css/index.css",
     "./plugins/datasets/css": "./plugins/datasets/dist/css/index.css",
     "./plugins/menu/css": "./plugins/menu/dist/css/index.css",
