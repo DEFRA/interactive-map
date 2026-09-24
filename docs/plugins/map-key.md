@@ -121,12 +121,14 @@ These properties control how an entry looks in the key panel — they have no ef
 
 ---
 
-### `keySymbolShape`
+### Key symbol shape
 
-**Type:** `'polygon' | 'line'`
-**Default:** `'polygon'`
+A polygon/line entry's key symbol is inferred from its style — there's no separate setting:
 
-Overrides the shape used to render a polygon/line entry's symbol in the key.
+- a `stroke` with no `fill` shows as a **line**
+- any `fill` shows as a **shape**. For an outline-only shape, set `fill: 'transparent'` — it draws nothing on the map
+
+Symbols and fill patterns show as themselves, whatever the stroke and fill.
 
 ---
 

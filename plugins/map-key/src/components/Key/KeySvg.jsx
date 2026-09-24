@@ -25,7 +25,9 @@ const getSymbolShape = (keyDefinition, groupStyle) => {
   if (hasPattern) {
     return { symbolShape: 'pattern', symbolDef: null }
   }
-  if (style.keySymbolShape === 'line') {
+  // Inferred from the style: a stroke with no fill at all is a line; any fill — including
+  // 'transparent' or 'none', for an outline-only shape — is a shape.
+  if (style.fill == null && style.stroke) {
     return { symbolShape: 'line', symbolDef: null }
   }
   return { symbolShape: 'rect', symbolDef: null }

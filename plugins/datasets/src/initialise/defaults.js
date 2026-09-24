@@ -15,7 +15,7 @@ const datasetDefaults = {
 const STYLE_PROPS = [
   'stroke', 'strokeWidth', 'strokeDashArray',
   'fill', 'fillPattern', 'fillPatternSvgContent', 'fillPatternForegroundColor', 'fillPatternBackgroundColor',
-  'opacity', 'symbolDescription', 'keySymbolShape',
+  'opacity', 'symbolDescription',
   'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor', 'symbolSize',
   'symbolBackgroundColor', 'symbolForegroundColor', 'symbolHaloWidth', 'symbolGraphic'
 ]

@@ -168,10 +168,8 @@ export const datasets = [
     visible: false,
     style: {
       stroke: '#b58840',
-      fill: 'transparent',
       strokeWidth: 4,
-      symbolDescription: { outdoor: 'blue outline' },
-      keySymbolShape: 'line'
+      symbolDescription: { outdoor: 'blue outline' }
     }
   }
 ]

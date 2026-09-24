@@ -313,12 +313,6 @@ Groups this dataset with others sharing the same `groupLabel` in the LayersMenu 
 
 ---
 
-### `keySymbolShape`
-
-Set within [`style`](#style) — not a top-level dataset property. See [Map Key: `keySymbolShape`](./map-key.md#keysymbolshape).
-
----
-
 ### `style`
 
 **Type:** `Object`
@@ -339,12 +333,11 @@ Visual style for the dataset. All style properties must be nested within this ob
 | `stroke` | `string \| Record<string, string>` | Stroke (outline) colour. Accepts a plain colour string or a map-style-keyed object e.g. `{ outdoor: '#ff0000', dark: '#ffffff' }` |
 | `strokeWidth` | `number` | Stroke width in pixels. **Default:** `2` |
 | `strokeDashArray` | `number[]` | Dash pattern for the stroke e.g. `[4, 2]` |
-| `fill` | `string \| Record<string, string>` | Fill colour. Use `'transparent'` for no fill |
+| `fill` | `string \| Record<string, string>` | Fill colour. Use `'transparent'` for no fill. Also sets the key symbol: with a `fill` it's a shape, without one (stroke only) it's a line — see [Map Key: Key symbol shape](./map-key.md#key-symbol-shape) |
 | `fillPattern` | `string` | Named fill pattern e.g. `'diagonal-cross-hatch'`, `'horizontal-hatch'`, `'dot'`, `'vertical-hatch'` |
 | `fillPatternSvgContent` | `string` | Raw SVG content for a custom fill pattern |
 | `fillPatternForegroundColor` | `string \| Record<string, string>` | Foreground colour for the fill pattern |
 | `fillPatternBackgroundColor` | `string \| Record<string, string>` | Background colour for the fill pattern |
-| `keySymbolShape` | `'polygon' \| 'line'` | Shape used for the key symbol |
 
 **Symbol (point) properties:**
 
@@ -368,7 +361,7 @@ They follow the same resolution order and support style-keyed colour objects in 
 
 `haloColor` and `selectedColor` are not settable here — they are basemap-level properties set on [`MapStyleConfig`](../api/map-style-config.md).
 
-`symbolDescription` and `keySymbolShape` only affect how an entry looks in the Key panel — see [Map Key: Key display properties](./map-key.md#key-display-properties) for details.
+`symbolDescription` only affects how an entry looks in the Key panel — see [Map Key: Key display properties](./map-key.md#key-display-properties) for details.
 
 ```js
 // Polygon/line dataset

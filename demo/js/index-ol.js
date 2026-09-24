@@ -186,10 +186,7 @@ const datasetsPlugin = createDatasetsPlugin({
     showInMenu: true,
     style: {
       stroke: '#b58840',
-      strokeWidth: 4,
-      // Without this, the Key panel's default rect swatch would show for a line-only
-      // dataset — same as index.js's hedge-control.
-      keySymbolShape: 'line'
+      strokeWidth: 4
     }
   }, {
     id: 'historic-monuments',
