@@ -235,7 +235,7 @@ Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as 
 | `options.snapLayers` | `string[]` | Overrides the plugin-level `snapLayers` for this session |
 | `options.onGeometryChange` | `Function` | Overrides the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
 | `options.properties` | `Object` | Custom GeoJSON properties to set on the finished feature |
-| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, or `'square'` |
+| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, or `'diamond'` |
 | `options.symbolSvgContent` | `string` | Custom SVG markup, used instead of `symbol` |
 | `options.symbolBackgroundColor` | `string \| Record<string, string>` | Symbol background colour |
 | `options.symbolForegroundColor` | `string \| Record<string, string>` | Symbol foreground colour |

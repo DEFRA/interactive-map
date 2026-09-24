@@ -1,5 +1,5 @@
 import { getValueForStyle } from '../utils/getValueForStyle.js'
-import { symbolDefaults, pin, circle, square, graphics } from '../config/symbolConfig.js'
+import { symbolDefaults, pin, circle, square, hexagon, triangle, diamond, graphics } from '../config/symbolConfig.js'
 import { getSymbolStyleColors, getSymbolViewBox } from '../utils/symbolUtils.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { rasteriseToImageData } from '../utils/rasteriseToImageData.js'
@@ -103,6 +103,9 @@ export const symbolRegistry = {
     this.register(pin)
     this.register(circle)
     this.register(square)
+    this.register(hexagon)
+    this.register(triangle)
+    this.register(diamond)
   },
 
   /**

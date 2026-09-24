@@ -67,7 +67,9 @@
 }
 
 .im-c-map-key-symbol--point {
-  margin: -12px 1px -12px -9px;
+  // Vertical margins are set inline from the symbol's viewBox height (KeySvgSymbol.jsx)
+  margin-right: 1px;
+  margin-left: -9px;
 }
 
 .im-c-map-key-list-horizontal-ramp {

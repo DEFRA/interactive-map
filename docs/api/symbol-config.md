@@ -25,7 +25,7 @@ backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' }
 **Type:** `string`
 **Default:** `'pin'`
 
-Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`. Ignored when `symbolSvgContent` is set.
+Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. Ignored when `symbolSvgContent` is set.
 
 ---
 

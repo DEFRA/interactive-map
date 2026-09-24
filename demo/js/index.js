@@ -31,7 +31,9 @@ const POINT_DATA = {
   features: [
     {type: 'Feature', properties:  { category:'prehistoric', name: 'Prehistoric feature' }, geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }},
     { type: 'Feature', properties: { category: 'roman', name: 'Roman feature' }, geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }},
-    { type: 'Feature', properties: { category:'medieval', name: 'Medieval feature' }, geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} }
+    { type: 'Feature', properties: { category:'medieval', name: 'Medieval feature' }, geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} },
+    { type: 'Feature', properties: { category:'industrial', name: 'Industrial feature' }, geometry: { coordinates: [-2.4432,54.5601], type: 'Point'} },
+    { type: 'Feature', properties: { category:'modern', name: 'Modern feature' }, geometry: { coordinates: [-2.4400,54.5568], type: 'Point'} }
   ]
 }
 
@@ -46,6 +48,14 @@ const interactPlugin = createInteractPlugin({
     labelProperty: 'name'
   }, {
     layerId: 'historic-monuments-medieval',
+    idProperty: 'name',
+    labelProperty: 'name'
+  }, {
+    layerId: 'historic-monuments-industrial',
+    idProperty: 'name',
+    labelProperty: 'name'
+  }, {
+    layerId: 'historic-monuments-modern',
     idProperty: 'name',
     labelProperty: 'name'
   }, {
@@ -208,7 +218,7 @@ const datasetsPlugin = createDatasetsPlugin({
     showInKey: true,
     showInMenu: true,
     style: {
-      symbol: 'square',
+      symbol: 'pin',
       symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
       // symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
       // symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
@@ -219,6 +229,7 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], 'prehistoric'],
       showInMenu: true,
       style: {
+        symbol: 'circle',
         symbolBackgroundColor: '#00897B',
       }
     },{
@@ -227,6 +238,7 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], 'roman'],
       showInMenu: true,
       style: {
+        symbol: 'square',
         symbolBackgroundColor: '#ca3535',
       }
     },{
@@ -235,7 +247,26 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], 'medieval'],
       showInMenu: true,
       style: {
+        symbol: 'hexagon',
         symbolBackgroundColor: '#1565C0',
+      }
+    },{
+      id: 'industrial',
+      label: 'Industrial',
+      filter: ['in', ['get', 'category'], 'industrial'],
+      showInMenu: true,
+      style: {
+        symbol: 'triangle',
+        symbolBackgroundColor: '#54319f',
+      }
+    },{
+      id: 'modern',
+      label: 'Modern',
+      filter: ['in', ['get', 'category'], 'modern'],
+      showInMenu: true,
+      style: {
+        symbol: 'diamond',
+        symbolBackgroundColor: '#d53880',
       }
     }]
   },{
@@ -337,7 +368,7 @@ interactiveMap.on('map:ready', function (e) {
   // })
   interactPlugin.enable()
   interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407], { label: 'My label', showLabel: true })
-  interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], { label: 'Another marker', symbol: 'square' })
+  interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], { label: 'Another marker', symbol: 'square', graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' })
 })
 
 interactiveMap.on('datasets:ready', function () {

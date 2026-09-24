@@ -12,6 +12,7 @@ import { anchorToMaplibre, anchorToMaplibreOffset } from '../../../../../provide
 export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
 
 const POINT_SYMBOL_LAYER_ID = 'point-symbol'
+const POINT_SYMBOL_LAYER_IDS = [`${POINT_SYMBOL_LAYER_ID}.hot`, `${POINT_SYMBOL_LAYER_ID}.cold`]
 
 // icon-offset can't be a raw per-feature `get` on an array property — MapLibre's GeoJSON
 // sources silently JSON.stringify arrays, so it reads back a string at render time. Instead
@@ -25,15 +26,24 @@ const buildIconOffsetExpression = (offsetsByImageId) => {
   return expression
 }
 
-const registerSymbolIconOffset = (map, symbolImageId, offset) => {
+// Written to both the live layers and draw.options.styles — the definitions mapbox-gl-draw
+// builds its layers from, and that mapboxDraw.js's ensureDrawSourcesAndLayers re-adds them
+// from after a style change. Without the latter, any rebuild (or a point resolved before the
+// layers first exist) left the layers on pointSymbol()'s [0, 0] default, and the early return
+// below meant nothing ever put the offset back.
+const registerSymbolIconOffset = (map, draw, symbolImageId, offset) => {
   map._symbolIconOffsetMap ??= {}
   if (map._symbolIconOffsetMap[symbolImageId]) {
     return // offset is deterministic per id — already registered, nothing changed
   }
   map._symbolIconOffsetMap[symbolImageId] = offset
   const expression = buildIconOffsetExpression(map._symbolIconOffsetMap)
-  ;['hot', 'cold'].forEach((suffix) => {
-    const layerId = `${POINT_SYMBOL_LAYER_ID}.${suffix}`
+  draw.options?.styles?.forEach((style) => {
+    if (POINT_SYMBOL_LAYER_IDS.includes(style.id)) {
+      style.layout = { ...style.layout, 'icon-offset': expression }
+    }
+  })
+  POINT_SYMBOL_LAYER_IDS.forEach((layerId) => {
     if (map.getLayer(layerId)) {
       map.setLayoutProperty(layerId, 'icon-offset', expression)
     }
@@ -78,7 +88,7 @@ const resolvePointSymbolFeature = async ({ draw, mapProvider, map, featureId, pr
   // icon-anchor only has 9 discrete positions, so an off-grid anchor (e.g. pin's [0.5, 0.9])
   // loses precision snapping to the nearest one — icon-offset corrects that gap.
   const offset = anchorToMaplibreOffset(rawAnchor, getSymbolViewBox(properties, symbolDef))
-  registerSymbolIconOffset(map, symbolImageId, offset)
+  registerSymbolIconOffset(map, draw, symbolImageId, offset)
 
   return {
     ...feature,

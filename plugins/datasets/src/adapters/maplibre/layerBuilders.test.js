@@ -80,4 +80,14 @@ describe('addSymbolLayer', () => {
     addSymbolLayer(map, ds, { id: 'outdoor' }, symbolRegistry, 1)
     expect(map.addLayer).not.toHaveBeenCalled()
   })
+
+  it('passes the symbol anchor and viewBox to getSymbolSource', () => {
+    const map = makeMap()
+    const symbolDef = { viewBox: '0 0 44 47', anchor: [0.5, 0.9] }
+    const symbolRegistry = { getSymbolDef: jest.fn(() => symbolDef), getSymbolImageId: jest.fn(() => 'img') }
+    const ds = makeDataset({ hasSymbol: true, symbolLayerId: 'test-ds', style: { symbol: 'pin' } })
+    addSymbolLayer(map, ds, { id: 'outdoor' }, symbolRegistry, 1)
+    expect(ds.getSymbolSource).toHaveBeenCalledWith('img', [0.5, 0.9], symbolDef, '0 0 44 47')
+    expect(map.addLayer).toHaveBeenCalled()
+  })
 })

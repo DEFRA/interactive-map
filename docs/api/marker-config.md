@@ -39,7 +39,7 @@ Controls the visual appearance of a marker. All properties are optional — unse
 **Type:** `string`
 **Default:** `'pin'`
 
-Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`. For a custom one-off symbol, use `symbolSvgContent` instead.
+Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. For a custom one-off symbol, use `symbolSvgContent` instead.
 
 ---
 

@@ -58,6 +58,25 @@ describe('KeySvgSymbol', () => {
     expect(container.querySelector('svg').getAttribute('viewBox')).toBe('0 0 64 64')
   })
 
+  it('renders a square viewBox at 44×44 with -12px vertical margins', () => {
+    const { container } = render(<KeySvgSymbol {...defaultProps} />)
+    const svg = container.querySelector('svg')
+    expect(svg.getAttribute('width')).toBe('44')
+    expect(svg.getAttribute('height')).toBe('44')
+    expect(svg.style.marginTop).toBe('-12px')
+    expect(svg.style.marginBottom).toBe('-12px')
+  })
+
+  it('keeps a 44px width and derives height from a non-square viewBox', () => {
+    getSymbolViewBox.mockReturnValue('0 0 44 50')
+    const { container } = render(<KeySvgSymbol {...defaultProps} />)
+    const svg = container.querySelector('svg')
+    expect(svg.getAttribute('width')).toBe('44')
+    expect(svg.getAttribute('height')).toBe('50')
+    expect(svg.style.marginTop).toBe('-15px')
+    expect(svg.style.marginBottom).toBe('-15px')
+  })
+
   it('renders the resolved svg html inside a g element', () => {
     mockResolve.mockReturnValue('<circle id="sym-el"/>')
     const { container } = render(<KeySvgSymbol {...defaultProps} />)

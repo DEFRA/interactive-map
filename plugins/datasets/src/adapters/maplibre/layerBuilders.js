@@ -1,5 +1,5 @@
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
-import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
+import { getSymbolAnchor, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
 
 // ─── Fill layer ───────────────────────────────────────────────────────────────
 
@@ -43,7 +43,8 @@ export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, p
   const imageId = symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, pixelRatio)
   if (!imageId) { return }
   const anchor = getSymbolAnchor(registryDataset.style, symbolDef)
-  map.addLayer(registryDataset.getSymbolSource(imageId, anchor, symbolDef))
+  const viewBox = getSymbolViewBox(registryDataset.style, symbolDef)
+  map.addLayer(registryDataset.getSymbolSource(imageId, anchor, symbolDef, viewBox))
 }
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────

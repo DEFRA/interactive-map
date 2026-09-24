@@ -30,10 +30,31 @@ describe('symbolRegistry — built-in symbols', () => {
     expect(circle.anchor).toEqual([0.5, 0.5])
   })
 
-  it('lists both built-in symbols', () => {
+  it('registers hexagon by default, centred like circle', () => {
+    const hexagon = symbolRegistry.get('hexagon')
+    expect(hexagon).toBeDefined()
+    expect(hexagon.id).toBe('hexagon')
+    expect(hexagon.viewBox).toBe('0 0 44 44')
+    expect(hexagon.anchor).toEqual([0.5, 0.5])
+  })
+
+  it('registers triangle by default, anchored at its centroid', () => {
+    const triangle = symbolRegistry.get('triangle')
+    expect(triangle).toBeDefined()
+    expect(triangle.viewBox).toBe('0 0 46 44')
+    expect(triangle.anchor).toEqual([0.5, 26 / 44])
+  })
+
+  it('registers diamond by default, centred', () => {
+    const diamond = symbolRegistry.get('diamond')
+    expect(diamond).toBeDefined()
+    expect(diamond.viewBox).toBe('0 0 46 46')
+    expect(diamond.anchor).toEqual([0.5, 0.5])
+  })
+
+  it('lists all built-in symbols', () => {
     const ids = symbolRegistry.list().map(s => s.id)
-    expect(ids).toContain('pin')
-    expect(ids).toContain('circle')
+    expect(ids).toEqual(expect.arrayContaining(['pin', 'circle', 'square', 'hexagon', 'triangle', 'diamond']))
   })
 })
 
@@ -278,11 +299,17 @@ describe('symbolRegistry — graphic token', () => {
     expect(circle.graphic.length).toBeGreaterThan(0)
   })
 
+  it('hexagon hides both ring strokes when resolved for normal rendering', () => {
+    const resolved = symbolRegistry.resolve(symbolRegistry.get('hexagon'), {}, mapStyle)
+    expect(resolved).toContain('stroke="none" stroke-width="14"')
+    expect(resolved).toContain('stroke="none" stroke-width="8"')
+  })
+
   it('pin resolves graphic token into its svg within a g transform', () => {
     const pin = symbolRegistry.get('pin')
     const resolved = symbolRegistry.resolve(pin, {}, mapStyle)
     expect(resolved).toContain(`d="${pin.graphic}"`)
-    expect(resolved).toContain('translate(22, 19) scale(0.8) translate(-8, -8)')
+    expect(resolved).toContain('translate(22, 20) scale(0.8) translate(-8, -8)')
   })
 })
 

@@ -6,15 +6,18 @@ The symbol registry is a service that manages reusable named symbols for map mar
 
 ## Built-in symbols
 
-Three symbols are registered by default:
+Six symbols are registered by default:
 
 | ID | Anchor | Description |
 |----|--------|-------------|
-| `'pin'` | `[0.5, 1]` | Teardrop pin — tip aligns with the coordinate |
+| `'pin'` | `[0.5, 0.9]` | Teardrop pin — tip aligns with the coordinate |
 | `'circle'` | `[0.5, 0.5]` | Filled circle — centre aligns with the coordinate |
 | `'square'` | `[0.5, 0.5]` | Rounded square — centre aligns with the coordinate |
+| `'hexagon'` | `[0.5, 0.5]` | Pointy-top hexagon, the same size as the circle — centre aligns with the coordinate |
+| `'triangle'` | `[0.5, 26 / 44]` | Point-up triangle, the same size as the hexagon — centroid aligns with the coordinate |
+| `'diamond'` | `[0.5, 0.5]` | Square rotated 45° — centre aligns with the coordinate |
 
-Both use the standard `{{token}}` placeholders and respect the resolution order described in [Symbol Config](./symbol-config.md#how-values-are-resolved).
+All use the standard `{{token}}` placeholders and respect the resolution order described in [Symbol Config](./symbol-config.md#how-values-are-resolved).
 
 ## Methods
 

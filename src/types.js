@@ -491,7 +491,7 @@
  * @typedef {Object} SymbolDefaults
  *
  * @property {string} [symbol='pin']
- * Default symbol ID. Built-in values: `'pin'`, `'circle'`.
+ * Default symbol ID. Built-in values: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`.
  *
  * @property {string} [symbolSvgContent]
  * Default inner SVG path content. When set, overrides `symbol`.

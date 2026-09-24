@@ -20,7 +20,7 @@ const HIGHLIGHTED_SBI = '106223377' // Same farm as demo/js/index.js's existing-
 // converted to EPSG:27700 via this same API's /convert-to-osgb36 endpoint.
 const BOUNDS = [370945, 518391, 374023, 525049]
 
-// Same 3 points as index.js's pointData, converted from WGS84 to EPSG:27700.
+// Same 5 points as index.js's pointData, converted from WGS84 to EPSG:27700.
 // No id/idProperty here — click-to-select instead reads the interact plugin's own per-layer
 // idProperty: 'name' (see interactPlugin below), since 'name' is already unique per feature.
 const POINT_DATA = {
@@ -28,7 +28,9 @@ const POINT_DATA = {
   features: [
     { type: 'Feature', properties: { category: 'prehistoric', name: 'Prehistoric feature' }, geometry: { type: 'Point', coordinates: [370619, 518593] } },
     { type: 'Feature', properties: { category: 'roman', name: 'Roman feature' }, geometry: { type: 'Point', coordinates: [371650, 517566] } },
-    { type: 'Feature', properties: { category: 'medieval', name: 'Medieval feature' }, geometry: { type: 'Point', coordinates: [371112, 518124] } }
+    { type: 'Feature', properties: { category: 'medieval', name: 'Medieval feature' }, geometry: { type: 'Point', coordinates: [371112, 518124] } },
+    { type: 'Feature', properties: { category: 'industrial', name: 'Industrial feature' }, geometry: { type: 'Point', coordinates: [371437, 518409] } },
+    { type: 'Feature', properties: { category: 'modern', name: 'Modern feature' }, geometry: { type: 'Point', coordinates: [371642, 518040] } }
   ]
 }
 
@@ -66,6 +68,14 @@ const interactPlugin = createInteractPlugin({
     labelProperty: 'name'
   }, {
     layerId: 'historic-monuments-medieval',
+    idProperty: 'name',
+    labelProperty: 'name'
+  }, {
+    layerId: 'historic-monuments-industrial',
+    idProperty: 'name',
+    labelProperty: 'name'
+  }, {
+    layerId: 'historic-monuments-modern',
     idProperty: 'name',
     labelProperty: 'name'
   }],
@@ -188,7 +198,7 @@ const datasetsPlugin = createDatasetsPlugin({
     showInKey: true,
     showInMenu: true,
     style: {
-      symbol: 'square',
+      symbol: 'pin',
       symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' // Historic monument
     },
     sublayers: [{
@@ -199,19 +209,31 @@ const datasetsPlugin = createDatasetsPlugin({
       // MapLibre also tolerates a bare scalar.
       filter: ['in', ['get', 'category'], ['literal', ['prehistoric']]],
       showInMenu: true,
-      style: { symbolBackgroundColor: '#00897B' }
+      style: { symbol: 'circle', symbolBackgroundColor: '#00897B' }
     }, {
       id: 'roman',
       label: 'Roman',
       filter: ['in', ['get', 'category'], ['literal', ['roman']]],
       showInMenu: true,
-      style: { symbolBackgroundColor: '#ca3535' }
+      style: { symbol: 'square', symbolBackgroundColor: '#ca3535' }
     }, {
       id: 'medieval',
       label: 'Medieval',
       filter: ['in', ['get', 'category'], ['literal', ['medieval']]],
       showInMenu: true,
-      style: { symbolBackgroundColor: '#1565C0' }
+      style: { symbol: 'hexagon', symbolBackgroundColor: '#1565C0' }
+    }, {
+      id: 'industrial',
+      label: 'Industrial',
+      filter: ['in', ['get', 'category'], ['literal', ['industrial']]],
+      showInMenu: true,
+      style: { symbol: 'triangle', symbolBackgroundColor: '#54319f' }
+    }, {
+      id: 'modern',
+      label: 'Modern',
+      filter: ['in', ['get', 'category'], ['literal', ['modern']]],
+      showInMenu: true,
+      style: { symbol: 'diamond', symbolBackgroundColor: '#d53880' }
     }]
   }]
 })
