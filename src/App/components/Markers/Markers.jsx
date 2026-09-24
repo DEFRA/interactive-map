@@ -12,17 +12,23 @@ import SymbolLabelMarker from './SymbolLabelMarker.jsx'
 import SymbolMarker from './SymbolMarker.jsx'
 
 // Marker properties handled internally — excluded from style value resolution
-const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'viewBox', 'anchor', 'selectedColor', 'label', 'showLabel'])
+const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'symbolSize', 'viewBox', 'anchor', 'selectedColor', 'label', 'showLabel'])
 
+// Sized for the marker's symbolSize — the returned def carries the viewBox (and, for built-in
+// symbols, the anchor) for that size. A viewBox override only applies to SVG-template symbols.
 const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
   const svgContent = marker.symbolSvgContent || defaults.symbolSvgContent
-  return svgContent
+  const baseDef = svgContent
     ? { svg: svgContent }
     : symbolRegistry.get(marker.symbol || defaults.symbol)
+  if (!baseDef) {
+    return undefined
+  }
+  return symbolRegistry.getSizedSymbolDef(baseDef, {
+    viewBox: marker.viewBox || defaults.viewBox || baseDef.viewBox || '0 0 44 44',
+    symbolSize: marker.symbolSize ?? defaults.symbolSize
+  })
 }
-
-const resolveViewBox = (marker, defaults, symbolDef) =>
-  marker.viewBox || defaults.viewBox || symbolDef?.viewBox || '0 0 44 44'
 
 const resolveAnchor = (marker, defaults, symbolDef) =>
   marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
@@ -40,7 +46,7 @@ const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize,
   } else {
     resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
   }
-  const viewBox = resolveViewBox(marker, defaults, symbolDef)
+  const viewBox = symbolDef?.viewBox ?? '0 0 44 44'
   const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
   const anchor = resolveAnchor(marker, defaults, symbolDef)
   const shapeId = marker.symbol || defaults.symbol

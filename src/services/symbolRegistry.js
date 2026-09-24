@@ -1,6 +1,9 @@
 import { getValueForStyle } from '../utils/getValueForStyle.js'
-import { symbolDefaults, pin, circle, square, hexagon, triangle, diamond, graphics } from '../config/symbolConfig.js'
-import { getSymbolStyleColors, getSymbolViewBox } from '../utils/symbolUtils.js'
+import {
+  symbolDefaults, pin, circle, square, hexagon, triangle, diamond, graphics,
+  HALO_STROKE_WIDTH, SELECTED_RING_STROKE_WIDTH, ACTIVE_RING_STROKE_WIDTH, SYMBOL_PADDING
+} from '../config/symbolConfig.js'
+import { getSymbolStyleColors, getSymbolViewBox, getSymbolScale } from '../utils/symbolUtils.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { rasteriseToImageData } from '../utils/rasteriseToImageData.js'
 
@@ -20,7 +23,85 @@ const hashString = (str) => {
 }
 
 // Keys that are structural — not token values for SVG substitution
-const STRUCTURAL = new Set(['id', 'svg', 'viewBox', 'anchor', 'symbol', 'symbolSvgContent'])
+const STRUCTURAL = new Set([
+  'id', 'svg', 'viewBox', 'anchor', 'symbol', 'symbolSvgContent', 'symbolSize',
+  'path', 'bounds', 'anchorPoint', 'graphicCentre', 'transform', 'scale'
+])
+
+const DEFAULT_SVG_VIEWBOX = '0 0 38 38'
+const GRAPHIC_SCALE = 0.8
+const round3 = (n) => Math.round(n * 1000) / 1000 // NOSONAR — 3dp: sub-pixel precision for SVG attributes
+
+// Built-in (path-based) symbol definitions, composed per scale: symbolDef → Map(scale → sized def)
+const composedCache = new WeakMap()
+
+// Sizes a path-based built-in symbol. The body and graphic scale; the halo and rings are drawn
+// as strokes at a fixed width (divided by the scale to cancel it out), so the viewBox is the
+// scaled body plus a fixed SYMBOL_PADDING, rounded up to whole pixels so rasterised images
+// have exact dimensions. The fractional anchor is recomputed from anchorPoint to match.
+function composeSymbolDef (symbolDef, scale) {
+  let byScale = composedCache.get(symbolDef)
+  if (!byScale) {
+    byScale = new Map()
+    composedCache.set(symbolDef, byScale)
+  }
+  if (byScale.has(scale)) {
+    return byScale.get(scale)
+  }
+  const [bx, by, bw, bh] = symbolDef.bounds
+  const width = Math.ceil(bw * scale + SYMBOL_PADDING * 2)
+  const height = Math.ceil(bh * scale + SYMBOL_PADDING * 2)
+  const offsetX = (width - bw * scale) / 2
+  const offsetY = (height - bh * scale) / 2
+  const [ax, ay] = symbolDef.anchorPoint
+  const sized = {
+    ...symbolDef,
+    scale,
+    viewBox: `0 0 ${width} ${height}`,
+    anchor: [
+      round3(((ax - bx) * scale + offsetX) / width),
+      round3(((ay - by) * scale + offsetY) / height)
+    ],
+    transform: `translate(${round3(offsetX)}, ${round3(offsetY)}) scale(${scale}) translate(${-bx}, ${-by})`
+  }
+  byScale.set(scale, sized)
+  return sized
+}
+
+// Sizes an SVG-template symbol (custom symbols, or symbolSvgContent) by scaling it as a whole —
+// its own rings, if it draws any, scale with it.
+function scaleSvgSymbolDef (symbolDef, viewBox, scale) {
+  if (scale === 1) {
+    return { ...symbolDef, viewBox }
+  }
+  const scaledViewBox = viewBox.split(' ').map((n) => round3(Number(n) * scale)).join(' ')
+  return { ...symbolDef, viewBox: scaledViewBox, svg: `<g transform="scale(${scale})">${symbolDef.svg}</g>` }
+}
+
+const hasColor = (color) => !!color && color !== 'none'
+
+// Rings are only emitted when shown, so an unselected symbol is a single path plus its graphic.
+function renderComposed (symbolDef, values) {
+  const { path, scale, transform, graphicCentre: [gx, gy] } = symbolDef
+  const ring = (color, strokeWidth) =>
+    `<path d="${path}" fill="none" stroke="${color}" stroke-width="${round3(strokeWidth / scale)}" stroke-linejoin="round"/>`
+  const layers = [
+    hasColor(values.activeColor) ? ring(values.activeColor, ACTIVE_RING_STROKE_WIDTH) : '',
+    hasColor(values.selectedColor) ? ring(values.selectedColor, SELECTED_RING_STROKE_WIDTH) : '',
+    `<path d="${path}" fill="${values.backgroundColor}" stroke="${values.haloColor}" stroke-width="${round3(HALO_STROKE_WIDTH / scale)}" stroke-linejoin="round" paint-order="stroke fill"/>`,
+    `<g transform="translate(${gx}, ${gy}) scale(${GRAPHIC_SCALE}) translate(-8, -8)"><path d="${values.graphic}" fill="${values.foregroundColor}"/></g>`
+  ]
+  return `<g transform="${transform}">${layers.join('')}</g>`
+}
+
+function renderSymbol (symbolDef, values) {
+  if (symbolDef.path) {
+    // Accept an unsized (registered) built-in def too, rendering it at medium
+    const sized = symbolDef.transform ? symbolDef : composeSymbolDef(symbolDef, 1)
+    return renderComposed(sized, values)
+  }
+  return resolveLayer(symbolDef.svg, values)
+}
 
 // selectedColor and activeColor are map style concerns — always injected from mapStyle, never from cascade.
 
@@ -122,7 +203,7 @@ export const symbolRegistry = {
     if (!symbolDef) { return '' }
     colors.selectedColor = 'none'
     colors.activeColor = 'none'
-    return resolveLayer(symbolDef.svg, colors)
+    return renderSymbol(symbolDef, colors)
   },
 
   /**
@@ -138,7 +219,7 @@ export const symbolRegistry = {
   resolveActive (symbolDef, styleColors, mapStyle) {
     const colors = resolveValues(symbolDef, styleColors || {}, mapStyle)
     if (!symbolDef) { return '' }
-    return resolveLayer(symbolDef.svg, colors)
+    return renderSymbol(symbolDef, colors)
   },
 
   /**
@@ -154,7 +235,7 @@ export const symbolRegistry = {
     const colors = resolveValues(symbolDef, styleColors || {}, mapStyle)
     if (!symbolDef) { return '' }
     colors.activeColor = 'none'
-    return resolveLayer(symbolDef.svg, colors)
+    return renderSymbol(symbolDef, colors)
   },
 
   // ─── Image IDs ────────────────────────────────────────────────────────────────
@@ -182,22 +263,40 @@ export const symbolRegistry = {
   },
 
   /**
-   * Resolves the symbolDef for a style's symbol config.
+   * Resolves the symbolDef for a style's symbol config, sized for style.symbolSize.
    *
    * style.symbol is a string symbol ID (e.g. 'pin').
    * style.symbolSvgContent is inline SVG content for a custom symbol.
+   * style.symbolViewBox overrides the viewBox of an SVG-template symbol.
    *
    * @param {Object} style
-   * @returns {Object|undefined}
+   * @returns {Object|undefined} with viewBox and anchor for that size
    */
   getSymbolDef (style) {
-    if (style.symbolSvgContent) {
-      return { svg: style.symbolSvgContent }
+    const baseDef = style.symbolSvgContent ? { svg: style.symbolSvgContent } : style.symbol && this.get(style.symbol)
+    if (!baseDef) {
+      return undefined
     }
-    if (style.symbol) {
-      return this.get(style.symbol)
+    return this.getSizedSymbolDef(baseDef, { viewBox: style.symbolViewBox, symbolSize: style.symbolSize })
+  },
+
+  /**
+   * Sizes a symbol definition for rendering. Built-in (path-based) symbols are composed at the
+   * size's scale with fixed-width rings; SVG-template symbols are scaled as a whole. The result
+   * always carries the viewBox (and, for built-ins, the anchor) for that size.
+   *
+   * @param {Object} symbolDef - a registered definition or { svg } for inline content
+   * @param {Object} [options]
+   * @param {string} [options.viewBox] - viewBox override, SVG-template symbols only
+   * @param {string} [options.symbolSize] - 'small' | 'medium' | 'large', else the app default
+   * @returns {Object}
+   */
+  getSizedSymbolDef (symbolDef, { viewBox, symbolSize } = {}) {
+    const scale = getSymbolScale(symbolSize ?? this.getDefaults().symbolSize)
+    if (symbolDef.path) {
+      return composeSymbolDef(symbolDef, scale)
     }
-    return undefined
+    return scaleSvgSymbolDef(symbolDef, viewBox ?? symbolDef.viewBox ?? DEFAULT_SVG_VIEWBOX, scale)
   },
 
   /**

@@ -8,16 +8,16 @@ The symbol registry is a service that manages reusable named symbols for map mar
 
 Six symbols are registered by default:
 
-| ID | Anchor | Description |
-|----|--------|-------------|
-| `'pin'` | `[0.5, 0.9]` | Teardrop pin — tip aligns with the coordinate |
-| `'circle'` | `[0.5, 0.5]` | Filled circle — centre aligns with the coordinate |
-| `'square'` | `[0.5, 0.5]` | Rounded square — centre aligns with the coordinate |
-| `'hexagon'` | `[0.5, 0.5]` | Pointy-top hexagon, the same size as the circle — centre aligns with the coordinate |
-| `'triangle'` | `[0.5, 26 / 44]` | Point-up triangle, the same size as the hexagon — centroid aligns with the coordinate |
-| `'diamond'` | `[0.5, 0.5]` | Square rotated 45° — centre aligns with the coordinate |
+| ID | Anchored at | Description |
+|----|-------------|-------------|
+| `'pin'` | Just below the tip | Teardrop pin |
+| `'circle'` | Centre | Filled circle |
+| `'square'` | Centre | Rounded square |
+| `'hexagon'` | Centre | Pointy-top hexagon |
+| `'triangle'` | Centroid | Point-up triangle |
+| `'diamond'` | Centre | Square rotated 45° |
 
-All use the standard `{{token}}` placeholders and respect the resolution order described in [Symbol Config](./symbol-config.md#how-values-are-resolved).
+The shapes are sized to look the same size as each other. Each is defined as a single body `path`, plus its `bounds`, `anchorPoint` and `graphicCentre` in the path's own coordinates, and the registry builds the SVG, viewBox and fractional anchor for each [`symbolSize`](./symbol-config.md#symbolsize). The body and graphic scale with the size; the halo and selected/active rings are strokes on the body outline at a fixed width, and are only included in the SVG when they're showing. They use the same [token resolution order](./symbol-config.md#how-values-are-resolved) as any other symbol.
 
 ## Methods
 
@@ -72,6 +72,18 @@ See [Symbol Config](./symbol-config.md) for the full list of token properties an
 
 ---
 
+### `getSymbolDef(style)`
+
+Returns the symbol definition for a marker or dataset style (`symbol` or `symbolSvgContent`), sized for its `symbolSize` — with the `viewBox` and `anchor` for that size. Pass the result to the `resolve` methods.
+
+---
+
+### `getSizedSymbolDef(symbolDef, { viewBox, symbolSize })`
+
+Sizes a definition from [`get()`](#getid) (or `{ svg }` for inline content) directly. `viewBox` only applies to SVG-template symbols.
+
+---
+
 ### `get(id)`
 
 Returns the symbol definition for the given ID, or `undefined` if not registered.
@@ -98,7 +110,7 @@ Resolves a symbol's SVG for **normal (unselected, inactive) rendering**. Both `{
 
 ```js
 const svg = services.symbolRegistry.resolve(
-  services.symbolRegistry.get('pin'),
+  services.symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSize: 'large' }),
   { backgroundColor: '#d4351c' },
   mapStyle
 )

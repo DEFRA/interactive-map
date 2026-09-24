@@ -243,6 +243,7 @@ Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as 
 | `options.symbolHaloWidth` | `number` | Symbol halo width |
 | `options.symbolViewBox` | `string` | SVG `viewBox`, for use with `symbolSvgContent` |
 | `options.symbolAnchor` | `[number, number]` | Normalised `[x, y]` anchor point |
+| `options.symbolSize` | `'small' \| 'medium' \| 'large'` | Symbol size — see [Symbol Config](../api/symbol-config.md#symbolsize) |
 
 These mirror [MarkerOptions](../api/marker-config.md#markeroptions)' `symbol`-family properties (prefixed with `symbol` here to sit alongside other feature properties) — see [Symbol Config](../api/symbol-config.md) for the full resolution order and SVG token structure. Points with no symbol config render with the plugin's default marker.
 

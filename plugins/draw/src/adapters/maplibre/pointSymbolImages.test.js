@@ -86,15 +86,15 @@ describe('resolvePointSymbol', () => {
         symbolSelectedImageId: null
       }
     })
-    // icon-offset corrects the precision lost snapping 0.9 to 1.0 against pin's 47px-tall viewBox —
+    // icon-offset corrects the precision lost snapping pin's 0.889 anchor to 1.0 against its 49px-tall viewBox —
     // registered into the point-symbol layers' icon-offset match expression instead of onto
     // the feature (see registerSymbolIconOffset's comment for why).
-    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 4.7])
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 5.44])
     expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.hot', 'icon-offset', [
-      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 4.7]], ['literal', [0, 0]]
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.44]], ['literal', [0, 0]]
     ])
     expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.cold', 'icon-offset', [
-      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 4.7]], ['literal', [0, 0]]
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.44]], ['literal', [0, 0]]
     ])
   })
 
@@ -128,7 +128,7 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
-    const expression = ['match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 4.7]], ['literal', [0, 0]]]
+    const expression = ['match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.44]], ['literal', [0, 0]]]
     expect(draw.options.styles[0].layout).toEqual({ 'icon-anchor': 'x', 'icon-offset': expression })
     expect(draw.options.styles[1].layout).toEqual({ 'icon-offset': expression })
     expect(draw.options.styles[2].layout).toEqual({})
@@ -224,23 +224,23 @@ describe('resolvePointSymbol', () => {
 
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
-    // circle's viewBox is 44×44 — anchor 0.8 snaps to icon-anchor 'bottom' (1.0), offset corrects the gap
+    // circle's viewBox is 42×42 — anchor 0.8 snaps to icon-anchor 'bottom' (1.0), offset corrects the gap
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
       properties: expect.objectContaining({ symbolIconAnchor: 'bottom' })
     }))
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
-    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 8.8])
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 8.4])
   })
 
   it('respects a custom symbolViewBox when computing the offset', async () => {
     const map = createMap()
     const mapProvider = createMapProvider()
-    const properties = { symbol: 'pin', symbolViewBox: '0 0 100 100' }
+    const properties = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 100 100', symbolAnchor: [0.5, 0.9] }
     const draw = createDraw([point('p1', properties)])
 
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
-    // pin's anchor [0.5, 0.9] against a 100×100 viewBox instead of the built-in 44×44
+    // anchor [0.5, 0.9] against the custom 100×100 viewBox
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
     expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 10])
   })

@@ -29,6 +29,16 @@ Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`, `
 
 ---
 
+### `symbolSize`
+**Type:** `'small' | 'medium' | 'large'`
+**Default:** `'medium'`
+
+Size of the symbol on the map: `'small'` is 75% and `'large'` 125% of `'medium'`. The shape and its graphic scale; the white halo and the selected/active rings stay the same width at every size, as they do everywhere else in the interface. The [map key](../plugins/map-key.md) always shows symbols at `'medium'`.
+
+SVG-template symbols (`symbolSvgContent`, or a symbol registered with `svg`) are scaled as a whole, so any rings they draw scale with them.
+
+---
+
 ### `symbolSvgContent`
 **Type:** `string`
 
@@ -54,7 +64,7 @@ See [SVG structure](#svg-structure) for the standard three-layer pattern.
 **Type:** `string`
 **Default:** registered symbol's viewBox, or `'0 0 44 44'`
 
-SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a different coordinate space.
+SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a different coordinate space. Built-in symbols work out their own viewBox for each `symbolSize`, and ignore this.
 
 ---
 
@@ -62,7 +72,7 @@ SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a 
 **Type:** `[number, number]`
 **Default:** registered symbol's anchor, or `[0.5, 0.5]`
 
-Normalised `[x, y]` anchor point where `[0, 0]` is the top-left and `[1, 1]` is the bottom-right of the symbol. Determines which point on the symbol aligns with the geographic coordinate.
+Normalised `[x, y]` anchor point where `[0, 0]` is the top-left and `[1, 1]` is the bottom-right of the symbol. Determines which point on the symbol aligns with the geographic coordinate. Built-in symbols work out their anchor for each `symbolSize`; an override here is a fraction of that size's viewBox.
 
 ```js
 anchor: [0.5, 1]   // bottom-centre — tip of a pin

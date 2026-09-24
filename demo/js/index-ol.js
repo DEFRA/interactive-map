@@ -209,7 +209,7 @@ const datasetsPlugin = createDatasetsPlugin({
       // MapLibre also tolerates a bare scalar.
       filter: ['in', ['get', 'category'], ['literal', ['prehistoric']]],
       showInMenu: true,
-      style: { symbol: 'circle', symbolBackgroundColor: '#00897B' }
+      style: { symbol: 'circle', symbolSize: 'small', symbolBackgroundColor: '#00897B' }
     }, {
       id: 'roman',
       label: 'Roman',
@@ -227,7 +227,7 @@ const datasetsPlugin = createDatasetsPlugin({
       label: 'Industrial',
       filter: ['in', ['get', 'category'], ['literal', ['industrial']]],
       showInMenu: true,
-      style: { symbol: 'triangle', symbolBackgroundColor: '#54319f' }
+      style: { symbol: 'triangle', symbolSize: 'large', symbolBackgroundColor: '#54319f' }
     }, {
       id: 'modern',
       label: 'Modern',

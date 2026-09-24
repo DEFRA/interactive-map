@@ -3,7 +3,8 @@ import {
   isStandaloneLabel,
   getSymbolStyleColors,
   getSymbolViewBox,
-  getSymbolAnchor
+  getSymbolAnchor,
+  getSymbolScale
 } from './symbolUtils.js'
 
 // ─── hasSymbol ────────────────────────────────────────────────────────────────
@@ -106,9 +107,14 @@ describe('getSymbolStyleColors', () => {
 // ─── getSymbolViewBox ─────────────────────────────────────────────────────────
 
 describe('getSymbolViewBox', () => {
-  it('returns symbolViewBox from dataset', () => {
+  it('returns symbolViewBox from dataset when there is no symbolDef', () => {
     const dataset = { symbol: 'custom', symbolViewBox: '0 0 24 24' }
     expect(getSymbolViewBox(dataset, undefined)).toBe('0 0 24 24')
+  })
+
+  it('prefers the (already sized) symbolDef viewBox over dataset.symbolViewBox', () => {
+    const dataset = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 24 24', symbolSize: 'large' }
+    expect(getSymbolViewBox(dataset, { viewBox: '0 0 30 30' })).toBe('0 0 30 30')
   })
 
   it('falls back to symbolDef viewBox', () => {
@@ -144,5 +150,18 @@ describe('getSymbolAnchor', () => {
 
   it('returns default [0.5, 0.5] when symbolDef is undefined', () => {
     expect(getSymbolAnchor({ symbol: 'pin' }, undefined)).toEqual([0.5, 0.5])
+  })
+})
+
+// ─── getSymbolScale ───────────────────────────────────────────────────────────
+
+describe('getSymbolScale', () => {
+  it.each([['small', 0.75], ['medium', 1], ['large', 1.25]])('maps %s to %s', (symbolSize, scale) => {
+    expect(getSymbolScale(symbolSize)).toBe(scale)
+  })
+
+  it('returns 1 for a missing or unknown size', () => {
+    expect(getSymbolScale(undefined)).toBe(1)
+    expect(getSymbolScale('huge')).toBe(1)
   })
 })

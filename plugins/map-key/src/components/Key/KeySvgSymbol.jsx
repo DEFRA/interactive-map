@@ -1,5 +1,5 @@
 import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
-import { svgSymbolProps, SVG_SIZE, SVG_SYMBOL_SIZE } from './svgProperties.js'
+import { svgSymbolProps, SVG_SYMBOL_SIZE } from './svgProperties.js'
 import { symbolRegistry } from '../../registry/index.js'
 
 export const KeySvgSymbol = ({ keyDefinition, mapStyle, symbolDef }) => {
@@ -13,15 +13,19 @@ export const KeySvgSymbol = ({ keyDefinition, mapStyle, symbolDef }) => {
     return null
   }
 
-  // Fixed width, height from the viewBox aspect ratio — so a taller symbol (e.g. pin's tail)
-  // isn't shrunk to fit a square. Negative vertical margins keep the row's layout height at
-  // SVG_SIZE regardless of the symbol's height.
-  const [,, viewBoxWidth, viewBoxHeight] = viewBox.split(' ').map(Number)
-  const height = SVG_SYMBOL_SIZE * viewBoxHeight / viewBoxWidth
-  const marginBlock = `${(SVG_SIZE - height) / 2}px`
+  // Drawn 1:1 (one viewBox unit per pixel, as on the map), centred in the key's fixed square —
+  // symbols vary in size (pin's tail, triangle's width), so overflow is left visible rather than
+  // shrinking the larger ones to fit.
+  const [minX, minY, width, height] = viewBox.split(' ').map(Number)
+  const keyViewBox = [
+    minX - (SVG_SYMBOL_SIZE - width) / 2,
+    minY - (SVG_SYMBOL_SIZE - height) / 2,
+    SVG_SYMBOL_SIZE,
+    SVG_SYMBOL_SIZE
+  ].join(' ')
 
   return (
-    <svg {...svgSymbolProps} height={height} viewBox={viewBox} style={{ marginTop: marginBlock, marginBottom: marginBlock }}>
+    <svg {...svgSymbolProps} viewBox={keyViewBox} overflow='visible'>
       <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />
     </svg>
   )

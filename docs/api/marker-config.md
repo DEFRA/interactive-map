@@ -43,6 +43,14 @@ Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`
 
 ---
 
+### `symbolSize`
+**Type:** `'small' | 'medium' | 'large'`
+**Default:** `'medium'`, or the constructor's `symbolDefaults.symbolSize`
+
+Size of the marker's symbol — see [Symbol Config](./symbol-config.md#symbolsize).
+
+---
+
 ### `symbolSvgContent`
 **Type:** `string`
 

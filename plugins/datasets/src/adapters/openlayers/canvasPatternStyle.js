@@ -86,7 +86,7 @@ const buildStroke = (registryDataset, mapStyleId) => {
 
 /**
  * Builds an OL style function for a Canvas-rendered, pattern-bearing dataset/sublayer — uses a
- * real CanvasPattern (see module doc), bypassing OpenLayersDataset.flatStyle for this one case.
+ * real CanvasPattern (see module doc), bypassing OpenLayersDataset.getFlatStyle for this one case.
  * @param {Object} registryDataset - an OpenLayersDataset with hasPattern true
  * @param {string} mapStyleId
  * @param {number} pixelRatio - must match what registerCrispCanvasPattern was last called with

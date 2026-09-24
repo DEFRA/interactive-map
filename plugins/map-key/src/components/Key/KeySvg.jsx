@@ -18,7 +18,8 @@ const getSymbolShape = (keyDefinition, groupStyle) => {
     return { symbolShape: HORIZONTAL_RAMP, symbolDef: null }
   }
   if (hasSymbol) {
-    const symbolDef = symbolRegistry.getSymbolDef(style)
+    // Always medium in the key, whatever symbolSize the map uses
+    const symbolDef = symbolRegistry.getSymbolDef({ ...style, symbolSize: 'medium' })
     return { symbolShape: symbolDef ? 'symbol' : 'rect', symbolDef }
   }
   if (hasPattern) {

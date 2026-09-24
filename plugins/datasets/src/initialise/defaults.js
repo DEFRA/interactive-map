@@ -16,7 +16,7 @@ const STYLE_PROPS = [
   'stroke', 'strokeWidth', 'strokeDashArray',
   'fill', 'fillPattern', 'fillPatternSvgContent', 'fillPatternForegroundColor', 'fillPatternBackgroundColor',
   'opacity', 'symbolDescription', 'keySymbolShape',
-  'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor',
+  'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor', 'symbolSize',
   'symbolBackgroundColor', 'symbolForegroundColor', 'symbolHaloWidth', 'symbolGraphic'
 ]
 

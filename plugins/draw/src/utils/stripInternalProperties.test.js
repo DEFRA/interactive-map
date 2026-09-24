@@ -7,6 +7,7 @@ describe('stripInternalProperties', () => {
       properties: {
         symbol: 'pin',
         symbolBackgroundColor: '#ca3535',
+        symbolSize: 'large',
         symbolImageId: 'symbol-abc-2x',
         symbolIconAnchor: 'bottom',
         symbolIconOffset: [0, -10],
@@ -18,7 +19,7 @@ describe('stripInternalProperties', () => {
 
     expect(stripInternalProperties(feature)).toEqual({
       id: 'a',
-      properties: { symbol: 'pin', symbolBackgroundColor: '#ca3535' }
+      properties: { symbol: 'pin', symbolBackgroundColor: '#ca3535', symbolSize: 'large' }
     })
   })
 

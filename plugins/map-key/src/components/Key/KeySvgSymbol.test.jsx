@@ -52,29 +52,20 @@ describe('KeySvgSymbol', () => {
     expect(getSymbolViewBox).toHaveBeenCalledWith(defaultProps.keyDefinition.style, defaultProps.symbolDef)
   })
 
-  it('sets the viewBox from getSymbolViewBox', () => {
-    getSymbolViewBox.mockReturnValue('0 0 64 64')
-    const { container } = render(<KeySvgSymbol {...defaultProps} />)
-    expect(container.querySelector('svg').getAttribute('viewBox')).toBe('0 0 64 64')
-  })
-
-  it('renders a square viewBox at 44×44 with -12px vertical margins', () => {
+  it('draws the symbol 1:1, centred in a fixed 44×44 box', () => {
+    getSymbolViewBox.mockReturnValue('0 0 42 48')
     const { container } = render(<KeySvgSymbol {...defaultProps} />)
     const svg = container.querySelector('svg')
     expect(svg.getAttribute('width')).toBe('44')
     expect(svg.getAttribute('height')).toBe('44')
-    expect(svg.style.marginTop).toBe('-12px')
-    expect(svg.style.marginBottom).toBe('-12px')
+    expect(svg.getAttribute('viewBox')).toBe('-1 2 44 44')
+    expect(svg.getAttribute('overflow')).toBe('visible')
   })
 
-  it('keeps a 44px width and derives height from a non-square viewBox', () => {
-    getSymbolViewBox.mockReturnValue('0 0 44 50')
+  it('keeps a non-zero viewBox origin when centring', () => {
+    getSymbolViewBox.mockReturnValue('10 10 64 64')
     const { container } = render(<KeySvgSymbol {...defaultProps} />)
-    const svg = container.querySelector('svg')
-    expect(svg.getAttribute('width')).toBe('44')
-    expect(svg.getAttribute('height')).toBe('50')
-    expect(svg.style.marginTop).toBe('-15px')
-    expect(svg.style.marginBottom).toBe('-15px')
+    expect(container.querySelector('svg').getAttribute('viewBox')).toBe('20 20 44 44')
   })
 
   it('renders the resolved svg html inside a g element', () => {

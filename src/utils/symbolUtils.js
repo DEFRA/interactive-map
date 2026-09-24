@@ -1,3 +1,5 @@
+import { SYMBOL_SIZES } from '../config/symbolConfig.js'
+
 // Symbol style props in dataset style that carry token values.
 // These use the 'symbol' prefix to distinguish them from fill/stroke props at the same level.
 // The prefix is stripped before passing tokens to the registry (e.g. symbolBackgroundColor → backgroundColor).
@@ -53,18 +55,25 @@ export const getSymbolStyleColors = (dataset) => {
 }
 
 /**
+ * Returns the scale factor for a symbolSize ('small' | 'medium' | 'large'); 1 when unknown.
+ * The one place a size becomes a number — extend here to accept other sizes or raw factors.
+ *
+ * @param {string} [symbolSize]
+ * @returns {number}
+ */
+export const getSymbolScale = (symbolSize) => SYMBOL_SIZES[symbolSize] ?? 1
+
+/**
  * Returns the viewBox string for a dataset's symbol.
- * Precedence: dataset.symbolViewBox → symbolDef viewBox → default.
+ * Precedence: symbolDef viewBox (already sized, with any symbolViewBox override folded in by
+ * symbolRegistry.getSymbolDef) → dataset.symbolViewBox → default.
  *
  * @param {Object} dataset
  * @param {Object|undefined} symbolDef
  * @returns {string}
  */
 export const getSymbolViewBox = (dataset, symbolDef) => {
-  if (dataset.symbolViewBox) {
-    return dataset.symbolViewBox
-  }
-  return symbolDef?.viewBox ?? '0 0 38 38'
+  return symbolDef?.viewBox ?? dataset.symbolViewBox ?? '0 0 38 38'
 }
 
 /**
