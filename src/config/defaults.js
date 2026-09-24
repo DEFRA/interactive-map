@@ -32,7 +32,7 @@ const defaults = {
   urlPosition: 'sync',
   maxMobileWidth: 640,
   minDesktopWidth: 835,
-  mapControlsHintText: 'A "Move and zoom controls" button is also available, opening further controls for moving and zooming.',
+  mapControlsHintText: 'A "map controls" button is also available, opening further controls for moving and zooming.',
   nudgePanDelta: 5,
   nudgeZoomDelta: 0.1,
   panDelta: 100,
