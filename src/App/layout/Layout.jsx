@@ -14,11 +14,22 @@ import { Hints } from '../components/Hints/Hints.jsx'
 import { hasOpenModalPanel } from '../renderer/slotHelpers.js'
 import { getMapThemeVars } from '../../config/mapTheme.js'
 
+// im-o-app--exclusive-control-{pluginId}, or im-o-app--exclusive-control-{pluginId}--{name} when
+// the plugin passed a name, for the most recent claim only.
+const getExclusiveControlClass = (exclusiveControl = []) => {
+  const top = exclusiveControl.at(-1)
+  if (!top) {
+    return null
+  }
+  const suffix = top.name ? '--' + top.name : ''
+  return `im-o-app--exclusive-control-${top.pluginId}${suffix}`
+}
+
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Layout = () => {
   const { id, mapLabel, mapHintText } = useConfig()
-  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen, openPanels, panelConfig } = useApp()
+  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, exclusiveControl, isFullscreen, openPanels, panelConfig } = useApp()
   const { mapStyle } = useMap()
   const showModalBackdrop = hasOpenModalPanel(openPanels ?? {}, panelConfig ?? {}, breakpoint)
 
@@ -34,7 +45,7 @@ export const Layout = () => {
         `im-o-app--${interfaceType}`,
         `im-o-app--${isFullscreen ? 'fullscreen' : 'inline'}`,
         `im-o-app--${mapStyle?.appColorScheme || preferredColorScheme}-app`,
-        hasExclusiveControl && 'im-o-app--exclusive-control'
+        getExclusiveControlClass(exclusiveControl)
       ].filter(Boolean).join(' ')}
       style={{ backgroundColor: mapStyle?.backgroundColor || undefined, ...getMapThemeVars(mapStyle) }}
       ref={layoutRefs.appContainerRef}

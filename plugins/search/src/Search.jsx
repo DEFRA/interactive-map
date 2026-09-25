@@ -6,7 +6,7 @@ import { SubmitButton } from './components/SubmitButton/SubmitButton'
 import { createDatasets } from './datasets.js'
 import { attachEvents } from './events/index.js'
 
-export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
+export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider, setExclusiveControl }) {
   const { id } = appConfig
   const { interfaceType } = appState
   const { expanded: defaultExpanded, customDatasets, osNamesURL, regions, maxSuggestions } = pluginConfig
@@ -55,11 +55,11 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
   }, [isExpanded])
 
   // Manage focus outside the search control
-  // useLayoutEffect (not useEffect) so hasExclusiveControl flips in the same paint as the
+  // useLayoutEffect (not useEffect) so exclusiveControl flips in the same paint as the
   // form expanding - otherwise the browser paints once with the other buttons still visible,
   // then again once this dispatch lands, producing a visible flicker.
   useLayoutEffect(() => {
-    appState.dispatch({ type: 'TOGGLE_HAS_EXCLUSIVE_CONTROL', payload: isExpanded })
+    setExclusiveControl(isExpanded)
 
     if (!searchOpen) {
       return undefined
