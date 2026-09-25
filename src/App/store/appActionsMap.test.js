@@ -24,7 +24,7 @@ describe('actionsMap full coverage', () => {
       interfaceType: 'default',
       openPanels: { panel1: { props: {} } },
       previousOpenPanels: {},
-      hasExclusiveControl: false,
+      exclusiveControl: [],
       nudgeStepSize: 'small',
       safeZoneInset: { top: 0, bottom: 0 },
       isLayoutReady: false,
@@ -134,9 +134,45 @@ describe('actionsMap full coverage', () => {
     expect(result.previousOpenPanels).toBe(localState.openPanels)
   })
 
-  test('TOGGLE_HAS_EXCLUSIVE_CONTROL sets flag', () => {
-    const result = actionsMap.TOGGLE_HAS_EXCLUSIVE_CONTROL(state, true)
-    expect(result.hasExclusiveControl).toBe(true)
+  test('SET_EXCLUSIVE_CONTROL adds a claim with a null name by default', () => {
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(state, { pluginId: 'search', active: true })
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL stacks a new plugin\'s claim on top', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'search', active: true })
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: 'edit-point' }, { pluginId: 'search', name: null }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL reinstates the claim underneath when the top claim is released', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }, { pluginId: 'search', name: null }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'search', active: false })
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: 'edit-point' }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL releasing a claim underneath leaves the top claim in place', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }, { pluginId: 'search', name: null }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', active: false })
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL re-claiming replaces the plugin\'s own claim and moves it to the top', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'draw-polygon' }, { pluginId: 'search', name: null }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', name: 'edit-vertex', active: true })
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null }, { pluginId: 'draw', name: 'edit-vertex' }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL re-claiming the top claim unchanged returns the same state', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-vertex' }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', name: 'edit-vertex', active: true })
+    expect(result).toBe(localState)
+  })
+
+  test('SET_EXCLUSIVE_CONTROL releasing without a claim returns the same state', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'draw-polygon' }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'search', active: false })
+    expect(result).toBe(localState)
   })
 
   test('TOGGLE_NUDGE_STEP flips small to large', () => {

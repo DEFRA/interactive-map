@@ -1,5 +1,5 @@
 // src/core/renderers/pluginWrapper.js
-import { useMemo } from 'react'
+import { useCallback, useMemo } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
@@ -48,6 +48,12 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
       const mapState = useMap()
       const services = useService()
       const pluginState = usePlugin(pluginId)
+      // Bound to this plugin's id so authors never pass it: true claims control, a string claims it
+      // with a name (--{name} class suffix), anything falsy releases it.
+      const setExclusiveControl = useCallback((value) => appState.dispatch({
+        type: 'SET_EXCLUSIVE_CONTROL',
+        payload: { pluginId, name: typeof value === 'string' ? value : null, active: !!value }
+      }), [appState.dispatch])
 
       return (
         <Component
@@ -60,6 +66,7 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
           services={services}
           mapProvider={appConfig.mapProvider}
           iconRegistry={getIconRegistry()}
+          setExclusiveControl={setExclusiveControl}
           buttonConfig={useMemo(() => Object.fromEntries(
             Object.entries(appState.buttonConfig).filter(
               ([_, btn]) => btn.pluginId === pluginId

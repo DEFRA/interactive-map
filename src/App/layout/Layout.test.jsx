@@ -55,7 +55,7 @@ describe('Layout', () => {
       preferredColorScheme: 'dark',
       layoutRefs: mockRefs,
       isLayoutReady: true,
-      hasExclusiveControl: true,
+      exclusiveControl: [{ pluginId: 'search', name: null }],
       isFullscreen: false
     })
     useMap.mockReturnValue({
@@ -76,7 +76,8 @@ describe('Layout', () => {
     expect(root.className).toContain('im-o-app--map')
     expect(root.className).toContain('im-o-app--inline')
     expect(root.className).toContain('im-o-app--light-app')
-    expect(root.className).toContain('im-o-app--exclusive-control')
+    expect(root.className).toContain('im-o-app--exclusive-control-search')
+    expect(root.className).not.toContain('im-o-app--exclusive-control-search--')
     expect(root.style.backgroundColor).toBe('pink')
     expect(root.style.getPropertyValue('--map-overlay-halo-color')).toBe('#0b0c0c')
     expect(root.style.getPropertyValue('--map-overlay-selected-color')).toBe('#ffffff')
@@ -101,6 +102,38 @@ describe('Layout', () => {
     expect(backdrop).not.toHaveClass('im-o-app__modal-backdrop--visible')
   })
 
+  test('adds a single name-suffixed class when a name is set', () => {
+    useApp.mockReturnValueOnce({
+      breakpoint: 'desktop',
+      interfaceType: 'map',
+      preferredColorScheme: 'dark',
+      layoutRefs: mockRefs,
+      isLayoutReady: true,
+      exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }],
+      isFullscreen: false
+    })
+    render(<Layout />)
+    const root = document.getElementById('myApp-im-app')
+    expect(root).toHaveClass('im-o-app--exclusive-control-draw--edit-point')
+    expect(root).not.toHaveClass('im-o-app--exclusive-control-draw')
+  })
+
+  test('adds the class for the most recent claim only', () => {
+    useApp.mockReturnValueOnce({
+      breakpoint: 'desktop',
+      interfaceType: 'map',
+      preferredColorScheme: 'dark',
+      layoutRefs: mockRefs,
+      isLayoutReady: true,
+      exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }, { pluginId: 'search', name: null }],
+      isFullscreen: false
+    })
+    render(<Layout />)
+    const root = document.getElementById('myApp-im-app')
+    expect(root).toHaveClass('im-o-app--exclusive-control-search')
+    expect(root.className).not.toContain('exclusive-control-draw')
+  })
+
   test('shows the modal backdrop only while a modal-configured panel is open', () => {
     useApp.mockReturnValue({
       breakpoint: 'mobile',
@@ -108,7 +141,7 @@ describe('Layout', () => {
       preferredColorScheme: 'dark',
       layoutRefs: mockRefs,
       isLayoutReady: true,
-      hasExclusiveControl: false,
+      exclusiveControl: [],
       isFullscreen: true,
       openPanels: { settings: { props: {} } },
       panelConfig: { settings: { mobile: { modal: true } } }
@@ -125,7 +158,7 @@ describe('Layout', () => {
       preferredColorScheme: 'dark',
       layoutRefs: mockRefs,
       isLayoutReady: false,
-      hasExclusiveControl: false,
+      exclusiveControl: [],
       isFullscreen: true
     })
     render(<Layout />)
@@ -143,7 +176,7 @@ describe('Layout', () => {
       preferredColorScheme: 'dark',
       layoutRefs: mockRefs,
       isLayoutReady: true,
-      hasExclusiveControl: false,
+      exclusiveControl: [],
       isFullscreen: false
     })
 
