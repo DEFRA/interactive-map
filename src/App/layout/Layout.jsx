@@ -16,7 +16,7 @@ import { getMapThemeVars } from '../../config/mapTheme.js'
 
 // im-o-app--exclusive-control-{pluginId}, or im-o-app--exclusive-control-{pluginId}--{name} when
 // the plugin passed a name, for the most recent claim only.
-const getExclusiveControlClass = (exclusiveControl = []) => {
+const getExclusiveControlClass = (exclusiveControl) => {
   const top = exclusiveControl.at(-1)
   if (!top) {
     return null
