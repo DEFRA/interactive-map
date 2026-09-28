@@ -26,6 +26,7 @@ const makeProps = (overrides = {}) => {
     services: { eventBus: { emit: jest.fn() } },
     mapProvider: { draw: null },
     buttonConfig: {},
+    setExclusiveControl: jest.fn(),
     ...overrides
   }
   return { props, adapter }
@@ -264,5 +265,37 @@ describe('event attachment', () => {
     })
     await renderInit(props)
     expect(attachEvents).not.toHaveBeenCalled()
+  })
+})
+
+describe('exclusive control', () => {
+  test('claims exclusive control while in a draw/edit mode', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    await renderInit(props)
+    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(true)
+  })
+
+  test('releases exclusive control when the mode clears', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
+    const { rerender } = await renderInit(props)
+    rerender(<DrawInit {...props} pluginState={{ dispatch: jest.fn(), mode: null }} />)
+    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(false)
+  })
+
+  test('releases exclusive control on unmount', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_line' } })
+    const { unmount } = await renderInit(props)
+    unmount()
+    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(false)
+  })
+
+  test('never claims when the host opts out with exclusiveControl: false', async () => {
+    const { props } = makeProps({
+      pluginConfig: { snapLayers: ['a'], exclusiveControl: false },
+      pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' }
+    })
+    const { unmount } = await renderInit(props)
+    unmount()
+    expect(props.setExclusiveControl).not.toHaveBeenCalled()
   })
 })

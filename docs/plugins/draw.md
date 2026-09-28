@@ -58,7 +58,7 @@ Vector tile source-layer names to snap new and edited vertices against. Can be o
 
 The layer names available depend entirely on your basemap style — there's no universal default, so check your style's vector tile source(s) for the source-layer names to use. The example below (`'OS/TopographicArea_1/Agricultural Land'`) is specific to an Ordnance Survey basemap style.
 
-When set (globally or per call), a "Snap to feature" toggle appears in the draw menu, letting the user turn snapping on and off during a session.
+When set (globally or per call), a "Snap" toggle button appears in the top row, letting the user turn snapping on and off during a session.
 
 ```js
 createDrawPlugin({
@@ -73,6 +73,27 @@ createDrawPlugin({
 **Type:** `Function`
 
 Plugin-level validation callback, called throughout the draw/edit lifecycle so you can enforce your own rules (e.g. "shapes must stay inside a boundary") alongside the built-in ones. Can be overridden per call — see [Validation](#validation) below for the full contract, and `newPolygon`, `newLine`, `newPoint`, `editFeature` for the per-call override.
+
+---
+
+### `exclusiveControl`
+
+**Type:** `boolean`
+**Default:** `true`
+
+While drawing or editing, the plugin takes [exclusive control](./plugin-context.md#setexclusivecontrol) of the interface and hides everything else in the top row (buttons, button groups and controls) to make room for its own, keeping only the map styles and map controls buttons.
+
+Set to `false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden:
+
+```js
+createDrawPlugin({ exclusiveControl: false })
+```
+
+To keep a particular button while still letting draw take control, bring it back with your own CSS. The plugin's hiding rule has zero specificity, so a simple rule is enough:
+
+```css
+.im-c-button-wrapper--datasets-layers { display: block; }
+```
 
 ---
 
@@ -396,7 +417,7 @@ interactiveMap.on('draw:merge', (e) => {
 
 ## Buttons and keyboard shortcuts
 
-The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only), Done, and a Draw actions menu (Undo, Snap to feature, Delete point) — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
+The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only) and Done in the actions bar, plus Undo, Snap and Delete point in the middle of the top row — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
 
 | Shortcut | Action |
 |----------|--------|
