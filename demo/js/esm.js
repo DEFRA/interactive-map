@@ -108,11 +108,7 @@ const interactPlugin = createInteractPlugin({
 
 const framePlugin = createFramePlugin({ aspectRatio: 1.5 })
 
-const drawPlugin = createDrawPlugin({
-  manifest: {
-    buttons: [{ id: 'drawMenu', mobile: { slot: 'bottom-right' } }]
-  }
-})
+const drawPlugin = createDrawPlugin()
 
 const landCoversDataset = {
   id: 'land-covers',

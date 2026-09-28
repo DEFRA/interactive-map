@@ -67,10 +67,7 @@ const drawPlugin = createDrawPlugin({
   onGeometryChange: (event) => ({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
-  }),
-  manifest: {
-    buttons: [{ id: 'drawMenu', mobile: { slot: 'bottom-right' }}]
-  }
+  })
 })
 
 const datasetsPlugin = createDatasetsPlugin({

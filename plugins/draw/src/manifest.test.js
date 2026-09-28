@@ -1,7 +1,6 @@
 import { manifest } from './manifest.js'
 
 const findButton = (id) => manifest.buttons.find((b) => b.id === id)
-const findMenuItem = (menuId, itemId) => findButton(menuId).menuItems.find((m) => m.id === itemId)
 
 describe('manifest structure', () => {
   test('exposes the reducer, init component and api surface', () => {
@@ -63,32 +62,21 @@ describe('drawDone', () => {
   })
 })
 
-describe('drawMenu', () => {
-  test('is hidden outside draw/edit modes', () => {
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: null } })).toBe(true)
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_vertex' } })).toBe(false)
+describe('top row buttons', () => {
+  test('sit in the top-middle slot as Undo, Snap, Delete point, with only Snap showing its label', () => {
+    const topMiddle = manifest.buttons.filter(b => b.desktop?.slot === 'top-middle').map(b => b.id)
+    expect(topMiddle).toEqual(['drawUndo', 'drawSnap', 'drawDeletePoint'])
+    expect(findButton('drawUndo').desktop).toEqual({ slot: 'top-middle', showLabel: false })
+    expect(findButton('drawSnap').desktop).toEqual({ slot: 'top-middle', showLabel: true })
+    expect(findButton('drawDeletePoint').desktop).toEqual({ slot: 'top-middle', showLabel: false })
   })
 
-  // draw_point has no Undo and no delete-vertex, but it does support snapping, and Snap is
-  // a menuItem inside this same button — so the button itself must stay visible for it even
-  // though drawUndo/drawDeletePoint (below) correctly keep excluding it.
-  test('is visible during draw_point, for the Snap toggle, even though it has no undo/delete', () => {
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'draw_point' } })).toBe(false)
-  })
-
-  test('labels "Edit actions" in edit mode, "Draw actions" otherwise', () => {
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_vertex' } })).toBe('Edit actions')
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_point' } })).toBe('Edit actions')
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_polygon' } })).toBe('Draw actions')
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_line' } })).toBe('Draw actions')
-  })
-
-  test('is visible during edit_point', () => {
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_point' } })).toBe(false)
+  test('replace the draw/edit actions menu', () => {
+    expect(findButton('drawMenu')).toBeUndefined()
   })
 
   describe('drawUndo', () => {
-    const item = () => findMenuItem('drawMenu', 'drawUndo')
+    const item = () => findButton('drawUndo')
 
     test('is hidden outside draw/edit modes', () => {
       expect(item().hiddenWhen({ pluginState: { mode: null } })).toBe(true)
@@ -114,12 +102,16 @@ describe('drawMenu', () => {
   })
 
   describe('drawSnap', () => {
-    const item = () => findMenuItem('drawMenu', 'drawSnap')
+    const item = () => findButton('drawSnap')
 
     test('is hidden without a mode or snap layers', () => {
       expect(item().hiddenWhen({ pluginState: { mode: null, hasSnapLayers: true } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: false } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true } })).toBe(false)
+    })
+
+    test('is visible during draw_point, which supports snapping but has no undo/delete', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_point', hasSnapLayers: true } })).toBe(false)
     })
 
     test('is pressed when snapping is enabled', () => {
@@ -129,7 +121,7 @@ describe('drawMenu', () => {
   })
 
   describe('drawDeletePoint', () => {
-    const item = () => findMenuItem('drawMenu', 'drawDeletePoint')
+    const item = () => findButton('drawDeletePoint')
 
     test('is hidden outside edit mode', () => {
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_polygon' } })).toBe(true)

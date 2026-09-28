@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
@@ -40,7 +40,7 @@ function useLoadDrawAdapter ({ mapState, appState, pluginConfig, pluginState, ma
   }, [mapState.isMapReady, appState.mode])
 }
 
-export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
+export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig, setExclusiveControl }) => {
   const { eventBus, hints } = services
   const { crossHair } = mapState
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
@@ -54,6 +54,17 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     (isTouchOrKeyboard || appState.expandedButtons?.has('mapControls'))
 
   useLoadDrawAdapter({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus })
+
+  // Takes exclusive control of the interface in any draw/edit mode, so draw.scss can clear the top
+  // row for draw's own buttons. Hosts opt out with exclusiveControl: false (e.g. a single-task map
+  // whose other buttons are all deliberate). useLayoutEffect so the class lands in the same paint.
+  useLayoutEffect(() => {
+    if (pluginConfig.exclusiveControl === false) {
+      return undefined
+    }
+    setExclusiveControl(!!pluginState.mode)
+    return () => setExclusiveControl(false)
+  }, [pluginState.mode])
 
   // Suppresses the accessible spatial list for every draw/edit mode except edit_vertex, which
   // supplies its own list instead (useSpatialList.js above, claimed exclusively via the
