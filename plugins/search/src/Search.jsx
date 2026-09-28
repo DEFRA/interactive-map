@@ -87,6 +87,7 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
     <div
       className={`im-c-search${isFormVisible ? '' : ' im-c-search--collapsed'}`}
       ref={searchContainerRef}
+      onKeyDown={(e) => events.handleTabOut(e, appState.buttonRefs)}
     >
       <Form
         id={id}

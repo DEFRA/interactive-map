@@ -33,7 +33,8 @@ jest.mock('./datasets.js', () => ({
 jest.mock('./events/index.js', () => ({
   attachEvents: jest.fn(() => ({
     handleCloseClick: jest.fn(),
-    handleOutside: jest.fn()
+    handleOutside: jest.fn(),
+    handleTabOut: jest.fn()
   }))
 }))
 
@@ -139,6 +140,14 @@ describe('Search component', () => {
   it('renders SubmitButton when expanded is false', () => {
     render(<Search {...props} />)
     expect(screen.getByTestId('submit-button')).toBeInTheDocument()
+  })
+
+  it('passes key presses in the search container to handleTabOut with the button refs', () => {
+    props.appState.buttonRefs = { current: {} }
+    const { container } = render(<Search {...props} />)
+    fireEvent.keyDown(container.querySelector('.im-c-search'), { key: 'Tab' })
+    const { handleTabOut } = attachEvents.mock.results[0].value
+    expect(handleTabOut).toHaveBeenCalledWith(expect.objectContaining({ key: 'Tab' }), props.appState.buttonRefs)
   })
 
   it('CloseButton click triggers handleCloseClick', () => {

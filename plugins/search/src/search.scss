@@ -113,16 +113,20 @@
 
 // 3. Modifiers
 .im-o-app--exclusive-control-search {
-  .im-o-app__top .im-c-button-wrapper,
+  // Everything in the top row except the form itself: buttons (the trigger included), button
+  // groups and other controls, whatever slot search is in. Taken out of flow so nothing offsets the
+  // form within its column, but kept focusable: Tab from the form still reaches the next item, and
+  // focus can return to the trigger on close.
+  .im-o-app__top-col > :not(.im-c-search) {
+    position: absolute;
+    opacity: 0;
+    z-index: -1;
+    pointer-events: none;
+  }
+
   .im-o-app__right .im-c-button-wrapper {
     opacity: 0;
     z-index: -1;
-  }
-
-  // Takes the trigger out of flow (already hidden above) but keeps it focusable so focus can return to it on close.
-  .im-c-button-wrapper--search {
-    position: absolute;
-    pointer-events: none;
   }
 
   .im-o-app__left-top,
