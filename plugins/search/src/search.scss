@@ -26,7 +26,7 @@
 }
 
 // Prevents a phantom trailing gap when the only header content is a collapsed (but still present) search form.
-.im-o-app__header:has(> .im-c-search--collapsed:only-child) {
+.im-o-app__header:has(> .im-c-control-wrapper:only-child > .im-c-search--collapsed) {
   margin-bottom: 0;
 }
 

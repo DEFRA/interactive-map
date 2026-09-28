@@ -70,9 +70,14 @@ export function mapControls ({ slot, appState, evaluateProp }) {
           pluginConfig: plugin?.config
         })
         // Always wrapped, so hiding it (exclusive control) never remounts it: display: contents
-        // leaves layout untouched while shown, display: none hides it with its state intact.
+        // leaves layout untouched while shown, display: none hides it with its state intact. The
+        // --hidden modifier lets slot CSS ignore it (e.g. the header's trailing gap).
         element = (
-          <div key={control.id} className='im-c-control-wrapper' style={{ display: isHidden ? 'none' : 'contents' }}>
+          <div
+            key={control.id}
+            className={`im-c-control-wrapper${isHidden ? ' im-c-control-wrapper--hidden' : ''}`}
+            style={{ display: isHidden ? 'none' : 'contents' }}
+          >
             <Wrapped />
           </div>
         )

@@ -110,7 +110,8 @@
   width: 100%;
 }
 
-.im-o-app__header:not(:empty) {
+// Only when something in it is shown — a plugin control hidden by exclusive control doesn't count.
+.im-o-app__header:has(> :not(.im-c-control-wrapper--hidden)) {
   margin-bottom: var(--divider-gap);
 }
 

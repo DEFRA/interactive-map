@@ -143,7 +143,7 @@ describe('mapControls', () => {
     const wrapper = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element
     expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper', style: { display: 'contents' } })
     defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['mapStyles'] }]
-    expect(wrapper().props.style).toEqual({ display: 'none' })
+    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--hidden', style: { display: 'none' } })
     // The claiming plugin's own controls stay
     defaultAppState.exclusiveControl = [{ pluginId: 'plugin1', name: null, keep: [] }]
     expect(wrapper().props.style).toEqual({ display: 'contents' })
