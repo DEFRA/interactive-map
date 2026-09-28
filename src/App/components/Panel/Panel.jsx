@@ -27,7 +27,7 @@ const buildPanelBodyClassNames = (showLabel, isDismissible) => [
   !showLabel && isDismissible && 'im-c-panel__body--offset'
 ].filter(Boolean).join(' ')
 
-const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissible, isModal, width, panelClass, slot, isOpen }) => ({
+const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissible, isModal, width, panelClass, slot, isOpen, isHidden }) => ({
   id: elementId,
   'aria-labelledby': `${elementId}-label`,
   tabIndex: shouldFocus ? -1 : undefined, // nosonar
@@ -36,8 +36,9 @@ const buildPanelProps = ({ elementId, shouldFocus, isDialog, isDismissible, isMo
   style: width ? { width } : undefined,
   className: panelClass,
   'data-slot': slot,
-  // Panel is mounted permanently (see mapPanels.js); hidden is what actually opens/closes it.
-  hidden: !isOpen
+  // Panel is mounted permanently (see mapPanels.js); hidden is what actually opens/closes it. An
+  // open panel can also be hidden by another plugin's exclusive control, staying open underneath.
+  hidden: !isOpen || isHidden
 })
 
 const buildBodyProps = ({ bodyRef, panelBodyClass, isBodyScrollable, elementId }) => ({
@@ -97,7 +98,7 @@ const PanelBody = ({ innerHtmlProp, tabs, items, WrappedChild, props, children, 
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
-export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, items, tabs, label, html, children, isOpen = true, rootRef }) => {
+export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, items, tabs, label, html, children, isOpen = true, isHidden = false, rootRef }) => {
   const { id } = useConfig()
   const { dispatch, breakpoint, layoutRefs, interfaceType } = useApp()
 
@@ -148,7 +149,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
   const panelBodyClass = buildPanelBodyClassNames(bpConfig.showLabel ?? true, isDismissible)
   const innerHtmlProp = useMemo(() => html ? { __html: html } : null, [html])
 
-  const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissible, isModal, width: bpConfig.width, panelClass, slot: bpConfig.slot, isOpen })
+  const panelProps = buildPanelProps({ elementId, shouldFocus, isDialog, isDismissible, isModal, width: bpConfig.width, panelClass, slot: bpConfig.slot, isOpen, isHidden })
   const bodyProps = buildBodyProps({ bodyRef, panelBodyClass, isBodyScrollable, elementId })
   // DOM anchor for controls DOM-projected via the JS/consumer-HTML API — see HtmlElementHost.jsx.
   // Only present on the items-capable body below: dangerouslySetInnerHTML owns the static-html

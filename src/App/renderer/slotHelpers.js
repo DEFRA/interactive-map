@@ -17,6 +17,21 @@ export const resolveTargetSlot = (bpConfig, breakpoint) => {
 }
 
 /**
+ * Whether exclusive control hides an item: true when any claim in the stack that has a keep list
+ * neither lists one of the item's ids nor belongs to the item's own plugin (a claiming plugin's own
+ * items always stay). Claims without a keep list (e.g. search's) hide nothing here — that plugin's
+ * own CSS does. Items are hidden with CSS, never unmounted, so their state survives.
+ *
+ * @param {Array<{ pluginId: string, keep: string[] | null }>} [exclusiveControl] - The claim stack.
+ * @param {{ ids: string[], pluginId?: string }} item - The item's id(s) and owning plugin, if any.
+ * @returns {boolean}
+ */
+export const isHiddenByExclusiveControl = (exclusiveControl, { ids, pluginId }) =>
+  (exclusiveControl ?? []).some(claim =>
+    claim.keep && claim.pluginId !== pluginId && !ids.some(id => claim.keep.includes(id))
+  )
+
+/**
  * Checks whether the current application mode permits an item to be shown,
  * based on its includeModes and excludModes configuration.
  */

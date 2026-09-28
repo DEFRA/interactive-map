@@ -66,7 +66,7 @@ const setHybridFullscreen = (state, payload) => {
 const setBreakpoint = (state, payload) => {
   const { behaviour, hybridWidth, maxMobileWidth } = payload
   const panelIds = Object.keys(state.openPanels)
-  const lastPanelId = panelIds[panelIds.length - 1]
+  const lastPanelId = panelIds[panelIds.length - 1] // NOSONAR .length - 1 used instead of .at(-1) for wider browser support
 
   // For hybrid, isFullscreen is controlled by media query via SET_HYBRID_FULLSCREEN
   // For other behaviours, calculate it here
@@ -145,21 +145,25 @@ const restorePreviousPanels = (state) => {
   }
 }
 
+const isSameKeep = (a, b) => a === b || (!!a && !!b && a.length === b.length && a.every((id, i) => id === b[i]))
+
 // A stack of plugins' claims on the interface, most recent last; Layout adds a single
-// im-o-app--exclusive-control-{pluginId}[--{name}] class for the top claim. Claiming moves the
-// plugin's claim to the top; releasing removes only its own, so an earlier claim underneath
-// (e.g. draw's, while search was open) comes back on its own.
-const setExclusiveControl = (state, { pluginId, name = null, active }) => {
+// im-o-app--exclusive-control-{pluginId}[--{name}] class for the top claim. A claim with a keep list
+// also has the slot renderers hide every item not on it (see isHiddenByExclusiveControl); a claim
+// with keep: null hides nothing itself. Claiming moves the plugin's claim to the top; releasing
+// removes only its own, so an earlier claim underneath (e.g. draw's, while search was open) comes
+// back on its own.
+const setExclusiveControl = (state, { pluginId, name = null, keep = null, active }) => {
   const stack = state.exclusiveControl
-  const top = stack.at(-1)
-  if (active && top?.pluginId === pluginId && top.name === name) {
+  const top = stack[stack.length - 1] // NOSONAR, .length - 1 used instead of .at(-1) for wider browser support
+  if (active && top?.pluginId === pluginId && top.name === name && isSameKeep(top.keep, keep)) {
     return state
   }
   const others = stack.filter(claim => claim.pluginId !== pluginId)
   if (!active && others.length === stack.length) {
     return state
   }
-  return { ...state, exclusiveControl: active ? [...others, { pluginId, name }] : others }
+  return { ...state, exclusiveControl: active ? [...others, { pluginId, name, keep }] : others }
 }
 
 const toggleNudgeStep = (state) => {

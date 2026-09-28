@@ -113,6 +113,23 @@
  *
  * @property {Object} [services]
  * Core services (announce, reverseGeocode, closeApp, etc.).
+ *
+ * @property {(value?: boolean | string | null, options?: ExclusiveControlOptions) => void} [setExclusiveControl]
+ * Plugin components only. Claims (true, or a string name) or releases (falsy) exclusive control of
+ * the interface for this plugin, adding im-o-app--exclusive-control-{pluginId}[--{name}] to the app
+ * root while its claim is the most recent. The plugin id is bound automatically.
+ */
+
+/**
+ * Options for a plugin's exclusive-control claim.
+ *
+ * @typedef {Object} ExclusiveControlOptions
+ *
+ * @property {string[] | null} [keep=null]
+ * When given, core hides every button, panel and control, in every slot, whose id isn't listed and
+ * which doesn't belong to the claiming plugin, until the claim is released. Hidden items stay
+ * mounted (display: none), so their state survives. Modal panels are never hidden. Without keep,
+ * core hides nothing and the plugin's own CSS decides what to hide.
  */
 
 /**

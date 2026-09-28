@@ -49,10 +49,11 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
       const services = useService()
       const pluginState = usePlugin(pluginId)
       // Bound to this plugin's id so authors never pass it: true claims control, a string claims it
-      // with a name (--{name} class suffix), anything falsy releases it.
-      const setExclusiveControl = useCallback((value) => appState.dispatch({
+      // with a name (--{name} class suffix), anything falsy releases it. options.keep, if given, has
+      // core hide every button, panel and control not listed (or not this plugin's own) meanwhile.
+      const setExclusiveControl = useCallback((value, { keep = null } = {}) => appState.dispatch({
         type: 'SET_EXCLUSIVE_CONTROL',
-        payload: { pluginId, name: typeof value === 'string' ? value : null, active: !!value }
+        payload: { pluginId, name: typeof value === 'string' ? value : null, keep, active: !!value }
       }), [appState.dispatch])
 
       return (

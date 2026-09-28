@@ -114,6 +114,15 @@ describe('mapPanels', () => {
     expect(result).toEqual([])
   })
 
+  it('hides a non-modal panel exclusive control doesn\'t keep, but never a modal one', () => {
+    const exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['other'] }]
+    expect(map({ ...defaultAppState, exclusiveControl })[0].element.props.isHidden).toBe(true)
+    expect(map({ ...defaultAppState, exclusiveControl: [{ pluginId: 'draw', name: null, keep: ['p1'] }] })[0].element.props.isHidden).toBe(false)
+    expect(map(defaultAppState)[0].element.props.isHidden).toBe(false)
+    defaultAppState.panelConfig = ({ p1: { desktop: { modal: true }, includeModes: ['view'] } })
+    expect(map({ ...defaultAppState, exclusiveControl }, 'modal')[0].element.props.isHidden).toBe(false)
+  })
+
   it('renders both modal panels\' shells but only marks the last-opened one as open', () => {
     defaultAppState.panelConfig = ({
       p1: { desktop: { modal: true }, includeModes: ['view'] },

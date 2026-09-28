@@ -52,7 +52,19 @@ describe('withPluginContexts', () => {
     render(<Wrapped />)
     Inner.mock.calls[0][0].setExclusiveControl(value)
 
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_EXCLUSIVE_CONTROL', payload: { pluginId: 'plugin1', ...expected } })
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_EXCLUSIVE_CONTROL', payload: { pluginId: 'plugin1', keep: null, ...expected } })
+  })
+
+  it('passes setExclusiveControl\'s keep option through with the claim', () => {
+    const dispatch = jest.fn()
+    require('../store/appContext.js').useApp.mockReturnValueOnce({ buttonConfig: {}, dispatch })
+    const Inner = jest.fn(() => <div>Inner</div>)
+    const Wrapped = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: {} })
+
+    render(<Wrapped />)
+    Inner.mock.calls[0][0].setExclusiveControl(true, { keep: ['mapStyles'] })
+
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_EXCLUSIVE_CONTROL', payload: { pluginId: 'plugin1', name: null, keep: ['mapStyles'], active: true } })
   })
 
   it('returns the cached wrapper if called again with the same component', () => {

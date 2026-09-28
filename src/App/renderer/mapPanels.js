@@ -2,7 +2,7 @@
 import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
-import { resolveTargetSlot, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
+import { resolveTargetSlot, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, isHiddenByExclusiveControl } from './slotHelpers.js'
 import { mapControls } from './mapControls.js'
 import { orderItems } from './orderItems.js'
 import { groupIntoTabs } from './groupIntoTabs.js'
@@ -57,6 +57,9 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
     const plugin = pluginRegistry.registeredPlugins.find(p => p.id === config.pluginId)
     const pluginId = plugin?.id
 
+    // Modal panels are never hidden by exclusive control, so focus is never trapped in a hidden one
+    const isHidden = !bpConfig.modal && isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [panelId], pluginId })
+
     const html = pluginId ? evaluateProp(config.html, pluginId) : config.html
     const label = evaluateProp(config.label, pluginId)
 
@@ -72,6 +75,7 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
           props={props}
           focusOnOpen={focusOnOpen}
           isOpen={isOpen}
+          isHidden={isHidden}
           {...(isOpen ? buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp }) : {})}
           label={label}
           html={html}

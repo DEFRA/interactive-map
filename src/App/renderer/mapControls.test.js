@@ -103,7 +103,9 @@ describe('mapControls', () => {
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].order).toBe(5)
     expect(result[0].id).toBe('ctrl1')
-    expect(typeof result[0].element.type).toBe('function')
+    // Rendered inside the core wrapper exclusive control hides it by
+    expect(result[0].element.type).toBe('div')
+    expect(typeof result[0].element.props.children.type).toBe('function')
   })
 
   it('falls back to order 0 if order is missing', () => {
@@ -120,6 +122,31 @@ describe('mapControls', () => {
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].element.props.dangerouslySetInnerHTML).toEqual({ __html: '<p>Hi</p>' })
+  })
+
+  it('hides an HTML control (keeping it mounted) when exclusive control doesn\'t keep it', () => {
+    defaultAppState.controlConfig = ({
+      ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
+    })
+    const style = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element.props.style
+    expect(style()).toBeUndefined()
+    defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: [] }]
+    expect(style()).toEqual({ display: 'none' })
+    defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['ctrlHtml'] }]
+    expect(style()).toBeUndefined()
+  })
+
+  it('always wraps a plugin control, switching the wrapper to display: none when exclusive control hides it', () => {
+    defaultAppState.controlConfig = ({
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => null, includeModes: ['view'] }
+    })
+    const wrapper = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element
+    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper', style: { display: 'contents' } })
+    defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['mapStyles'] }]
+    expect(wrapper().props.style).toEqual({ display: 'none' })
+    // The claiming plugin's own controls stay
+    defaultAppState.exclusiveControl = [{ pluginId: 'plugin1', name: null, keep: [] }]
+    expect(wrapper().props.style).toEqual({ display: 'contents' })
   })
 
   it('filters out consumer HTML controls (handled by HtmlElementHost)', () => {

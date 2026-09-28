@@ -32,17 +32,3 @@
     border-color: var(--pressed-button-border-color);
     background-color: var(--pressed-button-background-color);
 }
-
-// While draw has exclusive control, clear the top row (buttons, button groups and controls) for
-// draw's own buttons, keeping map styles and map controls in whichever top-row slot they're in.
-// Wrapped in :where() for zero specificity, so a host can bring an item back with a simple rule,
-// e.g. `.im-c-button-wrapper--datasets-layers { display: block; }`.
-:where(.im-o-app--exclusive-control-draw .im-o-app__top-col > :not(
-    .im-c-button-wrapper--map-styles,
-    .im-c-button-wrapper--map-controls,
-    .im-c-button-wrapper--draw-undo,
-    .im-c-button-wrapper--draw-snap,
-    .im-c-button-wrapper--draw-delete-point
-)) {
-    display: none;
-}

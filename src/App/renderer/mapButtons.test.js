@@ -158,6 +158,14 @@ describe('mapButtons module', () => {
       })
     })
 
+    it('hides (keeps mounted) a button another plugin\'s exclusive control doesn\'t keep', () => {
+      const claim = (keep) => [{ pluginId: 'draw', name: null, keep }]
+      expect(render(baseBtn, { ...appState, exclusiveControl: claim(['other']) }).props.isHidden).toBe(true)
+      expect(render(baseBtn, { ...appState, exclusiveControl: claim(['id']) }).props.isHidden).toBe(false)
+      expect(render({ ...baseBtn, pluginId: 'draw' }, { ...appState, exclusiveControl: claim([]) }).props.isHidden).toBe(false)
+      expect(render(baseBtn, { ...appState, exclusiveControl: [{ pluginId: 'search', name: null, keep: null }] }).props.isHidden).toBe(false)
+    })
+
     it('renders correct state flags for disabled, hidden, pressed and expanded buttons', () => {
       const state = {
         ...appState,
@@ -269,6 +277,18 @@ describe('mapButtons module', () => {
       expect(result[0]).toMatchObject({ id: 'group-group 1', type: 'group', order: 2 })
       expect(result[0].element.props.role).toBe('group')
       expect(result[0].element.props['aria-label']).toBe('Group 1')
+    })
+
+    it('hides a group only once every member is hidden, e.g. by exclusive control', () => {
+      appState.buttonConfig = ({
+        b1: { ...baseBtn, group: { label: 'Group 1' } },
+        b2: { ...baseBtn, group: { label: 'Group 1' } }
+      })
+      expect(map()[0].element.props.style).toBeUndefined()
+      appState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['b2'] }]
+      expect(map()[0].element.props.style).toBeUndefined()
+      appState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: [] }]
+      expect(map()[0].element.props.style).toEqual({ display: 'none' })
     })
 
     it('merges group labels that differ only by case/whitespace into one group', () => {

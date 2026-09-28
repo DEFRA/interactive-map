@@ -136,48 +136,65 @@ describe('actionsMap full coverage', () => {
 
   test('SET_EXCLUSIVE_CONTROL adds a claim with a null name by default', () => {
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(state, { pluginId: 'search', active: true })
-    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null }])
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null, keep: null }])
   })
 
   test('SET_EXCLUSIVE_CONTROL stacks a new plugin\'s claim on top', () => {
-    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }] }
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point', keep: null }] }
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'search', active: true })
-    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: 'edit-point' }, { pluginId: 'search', name: null }])
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: 'edit-point', keep: null }, { pluginId: 'search', name: null, keep: null }])
   })
 
   test('SET_EXCLUSIVE_CONTROL reinstates the claim underneath when the top claim is released', () => {
-    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }, { pluginId: 'search', name: null }] }
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point', keep: null }, { pluginId: 'search', name: null, keep: null }] }
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'search', active: false })
-    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: 'edit-point' }])
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: 'edit-point', keep: null }])
   })
 
   test('SET_EXCLUSIVE_CONTROL releasing a claim underneath leaves the top claim in place', () => {
-    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point' }, { pluginId: 'search', name: null }] }
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-point', keep: null }, { pluginId: 'search', name: null, keep: null }] }
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', active: false })
-    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null }])
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null, keep: null }])
   })
 
   test('SET_EXCLUSIVE_CONTROL keeps draw\'s claim when search, claimed first, releases after draw claims', () => {
     const searchClaimed = actionsMap.SET_EXCLUSIVE_CONTROL({ ...state, exclusiveControl: [] }, { pluginId: 'search', active: true })
     const drawClaimed = actionsMap.SET_EXCLUSIVE_CONTROL(searchClaimed, { pluginId: 'draw', active: true })
     const searchReleased = actionsMap.SET_EXCLUSIVE_CONTROL(drawClaimed, { pluginId: 'search', active: false })
-    expect(searchReleased.exclusiveControl).toEqual([{ pluginId: 'draw', name: null }])
+    expect(searchReleased.exclusiveControl).toEqual([{ pluginId: 'draw', name: null, keep: null }])
   })
 
   test('SET_EXCLUSIVE_CONTROL re-claiming replaces the plugin\'s own claim and moves it to the top', () => {
-    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'draw-polygon' }, { pluginId: 'search', name: null }] }
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'draw-polygon', keep: null }, { pluginId: 'search', name: null, keep: null }] }
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', name: 'edit-vertex', active: true })
-    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null }, { pluginId: 'draw', name: 'edit-vertex' }])
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null, keep: null }, { pluginId: 'draw', name: 'edit-vertex', keep: null }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL stores the claim\'s keep list', () => {
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(state, { pluginId: 'draw', keep: ['mapStyles'], active: true })
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: null, keep: ['mapStyles'] }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL re-claiming with a different keep list replaces it', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: null, keep: ['mapStyles'] }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', keep: ['mapStyles', 'search'], active: true })
+    expect(result.exclusiveControl).toEqual([{ pluginId: 'draw', name: null, keep: ['mapStyles', 'search'] }])
+  })
+
+  test('SET_EXCLUSIVE_CONTROL re-claiming with an equal keep list returns the same state', () => {
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: null, keep: ['mapStyles'] }] }
+    const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', keep: ['mapStyles'], active: true })
+    expect(result).toBe(localState)
   })
 
   test('SET_EXCLUSIVE_CONTROL re-claiming the top claim unchanged returns the same state', () => {
-    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-vertex' }] }
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'edit-vertex', keep: null }] }
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', name: 'edit-vertex', active: true })
     expect(result).toBe(localState)
   })
 
   test('SET_EXCLUSIVE_CONTROL releasing without a claim returns the same state', () => {
-    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'draw-polygon' }] }
+    const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'draw-polygon', keep: null }] }
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'search', active: false })
     expect(result).toBe(localState)
   })

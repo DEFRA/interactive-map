@@ -50,3 +50,9 @@ export const MAP_SIZE_SCALES = {
   medium: 1.5,
   large: 2
 }
+
+// Button, panel and control ids that stay visible while draw has exclusive control; everything else
+// in the interface is hidden. Hosts replace this list with exclusiveControl: { keep: [...] }, or
+// adjust it with a keep function that receives it. Draw's own buttons are always kept (core never
+// hides a claiming plugin's own items).
+export const EXCLUSIVE_CONTROL_KEEP = ['mapStyles', 'mapControls', 'scaleBar']

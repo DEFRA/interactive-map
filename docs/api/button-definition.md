@@ -10,7 +10,7 @@ Defines a button that can be rendered in the UI at various breakpoints.
 **Type:** `string`
 **Required**
 
-Unique button identifier.
+Unique button identifier. It's also the id to list when a plugin that takes exclusive control of the interface lets you keep items visible, e.g. the draw plugin's [`exclusiveControl.keep`](../plugins/draw.md#exclusivecontrol).
 
 ---
 
