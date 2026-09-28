@@ -129,7 +129,7 @@ describe('AppProvider', () => {
       previousOpenPanels: {},
       interfaceType: 'default',
       isFullscreen: false,
-      hasExclusiveControl: false,
+      exclusiveControl: [],
       panelRegistry: { getPanelConfig: getPanelConfigMock } // <-- provide it here!
     }))
 

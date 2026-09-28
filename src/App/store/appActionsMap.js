@@ -145,11 +145,21 @@ const restorePreviousPanels = (state) => {
   }
 }
 
-const toggleHasExclusiveControl = (state, payload) => {
-  return {
-    ...state,
-    hasExclusiveControl: payload
+// A stack of plugins' claims on the interface, most recent last; Layout adds a single
+// im-o-app--exclusive-control-{pluginId}[--{name}] class for the top claim. Claiming moves the
+// plugin's claim to the top; releasing removes only its own, so an earlier claim underneath
+// (e.g. draw's, while search was open) comes back on its own.
+const setExclusiveControl = (state, { pluginId, name = null, active }) => {
+  const stack = state.exclusiveControl
+  const top = stack.at(-1)
+  if (active && top?.pluginId === pluginId && top.name === name) {
+    return state
   }
+  const others = stack.filter(claim => claim.pluginId !== pluginId)
+  if (!active && others.length === stack.length) {
+    return state
+  }
+  return { ...state, exclusiveControl: active ? [...others, { pluginId, name }] : others }
 }
 
 const toggleNudgeStep = (state) => {
@@ -391,7 +401,7 @@ export const actionsMap = {
   CLOSE_ALL_PANELS: closeAllPanels,
   RESTORE_PREVIOUS_PANELS: restorePreviousPanels,
   TOGGLE_APP_VISIBLE: toggleAppVisible,
-  TOGGLE_HAS_EXCLUSIVE_CONTROL: toggleHasExclusiveControl,
+  SET_EXCLUSIVE_CONTROL: setExclusiveControl,
   TOGGLE_NUDGE_STEP: toggleNudgeStep,
   TOGGLE_BUTTON_DISABLED: toggleButtonDisabled,
   TOGGLE_BUTTON_HIDDEN: toggleButtonHidden,

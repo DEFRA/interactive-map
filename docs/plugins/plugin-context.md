@@ -65,3 +65,36 @@ const { isActive } = context.pluginState
 // Update state
 context.pluginState.dispatch({ type: 'setActive', payload: true })
 ```
+
+---
+
+### `setExclusiveControl`
+**Type:** `(value: boolean | string | null) => void`
+
+Available to plugin components (InitComponent, panel and control render components) as a prop.
+
+Tells the app that your plugin has taken control of the interface, e.g. while a search form is expanded. You don't pass your plugin's id: it's added for you.
+
+- `setExclusiveControl(true)` adds `im-o-app--exclusive-control-{pluginId}` to the app root.
+- `setExclusiveControl('some-name')` adds `im-o-app--exclusive-control-{pluginId}--some-name` instead. The name is used as-is, so pass something class-safe.
+- `setExclusiveControl(false)` (or `null`/`undefined`) releases your claim.
+
+Only one class is ever present, for the most recent claim. Claims stack: if another plugin claims control while yours holds it, its class replaces yours, and when it releases, your class comes back. Releasing only removes your own claim, so it never affects another plugin's. Each plugin holds one claim at a time, so claiming with a new name replaces your previous one rather than stacking on it. Release in your effect's cleanup too, so a claim isn't left behind if your component unmounts.
+
+Your plugin's own CSS decides what to hide in response, so it can pick what suits its focus behaviour. For example, it could use `opacity: 0` to keep hidden buttons in the tab order, or `display: none` to free up their space.
+
+```js
+// Claim while expanded; release when collapsed or unmounted
+useLayoutEffect(() => {
+  setExclusiveControl(isExpanded)
+  return () => setExclusiveControl(false)
+}, [isExpanded])
+```
+
+```scss
+.im-o-app--exclusive-control-my-plugin {
+  .im-o-app__right .im-c-button-wrapper {
+    display: none;
+  }
+}
+```

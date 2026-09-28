@@ -68,7 +68,8 @@ describe('Search component', () => {
       },
       mapState: { markers: {} },
       services: {},
-      mapProvider: { crs: 'EPSG:3857' }
+      mapProvider: { crs: 'EPSG:3857' },
+      setExclusiveControl: jest.fn()
     }
   })
 
@@ -100,6 +101,17 @@ describe('Search component', () => {
     props.pluginState.isExpanded = true
     const { container } = render(<Search {...props} />)
     expect(container.querySelector('.im-c-search')).not.toHaveClass('im-c-search--collapsed')
+  })
+
+  it('claims exclusive control as search while expanded', () => {
+    props.pluginState.isExpanded = true
+    render(<Search {...props} />)
+    expect(props.setExclusiveControl).toHaveBeenCalledWith(true)
+  })
+
+  it('releases exclusive control when collapsed', () => {
+    render(<Search {...props} />)
+    expect(props.setExclusiveControl).toHaveBeenCalledWith(false)
   })
 
   it('does not collapse the wrapper in default-expanded mode', () => {
