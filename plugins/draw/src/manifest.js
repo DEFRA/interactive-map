@@ -22,6 +22,9 @@ const undoCommand = isMac() ? '<kbd>Command</kbd> + <kbd>Z</kbd>' : '<kbd>Ctrl</
 // menus call it Option, not Alt.
 const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 
+// Undo, Snap and Delete point sit together in the middle of the top row
+const TOOLBAR_SLOT = 'top-middle'
+
 const createButtonSlots = (showLabel, slot = 'actions') => ({
   mobile: { slot, showLabel },
   tablet: { slot, showLabel },
@@ -72,8 +75,8 @@ export const manifest = {
       ...createButtonSlots(true)
     },
     {
-      // Undo, Snap and Delete point sit together in the middle of the top row (in this order), which
-      // draw.scss clears of other buttons while draw has exclusive control.
+      // Undo, Snap and Delete point render in this order in TOOLBAR_SLOT. While draw has exclusive
+      // control, core hides everything around them that isn't on the keep list.
       id: 'drawUndo',
       label: 'Undo',
       iconId: 'undo',
@@ -85,7 +88,7 @@ export const manifest = {
         }
         return pluginState.undoStackLength > 0
       },
-      ...createButtonSlots(false, 'top-middle')
+      ...createButtonSlots(false, TOOLBAR_SLOT)
     },
     {
       id: 'drawSnap',
@@ -93,7 +96,7 @@ export const manifest = {
       iconId: 'magnet',
       hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
       pressedWhen: ({ pluginState }) => !!pluginState.snap,
-      ...createButtonSlots(true, 'top-middle')
+      ...createButtonSlots(true, TOOLBAR_SLOT)
     },
     {
       id: 'drawDeletePoint',
@@ -107,7 +110,7 @@ export const manifest = {
       // Deliberately excluded from edit_point — deleting a point's one coordinate is deleting
       // the whole feature (deleteFeature's job), not a per-vertex action.
       hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex',
-      ...createButtonSlots(false, 'top-middle')
+      ...createButtonSlots(false, TOOLBAR_SLOT)
     }
   ],
 
