@@ -2,7 +2,7 @@
 import React, { useRef, useLayoutEffect, useMemo } from 'react'
 import { useApp } from '../store/appContext.js'
 import { Panel } from '../components/Panel/Panel.jsx'
-import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
+import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, isHiddenByExclusiveControl } from './slotHelpers.js'
 
 /**
  * Maps slot names to their corresponding layout refs.
@@ -91,11 +91,11 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen,
 
   // Same eligibility/modal-exclusivity rules as mapPanels.js (see slotHelpers.js), combined into
   // one boolean since isVisible alone decides whether useDomProjection shows it.
-  const isVisible = Boolean(
-    isOpen && bpConfig && targetSlot &&
-    isPanelSlotEligible(config, { targetSlot, mode, isFullscreen }) &&
-    (!bpConfig.modal || panelId === allowedModalPanelId)
-  )
+  const isEligible = Boolean(bpConfig && targetSlot && isPanelSlotEligible(config, { targetSlot, mode, isFullscreen }))
+  const isAllowedModal = !bpConfig?.modal || panelId === allowedModalPanelId
+  // Modal panels are never hidden by exclusive control, so focus is never trapped in a hidden one
+  const isExclusiveHidden = !bpConfig?.modal && isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [panelId], pluginId: config.pluginId })
+  const isVisible = isOpen && isEligible && isAllowedModal && !isExclusiveHidden
 
   useDomProjection(panelRootRef, targetSlot, isVisible, layoutRefs, breakpoint)
 
@@ -122,7 +122,9 @@ const PersistentControl = ({ control, appState }) => {
   const { breakpoint, mode, isFullscreen, layoutRefs, openPanels } = appState
 
   const bpConfig = control[breakpoint]
-  const isVisible = isControlVisible(control, { breakpoint, mode, isFullscreen })
+  // Exclusive control hides it by the same display toggle, so it stays mounted either way
+  const isVisible = isControlVisible(control, { breakpoint, mode, isFullscreen }) &&
+    !isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [control.id], pluginId: control.pluginId })
   const targetSlot = bpConfig?.slot || null
 
   // A control targeting a panel's body (`<panelId>-panel`) needs its DOM anchor re-resolved

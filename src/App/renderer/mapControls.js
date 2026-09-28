@@ -2,7 +2,7 @@
 import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { allowedSlots } from './slots.js'
-import { isConsumerHtml } from './slotHelpers.js'
+import { isConsumerHtml, isHiddenByExclusiveControl } from './slotHelpers.js'
 
 /**
  * Map controls for a given slot and app state.
@@ -49,6 +49,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
       )
 
       const pluginId = plugin?.id
+      const isHidden = isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [control.id], pluginId })
 
       let element
 
@@ -58,6 +59,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
           <div
             className='im-c-control'
             key={control.id}
+            style={isHidden ? { display: 'none' } : undefined}
             dangerouslySetInnerHTML={{ __html: evaluateProp(control.html, pluginId) }}
           />
         )
@@ -67,7 +69,13 @@ export function mapControls ({ slot, appState, evaluateProp }) {
           pluginId,
           pluginConfig: plugin?.config
         })
-        element = <Wrapped key={control.id} />
+        // Always wrapped, so hiding it (exclusive control) never remounts it: display: contents
+        // leaves layout untouched while shown, display: none hides it with its state intact.
+        element = (
+          <div key={control.id} className='im-c-control-wrapper' style={{ display: isHidden ? 'none' : 'contents' }}>
+            <Wrapped />
+          </div>
+        )
       }
 
       return {

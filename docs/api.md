@@ -785,7 +785,7 @@ Add a custom control to the UI at runtime.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `id` | `string` | Unique control identifier |
+| `id` | `string` | Unique control identifier. Also the id to list in a plugin's exclusive-control keep list, e.g. the draw plugin's [`exclusiveControl.keep`](./plugins/draw.md#exclusivecontrol) |
 | `config` | `ControlDefinition` | Control configuration |
 
 See [ControlDefinition](./api/control-definition.md) for configuration options.

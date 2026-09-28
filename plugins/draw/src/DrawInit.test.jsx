@@ -1,6 +1,6 @@
 import { render, act } from '@testing-library/react'
 import { EVENTS } from '../../../src/config/events.js'
-import { DrawInit } from './DrawInit.jsx'
+import { DrawInit, getExclusiveControlKeep, getInterfaceItemIds } from './DrawInit.jsx'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
@@ -269,17 +269,51 @@ describe('event attachment', () => {
 })
 
 describe('exclusive control', () => {
-  test('claims exclusive control while in a draw/edit mode', async () => {
+  test('claims exclusive control while in a draw/edit mode, keeping map styles, map controls and scale bar', async () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
     await renderInit(props)
-    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(true)
+    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(true, { keep: ['mapStyles', 'mapControls', 'scaleBar'] })
+  })
+
+  test('claims with the host\'s keep list in place of the default', async () => {
+    const { props } = makeProps({
+      pluginConfig: { snapLayers: ['a'], exclusiveControl: { keep: ['search', 'myButton'] } },
+      pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' }
+    })
+    await renderInit(props)
+    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(true, { keep: ['search', 'myButton'] })
+  })
+
+  test('calls a keep function on entering a mode with the defaults and every current item id', async () => {
+    const keep = jest.fn((defaults) => defaults.filter(id => id !== 'scaleBar'))
+    const { props } = makeProps({
+      pluginConfig: { snapLayers: ['a'], exclusiveControl: { keep } },
+      pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' }
+    })
+    props.appState.buttonConfig = { search: {}, drawUndo: {} }
+    props.appState.panelConfig = { mapStyles: {} }
+    await renderInit(props)
+    expect(keep).toHaveBeenCalledWith(['mapStyles', 'mapControls', 'scaleBar'], { ids: ['search', 'drawUndo', 'mapStyles'] })
+    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(true, { keep: ['mapStyles', 'mapControls'] })
+  })
+
+  test('does not call a keep function when the mode clears', async () => {
+    const keep = jest.fn(() => [])
+    const { props } = makeProps({
+      pluginConfig: { snapLayers: ['a'], exclusiveControl: { keep } },
+      pluginState: { dispatch: jest.fn(), mode: 'draw_line' }
+    })
+    const { rerender } = await renderInit(props)
+    keep.mockClear()
+    rerender(<DrawInit {...props} pluginState={{ dispatch: jest.fn(), mode: null }} />)
+    expect(keep).not.toHaveBeenCalled()
   })
 
   test('releases exclusive control when the mode clears', async () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
     const { rerender } = await renderInit(props)
     rerender(<DrawInit {...props} pluginState={{ dispatch: jest.fn(), mode: null }} />)
-    expect(props.setExclusiveControl).toHaveBeenLastCalledWith(false)
+    expect(props.setExclusiveControl.mock.lastCall[0]).toBe(false)
   })
 
   test('releases exclusive control on unmount', async () => {
@@ -297,5 +331,46 @@ describe('exclusive control', () => {
     const { unmount } = await renderInit(props)
     unmount()
     expect(props.setExclusiveControl).not.toHaveBeenCalled()
+  })
+})
+
+describe('getExclusiveControlKeep', () => {
+  test('uses the default keep list when no option is given', () => {
+    expect(getExclusiveControlKeep(undefined)).toEqual(['mapStyles', 'mapControls', 'scaleBar'])
+    expect(getExclusiveControlKeep(true)).toEqual(['mapStyles', 'mapControls', 'scaleBar'])
+  })
+
+  test('replaces the default with the host\'s keep list', () => {
+    expect(getExclusiveControlKeep({ keep: ['mapControls'] })).toEqual(['mapControls'])
+    expect(getExclusiveControlKeep({ keep: [] })).toEqual([])
+  })
+
+  test('passes a keep function a copy of the defaults and the item ids, using what it returns', () => {
+    const keep = jest.fn((defaults, { ids }) => [...defaults, ids[0]])
+    expect(getExclusiveControlKeep({ keep }, ['search'])).toEqual(['mapStyles', 'mapControls', 'scaleBar', 'search'])
+    expect(keep).toHaveBeenCalledWith(['mapStyles', 'mapControls', 'scaleBar'], { ids: ['search'] })
+  })
+
+  test('a keep function mutating its defaults argument doesn\'t change the shared default', () => {
+    getExclusiveControlKeep({ keep: (defaults) => { defaults.length = 0; return defaults } })
+    expect(getExclusiveControlKeep(undefined)).toEqual(['mapStyles', 'mapControls', 'scaleBar'])
+  })
+
+  test('returns null when the host opts out', () => {
+    expect(getExclusiveControlKeep(false)).toBeNull()
+  })
+})
+
+describe('getInterfaceItemIds', () => {
+  test('lists every button (not menu item), panel and control id once', () => {
+    expect(getInterfaceItemIds({
+      buttonConfig: { mapStyles: {}, drawUndo: {}, drawSnapItem: { isMenuItem: true } },
+      panelConfig: { mapStyles: {}, mapKey: {} },
+      controlConfig: { scaleBar: {} }
+    })).toEqual(['mapStyles', 'drawUndo', 'mapKey', 'scaleBar'])
+  })
+
+  test('copes with missing config', () => {
+    expect(getInterfaceItemIds({})).toEqual([])
   })
 })

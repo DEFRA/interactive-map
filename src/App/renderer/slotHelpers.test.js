@@ -1,4 +1,4 @@
-import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, hasOpenModalPanel } from './slotHelpers.js'
+import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, hasOpenModalPanel, isHiddenByExclusiveControl } from './slotHelpers.js'
 
 jest.mock('./slots.js', () => ({ allowedSlots: { control: ['inset', 'banner', 'actions'], panel: ['header', 'modal', 'left-top'] } }))
 
@@ -160,5 +160,38 @@ describe('hasOpenModalPanel', () => {
 
   it('returns true when a modal panel is open', () => {
     expect(hasOpenModalPanel({ p1: { props: {} } }, panelConfig, 'desktop')).toBe(true)
+  })
+})
+
+describe('isHiddenByExclusiveControl', () => {
+  const draw = { pluginId: 'draw', name: null, keep: ['mapStyles', 'mapControls'] }
+  const search = { pluginId: 'search', name: null, keep: null }
+
+  it('hides an item not on a keep-list claim\'s keep list', () => {
+    expect(isHiddenByExclusiveControl([draw], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(true)
+  })
+
+  it('keeps an item whose id (any of its ids) is on the keep list', () => {
+    expect(isHiddenByExclusiveControl([draw], { ids: ['mapStyles'], pluginId: 'mapStyles' })).toBe(false)
+    expect(isHiddenByExclusiveControl([draw], { ids: ['zoomIn', 'mapControls'] })).toBe(false)
+  })
+
+  it('never hides the claiming plugin\'s own items', () => {
+    expect(isHiddenByExclusiveControl([draw], { ids: ['drawUndo'], pluginId: 'draw' })).toBe(false)
+  })
+
+  it('ignores claims without a keep list', () => {
+    expect(isHiddenByExclusiveControl([search], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(false)
+  })
+
+  it('hides an item if any keep-list claim in the stack excludes it, whatever is on top', () => {
+    const searchKeepList = { pluginId: 'search', name: null, keep: ['mapStyles', 'datasetsLayers'] }
+    expect(isHiddenByExclusiveControl([draw, searchKeepList], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(true)
+    expect(isHiddenByExclusiveControl([draw, search], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(true)
+  })
+
+  it('hides nothing with no claims or no exclusiveControl state', () => {
+    expect(isHiddenByExclusiveControl([], { ids: ['x'] })).toBe(false)
+    expect(isHiddenByExclusiveControl(undefined, { ids: ['x'] })).toBe(false)
   })
 })

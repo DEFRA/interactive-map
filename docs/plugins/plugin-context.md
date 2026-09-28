@@ -69,7 +69,7 @@ context.pluginState.dispatch({ type: 'setActive', payload: true })
 ---
 
 ### `setExclusiveControl`
-**Type:** `(value: boolean | string | null) => void`
+**Type:** `(value: boolean | string | null, options?: { keep?: string[] }) => void`
 
 Available to plugin components (InitComponent, panel and control render components) as a prop.
 
@@ -98,3 +98,19 @@ useLayoutEffect(() => {
   }
 }
 ```
+
+#### Hiding everything else
+
+To take over the whole interface, pass a `keep` list of ids. While your claim holds, core hides every button, panel and control, in every slot, except those whose id is listed and your own plugin's items. You don't need any CSS:
+
+```js
+setExclusiveControl(isActive, { keep: ['mapStyles', 'mapControls', 'scaleBar'] })
+```
+
+- One id can cover several items, e.g. `mapStyles` is both the map styles button and its panel.
+- Hidden items are hidden with `display: none`, not removed, so their state, scroll position and focus-return targets survive, and they reappear as they were when your claim is released.
+- Modal panels are never hidden, so focus can't get trapped in a hidden one.
+- If several claims with a `keep` list are active, an item only shows if every one of them allows it.
+- Without `keep`, core hides nothing, and your CSS decides what to hide in response to your class (as in the examples above).
+
+Use `keep` for a mode the user stays in until they end it (like drawing), where hidden items shouldn't be reachable with Tab. Leave it out and hide things with your own CSS when hidden items must stay focusable, for example if your UI closes when focus leaves it, as search does, so Tab can still move on to the next item.

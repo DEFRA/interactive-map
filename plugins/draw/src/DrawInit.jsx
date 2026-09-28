@@ -3,6 +3,38 @@ import { EVENTS } from '../../../src/config/events.js'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
+import { EXCLUSIVE_CONTROL_KEEP } from './defaults.js'
+
+/**
+ * Every button (not menu item), panel and control id currently registered, de-duplicated (one id
+ * can name a button and its panel). Passed to a keep function so hosts can discover ids.
+ *
+ * @param {{ buttonConfig?: Object, panelConfig?: Object, controlConfig?: Object }} appState
+ * @returns {string[]}
+ */
+export const getInterfaceItemIds = ({ buttonConfig = {}, panelConfig = {}, controlConfig = {} }) => [...new Set([
+  ...Object.keys(buttonConfig).filter(id => !buttonConfig[id].isMenuItem),
+  ...Object.keys(panelConfig),
+  ...Object.keys(controlConfig)
+])]
+
+/**
+ * Resolves the ids to keep visible while draw has exclusive control, from the exclusiveControl option.
+ * Draw's own buttons don't need listing: core never hides a claiming plugin's own items.
+ *
+ * @param {boolean | { keep?: string[] | ((defaults: string[], context: { ids: string[] }) => string[]) }} [option]
+ *   false opts out; keep as an array replaces the default list, as a function receives a copy of the
+ *   defaults and every current item id and returns the list to keep.
+ * @param {string[]} [ids=[]] - Every current button, panel and control id, for a keep function.
+ * @returns {string[] | null} The ids to keep, or null when opted out.
+ */
+export const getExclusiveControlKeep = (option, ids = []) => {
+  if (option === false) {
+    return null
+  }
+  const keep = option?.keep ?? EXCLUSIVE_CONTROL_KEEP
+  return typeof keep === 'function' ? keep([...EXCLUSIVE_CONTROL_KEEP], { ids }) : keep
+}
 
 // Loads the draw adapter once the map is ready and this plugin instance is in scope for the
 // current app mode; tears it down (and releases MapControls' D-pad) on cleanup.
@@ -55,14 +87,22 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
 
   useLoadDrawAdapter({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus })
 
-  // Takes exclusive control of the interface in any draw/edit mode, so draw.scss can clear the top
-  // row for draw's own buttons. Hosts opt out with exclusiveControl: false (e.g. a single-task map
-  // whose other buttons are all deliberate). useLayoutEffect so the class lands in the same paint.
+  // Takes exclusive control of the interface in any draw/edit mode: core hides every button, panel
+  // and control not on the keep list (other than draw's own) until the mode ends, keeping them
+  // mounted so their state survives. Hosts change the list with exclusiveControl: { keep },
+  // or opt out with exclusiveControl: false (e.g. a single-task map whose other buttons are all
+  // deliberate). useLayoutEffect so the class lands in the same paint as the mode change.
   useLayoutEffect(() => {
     if (pluginConfig.exclusiveControl === false) {
       return undefined
     }
-    setExclusiveControl(!!pluginState.mode)
+    if (!pluginState.mode) {
+      setExclusiveControl(false)
+      return undefined
+    }
+    // Resolved on entering each mode (so a keep function runs once per mode, with current ids)
+    const keep = getExclusiveControlKeep(pluginConfig.exclusiveControl, getInterfaceItemIds(appState))
+    setExclusiveControl(true, { keep })
     return () => setExclusiveControl(false)
   }, [pluginState.mode])
 

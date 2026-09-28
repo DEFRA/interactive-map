@@ -78,21 +78,44 @@ Plugin-level validation callback, called throughout the draw/edit lifecycle so y
 
 ### `exclusiveControl`
 
-**Type:** `boolean`
-**Default:** `true`
+**Type:** `boolean | { keep: string[] | ((defaults: string[], context: { ids: string[] }) => string[]) }`
+**Default:** `{ keep: ['mapStyles', 'mapControls', 'scaleBar'] }`
 
-While drawing or editing, the plugin takes [exclusive control](./plugin-context.md#setexclusivecontrol) of the interface and hides everything else in the top row (buttons, button groups and controls) to make room for its own, keeping only the map styles and map controls buttons.
+While drawing or editing, the plugin takes [exclusive control](./plugin-context.md#setexclusivecontrol) of the interface: every button, panel and control, in every slot, is hidden except the items on its keep list and draw's own buttons. Everything reappears as it was when the draw or edit mode ends. Hidden items stay mounted, so open panels keep their state and scroll position. Modal panels are never hidden.
+
+`keep` lists button, panel and control ids, and replaces the default list, so include any defaults you still want. For example, to also keep search and a button of your own:
+
+```js
+createDrawPlugin({
+  exclusiveControl: { keep: ['mapStyles', 'mapControls', 'scaleBar', 'search', 'myButton'] }
+})
+```
+
+Or to hide map styles, leave it out:
+
+```js
+createDrawPlugin({ exclusiveControl: { keep: ['mapControls', 'scaleBar'] } })
+```
+
+`keep` can also be a function, so you can adjust the defaults without repeating them. It receives a copy of the default list and `ids`, every button, panel and control id currently on the map, and returns the list to keep. It's called each time a draw or edit mode starts, so logging `ids` is a handy way to find the id you need:
+
+```js
+createDrawPlugin({
+  exclusiveControl: {
+    keep: (defaults, { ids }) => {
+      console.log(ids)
+      return [...defaults.filter(id => id !== 'scaleBar'), 'search']
+    }
+  }
+})
+```
+
+An id covers every item that shares it: `mapStyles` keeps both the map styles button and its panel, and `search` keeps both the search button and its form. If the user opens search while drawing, draw's hiding still applies to everything else.
 
 Set to `false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden:
 
 ```js
 createDrawPlugin({ exclusiveControl: false })
-```
-
-To keep a particular button while still letting draw take control, bring it back with your own CSS. The plugin's hiding rule has zero specificity, so a simple rule is enough:
-
-```css
-.im-c-button-wrapper--datasets-layers { display: block; }
 ```
 
 ---

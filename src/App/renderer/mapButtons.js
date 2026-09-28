@@ -5,6 +5,7 @@ import { groupByKey } from './groupByKey.js'
 import { orderItems } from './orderItems.js'
 import { classifyPanel, getPanelRole } from '../../utils/getPanelRole.js'
 import { logger } from '../../services/logger.js'
+import { isHiddenByExclusiveControl } from './slotHelpers.js'
 
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
   const { breakpoint, mode } = appState
@@ -95,6 +96,12 @@ function applySlotExclusivity (matching, appState) {
   return matching.filter(([_, config]) => config.pluginId === exclusivePluginId)
 }
 
+// Hidden via toggleButtonState/hiddenWhen, or by another plugin's exclusive control. Either way the
+// button stays mounted (display: none), so its refs, focus-return target and state survive.
+const isButtonHidden = (buttonId, config, appState) =>
+  appState.hiddenButtons.has(buttonId) ||
+  isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [buttonId], pluginId: config.pluginId })
+
 /**
  * Builds the props for a <SlotButton>. isHidden/variant are included here (not just derived
  * inside SlotButton) because Actions.jsx also reads them directly off the 'actions' slot's
@@ -107,7 +114,7 @@ const slotButtonProps = ({ buttonId, config, appState, appConfig, evaluateProp }
   appState,
   appConfig,
   evaluateProp,
-  isHidden: appState.hiddenButtons.has(buttonId),
+  isHidden: isButtonHidden(buttonId, config, appState),
   variant: config.variant
 })
 
@@ -132,7 +139,7 @@ function SlotButton ({ buttonId, config, appState, appConfig, evaluateProp }) {
       href={evaluateProp(config.href, config.pluginId)}
       showLabel={bpConfig.showLabel ?? true}
       isDisabled={appState.disabledButtons.has(buttonId)}
-      isHidden={appState.hiddenButtons.has(buttonId)}
+      isHidden={isButtonHidden(buttonId, config, appState)}
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
       isExpanded={(config.isExpanded !== undefined || config.expandedWhen) ? appState.expandedButtons.has(buttonId) : undefined}
       isPanelOpen={isPanelOpen}
@@ -202,7 +209,14 @@ function buildGroupItem (key, members, ctx) {
     type: 'group',
     order,
     element: (
-      <div key={`group-${key}`} role='group' aria-label={firstConfig.group.label} className='im-c-button-group'>{/* NOSONAR - div with role="group" is correct for a button group */}
+      <div // NOSONAR - div with role="group" is correct for a button group
+        key={`group-${key}`}
+        role='group'
+        aria-label={firstConfig.group.label}
+        className='im-c-button-group'
+        // Hidden too once every member is, so an empty group doesn't hold a gap in its slot
+        style={members.every(([buttonId, config]) => isButtonHidden(buttonId, config, ctx.appState)) ? { display: 'none' } : undefined}
+      >
         {sorted.map(({ buttonId, config }) => <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, ...ctx })} />)}
       </div>
     )

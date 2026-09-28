@@ -185,6 +185,31 @@ describe('HtmlElementHost', () => {
     expect(control.innerHTML).toBe('<input type="checkbox">')
   })
 
+  it('hides (keeps mounted) a consumer control that exclusive control doesn\'t keep', () => {
+    const controlConfig = { c1: { id: 'c1', html: '<p>Hi</p>', desktop: { slot: 'left-top' } } }
+    const hidden = renderWithSlots({ controlConfig, exclusiveControl: [{ pluginId: 'draw', name: null, keep: ['c2'] }] })
+    expect(hidden.container.querySelector('.im-c-control').style.display).toBe('none')
+    const kept = renderWithSlots({ controlConfig, exclusiveControl: [{ pluginId: 'draw', name: null, keep: ['c1'] }] })
+    expect(kept.container.querySelector('[data-slot="left-top"] .im-c-control').style.display).toBe('')
+  })
+
+  it('hides an open non-modal consumer panel that exclusive control doesn\'t keep, but never a modal one', () => {
+    const exclusiveControl = [{ pluginId: 'draw', name: null, keep: [] }]
+    const nonModal = renderWithSlots({
+      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'left-top' } } },
+      openPanels: { p1: { props: {} } },
+      exclusiveControl
+    })
+    expect(nonModal.getByTestId('panel-p1').style.display).toBe('none')
+    nonModal.unmount()
+    const modal = renderWithSlots({
+      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'side', modal: true } } },
+      openPanels: { p1: { props: {} } },
+      exclusiveControl
+    })
+    expect(modal.getByTestId('panel-p1').style.display).toBe('')
+  })
+
   it('hides panel when slot is not allowed', () => {
     const { getByTestId } = renderWithSlots({
       panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'invalid' } } },
