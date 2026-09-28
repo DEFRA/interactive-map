@@ -3,6 +3,7 @@ import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { allowedSlots } from './slots.js'
 import { isConsumerHtml, isHiddenByExclusiveControl } from './slotHelpers.js'
+import { stringToKebab } from '../../utils/stringToKebab.js'
 
 /**
  * Map controls for a given slot and app state.
@@ -69,13 +70,19 @@ export function mapControls ({ slot, appState, evaluateProp }) {
           pluginId,
           pluginConfig: plugin?.config
         })
-        // Always wrapped, so hiding it (exclusive control) never remounts it: display: contents
-        // leaves layout untouched while shown, display: none hides it with its state intact. The
-        // --hidden modifier lets slot CSS ignore it (e.g. the header's trailing gap).
+        // Core's own element around the plugin's control, as MapButton's wrapper is for buttons and
+        // Panel's root for panels — so hiding it (exclusive control) never remounts it: display:
+        // contents leaves layout untouched while shown, display: none hides it with its state intact.
+        // --{id} identifies it (as im-c-button-wrapper--{id} does); --hidden lets slot CSS ignore it.
+        const wrapperClassName = [
+          'im-c-control-wrapper',
+          `im-c-control-wrapper--${stringToKebab(control.id)}`,
+          isHidden && 'im-c-control-wrapper--hidden'
+        ].filter(Boolean).join(' ')
         element = (
           <div
             key={control.id}
-            className={`im-c-control-wrapper${isHidden ? ' im-c-control-wrapper--hidden' : ''}`}
+            className={wrapperClassName}
             style={{ display: isHidden ? 'none' : 'contents' }}
           >
             <Wrapped />

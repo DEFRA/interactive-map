@@ -136,14 +136,22 @@ describe('mapControls', () => {
     expect(style()).toBeUndefined()
   })
 
+  it('gives a plugin control\'s wrapper a kebab-cased id modifier, like button wrappers', () => {
+    defaultAppState.controlConfig = ({
+      scaleBar: { id: 'scaleBar', desktop: { slot: 'header' }, render: () => null, includeModes: ['view'] }
+    })
+    const [item] = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
+    expect(item.element.props.className).toBe('im-c-control-wrapper im-c-control-wrapper--scale-bar')
+  })
+
   it('always wraps a plugin control, switching the wrapper to display: none when exclusive control hides it', () => {
     defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => null, includeModes: ['view'] }
     })
     const wrapper = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element
-    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper', style: { display: 'contents' } })
+    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1', style: { display: 'contents' } })
     defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['mapStyles'] }]
-    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--hidden', style: { display: 'none' } })
+    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1 im-c-control-wrapper--hidden', style: { display: 'none' } })
     // The claiming plugin's own controls stay
     defaultAppState.exclusiveControl = [{ pluginId: 'plugin1', name: null, keep: [] }]
     expect(wrapper().props.style).toEqual({ display: 'contents' })
