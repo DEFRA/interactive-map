@@ -157,6 +157,13 @@ describe('actionsMap full coverage', () => {
     expect(result.exclusiveControl).toEqual([{ pluginId: 'search', name: null }])
   })
 
+  test('SET_EXCLUSIVE_CONTROL keeps draw\'s claim when search, claimed first, releases after draw claims', () => {
+    const searchClaimed = actionsMap.SET_EXCLUSIVE_CONTROL({ ...state, exclusiveControl: [] }, { pluginId: 'search', active: true })
+    const drawClaimed = actionsMap.SET_EXCLUSIVE_CONTROL(searchClaimed, { pluginId: 'draw', active: true })
+    const searchReleased = actionsMap.SET_EXCLUSIVE_CONTROL(drawClaimed, { pluginId: 'search', active: false })
+    expect(searchReleased.exclusiveControl).toEqual([{ pluginId: 'draw', name: null }])
+  })
+
   test('SET_EXCLUSIVE_CONTROL re-claiming replaces the plugin\'s own claim and moves it to the top', () => {
     const localState = { ...state, exclusiveControl: [{ pluginId: 'draw', name: 'draw-polygon' }, { pluginId: 'search', name: null }] }
     const result = actionsMap.SET_EXCLUSIVE_CONTROL(localState, { pluginId: 'draw', name: 'edit-vertex', active: true })
