@@ -9,6 +9,11 @@ const keyboardBasePanelSlots = {
 }
 
 const buttonSlots = {
+  slot: 'top-right',
+  showLabel: false
+}
+
+const zoomButtonSlots = {
   slot: 'right-top',
   showLabel: false
 }
@@ -81,9 +86,9 @@ export const defaultAppConfig = {
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomIn(appConfig.zoomDelta),
     excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMapControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMaxZoom,
-    mobile: buttonSlots,
-    tablet: buttonSlots,
-    desktop: buttonSlots
+    mobile: zoomButtonSlots,
+    tablet: zoomButtonSlots,
+    desktop: zoomButtonSlots
   }, {
     id: 'zoomOut',
     group: { label: 'Zoom controls', slotOrder: 0 },
@@ -93,9 +98,9 @@ export const defaultAppConfig = {
     onClick: (_e, { mapProvider, appConfig }) => mapProvider.zoomOut(appConfig.zoomDelta),
     excludeWhen: ({ appState, appConfig }) => !appConfig.enableZoomControls || appConfig.enableMapControls || appState.interfaceType === 'touch',
     enableWhen: ({ mapState }) => !mapState.isAtMinZoom,
-    mobile: buttonSlots,
-    tablet: buttonSlots,
-    desktop: buttonSlots
+    mobile: zoomButtonSlots,
+    tablet: zoomButtonSlots,
+    desktop: zoomButtonSlots
   }, {
     id: 'mapControls',
     label: 'Map controls',
