@@ -262,4 +262,91 @@ describe('createFormHandlers', () => {
 
     expect(fetchSuggestions).toHaveBeenCalledTimes(1)
   })
+
+  describe('handleTabOut', () => {
+    let container, input, closeButton, trigger, afterTrigger, before, tabHandlers
+
+    const keyDown = (target, shiftKey = false) => ({ key: 'Tab', shiftKey, target, preventDefault: jest.fn() })
+
+    beforeEach(() => {
+      container = document.createElement('div')
+      input = document.createElement('input')
+      closeButton = document.createElement('button')
+      container.append(input, closeButton)
+      before = document.createElement('button')
+      trigger = document.createElement('button')
+      afterTrigger = document.createElement('a')
+      afterTrigger.href = '#'
+      document.body.append(before, container, trigger, afterTrigger)
+      // jsdom has no layout, so give each tab stop a client rect (i.e. rendered). Page tab order:
+      // before, input, closeButton, trigger, afterTrigger
+      const stops = [before, input, closeButton, trigger, afterTrigger]
+      stops.forEach(el => { el.getClientRects = () => [{}] })
+      tabHandlers = createFormHandlers({ dispatch, services, viewportRef, searchContainerRef: { current: container }, markers })
+    })
+
+    afterEach(() => {
+      document.body.innerHTML = ''
+    })
+
+    const buttonRefs = () => ({ current: { search: trigger } })
+
+    test('Tab past the last element moves focus to whatever follows the trigger', () => {
+      const e = keyDown(closeButton)
+      tabHandlers.handleTabOut(e, buttonRefs())
+      expect(e.preventDefault).toHaveBeenCalled()
+      expect(document.activeElement).toBe(afterTrigger)
+    })
+
+    test('Shift+Tab past the first element returns focus to the trigger', () => {
+      const e = keyDown(input, true)
+      tabHandlers.handleTabOut(e, buttonRefs())
+      expect(e.preventDefault).toHaveBeenCalled()
+      expect(document.activeElement).toBe(trigger)
+    })
+
+    test('leaves Tab alone while focus is moving within the form', () => {
+      const e = keyDown(input)
+      tabHandlers.handleTabOut(e, buttonRefs())
+      expect(e.preventDefault).not.toHaveBeenCalled()
+    })
+
+    test('ignores keys other than Tab', () => {
+      const e = { ...keyDown(closeButton), key: 'Enter' }
+      tabHandlers.handleTabOut(e, buttonRefs())
+      expect(e.preventDefault).not.toHaveBeenCalled()
+    })
+
+    test('Shift+Tab from the page\'s first tab stop still returns to the trigger', () => {
+      before.remove()
+      const e = keyDown(input, true)
+      tabHandlers.handleTabOut(e, buttonRefs())
+      expect(document.activeElement).toBe(trigger)
+    })
+
+    test('counts [tabindex] elements and skips unrendered ones when finding what follows the trigger', () => {
+      const hidden = document.createElement('button')
+      hidden.getClientRects = () => []
+      const listItem = document.createElement('li')
+      listItem.tabIndex = 0
+      listItem.getClientRects = () => [{}]
+      trigger.after(hidden, listItem)
+      tabHandlers.handleTabOut(keyDown(closeButton), buttonRefs())
+      expect(document.activeElement).toBe(listItem)
+    })
+
+    test('lets focus leave the page natively when the trigger is the last tab stop', () => {
+      afterTrigger.remove()
+      const e = keyDown(closeButton)
+      tabHandlers.handleTabOut(e, buttonRefs())
+      expect(e.preventDefault).not.toHaveBeenCalled()
+    })
+
+    test('keeps native tab order when there is no trigger (default-expanded)', () => {
+      trigger.remove()
+      const e = keyDown(closeButton)
+      tabHandlers.handleTabOut(e, { current: {} })
+      expect(e.preventDefault).not.toHaveBeenCalled()
+    })
+  })
 })
