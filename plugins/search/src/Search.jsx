@@ -84,7 +84,7 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
   const isFormVisible = defaultExpanded || isExpanded
 
   return (
-    <div
+    <div // NOSONAR - not interactive itself: only catches Tab from its focusable children to continue tab order from the search button
       className={`im-c-search${isFormVisible ? '' : ' im-c-search--collapsed'}`}
       ref={searchContainerRef}
       onKeyDown={(e) => events.handleTabOut(e, appState.buttonRefs)}
