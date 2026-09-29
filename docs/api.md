@@ -805,9 +805,9 @@ interactiveMap.hidePanel('info-panel')
 
 ### `setApplicationMode(id, options?)`
 
-Enters an application mode — for example for a step in a journey that needs a pared-down interface. Modes form a stack: the new mode goes on top, and setting a mode that's already on the stack replaces its lists and moves it to the top. While it's the most recently set active mode, the app root gets the class `im-o-app--mode-{id}`. Hidden items stay mounted, so their state is preserved, and modal panels are never hidden.
+Enters an application mode — for example for a step in a journey that needs a pared-down interface. Modes form a stack: the new mode goes on top, and setting a mode that's already on the stack replaces its lists and moves it to the top. Only the current mode, the top of the stack, applies: the app root gets the class `im-o-app--mode-{id}`, and modes underneath wait until they're current again. Hidden items stay mounted, so their state is preserved, and modal panels are never hidden.
 
-Plugins set modes too (e.g. the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'`). An item only shows if every active mode allows it, and your [`applicationModes`](#applicationmodes) option always has the final say over a mode's lists.
+Plugins set modes too (e.g. the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'`). Your [`applicationModes`](#applicationmodes) option always has the final say over a mode's lists.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|

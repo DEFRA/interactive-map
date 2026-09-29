@@ -78,7 +78,7 @@ Available to plugin components (InitComponent, panel and control render componen
 
 Application modes let your plugin change what the interface shows while it's in a particular state, e.g. draw while drawing or search while its form is open. Modes form a stack: `setApplicationMode(id, options)` puts a mode on top (or replaces its lists and moves it to the top if it's already set), and `clearApplicationMode(id)` removes it, so the mode underneath takes over.
 
-While a mode is the most recently set active mode, the app root gets `im-o-app--mode-{id}`. What's hidden depends on its lists:
+Only the current mode, the top of the stack, applies: the app root gets `im-o-app--mode-{id}`, and what's hidden depends on its lists:
 
 - **No lists** — nothing is hidden; your CSS can respond to the class instead (as search does).
 - **`include`** — only the listed buttons, panels and controls stay visible. Use this to take over the interface, and list your own items too (e.g. draw adds its own button ids).
@@ -100,7 +100,7 @@ useLayoutEffect(() => {
 - One id can name several items, e.g. `mapStyles` is both the map styles button and its panel.
 - Hidden items are hidden with `display: none`, not removed, so their state, scroll position and focus-return targets survive, and they reappear as they were when the mode ends. If focus was on something that's hidden, it moves to the map.
 - Modal panels are never hidden, so focus can't get trapped in a hidden one.
-- If several modes are active, an item only shows if every one of them allows it.
+- Only the current mode applies. If another mode is set on top of yours, yours waits underneath and applies again once it's back on top.
 - The host has the final say: its [`applicationModes`](../api.md#applicationmodes) option can add to, remove from or disable your mode. Document your mode's id and default lists so they can.
 - Modes only change the interface. Your plugin's own behaviour, and other plugins', carries on as normal.
 

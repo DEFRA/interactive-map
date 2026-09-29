@@ -123,8 +123,8 @@
  */
 
 /**
- * What an application mode shows. The mode adds `im-o-app--mode-{id}` to the app root while it's the
- * most recently set active mode. Hidden items stay mounted (display: none), so their state survives,
+ * What an application mode shows while it's the current mode (the top of the stack; modes underneath
+ * don't apply). The current mode adds `im-o-app--mode-{id}` to the app root. Hidden items stay mounted (display: none), so their state survives,
  * and modal panels are never hidden. Without either list, nothing is hidden.
  *
  * @typedef {Object} ApplicationModeOptions

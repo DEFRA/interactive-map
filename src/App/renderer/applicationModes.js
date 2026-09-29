@@ -14,52 +14,52 @@ export const selectApplicationModes = (appState, appConfig) => ({
 })
 
 /**
- * The active application modes, least recently set first: every mode on the stack, unless the
- * consumer's config disables it (false).
+ * The current application mode: the top of the stack, skipping any mode the consumer's config
+ * disables (false). Only the current mode applies; modes underneath wait until they're on top again.
  *
  * @param {{ entries: Array<Object>, config: Object }} modes - From selectApplicationModes.
- * @returns {Array<{ id: string, include: string[] | null, exclude: string[] | null }>}
+ * @returns {{ id: string, include: string[] | null, exclude: string[] | null } | null}
  */
-export const getActiveApplicationModes = ({ entries, config }) =>
-  entries.filter(mode => config[mode.id] !== false)
+export const getCurrentApplicationMode = ({ entries, config }) => {
+  const enabledModes = entries.filter(mode => config[mode.id] !== false)
+  return enabledModes[enabledModes.length - 1] ?? null // NOSONAR, .length - 1 used instead of .at(-1) for wider browser support
+}
 
 /**
- * The root class for the most recently set active mode, or null when no mode is active.
+ * The root class for the current mode, or null when there's no current mode.
  *
  * @param {{ entries: Array<Object>, config: Object }} modes - From selectApplicationModes.
  * @returns {string | null}
  */
 export const getApplicationModeClass = (modes) => {
-  const activeModes = getActiveApplicationModes(modes)
-  const topMode = activeModes[activeModes.length - 1] // NOSONAR, .length - 1 used instead of .at(-1) for wider browser support
-  return topMode ? `im-o-app--mode-${topMode.id}` : null
+  const currentMode = getCurrentApplicationMode(modes)
+  return currentMode ? `im-o-app--mode-${currentMode.id}` : null
 }
 
 const includesAny = (list, ids) => !!list && ids.some(id => list.includes(id))
 
 /**
- * Whether one active mode shows an item. The consumer's config for the mode adjusts what the mode
- * was set with, so it's checked first and wins for the items it names: exclude removes, include
- * appends. Every other item follows the mode's own lists: with include, only listed items show;
- * with exclude, listed items are hidden.
- */
-const isVisibleInMode = (mode, config, ids) => {
-  if (includesAny(config?.exclude, ids)) {
-    return false
-  }
-  if (includesAny(config?.include, ids)) {
-    return true
-  }
-  return (!mode.include || includesAny(mode.include, ids)) && !includesAny(mode.exclude, ids)
-}
-
-/**
- * Whether the active application modes hide an item: true when any active mode doesn't show it.
- * Items are hidden with CSS, never unmounted, so their state survives.
+ * Whether the current application mode hides an item. The consumer's config for the mode adjusts
+ * what the mode was set with, so it's checked first and wins for the items it names: exclude
+ * removes, include appends. Every other item follows the mode's own lists: with include, only listed
+ * items show; with exclude, listed items are hidden. Items are hidden with CSS, never unmounted, so
+ * their state survives.
  *
  * @param {{ entries: Array<Object>, config: Object }} modes - From selectApplicationModes.
  * @param {string[]} ids - The item's id(s); one id can name a button and its panel.
  * @returns {boolean}
  */
-export const isHiddenByApplicationMode = (modes, ids) =>
-  getActiveApplicationModes(modes).some(mode => !isVisibleInMode(mode, modes.config[mode.id], ids))
+export const isHiddenByApplicationMode = (modes, ids) => {
+  const currentMode = getCurrentApplicationMode(modes)
+  if (!currentMode) {
+    return false
+  }
+  const config = modes.config[currentMode.id]
+  if (includesAny(config?.exclude, ids)) {
+    return true
+  }
+  if (includesAny(config?.include, ids)) {
+    return false
+  }
+  return (!!currentMode.include && !includesAny(currentMode.include, ids)) || includesAny(currentMode.exclude, ids)
+}

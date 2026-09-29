@@ -102,7 +102,7 @@ describe('Layout', () => {
     expect(backdrop).not.toHaveClass('im-o-app__modal-backdrop--visible')
   })
 
-  test('adds the class for the most recently set active mode only', () => {
+  test('adds the class for the current mode (the top of the stack) only', () => {
     useApp.mockReturnValueOnce({
       breakpoint: 'desktop',
       interfaceType: 'map',

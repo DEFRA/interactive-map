@@ -1,6 +1,6 @@
 import {
   selectApplicationModes,
-  getActiveApplicationModes,
+  getCurrentApplicationMode,
   getApplicationModeClass,
   isHiddenByApplicationMode
 } from './applicationModes.js'
@@ -21,29 +21,33 @@ describe('selectApplicationModes', () => {
   })
 })
 
-describe('getActiveApplicationModes', () => {
-  it('lists the modes on the stack, least recently set first', () => {
-    expect(getActiveApplicationModes(modesWith([mode('draw'), mode('search')])).map(active => active.id)).toEqual(['draw', 'search'])
+describe('getCurrentApplicationMode', () => {
+  it('is the top of the stack', () => {
+    expect(getCurrentApplicationMode(modesWith([mode('draw'), mode('search')]))).toEqual(mode('search'))
   })
 
-  it('leaves out a mode the consumer\'s config disables', () => {
-    expect(getActiveApplicationModes(modesWith([mode('draw'), mode('search')], { draw: false })).map(active => active.id)).toEqual(['search'])
+  it('skips a mode the consumer\'s config disables, so the one underneath is current', () => {
+    expect(getCurrentApplicationMode(modesWith([mode('search'), mode('draw')], { draw: false }))).toEqual(mode('search'))
+  })
+
+  it('is null with an empty stack', () => {
+    expect(getCurrentApplicationMode(modesWith([]))).toBeNull()
   })
 })
 
 describe('getApplicationModeClass', () => {
-  it('uses the most recently set active mode', () => {
+  it('uses the current mode', () => {
     expect(getApplicationModeClass(modesWith([mode('draw'), mode('search')]))).toBe('im-o-app--mode-search')
   })
 
-  it('is null with no active mode', () => {
+  it('is null with no current mode', () => {
     expect(getApplicationModeClass(modesWith([]))).toBeNull()
     expect(getApplicationModeClass(modesWith([mode('draw')], { draw: false }))).toBeNull()
   })
 })
 
 describe('isHiddenByApplicationMode', () => {
-  it('hides nothing with no active mode, or a mode without lists', () => {
+  it('hides nothing with no current mode, or a mode without lists', () => {
     expect(isHiddenByApplicationMode(modesWith([]), ['mapKey'])).toBe(false)
     expect(isHiddenByApplicationMode(modesWith([mode('search')]), ['mapKey'])).toBe(false)
   })
@@ -102,10 +106,11 @@ describe('isHiddenByApplicationMode', () => {
     })
   })
 
-  it('hides an item when any active mode hides it', () => {
-    const modes = modesWith([mode('draw', { include: ['mapStyles', 'search'] }), mode('focus', { exclude: ['mapStyles'] })])
-    expect(isHiddenByApplicationMode(modes, ['mapKey'])).toBe(true)
-    expect(isHiddenByApplicationMode(modes, ['mapStyles'])).toBe(true)
-    expect(isHiddenByApplicationMode(modes, ['search'])).toBe(false)
+  it('applies only the current mode\'s lists, not those of modes underneath', () => {
+    const modes = modesWith([mode('draw', { include: ['mapStyles'] }), mode('search')])
+    // search is current and has no lists, so draw's include (underneath) doesn't hide anything
+    expect(isHiddenByApplicationMode(modes, ['mapKey'])).toBe(false)
+    // once search is cleared, draw is current again and its include applies
+    expect(isHiddenByApplicationMode(modesWith([mode('draw', { include: ['mapStyles'] })]), ['mapKey'])).toBe(true)
   })
 })
