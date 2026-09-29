@@ -1,4 +1,4 @@
-import { resolveTargetSlot, isModeAllowed, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, hasOpenModalPanel, isHiddenByExclusiveControl } from './slotHelpers.js'
+import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, hasOpenModalPanel } from './slotHelpers.js'
 
 jest.mock('./slots.js', () => ({ allowedSlots: { control: ['inset', 'banner', 'actions'], panel: ['header', 'modal', 'left-top'] } }))
 
@@ -21,54 +21,32 @@ describe('resolveTargetSlot', () => {
   })
 })
 
-describe('isModeAllowed', () => {
-  it('returns true when no mode restrictions', () => {
-    expect(isModeAllowed({}, 'view')).toBe(true)
-  })
-
-  it('rejects when mode not in includeModes', () => {
-    expect(isModeAllowed({ includeModes: ['edit'] }, 'view')).toBe(false)
-  })
-
-  it('rejects when mode in excludeModes', () => {
-    expect(isModeAllowed({ excludeModes: ['view'] }, 'view')).toBe(false)
-  })
-
-  it('allows when mode matches includeModes', () => {
-    expect(isModeAllowed({ includeModes: ['view'] }, 'view')).toBe(true)
-  })
-})
-
 describe('isControlVisible', () => {
   const base = { desktop: { slot: 'inset' } }
 
   it('returns true for valid control', () => {
-    expect(isControlVisible(base, { breakpoint: 'desktop', mode: 'view', isFullscreen: false })).toBe(true)
+    expect(isControlVisible(base, { breakpoint: 'desktop', isFullscreen: false })).toBe(true)
   })
 
   it('returns false when breakpoint config missing', () => {
-    expect(isControlVisible(base, { breakpoint: 'mobile', mode: 'view', isFullscreen: false })).toBe(false)
+    expect(isControlVisible(base, { breakpoint: 'mobile', isFullscreen: false })).toBe(false)
   })
 
   it('returns false when slot not allowed', () => {
-    expect(isControlVisible({ desktop: { slot: 'invalid' } }, { breakpoint: 'desktop', mode: 'view', isFullscreen: false })).toBe(false)
-  })
-
-  it('returns false when mode not allowed', () => {
-    expect(isControlVisible({ ...base, includeModes: ['edit'] }, { breakpoint: 'desktop', mode: 'view', isFullscreen: false })).toBe(false)
+    expect(isControlVisible({ desktop: { slot: 'invalid' } }, { breakpoint: 'desktop', isFullscreen: false })).toBe(false)
   })
 
   it('returns false when inline:false and not fullscreen', () => {
-    expect(isControlVisible({ ...base, inline: false }, { breakpoint: 'desktop', mode: 'view', isFullscreen: false })).toBe(false)
+    expect(isControlVisible({ ...base, inline: false }, { breakpoint: 'desktop', isFullscreen: false })).toBe(false)
   })
 
   it('returns true when inline:false and fullscreen', () => {
-    expect(isControlVisible({ ...base, inline: false }, { breakpoint: 'desktop', mode: 'view', isFullscreen: true })).toBe(true)
+    expect(isControlVisible({ ...base, inline: false }, { breakpoint: 'desktop', isFullscreen: true })).toBe(true)
   })
 
   it('returns true for a control targeting a panel-body slot via the <panelId>-panel convention', () => {
     const panelTargeting = { desktop: { slot: 'map-styles-panel' } }
-    expect(isControlVisible(panelTargeting, { breakpoint: 'desktop', mode: 'view', isFullscreen: false })).toBe(true)
+    expect(isControlVisible(panelTargeting, { breakpoint: 'desktop', isFullscreen: false })).toBe(true)
   })
 })
 
@@ -87,8 +65,8 @@ describe('isConsumerHtml', () => {
 })
 
 describe('isPanelSlotEligible', () => {
-  const base = { includeModes: ['view'] }
-  const ctx = { targetSlot: 'header', mode: 'view', isFullscreen: false }
+  const base = {}
+  const ctx = { targetSlot: 'header', isFullscreen: false }
 
   it('returns true for a panel in an allowed slot', () => {
     expect(isPanelSlotEligible(base, ctx)).toBe(true)
@@ -100,10 +78,6 @@ describe('isPanelSlotEligible', () => {
 
   it('allows a target slot next to a button even though it is not a named panel slot', () => {
     expect(isPanelSlotEligible(base, { ...ctx, targetSlot: 'my-button-button' })).toBe(true)
-  })
-
-  it('returns false when mode is not allowed', () => {
-    expect(isPanelSlotEligible({ includeModes: ['edit'] }, ctx)).toBe(false)
   })
 
   it('returns false when inline:false and not fullscreen', () => {
@@ -123,7 +97,7 @@ describe('isPanelSlotEligible', () => {
   })
 
   it('skips the requested-slot check entirely when slot is omitted (HtmlElementHost usage)', () => {
-    expect(isPanelSlotEligible(base, { targetSlot: 'header', mode: 'view', isFullscreen: false })).toBe(true)
+    expect(isPanelSlotEligible(base, { targetSlot: 'header', isFullscreen: false })).toBe(true)
   })
 })
 
@@ -160,38 +134,5 @@ describe('hasOpenModalPanel', () => {
 
   it('returns true when a modal panel is open', () => {
     expect(hasOpenModalPanel({ p1: { props: {} } }, panelConfig, 'desktop')).toBe(true)
-  })
-})
-
-describe('isHiddenByExclusiveControl', () => {
-  const draw = { pluginId: 'draw', name: null, keep: ['mapStyles', 'mapControls'] }
-  const search = { pluginId: 'search', name: null, keep: null }
-
-  it('hides an item not on a keep-list claim\'s keep list', () => {
-    expect(isHiddenByExclusiveControl([draw], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(true)
-  })
-
-  it('keeps an item whose id (any of its ids) is on the keep list', () => {
-    expect(isHiddenByExclusiveControl([draw], { ids: ['mapStyles'], pluginId: 'mapStyles' })).toBe(false)
-    expect(isHiddenByExclusiveControl([draw], { ids: ['zoomIn', 'mapControls'] })).toBe(false)
-  })
-
-  it('never hides the claiming plugin\'s own items', () => {
-    expect(isHiddenByExclusiveControl([draw], { ids: ['drawUndo'], pluginId: 'draw' })).toBe(false)
-  })
-
-  it('ignores claims without a keep list', () => {
-    expect(isHiddenByExclusiveControl([search], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(false)
-  })
-
-  it('hides an item if any keep-list claim in the stack excludes it, whatever is on top', () => {
-    const searchKeepList = { pluginId: 'search', name: null, keep: ['mapStyles', 'datasetsLayers'] }
-    expect(isHiddenByExclusiveControl([draw, searchKeepList], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(true)
-    expect(isHiddenByExclusiveControl([draw, search], { ids: ['datasetsLayers'], pluginId: 'datasets' })).toBe(true)
-  })
-
-  it('hides nothing with no claims or no exclusiveControl state', () => {
-    expect(isHiddenByExclusiveControl([], { ids: ['x'] })).toBe(false)
-    expect(isHiddenByExclusiveControl(undefined, { ids: ['x'] })).toBe(false)
   })
 })

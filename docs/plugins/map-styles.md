@@ -70,20 +70,6 @@ createMapStylesPlugin({
 
 ---
 
-### `includeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin only renders when the app is in one of these modes.
-
----
-
-### `excludeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin does not render when the app is in one of these modes.
-
----
-
 ## Map size
 
 When the active map provider supports map sizes (i.e. `mapProvider.capabilities.supportsMapSizes` is `true`), the panel also shows a map size control. This lets users choose between three size levels:

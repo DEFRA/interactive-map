@@ -11,12 +11,23 @@ const ATTRIBUTIONS_STACKED_CLASS = 'im-o-app__attributions--stacked'
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
 
-// A top column whose children are all display:none (hiddenWhen buttons, or items hidden by a
-// plugin's exclusive-control CSS) isn't :empty, so it keeps its trailing padding-bottom — which
-// would push the side column below it down by a gap. Treat it as empty instead.
+// Whether an element renders anything. A display: contents element (e.g. the control wrapper core puts
+// around each plugin control) has no box of its own, so it counts as rendered if any child is.
+const isRendered = (element) => {
+  if (element.getClientRects().length > 0) {
+    return true
+  }
+  // Core's control wrapper sets display inline, so check that before the (costlier) computed style
+  const display = element.style.display || getComputedStyle(element).display
+  return display === 'contents' && Array.from(element.children).some(isRendered)
+}
+
+// A top column whose children are all display:none (hiddenWhen buttons, or items an application mode
+// hides) isn't :empty, so it keeps its trailing padding-bottom — which would push the side column
+// below it down by a gap. Treat it as empty instead.
 const topColHeight = (col) => {
   const children = Array.from(col.children)
-  const isAllHidden = children.length > 0 && children.every(child => child.getClientRects().length === 0)
+  const isAllHidden = children.length > 0 && !children.some(isRendered)
   return isAllHidden ? 0 : col.offsetHeight
 }
 

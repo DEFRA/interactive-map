@@ -41,22 +41,22 @@ const getTabStops = () => Array.from(document.querySelectorAll(TAB_STOP_SELECTOR
 // Tab order would leave the form for whatever happens to follow it in the DOM. Continue from the
 // trigger's position instead: Tab past the last element goes to whatever follows the trigger,
 // Shift+Tab past the first returns to the trigger. handleOutside then closes search as usual.
-const tabOutFromTrigger = (e, buttonRefs, searchContainerRef) => {
+const tabOutFromTrigger = (event, buttonRefs, searchContainerRef) => {
   const trigger = getTriggerButton(buttonRefs)
-  if (e.key !== 'Tab' || !trigger) {
+  if (event.key !== 'Tab' || !trigger) {
     return
   }
   const stops = getTabStops()
-  const adjacent = stops[stops.indexOf(e.target) + (e.shiftKey ? -1 : 1)]
+  const adjacent = stops[stops.indexOf(event.target) + (event.shiftKey ? -1 : 1)]
   if (searchContainerRef.current?.contains(adjacent)) {
     return
   }
   // Nothing after the trigger means it's the page's last tab stop: let focus leave the page natively.
-  const target = e.shiftKey ? trigger : stops[stops.indexOf(trigger) + 1]
+  const target = event.shiftKey ? trigger : stops[stops.indexOf(trigger) + 1]
   if (!target) {
     return
   }
-  e.preventDefault()
+  event.preventDefault()
   target.focus()
 }
 
@@ -75,8 +75,8 @@ export const createFormHandlers = ({
   let lastFetchedValue = ''
 
   return {
-    handleTabOut (e, buttonRefs) {
-      tabOutFromTrigger(e, buttonRefs, searchContainerRef)
+    handleTabOut (event, buttonRefs) {
+      tabOutFromTrigger(event, buttonRefs, searchContainerRef)
     },
 
     handleCloseClick (_e, appState) {

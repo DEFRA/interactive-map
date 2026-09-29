@@ -393,15 +393,6 @@ export default class InteractiveMap {
   }
 
   /**
-   * Set the application mode.
-   *
-   * @param {string} mode - Mode identifier.
-   */
-  setMode (mode) {
-    this.eventBus.emit(events.APP_SET_MODE, mode)
-  }
-
-  /**
    * Add a button to the UI.
    *
    * @param {string} id - Unique button identifier.
@@ -487,6 +478,31 @@ export default class InteractiveMap {
    */
   hidePanel (id) {
     this.eventBus.emit(events.APP_HIDE_PANEL, id)
+  }
+
+  /**
+   * Enter an application mode, putting it on top of the stack, or replace its lists if it's already
+   * set. While it's the most recently set active mode the app root gets `im-o-app--mode-{id}`. With
+   * `include`, only the listed buttons, panels and controls stay visible; with `exclude`, the listed
+   * ones are hidden. Hidden items stay mounted, so their state survives, and modal panels are never
+   * hidden. The `applicationModes` option still has the final say over the mode's lists.
+   *
+   * @param {string} id - Mode id, e.g. `'review'`. Used as-is in the class, so keep it class-safe.
+   * @param {ApplicationModeOptions} [options]
+   */
+  setApplicationMode (id, { include = null, exclude = null } = {}) {
+    this.eventBus.emit(events.APP_SET_APPLICATION_MODE, { id, include, exclude })
+  }
+
+  /**
+   * Leave an application mode, so the mode underneath (if any) takes over. Clearing a mode a plugin set
+   * (e.g. `'draw'`) only changes the interface, not the plugin; use `applicationModes` to adjust or
+   * disable a plugin's mode instead.
+   *
+   * @param {string} id - Mode id.
+   */
+  clearApplicationMode (id) {
+    this.eventBus.emit(events.APP_CLEAR_APPLICATION_MODE, id)
   }
 
   /**

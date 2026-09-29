@@ -58,7 +58,6 @@ describe('HtmlElementHost', () => {
   const mockApp = (overrides = {}) => {
     const state = {
       breakpoint: 'desktop',
-      mode: 'view',
       isFullscreen: false,
       panelConfig: {},
       controlConfig: {},
@@ -120,14 +119,6 @@ describe('HtmlElementHost', () => {
     expect(getByTestId('panel-p1').dataset.open).toBe('false')
   })
 
-  it('hides panel when mode is not allowed', () => {
-    const { getByTestId } = renderWithSlots({
-      panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'inset' }, includeModes: ['edit'] } },
-      openPanels: { p1: { props: {} } }
-    })
-    expect(getByTestId('panel-p1').style.display).toBe('none')
-  })
-
   it('hides panel with inline:false when not fullscreen', () => {
     const { getByTestId } = renderWithSlots({
       panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'left-top' }, inline: false } },
@@ -182,30 +173,31 @@ describe('HtmlElementHost', () => {
     })
     const control = container.querySelector('[data-slot="left-top"] .im-c-control')
     expect(control).toBeTruthy()
+    expect(control).toHaveClass('im-c-control--c1')
     expect(control.innerHTML).toBe('<input type="checkbox">')
   })
 
-  it('hides (keeps mounted) a consumer control that exclusive control doesn\'t keep', () => {
+  it('hides (keeps mounted) a consumer control that an application mode doesn\'t show', () => {
     const controlConfig = { c1: { id: 'c1', html: '<p>Hi</p>', desktop: { slot: 'left-top' } } }
-    const hidden = renderWithSlots({ controlConfig, exclusiveControl: [{ pluginId: 'draw', name: null, keep: ['c2'] }] })
+    const hidden = renderWithSlots({ controlConfig, applicationModeEntries: [{ id: 'draw', include: ['c2'], exclude: null }] })
     expect(hidden.container.querySelector('.im-c-control').style.display).toBe('none')
-    const kept = renderWithSlots({ controlConfig, exclusiveControl: [{ pluginId: 'draw', name: null, keep: ['c1'] }] })
+    const kept = renderWithSlots({ controlConfig, applicationModeEntries: [{ id: 'draw', include: ['c1'], exclude: null }] })
     expect(kept.container.querySelector('[data-slot="left-top"] .im-c-control').style.display).toBe('')
   })
 
-  it('hides an open non-modal consumer panel that exclusive control doesn\'t keep, but never a modal one', () => {
-    const exclusiveControl = [{ pluginId: 'draw', name: null, keep: [] }]
+  it('hides an open non-modal consumer panel that an application mode doesn\'t show, but never a modal one', () => {
+    const applicationModeEntries = [{ id: 'draw', include: [], exclude: null }]
     const nonModal = renderWithSlots({
       panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'left-top' } } },
       openPanels: { p1: { props: {} } },
-      exclusiveControl
+      applicationModeEntries
     })
     expect(nonModal.getByTestId('panel-p1').style.display).toBe('none')
     nonModal.unmount()
     const modal = renderWithSlots({
       panelConfig: { p1: { html: '<p>Hi</p>', label: 'Test', desktop: { slot: 'side', modal: true } } },
       openPanels: { p1: { props: {} } },
-      exclusiveControl
+      applicationModeEntries
     })
     expect(modal.getByTestId('panel-p1').style.display).toBe('')
   })
@@ -298,7 +290,6 @@ describe('HtmlElementHost', () => {
     // Close the panel
     useApp.mockReturnValue({
       breakpoint: 'desktop',
-      mode: 'view',
       isFullscreen: false,
       panelConfig,
       controlConfig: {},

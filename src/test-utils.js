@@ -55,7 +55,6 @@ export const createMockAppState = (overrides = {}) => {
 
   return {
     breakpoint: 'desktop',
-    mode: 'view',
     openPanels: {},
     dispatch: jest.fn(),
     disabledButtons: new Set(),

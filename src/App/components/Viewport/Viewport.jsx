@@ -20,7 +20,7 @@ import { Markers } from '../Markers/Markers'
 // sonarjs/disable-next-line function-name
 export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText, focusOnMount } = useConfig()
-  const { mode, previousMode, layoutRefs, safeZoneInset, dispatch } = useApp()
+  const { layoutRefs, safeZoneInset, dispatch } = useApp()
   const { mapSize, isMapReady } = useMap()
   const { eventBus, hints } = useService()
 
@@ -64,13 +64,6 @@ export const Viewport = () => {
       }
     }
   })
-
-  // Set focus on viewport on mode change
-  useEffect(() => {
-    if (mode && previousMode && mode !== previousMode) {
-      layoutRefs.viewportRef?.current.focus()
-    }
-  }, [mode])
 
   // Focus the viewport on mount when opened by a genuine launcher click (see InteractiveMap.js's _handleButtonClick), never on an auto-load or resize.
   useEffect(() => {

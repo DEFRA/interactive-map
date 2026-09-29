@@ -5,6 +5,7 @@ import { useApp } from '../store/appContext'
 import { useMap } from '../store/mapContext'
 import { useLayoutMeasurements } from '../hooks/useLayoutMeasurements'
 import { useFocusVisible } from '../hooks/useFocusVisible'
+import { useApplicationModeFocus } from '../hooks/useApplicationModeFocus.js'
 import { Logo } from '../components/Logo/Logo'
 import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
@@ -13,28 +14,21 @@ import { HtmlElementHost } from '../renderer/HtmlElementHost'
 import { Hints } from '../components/Hints/Hints.jsx'
 import { hasOpenModalPanel } from '../renderer/slotHelpers.js'
 import { getMapThemeVars } from '../../config/mapTheme.js'
-
-// im-o-app--exclusive-control-{pluginId}, or im-o-app--exclusive-control-{pluginId}--{name} when
-// the plugin passed a name, for the most recent claim only.
-const getExclusiveControlClass = (exclusiveControl) => {
-  const top = exclusiveControl[exclusiveControl.length - 1] // NOSONAR, .length - 1 used instead of .at(-1) for wider browser support
-  if (!top) {
-    return null
-  }
-  const suffix = top.name ? '--' + top.name : ''
-  return `im-o-app--exclusive-control-${top.pluginId}${suffix}`
-}
+import { getApplicationModeClass, selectApplicationModes } from '../renderer/applicationModes.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Layout = () => {
-  const { id, mapLabel, mapHintText } = useConfig()
-  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, exclusiveControl, isFullscreen, openPanels, panelConfig } = useApp()
+  const appConfig = useConfig()
+  const { id, mapLabel, mapHintText } = appConfig
+  const appState = useApp()
+  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, isFullscreen, openPanels, panelConfig } = appState
   const { mapStyle } = useMap()
   const showModalBackdrop = hasOpenModalPanel(openPanels ?? {}, panelConfig ?? {}, breakpoint)
 
   useLayoutMeasurements()
   useFocusVisible()
+  useApplicationModeFocus()
 
   return (
     <div
@@ -45,7 +39,7 @@ export const Layout = () => {
         `im-o-app--${interfaceType}`,
         `im-o-app--${isFullscreen ? 'fullscreen' : 'inline'}`,
         `im-o-app--${mapStyle?.appColorScheme || preferredColorScheme}-app`,
-        getExclusiveControlClass(exclusiveControl)
+        getApplicationModeClass(selectApplicationModes(appState, appConfig))
       ].filter(Boolean).join(' ')}
       style={{ backgroundColor: mapStyle?.backgroundColor || undefined, ...getMapThemeVars(mapStyle) }}
       ref={layoutRefs.appContainerRef}

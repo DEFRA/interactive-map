@@ -89,22 +89,6 @@ Array of dataset configurations to render on the map. See [Dataset configuration
 
 ---
 
-### `includeModes`
-
-**Type:** `string[]`
-
-When set, the plugin only initialises when the app is in one of the specified modes.
-
----
-
-### `excludeModes`
-
-**Type:** `string[]`
-
-When set, the plugin does not initialise when the app is in one of the specified modes.
-
----
-
 ## Dataset configuration
 
 Each entry in the `datasets` array describes one data source and how it should be rendered.

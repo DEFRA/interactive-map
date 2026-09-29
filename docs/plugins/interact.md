@@ -26,20 +26,6 @@ Options are passed to the factory function when creating the plugin.
 
 ---
 
-### `includeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin only renders when the app is in one of these modes.
-
----
-
-### `excludeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin does not render when the app is in one of these modes.
-
----
-
 ### `interactionModes`
 **Type:** `Array<'selectMarker' | 'selectFeature' | 'placeMarker'>`
 **Default:** `['selectMarker']`

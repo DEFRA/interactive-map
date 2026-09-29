@@ -17,39 +17,10 @@ export const resolveTargetSlot = (bpConfig, breakpoint) => {
 }
 
 /**
- * Whether exclusive control hides an item: true when any claim in the stack that has a keep list
- * neither lists one of the item's ids nor belongs to the item's own plugin (a claiming plugin's own
- * items always stay). Claims without a keep list (e.g. search's) hide nothing here — that plugin's
- * own CSS does. Items are hidden with CSS, never unmounted, so their state survives.
- *
- * @param {Array<{ pluginId: string, keep: string[] | null }>} [exclusiveControl] - The claim stack.
- * @param {{ ids: string[], pluginId?: string }} item - The item's id(s) and owning plugin, if any.
- * @returns {boolean}
- */
-export const isHiddenByExclusiveControl = (exclusiveControl, { ids, pluginId }) =>
-  (exclusiveControl ?? []).some(claim =>
-    claim.keep && claim.pluginId !== pluginId && !ids.some(id => claim.keep.includes(id))
-  )
-
-/**
- * Checks whether the current application mode permits an item to be shown,
- * based on its includeModes and excludModes configuration.
- */
-export const isModeAllowed = (config, mode) => {
-  if (config.includeModes && !config.includeModes.includes(mode)) {
-    return false
-  }
-  if (config.excludeModes?.includes(mode)) {
-    return false
-  }
-  return true
-}
-
-/**
  * Checks whether a control should be visible based on breakpoint,
- * mode, fullscreen, and slot constraints.
+ * fullscreen, and slot constraints.
  */
-export const isControlVisible = (control, { breakpoint, mode, isFullscreen }) => {
+export const isControlVisible = (control, { breakpoint, isFullscreen }) => {
   const bpConfig = control[breakpoint]
   if (!bpConfig) {
     return false
@@ -57,9 +28,6 @@ export const isControlVisible = (control, { breakpoint, mode, isFullscreen }) =>
   // A control may also target a panel's body directly via the `<panelId>-panel`
   // slot convention (mirrors the `<buttonId>-button` convention panels already use).
   if (!allowedSlots.control.includes(bpConfig.slot) && !bpConfig.slot?.endsWith('-panel')) {
-    return false
-  }
-  if (!isModeAllowed(control, mode)) {
     return false
   }
   if (control.inline === false && !isFullscreen) {
@@ -77,16 +45,13 @@ export const isConsumerHtml = (config) => {
 }
 
 /**
- * Whether a panel is eligible for a target slot (slot type, mode, inline/fullscreen) —
+ * Whether a panel is eligible for a target slot (slot type, inline/fullscreen) —
  * independent of open state and modal exclusivity (see getAllowedModalPanelId). `slot`, if
  * given, also requires an exact match to the panel's resolved targetSlot.
  */
-export const isPanelSlotEligible = (config, { targetSlot, slot, mode, isFullscreen }) => {
+export const isPanelSlotEligible = (config, { targetSlot, slot, isFullscreen }) => {
   const isNextToButton = targetSlot.endsWith('-button')
   if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
-    return false
-  }
-  if (!isModeAllowed(config, mode)) {
     return false
   }
   if (config.inline === false && !isFullscreen) {

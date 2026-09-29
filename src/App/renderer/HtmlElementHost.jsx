@@ -1,8 +1,11 @@
 // src/App/renderer/HtmlElementHost.jsx
 import React, { useRef, useLayoutEffect, useMemo } from 'react'
 import { useApp } from '../store/appContext.js'
+import { stringToKebab } from '../../utils/stringToKebab.js'
 import { Panel } from '../components/Panel/Panel.jsx'
-import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, isHiddenByExclusiveControl } from './slotHelpers.js'
+import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
+import { isHiddenByApplicationMode, selectApplicationModes } from './applicationModes.js'
+import { useConfig } from '../store/configContext.js'
 
 /**
  * Maps slot names to their corresponding layout refs.
@@ -82,20 +85,20 @@ export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, 
  * The Panel component stays mounted for the lifetime of the registration.
  * DOM projection moves it between slots; CSS hides it when closed.
  */
-const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen, allowedModalPanelId, appState }) => {
+const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen, allowedModalPanelId, appState, appConfig }) => {
   const panelRootRef = useRef(null)
-  const { breakpoint, mode, isFullscreen, layoutRefs } = appState
+  const { breakpoint, isFullscreen, layoutRefs } = appState
 
   const bpConfig = config[breakpoint]
   const targetSlot = bpConfig ? resolveTargetSlot(bpConfig, breakpoint) : null
 
   // Same eligibility/modal-exclusivity rules as mapPanels.js (see slotHelpers.js), combined into
   // one boolean since isVisible alone decides whether useDomProjection shows it.
-  const isEligible = Boolean(bpConfig && targetSlot && isPanelSlotEligible(config, { targetSlot, mode, isFullscreen }))
+  const isEligible = Boolean(bpConfig && targetSlot && isPanelSlotEligible(config, { targetSlot, isFullscreen }))
   const isAllowedModal = !bpConfig?.modal || panelId === allowedModalPanelId
-  // Modal panels are never hidden by exclusive control, so focus is never trapped in a hidden one
-  const isExclusiveHidden = !bpConfig?.modal && isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [panelId], pluginId: config.pluginId })
-  const isVisible = isOpen && isEligible && isAllowedModal && !isExclusiveHidden
+  // Modal panels are never hidden by an application mode, so focus is never trapped in a hidden one
+  const isModeHidden = !bpConfig?.modal && isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), [panelId])
+  const isVisible = isOpen && isEligible && isAllowedModal && !isModeHidden
 
   useDomProjection(panelRootRef, targetSlot, isVisible, layoutRefs, breakpoint)
 
@@ -117,14 +120,14 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen,
  * Persistent wrapper for a consumer HTML control.
  * The control stays mounted for the lifetime of the registration.
  */
-const PersistentControl = ({ control, appState }) => {
+const PersistentControl = ({ control, appState, appConfig }) => {
   const wrapperRef = useRef(null)
-  const { breakpoint, mode, isFullscreen, layoutRefs, openPanels } = appState
+  const { breakpoint, isFullscreen, layoutRefs, openPanels } = appState
 
   const bpConfig = control[breakpoint]
-  // Exclusive control hides it by the same display toggle, so it stays mounted either way
-  const isVisible = isControlVisible(control, { breakpoint, mode, isFullscreen }) &&
-    !isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [control.id], pluginId: control.pluginId })
+  // An application mode hides it by the same display toggle, so it stays mounted either way
+  const isVisible = isControlVisible(control, { breakpoint, isFullscreen }) &&
+    !isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), [control.id])
   const targetSlot = bpConfig?.slot || null
 
   // A control targeting a panel's body (`<panelId>-panel`) needs its DOM anchor re-resolved
@@ -138,7 +141,7 @@ const PersistentControl = ({ control, appState }) => {
   return (
     <div
       ref={wrapperRef}
-      className='im-c-control'
+      className={`im-c-control im-c-control--${stringToKebab(control.id)}`}
       style={{ display: 'none' }}
       dangerouslySetInnerHTML={innerHtml}
     />
@@ -152,6 +155,7 @@ const PersistentControl = ({ control, appState }) => {
  */
 export const HtmlElementHost = () => {
   const appState = useApp()
+  const appConfig = useConfig()
   const { panelConfig = {}, controlConfig = {}, openPanels = {}, breakpoint } = appState
 
   // Find consumer HTML panels
@@ -188,6 +192,7 @@ export const HtmlElementHost = () => {
           focusOnOpen={openPanels[panelId]?.focusOnOpen}
           allowedModalPanelId={allowedModalPanelId}
           appState={appState}
+          appConfig={appConfig}
         />
       ))}
       {htmlControls.map(control => (
@@ -195,6 +200,7 @@ export const HtmlElementHost = () => {
           key={control.id}
           control={control}
           appState={appState}
+          appConfig={appConfig}
         />
       ))}
     </>

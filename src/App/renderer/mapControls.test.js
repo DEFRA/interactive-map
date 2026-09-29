@@ -21,7 +21,6 @@ describe('mapControls', () => {
     jest.clearAllMocks()
     defaultAppState = {
       breakpoint: 'desktop',
-      mode: 'view',
       isFullscreen: true,
       controlConfig: {},
       pluginRegistry: {
@@ -40,8 +39,8 @@ describe('mapControls', () => {
 
   it('filters controls by slot and allowedSlots', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['view'] },
-      ctrl2: { id: 'ctrl2', desktop: { slot: 'footer', order: 2 }, includeModes: ['view'] } // filtered out
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 } },
+      ctrl2: { id: 'ctrl2', desktop: { slot: 'footer', order: 2 } } // filtered out
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result.map(c => c.id)).toEqual(['ctrl1'])
@@ -49,15 +48,7 @@ describe('mapControls', () => {
 
   it('filters out controls missing breakpoint config', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', mobile: { slot: 'header', order: 1 }, includeModes: ['view'] }
-    })
-    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
-    expect(result).toEqual([])
-  })
-
-  it('filters by includeModes whitelist', () => {
-    defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['edit'] }
+      ctrl1: { id: 'ctrl1', mobile: { slot: 'header', order: 1 } }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result).toEqual([])
@@ -87,18 +78,10 @@ describe('mapControls', () => {
     expect(result.map(c => c.id)).toEqual(['ctrl1'])
   })
 
-  it('filters by excludeModes', () => {
-    defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, excludeModes: ['view'] }
-    })
-    const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
-    expect(result).toEqual([])
-  })
-
   it('maps plugin controls to wrapped component with correct order', () => {
     const renderFn = () => <div>Control</div>
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 5 }, render: renderFn, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 5 }, render: renderFn }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].order).toBe(5)
@@ -110,7 +93,7 @@ describe('mapControls', () => {
 
   it('falls back to order 0 if order is missing', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => <div />, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => <div /> }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].order).toBe(0)
@@ -118,48 +101,56 @@ describe('mapControls', () => {
 
   it('renders plugin HTML controls with dangerouslySetInnerHTML', () => {
     defaultAppState.controlConfig = ({
-      ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
+      ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>' }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].element.props.dangerouslySetInnerHTML).toEqual({ __html: '<p>Hi</p>' })
   })
 
-  it('hides an HTML control (keeping it mounted) when exclusive control doesn\'t keep it', () => {
+  it('gives an HTML control a kebab-cased id modifier, like button and control wrappers', () => {
     defaultAppState.controlConfig = ({
-      ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
+      myHtmlCtrl: { id: 'myHtmlCtrl', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>' }
+    })
+    const [item] = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
+    expect(item.element.props.className).toBe('im-c-control im-c-control--my-html-ctrl')
+  })
+
+  it('hides an HTML control (keeping it mounted) when an application mode doesn\'t show it', () => {
+    defaultAppState.controlConfig = ({
+      ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>' }
     })
     const style = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element.props.style
     expect(style()).toBeUndefined()
-    defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: [] }]
+    defaultAppState.applicationModeEntries = [{ id: 'draw', include: [], exclude: null }]
     expect(style()).toEqual({ display: 'none' })
-    defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['ctrlHtml'] }]
+    defaultAppState.applicationModeEntries = [{ id: 'draw', include: ['ctrlHtml'], exclude: null }]
     expect(style()).toBeUndefined()
   })
 
   it('gives a plugin control\'s wrapper a kebab-cased id modifier, like button wrappers', () => {
     defaultAppState.controlConfig = ({
-      scaleBar: { id: 'scaleBar', desktop: { slot: 'header' }, render: () => null, includeModes: ['view'] }
+      scaleBar: { id: 'scaleBar', desktop: { slot: 'header' }, render: () => null }
     })
     const [item] = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(item.element.props.className).toBe('im-c-control-wrapper im-c-control-wrapper--scale-bar')
   })
 
-  it('always wraps a plugin control, switching the wrapper to display: none when exclusive control hides it', () => {
+  it('always wraps a plugin control, switching the wrapper to display: none when an application mode hides it', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => null, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => null }
     })
     const wrapper = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element
     expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1', style: { display: 'contents' } })
-    defaultAppState.exclusiveControl = [{ pluginId: 'draw', name: null, keep: ['mapStyles'] }]
+    defaultAppState.applicationModeEntries = [{ id: 'draw', include: ['mapStyles'], exclude: null }]
     expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1 im-c-control-wrapper--hidden', style: { display: 'none' } })
-    // The claiming plugin's own controls stay
-    defaultAppState.exclusiveControl = [{ pluginId: 'plugin1', name: null, keep: [] }]
+    // Listed controls stay
+    defaultAppState.applicationModeEntries = [{ id: 'plugin1-mode', include: ['ctrl1'], exclude: null }]
     expect(wrapper().props.style).toEqual({ display: 'contents' })
   })
 
   it('filters out consumer HTML controls (handled by HtmlElementHost)', () => {
     defaultAppState.controlConfig = ({
-      ctrlHtml: { id: 'ctrlHtml', desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
+      ctrlHtml: { id: 'ctrlHtml', desktop: { slot: 'header' }, html: '<p>Hi</p>' }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result).toEqual([])
@@ -167,7 +158,7 @@ describe('mapControls', () => {
 
   it('handles plugin-less controls gracefully', () => {
     defaultAppState.controlConfig = ({
-      ctrl2: { id: 'ctrl2', desktop: { slot: 'header' }, render: () => <div />, includeModes: ['view'] }
+      ctrl2: { id: 'ctrl2', desktop: { slot: 'header' }, render: () => <div /> }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].element).toBeDefined()
@@ -176,7 +167,7 @@ describe('mapControls', () => {
   it('filters out controls with inline:false when not in fullscreen', () => {
     defaultAppState.isFullscreen = false
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['view'], inline: false }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, inline: false }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result).toEqual([])
@@ -185,7 +176,7 @@ describe('mapControls', () => {
   it('includes controls with inline:false when in fullscreen', () => {
     defaultAppState.isFullscreen = true
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['view'], inline: false }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, inline: false }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result.map(c => c.id)).toEqual(['ctrl1'])
@@ -194,7 +185,7 @@ describe('mapControls', () => {
   it('includes controls without inline property regardless of fullscreen state', () => {
     defaultAppState.isFullscreen = false
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 } }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result.map(c => c.id)).toEqual(['ctrl1'])
@@ -202,7 +193,7 @@ describe('mapControls', () => {
 
   it('matches a control targeting a panel-body slot via the <panelId>-panel convention', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', order: 1 }, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', order: 1 } }
     })
     const result = mapControls({ slot: 'map-styles-panel', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result.map(c => c.id)).toEqual(['ctrl1'])
@@ -210,7 +201,7 @@ describe('mapControls', () => {
 
   it('does not match a panel-body-targeting control against an unrelated slot', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', order: 1 }, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', order: 1 } }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result).toEqual([])
@@ -218,7 +209,7 @@ describe('mapControls', () => {
 
   it('passes through the tab field from the breakpoint config', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', tab: 'Styles' }, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'map-styles-panel', tab: 'Styles' } }
     })
     const result = mapControls({ slot: 'map-styles-panel', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].tab).toBe('Styles')
@@ -226,7 +217,7 @@ describe('mapControls', () => {
 
   it('leaves tab undefined when not set on the breakpoint config', () => {
     defaultAppState.controlConfig = ({
-      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 }, includeModes: ['view'] }
+      ctrl1: { id: 'ctrl1', desktop: { slot: 'header', order: 1 } }
     })
     const result = mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })
     expect(result[0].tab).toBeUndefined()

@@ -76,66 +76,6 @@ Plugin-level validation callback, called throughout the draw/edit lifecycle so y
 
 ---
 
-### `exclusiveControl`
-
-**Type:** `boolean | { keep: string[] | ((defaults: string[], context: { ids: string[] }) => string[]) }`
-**Default:** `{ keep: ['mapStyles', 'mapControls', 'scaleBar'] }`
-
-While drawing or editing, the plugin takes [exclusive control](./plugin-context.md#setexclusivecontrol) of the interface: every button, panel and control, in every slot, is hidden except the items on its keep list and draw's own buttons. Everything reappears as it was when the draw or edit mode ends. Hidden items stay mounted, so open panels keep their state and scroll position. Modal panels are never hidden.
-
-`keep` lists button, panel and control ids, and replaces the default list, so include any defaults you still want. For example, to also keep search and a button of your own:
-
-```js
-createDrawPlugin({
-  exclusiveControl: { keep: ['mapStyles', 'mapControls', 'scaleBar', 'search', 'myButton'] }
-})
-```
-
-Or to hide map styles, leave it out:
-
-```js
-createDrawPlugin({ exclusiveControl: { keep: ['mapControls', 'scaleBar'] } })
-```
-
-`keep` can also be a function, so you can adjust the defaults without repeating them. It receives a copy of the default list and `ids`, every button, panel and control id currently on the map, and returns the list to keep. It's called each time a draw or edit mode starts, so logging `ids` is a handy way to find the id you need:
-
-```js
-createDrawPlugin({
-  exclusiveControl: {
-    keep: (defaults, { ids }) => {
-      console.log(ids)
-      return [...defaults.filter(id => id !== 'scaleBar'), 'search']
-    }
-  }
-})
-```
-
-An id covers every item that shares it: `mapStyles` keeps both the map styles button and its panel, and `search` keeps both the search button and its form. If the user opens search while drawing, draw's hiding still applies to everything else.
-
-Set to `false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden:
-
-```js
-createDrawPlugin({ exclusiveControl: false })
-```
-
----
-
-### `includeModes`
-
-**Type:** `string[]`
-
-When set, the plugin only initialises when the app is in one of the specified modes.
-
----
-
-### `excludeModes`
-
-**Type:** `string[]`
-
-When set, the plugin does not initialise when the app is in one of the specified modes.
-
----
-
 ### Colour and size overrides
 
 > [!NOTE]
@@ -437,6 +377,31 @@ interactiveMap.on('draw:merge', (e) => {
   })
 })
 ```
+
+## Application mode
+
+While drawing or editing, the plugin sets the `'draw'` [application mode](../api.md#setapplicationmodeid-options), which gives the interface over to drawing: every button, panel and control, in every slot, is hidden except draw's own and these defaults:
+
+```js
+['mapStyles', 'mapControls', 'scaleBar']
+```
+
+Everything reappears as it was when the draw or edit mode ends. Hidden items stay mounted, so open panels keep their state and scroll position, and modal panels are never hidden. The app root also gets the class `im-o-app--mode-draw`.
+
+Adjust it with the [`applicationModes`](../api.md#applicationmodes) option, keyed by the mode id. For example, to also keep search and a control of your own, and hide the scale bar:
+
+```js
+new InteractiveMap('map', {
+  applicationModes: {
+    draw: { include: ['search', 'myControl'], exclude: ['scaleBar'] }
+  }
+})
+```
+
+Or set `draw: false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden.
+
+> [!NOTE]
+> The mode only changes the interface. Other plugins' own behaviour keeps running while their buttons are hidden, so disable any that shouldn't respond while drawing — for example, call `interactPlugin.disable()` on [`draw:started`](#drawstarted) and [`draw:editstart`](#draweditstart), and `interactPlugin.enable()` on [`draw:created`](#drawcreated), [`draw:edited`](#drawedited) and [`draw:cancelled`](#drawcancelled).
 
 ## Buttons and keyboard shortcuts
 

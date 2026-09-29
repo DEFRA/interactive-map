@@ -85,6 +85,28 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
   })
 
+  test('counts a display: contents wrapper as rendered when anything inside it is', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 50 }, top: { offsetTop: 15 } } })
+    // A plain element, since el()'s mocked style.setProperty would swallow the display change
+    const wrapper = document.createElement('div')
+    wrapper.style.display = 'contents'
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper, { getClientRects: () => [{}] })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '65px')
+  })
+
+  test('treats a display: contents wrapper with nothing rendered inside as hidden', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
+    // A plain element, since el()'s mocked style.setProperty would swallow the display change
+    const wrapper = document.createElement('div')
+    wrapper.style.display = 'contents'
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper)
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
+  })
+
   test('measures a top column normally when any child is rendered', () => {
     const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 50 }, top: { offsetTop: 15 } } })
     appendChild(layoutRefs.topRightColRef.current)

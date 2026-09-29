@@ -68,49 +68,48 @@ context.pluginState.dispatch({ type: 'setActive', payload: true })
 
 ---
 
-### `setExclusiveControl`
-**Type:** `(value: boolean | string | null, options?: { keep?: string[] }) => void`
+### `setApplicationMode`
+**Type:** `(id: string, options?: { include?: string[], exclude?: string[] }) => void`
 
-Available to plugin components (InitComponent, panel and control render components) as a prop.
+### `clearApplicationMode`
+**Type:** `(id: string) => void`
 
-Tells the app that your plugin has taken control of the interface, e.g. while a search form is expanded. You don't pass your plugin's id: it's added for you.
+Available to plugin components (InitComponent, panel and control render components) as props.
 
-- `setExclusiveControl(true)` adds `im-o-app--exclusive-control-{pluginId}` to the app root.
-- `setExclusiveControl('some-name')` adds `im-o-app--exclusive-control-{pluginId}--some-name` instead. The name is used as-is, so pass something class-safe.
-- `setExclusiveControl(false)` (or `null`/`undefined`) releases your claim.
+Application modes let your plugin change what the interface shows while it's in a particular state, e.g. draw while drawing or search while its form is open. Modes form a stack: `setApplicationMode(id, options)` puts a mode on top (or replaces its lists and moves it to the top if it's already set), and `clearApplicationMode(id)` removes it, so the mode underneath takes over.
 
-Only one class is ever present, for the most recent claim. Claims stack: if another plugin claims control while yours holds it, its class replaces yours, and when it releases, your class comes back. Releasing only removes your own claim, so it never affects another plugin's. Each plugin holds one claim at a time, so claiming with a new name replaces your previous one rather than stacking on it. Release in your effect's cleanup too, so a claim isn't left behind if your component unmounts.
+While a mode is the most recently set active mode, the app root gets `im-o-app--mode-{id}`. What's hidden depends on its lists:
 
-Your plugin's own CSS decides what to hide in response, so it can pick what suits its focus behaviour. For example, it could use `opacity: 0` to keep hidden buttons in the tab order, or `display: none` to free up their space.
+- **No lists** — nothing is hidden; your CSS can respond to the class instead (as search does).
+- **`include`** — only the listed buttons, panels and controls stay visible. Use this to take over the interface, and list your own items too (e.g. draw adds its own button ids).
+- **`exclude`** — the listed ones are hidden and everything else stays.
 
 ```js
-// Claim while expanded; release when collapsed or unmounted
+// Enter the mode for as long as your plugin is in that state, and leave it on unmount too
 useLayoutEffect(() => {
-  setExclusiveControl(isExpanded)
-  return () => setExclusiveControl(false)
-}, [isExpanded])
+  if (!isDrawing) {
+    return undefined
+  }
+  // buttonConfig (a prop) holds your plugin's own buttons, so listing its keys keeps them visible
+  setApplicationMode('my-plugin', { include: ['mapStyles', 'mapControls', ...Object.keys(buttonConfig)] })
+  return () => clearApplicationMode('my-plugin')
+}, [isDrawing])
 ```
 
+- Use your plugin's id as the mode id, or as a prefix for several modes (e.g. `'draw-polygon'`).
+- One id can name several items, e.g. `mapStyles` is both the map styles button and its panel.
+- Hidden items are hidden with `display: none`, not removed, so their state, scroll position and focus-return targets survive, and they reappear as they were when the mode ends. If focus was on something that's hidden, it moves to the map.
+- Modal panels are never hidden, so focus can't get trapped in a hidden one.
+- If several modes are active, an item only shows if every one of them allows it.
+- The host has the final say: its [`applicationModes`](../api.md#applicationmodes) option can add to, remove from or disable your mode. Document your mode's id and default lists so they can.
+- Modes only change the interface. Your plugin's own behaviour, and other plugins', carries on as normal.
+
+Use `include` for a mode the user stays in until they end it (like drawing), where hidden items shouldn't be reachable with Tab. Use no lists, and hide things with your own CSS, when hidden items must stay focusable — for example if your UI closes when focus leaves it, as search does, so Tab can still move on to the next item:
+
 ```scss
-.im-o-app--exclusive-control-my-plugin {
+.im-o-app--mode-my-plugin {
   .im-o-app__right .im-c-button-wrapper {
-    display: none;
+    opacity: 0;
   }
 }
 ```
-
-#### Hiding everything else
-
-To take over the whole interface, pass a `keep` list of ids. While your claim holds, core hides every button, panel and control, in every slot, except those whose id is listed and your own plugin's items. You don't need any CSS:
-
-```js
-setExclusiveControl(isActive, { keep: ['mapStyles', 'mapControls', 'scaleBar'] })
-```
-
-- One id can cover several items, e.g. `mapStyles` is both the map styles button and its panel.
-- Hidden items are hidden with `display: none`, not removed, so their state, scroll position and focus-return targets survive, and they reappear as they were when your claim is released.
-- Modal panels are never hidden, so focus can't get trapped in a hidden one.
-- If several claims with a `keep` list are active, an item only shows if every one of them allows it.
-- Without `keep`, core hides nothing, and your CSS decides what to hide in response to your class (as in the examples above).
-
-Use `keep` for a mode the user stays in until they end it (like drawing), where hidden items shouldn't be reachable with Tab. Leave it out and hide things with your own CSS when hidden items must stay focusable, for example if your UI closes when focus leaves it, as search does, so Tab can still move on to the next item.

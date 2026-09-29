@@ -1,5 +1,5 @@
 // src/core/renderers/pluginWrapper.js
-import { useCallback, useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
@@ -48,13 +48,20 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
       const mapState = useMap()
       const services = useService()
       const pluginState = usePlugin(pluginId)
-      // Bound to this plugin's id so authors never pass it: true claims control, a string claims it
-      // with a name (--{name} class suffix), anything falsy releases it. options.keep, if given, has
-      // core hide every button, panel and control not listed (or not this plugin's own) meanwhile.
-      const setExclusiveControl = useCallback((value, { keep = null } = {}) => appState.dispatch({
-        type: 'SET_EXCLUSIVE_CONTROL',
-        payload: { pluginId, name: typeof value === 'string' ? value : null, keep, active: !!value }
-      }), [appState.dispatch])
+      // Created once per mount, reading dispatch through a ref, so effects can depend on them without
+      // re-running.
+      const dispatchRef = useRef(appState.dispatch)
+      dispatchRef.current = appState.dispatch
+      const applicationModeApiRef = useRef(null)
+      if (!applicationModeApiRef.current) {
+        applicationModeApiRef.current = {
+          setApplicationMode: (id, { include = null, exclude = null } = {}) =>
+            dispatchRef.current({ type: 'SET_APPLICATION_MODE', payload: { id, include, exclude } }),
+          clearApplicationMode: (id) =>
+            dispatchRef.current({ type: 'CLEAR_APPLICATION_MODE', payload: id })
+        }
+      }
+      const { setApplicationMode, clearApplicationMode } = applicationModeApiRef.current
 
       return (
         <Component
@@ -67,7 +74,8 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
           services={services}
           mapProvider={appConfig.mapProvider}
           iconRegistry={getIconRegistry()}
-          setExclusiveControl={setExclusiveControl}
+          setApplicationMode={setApplicationMode}
+          clearApplicationMode={clearApplicationMode}
           buttonConfig={useMemo(() => Object.fromEntries(
             Object.entries(appState.buttonConfig).filter(
               ([_, btn]) => btn.pluginId === pluginId

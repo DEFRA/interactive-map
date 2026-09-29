@@ -114,22 +114,34 @@
  * @property {Object} [services]
  * Core services (announce, reverseGeocode, closeApp, etc.).
  *
- * @property {(value?: boolean | string | null, options?: ExclusiveControlOptions) => void} [setExclusiveControl]
- * Plugin components only. Claims (true, or a string name) or releases (falsy) exclusive control of
- * the interface for this plugin, adding im-o-app--exclusive-control-{pluginId}[--{name}] to the app
- * root while its claim is the most recent. The plugin id is bound automatically.
+ * @property {(id: string, options?: ApplicationModeOptions) => void} [setApplicationMode]
+ * Plugin components only. Enters an application mode, putting it on top of the stack, or replaces its
+ * lists if it's already set. See ApplicationModeOptions.
+ *
+ * @property {(id: string) => void} [clearApplicationMode]
+ * Plugin components only. Leaves an application mode, so the mode underneath (if any) takes over.
  */
 
 /**
- * Options for a plugin's exclusive-control claim.
+ * What an application mode shows. The mode adds `im-o-app--mode-{id}` to the app root while it's the
+ * most recently set active mode. Hidden items stay mounted (display: none), so their state survives,
+ * and modal panels are never hidden. Without either list, nothing is hidden.
  *
- * @typedef {Object} ExclusiveControlOptions
+ * @typedef {Object} ApplicationModeOptions
  *
- * @property {string[] | null} [keep=null]
- * When given, core hides every button, panel and control, in every slot, whose id isn't listed and
- * which doesn't belong to the claiming plugin, until the claim is released. Hidden items stay
- * mounted (display: none), so their state survives. Modal panels are never hidden. Without keep,
- * core hides nothing and the plugin's own CSS decides what to hide.
+ * @property {string[] | null} [include]
+ * Only these buttons, panels and controls (by id) stay visible. List your own items too.
+ *
+ * @property {string[] | null} [exclude]
+ * These buttons, panels and controls (by id) are hidden.
+ */
+
+/**
+ * The host's adjustments to application modes, keyed by mode id. A mode's include appends items to
+ * the lists it was set with (bringing back any it excluded); exclude removes items; false disables the
+ * mode entirely (no class, nothing hidden), whoever sets it.
+ *
+ * @typedef {Object<string, ApplicationModeOptions | false>} ApplicationModesConfig
  */
 
 /**
@@ -776,6 +788,10 @@
  *
  * @property {'light' | 'dark'} [appColorScheme='light']
  * Application colour scheme.
+ *
+ * @property {ApplicationModesConfig} [applicationModes]
+ * Adjusts or disables application modes, keyed by mode id, e.g. `{ draw: { include: ['search'] } }`.
+ * Applied whenever that mode is active, whoever sets it, and has the final say over the mode's own lists.
  *
  * @property {boolean} [autoColorScheme=false]
  * Whether to automatically determine the colour scheme based on system preferences.

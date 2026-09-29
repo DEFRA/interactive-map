@@ -51,8 +51,8 @@ export const MAP_SIZE_SCALES = {
   large: 2
 }
 
-// Button, panel and control ids that stay visible while draw has exclusive control; everything else
-// in the interface is hidden. Hosts replace this list with exclusiveControl: { keep: [...] }, or
-// adjust it with a keep function that receives it. Draw's own buttons are always kept (core never
-// hides a claiming plugin's own items).
-export const EXCLUSIVE_CONTROL_KEEP = ['mapStyles', 'mapControls', 'scaleBar']
+// The application mode draw enters while drawing or editing, and the button, panel and control ids
+// it keeps visible alongside its own buttons; everything else in the interface is hidden meanwhile.
+// Hosts adjust or disable it via the applicationModes config, keyed by this id.
+export const APPLICATION_MODE_ID = 'draw'
+export const APPLICATION_MODE_INCLUDE = ['mapStyles', 'mapControls', 'scaleBar']

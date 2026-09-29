@@ -2,15 +2,16 @@
 import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { allowedSlots } from './slots.js'
-import { isConsumerHtml, isHiddenByExclusiveControl } from './slotHelpers.js'
+import { isConsumerHtml } from './slotHelpers.js'
+import { isHiddenByApplicationMode, selectApplicationModes } from './applicationModes.js'
 import { stringToKebab } from '../../utils/stringToKebab.js'
 
 /**
  * Map controls for a given slot and app state.
  * Returns an array of control descriptors.
  */
-export function mapControls ({ slot, appState, evaluateProp }) {
-  const { breakpoint, mode, pluginRegistry, controlConfig } = appState
+export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
+  const { breakpoint, pluginRegistry, controlConfig } = appState
 
   return Object.values(controlConfig)
     .filter(control => { // NOSONAR, extracting to a helper wouldn't necessarily improve readability
@@ -32,16 +33,14 @@ export function mapControls ({ slot, appState, evaluateProp }) {
       // A control may also target a panel's body directly via the `<panelId>-panel`
       // slot convention (mirrors the `<buttonId>-button` convention panels already use).
       const slotAllowed = allowedSlots.control.includes(bpConfig.slot) || bpConfig.slot?.endsWith('-panel')
-      const inModeWhitelist = control.includeModes?.includes(mode) ?? true
-      const inExcludeModes = control.excludeModes?.includes(mode) ?? false
 
       // Skip controls marked as inline:false when not in fullscreen mode
       if (control.inline === false && !appState.isFullscreen) {
         return false
       }
 
-      // Only include controls allowed in slot and current mode
-      return inModeWhitelist && !inExcludeModes && bpConfig.slot === slot && slotAllowed
+      // Only include controls allowed in this slot
+      return bpConfig.slot === slot && slotAllowed
     })
     .map(control => {
       // Detect plugin owning this control
@@ -50,7 +49,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
       )
 
       const pluginId = plugin?.id
-      const isHidden = isHiddenByExclusiveControl(appState.exclusiveControl, { ids: [control.id], pluginId })
+      const isHidden = isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), [control.id])
 
       let element
 
@@ -58,7 +57,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
       if (control.html) {
         element = (
           <div
-            className='im-c-control'
+            className={`im-c-control im-c-control--${stringToKebab(control.id)}`}
             key={control.id}
             style={isHidden ? { display: 'none' } : undefined}
             dangerouslySetInnerHTML={{ __html: evaluateProp(control.html, pluginId) }}
@@ -71,7 +70,7 @@ export function mapControls ({ slot, appState, evaluateProp }) {
           pluginConfig: plugin?.config
         })
         // Core's own element around the plugin's control, as MapButton's wrapper is for buttons and
-        // Panel's root for panels — so hiding it (exclusive control) never remounts it: display:
+        // Panel's root for panels — so hiding it (application mode) never remounts it: display:
         // contents leaves layout untouched while shown, display: none hides it with its state intact.
         // --{id} identifies it (as im-c-button-wrapper--{id} does); --hidden lets slot CSS ignore it.
         const wrapperClassName = [

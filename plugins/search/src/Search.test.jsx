@@ -70,7 +70,8 @@ describe('Search component', () => {
       mapState: { markers: {} },
       services: {},
       mapProvider: { crs: 'EPSG:3857' },
-      setExclusiveControl: jest.fn()
+      setApplicationMode: jest.fn(),
+      clearApplicationMode: jest.fn()
     }
   })
 
@@ -104,15 +105,27 @@ describe('Search component', () => {
     expect(container.querySelector('.im-c-search')).not.toHaveClass('im-c-search--collapsed')
   })
 
-  it('claims exclusive control as search while expanded', () => {
+  it('enters the search application mode while expanded', () => {
     props.pluginState.isExpanded = true
     render(<Search {...props} />)
-    expect(props.setExclusiveControl).toHaveBeenCalledWith(true)
+    expect(props.setApplicationMode).toHaveBeenCalledWith('search')
   })
 
-  it('releases exclusive control when collapsed', () => {
+  it('does not enter the search application mode while collapsed', () => {
     render(<Search {...props} />)
-    expect(props.setExclusiveControl).toHaveBeenCalledWith(false)
+    expect(props.setApplicationMode).not.toHaveBeenCalled()
+  })
+
+  it('leaves the search application mode on collapse and on unmount', () => {
+    props.pluginState.isExpanded = true
+    const { rerender, unmount } = render(<Search {...props} />)
+    rerender(<Search {...props} pluginState={{ ...props.pluginState, isExpanded: false }} />)
+    expect(props.clearApplicationMode).toHaveBeenCalledWith('search')
+
+    props.clearApplicationMode.mockClear()
+    rerender(<Search {...props} />)
+    unmount()
+    expect(props.clearApplicationMode).toHaveBeenCalledWith('search')
   })
 
   it('does not collapse the wrapper in default-expanded mode', () => {

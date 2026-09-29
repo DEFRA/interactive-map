@@ -1,5 +1,4 @@
 // src/App/store/appActionsMap.js
-import { getInitialOpenPanels } from '../../config/getInitialOpenPanels.js'
 import { getIsFullscreen } from '../../utils/getIsFullscreen.js'
 import { shallowEqual } from '../../utils/shallowEqual.js'
 import { registerButton as registerButtonFn, addButton as addButtonFn } from '../registry/buttonRegistry.js'
@@ -24,28 +23,6 @@ function buildOpenPanels (state, panelId, breakpoint, props, focusOnOpen) {
     ...(isExclusiveNonModal ? {} : filteredPanels),
     ...(isModal ? state.openPanels : {}),
     [panelId]: { props, ...(focusOnOpen !== undefined && { focusOnOpen }) }
-  }
-}
-
-const setMode = (state, payload) => {
-  const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
-
-  return {
-    ...state,
-    mode: payload,
-    previousMode: state.mode,
-    openPanels: getInitialOpenPanels(panelConfig, state.breakpoint, state.openPanels)
-  }
-}
-
-const revertMode = (state) => {
-  const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
-
-  return {
-    ...state,
-    mode: state.previousMode,
-    previousMode: state.mode,
-    openPanels: getInitialOpenPanels(panelConfig, state.breakpoint, state.openPanels)
   }
 }
 
@@ -145,25 +122,24 @@ const restorePreviousPanels = (state) => {
   }
 }
 
-const isSameKeep = (a, b) => a === b || (!!a && !!b && a.length === b.length && a.every((id, i) => id === b[i]))
+const isSameList = (first, second) =>
+  first === second || (!!first && !!second && first.length === second.length && first.every((id, i) => id === second[i]))
 
-// A stack of plugins' claims on the interface, most recent last; Layout adds a single
-// im-o-app--exclusive-control-{pluginId}[--{name}] class for the top claim. A claim with a keep list
-// also has the slot renderers hide every item not on it (see isHiddenByExclusiveControl); a claim
-// with keep: null hides nothing itself. Claiming moves the plugin's claim to the top; releasing
-// removes only its own, so an earlier claim underneath (e.g. draw's, while search was open) comes
-// back on its own.
-const setExclusiveControl = (state, { pluginId, name = null, keep = null, active }) => {
-  const stack = state.exclusiveControl
-  const top = stack[stack.length - 1] // NOSONAR, .length - 1 used instead of .at(-1) for wider browser support
-  if (active && top?.pluginId === pluginId && top.name === name && isSameKeep(top.keep, keep)) {
+// Application modes are a stack of { id, include, exclude }, most recently set last (see
+// applicationModes.js for what they show). Setting a mode replaces any existing entry for that id
+// and moves it to the end; clearing removes it, whoever set it, so the mode underneath takes over.
+const setApplicationMode = (state, { id, include = null, exclude = null }) => {
+  const entries = state.applicationModeEntries
+  const last = entries[entries.length - 1] // NOSONAR, .length - 1 used instead of .at(-1) for wider browser support
+  if (last?.id === id && isSameList(last.include, include) && isSameList(last.exclude, exclude)) {
     return state
   }
-  const others = stack.filter(claim => claim.pluginId !== pluginId)
-  if (!active && others.length === stack.length) {
-    return state
-  }
-  return { ...state, exclusiveControl: active ? [...others, { pluginId, name, keep }] : others }
+  return { ...state, applicationModeEntries: [...entries.filter(entry => entry.id !== id), { id, include, exclude }] }
+}
+
+const clearApplicationMode = (state, id) => {
+  const remaining = state.applicationModeEntries.filter(entry => entry.id !== id)
+  return remaining.length === state.applicationModeEntries.length ? state : { ...state, applicationModeEntries: remaining }
 }
 
 const toggleNudgeStep = (state) => {
@@ -394,18 +370,17 @@ export const actionsMap = {
   SET_MEDIA: setMedia,
   SET_HYBRID_FULLSCREEN: setHybridFullscreen,
   SET_INTERFACE_TYPE: setInterfaceType,
-  SET_MODE: setMode,
   PLUGINS_EVALUATED: setPluginsEvaluated,
   CLEAR_PLUGINS_EVALUATED: clearPluginsEvaluated,
   SET_LISTBOX_ACTIVE: setListboxActive,
   SET_SAFE_ZONE_INSET: setSafeZoneInset,
-  REVERT_MODE: revertMode,
   OPEN_PANEL: openPanel,
   CLOSE_PANEL: closePanel,
   CLOSE_ALL_PANELS: closeAllPanels,
   RESTORE_PREVIOUS_PANELS: restorePreviousPanels,
   TOGGLE_APP_VISIBLE: toggleAppVisible,
-  SET_EXCLUSIVE_CONTROL: setExclusiveControl,
+  SET_APPLICATION_MODE: setApplicationMode,
+  CLEAR_APPLICATION_MODE: clearApplicationMode,
   TOGGLE_NUDGE_STEP: toggleNudgeStep,
   TOGGLE_BUTTON_DISABLED: toggleButtonDisabled,
   TOGGLE_BUTTON_HIDDEN: toggleButtonHidden,
