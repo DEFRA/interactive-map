@@ -28,13 +28,7 @@ The map component also requires a **map provider** — a separate library that h
 
 ### MapLibre provider (recommended)
 
-**ESM:** `maplibre-gl` is a peer dependency, install it separately:
-
-```shell
-npm install maplibre-gl
-```
-
-**UMD:** `maplibre-gl` is bundled — no separate install needed.
+`maplibre-gl` is installed with this package (ESM) or bundled (UMD) — no separate install needed.
 
 ### ESRI provider (optional)
 
@@ -53,6 +47,69 @@ npm install ol proj4
 ```
 
 **UMD:** `ol` and `proj4` are bundled — no separate install needed.
+
+### Bundler configuration (ESM)
+
+Some plugins work with more than one map provider. They load an adapter for your provider at runtime, and each adapter imports its own map engine. Only the adapter for your provider is ever loaded in the browser, but your bundler still builds every adapter, so it fails to resolve the engines you haven't installed:
+
+```
+Module not found: Error: Can't resolve 'ol/layer/Vector.js'
+```
+
+Tell your bundler to ignore the engines for the providers you don't use. Plugins that need this say so at the top of their documentation.
+
+| Provider | Ignore | Pattern |
+|---|---|---|
+| MapLibre | `ol`, `proj4`, `@arcgis/core` | `/^(ol\|proj4\|@arcgis\/core)(\/\|$)/` |
+| OpenLayers | `@arcgis/core` | `/^@arcgis\/core(\/\|$)/` |
+| ESRI | `ol`, `proj4` | `/^(ol\|proj4)(\/\|$)/` |
+
+The examples below are for the MapLibre provider. For another provider, swap in its pattern.
+
+**Webpack**
+
+```js
+import webpack from 'webpack'
+
+export default {
+  // ...
+  plugins: [
+    new webpack.IgnorePlugin({ resourceRegExp: /^(ol|proj4|@arcgis\/core)(\/|$)/ })
+  ]
+}
+```
+
+**Vite** (production builds; the dev server only warns)
+
+```js
+export default {
+  build: {
+    rollupOptions: { // rolldownOptions in Vite 8+
+      external: [/^(ol|proj4|@arcgis\/core)(\/|$)/]
+    }
+  }
+}
+```
+
+**Rollup**
+
+```js
+export default {
+  // ...
+  external: [/^(ol|proj4|@arcgis\/core)(\/|$)/]
+}
+```
+
+**esbuild**
+
+```js
+await esbuild.build({
+  // ...
+  external: ['ol', 'ol/*', 'proj4', '@arcgis/core', '@arcgis/core/*']
+})
+```
+
+The ignored engines are only used by adapters for other providers, which are never loaded, so nothing is missing at runtime. If you switch provider, update the pattern to match.
 
 ## Basic usage
 
