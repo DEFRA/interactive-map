@@ -51,8 +51,5 @@ export const MAP_SIZE_SCALES = {
   large: 2
 }
 
-// The application mode draw enters while drawing or editing, and the button, panel and control ids
-// it keeps visible alongside its own buttons; everything else in the interface is hidden meanwhile.
-// Hosts adjust or disable it via the applicationModes config, keyed by this id.
+// The application mode draw enters while drawing or editing (declared in manifest.js)
 export const APPLICATION_MODE_ID = 'draw'
-export const APPLICATION_MODE_INCLUDE = ['mapStyles', 'mapControls', 'scaleBar']

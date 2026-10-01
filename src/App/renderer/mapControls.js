@@ -49,7 +49,7 @@ export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
       )
 
       const pluginId = plugin?.id
-      const isHidden = isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), [control.id])
+      const isHidden = isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), { ids: [control.id], pluginId })
 
       let element
 

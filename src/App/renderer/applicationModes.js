@@ -1,15 +1,19 @@
 // src/App/renderer/applicationModes.js
 
 /**
- * The two halves of the application mode data the helpers below need: the stack of modes set at
- * runtime (app state) and the consumer's fixed applicationModes option (app config).
+ * Everything the helpers below need: the stack of modes set at runtime (app state), the modes plugins
+ * declare in their manifests (via the plugin registry in app state) and the consumer's fixed
+ * applicationModes option (app config).
  *
- * @param {{ applicationModeEntries?: Array<Object> }} appState
+ * @param {{ applicationModeEntries?: Array<Object>, pluginRegistry?: Object }} appState
  * @param {{ applicationModes?: Object }} [appConfig]
- * @returns {{ entries: Array<{ id: string, include: string[] | null, exclude: string[] | null }>, config: Object }}
+ * @returns {{ entries: Array<Object>, declarations: Array<Object>, config: Object }}
  */
 export const selectApplicationModes = (appState, appConfig) => ({
   entries: appState?.applicationModeEntries ?? [],
+  declarations: (appState?.pluginRegistry?.registeredPlugins ?? []).flatMap(plugin =>
+    Object.entries(plugin.manifest?.applicationModes ?? {}).map(([id, lists]) => ({ id, pluginId: plugin.id, ...lists }))
+  ),
   config: appConfig?.applicationModes ?? {}
 })
 
@@ -38,28 +42,53 @@ export const getApplicationModeClass = (modes) => {
 
 const includesAny = (list, ids) => !!list && ids.some(id => list.includes(id))
 
+// One list combining a layer's sources (several manifests can contribute to the same mode)
+const mergeLists = (sources, key) => {
+  const lists = sources.map(source => source?.[key]).filter(Boolean)
+  return lists.length ? lists.flat() : null
+}
+
 /**
- * Whether the current application mode hides an item. The consumer's config for the mode adjusts
- * what the mode was set with, so it's checked first and wins for the items it names: exclude
- * removes, include appends. Every other item follows the mode's own lists: with include, only listed
- * items show; with exclude, listed items are hidden. Items are hidden with CSS, never unmounted, so
- * their state survives.
+ * The layers that decide the current mode, in order. The earliest layer that mentions the mode
+ * defines it: every plugin manifest that declares it (combined), else the consumer's config, else the
+ * options it was set with. Later layers only adjust it.
+ */
+const getLayers = (mode, { declarations, config }) => {
+  const manifests = declarations.filter(declaration => declaration.id === mode.id)
+  const layers = [
+    manifests.length ? { include: mergeLists(manifests, 'include'), exclude: mergeLists(manifests, 'exclude') } : null,
+    config[mode.id] || null,
+    mode.include || mode.exclude ? { include: mode.include, exclude: mode.exclude } : null
+  ].filter(Boolean)
+  return { layers, ownerIds: manifests.map(manifest => manifest.pluginId) }
+}
+
+/**
+ * Whether the current application mode hides an item. The mode's definition (its first layer) sets
+ * the starting point: with an include, only the included items and the declaring plugins' own items
+ * show; otherwise everything does. Then every layer in turn appends its include and removes its
+ * exclude, so later layers have the final say. Items are hidden with CSS, never unmounted, so their
+ * state survives.
  *
- * @param {{ entries: Array<Object>, config: Object }} modes - From selectApplicationModes.
- * @param {string[]} ids - The item's id(s); one id can name a button and its panel.
+ * @param {{ entries: Array<Object>, declarations: Array<Object>, config: Object }} modes - From selectApplicationModes.
+ * @param {{ ids: string[], pluginId?: string }} item - The item's id(s) and owning plugin, if any.
  * @returns {boolean}
  */
-export const isHiddenByApplicationMode = (modes, ids) => {
+export const isHiddenByApplicationMode = (modes, { ids, pluginId }) => {
   const currentMode = getCurrentApplicationMode(modes)
   if (!currentMode) {
     return false
   }
-  const config = modes.config[currentMode.id]
-  if (includesAny(config?.exclude, ids)) {
-    return true
-  }
-  if (includesAny(config?.include, ids)) {
-    return false
-  }
-  return (!!currentMode.include && !includesAny(currentMode.include, ids)) || includesAny(currentMode.exclude, ids)
+  const { layers, ownerIds } = getLayers(currentMode, modes)
+  const isTakeover = !!layers[0]?.include
+  let isVisible = !isTakeover || ownerIds.includes(pluginId)
+  layers.forEach(layer => {
+    if (includesAny(layer.include, ids)) {
+      isVisible = true
+    }
+    if (includesAny(layer.exclude, ids)) {
+      isVisible = false
+    }
+  })
+  return !isVisible
 }

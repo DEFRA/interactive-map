@@ -59,7 +59,7 @@ export function mapPanels ({ slot, appState, appConfig, evaluateProp }) {
     const pluginId = plugin?.id
 
     // Modal panels are never hidden by an application mode, so focus is never trapped in a hidden one
-    const isHidden = !bpConfig.modal && isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), [panelId])
+    const isHidden = !bpConfig.modal && isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), { ids: [panelId], pluginId })
 
     const html = pluginId ? evaluateProp(config.html, pluginId) : config.html
     const label = evaluateProp(config.label, pluginId)

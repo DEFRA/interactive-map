@@ -5,112 +5,146 @@ import {
   isHiddenByApplicationMode
 } from './applicationModes.js'
 
+// A mode on the stack, as setApplicationMode stores it (its lists are the call options)
 const mode = (id, lists = {}) => ({ id, include: null, exclude: null, ...lists })
-// The stack of modes set at runtime (app state) and the consumer's applicationModes option (app config)
-const modesWith = (entries, config = {}) => ({ entries, config })
+// A mode a plugin declares in its manifest
+const declared = (id, pluginId, lists = {}) => ({ id, pluginId, ...lists })
+const modesWith = ({ entries = [], declarations = [], config = {} } = {}) => ({ entries, declarations, config })
+
+// An item as the renderers describe it: its id and owning plugin (none for host-added items)
+const item = (id, pluginId) => ({ ids: [id], pluginId })
+const isHidden = (modes, target) => isHiddenByApplicationMode(modes, target)
 
 describe('selectApplicationModes', () => {
-  it('pairs the stack from app state with the applicationModes option from app config', () => {
-    const entries = [mode('draw')]
-    expect(selectApplicationModes({ applicationModeEntries: entries }, { applicationModes: { draw: false } }))
-      .toEqual({ entries, config: { draw: false } })
+  it('gathers the stack, the manifests\' declarations and the consumer\'s config', () => {
+    const appState = {
+      applicationModeEntries: [mode('draw')],
+      pluginRegistry: {
+        registeredPlugins: [
+          { id: 'draw', manifest: { applicationModes: { draw: { include: ['mapStyles'] } } } },
+          { id: 'search', manifest: {} }
+        ]
+      }
+    }
+    expect(selectApplicationModes(appState, { applicationModes: { draw: false } })).toEqual({
+      entries: [mode('draw')],
+      declarations: [declared('draw', 'draw', { include: ['mapStyles'] })],
+      config: { draw: false }
+    })
   })
 
-  it('defaults both halves when missing', () => {
-    expect(selectApplicationModes({}, undefined)).toEqual({ entries: [], config: {} })
+  it('defaults everything when missing', () => {
+    expect(selectApplicationModes({}, undefined)).toEqual({ entries: [], declarations: [], config: {} })
   })
 })
 
 describe('getCurrentApplicationMode', () => {
   it('is the top of the stack', () => {
-    expect(getCurrentApplicationMode(modesWith([mode('draw'), mode('search')]))).toEqual(mode('search'))
+    expect(getCurrentApplicationMode(modesWith({ entries: [mode('draw'), mode('search')] }))).toEqual(mode('search'))
   })
 
   it('skips a mode the consumer\'s config disables, so the one underneath is current', () => {
-    expect(getCurrentApplicationMode(modesWith([mode('search'), mode('draw')], { draw: false }))).toEqual(mode('search'))
+    expect(getCurrentApplicationMode(modesWith({ entries: [mode('search'), mode('draw')], config: { draw: false } }))).toEqual(mode('search'))
   })
 
   it('is null with an empty stack', () => {
-    expect(getCurrentApplicationMode(modesWith([]))).toBeNull()
+    expect(getCurrentApplicationMode(modesWith())).toBeNull()
   })
 })
 
 describe('getApplicationModeClass', () => {
   it('uses the current mode', () => {
-    expect(getApplicationModeClass(modesWith([mode('draw'), mode('search')]))).toBe('im-o-app--mode-search')
+    expect(getApplicationModeClass(modesWith({ entries: [mode('draw'), mode('search')] }))).toBe('im-o-app--mode-search')
   })
 
   it('is null with no current mode', () => {
-    expect(getApplicationModeClass(modesWith([]))).toBeNull()
-    expect(getApplicationModeClass(modesWith([mode('draw')], { draw: false }))).toBeNull()
+    expect(getApplicationModeClass(modesWith())).toBeNull()
+    expect(getApplicationModeClass(modesWith({ entries: [mode('draw')], config: { draw: false } }))).toBeNull()
   })
 })
 
 describe('isHiddenByApplicationMode', () => {
-  it('hides nothing with no current mode, or a mode without lists', () => {
-    expect(isHiddenByApplicationMode(modesWith([]), ['mapKey'])).toBe(false)
-    expect(isHiddenByApplicationMode(modesWith([mode('search')]), ['mapKey'])).toBe(false)
+  it('hides nothing with no current mode, or a mode without lists anywhere', () => {
+    expect(isHidden(modesWith(), item('mapKey', 'mapKey'))).toBe(false)
+    const search = modesWith({ entries: [mode('search')], declarations: [declared('search', 'search')] })
+    expect(isHidden(search, item('mapKey', 'mapKey'))).toBe(false)
   })
 
-  it('shows only included items when a mode has an include list', () => {
-    const modes = modesWith([mode('draw', { include: ['mapStyles', 'drawUndo'] })])
-    expect(isHiddenByApplicationMode(modes, ['mapStyles'])).toBe(false)
-    expect(isHiddenByApplicationMode(modes, ['drawUndo'])).toBe(false)
-    expect(isHiddenByApplicationMode(modes, ['mapKey'])).toBe(true)
+  it('applies only the current mode, not modes underneath', () => {
+    const declarations = [declared('draw', 'draw', { include: ['mapStyles'] }), declared('search', 'search')]
+    expect(isHidden(modesWith({ entries: [mode('draw'), mode('search')], declarations }), item('mapKey', 'mapKey'))).toBe(false)
+    expect(isHidden(modesWith({ entries: [mode('draw')], declarations }), item('mapKey', 'mapKey'))).toBe(true)
   })
 
-  it('shows an item if any of its ids is included', () => {
-    const modes = modesWith([mode('draw', { include: ['mapStyles'] })])
-    expect(isHiddenByApplicationMode(modes, ['zoomIn', 'mapStyles'])).toBe(false)
+  describe('a mode defined in a plugin manifest', () => {
+    const declarations = [declared('draw', 'draw', { include: ['mapStyles'] })]
+    const drawing = (overrides = {}) => modesWith({ entries: [mode('draw', overrides.call)], declarations, config: overrides.config })
+
+    it('is a takeover with an include: only included items and the declaring plugin\'s own items show', () => {
+      expect(isHidden(drawing(), item('mapStyles', 'mapStyles'))).toBe(false)
+      expect(isHidden(drawing(), item('drawUndo', 'draw'))).toBe(false)
+      expect(isHidden(drawing(), item('mapKey', 'mapKey'))).toBe(true)
+    })
+
+    it('shows an item if any of its ids is included', () => {
+      expect(isHidden(drawing(), { ids: ['zoomIn', 'mapStyles'] })).toBe(false)
+    })
+
+    it('combines every manifest that declares the mode, keeping each declaring plugin\'s own items', () => {
+      const modes = modesWith({
+        entries: [mode('draw')],
+        declarations: [...declarations, declared('draw', 'measure', { include: ['scaleBar'], exclude: ['mapStyles'] })]
+      })
+      expect(isHidden(modes, item('scaleBar', 'scaleBar'))).toBe(false)
+      expect(isHidden(modes, item('measureTool', 'measure'))).toBe(false)
+      expect(isHidden(modes, item('mapStyles', 'mapStyles'))).toBe(true)
+    })
+
+    it('lets the consumer\'s config append and remove items, without changing what it is', () => {
+      const modes = drawing({ config: { draw: { include: ['search'], exclude: ['mapStyles'] } } })
+      expect(isHidden(modes, item('search', 'search'))).toBe(false)
+      expect(isHidden(modes, item('mapStyles', 'mapStyles'))).toBe(true)
+      expect(isHidden(modes, item('mapKey', 'mapKey'))).toBe(true)
+    })
+
+    it('can\'t be turned into a takeover by the consumer\'s include', () => {
+      const search = modesWith({ entries: [mode('search')], declarations: [declared('search', 'search')], config: { search: { include: ['myControl'] } } })
+      expect(isHidden(search, item('mapKey', 'mapKey'))).toBe(false)
+    })
+
+    it('applies call options last, so they have the final say', () => {
+      const modes = drawing({ config: { draw: { include: ['search'] } }, call: { exclude: ['search'] } })
+      expect(isHidden(modes, item('search', 'search'))).toBe(true)
+      expect(isHidden(drawing({ call: { include: ['mapKey'] } }), item('mapKey', 'mapKey'))).toBe(false)
+    })
+
+    it('lets a layer\'s exclude beat its own include', () => {
+      expect(isHidden(drawing({ config: { draw: { include: ['layers'], exclude: ['layers'] } } }), item('layers', 'datasets'))).toBe(true)
+    })
   })
 
-  it('hides excluded items and nothing else when a mode has only an exclude list', () => {
-    const modes = modesWith([mode('focus', { exclude: ['search'] })])
-    expect(isHiddenByApplicationMode(modes, ['search'])).toBe(true)
-    expect(isHiddenByApplicationMode(modes, ['mapKey'])).toBe(false)
-  })
-
-  it('lets a mode\'s exclude beat its include', () => {
-    const modes = modesWith([mode('review', { include: ['layers'], exclude: ['layers'] })])
-    expect(isHiddenByApplicationMode(modes, ['layers'])).toBe(true)
-  })
-
-  describe('the consumer\'s config adjusts the mode', () => {
-    const draw = mode('draw', { include: ['mapStyles', 'scaleBar'] })
-
-    it('appends items with include', () => {
-      expect(isHiddenByApplicationMode(modesWith([draw], { draw: { include: ['search'] } }), ['search'])).toBe(false)
+  describe('a mode no manifest declares', () => {
+    it('is defined by the consumer\'s config, whose include makes it a takeover', () => {
+      const modes = modesWith({ entries: [mode('review')], config: { review: { include: ['mapStyles'] } } })
+      expect(isHidden(modes, item('mapStyles', 'mapStyles'))).toBe(false)
+      expect(isHidden(modes, item('mapKey', 'mapKey'))).toBe(true)
     })
 
-    it('removes items with exclude', () => {
-      expect(isHiddenByApplicationMode(modesWith([draw], { draw: { exclude: ['scaleBar'] } }), ['scaleBar'])).toBe(true)
+    it('is defined by its call options when there\'s no config either', () => {
+      const modes = modesWith({ entries: [mode('review', { include: ['myButton'] })] })
+      expect(isHidden(modes, item('myButton', undefined))).toBe(false)
+      expect(isHidden(modes, item('mapKey', 'mapKey'))).toBe(true)
     })
 
-    it('brings back an item the mode excluded', () => {
-      const focus = mode('focus', { exclude: ['search'] })
-      expect(isHiddenByApplicationMode(modesWith([focus], { focus: { include: ['search'] } }), ['search'])).toBe(false)
-    })
-
-    it('leaves items it doesn\'t name to the mode', () => {
-      const modes = modesWith([draw], { draw: { include: ['search'] } })
-      expect(isHiddenByApplicationMode(modes, ['mapStyles'])).toBe(false)
-      expect(isHiddenByApplicationMode(modes, ['mapKey'])).toBe(true)
-    })
-
-    it('only applies to its own mode', () => {
-      expect(isHiddenByApplicationMode(modesWith([draw], { review: { include: ['search'] } }), ['search'])).toBe(true)
-    })
-
-    it('ignores a mode it disables', () => {
-      expect(isHiddenByApplicationMode(modesWith([draw], { draw: false }), ['mapKey'])).toBe(false)
+    it('hides only excluded items when its definition has just an exclude', () => {
+      const modes = modesWith({ entries: [mode('focus')], config: { focus: { exclude: ['search'] } } })
+      expect(isHidden(modes, item('search', 'search'))).toBe(true)
+      expect(isHidden(modes, item('mapKey', 'mapKey'))).toBe(false)
     })
   })
 
-  it('applies only the current mode\'s lists, not those of modes underneath', () => {
-    const modes = modesWith([mode('draw', { include: ['mapStyles'] }), mode('search')])
-    // search is current and has no lists, so draw's include (underneath) doesn't hide anything
-    expect(isHiddenByApplicationMode(modes, ['mapKey'])).toBe(false)
-    // once search is cleared, draw is current again and its include applies
-    expect(isHiddenByApplicationMode(modesWith([mode('draw', { include: ['mapStyles'] })]), ['mapKey'])).toBe(true)
+  it('ignores a mode the consumer\'s config disables', () => {
+    const modes = modesWith({ entries: [mode('draw')], declarations: [declared('draw', 'draw', { include: [] })], config: { draw: false } })
+    expect(isHidden(modes, item('mapKey', 'mapKey'))).toBe(false)
   })
 })

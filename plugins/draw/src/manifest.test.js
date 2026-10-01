@@ -13,6 +13,12 @@ describe('manifest structure', () => {
   })
 })
 
+describe('application mode', () => {
+  test('declares the draw mode, keeping map styles, map controls and the scale bar (its own items are kept automatically)', () => {
+    expect(manifest.applicationModes).toEqual({ draw: { include: ['mapStyles', 'mapControls', 'scaleBar'] } })
+  })
+})
+
 describe('drawCancel', () => {
   test('is hidden only when there is no active mode', () => {
     expect(findButton('drawCancel').hiddenWhen({ pluginState: { mode: null } })).toBe(true)

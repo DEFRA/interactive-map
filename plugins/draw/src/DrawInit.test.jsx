@@ -252,10 +252,10 @@ describe('event attachment', () => {
 })
 
 describe('application mode', () => {
-  test('enters the draw application mode in a draw/edit mode, including its default items', async () => {
+  test('enters the draw application mode (lists come from the manifest) in a draw/edit mode', async () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
     await renderInit(props)
-    expect(props.setApplicationMode).toHaveBeenLastCalledWith('draw', { include: ['mapStyles', 'mapControls', 'scaleBar'] })
+    expect(props.setApplicationMode).toHaveBeenLastCalledWith('draw')
   })
 
   test('leaves the draw application mode when the draw/edit mode ends', async () => {

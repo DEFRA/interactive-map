@@ -3,7 +3,7 @@ import { EVENTS } from '../../../src/config/events.js'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
-import { APPLICATION_MODE_ID, APPLICATION_MODE_INCLUDE } from './defaults.js'
+import { APPLICATION_MODE_ID } from './defaults.js'
 
 // Loads the draw adapter once the map is ready; tears it down (and releases MapControls' D-pad)
 // on cleanup.
@@ -53,17 +53,14 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
 
   useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus })
 
-  // Enters the 'draw' application mode in any draw/edit mode: core hides every button, panel and
-  // control except APPLICATION_MODE_INCLUDE and draw's own buttons (buttonConfig holds only draw's)
-  // until the draw/edit mode ends, keeping them mounted so their state survives. The host adjusts or
-  // disables it via its applicationModes config. useLayoutEffect so the class lands in the same paint
-  // as the draw/edit mode change.
+  // Enters the 'draw' application mode (declared in the manifest) in any draw/edit mode, and leaves it
+  // when the draw/edit mode ends. useLayoutEffect so the class lands in the same paint as the change.
   useLayoutEffect(() => {
     if (!pluginState.mode) {
       clearApplicationMode(APPLICATION_MODE_ID)
       return undefined
     }
-    setApplicationMode(APPLICATION_MODE_ID, { include: [...APPLICATION_MODE_INCLUDE, ...Object.keys(buttonConfig)] })
+    setApplicationMode(APPLICATION_MODE_ID)
     return () => clearApplicationMode(APPLICATION_MODE_ID)
   }, [pluginState.mode])
 

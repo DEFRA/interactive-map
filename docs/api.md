@@ -61,13 +61,13 @@ Uses a dark colour scheme. |
 ### `applicationModes`
 **Type:** `Object<string, { include?: string[], exclude?: string[] } | false>`
 
-Adjusts [application modes](#setapplicationmodeid-options), keyed by mode id. Plugins document the modes they set — for example the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'` while drawing or editing. Your settings apply whenever that mode is active, whoever sets it, and have the final say.
+Adjusts plugins' [application modes](#setapplicationmodeid-options), or defines your own, keyed by mode id. Plugins document the modes they set — for example the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'` while drawing or editing. Your settings apply whenever that mode is current, whoever sets it.
 
 Each mode's value is either:
 
 - **an object**, with either or both of:
-  - `include` — adds items to the mode's visible items, and brings back any a plugin excluded.
-  - `exclude` — hides items, whoever included them.
+  - `include` — for a plugin's mode, adds items to what it shows (including any a plugin excluded). For your own mode, makes it take over the interface: only these items stay visible.
+  - `exclude` — hides items.
 - **`false`** — turns the mode off entirely, so it adds no class and hides nothing.
 
 Ids name buttons, panels and controls, and don't need to exist yet — an item you add later with [`addControl`](#addcontrolid-config) or similar is picked up when it appears.
@@ -807,15 +807,15 @@ interactiveMap.hidePanel('info-panel')
 
 Enters an application mode — for example for a step in a journey that needs a pared-down interface. Modes form a stack: the new mode goes on top, and setting a mode that's already on the stack replaces its lists and moves it to the top. Only the current mode, the top of the stack, applies: the app root gets the class `im-o-app--mode-{id}`, and modes underneath wait until they're current again. Hidden items stay mounted, so their state is preserved, and modal panels are never hidden.
 
-Plugins set modes too (e.g. the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'`). Your [`applicationModes`](#applicationmodes) option always has the final say over a mode's lists.
+Plugins set modes too (e.g. the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'`). Define your own mode's lists in the [`applicationModes`](#applicationmodes) option and call `setApplicationMode(id)`, or pass them here. Options passed here are applied last, after the plugins' manifests and your `applicationModes` option.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `id` | `string` | Mode id, used as-is in the class, so keep it class-safe |
-| `options.include` | `string[]` | Only these buttons, panels and controls stay visible |
-| `options.exclude` | `string[]` | These buttons, panels and controls are hidden |
+| `options.include` | `string[]` | Buttons, panels and controls to keep visible. If nothing else defines the mode, only these stay visible |
+| `options.exclude` | `string[]` | Buttons, panels and controls to hide |
 
-Without either list, nothing is hidden and only the class is added.
+Without any lists, nothing is hidden and only the class is added.
 
 ```js
 // Only the map styles button and panel, and your own button, stay visible

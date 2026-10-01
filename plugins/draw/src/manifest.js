@@ -10,6 +10,7 @@ import { deleteFeature } from './api/deleteFeature.js'
 import { split } from './api/split.js'
 import { merge } from './api/merge.js'
 import { isMac } from '../../../src/utils/isMac.js'
+import { APPLICATION_MODE_ID } from './defaults.js'
 
 // edit_point behaves like edit_vertex for Done/Undo, but stays out of drawDeletePoint and mergeShapes (neither applies to a single coordinate).
 const EDIT_MODES = new Set(['edit_vertex', 'edit_point'])
@@ -38,6 +39,11 @@ export const manifest = {
   },
 
   InitComponent: DrawInit,
+
+  // While drawing or editing, hide everything except draw's own items (kept automatically) and these
+  applicationModes: {
+    [APPLICATION_MODE_ID]: { include: ['mapStyles', 'mapControls', 'scaleBar'] }
+  },
 
   buttons: [
     {

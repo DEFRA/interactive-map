@@ -4,6 +4,10 @@ import { manifest } from './manifest.js'
 describe('search manifest', () => {
   const getButton = () => manifest.buttons.find(b => b.id === 'search')
 
+  it('declares the search application mode with no lists (search.scss does the hiding)', () => {
+    expect(manifest.applicationModes).toEqual({ search: {} })
+  })
+
   it('declares a single search button and control', () => {
     expect(manifest.buttons).toHaveLength(1)
     expect(getButton()).toBeDefined()

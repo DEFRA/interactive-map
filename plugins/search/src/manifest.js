@@ -1,11 +1,17 @@
 // /plugins/search/manifest.js
 import { initialState, actions } from './reducer.js'
 import { Search } from './Search.jsx'
+import { APPLICATION_MODE_ID } from './defaults.js'
 
 export const manifest = {
   reducer: {
     initialState,
     actions
+  },
+
+  // Set while the form is open. No lists: search.scss hides things itself, keyed on its class
+  applicationModes: {
+    [APPLICATION_MODE_ID]: {}
   },
 
   // Standard MapButton that toggles the plugin's own `isExpanded` state to reveal the form.
