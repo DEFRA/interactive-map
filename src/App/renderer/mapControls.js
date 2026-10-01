@@ -12,6 +12,7 @@ import { stringToKebab } from '../../utils/stringToKebab.js'
  */
 export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
   const { breakpoint, pluginRegistry, controlConfig } = appState
+  const applicationModes = selectApplicationModes(appState, appConfig)
 
   return Object.values(controlConfig)
     .filter(control => { // NOSONAR, extracting to a helper wouldn't necessarily improve readability
@@ -49,7 +50,7 @@ export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
       )
 
       const pluginId = plugin?.id
-      const isHidden = isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), { ids: [control.id], pluginId })
+      const isHidden = isHiddenByApplicationMode(applicationModes, { ids: [control.id], pluginId })
 
       let element
 

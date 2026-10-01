@@ -118,7 +118,7 @@ describe('isHiddenByApplicationMode', () => {
       expect(isHidden(drawing({ call: { include: ['mapKey'] } }), item('mapKey', 'mapKey'))).toBe(false)
     })
 
-    it('lets a layer\'s exclude beat its own include', () => {
+    it('lets a rule\'s exclude beat its own include', () => {
       expect(isHidden(drawing({ config: { draw: { include: ['layers'], exclude: ['layers'] } } }), item('layers', 'datasets'))).toBe(true)
     })
   })

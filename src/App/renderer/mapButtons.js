@@ -92,9 +92,13 @@ function applySlotExclusivity (matching, appState) {
 
 // Hidden via toggleButtonState/hiddenWhen, or by an application mode. Either way the button stays
 // mounted (display: none), so its refs, focus-return target and state survive.
-const isButtonHidden = (buttonId, config, appState, appConfig) =>
-  appState.hiddenButtons.has(buttonId) ||
-  isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), { ids: [buttonId], pluginId: config.pluginId })
+const isButtonHidden = (buttonId, config, appState, appConfig) => {
+  if (appState.hiddenButtons.has(buttonId)) {
+    return true
+  }
+  const applicationModes = selectApplicationModes(appState, appConfig)
+  return isHiddenByApplicationMode(applicationModes, { ids: [buttonId], pluginId: config.pluginId })
+}
 
 /**
  * Builds the props for a <SlotButton>. isHidden/variant are included here (not just derived

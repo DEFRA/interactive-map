@@ -127,7 +127,7 @@
  * What an application mode shows while it's the current mode (the top of the stack; modes underneath
  * don't apply). The current mode adds `im-o-app--mode-{id}` to the app root. A mode is defined by the
  * plugin manifests that declare it (combined), else the host's applicationModes config, else the
- * options it was set with; later layers append (include) and remove (exclude) items. Hidden items stay
+ * options it was set with; later rules append (include) and remove (exclude) items. Hidden items stay
  * mounted (display: none), so their state survives, and modal panels are never hidden. Without any
  * lists, nothing is hidden.
  *
@@ -135,7 +135,7 @@
  *
  * @property {string[] | null} [include]
  * In a mode's definition: only these buttons, panels and controls (by id), plus the declaring
- * plugins' own items, stay visible. In a later layer: these are added.
+ * plugins' own items, stay visible. In a later rule: these are added.
  *
  * @property {string[] | null} [exclude]
  * These buttons, panels and controls (by id) are hidden.

@@ -42,32 +42,32 @@ export const getApplicationModeClass = (modes) => {
 
 const includesAny = (list, ids) => !!list && ids.some(id => list.includes(id))
 
-// One list combining a layer's sources (several manifests can contribute to the same mode)
+// One list combining several manifests' lists (several manifests can contribute to the same mode)
 const mergeLists = (sources, key) => {
   const lists = sources.map(source => source?.[key]).filter(Boolean)
   return lists.length ? lists.flat() : null
 }
 
 /**
- * The layers that decide the current mode, in order. The earliest layer that mentions the mode
- * defines it: every plugin manifest that declares it (combined), else the consumer's config, else the
- * options it was set with. Later layers only adjust it.
+ * The rules that decide the current mode, in order. The earliest rule that mentions the mode defines
+ * it: every plugin manifest that declares it (combined), else the consumer's config, else the options
+ * it was set with. Later rules only adjust it.
  */
-const getLayers = (mode, { declarations, config }) => {
+const getModeRules = (mode, { declarations, config }) => {
   const manifests = declarations.filter(declaration => declaration.id === mode.id)
-  const layers = [
+  const modeRules = [
     manifests.length ? { include: mergeLists(manifests, 'include'), exclude: mergeLists(manifests, 'exclude') } : null,
     config[mode.id] || null,
     mode.include || mode.exclude ? { include: mode.include, exclude: mode.exclude } : null
   ].filter(Boolean)
-  return { layers, ownerIds: manifests.map(manifest => manifest.pluginId) }
+  return { modeRules, ownerIds: manifests.map(manifest => manifest.pluginId) }
 }
 
 /**
- * Whether the current application mode hides an item. The mode's definition (its first layer) sets
+ * Whether the current application mode hides an item. The mode's definition (its first rule) sets
  * the starting point: with an include, only the included items and the declaring plugins' own items
- * show; otherwise everything does. Then every layer in turn appends its include and removes its
- * exclude, so later layers have the final say. Items are hidden with CSS, never unmounted, so their
+ * show; otherwise everything does. Then every rule in turn appends its include and removes its
+ * exclude, so later rules have the final say. Items are hidden with CSS, never unmounted, so their
  * state survives.
  *
  * @param {{ entries: Array<Object>, declarations: Array<Object>, config: Object }} modes - From selectApplicationModes.
@@ -79,14 +79,15 @@ export const isHiddenByApplicationMode = (modes, { ids, pluginId }) => {
   if (!currentMode) {
     return false
   }
-  const { layers, ownerIds } = getLayers(currentMode, modes)
-  const isTakeover = !!layers[0]?.include
+  const { modeRules, ownerIds } = getModeRules(currentMode, modes)
+  // The first rule is the mode's definition, so it alone decides whether the mode is a takeover
+  const isTakeover = !!modeRules[0]?.include
   let isVisible = !isTakeover || ownerIds.includes(pluginId)
-  layers.forEach(layer => {
-    if (includesAny(layer.include, ids)) {
+  modeRules.forEach(rule => {
+    if (includesAny(rule.include, ids)) {
       isVisible = true
     }
-    if (includesAny(layer.exclude, ids)) {
+    if (includesAny(rule.exclude, ids)) {
       isVisible = false
     }
   })

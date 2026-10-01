@@ -26,6 +26,8 @@ export const Layout = () => {
   const { mapStyle } = useMap()
   const showModalBackdrop = hasOpenModalPanel(openPanels ?? {}, panelConfig ?? {}, breakpoint)
 
+  const applicationModes = selectApplicationModes(appState, appConfig)
+
   useLayoutMeasurements()
   useFocusVisible()
   useApplicationModeFocus()
@@ -39,7 +41,7 @@ export const Layout = () => {
         `im-o-app--${interfaceType}`,
         `im-o-app--${isFullscreen ? 'fullscreen' : 'inline'}`,
         `im-o-app--${mapStyle?.appColorScheme || preferredColorScheme}-app`,
-        getApplicationModeClass(selectApplicationModes(appState, appConfig))
+        getApplicationModeClass(applicationModes)
       ].filter(Boolean).join(' ')}
       style={{ backgroundColor: mapStyle?.backgroundColor || undefined, ...getMapThemeVars(mapStyle) }}
       ref={layoutRefs.appContainerRef}

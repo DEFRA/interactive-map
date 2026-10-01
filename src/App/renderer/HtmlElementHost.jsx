@@ -97,7 +97,8 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen,
   const isEligible = Boolean(bpConfig && targetSlot && isPanelSlotEligible(config, { targetSlot, isFullscreen }))
   const isAllowedModal = !bpConfig?.modal || panelId === allowedModalPanelId
   // Modal panels are never hidden by an application mode, so focus is never trapped in a hidden one
-  const isModeHidden = !bpConfig?.modal && isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), { ids: [panelId], pluginId: config.pluginId })
+  const applicationModes = selectApplicationModes(appState, appConfig)
+  const isModeHidden = !bpConfig?.modal && isHiddenByApplicationMode(applicationModes, { ids: [panelId], pluginId: config.pluginId })
   const isVisible = isOpen && isEligible && isAllowedModal && !isModeHidden
 
   useDomProjection(panelRootRef, targetSlot, isVisible, layoutRefs, breakpoint)
@@ -126,8 +127,9 @@ const PersistentControl = ({ control, appState, appConfig }) => {
 
   const bpConfig = control[breakpoint]
   // An application mode hides it by the same display toggle, so it stays mounted either way
-  const isVisible = isControlVisible(control, { breakpoint, isFullscreen }) &&
-    !isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), { ids: [control.id], pluginId: control.pluginId })
+  const applicationModes = selectApplicationModes(appState, appConfig)
+  const isModeHidden = isHiddenByApplicationMode(applicationModes, { ids: [control.id], pluginId: control.pluginId })
+  const isVisible = isControlVisible(control, { breakpoint, isFullscreen }) && !isModeHidden
   const targetSlot = bpConfig?.slot || null
 
   // A control targeting a panel's body (`<panelId>-panel`) needs its DOM anchor re-resolved

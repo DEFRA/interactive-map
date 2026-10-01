@@ -43,6 +43,7 @@ export function mapPanels ({ slot, appState, appConfig, evaluateProp }) {
 
   // Only the most-recently-opened modal panel is ever actually shown — see isOpen below.
   const allowedModalPanelId = getAllowedModalPanelId(openPanels, panelConfig, breakpoint)
+  const applicationModes = selectApplicationModes(appState, appConfig)
 
   return Object.keys(panelConfig).map((panelId) => {
     const eligible = getEligiblePanelConfig(panelId, panelConfig, breakpoint, { slot, isFullscreen: appState.isFullscreen })
@@ -59,7 +60,7 @@ export function mapPanels ({ slot, appState, appConfig, evaluateProp }) {
     const pluginId = plugin?.id
 
     // Modal panels are never hidden by an application mode, so focus is never trapped in a hidden one
-    const isHidden = !bpConfig.modal && isHiddenByApplicationMode(selectApplicationModes(appState, appConfig), { ids: [panelId], pluginId })
+    const isHidden = !bpConfig.modal && isHiddenByApplicationMode(applicationModes, { ids: [panelId], pluginId })
 
     const html = pluginId ? evaluateProp(config.html, pluginId) : config.html
     const label = evaluateProp(config.label, pluginId)
