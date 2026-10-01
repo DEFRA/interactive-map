@@ -28,13 +28,7 @@ The map component also requires a **map provider** — a separate library that h
 
 ### MapLibre provider (recommended)
 
-**ESM:** `maplibre-gl` is a peer dependency, install it separately:
-
-```shell
-npm install maplibre-gl
-```
-
-**UMD:** `maplibre-gl` is bundled — no separate install needed.
+`maplibre-gl` is installed with this package (ESM) or bundled (UMD) — no separate install needed.
 
 ### ESRI provider (optional)
 
