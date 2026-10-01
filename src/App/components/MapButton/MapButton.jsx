@@ -196,7 +196,7 @@ const buildButtonProps = ({
  * @param {boolean} [props.isDisabled=false] - Whether the button is disabled
  * @param {boolean} [props.isPressed] - Whether the button is in pressed state (aria-pressed)
  * @param {boolean} [props.isExpanded] - Whether content controlled by the button is expanded
- * @param {boolean} [props.isHidden=false] - Whether to hide the button (CSS display: none)
+ * @param {boolean} [props.isHidden=false] - Whether to hide the button (hidden attribute, so it stays mounted)
  * @param {boolean} [props.isPanelOpen=false] - Whether the controlled panel is open
  * @param {string} [props.panelRole] - The controlled panel's own ARIA role, used for aria-haspopup
  * @param {string} [props.variant] - CSS variant class for styling (e.g., 'primary')
@@ -306,7 +306,7 @@ export const MapButton = ({
     <div
       className={buildWrapperClassNames(buttonId, showLabel)}
       data-button-slot={buttonSlot}
-      style={isHidden ? { display: 'none' } : undefined}
+      hidden={isHidden}
     >
       {showLabel ? buttonEl : <Tooltip content={label}>{buttonEl}</Tooltip>}
       {buttonSlot && <SlotRenderer slot={buttonSlot} />}

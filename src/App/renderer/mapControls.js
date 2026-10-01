@@ -3,16 +3,15 @@ import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { allowedSlots } from './slots.js'
 import { isConsumerHtml } from './slotHelpers.js'
-import { isHiddenByApplicationMode, selectApplicationModes } from './applicationModes.js'
+import { hidesNothing } from './applicationModes.js'
 import { stringToKebab } from '../../utils/stringToKebab.js'
 
 /**
  * Map controls for a given slot and app state.
  * Returns an array of control descriptors.
  */
-export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
+export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
   const { breakpoint, pluginRegistry, controlConfig } = appState
-  const applicationModes = selectApplicationModes(appState, appConfig)
 
   return Object.values(controlConfig)
     .filter(control => { // NOSONAR, extracting to a helper wouldn't necessarily improve readability
@@ -50,7 +49,7 @@ export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
       )
 
       const pluginId = plugin?.id
-      const isHidden = isHiddenByApplicationMode(applicationModes, { ids: [control.id], pluginId })
+      const isHidden = isHiddenByApplicationMode({ ids: [control.id], pluginId })
 
       let element
 
@@ -60,7 +59,7 @@ export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
           <div
             className={`im-c-control im-c-control--${stringToKebab(control.id)}`}
             key={control.id}
-            style={isHidden ? { display: 'none' } : undefined}
+            hidden={isHidden}
             dangerouslySetInnerHTML={{ __html: evaluateProp(control.html, pluginId) }}
           />
         )
@@ -72,18 +71,13 @@ export function mapControls ({ slot, appState, appConfig, evaluateProp }) {
         })
         // Core's own element around the plugin's control, as MapButton's wrapper is for buttons and
         // Panel's root for panels — so hiding it (application mode) never remounts it: display:
-        // contents leaves layout untouched while shown, display: none hides it with its state intact.
-        // --{id} identifies it (as im-c-button-wrapper--{id} does); --hidden lets slot CSS ignore it.
-        const wrapperClassName = [
-          'im-c-control-wrapper',
-          `im-c-control-wrapper--${stringToKebab(control.id)}`,
-          isHidden && 'im-c-control-wrapper--hidden'
-        ].filter(Boolean).join(' ')
+        // contents leaves layout untouched while shown, hidden hides it with its state intact.
+        // --{id} identifies it (as im-c-button-wrapper--{id} does).
         element = (
           <div
             key={control.id}
-            className={wrapperClassName}
-            style={{ display: isHidden ? 'none' : 'contents' }}
+            className={`im-c-control-wrapper im-c-control-wrapper--${stringToKebab(control.id)}`}
+            hidden={isHidden}
           >
             <Wrapped />
           </div>

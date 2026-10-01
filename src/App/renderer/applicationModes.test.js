@@ -2,7 +2,7 @@ import {
   selectApplicationModes,
   getCurrentApplicationMode,
   getApplicationModeClass,
-  isHiddenByApplicationMode
+  createApplicationModeFilter
 } from './applicationModes.js'
 
 // A mode on the stack, as setApplicationMode stores it (its lists are the call options)
@@ -13,7 +13,7 @@ const modesWith = ({ entries = [], declarations = [], config = {} } = {}) => ({ 
 
 // An item as the renderers describe it: its id and owning plugin (none for host-added items)
 const item = (id, pluginId) => ({ ids: [id], pluginId })
-const isHidden = (modes, target) => isHiddenByApplicationMode(modes, target)
+const isHidden = (modes, target) => createApplicationModeFilter(modes)(target)
 
 describe('selectApplicationModes', () => {
   it('gathers the stack, the manifests\' declarations and the consumer\'s config', () => {
@@ -63,7 +63,7 @@ describe('getApplicationModeClass', () => {
   })
 })
 
-describe('isHiddenByApplicationMode', () => {
+describe('createApplicationModeFilter', () => {
   it('hides nothing with no current mode, or a mode without lists anywhere', () => {
     expect(isHidden(modesWith(), item('mapKey', 'mapKey'))).toBe(false)
     const search = modesWith({ entries: [mode('search')], declarations: [declared('search', 'search')] })
@@ -141,6 +141,11 @@ describe('isHiddenByApplicationMode', () => {
       expect(isHidden(modes, item('search', 'search'))).toBe(true)
       expect(isHidden(modes, item('mapKey', 'mapKey'))).toBe(false)
     })
+  })
+
+  it('never hides a modal item', () => {
+    const modes = modesWith({ entries: [mode('draw')], declarations: [declared('draw', 'draw', { include: [] })] })
+    expect(isHidden(modes, { ...item('mapKey', 'mapKey'), isModal: true })).toBe(false)
   })
 
   it('ignores a mode the consumer\'s config disables', () => {

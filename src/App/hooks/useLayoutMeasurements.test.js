@@ -85,24 +85,33 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
   })
 
-  test('counts a display: contents wrapper as rendered when anything inside it is', () => {
+  test('counts a control wrapper as rendered when anything inside it is', () => {
     const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 50 }, top: { offsetTop: 15 } } })
-    // A plain element, since el()'s mocked style.setProperty would swallow the display change
     const wrapper = document.createElement('div')
-    wrapper.style.display = 'contents'
+    wrapper.className = 'im-c-control-wrapper'
     layoutRefs.topRightColRef.current.appendChild(wrapper)
     appendChild(wrapper, { getClientRects: () => [{}] })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '65px')
   })
 
-  test('treats a display: contents wrapper with nothing rendered inside as hidden', () => {
+  test('treats a control wrapper with nothing rendered inside as hidden', () => {
     const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
-    // A plain element, since el()'s mocked style.setProperty would swallow the display change
     const wrapper = document.createElement('div')
-    wrapper.style.display = 'contents'
+    wrapper.className = 'im-c-control-wrapper'
     layoutRefs.topRightColRef.current.appendChild(wrapper)
     appendChild(wrapper)
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
+  })
+
+  test('treats a hidden wrapper as hidden, whatever is inside it', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'im-c-control-wrapper'
+    wrapper.hidden = true
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper, { getClientRects: () => [{}] })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
   })

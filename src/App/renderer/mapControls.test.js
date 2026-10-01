@@ -115,16 +115,15 @@ describe('mapControls', () => {
     expect(item.element.props.className).toBe('im-c-control im-c-control--my-html-ctrl')
   })
 
-  it('hides an HTML control (keeping it mounted) when an application mode doesn\'t show it', () => {
+  it('hides an HTML control (keeping it mounted) when the application mode filter hides it', () => {
     defaultAppState.controlConfig = ({
       ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>' }
     })
-    const style = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element.props.style
-    expect(style()).toBeUndefined()
-    defaultAppState.applicationModeEntries = [{ id: 'draw', include: [], exclude: null }]
-    expect(style()).toEqual({ display: 'none' })
-    defaultAppState.applicationModeEntries = [{ id: 'draw', include: ['ctrlHtml'], exclude: null }]
-    expect(style()).toBeUndefined()
+    const isHiddenByApplicationMode = jest.fn(() => true)
+    const hidden = (filter) => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p, isHiddenByApplicationMode: filter })[0].element.props.hidden
+    expect(hidden()).toBe(false)
+    expect(hidden(isHiddenByApplicationMode)).toBe(true)
+    expect(isHiddenByApplicationMode).toHaveBeenCalledWith({ ids: ['ctrlHtml'], pluginId: undefined })
   })
 
   it('gives a plugin control\'s wrapper a kebab-cased id modifier, like button wrappers', () => {
@@ -135,17 +134,13 @@ describe('mapControls', () => {
     expect(item.element.props.className).toBe('im-c-control-wrapper im-c-control-wrapper--scale-bar')
   })
 
-  it('always wraps a plugin control, switching the wrapper to display: none when an application mode hides it', () => {
+  it('always wraps a plugin control, hiding the wrapper when the application mode filter hides it', () => {
     defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => null }
     })
-    const wrapper = () => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p })[0].element
-    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1', style: { display: 'contents' } })
-    defaultAppState.applicationModeEntries = [{ id: 'draw', include: ['mapStyles'], exclude: null }]
-    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1 im-c-control-wrapper--hidden', style: { display: 'none' } })
-    // Listed controls stay
-    defaultAppState.applicationModeEntries = [{ id: 'plugin1-mode', include: ['ctrl1'], exclude: null }]
-    expect(wrapper().props.style).toEqual({ display: 'contents' })
+    const wrapper = (filter) => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p, isHiddenByApplicationMode: filter })[0].element
+    expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1', hidden: false })
+    expect(wrapper(() => true).props.hidden).toBe(true)
   })
 
   it('filters out consumer HTML controls (handled by HtmlElementHost)', () => {

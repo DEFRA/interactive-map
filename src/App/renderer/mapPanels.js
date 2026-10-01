@@ -3,7 +3,7 @@ import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { resolveTargetSlot, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
-import { isHiddenByApplicationMode, selectApplicationModes } from './applicationModes.js'
+import { hidesNothing } from './applicationModes.js'
 import { mapControls } from './mapControls.js'
 import { orderItems } from './orderItems.js'
 import { groupIntoTabs } from './groupIntoTabs.js'
@@ -38,12 +38,11 @@ const getEligiblePanelConfig = (panelId, panelConfig, breakpoint, { slot, isFull
 const resolveIsOpen = (openEntry, bpConfig, panelId, allowedModalPanelId) =>
   Boolean(openEntry) && (!bpConfig.modal || panelId === allowedModalPanelId)
 
-export function mapPanels ({ slot, appState, appConfig, evaluateProp }) {
+export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
   const { breakpoint, pluginRegistry, panelConfig, openPanels } = appState
 
   // Only the most-recently-opened modal panel is ever actually shown — see isOpen below.
   const allowedModalPanelId = getAllowedModalPanelId(openPanels, panelConfig, breakpoint)
-  const applicationModes = selectApplicationModes(appState, appConfig)
 
   return Object.keys(panelConfig).map((panelId) => {
     const eligible = getEligiblePanelConfig(panelId, panelConfig, breakpoint, { slot, isFullscreen: appState.isFullscreen })
@@ -59,8 +58,7 @@ export function mapPanels ({ slot, appState, appConfig, evaluateProp }) {
     const plugin = pluginRegistry.registeredPlugins.find(p => p.id === config.pluginId)
     const pluginId = plugin?.id
 
-    // Modal panels are never hidden by an application mode, so focus is never trapped in a hidden one
-    const isHidden = !bpConfig.modal && isHiddenByApplicationMode(applicationModes, { ids: [panelId], pluginId })
+    const isHidden = isHiddenByApplicationMode({ ids: [panelId], pluginId, isModal: !!bpConfig.modal })
 
     const html = pluginId ? evaluateProp(config.html, pluginId) : config.html
     const label = evaluateProp(config.label, pluginId)
@@ -78,7 +76,7 @@ export function mapPanels ({ slot, appState, appConfig, evaluateProp }) {
           focusOnOpen={focusOnOpen}
           isOpen={isOpen}
           isHidden={isHidden}
-          {...(isOpen ? buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, appConfig, evaluateProp }) : {})}
+          {...(isOpen ? buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode }) : {})}
           label={label}
           html={html}
         />
@@ -98,12 +96,12 @@ export function mapPanels ({ slot, appState, appConfig, evaluateProp }) {
  * @returns {{ items?: object[], tabs?: object[] }} spread directly onto `<Panel>` — exactly one
  *   of `items`/`tabs` is set (or neither, for a static-html panel).
  */
-function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, appConfig, evaluateProp }) {
+function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode }) {
   const injectedItems = mapControls({
     slot: `${stringToKebab(panelId)}-panel`,
     appState,
-    appConfig,
-    evaluateProp
+    evaluateProp,
+    isHiddenByApplicationMode
   })
 
   if (html) {

@@ -21,8 +21,8 @@ describe('mapPanels', () => {
 
   let defaultAppState
 
-  const map = (state = defaultAppState, slot = 'header') =>
-    mapPanels({ slot, appState: state, evaluateProp: (p) => p })
+  const map = (state = defaultAppState, slot = 'header', isHiddenByApplicationMode) =>
+    mapPanels({ slot, appState: state, evaluateProp: (p) => p, isHiddenByApplicationMode })
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -88,13 +88,14 @@ describe('mapPanels', () => {
     expect(map()).toEqual([])
   })
 
-  it('hides a non-modal panel an application mode doesn\'t show, but never a modal one', () => {
-    const applicationModeEntries = [{ id: 'draw', include: ['other'], exclude: null }]
-    expect(map({ ...defaultAppState, applicationModeEntries })[0].element.props.isHidden).toBe(true)
-    expect(map({ ...defaultAppState, applicationModeEntries: [{ id: 'draw', include: ['p1'], exclude: null }] })[0].element.props.isHidden).toBe(false)
+  it('hides a panel the application mode filter hides, telling it whether the panel is modal', () => {
+    const isHiddenByApplicationMode = jest.fn(() => true)
+    expect(map(defaultAppState, 'header', isHiddenByApplicationMode)[0].element.props.isHidden).toBe(true)
+    expect(isHiddenByApplicationMode).toHaveBeenCalledWith({ ids: ['p1'], pluginId: undefined, isModal: false })
     expect(map(defaultAppState)[0].element.props.isHidden).toBe(false)
     defaultAppState.panelConfig = ({ p1: { desktop: { modal: true } } })
-    expect(map({ ...defaultAppState, applicationModeEntries }, 'modal')[0].element.props.isHidden).toBe(false)
+    map(defaultAppState, 'modal', isHiddenByApplicationMode)
+    expect(isHiddenByApplicationMode).toHaveBeenLastCalledWith({ ids: ['p1'], pluginId: undefined, isModal: true })
   })
 
   it('renders both modal panels\' shells but only marks the last-opened one as open', () => {

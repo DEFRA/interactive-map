@@ -63,33 +63,40 @@ const getModeRules = (mode, { declarations, config }) => {
   return { modeRules, ownerIds: manifests.map(manifest => manifest.pluginId) }
 }
 
+// The filter with no current mode, and the renderers' default when they're given no filter
+export const hidesNothing = () => false
+
 /**
- * Whether the current application mode hides an item. The mode's definition (its first rule) sets
- * the starting point: with an include, only the included items and the declaring plugins' own items
- * show; otherwise everything does. Then every rule in turn appends its include and removes its
- * exclude, so later rules have the final say. Items are hidden with CSS, never unmounted, so their
- * state survives.
+ * Decides, once per render, how the current application mode treats items, returning a function that
+ * says whether it hides a given item. The mode's definition (its first rule) sets the starting point:
+ * with an include, only the included items and the declaring plugins' own items show; otherwise
+ * everything does. Then every rule in turn appends its include and removes its exclude, so later
+ * rules have the final say. Modal items are never hidden, so focus is never trapped in a hidden one.
  *
  * @param {{ entries: Array<Object>, declarations: Array<Object>, config: Object }} modes - From selectApplicationModes.
- * @param {{ ids: string[], pluginId?: string }} item - The item's id(s) and owning plugin, if any.
- * @returns {boolean}
+ * @returns {(item: { ids: string[], pluginId?: string, isModal?: boolean }) => boolean}
  */
-export const isHiddenByApplicationMode = (modes, { ids, pluginId }) => {
+export const createApplicationModeFilter = (modes) => {
   const currentMode = getCurrentApplicationMode(modes)
   if (!currentMode) {
-    return false
+    return hidesNothing
   }
   const { modeRules, ownerIds } = getModeRules(currentMode, modes)
   // The first rule is the mode's definition, so it alone decides whether the mode is a takeover
   const isTakeover = !!modeRules[0]?.include
-  let isVisible = !isTakeover || ownerIds.includes(pluginId)
-  modeRules.forEach(rule => {
-    if (includesAny(rule.include, ids)) {
-      isVisible = true
+  return ({ ids, pluginId, isModal = false }) => {
+    if (isModal) {
+      return false
     }
-    if (includesAny(rule.exclude, ids)) {
-      isVisible = false
-    }
-  })
-  return !isVisible
+    let isVisible = !isTakeover || ownerIds.includes(pluginId)
+    modeRules.forEach(rule => {
+      if (includesAny(rule.include, ids)) {
+        isVisible = true
+      }
+      if (includesAny(rule.exclude, ids)) {
+        isVisible = false
+      }
+    })
+    return !isVisible
+  }
 }

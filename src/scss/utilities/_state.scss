@@ -26,3 +26,10 @@
         left: 0;
     }
 }
+
+// One way to hide interface items without unmounting them (application modes, hiddenWhen, closed
+// panels): the hidden attribute. !important so a component's own display (flex, contents) never
+// beats it, as it would the browser's default [hidden] rule.
+.im-o-app [hidden] {
+    display: none !important;
+}

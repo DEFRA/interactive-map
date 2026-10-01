@@ -4,8 +4,7 @@ import { useApp } from '../store/appContext.js'
 import { stringToKebab } from '../../utils/stringToKebab.js'
 import { Panel } from '../components/Panel/Panel.jsx'
 import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
-import { isHiddenByApplicationMode, selectApplicationModes } from './applicationModes.js'
-import { useConfig } from '../store/configContext.js'
+import { useApplicationModeFilter } from '../hooks/useApplicationModeFilter.js'
 
 /**
  * Maps slot names to their corresponding layout refs.
@@ -85,7 +84,7 @@ export const useDomProjection = (wrapperRef, targetSlot, isVisible, layoutRefs, 
  * The Panel component stays mounted for the lifetime of the registration.
  * DOM projection moves it between slots; CSS hides it when closed.
  */
-const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen, allowedModalPanelId, appState, appConfig }) => {
+const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen, allowedModalPanelId, appState, isHiddenByApplicationMode }) => {
   const panelRootRef = useRef(null)
   const { breakpoint, isFullscreen, layoutRefs } = appState
 
@@ -96,9 +95,7 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen,
   // one boolean since isVisible alone decides whether useDomProjection shows it.
   const isEligible = Boolean(bpConfig && targetSlot && isPanelSlotEligible(config, { targetSlot, isFullscreen }))
   const isAllowedModal = !bpConfig?.modal || panelId === allowedModalPanelId
-  // Modal panels are never hidden by an application mode, so focus is never trapped in a hidden one
-  const applicationModes = selectApplicationModes(appState, appConfig)
-  const isModeHidden = !bpConfig?.modal && isHiddenByApplicationMode(applicationModes, { ids: [panelId], pluginId: config.pluginId })
+  const isModeHidden = isHiddenByApplicationMode({ ids: [panelId], pluginId: config.pluginId, isModal: !!bpConfig?.modal })
   const isVisible = isOpen && isEligible && isAllowedModal && !isModeHidden
 
   useDomProjection(panelRootRef, targetSlot, isVisible, layoutRefs, breakpoint)
@@ -121,14 +118,13 @@ const PersistentPanel = ({ panelId, config, isOpen, openPanelProps, focusOnOpen,
  * Persistent wrapper for a consumer HTML control.
  * The control stays mounted for the lifetime of the registration.
  */
-const PersistentControl = ({ control, appState, appConfig }) => {
+const PersistentControl = ({ control, appState, isHiddenByApplicationMode }) => {
   const wrapperRef = useRef(null)
   const { breakpoint, isFullscreen, layoutRefs, openPanels } = appState
 
   const bpConfig = control[breakpoint]
   // An application mode hides it by the same display toggle, so it stays mounted either way
-  const applicationModes = selectApplicationModes(appState, appConfig)
-  const isModeHidden = isHiddenByApplicationMode(applicationModes, { ids: [control.id], pluginId: control.pluginId })
+  const isModeHidden = isHiddenByApplicationMode({ ids: [control.id], pluginId: control.pluginId })
   const isVisible = isControlVisible(control, { breakpoint, isFullscreen }) && !isModeHidden
   const targetSlot = bpConfig?.slot || null
 
@@ -157,7 +153,7 @@ const PersistentControl = ({ control, appState, appConfig }) => {
  */
 export const HtmlElementHost = () => {
   const appState = useApp()
-  const appConfig = useConfig()
+  const isHiddenByApplicationMode = useApplicationModeFilter()
   const { panelConfig = {}, controlConfig = {}, openPanels = {}, breakpoint } = appState
 
   // Find consumer HTML panels
@@ -194,7 +190,7 @@ export const HtmlElementHost = () => {
           focusOnOpen={openPanels[panelId]?.focusOnOpen}
           allowedModalPanelId={allowedModalPanelId}
           appState={appState}
-          appConfig={appConfig}
+          isHiddenByApplicationMode={isHiddenByApplicationMode}
         />
       ))}
       {htmlControls.map(control => (
@@ -202,7 +198,7 @@ export const HtmlElementHost = () => {
           key={control.id}
           control={control}
           appState={appState}
-          appConfig={appConfig}
+          isHiddenByApplicationMode={isHiddenByApplicationMode}
         />
       ))}
     </>

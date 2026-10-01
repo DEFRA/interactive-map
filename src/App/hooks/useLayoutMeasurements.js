@@ -11,15 +11,16 @@ const ATTRIBUTIONS_STACKED_CLASS = 'im-o-app__attributions--stacked'
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
 
-// Whether an element renders anything. A display: contents element (e.g. the control wrapper core puts
-// around each plugin control) has no box of its own, so it counts as rendered if any child is.
+// Whether an element renders anything. The control wrapper core puts around each plugin control is
+// display: contents, with no box of its own, so it counts as rendered if any child is.
 const isRendered = (element) => {
+  if (element.hidden) {
+    return false
+  }
   if (element.getClientRects().length > 0) {
     return true
   }
-  // Core's control wrapper sets display inline, so check that before the (costlier) computed style
-  const display = element.style.display || getComputedStyle(element).display
-  return display === 'contents' && Array.from(element.children).some(isRendered)
+  return element.classList.contains('im-c-control-wrapper') && Array.from(element.children).some(isRendered)
 }
 
 // A top column whose children are all display:none (hiddenWhen buttons, or items an application mode

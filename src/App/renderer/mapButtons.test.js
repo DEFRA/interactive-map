@@ -154,23 +154,14 @@ describe('mapButtons module', () => {
       })
     })
 
-    it('hides (keeps mounted) a button an application mode doesn\'t show', () => {
-      const withMode = (include) => ({ ...appState, applicationModeEntries: [{ id: 'draw', include, exclude: null }] })
-      expect(render(baseBtn, withMode(['other'])).props.isHidden).toBe(true)
-      expect(render(baseBtn, withMode(['id'])).props.isHidden).toBe(false)
-      const searchMode = { ...appState, applicationModeEntries: [{ id: 'search', include: null, exclude: null }] }
-      expect(render(baseBtn, searchMode).props.isHidden).toBe(false)
-    })
-
     it('renders correct state flags for disabled, hidden, pressed and expanded buttons', () => {
       const state = {
         ...appState,
         disabledButtons: new Set(['id']),
-        hiddenButtons: new Set(['id']),
         pressedButtons: new Set(['id']),
         expandedButtons: new Set(['id'])
       }
-      const result = render({ ...baseBtn, pressedWhen: jest.fn(), expandedWhen: jest.fn() }, state)
+      const result = SlotButton({ buttonId: 'id', config: { ...baseBtn, pressedWhen: jest.fn(), expandedWhen: jest.fn() }, isHidden: true, appState: state, appConfig, evaluateProp })
       expect(result.props).toMatchObject({ isDisabled: true, isHidden: true, isPressed: true, isExpanded: true })
     })
 
@@ -249,10 +240,18 @@ describe('mapButtons module', () => {
   // mapButtons tests
   // -------------------------
   describe('mapButtons', () => {
-    const map = () => mapButtons({ slot: 'header', appState, appConfig, evaluateProp })
+    const map = (isHiddenByApplicationMode) => mapButtons({ slot: 'header', appState, appConfig, evaluateProp, isHiddenByApplicationMode })
 
     it('returns empty array when buttonConfig is empty', () => {
       expect(map()).toEqual([])
+    })
+
+    it('hides (keeps mounted) a button the application mode filter hides', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, pluginId: 'p1' } })
+      expect(map()[0].element.props.isHidden).toBe(false)
+      const isHiddenByApplicationMode = jest.fn(() => true)
+      expect(map(isHiddenByApplicationMode)[0].element.props.isHidden).toBe(true)
+      expect(isHiddenByApplicationMode).toHaveBeenCalledWith({ ids: ['b1'], pluginId: 'p1' })
     })
 
     it('returns a flat list of buttons with type and order', () => {
@@ -280,11 +279,9 @@ describe('mapButtons module', () => {
         b1: { ...baseBtn, group: { label: 'Group 1' } },
         b2: { ...baseBtn, group: { label: 'Group 1' } }
       })
-      expect(map()[0].element.props.style).toBeUndefined()
-      appState.applicationModeEntries = [{ id: 'draw', include: ['b2'], exclude: null }]
-      expect(map()[0].element.props.style).toBeUndefined()
-      appState.applicationModeEntries = [{ id: 'draw', include: [], exclude: null }]
-      expect(map()[0].element.props.style).toEqual({ display: 'none' })
+      expect(map()[0].element.props.hidden).toBe(false)
+      expect(map(({ ids }) => ids[0] === 'b1')[0].element.props.hidden).toBe(false)
+      expect(map(() => true)[0].element.props.hidden).toBe(true)
     })
 
     it('merges group labels that differ only by case/whitespace into one group', () => {

@@ -13,7 +13,7 @@ const MenuItem = ({ item, isSelected, hiddenButtons, disabledButtons, pressedBut
     role={item.isPressed !== undefined || item.pressedWhen ? 'menuitemcheckbox' : 'menuitem'} // NOSONAR
     aria-disabled={disabledButtons.has(item.id) || undefined} // NOSONAR
     aria-checked={(item.isPressed !== undefined || item.pressedWhen) ? pressedButtons.has(item.id) : undefined} // NOSONAR
-    style={hiddenButtons.has(item.id) ? { display: 'none' } : undefined}
+    hidden={hiddenButtons.has(item.id)}
     onClick={(e) => onItemClick(e, item)} // NOSONAR
   >
     {(item.iconId || item.iconSvgContent) && <Icon id={item.iconId} svgContent={item.iconSvgContent} />}
