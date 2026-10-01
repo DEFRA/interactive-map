@@ -5,6 +5,9 @@ The datasets plugin renders GeoJSON and vector tile datasets on the map, with su
 > [!IMPORTANT]
 > **Upgrading?** This plugin no longer renders key of symbols itself — that button and panel have been removed. Add the [Map Key](./map-key.md) plugin to restore it. Your `showInKey` config is unaffected and needs no changes.
 
+> [!IMPORTANT]
+> **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
+
 ## ESM usage
 
 ```js

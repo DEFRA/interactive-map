@@ -82,7 +82,7 @@ const PREACT_EXTERNALS = [
 // dependency so it auto-installs for consumers and is resolved transparently.
 const BABEL_RUNTIME_EXTERNAL = /@babel\/runtime/
 
-const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, extraExternals = []) => {
+const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
   const esmDir = path.resolve(__dirname, outDir)
   // Use the parent dir as output.dir so CSS can be emitted to css/index.css
   // (a sibling subdir) without Rollup 4's ban on ".." in emitted file names.
@@ -104,12 +104,13 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       : [
           ...PREACT_EXTERNALS,
           BABEL_RUNTIME_EXTERNAL,
-          // maplibre-gl is externalised so ESM consumers get a single shared
-          // instance from their own node_modules rather than a 1 MB copy bundled
-          // into the provider.  (UMD keeps it bundled — no bundler available there.)
+          // Map engines (optional peers) are externalised so consumers share one copy
+          // from their own node_modules; they ignore the engines they don't install
+          // (see docs/getting-started.md).  UMD keeps them bundled.
           'maplibre-gl',
-          /^@arcgis\/core/,
-          ...extraExternals
+          /^ol\//,
+          'proj4',
+          /^@arcgis\/core/
         ],
 
     plugins: [
@@ -196,7 +197,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       // - anything else → im-shell.js (the sync InteractiveMap + shared utils chunk)
       chunkFileNames: isCore
         ? (chunk) => chunk.name === 'initialiseApp' ? 'esm/im-core.js' : 'esm/im-shell.js'
-        : 'esm/[name].js',
+        : (chunk) => `esm/${chunkNames[chunk.name] || chunk.name}.js`,
       // Rollup ignores webpack magic comments; manualChunks is how we assign
       // meaningful names to lazy-loaded splits.
       // Core: no manualChunks — Rollup's natural algorithm keeps shared source
@@ -234,7 +235,6 @@ const ALL_BUILDS = [
   {
     entryPath: './providers/beta/openlayers/src/index.js',
     outDir: 'providers/beta/openlayers/dist/esm',
-    extraExternals: [/^ol\//, 'proj4'],
     manualChunks: (id) => id.includes('/openlayersProvider') ? 'im-openlayers-provider' : undefined
   },
 
@@ -262,13 +262,9 @@ const ALL_BUILDS = [
   {
     entryPath: './plugins/datasets/src/index.js',
     outDir: 'plugins/datasets/dist/esm',
-    manualChunks: (id) => {
-      if (id.includes('/manifest')) { return 'im-datasets-plugin' }
-      if (id.includes('maplibreLayerAdapter')) { return 'im-datasets-ml-adapter' }
-      if (id.includes('openlayersLayerAdapter')) { return 'im-datasets-ol-adapter' }
-      if (id.includes('esriLayerAdapter')) { return 'im-datasets-esri-adapter' }
-      return undefined
-    }
+    // Adapters renamed rather than in manualChunks — see the draw build below
+    manualChunks: (id) => id.includes('/manifest') ? 'im-datasets-plugin' : undefined,
+    chunkNames: { maplibreLayerAdapter: 'im-datasets-ml-adapter', openlayersLayerAdapter: 'im-datasets-ol-adapter', esriLayerAdapter: 'im-datasets-esri-adapter' }
   },
   {
     entryPath: './plugins/beta/map-styles/src/index.js',
@@ -278,13 +274,12 @@ const ALL_BUILDS = [
   {
     entryPath: './plugins/draw/src/index.js',
     outDir: 'plugins/draw/dist/esm',
-    extraExternals: [/^ol\//],
-    manualChunks: (id) => {
-      if (id.includes('/manifest')) { return 'im-draw-plugin' }
-      if (id.includes('MaplibreDrawAdapter')) { return 'im-draw-ml-adapter' }
-      if (id.includes('OLDrawAdapter')) { return 'im-draw-ol-adapter' }
-      return undefined
-    }
+    // Adapters are renamed rather than put in manualChunks: manual chunks absorb their
+    // dependencies, which put helpers shared by both adapters inside the MapLibre one, so
+    // OpenLayers hosts downloaded the whole MapLibre adapter.  Left to Rollup, shared
+    // helpers get a small chunk of their own.
+    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-plugin' : undefined,
+    chunkNames: { MaplibreDrawAdapter: 'im-draw-ml-adapter', OLDrawAdapter: 'im-draw-ol-adapter' }
   },
   {
     entryPath: './plugins/beta/draw-ml/src/index.js',
@@ -299,7 +294,6 @@ const ALL_BUILDS = [
   {
     entryPath: './plugins/beta/draw-ol/src/index.js',
     outDir: 'plugins/beta/draw-ol/dist/esm',
-    extraExternals: [/^ol\//],
     manualChunks: (id) => id.includes('/manifest') ? 'im-draw-ol-plugin' : undefined
   },
   {
@@ -326,5 +320,5 @@ const buildsToRun = BUILD_TARGET
   : ALL_BUILDS
 
 export default buildsToRun.map(b =>
-  createESMConfig(b.entryPath, b.outDir, b.isCore || false, b.manualChunks || null, b.extraExternals || [])
+  createESMConfig(b.entryPath, b.outDir, b.isCore || false, b.manualChunks || null, b.chunkNames)
 )
