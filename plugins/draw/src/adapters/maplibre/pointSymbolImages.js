@@ -12,7 +12,7 @@ import { anchorToMaplibre, anchorToMaplibreOffset } from '../../../../../provide
 export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
 
 const POINT_SYMBOL_LAYER_ID = 'point-symbol'
-const POINT_SYMBOL_LAYER_IDS = [`${POINT_SYMBOL_LAYER_ID}.hot`, `${POINT_SYMBOL_LAYER_ID}.cold`]
+const POINT_SYMBOL_LAYER_IDS = new Set([`${POINT_SYMBOL_LAYER_ID}.hot`, `${POINT_SYMBOL_LAYER_ID}.cold`])
 
 // icon-offset can't be a raw per-feature `get` on an array property — MapLibre's GeoJSON
 // sources silently JSON.stringify arrays, so it reads back a string at render time. Instead
@@ -33,7 +33,7 @@ const buildIconOffsetExpression = (offsetsByImageId) => {
 const applyIconOffsetExpression = (map, draw) => {
   const expression = buildIconOffsetExpression(map._symbolIconOffsetMap)
   draw.options?.styles?.forEach((style) => {
-    if (POINT_SYMBOL_LAYER_IDS.includes(style.id)) {
+    if (POINT_SYMBOL_LAYER_IDS.has(style.id)) {
       style.layout = { ...style.layout, 'icon-offset': expression }
     }
   })

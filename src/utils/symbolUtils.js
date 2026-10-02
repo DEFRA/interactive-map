@@ -3,6 +3,7 @@ import { logger } from '../services/logger.js'
 
 // Each unknown symbolSize is reported once, rather than on every render
 const reportedSymbolSizes = new Set()
+const quoted = (text) => `'${text}'`
 
 // Symbol style props in dataset style that carry token values.
 // These use the 'symbol' prefix to distinguish them from fill/stroke props at the same level.
@@ -72,7 +73,7 @@ export const getSymbolScale = (symbolSize) => {
   }
   if (!reportedSymbolSizes.has(symbolSize)) {
     reportedSymbolSizes.add(symbolSize)
-    const expected = Object.keys(SYMBOL_SIZES).map((size) => "'" + size + "'").join(', ')
+    const expected = Object.keys(SYMBOL_SIZES).map(quoted).join(', ')
     logger.warn(`Unknown symbolSize "${symbolSize}" — expected ${expected}. Using 'medium'.`)
   }
   return SYMBOL_SIZES.medium
