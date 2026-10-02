@@ -382,6 +382,17 @@ describe('pattern registration', () => {
     expect(layer.get('symbolMeta').pixelRatio).toBe(2)
   })
 
+  it('onMapSizeChange() leaves symbol styles alone if the pixel ratio changes again while its images are registering', async () => {
+    await adapter.addDataset('ds-symbol')
+    const layer = getLayer('ds-symbol')
+    const setStyleSpy = jest.spyOn(layer, 'setStyle')
+    // a second map-size change lands mid-registration — its own call will apply the newer ratio
+    const registering = adapter.onMapSizeChange()
+    map.getPixelRatio.mockReturnValue(2)
+    await registering
+    expect(setStyleSpy).not.toHaveBeenCalled()
+  })
+
   it('onMapSizeChange() does not touch a plain fill/stroke dataset\'s style', async () => {
     await adapter.addDataset('ds-fill')
     const layer = getLayer('ds-fill')

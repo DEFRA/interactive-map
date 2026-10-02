@@ -12,7 +12,18 @@ const GRAPHIC_SCALE = 0.8 // ...and drawn at 0.8 of that, centred on the shape's
 const PRECISION = 1000 // 3dp: sub-pixel precision for SVG attributes
 const HALF = 0.5
 const BOTH_SIDES = 2
+// Built-in viewBoxes are rounded up to a multiple of this, so viewBox × pixel ratio is a whole
+// number of pixels at every common ratio (device 1, 1.25, 1.5, 2 × map size 1, 1.5, 2 — all but
+// 1.875). A fractional size would be truncated when rasterised, squashing the image slightly
+// and shifting its anchor.
+const SIZE_STEP = 4
+const roundUpToStep = (value) => Math.ceil(value / SIZE_STEP) * SIZE_STEP
 const round3 = (value) => Math.round(value * PRECISION) / PRECISION
+
+// Each invalid symbolAnchor is reported once, rather than on every render
+const reportedAnchors = new Set()
+const ANCHOR_LENGTH = 2
+const isValidAnchor = (anchor) => Array.isArray(anchor) && anchor.length === ANCHOR_LENGTH && anchor.every(Number.isFinite)
 
 // Built-in (path-based) shapes, composed per scale: symbolDef → Map(scale → sized def)
 const composedCache = new WeakMap()
@@ -20,7 +31,7 @@ const composedCache = new WeakMap()
 /**
  * Sizes a path-based built-in shape. The body and graphic scale; the halo and rings are drawn
  * as strokes at a fixed width (see renderComposed), so the viewBox is the scaled body plus a
- * fixed SYMBOL_PADDING, rounded up to whole pixels so rasterised images have exact dimensions.
+ * fixed SYMBOL_PADDING, rounded up to a SIZE_STEP so rasterised images have exact dimensions.
  *
  * @param {Object} symbolDef - { path, bounds, anchorPoint, graphicCentre, ... }
  * @param {number} scale
@@ -36,8 +47,8 @@ export const composeSymbolDef = (symbolDef, scale) => {
     return byScale.get(scale)
   }
   const [boundsX, boundsY, boundsWidth, boundsHeight] = symbolDef.bounds
-  const width = Math.ceil(boundsWidth * scale + SYMBOL_PADDING * BOTH_SIDES)
-  const height = Math.ceil(boundsHeight * scale + SYMBOL_PADDING * BOTH_SIDES)
+  const width = roundUpToStep(boundsWidth * scale + SYMBOL_PADDING * BOTH_SIDES)
+  const height = roundUpToStep(boundsHeight * scale + SYMBOL_PADDING * BOTH_SIDES)
   const offsetX = (width - boundsWidth * scale) * HALF
   const offsetY = (height - boundsHeight * scale) * HALF
   const [anchorX, anchorY] = symbolDef.anchorPoint
@@ -57,7 +68,8 @@ export const composeSymbolDef = (symbolDef, scale) => {
 /**
  * Applies a symbolAnchor override to a sized def. For a built-in shape the override is a
  * fraction of the shape itself ([0.5, 1] = its bottom edge), so it stays on the same point of the
- * shape at every size; for an SVG-template symbol it's a fraction of its own viewBox.
+ * shape at every size; for an SVG-template symbol it's a fraction of its own viewBox. An invalid
+ * override is warned about (once) and ignored, keeping the symbol's own anchor.
  *
  * @param {Object} sizedDef
  * @param {number[]} [anchor] - [x, y] in 0–1
@@ -65,6 +77,14 @@ export const composeSymbolDef = (symbolDef, scale) => {
  */
 export const applyAnchorOverride = (sizedDef, anchor) => {
   if (!anchor) {
+    return sizedDef
+  }
+  if (!isValidAnchor(anchor)) {
+    const reportKey = JSON.stringify(anchor)
+    if (!reportedAnchors.has(reportKey)) {
+      reportedAnchors.add(reportKey)
+      logger.warn(`Invalid symbolAnchor ${reportKey} — expected [x, y] numbers. Using the symbol's own anchor.`)
+    }
     return sizedDef
   }
   if (!sizedDef.bodyBox) {

@@ -27,9 +27,11 @@ export const getPixelRatio = (mapProvider) => mapProvider?.map?.getPixelRatio?.(
  * @param {import('ol/Feature.js').default} params.olFeature
  * @param {number} [params.pixelRatioOverride] - use this instead of the map's pixelRatio, for
  *   callers (MAP_SET_PIXEL_RATIO) that already have the freshly set value
+ * @param {number} [params.refreshId] - set by refreshAllPointSymbols; the result is dropped if a
+ *   newer refresh has started since
  * @returns {Promise<void>}
  */
-export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixelRatioOverride }) => {
+export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixelRatioOverride, refreshId }) => {
   const properties = olFeature.getProperties()
   if (!hasSymbolStyle(properties)) {
     return
@@ -47,8 +49,9 @@ export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixe
       return
     }
 
-    // The feature may have been deleted/cancelled while rasterising was in flight.
-    if (!manager.store.source.hasFeature(olFeature)) {
+    // The feature may have been deleted/cancelled while rasterising was in flight, or a newer
+    // refresh (another size or style change) may have superseded this one.
+    if (!manager.store.source.hasFeature(olFeature) || (refreshId !== undefined && refreshId !== manager.pointSymbolRefreshId)) {
       return
     }
     VARIANTS.forEach((variant, i) => {
@@ -79,8 +82,12 @@ export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixe
  * @returns {Promise<void>}
  */
 export const refreshAllPointSymbols = ({ manager, mapProvider, pixelRatioOverride }) => {
+  // Refreshes overlap when the map size or style changes again before one finishes; only the
+  // latest may write back, so an older one finishing last can't restore its stale images
+  manager.pointSymbolRefreshId = (manager.pointSymbolRefreshId ?? 0) + 1
+  const refreshId = manager.pointSymbolRefreshId
   const points = manager.store.source.getFeatures().filter(
-    (f) => f.getGeometry()?.getType() === 'Point' && hasSymbolStyle(f.getProperties())
+    (feature) => feature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(feature.getProperties())
   )
-  return Promise.all(points.map((olFeature) => resolvePointSymbol({ manager, mapProvider, olFeature, pixelRatioOverride })))
+  return Promise.all(points.map((olFeature) => resolvePointSymbol({ manager, mapProvider, olFeature, pixelRatioOverride, refreshId })))
 }

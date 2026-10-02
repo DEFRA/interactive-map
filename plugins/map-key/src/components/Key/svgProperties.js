@@ -1,5 +1,7 @@
+const HALF = 0.5
+
 export const SVG_SIZE = 20 // Width and height attributes of the svg element
-export const SVG_CENTER = SVG_SIZE / 2
+export const SVG_CENTER = SVG_SIZE * HALF
 export const SVG_SYMBOL_SIZE = 44 // Width and height attributes of the svg element if its a marker or point feature symbol
 // Largest a symbol is drawn in the key: built-in symbols top out at 49 at medium and draw 1:1;
 // a bigger custom symbol is scaled down to this so it can't spill far past its row

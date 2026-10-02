@@ -39,11 +39,11 @@ describe('symbolRegistry — built-in symbols', () => {
     expect(ids).toEqual(expect.arrayContaining(BUILT_IN_IDS))
   })
 
-  it('sizes pin at medium to a 42×49 viewBox, anchored just below its tip', () => {
+  it('sizes pin at medium to a 44×52 viewBox, anchored just below its tip', () => {
     const sized = symbolRegistry.getSymbolDef({ symbol: 'pin' })
-    expect(sized.viewBox).toBe('0 0 42 49')
+    expect(sized.viewBox).toBe('0 0 44 52')
     expect(sized.anchor[0]).toBe(0.5)
-    expect(sized.anchor[1]).toBeCloseTo(0.8888, 4)
+    expect(sized.anchor[1]).toBeCloseTo(0.8664, 4)
   })
 
   it('keeps each anchor on its anchorPoint at every size', () => {
@@ -59,15 +59,30 @@ describe('symbolRegistry — built-in symbols', () => {
     })
   })
 
-  it('scales the body but keeps a fixed 8px margin for the rings at every size', () => {
+  it('scales the body but keeps at least an 8px margin for the rings, rounding the viewBox up to a multiple of 4', () => {
     BUILT_IN_IDS.forEach((id) => {
       const [,, bw, bh] = symbolRegistry.get(id).bounds
       Object.entries(SIZES).forEach(([symbolSize, scale]) => {
         const [width, height] = dims(symbolRegistry.getSymbolDef({ symbol: id, symbolSize }).viewBox)
+        expect(width % 4).toBe(0)
+        expect(height % 4).toBe(0)
         expect(width - bw * scale).toBeGreaterThanOrEqual(16)
-        expect(width - bw * scale).toBeLessThan(17)
+        expect(width - bw * scale).toBeLessThan(20)
         expect(height - bh * scale).toBeGreaterThanOrEqual(16)
-        expect(height - bh * scale).toBeLessThan(17)
+        expect(height - bh * scale).toBeLessThan(20)
+      })
+    })
+  })
+
+  it('gives a whole-pixel image size at every common pixel ratio except 1.875', () => {
+    const ratios = [1, 1.25, 1.5, 2, 2.25, 2.5, 3, 4] // device 1 / 1.25 / 1.5 / 2 × map size 1 / 1.5 / 2
+    BUILT_IN_IDS.forEach((id) => {
+      Object.keys(SIZES).forEach((symbolSize) => {
+        const [width, height] = dims(symbolRegistry.getSymbolDef({ symbol: id, symbolSize }).viewBox)
+        ratios.forEach((ratio) => {
+          expect(Number.isInteger(width * ratio)).toBe(true)
+          expect(Number.isInteger(height * ratio)).toBe(true)
+        })
       })
     })
   })

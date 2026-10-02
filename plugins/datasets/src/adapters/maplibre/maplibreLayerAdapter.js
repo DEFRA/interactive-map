@@ -110,20 +110,26 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    */
   async onMapSizeChange () {
     const { mapStyle } = datasetRegistry
+    const pixelRatio = this._pixelRatio
     const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs)
+    // A later size change has moved the map on to another ratio while these images were being
+    // registered — its own call applies that ratio's images, which may not be registered yet
+    if (this._pixelRatio !== pixelRatio) {
+      return
+    }
 
     datasetRegistry.forEach(registryDataset => {
       const { fillLayerId, symbolLayerId } = registryDataset
       if (symbolLayerId && this._symbolLayerIds.has(symbolLayerId) && this._map.getLayer(symbolLayerId)) {
-        const imageId = this._symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, this._pixelRatio)
+        const imageId = this._symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, pixelRatio)
         if (imageId) {
           this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
         }
         return
       }
       if (fillLayerId && this._map.getLayer(fillLayerId)) {
-        const imageId = this._patternRegistry.getPatternImageId(registryDataset.style, mapStyle.id, this._pixelRatio)
+        const imageId = this._patternRegistry.getPatternImageId(registryDataset.style, mapStyle.id, pixelRatio)
         if (imageId) {
           this._map.setPaintProperty(fillLayerId, 'fill-pattern', imageId)
         }

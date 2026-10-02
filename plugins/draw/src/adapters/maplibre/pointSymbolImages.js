@@ -69,9 +69,9 @@ const pruneSymbolIconOffsets = (map, draw) => {
   applyIconOffsetExpression(map, draw)
 }
 
-// map.getPixelRatio() is only set once at map construction, so it won't reflect a later
-// map-size change on its own. Callers reacting to MAP_SET_PIXEL_RATIO should pass the fresh
-// value through as pixelRatioOverride instead.
+// The map's current pixel ratio (device pixel ratio × map-size scale factor). Callers reacting to
+// MAP_SET_PIXEL_RATIO pass the event's value through as pixelRatioOverride instead, so they don't
+// depend on the provider's listener having applied it to the map first.
 export const getPixelRatio = (map) => map.getPixelRatio?.() || 1
 
 // Does the async work for one point without touching the store — draw.add() is left to the
@@ -164,23 +164,30 @@ export const resolvePointSymbol = async (params) => {
  * @returns {Promise<void>}
  */
 export const refreshAllPointSymbols = async ({ draw, mapProvider, map, pixelRatioOverride }) => {
+  // Refreshes overlap when the map size or style changes again before one finishes; only the
+  // latest may write back, so an older one finishing last can't restore its stale image ids
+  map._pointSymbolRefreshId = (map._pointSymbolRefreshId ?? 0) + 1
+  const refreshId = map._pointSymbolRefreshId
   const points = draw.getAll().features.filter(
-    (f) => f.geometry.type === 'Point' && hasSymbolStyle(f.properties)
+    (feature) => feature.geometry.type === 'Point' && hasSymbolStyle(feature.properties)
   )
-  const results = await Promise.allSettled(points.map((f) =>
-    resolvePointSymbolFeature({ draw, mapProvider, map, featureId: f.id, properties: f.properties, pixelRatioOverride })
+  const results = await Promise.allSettled(points.map((feature) =>
+    resolvePointSymbolFeature({ draw, mapProvider, map, featureId: feature.id, properties: feature.properties, pixelRatioOverride })
   ))
 
-  results.filter((r) => r.status === 'rejected').forEach((r) => {
-    console.error('[draw] failed to resolve point symbol', r.reason) // NOSONAR
+  results.filter((result) => result.status === 'rejected').forEach((result) => {
+    console.error('[draw] failed to resolve point symbol', result.reason) // NOSONAR
   })
+  if (map._pointSymbolRefreshId !== refreshId) {
+    return
+  }
 
   // One combined draw.add() call triggers a single render. Adding one point at a time here
   // would let mapbox-gl-draw's debounced render fire mid-batch, painting a not-yet-resolved
   // point with its stale, now-unregistered image id ("Image X could not be loaded").
   const features = results
-    .filter((r) => r.status === 'fulfilled' && r.value)
-    .map((r) => r.value)
+    .filter((result) => result.status === 'fulfilled' && result.value)
+    .map((result) => result.value)
   if (features.length) {
     draw.add({ type: 'FeatureCollection', features })
   }

@@ -74,7 +74,13 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   // re-applied style, the same way MapLibreLayerAdapter.onMapSizeChange re-rasterises
   // symbols/patterns at the new ratio.
   async onMapSizeChange () {
+    const pixelRatio = this._pixelRatio
     await Promise.all([this._registerPatterns(), this._registerSymbols()])
+    // A later size change has moved the map on to another ratio while these images were being
+    // registered — its own call applies that ratio's styles, whose images may not be ready yet
+    if (this._pixelRatio !== pixelRatio) {
+      return
+    }
     datasetRegistry.forEachDataset(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
       if (leaf.hasPattern || leaf.hasSymbol) {
         this._setLayerStyle(leaf)

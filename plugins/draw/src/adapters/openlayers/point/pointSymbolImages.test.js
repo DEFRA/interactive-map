@@ -212,6 +212,27 @@ describe('refreshAllPointSymbols', () => {
     expect(point.set).toHaveBeenCalledWith('symbolPixelRatio', 4)
   })
 
+  it('drops an older refresh\'s results when a newer one has started since', async () => {
+    const point = feature('Point', { symbol: 'pin' })
+    const manager = createManager({ features: [point] })
+    // the first refresh's rasterising is held until after the second has finished
+    let releaseFirst
+    const held = new Promise((resolve) => { releaseFirst = resolve })
+    const real = symbolRegistry.rasteriseSymbolImage.getMockImplementation()
+    symbolRegistry.rasteriseSymbolImage.mockImplementation(async (style, ms, variant, pixelRatio) => {
+      if (pixelRatio === 1) { await held }
+      return real(style, ms, variant, pixelRatio)
+    })
+
+    const first = refreshAllPointSymbols({ manager, mapProvider: createMapProvider(), pixelRatioOverride: 1 })
+    await refreshAllPointSymbols({ manager, mapProvider: createMapProvider(), pixelRatioOverride: 2 })
+    releaseFirst()
+    await first
+
+    expect(point.set).toHaveBeenLastCalledWith('symbolPixelRatio', 2)
+    expect(point.set).not.toHaveBeenCalledWith('symbolPixelRatio', 1)
+  })
+
   it('does nothing when there are no drawn points', async () => {
     const manager = createManager({ features: [] })
     await expect(refreshAllPointSymbols({ manager, mapProvider: createMapProvider() })).resolves.toEqual([])

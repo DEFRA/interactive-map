@@ -1,4 +1,8 @@
 import { SYMBOL_SIZES, DEFAULT_SYMBOL_ANCHOR } from '../config/symbolConfig.js'
+import { logger } from '../services/logger.js'
+
+// Each unknown symbolSize is reported once, rather than on every render
+const reportedSymbolSizes = new Set()
 
 // Symbol style props in dataset style that carry token values.
 // These use the 'symbol' prefix to distinguish them from fill/stroke props at the same level.
@@ -55,13 +59,24 @@ export const getSymbolStyleColors = (dataset) => {
 }
 
 /**
- * Returns the scale factor for a symbolSize ('small' | 'medium' | 'large'); 1 when unknown.
+ * Returns the scale factor for a symbolSize ('small' | 'medium' | 'large'). Missing means
+ * medium; an unknown value is warned about (once) and also treated as medium.
  * The one place a size becomes a number — extend here to accept other sizes or raw factors.
  *
  * @param {string} [symbolSize]
  * @returns {number}
  */
-export const getSymbolScale = (symbolSize) => SYMBOL_SIZES[symbolSize] ?? 1
+export const getSymbolScale = (symbolSize) => {
+  if (symbolSize == null || Object.keys(SYMBOL_SIZES).includes(symbolSize)) {
+    return SYMBOL_SIZES[symbolSize] ?? SYMBOL_SIZES.medium
+  }
+  if (!reportedSymbolSizes.has(symbolSize)) {
+    reportedSymbolSizes.add(symbolSize)
+    const expected = Object.keys(SYMBOL_SIZES).map((size) => "'" + size + "'").join(', ')
+    logger.warn(`Unknown symbolSize "${symbolSize}" — expected ${expected}. Using 'medium'.`)
+  }
+  return SYMBOL_SIZES.medium
+}
 
 /**
  * Returns the viewBox string for a dataset's symbol.

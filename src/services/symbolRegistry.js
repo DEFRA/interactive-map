@@ -33,11 +33,12 @@ const cacheImageData = (imageId, imageData) => {
 let _constructorDefaults = {}
 
 const HASH_BASE = 36
+const HASH_SHIFT = 5 // hash × 31 + character: (hash << 5) - hash
 
 const hashString = (str) => {
   let hash = 0
-  for (const ch of str) {
-    hash = Math.trunc(((hash << 5) - hash) + ch.codePointAt(0))
+  for (const character of str) {
+    hash = Math.trunc(((hash << HASH_SHIFT) - hash) + character.codePointAt(0))
   }
   return Math.abs(hash).toString(HASH_BASE)
 }

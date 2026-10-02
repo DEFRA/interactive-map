@@ -6,6 +6,9 @@ import {
   getSymbolAnchor,
   getSymbolScale
 } from './symbolUtils.js'
+import { logger } from '../services/logger.js'
+
+jest.mock('../services/logger.js', () => ({ logger: { warn: jest.fn() } }))
 
 // ─── hasSymbol ────────────────────────────────────────────────────────────────
 
@@ -160,8 +163,19 @@ describe('getSymbolScale', () => {
     expect(getSymbolScale(symbolSize)).toBe(scale)
   })
 
-  it('returns 1 for a missing or unknown size', () => {
+  it('treats a missing size as medium, without a warning', () => {
     expect(getSymbolScale(undefined)).toBe(1)
+    expect(logger.warn).not.toHaveBeenCalled()
+  })
+
+  it('warns once about an unknown size, and treats it as medium', () => {
     expect(getSymbolScale('huge')).toBe(1)
+    expect(getSymbolScale('huge')).toBe(1)
+    expect(logger.warn).toHaveBeenCalledTimes(1)
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unknown symbolSize "huge"'))
+  })
+
+  it('doesn\'t mistake inherited object keys for sizes', () => {
+    expect(getSymbolScale('toString')).toBe(1)
   })
 })

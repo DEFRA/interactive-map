@@ -17,9 +17,11 @@ const values = {
 }
 
 describe('composeSymbolDef', () => {
-  it('pads the scaled body by SYMBOL_PADDING on every side, rounded up to whole pixels', () => {
+  it('pads the scaled body by SYMBOL_PADDING on every side, rounded up to a multiple of 4', () => {
     const [width, height] = dims(composeSymbolDef(circle, 1.25).viewBox)
-    expect(width).toBe(Math.ceil(26 * 1.25 + SYMBOL_PADDING * 2))
+    // 26 × 1.25 + 16 = 48.5, rounded up to 52
+    expect(26 * 1.25 + SYMBOL_PADDING * 2).toBe(48.5)
+    expect(width).toBe(52)
     expect(height).toBe(width)
   })
 
@@ -29,8 +31,8 @@ describe('composeSymbolDef', () => {
 
   it('records the body\'s box within the viewBox', () => {
     const { bodyBox, viewBox } = composeSymbolDef(circle, 1)
-    expect(bodyBox).toEqual([8, 8, 26, 26])
-    expect(dims(viewBox)).toEqual([42, 42])
+    expect(bodyBox).toEqual([9, 9, 26, 26])
+    expect(dims(viewBox)).toEqual([44, 44])
   })
 })
 
@@ -50,6 +52,15 @@ describe('applyAnchorOverride', () => {
       expect(anchor[0] * width).toBeCloseTo(x + w / 2)
       expect(anchor[1] * height).toBeCloseTo(y + h)
     })
+  })
+
+  it.each([[[0.5]], [['0.5', '1']], [[0.5, Number.NaN]], ['bottom']])('ignores an invalid override %j, warning once', (anchor) => {
+    const sized = composeSymbolDef(circle, 1)
+    logger.warn.mockClear()
+    expect(applyAnchorOverride(sized, anchor)).toBe(sized)
+    expect(applyAnchorOverride(sized, anchor)).toBe(sized)
+    expect(logger.warn).toHaveBeenCalledTimes(1)
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Invalid symbolAnchor'))
   })
 
   it('uses an SVG-template symbol\'s override as given — a fraction of its own viewBox', () => {

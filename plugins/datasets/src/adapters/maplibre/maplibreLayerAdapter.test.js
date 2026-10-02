@@ -552,6 +552,16 @@ describe('onMapSizeChange', () => {
     expect(mapProvider.addPatternsToMap).toHaveBeenCalled()
   })
 
+  it('leaves the layers alone if the pixel ratio changes again while its images are registering', async () => {
+    // a second map-size change lands mid-registration — its own call will apply the newer ratio
+    mapProvider.addSymbolsToMap.mockImplementationOnce(async () => { map.getPixelRatio.mockReturnValue(2) })
+    map.setLayoutProperty.mockClear()
+    map.setPaintProperty.mockClear()
+    await adapter.onMapSizeChange()
+    expect(map.setLayoutProperty.mock.calls.filter(([, prop]) => prop === 'icon-image')).toHaveLength(0)
+    expect(map.setPaintProperty.mock.calls.filter(([, prop]) => prop === 'fill-pattern')).toHaveLength(0)
+  })
+
   it('does not call setLayoutProperty for icon-image when getSymbolImageId returns null', async () => {
     jest.spyOn(symbolRegistry, 'getSymbolImageId').mockReturnValue(null)
     map.setLayoutProperty.mockClear()

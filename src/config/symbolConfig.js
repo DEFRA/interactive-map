@@ -27,13 +27,16 @@ export const HALO_STROKE_WIDTH = 2
 /** Stroke width for the selected state — symbol rings and feature highlight lines */
 export const SELECTED_STROKE_WIDTH = 3
 
+// A stroke is centred on its path, so it reaches half its width either side
+const BOTH_SIDES = 2
+
 /** Stroke width for the active (keyboard cursor) state — double selected, extends 1× each side */
-export const ACTIVE_STROKE_WIDTH = SELECTED_STROKE_WIDTH * 2
+export const ACTIVE_STROKE_WIDTH = SELECTED_STROKE_WIDTH * BOTH_SIDES
 
 // Built-in symbols draw their halo and rings as strokes centred on the body outline, so each
 // stroke is twice the distance its visible edge reaches beyond the body: halo 1, selected ring
 // 1 + 3 = 4, active ring 4 + 3 = 7. A stroke is an exact offset, so rings stay even round corners.
-export const SELECTED_RING_STROKE_WIDTH = HALO_STROKE_WIDTH + SELECTED_STROKE_WIDTH * 2 // NOSONAR
+export const SELECTED_RING_STROKE_WIDTH = HALO_STROKE_WIDTH + SELECTED_STROKE_WIDTH * BOTH_SIDES
 export const ACTIVE_RING_STROKE_WIDTH = SELECTED_RING_STROKE_WIDTH + ACTIVE_STROKE_WIDTH
 
 const CENTRE = 0.5
@@ -42,7 +45,7 @@ const CENTRE = 0.5
 export const DEFAULT_SYMBOL_ANCHOR = [CENTRE, CENTRE]
 
 /** Space around a built-in symbol's body: its outermost (active) ring plus 1px clearance */
-export const SYMBOL_PADDING = ACTIVE_RING_STROKE_WIDTH / 2 + 1 // NOSONAR
+export const SYMBOL_PADDING = ACTIVE_RING_STROKE_WIDTH / BOTH_SIDES + 1
 
 /**
  * Built-in graphic path data strings for use with the `graphic` token.

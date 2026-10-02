@@ -1,3 +1,6 @@
+import { get as getIconImage } from 'ol/style/IconImage.js'
+import ImageState from 'ol/ImageState.js'
+
 /**
  * The OL "last mile" for symbolRegistry's rasterised symbol images: turns the ImageData
  * rasteriseSymbolImage() produces into something OL can render, cached by the same imageId
@@ -86,7 +89,13 @@ export const registerSymbol = async (style, mapStyle, symbolRegistry, pixelRatio
     if (!imageCache.has(result.imageId)) {
       const canvas = getOrCreateSymbolImage(result.imageId, result.imageData)
       if (variant === 'normal') {
-        dataUriCache.set(result.imageId, canvas.toDataURL())
+        const dataUri = canvas.toDataURL()
+        dataUriCache.set(result.imageId, dataUri)
+        // Seed OL's icon cache with the already-drawn canvas under this data URI, so a flat
+        // style's icon-src finds a loaded image straight away. Otherwise OL loads the data URI
+        // asynchronously and draws nothing for that icon until it has — a visible flicker each
+        // time styles switch to new images, as on every map-size change.
+        getIconImage(canvas, dataUri, undefined, ImageState.LOADED, null)
       }
     }
   }))
