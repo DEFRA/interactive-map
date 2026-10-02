@@ -40,7 +40,7 @@ const makeMarker = (overrides = {}) => ({
 
 // Stands in for the real registry's sizing of an SVG-template symbol at medium: the def with
 // its resolved viewBox. Added to any registry a test builds by hand that doesn't define one.
-const passThroughSizing = (def, { viewBox }) => ({ ...def, viewBox })
+const passThroughSizing = (def, { viewBox, anchor }) => ({ ...def, viewBox, ...(anchor && { anchor }) })
 
 const setup = ({ markers = [], mapSize = 'small', eventBus, symbolRegistry, mapStyle = 'outdoor' } = {}) => {
   const eb = eventBus ?? makeEventBus()

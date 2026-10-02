@@ -86,15 +86,15 @@ describe('resolvePointSymbol', () => {
         symbolSelectedImageId: null
       }
     })
-    // icon-offset corrects the precision lost snapping pin's 0.889 anchor to 1.0 against its 49px-tall viewBox —
+    // icon-offset corrects the precision lost snapping pin's ~0.889 anchor to 1.0 against its 49px-tall viewBox —
     // registered into the point-symbol layers' icon-offset match expression instead of onto
     // the feature (see registerSymbolIconOffset's comment for why).
-    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 5.44])
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 5.45])
     expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.hot', 'icon-offset', [
-      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.44]], ['literal', [0, 0]]
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.45]], ['literal', [0, 0]]
     ])
     expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.cold', 'icon-offset', [
-      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.44]], ['literal', [0, 0]]
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.45]], ['literal', [0, 0]]
     ])
   })
 
@@ -128,7 +128,7 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
-    const expression = ['match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.44]], ['literal', [0, 0]]]
+    const expression = ['match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 5.45]], ['literal', [0, 0]]]
     expect(draw.options.styles[0].layout).toEqual({ 'icon-anchor': 'x', 'icon-offset': expression })
     expect(draw.options.styles[1].layout).toEqual({ 'icon-offset': expression })
     expect(draw.options.styles[2].layout).toEqual({})
@@ -201,7 +201,7 @@ describe('resolvePointSymbol', () => {
     expect(draw.add).not.toHaveBeenCalled()
   })
 
-  it('uses a custom symbolAnchor when the style provides one, with no offset needed for an on-grid anchor', async () => {
+  it('anchors a built-in shape\'s symbolAnchor override to the shape itself, not its padded viewBox', async () => {
     const map = createMap()
     const mapProvider = createMapProvider()
     const properties = { symbol: 'circle', symbolAnchor: [0, 0] }
@@ -209,27 +209,30 @@ describe('resolvePointSymbol', () => {
 
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
+    // [0, 0] is the circle's own top-left — 8px in from the 42×42 viewBox's corner (the ring
+    // padding) — so it snaps to 'top-left' and the offset moves it the remaining 8px
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
       properties: expect.objectContaining({ symbolIconAnchor: 'top-left' })
     }))
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
-    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 0])
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([-8, -8])
   })
 
   it('computes a non-zero icon-offset for an off-grid custom symbolAnchor', async () => {
     const map = createMap()
     const mapProvider = createMapProvider()
-    const properties = { symbol: 'circle', symbolAnchor: [0.5, 0.8] }
+    const properties = { symbol: 'circle', symbolAnchor: [0.5, 1] }
     const draw = createDraw([point('p1', properties)])
 
     await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
 
-    // circle's viewBox is 42×42 — anchor 0.8 snaps to icon-anchor 'bottom' (1.0), offset corrects the gap
+    // the circle's bottom edge sits 8px above its 42×42 viewBox's — off the grid, so it snaps to
+    // icon-anchor 'bottom' (the viewBox edge) and the offset moves it back up those 8px
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
       properties: expect.objectContaining({ symbolIconAnchor: 'bottom' })
     }))
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
-    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 8.4])
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 8])
   })
 
   it('respects a custom symbolViewBox when computing the offset', async () => {
@@ -281,6 +284,32 @@ describe('refreshAllPointSymbols', () => {
     const draw = createDraw([])
     await refreshAllPointSymbols({ draw, mapProvider, map })
     expect(mapProvider.addSymbolsToMap).not.toHaveBeenCalled()
+  })
+
+  it('drops icon offsets for image ids no drawn point uses any more, keeping the rest', async () => {
+    const map = createMap()
+    const mapProvider = createMapProvider()
+    let features = [point('p1', { symbol: 'pin', symbolImageId: 'symbol-stale-1x' })]
+    // a draw whose add() really replaces the stored features, as mapbox-gl-draw's does
+    const draw = {
+      getAll: jest.fn(() => ({ features })),
+      get: jest.fn((id) => features.find((f) => f.id === id) ?? null),
+      add: jest.fn(({ features: added }) => { features = added })
+    }
+    map._symbolIconOffsetMap = { 'symbol-stale-1x': [0, 4] }
+
+    await refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: 2 })
+
+    const freshId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, 2)
+    expect(Object.keys(map._symbolIconOffsetMap)).toEqual([freshId])
+
+    // a second refresh at the same ratio has nothing new to register or prune
+    const calls = map.setLayoutProperty.mock.calls.length
+    await refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: 2 })
+    expect(map.setLayoutProperty.mock.calls.length).toBe(calls)
+    expect(map.setLayoutProperty).toHaveBeenLastCalledWith('point-symbol.cold', 'icon-offset', [
+      'match', ['get', 'user_symbolImageId'], freshId, ['literal', [0, 5.45]], ['literal', [0, 0]]
+    ])
   })
 
   // A style change re-resolves every point concurrently; each one's addSymbolsToMap()

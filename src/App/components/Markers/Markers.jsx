@@ -6,6 +6,7 @@ import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { scaleFactor } from '../../../config/appConfig.js'
 import { isStandaloneLabel } from '../../../utils/symbolUtils.js'
+import { DEFAULT_SYMBOL_ANCHOR } from '../../../config/symbolConfig.js'
 import { EVENTS } from '../../../config/events.js'
 import LabelMarker from './LabelMarker.jsx'
 import SymbolLabelMarker from './SymbolLabelMarker.jsx'
@@ -14,8 +15,9 @@ import SymbolMarker from './SymbolMarker.jsx'
 // Marker properties handled internally — excluded from style value resolution
 const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'symbolSvgContent', 'symbolSize', 'viewBox', 'anchor', 'selectedColor', 'label', 'showLabel'])
 
-// Sized for the marker's symbolSize — the returned def carries the viewBox (and, for built-in
-// symbols, the anchor) for that size. A viewBox override only applies to SVG-template symbols.
+// Sized for the marker's symbolSize — the returned def carries the viewBox and anchor for that
+// size. A viewBox override only applies to SVG-template symbols; an anchor override on a built-in
+// shape is a fraction of the shape itself (see symbolRegistry.getSizedSymbolDef).
 const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
   const svgContent = marker.symbolSvgContent || defaults.symbolSvgContent
   const baseDef = svgContent
@@ -26,12 +28,10 @@ const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
   }
   return symbolRegistry.getSizedSymbolDef(baseDef, {
     viewBox: marker.viewBox || defaults.viewBox || baseDef.viewBox || '0 0 44 44',
-    symbolSize: marker.symbolSize ?? defaults.symbolSize
+    symbolSize: marker.symbolSize ?? defaults.symbolSize,
+    anchor: marker.anchor ?? defaults.anchor
   })
 }
-
-const resolveAnchor = (marker, defaults, symbolDef) =>
-  marker.anchor ?? defaults.anchor ?? symbolDef?.anchor ?? [0.5, 0.5]
 
 const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected, isActive) => {
   const symbolDef = resolveSymbolDef(marker, defaults, symbolRegistry)
@@ -48,7 +48,7 @@ const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize,
   }
   const viewBox = symbolDef?.viewBox ?? '0 0 44 44'
   const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
-  const anchor = resolveAnchor(marker, defaults, symbolDef)
+  const anchor = symbolDef?.anchor ?? DEFAULT_SYMBOL_ANCHOR
   const shapeId = marker.symbol || defaults.symbol
   const scale = scaleFactor[mapSize] ?? 1
   return { resolvedSvg, viewBox, anchor, shapeId, scaledWidth: svgWidth * scale, scaledHeight: svgHeight * scale }

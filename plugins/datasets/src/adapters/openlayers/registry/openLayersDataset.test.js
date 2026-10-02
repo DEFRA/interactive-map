@@ -8,6 +8,9 @@ jest.mock('../../../registry/datasetRegistry.js')
 
 // The map's own pixelRatio — symbols are rasterised at it and drawn 1:1 (icon-scale 1 / ratio)
 const PIXEL_RATIO = 2
+// pin at medium: its default anchor (just below the tip), and [0.5, 1] — the bottom of the pin shape itself
+const PIN_ANCHOR = symbolRegistry.getSymbolDef({ symbol: 'pin' }).anchor
+const PIN_BOTTOM_ANCHOR = symbolRegistry.getSymbolDef({ symbol: 'pin', symbolAnchor: [0.5, 1] }).anchor
 
 beforeAll(() => {
   globalThis.Image = class {
@@ -179,13 +182,13 @@ describe('OpenLayersDataset', () => {
     it('returns the resolved imageId and anchor for a known symbol, with no registration needed', () => {
       expect(datasetRegistry.getDataset('ds-symbol').getSymbolMeta(PIXEL_RATIO)).toEqual({
         imageId: expect.any(String),
-        anchor: [0.5, 0.889], // pin's own default anchor at medium
+        anchor: PIN_ANCHOR,
         pixelRatio: PIXEL_RATIO
       })
     })
 
     it('uses the dataset\'s own symbolAnchor over the symbol definition\'s default', () => {
-      expect(datasetRegistry.getDataset('ds-symbol-anchor').getSymbolMeta(PIXEL_RATIO).anchor).toEqual([0.5, 1])
+      expect(datasetRegistry.getDataset('ds-symbol-anchor').getSymbolMeta(PIXEL_RATIO).anchor).toEqual(PIN_BOTTOM_ANCHOR)
     })
   })
 
@@ -238,7 +241,7 @@ describe('OpenLayersDataset', () => {
         await registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
         expect(dataset.getFlatStyle(PIXEL_RATIO)).toEqual({
           'icon-src': 'data:image/png;base64,mock',
-          'icon-anchor': [0.5, 0.889], // pin's own default anchor at medium
+          'icon-anchor': PIN_ANCHOR,
           'icon-scale': 1 / PIXEL_RATIO
         })
       })
@@ -246,7 +249,7 @@ describe('OpenLayersDataset', () => {
       it('uses the dataset\'s own symbolAnchor over the symbol definition\'s default', async () => {
         const dataset = datasetRegistry.getDataset('ds-symbol-anchor')
         await registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
-        expect(dataset.getFlatStyle(PIXEL_RATIO)['icon-anchor']).toEqual([0.5, 1])
+        expect(dataset.getFlatStyle(PIXEL_RATIO)['icon-anchor']).toEqual(PIN_BOTTOM_ANCHOR)
       })
 
       it('only finds the image registered at the same pixelRatio', async () => {
@@ -262,7 +265,7 @@ describe('OpenLayersDataset', () => {
           filter: ['==', ['get', 'type'], 'a'],
           style: {
             'icon-src': 'data:image/png;base64,mock',
-            'icon-anchor': [0.5, 0.889],
+            'icon-anchor': PIN_ANCHOR,
             'icon-scale': 1 / PIXEL_RATIO
           }
         }])

@@ -107,7 +107,7 @@ These properties control how an entry looks in the key panel — they have no ef
 
 ### Key symbol shape
 
-A polygon/line entry's key symbol is inferred from its style — there's no separate setting:
+A polygon/line entry's key symbol is inferred from its style:
 
 - a `stroke` with no `fill` shows as a **line**
 - any `fill` shows as a **shape**. For an outline-only shape, set `fill: 'transparent'` — it draws nothing on the map

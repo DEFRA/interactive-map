@@ -13,9 +13,9 @@ const PROPERTY_FOR_VARIANT = { normal: 'symbolImageId', active: 'symbolActiveIma
 
 export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
 
-// Combines the browser's native devicePixelRatio with this app's own map-size scale factor
-// (mapProvider.drawScale), matching MapController.jsx's construction-time formula.
-export const getPixelRatio = (mapProvider) => (globalThis.devicePixelRatio || 1) * (mapProvider?.drawScale ?? 1)
+// The map's own pixelRatio (device pixel ratio × map-size scale factor) — the same source the
+// datasets plugin rasterises its OL symbols at, so both draw them 1:1.
+export const getPixelRatio = (mapProvider) => mapProvider?.map?.getPixelRatio?.() || 1
 
 /**
  * Resolve one point feature's symbol image and write it back onto the feature.
@@ -25,15 +25,17 @@ export const getPixelRatio = (mapProvider) => (globalThis.devicePixelRatio || 1)
  * @param {Object} params.manager - OLDrawManager (needs store.source, mapStyle)
  * @param {Object} params.mapProvider
  * @param {import('ol/Feature.js').default} params.olFeature
+ * @param {number} [params.pixelRatioOverride] - use this instead of the map's pixelRatio, for
+ *   callers (MAP_SET_PIXEL_RATIO) that already have the freshly set value
  * @returns {Promise<void>}
  */
-export const resolvePointSymbol = async ({ manager, mapProvider, olFeature }) => {
+export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixelRatioOverride }) => {
   const properties = olFeature.getProperties()
   if (!hasSymbolStyle(properties)) {
     return
   }
 
-  const pixelRatio = getPixelRatio(mapProvider)
+  const pixelRatio = pixelRatioOverride ?? getPixelRatio(mapProvider)
 
   try {
     const results = await Promise.all(
@@ -73,11 +75,12 @@ export const resolvePointSymbol = async ({ manager, mapProvider, olFeature }) =>
  * @param {Object} params
  * @param {Object} params.manager
  * @param {Object} params.mapProvider
+ * @param {number} [params.pixelRatioOverride] - see resolvePointSymbol
  * @returns {Promise<void>}
  */
-export const refreshAllPointSymbols = ({ manager, mapProvider }) => {
+export const refreshAllPointSymbols = ({ manager, mapProvider, pixelRatioOverride }) => {
   const points = manager.store.source.getFeatures().filter(
     (f) => f.getGeometry()?.getType() === 'Point' && hasSymbolStyle(f.getProperties())
   )
-  return Promise.all(points.map((olFeature) => resolvePointSymbol({ manager, mapProvider, olFeature })))
+  return Promise.all(points.map((olFeature) => resolvePointSymbol({ manager, mapProvider, olFeature, pixelRatioOverride })))
 }

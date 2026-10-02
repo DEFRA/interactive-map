@@ -1,7 +1,7 @@
 import { createOLDraw } from './olDraw.js'
 import { OLDrawManager } from './core/OLDrawManager.js'
 import { refreshAllPointSymbols } from './point/pointSymbolImages.js'
-import { MAP_SIZE_SCALES } from './defaults.js'
+import { logger } from '../../../../../src/services/logger.js'
 
 jest.mock('./core/OLDrawManager.js', () => ({
   OLDrawManager: jest.fn(function () {
@@ -10,8 +10,9 @@ jest.mock('./core/OLDrawManager.js', () => ({
   })
 }))
 jest.mock('./point/pointSymbolImages.js', () => ({ refreshAllPointSymbols: jest.fn(() => Promise.resolve()) }))
+jest.mock('../../../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 
-const events = { MAP_SET_SIZE: 'app:size', MAP_SET_STYLE: 'app:style', MAP_DATA_CHANGE: 'app:datachange' }
+const events = { MAP_SET_PIXEL_RATIO: 'app:pixelratio', MAP_SET_STYLE: 'app:style', MAP_DATA_CHANGE: 'app:datachange' }
 
 const setup = (mapStyle = null) => {
   const listeners = {}
@@ -37,31 +38,13 @@ test('creates the manager for the map, exposes it as mapProvider.draw and applie
   expect(setup().manager.setMapStyle).not.toHaveBeenCalled() // no initial style
 })
 
-// Regression: MAP_SET_SIZE only ever fires from the map-size UI control being clicked at
-// runtime, so a map that loads directly at medium/large left drawScale unset (defaulting to 1,
-// i.e. small) until the user happened to change size — rasterising the first symbol placed at
-// the wrong resolution. mapProvider.mapSize already holds the size the map actually loaded at.
-test('seeds drawScale from the provider\'s own starting map size, before any size-change event', () => {
-  const eventBus = { on: jest.fn(), off: jest.fn() }
-  const mapProvider = { map: { id: 'ol-map' }, mapSize: 'large' }
-  createOLDraw({ mapProvider, events, eventBus })
-  expect(mapProvider.drawScale).toBe(MAP_SIZE_SCALES.large)
-})
-
-test('defaults the seeded drawScale to 1 when the provider has no starting map size', () => {
-  const eventBus = { on: jest.fn(), off: jest.fn() }
-  const mapProvider = { map: { id: 'ol-map' } }
-  createOLDraw({ mapProvider, events, eventBus })
-  expect(mapProvider.drawScale).toBe(1)
-})
-
-test('map size changes update the draw UI scale, defaulting to 1 for unknown sizes, and re-resolve point symbols', async () => {
+// Point symbols are rasterised at the map's own pixelRatio (see point/pointSymbolImages.js's
+// getPixelRatio), which the map is created with — so a map that loads straight at medium/large
+// is already right. A runtime map-size change sets a new ratio, which re-resolves them.
+test('pixel ratio changes re-resolve point symbols at the new ratio carried by the event', () => {
   const { eventBus, mapProvider, manager } = setup()
-  eventBus.emit(events.MAP_SET_SIZE, 'large')
-  expect(mapProvider.drawScale).toBe(MAP_SIZE_SCALES.large)
-  expect(refreshAllPointSymbols).toHaveBeenCalledWith({ manager, mapProvider })
-  eventBus.emit(events.MAP_SET_SIZE, 'enormous')
-  expect(mapProvider.drawScale).toBe(1)
+  eventBus.emit(events.MAP_SET_PIXEL_RATIO, 3)
+  expect(refreshAllPointSymbols).toHaveBeenCalledWith({ manager, mapProvider, pixelRatioOverride: 3 })
 })
 
 // A selected point's highlight overlay only re-applies on MAP_DATA_CHANGE, and (unlike
@@ -71,10 +54,20 @@ test('map size changes update the draw UI scale, defaulting to 1 for unknown siz
 // already-selected point's ring stuck on its old (now wrong-resolution) icon.
 test('emits MAP_DATA_CHANGE once point symbols have actually finished re-resolving after a size change', async () => {
   const { eventBus, manager, mapProvider } = setup()
-  eventBus.emit(events.MAP_SET_SIZE, 'large')
+  eventBus.emit(events.MAP_SET_PIXEL_RATIO, 4)
   await Promise.resolve() // flush the refreshAllPointSymbols().then(...) microtask
-  expect(refreshAllPointSymbols).toHaveBeenCalledWith({ manager, mapProvider })
+  expect(refreshAllPointSymbols).toHaveBeenCalledWith({ manager, mapProvider, pixelRatioOverride: 4 })
   expect(eventBus.emit).toHaveBeenCalledWith(events.MAP_DATA_CHANGE)
+})
+
+test('logs, rather than leaving unhandled, a failure to refresh point symbols', async () => {
+  const { eventBus } = setup()
+  const failure = new Error('rasterise failed')
+  refreshAllPointSymbols.mockReturnValueOnce(Promise.reject(failure))
+  eventBus.emit(events.MAP_SET_PIXEL_RATIO, 2)
+  await new Promise((resolve) => setTimeout(resolve, 0))
+  expect(logger.error).toHaveBeenCalledWith('[draw] failed to refresh point symbols', failure)
+  expect(eventBus.emit).not.toHaveBeenCalledWith(events.MAP_DATA_CHANGE)
 })
 
 test('pluginConfig and mapStyle are optional, defaulting to {} and no initial style', () => {
@@ -105,7 +98,7 @@ test('emits MAP_DATA_CHANGE once point symbols have actually finished re-resolvi
 test('remove unsubscribes, destroys the manager and clears mapProvider.draw', () => {
   const { eventBus, mapProvider, olDraw, manager } = setup()
   olDraw.remove()
-  expect(eventBus.off).toHaveBeenCalledWith(events.MAP_SET_SIZE, expect.any(Function))
+  expect(eventBus.off).toHaveBeenCalledWith(events.MAP_SET_PIXEL_RATIO, expect.any(Function))
   expect(eventBus.off).toHaveBeenCalledWith(events.MAP_SET_STYLE, expect.any(Function))
   expect(manager.remove).toHaveBeenCalled()
   expect(mapProvider.draw).toBeNull()

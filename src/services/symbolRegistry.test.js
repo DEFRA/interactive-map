@@ -2,6 +2,9 @@ import { symbolRegistry } from './symbolRegistry.js'
 import { symbolDefaults, pin } from '../config/symbolConfig.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
+import { rasteriseToImageData } from '../utils/rasteriseToImageData.js'
+
+jest.mock('../utils/rasteriseToImageData.js', () => ({ rasteriseToImageData: jest.fn(async (svg, width, height) => ({ width, height })) }))
 
 const STYLE_ID = 'test'
 const mapStyle = { id: STYLE_ID }
@@ -39,7 +42,8 @@ describe('symbolRegistry — built-in symbols', () => {
   it('sizes pin at medium to a 42×49 viewBox, anchored just below its tip', () => {
     const sized = symbolRegistry.getSymbolDef({ symbol: 'pin' })
     expect(sized.viewBox).toBe('0 0 42 49')
-    expect(sized.anchor).toEqual([0.5, 0.889])
+    expect(sized.anchor[0]).toBe(0.5)
+    expect(sized.anchor[1]).toBeCloseTo(0.8888, 4)
   })
 
   it('keeps each anchor on its anchorPoint at every size', () => {
@@ -143,6 +147,54 @@ describe('symbolRegistry — register / get', () => {
 
   it('returns undefined for an unregistered id', () => {
     expect(symbolRegistry.get('does-not-exist')).toBeUndefined()
+  })
+
+  it.each([
+    [{ svg: '<rect/>', viewBox: '0 0 1 1' }, 'needs a string "id"'],
+    [{ id: 'no-svg', viewBox: '0 0 1 1' }, 'symbol "no-svg" needs an "svg" template'],
+    [{ id: 'no-viewbox', svg: '<rect/>' }, 'symbol "no-viewbox" needs a "viewBox"'],
+    [{ id: 'bad-viewbox', svg: '<rect/>', viewBox: '0 0 10' }, 'symbol "bad-viewbox" needs a "viewBox"'],
+    [{ id: 'bad-anchor', svg: '<rect/>', viewBox: '0 0 1 1', anchor: [0.5] }, 'symbol "bad-anchor" has an invalid "anchor"'],
+    [{ id: 'no-bounds', path: 'M0 0H1V1Z', anchorPoint: [0, 0], graphicCentre: [0, 0] }, 'symbol "no-bounds" has a "path" but no valid "bounds"'],
+    [{ id: 'no-points', path: 'M0 0H1V1Z', bounds: [0, 0, 1, 1] }, 'symbol "no-points" has a "path" but no valid "anchorPoint" and "graphicCentre"']
+  ])('rejects an incomplete definition with a clear error (%#)', (symbolDef, message) => {
+    expect(() => symbolRegistry.register(symbolDef)).toThrow(message)
+  })
+
+  it('accepts a viewBox written with commas', () => {
+    expect(() => symbolRegistry.register({ id: 'commas', svg: '<rect/>', viewBox: '0,0,10,10' })).not.toThrow()
+  })
+})
+
+describe('symbolRegistry — image ids and rasterising', () => {
+  it('gives the same SVG content at different viewBoxes different image ids', () => {
+    const style = { symbolSvgContent: '<circle r="4" fill="{{backgroundColor}}"/>' }
+    const small = symbolRegistry.getSymbolImageId({ ...style, symbolViewBox: '0 0 10 10' }, mapStyle)
+    const big = symbolRegistry.getSymbolImageId({ ...style, symbolViewBox: '0 0 20 20' }, mapStyle)
+    expect(small).not.toBe(big)
+  })
+
+  it('rasterises at the sized viewBox × pixelRatio, under the same id getSymbolImageId gives', async () => {
+    const style = { symbol: 'circle', symbolSize: 'large' }
+    const { imageId, imageData } = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, 'normal', 2)
+    const [,, width, height] = symbolRegistry.getSymbolDef(style).viewBox.split(' ').map(Number)
+    expect(imageData).toEqual({ width: width * 2, height: height * 2 })
+    expect(imageId).toBe(symbolRegistry.getSymbolImageId(style, mapStyle, false, 2))
+  })
+
+  it('reuses a cached image, but drops the least recently used once the cache is full', async () => {
+    const colour = (i) => ({ symbol: 'circle', symbolBackgroundColor: `#${i.toString(16).padStart(6, '0')}` })
+    await symbolRegistry.rasteriseSymbolImage(colour(0), mapStyle, 'normal', 1)
+    rasteriseToImageData.mockClear()
+    await symbolRegistry.rasteriseSymbolImage(colour(0), mapStyle, 'normal', 1)
+    expect(rasteriseToImageData).not.toHaveBeenCalled()
+
+    for (let i = 1; i <= 256; i++) { // NOSONAR — fills the 256-entry cache, pushing colour(0) out
+      await symbolRegistry.rasteriseSymbolImage(colour(i), mapStyle, 'normal', 1)
+    }
+    rasteriseToImageData.mockClear()
+    await symbolRegistry.rasteriseSymbolImage(colour(0), mapStyle, 'normal', 1)
+    expect(rasteriseToImageData).toHaveBeenCalledTimes(1)
   })
 })
 

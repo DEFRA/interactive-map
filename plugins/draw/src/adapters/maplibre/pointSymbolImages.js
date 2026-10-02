@@ -29,14 +29,8 @@ const buildIconOffsetExpression = (offsetsByImageId) => {
 // Written to both the live layers and draw.options.styles — the definitions mapbox-gl-draw
 // builds its layers from, and that mapboxDraw.js's ensureDrawSourcesAndLayers re-adds them
 // from after a style change. Without the latter, any rebuild (or a point resolved before the
-// layers first exist) left the layers on pointSymbol()'s [0, 0] default, and the early return
-// below meant nothing ever put the offset back.
-const registerSymbolIconOffset = (map, draw, symbolImageId, offset) => {
-  map._symbolIconOffsetMap ??= {}
-  if (map._symbolIconOffsetMap[symbolImageId]) {
-    return // offset is deterministic per id — already registered, nothing changed
-  }
-  map._symbolIconOffsetMap[symbolImageId] = offset
+// layers first exist) would leave the layers on pointSymbol()'s [0, 0] default.
+const applyIconOffsetExpression = (map, draw) => {
   const expression = buildIconOffsetExpression(map._symbolIconOffsetMap)
   draw.options?.styles?.forEach((style) => {
     if (POINT_SYMBOL_LAYER_IDS.includes(style.id)) {
@@ -48,6 +42,31 @@ const registerSymbolIconOffset = (map, draw, symbolImageId, offset) => {
       map.setLayoutProperty(layerId, 'icon-offset', expression)
     }
   })
+}
+
+const registerSymbolIconOffset = (map, draw, symbolImageId, offset) => {
+  map._symbolIconOffsetMap ??= {}
+  if (map._symbolIconOffsetMap[symbolImageId]) {
+    return // offset is deterministic per id — already registered, nothing changed
+  }
+  map._symbolIconOffsetMap[symbolImageId] = offset
+  applyIconOffsetExpression(map, draw)
+}
+
+// A style or pixel-ratio change gives every point a new image id, so the old ids' offsets are
+// dead weight in the match expression — drop any id no drawn point uses any more.
+const pruneSymbolIconOffsets = (map, draw) => {
+  const offsets = map._symbolIconOffsetMap
+  if (!offsets) {
+    return
+  }
+  const inUse = new Set(draw.getAll().features.map((feature) => feature.properties?.symbolImageId))
+  const unused = Object.keys(offsets).filter((imageId) => !inUse.has(imageId))
+  if (!unused.length) {
+    return
+  }
+  unused.forEach((imageId) => delete offsets[imageId])
+  applyIconOffsetExpression(map, draw)
 }
 
 // map.getPixelRatio() is only set once at map construction, so it won't reflect a later
@@ -165,4 +184,5 @@ export const refreshAllPointSymbols = async ({ draw, mapProvider, map, pixelRati
   if (features.length) {
     draw.add({ type: 'FeatureCollection', features })
   }
+  pruneSymbolIconOffsets(map, draw)
 }

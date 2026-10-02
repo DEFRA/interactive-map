@@ -36,6 +36,11 @@ export const ACTIVE_STROKE_WIDTH = SELECTED_STROKE_WIDTH * 2
 export const SELECTED_RING_STROKE_WIDTH = HALO_STROKE_WIDTH + SELECTED_STROKE_WIDTH * 2 // NOSONAR
 export const ACTIVE_RING_STROKE_WIDTH = SELECTED_RING_STROKE_WIDTH + ACTIVE_STROKE_WIDTH
 
+const CENTRE = 0.5
+
+/** Anchor used when a symbol doesn't set one — its centre */
+export const DEFAULT_SYMBOL_ANCHOR = [CENTRE, CENTRE]
+
 /** Space around a built-in symbol's body: its outermost (active) ring plus 1px clearance */
 export const SYMBOL_PADDING = ACTIVE_RING_STROKE_WIDTH / 2 + 1 // NOSONAR
 
@@ -140,7 +145,7 @@ export const triangle = {
 export const diamond = {
   id: 'diamond',
   path: 'M25.121 8.716L37.284 20.879A3 3 0 0 1 37.284 25.121L25.121 37.284A3 3 0 0 1 20.879 37.284L8.716 25.121A3 3 0 0 1 8.716 20.879L20.879 8.716A3 3 0 0 1 25.121 8.716z',
-  bounds: [7.838, 7.838, 30.324, 30.324], // NOSONAR
+  bounds: [7.838, 7.838, 30.325, 30.325], // NOSONAR
   anchorPoint: [23, 23], // NOSONAR
   graphicCentre: [23, 23], // NOSONAR
   graphic: graphics.dot

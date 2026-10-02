@@ -1,6 +1,7 @@
 import { MapboxStyleDataset } from '../../../registry/mapboxStyleDataset.js'
 import { anchorToMaplibre, anchorToMaplibreOffset } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
 import { logger } from '../../../../../../src/services/logger.js'
+import { DEFAULT_SYMBOL_ANCHOR } from '../../../../../../src/config/symbolConfig.js'
 const MAX_TILE_ZOOM = 22
 
 export class MapLibreDataset extends MapboxStyleDataset {
@@ -76,7 +77,7 @@ export class MapLibreDataset extends MapboxStyleDataset {
   // viewBox is needed for icon-offset, which corrects the precision icon-anchor loses by
   // snapping to one of 9 positions (e.g. pin's 0.9 would otherwise render as 1.0/'bottom')
   getSymbolSource (imageId, anchor, symbolDef, viewBox) {
-    const resolvedAnchor = anchor || symbolDef?.anchor || [0.5, 0.5]
+    const resolvedAnchor = anchor || symbolDef?.anchor || DEFAULT_SYMBOL_ANCHOR
     return {
       id: this.symbolLayerId,
       type: 'symbol',

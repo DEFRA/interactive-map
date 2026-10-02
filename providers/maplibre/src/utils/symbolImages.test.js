@@ -235,3 +235,42 @@ describe('addSymbolsToMap — null results and caching', () => {
     expect(map2.addImage).toHaveBeenCalledTimes(3) // NOSONAR S109 — normal, active, selected
   })
 })
+
+// End to end across the symbol pipeline: whatever the shape, size or anchor override, MapLibre's
+// snapped icon-anchor plus the icon-offset must land the symbol's true anchor pixel on the
+// coordinate — the same pixel HTML markers and OpenLayers place directly from the fraction.
+describe('anchor placement across symbols, sizes and overrides', () => {
+  const ANCHOR_POSITIONS = {
+    left: 0, right: 1, top: 0, bottom: 1, center: 0.5
+  }
+  // icon-anchor names the point of the image placed on the coordinate, as fractions
+  const discretePoint = (name) => {
+    if (name === 'center') { return [0.5, 0.5] }
+    const parts = name.split('-')
+    const x = parts.find((p) => p === 'left' || p === 'right')
+    const y = parts.find((p) => p === 'top' || p === 'bottom')
+    return [x ? ANCHOR_POSITIONS[x] : 0.5, y ? ANCHOR_POSITIONS[y] : 0.5]
+  }
+  const styles = [
+    ...['pin', 'circle', 'square', 'hexagon', 'triangle', 'diamond'].map((symbol) => ({ symbol })),
+    { symbolSvgContent: '<rect width="30" height="20"/>', symbolViewBox: '0 0 30 20', symbolAnchor: [0.3, 0.9] }
+  ]
+  const overrides = [undefined, [0, 0], [0.5, 1], [1, 0.25]]
+
+  styles.forEach((baseStyle) => {
+    ['small', 'medium', 'large'].forEach((symbolSize) => {
+      overrides.forEach((symbolAnchor) => {
+        const style = { ...baseStyle, symbolSize, ...(symbolAnchor && { symbolAnchor }) }
+        it(`${baseStyle.symbol ?? 'custom svg'} ${symbolSize} anchor ${JSON.stringify(symbolAnchor ?? 'default')}`, () => {
+          const { viewBox, anchor } = symbolRegistry.getSymbolDef(style)
+          const [,, width, height] = viewBox.split(' ').map(Number)
+          const [dx, dy] = discretePoint(anchorToMaplibre(anchor))
+          const [ox, oy] = anchorToMaplibreOffset(anchor, viewBox)
+          // the discrete anchor point, shifted by the offset, is the true anchor pixel (offset is 2dp)
+          expect(dx * width - ox).toBeCloseTo(anchor[0] * width, 1)
+          expect(dy * height - oy).toBeCloseTo(anchor[1] * height, 1)
+        })
+      })
+    })
+  })
+})

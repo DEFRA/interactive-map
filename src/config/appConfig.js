@@ -228,8 +228,4 @@ export const defaultControlConfig = {
   }
 }
 
-export const scaleFactor = {
-  small: 1,
-  medium: 1.5,
-  large: 2
-}
+export { scaleFactor } from './mapSizeScales.js'

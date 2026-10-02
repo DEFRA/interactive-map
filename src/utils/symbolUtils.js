@@ -1,4 +1,4 @@
-import { SYMBOL_SIZES } from '../config/symbolConfig.js'
+import { SYMBOL_SIZES, DEFAULT_SYMBOL_ANCHOR } from '../config/symbolConfig.js'
 
 // Symbol style props in dataset style that carry token values.
 // These use the 'symbol' prefix to distinguish them from fill/stroke props at the same level.
@@ -77,16 +77,15 @@ export const getSymbolViewBox = (dataset, symbolDef) => {
 }
 
 /**
- * Returns the anchor for a dataset's symbol as [x, y] in 0–1 space.
- * Precedence: dataset.symbolAnchor → symbolDef anchor → [0.5, 0.5].
+ * Returns the anchor for a dataset's symbol as [x, y] in 0–1 space of its viewBox.
+ * Precedence: symbolDef anchor (already sized, with any symbolAnchor override converted by
+ * symbolRegistry.getSymbolDef — a built-in shape's override is a fraction of the shape, not the
+ * viewBox) → dataset.symbolAnchor → the centre.
  *
  * @param {Object} dataset
  * @param {Object|undefined} symbolDef
  * @returns {number[]}
  */
 export const getSymbolAnchor = (dataset, symbolDef) => {
-  if (dataset.symbolAnchor) {
-    return dataset.symbolAnchor
-  }
-  return symbolDef?.anchor ?? [0.5, 0.5]
+  return symbolDef?.anchor ?? dataset.symbolAnchor ?? DEFAULT_SYMBOL_ANCHOR
 }
