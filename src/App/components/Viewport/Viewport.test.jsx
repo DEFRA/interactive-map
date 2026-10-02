@@ -38,8 +38,6 @@ function setupHookMocks (mainEl, viewportEl) {
   })
   useApp.mockReturnValue({
     interfaceType: 'desktop',
-    mode: 'default',
-    previousMode: 'default',
     layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewportEl }, safeZoneRef: { current: null } },
     safeZoneInset: {},
     dispatch: jest.fn()
@@ -196,19 +194,5 @@ describe('Viewport interactions', () => {
     const { container } = renderViewport()
     fireEvent.blur(container.querySelector('[role="listbox"]'))
     expect(hints.dismiss).toHaveBeenCalled()
-  })
-
-  it('focuses viewport when mode changes', () => {
-    const { viewport, rerender } = renderViewport()
-    const focusMock = jest.spyOn(viewport, 'focus')
-    useApp.mockReturnValueOnce({
-      interfaceType: 'desktop',
-      mode: 'edit',
-      previousMode: 'default',
-      layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewport }, safeZoneRef: { current: null } },
-      safeZoneInset: {}
-    })
-    rerender(<Viewport />)
-    expect(focusMock).toHaveBeenCalled()
   })
 })

@@ -12,8 +12,7 @@ export const initialState = (config) => {
     pluginRegistry,
     buttonRegistry,
     panelRegistry,
-    controlRegistry,
-    mode
+    controlRegistry
   } = config
 
   const {
@@ -37,14 +36,12 @@ export const initialState = (config) => {
     preferredColorScheme: autoColorScheme ? preferredColorScheme : appColorScheme,
     prefersReducedMotion,
     isFullscreen,
-    mode: mode || null,
-    previousMode: null,
     safeZoneInset: null,
     disabledButtons: config.backAndContinue?.continueLabel ? new Set(['journeyContinue']) : new Set(),
     hiddenButtons: new Set(),
     pressedButtons: new Set(),
     expandedButtons: new Set(),
-    exclusiveControl: [],
+    applicationModeEntries: [],
     nudgeStepSize: 'large',
     openPanels,
     previousOpenPanels: {},

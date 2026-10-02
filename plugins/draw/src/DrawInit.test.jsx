@@ -26,6 +26,8 @@ const makeProps = (overrides = {}) => {
     services: { eventBus: { emit: jest.fn() } },
     mapProvider: { draw: null },
     buttonConfig: {},
+    setApplicationMode: jest.fn(),
+    clearApplicationMode: jest.fn(),
     ...overrides
   }
   return { props, adapter }
@@ -55,24 +57,6 @@ describe('adapter lifecycle', () => {
   test('does not load when the map is not ready', async () => {
     const { props } = makeProps({
       mapState: { isMapReady: false, mapStyle: {}, crossHair: { isVisible: false, fixAtCenter: jest.fn(), hide: jest.fn() } }
-    })
-    await renderInit(props)
-    expect(loadDrawAdapter).not.toHaveBeenCalled()
-  })
-
-  test('does not load when the app mode is excluded', async () => {
-    const { props } = makeProps({
-      appState: { interfaceType: 'mouse', mode: 'measure', layoutRefs: { viewportRef: { current: null } } },
-      pluginConfig: { snapLayers: [], excludeModes: ['measure'] }
-    })
-    await renderInit(props)
-    expect(loadDrawAdapter).not.toHaveBeenCalled()
-  })
-
-  test('does not load when the app mode is outside the include list', async () => {
-    const { props } = makeProps({
-      appState: { interfaceType: 'mouse', mode: 'other', layoutRefs: { viewportRef: { current: null } } },
-      pluginConfig: { snapLayers: [], includeModes: ['draw'] }
     })
     await renderInit(props)
     expect(loadDrawAdapter).not.toHaveBeenCalled()
@@ -264,5 +248,28 @@ describe('event attachment', () => {
     })
     await renderInit(props)
     expect(attachEvents).not.toHaveBeenCalled()
+  })
+})
+
+describe('application mode', () => {
+  test('enters the draw application mode (lists come from the manifest) in a draw/edit mode', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    await renderInit(props)
+    expect(props.setApplicationMode).toHaveBeenLastCalledWith('draw')
+  })
+
+  test('leaves the draw application mode when the draw/edit mode ends', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
+    const { rerender } = await renderInit(props)
+    rerender(<DrawInit {...props} pluginState={{ dispatch: jest.fn(), mode: null }} />)
+    expect(props.clearApplicationMode).toHaveBeenLastCalledWith('draw')
+  })
+
+  test('leaves the draw application mode on unmount', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_line' } })
+    const { unmount } = await renderInit(props)
+    props.clearApplicationMode.mockClear()
+    unmount()
+    expect(props.clearApplicationMode).toHaveBeenCalledWith('draw')
   })
 })

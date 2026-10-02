@@ -50,3 +50,6 @@ export const MAP_SIZE_SCALES = {
   medium: 1.5,
   large: 2
 }
+
+// The application mode draw enters while drawing or editing (declared in manifest.js)
+export const APPLICATION_MODE_ID = 'draw'

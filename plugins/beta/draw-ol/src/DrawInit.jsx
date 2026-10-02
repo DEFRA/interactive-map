@@ -10,9 +10,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
 
   // Create the OLDrawManager once when the map is ready
   useEffect(() => {
-    const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
-    const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
-    if (!mapState.isMapReady || !inModeWhitelist || inExcludeModes) {
+    if (!mapState.isMapReady) {
       return undefined
     }
 
@@ -23,7 +21,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     eventBus.emit('draw:ready')
 
     return () => remove()
-  }, [mapState.isMapReady, appState.mode])
+  }, [mapState.isMapReady])
 
   // Show crosshair when entering draw mode on touch/keyboard
   useEffect(() => {

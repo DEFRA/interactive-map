@@ -113,6 +113,40 @@
  *
  * @property {Object} [services]
  * Core services (announce, reverseGeocode, closeApp, etc.).
+ *
+ * @property {(id: string, options?: ApplicationModeOptions) => void} [setApplicationMode]
+ * Plugin components only. Enters an application mode, putting it on top of the stack (or moving it to
+ * the top if it's already set). Its lists usually come from the manifest's applicationModes; options
+ * adjust them for this call, applied last.
+ *
+ * @property {(id: string) => void} [clearApplicationMode]
+ * Plugin components only. Leaves an application mode, so the mode underneath (if any) takes over.
+ */
+
+/**
+ * What an application mode shows while it's the current mode (the top of the stack; modes underneath
+ * don't apply). The current mode adds `im-o-app--mode-{id}` to the app root. A mode is defined by the
+ * plugin manifests that declare it (combined), else the host's applicationModes config, else the
+ * options it was set with; later rules append (include) and remove (exclude) items. Hidden items stay
+ * mounted (display: none), so their state survives, and modal panels are never hidden. Without any
+ * lists, nothing is hidden.
+ *
+ * @typedef {Object} ApplicationModeOptions
+ *
+ * @property {string[] | null} [include]
+ * In a mode's definition: only these buttons, panels and controls (by id), plus the declaring
+ * plugins' own items, stay visible. In a later rule: these are added.
+ *
+ * @property {string[] | null} [exclude]
+ * These buttons, panels and controls (by id) are hidden.
+ */
+
+/**
+ * The host's application modes, keyed by mode id. For a mode a plugin declares, include appends
+ * items and exclude removes them; for any other mode it's the definition. false disables a mode
+ * entirely (no class, nothing hidden), whoever sets it.
+ *
+ * @typedef {Object<string, ApplicationModeOptions | false>} ApplicationModesConfig
  */
 
 /**
@@ -699,6 +733,11 @@
  * @property {Record<string, Function>} [api]
  * API methods.
  *
+ * @property {Object<string, ApplicationModeOptions>} [applicationModes]
+ * Application modes this plugin enters (with setApplicationMode), keyed by mode id, and what each
+ * shows. With an include, the mode hides everything except the included items and this plugin's own
+ * items. Several plugins can declare the same mode; their lists combine.
+ *
  * @property {ButtonDefinition[]} [buttons]
  * Button definitions.
  *
@@ -759,6 +798,10 @@
  *
  * @property {'light' | 'dark'} [appColorScheme='light']
  * Application colour scheme.
+ *
+ * @property {ApplicationModesConfig} [applicationModes]
+ * Defines, adjusts or disables application modes, keyed by mode id, e.g. `{ draw: { include: ['search'] } }`.
+ * Applied whenever that mode is current, whoever sets it, after the plugins' manifests.
  *
  * @property {boolean} [autoColorScheme=false]
  * Whether to automatically determine the colour scheme based on system preferences.

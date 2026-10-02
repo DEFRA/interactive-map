@@ -17,24 +17,10 @@ export const resolveTargetSlot = (bpConfig, breakpoint) => {
 }
 
 /**
- * Checks whether the current application mode permits an item to be shown,
- * based on its includeModes and excludModes configuration.
- */
-export const isModeAllowed = (config, mode) => {
-  if (config.includeModes && !config.includeModes.includes(mode)) {
-    return false
-  }
-  if (config.excludeModes?.includes(mode)) {
-    return false
-  }
-  return true
-}
-
-/**
  * Checks whether a control should be visible based on breakpoint,
- * mode, fullscreen, and slot constraints.
+ * fullscreen, and slot constraints.
  */
-export const isControlVisible = (control, { breakpoint, mode, isFullscreen }) => {
+export const isControlVisible = (control, { breakpoint, isFullscreen }) => {
   const bpConfig = control[breakpoint]
   if (!bpConfig) {
     return false
@@ -42,9 +28,6 @@ export const isControlVisible = (control, { breakpoint, mode, isFullscreen }) =>
   // A control may also target a panel's body directly via the `<panelId>-panel`
   // slot convention (mirrors the `<buttonId>-button` convention panels already use).
   if (!allowedSlots.control.includes(bpConfig.slot) && !bpConfig.slot?.endsWith('-panel')) {
-    return false
-  }
-  if (!isModeAllowed(control, mode)) {
     return false
   }
   if (control.inline === false && !isFullscreen) {
@@ -62,16 +45,13 @@ export const isConsumerHtml = (config) => {
 }
 
 /**
- * Whether a panel is eligible for a target slot (slot type, mode, inline/fullscreen) —
+ * Whether a panel is eligible for a target slot (slot type, inline/fullscreen) —
  * independent of open state and modal exclusivity (see getAllowedModalPanelId). `slot`, if
  * given, also requires an exact match to the panel's resolved targetSlot.
  */
-export const isPanelSlotEligible = (config, { targetSlot, slot, mode, isFullscreen }) => {
+export const isPanelSlotEligible = (config, { targetSlot, slot, isFullscreen }) => {
   const isNextToButton = targetSlot.endsWith('-button')
   if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
-    return false
-  }
-  if (!isModeAllowed(config, mode)) {
     return false
   }
   if (config.inline === false && !isFullscreen) {

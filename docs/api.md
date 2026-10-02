@@ -58,6 +58,40 @@ Uses a dark colour scheme. |
 
 ---
 
+### `applicationModes`
+**Type:** `Object<string, { include?: string[], exclude?: string[] } | false>`
+
+Adjusts plugins' [application modes](#setapplicationmodeid-options), or defines your own, keyed by mode id. Plugins document the modes they set — for example the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'` while drawing or editing. Your settings apply whenever that mode is current, whoever sets it.
+
+Each mode's value is either:
+
+- **an object**, with either or both of:
+  - `include` — for a plugin's mode, adds items to what it shows (including any a plugin excluded). For your own mode, makes it take over the interface: only these items stay visible.
+  - `exclude` — hides items.
+- **`false`** — turns the mode off entirely, so it adds no class and hides nothing.
+
+Ids name buttons, panels and controls, and don't need to exist yet — an item you add later with [`addControl`](#addcontrolid-config) or similar is picked up when it appears.
+
+```js
+new InteractiveMap('map', {
+  applicationModes: {
+    draw: { include: ['search', 'shapeDimensions'], exclude: ['scaleBar'] }
+  }
+})
+```
+
+Or, when every item on your map is deliberate (e.g. a single-task map that goes straight into editing a shape), turn a mode off so it hides nothing and adds no class:
+
+```js
+new InteractiveMap('map', {
+  applicationModes: {
+    draw: false
+  }
+})
+```
+
+---
+
 ### `autoColorScheme`
 **Type:** `boolean`
 **Default:** `false`
@@ -430,16 +464,6 @@ Passed directly to the underlying map engine.
 
 ---
 
-### `mode`
-**Type:** `string | null`
-**Default:** `null`
-
-Initial application mode. Modes facilitate attaching behaviour to certain states, enabling short user journey steps within the map interface. Plugins can be configured to respect modes, only rendering content when the app is in a specific mode.
-
-See also: [`setMode()`](#setmodemode) method.
-
----
-
 ### `nudgePanDelta`
 **Type:** `number`
 **Default:** `5`
@@ -779,13 +803,50 @@ interactiveMap.hidePanel('info-panel')
 
 ---
 
+### `setApplicationMode(id, options?)`
+
+Enters an application mode — for example for a step in a journey that needs a pared-down interface. Modes form a stack: the new mode goes on top, and setting a mode that's already on the stack replaces its lists and moves it to the top. Only the current mode, the top of the stack, applies: the app root gets the class `im-o-app--mode-{id}`, and modes underneath wait until they're current again. Hidden items stay mounted, so their state is preserved, and modal panels are never hidden.
+
+Plugins set modes too (e.g. the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'`). Define your own mode's lists in the [`applicationModes`](#applicationmodes) option and call `setApplicationMode(id)`, or pass them here. Options passed here are applied last, after the plugins' manifests and your `applicationModes` option.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Mode id, used as-is in the class, so keep it class-safe |
+| `options.include` | `string[]` | Buttons, panels and controls to keep visible. If nothing else defines the mode, only these stay visible |
+| `options.exclude` | `string[]` | Buttons, panels and controls to hide |
+
+Without any lists, nothing is hidden and only the class is added.
+
+```js
+// Only the map styles button and panel, and your own button, stay visible
+interactiveMap.setApplicationMode('review', { include: ['mapStyles', 'myButton'] })
+
+// Later, bring everything back
+interactiveMap.clearApplicationMode('review')
+```
+
+> [!NOTE]
+> Don't set or clear a plugin's mode id yourself (e.g. `'draw'`): it only changes the interface, so clearing it mid-draw would show everything again while drawing carries on. To adjust or disable a plugin's mode, use [`applicationModes`](#applicationmodes) instead.
+
+---
+
+### `clearApplicationMode(id)`
+
+Leaves an application mode, removing it from the stack so the mode underneath (if any) takes over.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Mode id |
+
+---
+
 ### `addControl(id, config)`
 
 Add a custom control to the UI at runtime.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `id` | `string` | Unique control identifier |
+| `id` | `string` | Unique control identifier. Also the id to list in an application mode's `include`/`exclude`, e.g. in [`applicationModes`](#applicationmodes) |
 | `config` | `ControlDefinition` | Control configuration |
 
 See [ControlDefinition](./api/control-definition.md) for configuration options.
@@ -845,20 +906,6 @@ interactiveMap.on('draw:merged', () => {
 interactiveMap.on('draw:unmerged', () => {
   interactiveMap.setContinueEnabled(false)
 })
-```
-
----
-
-### `setMode(mode)`
-
-Programmatically set the application mode. See the [`mode`](#mode) option for more detail.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `mode` | `string` | Mode identifier |
-
-```js
-interactiveMap.setMode('fullscreen')
 ```
 
 ---

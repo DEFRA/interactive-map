@@ -68,33 +68,43 @@ context.pluginState.dispatch({ type: 'setActive', payload: true })
 
 ---
 
-### `setExclusiveControl`
-**Type:** `(value: boolean | string | null) => void`
+### `setApplicationMode`
+**Type:** `(id: string, options?: { include?: string[], exclude?: string[] }) => void`
 
-Available to plugin components (InitComponent, panel and control render components) as a prop.
+### `clearApplicationMode`
+**Type:** `(id: string) => void`
 
-Tells the app that your plugin has taken control of the interface, e.g. while a search form is expanded. You don't pass your plugin's id: it's added for you.
+Available to plugin components (InitComponent, panel and control render components) as props.
 
-- `setExclusiveControl(true)` adds `im-o-app--exclusive-control-{pluginId}` to the app root.
-- `setExclusiveControl('some-name')` adds `im-o-app--exclusive-control-{pluginId}--some-name` instead. The name is used as-is, so pass something class-safe.
-- `setExclusiveControl(false)` (or `null`/`undefined`) releases your claim.
-
-Only one class is ever present, for the most recent claim. Claims stack: if another plugin claims control while yours holds it, its class replaces yours, and when it releases, your class comes back. Releasing only removes your own claim, so it never affects another plugin's. Each plugin holds one claim at a time, so claiming with a new name replaces your previous one rather than stacking on it. Release in your effect's cleanup too, so a claim isn't left behind if your component unmounts.
-
-Your plugin's own CSS decides what to hide in response, so it can pick what suits its focus behaviour. For example, it could use `opacity: 0` to keep hidden buttons in the tab order, or `display: none` to free up their space.
+Application modes let your plugin change what the interface shows while it's in a particular state, e.g. draw while drawing or search while its form is open. Declare the mode and what it shows in your manifest's [`applicationModes`](./plugin-manifest.md#applicationmodes), then enter and leave it. Modes form a stack: `setApplicationMode(id)` puts a mode on top (or moves it to the top if it's already set), and `clearApplicationMode(id)` removes it, so the mode underneath takes over.
 
 ```js
-// Claim while expanded; release when collapsed or unmounted
+// Enter the mode for as long as your plugin is in that state, and leave it on unmount too
 useLayoutEffect(() => {
-  setExclusiveControl(isExpanded)
-  return () => setExclusiveControl(false)
-}, [isExpanded])
+  if (!isDrawing) {
+    return undefined
+  }
+  setApplicationMode('my-plugin')
+  return () => clearApplicationMode('my-plugin')
+}, [isDrawing])
 ```
 
+Only the current mode, the top of the stack, applies: the app root gets `im-o-app--mode-{id}`, and its lists decide what's hidden. Pass `options` (`{ include, exclude }`) only to adjust the mode for one call; they're applied last, on top of the manifests and the host's config.
+
+- Use your plugin's id as the mode id, or as a prefix for several modes (e.g. `'draw-polygon'`).
+- One id can name several items, e.g. `mapStyles` is both the map styles button and its panel.
+- Hidden items are hidden with `display: none`, not removed, so their state, scroll position and focus-return targets survive, and they reappear as they were when the mode ends. If focus was on something that's hidden, it moves to the map.
+- Modal panels are never hidden, so focus can't get trapped in a hidden one.
+- If another mode is set on top of yours, yours waits underneath and applies again once it's back on top.
+- The host can add to, remove from or disable your mode with its [`applicationModes`](../api.md#applicationmodes) option. Document your mode's id so they can.
+- Modes only change the interface. Your plugin's own behaviour, and other plugins', carries on as normal.
+
+Use `include` (in your manifest) for a mode the user stays in until they end it (like drawing), where hidden items shouldn't be reachable with Tab. Use no lists, and hide things with your own CSS, when hidden items must stay focusable — for example if your UI closes when focus leaves it, as search does, so Tab can still move on to the next item:
+
 ```scss
-.im-o-app--exclusive-control-my-plugin {
+.im-o-app--mode-my-plugin {
   .im-o-app__right .im-c-button-wrapper {
-    display: none;
+    opacity: 0;
   }
 }
 ```

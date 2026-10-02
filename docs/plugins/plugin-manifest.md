@@ -30,6 +30,25 @@ Each function receives a [PluginContext](./plugin-context.md) as its first argum
 
 ---
 
+### `applicationModes`
+**Type:** `Object<string, { include?: string[], exclude?: string[] }>`
+
+The [application modes](./plugin-context.md#setapplicationmode) your plugin enters, keyed by mode id, and what each one shows. Your plugin enters and leaves them with `setApplicationMode(id)` and `clearApplicationMode(id)`.
+
+- **`include`** — the mode takes over the interface: everything is hidden except these buttons, panels and controls and your plugin's own items, which are always kept.
+- **`exclude`** — these are hidden; everything else stays.
+- **No lists** — nothing is hidden; only the `im-o-app--mode-{id}` class is added, for your CSS to respond to.
+
+```js
+applicationModes: {
+  draw: { include: ['mapStyles', 'mapControls', 'scaleBar'] }
+}
+```
+
+Several plugins can declare the same mode, e.g. to keep their own control visible in another plugin's mode: their lists combine, and each declaring plugin's own items are kept. The host can then add to, remove from or disable the mode with its [`applicationModes`](../api.md#applicationmodes) option, and any options passed to `setApplicationMode` are applied last.
+
+---
+
 ### `buttons`
 **Type:** `ButtonDefinition[]`
 

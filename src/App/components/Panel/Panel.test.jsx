@@ -353,6 +353,11 @@ describe('Panel', () => {
       expect(panel).toHaveAttribute('hidden')
     })
 
+    it('renders hidden while open when isHidden (e.g. by exclusive control), staying mounted', () => {
+      renderPanel({}, { isOpen: true, isHidden: true })
+      expect(document.getElementById('app-panel-settings')).toHaveAttribute('hidden')
+    })
+
     it('does not focus a closed panel, even one that would otherwise auto-focus (modal)', () => {
       renderPanel({ desktop: { slot: 'overlay', dismissible: true, modal: true } }, { isOpen: false })
       const panel = document.getElementById('app-panel-settings')

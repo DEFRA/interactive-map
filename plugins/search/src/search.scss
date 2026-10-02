@@ -26,7 +26,7 @@
 }
 
 // Prevents a phantom trailing gap when the only header content is a collapsed (but still present) search form.
-.im-o-app__header:has(> .im-c-search--collapsed:only-child) {
+.im-o-app__header:has(> .im-c-control-wrapper:only-child > .im-c-search--collapsed) {
   margin-bottom: 0;
 }
 
@@ -112,12 +112,14 @@
 }
 
 // 3. Modifiers
-.im-o-app--exclusive-control-search {
+.im-o-app--mode-search {
   // Everything in the top row except the form itself: buttons (the trigger included), button
-  // groups and other controls, whatever slot search is in. Taken out of flow so nothing offsets the
-  // form within its column, but kept focusable: Tab from the form still reaches the next item, and
-  // focus can return to the trigger on close.
-  .im-o-app__top-col > :not(.im-c-search) {
+  // groups and other controls, whatever slot search is in. Plugin controls sit inside a display:
+  // contents wrapper, so it's their content that's targeted (search's own wrapper excepted). Taken
+  // out of flow so nothing offsets the form within its column, but kept focusable: Tab from the form
+  // still reaches the next item, and focus can return to the trigger on close.
+  .im-o-app__top-col > :not(.im-c-control-wrapper),
+  .im-o-app__top-col > .im-c-control-wrapper:not(.im-c-control-wrapper--search) > * {
     position: absolute;
     opacity: 0;
     z-index: -1;

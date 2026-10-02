@@ -10,10 +10,9 @@ import { deleteFeature } from './api/deleteFeature.js'
 import { split } from './api/split.js'
 import { merge } from './api/merge.js'
 import { isMac } from '../../../src/utils/isMac.js'
+import { APPLICATION_MODE_ID } from './defaults.js'
 
-const DRAW_ACTIONS_SLOT = 'top-middle'
-
-// edit_point behaves like edit_vertex for Done/Menu/Undo, but stays out of drawDeletePoint and mergeShapes (neither applies to a single coordinate).
+// edit_point behaves like edit_vertex for Done/Undo, but stays out of drawDeletePoint and mergeShapes (neither applies to a single coordinate).
 const EDIT_MODES = new Set(['edit_vertex', 'edit_point'])
 // .has(), not spread — [...aSet] can silently misbehave under a loose-mode Babel build (see OLDrawManager.js's emit()).
 const isEditMode = (mode) => EDIT_MODES.has(mode)
@@ -24,10 +23,13 @@ const undoCommand = isMac() ? '<kbd>Command</kbd> + <kbd>Z</kbd>' : '<kbd>Ctrl</
 // menus call it Option, not Alt.
 const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 
-const createButtonSlots = (showLabel) => ({
-  mobile: { slot: 'actions', showLabel },
-  tablet: { slot: 'actions', showLabel },
-  desktop: { slot: 'actions', showLabel }
+// Undo, Snap and Delete point sit together in the middle of the top row
+const TOOLBAR_SLOT = 'top-middle'
+
+const createButtonSlots = (showLabel, slot = 'actions') => ({
+  mobile: { slot, showLabel },
+  tablet: { slot, showLabel },
+  desktop: { slot, showLabel }
 })
 
 export const manifest = {
@@ -37,6 +39,11 @@ export const manifest = {
   },
 
   InitComponent: DrawInit,
+
+  // While drawing or editing, hide everything except draw's own items (kept automatically) and these
+  applicationModes: {
+    [APPLICATION_MODE_ID]: { include: ['mapStyles', 'mapControls', 'scaleBar'] }
+  },
 
   buttons: [
     {
@@ -74,49 +81,42 @@ export const manifest = {
       ...createButtonSlots(true)
     },
     {
-      id: 'drawMenu',
-      label: ({ pluginState }) => isEditMode(pluginState.mode) ? 'Edit actions' : 'Draw actions',
-      iconId: 'menu',
-      exclusiveSlot: true,
-      // draw_point belongs here too — it has no Undo (nothing to undo before a single-click
-      // commit, gated separately below) and no delete-vertex, but it DOES support snapping,
-      // and the Snap toggle is a menuItem living inside this same button.
-      hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
-      menuItems: [
-        {
-          id: 'drawUndo',
-          label: 'Undo',
-          iconId: 'undo',
-          hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
-          enableWhen: ({ pluginState }) => {
-            if (['draw_polygon', 'draw_line'].includes(pluginState.mode)) {
-              return pluginState.numVertices > 0
-            }
-            return pluginState.undoStackLength > 0
-          }
-        },
-        {
-          id: 'drawSnap',
-          label: 'Snap to feature',
-          iconId: 'magnet',
-          hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
-          pressedWhen: ({ pluginState }) => !!pluginState.snap
-        },
-        {
-          id: 'drawDeletePoint',
-          label: 'Delete point',
-          iconId: 'trash',
-          enableWhen: ({ pluginState }) => {
-            if (pluginState.selectedVertexIndex < 0) { return false }
-            const isPolygon = pluginState.feature?.geometry?.type === 'Polygon'
-            return isPolygon ? pluginState.numVertices > 3 : pluginState.numVertices > 2 // NOSONAR
-          },
-          hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex'
+      // Undo, Snap and Delete point render in this order in TOOLBAR_SLOT. While draw has exclusive
+      // control, core hides everything around them that isn't on the keep list.
+      id: 'drawUndo',
+      label: 'Undo',
+      iconId: 'undo',
+      // Hidden for draw_point — nothing to undo before a single-click commit.
+      hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
+      enableWhen: ({ pluginState }) => {
+        if (['draw_polygon', 'draw_line'].includes(pluginState.mode)) {
+          return pluginState.numVertices > 0
         }
-      ],
-      mobile: { slot: DRAW_ACTIONS_SLOT },
-      tablet: { slot: DRAW_ACTIONS_SLOT },
-      desktop: { slot: DRAW_ACTIONS_SLOT }
+        return pluginState.undoStackLength > 0
+      },
+      ...createButtonSlots(false, TOOLBAR_SLOT)
+    },
+    {
+      id: 'drawSnap',
+      label: 'Snap',
+      iconId: 'magnet',
+      hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
+      pressedWhen: ({ pluginState }) => !!pluginState.snap,
+      ...createButtonSlots(true, TOOLBAR_SLOT)
+    },
+    {
+      id: 'drawDeletePoint',
+      label: 'Delete point',
+      iconId: 'trash',
+      enableWhen: ({ pluginState }) => {
+        if (pluginState.selectedVertexIndex < 0) { return false }
+        const isPolygon = pluginState.feature?.geometry?.type === 'Polygon'
+        return isPolygon ? pluginState.numVertices > 3 : pluginState.numVertices > 2 // NOSONAR
+      },
+      // Deliberately excluded from edit_point — deleting a point's one coordinate is deleting
+      // the whole feature (deleteFeature's job), not a per-vertex action.
+      hiddenWhen: ({ pluginState }) => pluginState.mode !== 'edit_vertex',
+      ...createButtonSlots(false, TOOLBAR_SLOT)
     }
   ],
 
@@ -158,9 +158,6 @@ export const manifest = {
   }],
 
   icons: [{
-    id: 'menu',
-    svgContent: '<path d="m6 9 6 6 6-6"/>'
-  }, {
     id: 'undo',
     svgContent: '<path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5a5.5 5.5 0 0 1-5.5 5.5H11"/>'
   }, {

@@ -33,6 +33,21 @@ describe('useInterfaceAPI', () => {
     useService.mockReturnValue({ eventBus: mockEventBus })
   })
 
+  it('sets a mode on app:setapplicationmode', () => {
+    renderHook(() => useInterfaceAPI())
+    act(() => mockEventBus.emit('app:setapplicationmode', { id: 'review', include: ['mapStyles'], exclude: null }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_APPLICATION_MODE',
+      payload: { id: 'review', include: ['mapStyles'], exclude: null }
+    })
+  })
+
+  it('clears a mode on app:clearapplicationmode', () => {
+    renderHook(() => useInterfaceAPI())
+    act(() => mockEventBus.emit('app:clearapplicationmode', 'review'))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_APPLICATION_MODE', payload: 'review' })
+  })
+
   it('dispatches ADD_BUTTON on app:addbutton', () => {
     renderHook(() => useInterfaceAPI())
     act(() => mockEventBus.emit('app:addbutton', { id: 'btn1', config: { label: 'Test' } }))

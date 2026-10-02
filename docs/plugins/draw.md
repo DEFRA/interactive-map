@@ -61,7 +61,7 @@ Vector tile source-layer names to snap new and edited vertices against. Can be o
 
 The layer names available depend entirely on your basemap style — there's no universal default, so check your style's vector tile source(s) for the source-layer names to use. The example below (`'OS/TopographicArea_1/Agricultural Land'`) is specific to an Ordnance Survey basemap style.
 
-When set (globally or per call), a "Snap to feature" toggle appears in the draw menu, letting the user turn snapping on and off during a session.
+When set (globally or per call), a "Snap" toggle button appears in the top row, letting the user turn snapping on and off during a session.
 
 ```js
 createDrawPlugin({
@@ -76,22 +76,6 @@ createDrawPlugin({
 **Type:** `Function`
 
 Plugin-level validation callback, called throughout the draw/edit lifecycle so you can enforce your own rules (e.g. "shapes must stay inside a boundary") alongside the built-in ones. Can be overridden per call — see [Validation](#validation) below for the full contract, and `newPolygon`, `newLine`, `newPoint`, `editFeature` for the per-call override.
-
----
-
-### `includeModes`
-
-**Type:** `string[]`
-
-When set, the plugin only initialises when the app is in one of the specified modes.
-
----
-
-### `excludeModes`
-
-**Type:** `string[]`
-
-When set, the plugin does not initialise when the app is in one of the specified modes.
 
 ---
 
@@ -397,9 +381,34 @@ interactiveMap.on('draw:merge', (e) => {
 })
 ```
 
+## Application mode
+
+While drawing or editing, the plugin sets the `'draw'` [application mode](../api.md#setapplicationmodeid-options), which gives the interface over to drawing: every button, panel and control, in every slot, is hidden except draw's own and these defaults:
+
+```js
+['mapStyles', 'mapControls', 'scaleBar']
+```
+
+Everything reappears as it was when the draw or edit mode ends. Hidden items stay mounted, so open panels keep their state and scroll position, and modal panels are never hidden. The app root also gets the class `im-o-app--mode-draw`.
+
+Adjust it with the [`applicationModes`](../api.md#applicationmodes) option, keyed by the mode id. For example, to also keep search and a control of your own, and hide the scale bar:
+
+```js
+new InteractiveMap('map', {
+  applicationModes: {
+    draw: { include: ['search', 'myControl'], exclude: ['scaleBar'] }
+  }
+})
+```
+
+Or set `draw: false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden.
+
+> [!NOTE]
+> The mode only changes the interface. Other plugins' own behaviour keeps running while their buttons are hidden, so disable any that shouldn't respond while drawing — for example, call `interactPlugin.disable()` on [`draw:started`](#drawstarted) and [`draw:editstart`](#draweditstart), and `interactPlugin.enable()` on [`draw:created`](#drawcreated), [`draw:edited`](#drawedited) and [`draw:cancelled`](#drawcancelled).
+
 ## Buttons and keyboard shortcuts
 
-The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only), Done, and a Draw actions menu (Undo, Snap to feature, Delete point) — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
+The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only) and Done in the actions bar, plus Undo, Snap and Delete point in the middle of the top row — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
 
 | Shortcut | Action |
 |----------|--------|

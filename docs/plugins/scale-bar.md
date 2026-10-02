@@ -39,20 +39,6 @@ createScaleBarPlugin({ units: 'imperial' })
 
 ---
 
-### `includeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin only renders when the app is in one of these modes.
-
----
-
-### `excludeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin does not render when the app is in one of these modes.
-
----
-
 ## Methods
 
 This plugin does not expose any public methods.

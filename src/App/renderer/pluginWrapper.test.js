@@ -37,22 +37,51 @@ describe('withPluginContexts', () => {
     }))
   })
 
-  it.each([
-    [true, { name: null, active: true }],
-    ['edit-point', { name: 'edit-point', active: true }],
-    [false, { name: null, active: false }],
-    [null, { name: null, active: false }],
-    [undefined, { name: null, active: false }]
-  ])('injects setExclusiveControl bound to the plugin id (%p)', (value, expected) => {
-    const dispatch = jest.fn()
-    require('../store/appContext.js').useApp.mockReturnValueOnce({ buttonConfig: {}, dispatch })
-    const Inner = jest.fn(() => <div>Inner</div>)
-    const Wrapped = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: {} })
+  describe('application mode helpers', () => {
+    const setup = () => {
+      const dispatch = jest.fn()
+      require('../store/appContext.js').useApp.mockReturnValue({ buttonConfig: {}, dispatch })
+      const Inner = jest.fn(() => <div>Inner</div>)
+      const Wrapped = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: {} })
+      const { rerender } = render(<Wrapped />)
+      return { dispatch, Inner, Wrapped, rerender }
+    }
 
-    render(<Wrapped />)
-    Inner.mock.calls[0][0].setExclusiveControl(value)
+    afterEach(() => {
+      require('../store/appContext.js').useApp.mockReturnValue({ user: 'testUser', buttonConfig: {} })
+    })
 
-    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_EXCLUSIVE_CONTROL', payload: { pluginId: 'plugin1', ...expected } })
+    it('sets a mode with its lists', () => {
+      const { dispatch, Inner } = setup()
+      Inner.mock.calls[0][0].setApplicationMode('draw', { include: ['mapStyles'] })
+      expect(dispatch).toHaveBeenCalledWith({
+        type: 'SET_APPLICATION_MODE',
+        payload: { id: 'draw', include: ['mapStyles'], exclude: null }
+      })
+    })
+
+    it('defaults both lists to null', () => {
+      const { dispatch, Inner } = setup()
+      Inner.mock.calls[0][0].setApplicationMode('search')
+      expect(dispatch).toHaveBeenCalledWith({
+        type: 'SET_APPLICATION_MODE',
+        payload: { id: 'search', include: null, exclude: null }
+      })
+    })
+
+    it('clears a mode', () => {
+      const { dispatch, Inner } = setup()
+      Inner.mock.calls[0][0].clearApplicationMode('draw')
+      expect(dispatch).toHaveBeenCalledWith({ type: 'CLEAR_APPLICATION_MODE', payload: 'draw' })
+    })
+
+    it('passes the same functions on every render, so effects can depend on them', () => {
+      const { Inner, Wrapped, rerender } = setup()
+      rerender(<Wrapped />)
+      const [firstProps, secondProps] = Inner.mock.calls.map(([props]) => props)
+      expect(secondProps.setApplicationMode).toBe(firstProps.setApplicationMode)
+      expect(secondProps.clearApplicationMode).toBe(firstProps.clearApplicationMode)
+    })
   })
 
   it('returns the cached wrapper if called again with the same component', () => {

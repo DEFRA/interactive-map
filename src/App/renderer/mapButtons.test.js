@@ -17,8 +17,7 @@ describe('mapButtons module', () => {
   const baseBtn = {
     iconId: 'i1',
     label: 'Btn',
-    desktop: { slot: 'header', order: 1, showLabel: true },
-    includeModes: ['view']
+    desktop: { slot: 'header', order: 1, showLabel: true }
   }
 
   let appState
@@ -31,7 +30,6 @@ describe('mapButtons module', () => {
     jest.clearAllMocks()
     appState = {
       breakpoint: 'desktop',
-      mode: 'view',
       isFullscreen: true,
       openPanels: {},
       dispatch: jest.fn(),
@@ -57,8 +55,6 @@ describe('mapButtons module', () => {
 
     it('returns empty array when buttonConfig is null', () => testFilter(null, 0))
     it('filters out buttons not in the correct slot', () => testFilter({ b1: { ...baseBtn, desktop: { slot: 'sidebar' } } }, 0))
-    it('filters out buttons excluded by includeModes', () => testFilter({ b1: { ...baseBtn, includeModes: ['edit'] } }, 0))
-    it('filters out buttons excluded by excludeModes', () => testFilter({ b1: { ...baseBtn, excludeModes: ['view'] } }, 0))
     it('returns all valid matching buttons', () => testFilter({ b1: baseBtn, b2: baseBtn }, 2))
 
     it('excludes buttons dynamically via excludeWhen', () => {
@@ -162,11 +158,10 @@ describe('mapButtons module', () => {
       const state = {
         ...appState,
         disabledButtons: new Set(['id']),
-        hiddenButtons: new Set(['id']),
         pressedButtons: new Set(['id']),
         expandedButtons: new Set(['id'])
       }
-      const result = render({ ...baseBtn, pressedWhen: jest.fn(), expandedWhen: jest.fn() }, state)
+      const result = SlotButton({ buttonId: 'id', config: { ...baseBtn, pressedWhen: jest.fn(), expandedWhen: jest.fn() }, isHidden: true, appState: state, appConfig, evaluateProp })
       expect(result.props).toMatchObject({ isDisabled: true, isHidden: true, isPressed: true, isExpanded: true })
     })
 
@@ -245,10 +240,18 @@ describe('mapButtons module', () => {
   // mapButtons tests
   // -------------------------
   describe('mapButtons', () => {
-    const map = () => mapButtons({ slot: 'header', appState, appConfig, evaluateProp })
+    const map = (isHiddenByApplicationMode) => mapButtons({ slot: 'header', appState, appConfig, evaluateProp, isHiddenByApplicationMode })
 
     it('returns empty array when buttonConfig is empty', () => {
       expect(map()).toEqual([])
+    })
+
+    it('hides (keeps mounted) a button the application mode filter hides', () => {
+      appState.buttonConfig = ({ b1: { ...baseBtn, pluginId: 'p1' } })
+      expect(map()[0].element.props.isHidden).toBe(false)
+      const isHiddenByApplicationMode = jest.fn(() => true)
+      expect(map(isHiddenByApplicationMode)[0].element.props.isHidden).toBe(true)
+      expect(isHiddenByApplicationMode).toHaveBeenCalledWith({ ids: ['b1'], pluginId: 'p1' })
     })
 
     it('returns a flat list of buttons with type and order', () => {
@@ -269,6 +272,16 @@ describe('mapButtons module', () => {
       expect(result[0]).toMatchObject({ id: 'group-group 1', type: 'group', order: 2 })
       expect(result[0].element.props.role).toBe('group')
       expect(result[0].element.props['aria-label']).toBe('Group 1')
+    })
+
+    it('hides a group only once every member is hidden, e.g. by an application mode', () => {
+      appState.buttonConfig = ({
+        b1: { ...baseBtn, group: { label: 'Group 1' } },
+        b2: { ...baseBtn, group: { label: 'Group 1' } }
+      })
+      expect(map()[0].element.props.hidden).toBe(false)
+      expect(map(({ ids }) => ids[0] === 'b1')[0].element.props.hidden).toBe(false)
+      expect(map(() => true)[0].element.props.hidden).toBe(true)
     })
 
     it('merges group labels that differ only by case/whitespace into one group', () => {

@@ -85,6 +85,37 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
   })
 
+  test('counts a control wrapper as rendered when anything inside it is', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 50 }, top: { offsetTop: 15 } } })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'im-c-control-wrapper'
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper, { getClientRects: () => [{}] })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '65px')
+  })
+
+  test('treats a control wrapper with nothing rendered inside as hidden', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'im-c-control-wrapper'
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper)
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
+  })
+
+  test('treats a hidden wrapper as hidden, whatever is inside it', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'im-c-control-wrapper'
+    wrapper.hidden = true
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper, { getClientRects: () => [{}] })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
+  })
+
   test('measures a top column normally when any child is rendered', () => {
     const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 50 }, top: { offsetTop: 15 } } })
     appendChild(layoutRefs.topRightColRef.current)

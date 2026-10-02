@@ -24,9 +24,7 @@ export function createPluginRegistry ({ registerButton, registerPanel, registerC
     const { manifest } = plugin
 
     const pluginConfig = {
-      pluginId: plugin.id,
-      includeModes: plugin.config?.includeModes,
-      excludeModes: plugin.config?.excludeModes
+      pluginId: plugin.id
     }
 
     if (manifest.buttons) {

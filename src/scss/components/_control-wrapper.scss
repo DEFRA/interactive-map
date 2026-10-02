@@ -1,0 +1,5 @@
+// Core's wrapper around a plugin control (see mapControls.js): it leaves layout untouched, so the
+// control behaves as a direct child of its slot. Hidden with the hidden attribute (utilities/state).
+.im-c-control-wrapper {
+    display: contents;
+}
