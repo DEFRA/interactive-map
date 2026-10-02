@@ -22,7 +22,7 @@ describe('mapPanels', () => {
   let defaultAppState
 
   const map = (state = defaultAppState, slot = 'header', isHiddenByApplicationMode) =>
-    mapPanels({ slot, appState: state, evaluateProp: (p) => p, isHiddenByApplicationMode })
+    mapPanels({ slot, appState: state, evaluateProp: (prop) => prop, isHiddenByApplicationMode })
 
   beforeEach(() => {
     jest.clearAllMocks()

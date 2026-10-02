@@ -485,7 +485,7 @@ export default class InteractiveMap {
    * set. Only the current mode (the top of the stack) applies: the app root gets `im-o-app--mode-{id}`. With
    * `include`, only the listed buttons, panels and controls stay visible; with `exclude`, the listed
    * ones are hidden. Hidden items stay mounted, so their state survives, and modal panels are never
-   * hidden. The `applicationModes` option still has the final say over the mode's lists.
+   * hidden. Options passed here are applied last, after plugins' manifests and the `applicationModes` option.
    *
    * @param {string} id - Mode id, e.g. `'review'`. Used as-is in the class, so keep it class-safe.
    * @param {ApplicationModeOptions} [options]

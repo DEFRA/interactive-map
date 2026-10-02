@@ -70,7 +70,7 @@ describe('drawDone', () => {
 
 describe('top row buttons', () => {
   test('sit in the top-middle slot as Undo, Snap, Delete point, with only Snap showing its label', () => {
-    const topMiddle = manifest.buttons.filter(b => b.desktop?.slot === 'top-middle').map(b => b.id)
+    const topMiddle = manifest.buttons.filter(button => button.desktop?.slot === 'top-middle').map(button => button.id)
     expect(topMiddle).toEqual(['drawUndo', 'drawSnap', 'drawDeletePoint'])
     expect(findButton('drawUndo').desktop).toEqual({ slot: 'top-middle', showLabel: false })
     expect(findButton('drawSnap').desktop).toEqual({ slot: 'top-middle', showLabel: true })

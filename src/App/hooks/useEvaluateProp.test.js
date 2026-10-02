@@ -96,10 +96,10 @@ describe('useEvaluateProp — pluginStates (core/framework buttons)', () => {
 
 describe('useEvaluateProp — plugin state isolation', () => {
   it('includes pluginConfig and pluginState for real plugin buttons', () => {
-    mockPluginRegistry.registeredPlugins.push({ id: 'myPlugin', config: { includeModes: ['edit'], excludeModes: ['view'] } })
+    mockPluginRegistry.registeredPlugins.push({ id: 'myPlugin', config: { maxResults: 5 } })
     const { result } = renderHook(() => useEvaluateProp(), { wrapper: withPluginContext })
     const ctx = result.current(c => c, 'myPlugin')
-    expect(ctx.pluginConfig).toEqual({ pluginId: 'myPlugin', includeModes: ['edit'], excludeModes: ['view'] })
+    expect(ctx.pluginConfig).toEqual({ pluginId: 'myPlugin', maxResults: 5 })
     expect(ctx.pluginState).toMatchObject({ foo: 'bar', dispatch: expect.any(Function) })
   })
 

@@ -120,7 +120,7 @@ describe('mapControls', () => {
       ctrlHtml: { id: 'ctrlHtml', pluginId: 'plugin1', desktop: { slot: 'header' }, html: '<p>Hi</p>' }
     })
     const isHiddenByApplicationMode = jest.fn(() => true)
-    const hidden = (filter) => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p, isHiddenByApplicationMode: filter })[0].element.props.hidden
+    const hidden = (filter) => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (prop) => prop, isHiddenByApplicationMode: filter })[0].element.props.hidden
     expect(hidden()).toBe(false)
     expect(hidden(isHiddenByApplicationMode)).toBe(true)
     expect(isHiddenByApplicationMode).toHaveBeenCalledWith({ ids: ['ctrlHtml'], pluginId: undefined })
@@ -138,7 +138,7 @@ describe('mapControls', () => {
     defaultAppState.controlConfig = ({
       ctrl1: { id: 'ctrl1', desktop: { slot: 'header' }, render: () => null }
     })
-    const wrapper = (filter) => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (p) => p, isHiddenByApplicationMode: filter })[0].element
+    const wrapper = (filter) => mapControls({ slot: 'header', appState: defaultAppState, evaluateProp: (prop) => prop, isHiddenByApplicationMode: filter })[0].element
     expect(wrapper().props).toMatchObject({ className: 'im-c-control-wrapper im-c-control-wrapper--ctrl1', hidden: false })
     expect(wrapper(() => true).props.hidden).toBe(true)
   })
