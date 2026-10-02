@@ -140,7 +140,7 @@ describe('createDatasetLayer', () => {
   // canvas 2D context, which jsdom returns null for without the `canvas` npm package. Hex
   // colours take OL's fast lane and skip that path entirely (see ol/color.js#parseRgba).
   // Named colours work fine in a real browser; this is a test-environment gap only.
-  const registryDataset = { flatStyle: { 'fill-color': '#0000ff' }, opacity: 0.5, visibility: 'visible', minZoom: 1, maxZoom: 10, hasPattern: false }
+  const registryDataset = { getFlatStyle: () => ({ 'fill-color': '#0000ff' }), opacity: 0.5, visibility: 'visible', minZoom: 1, maxZoom: 10, hasPattern: false }
 
   it('builds a Canvas VectorLayer', () => {
     const layer = createDatasetLayer(registryDataset, new VectorSource())
@@ -203,13 +203,19 @@ describe('createDatasetLayer', () => {
     })
 
     it('gives a symbol dataset a higher zIndex, so it always renders above fill/stroke layers', () => {
-      const layer = createDatasetLayer({ ...registryDataset, hasSymbol: true }, new VectorSource())
+      const layer = createDatasetLayer({ ...registryDataset, hasSymbol: true, getSymbolMeta: () => null }, new VectorSource())
       expect(layer.getZIndex()).toBeGreaterThan(0)
+    })
+
+    it('tags a symbol layer with its symbolMeta at the context pixelRatio, for highlightFeatures.js', () => {
+      const getSymbolMeta = jest.fn((pixelRatio) => ({ imageId: 'img', anchor: [0.5, 0.5], pixelRatio }))
+      const layer = createDatasetLayer({ ...registryDataset, hasSymbol: true, getSymbolMeta }, new VectorSource(), { pixelRatio: 3 })
+      expect(layer.get('symbolMeta')).toEqual({ imageId: 'img', anchor: [0.5, 0.5], pixelRatio: 3 })
     })
   })
 
   describe('tile-backed dataset', () => {
-    const tileRegistryDataset = { flatStyle: { 'stroke-color': '#0000ff' }, opacity: 1, visibility: 'visible', hasPattern: false, id: 'existing-fields' }
+    const tileRegistryDataset = { getFlatStyle: () => ({ 'stroke-color': '#0000ff' }), opacity: 1, visibility: 'visible', hasPattern: false, id: 'existing-fields' }
     // A real VectorTileSource, built the same way createDatasetSource does — a bare
     // `new VectorTileSource()` throws without a resolved projection.
     const tileSource = () => createDatasetSource({ id: 'existing-fields', idStrategy: null, source: { type: 'vector', tiles: ['https://example.com/{z}/{x}/{y}'] } })

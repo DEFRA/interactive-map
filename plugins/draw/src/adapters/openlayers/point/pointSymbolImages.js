@@ -13,9 +13,9 @@ const PROPERTY_FOR_VARIANT = { normal: 'symbolImageId', active: 'symbolActiveIma
 
 export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
 
-// Combines the browser's native devicePixelRatio with this app's own map-size scale factor
-// (mapProvider.drawScale), matching MapController.jsx's construction-time formula.
-export const getPixelRatio = (mapProvider) => (globalThis.devicePixelRatio || 1) * (mapProvider?.drawScale ?? 1)
+// The map's own pixelRatio (device pixel ratio × map-size scale factor) — the same source the
+// datasets plugin rasterises its OL symbols at, so both draw them 1:1.
+export const getPixelRatio = (mapProvider) => mapProvider?.map?.getPixelRatio?.() || 1
 
 /**
  * Resolve one point feature's symbol image and write it back onto the feature.
@@ -25,15 +25,19 @@ export const getPixelRatio = (mapProvider) => (globalThis.devicePixelRatio || 1)
  * @param {Object} params.manager - OLDrawManager (needs store.source, mapStyle)
  * @param {Object} params.mapProvider
  * @param {import('ol/Feature.js').default} params.olFeature
+ * @param {number} [params.pixelRatioOverride] - use this instead of the map's pixelRatio, for
+ *   callers (MAP_SET_PIXEL_RATIO) that already have the freshly set value
+ * @param {number} [params.refreshId] - set by refreshAllPointSymbols; the result is dropped if a
+ *   newer refresh has started since
  * @returns {Promise<void>}
  */
-export const resolvePointSymbol = async ({ manager, mapProvider, olFeature }) => {
+export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixelRatioOverride, refreshId }) => {
   const properties = olFeature.getProperties()
   if (!hasSymbolStyle(properties)) {
     return
   }
 
-  const pixelRatio = getPixelRatio(mapProvider)
+  const pixelRatio = pixelRatioOverride ?? getPixelRatio(mapProvider)
 
   try {
     const results = await Promise.all(
@@ -45,8 +49,9 @@ export const resolvePointSymbol = async ({ manager, mapProvider, olFeature }) =>
       return
     }
 
-    // The feature may have been deleted/cancelled while rasterising was in flight.
-    if (!manager.store.source.hasFeature(olFeature)) {
+    // The feature may have been deleted/cancelled while rasterising was in flight, or a newer
+    // refresh (another size or style change) may have superseded this one.
+    if (!manager.store.source.hasFeature(olFeature) || (refreshId !== undefined && refreshId !== manager.pointSymbolRefreshId)) {
       return
     }
     VARIANTS.forEach((variant, i) => {
@@ -73,11 +78,16 @@ export const resolvePointSymbol = async ({ manager, mapProvider, olFeature }) =>
  * @param {Object} params
  * @param {Object} params.manager
  * @param {Object} params.mapProvider
+ * @param {number} [params.pixelRatioOverride] - see resolvePointSymbol
  * @returns {Promise<void>}
  */
-export const refreshAllPointSymbols = ({ manager, mapProvider }) => {
+export const refreshAllPointSymbols = ({ manager, mapProvider, pixelRatioOverride }) => {
+  // Refreshes overlap when the map size or style changes again before one finishes; only the
+  // latest may write back, so an older one finishing last can't restore its stale images
+  manager.pointSymbolRefreshId = (manager.pointSymbolRefreshId ?? 0) + 1
+  const refreshId = manager.pointSymbolRefreshId
   const points = manager.store.source.getFeatures().filter(
-    (f) => f.getGeometry()?.getType() === 'Point' && hasSymbolStyle(f.getProperties())
+    (feature) => feature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(feature.getProperties())
   )
-  return Promise.all(points.map((olFeature) => resolvePointSymbol({ manager, mapProvider, olFeature })))
+  return Promise.all(points.map((olFeature) => resolvePointSymbol({ manager, mapProvider, olFeature, pixelRatioOverride, refreshId })))
 }

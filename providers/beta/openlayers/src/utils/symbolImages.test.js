@@ -1,3 +1,5 @@
+import Icon from 'ol/style/Icon.js'
+import ImageState from 'ol/ImageState.js'
 import { getCachedSymbolImage, getOrCreateSymbolImage, clearSymbolImageCache, registerSymbol, registerSymbols, getCachedSymbolDataUri, getActiveSymbolImageId, getSelectedSymbolImageId } from './symbolImages.js'
 
 const MAP_STYLE = { id: 'outdoor' }
@@ -78,6 +80,22 @@ describe('clearSymbolImageCache', () => {
 })
 
 describe('registerSymbol', () => {
+  // A flat style's icon-src that isn't already in OL's icon cache is loaded asynchronously, and
+  // OL draws nothing for the icon until it has — a flicker every time styles switch images.
+  it('seeds OL\'s icon cache, so an icon-src from it is loaded straight away', async () => {
+    const symbolRegistry = makeSymbolRegistry()
+    symbolRegistry.getSymbolImageId.mockReturnValue('seeded')
+    symbolRegistry.rasteriseSymbolImage.mockImplementation(async (style, mapStyle, variant) => ({
+      imageId: variant === 'normal' ? 'seeded' : `seeded-${variant}`,
+      imageData: imageData(31, 17)
+    }))
+    await registerSymbol({ symbol: 'pin' }, MAP_STYLE, symbolRegistry, 1)
+
+    const icon = new Icon({ src: getCachedSymbolDataUri('seeded') })
+    expect(icon.getImageState()).toBe(ImageState.LOADED)
+    expect(icon.getImage(1)).toBe(getCachedSymbolImage('seeded'))
+  })
+
   it('caches a data URI built from the rasterised ImageData', async () => {
     const symbolRegistry = makeSymbolRegistry()
     await registerSymbol({ symbol: 'pin' }, MAP_STYLE, symbolRegistry, 1)

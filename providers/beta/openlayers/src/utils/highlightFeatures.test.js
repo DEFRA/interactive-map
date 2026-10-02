@@ -202,19 +202,21 @@ describe('updateHighlightedFeatures', () => {
     test('renders the selected-variant Icon for a dataset symbol point', async () => {
       await registerDatasetSymbol()
       const selectedCanvas = getCachedSymbolImage('ds-symbol-selected')
-      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1] })])
+      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1], pixelRatio: 3 })])
 
       updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
       const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
       const [style] = hlFeature.getStyle()
       expect(style.getImage()).toBeInstanceOf(Icon)
       expect(style.getImage().getImage(1)).toBe(selectedCanvas)
+      // drawn 1:1 — scaled by the pixelRatio the image was rasterised at
+      expect(style.getImage().getScale()).toBeCloseTo(1 / 3)
     })
 
     test('renders the active-variant Icon for the keyboard-cursor item', async () => {
       await registerDatasetSymbol()
       const activeCanvas = getCachedSymbolImage('ds-symbol-active')
-      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1] })])
+      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1], pixelRatio: 3 })])
 
       updateHighlightedFeatures(map, [], [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], {})
       const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()

@@ -14,7 +14,7 @@ const SymbolMarker = ({ marker, mapId, markerRef, isSelected, symbolProps }) => 
       width={scaledWidth}
       height={scaledHeight}
       viewBox={viewBox}
-      overflow='visible'
+      overflow='hidden'
       aria-hidden='true'
       style={{
         display: marker.isVisible ? 'block' : 'none',

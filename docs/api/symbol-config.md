@@ -25,7 +25,17 @@ backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' }
 **Type:** `string`
 **Default:** `'pin'`
 
-Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`. Ignored when `symbolSvgContent` is set.
+Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. Ignored when `symbolSvgContent` is set.
+
+---
+
+### `symbolSize`
+**Type:** `'small' | 'medium' | 'large'`
+**Default:** `'medium'`
+
+Size of the symbol on the map: `'small'` is 75% and `'large'` 125% of `'medium'`. The shape and its graphic scale; the white halo and the selected/active rings stay the same width. The [map key](../plugins/map-key.md) always shows symbols at `'medium'`.
+
+SVG-template symbols (`symbolSvgContent`, or a symbol registered with `svg`) are scaled as a whole, including any rings they draw.
 
 ---
 
@@ -46,7 +56,7 @@ Inner SVG path content (no `<svg>` wrapper) to render as the symbol. Use `{{toke
 }
 ```
 
-See [SVG structure](#svg-structure) for the standard three-layer pattern.
+See [SVG structure](#svg-structure) for the standard three-layer pattern. Anything drawn outside the `viewBox` is cut off.
 
 ---
 
@@ -54,7 +64,7 @@ See [SVG structure](#svg-structure) for the standard three-layer pattern.
 **Type:** `string`
 **Default:** registered symbol's viewBox, or `'0 0 44 44'`
 
-SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a different coordinate space.
+SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a different coordinate space. Ignored by built-in symbols.
 
 ---
 
@@ -62,11 +72,14 @@ SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a 
 **Type:** `[number, number]`
 **Default:** registered symbol's anchor, or `[0.5, 0.5]`
 
-Normalised `[x, y]` anchor point where `[0, 0]` is the top-left and `[1, 1]` is the bottom-right of the symbol. Determines which point on the symbol aligns with the geographic coordinate.
+Normalised `[x, y]` anchor point — which point on the symbol sits on the geographic coordinate. Each built-in symbol has its own default: just below the tip for `'pin'`, the centroid for `'triangle'`, and the centre for the others.
+
+- **On a built-in symbol**, `[0, 0]` is the top-left and `[1, 1]` the bottom-right of the shape.
+- **On a custom SVG symbol** (`symbolSvgContent` or a registered `svg`), it's a fraction of the symbol's `viewBox`.
 
 ```js
-anchor: [0.5, 1]   // bottom-centre — tip of a pin
-anchor: [0.5, 0.5] // centre — circle or dot
+anchor: [0.5, 1]   // bottom-centre
+anchor: [0.5, 0.5] // centre
 ```
 
 ---
@@ -101,6 +114,8 @@ Pass a built-in name or supply your own path data:
 // Inline path data
 { symbol: 'pin', graphic: 'M14 12 L24 20 L14 28 Z' }
 ```
+
+Path data can use any coordinate space, such as a 24×24 icon. The graphic is centred in the shape and scaled down, if needed, to fit a 16×16 area.
 
 Built-in named graphics (16×16 coordinate space, centred at 8,8):
 

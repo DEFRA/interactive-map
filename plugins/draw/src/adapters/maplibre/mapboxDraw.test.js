@@ -7,6 +7,7 @@ import { applyTouchVertexColors } from './modes/editVertexMode/touchHandlers.js'
 import { resolveColors } from '../../utils/resolveColors.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
 import { refreshAllPointSymbols } from './pointSymbolImages.js'
+import { logger } from '../../../../../src/services/logger.js'
 import { createMapboxDraw } from './mapboxDraw.js'
 
 jest.mock('@mapbox/mapbox-gl-draw', () => {
@@ -31,6 +32,7 @@ jest.mock('./modes/drawPolygonMode.js', () => ({ DrawPolygonMode: { id: 'draw_po
 jest.mock('./modes/drawLineMode.js', () => ({ DrawLineMode: { id: 'draw_line' } }))
 jest.mock('./modes/drawPointMode.js', () => ({ DrawPointMode: { id: 'draw_point' } }))
 jest.mock('./pointSymbolImages.js', () => ({ refreshAllPointSymbols: jest.fn(() => Promise.resolve()) }))
+jest.mock('../../../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 jest.mock('./styles.js', () => ({
   createDrawStyles: jest.fn(() => ['style']),
   updateDrawStyles: jest.fn()
@@ -384,6 +386,22 @@ describe('createMapboxDraw – event handlers', () => {
   // app calls map.setPixelRatio() off MAP_SET_SIZE alone, so a point-symbol refresh here
   // would run before the map actually knows about the new size. MAP_SET_PIXEL_RATIO (fired
   // separately, after MAP_SET_SIZE, carrying the freshly computed value) owns that instead.
+  test('logs, rather than leaving unhandled, a failure to refresh point symbols', async () => {
+    const { eventBus, map } = setup()
+    const failure = new Error('rasterise failed')
+
+    refreshAllPointSymbols.mockReturnValueOnce(Promise.reject(failure))
+    handlerFor(eventBus.on, EVENTS.MAP_SET_PIXEL_RATIO)(2)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(logger.error).toHaveBeenCalledWith('[draw] failed to refresh point symbols', failure)
+
+    refreshAllPointSymbols.mockReturnValueOnce(Promise.reject(failure))
+    handlerFor(eventBus.on, EVENTS.MAP_STYLE_CHANGE)()
+    handlerFor(map.once, 'idle')()
+    await new Promise((resolve) => setTimeout(resolve, 0))
+    expect(logger.error).toHaveBeenCalledWith('[draw] failed to refresh point symbols after a style change', failure)
+  })
+
   test('MAP_SET_SIZE does not refresh point symbols — MAP_SET_PIXEL_RATIO owns that', () => {
     const { eventBus } = setup()
     handlerFor(eventBus.on, EVENTS.MAP_SET_SIZE)('medium')

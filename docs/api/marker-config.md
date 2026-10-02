@@ -39,7 +39,15 @@ Controls the visual appearance of a marker. All properties are optional — unse
 **Type:** `string`
 **Default:** `'pin'`
 
-Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`. For a custom one-off symbol, use `symbolSvgContent` instead.
+Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. For a custom one-off symbol, use `symbolSvgContent` instead.
+
+---
+
+### `symbolSize`
+**Type:** `'small' | 'medium' | 'large'`
+**Default:** `'medium'`, or the constructor's `symbolDefaults.symbolSize`
+
+Size of the marker's symbol — see [Symbol Config](./symbol-config.md#symbolsize).
 
 ---
 
@@ -91,11 +99,11 @@ SVG `viewBox` attribute for the symbol. Use alongside `symbolSvgContent` when yo
 **Type:** `[number, number]`
 **Default:** registered symbol's anchor, or `[0.5, 0.5]`
 
-Normalised [x, y] anchor point where `[0, 0]` is top-left and `[1, 1]` is bottom-right. Determines which point on the symbol aligns with the geographic coordinate.
+Normalised [x, y] anchor point — which point on the symbol sits on the geographic coordinate. On a built-in symbol it's a fraction of the shape; on a custom SVG symbol it's a fraction of its `viewBox`. See [Symbol Config: `anchor`](./symbol-config.md#anchor).
 
 ```js
-anchor: [0.5, 1]   // bottom-centre — tip of a pin
-anchor: [0.5, 0.5] // centre — circle or dot
+anchor: [0.5, 1]   // bottom-centre of the shape
+anchor: [0.5, 0.5] // centre
 ```
 
 ---

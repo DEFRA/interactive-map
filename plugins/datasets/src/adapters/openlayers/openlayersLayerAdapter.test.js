@@ -237,12 +237,12 @@ describe('visibility', () => {
 })
 
 describe('applyFeatureFilter', () => {
-  it('re-derives flatStyle to reflect newly hidden features', async () => {
+  it('re-derives the flat style to reflect newly hidden features', async () => {
     await adapter.addDataset('ds-fill')
     datasetRegistry.mockExtend({ 'ds-fill': { id: 'ds-fill', style: { fill: '#0000ff' }, hiddenFeatures: [1], geojson: { type: 'FeatureCollection', features: [] } } })
     adapter.applyFeatureFilter('ds-fill')
-    // flatStyle now wraps in a filter rule — confirm the layer's style function reflects it by
-    // checking the underlying style was re-set to the dataset's current (filtered) flatStyle.
+    // the flat style now wraps in a filter rule — confirm the layer's style function reflects it by
+    // checking the underlying style was re-set to the dataset's current (filtered) flat style.
     const registryDataset = datasetRegistry.getDataset('ds-fill')
     expect(getLayer('ds-fill').getStyle()).toBeDefined()
     expect(registryDataset.filter).not.toBeNull()
@@ -369,6 +369,30 @@ describe('pattern registration', () => {
     expect(setStyleSpy).toHaveBeenCalledWith(expect.any(Function))
   })
 
+  it('onMapSizeChange() re-rasterises symbols at the new pixelRatio so they stay drawn 1:1', async () => {
+    await adapter.addDataset('ds-symbol')
+    const layer = getLayer('ds-symbol')
+    expect(layer.getStyle()).toMatchObject({ 'icon-scale': 1 })
+    expect(layer.get('symbolMeta').pixelRatio).toBe(1)
+
+    map.getPixelRatio.mockReturnValue(2)
+    await adapter.onMapSizeChange()
+
+    expect(layer.getStyle()).toMatchObject({ 'icon-src': 'data:image/png;base64,mock', 'icon-scale': 0.5 })
+    expect(layer.get('symbolMeta').pixelRatio).toBe(2)
+  })
+
+  it('onMapSizeChange() leaves symbol styles alone if the pixel ratio changes again while its images are registering', async () => {
+    await adapter.addDataset('ds-symbol')
+    const layer = getLayer('ds-symbol')
+    const setStyleSpy = jest.spyOn(layer, 'setStyle')
+    // a second map-size change lands mid-registration — its own call will apply the newer ratio
+    const registering = adapter.onMapSizeChange()
+    map.getPixelRatio.mockReturnValue(2)
+    await registering
+    expect(setStyleSpy).not.toHaveBeenCalled()
+  })
+
   it('onMapSizeChange() does not touch a plain fill/stroke dataset\'s style', async () => {
     await adapter.addDataset('ds-fill')
     const layer = getLayer('ds-fill')
@@ -379,7 +403,7 @@ describe('pattern registration', () => {
 })
 
 describe('symbol registration', () => {
-  it('registers a symbol before init() adds its layer, so flatStyle already resolves it', async () => {
+  it('registers a symbol before init() adds its layer, so getFlatStyle already resolves it', async () => {
     await adapter.init()
     expect(getLayer('ds-symbol').getStyle()).toMatchObject({ 'icon-src': 'data:image/png;base64,mock' })
   })

@@ -1,3 +1,6 @@
+import { get as getIconImage } from 'ol/style/IconImage.js'
+import ImageState from 'ol/ImageState.js'
+
 /**
  * The OL "last mile" for symbolRegistry's rasterised symbol images: turns the ImageData
  * rasteriseSymbolImage() produces into something OL can render, cached by the same imageId
@@ -6,13 +9,8 @@
  *
  * Two consumers need two different shapes from the same ImageData: highlightFeatures.js builds
  * its own ol/style/Icon directly, so it wants a raw <canvas> (getOrCreateSymbolImage/
- * getCachedSymbolImage); OpenLayersDataset.flatStyle's icon-src needs a data URI string instead.
+ * getCachedSymbolImage); OpenLayersDataset.getFlatStyle's icon-src needs a data URI string instead.
  */
-
-// Fixed oversampling ratio, unrelated to the map's actual pixelRatio — icon-scale genuinely
-// decouples a symbol's on-screen size from its native pixel detail, so one fixed high-detail
-// raster stays crisp at any pixelRatio with no re-rasterisation needed on resize.
-export const SYMBOL_RASTER_PIXEL_RATIO = 3
 
 const imageCache = new Map() // imageId → HTMLCanvasElement
 const dataUriCache = new Map() // imageId → data URI string
@@ -52,7 +50,7 @@ export const getOrCreateSymbolImage = (imageId, imageData) => {
   return canvas
 }
 
-/** Synchronous lookup for OpenLayersDataset.flatStyle (a synchronous getter) — undefined
+/** Synchronous lookup for OpenLayersDataset.getFlatStyle (which is synchronous) — undefined
  * until registerSymbol() has resolved it at least once. */
 export const getCachedSymbolDataUri = (imageId) => dataUriCache.get(imageId)
 
@@ -91,7 +89,13 @@ export const registerSymbol = async (style, mapStyle, symbolRegistry, pixelRatio
     if (!imageCache.has(result.imageId)) {
       const canvas = getOrCreateSymbolImage(result.imageId, result.imageData)
       if (variant === 'normal') {
-        dataUriCache.set(result.imageId, canvas.toDataURL())
+        const dataUri = canvas.toDataURL()
+        dataUriCache.set(result.imageId, dataUri)
+        // Seed OL's icon cache with the already-drawn canvas under this data URI, so a flat
+        // style's icon-src finds a loaded image straight away. Otherwise OL loads the data URI
+        // asynchronously and draws nothing for that icon until it has — a visible flicker each
+        // time styles switch to new images, as on every map-size change.
+        getIconImage(canvas, dataUri, undefined, ImageState.LOADED, null)
       }
     }
   }))

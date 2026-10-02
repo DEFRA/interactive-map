@@ -349,6 +349,14 @@ describe('MapLibreDataset', () => {
       })
     })
 
+    it('adds an icon-offset correcting the snapped anchor when a viewBox is given', () => {
+      // pin's [0.5, 0.9] snaps to 'bottom' (1.0) — offset moves it back 0.1 × 47px
+      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', [0.5, 0.9], null, '0 0 44 47')).toEqual({
+        ...prehistoricBase,
+        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'bottom', 'icon-offset': [0, 4.7], 'icon-allow-overlap': true }
+      })
+    })
+
     it('does not include a filter property when filter is null', () => {
       expect(datasetRegistry.getDataset('historic-monuments').getSymbolSource('icon', null, null)).toEqual({
         id: null,

@@ -7,7 +7,7 @@ import Stroke from 'ol/style/Stroke.js'
 import Fill from 'ol/style/Fill.js'
 import Icon from 'ol/style/Icon.js'
 import { collectTileFragments } from './vtTileFragments.js'
-import { getCachedSymbolImage, getActiveSymbolImageId, getSelectedSymbolImageId, SYMBOL_RASTER_PIXEL_RATIO } from './symbolImages.js'
+import { getCachedSymbolImage, getActiveSymbolImageId, getSelectedSymbolImageId } from './symbolImages.js'
 import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
 
@@ -194,7 +194,7 @@ const buildDatasetSymbolHighlightStyle = (map, layerId, isActive) => {
   if (!canvas) {
     return null
   }
-  return [new Style({ image: new Icon({ img: canvas, anchor: symbolMeta.anchor, scale: 1 / SYMBOL_RASTER_PIXEL_RATIO }), zIndex: HIGHLIGHT_Z })]
+  return [new Style({ image: new Icon({ img: canvas, anchor: symbolMeta.anchor, scale: 1 / symbolMeta.pixelRatio }), zIndex: HIGHLIGHT_Z })]
 }
 
 const addVectorHighlights = (map, source, features, isActive, stylesMap) => {

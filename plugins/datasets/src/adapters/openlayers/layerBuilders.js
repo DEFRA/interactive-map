@@ -135,7 +135,7 @@ export const createDatasetSource = (registryDataset) => {
 
 /**
  * The style value to hand to layer.setStyle()/the layer constructor: registryDataset's own
- * flatStyle, except for a pattern fill, which needs the genuinely crisp, CanvasPattern-based
+ * flat style, except for a pattern fill, which needs the genuinely crisp, CanvasPattern-based
  * style function from canvasPatternStyle.js instead — see that module's doc for why flat-style's
  * fill-pattern-src can't achieve this.
  * @param {Object} registryDataset - an OpenLayersDataset
@@ -146,7 +146,7 @@ export const resolveLayerStyle = (registryDataset, { mapStyleId, pixelRatio, pat
   if (registryDataset.hasPattern) {
     return buildCanvasPatternStyle(registryDataset, mapStyleId, pixelRatio, patternRegistry)
   }
-  return registryDataset.flatStyle
+  return registryDataset.getFlatStyle(pixelRatio)
 }
 
 /**
@@ -197,9 +197,9 @@ export const createDatasetLayer = (registryDataset, olSource, context) => {
     layer.set('filter', registryDataset.filter)
   }
   // Lets highlightFeatures.js build a select/active highlight for a dataset symbol point —
-  // see OpenLayersDataset.symbolMeta's doc.
+  // see OpenLayersDataset.getSymbolMeta's doc.
   if (registryDataset.hasSymbol) {
-    layer.set('symbolMeta', registryDataset.symbolMeta)
+    layer.set('symbolMeta', registryDataset.getSymbolMeta(context?.pixelRatio))
   }
   return layer
 }

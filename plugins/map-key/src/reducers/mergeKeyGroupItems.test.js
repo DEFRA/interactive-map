@@ -40,6 +40,21 @@ describe('mergeKeyGroupItems', () => {
     ])
   })
 
+  it('merges a matched group even when the incoming item has no keyDefinitions array', () => {
+    attachPluginStateRef({
+      current: {
+        groups: [{ id: 'group-1', type: 'group', groupLabel: 'Group 1' }],
+        keyDefinitions: [{ id: 'k1', groupId: 'group-1' }]
+      }
+    })
+
+    const items = [{ id: 'group-1' }]
+
+    expect(mergeKeyGroupItems(items)).toEqual([
+      { id: 'group-1', type: 'group', groupLabel: 'Group 1', keyDefinitions: [{ id: 'k1', groupId: 'group-1' }] }
+    ])
+  })
+
   it('reuses the cached plugin-state groups when the ref object is unchanged', () => {
     const ref = { current: { groups: [{ id: 'group-1', type: 'group', groupLabel: 'Group 1' }], keyDefinitions: [{ id: 'k1', groupId: 'group-1' }] } }
     attachPluginStateRef(ref)

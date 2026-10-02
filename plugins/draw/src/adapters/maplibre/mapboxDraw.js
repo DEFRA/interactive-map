@@ -13,6 +13,7 @@ import { applyTouchVertexColors } from './modes/editVertexMode/touchHandlers.js'
 import { resolveColors } from '../../utils/resolveColors.js'
 import { TOLERANCES, MAP_SIZE_SCALES } from './defaults.js'
 import { refreshAllPointSymbols } from './pointSymbolImages.js'
+import { logger } from '../../../../../src/services/logger.js'
 
 // map.setStyle() discards MapLibre's entire previous Style, wiping every programmatically
 // added source/layer/image — including mapbox-gl-draw's own, which it never re-adds itself.
@@ -60,7 +61,7 @@ const settleStyleChange = ({ map, draw, mapProvider, pluginConfig, onDone }) => 
       // cursor's queryRenderedFeatures results) right after a style reload — force it.
       map.triggerRepaint()
       onDone()
-    })
+    }).catch((error) => logger.error('[draw] failed to refresh point symbols after a style change', error))
   })
 }
 
@@ -193,12 +194,13 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
 
   // --- Update point symbol resolution for the new pixel ratio ---
   // MAP_SET_PIXEL_RATIO carries the freshly computed pixel ratio itself, fired right after
-  // MAP_SET_SIZE — that's the value this needs, not map.getPixelRatio() (unchanged since init).
+  // MAP_SET_SIZE — using it directly doesn't depend on the provider's own listener having already
+  // applied it to the map.
   const handleSetPixelRatio = (pixelRatio) => {
     refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: pixelRatio }).then(() => {
       map.triggerRepaint()
       notifyPointSymbolsRefreshed()
-    })
+    }).catch((error) => logger.error('[draw] failed to refresh point symbols', error))
   }
   eventBus.on(events.MAP_SET_PIXEL_RATIO, handleSetPixelRatio)
 

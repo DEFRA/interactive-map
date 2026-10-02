@@ -4,7 +4,7 @@ import { getCachedSymbolImage, clearSymbolImageCache } from '../../../../../../p
 
 const mapStyle = { id: 'outdoor', mapColorScheme: 'light' }
 
-const createMapProvider = ({ drawScale = 1 } = {}) => ({ drawScale })
+const createMapProvider = ({ pixelRatio = 1 } = {}) => ({ map: { getPixelRatio: () => pixelRatio } })
 
 // A minimal ol.Feature stand-in — resolvePointSymbol only ever calls
 // getProperties()/set() on it, and manager.store.source.hasFeature() to check liveness.
@@ -68,19 +68,14 @@ describe('hasSymbolStyle', () => {
 })
 
 describe('getPixelRatio', () => {
-  it('combines devicePixelRatio and mapProvider.drawScale', () => {
-    const restore = globalThis.devicePixelRatio
-    globalThis.devicePixelRatio = 2
-    expect(getPixelRatio(createMapProvider({ drawScale: 1.5 }))).toBe(3)
-    globalThis.devicePixelRatio = restore
+  it('reads the map\'s own pixelRatio (device pixel ratio × map-size scale)', () => {
+    expect(getPixelRatio(createMapProvider({ pixelRatio: 3 }))).toBe(3)
   })
 
-  it('falls back to 1 for either factor when unset', () => {
-    const restore = globalThis.devicePixelRatio
-    delete globalThis.devicePixelRatio
-    expect(getPixelRatio(createMapProvider({ drawScale: undefined }))).toBe(1)
+  it('falls back to 1 when there is no map or no ratio', () => {
     expect(getPixelRatio(undefined)).toBe(1)
-    globalThis.devicePixelRatio = restore
+    expect(getPixelRatio({ map: {} })).toBe(1)
+    expect(getPixelRatio(createMapProvider({ pixelRatio: 0 }))).toBe(1)
   })
 })
 
@@ -96,7 +91,7 @@ describe('resolvePointSymbol', () => {
     const properties = { symbol: 'pin' }
     const olFeature = createOlFeature(properties)
     const manager = createManager({ features: [olFeature] })
-    const mapProvider = createMapProvider({ drawScale: 2 })
+    const mapProvider = createMapProvider({ pixelRatio: 2 })
 
     await resolvePointSymbol({ manager, mapProvider, olFeature })
 
@@ -205,6 +200,37 @@ describe('refreshAllPointSymbols', () => {
     expect(pointWithSymbol.set).toHaveBeenCalledWith('symbolImageId', expect.any(String))
     expect(pointWithoutSymbol.set).not.toHaveBeenCalled()
     expect(polygon.set).not.toHaveBeenCalled()
+  })
+
+  it('rasterises at pixelRatioOverride rather than the map\'s current ratio when given', async () => {
+    const point = feature('Point', { symbol: 'pin' })
+    const manager = createManager({ features: [point] })
+    manager.store.source.hasFeature = jest.fn(() => true)
+
+    await refreshAllPointSymbols({ manager, mapProvider: createMapProvider({ pixelRatio: 2 }), pixelRatioOverride: 4 })
+
+    expect(point.set).toHaveBeenCalledWith('symbolPixelRatio', 4)
+  })
+
+  it('drops an older refresh\'s results when a newer one has started since', async () => {
+    const point = feature('Point', { symbol: 'pin' })
+    const manager = createManager({ features: [point] })
+    // the first refresh's rasterising is held until after the second has finished
+    let releaseFirst
+    const held = new Promise((resolve) => { releaseFirst = resolve })
+    const real = symbolRegistry.rasteriseSymbolImage.getMockImplementation()
+    symbolRegistry.rasteriseSymbolImage.mockImplementation(async (style, ms, variant, pixelRatio) => {
+      if (pixelRatio === 1) { await held }
+      return real(style, ms, variant, pixelRatio)
+    })
+
+    const first = refreshAllPointSymbols({ manager, mapProvider: createMapProvider(), pixelRatioOverride: 1 })
+    await refreshAllPointSymbols({ manager, mapProvider: createMapProvider(), pixelRatioOverride: 2 })
+    releaseFirst()
+    await first
+
+    expect(point.set).toHaveBeenLastCalledWith('symbolPixelRatio', 2)
+    expect(point.set).not.toHaveBeenCalledWith('symbolPixelRatio', 1)
   })
 
   it('does nothing when there are no drawn points', async () => {

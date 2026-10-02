@@ -6,15 +6,18 @@ The symbol registry is a service that manages reusable named symbols for map mar
 
 ## Built-in symbols
 
-Three symbols are registered by default:
+Six symbols are registered by default:
 
-| ID | Anchor | Description |
-|----|--------|-------------|
-| `'pin'` | `[0.5, 1]` | Teardrop pin — tip aligns with the coordinate |
-| `'circle'` | `[0.5, 0.5]` | Filled circle — centre aligns with the coordinate |
-| `'square'` | `[0.5, 0.5]` | Rounded square — centre aligns with the coordinate |
+| ID | Anchored at | Description |
+|----|-------------|-------------|
+| `'pin'` | Just below the tip | Teardrop pin |
+| `'circle'` | Centre | Filled circle |
+| `'square'` | Centre | Rounded square |
+| `'hexagon'` | Centre | Pointy-top hexagon |
+| `'triangle'` | Centroid | Point-up triangle |
+| `'diamond'` | Centre | Square rotated 45° |
 
-Both use the standard `{{token}}` placeholders and respect the resolution order described in [Symbol Config](./symbol-config.md#how-values-are-resolved).
+Each can be shown at any [`symbolSize`](./symbol-config.md#symbolsize) and takes a custom [`graphic`](./symbol-config.md#graphic). They use the same [token resolution order](./symbol-config.md#how-values-are-resolved) as any other symbol.
 
 ## Methods
 
@@ -41,14 +44,14 @@ const defaults = services.symbolRegistry.getDefaults()
 
 ### `register(symbolDef)`
 
-Register a custom symbol. Once registered it can be referenced by ID via `MarkerOptions.symbol` or a dataset `style.symbol`.
+Register a custom SVG-template symbol, such as one with several colours. Once registered it can be referenced by ID via `MarkerOptions.symbol` or a dataset `style.symbol`. Throws if `id`, `svg` or `viewBox` is missing, or `anchor` is invalid.
 
 | Property | Type | Required | Description |
 |----------|------|----------|-------------|
 | `id` | `string` | Yes | Unique symbol identifier |
 | `svg` | `string` | Yes | Inner SVG path content with `{{token}}` placeholders — see [SVG structure](./symbol-config.md#svg-structure) |
-| `viewBox` | `string` | Yes | SVG viewBox, e.g. `'0 0 44 44'` |
-| `anchor` | `[number, number]` | Yes | Normalised [x, y] anchor point |
+| `viewBox` | `string` | Yes | SVG viewBox, e.g. `'0 0 44 44'`. Anything drawn outside it is cut off |
+| `anchor` | `[number, number]` | No | Normalised [x, y] anchor point within the viewBox. **Default:** `[0.5, 0.5]` |
 | *(token)* | `string \| Record<string, string>` | No | Default token value for this symbol, e.g. `backgroundColor: '#1d70b8'`. `selectedColor` and `activeColor` are ignored here — they are always derived from the active map style. |
 
 ```js
@@ -66,6 +69,18 @@ services.symbolRegistry.register({
 ```
 
 See [Symbol Config](./symbol-config.md) for the full list of token properties and the SVG structure convention.
+
+---
+
+### `getSymbolDef(style)`
+
+Returns the symbol definition for a marker or dataset style (`symbol` or `symbolSvgContent`), sized for its `symbolSize` — with the `viewBox` and `anchor` for that size. Pass the result to the `resolve` methods.
+
+---
+
+### `getSizedSymbolDef(symbolDef, { viewBox, symbolSize, anchor })`
+
+Sizes a definition from [`get()`](#getid) (or `{ svg }` for inline content) directly. `viewBox` only applies to SVG-template symbols; `anchor` is as described in [Symbol Config: `anchor`](./symbol-config.md#anchor).
 
 ---
 
@@ -95,7 +110,7 @@ Resolves a symbol's SVG for **normal (unselected, inactive) rendering**. Both `{
 
 ```js
 const svg = services.symbolRegistry.resolve(
-  services.symbolRegistry.get('pin'),
+  services.symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSize: 'large' }),
   { backgroundColor: '#d4351c' },
   mapStyle
 )

@@ -2,6 +2,9 @@ import { symbolRegistry } from './symbolRegistry.js'
 import { symbolDefaults, pin } from '../config/symbolConfig.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
+import { rasteriseToImageData } from '../utils/rasteriseToImageData.js'
+
+jest.mock('../utils/rasteriseToImageData.js', () => ({ rasteriseToImageData: jest.fn(async (svg, width, height) => ({ width, height })) }))
 
 const STYLE_ID = 'test'
 const mapStyle = { id: STYLE_ID }
@@ -14,26 +17,134 @@ beforeEach(() => {
   symbolRegistry.setDefaults({})
 })
 
+const BUILT_IN_IDS = ['pin', 'circle', 'square', 'hexagon', 'triangle', 'diamond']
+const SIZES = { small: 0.75, medium: 1, large: 1.25 }
+const dims = (viewBox) => viewBox.split(' ').map(Number).slice(2)
+const countPaths = (svg) => svg.match(/<path /g).length
+
 describe('symbolRegistry — built-in symbols', () => {
-  it('registers pin by default', () => {
-    const pin = symbolRegistry.get('pin')
-    expect(pin).toBeDefined()
-    expect(pin.id).toBe('pin')
-    expect(pin.anchor).toEqual([0.5, 0.9])
-    expect(typeof pin.svg).toBe('string')
+  it('registers every built-in as a single body path with bounds, anchor point and graphic centre', () => {
+    BUILT_IN_IDS.forEach((id) => {
+      const def = symbolRegistry.get(id)
+      expect(def.id).toBe(id)
+      expect(typeof def.path).toBe('string')
+      expect(def.bounds).toHaveLength(4)
+      expect(def.anchorPoint).toHaveLength(2)
+      expect(def.graphicCentre).toHaveLength(2)
+    })
   })
 
-  it('registers circle by default', () => {
-    const circle = symbolRegistry.get('circle')
-    expect(circle).toBeDefined()
-    expect(circle.id).toBe('circle')
-    expect(circle.anchor).toEqual([0.5, 0.5])
-  })
-
-  it('lists both built-in symbols', () => {
+  it('lists all built-in symbols', () => {
     const ids = symbolRegistry.list().map(s => s.id)
-    expect(ids).toContain('pin')
-    expect(ids).toContain('circle')
+    expect(ids).toEqual(expect.arrayContaining(BUILT_IN_IDS))
+  })
+
+  it('sizes pin at medium to a 44×52 viewBox, anchored just below its tip', () => {
+    const sized = symbolRegistry.getSymbolDef({ symbol: 'pin' })
+    expect(sized.viewBox).toBe('0 0 44 52')
+    expect(sized.anchor[0]).toBe(0.5)
+    expect(sized.anchor[1]).toBeCloseTo(0.8664, 4)
+  })
+
+  it('keeps each anchor on its anchorPoint at every size', () => {
+    BUILT_IN_IDS.forEach((id) => {
+      const { bounds: [bx, by, bw, bh], anchorPoint: [ax, ay] } = symbolRegistry.get(id)
+      Object.entries(SIZES).forEach(([symbolSize, scale]) => {
+        const { viewBox, anchor } = symbolRegistry.getSymbolDef({ symbol: id, symbolSize })
+        const [width, height] = dims(viewBox)
+        // body is centred in the viewBox, so the anchor point lands at centring offset + scaled distance
+        expect(anchor[0] * width).toBeCloseTo((width - bw * scale) / 2 + (ax - bx) * scale, 1)
+        expect(anchor[1] * height).toBeCloseTo((height - bh * scale) / 2 + (ay - by) * scale, 1)
+      })
+    })
+  })
+
+  it('scales the body but keeps at least an 8px margin for the rings, rounding the viewBox up to a multiple of 4', () => {
+    BUILT_IN_IDS.forEach((id) => {
+      const [,, bw, bh] = symbolRegistry.get(id).bounds
+      Object.entries(SIZES).forEach(([symbolSize, scale]) => {
+        const [width, height] = dims(symbolRegistry.getSymbolDef({ symbol: id, symbolSize }).viewBox)
+        expect(width % 4).toBe(0)
+        expect(height % 4).toBe(0)
+        expect(width - bw * scale).toBeGreaterThanOrEqual(16)
+        expect(width - bw * scale).toBeLessThan(20)
+        expect(height - bh * scale).toBeGreaterThanOrEqual(16)
+        expect(height - bh * scale).toBeLessThan(20)
+      })
+    })
+  })
+
+  it('gives a whole-pixel image size at every common pixel ratio except 1.875', () => {
+    const ratios = [1, 1.25, 1.5, 2, 2.25, 2.5, 3, 4] // device 1 / 1.25 / 1.5 / 2 × map size 1 / 1.5 / 2
+    BUILT_IN_IDS.forEach((id) => {
+      Object.keys(SIZES).forEach((symbolSize) => {
+        const [width, height] = dims(symbolRegistry.getSymbolDef({ symbol: id, symbolSize }).viewBox)
+        ratios.forEach((ratio) => {
+          expect(Number.isInteger(width * ratio)).toBe(true)
+          expect(Number.isInteger(height * ratio)).toBe(true)
+        })
+      })
+    })
+  })
+
+  it('draws the halo and rings at a fixed width whatever the scale', () => {
+    const small = symbolRegistry.resolveActive(symbolRegistry.getSymbolDef({ symbol: 'circle', symbolSize: 'small' }), {}, mapStyle)
+    expect(small).toContain('scale(0.75)')
+    // stroke widths are divided by the scale so they render at 14 / 8 / 2 px
+    expect(small).toContain('stroke-width="18.667"')
+    expect(small).toContain('stroke-width="10.667"')
+    expect(small).toContain('stroke-width="2.667"')
+    const large = symbolRegistry.resolveActive(symbolRegistry.getSymbolDef({ symbol: 'circle', symbolSize: 'large' }), {}, mapStyle)
+    expect(large).toContain('stroke-width="11.2"')
+    expect(large).toContain('stroke-width="6.4"')
+    expect(large).toContain('stroke-width="1.6"')
+  })
+
+  it('only emits the rings that are showing', () => {
+    const def = symbolRegistry.getSymbolDef({ symbol: 'hexagon' })
+    expect(countPaths(symbolRegistry.resolve(def, {}, mapStyle))).toBe(2) // body + graphic
+    expect(countPaths(symbolRegistry.resolveSelected(def, {}, mapStyle))).toBe(3)
+    expect(countPaths(symbolRegistry.resolveActive(def, {}, mapStyle))).toBe(4)
+  })
+
+  it('renders an unsized registered built-in at medium', () => {
+    const fromRaw = symbolRegistry.resolve(symbolRegistry.get('square'), {}, mapStyle)
+    expect(fromRaw).toBe(symbolRegistry.resolve(symbolRegistry.getSymbolDef({ symbol: 'square' }), {}, mapStyle))
+  })
+
+  it('uses the app default symbolSize when a style has none', () => {
+    symbolRegistry.setDefaults({ symbolSize: 'large' })
+    expect(symbolRegistry.getSymbolDef({ symbol: 'circle' }).scale).toBe(1.25)
+  })
+
+  it('falls back to medium for an unknown symbolSize', () => {
+    expect(symbolRegistry.getSymbolDef({ symbol: 'circle', symbolSize: 'huge' }).scale).toBe(1)
+  })
+})
+
+describe('symbolRegistry — SVG-template symbols', () => {
+  const custom = { id: 'custom', svg: '<rect fill="{{backgroundColor}}"/>', viewBox: '0 0 20 10', anchor: [0.5, 1] }
+
+  it('leaves the svg and viewBox as they are at medium', () => {
+    const sized = symbolRegistry.getSizedSymbolDef(custom)
+    expect(sized.viewBox).toBe('0 0 20 10')
+    expect(sized.svg).toBe(custom.svg)
+    expect(sized.anchor).toEqual([0.5, 1])
+  })
+
+  it('scales the whole symbol, viewBox included, at other sizes', () => {
+    const sized = symbolRegistry.getSizedSymbolDef(custom, { symbolSize: 'large' })
+    expect(sized.viewBox).toBe('0 0 25 12.5')
+    expect(sized.svg).toBe(`<g transform="scale(1.25)">${custom.svg}</g>`)
+  })
+
+  it('folds a symbolViewBox override into inline symbolSvgContent before scaling', () => {
+    const sized = symbolRegistry.getSymbolDef({ symbolSvgContent: '<circle/>', symbolViewBox: '0 0 10 10', symbolSize: 'small' })
+    expect(sized.viewBox).toBe('0 0 7.5 7.5')
+  })
+
+  it('defaults inline symbolSvgContent to a 38×38 viewBox', () => {
+    expect(symbolRegistry.getSymbolDef({ symbolSvgContent: '<circle/>' }).viewBox).toBe('0 0 38 38')
   })
 })
 
@@ -51,6 +162,54 @@ describe('symbolRegistry — register / get', () => {
 
   it('returns undefined for an unregistered id', () => {
     expect(symbolRegistry.get('does-not-exist')).toBeUndefined()
+  })
+
+  it.each([
+    [{ svg: '<rect/>', viewBox: '0 0 1 1' }, 'needs a string "id"'],
+    [{ id: 'no-svg', viewBox: '0 0 1 1' }, 'symbol "no-svg" needs an "svg" template'],
+    [{ id: 'no-viewbox', svg: '<rect/>' }, 'symbol "no-viewbox" needs a "viewBox"'],
+    [{ id: 'bad-viewbox', svg: '<rect/>', viewBox: '0 0 10' }, 'symbol "bad-viewbox" needs a "viewBox"'],
+    [{ id: 'bad-anchor', svg: '<rect/>', viewBox: '0 0 1 1', anchor: [0.5] }, 'symbol "bad-anchor" has an invalid "anchor"'],
+    [{ id: 'no-bounds', path: 'M0 0H1V1Z', anchorPoint: [0, 0], graphicCentre: [0, 0] }, 'symbol "no-bounds" has a "path" but no valid "bounds"'],
+    [{ id: 'no-points', path: 'M0 0H1V1Z', bounds: [0, 0, 1, 1] }, 'symbol "no-points" has a "path" but no valid "anchorPoint" and "graphicCentre"']
+  ])('rejects an incomplete definition with a clear error (%#)', (symbolDef, message) => {
+    expect(() => symbolRegistry.register(symbolDef)).toThrow(message)
+  })
+
+  it('accepts a viewBox written with commas', () => {
+    expect(() => symbolRegistry.register({ id: 'commas', svg: '<rect/>', viewBox: '0,0,10,10' })).not.toThrow()
+  })
+})
+
+describe('symbolRegistry — image ids and rasterising', () => {
+  it('gives the same SVG content at different viewBoxes different image ids', () => {
+    const style = { symbolSvgContent: '<circle r="4" fill="{{backgroundColor}}"/>' }
+    const small = symbolRegistry.getSymbolImageId({ ...style, symbolViewBox: '0 0 10 10' }, mapStyle)
+    const big = symbolRegistry.getSymbolImageId({ ...style, symbolViewBox: '0 0 20 20' }, mapStyle)
+    expect(small).not.toBe(big)
+  })
+
+  it('rasterises at the sized viewBox × pixelRatio, under the same id getSymbolImageId gives', async () => {
+    const style = { symbol: 'circle', symbolSize: 'large' }
+    const { imageId, imageData } = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, 'normal', 2)
+    const [,, width, height] = symbolRegistry.getSymbolDef(style).viewBox.split(' ').map(Number)
+    expect(imageData).toEqual({ width: width * 2, height: height * 2 })
+    expect(imageId).toBe(symbolRegistry.getSymbolImageId(style, mapStyle, false, 2))
+  })
+
+  it('reuses a cached image, but drops the least recently used once the cache is full', async () => {
+    const colour = (i) => ({ symbol: 'circle', symbolBackgroundColor: `#${i.toString(16).padStart(6, '0')}` })
+    await symbolRegistry.rasteriseSymbolImage(colour(0), mapStyle, 'normal', 1)
+    rasteriseToImageData.mockClear()
+    await symbolRegistry.rasteriseSymbolImage(colour(0), mapStyle, 'normal', 1)
+    expect(rasteriseToImageData).not.toHaveBeenCalled()
+
+    for (let i = 1; i <= 256; i++) { // NOSONAR — fills the 256-entry cache, pushing colour(0) out
+      await symbolRegistry.rasteriseSymbolImage(colour(i), mapStyle, 'normal', 1)
+    }
+    rasteriseToImageData.mockClear()
+    await symbolRegistry.rasteriseSymbolImage(colour(0), mapStyle, 'normal', 1)
+    expect(rasteriseToImageData).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -282,7 +441,7 @@ describe('symbolRegistry — graphic token', () => {
     const pin = symbolRegistry.get('pin')
     const resolved = symbolRegistry.resolve(pin, {}, mapStyle)
     expect(resolved).toContain(`d="${pin.graphic}"`)
-    expect(resolved).toContain('translate(22, 19) scale(0.8) translate(-8, -8)')
+    expect(resolved).toContain('translate(22, 20) scale(0.8) translate(-8, -8)')
   })
 })
 
@@ -293,8 +452,15 @@ describe('getSymbolDef', () => {
     expect(symbolRegistry.getSymbolDef({})).toBeUndefined()
   })
 
-  it('looks up string symbol id in the registry', () => {
-    expect(symbolRegistry.getSymbolDef({ symbol: 'pin' })).toBe(pin)
+  it('looks up string symbol id in the registry, sized for rendering', () => {
+    const sized = symbolRegistry.getSymbolDef({ symbol: 'pin' })
+    expect(sized).toMatchObject({ id: 'pin', path: pin.path, scale: 1 })
+    expect(sized.viewBox).toBeDefined()
+  })
+
+  it('returns the same sized def for the same symbol and size', () => {
+    expect(symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSize: 'large' }))
+      .toBe(symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSize: 'large' }))
   })
 
   it('returns undefined for an unregistered string symbol', () => {
