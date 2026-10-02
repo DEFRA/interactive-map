@@ -90,7 +90,7 @@
   gap: var(--divider-gap);
 }
 
-// Trailing gap below the banner is added in JS, not via a last-child margin, since closed consumer HTML panels stay in the DOM.
+// Trailing gap below the banner is added in JS (closed consumer HTML panels stay in the DOM).
 
 // Stacked fills full width; docked caps the width and centres it.
 .im-o-app__banner--docked .im-c-panel--banner {
@@ -102,7 +102,7 @@
 // Header: normal flow, above the top row — pushes everything below it down for free.
 // ---------------------------------------------------
 
-// z-index only, no position — flex items get stacking priority from z-index alone, and must stay above .im-o-app__top's since header comes first in the DOM.
+// Must stay above .im-o-app__top's z-index, since the header comes first in the DOM.
 .im-o-app__header {
   z-index: 11;
   display: flex;
@@ -110,7 +110,7 @@
   width: 100%;
 }
 
-// Only when something in it is shown — an item hidden by an application mode doesn't count.
+// Only when something in it is shown.
 .im-o-app__header:has(> :not([hidden])) {
   margin-bottom: var(--divider-gap);
 }
@@ -119,31 +119,24 @@
 // Top: Includes a panel and buttons in colums
 // ---------------------------------------------------
 
-// z-index only (see .im-o-app__header's comment above) — must stay below its value.
+// Equal side columns keep the middle one centred; the middle is sized to its content first.
 .im-o-app__top {
   z-index: 10;
-  display: flex;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
   margin-bottom: auto;
-  justify-content: space-between;
-  align-items: flex-start;
+  align-items: start;
   width: 100%;
   gap: var(--divider-gap);
 }
 
 .im-o-app__top-col {
   display: flex;
-  flex: 1 1 auto;
   gap: var(--divider-gap);
 }
 
 .im-o-app__top-col:not(:empty) {
   padding-bottom: var(--divider-gap);
-}
-
-.im-o-app__top-col:first-child,
-.im-o-app__top-col:last-child {
-  flex: 1 1 calc(var(--button-size) + (var(--primary-gap) * 2));
-  max-width: var(--top-col-width, 100%);
 }
 
 .im-o-app__top-col:first-child {
@@ -267,11 +260,7 @@
   flex-wrap: wrap; // lets a stacked attributions row wrap onto its own line
   justify-content: space-between;
   align-items: flex-end;
-  // No effect on a single line (the common case), only between wrapped lines — covers both
-  // a too-wide .im-o-app__bottom-right dropping below the logo/bottom-left column, and the
-  // stacked attributions row below that (see its own comment further down: this same gap
-  // replaces what used to be its one-off margin-top, so a doubly-wrapped bottom stays evenly
-  // spaced rather than gapping only at the line the margin happened to be declared on).
+  // Between wrapped lines only: a too-wide bottom-right column, and stacked attributions
   row-gap: var(--divider-gap);
   z-index: -2; // Support masking the viewport
 }
@@ -288,8 +277,7 @@
   gap: var(--divider-gap);
 }
 
-// :nth-child, not :last-child — .im-o-app__attributions (Layout.jsx) is a third sibling
-// after both bottom-cols, so this is no longer literally the last child.
+// :nth-child, since .im-o-app__attributions follows both columns
 .im-o-app__bottom-col:nth-child(2) {
   position: relative; // anchor for absolutely-positioned attributions
   flex: 1 1 auto;
@@ -308,8 +296,7 @@
 
 .im-o-app__bottom-right {
   justify-content: flex-end;
-  // Docked attributions (below) bleeds past the row's own bottom edge and can grow back up
-  // into it — --bottom-right-clearance (useLayoutMeasurements) keeps this content clear.
+  // Clears docked attributions, which grow up into this row (set in useLayoutMeasurements)
   margin-bottom: var(--bottom-right-clearance, 0);
 }
 
@@ -317,22 +304,11 @@
 // Attributions:
 // ---------------------------------------------------
 //
-// Docked (default): absolutely positioned against .im-o-app__bottom (not the bottom-right
-// column it's a DOM sibling of — see Layout.jsx), so it can bleed flush into the corner
-// past .im-o-app__main's padding on bottom/right. `left` (--attributions-left, computed in
-// useLayoutMeasurements from the bottom-right column's own measured position) caps it to
-// that column's width, so it never overlaps the logo — long text wraps within that width.
+// Docked (default): absolutely positioned in the bottom-right corner, bleeding past the main
+// padding; --attributions-left keeps it clear of the logo.
 //
-// Stacked (im-o-app__attributions--stacked, toggled in useLayoutMeasurements when the
-// copyright text no longer fits beside the logo at its natural width): back in normal flex
-// flow as .im-o-app__bottom's third (wrapped) item, `flex-basis` forces it onto its own
-// full-width row below both columns — genuinely growing .im-o-app__bottom's height, which
-// (being bottom-pinned) pushes the logo and bottom-right buttons up rather than squeezing
-// the text into an ever-narrower column. The oversized flex-basis plus negative
-// right/bottom/left margin bleeds that row flush to the true edges the same way the docked
-// box's absolute offsets do above; the gap above it comes from .im-o-app__bottom's own
-// row-gap (not a margin-top here), so it stays exactly one gap even if .im-o-app__bottom-right
-// has also wrapped onto a line of its own above it.
+// Stacked (toggled in useLayoutMeasurements when the text won't fit beside the logo): its own
+// full-width row below both columns, pushing them up. Negative margins bleed it to the edges.
 
 .im-o-app__attributions:not(:empty) {
   position: absolute;
@@ -341,6 +317,11 @@
   left: var(--attributions-left, 0);
   display: flex;
   justify-content: flex-end;
+}
+
+// Out of flow when empty, else it can wrap onto a line of its own and its row-gap lifts the row
+.im-o-app__attributions:empty {
+  display: none;
 }
 
 .im-o-app__attributions--stacked:not(:empty) {

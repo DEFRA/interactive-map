@@ -192,10 +192,6 @@ export function calculateLayout (layoutRefs, breakpoint) {
   const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
   const primaryGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--primary-gap'), 10)
 
-  // === Top column width ===
-  const topColWidthPx = symmetricWidth(topLeftCol.offsetWidth, topRightCol.offsetWidth)
-  appContainer.style.setProperty('--top-col-width', `${topColWidthPx}px`)
-
   // Banner: docks centred between the side columns when there's room, otherwise stacks
   // full-width. Mobile always stacks.
   const isMobile = breakpoint === 'mobile'
