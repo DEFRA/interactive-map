@@ -340,7 +340,20 @@ const interactiveMap = new InteractiveMap('map', {
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
       showMarker: true,
-      showLabel: true
+      showLabel: true,
+      // Search trigger and form in the top-right on tablet/desktop (mobile keeps its defaults)
+      manifest: {
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-right', showLabel: false },
+          desktop: { slot: 'top-right', showLabel: false }
+        }],
+        controls: [{
+          id: 'search',
+          tablet: { slot: 'top-right' },
+          desktop: { slot: 'top-right' }
+        }]
+      }
     }),
     datasetsPlugin,
     createMapKeyPlugin(),

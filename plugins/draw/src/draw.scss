@@ -25,19 +25,10 @@
   outline-offset: 2px;
 }
 
-// Ensure action buttons take up same width
-.im-c-actions {
-    .im-c-button-wrapper--draw-done,
-    .im-c-button-wrapper--draw-menu,
-    .im-c-button-wrapper--draw-cancel {
-        width: 33.33%;
-    }
-}
-.im-o-app--tablet .im-c-actions,
-.im-o-app--desktop .im-c-actions {
-    .im-c-button-wrapper--draw-done,
-    .im-c-button-wrapper--draw-menu,
-    .im-c-button-wrapper--draw-cancel {
-        width: 100px;
-    }
+// Snap is a toggle in the top row, where core gives pressed buttons no visual state — reuse the
+// inverted pressed treatment from the actions bar and map controls so its on state is visible.
+.im-c-map-button--draw-snap[aria-pressed="true"] {
+    color: var(--pressed-button-foreground-color);
+    border-color: var(--pressed-button-border-color);
+    background-color: var(--pressed-button-background-color);
 }

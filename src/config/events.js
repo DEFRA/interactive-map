@@ -29,10 +29,6 @@ export const EVENTS = {
   APP_UPDATE_MARKER: 'app:updatemarker',
   /** @internal Remove a marker. Payload: id */
   APP_REMOVE_MARKER: 'app:removemarker',
-  /** @internal Set application mode. Payload: mode */
-  APP_SET_MODE: 'app:setmode',
-  /** @internal Revert to previous mode. */
-  APP_REVERT_MODE: 'app:revertmode',
   /** @internal Add a button. Payload: { id, config } */
   APP_ADD_BUTTON: 'app:addbutton',
   /** @internal Set a buttons state. Payload: { id, prop, value? } */
@@ -47,6 +43,10 @@ export const EVENTS = {
   APP_HIDE_PANEL: 'app:hidepanel',
   /** @internal Add a control. Payload: { id, config } */
   APP_ADD_CONTROL: 'app:addcontrol',
+  /** @internal Set the host's entry for an application mode. Payload: { id, include, exclude } */
+  APP_SET_APPLICATION_MODE: 'app:setapplicationmode',
+  /** @internal Clear the host's entry for an application mode. Payload: id */
+  APP_CLEAR_APPLICATION_MODE: 'app:clearapplicationmode',
   /** @internal Show a toast hint, announced to screen readers. Payload: { text, options } */
   APP_SHOW_HINT: 'app:showhint',
   /** @internal Dismiss the active toast hint, if any. */

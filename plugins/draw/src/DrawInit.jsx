@@ -1,17 +1,15 @@
-import { useEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
+import { APPLICATION_MODE_ID } from './defaults.js'
 
-// Loads the draw adapter once the map is ready and this plugin instance is in scope for the
-// current app mode; tears it down (and releases MapControls' D-pad) on cleanup.
-function useLoadDrawAdapter ({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus }) {
+// Loads the draw adapter once the map is ready; tears it down (and releases MapControls' D-pad)
+// on cleanup.
+function useLoadDrawAdapter ({ mapState, pluginConfig, pluginState, mapProvider, eventBus }) {
   useEffect(() => {
-    const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
-    const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
-
-    if (!mapState.isMapReady || !inModeWhitelist || inExcludeModes) {
+    if (!mapState.isMapReady) {
       return undefined
     }
 
@@ -37,10 +35,10 @@ function useLoadDrawAdapter ({ mapState, appState, pluginConfig, pluginState, ma
       // Release MapControls' D-pad if this plugin instance still held it.
       mapProvider.activeMoveTarget = null
     }
-  }, [mapState.isMapReady, appState.mode])
+  }, [mapState.isMapReady])
 }
 
-export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig }) => {
+export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig, setApplicationMode, clearApplicationMode }) => {
   const { eventBus, hints } = services
   const { crossHair } = mapState
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
@@ -53,7 +51,18 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
     (isTouchOrKeyboard || appState.expandedButtons?.has('mapControls'))
 
-  useLoadDrawAdapter({ mapState, appState, pluginConfig, pluginState, mapProvider, eventBus })
+  useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus })
+
+  // Enters the 'draw' application mode (declared in the manifest) in any draw/edit mode, and leaves it
+  // when the draw/edit mode ends. useLayoutEffect so the class lands in the same paint as the change.
+  useLayoutEffect(() => {
+    if (!pluginState.mode) {
+      clearApplicationMode(APPLICATION_MODE_ID)
+      return undefined
+    }
+    setApplicationMode(APPLICATION_MODE_ID)
+    return () => clearApplicationMode(APPLICATION_MODE_ID)
+  }, [pluginState.mode])
 
   // Suppresses the accessible spatial list for every draw/edit mode except edit_vertex, which
   // supplies its own list instead (useSpatialList.js above, claimed exclusively via the

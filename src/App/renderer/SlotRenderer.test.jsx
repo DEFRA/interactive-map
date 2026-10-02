@@ -5,6 +5,7 @@ import { getSlotItems } from './slotAggregator'
 import { useApp } from '../store/appContext'
 import { useConfig } from '../store/configContext'
 import { useEvaluateProp } from '../hooks/useEvaluateProp'
+import { useApplicationModeFilter } from '../hooks/useApplicationModeFilter.js'
 
 jest.mock('./slotAggregator', () => ({
   getSlotItems: jest.fn()
@@ -18,6 +19,9 @@ jest.mock('../store/configContext', () => ({
 jest.mock('../hooks/useEvaluateProp', () => ({
   useEvaluateProp: jest.fn()
 }))
+jest.mock('../hooks/useApplicationModeFilter.js', () => ({
+  useApplicationModeFilter: jest.fn()
+}))
 
 describe('SlotRenderer', () => {
   const mockAppConfig = { id: 'testId' }
@@ -29,12 +33,14 @@ describe('SlotRenderer', () => {
     disabledButtons: new Set()
   }
   const mockEvaluateProp = jest.fn(x => x)
+  const mockIsHiddenByApplicationMode = jest.fn(() => false)
 
   beforeEach(() => {
     jest.clearAllMocks()
     useConfig.mockReturnValue(mockAppConfig)
     useApp.mockReturnValue(mockAppState)
     useEvaluateProp.mockReturnValue(mockEvaluateProp)
+    useApplicationModeFilter.mockReturnValue(mockIsHiddenByApplicationMode)
   })
 
   it('renders nothing if no slot items', () => {
@@ -63,14 +69,15 @@ describe('SlotRenderer', () => {
     expect(getByText('Item2')).toBeInTheDocument()
   })
 
-  it('calls getSlotItems with correct arguments including evaluateProp', () => {
+  it('calls getSlotItems with correct arguments including evaluateProp and the application mode filter', () => {
     getSlotItems.mockReturnValue([])
     render(<SlotRenderer slot='sidebar' />)
     expect(getSlotItems).toHaveBeenCalledWith({
       slot: 'sidebar',
       appState: mockAppState,
       appConfig: mockAppConfig,
-      evaluateProp: mockEvaluateProp
+      evaluateProp: mockEvaluateProp,
+      isHiddenByApplicationMode: mockIsHiddenByApplicationMode
     })
   })
 })

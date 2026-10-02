@@ -5,8 +5,9 @@ import { CloseButton } from './components/CloseButton/CloseButton'
 import { SubmitButton } from './components/SubmitButton/SubmitButton'
 import { createDatasets } from './datasets.js'
 import { attachEvents } from './events/index.js'
+import { APPLICATION_MODE_ID } from './defaults.js'
 
-export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider }) {
+export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, appState, mapState, services, mapProvider, setApplicationMode, clearApplicationMode }) {
   const { id } = appConfig
   const { interfaceType } = appState
   const { expanded: defaultExpanded, customDatasets, osNamesURL, regions, maxSuggestions } = pluginConfig
@@ -54,13 +55,20 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
     inputRef.current?.focus()
   }, [isExpanded])
 
-  // Manage focus outside the search control
-  // useLayoutEffect (not useEffect) so hasExclusiveControl flips in the same paint as the
-  // form expanding - otherwise the browser paints once with the other buttons still visible,
-  // then again once this dispatch lands, producing a visible flicker.
+  // Enters the 'search' application mode while expanded, so search.scss can hide the rest of the
+  // interface (with opacity, keeping it focusable for Tab-out), and leaves it on collapse or unmount.
+  // useLayoutEffect (not useEffect) so the class lands in the same paint as the form expanding -
+  // otherwise the browser paints once with the other buttons still visible, producing a flicker.
   useLayoutEffect(() => {
-    appState.dispatch({ type: 'TOGGLE_HAS_EXCLUSIVE_CONTROL', payload: isExpanded })
+    if (!isExpanded) {
+      return undefined
+    }
+    setApplicationMode(APPLICATION_MODE_ID)
+    return () => clearApplicationMode(APPLICATION_MODE_ID)
+  }, [isExpanded])
 
+  // Manage focus outside the search control
+  useLayoutEffect(() => {
     if (!searchOpen) {
       return undefined
     }
@@ -84,9 +92,10 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
   const isFormVisible = defaultExpanded || isExpanded
 
   return (
-    <div
+    <div // NOSONAR - not interactive itself: only catches Tab from its focusable children to continue tab order from the search button
       className={`im-c-search${isFormVisible ? '' : ' im-c-search--collapsed'}`}
       ref={searchContainerRef}
+      onKeyDown={(event) => events.handleTabOut(event, appState.buttonRefs)}
     >
       <Form
         id={id}

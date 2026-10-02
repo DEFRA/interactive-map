@@ -2,7 +2,6 @@
 import React, { createContext, useRef, useEffect, useReducer, useMemo, useCallback } from 'react'
 import { initialState, reducer } from './appReducer.js'
 import { handleActionSideEffects } from './appDispatchMiddleware.js'
-import { EVENTS as events } from '../../config/events.js'
 import { ConfigContext } from './configContext.js'
 import { subscribeToInterfaceChanges } from '../../utils/detectInterfaceType.js'
 import { useMediaQueryDispatch } from '../hooks/useMediaQueryDispatch.js'
@@ -51,18 +50,7 @@ export const AppProvider = ({ options, children }) => {
 
   useMediaQueryDispatch(rawDispatch, options)
 
-  const handleSetMode = (mode) => {
-    dispatch({ type: 'SET_MODE', payload: mode })
-  }
-
-  const handleRevertMode = () => {
-    dispatch({ type: 'REVERT_MODE' })
-  }
-
   useEffect(() => {
-    eventBus.on(events.APP_SET_MODE, handleSetMode)
-    eventBus.on(events.APP_REVERT_MODE, handleRevertMode)
-
     const unsubBreakpoint = breakpointDetector.subscribe((breakpoint) => {
       dispatch({
         type: 'SET_BREAKPOINT',
@@ -80,8 +68,6 @@ export const AppProvider = ({ options, children }) => {
     })
 
     return () => {
-      eventBus.off(events.APP_SET_MODE, handleSetMode)
-      eventBus.off(events.APP_REVERT_MODE, handleRevertMode)
       unsubBreakpoint()
       unsubInterface()
     }

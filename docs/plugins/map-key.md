@@ -99,22 +99,6 @@ createMapKeyPlugin({ noKeyItemText: 'No layers to show' })
 
 ---
 
-### `includeModes`
-
-**Type:** `string[]`
-
-When set, the plugin only initialises when the app is in one of the specified modes.
-
----
-
-### `excludeModes`
-
-**Type:** `string[]`
-
-When set, the plugin does not initialise when the app is in one of the specified modes.
-
----
-
 ## Key display properties
 
 These properties control how an entry looks in the key panel — they have no effect on how a feature renders on the map itself. Today the only way to set them is via a dataset's [`style`](./datasets.md#style) object, since Datasets is the only plugin feeding this key panel.

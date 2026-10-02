@@ -10,7 +10,7 @@ const pluginConfigHasMenuItems = (pluginConfig) =>
   pluginConfig.datasets
     .some(dataset => dataset.showInMenu || dataset.sublayers?.some(sublayer => sublayer.showInMenu))
 
-export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
+export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
@@ -32,10 +32,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   const datasetsInstanceRef = useRef(null)
 
   useEffect(() => {
-    const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
-    const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
-
-    if (!isBaseMapReady || !inModeWhitelist || inExcludeModes) {
+    if (!isBaseMapReady) {
       return
     }
 
@@ -60,7 +57,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     }
 
     initDatasets()
-  }, [isBaseMapReady, appState.mode])
+  }, [isBaseMapReady])
 
   useEffect(() => {
     datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets)

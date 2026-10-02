@@ -4,14 +4,13 @@ import { withPluginContexts } from './pluginWrapper.js'
 import { withPluginApiContexts, usePluginApiState } from './pluginApiWrapper.js'
 import { useInterfaceAPI } from '../hooks/useInterfaceAPI.js'
 import { useHintsAPI } from '../hooks/useHintsAPI.js'
-import { useApp } from '../store/appContext.js'
 import { useConfig } from '../store/configContext.js'
 import { useEvaluateProp } from '../hooks/useEvaluateProp.js'
 import { useButtonStateEvaluator } from '../hooks/useButtonStateEvaluator.js'
 import { useContinueEnabledEvaluator } from '../hooks/useContinueEnabledEvaluator.js'
 
 // Create a component for each plugin to handle its hooks properly
-const PluginInit = ({ plugin, mode }) => {
+const PluginInit = ({ plugin }) => {
   const stateRef = usePluginApiState(plugin.id)
 
   // Wrap all API functions
@@ -30,12 +29,7 @@ const PluginInit = ({ plugin, mode }) => {
   const { InitComponent } = plugin
   const { api, ...pluginConfig } = plugin?.config || {}
 
-  // Check if valid mode for plugin
-  const { includeModes, excludeModes } = plugin.config || {}
-  const inModeWhitelist = includeModes?.includes(mode) ?? true
-  const inExcludeModes = excludeModes?.includes(mode) ?? false
-
-  if (!inModeWhitelist || inExcludeModes || !InitComponent) {
+  if (!InitComponent) {
     return null
   }
 
@@ -48,7 +42,6 @@ const PluginInit = ({ plugin, mode }) => {
 }
 
 export const PluginInits = () => {
-  const { mode } = useApp()
   const { pluginRegistry } = useConfig()
 
   // Add button, panel and control API methods (Needs to be top-level)
@@ -68,7 +61,6 @@ export const PluginInits = () => {
         <PluginInit
           key={`init-${plugin.id}-${idx}`}
           plugin={plugin}
-          mode={mode}
           evaluateProp={evaluateProp}
         />
       ))}

@@ -35,6 +35,8 @@ const MyControl = ({ context }) => {
 }
 ```
 
+Core renders the component inside a wrapper element, `<div class="im-c-control-wrapper im-c-control-wrapper--{id}">` (the id kebab-cased), as it does for buttons (`im-c-button-wrapper--{id}`). The wrapper is `display: contents`, so it doesn't affect layout, but your control isn't a direct child of its slot, so write CSS selectors with that in mind.
+
 ---
 
 ### `mobile`

@@ -1,5 +1,5 @@
 // src/core/renderers/pluginWrapper.js
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
@@ -48,6 +48,20 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
       const mapState = useMap()
       const services = useService()
       const pluginState = usePlugin(pluginId)
+      // Created once per mount, reading dispatch through a ref, so effects can depend on them without
+      // re-running.
+      const dispatchRef = useRef(appState.dispatch)
+      dispatchRef.current = appState.dispatch
+      const applicationModeApiRef = useRef(null)
+      if (!applicationModeApiRef.current) {
+        applicationModeApiRef.current = {
+          setApplicationMode: (id, { include = null, exclude = null } = {}) =>
+            dispatchRef.current({ type: 'SET_APPLICATION_MODE', payload: { id, include, exclude } }),
+          clearApplicationMode: (id) =>
+            dispatchRef.current({ type: 'CLEAR_APPLICATION_MODE', payload: id })
+        }
+      }
+      const { setApplicationMode, clearApplicationMode } = applicationModeApiRef.current
 
       return (
         <Component
@@ -60,6 +74,8 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
           services={services}
           mapProvider={appConfig.mapProvider}
           iconRegistry={getIconRegistry()}
+          setApplicationMode={setApplicationMode}
+          clearApplicationMode={clearApplicationMode}
           buttonConfig={useMemo(() => Object.fromEntries(
             Object.entries(appState.buttonConfig).filter(
               ([_, btn]) => btn.pluginId === pluginId

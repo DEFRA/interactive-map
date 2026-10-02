@@ -47,7 +47,7 @@ const makeProps = (overrides = {}) => ({
     datasets: [{ id: 'roads', label: 'Roads', showInMenu: true }]
   },
   pluginState: makePluginState(),
-  appState: { mode: 'default' },
+  appState: {},
   mapState: { mapStyle: { id: 'outdoor' } },
   mapProvider: { isBaseMapReady: jest.fn().mockReturnValue(true) },
   services: {
@@ -144,24 +144,6 @@ describe('DatasetsInit', () => {
       expect(loadLayerAdapter).not.toHaveBeenCalled()
     })
 
-    it('does not initialise when mode is not in includeModes', async () => {
-      const props = makeProps({
-        pluginConfig: { datasets: [], includeModes: ['edit'] },
-        appState: { mode: 'default' }
-      })
-      await render(<DatasetsInit {...props} />)
-      expect(loadLayerAdapter).not.toHaveBeenCalled()
-    })
-
-    it('does not initialise when mode is in excludeModes', async () => {
-      const props = makeProps({
-        pluginConfig: { datasets: [], excludeModes: ['default'] },
-        appState: { mode: 'default' }
-      })
-      await render(<DatasetsInit {...props} />)
-      expect(loadLayerAdapter).not.toHaveBeenCalled()
-    })
-
     it('does not initialise twice when re-rendered', async () => {
       const props = makeProps()
       const { rerender } = render(<DatasetsInit {...props} />)
@@ -171,13 +153,16 @@ describe('DatasetsInit', () => {
       expect(loadLayerAdapter).toHaveBeenCalledTimes(1)
     })
 
-    it('skips init when datasetsInstanceRef is already populated (mode change)', async () => {
+    it('skips init when datasetsInstanceRef is already populated (base map reloads)', async () => {
       const props = makeProps()
       const { rerender } = render(<DatasetsInit {...props} />)
       await act(async () => {})
-      // Change appState.mode — that's in the effect deps, so the effect re-runs
+      // Toggle base map readiness — that's the effect's dependency, so the effect re-runs
       await act(async () => {
-        rerender(<DatasetsInit {...props} appState={{ mode: 'edit' }} />)
+        rerender(<DatasetsInit {...props} mapProvider={{ isBaseMapReady: () => false }} />)
+      })
+      await act(async () => {
+        rerender(<DatasetsInit {...props} mapProvider={{ isBaseMapReady: () => true }} />)
       })
       // loadLayerAdapter should only be called once despite the re-run
       expect(loadLayerAdapter).toHaveBeenCalledTimes(1)

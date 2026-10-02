@@ -27,7 +27,7 @@ describe('pluginRegistry', () => {
   it('registers plugin and pushes to registeredPlugins', () => {
     const plugin = {
       id: 'plugin1',
-      config: { includeModes: ['view'], excludeModes: ['edit'] },
+      config: {},
       manifest: {}
     }
     pluginRegistry.registerPlugin(plugin)
@@ -37,7 +37,7 @@ describe('pluginRegistry', () => {
   it('registers buttons, panels, controls, icons, and shortcuts with pluginConfig info', () => {
     const plugin = {
       id: 'plugin2',
-      config: { includeModes: ['view'], excludeModes: ['edit'] },
+      config: {},
       manifest: {
         buttons: { id: 'btn1' },
         panels: [{ id: 'panel1' }],
@@ -50,9 +50,7 @@ describe('pluginRegistry', () => {
     pluginRegistry.registerPlugin(plugin)
 
     const expectedPluginConfig = {
-      pluginId: 'plugin2',
-      includeModes: ['view'],
-      excludeModes: ['edit']
+      pluginId: 'plugin2'
     }
 
     expect(registerButton).toHaveBeenCalledWith({
@@ -74,7 +72,7 @@ describe('pluginRegistry', () => {
   it('registers nested menuItems for buttons', () => {
     const plugin = {
       id: 'plugin-menu',
-      config: { includeModes: ['mode1'], excludeModes: [] },
+      config: {},
       manifest: {
         buttons: [
           {
@@ -91,9 +89,7 @@ describe('pluginRegistry', () => {
     pluginRegistry.registerPlugin(plugin)
 
     const expectedPluginConfig = {
-      pluginId: 'plugin-menu',
-      includeModes: ['mode1'],
-      excludeModes: []
+      pluginId: 'plugin-menu'
     }
 
     // Parent button
@@ -113,7 +109,7 @@ describe('pluginRegistry', () => {
   it('handles single vs array manifests correctly', () => {
     const plugin = {
       id: 'plugin3',
-      config: { includeModes: ['a'], excludeModes: ['b'] },
+      config: {},
       manifest: {
         buttons: [{ id: 'b1' }, { id: 'b2' }],
         panels: { id: 'p1' },

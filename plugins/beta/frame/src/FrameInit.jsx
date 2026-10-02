@@ -10,15 +10,13 @@ export const FrameInit = ({
   services,
   buttonConfig
 }) => {
-  const { mode, breakpoint, layoutRefs } = appState
+  const { breakpoint, layoutRefs } = appState
   const { eventBus } = services
   const { frameDone, frameCancel } = buttonConfig
   const { dispatch, frameRefs, frame } = pluginState
 
   // Check if plugin should be active
-  const inModeWhitelist = pluginConfig.includeModes?.includes(mode) ?? true
-  const inExcludeModes = pluginConfig.excludeModes?.includes(mode) ?? false
-  const isActive = mapState.isMapReady && inModeWhitelist && !inExcludeModes
+  const isActive = mapState.isMapReady
 
   // Attach events
   useEffect(() => {
@@ -50,5 +48,5 @@ export const FrameInit = ({
       frameDone.onClick = null
       frameCancel.onClick = null
     }
-  }, [mapState.isMapReady, mode, breakpoint, frame, frameRefs, layoutRefs, mapProvider, dispatch, eventBus, frameDone, frameCancel])
+  }, [mapState.isMapReady, breakpoint, frame, frameRefs, layoutRefs, mapProvider, dispatch, eventBus, frameDone, frameCancel])
 }

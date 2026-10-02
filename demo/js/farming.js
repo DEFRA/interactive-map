@@ -27,8 +27,7 @@ var interactPlugin = createInteractPlugin({
     // idProperty: 'gid'
   }],
   interactionModes: ['selectMarker', 'selectFeature', 'placeMarker'], // e.g. ['selectMarker'], ['selectFeature'], ['placeMarker'], or combinations
-  multiSelect: true,
-  // excludeModes: ['draw']
+  multiSelect: true
 })
 
 var datasetsPlugin = createDatasetsPlugin({
@@ -131,7 +130,6 @@ var interactiveMap = new InteractiveMap('map', {
 })
 
 interactiveMap.on('map:ready', function (e) {
-  // interactiveMap.setMode('draw')
   // framePlugin.addFrame('test', {
   //   aspectRatio: 1
   // })

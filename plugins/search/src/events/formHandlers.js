@@ -31,10 +31,40 @@ const restoreTriggerFocus = (buttonRefs) => {
   requestAnimationFrame(focusWhenReady)
 }
 
+// Every focusable element on the page in tab order — including [tabindex] elements (e.g. the features
+// list) and visually hidden but still-rendered ones (e.g. buttons search hides with opacity while open).
+const TAB_STOP_SELECTOR = 'input, button, select, textarea, a[href], [tabindex]'
+const getTabStops = () => Array.from(document.querySelectorAll(TAB_STOP_SELECTOR))
+  .filter(el => el.tabIndex >= 0 && !el.disabled && el.getClientRects().length > 0)
+
+// The form renders apart from its trigger (a slot's controls come before its buttons), so native
+// Tab order would leave the form for whatever happens to follow it in the DOM. Continue from the
+// trigger's position instead: Tab past the last element goes to whatever follows the trigger,
+// Shift+Tab past the first returns to the trigger. handleOutside then closes search as usual.
+const tabOutFromTrigger = (event, buttonRefs, searchContainerRef) => {
+  const trigger = getTriggerButton(buttonRefs)
+  if (event.key !== 'Tab' || !trigger) {
+    return
+  }
+  const stops = getTabStops()
+  const adjacent = stops[stops.indexOf(event.target) + (event.shiftKey ? -1 : 1)]
+  if (searchContainerRef.current?.contains(adjacent)) {
+    return
+  }
+  // Nothing after the trigger means it's the page's last tab stop: let focus leave the page natively.
+  const target = event.shiftKey ? trigger : stops[stops.indexOf(trigger) + 1]
+  if (!target) {
+    return
+  }
+  event.preventDefault()
+  target.focus()
+}
+
 export const createFormHandlers = ({
   dispatch,
   services,
   viewportRef,
+  searchContainerRef,
   mapProvider,
   markers,
   datasets,
@@ -45,6 +75,10 @@ export const createFormHandlers = ({
   let lastFetchedValue = ''
 
   return {
+    handleTabOut (event, buttonRefs) {
+      tabOutFromTrigger(event, buttonRefs, searchContainerRef)
+    },
+
     handleCloseClick (_e, appState) {
       dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
       dispatch({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })

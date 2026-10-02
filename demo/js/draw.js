@@ -67,10 +67,7 @@ const drawPlugin = createDrawPlugin({
   onGeometryChange: (event) => ({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
-  }),
-  manifest: {
-    buttons: [{ id: 'drawMenu', mobile: { slot: 'bottom-right' }}]
-  }
+  })
 })
 
 const datasetsPlugin = createDatasetsPlugin({
@@ -159,7 +156,20 @@ const interactiveMap = new InteractiveMap('map', {
       osNamesURL: process.env.OS_NAMES_URL,
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
-      showMarker: false
+      showMarker: false,
+      // Search trigger and form in the top-right on tablet/desktop (mobile keeps its defaults)
+      manifest: {
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-right', showLabel: false },
+          desktop: { slot: 'top-right', showLabel: false }
+        }],
+        controls: [{
+          id: 'search',
+          tablet: { slot: 'top-right' },
+          desktop: { slot: 'top-right' }
+        }]
+      }
     }),
     datasetsPlugin,
     createMapKeyPlugin(),

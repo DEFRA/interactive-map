@@ -33,7 +33,8 @@ jest.mock('./datasets.js', () => ({
 jest.mock('./events/index.js', () => ({
   attachEvents: jest.fn(() => ({
     handleCloseClick: jest.fn(),
-    handleOutside: jest.fn()
+    handleOutside: jest.fn(),
+    handleTabOut: jest.fn()
   }))
 }))
 
@@ -68,7 +69,9 @@ describe('Search component', () => {
       },
       mapState: { markers: {} },
       services: {},
-      mapProvider: { crs: 'EPSG:3857' }
+      mapProvider: { crs: 'EPSG:3857' },
+      setApplicationMode: jest.fn(),
+      clearApplicationMode: jest.fn()
     }
   })
 
@@ -102,6 +105,29 @@ describe('Search component', () => {
     expect(container.querySelector('.im-c-search')).not.toHaveClass('im-c-search--collapsed')
   })
 
+  it('enters the search application mode while expanded', () => {
+    props.pluginState.isExpanded = true
+    render(<Search {...props} />)
+    expect(props.setApplicationMode).toHaveBeenCalledWith('search')
+  })
+
+  it('does not enter the search application mode while collapsed', () => {
+    render(<Search {...props} />)
+    expect(props.setApplicationMode).not.toHaveBeenCalled()
+  })
+
+  it('leaves the search application mode on collapse and on unmount', () => {
+    props.pluginState.isExpanded = true
+    const { rerender, unmount } = render(<Search {...props} />)
+    rerender(<Search {...props} pluginState={{ ...props.pluginState, isExpanded: false }} />)
+    expect(props.clearApplicationMode).toHaveBeenCalledWith('search')
+
+    props.clearApplicationMode.mockClear()
+    rerender(<Search {...props} />)
+    unmount()
+    expect(props.clearApplicationMode).toHaveBeenCalledWith('search')
+  })
+
   it('does not collapse the wrapper in default-expanded mode', () => {
     props.pluginConfig.expanded = true
     const { container } = render(<Search {...props} />)
@@ -127,6 +153,14 @@ describe('Search component', () => {
   it('renders SubmitButton when expanded is false', () => {
     render(<Search {...props} />)
     expect(screen.getByTestId('submit-button')).toBeInTheDocument()
+  })
+
+  it('passes key presses in the search container to handleTabOut with the button refs', () => {
+    props.appState.buttonRefs = { current: {} }
+    const { container } = render(<Search {...props} />)
+    fireEvent.keyDown(container.querySelector('.im-c-search'), { key: 'Tab' })
+    const { handleTabOut } = attachEvents.mock.results[0].value
+    expect(handleTabOut).toHaveBeenCalledWith(expect.objectContaining({ key: 'Tab' }), props.appState.buttonRefs)
   })
 
   it('CloseButton click triggers handleCloseClick', () => {

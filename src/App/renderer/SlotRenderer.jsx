@@ -5,6 +5,7 @@ import { useApp } from '../store/appContext.js'
 import { getSlotItems } from './slotAggregator.js'
 import { Actions } from '../components/Actions/Actions.jsx'
 import { useEvaluateProp } from '../hooks/useEvaluateProp.js'
+import { useApplicationModeFilter } from '../hooks/useApplicationModeFilter.js'
 
 export const SlotRenderer = ({ slot }) => {
   const appConfig = useConfig()
@@ -12,9 +13,10 @@ export const SlotRenderer = ({ slot }) => {
 
   // Shared evaluateProp hook for this render cycle
   const evaluateProp = useEvaluateProp()
+  const isHiddenByApplicationMode = useApplicationModeFilter()
 
   // Get all slot items (controls, panels, buttons)
-  const slotItems = getSlotItems({ slot, appConfig, appState, evaluateProp })
+  const slotItems = getSlotItems({ slot, appConfig, appState, evaluateProp, isHiddenByApplicationMode })
 
   if (!slotItems.length) {
     return null

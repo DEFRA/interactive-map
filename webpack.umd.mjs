@@ -2,6 +2,7 @@ import path, { dirname } from 'path'
 import { fileURLToPath } from 'url'
 import fs from 'fs'
 
+import webpack from 'webpack'
 import MiniCssExtractPlugin from 'mini-css-extract-plugin'
 import CssMinimizerPlugin from 'css-minimizer-webpack-plugin'
 import RemoveEmptyScriptsPlugin from 'webpack-remove-empty-scripts'
@@ -30,7 +31,10 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
     }),
     new RemoveFilesPlugin({
       before: { include: [path.resolve(__dirname, outDir)] }
-    })
+    }),
+    // There's no Esri provider in UMD, so Esri code can never run here: leave out
+    // @arcgis/core and the datasets Esri adapter rather than bundling ~100 MB of chunks.
+    new webpack.IgnorePlugin({ resourceRegExp: /^@arcgis\/core|esriLayerAdapter/ })
   ]
 
   if (isCore) {

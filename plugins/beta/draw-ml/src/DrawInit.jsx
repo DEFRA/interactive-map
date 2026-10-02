@@ -10,11 +10,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
 
   // Create draw instance once
   useEffect(() => {
-    // Don't run init if the app is in non-specified mode
-    const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
-    const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
-
-    if (!mapState.isMapReady || !inModeWhitelist || inExcludeModes) {
+    if (!mapState.isMapReady) {
       return
     }
 
@@ -33,7 +29,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
     eventBus.emit('draw:ready')
 
     return () => remove()
-  }, [mapState.isMapReady, appState.mode])
+  }, [mapState.isMapReady])
 
   // Keep draw instance aware of the crossHair API so draw modes can use show/hide
   // (rather than direct DOM manipulation which conflicts with React's controlled display style)

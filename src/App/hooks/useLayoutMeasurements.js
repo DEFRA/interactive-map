@@ -11,6 +11,27 @@ const ATTRIBUTIONS_STACKED_CLASS = 'im-o-app__attributions--stacked'
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
 
+// Whether an element renders anything. The control wrapper core puts around each plugin control is
+// display: contents, with no box of its own, so it counts as rendered if any child is.
+const isRendered = (element) => {
+  if (element.hidden) {
+    return false
+  }
+  if (element.getClientRects().length > 0) {
+    return true
+  }
+  return element.classList.contains('im-c-control-wrapper') && Array.from(element.children).some(isRendered)
+}
+
+// A top column whose children are all display:none (hiddenWhen buttons, or items an application mode
+// hides) isn't :empty, so it keeps its trailing padding-bottom — which would push the side column
+// below it down by a gap. Treat it as empty instead.
+const topColHeight = (col) => {
+  const children = Array.from(col.children)
+  const isAllHidden = children.length > 0 && !children.some(isRendered)
+  return isAllHidden ? 0 : col.offsetHeight
+}
+
 // Max of both sides, so centred content doesn't lean toward the emptier one.
 const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 0
 
@@ -191,7 +212,7 @@ export function calculateLayout (layoutRefs, breakpoint) {
   const { rise: attributionsLift } = applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
 
   // === Left container offsets ===
-  const leftOffsetTop = sideOffsetTop(topLeftCol.offsetHeight)
+  const leftOffsetTop = sideOffsetTop(topColHeight(topLeftCol))
   const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap
   appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
   appContainer.style.setProperty('--left-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
@@ -200,7 +221,7 @@ export function calculateLayout (layoutRefs, breakpoint) {
   // === Right container offsets === (mirrors the left formula)
   const bottomRightHeight = buttonHeight(bottomRightRef)
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
-  const rightOffsetTop = sideOffsetTop(topRightCol.offsetHeight)
+  const rightOffsetTop = sideOffsetTop(topColHeight(topRightCol))
   const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - attributionsLift
   const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
   appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
