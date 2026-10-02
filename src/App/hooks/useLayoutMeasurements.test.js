@@ -128,7 +128,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     const spy = layoutRefs.appContainerRef.current.style.setProperty
-    ;['--right-offset-top', '--right-offset-bottom', '--top-col-width']
+    ;['--right-offset-top', '--right-offset-bottom']
       .forEach(prop => expect(spy).toHaveBeenCalledWith(prop, expect.any(String)))
   })
 
@@ -191,16 +191,6 @@ describe('useLayoutMeasurements', () => {
     renderHook(() => useLayoutMeasurements())
     // actionsHeight = 0, falls back to clearsBottomRow = 500 - 400 + dividerGap (8) = 108
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '108px')
-  })
-
-  test.each([
-    [{ offsetWidth: 250 }, { offsetWidth: 200 }, '250px'],
-    [{ offsetWidth: 0 }, { offsetWidth: 200 }, '200px'],
-    [{ offsetWidth: 0 }, { offsetWidth: 0 }, '0px']
-  ])('calculates top-col-width for left=%o right=%o', (left, right, expected) => {
-    const { layoutRefs } = setup({ refs: { topLeftCol: { offsetHeight: 50, ...left }, topRightCol: { offsetHeight: 40, ...right } } })
-    renderHook(() => useLayoutMeasurements())
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--top-col-width', expected)
   })
 
   test('clears inline banner panel widths on mobile', () => {
