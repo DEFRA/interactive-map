@@ -287,7 +287,7 @@ export const symbolRegistry = {
   /**
    * Sizes a symbol definition for rendering. Built-in (path-based) symbols are composed at the
    * size's scale with fixed-width rings; SVG-template symbols are scaled as a whole. The result
-   * always carries the viewBox (and, for built-ins, the anchor) for that size.
+   * always carries the viewBox and anchor for that size.
    *
    * @param {Object} symbolDef - a registered definition or { svg } for inline content
    * @param {Object} [options]

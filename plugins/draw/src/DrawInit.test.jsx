@@ -1,3 +1,4 @@
+import { logger } from '../../../src/services/logger.js'
 import { render, act } from '@testing-library/react'
 import { EVENTS } from '../../../src/config/events.js'
 import { DrawInit } from './DrawInit.jsx'
@@ -6,6 +7,7 @@ import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
 
 jest.mock('./adapters/loadDrawAdapter.js', () => ({ loadDrawAdapter: jest.fn() }))
+jest.mock('../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 jest.mock('./events.js', () => ({ attachEvents: jest.fn(() => jest.fn()) }))
 jest.mock('./hooks/useSpatialList.js', () => ({ useSpatialList: jest.fn() }))
 
@@ -23,7 +25,7 @@ const makeProps = (overrides = {}) => {
     },
     pluginConfig: { snapLayers: ['a'] },
     pluginState: { dispatch: jest.fn(), mode: null },
-    services: { eventBus: { emit: jest.fn() } },
+    services: { eventBus: { emit: jest.fn() }, symbolRegistry: { id: 'app-symbol-registry' } },
     mapProvider: { draw: null },
     buttonConfig: {},
     setApplicationMode: jest.fn(),
@@ -38,6 +40,18 @@ const renderInit = async (props) => render(<DrawInit {...props} />)
 beforeEach(() => jest.clearAllMocks())
 
 describe('adapter lifecycle', () => {
+  test('logs, rather than leaving unhandled, a failure to load the adapter', async () => {
+    const { props } = makeProps()
+    const failure = new Error('no adapter for this provider')
+    loadDrawAdapter.mockRejectedValueOnce(failure)
+
+    await renderInit(props)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(logger.error).toHaveBeenCalledWith('[draw] failed to load the draw adapter', failure)
+    expect(props.services.eventBus.emit).not.toHaveBeenCalledWith('draw:ready')
+  })
+
   test('loads the adapter and announces readiness when the map is ready', async () => {
     const { props, adapter } = makeProps()
 
@@ -47,7 +61,9 @@ describe('adapter lifecycle', () => {
       mapStyle: props.mapState.mapStyle,
       snapLayers: props.pluginConfig.snapLayers,
       events: EVENTS,
-      eventBus: props.services.eventBus
+      eventBus: props.services.eventBus,
+      // the app's registry, so drawn points see its symbols and defaults
+      symbolRegistry: props.services.symbolRegistry
     }))
     expect(props.mapProvider.draw).toBe(adapter)
     expect(props.pluginState.dispatch).toHaveBeenCalledWith({ type: 'SET_HAS_SNAP_LAYERS', payload: true })

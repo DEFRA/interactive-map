@@ -71,11 +71,15 @@ describe('applyAnchorOverride', () => {
 
 describe('scaleSvgSymbolDef', () => {
   it('leaves the svg as it is at scale 1', () => {
-    expect(scaleSvgSymbolDef({ svg: '<rect/>' }, '0 0 20 10', 1)).toEqual({ svg: '<rect/>', viewBox: '0 0 20 10' })
+    expect(scaleSvgSymbolDef({ svg: '<rect/>' }, '0 0 20 10', 1)).toEqual({ svg: '<rect/>', viewBox: '0 0 20 10', anchor: [0.5, 0.5] })
+  })
+
+  it('keeps the symbol\'s own anchor', () => {
+    expect(scaleSvgSymbolDef({ svg: '<rect/>', anchor: [0.5, 1] }, '0 0 20 10', 2).anchor).toEqual([0.5, 1])
   })
 
   it('scales the viewBox, origin included, and wraps the svg in a scale transform', () => {
-    expect(scaleSvgSymbolDef({ svg: '<rect/>' }, '2 4 20 10', 1.5)).toEqual({ svg: '<g transform="scale(1.5)"><rect/></g>', viewBox: '3 6 30 15' })
+    expect(scaleSvgSymbolDef({ svg: '<rect/>' }, '2 4 20 10', 1.5)).toEqual({ svg: '<g transform="scale(1.5)"><rect/></g>', viewBox: '3 6 30 15', anchor: [0.5, 0.5] })
   })
 })
 

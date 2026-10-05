@@ -328,51 +328,31 @@ describe('MapLibreDataset', () => {
       filter: ['in', ['get', 'category'], 'prehistoric']
     }
 
+    const ICON_LAYOUT = { 'icon-anchor': 'bottom', 'icon-offset': [0, 4.7] }
+
     it('returns a symbol layer spec with the correct shape', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('my-icon', null, null)).toEqual({
+      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('my-icon', ICON_LAYOUT)).toEqual({
         ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'my-icon', 'icon-anchor': 'center', 'icon-allow-overlap': true }
-      })
-    })
-
-    it('uses the provided anchor when given', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', [0.1, 0.9], null)).toEqual({
-        ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'bottom-left', 'icon-allow-overlap': true }
-      })
-    })
-
-    it('falls back to symbolDef.anchor when no anchor is provided', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', null, { anchor: [0.5, 0] })).toEqual({
-        ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'top', 'icon-allow-overlap': true }
-      })
-    })
-
-    it('adds an icon-offset correcting the snapped anchor when a viewBox is given', () => {
-      // pin's [0.5, 0.9] snaps to 'bottom' (1.0) — offset moves it back 0.1 × 47px
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', [0.5, 0.9], null, '0 0 44 47')).toEqual({
-        ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'bottom', 'icon-offset': [0, 4.7], 'icon-allow-overlap': true }
+        layout: { visibility: 'visible', 'icon-image': 'my-icon', ...ICON_LAYOUT, 'icon-allow-overlap': true }
       })
     })
 
     it('does not include a filter property when filter is null', () => {
-      expect(datasetRegistry.getDataset('historic-monuments').getSymbolSource('icon', null, null)).toEqual({
+      expect(datasetRegistry.getDataset('historic-monuments').getSymbolSource('icon', ICON_LAYOUT)).toEqual({
         id: null,
         type: 'symbol',
         source: 'geojson-historic-monuments',
         'source-layer': undefined,
         minzoom: 10,
         maxzoom: 24,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'center', 'icon-allow-overlap': true }
+        layout: { visibility: 'visible', 'icon-image': 'icon', ...ICON_LAYOUT, 'icon-allow-overlap': true }
       })
     })
 
     it('includes a filter property when the dataset has a filter', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', null, null)).toEqual({
+      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', ICON_LAYOUT)).toEqual({
         ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'center', 'icon-allow-overlap': true }
+        layout: { visibility: 'visible', 'icon-image': 'icon', ...ICON_LAYOUT, 'icon-allow-overlap': true }
       })
     })
   })

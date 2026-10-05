@@ -6,9 +6,9 @@ import { logger } from '../../../../../src/services/logger.js'
  * Creates the OLDrawManager, attaches it to mapProvider, and wires app-level size/style events.
  * @returns {{ manager: OLDrawManager, remove: () => void }}
  */
-export const createOLDraw = ({ mapProvider, events, eventBus, pluginConfig = {}, mapStyle = null }) => {
+export const createOLDraw = ({ mapProvider, symbolRegistry, events, eventBus, pluginConfig = {}, mapStyle = null }) => {
   const { map } = mapProvider
-  const manager = new OLDrawManager(map, pluginConfig)
+  const manager = new OLDrawManager(map, pluginConfig, { mapProvider, symbolRegistry })
 
   if (mapStyle) {
     manager.setMapStyle(mapStyle)

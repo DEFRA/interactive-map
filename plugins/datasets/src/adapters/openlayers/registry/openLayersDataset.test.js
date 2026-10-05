@@ -1,7 +1,7 @@
 import { OpenLayersDataset } from './openLayersDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { registerSymbol, clearSymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('../../../registry/datasetRegistry.js')
@@ -11,6 +11,10 @@ const PIXEL_RATIO = 2
 // pin at medium: its default anchor (just below the tip), and [0.5, 1] — the bottom of the pin shape itself
 const PIN_ANCHOR = symbolRegistry.getSymbolDef({ symbol: 'pin' }).anchor
 const PIN_BOTTOM_ANCHOR = symbolRegistry.getSymbolDef({ symbol: 'pin', symbolAnchor: [0.5, 1] }).anchor
+
+// The OL provider's symbol images, and the style context the adapter resolves styles against
+let symbolImages
+const context = (pixelRatio = PIXEL_RATIO) => ({ pixelRatio, symbolRegistry, getSymbolDataUri: (imageId) => symbolImages.getDataUri(imageId) })
 
 beforeAll(() => {
   globalThis.Image = class {
@@ -46,7 +50,7 @@ describe('OpenLayersDataset', () => {
       'ds-symbol-anchor': { id: 'ds-symbol-anchor', style: { symbol: 'pin', symbolAnchor: [0.5, 1] } },
       'ds-symbol-filter': { id: 'ds-symbol-filter', style: { symbol: 'pin' }, filter: ['==', ['get', 'type'], 'a'] }
     })
-    clearSymbolImageCache()
+    symbolImages = new SymbolImageCache()
   })
 
   describe('leafLayerIds', () => {
@@ -172,15 +176,15 @@ describe('OpenLayersDataset', () => {
 
   describe('getSymbolMeta', () => {
     it('returns null for a dataset with no symbol', () => {
-      expect(datasetRegistry.getDataset('ds-fill-only').getSymbolMeta(PIXEL_RATIO)).toBeNull()
+      expect(datasetRegistry.getDataset('ds-fill-only').getSymbolMeta(context())).toBeNull()
     })
 
     it('returns null when the style\'s symbol name has no known symbol definition', () => {
-      expect(datasetRegistry.getDataset('ds-symbol-unknown').getSymbolMeta(PIXEL_RATIO)).toBeNull()
+      expect(datasetRegistry.getDataset('ds-symbol-unknown').getSymbolMeta(context())).toBeNull()
     })
 
     it('returns the resolved imageId and anchor for a known symbol, with no registration needed', () => {
-      expect(datasetRegistry.getDataset('ds-symbol').getSymbolMeta(PIXEL_RATIO)).toEqual({
+      expect(datasetRegistry.getDataset('ds-symbol').getSymbolMeta(context())).toEqual({
         imageId: expect.any(String),
         anchor: PIN_ANCHOR,
         pixelRatio: PIXEL_RATIO
@@ -188,21 +192,21 @@ describe('OpenLayersDataset', () => {
     })
 
     it('uses the dataset\'s own symbolAnchor over the symbol definition\'s default', () => {
-      expect(datasetRegistry.getDataset('ds-symbol-anchor').getSymbolMeta(PIXEL_RATIO).anchor).toEqual(PIN_BOTTOM_ANCHOR)
+      expect(datasetRegistry.getDataset('ds-symbol-anchor').getSymbolMeta(context()).anchor).toEqual(PIN_BOTTOM_ANCHOR)
     })
   })
 
   describe('getFlatStyle', () => {
     it('returns fill-color for a fill-only dataset', () => {
-      expect(datasetRegistry.getDataset('ds-fill-only').getFlatStyle(PIXEL_RATIO)).toEqual({ 'fill-color': 'blue' })
+      expect(datasetRegistry.getDataset('ds-fill-only').getFlatStyle(context())).toEqual({ 'fill-color': 'blue' })
     })
 
     it('returns stroke-color and stroke-width, defaulting stroke-width to 1', () => {
-      expect(datasetRegistry.getDataset('ds-stroke-only').getFlatStyle(PIXEL_RATIO)).toEqual({ 'stroke-color': 'red', 'stroke-width': 2 })
+      expect(datasetRegistry.getDataset('ds-stroke-only').getFlatStyle(context())).toEqual({ 'stroke-color': 'red', 'stroke-width': 2 })
     })
 
     it('includes stroke-line-dash when strokeDashArray is set', () => {
-      expect(datasetRegistry.getDataset('ds-dashed-stroke').getFlatStyle(PIXEL_RATIO)).toEqual({
+      expect(datasetRegistry.getDataset('ds-dashed-stroke').getFlatStyle(context())).toEqual({
         'stroke-color': 'red',
         'stroke-width': 1,
         'stroke-line-dash': [4, 2]
@@ -210,11 +214,11 @@ describe('OpenLayersDataset', () => {
     })
 
     it('returns an empty style object for a bare dataset', () => {
-      expect(datasetRegistry.getDataset('ds-bare').getFlatStyle(PIXEL_RATIO)).toEqual({})
+      expect(datasetRegistry.getDataset('ds-bare').getFlatStyle(context())).toEqual({})
     })
 
     it('wraps the style in a filter rule when the dataset has hidden features', () => {
-      expect(datasetRegistry.getDataset('ds-hf').getFlatStyle(PIXEL_RATIO)).toEqual([{
+      expect(datasetRegistry.getDataset('ds-hf').getFlatStyle(context())).toEqual([{
         filter: ['!', ['in', ['to-string', ['id']], ['literal', ['1', '2']]]],
         style: { 'fill-color': 'blue' }
       }])
@@ -226,20 +230,20 @@ describe('OpenLayersDataset', () => {
       // must not fall back to a meaningless fill-color either (see base Dataset.hasFill, which
       // is also true for a pattern dataset).
       it('never sets fill-color or fill-pattern-src for a pattern dataset', () => {
-        expect(datasetRegistry.getDataset('ds-pattern').getFlatStyle(PIXEL_RATIO)).toEqual({})
+        expect(datasetRegistry.getDataset('ds-pattern').getFlatStyle(context())).toEqual({})
       })
     })
 
     describe('symbols', () => {
       it('has no icon-src before the symbol is registered', () => {
-        // registerSymbol is async and hasn't run yet — getFlatStyle must never block on it.
-        expect(datasetRegistry.getDataset('ds-symbol').getFlatStyle(PIXEL_RATIO)).toEqual({})
+        // image registration is async and hasn't run yet — getFlatStyle must never block on it.
+        expect(datasetRegistry.getDataset('ds-symbol').getFlatStyle(context())).toEqual({})
       })
 
       it('uses icon-src, icon-anchor and icon-scale once the symbol is registered', async () => {
         const dataset = datasetRegistry.getDataset('ds-symbol')
-        await registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
-        expect(dataset.getFlatStyle(PIXEL_RATIO)).toEqual({
+        await symbolImages.registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
+        expect(dataset.getFlatStyle(context())).toEqual({
           'icon-src': 'data:image/png;base64,mock',
           'icon-anchor': PIN_ANCHOR,
           'icon-scale': 1 / PIXEL_RATIO
@@ -248,20 +252,20 @@ describe('OpenLayersDataset', () => {
 
       it('uses the dataset\'s own symbolAnchor over the symbol definition\'s default', async () => {
         const dataset = datasetRegistry.getDataset('ds-symbol-anchor')
-        await registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
-        expect(dataset.getFlatStyle(PIXEL_RATIO)['icon-anchor']).toEqual(PIN_BOTTOM_ANCHOR)
+        await symbolImages.registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
+        expect(dataset.getFlatStyle(context())['icon-anchor']).toEqual(PIN_BOTTOM_ANCHOR)
       })
 
       it('only finds the image registered at the same pixelRatio', async () => {
         const dataset = datasetRegistry.getDataset('ds-symbol')
-        await registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
-        expect(dataset.getFlatStyle(PIXEL_RATIO + 1)).toEqual({})
+        await symbolImages.registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
+        expect(dataset.getFlatStyle(context(PIXEL_RATIO + 1))).toEqual({})
       })
 
       it('wraps icon style in a filter rule when the dataset has one', async () => {
         const dataset = datasetRegistry.getDataset('ds-symbol-filter')
-        await registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
-        expect(dataset.getFlatStyle(PIXEL_RATIO)).toEqual([{
+        await symbolImages.registerSymbol(dataset.style, undefined, symbolRegistry, PIXEL_RATIO)
+        expect(dataset.getFlatStyle(context())).toEqual([{
           filter: ['==', ['get', 'type'], 'a'],
           style: {
             'icon-src': 'data:image/png;base64,mock',

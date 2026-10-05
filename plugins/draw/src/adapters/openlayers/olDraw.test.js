@@ -12,6 +12,7 @@ jest.mock('./core/OLDrawManager.js', () => ({
 jest.mock('./point/pointSymbolImages.js', () => ({ refreshAllPointSymbols: jest.fn(() => Promise.resolve()) }))
 jest.mock('../../../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 
+const symbolRegistry = { id: 'app-symbol-registry' }
 const events = { MAP_SET_PIXEL_RATIO: 'app:pixelratio', MAP_SET_STYLE: 'app:style', MAP_DATA_CHANGE: 'app:datachange' }
 
 const setup = (mapStyle = null) => {
@@ -22,7 +23,7 @@ const setup = (mapStyle = null) => {
     emit: jest.fn((type, payload) => listeners[type]?.(payload))
   }
   const mapProvider = { map: { id: 'ol-map' } }
-  const olDraw = createOLDraw({ mapProvider, events, eventBus, pluginConfig: { snapRadius: 5 }, mapStyle })
+  const olDraw = createOLDraw({ mapProvider, symbolRegistry, events, eventBus, pluginConfig: { snapRadius: 5 }, mapStyle })
   const manager = OLDrawManager.mock.instances.at(-1)
   return { eventBus, mapProvider, olDraw, manager }
 }
@@ -31,7 +32,8 @@ afterEach(() => jest.clearAllMocks())
 
 test('creates the manager for the map, exposes it as mapProvider.draw and applies an initial style', () => {
   const { mapProvider, manager } = setup({ id: 'dark' })
-  expect(OLDrawManager).toHaveBeenCalledWith(mapProvider.map, { snapRadius: 5 })
+  // the provider and the app's registry, for resolving drawn points' symbols
+  expect(OLDrawManager).toHaveBeenCalledWith(mapProvider.map, { snapRadius: 5 }, { mapProvider, symbolRegistry })
   expect(mapProvider.draw).toBe(manager)
   expect(manager.setMapStyle).toHaveBeenCalledWith({ id: 'dark' })
 
@@ -75,7 +77,7 @@ test('pluginConfig and mapStyle are optional, defaulting to {} and no initial st
   const mapProvider = { map: { id: 'ol-map' } }
   const olDraw = createOLDraw({ mapProvider, events, eventBus }) // no pluginConfig, no mapStyle
   const manager = OLDrawManager.mock.instances.at(-1)
-  expect(OLDrawManager).toHaveBeenCalledWith(mapProvider.map, {})
+  expect(OLDrawManager).toHaveBeenCalledWith(mapProvider.map, {}, { mapProvider, symbolRegistry: undefined })
   expect(manager.setMapStyle).not.toHaveBeenCalled()
   expect(mapProvider.draw).toBe(manager)
   olDraw.remove()

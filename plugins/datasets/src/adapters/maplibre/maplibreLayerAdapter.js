@@ -220,7 +220,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
 
   _addLayers (registryDataset) {
     const { mapStyle } = datasetRegistry
-    const sourceId = addDatasetLayers(this._map, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, this._pixelRatio)
+    const sourceId = addDatasetLayers(this._mapProvider, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, this._pixelRatio)
     this._datasetSourceMap.set(registryDataset.id, sourceId)
     this._maintainSymbolOrdering(registryDataset)
   }

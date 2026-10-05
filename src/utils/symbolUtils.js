@@ -1,4 +1,4 @@
-import { SYMBOL_SIZES, DEFAULT_SYMBOL_ANCHOR } from '../config/symbolConfig.js'
+import { SYMBOL_SIZES } from '../config/symbolConfig.js'
 import { logger } from '../services/logger.js'
 
 // Each unknown symbolSize is reported once, rather than on every render
@@ -90,18 +90,4 @@ export const getSymbolScale = (symbolSize) => {
  */
 export const getSymbolViewBox = (dataset, symbolDef) => {
   return symbolDef?.viewBox ?? dataset.symbolViewBox ?? '0 0 38 38'
-}
-
-/**
- * Returns the anchor for a dataset's symbol as [x, y] in 0–1 space of its viewBox.
- * Precedence: symbolDef anchor (already sized, with any symbolAnchor override converted by
- * symbolRegistry.getSymbolDef — a built-in shape's override is a fraction of the shape, not the
- * viewBox) → dataset.symbolAnchor → the centre.
- *
- * @param {Object} dataset
- * @param {Object|undefined} symbolDef
- * @returns {number[]}
- */
-export const getSymbolAnchor = (dataset, symbolDef) => {
-  return symbolDef?.anchor ?? dataset.symbolAnchor ?? DEFAULT_SYMBOL_ANCHOR
 }

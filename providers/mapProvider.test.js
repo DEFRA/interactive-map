@@ -19,6 +19,12 @@ describe('MapProvider', () => {
     })
   })
 
+  it.each(['addSymbolsToMap', 'getActiveSymbolImageId', 'getSelectedSymbolImageId'])('requires a subclass to implement %s', (method) => {
+    const provider = new MapProvider()
+    provider.name = 'TestProvider'
+    expect(() => provider[method]()).toThrow(`TestProvider must implement ${method}()`)
+  })
+
   it('can be subclassed with an isBaseMapReady implementation', () => {
     class ConcreteProvider extends MapProvider {
       isBaseMapReady () {

@@ -2,6 +2,7 @@ import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
 import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
+import { logger } from '../../../../../src/services/logger.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
 
@@ -13,7 +14,7 @@ jest.mock('./utils/snapHelpers.js', () => ({
 }))
 jest.mock('../../utils/eventBus.js', () => ({ createEventBus: jest.fn() }))
 jest.mock('./pointSymbolImages.js', () => ({
-  resolvePointSymbol: jest.fn(),
+  resolvePointSymbol: jest.fn(() => Promise.resolve()),
   refreshAllPointSymbols: jest.fn(),
   hasSymbolStyle: jest.fn()
 }))
@@ -22,7 +23,7 @@ const SNAP_LAYER = 'snap-helper-circle'
 
 const onHandler = (map, event) => map.on.mock.calls.find(([name]) => name === event)?.[1]
 
-const setup = () => {
+const setup = (extraOptions = {}) => {
   const map = {
     on: jest.fn(),
     off: jest.fn(),
@@ -54,7 +55,8 @@ const setup = () => {
     mapStyle: 'light',
     events: { MAP_SET_STYLE: 'mss' },
     eventBus: { on: jest.fn() },
-    snapLayers: ['layer-a']
+    snapLayers: ['layer-a'],
+    ...extraOptions
   }
   const adapter = new MaplibreDrawAdapter(mapProvider, options)
 
@@ -76,6 +78,12 @@ describe('construction', () => {
       snapLayers: ['layer-a'],
       pluginConfig: {}
     })
+  })
+
+  test('passes the app\'s symbol registry through to createMapboxDraw', () => {
+    const symbolRegistry = { id: 'app-symbol-registry' }
+    setup({ symbolRegistry })
+    expect(createMapboxDraw).toHaveBeenCalledWith(expect.objectContaining({ symbolRegistry }))
   })
 
   test('forwards a provided pluginConfig through to createMapboxDraw', () => {
@@ -631,6 +639,21 @@ describe('simple delegations', () => {
         draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin', sortKey: 1 }
       })
       expect(result).toEqual(['generated-id'])
+    })
+
+    test('logs a failed resolution rather than leaving the rejection unhandled', async () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['p1'])
+      hasSymbolStyle.mockReturnValue(true)
+      const error = new Error('rasterise failed')
+      resolvePointSymbol.mockRejectedValueOnce(error)
+      const loggerError = jest.spyOn(logger, 'error').mockImplementation(() => {})
+
+      adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } })
+      await Promise.resolve()
+
+      expect(loggerError).toHaveBeenCalledWith('[draw] failed to resolve point symbol', 'p1', error)
+      loggerError.mockRestore()
     })
 
     test('does not attempt resolution for a Point with no symbol properties', () => {

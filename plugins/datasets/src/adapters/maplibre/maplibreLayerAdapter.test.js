@@ -35,7 +35,8 @@ const makeMap = () => {
 const makeMapProvider = (map) => ({
   map,
   addPatternsToMap: jest.fn().mockResolvedValue(undefined),
-  addSymbolsToMap: jest.fn().mockResolvedValue(undefined)
+  addSymbolsToMap: jest.fn().mockResolvedValue(undefined),
+  getSymbolIconLayout: jest.fn(() => ({ 'icon-anchor': 'center', 'icon-offset': [0, 0] }))
 })
 
 const MAP_STYLE = { id: 'outdoor', layers: [] }

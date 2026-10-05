@@ -1,5 +1,7 @@
 import { hasSymbolStyle, getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
 import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { logger } from '../../../../../src/services/logger.js'
+import { getSymbolIconLayout } from '../../../../../providers/maplibre/src/utils/symbolImages.js'
 
 const mapStyle = { id: 'outdoor', mapColorScheme: 'light' }
 
@@ -12,8 +14,14 @@ const createMap = ({ pixelRatio = 2 } = {}) => ({
   setLayoutProperty: jest.fn()
 })
 
-const createMapProvider = () => ({
-  addSymbolsToMap: jest.fn(() => Promise.resolve())
+// The provider's symbol methods: addSymbolsToMap is a no-op unless overridden, nothing is
+// registered as an active/selected variant, and icon placement is the provider's own
+const createMapProvider = (overrides = {}) => ({
+  addSymbolsToMap: jest.fn(() => Promise.resolve()),
+  getActiveSymbolImageId: jest.fn(() => null),
+  getSelectedSymbolImageId: jest.fn(() => null),
+  getSymbolIconLayout: jest.fn(getSymbolIconLayout),
+  ...overrides
 })
 
 const createDraw = (features = []) => ({
@@ -56,7 +64,7 @@ describe('resolvePointSymbol', () => {
     const map = createMap()
     const mapProvider = createMapProvider()
     const draw = createDraw()
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties: {} })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties: {} })
     expect(mapProvider.addSymbolsToMap).not.toHaveBeenCalled()
     expect(draw.add).not.toHaveBeenCalled()
   })
@@ -67,9 +75,9 @@ describe('resolvePointSymbol', () => {
     const properties = { symbol: 'pin', label: 'a point' }
     const draw = createDraw([point('p1', properties)])
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
-    expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([properties], mapStyle, symbolRegistry)
+    expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([properties], mapStyle, symbolRegistry, 2)
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
     expect(draw.add).toHaveBeenCalledWith({
       id: 'p1',
@@ -79,22 +87,21 @@ describe('resolvePointSymbol', () => {
         ...properties,
         symbolImageId: expectedImageId,
         symbolIconAnchor: 'bottom', // pin's default anchor [0.5, 0.9] snaps to icon-anchor 'bottom'
-        // Nothing registered in map._activeSymbolImageMap/_selectedSymbolImageMap here since
-        // addSymbolsToMap is mocked out (a no-op) in this test — see the dedicated test below
-        // for the case where it actually populates them.
+        // The provider has no active/selected variants registered in this test — see the
+        // dedicated test below for the case where it does.
         symbolActiveImageId: null,
         symbolSelectedImageId: null
       }
     })
-    // icon-offset corrects the precision lost snapping pin's ~0.866 anchor to 1.0 against its 52px-tall viewBox —
+    // icon-offset corrects the precision lost snapping pin's ~0.832 anchor to 1.0 against its 52px-tall viewBox —
     // registered into the point-symbol layers' icon-offset match expression instead of onto
     // the feature (see registerSymbolIconOffset's comment for why).
-    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 6.95])
+    expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 8.75])
     expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.hot', 'icon-offset', [
-      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 6.95]], ['literal', [0, 0]]
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 8.75]], ['literal', [0, 0]]
     ])
     expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.cold', 'icon-offset', [
-      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 6.95]], ['literal', [0, 0]]
+      'match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 8.75]], ['literal', [0, 0]]
     ])
   })
 
@@ -105,7 +112,7 @@ describe('resolvePointSymbol', () => {
     const properties = { symbol: 'pin' }
     const draw = createDraw([point('p1', properties)])
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     expect(map.setLayoutProperty).toHaveBeenCalledWith('point-symbol.cold', 'icon-offset', expect.anything())
     expect(map.setLayoutProperty).not.toHaveBeenCalledWith('point-symbol.hot', 'icon-offset', expect.anything())
@@ -125,10 +132,10 @@ describe('resolvePointSymbol', () => {
       ]
     }
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
-    const expression = ['match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 6.95]], ['literal', [0, 0]]]
+    const expression = ['match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 8.75]], ['literal', [0, 0]]]
     expect(draw.options.styles[0].layout).toEqual({ 'icon-anchor': 'x', 'icon-offset': expression })
     expect(draw.options.styles[1].layout).toEqual({ 'icon-offset': expression })
     expect(draw.options.styles[2].layout).toEqual({})
@@ -141,30 +148,25 @@ describe('resolvePointSymbol', () => {
     const properties = { symbol: 'pin' }
     const draw = createDraw([point('p1', properties), point('p2', properties)])
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
     map.setLayoutProperty.mockClear()
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p2', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p2', properties })
 
     expect(map.setLayoutProperty).not.toHaveBeenCalled()
   })
 
-  it('reads the active/selected variant ids back from map._activeSymbolImageMap/_selectedSymbolImageMap once addSymbolsToMap has registered them', async () => {
+  it('reads the active/selected variant ids back from the provider once addSymbolsToMap has registered them', async () => {
     const map = createMap()
     const properties = { symbol: 'pin' }
     const draw = createDraw([point('p1', properties)])
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
-    // Simulates what the real addSymbolsToMap (providers/maplibre/src/utils/symbolImages.js)
-    // does as a side effect: populate these maps, keyed by the normal variant's own id.
-    const mapProvider = {
-      addSymbolsToMap: jest.fn(() => {
-        map._activeSymbolImageMap = { [expectedImageId]: 'symbol-act-xyz' }
-        map._selectedSymbolImageMap = { [expectedImageId]: 'symbol-sel-xyz' }
-        return Promise.resolve()
-      })
-    }
+    const mapProvider = createMapProvider({
+      getActiveSymbolImageId: jest.fn((imageId) => imageId === expectedImageId ? 'symbol-act-xyz' : null),
+      getSelectedSymbolImageId: jest.fn((imageId) => imageId === expectedImageId ? 'symbol-sel-xyz' : null)
+    })
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
       properties: expect.objectContaining({
@@ -181,7 +183,7 @@ describe('resolvePointSymbol', () => {
     const draw = createDraw([point('p1', properties)])
     const spy = jest.spyOn(symbolRegistry, 'getSymbolImageId').mockReturnValueOnce(null)
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     expect(draw.add).not.toHaveBeenCalled()
     spy.mockRestore()
@@ -191,10 +193,10 @@ describe('resolvePointSymbol', () => {
     const map = createMap()
     const properties = { symbol: 'pin' }
     let resolveRegistration
-    const mapProvider = { addSymbolsToMap: jest.fn(() => new Promise((resolve) => { resolveRegistration = resolve })) }
+    const mapProvider = createMapProvider({ addSymbolsToMap: jest.fn(() => new Promise((resolve) => { resolveRegistration = resolve })) })
     const draw = createDraw() // empty — feature already gone
 
-    const pending = resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    const pending = resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
     resolveRegistration()
     await pending
 
@@ -207,7 +209,7 @@ describe('resolvePointSymbol', () => {
     const properties = { symbol: 'circle', symbolAnchor: [0, 0] }
     const draw = createDraw([point('p1', properties)])
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     // [0, 0] is the circle's own top-left — 9px in from the 44×44 viewBox's corner (the ring
     // padding) — so it snaps to 'top-left' and the offset moves it the remaining 9px
@@ -224,7 +226,7 @@ describe('resolvePointSymbol', () => {
     const properties = { symbol: 'circle', symbolAnchor: [0.5, 1] }
     const draw = createDraw([point('p1', properties)])
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     // the circle's bottom edge sits 9px above its 44×44 viewBox's — off the grid, so it snaps to
     // icon-anchor 'bottom' (the viewBox edge) and the offset moves it back up those 9px
@@ -241,25 +243,22 @@ describe('resolvePointSymbol', () => {
     const properties = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 100 100', symbolAnchor: [0.5, 0.9] }
     const draw = createDraw([point('p1', properties)])
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
+    await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     // anchor [0.5, 0.9] against the custom 100×100 viewBox
     const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
     expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 10])
   })
 
-  it('surfaces (rather than swallows) a registration failure', async () => {
+  it('rejects, without writing to the feature, when registration fails', async () => {
     const map = createMap()
     const properties = { symbol: 'pin' }
-    const mapProvider = { addSymbolsToMap: jest.fn(() => Promise.reject(new Error('rasterise failed'))) }
+    const error = new Error('rasterise failed')
+    const mapProvider = createMapProvider({ addSymbolsToMap: jest.fn(() => Promise.reject(error)) })
     const draw = createDraw([point('p1', properties)])
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
 
-    await resolvePointSymbol({ draw, mapProvider, map, featureId: 'p1', properties })
-
+    await expect(resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })).rejects.toBe(error)
     expect(draw.add).not.toHaveBeenCalled()
-    expect(consoleError).toHaveBeenCalledWith('[draw] failed to resolve point symbol', 'p1', expect.any(Error))
-    consoleError.mockRestore()
   })
 })
 
@@ -272,17 +271,29 @@ describe('refreshAllPointSymbols', () => {
     const polygon = { id: 'poly1', geometry: { type: 'Polygon' }, properties: { symbol: 'pin' } }
     const draw = createDraw([pointWithSymbol, pointWithoutSymbol, polygon])
 
-    await refreshAllPointSymbols({ draw, mapProvider, map })
+    await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry })
 
     expect(mapProvider.addSymbolsToMap).toHaveBeenCalledTimes(1)
-    expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([pointWithSymbol.properties], mapStyle, symbolRegistry)
+    expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([pointWithSymbol.properties], mapStyle, symbolRegistry, 2)
+  })
+
+  it('registers images at pixelRatioOverride, so they match the ids worked out at it', async () => {
+    const map = createMap({ pixelRatio: 2 })
+    const mapProvider = createMapProvider()
+    const draw = createDraw([point('p1', { symbol: 'pin' })])
+
+    await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride: 3 })
+
+    expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([expect.objectContaining({ symbol: 'pin' })], mapStyle, symbolRegistry, 3)
+    const [{ features: [written] }] = draw.add.mock.calls[0]
+    expect(written.properties.symbolImageId).toBe(symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, 3))
   })
 
   it('does nothing when there are no drawn points', async () => {
     const map = createMap()
     const mapProvider = createMapProvider()
     const draw = createDraw([])
-    await refreshAllPointSymbols({ draw, mapProvider, map })
+    await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry })
     expect(mapProvider.addSymbolsToMap).not.toHaveBeenCalled()
   })
 
@@ -292,10 +303,10 @@ describe('refreshAllPointSymbols', () => {
     // the first refresh's image registration is held until after the second has finished
     let releaseFirst
     const held = new Promise((resolve) => { releaseFirst = resolve })
-    const mapProvider = { addSymbolsToMap: jest.fn().mockImplementationOnce(() => held).mockResolvedValue(undefined) }
+    const mapProvider = createMapProvider({ addSymbolsToMap: jest.fn().mockImplementationOnce(() => held).mockResolvedValue(undefined) })
 
-    const first = refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: 1 })
-    await refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: 2 })
+    const first = refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride: 1 })
+    await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride: 2 })
     releaseFirst()
     await first
 
@@ -316,17 +327,17 @@ describe('refreshAllPointSymbols', () => {
     }
     map._symbolIconOffsetMap = { 'symbol-stale-1x': [0, 4] }
 
-    await refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: 2 })
+    await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride: 2 })
 
     const freshId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, 2)
     expect(Object.keys(map._symbolIconOffsetMap)).toEqual([freshId])
 
     // a second refresh at the same ratio has nothing new to register or prune
     const calls = map.setLayoutProperty.mock.calls.length
-    await refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: 2 })
+    await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride: 2 })
     expect(map.setLayoutProperty.mock.calls.length).toBe(calls)
     expect(map.setLayoutProperty).toHaveBeenLastCalledWith('point-symbol.cold', 'icon-offset', [
-      'match', ['get', 'user_symbolImageId'], freshId, ['literal', [0, 6.95]], ['literal', [0, 0]]
+      'match', ['get', 'user_symbolImageId'], freshId, ['literal', [0, 8.75]], ['literal', [0, 0]]
     ])
   })
 
@@ -343,14 +354,14 @@ describe('refreshAllPointSymbols', () => {
     // Stagger completion — p2 resolves after p1 to simulate genuinely concurrent, unevenly
     // timed rasterisation.
     let resolveP1, resolveP2
-    const mapProvider = {
+    const mapProvider = createMapProvider({
       addSymbolsToMap: jest.fn((configs) => new Promise((resolve) => {
         const target = configs[0].symbol === 'pin' ? (v) => { resolveP1 = v } : (v) => { resolveP2 = v }
         target(resolve)
       }))
-    }
+    })
 
-    const pending = refreshAllPointSymbols({ draw, mapProvider, map })
+    const pending = refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry })
     resolveP2()
     await Promise.resolve()
     resolveP1()
@@ -367,19 +378,19 @@ describe('refreshAllPointSymbols', () => {
     const p1 = point('p1', { symbol: 'pin' })
     const p2 = point('p2', { symbol: 'not-a-real-symbol' })
     const draw = createDraw([p1, p2])
-    const mapProvider = {
+    const mapProvider = createMapProvider({
       addSymbolsToMap: jest.fn((configs) =>
         configs[0].symbol === 'not-a-real-symbol' ? Promise.reject(new Error('rasterise failed')) : Promise.resolve()
       )
-    }
-    const consoleError = jest.spyOn(console, 'error').mockImplementation(() => {})
+    })
+    const loggerError = jest.spyOn(logger, 'error').mockImplementation(() => {})
 
-    await refreshAllPointSymbols({ draw, mapProvider, map })
+    await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry })
 
-    expect(consoleError).toHaveBeenCalledWith('[draw] failed to resolve point symbol', expect.any(Error))
+    expect(loggerError).toHaveBeenCalledWith('[draw] failed to resolve point symbol', expect.any(Error))
     expect(draw.add).toHaveBeenCalledTimes(1)
     const [{ features }] = draw.add.mock.calls[0]
     expect(features.map((f) => f.id)).toEqual(['p1'])
-    consoleError.mockRestore()
+    loggerError.mockRestore()
   })
 })

@@ -80,7 +80,6 @@ export const graphics = {
 }
 
 // ─── Built-in symbol definitions ─────────────────────────────────────────────
-// ─── Built-in symbol definitions ─────────────────────────────────────────────
 // Each is a single body `path` in its own coordinates, with:
 //   bounds        [x, y, width, height] — the body path's tight bounding box
 //   anchorPoint   [x, y] — the point that sits on the map coordinate
@@ -88,13 +87,12 @@ export const graphics = {
 // symbolRegistry composes the rendered SVG, viewBox and fractional anchor from these for each
 // symbolSize: the body and graphic scale, the halo and rings don't.
 
-// Circle-headed pin, head r=13. The anchor sits 2.8 below the body tip — between the halo edge
-// and the selected ring's tip.
+// Circle-headed pin, head r=13. The anchor is the halo's tip, 1 below the body's.
 export const pin = {
   id: 'pin',
   path: 'M22 7a13 13 0 0 1 13 13C35 28.258 23.758 39.499 22 39.499S9 28.259 9 20.001a13 13 0 0 1 13-13z',
   bounds: [9, 7, 26, 32.499], // NOSONAR
-  anchorPoint: [22, 42.3], // NOSONAR
+  anchorPoint: [22, 40.5], // NOSONAR
   graphicCentre: [22, 20], // NOSONAR
   graphic: graphics.dot
 }

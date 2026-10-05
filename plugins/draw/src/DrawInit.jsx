@@ -4,10 +4,11 @@ import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
+import { logger } from '../../../src/services/logger.js'
 
 // Loads the draw adapter once the map is ready; tears it down (and releases MapControls' D-pad)
 // on cleanup.
-function useLoadDrawAdapter ({ mapState, pluginConfig, pluginState, mapProvider, eventBus }) {
+function useLoadDrawAdapter ({ mapState, pluginConfig, pluginState, mapProvider, eventBus, symbolRegistry }) {
   useEffect(() => {
     if (!mapState.isMapReady) {
       return undefined
@@ -20,13 +21,14 @@ function useLoadDrawAdapter ({ mapState, pluginConfig, pluginState, mapProvider,
       snapLayers: pluginConfig.snapLayers,
       pluginConfig,
       events: EVENTS,
-      eventBus
+      eventBus,
+      symbolRegistry
     }).then(adapter => {
       if (!isMounted) { return }
       mapProvider.draw = adapter
       pluginState.dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: pluginConfig.snapLayers?.length > 0 })
       eventBus.emit('draw:ready')
-    })
+    }).catch((error) => logger.error('[draw] failed to load the draw adapter', error))
 
     return () => {
       isMounted = false
@@ -39,7 +41,7 @@ function useLoadDrawAdapter ({ mapState, pluginConfig, pluginState, mapProvider,
 }
 
 export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig, setApplicationMode, clearApplicationMode }) => {
-  const { eventBus, hints } = services
+  const { eventBus, hints, symbolRegistry } = services
   const { crossHair } = mapState
   const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
 
@@ -51,7 +53,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
     (isTouchOrKeyboard || appState.expandedButtons?.has('mapControls'))
 
-  useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus })
+  useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus, symbolRegistry })
 
   // Enters the 'draw' application mode (declared in the manifest) in any draw/edit mode, and leaves it
   // when the draw/edit mode ends. useLayoutEffect so the class lands in the same paint as the change.

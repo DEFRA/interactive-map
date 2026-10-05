@@ -14,6 +14,8 @@ import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
+import { SymbolImageCache } from './utils/symbolImages.js'
+import { buildFilterEvaluator } from './utils/filterEvaluator.js'
 import { queryFeatures, getVisibleFeatures } from './utils/queryFeatures.js'
 import { collectTileFragments } from './utils/vtTileFragments.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
@@ -51,6 +53,8 @@ export default class OpenLayersProvider extends MapProvider {
       supportedShortcuts,
       supportsMapSizes: true
     }
+    // This map's rasterised symbol images (see addSymbolsToMap)
+    this.symbolImages = new SymbolImageCache()
     Object.assign(this, mapProviderConfig)
   }
 
@@ -340,7 +344,7 @@ export default class OpenLayersProvider extends MapProvider {
    */
   updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {
     this._lastHighlightArgs = { selectedFeatures, activeFeatures, stylesMap }
-    return updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap)
+    return updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap, this.symbolImages)
   }
 
   /**
@@ -354,7 +358,77 @@ export default class OpenLayersProvider extends MapProvider {
       return
     }
     const { selectedFeatures, activeFeatures, stylesMap } = this._lastHighlightArgs
-    updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap)
+    updateHighlightedFeatures(this.map, selectedFeatures, activeFeatures, stylesMap, this.symbolImages)
+  }
+
+  // ==========================
+  // Symbol images
+  // ==========================
+
+  /**
+   * Rasterise and register symbol images (normal, active and selected) for the given symbol
+   * configs, at the map's pixel ratio unless one is given.
+   *
+   * @param {Object[]} symbolConfigs - an array of symbol configs
+   * @param {Object} mapStyle - Current map style config
+   * @param {Object} symbolRegistry
+   * @param {number} [pixelRatio] - defaults to the map's current pixel ratio
+   * @returns {Promise<void>}
+   */
+  async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry, pixelRatio = this.map.getPixelRatio() || 1) {
+    return this.symbolImages.registerSymbols(symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
+  }
+
+  /**
+   * A registered symbol image, as a canvas — for an ol/style/Icon `img`.
+   *
+   * @param {string} imageId
+   * @returns {HTMLCanvasElement|undefined}
+   */
+  getSymbolImage (imageId) {
+    return this.symbolImages.getImage(imageId)
+  }
+
+  /**
+   * A registered symbol image's data URI — for a flat style's `icon-src`. Only normal images
+   * have one.
+   *
+   * @param {string} imageId
+   * @returns {string|undefined}
+   */
+  getSymbolDataUri (imageId) {
+    return this.symbolImages.getDataUri(imageId)
+  }
+
+  /**
+   * Compiles a dataset filter (a MapLibre-style filter expression) into a per-feature predicate,
+   * matching how queryFeatures applies a layer's filter.
+   *
+   * @param {Array|null} filter
+   * @returns {((feature: import('ol/Feature.js').default) => boolean)|null}
+   */
+  buildFilterEvaluator (filter) {
+    return buildFilterEvaluator(filter)
+  }
+
+  /**
+   * The imageId of a registered symbol's active (keyboard cursor) variant.
+   *
+   * @param {string} normalImageId
+   * @returns {string|null}
+   */
+  getActiveSymbolImageId (normalImageId) {
+    return this.symbolImages.getActiveImageId(normalImageId)
+  }
+
+  /**
+   * The imageId of a registered symbol's selected variant.
+   *
+   * @param {string} normalImageId
+   * @returns {string|null}
+   */
+  getSelectedSymbolImageId (normalImageId) {
+    return this.symbolImages.getSelectedImageId(normalImageId)
   }
 
   // ==========================

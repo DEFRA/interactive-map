@@ -39,11 +39,11 @@ describe('symbolRegistry — built-in symbols', () => {
     expect(ids).toEqual(expect.arrayContaining(BUILT_IN_IDS))
   })
 
-  it('sizes pin at medium to a 44×52 viewBox, anchored just below its tip', () => {
+  it('sizes pin at medium to a 44×52 viewBox, anchored on the tip of its halo', () => {
     const sized = symbolRegistry.getSymbolDef({ symbol: 'pin' })
     expect(sized.viewBox).toBe('0 0 44 52')
     expect(sized.anchor[0]).toBe(0.5)
-    expect(sized.anchor[1]).toBeCloseTo(0.8664, 4)
+    expect(sized.anchor[1]).toBeCloseTo(0.8317, 4)
   })
 
   it('keeps each anchor on its anchorPoint at every size', () => {

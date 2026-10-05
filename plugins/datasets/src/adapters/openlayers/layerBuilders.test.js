@@ -4,6 +4,8 @@ import VectorTileSource from 'ol/source/VectorTile.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import { createDatasetSource, createDatasetLayer, readGeoJSONFeatures } from './layerBuilders.js'
 import { logger } from '../../../../../src/services/logger.js'
+// The OL provider registers British National Grid when it loads
+import '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
 
 jest.mock('../../../../../src/services/logger.js', () => ({ logger: { warn: jest.fn() } }))
 
@@ -208,7 +210,7 @@ describe('createDatasetLayer', () => {
     })
 
     it('tags a symbol layer with its symbolMeta at the context pixelRatio, for highlightFeatures.js', () => {
-      const getSymbolMeta = jest.fn((pixelRatio) => ({ imageId: 'img', anchor: [0.5, 0.5], pixelRatio }))
+      const getSymbolMeta = jest.fn(({ pixelRatio }) => ({ imageId: 'img', anchor: [0.5, 0.5], pixelRatio }))
       const layer = createDatasetLayer({ ...registryDataset, hasSymbol: true, getSymbolMeta }, new VectorSource(), { pixelRatio: 3 })
       expect(layer.get('symbolMeta')).toEqual({ imageId: 'img', anchor: [0.5, 0.5], pixelRatio: 3 })
     })

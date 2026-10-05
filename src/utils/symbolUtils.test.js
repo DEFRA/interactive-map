@@ -3,7 +3,6 @@ import {
   isStandaloneLabel,
   getSymbolStyleColors,
   getSymbolViewBox,
-  getSymbolAnchor,
   getSymbolScale
 } from './symbolUtils.js'
 import { logger } from '../services/logger.js'
@@ -131,28 +130,6 @@ describe('getSymbolViewBox', () => {
 
   it('returns default viewBox when symbolDef is undefined', () => {
     expect(getSymbolViewBox({ symbol: 'pin' }, undefined)).toBe('0 0 38 38')
-  })
-})
-
-// ─── getSymbolAnchor ──────────────────────────────────────────────────────────
-
-describe('getSymbolAnchor', () => {
-  it('returns symbolAnchor from dataset', () => {
-    const dataset = { symbol: 'custom', symbolAnchor: [0.5, 0.9] }
-    expect(getSymbolAnchor(dataset, undefined)).toEqual([0.5, 0.9])
-  })
-
-  it('falls back to symbolDef anchor', () => {
-    const symbolDef = { id: 'pin', anchor: [0.5, 0.9] }
-    expect(getSymbolAnchor({ symbol: 'pin' }, symbolDef)).toEqual([0.5, 0.9])
-  })
-
-  it('returns default [0.5, 0.5] when neither source has an anchor', () => {
-    expect(getSymbolAnchor({ symbol: 'pin' }, {})).toEqual([0.5, 0.5])
-  })
-
-  it('returns default [0.5, 0.5] when symbolDef is undefined', () => {
-    expect(getSymbolAnchor({ symbol: 'pin' }, undefined)).toEqual([0.5, 0.5])
   })
 })
 

@@ -1,15 +1,10 @@
-import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { getOrCreateSymbolImage } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
-
 /**
- * Resolves a drawn point's symbol-config icon and writes the resolved image id back onto the
- * OL feature, so core/styles.js's createFeatureStyle() can render it via an ol/style/Icon.
- * Also resolves and caches the 'active'/'selected' variants as symbolActiveImageId/
- * symbolSelectedImageId, read directly by highlightFeatures.js's selection overlay.
+ * Resolves a drawn point's symbol-config icon: registers its images with the OL provider (as
+ * the MapLibre adapter does with its own provider), then writes the resolved image ids — normal,
+ * active and selected — plus the anchor and pixel ratio they were drawn at back onto the OL
+ * feature. core/styles.js renders the icon from these, and the provider's highlightFeatures.js
+ * the selection ring.
  */
-
-const VARIANTS = ['normal', 'active', 'selected']
-const PROPERTY_FOR_VARIANT = { normal: 'symbolImageId', active: 'symbolActiveImageId', selected: 'symbolSelectedImageId' }
 
 export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
 
@@ -22,14 +17,15 @@ export const getPixelRatio = (mapProvider) => mapProvider?.map?.getPixelRatio?.(
  * A no-op for points with no symbol config (nothing to render as an icon).
  *
  * @param {Object} params
- * @param {Object} params.manager - OLDrawManager (needs store.source, mapStyle)
- * @param {Object} params.mapProvider
+ * @param {Object} params.manager - OLDrawManager (needs store.source, mapStyle, symbolRegistry)
+ * @param {Object} params.mapProvider - OpenLayersProvider (needs addSymbolsToMap and the
+ *   active/selected image id lookups)
  * @param {import('ol/Feature.js').default} params.olFeature
  * @param {number} [params.pixelRatioOverride] - use this instead of the map's pixelRatio, for
  *   callers (MAP_SET_PIXEL_RATIO) that already have the freshly set value
  * @param {number} [params.refreshId] - set by refreshAllPointSymbols; the result is dropped if a
  *   newer refresh has started since
- * @returns {Promise<void>}
+ * @returns {Promise<void>} rejects if the symbol's images couldn't be registered
  */
 export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixelRatioOverride, refreshId }) => {
   const properties = olFeature.getProperties()
@@ -37,38 +33,27 @@ export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixe
     return
   }
 
+  const { symbolRegistry, mapStyle } = manager
   const pixelRatio = pixelRatioOverride ?? getPixelRatio(mapProvider)
 
-  try {
-    const results = await Promise.all(
-      VARIANTS.map((variant) => symbolRegistry.rasteriseSymbolImage(properties, manager.mapStyle, variant, pixelRatio))
-    )
-    // All three variants resolve from the same symbol config, so either all succeed or (an
-    // unresolvable symbol id) all fail together — gating on 'normal' alone is enough.
-    if (!results[0]) {
-      return
-    }
-
-    // The feature may have been deleted/cancelled while rasterising was in flight, or a newer
-    // refresh (another size or style change) may have superseded this one.
-    if (!manager.store.source.hasFeature(olFeature) || (refreshId !== undefined && refreshId !== manager.pointSymbolRefreshId)) {
-      return
-    }
-    VARIANTS.forEach((variant, i) => {
-      const result = results[i]
-      if (!result) { return }
-      getOrCreateSymbolImage(result.imageId, result.imageData)
-      olFeature.set(PROPERTY_FOR_VARIANT[variant], result.imageId)
-    })
+  await mapProvider.addSymbolsToMap([properties], mapStyle, symbolRegistry, pixelRatio)
+  const symbolImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, pixelRatio)
+  // Unresolvable (e.g. an unknown symbol id), deleted/cancelled while registering, or
+  // superseded by a newer refresh (another size or style change)
+  if (!symbolImageId || !manager.store.source.hasFeature(olFeature) || (refreshId !== undefined && refreshId !== manager.pointSymbolRefreshId)) {
+    return
+  }
+  // One write, so the feature changes (and re-renders) once
+  olFeature.setProperties({
+    symbolImageId,
+    symbolActiveImageId: mapProvider.getActiveSymbolImageId(symbolImageId),
+    symbolSelectedImageId: mapProvider.getSelectedSymbolImageId(symbolImageId),
+    symbolImageAnchor: symbolRegistry.getSymbolDef(properties).anchor,
     // ol/style/Icon draws its source canvas at native pixel size — core/styles.js reads this
     // back to apply `scale: 1 / symbolPixelRatio`, correcting for the canvas being rasterised
     // at pixelRatio device pixels for crispness.
-    olFeature.set('symbolPixelRatio', pixelRatio)
-  } catch (err) {
-    // A silent failure here means a point simply never gets/keeps an icon, with nothing in
-    // the UI to explain why — surface it instead of letting the rejection vanish.
-    console.error('[draw] failed to resolve point symbol', olFeature.getId(), err) // NOSONAR
-  }
+    symbolPixelRatio: pixelRatio
+  })
 }
 
 /**

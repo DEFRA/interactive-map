@@ -41,7 +41,7 @@ const ensureDrawSourcesAndLayers = (map, draw) => {
 // actually ran), not MAP_SET_STYLE (fired the instant a change is *requested*, before setStyle
 // may have run) — registering map.once('idle', ...) too early can catch the map still idle
 // from the *previous* style and consume itself before the real wipe happens.
-const settleStyleChange = ({ map, draw, mapProvider, pluginConfig, onDone }) => {
+const settleStyleChange = ({ map, draw, mapProvider, symbolRegistry, pluginConfig, onDone }) => {
   const mapStyle = map._drawCurrentMapStyle
   map.once('idle', () => {
     const sourcesWereMissing = ensureDrawSourcesAndLayers(map, draw)
@@ -50,7 +50,7 @@ const settleStyleChange = ({ map, draw, mapProvider, pluginConfig, onDone }) => 
     applyTouchVertexColors(svg, mapStyle, pluginConfig)
     // Rasterised point symbol images are style-scoped (colours resolve per map style) —
     // re-resolve every drawn point's icon now the new style has settled.
-    refreshAllPointSymbols({ draw, mapProvider, map }).then(() => {
+    refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry }).then(() => {
       if (sourcesWereMissing) {
         // draw's own feature store still holds everything; push it back now the new style's
         // image ids are resolved — exactly one write, with final data.
@@ -67,7 +67,7 @@ const settleStyleChange = ({ map, draw, mapProvider, pluginConfig, onDone }) => 
 
 // Wires MAP_SET_STYLE (stashes the incoming style) and MAP_STYLE_CHANGE (settles it) onto the
 // event bus. Returns both handlers so createMapboxDraw's remove() can unsubscribe them.
-const wireStyleChangeHandling = ({ map, draw, mapProvider, pluginConfig, eventBus, events, notifyPointSymbolsRefreshed }) => {
+const wireStyleChangeHandling = ({ map, draw, mapProvider, symbolRegistry, pluginConfig, eventBus, events, notifyPointSymbolsRefreshed }) => {
   const handleSetMapStyle = (e) => {
     map._drawCurrentMapStyle = e
   }
@@ -85,6 +85,7 @@ const wireStyleChangeHandling = ({ map, draw, mapProvider, pluginConfig, eventBu
       map,
       draw,
       mapProvider,
+      symbolRegistry,
       pluginConfig,
       onDone: () => {
         settlePending = false
@@ -113,7 +114,7 @@ const wireStyleChangeHandling = ({ map, draw, mapProvider, pluginConfig, eventBu
  * @param {Object} [options.pluginConfig] - Plugin-level colour/size overrides — see resolveColors()
  * @returns {{ draw: MapboxDraw, remove: Function }} draw instance and cleanup function
  */
-export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snapLayers, pluginConfig = {} }) => {
+export const createMapboxDraw = ({ mapStyle, mapProvider, symbolRegistry, events, eventBus, snapLayers, pluginConfig = {} }) => {
   const { map } = mapProvider
 
   // --- Configure MapLibre GL Draw CSS classes ---
@@ -183,7 +184,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
 
   // --- Update colour scheme ---
   const { handleSetMapStyle, handleStyleChanged } = wireStyleChangeHandling({
-    map, draw, mapProvider, pluginConfig, eventBus, events, notifyPointSymbolsRefreshed
+    map, draw, mapProvider, symbolRegistry, pluginConfig, eventBus, events, notifyPointSymbolsRefreshed
   })
 
   // --- Update map scale ---
@@ -197,7 +198,7 @@ export const createMapboxDraw = ({ mapStyle, mapProvider, events, eventBus, snap
   // MAP_SET_SIZE — using it directly doesn't depend on the provider's own listener having already
   // applied it to the map.
   const handleSetPixelRatio = (pixelRatio) => {
-    refreshAllPointSymbols({ draw, mapProvider, map, pixelRatioOverride: pixelRatio }).then(() => {
+    refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride: pixelRatio }).then(() => {
       map.triggerRepaint()
       notifyPointSymbolsRefreshed()
     }).catch((error) => logger.error('[draw] failed to refresh point symbols', error))

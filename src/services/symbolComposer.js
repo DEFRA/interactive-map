@@ -1,5 +1,5 @@
 import {
-  HALO_STROKE_WIDTH, SELECTED_RING_STROKE_WIDTH, ACTIVE_RING_STROKE_WIDTH, SYMBOL_PADDING
+  HALO_STROKE_WIDTH, SELECTED_RING_STROKE_WIDTH, ACTIVE_RING_STROKE_WIDTH, SYMBOL_PADDING, DEFAULT_SYMBOL_ANCHOR
 } from '../config/symbolConfig.js'
 import { getPathBounds } from '../utils/pathBounds.js'
 import { logger } from './logger.js'
@@ -97,7 +97,7 @@ export const applyAnchorOverride = (sizedDef, anchor) => {
 
 /**
  * Sizes an SVG-template symbol (a custom symbol, or symbolSvgContent) by scaling it as a whole —
- * its own rings, if it draws any, scale with it.
+ * its own rings, if it draws any, scale with it. A symbol with no anchor of its own is centred.
  *
  * @param {Object} symbolDef - { svg, anchor?, ... }
  * @param {string} viewBox
@@ -105,11 +105,12 @@ export const applyAnchorOverride = (sizedDef, anchor) => {
  * @returns {Object}
  */
 export const scaleSvgSymbolDef = (symbolDef, viewBox, scale) => {
+  const anchored = { anchor: DEFAULT_SYMBOL_ANCHOR, ...symbolDef }
   if (scale === 1) {
-    return { ...symbolDef, viewBox }
+    return { ...anchored, viewBox }
   }
   const scaledViewBox = viewBox.split(' ').map((value) => round3(Number(value) * scale)).join(' ')
-  return { ...symbolDef, viewBox: scaledViewBox, svg: `<g transform="scale(${scale})">${symbolDef.svg}</g>` }
+  return { ...anchored, viewBox: scaledViewBox, svg: `<g transform="scale(${scale})">${symbolDef.svg}</g>` }
 }
 
 // graphic path → transform that centres it and, if bigger than 16×16, shrinks it to fit

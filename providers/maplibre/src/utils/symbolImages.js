@@ -1,5 +1,7 @@
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
+const ANCHOR_CENTRE = 0.5
+const HUNDREDTHS = 100
 
 // ─── MapLibre-specific anchor conversion ──────────────────────────────────────
 
@@ -39,10 +41,10 @@ export const anchorToMaplibre = ([ax, ay]) => {
 // The discrete fraction (0, 0.5 or 1) icon-anchor actually renders a given axis at — the
 // same left/right/top/bottom/center snapping xAnchor/yAnchor above already do, expressed as
 // a number instead of a string so it can be compared against the true, unsnapped fraction.
-const discreteFraction = (a) => {
-  if (a <= ANCHOR_LOW) { return 0 }
-  if (a >= ANCHOR_HIGH) { return 1 }
-  return 0.5
+const discreteFraction = (fraction) => {
+  if (fraction <= ANCHOR_LOW) { return 0 }
+  if (fraction >= ANCHOR_HIGH) { return 1 }
+  return ANCHOR_CENTRE
 }
 
 /**
@@ -61,7 +63,7 @@ const discreteFraction = (a) => {
  */
 // Rounded to 2dp: sub-hundredth-of-a-pixel precision is meaningless for rendering, and
 // without it fractions like 0.8 produce float noise (8.799999999999997, not 8.8).
-const round2dp = (n) => Math.round(n * 100) / 100
+const round2dp = (value) => Math.round(value * HUNDREDTHS) / HUNDREDTHS
 
 export const anchorToMaplibreOffset = ([ax, ay], viewBox) => {
   const [,, width, height] = viewBox.split(' ').map(Number)
@@ -70,6 +72,17 @@ export const anchorToMaplibreOffset = ([ax, ay], viewBox) => {
     round2dp((discreteFraction(ay) - ay) * height)
   ]
 }
+
+/**
+ * The icon-anchor and icon-offset layout properties that place a symbol image on its point.
+ *
+ * @param {Object} symbolDef - a sized symbol definition (symbolRegistry.getSymbolDef)
+ * @returns {{ 'icon-anchor': string, 'icon-offset': number[] }}
+ */
+export const getSymbolIconLayout = ({ anchor, viewBox }) => ({
+  'icon-anchor': anchorToMaplibre(anchor),
+  'icon-offset': anchorToMaplibreOffset(anchor, viewBox)
+})
 
 /**
  * Register normal, active (both rings) and selected (black ring) symbol images.

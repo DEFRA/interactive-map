@@ -1,4 +1,4 @@
-import { anchorToMaplibre, anchorToMaplibreOffset, addSymbolsToMap } from './symbolImages.js'
+import { anchorToMaplibre, anchorToMaplibreOffset, getSymbolIconLayout, addSymbolsToMap } from './symbolImages.js'
 import { symbolRegistry } from '../../../../src/services/symbolRegistry.js'
 
 beforeAll(() => {
@@ -111,6 +111,23 @@ describe('anchorToMaplibreOffset', () => {
 
   it('scales with the viewBox, not just the anchor fraction', () => {
     expect(anchorToMaplibreOffset([0.5, 0.9], '0 0 100 100')).toEqual([0, 10])
+  })
+})
+
+// ─── getSymbolIconLayout ──────────────────────────────────────────────────────
+
+describe('getSymbolIconLayout', () => {
+  it('snaps to the nearest icon-anchor and offsets the rest of the way', () => {
+    expect(getSymbolIconLayout({ anchor: [0.5, 0.9], viewBox: '0 0 44 44' })).toEqual({ 'icon-anchor': 'bottom', 'icon-offset': [0, 4.4] })
+  })
+
+  it('places a sized built-in symbol on its own anchor point', () => {
+    const symbolDef = symbolRegistry.getSymbolDef({ symbol: 'pin' })
+    const [, , width, height] = symbolDef.viewBox.split(' ').map(Number)
+    const { 'icon-offset': [offsetX, offsetY] } = getSymbolIconLayout(symbolDef)
+    // icon-offset moves the image, so the point lands that far back from the snapped edge
+    expect(width / 2 - offsetX).toBeCloseTo(symbolDef.anchor[0] * width)
+    expect(height - offsetY).toBeCloseTo(symbolDef.anchor[1] * height)
   })
 })
 

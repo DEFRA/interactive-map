@@ -4,7 +4,7 @@ import { attachAppEvents } from './appEvents.js'
 import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
-import { addSymbolsToMap } from './utils/symbolImages.js'
+import { addSymbolsToMap, getSymbolIconLayout } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
 import { symbolRegistry } from '../../../src/services/symbolRegistry.js'
@@ -36,7 +36,10 @@ jest.mock('./utils/labels.js', () => ({
 }))
 jest.mock('./utils/highlightFeatures.js', () => ({ updateHighlightedFeatures: jest.fn(() => []) }))
 jest.mock('./utils/queryFeatures.js', () => ({ queryFeatures: jest.fn(() => []) }))
-jest.mock('./utils/symbolImages.js', () => ({ addSymbolsToMap: jest.fn(() => Promise.resolve()) }))
+jest.mock('./utils/symbolImages.js', () => ({
+  addSymbolsToMap: jest.fn(() => Promise.resolve()),
+  getSymbolIconLayout: jest.fn(() => ({ 'icon-anchor': 'bottom', 'icon-offset': [0, 2] }))
+}))
 jest.mock('./utils/patternImages.js', () => ({ addPatternsToMap: jest.fn(() => Promise.resolve()) }))
 
 describe('MapLibreProvider', () => {
@@ -313,6 +316,31 @@ describe('MapLibreProvider', () => {
     p.mapSize = 'medium'
     await p.addSymbolsToMap([], { id: 'test' }, symbolRegistry)
     expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, symbolRegistry, 2)
+  })
+
+  test('addSymbolsToMap registers at a given pixelRatio instead of the map\'s', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    map.getPixelRatio.mockReturnValue(2)
+    await p.addSymbolsToMap([], { id: 'test' }, symbolRegistry, 3)
+    expect(addSymbolsToMap).toHaveBeenCalledWith(map, [], { id: 'test' }, symbolRegistry, 3)
+  })
+
+  test('getSymbolIconLayout delegates to the symbol image utility', () => {
+    const symbolDef = { anchor: [0.5, 0.9], viewBox: '0 0 44 44' }
+    expect(makeProvider().getSymbolIconLayout(symbolDef)).toEqual({ 'icon-anchor': 'bottom', 'icon-offset': [0, 2] })
+    expect(getSymbolIconLayout).toHaveBeenCalledWith(symbolDef)
+  })
+
+  test('looks up a registered symbol\'s active and selected variants', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    expect(p.getActiveSymbolImageId('img')).toBeNull()
+    expect(p.getSelectedSymbolImageId('img')).toBeNull()
+    map._activeSymbolImageMap = { img: 'img-active' }
+    map._selectedSymbolImageMap = { img: 'img-selected' }
+    expect(p.getActiveSymbolImageId('img')).toBe('img-active')
+    expect(p.getSelectedSymbolImageId('img')).toBe('img-selected')
   })
 
   test('addSymbolsToMap falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {

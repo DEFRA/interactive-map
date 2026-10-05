@@ -1,6 +1,4 @@
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
-import { getSymbolAnchor, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
-import { anchorToMaplibre, anchorToMaplibreOffset } from '../../../../../providers/maplibre/src/utils/symbolImages.js'
+import { logger } from '../../../../../src/services/logger.js'
 
 /**
  * Resolves and registers a drawn point's symbol-config icon (same schema as addMarker/dataset
@@ -77,7 +75,7 @@ export const getPixelRatio = (map) => map.getPixelRatio?.() || 1
 // Does the async work for one point without touching the store — draw.add() is left to the
 // caller so refreshAllPointSymbols can batch every point into one call (see its comment why).
 // Returns null if there's nothing to write back (no symbol config, feature gone, or unresolvable id).
-const resolvePointSymbolFeature = async ({ draw, mapProvider, map, featureId, properties, pixelRatioOverride }) => {
+const resolvePointSymbolFeature = async ({ draw, mapProvider, map, symbolRegistry, featureId, properties, pixelRatioOverride }) => {
   if (!hasSymbolStyle(properties)) {
     return null
   }
@@ -85,7 +83,7 @@ const resolvePointSymbolFeature = async ({ draw, mapProvider, map, featureId, pr
   const mapStyle = map._drawCurrentMapStyle
   const pixelRatio = pixelRatioOverride ?? getPixelRatio(map)
 
-  await mapProvider.addSymbolsToMap([properties], mapStyle, symbolRegistry)
+  await mapProvider.addSymbolsToMap([properties], mapStyle, symbolRegistry, pixelRatio)
 
   const feature = draw.get(featureId)
   if (!feature) {
@@ -96,25 +94,20 @@ const resolvePointSymbolFeature = async ({ draw, mapProvider, map, featureId, pr
   if (!symbolImageId) {
     return null
   }
-  // addSymbolsToMap() (just awaited above) already mapped this id's active/selected variants
-  // into map._activeSymbolImageMap/_selectedSymbolImageMap — read them back so the highlight
-  // ring (highlightFeatures.js) can reference each point's own precomputed variant directly.
-  const symbolActiveImageId = map._activeSymbolImageMap?.[symbolImageId] ?? null
-  const symbolSelectedImageId = map._selectedSymbolImageMap?.[symbolImageId] ?? null
-  const symbolDef = symbolRegistry.getSymbolDef(properties)
-  const rawAnchor = getSymbolAnchor(properties, symbolDef)
-  const anchor = anchorToMaplibre(rawAnchor)
-  // icon-anchor only has 9 discrete positions, so an off-grid anchor (e.g. pin's [0.5, 0.9])
-  // loses precision snapping to the nearest one — icon-offset corrects that gap.
-  const offset = anchorToMaplibreOffset(rawAnchor, getSymbolViewBox(properties, symbolDef))
-  registerSymbolIconOffset(map, draw, symbolImageId, offset)
+  // addSymbolsToMap() (just awaited above) also registered this id's active/selected variants —
+  // read them back so the highlight ring (highlightFeatures.js) can reference each point's own
+  // precomputed variant directly.
+  const symbolActiveImageId = mapProvider.getActiveSymbolImageId(symbolImageId)
+  const symbolSelectedImageId = mapProvider.getSelectedSymbolImageId(symbolImageId)
+  const iconLayout = mapProvider.getSymbolIconLayout(symbolRegistry.getSymbolDef(properties))
+  registerSymbolIconOffset(map, draw, symbolImageId, iconLayout['icon-offset'])
 
   return {
     ...feature,
     properties: {
       ...properties,
       symbolImageId,
-      symbolIconAnchor: anchor,
+      symbolIconAnchor: iconLayout['icon-anchor'],
       symbolActiveImageId,
       symbolSelectedImageId
     }
@@ -127,29 +120,24 @@ const resolvePointSymbolFeature = async ({ draw, mapProvider, map, featureId, pr
  *
  * @param {Object} params
  * @param {Object} params.draw - the raw MapboxDraw instance (needs get/add)
- * @param {Object} params.mapProvider - MapLibreProvider (needs addSymbolsToMap)
+ * @param {Object} params.mapProvider - MapLibreProvider (needs addSymbolsToMap, getActiveSymbolImageId, getSelectedSymbolImageId, getSymbolIconLayout)
  * @param {Object} params.map - MapLibre map instance (needs _drawCurrentMapStyle, getPixelRatio)
+ * @param {Object} params.symbolRegistry - the app's symbol registry (services.symbolRegistry)
  * @param {string} params.featureId
  * @param {Object} params.properties - the point feature's current properties
  * @param {number} [params.pixelRatioOverride] - use this instead of map.getPixelRatio(), for
  *   callers (map-size refresh) that already know the freshly computed value
- * @returns {Promise<void>}
+ * @returns {Promise<void>} rejects if the symbol's images couldn't be registered
  */
 export const resolvePointSymbol = async (params) => {
-  try {
-    const feature = await resolvePointSymbolFeature(params)
-    if (!feature) {
-      return
-    }
-    // draw.setFeatureProperty() only marks the feature dirty for mapbox-gl-draw's own mode-
-    // dispatch loop, which won't run again until the next interaction. draw.add() on an
-    // existing id updates its properties and renders unconditionally, so it's used instead.
-    params.draw.add(feature)
-  } catch (err) {
-    // A silent failure here means a point simply never gets/keeps an icon, with nothing in
-    // the UI to explain why — surface it instead of letting the rejection vanish.
-    console.error('[draw] failed to resolve point symbol', params.featureId, err) // NOSONAR
+  const feature = await resolvePointSymbolFeature(params)
+  if (!feature) {
+    return
   }
+  // draw.setFeatureProperty() only marks the feature dirty for mapbox-gl-draw's own mode-
+  // dispatch loop, which won't run again until the next interaction. draw.add() on an
+  // existing id updates its properties and renders unconditionally, so it's used instead.
+  params.draw.add(feature)
 }
 
 /**
@@ -160,10 +148,11 @@ export const resolvePointSymbol = async (params) => {
  * @param {Object} params.draw - the raw MapboxDraw instance (needs getAll)
  * @param {Object} params.mapProvider
  * @param {Object} params.map
+ * @param {Object} params.symbolRegistry
  * @param {number} [params.pixelRatioOverride] - see resolvePointSymbol
  * @returns {Promise<void>}
  */
-export const refreshAllPointSymbols = async ({ draw, mapProvider, map, pixelRatioOverride }) => {
+export const refreshAllPointSymbols = async ({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride }) => {
   // Refreshes overlap when the map size or style changes again before one finishes; only the
   // latest may write back, so an older one finishing last can't restore its stale image ids
   map._pointSymbolRefreshId = (map._pointSymbolRefreshId ?? 0) + 1
@@ -172,11 +161,11 @@ export const refreshAllPointSymbols = async ({ draw, mapProvider, map, pixelRati
     (feature) => feature.geometry.type === 'Point' && hasSymbolStyle(feature.properties)
   )
   const results = await Promise.allSettled(points.map((feature) =>
-    resolvePointSymbolFeature({ draw, mapProvider, map, featureId: feature.id, properties: feature.properties, pixelRatioOverride })
+    resolvePointSymbolFeature({ draw, mapProvider, map, symbolRegistry, featureId: feature.id, properties: feature.properties, pixelRatioOverride })
   ))
 
   results.filter((result) => result.status === 'rejected').forEach((result) => {
-    console.error('[draw] failed to resolve point symbol', result.reason) // NOSONAR
+    logger.error('[draw] failed to resolve point symbol', result.reason)
   })
   if (map._pointSymbolRefreshId !== refreshId) {
     return

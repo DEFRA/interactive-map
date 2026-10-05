@@ -12,7 +12,7 @@ import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
-import { addSymbolsToMap } from './utils/symbolImages.js'
+import { addSymbolsToMap, getSymbolIconLayout } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 
 /**
@@ -329,11 +329,43 @@ export default class MapLibreProvider extends MapProvider {
    * @param {Object[]} symbolConfigs - an array of symbol configs
    * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
    * @param {Object} symbolRegistry
+   * @param {number} [pixelRatio] - defaults to the map's current pixel ratio
    * @returns {Promise<void>}
    */
-  async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry) {
-    const pixelRatio = this.map.getPixelRatio() || 1
+  async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry, pixelRatio = this.map.getPixelRatio() || 1) {
     return addSymbolsToMap(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
+  }
+
+  /**
+   * The icon-anchor and icon-offset layout properties that place a symbol image on its point.
+   * icon-anchor has only 9 positions, so icon-offset makes up the difference to the symbol's
+   * exact anchor.
+   *
+   * @param {Object} symbolDef - a sized symbol definition (symbolRegistry.getSymbolDef)
+   * @returns {{ 'icon-anchor': string, 'icon-offset': number[] }}
+   */
+  getSymbolIconLayout (symbolDef) {
+    return getSymbolIconLayout(symbolDef)
+  }
+
+  /**
+   * The imageId of a registered symbol's active (keyboard cursor) variant.
+   *
+   * @param {string} normalImageId
+   * @returns {string|null}
+   */
+  getActiveSymbolImageId (normalImageId) {
+    return this.map._activeSymbolImageMap?.[normalImageId] ?? null
+  }
+
+  /**
+   * The imageId of a registered symbol's selected variant.
+   *
+   * @param {string} normalImageId
+   * @returns {string|null}
+   */
+  getSelectedSymbolImageId (normalImageId) {
+    return this.map._selectedSymbolImageMap?.[normalImageId] ?? null
   }
 
   /**

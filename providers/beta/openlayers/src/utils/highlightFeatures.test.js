@@ -5,7 +5,7 @@ import OlFeature from 'ol/Feature.js'
 import Point from 'ol/geom/Point.js'
 import Icon from 'ol/style/Icon.js'
 import { updateHighlightedFeatures } from './highlightFeatures.js'
-import { getOrCreateSymbolImage, getCachedSymbolImage, clearSymbolImageCache, registerSymbol } from './symbolImages.js'
+import { SymbolImageCache } from './symbolImages.js'
 
 const HIGHLIGHT_MARKER = '_highlight'
 
@@ -42,8 +42,17 @@ const drawLayer = (features = []) => {
 
 const selEntry = (id, geometry = { type: 'Point', coordinates: [1, 2] }) => ({ layerId: 'draw', featureId: id, geometry })
 
+// The provider's own cache of rasterised symbol images, passed to updateHighlightedFeatures
+let symbolImages
+const addImage = (imageId, imageData) => {
+  symbolImages.addImage(imageId, imageData)
+  return symbolImages.getImage(imageId)
+}
+
 beforeEach(() => {
-  clearSymbolImageCache()
+  symbolImages = new SymbolImageCache()
+  // jsdom has no canvas encoding; registering a normal image makes its data URI
+  HTMLCanvasElement.prototype.toDataURL = jest.fn(() => 'data:image/png;base64,mock')
   HTMLCanvasElement.prototype.getContext = jest.fn(function () {
     this._ctx ??= { putImageData: jest.fn() }
     return this._ctx
@@ -57,31 +66,31 @@ describe('updateHighlightedFeatures', () => {
 
   test('creates the highlight overlay layer once and reuses it on later calls', () => {
     const map = createFakeMap([drawLayer()])
-    updateHighlightedFeatures(map, [], [], {})
+    updateHighlightedFeatures(map, [], [], {}, symbolImages)
     expect(map.addLayer).toHaveBeenCalledTimes(1)
-    updateHighlightedFeatures(map, [], [], {})
+    updateHighlightedFeatures(map, [], [], {}, symbolImages)
     expect(map.addLayer).toHaveBeenCalledTimes(1) // reused, not re-added
   })
 
   test('clears previous overlay features before adding the current selection', () => {
     const map = createFakeMap([drawLayer([['f1', {}]])])
     const stylesMap = { draw: { stroke: '#000', selectionStroke: '#000', fill: 'transparent', strokeWidth: 2, activeStrokeWidth: 2 } }
-    updateHighlightedFeatures(map, [{ ...selEntry('f1'), geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } }], [], stylesMap)
+    updateHighlightedFeatures(map, [{ ...selEntry('f1'), geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } }], [], stylesMap, symbolImages)
     expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(1)
-    updateHighlightedFeatures(map, [], [], stylesMap)
+    updateHighlightedFeatures(map, [], [], stylesMap, symbolImages)
     expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
   })
 
   test('a feature with no geometry is skipped', () => {
     const map = createFakeMap([drawLayer()])
     const stylesMap = { draw: { stroke: '#000', selectionStroke: '#000', fill: 'transparent', strokeWidth: 2, activeStrokeWidth: 2 } }
-    updateHighlightedFeatures(map, [{ layerId: 'draw' }], [], stylesMap)
+    updateHighlightedFeatures(map, [{ layerId: 'draw' }], [], stylesMap, symbolImages)
     expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
   })
 
   test('a feature whose layerId has no stylesMap entry and no symbol properties renders nothing', () => {
     const map = createFakeMap([drawLayer([['f1', {}]])])
-    updateHighlightedFeatures(map, [{ ...selEntry('f1'), geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } }], [], {})
+    updateHighlightedFeatures(map, [{ ...selEntry('f1'), geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] } }], [], {}, symbolImages)
     expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
   })
 
@@ -89,7 +98,7 @@ describe('updateHighlightedFeatures', () => {
     const map = createFakeMap([drawLayer([['f1', {}]])])
     const stylesMap = { draw: { stroke: '#000', selectionStroke: '#111', fill: '#222', strokeWidth: 3, activeStrokeWidth: 5 } }
     const feature = { ...selEntry('f1'), geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] } }
-    updateHighlightedFeatures(map, [feature], [], stylesMap)
+    updateHighlightedFeatures(map, [feature], [], stylesMap, symbolImages)
     const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
     const styles = hlFeature.getStyle()
     expect(styles.some(s => s.getFill())).toBe(true) // selected polygons get a fill
@@ -102,13 +111,14 @@ describe('updateHighlightedFeatures', () => {
       symbolImageId: imageId,
       symbolSelectedImageId: variantImageId,
       symbolActiveImageId: variantImageId,
+      symbolImageAnchor: [0.5, 1],
       symbolPixelRatio: 2
     })
 
     test('renders the selected-variant Icon for a selected symbol point, scaled down by symbolPixelRatio', () => {
-      const canvas = getOrCreateSymbolImage('sym-sel', { width: 88, height: 88 })
+      const canvas = addImage('sym-sel', { width: 88, height: 88 })
       const map = createFakeMap([drawLayer([['f1', symbolProperties('sym-sel')]])])
-      updateHighlightedFeatures(map, [selEntry('f1')], [], {})
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
       const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
       const [style] = hlFeature.getStyle()
       expect(style.getImage()).toBeInstanceOf(Icon)
@@ -117,9 +127,9 @@ describe('updateHighlightedFeatures', () => {
     })
 
     test('renders the active-variant Icon for the keyboard-cursor item', () => {
-      const canvas = getOrCreateSymbolImage('sym-act', { width: 44, height: 44 })
+      const canvas = addImage('sym-act', { width: 44, height: 44 })
       const map = createFakeMap([drawLayer([['f1', symbolProperties('sym-act')]])])
-      updateHighlightedFeatures(map, [], [selEntry('f1')], {})
+      updateHighlightedFeatures(map, [], [selEntry('f1')], {}, symbolImages)
       const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
       const [style] = hlFeature.getStyle()
       expect(style.getImage().getImage(1)).toBe(canvas)
@@ -130,37 +140,53 @@ describe('updateHighlightedFeatures', () => {
     // variants (point/pointSymbolImages.js) and rewrites them onto the live feature — the
     // highlight must pick up the NEW id, not whatever was true when the user first selected.
     test('picks up a re-resolved symbolSelectedImageId after a map style change, not whatever was true at selection time', () => {
-      const canvasLight = getOrCreateSymbolImage('sym-sel-light', { width: 44, height: 44 })
-      const canvasDark = getOrCreateSymbolImage('sym-sel-dark', { width: 44, height: 44 })
+      const canvasLight = addImage('sym-sel-light', { width: 44, height: 44 })
+      const canvasDark = addImage('sym-sel-dark', { width: 44, height: 44 })
       const layer = drawLayer([['f1', symbolProperties('sym-sel-light')]])
       const map = createFakeMap([layer])
 
-      updateHighlightedFeatures(map, [selEntry('f1')], [], {})
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
       const before = getHighlightLayer(map).getSource().getFeatures()[0].getStyle()[0]
       expect(before.getImage().getImage(1)).toBe(canvasLight)
 
       // Simulate refreshAllPointSymbols re-resolving the point against a new map style.
       layer.getSource().getFeatureById('f1').set('symbolSelectedImageId', 'sym-sel-dark')
-      updateHighlightedFeatures(map, [selEntry('f1')], [], {})
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
       const after = getHighlightLayer(map).getSource().getFeatures()[0].getStyle()[0]
       expect(after.getImage().getImage(1)).toBe(canvasDark)
     })
 
     test('falls back to no highlight (not a crash) when the variant has not been cached yet', () => {
       const map = createFakeMap([drawLayer([['f1', symbolProperties('sym-not-cached')]])])
-      updateHighlightedFeatures(map, [selEntry('f1')], [], {})
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
+      expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
+    })
+
+    test('uses the anchor draw resolved for the point', () => {
+      addImage('sym-sel', { width: 44, height: 44 })
+      const map = createFakeMap([drawLayer([['f1', { ...symbolProperties('sym-sel'), symbolImageAnchor: [0.25, 0.75] }]])])
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
+      const [style] = getHighlightLayer(map).getSource().getFeatures()[0].getStyle()
+      expect(style.getImage().getAnchor()).toEqual([11, 33]) // [0.25, 0.75] × 44px
+    })
+
+    test('falls back to no highlight until the point\'s anchor has been resolved', () => {
+      addImage('sym-sel', { width: 44, height: 44 })
+      const { symbolImageAnchor, ...unresolved } = symbolProperties('sym-sel')
+      const map = createFakeMap([drawLayer([['f1', unresolved]])])
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
       expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
     })
 
     test('falls back to no highlight when the live feature cannot be found (e.g. deleted mid-flight)', () => {
       const map = createFakeMap([drawLayer()]) // empty source — 'f1' doesn't exist
-      updateHighlightedFeatures(map, [selEntry('f1')], [], {})
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
       expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
     })
 
     test('a plain Point with no symbol config falls through to Stroke/Fill (still no visible highlight)', () => {
       const map = createFakeMap([drawLayer([['f1', {}]])])
-      updateHighlightedFeatures(map, [selEntry('f1')], [], {})
+      updateHighlightedFeatures(map, [selEntry('f1')], [], {}, symbolImages)
       expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
     })
   })
@@ -196,15 +222,15 @@ describe('updateHighlightedFeatures', () => {
           imageData: { width: 30, height: 30 }
         }))
       }
-      await registerSymbol({ symbol: 'square' }, {}, symbolRegistry, 3)
+      await symbolImages.registerSymbol({ symbol: 'square' }, {}, symbolRegistry, 3)
     }
 
     test('renders the selected-variant Icon for a dataset symbol point', async () => {
       await registerDatasetSymbol()
-      const selectedCanvas = getCachedSymbolImage('ds-symbol-selected')
+      const selectedCanvas = symbolImages.getImage('ds-symbol-selected')
       const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1], pixelRatio: 3 })])
 
-      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
+      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {}, symbolImages)
       const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
       const [style] = hlFeature.getStyle()
       expect(style.getImage()).toBeInstanceOf(Icon)
@@ -215,24 +241,31 @@ describe('updateHighlightedFeatures', () => {
 
     test('renders the active-variant Icon for the keyboard-cursor item', async () => {
       await registerDatasetSymbol()
-      const activeCanvas = getCachedSymbolImage('ds-symbol-active')
+      const activeCanvas = symbolImages.getImage('ds-symbol-active')
       const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1], pixelRatio: 3 })])
 
-      updateHighlightedFeatures(map, [], [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], {})
+      updateHighlightedFeatures(map, [], [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], {}, symbolImages)
       const [hlFeature] = getHighlightLayer(map).getSource().getFeatures()
       const [style] = hlFeature.getStyle()
       expect(style.getImage().getImage(1)).toBe(activeCanvas)
     })
 
+    test('falls back to no highlight when no symbol image cache is given', async () => {
+      await registerDatasetSymbol()
+      const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-normal', anchor: [0.5, 1], pixelRatio: 3 })])
+      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
+      expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
+    })
+
     test('falls back to no highlight when the layer has no symbolMeta (not a symbol dataset)', () => {
       const map = createFakeMap([datasetSymbolLayer([['f1', {}]])])
-      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
+      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {}, symbolImages)
       expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
     })
 
     test('falls back to no highlight when the variant has not been rasterised/cached yet', () => {
       const map = createFakeMap([datasetSymbolLayer([['f1', {}]], { imageId: 'ds-symbol-never-registered', anchor: [0.5, 1] })])
-      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {})
+      updateHighlightedFeatures(map, [{ layerId: LAYER_ID, featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], {}, symbolImages)
       expect(getHighlightLayer(map).getSource().getFeatures()).toHaveLength(0)
     })
   })
@@ -243,7 +276,7 @@ describe('VectorTileLayer style-wrap', () => {
     const vt = new VectorTileLayer({})
     vt.set('layerType', 'vectorTile')
     const map = createFakeMap([vt, drawLayer()])
-    expect(() => updateHighlightedFeatures(map, [], [], {})).not.toThrow()
+    expect(() => updateHighlightedFeatures(map, [], [], {}, symbolImages)).not.toThrow()
   })
 
   const vtStylesMap = { 'existing-fields': { stroke: '#000', selectionStroke: '#111', fill: 'transparent', strokeWidth: 2, activeStrokeWidth: 2 } }
@@ -266,7 +299,7 @@ describe('VectorTileLayer style-wrap', () => {
     const map = createFakeMap([vt])
     const feature = datasetVtFeature('f1')
 
-    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap)
+    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap, symbolImages)
 
     const styles = vt.getStyle()(feature, 1)
     expect(Array.isArray(styles)).toBe(true)
@@ -280,7 +313,7 @@ describe('VectorTileLayer style-wrap', () => {
     const map = createFakeMap([vt])
     const feature = datasetVtFeature('f2') // not the selected f1
 
-    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap)
+    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap, symbolImages)
 
     const base = vt._highlightOriginalStyle(feature, 1)
     const styled = vt.getStyle()(feature, 1)
@@ -298,12 +331,12 @@ describe('VectorTileLayer style-wrap', () => {
     const map = createFakeMap([vt])
     const selection = [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }]
 
-    updateHighlightedFeatures(map, selection, [], vtStylesMap)
+    updateHighlightedFeatures(map, selection, [], vtStylesMap, symbolImages)
 
     // Something outside the highlight module (a theme switch) restyles the layer directly.
     vt.setStyle({ 'fill-color': '#ff0000' })
 
-    updateHighlightedFeatures(map, selection, [], vtStylesMap)
+    updateHighlightedFeatures(map, selection, [], vtStylesMap, symbolImages)
 
     const otherFeature = datasetVtFeature('not-selected')
     const [styled] = vt.getStyle()(otherFeature, 1)
@@ -316,10 +349,10 @@ describe('VectorTileLayer style-wrap', () => {
     vt.set('layerId', 'existing-fields')
     const map = createFakeMap([vt])
 
-    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap)
+    updateHighlightedFeatures(map, [{ layerId: 'existing-fields', featureId: 'f1', geometry: { type: 'Point', coordinates: [1, 2] } }], [], vtStylesMap, symbolImages)
     expect(vt._highlightOriginalStyle).toBeDefined()
 
-    updateHighlightedFeatures(map, [], [], vtStylesMap)
+    updateHighlightedFeatures(map, [], [], vtStylesMap, symbolImages)
     expect(vt._highlightOriginalStyle).toBeUndefined()
   })
 })

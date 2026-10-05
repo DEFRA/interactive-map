@@ -6,18 +6,21 @@ import Icon from 'ol/style/Icon.js'
 import MultiPoint from 'ol/geom/MultiPoint.js'
 import { SIZES } from '../defaults.js'
 import { getPlacedSketchCoords } from '../utils/sketchHelpers.js'
-import { getCachedSymbolImage } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
-import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
 
 const HALO_RADIUS_OFFSET = 3
 
 const selectedVertexRadii = { outer: SIZES.vertexHaloRadius + HALO_RADIUS_OFFSET, mid: SIZES.vertexHaloRadius, inner: SIZES.vertexRadius }
 const selectedMidpointRadii = { outer: SIZES.midpointHaloRadius + HALO_RADIUS_OFFSET, mid: SIZES.midpointHaloRadius, inner: SIZES.midpointRadius }
 
+const FULL_CIRCLE = Math.PI + Math.PI // radians
+// Dashed outline for an invalid shape: dash and gap lengths
+const INVALID_DASH = 2
+const INVALID_GAP = 4
+const INVALID_LINE_DASH = [INVALID_DASH, INVALID_GAP]
+
 const fillArc = (ctx, cx, cy, radius, fillStyle) => {
   ctx.beginPath()
-  ctx.arc(cx, cy, radius, 0, Math.PI * 2)
+  ctx.arc(cx, cy, radius, 0, FULL_CIRCLE)
   ctx.fillStyle = fillStyle
   ctx.fill()
 }
@@ -68,13 +71,13 @@ const createSketchLineStyles = (colors) => ({
     fill: new Fill({ color: colors.editFill })
   }),
   invalid: new Style({
-    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
+    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: INVALID_LINE_DASH })
   }),
   splitValid: new Style({
     stroke: new Stroke({ color: colors.splitValid, width: 2 })
   }),
   splitInvalid: new Style({
-    stroke: new Stroke({ color: colors.splitInvalid, width: 2, lineDash: [2, 4] })
+    stroke: new Stroke({ color: colors.splitInvalid, width: 2, lineDash: INVALID_LINE_DASH })
   })
 })
 
@@ -98,7 +101,7 @@ const createPointPlaceholderStyle = (colors) => new Style({
 // is needed here — the raw anchor is usable as-is. Icon style instances are cached per
 // imageId+anchor+pixelRatio so a style function running every render frame doesn't rebuild
 // one each time.
-const createPointStyles = (colors) => {
+const createPointStyles = (colors, getSymbolImage) => {
   const pointStyle = createPointPlaceholderStyle(colors)
   const iconStyleCache = new Map()
 
@@ -108,12 +111,12 @@ const createPointStyles = (colors) => {
   // symbolSelectedImageId point/pointSymbolImages.js resolves for every point.
   const getPointIconStyle = (properties, imageIdProp = 'symbolImageId') => {
     const imageId = properties[imageIdProp]
-    const canvas = imageId && getCachedSymbolImage(imageId)
-    if (!canvas) {
+    const canvas = imageId && getSymbolImage?.(imageId)
+    if (!canvas || !properties.symbolImageAnchor) {
       return null
     }
-    const symbolDef = symbolRegistry.getSymbolDef(properties)
-    const [anchorX, anchorY] = getSymbolAnchor(properties, symbolDef)
+    // Resolved alongside the image by point/pointSymbolImages.js
+    const [anchorX, anchorY] = properties.symbolImageAnchor
     // The cached canvas was rasterised at viewBox × pixelRatio device pixels for crispness
     // (point/pointSymbolImages.js) — unlike MapLibre's map.addImage(id, data, {pixelRatio}),
     // which uses the registered pixelRatio to auto-derive the displayed CSS size, ol/style/
@@ -147,7 +150,12 @@ const createPointStyles = (colors) => {
  * @returns {{ vertexStyle, selectedVertexStyle, midpointStyle, selectedMidpointStyle,
  *             editFeatureStyle, selectedPointStyleFor, createSketchStyle, createFeatureStyle }}
  */
-export const createStyles = (colors) => {
+/**
+ * @param {Object} colors - resolved draw colours
+ * @param {Function} [getSymbolImage] - imageId → canvas, for drawn points' symbol icons (the OL
+ *   provider's getSymbolImage)
+ */
+export const createStyles = (colors, getSymbolImage) => {
   const { vertexImage, vertexStyle, selectedVertexStyle } = createVertexStyles(colors)
   const { midpointStyle, selectedMidpointStyle } = createMidpointStyles(colors)
 
@@ -159,7 +167,7 @@ export const createStyles = (colors) => {
   // Dashed variant shown while the edited/drawn shape is invalid — no fill, so an
   // invalid shape reads as an outline only.
   const editFeatureStyleInvalid = new Style({
-    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: [2, 4] })
+    stroke: new Stroke({ color: colors.invalidStroke, width: 2, lineDash: INVALID_LINE_DASH })
   })
 
   const sketchLineStyles = createSketchLineStyles(colors)
@@ -196,7 +204,7 @@ export const createStyles = (colors) => {
     return type === geometryType ? [lineStyle, sketchVertexStyle] : [lineStyle]
   }
 
-  const { pointStyleFor, selectedPointStyleFor } = createPointStyles(colors)
+  const { pointStyleFor, selectedPointStyleFor } = createPointStyles(colors, getSymbolImage)
 
   const createFeatureStyle = () => (feature) => {
     if (feature.getGeometry().getType() === 'Point') {
