@@ -85,48 +85,64 @@ export const getSymbolIconLayout = ({ anchor, viewBox }) => ({
 })
 
 /**
- * Register normal, active (both rings) and selected (black ring) symbol images.
- * Skips images that are already registered (safe to call on style change).
- * Merges into `map._activeSymbolImageMap` (normal→active) and `map._selectedSymbolImageMap`
- * (normal→selected) rather than replacing them — more than one caller (e.g. the datasets
- * and draw plugins) can register symbols on the same map, and each call must add to that
- * shared registry, not wipe out whatever another caller already registered there.
- *
- * @param {Object} map - MapLibre map instance
- * @param {Object[]} styleArray - an array of symbol configs
- * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
- * @param {Object} symbolRegistry
- * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)
- * @returns {Promise<void>}
+ * The MapLibre provider's record of its registered symbol images. The images themselves live in
+ * the map's own image store (map.addImage); this keeps which active (both rings) and selected
+ * (black ring) image belongs to each normal one. One per map, shared by every caller that
+ * registers symbols on it (e.g. the datasets and draw plugins).
  */
-export const addSymbolsToMap = async (map, styleArray, mapStyle, symbolRegistry, pixelRatio = 2) => {
-  if (!styleArray.length) {
-    return
+export class SymbolImageVariants {
+  activeImageIds = new Map() // normal imageId → active imageId
+  selectedImageIds = new Map() // normal imageId → selected imageId
+
+  /** @param {Object} map - MapLibre map instance */
+  constructor (map) {
+    this.map = map
   }
 
-  map._activeSymbolImageMap ??= {}
-  map._selectedSymbolImageMap ??= {}
+  /** A symbol's active (keyboard cursor) variant, from its normal imageId */
+  getActiveImageId (normalId) {
+    return this.activeImageIds.get(normalId) ?? null
+  }
 
-  await Promise.all(styleArray.flatMap(config => {
-    const normalId = symbolRegistry.getSymbolImageId(config, mapStyle, false, pixelRatio)
-    const activeId = symbolRegistry.getSymbolImageId(config, mapStyle, true, pixelRatio)
-    if (normalId && activeId) {
-      map._activeSymbolImageMap[normalId] = activeId
-    }
-    return ['normal', 'active', 'selected'].map(async (variant) => {
-      const imageId = variant === 'active' ? activeId : normalId
-      if (variant !== 'selected' && (!imageId || map.hasImage(imageId))) {
-        return
+  /** A symbol's selected variant, from its normal imageId */
+  getSelectedImageId (normalId) {
+    return this.selectedImageIds.get(normalId) ?? null
+  }
+
+  /**
+   * Rasterises and adds each symbol's normal, active and selected images to the map, and maps
+   * its normal imageId to the other two. Images the map already has are reused.
+   *
+   * @param {Object[]} styleArray - an array of symbol configs
+   * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
+   * @param {Object} symbolRegistry
+   * @param {number} pixelRatio - Device pixel ratio × map size scale factor
+   * @returns {Promise<void>}
+   */
+  async registerSymbols (styleArray, mapStyle, symbolRegistry, pixelRatio) {
+    const { map } = this
+    await Promise.all(styleArray.flatMap(config => {
+      const normalId = symbolRegistry.getSymbolImageId(config, mapStyle, false, pixelRatio)
+      const activeId = symbolRegistry.getSymbolImageId(config, mapStyle, true, pixelRatio)
+      if (normalId && activeId) {
+        this.activeImageIds.set(normalId, activeId)
       }
-      const result = await symbolRegistry.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
-      if (result) {
+      return ['normal', 'active', 'selected'].map(async (variant) => {
+        const imageId = variant === 'active' ? activeId : normalId
+        if (variant !== 'selected' && (!imageId || map.hasImage(imageId))) {
+          return
+        }
+        const result = await symbolRegistry.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
+        if (!result) {
+          return
+        }
         if (variant === 'selected' && normalId) {
-          map._selectedSymbolImageMap[normalId] = result.imageId
+          this.selectedImageIds.set(normalId, result.imageId)
         }
         if (!map.hasImage(result.imageId)) {
           map.addImage(result.imageId, result.imageData, { pixelRatio })
         }
-      }
-    })
-  }))
+      })
+    }))
+  }
 }

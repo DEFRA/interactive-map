@@ -12,7 +12,7 @@ import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
-import { addSymbolsToMap, getSymbolIconLayout } from './utils/symbolImages.js'
+import { SymbolImageVariants, getSymbolIconLayout } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 
 /**
@@ -77,6 +77,7 @@ export default class MapLibreProvider extends MapProvider {
 
     // map.showPadding = true
     this.map = map
+    this.symbolImages = new SymbolImageVariants(map)
 
     // Set padding before bounds
     this.map.setPadding(padding)
@@ -233,7 +234,7 @@ export default class MapLibreProvider extends MapProvider {
    */
   updateHighlightedFeatures (selectedFeatures, activeFeatures, stylesMap) {
     const { LngLatBounds } = this.maplibreModule
-    return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, activeFeatures, stylesMap })
+    return updateHighlightedFeatures({ LngLatBounds, map: this.map, selectedFeatures, activeFeatures, stylesMap, symbolImages: this.symbolImages })
   }
 
   // ==========================
@@ -319,12 +320,12 @@ export default class MapLibreProvider extends MapProvider {
   }
 
   /**
-   * Rasterise and register symbol images for the given pre-resolved symbol configs.
-   * Delegates to the shared symbol image utility so any plugin's MapLibre adapter can
-   * register symbols without importing provider internals directly.
+   * Rasterises each symbol's normal, active and selected images, adds them to the map, and
+   * records which active and selected image belongs to each normal one. Images the map already
+   * has are reused.
    *
-   * The pixel ratio is computed as device pixel ratio × map size scale factor so symbols
-   * are rasterised at the correct resolution for the current device DPI and map size.
+   * The pixel ratio is the device pixel ratio × map size scale factor, so symbols are
+   * rasterised at the right resolution for the current device DPI and map size.
    *
    * @param {Object[]} symbolConfigs - an array of symbol configs
    * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
@@ -333,7 +334,7 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {Promise<void>}
    */
   async addSymbolsToMap (symbolConfigs, mapStyle, symbolRegistry, pixelRatio = this.map.getPixelRatio() || 1) {
-    return addSymbolsToMap(this.map, symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
+    return this.symbolImages.registerSymbols(symbolConfigs, mapStyle, symbolRegistry, pixelRatio)
   }
 
   /**
@@ -355,7 +356,7 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {string|null}
    */
   getActiveSymbolImageId (normalImageId) {
-    return this.map._activeSymbolImageMap?.[normalImageId] ?? null
+    return this.symbolImages?.getActiveImageId(normalImageId) ?? null
   }
 
   /**
@@ -365,7 +366,7 @@ export default class MapLibreProvider extends MapProvider {
    * @returns {string|null}
    */
   getSelectedSymbolImageId (normalImageId) {
-    return this.map._selectedSymbolImageMap?.[normalImageId] ?? null
+    return this.symbolImages?.getSelectedImageId(normalImageId) ?? null
   }
 
   /**

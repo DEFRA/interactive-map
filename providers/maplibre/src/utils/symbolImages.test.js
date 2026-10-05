@@ -1,4 +1,4 @@
-import { anchorToMaplibre, anchorToMaplibreOffset, getSymbolIconLayout, addSymbolsToMap } from './symbolImages.js'
+import { anchorToMaplibre, anchorToMaplibreOffset, getSymbolIconLayout, SymbolImageVariants } from './symbolImages.js'
 import { symbolRegistry } from '../../../../src/services/symbolRegistry.js'
 
 beforeAll(() => {
@@ -131,80 +131,82 @@ describe('getSymbolIconLayout', () => {
   })
 })
 
-// ─── addSymbolsToMap ──────────────────────────────────────────────────────────
+// ─── SymbolImageVariants ──────────────────────────────────────────────────────
 
 const makeMap = (existingIds = []) => ({
-  _activeSymbolImageMap: {},
-  _selectedSymbolImageMap: {},
   hasImage: jest.fn((id) => existingIds.includes(id)),
   addImage: jest.fn()
 })
 const STYLE_ID = 'test'
 const mapStyle = { id: STYLE_ID }
+const PIXEL_RATIO = 2
 
-describe('addSymbolsToMap — registration', () => {
-  it('returns early and does not touch map for empty configs', async () => {
+// Registers the configs with a fresh SymbolImageVariants for the map, and returns it
+const register = async (map, configs, pixelRatio = PIXEL_RATIO, symbolImages = new SymbolImageVariants(map)) => {
+  await symbolImages.registerSymbols(configs, mapStyle, symbolRegistry, pixelRatio)
+  return symbolImages
+}
+
+describe('SymbolImageVariants — registration', () => {
+  it('does not touch the map for empty configs', async () => {
     const map = makeMap()
-    await addSymbolsToMap(map, [], mapStyle, symbolRegistry)
+    await register(map, [])
     expect(map.hasImage).not.toHaveBeenCalled()
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
-  it('merges into existing _activeSymbolImageMap/_selectedSymbolImageMap rather than replacing them', async () => {
-    // More than one caller (datasets, draw, ...) can register symbols on the same map —
-    // a later call must add to the shared registry, not wipe an earlier caller's entries.
+  it('adds to the variants already registered rather than replacing them', async () => {
+    // More than one caller (datasets, draw, ...) registers symbols on the same map
     const map = makeMap()
-    map._activeSymbolImageMap = { 'other-normal-id': 'other-active-id' }
-    map._selectedSymbolImageMap = { 'other-normal-id': 'other-selected-id' }
-    await addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
-    expect(map._activeSymbolImageMap['other-normal-id']).toBe('other-active-id')
-    expect(map._selectedSymbolImageMap['other-normal-id']).toBe('other-selected-id')
-    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false)
-    expect(map._activeSymbolImageMap).toHaveProperty(normalId)
+    const symbolImages = await register(map, [{ symbol: 'circle' }])
+    await register(map, [{ symbol: 'pin' }], PIXEL_RATIO, symbolImages)
+    const circleId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, false, PIXEL_RATIO)
+    const pinId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, PIXEL_RATIO)
+    expect(symbolImages.getActiveImageId(circleId)).not.toBeNull()
+    expect(symbolImages.getSelectedImageId(circleId)).not.toBeNull()
+    expect(symbolImages.getActiveImageId(pinId)).not.toBeNull()
   })
 
   it('calls addImage for normal, active and selected variants', async () => {
     const map = makeMap()
-    await addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
+    await register(map, [{ symbol: 'pin' }])
     expect(map.addImage).toHaveBeenCalledTimes(3) // NOSONAR S109 — normal, active, selected
     expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(Object), { pixelRatio: 2 })
     expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-act-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(Object), { pixelRatio: 2 })
     expect(map.addImage).toHaveBeenCalledWith(expect.stringMatching(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/), expect.any(Object), { pixelRatio: 2 })
   })
 
-  it('populates _activeSymbolImageMap and _selectedSymbolImageMap with normal → variant id pairs', async () => {
-    const map = makeMap()
-    await addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
-    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false)
-    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true)
-    const selectedId = map._selectedSymbolImageMap[normalId]
-    expect(map._activeSymbolImageMap[normalId]).toBe(activeId)
+  it('maps each normal image id to its active and selected variants', async () => {
+    const symbolImages = await register(makeMap(), [{ symbol: 'pin' }])
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, PIXEL_RATIO)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true, PIXEL_RATIO)
+    const selectedId = symbolImages.getSelectedImageId(normalId)
+    expect(symbolImages.getActiveImageId(normalId)).toBe(activeId)
     expect(selectedId).toMatch(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/)
   })
 
   it('skips addImage when all three variant images are already registered', async () => {
     // Run once to discover the selected image ID (not derivable without rasterising)
-    const setupMap = makeMap()
-    await addSymbolsToMap(setupMap, [{ symbol: 'circle' }], mapStyle, symbolRegistry)
-    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, false)
-    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, true)
-    const selectedId = setupMap._selectedSymbolImageMap[normalId]
+    const setup = await register(makeMap(), [{ symbol: 'circle' }])
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, false, PIXEL_RATIO)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, true, PIXEL_RATIO)
+    const selectedId = setup.getSelectedImageId(normalId)
 
     const map = makeMap([normalId, activeId, selectedId])
-    await addSymbolsToMap(map, [{ symbol: 'circle' }], mapStyle, symbolRegistry)
+    await register(map, [{ symbol: 'circle' }])
     expect(map.addImage).not.toHaveBeenCalled()
   })
 
   it('processes multiple configs independently', async () => {
     const map = makeMap()
-    await addSymbolsToMap(map, [{ symbol: 'pin' }, { symbol: 'circle' }], mapStyle, symbolRegistry)
+    const symbolImages = await register(map, [{ symbol: 'pin' }, { symbol: 'circle' }])
     expect(map.addImage).toHaveBeenCalledTimes(6) // NOSONAR S109 — 2 configs × 3 variants each
-    expect(Object.keys(map._activeSymbolImageMap)).toHaveLength(2)
-    expect(Object.keys(map._selectedSymbolImageMap)).toHaveLength(2)
+    expect(symbolImages.activeImageIds.size).toBe(2)
+    expect(symbolImages.selectedImageIds.size).toBe(2)
   })
 })
 
-describe('addSymbolsToMap — null results and caching', () => {
+describe('SymbolImageVariants — null results and caching', () => {
   it('does not call addImage when rasteriseSymbolImage returns null', async () => {
     // getSymbolImageId (called twice — normal + active) needs a real symbolDef to produce imageIds,
     // but rasteriseSymbolImage must get undefined from getSymbolDef so it returns null.
@@ -218,17 +220,17 @@ describe('addSymbolsToMap — null results and caching', () => {
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(undefined)
     const map = makeMap()
-    await addSymbolsToMap(map, [{ symbol: 'pin' }], mapStyle, symbolRegistry)
+    await register(map, [{ symbol: 'pin' }])
     expect(map.addImage).not.toHaveBeenCalled()
     getSpy.mockRestore()
   })
 
   it('skips config when symbolDef cannot be resolved', async () => {
     const map = makeMap()
-    await addSymbolsToMap(map, [{ symbol: 'no-such-symbol' }], mapStyle, symbolRegistry)
+    const symbolImages = await register(map, [{ symbol: 'no-such-symbol' }])
     expect(map.addImage).not.toHaveBeenCalled()
-    expect(map._activeSymbolImageMap).toEqual({})
-    expect(map._selectedSymbolImageMap).toEqual({})
+    expect(symbolImages.activeImageIds.size).toBe(0)
+    expect(symbolImages.selectedImageIds.size).toBe(0)
   })
 
   it('reuses cached imageData when called again with the same pixelRatio', async () => {
@@ -237,14 +239,14 @@ describe('addSymbolsToMap — null results and caching', () => {
 
     const map1 = makeMap()
     const getContextCallsBefore = HTMLCanvasElement.prototype.getContext.mock.calls.length
-    await addSymbolsToMap(map1, [{ symbol: 'pin' }], mapStyle, symbolRegistry, uniqueRatio)
+    await register(map1, [{ symbol: 'pin' }], uniqueRatio)
     const getContextCallsAfterFirst = HTMLCanvasElement.prototype.getContext.mock.calls.length
     // Rasterisation ran — canvas was used
     expect(getContextCallsAfterFirst).toBeGreaterThan(getContextCallsBefore)
 
     // Second call with a fresh map (hasImage → false) but same ratio → cache hit
     const map2 = makeMap()
-    await addSymbolsToMap(map2, [{ symbol: 'pin' }], mapStyle, symbolRegistry, uniqueRatio)
+    await register(map2, [{ symbol: 'pin' }], uniqueRatio)
     const getContextCallsAfterSecond = HTMLCanvasElement.prototype.getContext.mock.calls.length
     // No new canvas — rasterisation was skipped via cache
     expect(getContextCallsAfterSecond).toBe(getContextCallsAfterFirst)
