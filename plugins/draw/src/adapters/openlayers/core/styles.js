@@ -99,11 +99,12 @@ const createPointPlaceholderStyle = (colors) => new Style({
 // already match symbolAnchor's own [x,y]-fraction-from-top-left convention, so unlike the
 // MapLibre adapter (whose icon-anchor only has 9 discrete positions) no offset compensation
 // is needed here — the raw anchor is usable as-is. Icon style instances are cached per
-// imageId+anchor+pixelRatio so a style function running every render frame doesn't rebuild
-// one each time.
+// image+anchor+pixelRatio so a style function running every render frame doesn't rebuild one
+// each time. Keyed weakly by the image's canvas, so a cached style goes once the OL provider
+// drops that image.
 const createPointStyles = (colors, getSymbolImage) => {
   const pointStyle = createPointPlaceholderStyle(colors)
-  const iconStyleCache = new Map()
+  const iconStyleCache = new WeakMap() // canvas → Map of anchor|pixelRatio → Style
 
   // imageIdProp lets edit_point's own per-feature style override (point/editPointMode.js)
   // ask for the precomputed "selected" (black ring) variant instead of the normal one — the
@@ -123,11 +124,15 @@ const createPointStyles = (colors, getSymbolImage) => {
     // Icon draws its source at native pixel size by default, so `scale` has to cancel that
     // back out here or the icon renders pixelRatio× too big.
     const pixelRatio = properties.symbolPixelRatio || 1
-    const cacheKey = `${imageId}|${anchorX}|${anchorY}|${pixelRatio}`
-    let iconStyle = iconStyleCache.get(cacheKey)
+    if (!iconStyleCache.has(canvas)) {
+      iconStyleCache.set(canvas, new Map())
+    }
+    const canvasStyles = iconStyleCache.get(canvas)
+    const cacheKey = `${anchorX}|${anchorY}|${pixelRatio}`
+    let iconStyle = canvasStyles.get(cacheKey)
     if (!iconStyle) {
       iconStyle = new Style({ image: new Icon({ img: canvas, anchor: [anchorX, anchorY], scale: 1 / pixelRatio }) })
-      iconStyleCache.set(cacheKey, iconStyle)
+      canvasStyles.set(cacheKey, iconStyle)
     }
     return iconStyle
   }

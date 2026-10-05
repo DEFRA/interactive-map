@@ -255,6 +255,49 @@ describe('SymbolImageVariants — null results and caching', () => {
   })
 })
 
+describe('SymbolImageVariants — removing images from older map sizes and styles', () => {
+  // A map that keeps the images added to it, like MapLibre's image store
+  const makeImageStore = () => {
+    const images = new Set()
+    return {
+      images,
+      hasImage: jest.fn((id) => images.has(id)),
+      addImage: jest.fn((id) => images.add(id)),
+      removeImage: jest.fn((id) => images.delete(id))
+    }
+  }
+  const pinIds = (symbolImages, pixelRatio) => {
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, pixelRatio)
+    return [normalId, symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true, pixelRatio), symbolImages.getSelectedImageId(normalId)]
+  }
+
+  it('keeps the current and previous size, and removes an older one\'s images when a third arrives', async () => {
+    const map = makeImageStore()
+    const symbolImages = new SymbolImageVariants(map)
+    await register(map, [{ symbol: 'pin' }], 1, symbolImages)
+    const oldIds = pinIds(symbolImages, 1)
+    await register(map, [{ symbol: 'pin' }], 2, symbolImages)
+    oldIds.forEach((imageId) => expect(map.images.has(imageId)).toBe(true))
+
+    await register(map, [{ symbol: 'pin' }], 3, symbolImages)
+    oldIds.forEach((imageId) => expect(map.images.has(imageId)).toBe(false))
+    expect(symbolImages.getActiveImageId(oldIds[0])).toBeNull()
+    expect(symbolImages.getSelectedImageId(oldIds[0])).toBeNull()
+    pinIds(symbolImages, 2).concat(pinIds(symbolImages, 3)).forEach((imageId) => expect(map.images.has(imageId)).toBe(true))
+    expect(map.images.size).toBe(6) // NOSONAR S109 — two sizes × normal, active, selected
+  })
+
+  it('keeps an image the map no longer has, e.g. after a style change, without removing it', async () => {
+    const map = makeImageStore()
+    const symbolImages = new SymbolImageVariants(map)
+    await register(map, [{ symbol: 'pin' }], 1, symbolImages)
+    map.images.clear()
+    await register(map, [{ symbol: 'pin' }], 2, symbolImages)
+    await register(map, [{ symbol: 'pin' }], 3, symbolImages)
+    expect(map.removeImage).not.toHaveBeenCalled()
+  })
+})
+
 // End to end across the symbol pipeline: whatever the shape, size or anchor override, MapLibre's
 // snapped icon-anchor plus the icon-offset must land the symbol's true anchor pixel on the
 // coordinate — the same pixel HTML markers and OpenLayers place directly from the fraction.

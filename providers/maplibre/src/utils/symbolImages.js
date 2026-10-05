@@ -1,3 +1,5 @@
+import { RecentImageSets } from '../../../../src/utils/recentImageSets.js'
+
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
 const ANCHOR_CENTRE = 0.5
@@ -89,10 +91,14 @@ export const getSymbolIconLayout = ({ anchor, viewBox }) => ({
  * the map's own image store (map.addImage); this keeps which active (both rings) and selected
  * (black ring) image belongs to each normal one. One per map, shared by every caller that
  * registers symbols on it (e.g. the datasets and draw plugins).
+ *
+ * Images are kept for the current and previous map size and style; ones only older sizes and
+ * styles used are removed from the map, so they don't build up as the map size or style changes.
  */
 export class SymbolImageVariants {
   activeImageIds = new Map() // normal imageId → active imageId
   selectedImageIds = new Map() // normal imageId → selected imageId
+  recentImageSets = new RecentImageSets()
 
   /** @param {Object} map - MapLibre map instance */
   constructor (map) {
@@ -109,9 +115,18 @@ export class SymbolImageVariants {
     return this.selectedImageIds.get(normalId) ?? null
   }
 
+  removeImage (imageId) {
+    if (this.map.hasImage(imageId)) {
+      this.map.removeImage(imageId)
+    }
+    this.activeImageIds.delete(imageId)
+    this.selectedImageIds.delete(imageId)
+  }
+
   /**
    * Rasterises and adds each symbol's normal, active and selected images to the map, and maps
-   * its normal imageId to the other two. Images the map already has are reused.
+   * its normal imageId to the other two. Images the map already has are reused. Then removes
+   * images only map sizes and styles older than the previous one used.
    *
    * @param {Object[]} styleArray - an array of symbol configs
    * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
@@ -121,7 +136,7 @@ export class SymbolImageVariants {
    */
   async registerSymbols (styleArray, mapStyle, symbolRegistry, pixelRatio) {
     const { map } = this
-    await Promise.all(styleArray.flatMap(config => {
+    const imageIds = await Promise.all(styleArray.flatMap(config => {
       const normalId = symbolRegistry.getSymbolImageId(config, mapStyle, false, pixelRatio)
       const activeId = symbolRegistry.getSymbolImageId(config, mapStyle, true, pixelRatio)
       if (normalId && activeId) {
@@ -130,11 +145,11 @@ export class SymbolImageVariants {
       return ['normal', 'active', 'selected'].map(async (variant) => {
         const imageId = variant === 'active' ? activeId : normalId
         if (variant !== 'selected' && (!imageId || map.hasImage(imageId))) {
-          return
+          return imageId
         }
         const result = await symbolRegistry.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
         if (!result) {
-          return
+          return null
         }
         if (variant === 'selected' && normalId) {
           this.selectedImageIds.set(normalId, result.imageId)
@@ -142,7 +157,10 @@ export class SymbolImageVariants {
         if (!map.hasImage(result.imageId)) {
           map.addImage(result.imageId, result.imageData, { pixelRatio })
         }
+        return result.imageId
       })
     }))
+    this.recentImageSets.add(`${mapStyle?.id}|${pixelRatio}`, imageIds.filter(Boolean))
+      .forEach((imageId) => this.removeImage(imageId))
   }
 }

@@ -1,5 +1,7 @@
-import { get as getIconImage } from 'ol/style/IconImage.js'
+import IconImage from 'ol/style/IconImage.js'
+import { shared as iconImageCache } from 'ol/style/IconImageCache.js'
 import ImageState from 'ol/ImageState.js'
+import { RecentImageSets } from '../../../../../src/utils/recentImageSets.js'
 
 /**
  * The OL "last mile" for symbolRegistry's rasterised symbol images: turns the ImageData
@@ -9,12 +11,16 @@ import ImageState from 'ol/ImageState.js'
  *
  * Two shapes of the same image are kept: a <canvas> for styles that build an ol/style/Icon
  * directly (draw points, highlights), and a data URI for a flat style's icon-src (datasets).
+ *
+ * Images are kept for the current and previous map size and style; ones only older sizes and
+ * styles used are dropped, so the cache doesn't build up as the map size or style changes.
  */
 export class SymbolImageCache {
   images = new Map() // imageId → HTMLCanvasElement
   dataUris = new Map() // imageId → data URI string
   activeImageIds = new Map() // normal imageId → active imageId
   selectedImageIds = new Map() // normal imageId → selected imageId
+  recentImageSets = new RecentImageSets()
 
   /** Synchronous lookup for style functions — undefined until the image has been registered. */
   getImage (imageId) {
@@ -48,9 +54,24 @@ export class SymbolImageCache {
       // Seed OL's icon cache with the already-drawn canvas under this data URI, so a flat
       // style's icon-src finds a loaded image straight away. Otherwise OL loads the data URI
       // asynchronously and draws nothing for that icon until it has — a visible flicker each
-      // time styles switch to new images, as on every map-size change.
-      getIconImage(canvas, dataUri, undefined, ImageState.LOADED, null)
+      // time styles switch to new images, as on every map-size change. Set rather than got, so
+      // it also replaces an unloaded entry left by removeImage.
+      iconImageCache.set(dataUri, null, new IconImage(canvas, dataUri, undefined, ImageState.LOADED, null))
     }
+  }
+
+  removeImage (imageId) {
+    const dataUri = this.dataUris.get(imageId)
+    this.dataUris.delete(imageId)
+    // OL's icon cache would otherwise keep the canvas alive; an unloaded entry in its place holds
+    // nothing, and OL's own cache limit can clear it. Two images can draw identical pixels, so
+    // it's left alone while a kept image still has the same data URI.
+    if (dataUri && !Array.from(this.dataUris.values()).includes(dataUri)) {
+      iconImageCache.set(dataUri, null, new IconImage(undefined, dataUri, undefined, ImageState.IDLE, null))
+    }
+    this.images.delete(imageId)
+    this.activeImageIds.delete(imageId)
+    this.selectedImageIds.delete(imageId)
   }
 
   /**
@@ -61,24 +82,24 @@ export class SymbolImageCache {
    * @param {Object} mapStyle - current map style config
    * @param {Object} symbolRegistry
    * @param {number} pixelRatio
-   * @returns {Promise<void>}
+   * @returns {Promise<string[]>} the symbol's image ids
    */
   async registerSymbol (style, mapStyle, symbolRegistry, pixelRatio) {
     const normalId = symbolRegistry.getSymbolImageId(style, mapStyle, false, pixelRatio)
     if (!normalId) {
-      return
+      return []
     }
     const activeId = symbolRegistry.getSymbolImageId(style, mapStyle, true, pixelRatio)
     this.activeImageIds.set(normalId, activeId)
 
-    await Promise.all(['normal', 'active', 'selected'].map(async (variant) => {
+    const imageIds = await Promise.all(['normal', 'active', 'selected'].map(async (variant) => {
       const knownId = { normal: normalId, active: activeId }[variant]
       if (knownId && this.images.has(knownId)) {
-        return
+        return knownId
       }
       const result = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, variant, pixelRatio)
       if (!result) {
-        return
+        return null
       }
       if (variant === 'selected') {
         this.selectedImageIds.set(normalId, result.imageId)
@@ -86,11 +107,14 @@ export class SymbolImageCache {
       if (!this.images.has(result.imageId)) {
         this.addImage(result.imageId, result.imageData, variant === 'normal')
       }
+      return result.imageId
     }))
+    return imageIds.filter(Boolean)
   }
 
   /**
-   * Registers several symbols in parallel.
+   * Registers several symbols in parallel, then drops images only map sizes and styles older
+   * than the previous one used.
    *
    * @param {Object[]} styles
    * @param {Object} mapStyle
@@ -99,6 +123,8 @@ export class SymbolImageCache {
    * @returns {Promise<void>}
    */
   async registerSymbols (styles, mapStyle, symbolRegistry, pixelRatio) {
-    await Promise.all(styles.map((style) => this.registerSymbol(style, mapStyle, symbolRegistry, pixelRatio)))
+    const imageIds = await Promise.all(styles.map((style) => this.registerSymbol(style, mapStyle, symbolRegistry, pixelRatio)))
+    this.recentImageSets.add(`${mapStyle?.id}|${pixelRatio}`, imageIds.flat())
+      .forEach((imageId) => this.removeImage(imageId))
   }
 }

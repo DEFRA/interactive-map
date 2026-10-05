@@ -1,5 +1,6 @@
 import Icon from 'ol/style/Icon.js'
 import ImageState from 'ol/ImageState.js'
+import { shared as iconImageCache } from 'ol/style/IconImageCache.js'
 import { SymbolImageCache } from './symbolImages.js'
 
 const MAP_STYLE = { id: 'outdoor' }
@@ -152,5 +153,62 @@ describe('registerSymbols', () => {
     const symbolRegistry = makeSymbolRegistry()
     await cache.registerSymbols([], MAP_STYLE, symbolRegistry, 1)
     expect(symbolRegistry.rasteriseSymbolImage).not.toHaveBeenCalled()
+  })
+})
+
+describe('dropping images from older map sizes and styles', () => {
+  const pin = { symbol: 'pin' }
+
+  it('keeps the current and previous size, and drops an older one\'s images when a third arrives', async () => {
+    const symbolRegistry = makeSymbolRegistry()
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 1)
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 2)
+    expect(cache.getImage('symbol-pin-1x')).toBeInstanceOf(HTMLCanvasElement)
+
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 3)
+    expect(cache.getImage('symbol-pin-1x')).toBeUndefined()
+    expect(cache.getImage('symbol-pin-1x-active')).toBeUndefined()
+    expect(cache.getImage('symbol-pin-1x-selected')).toBeUndefined()
+    expect(cache.getDataUri('symbol-pin-1x')).toBeUndefined()
+    expect(cache.getActiveImageId('symbol-pin-1x')).toBeNull()
+    expect(cache.getSelectedImageId('symbol-pin-1x')).toBeNull()
+    expect(cache.getImage('symbol-pin-2x')).toBeInstanceOf(HTMLCanvasElement)
+    expect(cache.getImage('symbol-pin-3x')).toBeInstanceOf(HTMLCanvasElement)
+  })
+
+  it('treats a map style change the same as a size change', async () => {
+    const symbolRegistry = makeSymbolRegistry()
+    await cache.registerSymbols([pin], { id: 'outdoor' }, symbolRegistry, 1)
+    await cache.registerSymbols([{ symbol: 'flag' }], { id: 'dark' }, symbolRegistry, 1)
+    await cache.registerSymbols([{ symbol: 'star' }], { id: 'night' }, symbolRegistry, 1)
+    expect(cache.getImage('symbol-pin-1x')).toBeUndefined()
+    expect(cache.getImage('symbol-flag-1x')).toBeInstanceOf(HTMLCanvasElement)
+  })
+
+  it('keeps OL\'s icon cache entry while a kept image has the same data URI', async () => {
+    // every mock image is 20×20, so they all share one data URI
+    const symbolRegistry = makeSymbolRegistry()
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 1)
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 2)
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 3)
+    expect(new Icon({ src: cache.getDataUri('symbol-pin-3x') }).getImageState()).toBe(ImageState.LOADED)
+  })
+
+  it('releases a dropped image from OL\'s icon cache, and seeds it again when it comes back', async () => {
+    // a data URI per image size, so each image's is its own
+    HTMLCanvasElement.prototype.toDataURL = jest.fn(function () { return `data:image/png;base64,${this.width}` })
+    const symbolRegistry = makeSymbolRegistry()
+    symbolRegistry.rasteriseSymbolImage.mockImplementation(async (style, mapStyle, variant, pixelRatio) => ({
+      imageId: `symbol-${style.symbol}-${pixelRatio}x${variant === 'normal' ? '' : `-${variant}`}`,
+      imageData: imageData(20 * pixelRatio, 20 * pixelRatio)
+    }))
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 1)
+    const dataUri = cache.getDataUri('symbol-pin-1x')
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 2)
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 3)
+    expect(iconImageCache.get(dataUri, null).getImageState()).toBe(ImageState.IDLE)
+
+    await cache.registerSymbols([pin], MAP_STYLE, symbolRegistry, 1)
+    expect(new Icon({ src: dataUri }).getImageState()).toBe(ImageState.LOADED)
   })
 })
