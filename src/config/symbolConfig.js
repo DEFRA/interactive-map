@@ -44,6 +44,9 @@ const CENTRE = 0.5
 /** Anchor used when a symbol doesn't set one — its centre */
 export const DEFAULT_SYMBOL_ANCHOR = [CENTRE, CENTRE]
 
+/** View box used when a custom SVG symbol doesn't set one */
+export const DEFAULT_SYMBOL_VIEWBOX = '0 0 44 44'
+
 /** Space around a built-in symbol's body: its outermost (active) ring plus 1px clearance */
 export const SYMBOL_PADDING = ACTIVE_RING_STROKE_WIDTH / BOTH_SIDES + 1
 

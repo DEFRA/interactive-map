@@ -78,16 +78,3 @@ export const getSymbolScale = (symbolSize) => {
   }
   return SYMBOL_SIZES.medium
 }
-
-/**
- * Returns the viewBox string for a dataset's symbol.
- * Precedence: symbolDef viewBox (already sized, with any symbolViewBox override folded in by
- * symbolRegistry.getSymbolDef) → dataset.symbolViewBox → default.
- *
- * @param {Object} dataset
- * @param {Object|undefined} symbolDef
- * @returns {string}
- */
-export const getSymbolViewBox = (dataset, symbolDef) => {
-  return symbolDef?.viewBox ?? dataset.symbolViewBox ?? '0 0 38 38'
-}

@@ -1,6 +1,6 @@
 import { getValueForStyle } from '../utils/getValueForStyle.js'
-import { symbolDefaults, pin, circle, square, hexagon, triangle, diamond, graphics } from '../config/symbolConfig.js'
-import { getSymbolStyleColors, getSymbolViewBox, getSymbolScale } from '../utils/symbolUtils.js'
+import { symbolDefaults, pin, circle, square, hexagon, triangle, diamond, graphics, DEFAULT_SYMBOL_VIEWBOX } from '../config/symbolConfig.js'
+import { getSymbolStyleColors, getSymbolScale } from '../utils/symbolUtils.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { rasteriseToImageData } from '../utils/rasteriseToImageData.js'
 import {
@@ -55,8 +55,6 @@ const STRUCTURAL = new Set([
   'id', 'svg', 'viewBox', 'anchor', 'symbol', 'symbolSvgContent', 'symbolSize',
   'path', 'bounds', 'anchorPoint', 'graphicCentre', 'bodyBox', 'transform', 'scale'
 ])
-
-const DEFAULT_SVG_VIEWBOX = '0 0 38 38'
 
 const POINT_LENGTH = 2
 const BOX_LENGTH = 4 // [x, y, width, height], and a viewBox's four values
@@ -301,7 +299,7 @@ export const symbolRegistry = {
     const scale = getSymbolScale(symbolSize ?? this.getDefaults().symbolSize)
     const sized = symbolDef.path
       ? composeSymbolDef(symbolDef, scale)
-      : scaleSvgSymbolDef(symbolDef, viewBox ?? symbolDef.viewBox ?? DEFAULT_SVG_VIEWBOX, scale)
+      : scaleSvgSymbolDef(symbolDef, viewBox ?? symbolDef.viewBox ?? DEFAULT_SYMBOL_VIEWBOX, scale)
     return applyAnchorOverride(sized, anchor)
   },
 
@@ -336,7 +334,7 @@ export const symbolRegistry = {
       prefix = ''
     }
 
-    const viewBox = getSymbolViewBox(style, symbolDef)
+    const { viewBox } = symbolDef
     const imageId = imageIdFor(prefix, resolvedContent, viewBox, pixelRatio)
 
     let imageData = getCachedImageData(imageId)

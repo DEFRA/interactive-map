@@ -6,7 +6,7 @@ import { useMap } from '../../store/mapContext.js'
 import { useService } from '../../store/serviceContext.js'
 import { scaleFactor } from '../../../config/appConfig.js'
 import { isStandaloneLabel } from '../../../utils/symbolUtils.js'
-import { DEFAULT_SYMBOL_ANCHOR } from '../../../config/symbolConfig.js'
+import { DEFAULT_SYMBOL_ANCHOR, DEFAULT_SYMBOL_VIEWBOX } from '../../../config/symbolConfig.js'
 import { EVENTS } from '../../../config/events.js'
 import LabelMarker from './LabelMarker.jsx'
 import SymbolLabelMarker from './SymbolLabelMarker.jsx'
@@ -27,7 +27,7 @@ const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
     return undefined
   }
   return symbolRegistry.getSizedSymbolDef(baseDef, {
-    viewBox: marker.viewBox || defaults.viewBox || baseDef.viewBox || '0 0 44 44',
+    viewBox: marker.viewBox || defaults.viewBox,
     symbolSize: marker.symbolSize ?? defaults.symbolSize,
     anchor: marker.anchor ?? defaults.anchor
   })
@@ -46,7 +46,7 @@ const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize,
   } else {
     resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
   }
-  const viewBox = symbolDef?.viewBox ?? '0 0 44 44'
+  const viewBox = symbolDef?.viewBox ?? DEFAULT_SYMBOL_VIEWBOX
   const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
   const anchor = symbolDef?.anchor ?? DEFAULT_SYMBOL_ANCHOR
   const shapeId = marker.symbol || defaults.symbol

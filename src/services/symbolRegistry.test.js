@@ -143,8 +143,8 @@ describe('symbolRegistry — SVG-template symbols', () => {
     expect(sized.viewBox).toBe('0 0 7.5 7.5')
   })
 
-  it('defaults inline symbolSvgContent to a 38×38 viewBox', () => {
-    expect(symbolRegistry.getSymbolDef({ symbolSvgContent: '<circle/>' }).viewBox).toBe('0 0 38 38')
+  it('defaults inline symbolSvgContent to a 44×44 viewBox', () => {
+    expect(symbolRegistry.getSymbolDef({ symbolSvgContent: '<circle/>' }).viewBox).toBe('0 0 44 44')
   })
 })
 

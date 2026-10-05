@@ -1,4 +1,4 @@
-import { getSymbolStyleColors, getSymbolViewBox } from '../../../../../src/utils/symbolUtils.js'
+import { getSymbolStyleColors } from '../../../../../src/utils/symbolUtils.js'
 import { svgSymbolProps, SVG_SYMBOL_SIZE, KEY_SYMBOL_MAX_SIZE } from './svgProperties.js'
 import { symbolRegistry } from '../../registry/index.js'
 
@@ -9,7 +9,7 @@ export const KeySvgSymbol = ({ keyDefinition, mapStyle, symbolDef }) => {
   const mapColorScheme = mapStyle?.appColorScheme ?? 'light'
   const keyMapStyle = { ...mapStyle, mapColorScheme }
   const resolvedSvg = symbolRegistry.resolve(symbolDef, getSymbolStyleColors(style), keyMapStyle)
-  const viewBox = getSymbolViewBox(style, symbolDef)
+  const viewBox = symbolDef?.viewBox
 
   if (!(resolvedSvg && viewBox)) {
     return null

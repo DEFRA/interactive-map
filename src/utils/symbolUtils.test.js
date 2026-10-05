@@ -2,7 +2,6 @@ import {
   hasSymbol,
   isStandaloneLabel,
   getSymbolStyleColors,
-  getSymbolViewBox,
   getSymbolScale
 } from './symbolUtils.js'
 import { logger } from '../services/logger.js'
@@ -103,33 +102,6 @@ describe('getSymbolStyleColors', () => {
     expect(getSymbolStyleColors(dataset)).toEqual({
       backgroundColor: { outdoor: '#1d70b8', dark: '#5694ca' }
     })
-  })
-})
-
-// ─── getSymbolViewBox ─────────────────────────────────────────────────────────
-
-describe('getSymbolViewBox', () => {
-  it('returns symbolViewBox from dataset when there is no symbolDef', () => {
-    const dataset = { symbol: 'custom', symbolViewBox: '0 0 24 24' }
-    expect(getSymbolViewBox(dataset, undefined)).toBe('0 0 24 24')
-  })
-
-  it('prefers the (already sized) symbolDef viewBox over dataset.symbolViewBox', () => {
-    const dataset = { symbolSvgContent: '<circle/>', symbolViewBox: '0 0 24 24', symbolSize: 'large' }
-    expect(getSymbolViewBox(dataset, { viewBox: '0 0 30 30' })).toBe('0 0 30 30')
-  })
-
-  it('falls back to symbolDef viewBox', () => {
-    const symbolDef = { id: 'pin', viewBox: '0 0 38 38' }
-    expect(getSymbolViewBox({ symbol: 'pin' }, symbolDef)).toBe('0 0 38 38')
-  })
-
-  it('returns default viewBox when neither source has one', () => {
-    expect(getSymbolViewBox({ symbol: 'pin' }, {})).toBe('0 0 38 38')
-  })
-
-  it('returns default viewBox when symbolDef is undefined', () => {
-    expect(getSymbolViewBox({ symbol: 'pin' }, undefined)).toBe('0 0 38 38')
   })
 })
 
