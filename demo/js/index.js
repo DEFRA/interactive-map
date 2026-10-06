@@ -230,7 +230,6 @@ const datasetsPlugin = createDatasetsPlugin({
       showInMenu: true,
       style: {
         symbol: 'circle',
-        symbolSize: 'small',
         symbolBackgroundColor: '#00897B',
       }
     },{
@@ -258,7 +257,6 @@ const datasetsPlugin = createDatasetsPlugin({
       showInMenu: true,
       style: {
         symbol: 'triangle',
-        symbolSize: 'large',
         symbolBackgroundColor: '#54319f',
       }
     },{
