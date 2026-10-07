@@ -39,19 +39,19 @@ Controls the visual appearance of a marker. All properties are optional — unse
 **Type:** `string`
 **Default:** `'pin'`
 
-Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. For a custom one-off symbol, use `symbolSvgContent` instead.
+Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. For a custom one-off symbol, use `svgContent` instead.
 
 ---
 
-### `symbolSize`
+### `size`
 **Type:** `'small' | 'medium' | 'large'`
-**Default:** `'medium'`, or the constructor's `symbolDefaults.symbolSize`
+**Default:** `'medium'`, or the constructor's `symbolDefaults.size`
 
-Size of the marker's symbol — see [Symbol Config](./symbol-config.md#symbolsize).
+Size of the marker's symbol — see [Symbol Config](./symbol-config.md#size).
 
 ---
 
-### `symbolSvgContent`
+### `svgContent`
 **Type:** `string`
 
 Inner SVG path content (no `<svg>` wrapper) to render instead of a registered symbol. Use `{{token}}` placeholders for colours. When set, `symbol` is ignored.
@@ -59,7 +59,7 @@ Inner SVG path content (no `<svg>` wrapper) to render instead of a registered sy
 ```js
 // Using built-in tokens with per-style colours
 markers.add('id', coords, {
-  symbolSvgContent: `
+  svgContent: `
     <path d="..." fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
     <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
     <path d="..." fill="{{foregroundColor}}"/>
@@ -71,7 +71,7 @@ markers.add('id', coords, {
 
 // Using a custom token
 markers.add('id', coords, {
-  symbolSvgContent: `
+  svgContent: `
     <path d="..." fill="{{customColor}}"/>
   `,
   viewBox: '0 0 38 38',
@@ -91,7 +91,7 @@ markers.add('id', coords, {
 **Type:** `string`
 **Default:** registered symbol's viewBox, or `'0 0 44 44'`
 
-SVG `viewBox` attribute for the symbol. Use alongside `symbolSvgContent` when your paths use a different coordinate space.
+SVG `viewBox` attribute for the symbol. Use alongside `svgContent` when your paths use a different coordinate space.
 
 ---
 

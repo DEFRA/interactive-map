@@ -1,8 +1,8 @@
 import { SYMBOL_SIZES } from '../config/symbolConfig.js'
 import { logger } from '../services/logger.js'
 
-// Each unknown symbolSize is reported once, rather than on every render
-const reportedSymbolSizes = new Set()
+// Each unknown symbol size is reported once, rather than on every render
+const reportedSizes = new Set()
 const quoted = (text) => `'${text}'`
 
 // Symbol style props in dataset style that carry token values.
@@ -22,7 +22,7 @@ export const hasSymbol = (dataset) => !!(dataset.symbol || dataset.symbolSvgCont
 
 /**
  * Returns true if a marker item should render as a standalone label with no symbol.
- * Requires label content and at least one of symbol/symbolSvgContent to be explicitly null.
+ * Requires label content and at least one of symbol/svgContent to be explicitly null.
  * Undefined values fall through to render-time default symbol resolution.
  *
  * @param {Object} marker
@@ -32,10 +32,10 @@ export const isStandaloneLabel = (marker) => {
   if (!marker.label) {
     return false
   }
-  if (marker.symbol || marker.symbolSvgContent) {
+  if (marker.symbol || marker.svgContent) {
     return false
   }
-  return marker.symbol === null || marker.symbolSvgContent === null
+  return marker.symbol === null || marker.svgContent === null
 }
 
 /**
@@ -60,21 +60,21 @@ export const getSymbolStyleColors = (dataset) => {
 }
 
 /**
- * Returns the scale factor for a symbolSize ('small' | 'medium' | 'large'). Missing means
+ * Returns the scale factor for a symbol size ('small' | 'medium' | 'large'). Missing means
  * medium; an unknown value is warned about (once) and also treated as medium.
  * The one place a size becomes a number — extend here to accept other sizes or raw factors.
  *
- * @param {string} [symbolSize]
+ * @param {string} [size]
  * @returns {number}
  */
-export const getSymbolScale = (symbolSize) => {
-  if (symbolSize == null || Object.keys(SYMBOL_SIZES).includes(symbolSize)) {
-    return SYMBOL_SIZES[symbolSize] ?? SYMBOL_SIZES.medium
+export const getSymbolScale = (size) => {
+  if (size == null || Object.keys(SYMBOL_SIZES).includes(size)) {
+    return SYMBOL_SIZES[size] ?? SYMBOL_SIZES.medium
   }
-  if (!reportedSymbolSizes.has(symbolSize)) {
-    reportedSymbolSizes.add(symbolSize)
+  if (!reportedSizes.has(size)) {
+    reportedSizes.add(size)
     const expected = Object.keys(SYMBOL_SIZES).map(quoted).join(', ')
-    logger.warn(`Unknown symbolSize "${symbolSize}" — expected ${expected}. Using 'medium'.`)
+    logger.warn(`Unknown symbol size "${size}" — expected ${expected}. Using 'medium'.`)
   }
   return SYMBOL_SIZES.medium
 }

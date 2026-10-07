@@ -2,7 +2,7 @@
 
 The symbol registry is a service that manages reusable named symbols for map markers. It is available to plugin authors via `services.symbolRegistry`. Each map has its own registry, so symbols registered and `symbolDefaults` set on one map don't affect another on the same page.
 
-> **Application code** that needs a one-off custom marker should pass [`symbolSvgContent`](./symbol-config.md#symbolsvgcontent) directly to `addMarker()` via `MarkerOptions` instead — no registration required.
+> **Application code** that needs a one-off custom marker should pass [`svgContent`](./symbol-config.md#svgcontent) directly to `addMarker()` via `MarkerOptions` instead — no registration required.
 
 ## Built-in symbols
 
@@ -17,7 +17,7 @@ Six symbols are registered by default:
 | `'triangle'` | Centroid | Point-up triangle |
 | `'diamond'` | Centre | Square rotated 45° |
 
-Each can be shown at any [`symbolSize`](./symbol-config.md#symbolsize) and takes a custom [`graphic`](./symbol-config.md#graphic). They use the same [token resolution order](./symbol-config.md#how-values-are-resolved) as any other symbol.
+Each can be shown at any [`size`](./symbol-config.md#size) and takes a custom [`graphic`](./symbol-config.md#graphic). They use the same [token resolution order](./symbol-config.md#how-values-are-resolved) as any other symbol.
 
 ## Methods
 
@@ -74,11 +74,13 @@ See [Symbol Config](./symbol-config.md) for the full list of token properties an
 
 ### `getSymbolDef(style)`
 
-Returns the symbol definition for a marker or dataset style (`symbol` or `symbolSvgContent`), sized for its `symbolSize` — with the `viewBox` and `anchor` for that size. Pass the result to the `resolve` methods.
+Returns the symbol definition for a dataset or draw style, sized for its `symbolSize` — with the `viewBox` and `anchor` for that size. Pass the result to the `resolve` methods.
+
+Reads the style's `symbol` or `symbolSvgContent`, `symbolSize`, `symbolViewBox` and `symbolAnchor`. Marker options drop the `symbol` prefix (`svgContent`, `size`, `viewBox`, `anchor`); to size a definition from those, use [`getSizedSymbolDef`](#getsizedsymboldefsymboldef--viewbox-size-anchor-).
 
 ---
 
-### `getSizedSymbolDef(symbolDef, { viewBox, symbolSize, anchor })`
+### `getSizedSymbolDef(symbolDef, { viewBox, size, anchor })`
 
 Sizes a definition from [`get()`](#getid) (or `{ svg }` for inline content) directly. `viewBox` only applies to SVG-template symbols; `anchor` is as described in [Symbol Config: `anchor`](./symbol-config.md#anchor).
 

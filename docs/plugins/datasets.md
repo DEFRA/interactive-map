@@ -335,10 +335,10 @@ Each is documented in full in [Symbol Config](../api/symbol-config.md), under a 
 | Property | Symbol Config property |
 |----------|-------------------------|
 | `symbol` | [`symbol`](../api/symbol-config.md#symbol) |
-| `symbolSvgContent` | [`symbolSvgContent`](../api/symbol-config.md#symbolsvgcontent) |
+| `symbolSvgContent` | [`svgContent`](../api/symbol-config.md#svgcontent) |
 | `symbolViewBox` | [`viewBox`](../api/symbol-config.md#viewbox) |
 | `symbolAnchor` | [`anchor`](../api/symbol-config.md#anchor) |
-| `symbolSize` | [`symbolSize`](../api/symbol-config.md#symbolsize) |
+| `symbolSize` | [`size`](../api/symbol-config.md#size) |
 | `symbolBackgroundColor` | [`backgroundColor`](../api/symbol-config.md#backgroundcolor) |
 | `symbolForegroundColor` | [`foregroundColor`](../api/symbol-config.md#foregroundcolor) |
 | `symbolHaloWidth` | Stroke width of the halo in SVG units. Not currently documented in Symbol Config |

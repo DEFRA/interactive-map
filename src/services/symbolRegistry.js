@@ -75,7 +75,7 @@ const imageIdFor = (prefix, resolvedSvg, viewBox, pixelRatio) => {
 
 // Keys that are structural — not token values for SVG substitution
 const STRUCTURAL = new Set([
-  'id', 'svg', 'viewBox', 'anchor', 'symbol', 'symbolSvgContent', 'symbolSize',
+  'id', 'svg', 'viewBox', 'anchor', 'symbol', 'svgContent', 'size', 'symbolSvgContent', 'symbolSize',
   'path', 'bounds', 'anchorPoint', 'graphicCentre', 'bodyBox', 'transform', 'scale'
 ])
 
@@ -198,7 +198,9 @@ const symbolImageMethods = {
   },
 
   /**
-   * Resolves the symbolDef for a style's symbol config, sized for style.symbolSize.
+   * Resolves the symbolDef for a dataset or draw style's symbol config, sized for
+   * style.symbolSize. Marker options drop the symbol prefix (`svgContent`, `size`, `viewBox`,
+   * `anchor`), so markers size their definition with getSizedSymbolDef instead.
    *
    * style.symbol is a string symbol ID (e.g. 'pin').
    * style.symbolSvgContent is inline SVG content for a custom symbol.
@@ -213,7 +215,7 @@ const symbolImageMethods = {
     if (!baseDef) {
       return undefined
     }
-    return this.getSizedSymbolDef(baseDef, { viewBox: style.symbolViewBox, symbolSize: style.symbolSize, anchor: style.symbolAnchor })
+    return this.getSizedSymbolDef(baseDef, { viewBox: style.symbolViewBox, size: style.symbolSize, anchor: style.symbolAnchor })
   },
 
   /**
@@ -224,13 +226,13 @@ const symbolImageMethods = {
    * @param {Object} symbolDef - a registered definition or { svg } for inline content
    * @param {Object} [options]
    * @param {string} [options.viewBox] - viewBox override, SVG-template symbols only
-   * @param {string} [options.symbolSize] - 'small' | 'medium' | 'large', else the app default
+   * @param {string} [options.size] - 'small' | 'medium' | 'large', else the map's default
    * @param {number[]} [options.anchor] - anchor override, [x, y] in 0–1: a fraction of a built-in
    *   shape itself (so it stays on the same point at every size), or of an SVG-template symbol's viewBox
    * @returns {Object}
    */
-  getSizedSymbolDef (symbolDef, { viewBox, symbolSize, anchor } = {}) {
-    const scale = getSymbolScale(symbolSize ?? this.getDefaults().symbolSize)
+  getSizedSymbolDef (symbolDef, { viewBox, size, anchor } = {}) {
+    const scale = getSymbolScale(size ?? this.getDefaults().size)
     const sized = symbolDef.path
       ? composeSymbolDef(symbolDef, scale)
       : scaleSvgSymbolDef(symbolDef, viewBox ?? symbolDef.viewBox ?? DEFAULT_SYMBOL_VIEWBOX, scale)

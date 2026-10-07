@@ -81,7 +81,7 @@ describe('Markers — basic rendering', () => {
 
 describe('Markers — routing', () => {
   it('renders a LabelMarker for a marker with symbol: null', () => {
-    const marker = makeMarker({ id: 'lbl', label: 'My label', symbol: null, symbolSvgContent: null })
+    const marker = makeMarker({ id: 'lbl', label: 'My label', symbol: null, svgContent: null })
     const { result } = setup({ markers: [marker] })
     const wrapper = result.container.querySelector('.im-c-marker-wrapper--label')
     expect(wrapper).toBeTruthy()
@@ -108,23 +108,23 @@ describe('Markers — routing', () => {
 // ─── Markers — symbol resolution ─────────────────────────────────────────────
 
 describe('Markers — symbol resolution', () => {
-  it('sizes the symbol for the marker symbolSize, falling back to the default', () => {
-    const sr = makeSymbolRegistry({ getDefaults: jest.fn(() => ({ symbol: 'pin', symbolSize: 'small' })) })
-    setup({ markers: [makeMarker({ symbolSize: 'large' }), makeMarker({ id: 'm2' })], symbolRegistry: sr })
-    expect(sr.getSizedSymbolDef).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ symbolSize: 'large' }))
-    expect(sr.getSizedSymbolDef).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ symbolSize: 'small' }))
+  it('sizes the symbol for the marker size, falling back to the default', () => {
+    const sr = makeSymbolRegistry({ getDefaults: jest.fn(() => ({ symbol: 'pin', size: 'small' })) })
+    setup({ markers: [makeMarker({ size: 'large' }), makeMarker({ id: 'm2' })], symbolRegistry: sr })
+    expect(sr.getSizedSymbolDef).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ size: 'large' }))
+    expect(sr.getSizedSymbolDef).toHaveBeenCalledWith(expect.anything(), expect.objectContaining({ size: 'small' }))
   })
 
-  it('renders at the sized viewBox and anchor, and keeps symbolSize out of the style values', () => {
+  it('renders at the sized viewBox and anchor, and keeps size out of the style values', () => {
     const sr = makeSymbolRegistry({
       getSizedSymbolDef: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 30 40', anchor: [0.5, 1] }))
     })
-    const { result } = setup({ markers: [makeMarker({ symbolSize: 'large' })], symbolRegistry: sr })
+    const { result } = setup({ markers: [makeMarker({ size: 'large' })], symbolRegistry: sr })
     const svg = result.container.querySelector(SVG_SEL)
     expect(svg.getAttribute('width')).toBe('30')
     expect(svg.getAttribute('height')).toBe('40')
     expect(svg).toHaveStyle({ marginLeft: '-15px', marginTop: '-40px' })
-    expect(sr.resolve.mock.calls[0][1]).not.toHaveProperty('symbolSize')
+    expect(sr.resolve.mock.calls[0][1]).not.toHaveProperty('size')
   })
 
   it('skips sizing and falls back to a 44×44 viewBox for an unregistered symbol', () => {
@@ -135,15 +135,15 @@ describe('Markers — symbol resolution', () => {
     expect(result.container.querySelector(SVG_SEL).getAttribute('viewBox')).toBe('0 0 44 44')
   })
 
-  it('uses inline symbolSvgContent over the symbol registry', () => {
+  it('uses inline svgContent over the symbol registry', () => {
     const sr = makeSymbolRegistry()
-    setup({ markers: [makeMarker({ symbolSvgContent: '<rect/>' })], symbolRegistry: sr })
+    setup({ markers: [makeMarker({ svgContent: '<rect/>' })], symbolRegistry: sr })
     expect(sr.get).not.toHaveBeenCalled()
   })
 
-  it('falls back to defaults.symbolSvgContent', () => {
+  it('falls back to defaults.svgContent', () => {
     const sr = makeSymbolRegistry({
-      getDefaults: jest.fn(() => ({ symbolSvgContent: '<default-svg/>', viewBox: '0 0 38 38', anchor: [0.5, 1] }))
+      getDefaults: jest.fn(() => ({ svgContent: '<default-svg/>', viewBox: '0 0 38 38', anchor: [0.5, 1] }))
     })
     setup({ markers: [makeMarker({ symbol: null })], symbolRegistry: sr })
     expect(sr.get).not.toHaveBeenCalled()

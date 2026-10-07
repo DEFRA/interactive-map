@@ -130,8 +130,8 @@ describe('symbolRegistry — built-in symbols', () => {
     expect(fromRaw).toBe(symbolRegistry.resolve(symbolRegistry.getSymbolDef({ symbol: 'square' }), {}, mapStyle))
   })
 
-  it('uses the app default symbolSize when a style has none', () => {
-    symbolRegistry.setDefaults({ symbolSize: 'large' })
+  it('uses the map\'s default size when a style has none', () => {
+    symbolRegistry.setDefaults({ size: 'large' })
     expect(symbolRegistry.getSymbolDef({ symbol: 'circle' }).scale).toBe(1.25)
   })
 
@@ -151,7 +151,7 @@ describe('symbolRegistry — SVG-template symbols', () => {
   })
 
   it('scales the whole symbol, viewBox included, at other sizes', () => {
-    const sized = symbolRegistry.getSizedSymbolDef(custom, { symbolSize: 'large' })
+    const sized = symbolRegistry.getSizedSymbolDef(custom, { size: 'large' })
     expect(sized.viewBox).toBe('0 0 25 12.5')
     expect(sized.svg).toBe(`<g transform="scale(1.25)">${custom.svg}</g>`)
   })

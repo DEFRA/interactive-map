@@ -40,11 +40,11 @@ describe('isStandaloneLabel', () => {
     expect(isStandaloneLabel({ label: 'My label', symbol: 'pin' })).toBe(false)
   })
 
-  it('returns false when marker has symbolSvgContent (line 28)', () => {
-    expect(isStandaloneLabel({ label: 'My label', symbolSvgContent: '<circle/>' })).toBe(false)
+  it('returns false when marker has svgContent (line 28)', () => {
+    expect(isStandaloneLabel({ label: 'My label', svgContent: '<circle/>' })).toBe(false)
   })
 
-  it('returns false when label is present but both symbol and symbolSvgContent are undefined (line 31)', () => {
+  it('returns false when label is present but both symbol and svgContent are undefined (line 31)', () => {
     expect(isStandaloneLabel({ label: 'My label' })).toBe(false)
   })
 
@@ -52,8 +52,8 @@ describe('isStandaloneLabel', () => {
     expect(isStandaloneLabel({ label: 'My label', symbol: null })).toBe(true)
   })
 
-  it('returns true when label is present and symbolSvgContent is explicitly null (line 31)', () => {
-    expect(isStandaloneLabel({ label: 'My label', symbolSvgContent: null })).toBe(true)
+  it('returns true when label is present and svgContent is explicitly null (line 31)', () => {
+    expect(isStandaloneLabel({ label: 'My label', svgContent: null })).toBe(true)
   })
 })
 
@@ -108,8 +108,8 @@ describe('getSymbolStyleColors', () => {
 // ─── getSymbolScale ───────────────────────────────────────────────────────────
 
 describe('getSymbolScale', () => {
-  it.each([['small', 0.75], ['medium', 1], ['large', 1.25]])('maps %s to %s', (symbolSize, scale) => {
-    expect(getSymbolScale(symbolSize)).toBe(scale)
+  it.each([['small', 0.75], ['medium', 1], ['large', 1.25]])('maps %s to %s', (size, scale) => {
+    expect(getSymbolScale(size)).toBe(scale)
   })
 
   it('treats a missing size as medium, without a warning', () => {
@@ -121,7 +121,7 @@ describe('getSymbolScale', () => {
     expect(getSymbolScale('huge')).toBe(1)
     expect(getSymbolScale('huge')).toBe(1)
     expect(logger.warn).toHaveBeenCalledTimes(1)
-    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unknown symbolSize "huge"'))
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unknown symbol size "huge"'))
   })
 
   it('doesn\'t mistake inherited object keys for sizes', () => {

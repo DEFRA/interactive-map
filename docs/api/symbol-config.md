@@ -6,7 +6,7 @@ Symbol properties control the appearance of markers and point dataset features. 
 
 Each property is optional. A value set directly on a marker or dataset layer takes priority over everything else. If a property is not set there, the value registered with the symbol is used. If the symbol has no value for that property, the app-wide `symbolDefaults` from the constructor applies. If none of those are set, the built-in fallback listed under each property below is used.
 
-`haloColor`, `selectedColor`, and `activeColor` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `symbolSvgContent` — the app resolves their values automatically. All three are derived from the active map style — configure them via `MapStyleConfig`, not per symbol or marker.
+`haloColor`, `selectedColor`, and `activeColor` are required tokens in the SVG structure (see [SVG structure](#svg-structure)). Include them in any custom `svgContent` — the app resolves their values automatically. All three are derived from the active map style — configure them via `MapStyleConfig`, not per symbol or marker.
 
 ## Style-keyed colours
 
@@ -25,28 +25,28 @@ backgroundColor: { outdoor: '#d4351c', dark: '#ff6b6b' }
 **Type:** `string`
 **Default:** `'pin'`
 
-Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. Ignored when `symbolSvgContent` is set.
+Registered symbol ID to use. Built-in values: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. Ignored when `svgContent` is set.
 
 ---
 
-### `symbolSize`
+### `size`
 **Type:** `'small' | 'medium' | 'large'`
 **Default:** `'medium'`
 
 Size of the symbol on the map: `'small'` is 75% and `'large'` 125% of `'medium'`. The shape and its graphic scale; the white halo and the selected/active rings stay the same width. The [map key](../plugins/map-key.md) always shows symbols at `'medium'`.
 
-SVG-template symbols (`symbolSvgContent`, or a symbol registered with `svg`) are scaled as a whole, including any rings they draw.
+SVG-template symbols (`svgContent`, or a symbol registered with `svg`) are scaled as a whole, including any rings they draw.
 
 ---
 
-### `symbolSvgContent`
+### `svgContent`
 **Type:** `string`
 
 Inner SVG path content (no `<svg>` wrapper) to render as the symbol. Use `{{token}}` placeholders for colours. When set, `symbol` is ignored.
 
 ```js
 {
-  symbolSvgContent: `
+  svgContent: `
     <path d="..." fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
     <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
     <path d="..." fill="{{foregroundColor}}"/>
@@ -64,7 +64,7 @@ See [SVG structure](#svg-structure) for the standard three-layer pattern. Anythi
 **Type:** `string`
 **Default:** registered symbol's viewBox, or `'0 0 44 44'`
 
-SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a different coordinate space. Ignored by built-in symbols.
+SVG `viewBox` attribute. Use alongside `svgContent` when your paths use a different coordinate space. Ignored by built-in symbols.
 
 ---
 
@@ -75,7 +75,7 @@ SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a 
 Normalised `[x, y]` anchor point — which point on the symbol sits on the geographic coordinate. Each built-in symbol has its own default: the tip for `'pin'`, the centroid for `'triangle'`, and the centre for the others.
 
 - **On a built-in symbol**, `[0, 0]` is the top-left and `[1, 1]` the bottom-right of the shape.
-- **On a custom SVG symbol** (`symbolSvgContent` or a registered `svg`), it's a fraction of the symbol's `viewBox`.
+- **On a custom SVG symbol** (`svgContent` or a registered `svg`), it's a fraction of the symbol's `viewBox`.
 
 ```js
 anchor: [0.5, 1]   // bottom-centre

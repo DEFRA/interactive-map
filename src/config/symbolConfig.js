@@ -6,14 +6,15 @@
  */
 export const symbolDefaults = {
   symbol: 'pin',
-  symbolSize: 'medium',
+  size: 'medium',
   backgroundColor: '#ca3535',
   foregroundColor: '#ffffff'
 }
 
 /**
- * Scale factor for each `symbolSize`. Scales a symbol's shape and graphic; the halo and the
- * selected/active rings stay a fixed width at every size (see getSymbolScale in symbolUtils.js).
+ * Scale factor for each symbol size (`size` on markers, `symbolSize` on dataset and draw styles).
+ * Scales a symbol's shape and graphic; the halo and the selected/active rings stay a fixed width at
+ * every size (see getSymbolScale in symbolUtils.js).
  */
 export const SYMBOL_SIZES = {
   small: 0.75, // NOSONAR
@@ -88,7 +89,7 @@ export const graphics = {
 //   anchorPoint   [x, y] — the point that sits on the map coordinate
 //   graphicCentre [x, y] — where the 16×16 graphic is centred (drawn at 0.8 scale)
 // symbolRegistry composes the rendered SVG, viewBox and fractional anchor from these for each
-// symbolSize: the body and graphic scale, the halo and rings don't.
+// size: the body and graphic scale, the halo and rings don't.
 
 // Circle-headed pin, head r=13. The anchor is the halo's tip, 1 below the body's.
 export const pin = {
