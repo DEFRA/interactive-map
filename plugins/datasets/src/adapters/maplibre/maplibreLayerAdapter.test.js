@@ -1,7 +1,11 @@
 import MaplibreLayerAdapter from './maplibreLayerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
-import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { createPatternRegistry } from '../../../../../src/services/patternRegistry.js'
+
+const patternRegistry = createPatternRegistry()
+
+const symbolRegistry = createSymbolRegistry()
 
 jest.mock('../../registry/datasetRegistry.js')
 
@@ -35,7 +39,8 @@ const makeMap = () => {
 const makeMapProvider = (map) => ({
   map,
   addPatternsToMap: jest.fn().mockResolvedValue(undefined),
-  addSymbolsToMap: jest.fn().mockResolvedValue(undefined)
+  addSymbolsToMap: jest.fn().mockResolvedValue(undefined),
+  getSymbolIconLayout: jest.fn(() => ({ 'icon-anchor': 'center', 'icon-offset': [0, 0] }))
 })
 
 const MAP_STYLE = { id: 'outdoor', layers: [] }
@@ -550,6 +555,16 @@ describe('onMapSizeChange', () => {
     mapProvider.addPatternsToMap.mockClear()
     await adapter.onMapSizeChange()
     expect(mapProvider.addPatternsToMap).toHaveBeenCalled()
+  })
+
+  it('leaves the layers alone if the pixel ratio changes again while its images are registering', async () => {
+    // a second map-size change lands mid-registration — its own call will apply the newer ratio
+    mapProvider.addSymbolsToMap.mockImplementationOnce(async () => { map.getPixelRatio.mockReturnValue(2) })
+    map.setLayoutProperty.mockClear()
+    map.setPaintProperty.mockClear()
+    await adapter.onMapSizeChange()
+    expect(map.setLayoutProperty.mock.calls.filter(([, prop]) => prop === 'icon-image')).toHaveLength(0)
+    expect(map.setPaintProperty.mock.calls.filter(([, prop]) => prop === 'fill-pattern')).toHaveLength(0)
   })
 
   it('does not call setLayoutProperty for icon-image when getSymbolImageId returns null', async () => {

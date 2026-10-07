@@ -222,7 +222,7 @@ Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as 
 | `options.snapLayers` | `string[]` | Overrides the plugin-level `snapLayers` for this session |
 | `options.onGeometryChange` | `Function` | Overrides the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
 | `options.properties` | `Object` | Custom GeoJSON properties to set on the finished feature |
-| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, or `'square'` |
+| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, or `'diamond'` |
 | `options.symbolSvgContent` | `string` | Custom SVG markup, used instead of `symbol` |
 | `options.symbolBackgroundColor` | `string \| Record<string, string>` | Symbol background colour |
 | `options.symbolForegroundColor` | `string \| Record<string, string>` | Symbol foreground colour |
@@ -230,6 +230,7 @@ Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as 
 | `options.symbolHaloWidth` | `number` | Symbol halo width |
 | `options.symbolViewBox` | `string` | SVG `viewBox`, for use with `symbolSvgContent` |
 | `options.symbolAnchor` | `[number, number]` | Normalised `[x, y]` anchor point |
+| `options.symbolSize` | `'small' \| 'medium' \| 'large'` | Symbol size — see [Symbol Config](../api/symbol-config.md#size) |
 
 These mirror [MarkerOptions](../api/marker-config.md#markeroptions)' `symbol`-family properties (prefixed with `symbol` here to sit alongside other feature properties) — see [Symbol Config](../api/symbol-config.md) for the full resolution order and SVG token structure. Points with no symbol config render with the plugin's default marker.
 

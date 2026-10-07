@@ -2,7 +2,6 @@ import { OpenLayersDataset } from './registry/openLayersDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 import { createDatasetSource, createDatasetLayer, resolveLayerStyle, readGeoJSONFeatures } from './layerBuilders.js'
-import { registerSymbols, SYMBOL_RASTER_PIXEL_RATIO } from '../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 import { registerCrispCanvasPatterns } from './canvasPatternStyle.js'
 import { logger } from '../../../../../src/services/logger.js'
 
@@ -10,8 +9,8 @@ import { logger } from '../../../../../src/services/logger.js'
  * OpenLayers implementation of the LayerAdapter interface for the datasets plugin.
  *
  * GeoJSON and vector tile datasets are both supported (see layerBuilders.createDatasetSource).
- * Pattern fills and symbols are both wired into OpenLayersDataset.flatStyle, registered ahead
- * of time here (see _registerPatterns/_registerSymbols) since flatStyle is a synchronous getter.
+ * Pattern fills and symbols are both wired into OpenLayersDataset.getFlatStyle, registered ahead
+ * of time here (see _registerPatterns/_registerSymbols) since getFlatStyle is synchronous.
  *
  * One OL layer per dataset/sublayer (see OpenLayersDataset's leafLayerIds), not up to three like
  * MapLibre — an ol/style/flat spec can combine fill+stroke (or an icon) for one feature in a
@@ -40,8 +39,18 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     return new OpenLayersDataset(datasetDefinition)
   }
 
+  // What layer styles are resolved against — see layerBuilders.js's resolveLayerStyle. Symbol
+  // images live in the OL provider (registered by _registerSymbols), so a style reads them back
+  // from there rather than from a module of its own.
   get _styleContext () {
-    return { mapStyleId: datasetRegistry.mapStyle?.id, pixelRatio: this._pixelRatio, patternRegistry: this._patternRegistry }
+    return {
+      mapStyleId: datasetRegistry.mapStyle?.id,
+      pixelRatio: this._pixelRatio,
+      patternRegistry: this._patternRegistry,
+      symbolRegistry: this._symbolRegistry,
+      getSymbolDataUri: (imageId) => this._mapProvider.getSymbolDataUri(imageId),
+      buildFilterEvaluator: (filter) => this._mapProvider.buildFilterEvaluator(filter)
+    }
   }
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
@@ -66,20 +75,37 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     datasetRegistry.forEachDataset(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
       this._setLayerStyle(leaf)
     }))
+    this._reapplyHighlights()
   }
 
-  // Plain fill-color/stroke layers don't depend on map size at all. But a pattern fill (see
-  // canvasPatternStyle.js) is deliberately rasterised at the map's *actual* pixelRatio to stay
+  // Plain fill-color/stroke layers don't depend on map size at all. But pattern fills (see
+  // canvasPatternStyle.js) and symbols are rasterised at the map's *actual* pixelRatio to stay
   // genuinely crisp, so a pixelRatio change (map resize) needs a fresh rasterisation and a
   // re-applied style, the same way MapLibreLayerAdapter.onMapSizeChange re-rasterises
   // symbols/patterns at the new ratio.
   async onMapSizeChange () {
-    await this._registerPatterns()
+    const pixelRatio = this._pixelRatio
+    await Promise.all([this._registerPatterns(), this._registerSymbols()])
+    // A later size change has moved the map on to another ratio while these images were being
+    // registered — its own call applies that ratio's styles, whose images may not be ready yet
+    if (this._pixelRatio !== pixelRatio) {
+      return
+    }
     datasetRegistry.forEachDataset(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
-      if (leaf.hasPattern) {
+      if (leaf.hasPattern || leaf.hasSymbol) {
         this._setLayerStyle(leaf)
       }
     }))
+    this._reapplyHighlights()
+  }
+
+  // A selected/active dataset symbol's highlight is a separate overlay built from its images at
+  // selection time (see the OL provider's highlightFeatures.js), and OL only redraws highlights
+  // on its own basemap events — not when these styles change. So once the new images are in
+  // place, redraw it from them; otherwise it keeps the old images (blurry after a map-size
+  // change, the old colours after a style change) until the selection changes.
+  _reapplyHighlights () {
+    this._mapProvider.reapplyHighlights()
   }
 
   // ─── Dataset operations ─────────────────────────────────────────────────────
@@ -164,7 +190,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
 
   // ─── Private ─────────────────────────────────────────────────────────────────
 
-  // Rasterises and caches each pattern's image ahead of time, so OpenLayersDataset.flatStyle /
+  // Rasterises and caches each pattern's image ahead of time, so OpenLayersDataset.getFlatStyle /
   // resolveLayerStyle (both synchronous) can find it already resolved — mirrors
   // MapLibreLayerAdapter's addPatternsAndSymbolsToMap, which likewise runs before _addLayers
   // reads the dataset's style. Goes through canvasPatternStyle.js's genuinely-crisp,
@@ -180,8 +206,9 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     await registerCrispCanvasPatterns(styles, mapStyleId, this._patternRegistry, this._pixelRatio)
   }
 
-  // Rasterises and caches each symbol's icon image ahead of time, so OpenLayersDataset.flatStyle
-  // (a synchronous getter) can find it already resolved — same convention as _registerPatterns.
+  // Rasterises and caches each symbol's icon image ahead of time, at the map's current
+  // pixelRatio, so OpenLayersDataset.getFlatStyle (synchronous) can find it already resolved —
+  // same convention as _registerPatterns.
   async _registerSymbols (registryDatasets = datasetRegistry.topLevelDatasets()) {
     const styles = []
     registryDatasets.forEach(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
@@ -189,7 +216,9 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
         styles.push(leaf.style)
       }
     }))
-    await registerSymbols(styles, datasetRegistry.mapStyle, this._symbolRegistry, SYMBOL_RASTER_PIXEL_RATIO)
+    if (styles.length) {
+      await this._mapProvider.addSymbolsToMap(styles, datasetRegistry.mapStyle, this._symbolRegistry, this._pixelRatio)
+    }
   }
 
   // ol/style/flat's expression parser is stricter than MapLibre's filter dialect in some places
@@ -210,7 +239,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
       // from a stale, pre-switch base id forever (see layerBuilders.js's createDatasetLayer,
       // which sets this the same way when the layer is first built).
       if (registryDataset.hasSymbol) {
-        layer.set('symbolMeta', registryDataset.symbolMeta)
+        layer.set('symbolMeta', registryDataset.getSymbolMeta(this._styleContext))
       }
     } catch (error) {
       logger.warn(`OpenLayers datasets adapter: failed to build a style for dataset "${registryDataset.id}" — ${error.message}`)

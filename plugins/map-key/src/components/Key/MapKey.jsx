@@ -7,7 +7,7 @@ export function MapKey ({
   mapState: { mapStyle },
   pluginConfig: { noKeyItemText },
   pluginState,
-  services: { eventBus }
+  services: { eventBus, symbolRegistry, patternRegistry }
 }) {
   const [datasetRegistry, setDatasetRegistry] = useState(getDatasetRegistry())
   // Lazily seed from the registry (already populated whenever the key is opened after
@@ -58,6 +58,8 @@ export function MapKey ({
       keyGroups={keyGroups}
       hasGroups={hasGroups}
       mapStyle={mapStyle}
+      symbolRegistry={symbolRegistry}
+      patternRegistry={patternRegistry}
     />
   )
 }

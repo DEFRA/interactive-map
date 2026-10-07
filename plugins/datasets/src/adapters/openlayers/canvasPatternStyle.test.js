@@ -8,8 +8,12 @@ import {
   clearCrispPatternCache,
   buildCanvasPatternStyle
 } from './canvasPatternStyle.js'
+import { buildFilterEvaluator } from '../../../../../providers/beta/openlayers/src/utils/filterEvaluator.js'
 
 const OUTDOOR = 'outdoor'
+
+// The adapter's style context, with the OL provider's real filter compiler
+const styleContext = (patternRegistry) => ({ mapStyleId: OUTDOOR, pixelRatio: 1, patternRegistry, buildFilterEvaluator })
 
 const makePatternRegistry = () => ({
   getPatternImageId: jest.fn((style, mapStyleId, pixelRatio) => `pattern-${style.fillPattern}-${mapStyleId}-${pixelRatio}`),
@@ -119,7 +123,7 @@ describe('buildCanvasPatternStyle', () => {
   it('returns undefined when the pattern has not been registered yet', () => {
     const patternRegistry = makePatternRegistry()
     const registryDataset = { style: { fillPattern: 'dot' }, filter: null }
-    const styleFn = buildCanvasPatternStyle(registryDataset, OUTDOOR, 1, patternRegistry)
+    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
     expect(styleFn(feature())).toBeUndefined()
   })
 
@@ -127,7 +131,7 @@ describe('buildCanvasPatternStyle', () => {
     const patternRegistry = makePatternRegistry()
     await registerCrispCanvasPattern({ fillPattern: 'dot' }, OUTDOOR, patternRegistry, 1)
     const registryDataset = { style: { fillPattern: 'dot' }, filter: null, hasStroke: false }
-    const styleFn = buildCanvasPatternStyle(registryDataset, OUTDOOR, 1, patternRegistry)
+    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
     const style = styleFn(feature())
     expect(style).toBeInstanceOf(Style)
     expect(style.getFill().getColor()).toEqual(expect.objectContaining({ repetition: 'repeat' }))
@@ -141,7 +145,7 @@ describe('buildCanvasPatternStyle', () => {
       filter: null,
       hasStroke: true
     }
-    const styleFn = buildCanvasPatternStyle(registryDataset, OUTDOOR, 1, patternRegistry)
+    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
     const style = styleFn(feature())
     expect(style.getStroke().getColor()).toBe('#ff0000')
     expect(style.getStroke().getWidth()).toBe(3)
@@ -155,7 +159,7 @@ describe('buildCanvasPatternStyle', () => {
       filter: null,
       hasStroke: true
     }
-    const styleFn = buildCanvasPatternStyle(registryDataset, OUTDOOR, 1, patternRegistry)
+    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
     expect(styleFn(feature()).getStroke().getWidth()).toBe(1)
   })
 
@@ -167,7 +171,7 @@ describe('buildCanvasPatternStyle', () => {
       filter: ['==', ['get', 'category'], 'a'],
       hasStroke: false
     }
-    const styleFn = buildCanvasPatternStyle(registryDataset, OUTDOOR, 1, patternRegistry)
+    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
     const featureWithNoGeometry = new Feature({ category: 'a' })
     expect(styleFn(featureWithNoGeometry)).toBeInstanceOf(Style)
   })
@@ -180,7 +184,7 @@ describe('buildCanvasPatternStyle', () => {
       filter: ['==', ['get', 'category'], 'a'],
       hasStroke: false
     }
-    const styleFn = buildCanvasPatternStyle(registryDataset, OUTDOOR, 1, patternRegistry)
+    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
     expect(styleFn(feature({ category: 'b' }))).toBeUndefined()
   })
 
@@ -192,7 +196,7 @@ describe('buildCanvasPatternStyle', () => {
       filter: ['==', ['get', 'category'], 'a'],
       hasStroke: false
     }
-    const styleFn = buildCanvasPatternStyle(registryDataset, OUTDOOR, 1, patternRegistry)
+    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
     expect(styleFn(feature({ category: 'a' }))).toBeInstanceOf(Style)
   })
 })

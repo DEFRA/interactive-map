@@ -1,5 +1,4 @@
 import { MapboxStyleDataset } from '../../../registry/mapboxStyleDataset.js'
-import { anchorToMaplibre } from '../../../../../../providers/maplibre/src/utils/symbolImages.js'
 import { logger } from '../../../../../../src/services/logger.js'
 const MAX_TILE_ZOOM = 22
 
@@ -73,7 +72,8 @@ export class MapLibreDataset extends MapboxStyleDataset {
     return null
   }
 
-  getSymbolSource (imageId, anchor, symbolDef) {
+  // iconLayout: icon-anchor/icon-offset from MapLibreProvider.getSymbolIconLayout
+  getSymbolSource (imageId, iconLayout) {
     return {
       id: this.symbolLayerId,
       type: 'symbol',
@@ -84,7 +84,7 @@ export class MapLibreDataset extends MapboxStyleDataset {
       layout: {
         visibility: this.visibility,
         'icon-image': imageId,
-        'icon-anchor': anchorToMaplibre(anchor || symbolDef?.anchor || [0.5, 0.5]),
+        ...iconLayout,
         'icon-allow-overlap': true
       },
       ...(this.filter ? { filter: this.filter } : {})

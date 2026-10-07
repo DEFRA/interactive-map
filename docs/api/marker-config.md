@@ -39,11 +39,19 @@ Controls the visual appearance of a marker. All properties are optional — unse
 **Type:** `string`
 **Default:** `'pin'`
 
-Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`. For a custom one-off symbol, use `symbolSvgContent` instead.
+Symbol to use for this marker. Built-in symbols: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`. For a custom one-off symbol, use `svgContent` instead.
 
 ---
 
-### `symbolSvgContent`
+### `size`
+**Type:** `'small' | 'medium' | 'large'`
+**Default:** `'medium'`, or the constructor's `symbolDefaults.size`
+
+Size of the marker's symbol — see [Symbol Config](./symbol-config.md#size).
+
+---
+
+### `svgContent`
 **Type:** `string`
 
 Inner SVG path content (no `<svg>` wrapper) to render instead of a registered symbol. Use `{{token}}` placeholders for colours. When set, `symbol` is ignored.
@@ -51,7 +59,7 @@ Inner SVG path content (no `<svg>` wrapper) to render instead of a registered sy
 ```js
 // Using built-in tokens with per-style colours
 markers.add('id', coords, {
-  symbolSvgContent: `
+  svgContent: `
     <path d="..." fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
     <path d="..." fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
     <path d="..." fill="{{foregroundColor}}"/>
@@ -63,7 +71,7 @@ markers.add('id', coords, {
 
 // Using a custom token
 markers.add('id', coords, {
-  symbolSvgContent: `
+  svgContent: `
     <path d="..." fill="{{customColor}}"/>
   `,
   viewBox: '0 0 38 38',
@@ -83,7 +91,7 @@ markers.add('id', coords, {
 **Type:** `string`
 **Default:** registered symbol's viewBox, or `'0 0 44 44'`
 
-SVG `viewBox` attribute for the symbol. Use alongside `symbolSvgContent` when your paths use a different coordinate space.
+SVG `viewBox` attribute for the symbol. Use alongside `svgContent` when your paths use a different coordinate space.
 
 ---
 
@@ -91,11 +99,11 @@ SVG `viewBox` attribute for the symbol. Use alongside `symbolSvgContent` when yo
 **Type:** `[number, number]`
 **Default:** registered symbol's anchor, or `[0.5, 0.5]`
 
-Normalised [x, y] anchor point where `[0, 0]` is top-left and `[1, 1]` is bottom-right. Determines which point on the symbol aligns with the geographic coordinate.
+Normalised [x, y] anchor point — which point on the symbol sits on the geographic coordinate. On a built-in symbol it's a fraction of the shape; on a custom SVG symbol it's a fraction of its `viewBox`. See [Symbol Config: `anchor`](./symbol-config.md#anchor).
 
 ```js
-anchor: [0.5, 1]   // bottom-centre — tip of a pin
-anchor: [0.5, 0.5] // centre — circle or dot
+anchor: [0.5, 1]   // bottom-centre of the shape
+anchor: [0.5, 0.5] // centre
 ```
 
 ---

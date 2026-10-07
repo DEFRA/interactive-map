@@ -183,6 +183,12 @@ describe('Highlighting Utils — layer management', () => {
   })
 })
 
+// Stands in for the provider's SymbolImageVariants
+const makeSymbolImages = ({ active = {}, selected = {} } = {}) => ({
+  getActiveImageId: (imageId) => active[imageId] ?? null,
+  getSelectedImageId: (imageId) => selected[imageId] ?? null
+})
+
 // ─── Symbol layers ────────────────────────────────────────────────────────────
 
 describe('Highlighting Utils — symbol layers (active cursor)', () => {
@@ -192,17 +198,17 @@ describe('Highlighting Utils — symbol layers (active cursor)', () => {
   const ICON_ANCHOR = 'icon-anchor'
   const POINT_FEATURE = { featureId: 1, layerId: 'l1', geometry: { type: 'Point' } }
 
-  let map
+  let map, symbolImages
 
   beforeEach(() => {
     map = makeMap()
-    map._activeSymbolImageMap = { [SYMBOL_IMAGE]: ACTIVE_IMAGE }
+    symbolImages = makeSymbolImages({ active: { [SYMBOL_IMAGE]: ACTIVE_IMAGE } })
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'symbol' } : null) // NOSONAR
     map.getLayoutProperty.mockReturnValue(SYMBOL_IMAGE)
   })
 
   const run = (activeFeatures = [POINT_FEATURE]) =>
-    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures, stylesMap: { l1: {} } })
+    updateHighlightedFeatures({ LngLatBounds, map, activeFeatures, stylesMap: { l1: {} }, symbolImages })
 
   test('creates symbol highlight layer with cursor image variant', () => {
     run()
@@ -251,9 +257,9 @@ describe('Highlighting Utils — symbol layers (active cursor)', () => {
     expect(map.setLayoutProperty).toHaveBeenCalledWith(HIGHLIGHT_LAYER, ICON_IMAGE, ACTIVE_IMAGE)
   })
 
-  test('skips highlight when icon-image has no entry in _activeSymbolImageMap', () => {
+  test('skips highlight when the icon-image has no registered active variant', () => {
     map.getLayoutProperty.mockReturnValue(SYMBOL_IMAGE)
-    map._activeSymbolImageMap = {} // no mapping registered
+    symbolImages = makeSymbolImages()
     run()
     expect(map.addLayer).not.toHaveBeenCalled()
   })
@@ -307,17 +313,17 @@ describe('Highlighting Utils — symbol layers (committed selection)', () => {
   const ICON_IMAGE = 'icon-image'
   const POINT_FEATURE = { featureId: 1, layerId: 'l1', geometry: { type: 'Point' } }
 
-  let map
+  let map, symbolImages
 
   beforeEach(() => {
     map = makeMap()
-    map._selectedSymbolImageMap = { [SYMBOL_IMAGE]: SELECTED_IMAGE }
+    symbolImages = makeSymbolImages({ selected: { [SYMBOL_IMAGE]: SELECTED_IMAGE } })
     map.getLayer.mockImplementation(id => id === 'l1' ? { source: 's1', type: 'symbol' } : null) // NOSONAR
     map.getLayoutProperty.mockReturnValue(SYMBOL_IMAGE)
   })
 
   const run = (selectedFeatures = [POINT_FEATURE]) =>
-    updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, stylesMap: { l1: {} } })
+    updateHighlightedFeatures({ LngLatBounds, map, selectedFeatures, stylesMap: { l1: {} }, symbolImages })
 
   test('creates selected-highlight symbol layer with selected image variant', () => {
     run()
@@ -328,8 +334,8 @@ describe('Highlighting Utils — symbol layers (committed selection)', () => {
     }))
   })
 
-  test('skips highlight when icon-image has no entry in _selectedSymbolImageMap', () => {
-    map._selectedSymbolImageMap = {}
+  test('skips highlight when the icon-image has no registered selected variant', () => {
+    symbolImages = makeSymbolImages()
     run()
     expect(map.addLayer).not.toHaveBeenCalled()
   })
@@ -509,7 +515,6 @@ describe('Highlighting Utils — mapbox-gl-draw cold/hot sibling layers', () => 
     })
     map.getLayoutProperty.mockImplementation((id, prop) => // NOSONAR
       prop === 'icon-image' ? SYMBOL_IMAGE : undefined)
-    map._selectedSymbolImageMap = { [SYMBOL_IMAGE]: 'symbol-sel-xyz' }
 
     // The feature's own current geometry lives on the hot source (it moved there when its
     // properties were last refreshed) — only stylesMap['point-symbol.cold'] is registered,
@@ -518,7 +523,8 @@ describe('Highlighting Utils — mapbox-gl-draw cold/hot sibling layers', () => 
       LngLatBounds,
       map,
       selectedFeatures: [{ featureId: 'p1', layerId: 'point-symbol.cold', geometry: { type: 'Point' } }],
-      stylesMap: { 'point-symbol.cold': { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 } }
+      stylesMap: { 'point-symbol.cold': { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 } },
+      symbolImages: makeSymbolImages({ selected: { [SYMBOL_IMAGE]: 'symbol-sel-xyz' } })
     })
 
     // A highlight layer gets created/filtered for BOTH the recorded source and its sibling —
@@ -558,7 +564,6 @@ describe('Highlighting Utils — multi-select across geometry types sharing a so
     })
     map.getLayoutProperty.mockImplementation((id, prop) => // NOSONAR
       prop === 'icon-image' ? SYMBOL_IMAGE : undefined)
-    map._selectedSymbolImageMap = { [SYMBOL_IMAGE]: 'symbol-sel-xyz' }
 
     updateHighlightedFeatures({
       LngLatBounds,
@@ -570,7 +575,8 @@ describe('Highlighting Utils — multi-select across geometry types sharing a so
       stylesMap: {
         'point-symbol.cold': { stroke: 'red', selectionStroke: 'black', strokeWidth: 2 },
         'fill-inactive.cold': { stroke: 'red', selectionStroke: 'black', fill: 'blue', strokeWidth: 2 }
-      }
+      },
+      symbolImages: makeSymbolImages({ selected: { [SYMBOL_IMAGE]: 'symbol-sel-xyz' } })
     })
 
     expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({

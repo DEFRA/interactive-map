@@ -1,7 +1,8 @@
 import { render } from '@testing-library/react'
 import { KeySvg } from './KeySvg'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+const symbolRegistry = createSymbolRegistry()
 
 const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
 
@@ -33,7 +34,8 @@ const baseKeyDefinition = {
 
 const baseProps = {
   mapStyle: { id: 'default' },
-  keyDefinition: baseKeyDefinition
+  keyDefinition: baseKeyDefinition,
+  symbolRegistry
 }
 
 beforeEach(() => {
@@ -52,9 +54,14 @@ describe('KeySvg', () => {
     expect(getByTestId('key-svg-pattern')).toBeTruthy()
   })
 
-  it('renders KeySvgLine when keySymbolShape is line and no symbol or pattern', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { keySymbolShape: 'line' } }} />)
+  it('renders KeySvgLine for a stroke with no fill, and no symbol or pattern', () => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { stroke: '#b58840' } }} />)
     expect(getByTestId('key-svg-line')).toBeTruthy()
+  })
+
+  it.each(['transparent', 'none', '#ff0000'])('renders KeySvgRect for a stroke with fill %s', (fill) => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { stroke: '#b58840', fill } }} />)
+    expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
 
   it('renders KeySvgRect as the default fallback', () => {
@@ -70,13 +77,13 @@ describe('KeySvg', () => {
   })
 
   it('prefers pattern over line when both conditions are met', () => {
-    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasPattern: true, style: { keySymbolShape: 'line' } }} />)
+    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasPattern: true, style: { stroke: '#b58840' } }} />)
     expect(getByTestId('key-svg-pattern')).toBeTruthy()
     expect(queryByTestId('key-svg-line')).toBeNull()
   })
 
-  it('renders KeySvgRect when keySymbolShape is not line and no symbol or pattern', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { keySymbolShape: 'polygon' } }} />)
+  it('renders KeySvgRect for a fill with no stroke', () => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { fill: '#ff0000' } }} />)
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
 

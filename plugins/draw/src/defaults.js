@@ -44,12 +44,8 @@ export const KEYBOARD = {
   stepAmount: 5
 }
 
-// Scale factor applied to draw UI (touch targets, vertex handles) per app map size
-export const MAP_SIZE_SCALES = {
-  small: 1,
-  medium: 1.5,
-  large: 2
-}
+// Scale factor applied to draw UI (touch targets, vertex handles) per app map size — the app's own table
+export { scaleFactor as MAP_SIZE_SCALES } from '../../../src/config/mapSizeScales.js'
 
 // The application mode draw enters while drawing or editing (declared in manifest.js)
 export const APPLICATION_MODE_ID = 'draw'

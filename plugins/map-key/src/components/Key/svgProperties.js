@@ -1,6 +1,11 @@
+const HALF = 0.5
+
 export const SVG_SIZE = 20 // Width and height attributes of the svg element
-export const SVG_CENTER = SVG_SIZE / 2
-const SVG_SYMBOL_SIZE = 44 // Width and height attributes of the svg element if its a marker or point feature symbol
+export const SVG_CENTER = SVG_SIZE * HALF
+export const SVG_SYMBOL_SIZE = 44 // Width and height attributes of the svg element if its a marker or point feature symbol
+// Largest a symbol is drawn in the key: built-in symbols top out at 49 at medium and draw 1:1;
+// a bigger custom symbol is scaled down to this so it can't spill far past its row
+export const KEY_SYMBOL_MAX_SIZE = 56
 
 export const svgProps = {
   xmlns: 'http://www.w3.org/2000/svg',
@@ -16,5 +21,6 @@ export const svgSymbolProps = {
   ...svgProps,
   width: SVG_SYMBOL_SIZE,
   height: SVG_SYMBOL_SIZE,
+  viewBox: `0 0 ${SVG_SYMBOL_SIZE} ${SVG_SYMBOL_SIZE}`,
   className: 'im-c-map-key-symbol im-c-map-key-symbol--point'
 }

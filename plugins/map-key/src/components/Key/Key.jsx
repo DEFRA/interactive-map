@@ -6,7 +6,7 @@ import { KeyGroupItem } from './KeyGroupItem.jsx'
 const keyClassName = 'im-c-map-key'
 const keyGroupsClassName = 'im-c-map-key--has-groups'
 
-const KeyItemWrapper = ({ item, groupStyle, mapStyle }) => {
+const KeyItemWrapper = ({ item, groupStyle, mapStyle, symbolRegistry, patternRegistry }) => {
   if (item.type === 'group') {
     return (
       <KeyGroupItem
@@ -15,10 +15,12 @@ const KeyItemWrapper = ({ item, groupStyle, mapStyle }) => {
         groupStyle={groupStyle}
         keyDefinitions={item.keyDefinitions}
         mapStyle={mapStyle}
+        symbolRegistry={symbolRegistry}
+        patternRegistry={patternRegistry}
       />
     )
   } else {
-    return (<KeyItem keyDefinition={item.keyDefinition} mapStyle={mapStyle} />)
+    return (<KeyItem keyDefinition={item.keyDefinition} mapStyle={mapStyle} symbolRegistry={symbolRegistry} patternRegistry={patternRegistry} />)
   }
 }
 
@@ -26,7 +28,9 @@ export const Key = ({
   noKeyItemText,
   keyGroups,
   hasGroups,
-  mapStyle
+  mapStyle,
+  symbolRegistry,
+  patternRegistry
 }) => {
   if (!keyGroups?.length) {
     return (<EmptyKey text={noKeyItemText} />)
@@ -37,7 +41,7 @@ export const Key = ({
   const className = hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName
   return (
     <div className={className}>
-      {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} groupStyle={item.groupStyle} />)}
+      {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} symbolRegistry={symbolRegistry} patternRegistry={patternRegistry} groupStyle={item.groupStyle} />)}
     </div>
   )
 }

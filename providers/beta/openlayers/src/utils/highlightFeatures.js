@@ -7,9 +7,6 @@ import Stroke from 'ol/style/Stroke.js'
 import Fill from 'ol/style/Fill.js'
 import Icon from 'ol/style/Icon.js'
 import { collectTileFragments } from './vtTileFragments.js'
-import { getCachedSymbolImage, getActiveSymbolImageId, getSelectedSymbolImageId, SYMBOL_RASTER_PIXEL_RATIO } from './symbolImages.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
-import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
 
 const CRS = 'EPSG:27700'
 const geoJsonFormat = new GeoJSON({ dataProjection: CRS, featureProjection: CRS })
@@ -52,23 +49,22 @@ const toStyleArray = (style) => {
 }
 
 // A drawn point renders as a real symbol icon, not Stroke/Fill, so its selected/active ring is
-// the active/selected variant of that same icon instead. Returns null (not []) for a
-// non-symbol feature so the caller falls through to buildHighlightStyles.
-const buildSymbolHighlightStyle = (properties, isActive) => {
+// the active/selected variant of that same icon instead — with the anchor and pixel ratio draw
+// resolved it at. Returns null (not []) for a non-symbol feature so the caller falls through to
+// buildHighlightStyles.
+const buildSymbolHighlightStyle = (properties, isActive, symbolImages) => {
   if (!hasSymbolStyle(properties)) {
     return null
   }
   const imageId = isActive ? properties.symbolActiveImageId : properties.symbolSelectedImageId
-  const canvas = imageId && getCachedSymbolImage(imageId)
-  if (!canvas) {
+  const canvas = imageId && symbolImages?.getImage(imageId)
+  if (!canvas || !properties.symbolImageAnchor) {
     return null
   }
-  const symbolDef = symbolRegistry.getSymbolDef(properties)
-  const anchor = getSymbolAnchor(properties, symbolDef)
   // The cached canvas is rasterised at symbolPixelRatio for crispness — ol/style/Icon draws
   // it at native size, so the inverse scale keeps the displayed size correct.
   const scale = 1 / (properties.symbolPixelRatio || 1)
-  return [new Style({ image: new Icon({ img: canvas, anchor, scale }), zIndex: HIGHLIGHT_Z })]
+  return [new Style({ image: new Icon({ img: canvas, anchor: properties.symbolImageAnchor, scale }), zIndex: HIGHLIGHT_Z })]
 }
 
 // ---------------------------------------------------------------------------
@@ -184,27 +180,27 @@ const getLiveProperties = (map, layerId, featureId) => {
 
 // A dataset symbol point (unlike a drawn one) has no active/selected id of its own — every
 // feature in the layer shares one base imageId, so the variant is resolved from that instead.
-const buildDatasetSymbolHighlightStyle = (map, layerId, isActive) => {
+const buildDatasetSymbolHighlightStyle = (map, layerId, isActive, symbolImages) => {
   const symbolMeta = findVectorLayer(map, layerId)?.get('symbolMeta')
-  if (!symbolMeta) {
+  if (!symbolMeta || !symbolImages) {
     return null
   }
-  const targetId = isActive ? getActiveSymbolImageId(symbolMeta.imageId) : getSelectedSymbolImageId(symbolMeta.imageId)
-  const canvas = targetId && getCachedSymbolImage(targetId)
+  const targetId = isActive ? symbolImages.getActiveImageId(symbolMeta.imageId) : symbolImages.getSelectedImageId(symbolMeta.imageId)
+  const canvas = targetId && symbolImages.getImage(targetId)
   if (!canvas) {
     return null
   }
-  return [new Style({ image: new Icon({ img: canvas, anchor: symbolMeta.anchor, scale: 1 / SYMBOL_RASTER_PIXEL_RATIO }), zIndex: HIGHLIGHT_Z })]
+  return [new Style({ image: new Icon({ img: canvas, anchor: symbolMeta.anchor, scale: 1 / symbolMeta.pixelRatio }), zIndex: HIGHLIGHT_Z })]
 }
 
-const addVectorHighlights = (map, source, features, isActive, stylesMap) => {
+const addVectorHighlights = (map, source, features, isActive, stylesMap, symbolImages) => {
   for (const { layerId, featureId, geometry } of features ?? []) {
     if (!geometry) {
       continue
     }
     const liveProperties = getLiveProperties(map, layerId, featureId)
-    const styles = buildSymbolHighlightStyle(liveProperties, isActive) ??
-      buildDatasetSymbolHighlightStyle(map, layerId, isActive) ??
+    const styles = buildSymbolHighlightStyle(liveProperties, isActive, symbolImages) ??
+      buildDatasetSymbolHighlightStyle(map, layerId, isActive, symbolImages) ??
       buildHighlightStyles(stylesMap?.[layerId], isActive)
     if (styles.length) {
       const olFeature = new Feature({ geometry: geoJsonFormat.readGeometry(geometry) })
@@ -279,7 +275,7 @@ const computeBounds = (geometries) => {
  * - VectorLayers (draw etc.): overlay Feature at zIndex 1001.
  * Returns EPSG:27700 bounds [minX, minY, maxX, maxY] for selected features, or null.
  */
-export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures, stylesMap) => {
+export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures, stylesMap, symbolImages) => {
   if (!map) {
     return null
   }
@@ -310,8 +306,8 @@ export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures,
   const vecActive = (activeFeatures ?? []).filter(f => vectorLayerIds.has(f.layerId))
 
   // VT features are handled by style-wrap; only add vector features to overlay
-  addVectorHighlights(map, hlSource, vecActive, true, stylesMap)
-  addVectorHighlights(map, hlSource, vecSelected, false, stylesMap)
+  addVectorHighlights(map, hlSource, vecActive, true, stylesMap, symbolImages)
+  addVectorHighlights(map, hlSource, vecSelected, false, stylesMap, symbolImages)
 
   // Bounds from all tile fragments of selected features
   const allGeoms = (selectedFeatures ?? []).flatMap(feat => resolveGeometries(map, feat))

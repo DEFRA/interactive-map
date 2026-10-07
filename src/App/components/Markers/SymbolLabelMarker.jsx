@@ -28,7 +28,7 @@ const SymbolLabelMarker = ({ marker, mapId, markerRef, isSelected, symbolProps }
         width={scaledWidth}
         height={scaledHeight}
         viewBox={viewBox}
-        overflow='visible'
+        overflow='hidden'
         aria-hidden='true'
       >
         <g dangerouslySetInnerHTML={{ __html: resolvedSvg }} />

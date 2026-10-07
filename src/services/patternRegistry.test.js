@@ -1,5 +1,7 @@
-import { patternRegistry } from './patternRegistry.js'
+import { createPatternRegistry } from './patternRegistry.js'
 import { KEY_BORDER_PATH } from '../utils/patternUtils.js'
+
+const patternRegistry = createPatternRegistry()
 
 beforeAll(() => {
   globalThis.Image = class {
@@ -17,6 +19,22 @@ beforeAll(() => {
     drawImage: jest.fn(),
     getImageData: jest.fn((_x, _y, w, h) => ({ width: w, height: h }))
   }))
+})
+
+describe('createPatternRegistry', () => {
+  it('gives each registry its own patterns, each starting with the built-ins', () => {
+    const first = createPatternRegistry()
+    const second = createPatternRegistry()
+    first.register('my-hatch', '<path d="M0 0 L16 16"/>')
+    expect(second.get('my-hatch')).toBeUndefined()
+    expect(second.list().map((pattern) => pattern.id)).toEqual(first.list().map((pattern) => pattern.id).filter((id) => id !== 'my-hatch'))
+  })
+
+  it('clear removes every pattern, built-ins included', () => {
+    const registry = createPatternRegistry()
+    registry.clear()
+    expect(registry.list()).toEqual([])
+  })
 })
 
 describe('patternRegistry', () => {

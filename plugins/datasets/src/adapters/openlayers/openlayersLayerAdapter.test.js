@@ -1,12 +1,19 @@
 import OpenLayersLayerAdapter from './openlayersLayerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
-import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { createPatternRegistry } from '../../../../../src/services/patternRegistry.js'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
-import { clearSymbolImageCache } from '../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { SymbolImageCache } from '../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { buildFilterEvaluator } from '../../../../../providers/beta/openlayers/src/utils/filterEvaluator.js'
+// The OL provider registers British National Grid when it loads
+import '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import * as layerBuilders from './layerBuilders.js'
+
+const patternRegistry = createPatternRegistry()
+
+const symbolRegistry = createSymbolRegistry()
 
 jest.mock('../../registry/datasetRegistry.js')
 
@@ -15,9 +22,8 @@ jest.mock('../../registry/datasetRegistry.js')
 // — so pattern registration needs the real patternRegistry singleton, not an empty stub, even
 // though none of this file's own fixtures configure a pattern themselves.
 beforeEach(() => {
-  clearSymbolImageCache()
   // Covers the full pipeline exercised here: SVG -> Image -> canvas (rasteriseToImageData needs
-  // drawImage/getImageData) -> ImageData -> canvas (getOrCreateSymbolImage needs putImageData;
+  // drawImage/getImageData) -> ImageData -> canvas (SymbolImageCache.addImage needs putImageData;
   // canvasPatternStyle's crisp-pattern Fill needs createPattern).
   HTMLCanvasElement.prototype.getContext = jest.fn(() => ({
     drawImage: jest.fn(),
@@ -45,7 +51,17 @@ const makeMap = (pixelRatio = 1) => {
   }
 }
 
-const makeMapProvider = (map) => ({ map })
+// Stands in for the OL provider's methods the adapter uses, with a real symbol image cache
+const makeMapProvider = (map) => {
+  const symbolImages = new SymbolImageCache()
+  return {
+    map,
+    addSymbolsToMap: jest.fn((configs, mapStyle, symbolRegistry, pixelRatio) => symbolImages.registerSymbols(configs, mapStyle, symbolRegistry, pixelRatio)),
+    getSymbolDataUri: (imageId) => symbolImages.getDataUri(imageId),
+    buildFilterEvaluator,
+    reapplyHighlights: jest.fn()
+  }
+}
 
 let map, mapProvider, adapter
 
@@ -237,12 +253,12 @@ describe('visibility', () => {
 })
 
 describe('applyFeatureFilter', () => {
-  it('re-derives flatStyle to reflect newly hidden features', async () => {
+  it('re-derives the flat style to reflect newly hidden features', async () => {
     await adapter.addDataset('ds-fill')
     datasetRegistry.mockExtend({ 'ds-fill': { id: 'ds-fill', style: { fill: '#0000ff' }, hiddenFeatures: [1], geojson: { type: 'FeatureCollection', features: [] } } })
     adapter.applyFeatureFilter('ds-fill')
-    // flatStyle now wraps in a filter rule — confirm the layer's style function reflects it by
-    // checking the underlying style was re-set to the dataset's current (filtered) flatStyle.
+    // the flat style now wraps in a filter rule — confirm the layer's style function reflects it by
+    // checking the underlying style was re-set to the dataset's current (filtered) flat style.
     const registryDataset = datasetRegistry.getDataset('ds-fill')
     expect(getLayer('ds-fill').getStyle()).toBeDefined()
     expect(registryDataset.filter).not.toBeNull()
@@ -369,6 +385,51 @@ describe('pattern registration', () => {
     expect(setStyleSpy).toHaveBeenCalledWith(expect.any(Function))
   })
 
+  it('onMapSizeChange() re-rasterises symbols at the new pixelRatio so they stay drawn 1:1', async () => {
+    await adapter.addDataset('ds-symbol')
+    const layer = getLayer('ds-symbol')
+    expect(layer.getStyle()).toMatchObject({ 'icon-scale': 1 })
+    expect(layer.get('symbolMeta').pixelRatio).toBe(1)
+
+    map.getPixelRatio.mockReturnValue(2)
+    await adapter.onMapSizeChange()
+
+    expect(layer.getStyle()).toMatchObject({ 'icon-src': 'data:image/png;base64,mock', 'icon-scale': 0.5 })
+    expect(layer.get('symbolMeta').pixelRatio).toBe(2)
+  })
+
+  it('onMapSizeChange() leaves symbol styles alone if the pixel ratio changes again while its images are registering', async () => {
+    await adapter.addDataset('ds-symbol')
+    const layer = getLayer('ds-symbol')
+    const setStyleSpy = jest.spyOn(layer, 'setStyle')
+    // a second map-size change lands mid-registration — its own call will apply the newer ratio
+    const registering = adapter.onMapSizeChange()
+    map.getPixelRatio.mockReturnValue(2)
+    await registering
+    expect(setStyleSpy).not.toHaveBeenCalled()
+  })
+
+  it('onMapSizeChange() redraws highlights once the new images are in place, so a selected symbol isn\'t left blurry', async () => {
+    await adapter.addDataset('ds-symbol')
+    const layer = getLayer('ds-symbol')
+    const setStyleSpy = jest.spyOn(layer, 'setStyle')
+    map.getPixelRatio.mockReturnValue(2)
+    mapProvider.reapplyHighlights.mockImplementation(() => {
+      // by now the layer has been restyled with the new ratio's images
+      expect(setStyleSpy).toHaveBeenCalled()
+    })
+    await adapter.onMapSizeChange()
+    expect(mapProvider.reapplyHighlights).toHaveBeenCalledTimes(1)
+  })
+
+  it('onMapSizeChange() leaves highlights to the newer call when the pixel ratio has moved on', async () => {
+    await adapter.addDataset('ds-symbol')
+    const registering = adapter.onMapSizeChange()
+    map.getPixelRatio.mockReturnValue(2)
+    await registering
+    expect(mapProvider.reapplyHighlights).not.toHaveBeenCalled()
+  })
+
   it('onMapSizeChange() does not touch a plain fill/stroke dataset\'s style', async () => {
     await adapter.addDataset('ds-fill')
     const layer = getLayer('ds-fill')
@@ -379,7 +440,20 @@ describe('pattern registration', () => {
 })
 
 describe('symbol registration', () => {
-  it('registers a symbol before init() adds its layer, so flatStyle already resolves it', async () => {
+  it('registers symbol images with the OL provider, using the adapter\'s registry at the map\'s pixel ratio', async () => {
+    map.getPixelRatio.mockReturnValue(2)
+    await adapter.addDataset('ds-symbol')
+    expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith(
+      [expect.objectContaining({ symbol: 'pin' })], datasetRegistry.mapStyle, symbolRegistry, 2
+    )
+  })
+
+  it('doesn\'t call the provider when there are no symbols to register', async () => {
+    await adapter.addDataset('ds-fill')
+    expect(mapProvider.addSymbolsToMap).not.toHaveBeenCalled()
+  })
+
+  it('registers a symbol before init() adds its layer, so getFlatStyle already resolves it', async () => {
     await adapter.init()
     expect(getLayer('ds-symbol').getStyle()).toMatchObject({ 'icon-src': 'data:image/png;base64,mock' })
   })
@@ -408,9 +482,19 @@ describe('symbol registration', () => {
   })
 
   // symbolMeta.imageId is only ever resolved for the 'normal' variant, but that's still
-  // mapStyle-dependent (see registerSymbol's resolve() call) — so a stale, pre-switch id left
+  // mapStyle-dependent (see SymbolImageCache.registerSymbol's resolve() call) — so a stale, pre-switch id left
   // on the layer would make highlightFeatures.js's reverse-map keep resolving the OLD theme's
   // selected/active image forever, regardless of how many times the map style actually changes.
+  it('redraws highlights after onMapStyleChange() has re-registered and restyled, so a selected symbol takes the new colours', async () => {
+    await adapter.addDataset('ds-symbol')
+    const setStyleSpy = jest.spyOn(getLayer('ds-symbol'), 'setStyle')
+    mapProvider.reapplyHighlights.mockImplementation(() => {
+      expect(setStyleSpy).toHaveBeenCalled()
+    })
+    await adapter.onMapStyleChange()
+    expect(mapProvider.reapplyHighlights).toHaveBeenCalledTimes(1)
+  })
+
   it('refreshes symbolMeta on onMapStyleChange(), not just the layer\'s own style', async () => {
     await adapter.addDataset('ds-symbol')
     const layer = getLayer('ds-symbol')

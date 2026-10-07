@@ -525,9 +525,12 @@
  * @typedef {Object} SymbolDefaults
  *
  * @property {string} [symbol='pin']
- * Default symbol ID. Built-in values: `'pin'`, `'circle'`.
+ * Default symbol ID. Built-in values: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`.
  *
- * @property {string} [symbolSvgContent]
+ * @property {'small' | 'medium' | 'large'} [size='medium']
+ * Default symbol size: small is 75% and large 125% of medium. Rings and halo stay a fixed width.
+ *
+ * @property {string} [svgContent]
  * Default inner SVG path content. When set, overrides `symbol`.
  *
  * @property {string} [viewBox='0 0 44 44']
@@ -572,7 +575,10 @@
  * @property {string} [symbol]
  * Symbol id to use for this marker (e.g. 'pin', 'circle'). Overrides the default `symbolDefaults.symbol` option.
  *
- * @property {string} [symbolSvgContent]
+ * @property {'small' | 'medium' | 'large'} [size]
+ * Symbol size for this marker. Overrides the default `symbolDefaults.size` option.
+ *
+ * @property {string} [svgContent]
  * Inner SVG path content (no `<svg>` wrapper) to use instead of a registered symbol.
  * Use `{{token}}` placeholders for colours — e.g. `fill="{{backgroundColor}}"`.
  * When set, `symbol` is ignored.

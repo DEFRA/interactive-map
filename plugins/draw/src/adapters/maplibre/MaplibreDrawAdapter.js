@@ -7,6 +7,7 @@ import { createLiveStroke } from '../../validation/liveStroke.js'
 import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
 import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
 import { getCoords, getMidpointCoords } from './modes/editVertexMode/geometryHelpers.js'
+import { logger } from '../../../../../src/services/logger.js'
 
 const polygonFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates } })
 const lineFeature = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
@@ -72,6 +73,7 @@ export class MaplibreDrawAdapter {
   constructor (mapProvider, options) {
     this._mapProvider = mapProvider
     this._map = mapProvider.map
+    this._symbolRegistry = options.symbolRegistry
     this._bus = createEventBus()
     this._editingFeatureId = null
     // Assigned once per feature, on creation only (see styles.js's SORT_KEY_PROP) — drives
@@ -81,6 +83,7 @@ export class MaplibreDrawAdapter {
     const { draw, remove } = createMapboxDraw({
       mapStyle: options.mapStyle,
       mapProvider,
+      symbolRegistry: options.symbolRegistry,
       events: options.events,
       eventBus: options.eventBus,
       snapLayers: options.snapLayers,
@@ -181,10 +184,12 @@ export class MaplibreDrawAdapter {
     this._handleModeChange({ mode: name })
   }
 
-  // Resolves and registers the feature's symbol-config icon, then writes the resolved image
-  // id/anchor back so styles.js's point-symbol layer can render it.
+  // Resolves and registers the feature's symbol-config icon in the background, then writes the
+  // resolved image id/anchor back so styles.js's point-symbol layer can render it. A failure
+  // leaves the point without its icon, so it's logged rather than lost.
   _resolvePointSymbol (featureId, properties) {
-    return resolvePointSymbol({ draw: this._draw, mapProvider: this._mapProvider, map: this._map, featureId, properties })
+    resolvePointSymbol({ draw: this._draw, mapProvider: this._mapProvider, map: this._map, symbolRegistry: this._symbolRegistry, featureId, properties })
+      .catch((error) => logger.error('[draw] failed to resolve point symbol', featureId, error))
   }
 
   // Live invalid-stroke driver, called on every rubber-band move (draw) and vertex drag/nudge

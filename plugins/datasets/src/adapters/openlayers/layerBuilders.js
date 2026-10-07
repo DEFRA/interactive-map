@@ -7,13 +7,11 @@ import MVT from 'ol/format/MVT.js'
 import Feature from 'ol/Feature.js'
 import TileGrid from 'ol/tilegrid/TileGrid.js'
 import { logger } from '../../../../../src/services/logger.js'
-import { BNG_CRS } from '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
 import { buildCanvasPatternStyle } from './canvasPatternStyle.js'
 
-// Data and map both use BNG, so no coordinate transformation is needed. Importing bngProjection.js
-// (rather than just the string) also registers EPSG:27700 with proj4/OL, needed for
-// VectorTileSource's projection option below to resolve to a real projection.
-const PROJECTION = BNG_CRS
+// Data and map both use British National Grid, so no coordinate transformation is needed. The
+// OpenLayers provider registers the projection with OL.
+const PROJECTION = 'EPSG:27700'
 const format = new GeoJSON({ dataProjection: PROJECTION, featureProjection: PROJECTION })
 
 // The Mapbox style spec's minzoom/maxzoom are inclusive-min, exclusive-max; OL's own semantics
@@ -135,18 +133,18 @@ export const createDatasetSource = (registryDataset) => {
 
 /**
  * The style value to hand to layer.setStyle()/the layer constructor: registryDataset's own
- * flatStyle, except for a pattern fill, which needs the genuinely crisp, CanvasPattern-based
+ * flat style, except for a pattern fill, which needs the genuinely crisp, CanvasPattern-based
  * style function from canvasPatternStyle.js instead — see that module's doc for why flat-style's
  * fill-pattern-src can't achieve this.
  * @param {Object} registryDataset - an OpenLayersDataset
- * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object }} context
+ * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object, symbolRegistry: Object, getSymbolDataUri: Function, buildFilterEvaluator: Function }} context
  * @returns {Object|Array<Object>|import('ol/style/Style.js').StyleFunction}
  */
-export const resolveLayerStyle = (registryDataset, { mapStyleId, pixelRatio, patternRegistry } = {}) => {
+export const resolveLayerStyle = (registryDataset, context = {}) => {
   if (registryDataset.hasPattern) {
-    return buildCanvasPatternStyle(registryDataset, mapStyleId, pixelRatio, patternRegistry)
+    return buildCanvasPatternStyle(registryDataset, context)
   }
-  return registryDataset.flatStyle
+  return registryDataset.getFlatStyle(context)
 }
 
 /**
@@ -155,7 +153,7 @@ export const resolveLayerStyle = (registryDataset, { mapStyleId, pixelRatio, pat
  * style pipeline (see resolveLayerStyle).
  * @param {Object} registryDataset - an OpenLayersDataset
  * @param {import('ol/source/Vector.js').default} olSource
- * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object }} context
+ * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object, symbolRegistry: Object, getSymbolDataUri: Function, buildFilterEvaluator: Function }} context
  * @returns {import('ol/layer/Layer.js').default}
  */
 export const createDatasetLayer = (registryDataset, olSource, context) => {
@@ -197,9 +195,9 @@ export const createDatasetLayer = (registryDataset, olSource, context) => {
     layer.set('filter', registryDataset.filter)
   }
   // Lets highlightFeatures.js build a select/active highlight for a dataset symbol point —
-  // see OpenLayersDataset.symbolMeta's doc.
+  // see OpenLayersDataset.getSymbolMeta's doc.
   if (registryDataset.hasSymbol) {
-    layer.set('symbolMeta', registryDataset.symbolMeta)
+    layer.set('symbolMeta', registryDataset.getSymbolMeta(context))
   }
   return layer
 }

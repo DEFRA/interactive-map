@@ -1,9 +1,6 @@
 import { MapboxStyleDataset } from '../../../registry/mapboxStyleDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
-import { getSymbolAnchor } from '../../../../../../src/utils/symbolUtils.js'
-import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { getCachedSymbolDataUri, SYMBOL_RASTER_PIXEL_RATIO } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 
 const MAX_TILE_ZOOM = 22
 const DEFAULT_STROKE_WIDTH = 1
@@ -102,40 +99,41 @@ export class OpenLayersDataset extends MapboxStyleDataset {
 
   /**
    * The resolved base (normal) symbol imageId + anchor for this dataset — layerBuilders.js tags
-   * the OL layer with this so highlightFeatures.js can resolve a select/active highlight image
-   * for it (via symbolImages.js's getActiveSymbolImageId/getSelectedSymbolImageId) without
-   * reaching back into the datasets plugin's own registries from a provider-level file, the same
-   * way MapLibre's highlight code reads icon-image/icon-anchor straight off the rendered style
-   * layer instead of re-deriving them.
-   * @returns {{ imageId: string, anchor: number[] }|null}
+   * the OL layer with this so the OL provider's highlightFeatures.js can resolve a select/active
+   * highlight image for it without reaching back into the datasets plugin's own registries, the
+   * same way MapLibre's highlight code reads icon-image/icon-anchor straight off the rendered
+   * style layer instead of re-deriving them.
+   * @param {Object} context - the adapter's style context
+   * @param {number} context.pixelRatio - the map's current pixelRatio, which the image is rasterised at
+   * @param {Object} context.symbolRegistry
+   * @returns {{ imageId: string, anchor: number[], pixelRatio: number }|null}
    */
-  get symbolMeta () {
+  getSymbolMeta ({ pixelRatio, symbolRegistry }) {
     if (!this.hasSymbol) {
       return null
     }
-    const imageId = symbolRegistry.getSymbolImageId(this.style, datasetRegistry.mapStyle, false, SYMBOL_RASTER_PIXEL_RATIO)
+    const imageId = symbolRegistry.getSymbolImageId(this.style, datasetRegistry.mapStyle, 'normal', pixelRatio)
     if (!imageId) {
       return null
     }
-    return { imageId, anchor: getSymbolAnchor(this.style, symbolRegistry.getSymbolDef(this.style)) }
+    return { imageId, anchor: symbolRegistry.getSymbolDef(this.style).anchor, pixelRatio }
   }
 
-  // icon-scale genuinely gives resolution-independent crispness for symbols (see
-  // symbolImages.js's module doc), so unlike patterns this never needs re-registration on
-  // resize. Falls back to an empty style (no icon at all) until the image has been rasterised
-  // ahead of time by the adapter (registerSymbol is async; this getter must stay synchronous).
-  // Reuses symbolMeta rather than re-resolving getSymbolImageId/getSymbolDef itself — both
-  // getters need the same imageId+anchor, and symbolRegistry.resolve()/getSymbolDef() aren't
-  // free (colour resolution + hashing), so recomputing them a second time here would double the
-  // cost of every layer build/restyle for no benefit.
-  _symbolStyle () {
+  // The image is rasterised at the map's own pixelRatio and drawn at 1 / pixelRatio, i.e. one
+  // image pixel per device pixel — any other ratio makes the browser resample it, which Chrome
+  // does with visible aliasing. So, like patterns, symbols are re-registered on resize. Falls
+  // back to an empty style (no icon at all) until the image has been rasterised ahead of time by
+  // the adapter (image registration is async; this must stay synchronous). Reuses getSymbolMeta
+  // rather than re-resolving getSymbolImageId/getSymbolDef itself — symbolRegistry.resolve()/
+  // getSymbolDef() aren't free (colour resolution + hashing).
+  _symbolStyle (context) {
     const style = {}
-    const meta = this.symbolMeta
-    const dataUri = meta && getCachedSymbolDataUri(meta.imageId)
+    const meta = this.getSymbolMeta(context)
+    const dataUri = meta && context.getSymbolDataUri(meta.imageId)
     if (dataUri) {
       style['icon-src'] = dataUri
       style['icon-anchor'] = meta.anchor
-      style['icon-scale'] = 1 / SYMBOL_RASTER_PIXEL_RATIO
+      style['icon-scale'] = 1 / context.pixelRatio
     }
     return this._wrapWithFilter(style)
   }
@@ -149,11 +147,13 @@ export class OpenLayersDataset extends MapboxStyleDataset {
    * this getter knows nothing about. hasFill is also true for a pattern dataset (see base
    * Dataset.hasFill), so that's explicitly excluded here rather than emitting a meaningless
    * fill-color for it.
+   * @param {Object} context - the adapter's style context; symbol datasets use its pixelRatio,
+   *   symbolRegistry and getSymbolDataUri (the OL provider's registered image lookup)
    * @returns {Object|Array<Object>}
    */
-  get flatStyle () {
+  getFlatStyle (context) {
     if (this.hasSymbol) {
-      return this._symbolStyle()
+      return this._symbolStyle(context)
     }
     const mapStyleId = datasetRegistry.mapStyle?.id
     const style = {}

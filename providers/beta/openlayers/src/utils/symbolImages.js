@@ -1,114 +1,125 @@
+import IconImage from 'ol/style/IconImage.js'
+import { shared as iconImageCache } from 'ol/style/IconImageCache.js'
+import ImageState from 'ol/ImageState.js'
+import { RecentImageSets } from '../../../../../src/utils/recentImageSets.js'
+
+const VARIANTS = ['normal', 'active', 'selected']
+
 /**
  * The OL "last mile" for symbolRegistry's rasterised symbol images: turns the ImageData
  * rasteriseSymbolImage() produces into something OL can render, cached by the same imageId
- * symbolRegistry computes. OL has no map-level image registry like MapLibre's map.addImage,
- * so this cache lives at the module level instead.
+ * symbolRegistry computes. OL has no map-level image registry like MapLibre's map.addImage, so
+ * the OL provider owns one of these per map instead (see OpenLayersProvider.addSymbolsToMap).
  *
- * Two consumers need two different shapes from the same ImageData: highlightFeatures.js builds
- * its own ol/style/Icon directly, so it wants a raw <canvas> (getOrCreateSymbolImage/
- * getCachedSymbolImage); OpenLayersDataset.flatStyle's icon-src needs a data URI string instead.
- */
-
-// Fixed oversampling ratio, unrelated to the map's actual pixelRatio — icon-scale genuinely
-// decouples a symbol's on-screen size from its native pixel detail, so one fixed high-detail
-// raster stays crisp at any pixelRatio with no re-rasterisation needed on resize.
-export const SYMBOL_RASTER_PIXEL_RATIO = 3
-
-const imageCache = new Map() // imageId → HTMLCanvasElement
-const dataUriCache = new Map() // imageId → data URI string
-const activeImageMap = new Map() // normalId → activeId
-const selectedImageMap = new Map() // normalId → selectedId
-
-/** Synchronous lookup for style functions (which must be synchronous) — undefined until
- * getOrCreateSymbolImage() has resolved it at least once. */
-export const getCachedSymbolImage = (imageId) => imageCache.get(imageId)
-
-/**
- * Reverse-map a symbol's normal (base) imageId to its active/selected variant, mirroring
- * MapLibre's own active/selected image maps. Used by highlightFeatures.js to highlight a
- * dataset symbol point, which (unlike a drawn point) has no active/selected id of its own.
- */
-export const getActiveSymbolImageId = (normalId) => activeImageMap.get(normalId) ?? null
-export const getSelectedSymbolImageId = (normalId) => selectedImageMap.get(normalId) ?? null
-
-/**
- * Rasterise-once-cache-forever: draws the given ImageData onto a canvas the first time
- * imageId is seen, and returns the cached canvas on every subsequent call.
+ * Two shapes of the same image are kept: a <canvas> for styles that build an ol/style/Icon
+ * directly (draw points, highlights), and a data URI for a flat style's icon-src (datasets).
  *
- * @param {string} imageId
- * @param {ImageData} imageData
- * @returns {HTMLCanvasElement}
+ * Images are kept for the current and previous map size and style; ones only older sizes and
+ * styles used are dropped, so the cache doesn't build up as the map size or style changes.
  */
-export const getOrCreateSymbolImage = (imageId, imageData) => {
-  const cached = imageCache.get(imageId)
-  if (cached) {
-    return cached
-  }
-  const canvas = document.createElement('canvas')
-  canvas.width = imageData.width
-  canvas.height = imageData.height
-  canvas.getContext('2d').putImageData(imageData, 0, 0)
-  imageCache.set(imageId, canvas)
-  return canvas
-}
+export class SymbolImageCache {
+  images = new Map() // imageId → HTMLCanvasElement
+  dataUris = new Map() // imageId → data URI string
+  activeImageIds = new Map() // normal imageId → active imageId
+  selectedImageIds = new Map() // normal imageId → selected imageId
+  recentImageSets = new RecentImageSets()
 
-/** Synchronous lookup for OpenLayersDataset.flatStyle (a synchronous getter) — undefined
- * until registerSymbol() has resolved it at least once. */
-export const getCachedSymbolDataUri = (imageId) => dataUriCache.get(imageId)
-
-/**
- * Rasterise-once-cache-forever: resolves and caches one symbol's data URI for flatStyle's
- * icon-src, plus its active/selected variants so highlightFeatures.js can highlight a dataset
- * symbol point the same way it already does for a drawn one.
- * @param {Object} style - Dataset style with symbol/symbolSvgContent properties
- * @param {Object} mapStyle - Current map style config
- * @param {Object} symbolRegistry
- * @param {number} pixelRatio - the map's actual current pixelRatio
- * @returns {Promise<void>}
- */
-export const registerSymbol = async (style, mapStyle, symbolRegistry, pixelRatio) => {
-  const normalId = symbolRegistry.getSymbolImageId(style, mapStyle, false, pixelRatio)
-  if (!normalId) {
-    return
-  }
-  const activeId = symbolRegistry.getSymbolImageId(style, mapStyle, true, pixelRatio)
-  if (activeId) {
-    activeImageMap.set(normalId, activeId)
+  /** Synchronous lookup for style functions — undefined until the image has been registered. */
+  getImage (imageId) {
+    return this.images.get(imageId)
   }
 
-  await Promise.all(['normal', 'active', 'selected'].map(async (variant) => {
-    const imageId = variant === 'active' ? activeId : normalId
-    if (variant !== 'selected' && (!imageId || imageCache.has(imageId))) {
-      return
+  /** Synchronous lookup for a flat style's icon-src — undefined until the image has been registered. */
+  getDataUri (imageId) {
+    return this.dataUris.get(imageId)
+  }
+
+  /** A symbol's active (keyboard cursor) variant, from its normal imageId */
+  getActiveImageId (normalId) {
+    return this.activeImageIds.get(normalId) ?? null
+  }
+
+  /** A symbol's selected variant, from its normal imageId */
+  getSelectedImageId (normalId) {
+    return this.selectedImageIds.get(normalId) ?? null
+  }
+
+  addImage (imageId, imageData, withDataUri) {
+    const canvas = document.createElement('canvas')
+    canvas.width = imageData.width
+    canvas.height = imageData.height
+    canvas.getContext('2d').putImageData(imageData, 0, 0)
+    this.images.set(imageId, canvas)
+    if (withDataUri) {
+      const dataUri = canvas.toDataURL()
+      this.dataUris.set(imageId, dataUri)
+      // Seed OL's icon cache with the already-drawn canvas under this data URI, so a flat
+      // style's icon-src finds a loaded image straight away. Otherwise OL loads the data URI
+      // asynchronously and draws nothing for that icon until it has — a visible flicker each
+      // time styles switch to new images, as on every map-size change. Set rather than got, so
+      // it also replaces an unloaded entry left by removeImage.
+      iconImageCache.set(dataUri, null, new IconImage(canvas, dataUri, undefined, ImageState.LOADED, null))
     }
-    const result = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, variant, pixelRatio)
-    if (!result) {
-      return
+  }
+
+  removeImage (imageId) {
+    const dataUri = this.dataUris.get(imageId)
+    this.dataUris.delete(imageId)
+    // OL's icon cache would otherwise keep the canvas alive; an unloaded entry in its place holds
+    // nothing, and OL's own cache limit can clear it. Two images can draw identical pixels, so
+    // it's left alone while a kept image still has the same data URI.
+    if (dataUri && !Array.from(this.dataUris.values()).includes(dataUri)) {
+      iconImageCache.set(dataUri, null, new IconImage(undefined, dataUri, undefined, ImageState.IDLE, null))
     }
-    if (variant === 'selected') {
-      selectedImageMap.set(normalId, result.imageId)
+    this.images.delete(imageId)
+    this.activeImageIds.delete(imageId)
+    this.selectedImageIds.delete(imageId)
+  }
+
+  /**
+   * Rasterises and caches one symbol's normal, active and selected images, and maps its normal
+   * imageId to the other two. Images already cached are reused.
+   *
+   * @param {Object} style - a symbol style (symbol/symbolSvgContent plus token overrides)
+   * @param {Object} mapStyle - current map style config
+   * @param {Object} symbolRegistry
+   * @param {number} pixelRatio
+   * @returns {Promise<string[]>} the symbol's image ids
+   */
+  async registerSymbol (style, mapStyle, symbolRegistry, pixelRatio) {
+    const imageIds = VARIANTS.map((variant) => symbolRegistry.getSymbolImageId(style, mapStyle, variant, pixelRatio))
+    const [normalId, activeId, selectedId] = imageIds
+    if (!normalId) {
+      return []
     }
-    if (!imageCache.has(result.imageId)) {
-      const canvas = getOrCreateSymbolImage(result.imageId, result.imageData)
-      if (variant === 'normal') {
-        dataUriCache.set(result.imageId, canvas.toDataURL())
+    this.activeImageIds.set(normalId, activeId)
+    this.selectedImageIds.set(normalId, selectedId)
+
+    await Promise.all(VARIANTS.map(async (variant, index) => {
+      if (this.images.has(imageIds[index])) {
+        return
       }
-    }
-  }))
-}
-
-/** Register symbol data URIs for the given pre-resolved style configs, in parallel. */
-export const registerSymbols = async (styleArray, mapStyle, symbolRegistry, pixelRatio) => {
-  if (!styleArray.length) {
-    return
+      const result = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, variant, pixelRatio)
+      if (result && !this.images.has(result.imageId)) {
+        this.addImage(result.imageId, result.imageData, variant === 'normal')
+      }
+    }))
+    return imageIds.filter(Boolean)
   }
-  await Promise.all(styleArray.map(style => registerSymbol(style, mapStyle, symbolRegistry, pixelRatio)))
-}
 
-/** Mainly for testing — clears every cached image. */
-export const clearSymbolImageCache = () => {
-  imageCache.clear()
-  dataUriCache.clear()
-  activeImageMap.clear()
-  selectedImageMap.clear()
+  /**
+   * Registers several symbols in parallel, then drops images only map sizes and styles older
+   * than the previous one used.
+   *
+   * @param {Object[]} styles
+   * @param {Object} mapStyle
+   * @param {Object} symbolRegistry
+   * @param {number} pixelRatio
+   * @returns {Promise<void>}
+   */
+  async registerSymbols (styles, mapStyle, symbolRegistry, pixelRatio) {
+    const imageIds = await Promise.all(styles.map((style) => this.registerSymbol(style, mapStyle, symbolRegistry, pixelRatio)))
+    this.recentImageSets.add(`${mapStyle?.id}|${pixelRatio}`, imageIds.flat())
+      .forEach((imageId) => this.removeImage(imageId))
+  }
 }

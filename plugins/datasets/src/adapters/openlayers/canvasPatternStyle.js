@@ -2,7 +2,6 @@ import Style from 'ol/style/Style.js'
 import Fill from 'ol/style/Fill.js'
 import Stroke from 'ol/style/Stroke.js'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
-import { buildFilterEvaluator } from '../../../../../providers/beta/openlayers/src/utils/filterEvaluator.js'
 
 const DEFAULT_STROKE_WIDTH = 1
 
@@ -86,14 +85,16 @@ const buildStroke = (registryDataset, mapStyleId) => {
 
 /**
  * Builds an OL style function for a Canvas-rendered, pattern-bearing dataset/sublayer — uses a
- * real CanvasPattern (see module doc), bypassing OpenLayersDataset.flatStyle for this one case.
+ * real CanvasPattern (see module doc), bypassing OpenLayersDataset.getFlatStyle for this one case.
  * @param {Object} registryDataset - an OpenLayersDataset with hasPattern true
- * @param {string} mapStyleId
- * @param {number} pixelRatio - must match what registerCrispCanvasPattern was last called with
- * @param {Object} patternRegistry
+ * @param {Object} context - the adapter's style context
+ * @param {string} context.mapStyleId
+ * @param {number} context.pixelRatio - must match what registerCrispCanvasPattern was last called with
+ * @param {Object} context.patternRegistry
+ * @param {Function} context.buildFilterEvaluator - the OL provider's filter compiler
  * @returns {import('ol/style/Style.js').StyleFunction}
  */
-export const buildCanvasPatternStyle = (registryDataset, mapStyleId, pixelRatio, patternRegistry) => {
+export const buildCanvasPatternStyle = (registryDataset, { mapStyleId, pixelRatio, patternRegistry, buildFilterEvaluator }) => {
   const imageId = patternRegistry.getPatternImageId(registryDataset.style, mapStyleId, pixelRatio)
   const fill = imageId && getCachedCrispPatternFill(imageId)
   const style = fill ? new Style({ fill, stroke: buildStroke(registryDataset, mapStyleId) }) : undefined

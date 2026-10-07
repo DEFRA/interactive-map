@@ -1,5 +1,5 @@
 import { createOLDraw } from './olDraw.js'
-import { resolvePointSymbol, hasSymbolStyle } from './point/pointSymbolImages.js'
+import { hasSymbolStyle } from './point/pointSymbolImages.js'
 
 // split.js passes this literal — MapLibre's own always-present "already-drawn
 // shapes" style layer id — as a snapLayers entry so the split line snaps to the
@@ -39,6 +39,7 @@ export class OLDrawAdapter {
   constructor (mapProvider, options) {
     const { manager, remove } = createOLDraw({
       mapProvider,
+      symbolRegistry: options.symbolRegistry,
       events: options.events,
       eventBus: options.eventBus,
       // The full pluginConfig, not just snapLayers — OLDrawManager also reads
@@ -102,7 +103,7 @@ export class OLDrawAdapter {
   add (feature) {
     const olFeature = this._manager.add(feature)
     if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {
-      resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
+      this._manager.updatePointSymbol(olFeature)
     }
     return olFeature
   }
@@ -117,7 +118,7 @@ export class OLDrawAdapter {
     }
     olFeature.setProperties(properties)
     if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(olFeature.getProperties())) {
-      resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
+      this._manager.updatePointSymbol(olFeature)
     }
   }
 
@@ -130,7 +131,7 @@ export class OLDrawAdapter {
   }
 
   setSnapLayers (layers) {
-    const translated = layers?.map((l) => (l === DRAW_OUTLINE_STYLE_LAYER ? this._manager._layer : l))
+    const translated = layers?.map((layer) => (layer === DRAW_OUTLINE_STYLE_LAYER ? this._manager._layer : layer))
     this._manager.snap?.setSnapLayers(translated)
   }
 
