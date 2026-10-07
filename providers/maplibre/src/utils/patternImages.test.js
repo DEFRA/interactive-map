@@ -1,5 +1,7 @@
 import { addPatternsToMap } from './patternImages.js'
-import { patternRegistry } from '../../../../src/services/patternRegistry.js'
+import { createPatternRegistry } from '../../../../src/services/patternRegistry.js'
+
+const patternRegistry = createPatternRegistry()
 
 const OUTDOOR = 'outdoor'
 

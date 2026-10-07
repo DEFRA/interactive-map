@@ -32,7 +32,7 @@ const getSymbolShape = (keyDefinition, groupStyle, symbolRegistry) => {
   return { symbolShape: 'rect', symbolDef: null }
 }
 
-export const KeySvg = ({ keyDefinition, groupStyle, mapStyle, symbolRegistry }) => {
+export const KeySvg = ({ keyDefinition, groupStyle, mapStyle, symbolRegistry, patternRegistry }) => {
   const { symbolShape, symbolDef } = getSymbolShape(keyDefinition, groupStyle, symbolRegistry)
 
   if (!symbolShape) {
@@ -40,7 +40,7 @@ export const KeySvg = ({ keyDefinition, groupStyle, mapStyle, symbolRegistry }) 
   } else if (symbolShape === 'symbol') {
     return <KeySvgSymbol mapStyle={mapStyle} keyDefinition={keyDefinition} symbolDef={symbolDef} symbolRegistry={symbolRegistry} />
   } else if (symbolShape === 'pattern') {
-    return <KeySvgPattern mapStyle={mapStyle} keyDefinition={keyDefinition} />
+    return <KeySvgPattern mapStyle={mapStyle} keyDefinition={keyDefinition} patternRegistry={patternRegistry} />
   } else if (symbolShape === 'line') {
     return <KeySvgLine mapStyle={mapStyle} keyDefinition={keyDefinition} />
   } else if (symbolShape === HORIZONTAL_RAMP) {

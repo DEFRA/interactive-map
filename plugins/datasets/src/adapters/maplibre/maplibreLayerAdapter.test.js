@@ -1,7 +1,9 @@
 import MaplibreLayerAdapter from './maplibreLayerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
-import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
+import { createPatternRegistry } from '../../../../../src/services/patternRegistry.js'
+
+const patternRegistry = createPatternRegistry()
 
 const symbolRegistry = createSymbolRegistry()
 

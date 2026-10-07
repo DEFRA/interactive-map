@@ -6,7 +6,7 @@ import { reverseGeocode } from '../../services/reverseGeocode.js'
 import { useConfig } from '../store/configContext.js'
 import { closeApp } from '../../services/closeApp.js'
 import { createSymbolRegistry } from '../../services/symbolRegistry.js'
-import { patternRegistry } from '../../services/patternRegistry.js'
+import { createPatternRegistry } from '../../services/patternRegistry.js'
 
 export const ServiceContext = createContext(null)
 
@@ -15,8 +15,9 @@ export const ServiceProvider = ({ eventBus, pluginRegistry, children }) => {
   const mapStatusRef = useRef(null)
   const announce = useMemo(() => createAnnouncer(mapStatusRef), [])
   const hints = useMemo(() => createHints(announce), [announce])
-  // One per map, so maps on the same page keep their own symbols and symbolDefaults
+  // One of each per map, so maps on the same page keep their own symbols, symbolDefaults and patterns
   const symbolRegistry = useMemo(() => createSymbolRegistry(), [])
+  const patternRegistry = useMemo(() => createPatternRegistry(), [])
 
   symbolRegistry.setDefaults(constructorSymbolDefaults || {})
 
@@ -31,7 +32,7 @@ export const ServiceProvider = ({ eventBus, pluginRegistry, children }) => {
     patternRegistry,
     // See pluginRegistry.js's getPlugin() for what this does and doesn't guarantee.
     getPlugin: (pluginId) => pluginRegistry?.getPlugin(pluginId)
-  }), [announce, hints, pluginRegistry, symbolRegistry])
+  }), [announce, hints, pluginRegistry, symbolRegistry, patternRegistry])
 
   return (
     <ServiceContext.Provider value={services}>

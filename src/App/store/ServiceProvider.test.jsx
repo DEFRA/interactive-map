@@ -71,6 +71,15 @@ describe('ServiceProvider', () => {
     expect(second.result.current.symbolRegistry.getDefaults().backgroundColor).toBe('#222222')
   })
 
+  test('gives each map its own pattern registry, kept across renders', () => {
+    const first = renderHook(() => React.useContext(ServiceContext), { wrapper })
+    const firstRegistry = first.result.current.patternRegistry
+    first.rerender()
+    expect(first.result.current.patternRegistry).toBe(firstRegistry)
+    const second = renderHook(() => React.useContext(ServiceContext), { wrapper })
+    expect(second.result.current.patternRegistry).not.toBe(firstRegistry)
+  })
+
   test('renders children', () => {
     const { result } = renderHook(() => React.useContext(ServiceContext), {
       wrapper,
