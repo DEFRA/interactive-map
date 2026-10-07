@@ -112,7 +112,7 @@ export class OpenLayersDataset extends MapboxStyleDataset {
     if (!this.hasSymbol) {
       return null
     }
-    const imageId = symbolRegistry.getSymbolImageId(this.style, datasetRegistry.mapStyle, false, pixelRatio)
+    const imageId = symbolRegistry.getSymbolImageId(this.style, datasetRegistry.mapStyle, 'normal', pixelRatio)
     if (!imageId) {
       return null
     }

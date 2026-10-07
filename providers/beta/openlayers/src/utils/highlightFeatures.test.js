@@ -216,9 +216,9 @@ describe('updateHighlightedFeatures', () => {
 
     const registerDatasetSymbol = async () => {
       const symbolRegistry = {
-        getSymbolImageId: jest.fn((style, mapStyle, active) => (active ? 'ds-symbol-active' : 'ds-symbol-normal')),
+        getSymbolImageId: jest.fn((style, mapStyle, variant) => `ds-symbol-${variant}`),
         rasteriseSymbolImage: jest.fn(async (style, mapStyle, variant) => ({
-          imageId: variant === 'active' ? 'ds-symbol-active' : variant === 'selected' ? 'ds-symbol-selected' : 'ds-symbol-normal',
+          imageId: `ds-symbol-${variant}`,
           imageData: { width: 30, height: 30 }
         }))
       }

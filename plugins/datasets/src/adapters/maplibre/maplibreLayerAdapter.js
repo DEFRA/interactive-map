@@ -122,7 +122,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     datasetRegistry.forEach(registryDataset => {
       const { fillLayerId, symbolLayerId } = registryDataset
       if (symbolLayerId && this._symbolLayerIds.has(symbolLayerId) && this._map.getLayer(symbolLayerId)) {
-        const imageId = this._symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, pixelRatio)
+        const imageId = this._symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, 'normal', pixelRatio)
         if (imageId) {
           this._map.setLayoutProperty(symbolLayerId, 'icon-image', imageId)
         }

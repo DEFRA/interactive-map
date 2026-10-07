@@ -40,7 +40,7 @@ export const addSymbolLayer = (mapProvider, registryDataset, mapStyle, symbolReg
   if (!hasSymbol || !symbolRegistry || !symbolLayerId || map.getLayer(symbolLayerId)) { return }
   const symbolDef = symbolRegistry.getSymbolDef(registryDataset.style)
   if (!symbolDef) { return }
-  const imageId = symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, pixelRatio)
+  const imageId = symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, 'normal', pixelRatio)
   if (!imageId) { return }
   map.addLayer(registryDataset.getSymbolSource(imageId, mapProvider.getSymbolIconLayout(symbolDef)))
 }

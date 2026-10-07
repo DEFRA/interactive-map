@@ -37,7 +37,7 @@ export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixe
   const pixelRatio = pixelRatioOverride ?? getPixelRatio(mapProvider)
 
   await mapProvider.addSymbolsToMap([properties], mapStyle, symbolRegistry, pixelRatio)
-  const symbolImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, pixelRatio)
+  const symbolImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', pixelRatio)
   // Unresolvable (e.g. an unknown symbol id), deleted/cancelled while registering, or
   // superseded by a newer refresh (another size or style change)
   if (!symbolImageId || !manager.store.source.hasFeature(olFeature) || (refreshId !== undefined && refreshId !== manager.pointSymbolRefreshId)) {

@@ -7,7 +7,9 @@ import { queryFeatures } from './utils/queryFeatures.js'
 import { SymbolImageVariants, getSymbolIconLayout } from './utils/symbolImages.js'
 import { addPatternsToMap } from './utils/patternImages.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
-import { symbolRegistry } from '../../../src/services/symbolRegistry.js'
+import { createSymbolRegistry } from '../../../src/services/symbolRegistry.js'
+
+const symbolRegistry = createSymbolRegistry()
 
 jest.mock('./defaults.js', () => ({
   DEFAULTS: { animationDuration: 400, coordinatePrecision: 7 },

@@ -3,6 +3,8 @@ import { shared as iconImageCache } from 'ol/style/IconImageCache.js'
 import ImageState from 'ol/ImageState.js'
 import { RecentImageSets } from '../../../../../src/utils/recentImageSets.js'
 
+const VARIANTS = ['normal', 'active', 'selected']
+
 /**
  * The OL "last mile" for symbolRegistry's rasterised symbol images: turns the ImageData
  * rasteriseSymbolImage() produces into something OL can render, cached by the same imageId
@@ -85,29 +87,22 @@ export class SymbolImageCache {
    * @returns {Promise<string[]>} the symbol's image ids
    */
   async registerSymbol (style, mapStyle, symbolRegistry, pixelRatio) {
-    const normalId = symbolRegistry.getSymbolImageId(style, mapStyle, false, pixelRatio)
+    const imageIds = VARIANTS.map((variant) => symbolRegistry.getSymbolImageId(style, mapStyle, variant, pixelRatio))
+    const [normalId, activeId, selectedId] = imageIds
     if (!normalId) {
       return []
     }
-    const activeId = symbolRegistry.getSymbolImageId(style, mapStyle, true, pixelRatio)
     this.activeImageIds.set(normalId, activeId)
+    this.selectedImageIds.set(normalId, selectedId)
 
-    const imageIds = await Promise.all(['normal', 'active', 'selected'].map(async (variant) => {
-      const knownId = { normal: normalId, active: activeId }[variant]
-      if (knownId && this.images.has(knownId)) {
-        return knownId
+    await Promise.all(VARIANTS.map(async (variant, index) => {
+      if (this.images.has(imageIds[index])) {
+        return
       }
       const result = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, variant, pixelRatio)
-      if (!result) {
-        return null
-      }
-      if (variant === 'selected') {
-        this.selectedImageIds.set(normalId, result.imageId)
-      }
-      if (!this.images.has(result.imageId)) {
+      if (result && !this.images.has(result.imageId)) {
         this.addImage(result.imageId, result.imageData, variant === 'normal')
       }
-      return result.imageId
     }))
     return imageIds.filter(Boolean)
   }

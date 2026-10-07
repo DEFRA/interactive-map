@@ -1,7 +1,9 @@
 import { OpenLayersDataset } from './openLayersDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
-import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
+import { createSymbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
 import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+
+const symbolRegistry = createSymbolRegistry()
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('../../../registry/datasetRegistry.js')

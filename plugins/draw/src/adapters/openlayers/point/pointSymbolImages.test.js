@@ -1,6 +1,8 @@
 import { hasSymbolStyle, getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
-import { symbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
+import { createSymbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
 import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+
+const symbolRegistry = createSymbolRegistry()
 
 const mapStyle = { id: 'outdoor', mapColorScheme: 'light' }
 
@@ -42,16 +44,8 @@ const createManager = ({ features = [] } = {}) => ({
 // real one would give.
 const stubRasterise = () => jest.spyOn(symbolRegistry, 'rasteriseSymbolImage')
   .mockImplementation(async (style, ms, variant, pixelRatio) => {
-    const normalId = symbolRegistry.getSymbolImageId(style, ms, false, pixelRatio)
-    if (!normalId) {
-      return null
-    }
-    const imageId = {
-      normal: normalId,
-      active: symbolRegistry.getSymbolImageId(style, ms, true, pixelRatio),
-      selected: `symbol-sel-${normalId}`
-    }[variant]
-    return { imageId, imageData: { width: 10, height: 10 } }
+    const imageId = symbolRegistry.getSymbolImageId(style, ms, variant, pixelRatio)
+    return imageId ? { imageId, imageData: { width: 10, height: 10 } } : null
   })
 
 beforeEach(() => {
@@ -110,12 +104,12 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ manager, mapProvider, olFeature })
 
     expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([expect.objectContaining({ symbol: 'pin' })], mapStyle, symbolRegistry, 2)
-    const imageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    const imageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', 2)
     expect(olFeature.setProperties).toHaveBeenCalledTimes(1)
     expect(olFeature.setProperties).toHaveBeenCalledWith({
       symbolImageId: imageId,
-      symbolActiveImageId: symbolRegistry.getSymbolImageId(properties, mapStyle, true, 2),
-      symbolSelectedImageId: `symbol-sel-${imageId}`,
+      symbolActiveImageId: symbolRegistry.getSymbolImageId(properties, mapStyle, 'active', 2),
+      symbolSelectedImageId: symbolRegistry.getSymbolImageId(properties, mapStyle, 'selected', 2),
       symbolImageAnchor: symbolRegistry.getSymbolDef(properties).anchor,
       // core/styles.js scales the (pixelRatio×-oversized) canvas back down by this
       symbolPixelRatio: 2

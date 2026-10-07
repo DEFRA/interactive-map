@@ -1,5 +1,7 @@
 import { RecentImageSets } from '../../../../src/utils/recentImageSets.js'
 
+const VARIANTS = ['normal', 'active', 'selected']
+
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
 const ANCHOR_CENTRE = 0.5
@@ -136,31 +138,26 @@ export class SymbolImageVariants {
    */
   async registerSymbols (styleArray, mapStyle, symbolRegistry, pixelRatio) {
     const { map } = this
-    const imageIds = await Promise.all(styleArray.flatMap(config => {
-      const normalId = symbolRegistry.getSymbolImageId(config, mapStyle, false, pixelRatio)
-      const activeId = symbolRegistry.getSymbolImageId(config, mapStyle, true, pixelRatio)
-      if (normalId && activeId) {
-        this.activeImageIds.set(normalId, activeId)
+    const imageIds = await Promise.all(styleArray.map(async (config) => {
+      const variantIds = VARIANTS.map((variant) => symbolRegistry.getSymbolImageId(config, mapStyle, variant, pixelRatio))
+      const [normalId, activeId, selectedId] = variantIds
+      if (!normalId) {
+        return []
       }
-      return ['normal', 'active', 'selected'].map(async (variant) => {
-        const imageId = variant === 'active' ? activeId : normalId
-        if (variant !== 'selected' && (!imageId || map.hasImage(imageId))) {
-          return imageId
+      this.activeImageIds.set(normalId, activeId)
+      this.selectedImageIds.set(normalId, selectedId)
+      await Promise.all(VARIANTS.map(async (variant, index) => {
+        if (map.hasImage(variantIds[index])) {
+          return
         }
         const result = await symbolRegistry.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
-        if (!result) {
-          return null
-        }
-        if (variant === 'selected' && normalId) {
-          this.selectedImageIds.set(normalId, result.imageId)
-        }
-        if (!map.hasImage(result.imageId)) {
+        if (result && !map.hasImage(result.imageId)) {
           map.addImage(result.imageId, result.imageData, { pixelRatio })
         }
-        return result.imageId
-      })
+      }))
+      return variantIds.filter(Boolean)
     }))
-    this.recentImageSets.add(`${mapStyle?.id}|${pixelRatio}`, imageIds.filter(Boolean))
+    this.recentImageSets.add(`${mapStyle?.id}|${pixelRatio}`, imageIds.flat())
       .forEach((imageId) => this.removeImage(imageId))
   }
 }

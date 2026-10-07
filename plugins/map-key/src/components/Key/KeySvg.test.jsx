@@ -1,7 +1,8 @@
 import { render } from '@testing-library/react'
 import { KeySvg } from './KeySvg'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+const symbolRegistry = createSymbolRegistry()
 
 const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
 
@@ -33,7 +34,8 @@ const baseKeyDefinition = {
 
 const baseProps = {
   mapStyle: { id: 'default' },
-  keyDefinition: baseKeyDefinition
+  keyDefinition: baseKeyDefinition,
+  symbolRegistry
 }
 
 beforeEach(() => {

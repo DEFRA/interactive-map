@@ -1,7 +1,7 @@
 import OpenLayersLayerAdapter from './openlayersLayerAdapter.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { patternRegistry } from '../../../../../src/services/patternRegistry.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
 import { SymbolImageCache } from '../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 import { buildFilterEvaluator } from '../../../../../providers/beta/openlayers/src/utils/filterEvaluator.js'
@@ -10,6 +10,8 @@ import '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorTileLayer from 'ol/layer/VectorTile.js'
 import * as layerBuilders from './layerBuilders.js'
+
+const symbolRegistry = createSymbolRegistry()
 
 jest.mock('../../registry/datasetRegistry.js')
 

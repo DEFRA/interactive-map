@@ -90,7 +90,7 @@ const resolvePointSymbolFeature = async ({ draw, mapProvider, map, symbolRegistr
     return null
   }
 
-  const symbolImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, pixelRatio)
+  const symbolImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', pixelRatio)
   if (!symbolImageId) {
     return null
   }

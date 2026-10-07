@@ -61,18 +61,21 @@ await mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)
 
 ---
 
-#### `mapProvider.addSymbolsToMap(symbolConfigs, mapStyleId, symbolRegistry)`
+#### `mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, symbolRegistry, pixelRatio)`
 
-Rasterises and registers symbol images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
+Rasterises and registers each symbol's normal, active and selected images with the map engine. Images already registered are reused.
 
-- `symbolConfigs` — flat array of style configs that have a `symbol` property
-- `mapStyleId` — current map style ID, used to resolve style-variant token values
-- `symbolRegistry` — the core symbol registry instance
+- `symbolConfigs` — flat array of style configs that have a `symbol` or `symbolSvgContent` property
+- `mapStyle` — current map style config, used to resolve style-variant token values and ring colours
+- `symbolRegistry` — `services.symbolRegistry`
+- `pixelRatio` — optional; defaults to the map's current pixel ratio
 
 ```js
-// In a plugin's MapLibre layer adapter
-await mapProvider.addSymbolsToMap(symbolConfigs, mapStyleId, symbolRegistry)
+// In a plugin's layer adapter
+await mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, services.symbolRegistry)
 ```
+
+`mapProvider.getActiveSymbolImageId(imageId)` and `mapProvider.getSelectedSymbolImageId(imageId)` return the image id of a registered symbol's active (keyboard cursor) and selected variants.
 
 ---
 

@@ -1,6 +1,6 @@
 # Symbol Registry
 
-The symbol registry is a service that manages reusable named symbols for map markers. It is available to plugin authors via `services.symbolRegistry`.
+The symbol registry is a service that manages reusable named symbols for map markers. It is available to plugin authors via `services.symbolRegistry`. Each map has its own registry, so symbols registered and `symbolDefaults` set on one map don't affect another on the same page.
 
 > **Application code** that needs a one-off custom marker should pass [`symbolSvgContent`](./symbol-config.md#symbolsvgcontent) directly to `addMarker()` via `MarkerOptions` instead — no registration required.
 
@@ -10,7 +10,7 @@ Six symbols are registered by default:
 
 | ID | Anchored at | Description |
 |----|-------------|-------------|
-| `'pin'` | Just below the tip | Teardrop pin |
+| `'pin'` | Tip | Teardrop pin |
 | `'circle'` | Centre | Filled circle |
 | `'square'` | Centre | Rounded square |
 | `'hexagon'` | Centre | Pointy-top hexagon |
@@ -33,7 +33,7 @@ Set constructor-level defaults. Called automatically during app initialisation w
 
 ### `getDefaults()`
 
-Returns the merged app-wide defaults (hardcoded `symbolDefaults.js` + constructor overrides).
+Returns the map's merged defaults (hardcoded `symbolDefaults.js` + constructor overrides).
 
 ```js
 const defaults = services.symbolRegistry.getDefaults()

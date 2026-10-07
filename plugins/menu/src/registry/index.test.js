@@ -1,4 +1,4 @@
-import { getDatasetRegistry, patternRegistry, symbolRegistry } from './index.js'
+import { getDatasetRegistry, patternRegistry } from './index.js'
 
 describe('registry/index', () => {
   it('exports getDatasetRegistry as a function', () => {
@@ -7,9 +7,5 @@ describe('registry/index', () => {
 
   it('exports patternRegistry', () => {
     expect(patternRegistry).toBeDefined()
-  })
-
-  it('exports symbolRegistry', () => {
-    expect(symbolRegistry).toBeDefined()
   })
 })

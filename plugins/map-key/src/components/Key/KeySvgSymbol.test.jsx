@@ -1,12 +1,13 @@
 import { render } from '@testing-library/react'
 import { KeySvgSymbol } from './KeySvgSymbol'
 import { getSymbolStyleColors } from '../../../../../src/utils/symbolUtils.js'
-import { symbolRegistry } from '../../registry/index.js'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 
 jest.mock('../../../../../src/utils/symbolUtils.js', () => ({
   getSymbolStyleColors: jest.fn(() => ({ foreground: '#000', background: '#fff' }))
 }))
 
+const symbolRegistry = createSymbolRegistry()
 const mockResolve = jest.spyOn(symbolRegistry, 'resolve')
 
 const defaultProps = {
@@ -16,7 +17,8 @@ const defaultProps = {
       stroke: '#000000'
     }
   },
-  mapStyle: { id: 'default' }
+  mapStyle: { id: 'default' },
+  symbolRegistry
 }
 
 beforeEach(() => {

@@ -1,7 +1,9 @@
 import { hasSymbolStyle, getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
 import { getSymbolIconLayout } from '../../../../../providers/maplibre/src/utils/symbolImages.js'
+
+const symbolRegistry = createSymbolRegistry()
 
 const mapStyle = { id: 'outdoor', mapColorScheme: 'light' }
 
@@ -78,7 +80,7 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([properties], mapStyle, symbolRegistry, 2)
-    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', 2)
     expect(draw.add).toHaveBeenCalledWith({
       id: 'p1',
       type: 'Feature',
@@ -134,7 +136,7 @@ describe('resolvePointSymbol', () => {
 
     await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
-    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', 2)
     const expression = ['match', ['get', 'user_symbolImageId'], expectedImageId, ['literal', [0, 8.75]], ['literal', [0, 0]]]
     expect(draw.options.styles[0].layout).toEqual({ 'icon-anchor': 'x', 'icon-offset': expression })
     expect(draw.options.styles[1].layout).toEqual({ 'icon-offset': expression })
@@ -160,7 +162,7 @@ describe('resolvePointSymbol', () => {
     const map = createMap()
     const properties = { symbol: 'pin' }
     const draw = createDraw([point('p1', properties)])
-    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', 2)
     const mapProvider = createMapProvider({
       getActiveSymbolImageId: jest.fn((imageId) => imageId === expectedImageId ? 'symbol-act-xyz' : null),
       getSelectedSymbolImageId: jest.fn((imageId) => imageId === expectedImageId ? 'symbol-sel-xyz' : null)
@@ -216,7 +218,7 @@ describe('resolvePointSymbol', () => {
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
       properties: expect.objectContaining({ symbolIconAnchor: 'top-left' })
     }))
-    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', 2)
     expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([-9, -9])
   })
 
@@ -233,7 +235,7 @@ describe('resolvePointSymbol', () => {
     expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
       properties: expect.objectContaining({ symbolIconAnchor: 'bottom' })
     }))
-    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', 2)
     expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 9])
   })
 
@@ -246,7 +248,7 @@ describe('resolvePointSymbol', () => {
     await resolvePointSymbol({ draw, mapProvider, map, symbolRegistry, featureId: 'p1', properties })
 
     // anchor [0.5, 0.9] against the custom 100×100 viewBox
-    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, false, 2)
+    const expectedImageId = symbolRegistry.getSymbolImageId(properties, mapStyle, 'normal', 2)
     expect(map._symbolIconOffsetMap[expectedImageId]).toEqual([0, 10])
   })
 
@@ -286,7 +288,7 @@ describe('refreshAllPointSymbols', () => {
 
     expect(mapProvider.addSymbolsToMap).toHaveBeenCalledWith([expect.objectContaining({ symbol: 'pin' })], mapStyle, symbolRegistry, 3)
     const [{ features: [written] }] = draw.add.mock.calls[0]
-    expect(written.properties.symbolImageId).toBe(symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, 3))
+    expect(written.properties.symbolImageId).toBe(symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'normal', 3))
   })
 
   it('does nothing when there are no drawn points', async () => {
@@ -312,7 +314,7 @@ describe('refreshAllPointSymbols', () => {
 
     expect(draw.add).toHaveBeenCalledTimes(1)
     const [{ features: [written] }] = draw.add.mock.calls[0]
-    expect(written.properties.symbolImageId).toBe(symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, 2))
+    expect(written.properties.symbolImageId).toBe(symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'normal', 2))
   })
 
   it('drops icon offsets for image ids no drawn point uses any more, keeping the rest', async () => {
@@ -329,7 +331,7 @@ describe('refreshAllPointSymbols', () => {
 
     await refreshAllPointSymbols({ draw, mapProvider, map, symbolRegistry, pixelRatioOverride: 2 })
 
-    const freshId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, 2)
+    const freshId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'normal', 2)
     expect(Object.keys(map._symbolIconOffsetMap)).toEqual([freshId])
 
     // a second refresh at the same ratio has nothing new to register or prune

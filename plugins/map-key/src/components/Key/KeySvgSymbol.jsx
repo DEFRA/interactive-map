@@ -1,10 +1,9 @@
 import { getSymbolStyleColors } from '../../../../../src/utils/symbolUtils.js'
 import { svgSymbolProps, SVG_SYMBOL_SIZE, KEY_SYMBOL_MAX_SIZE } from './svgProperties.js'
-import { symbolRegistry } from '../../registry/index.js'
 
 const HALF = 0.5
 
-export const KeySvgSymbol = ({ keyDefinition, mapStyle, symbolDef }) => {
+export const KeySvgSymbol = ({ keyDefinition, mapStyle, symbolDef, symbolRegistry }) => {
   const { style } = keyDefinition
   const mapColorScheme = mapStyle?.appColorScheme ?? 'light'
   const keyMapStyle = { ...mapStyle, mapColorScheme }

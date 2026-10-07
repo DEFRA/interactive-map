@@ -1,5 +1,7 @@
 import { anchorToMaplibre, anchorToMaplibreOffset, getSymbolIconLayout, SymbolImageVariants } from './symbolImages.js'
-import { symbolRegistry } from '../../../../src/services/symbolRegistry.js'
+import { createSymbolRegistry } from '../../../../src/services/symbolRegistry.js'
+
+const symbolRegistry = createSymbolRegistry()
 
 beforeAll(() => {
   globalThis.URL.createObjectURL = jest.fn(() => 'blob:mock')
@@ -160,8 +162,8 @@ describe('SymbolImageVariants — registration', () => {
     const map = makeMap()
     const symbolImages = await register(map, [{ symbol: 'circle' }])
     await register(map, [{ symbol: 'pin' }], PIXEL_RATIO, symbolImages)
-    const circleId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, false, PIXEL_RATIO)
-    const pinId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, PIXEL_RATIO)
+    const circleId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, 'normal', PIXEL_RATIO)
+    const pinId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'normal', PIXEL_RATIO)
     expect(symbolImages.getActiveImageId(circleId)).not.toBeNull()
     expect(symbolImages.getSelectedImageId(circleId)).not.toBeNull()
     expect(symbolImages.getActiveImageId(pinId)).not.toBeNull()
@@ -178,8 +180,8 @@ describe('SymbolImageVariants — registration', () => {
 
   it('maps each normal image id to its active and selected variants', async () => {
     const symbolImages = await register(makeMap(), [{ symbol: 'pin' }])
-    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, PIXEL_RATIO)
-    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true, PIXEL_RATIO)
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'normal', PIXEL_RATIO)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'active', PIXEL_RATIO)
     const selectedId = symbolImages.getSelectedImageId(normalId)
     expect(symbolImages.getActiveImageId(normalId)).toBe(activeId)
     expect(selectedId).toMatch(/^symbol-sel-[a-z0-9]+-\d+(\.\d+)?x$/)
@@ -188,8 +190,8 @@ describe('SymbolImageVariants — registration', () => {
   it('skips addImage when all three variant images are already registered', async () => {
     // Run once to discover the selected image ID (not derivable without rasterising)
     const setup = await register(makeMap(), [{ symbol: 'circle' }])
-    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, false, PIXEL_RATIO)
-    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, true, PIXEL_RATIO)
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, 'normal', PIXEL_RATIO)
+    const activeId = symbolRegistry.getSymbolImageId({ symbol: 'circle' }, mapStyle, 'active', PIXEL_RATIO)
     const selectedId = setup.getSelectedImageId(normalId)
 
     const map = makeMap([normalId, activeId, selectedId])
@@ -208,21 +210,21 @@ describe('SymbolImageVariants — registration', () => {
 
 describe('SymbolImageVariants — null results and caching', () => {
   it('does not call addImage when rasteriseSymbolImage returns null', async () => {
-    // getSymbolImageId (called twice — normal + active) needs a real symbolDef to produce imageIds,
-    // but rasteriseSymbolImage must get undefined from getSymbolDef so it returns null.
-    // The registry.get call order: [1] getSymbolImageId normal, [2] getSymbolImageId active,
-    // [3] rasteriseSymbolImage normal, [4] rasteriseSymbolImage active, [5] rasteriseSymbolImage selected.
-    const pinDef = symbolRegistry.get('pin')
-    const getSpy = jest.spyOn(symbolRegistry, 'get')
-      .mockReturnValueOnce(pinDef)
-      .mockReturnValueOnce(pinDef)
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(undefined)
-      .mockReturnValueOnce(undefined)
+    const rasterise = jest.spyOn(symbolRegistry, 'rasteriseSymbolImage').mockResolvedValue(null)
     const map = makeMap()
     await register(map, [{ symbol: 'pin' }])
     expect(map.addImage).not.toHaveBeenCalled()
-    getSpy.mockRestore()
+    rasterise.mockRestore()
+  })
+
+  it('rasterises nothing for a symbol the map already has every image of', async () => {
+    const map = makeMap()
+    const symbolImages = await register(map, [{ symbol: 'pin' }])
+    const rasterise = jest.spyOn(symbolRegistry, 'rasteriseSymbolImage')
+    map.hasImage.mockReturnValue(true)
+    await register(map, [{ symbol: 'pin' }], PIXEL_RATIO, symbolImages)
+    expect(rasterise).not.toHaveBeenCalled()
+    rasterise.mockRestore()
   })
 
   it('skips config when symbolDef cannot be resolved', async () => {
@@ -267,8 +269,8 @@ describe('SymbolImageVariants — removing images from older map sizes and style
     }
   }
   const pinIds = (symbolImages, pixelRatio) => {
-    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, false, pixelRatio)
-    return [normalId, symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, true, pixelRatio), symbolImages.getSelectedImageId(normalId)]
+    const normalId = symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'normal', pixelRatio)
+    return [normalId, symbolRegistry.getSymbolImageId({ symbol: 'pin' }, mapStyle, 'active', pixelRatio), symbolImages.getSelectedImageId(normalId)]
   }
 
   it('keeps the current and previous size, and removes an older one\'s images when a third arrives', async () => {

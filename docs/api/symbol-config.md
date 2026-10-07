@@ -72,7 +72,7 @@ SVG `viewBox` attribute. Use alongside `symbolSvgContent` when your paths use a 
 **Type:** `[number, number]`
 **Default:** registered symbol's anchor, or `[0.5, 0.5]`
 
-Normalised `[x, y]` anchor point — which point on the symbol sits on the geographic coordinate. Each built-in symbol has its own default: just below the tip for `'pin'`, the centroid for `'triangle'`, and the centre for the others.
+Normalised `[x, y]` anchor point — which point on the symbol sits on the geographic coordinate. Each built-in symbol has its own default: the tip for `'pin'`, the centroid for `'triangle'`, and the centre for the others.
 
 - **On a built-in symbol**, `[0, 0]` is the top-left and `[1, 1]` the bottom-right of the shape.
 - **On a custom SVG symbol** (`symbolSvgContent` or a registered `svg`), it's a fraction of the symbol's `viewBox`.
