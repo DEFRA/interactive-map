@@ -5,7 +5,7 @@ import { createMapLabelNavigator } from './utils/labels.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { SymbolImageVariants, getSymbolIconLayout } from './utils/symbolImages.js'
-import { addPatternsToMap } from './utils/patternImages.js'
+import { PatternImages } from './utils/patternImages.js'
 import { getAreaDimensions, getCardinalMove, getResolution, getPaddedBounds, isGeometryObscured } from './utils/spatial.js'
 import { createSymbolRegistry } from '../../../src/services/symbolRegistry.js'
 
@@ -42,7 +42,6 @@ jest.mock('./utils/symbolImages.js', () => ({
   ...jest.requireActual('./utils/symbolImages.js'),
   getSymbolIconLayout: jest.fn(() => ({ 'icon-anchor': 'bottom', 'icon-offset': [0, 2] }))
 }))
-jest.mock('./utils/patternImages.js', () => ({ addPatternsToMap: jest.fn(() => Promise.resolve()) }))
 
 describe('MapLibreProvider', () => {
   let map, eventBus, maplibreModule, loadCallback
@@ -365,24 +364,38 @@ describe('MapLibreProvider', () => {
     expect(registerSymbols).toHaveBeenCalledWith([], { id: 'test' }, symbolRegistry, 1)
   })
 
-  test('addPatternsToMap falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
+  // The provider's own pattern images, created with its map
+  const initWithPatternImages = async () => {
     const p = makeProvider()
     await doInitMap(p)
+    const registerPatterns = jest.spyOn(p.patternImages, 'registerPatterns').mockResolvedValue()
+    return { p, registerPatterns }
+  }
+
+  test('owns a PatternImages for its map', async () => {
+    const p = makeProvider()
+    await doInitMap(p)
+    expect(p.patternImages).toBeInstanceOf(PatternImages)
+    expect(p.patternImages.map).toBe(map)
+  })
+
+  test('addPatternsToMap falls back to pixelRatio 1 when getPixelRatio returns 0', async () => {
+    const { p, registerPatterns } = await initWithPatternImages()
     map.getPixelRatio.mockReturnValue(0)
     const configs = [{ fillPattern: 'dot' }]
     const registry = {}
     await p.addPatternsToMap(configs, 'test', registry)
-    expect(addPatternsToMap).toHaveBeenCalledWith(map, configs, 'test', registry, 1)
+    expect(registerPatterns).toHaveBeenCalledWith(configs, 'test', registry, 1)
   })
 
-  test('addPatternsToMap is called with pixelRatio from getPixelRatio', async () => {
-    const p = makeProvider()
-    await doInitMap(p)
+  test('addPatternsToMap registers at the map\'s pixel ratio, or a given one', async () => {
+    const { p, registerPatterns } = await initWithPatternImages()
     map.getPixelRatio.mockReturnValue(2)
-    p.mapSize = 'medium'
     const registry = {}
     await p.addPatternsToMap([], 'test', registry)
-    expect(addPatternsToMap).toHaveBeenCalledWith(map, [], 'test', registry, 2)
+    expect(registerPatterns).toHaveBeenLastCalledWith([], 'test', registry, 2)
+    await p.addPatternsToMap([], 'test', registry, 3)
+    expect(registerPatterns).toHaveBeenLastCalledWith([], 'test', registry, 3)
   })
 
   describe('setHoverCursor', () => {

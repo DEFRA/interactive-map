@@ -2,6 +2,7 @@
 import OpenLayersProvider from './openlayersProvider.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { SymbolImageCache } from './utils/symbolImages.js'
+import { PatternImageCache } from './utils/patternImages.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getExtentFromGeoJSON, isGeometryObscured } from './utils/spatial.js'
@@ -423,6 +424,35 @@ describe('OpenLayersProvider', () => {
       const panelRect = { left: 0, top: 0, right: 100, bottom: 100 }
       provider.isGeometryObscured(geojson, panelRect)
       expect(isGeometryObscured).toHaveBeenCalledWith(geojson, panelRect, mockMapInstance)
+    })
+  })
+
+  describe('pattern images', () => {
+    const patternRegistry = { id: 'app-pattern-registry' }
+
+    it('gives each provider (each map) its own pattern cache', () => {
+      const { provider: first } = makeProvider()
+      const { provider: second } = makeProvider()
+      expect(first.patternImages).toBeInstanceOf(PatternImageCache)
+      expect(first.patternImages).not.toBe(second.patternImages)
+    })
+
+    it('addPatternsToMap registers at the map\'s pixel ratio unless given one, and getPatternFill reads its cache', async () => {
+      const { provider } = makeProvider()
+      provider.map = { getPixelRatio: () => 2 }
+      const register = jest.spyOn(provider.patternImages, 'registerPatterns').mockResolvedValue()
+      const configs = [{ fillPattern: 'dot' }]
+
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 2)
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry, 3)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 3)
+      provider.map = { getPixelRatio: () => 0 }
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 1)
+
+      jest.spyOn(provider.patternImages, 'getFill').mockReturnValue('fill')
+      expect(provider.getPatternFill('pattern-id')).toBe('fill')
     })
   })
 

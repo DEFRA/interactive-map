@@ -1,4 +1,4 @@
-import { addPatternsToMap } from './patternImages.js'
+import { PatternImages } from './patternImages.js'
 import { createPatternRegistry } from '../../../../src/services/patternRegistry.js'
 
 const patternRegistry = createPatternRegistry()
@@ -33,6 +33,10 @@ const makeMap = (existingIds = []) => ({
   addImage: jest.fn()
 })
 
+// Registers the configs with a fresh PatternImages for the map
+const addPatternsToMap = (map, configs, mapStyleId, registry, pixelRatio = 1) =>
+  new PatternImages(map).registerPatterns(configs, mapStyleId, registry, pixelRatio)
+
 // ─── addPatternsToMap ─────────────────────────────────────────────────────────
 describe('addPatternsToMap', () => {
   beforeEach(() => {
@@ -58,7 +62,7 @@ describe('addPatternsToMap', () => {
     it('skips addImage when image is already registered', async () => {
       const style = { fillPattern: 'stripes' }
       const pixelRatio = 1
-      const map = makeMap(['pattern-mpxwil-2x'])
+      const map = makeMap([patternRegistry.getPatternImageId(style, OUTDOOR, pixelRatio)])
       await addPatternsToMap(map, [style], OUTDOOR, patternRegistry, pixelRatio)
       expect(map.addImage).not.toHaveBeenCalled()
     })
@@ -79,7 +83,6 @@ describe('addPatternsToMap', () => {
     it('processes multiple configs in parallel', async () => {
       const map = makeMap()
       patternRegistry.register('dots', "fillPatternForegroundColor: '#aabbcc', fillPatternBackgroundColor: '#112233'")
-      console.log('patternRegistry.list', patternRegistry.list())
       await addPatternsToMap(map, [{ fillPattern: 'stripes' }, { fillPattern: 'dots' }], OUTDOOR, patternRegistry)
       expect(map.addImage).toHaveBeenCalledTimes(2)
     })
@@ -188,5 +191,48 @@ describe('addPatternsToMap', () => {
       getPatternImageId.mockRestore()
       getPatternInnerContent.mockRestore()
     })
+  })
+})
+
+describe('PatternImages — removing images from older map sizes and styles', () => {
+  // A map that keeps the images added to it, like MapLibre's image store
+  const makeImageStore = () => {
+    const images = new Set()
+    return {
+      images,
+      hasImage: jest.fn((id) => images.has(id)),
+      addImage: jest.fn((id) => images.add(id)),
+      removeImage: jest.fn((id) => images.delete(id))
+    }
+  }
+  const style = { fillPatternSvgContent: SVG_CONTENT }
+
+  it('keeps the current and previous size, and removes an older one\'s image when a third arrives', async () => {
+    const map = makeImageStore()
+    const patternImages = new PatternImages(map)
+    await patternImages.registerPatterns([style], OUTDOOR, patternRegistry, 1)
+    const oldId = patternRegistry.getPatternImageId(style, OUTDOOR, 1)
+    await patternImages.registerPatterns([style], OUTDOOR, patternRegistry, 2)
+    expect(map.images.has(oldId)).toBe(true)
+
+    await patternImages.registerPatterns([style], OUTDOOR, patternRegistry, 3)
+    expect(map.images.has(oldId)).toBe(false)
+    expect(map.images.size).toBe(2)
+  })
+
+  it('skips removing an old image the map no longer has, e.g. after a style change', async () => {
+    const map = makeImageStore()
+    const patternImages = new PatternImages(map)
+    await patternImages.registerPatterns([style], OUTDOOR, patternRegistry, 1)
+    map.images.clear()
+    await patternImages.registerPatterns([style], OUTDOOR, patternRegistry, 2)
+    await patternImages.registerPatterns([style], OUTDOOR, patternRegistry, 3)
+    expect(map.removeImage).not.toHaveBeenCalled()
+  })
+
+  it('rasterises a pattern shared by several styles once', async () => {
+    const map = makeImageStore()
+    await new PatternImages(map).registerPatterns([style, { ...style }], OUTDOOR, patternRegistry, 1)
+    expect(map.addImage).toHaveBeenCalledTimes(1)
   })
 })

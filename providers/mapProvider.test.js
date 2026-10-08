@@ -19,7 +19,7 @@ describe('MapProvider', () => {
     })
   })
 
-  it.each(['addSymbolsToMap', 'getActiveSymbolImageId', 'getSelectedSymbolImageId'])('requires a subclass to implement %s', (method) => {
+  it.each(['addSymbolsToMap', 'addPatternsToMap', 'getActiveSymbolImageId', 'getSelectedSymbolImageId'])('requires a subclass to implement %s', (method) => {
     const provider = new MapProvider()
     provider.name = 'TestProvider'
     expect(() => provider[method]()).toThrow(`TestProvider must implement ${method}()`)

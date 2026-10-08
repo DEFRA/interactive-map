@@ -15,6 +15,7 @@ import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getAreaDimensions, getCardinalMove, getExtentFromGeoJSON, getPaddedExtent, isGeometryObscured } from './utils/spatial.js'
 import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { SymbolImageCache } from './utils/symbolImages.js'
+import { PatternImageCache } from './utils/patternImages.js'
 import { buildFilterEvaluator } from './utils/filterEvaluator.js'
 import { queryFeatures, getVisibleFeatures } from './utils/queryFeatures.js'
 import { collectTileFragments } from './utils/vtTileFragments.js'
@@ -55,6 +56,7 @@ export default class OpenLayersProvider extends MapProvider {
     }
     // This map's rasterised symbol images (see addSymbolsToMap)
     this.symbolImages = new SymbolImageCache()
+    this.patternImages = new PatternImageCache()
     Object.assign(this, mapProviderConfig)
   }
 
@@ -398,6 +400,30 @@ export default class OpenLayersProvider extends MapProvider {
    */
   getSymbolDataUri (imageId) {
     return this.symbolImages.getDataUri(imageId)
+  }
+
+  /**
+   * Rasterises each pattern's image and caches it as a crisp CanvasPattern fill. Fills already
+   * cached are reused.
+   *
+   * @param {Object[]} patternConfigs - an array of pattern configs
+   * @param {string} mapStyleId
+   * @param {Object} patternRegistry
+   * @param {number} [pixelRatio] - defaults to the map's current pixel ratio
+   * @returns {Promise<void>}
+   */
+  async addPatternsToMap (patternConfigs, mapStyleId, patternRegistry, pixelRatio = this.map.getPixelRatio() || 1) {
+    return this.patternImages.registerPatterns(patternConfigs, mapStyleId, patternRegistry, pixelRatio)
+  }
+
+  /**
+   * A registered pattern's fill — an ol/style/Fill for a style's `fill`.
+   *
+   * @param {string} imageId
+   * @returns {import('ol/style/Fill.js').default|undefined}
+   */
+  getPatternFill (imageId) {
+    return this.patternImages.getFill(imageId)
   }
 
   /**

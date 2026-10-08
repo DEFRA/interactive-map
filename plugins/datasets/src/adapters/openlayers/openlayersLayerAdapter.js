@@ -2,7 +2,6 @@ import { OpenLayersDataset } from './registry/openLayersDataset.js'
 import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 import { createDatasetSource, createDatasetLayer, resolveLayerStyle, readGeoJSONFeatures } from './layerBuilders.js'
-import { registerCrispCanvasPatterns } from './canvasPatternStyle.js'
 import { logger } from '../../../../../src/services/logger.js'
 
 /**
@@ -49,6 +48,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
       patternRegistry: this._patternRegistry,
       symbolRegistry: this._symbolRegistry,
       getSymbolDataUri: (imageId) => this._mapProvider.getSymbolDataUri(imageId),
+      getPatternFill: (imageId) => this._mapProvider.getPatternFill(imageId),
       buildFilterEvaluator: (filter) => this._mapProvider.buildFilterEvaluator(filter)
     }
   }
@@ -190,11 +190,10 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
 
   // ─── Private ─────────────────────────────────────────────────────────────────
 
-  // Rasterises and caches each pattern's image ahead of time, so OpenLayersDataset.getFlatStyle /
-  // resolveLayerStyle (both synchronous) can find it already resolved — mirrors
+  // Registers each pattern's fill with the OL provider ahead of time, at the map's current
+  // pixelRatio, so resolveLayerStyle (synchronous) can find it already resolved — mirrors
   // MapLibreLayerAdapter's addPatternsAndSymbolsToMap, which likewise runs before _addLayers
-  // reads the dataset's style. Goes through canvasPatternStyle.js's genuinely-crisp,
-  // pixelRatio-scaled pipeline — see layerBuilders.js's resolveLayerStyle.
+  // reads the dataset's style. See canvasPatternStyle.js for how the fill is used.
   async _registerPatterns (registryDatasets = datasetRegistry.topLevelDatasets()) {
     const styles = []
     registryDatasets.forEach(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
@@ -202,8 +201,9 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
         styles.push(leaf.style)
       }
     }))
-    const mapStyleId = datasetRegistry.mapStyle?.id
-    await registerCrispCanvasPatterns(styles, mapStyleId, this._patternRegistry, this._pixelRatio)
+    if (styles.length) {
+      await this._mapProvider.addPatternsToMap(styles, datasetRegistry.mapStyle?.id, this._patternRegistry, this._pixelRatio)
+    }
   }
 
   // Rasterises and caches each symbol's icon image ahead of time, at the map's current

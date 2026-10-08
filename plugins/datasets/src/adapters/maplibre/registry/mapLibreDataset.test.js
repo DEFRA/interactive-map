@@ -1,10 +1,15 @@
 import { MapLibreDataset } from './mapLibreDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { logger } from '../../../../../../src/services/logger.js'
+import { hashString } from '../../../../../../src/utils/hashString.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('../../../registry/datasetRegistry.js')
 jest.mock('../../../../../../src/services/logger.js')
+
+// The demo existing-fields tiles URL and static geojson URL, as sourceId hashes them
+const EXISTING_FIELDS_SOURCE_ID = `tiles-${hashString('https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}')}`
+const STATIC_GEOJSON_SOURCE_ID = `geojson-${hashString('https://example.com/static.geojson')}`
 
 describe('MapLibreDataset', () => {
   beforeEach(() => {
@@ -212,12 +217,12 @@ describe('MapLibreDataset', () => {
 
     it('returns a tiles-based id for a tile dataset (array tiles)', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-35m5lrb')
+      expect(dataset.sourceId).toBe(EXISTING_FIELDS_SOURCE_ID)
     })
 
     it('returns a tiles-based id when tiles is a plain string (line 76 non-array branch)', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-35m5lrb')
+      expect(dataset.sourceId).toBe(EXISTING_FIELDS_SOURCE_ID)
     })
 
     it('returns geojson-dynamic-{id} for a dynamic geojson source', () => {
@@ -225,7 +230,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns geojson-{hash} for a static string geojson url', () => {
-      expect(datasetRegistry.getDataset('ds-static-url').sourceId).toBe('geojson-1u4xay')
+      expect(datasetRegistry.getDataset('ds-static-url').sourceId).toBe(STATIC_GEOJSON_SOURCE_ID)
     })
 
     it('returns geojson-{id} for an object geojson source', () => {
@@ -383,7 +388,7 @@ describe('MapLibreDataset', () => {
       expect(datasetRegistry.getDataset('existing-fields').getFillSource({})).toEqual({
         id: 'existing-fields',
         type: 'fill',
-        source: 'tiles-35m5lrb',
+        source: EXISTING_FIELDS_SOURCE_ID,
         'source-layer': 'field_parcels_wgs84',
         minzoom: 10,
         maxzoom: 24,
@@ -401,7 +406,7 @@ describe('MapLibreDataset', () => {
         .toEqual({
           id: 'hedge-control',
           type: 'line',
-          source: 'tiles-35m5lrb',
+          source: EXISTING_FIELDS_SOURCE_ID,
           'source-layer': 'hedge_control',
           minzoom: 10,
           maxzoom: 24,
@@ -416,7 +421,7 @@ describe('MapLibreDataset', () => {
         .toEqual({
           id: 'existing-fields-stroke',
           type: 'line',
-          source: 'tiles-35m5lrb',
+          source: EXISTING_FIELDS_SOURCE_ID,
           'source-layer': 'field_parcels_wgs84',
           minzoom: 10,
           maxzoom: 24,
