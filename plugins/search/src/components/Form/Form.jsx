@@ -55,7 +55,7 @@ export const Form = ({
       className={classNames}
       style={getFormStyle(pluginConfig, pluginState, appState)}
       aria-controls={`${id}-viewport`}
-      onSubmit={(e) => events.handleSubmit(e, appState, pluginState)}
+      onSubmit={(event) => events.handleSubmit(event, appState, pluginState)}
     >
       {/* Hidden submit button - required for Enter key to trigger form submission */}
       <button type='submit' style={{ display: 'none' }} aria-hidden='true' tabIndex={-1}>
@@ -81,10 +81,10 @@ export const Form = ({
           enterKeyHint='search'
           value={pluginState.value}
           onClick={events.handleInputClick}
-          onChange={events.handleInputChange}
+          onChange={(event) => events.handleInputChange(event, pluginState)}
           onFocus={() => events.handleInputFocus(appState.interfaceType)}
           onBlur={() => events.handleInputBlur(appState.interfaceType)}
-          onKeyDown={(e) => events.handleInputKeyDown(e, pluginState)}
+          onKeyDown={(event) => events.handleInputKeyDown(event, pluginState)}
           ref={inputRef}
         />
         <span id={`${id}-search-hint`} className='im-c-search__hint'>
