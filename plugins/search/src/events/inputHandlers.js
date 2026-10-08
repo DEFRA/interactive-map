@@ -13,8 +13,8 @@ export const createInputHandlers = ({ dispatch, debouncedFetchSuggestions }) => 
     dispatch({ type: 'INPUT_BLUR', payload: interfaceType })
   },
 
-  handleInputChange (e, pluginState) {
-    const value = e.target.value
+  handleInputChange (event, pluginState) {
+    const value = event.target.value
     dispatch({ type: 'SET_VALUE', payload: value })
 
     // Typing after arrowing to a suggestion returns the focus ring to the input
