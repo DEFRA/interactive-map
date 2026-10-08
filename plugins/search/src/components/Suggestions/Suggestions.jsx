@@ -7,6 +7,8 @@ export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
       aria-labelledby={`${id}-search-input`} // Option A: label from input
       className='im-c-search-suggestions'
       style={!pluginState.areSuggestionsVisible || !pluginState.suggestions.length ? { display: 'none' } : undefined}
+      // Keep focus in the input while a suggestion is pressed, so its blur can't hide the list before the click lands
+      onMouseDown={(event) => event.preventDefault()}
     >
       {pluginState.suggestions.map((suggestion, i) => (
         <li // NOSONAR
