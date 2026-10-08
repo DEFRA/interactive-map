@@ -81,7 +81,7 @@ export const Form = ({
           enterKeyHint='search'
           value={pluginState.value}
           onClick={events.handleInputClick}
-          onChange={events.handleInputChange}
+          onChange={(e) => events.handleInputChange(e, pluginState)}
           onFocus={() => events.handleInputFocus(appState.interfaceType)}
           onBlur={() => events.handleInputBlur(appState.interfaceType)}
           onKeyDown={(e) => events.handleInputKeyDown(e, pluginState)}

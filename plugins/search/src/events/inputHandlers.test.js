@@ -101,4 +101,24 @@ describe('createInputHandlers', () => {
     expect(debouncedFetchSuggestions).toHaveBeenCalledWith(value)
     expect(debouncedFetchSuggestions.cancel).not.toHaveBeenCalled()
   })
+
+  test('handleInputChange after arrowing to a suggestion clears it and restores the input focus ring', () => {
+    const value = 'a'.repeat(DEFAULTS.minSearchLength)
+
+    handlers.handleInputChange({ target: { value } }, { selectedIndex: 1 })
+
+    expect(dispatch.mock.calls.map(([action]) => action)).toEqual([
+      { type: 'SET_VALUE', payload: value },
+      { type: 'SET_SELECTED', payload: -1 },
+      { type: 'SET_KEYBOARD_FOCUS_WITHIN', payload: true },
+      { type: 'SHOW_SUGGESTIONS' }
+    ])
+  })
+
+  test('handleInputChange with no suggestion selected leaves the focus ring alone', () => {
+    handlers.handleInputChange({ target: { value: 'abc' } }, { selectedIndex: -1 })
+
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_KEYBOARD_FOCUS_WITHIN', payload: true })
+    expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_SELECTED', payload: -1 })
+  })
 })
