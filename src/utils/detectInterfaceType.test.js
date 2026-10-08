@@ -178,6 +178,38 @@ describe('Interface Detector Utility Module', () => {
     expect(handler).toHaveBeenCalledTimes(2) // no longer called after unsubscribe
   })
 
+  it('ignores Enter, arrows and Escape typed in a text field but still honours Tab there', () => {
+    cleanup = createInterfaceDetector()
+    triggerDomEvent('pointerdown', { pointerType: 'mouse' })
+
+    const input = document.createElement('input')
+    const textarea = document.createElement('textarea')
+    const editable = { tagName: 'DIV', isContentEditable: true }
+    const textFields = [input, textarea, editable]
+    textFields.forEach(target => {
+      ['Enter', 'ArrowDown', 'ArrowUp', 'Escape'].forEach(key => {
+        triggerDomEvent('keydown', { key, target })
+        expect(getInterfaceType()).toBe('mouse')
+      })
+    })
+
+    triggerDomEvent('keydown', { key: 'Tab', target: input })
+    expect(getInterfaceType()).toBe('keyboard')
+  })
+
+  it('switches to keyboard on Enter from non-text controls', () => {
+    cleanup = createInterfaceDetector()
+    const checkbox = document.createElement('input')
+    checkbox.type = 'checkbox'
+    const button = document.createElement('button')
+    const targets = [checkbox, button, undefined]
+    targets.forEach(target => {
+      triggerDomEvent('pointerdown', { pointerType: 'mouse' })
+      triggerDomEvent('keydown', { key: 'Enter', target })
+      expect(getInterfaceType()).toBe('keyboard')
+    })
+  })
+
   it('should return "touch" when matchMedia initially matches coarse pointer', async () => {
     jest.resetModules()
 
