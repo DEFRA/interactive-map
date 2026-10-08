@@ -18,6 +18,19 @@ function normalizePointerType (pointerType) {
   return 'unknown'
 }
 
+const KEYBOARD_MODE_KEYS = new Set(['Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'])
+const NON_TEXT_INPUT_TYPES = new Set(['button', 'checkbox', 'color', 'file', 'image', 'radio', 'range', 'reset', 'submit'])
+
+function isTextField (el) {
+  if (!el) {
+    return false
+  }
+  if (el.tagName === 'TEXTAREA' || el.isContentEditable) {
+    return true
+  }
+  return el.tagName === 'INPUT' && !NON_TEXT_INPUT_TYPES.has(el.type)
+}
+
 function notifyListeners (newType) {
   if (lastInterfaceType !== newType) {
     lastInterfaceType = newType
@@ -59,11 +72,9 @@ function createInterfaceDetector () {
   }
 
   const handleKeyDown = e => {
-    // Recognize keyboard mode from Tab (explicit focus), arrow keys (navigation),
-    // Enter (confirmation), or other significant keys. This allows the interface type
-    // to update even when keyboard input happens during drawing (where focus is on map).
-    const keyboardModeKeys = new Set(['Tab', 'Enter', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'Escape'])
-    if (keyboardModeKeys.has(e.key)) {
+    // Tab, and arrows/Enter/Escape outside text fields, switch to keyboard mode. The
+    // latter cover a pointer user who clicks the map then pans or draws by keyboard.
+    if (e.key === 'Tab' || (KEYBOARD_MODE_KEYS.has(e.key) && !isTextField(e.target))) {
       notifyListeners('keyboard')
     }
   }
