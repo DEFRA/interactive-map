@@ -1,3 +1,5 @@
+import { SYMBOL_STYLE_KEYS } from '../../../../src/config/symbolConfig.js'
+
 const datasetDefaults = {
   minZoom: 6,
   maxZoom: 24,
@@ -16,8 +18,7 @@ const STYLE_PROPS = [
   'stroke', 'strokeWidth', 'strokeDashArray',
   'fill', 'fillPattern', 'fillPatternSvgContent', 'fillPatternForegroundColor', 'fillPatternBackgroundColor',
   'opacity', 'symbolDescription',
-  'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor', 'symbolSize',
-  'symbolBackgroundColor', 'symbolForegroundColor', 'symbolHaloWidth', 'symbolGraphic'
+  ...SYMBOL_STYLE_KEYS
 ]
 
 // Props whose presence in a style object indicates a custom visual style.

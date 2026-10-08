@@ -76,7 +76,19 @@ See [Symbol Config](./symbol-config.md) for the full list of token properties an
 
 Returns the symbol definition for a dataset or draw style, sized for its `symbolSize` — with the `viewBox` and `anchor` for that size. Pass the result to the `resolve` methods.
 
-Reads the style's `symbol` or `symbolSvgContent`, `symbolSize`, `symbolViewBox` and `symbolAnchor`. Marker options drop the `symbol` prefix (`svgContent`, `size`, `viewBox`, `anchor`); to size a definition from those, use [`getSizedSymbolDef`](#getsizedsymboldefsymboldef--viewbox-size-anchor-).
+Reads the style's `symbol` or `symbolSvgContent`, `symbolSize`, `symbolViewBox` and `symbolAnchor`. Marker options drop the `symbol` prefix (`svgContent`, `size`, `viewBox`, `anchor`); for those, use [`getMarkerSymbolDef`](#getmarkersymboldefoptions).
+
+---
+
+### `getMarkerSymbolDef(options)`
+
+Returns the symbol definition for marker options, sized for their `size` — with the `viewBox` and `anchor` for that size. Reads `svgContent` or `symbol`, `size`, `viewBox` and `anchor`, each falling back to the map's [defaults](#getdefaults). Returns `undefined` when neither names a known symbol.
+
+---
+
+### `getKeySymbol(style, mapStyle)`
+
+Returns `{ svg, viewBox }` for a dataset style's symbol as drawn in the map key: always at `'medium'` size, and in the page's colour scheme (`mapStyle.appColorScheme`) rather than the map's. Returns `null` when the style has no known symbol.
 
 ---
 
@@ -145,3 +157,9 @@ const svg = services.symbolRegistry.resolveSelected(
   mapStyle
 )
 ```
+
+---
+
+### `resolveVariant(symbolDef, styleColors, mapStyle, variant)`
+
+Resolves a symbol's SVG for the named variant: `'normal'` ([`resolve`](#resolvesymboldef-stylecolors-mapstyle)), `'active'` ([`resolveActive`](#resolveactivesymboldef-stylecolors-mapstyle)) or `'selected'` ([`resolveSelected`](#resolveselectedsymboldef-stylecolors-mapstyle)).

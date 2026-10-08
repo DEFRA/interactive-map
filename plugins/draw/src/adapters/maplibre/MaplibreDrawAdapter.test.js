@@ -1,7 +1,7 @@
 import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
-import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
+import { resolvePointSymbol } from './pointSymbolImages.js'
 import { logger } from '../../../../../src/services/logger.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
@@ -15,8 +15,7 @@ jest.mock('./utils/snapHelpers.js', () => ({
 jest.mock('../../utils/eventBus.js', () => ({ createEventBus: jest.fn() }))
 jest.mock('./pointSymbolImages.js', () => ({
   resolvePointSymbol: jest.fn(() => Promise.resolve()),
-  refreshAllPointSymbols: jest.fn(),
-  hasSymbolStyle: jest.fn()
+  refreshAllPointSymbols: jest.fn()
 }))
 
 const SNAP_LAYER = 'snap-helper-circle'
@@ -629,12 +628,10 @@ describe('simple delegations', () => {
     test('resolves the symbol for a Point feature with symbol properties, using the id draw.add() returns', () => {
       const { adapter, draw, map, mapProvider } = setup()
       draw.add.mockReturnValue(['generated-id'])
-      hasSymbolStyle.mockReturnValue(true)
       const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
 
       const result = adapter.add(feature)
 
-      expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin', sortKey: 1 })
       expect(resolvePointSymbol).toHaveBeenCalledWith({
         draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin', sortKey: 1 }
       })
@@ -644,7 +641,6 @@ describe('simple delegations', () => {
     test('logs a failed resolution rather than leaving the rejection unhandled', async () => {
       const { adapter, draw } = setup()
       draw.add.mockReturnValue(['p1'])
-      hasSymbolStyle.mockReturnValue(true)
       const error = new Error('rasterise failed')
       resolvePointSymbol.mockRejectedValueOnce(error)
       const loggerError = jest.spyOn(logger, 'error').mockImplementation(() => {})
@@ -659,7 +655,6 @@ describe('simple delegations', () => {
     test('does not attempt resolution for a Point with no symbol properties', () => {
       const { adapter, draw } = setup()
       draw.add.mockReturnValue(['id-1'])
-      hasSymbolStyle.mockReturnValue(false)
       adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
       expect(resolvePointSymbol).not.toHaveBeenCalled()
     })
@@ -668,7 +663,6 @@ describe('simple delegations', () => {
       const { adapter, draw } = setup()
       draw.add.mockReturnValue(['id-1'])
       adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
-      expect(hasSymbolStyle).not.toHaveBeenCalled()
       expect(resolvePointSymbol).not.toHaveBeenCalled()
     })
 
@@ -731,7 +725,6 @@ describe('simple delegations', () => {
       const feature = { id: 'p1', type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
       draw.get.mockReturnValue(feature)
       draw.add.mockReturnValue(['p1'])
-      hasSymbolStyle.mockReturnValue(true)
 
       adapter.setStyle('p1', { symbolBackgroundColor: '#ca3535' })
 

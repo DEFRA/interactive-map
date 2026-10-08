@@ -77,10 +77,7 @@ const patternImageMethods = {
   },
 
   /**
-   * Rasterise a pattern to ImageData, cached by imageId — shared by MapLibre's map.addImage()
-   * and OpenLayers' CanvasPattern (canvasPatternStyle.js). Note: the two currently render the
-   * pattern tile at different on-screen sizes (8px vs 16px CSS) — not yet confirmed if that
-   * needs aligning.
+   * Rasterise a pattern to ImageData, cached by imageId, for a map provider to register.
    *
    * @param {Object} style - Dataset or marker config with fillPattern* properties
    * @param {string} mapStyleId - Current style/theme identifier

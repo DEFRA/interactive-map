@@ -109,9 +109,61 @@ function resolveValues (symbolDef, markerValues, mapStyle, constructorDefaults) 
   )
 }
 
-// Sizing, image ids and rasterising. They read the registry only through `this` (its symbols,
-// defaults and resolve methods), so every registry shares them.
+// Sizing, variants, image ids, rasterising and the key symbol. They read the registry only through
+// `this` (its symbols, defaults and resolve methods), so every registry shares them.
 const symbolImageMethods = {
+  /**
+   * The sized symbol definition for a marker's options, falling back to this map's defaults for
+   * each: `svgContent` or `symbol`, `size`, `viewBox` and `anchor`.
+   *
+   * @param {Object} options - marker options
+   * @returns {Object|undefined} undefined when neither names a known symbol
+   */
+  getMarkerSymbolDef (options) {
+    const defaults = this.getDefaults()
+    const svgContent = options.svgContent || defaults.svgContent
+    const baseDef = svgContent ? { svg: svgContent } : this.get(options.symbol || defaults.symbol)
+    if (!baseDef) {
+      return undefined
+    }
+    return this.getSizedSymbolDef(baseDef, {
+      viewBox: options.viewBox || defaults.viewBox,
+      size: options.size ?? defaults.size,
+      anchor: options.anchor ?? defaults.anchor
+    })
+  },
+
+  /**
+   * A symbol's SVG for one variant: normal (no rings), active (both rings) or selected (black ring).
+   *
+   * @param {Object} symbolDef
+   * @param {Object} styleColors - token overrides
+   * @param {Object} mapStyle
+   * @param {'normal'|'active'|'selected'} variant
+   * @returns {string}
+   */
+  resolveVariant (symbolDef, styleColors, mapStyle, variant) {
+    const { resolveWith } = SYMBOL_VARIANTS[variant] ?? SYMBOL_VARIANTS.normal
+    return this[resolveWith](symbolDef, styleColors, mapStyle)
+  },
+
+  /**
+   * A dataset style's symbol as the map key draws it: always medium, whatever size the map uses,
+   * and in the page's colour scheme (mapStyle.appColorScheme) rather than the map's.
+   *
+   * @param {Object} style - a dataset style
+   * @param {Object} mapStyle - current map style config
+   * @returns {{ svg: string, viewBox: string }|null} null when the style has no known symbol
+   */
+  getKeySymbol (style, mapStyle) {
+    const symbolDef = this.getSymbolDef({ ...style, symbolSize: 'medium' })
+    if (!symbolDef) {
+      return null
+    }
+    const keyMapStyle = { ...mapStyle, mapColorScheme: mapStyle?.appColorScheme ?? 'light' }
+    return { svg: this.resolve(symbolDef, getSymbolStyleColors(style), keyMapStyle), viewBox: symbolDef.viewBox }
+  },
+
   /**
    * A symbol variant's resolved SVG and image id, from the hash of that SVG, its viewBox and the
    * pixel ratio.
@@ -127,8 +179,8 @@ const symbolImageMethods = {
     if (!symbolDef) {
       return null
     }
-    const { resolveWith, prefix } = SYMBOL_VARIANTS[variant] ?? SYMBOL_VARIANTS.normal
-    const resolvedContent = this[resolveWith](symbolDef, getSymbolStyleColors(style), mapStyle)
+    const { prefix } = SYMBOL_VARIANTS[variant] ?? SYMBOL_VARIANTS.normal
+    const resolvedContent = this.resolveVariant(symbolDef, getSymbolStyleColors(style), mapStyle, variant)
     return { symbolDef, resolvedContent, imageId: imageIdFor(prefix, resolvedContent, symbolDef.viewBox, pixelRatio) }
   },
 
@@ -143,6 +195,26 @@ const symbolImageMethods = {
    */
   getSymbolImageId (style, mapStyle, variant, pixelRatio) {
     return this.resolveSymbolImage(style, mapStyle, variant, pixelRatio)?.imageId ?? null
+  },
+
+  /**
+   * The image ids of all three variants of a symbol, without rasterising them.
+   *
+   * @param {Object} style
+   * @param {Object} mapStyle
+   * @param {number} pixelRatio - Device pixel ratio × map size scale factor
+   * @returns {{ normal: string, active: string, selected: string }|null} null for an unknown symbol
+   */
+  getSymbolImageIds (style, mapStyle, pixelRatio) {
+    const normal = this.getSymbolImageId(style, mapStyle, 'normal', pixelRatio)
+    if (!normal) {
+      return null
+    }
+    return {
+      normal,
+      active: this.getSymbolImageId(style, mapStyle, 'active', pixelRatio),
+      selected: this.getSymbolImageId(style, mapStyle, 'selected', pixelRatio)
+    }
   },
 
   /**

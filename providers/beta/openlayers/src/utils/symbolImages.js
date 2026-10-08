@@ -3,8 +3,6 @@ import { shared as iconImageCache } from 'ol/style/IconImageCache.js'
 import ImageState from 'ol/ImageState.js'
 import { RecentImageSets } from '../../../../../src/utils/recentImageSets.js'
 
-const VARIANTS = ['normal', 'active', 'selected']
-
 /**
  * The OL "last mile" for symbolRegistry's rasterised symbol images: turns the ImageData
  * rasteriseSymbolImage() produces into something OL can render, cached by the same imageId
@@ -87,16 +85,15 @@ export class SymbolImageCache {
    * @returns {Promise<string[]>} the symbol's image ids
    */
   async registerSymbol (style, mapStyle, symbolRegistry, pixelRatio) {
-    const imageIds = VARIANTS.map((variant) => symbolRegistry.getSymbolImageId(style, mapStyle, variant, pixelRatio))
-    const [normalId, activeId, selectedId] = imageIds
-    if (!normalId) {
+    const imageIds = symbolRegistry.getSymbolImageIds(style, mapStyle, pixelRatio)
+    if (!imageIds) {
       return []
     }
-    this.activeImageIds.set(normalId, activeId)
-    this.selectedImageIds.set(normalId, selectedId)
+    this.activeImageIds.set(imageIds.normal, imageIds.active)
+    this.selectedImageIds.set(imageIds.normal, imageIds.selected)
 
-    await Promise.all(VARIANTS.map(async (variant, index) => {
-      if (this.images.has(imageIds[index])) {
+    await Promise.all(Object.entries(imageIds).map(async ([variant, imageId]) => {
+      if (this.images.has(imageId)) {
         return
       }
       const result = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, variant, pixelRatio)
@@ -104,7 +101,7 @@ export class SymbolImageCache {
         this.addImage(result.imageId, result.imageData, variant === 'normal')
       }
     }))
-    return imageIds.filter(Boolean)
+    return Object.values(imageIds)
   }
 
   /**

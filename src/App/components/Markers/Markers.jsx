@@ -15,37 +15,22 @@ import SymbolMarker from './SymbolMarker.jsx'
 // Marker properties handled internally — excluded from style value resolution
 const INTERNAL_KEYS = new Set(['id', 'coords', 'x', 'y', 'isVisible', 'symbol', 'svgContent', 'size', 'viewBox', 'anchor', 'selectedColor', 'label', 'showLabel'])
 
-// Sized for the marker's size — the returned def carries the viewBox and anchor for that
-// size. A viewBox override only applies to SVG-template symbols; an anchor override on a built-in
-// shape is a fraction of the shape itself (see symbolRegistry.getSizedSymbolDef).
-const resolveSymbolDef = (marker, defaults, symbolRegistry) => {
-  const svgContent = marker.svgContent || defaults.svgContent
-  const baseDef = svgContent
-    ? { svg: svgContent }
-    : symbolRegistry.get(marker.symbol || defaults.symbol)
-  if (!baseDef) {
-    return undefined
+// The keyboard cursor's rings take priority over the selected ring
+const markerVariant = (isSelected, isActive) => {
+  if (isActive) {
+    return 'active'
   }
-  return symbolRegistry.getSizedSymbolDef(baseDef, {
-    viewBox: marker.viewBox || defaults.viewBox,
-    size: marker.size ?? defaults.size,
-    anchor: marker.anchor ?? defaults.anchor
-  })
+  return isSelected ? 'selected' : 'normal'
 }
 
-const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected, isActive) => {
-  const symbolDef = resolveSymbolDef(marker, defaults, symbolRegistry)
+// The marker's definition carries the viewBox and anchor for its size (see
+// symbolRegistry.getMarkerSymbolDef)
+const resolveSymbolProps = (marker, defaults, symbolRegistry, mapStyle, mapSize, variant) => {
+  const symbolDef = symbolRegistry.getMarkerSymbolDef(marker)
   const styleValues = Object.fromEntries(
     Object.entries(marker).filter(([k]) => !INTERNAL_KEYS.has(k))
   )
-  let resolvedSvg
-  if (isActive) {
-    resolvedSvg = symbolRegistry.resolveActive(symbolDef, styleValues, mapStyle)
-  } else if (isSelected) {
-    resolvedSvg = symbolRegistry.resolveSelected(symbolDef, styleValues, mapStyle)
-  } else {
-    resolvedSvg = symbolRegistry.resolve(symbolDef, styleValues, mapStyle)
-  }
+  const resolvedSvg = symbolRegistry.resolveVariant(symbolDef, styleValues, mapStyle, variant)
   const viewBox = symbolDef?.viewBox ?? DEFAULT_SYMBOL_VIEWBOX
   const [,, svgWidth, svgHeight] = viewBox.split(' ').map(Number)
   const anchor = symbolDef?.anchor ?? DEFAULT_SYMBOL_ANCHOR
@@ -104,7 +89,7 @@ export const Markers = () => {
           return <LabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} />
         }
 
-        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, isSelected, isActive)
+        const symbolProps = resolveSymbolProps(marker, defaults, symbolRegistry, mapStyle, mapSize, markerVariant(isSelected, isActive))
 
         if (marker.showLabel && marker.label) {
           return <SymbolLabelMarker key={marker.id} marker={marker} mapId={id} markerRef={markerRef} isSelected={isSelected} symbolProps={symbolProps} />

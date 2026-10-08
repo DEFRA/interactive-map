@@ -1,4 +1,4 @@
-import { hasSymbolStyle, getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
+import { getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
 import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
 import { getSymbolIconLayout } from '../../../../../providers/maplibre/src/utils/symbolImages.js'
@@ -34,21 +34,6 @@ const createDraw = (features = []) => ({
 
 const point = (id, properties, coordinates = [1, 2]) =>
   ({ id, type: 'Feature', geometry: { type: 'Point', coordinates }, properties })
-
-describe('hasSymbolStyle', () => {
-  it('is true when symbol is set', () => {
-    expect(hasSymbolStyle({ symbol: 'pin' })).toBe(true)
-  })
-
-  it('is true when symbolSvgContent is set', () => {
-    expect(hasSymbolStyle({ symbolSvgContent: '<path/>' })).toBe(true)
-  })
-
-  it('is false with neither, or no properties at all', () => {
-    expect(hasSymbolStyle({})).toBe(false)
-    expect(hasSymbolStyle(undefined)).toBe(false)
-  })
-})
 
 describe('getPixelRatio', () => {
   it('reads map.getPixelRatio()', () => {

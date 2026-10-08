@@ -2,6 +2,7 @@ import { datasetRegistry } from './datasetRegistry.js'
 import { isVisibleWhen } from './isVisibleWhen.js'
 import { hasCustomVisualStyle } from '../initialise/defaults.js'
 import { hasPattern } from '../../../../src/utils/patternUtils.js'
+import { hasSymbol } from '../../../../src/utils/symbolUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
 import { calculateOpacity, getGlobalVisibility } from './globalDataset.js'
 
@@ -12,7 +13,7 @@ export class Dataset {
 
   get id () { return this._datasetDefinition.id }
   get label () { return this._datasetDefinition.label }
-  get hasSymbol () { return !this.hasSublayers && Boolean(this.style?.symbol) }
+  get hasSymbol () { return !this.hasSublayers && hasSymbol(this.style) }
   get hasPattern () { return !this.hasSublayers && !this.hasSymbol && hasPattern(this.style) }
   get hasFill () { return !this.hasSublayers && !this.hasSymbol && (this.hasPattern || (this.style?.fill && this.style?.fill !== 'transparent')) }
   get hasStroke () { return !this.hasSublayers && !this.hasSymbol && Boolean(this.style?.stroke) }

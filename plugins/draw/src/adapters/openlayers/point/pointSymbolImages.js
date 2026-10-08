@@ -1,3 +1,5 @@
+import { hasSymbol } from '../../../../../../src/utils/symbolUtils.js'
+
 /**
  * Resolves a drawn point's symbol-config icon: registers its images with the OL provider (as
  * the MapLibre adapter does with its own provider), then writes the resolved image ids — normal,
@@ -5,8 +7,6 @@
  * feature. core/styles.js renders the icon from these, and the provider's highlightFeatures.js
  * the selection ring.
  */
-
-export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
 
 // The map's own pixelRatio (device pixel ratio × map-size scale factor) — the same source the
 // datasets plugin rasterises its OL symbols at, so both draw them 1:1.
@@ -29,7 +29,7 @@ export const getPixelRatio = (mapProvider) => mapProvider?.map?.getPixelRatio?.(
  */
 export const resolvePointSymbol = async ({ manager, mapProvider, olFeature, pixelRatioOverride, refreshId }) => {
   const properties = olFeature.getProperties()
-  if (!hasSymbolStyle(properties)) {
+  if (!hasSymbol(properties)) {
     return
   }
 
@@ -72,7 +72,7 @@ export const refreshAllPointSymbols = ({ manager, mapProvider, pixelRatioOverrid
   manager.pointSymbolRefreshId = (manager.pointSymbolRefreshId ?? 0) + 1
   const refreshId = manager.pointSymbolRefreshId
   const points = manager.store.source.getFeatures().filter(
-    (feature) => feature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(feature.getProperties())
+    (feature) => feature.getGeometry()?.getType() === 'Point' && hasSymbol(feature.getProperties())
   )
   return Promise.all(points.map((olFeature) => resolvePointSymbol({ manager, mapProvider, olFeature, pixelRatioOverride, refreshId })))
 }

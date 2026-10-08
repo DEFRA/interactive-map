@@ -8,37 +8,36 @@ import { HORIZONTAL_RAMP } from '../../utils/groupStyles.js'
 // Pure derivation of keyDefinition — computed directly during render (see KeyItem.jsx for why:
 // staging this through useState/useEffect meant every fresh mount painted a blank symbol first).
 
-const getSymbolShape = (keyDefinition, groupStyle, symbolRegistry) => {
+const getSymbolShape = (keyDefinition, groupStyle, mapStyle, symbolRegistry) => {
   if (!keyDefinition) {
-    return { symbolShape: null, symbolDef: null }
+    return { symbolShape: null, keySymbol: null }
   }
   const { hasSymbol, hasPattern, style } = keyDefinition
   if (groupStyle === HORIZONTAL_RAMP) {
-    return { symbolShape: HORIZONTAL_RAMP, symbolDef: null }
+    return { symbolShape: HORIZONTAL_RAMP, keySymbol: null }
   }
   if (hasSymbol) {
-    // Always medium in the key, whatever symbolSize the map uses
-    const symbolDef = symbolRegistry.getSymbolDef({ ...style, symbolSize: 'medium' })
-    return { symbolShape: symbolDef ? 'symbol' : 'rect', symbolDef }
+    const keySymbol = symbolRegistry.getKeySymbol(style, mapStyle)
+    return { symbolShape: keySymbol ? 'symbol' : 'rect', keySymbol }
   }
   if (hasPattern) {
-    return { symbolShape: 'pattern', symbolDef: null }
+    return { symbolShape: 'pattern', keySymbol: null }
   }
   // Inferred from the style: a stroke with no fill at all is a line; any fill — including
   // 'transparent' or 'none', for an outline-only shape — is a shape.
   if (style.fill == null && style.stroke) {
-    return { symbolShape: 'line', symbolDef: null }
+    return { symbolShape: 'line', keySymbol: null }
   }
-  return { symbolShape: 'rect', symbolDef: null }
+  return { symbolShape: 'rect', keySymbol: null }
 }
 
 export const KeySvg = ({ keyDefinition, groupStyle, mapStyle, symbolRegistry, patternRegistry }) => {
-  const { symbolShape, symbolDef } = getSymbolShape(keyDefinition, groupStyle, symbolRegistry)
+  const { symbolShape, keySymbol } = getSymbolShape(keyDefinition, groupStyle, mapStyle, symbolRegistry)
 
   if (!symbolShape) {
     return null
   } else if (symbolShape === 'symbol') {
-    return <KeySvgSymbol mapStyle={mapStyle} keyDefinition={keyDefinition} symbolDef={symbolDef} symbolRegistry={symbolRegistry} />
+    return <KeySvgSymbol keySymbol={keySymbol} />
   } else if (symbolShape === 'pattern') {
     return <KeySvgPattern mapStyle={mapStyle} keyDefinition={keyDefinition} patternRegistry={patternRegistry} />
   } else if (symbolShape === 'line') {

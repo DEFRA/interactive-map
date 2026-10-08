@@ -24,6 +24,68 @@ const SIZES = { small: 0.75, medium: 1, large: 1.25 }
 const dims = (viewBox) => viewBox.split(' ').map(Number).slice(2)
 const countPaths = (svg) => svg.match(/<path /g).length
 
+describe('getMarkerSymbolDef', () => {
+  afterEach(() => symbolRegistry.setDefaults({}))
+
+  it('sizes the marker\'s symbol for its size, falling back to the map\'s default size', () => {
+    symbolRegistry.setDefaults({ size: 'small' })
+    expect(symbolRegistry.getMarkerSymbolDef({ symbol: 'pin', size: 'large' })).toBe(symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSize: 'large' }))
+    expect(symbolRegistry.getMarkerSymbolDef({ symbol: 'pin' })).toBe(symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSize: 'small' }))
+  })
+
+  it('falls back to the map\'s default symbol', () => {
+    symbolRegistry.setDefaults({ symbol: 'circle' })
+    expect(symbolRegistry.getMarkerSymbolDef({})).toBe(symbolRegistry.getSymbolDef({ symbol: 'circle' }))
+  })
+
+  it('uses inline svgContent over a symbol id, with the marker\'s viewBox and anchor', () => {
+    const symbolDef = symbolRegistry.getMarkerSymbolDef({ symbol: 'pin', svgContent: '<rect/>', viewBox: '0 0 50 60', anchor: [0.5, 1] })
+    expect(symbolDef.svg).toBe('<rect/>')
+    expect(symbolDef.viewBox).toBe('0 0 50 60')
+    expect(symbolDef.anchor).toEqual([0.5, 1])
+  })
+
+  it('falls back to the map\'s default svgContent', () => {
+    symbolRegistry.setDefaults({ svgContent: '<default-svg/>' })
+    expect(symbolRegistry.getMarkerSymbolDef({ symbol: null }).svg).toBe('<default-svg/>')
+  })
+
+  it('is undefined for an unknown symbol', () => {
+    expect(symbolRegistry.getMarkerSymbolDef({ symbol: 'does-not-exist' })).toBeUndefined()
+  })
+})
+
+describe('resolveVariant', () => {
+  it.each([
+    ['normal', 'resolve'],
+    ['active', 'resolveActive'],
+    ['selected', 'resolveSelected']
+  ])('resolves the %s variant with %s', (variant, method) => {
+    const symbolDef = symbolRegistry.getSymbolDef({ symbol: 'pin' })
+    expect(symbolRegistry.resolveVariant(symbolDef, {}, mapStyle, variant)).toBe(symbolRegistry[method](symbolDef, {}, mapStyle))
+  })
+})
+
+describe('getKeySymbol', () => {
+  it('draws a dataset style\'s symbol at medium, whatever size the style asks for', () => {
+    const keySymbol = symbolRegistry.getKeySymbol({ symbol: 'pin', symbolSize: 'large' }, mapStyle)
+    expect(keySymbol.viewBox).toBe(symbolRegistry.getSymbolDef({ symbol: 'pin', symbolSize: 'medium' }).viewBox)
+    expect(keySymbol.svg).toContain('<path')
+  })
+
+  it('uses the style\'s colours, in the page\'s colour scheme rather than the map\'s', () => {
+    const style = { symbol: 'circle', symbolBackgroundColor: '#123456' }
+    const darkMap = { ...mapStyle, mapColorScheme: 'dark', appColorScheme: 'light' }
+    const { svg } = symbolRegistry.getKeySymbol(style, darkMap)
+    expect(svg).toContain('#123456')
+    expect(svg).toBe(symbolRegistry.getKeySymbol(style, { ...mapStyle, mapColorScheme: 'light', appColorScheme: 'light' }).svg)
+  })
+
+  it('is null for a style with no known symbol', () => {
+    expect(symbolRegistry.getKeySymbol({ symbol: 'does-not-exist' }, mapStyle)).toBeNull()
+  })
+})
+
 describe('createSymbolRegistry', () => {
   it('gives each registry its own symbols and defaults', () => {
     const first = createSymbolRegistry()
@@ -226,6 +288,16 @@ describe('symbolRegistry — image ids and rasterising', () => {
       const { imageId } = await symbolRegistry.rasteriseSymbolImage(style, mapStyle, variant, 2)
       expect(imageId).toBe(ids[index])
     }
+  })
+
+  it('gives all three variant ids at once, matching getSymbolImageId, or null for an unknown symbol', () => {
+    const style = { symbol: 'pin' }
+    expect(symbolRegistry.getSymbolImageIds(style, mapStyle, 2)).toEqual({
+      normal: symbolRegistry.getSymbolImageId(style, mapStyle, 'normal', 2),
+      active: symbolRegistry.getSymbolImageId(style, mapStyle, 'active', 2),
+      selected: symbolRegistry.getSymbolImageId(style, mapStyle, 'selected', 2)
+    })
+    expect(symbolRegistry.getSymbolImageIds({ symbol: 'does-not-exist' }, mapStyle, 2)).toBeNull()
   })
 
   it('rasterises nothing for an unknown symbol', async () => {

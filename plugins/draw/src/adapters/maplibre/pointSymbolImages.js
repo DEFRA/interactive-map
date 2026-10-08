@@ -1,4 +1,5 @@
 import { logger } from '../../../../../src/services/logger.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 
 /**
  * Resolves and registers a drawn point's symbol-config icon (same schema as addMarker/dataset
@@ -6,8 +7,6 @@ import { logger } from '../../../../../src/services/logger.js'
  * the feature so styles.js's pointSymbol() layer can render it. icon-offset is handled
  * separately below since it can't safely be a per-feature property.
  */
-
-export const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
 
 const POINT_SYMBOL_LAYER_ID = 'point-symbol'
 const POINT_SYMBOL_LAYER_IDS = new Set([`${POINT_SYMBOL_LAYER_ID}.hot`, `${POINT_SYMBOL_LAYER_ID}.cold`])
@@ -76,7 +75,7 @@ export const getPixelRatio = (map) => map.getPixelRatio?.() || 1
 // caller so refreshAllPointSymbols can batch every point into one call (see its comment why).
 // Returns null if there's nothing to write back (no symbol config, feature gone, or unresolvable id).
 const resolvePointSymbolFeature = async ({ draw, mapProvider, map, symbolRegistry, featureId, properties, pixelRatioOverride }) => {
-  if (!hasSymbolStyle(properties)) {
+  if (!hasSymbol(properties)) {
     return null
   }
 
@@ -158,7 +157,7 @@ export const refreshAllPointSymbols = async ({ draw, mapProvider, map, symbolReg
   map._pointSymbolRefreshId = (map._pointSymbolRefreshId ?? 0) + 1
   const refreshId = map._pointSymbolRefreshId
   const points = draw.getAll().features.filter(
-    (feature) => feature.geometry.type === 'Point' && hasSymbolStyle(feature.properties)
+    (feature) => feature.geometry.type === 'Point' && hasSymbol(feature.properties)
   )
   const results = await Promise.allSettled(points.map((feature) =>
     resolvePointSymbolFeature({ draw, mapProvider, map, symbolRegistry, featureId: feature.id, properties: feature.properties, pixelRatioOverride })

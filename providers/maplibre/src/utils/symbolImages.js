@@ -1,7 +1,5 @@
 import { RecentImageSets } from '../../../../src/utils/recentImageSets.js'
 
-const VARIANTS = ['normal', 'active', 'selected']
-
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
 const ANCHOR_CENTRE = 0.5
@@ -139,15 +137,14 @@ export class SymbolImageVariants {
   async registerSymbols (styleArray, mapStyle, symbolRegistry, pixelRatio) {
     const { map } = this
     const imageIds = await Promise.all(styleArray.map(async (config) => {
-      const variantIds = VARIANTS.map((variant) => symbolRegistry.getSymbolImageId(config, mapStyle, variant, pixelRatio))
-      const [normalId, activeId, selectedId] = variantIds
-      if (!normalId) {
+      const variantIds = symbolRegistry.getSymbolImageIds(config, mapStyle, pixelRatio)
+      if (!variantIds) {
         return []
       }
-      this.activeImageIds.set(normalId, activeId)
-      this.selectedImageIds.set(normalId, selectedId)
-      await Promise.all(VARIANTS.map(async (variant, index) => {
-        if (map.hasImage(variantIds[index])) {
+      this.activeImageIds.set(variantIds.normal, variantIds.active)
+      this.selectedImageIds.set(variantIds.normal, variantIds.selected)
+      await Promise.all(Object.entries(variantIds).map(async ([variant, imageId]) => {
+        if (map.hasImage(imageId)) {
           return
         }
         const result = await symbolRegistry.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
@@ -155,7 +152,7 @@ export class SymbolImageVariants {
           map.addImage(result.imageId, result.imageData, { pixelRatio })
         }
       }))
-      return variantIds.filter(Boolean)
+      return Object.values(variantIds)
     }))
     this.recentImageSets.add(`${mapStyle?.id}|${pixelRatio}`, imageIds.flat())
       .forEach((imageId) => this.removeImage(imageId))

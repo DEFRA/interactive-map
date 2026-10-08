@@ -4,7 +4,7 @@ import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry
 
 const symbolRegistry = createSymbolRegistry()
 
-const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
+const getKeySymbol = jest.spyOn(symbolRegistry, 'getKeySymbol')
 
 jest.mock('./KeySvgPattern.jsx', () => ({
   KeySvgPattern: () => <svg data-testid='key-svg-pattern' />
@@ -39,12 +39,12 @@ const baseProps = {
 }
 
 beforeEach(() => {
-  getSymbolDef.mockReturnValue(null)
+  getKeySymbol.mockReturnValue(null)
 })
 
 describe('KeySvg', () => {
-  it('renders KeySvgSymbol when a symbolDef is resolved', () => {
-    getSymbolDef.mockReturnValue({ id: 'marker' })
+  it('renders KeySvgSymbol when the style resolves to a key symbol', () => {
+    getKeySymbol.mockReturnValue({ svg: '<path/>', viewBox: '0 0 44 44' })
     const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasSymbol: true }} />)
     expect(getByTestId('key-svg-symbol')).toBeTruthy()
   })
@@ -70,7 +70,7 @@ describe('KeySvg', () => {
   })
 
   it('prefers symbol over pattern when both are present', () => {
-    getSymbolDef.mockReturnValue({ id: 'marker' })
+    getKeySymbol.mockReturnValue({ svg: '<path/>', viewBox: '0 0 44 44' })
     const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasSymbol: true, hasPattern: true }} />)
     expect(getByTestId('key-svg-symbol')).toBeTruthy()
     expect(queryByTestId('key-svg-pattern')).toBeNull()
@@ -87,8 +87,8 @@ describe('KeySvg', () => {
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
 
-  it('does not render KeySvgSymbol when hasSymbol is true but getSymbolDef returns null', () => {
-    getSymbolDef.mockReturnValue(null)
+  it('does not render KeySvgSymbol when hasSymbol is true but there is no key symbol', () => {
+    getKeySymbol.mockReturnValue(null)
     const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasSymbol: true }} />)
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })

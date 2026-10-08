@@ -9,8 +9,18 @@ const imageData = (width, height) => ({ width, height })
 
 const imageIdFor = (style, variant, pixelRatio) => `symbol-${style.symbol}-${pixelRatio}x${variant === 'normal' ? '' : `-${variant}`}`
 
+// Like the real registry, getSymbolImageIds builds on getSymbolImageId (so a test overriding
+// getSymbolImageId changes both)
 const makeSymbolRegistry = () => ({
   getSymbolImageId: jest.fn((style, mapStyle, variant, pixelRatio) => imageIdFor(style, variant, pixelRatio)),
+  getSymbolImageIds: jest.fn(function (style, mapStyle, pixelRatio) {
+    const normal = this.getSymbolImageId(style, mapStyle, 'normal', pixelRatio)
+    return normal && {
+      normal,
+      active: this.getSymbolImageId(style, mapStyle, 'active', pixelRatio),
+      selected: this.getSymbolImageId(style, mapStyle, 'selected', pixelRatio)
+    }
+  }),
   rasteriseSymbolImage: jest.fn(async (style, mapStyle, variant, pixelRatio) => ({
     imageId: imageIdFor(style, variant, pixelRatio),
     imageData: imageData(20, 20)
@@ -127,13 +137,6 @@ describe('registerSymbol', () => {
     expect(cache.getSelectedImageId('symbol-pin-1x')).toBe('symbol-pin-1x-selected')
     expect(cache.getImage('symbol-pin-1x-active')).toBeInstanceOf(HTMLCanvasElement)
     expect(cache.getImage('symbol-pin-1x-selected')).toBeInstanceOf(HTMLCanvasElement)
-  })
-
-  it('has no active variant when getSymbolImageId returns null for active', async () => {
-    const symbolRegistry = makeSymbolRegistry()
-    symbolRegistry.getSymbolImageId.mockImplementation((style, mapStyle, variant) => (variant === 'active' ? null : imageIdFor(style, variant, 1)))
-    await cache.registerSymbol({ symbol: 'pin' }, MAP_STYLE, symbolRegistry, 1)
-    expect(cache.getActiveImageId('symbol-pin-1x')).toBeNull()
   })
 })
 
