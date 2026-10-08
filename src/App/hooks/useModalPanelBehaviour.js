@@ -200,7 +200,9 @@ export function useModalPanelBehaviour ({
   }, [isModal, rootEl, handleClose])
 
   // === Inert everything outside the panel but within the app === //
-  useEffect(() => {
+  // Layout effect so the cleanup restores aria-hidden at commit, before handleClose's
+  // requestAnimationFrame returns focus to the trigger (which sits inside an inerted branch).
+  useLayoutEffect(() => {
     if (!isModal || !panelRef.current || !rootEl) {
       return undefined
     }
