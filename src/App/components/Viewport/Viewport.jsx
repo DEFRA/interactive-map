@@ -86,7 +86,7 @@ export const Viewport = () => {
         onBlur={handleBlur}
         ref={layoutRefs.viewportRef}
         aria-describedby={`${id}-keyboard-desc`}
-        aria-controls={`${id}-features`}
+        aria-controls={`${id}-spatial-list`}
       >
         <div className='im-c-viewport__map-container' ref={mapContainerRef} aria-hidden='true' />
         <MapStatus />
