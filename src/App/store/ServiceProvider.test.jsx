@@ -24,6 +24,11 @@ jest.mock('../../services/closeApp.js', () => ({
   closeApp: jest.fn()
 }))
 
+const mockViewportRef = { current: { focus: jest.fn(), getAttribute: jest.fn(), setAttribute: jest.fn() } }
+jest.mock('../store/appContext.js', () => ({
+  useApp: jest.fn(() => ({ layoutRefs: { viewportRef: mockViewportRef } }))
+}))
+
 // Mock config values including id + handleExitClick
 jest.mock('../store/configContext.js', () => ({
   useConfig: jest.fn(() => ({
@@ -54,6 +59,16 @@ describe('ServiceProvider', () => {
     expect(typeof result.current.closeApp).toBe('function')
     expect(result.current.mapStatusRef).toBeDefined()
     expect(result.current.mapStatusRef.current).toBeNull()
+  })
+
+  test('focusMap names and focuses the viewport from layoutRefs', () => {
+    const { result } = renderHook(() => React.useContext(ServiceContext), { wrapper })
+
+    result.current.focusMap({ message: 'Map moved to Carlisle' })
+
+    expect(mockViewportRef.current.setAttribute).toHaveBeenCalledWith('aria-label', 'Map moved to Carlisle')
+    expect(mockViewportRef.current.focus).toHaveBeenCalled()
+    expect(result.current.mapFocus.isHoldingAnnouncements()).toBe(true)
   })
 
   test('gives each map its own symbol registry, kept across renders, with that map\'s symbolDefaults', () => {

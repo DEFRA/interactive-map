@@ -112,7 +112,7 @@
  * Plugin-specific state.
  *
  * @property {Object} [services]
- * Core services (announce, reverseGeocode, closeApp, etc.).
+ * Core services (announce, focusMap, reverseGeocode, closeApp, etc.).
  *
  * @property {(id: string, options?: ApplicationModeOptions) => void} [setApplicationMode]
  * Plugin components only. Enters an application mode, putting it on top of the stack (or moving it to
@@ -879,7 +879,7 @@
  * @property {string} [mapHintText]
  * Visually hidden text, rendered immediately before the map for screen reader users, explaining that it must be focused before keyboard commands work. Prefixed with mapLabel, so multiple maps on one page can be told apart.
  *
- * @property {string} [mapLabel='Interactive map']
+ * @property {string} [mapLabel='Interactive map application']
  * Accessible label for the map, announced by screen readers. Also prefixed onto mapHintText, so give each map on a page a distinct label.
  *
  * @property {string} [mapControlsHintText]

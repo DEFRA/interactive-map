@@ -46,7 +46,8 @@ function setupHookMocks (mainEl, viewportEl) {
   useService.mockReturnValue({
     announce: jest.fn(),
     hints: { show: jest.fn(), dismiss: jest.fn(), subscribe: jest.fn(() => jest.fn()) },
-    eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
+    eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
+    mapFocus: { clear: jest.fn(), releaseAnnouncements: jest.fn() }
   })
   useKeyboardHint.mockImplementation(({ onViewportFocusChange }) => ({
     handleFocus: () => onViewportFocusChange(true),
@@ -112,6 +113,22 @@ describe('Viewport rendering', () => {
   it('sets aria-describedby to the shared hints container id', () => {
     const { viewport } = renderViewport()
     expect(viewport).toHaveAttribute('aria-describedby', 'test-map-keyboard-desc')
+  })
+
+  it('restores the map label via mapFocus when the viewport loses focus', () => {
+    const { mapFocus } = useService()
+    const { viewport } = renderViewport()
+    fireEvent.blur(viewport)
+    expect(mapFocus.clear).toHaveBeenCalled()
+  })
+
+  it('releases held map announcements on a key or pointer press in the viewport', () => {
+    const { mapFocus } = useService()
+    const { viewport } = renderViewport()
+    fireEvent.keyDown(viewport, { key: 'ArrowUp' })
+    fireEvent.pointerDown(viewport)
+    expect(mapFocus.releaseAnnouncements).toHaveBeenCalledTimes(2)
+    expect(mapFocus.clear).not.toHaveBeenCalled()
   })
 
   it('calls hints.show() with keyboardHintText when viewport gains keyboard focus', () => {

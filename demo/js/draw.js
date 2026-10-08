@@ -118,7 +118,7 @@ const interactiveMap = new InteractiveMap('map', {
   }),
   // maxMobileWidth: 700,
   // minDesktopWidth: 960,
-  mapLabel: 'Map showing Carlisle',
+  mapLabel: 'Map for drawing shapes',
   // zoom: 14,
   minZoom: 6,
   maxZoom: 20,

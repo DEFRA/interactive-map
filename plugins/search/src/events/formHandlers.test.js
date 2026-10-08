@@ -12,7 +12,6 @@ jest.mock('../utils/updateMap.js')
 describe('createFormHandlers', () => {
   let dispatch
   let services
-  let viewportRef
   let markers
   let handlers
 
@@ -20,11 +19,8 @@ describe('createFormHandlers', () => {
     dispatch = jest.fn()
 
     services = {
-      eventBus: { emit: jest.fn() }
-    }
-
-    viewportRef = {
-      current: { focus: jest.fn() }
+      eventBus: { emit: jest.fn() },
+      focusMap: jest.fn()
     }
 
     markers = {
@@ -34,7 +30,6 @@ describe('createFormHandlers', () => {
     handlers = createFormHandlers({
       dispatch,
       services,
-      viewportRef,
       mapProvider: 'map',
       markers,
       datasets: [],
@@ -129,6 +124,7 @@ describe('createFormHandlers', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SELECTED', payload: -1 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'HIDE_SUGGESTIONS' })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALUE', payload: 'Paris' })
+    expect(services.focusMap).toHaveBeenCalledWith({ message: 'Map moved to Paris' })
 
     expect(updateMap).toHaveBeenCalledWith(
       expect.objectContaining({ bounds: 'b', point: 'p' })
@@ -174,7 +170,7 @@ describe('createFormHandlers', () => {
     )
 
     expect(fetchSuggestions).toHaveBeenCalled()
-    expect(viewportRef.current.focus).toHaveBeenCalled()
+    expect(services.focusMap).toHaveBeenCalledWith({ message: 'Map moved to rome' })
     expect(updateMap).toHaveBeenCalled()
     expect(services.eventBus.emit).toHaveBeenCalledWith(
       'search:match',
@@ -227,6 +223,7 @@ describe('createFormHandlers', () => {
     expect(fetchSuggestions).toHaveBeenCalled()
 
     // But nothing downstream runs
+    expect(services.focusMap).not.toHaveBeenCalled()
     expect(updateMap).not.toHaveBeenCalled()
     expect(services.eventBus.emit).not.toHaveBeenCalledWith(
       'search:match',
@@ -282,7 +279,7 @@ describe('createFormHandlers', () => {
       // before, input, closeButton, trigger, afterTrigger
       const stops = [before, input, closeButton, trigger, afterTrigger]
       stops.forEach(el => { el.getClientRects = () => [{}] })
-      tabHandlers = createFormHandlers({ dispatch, services, viewportRef, searchContainerRef: { current: container }, markers })
+      tabHandlers = createFormHandlers({ dispatch, services, searchContainerRef: { current: container }, markers })
     })
 
     afterEach(() => {

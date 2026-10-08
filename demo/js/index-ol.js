@@ -244,7 +244,7 @@ const interactiveMap = new InteractiveMap('map', {
     url: process.env.OS_NEAREST_URL,
     transformRequest: transformGeocodeRequest
   }),
-  mapLabel: 'Map showing field parcels and land use (OpenLayers)',
+  mapLabel: 'Field parcels and land use map (OpenLayers)',
   minZoom: 6,
   maxZoom: 20,
   autoColorScheme: true,

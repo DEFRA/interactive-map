@@ -40,11 +40,16 @@ const resolveMessage = (previous, current, mapProvider) => {
 
 export function useMapAnnouncements () {
   const { mapProvider } = useConfig()
-  const { eventBus, announce } = useService()
+  const { eventBus, announce, mapFocus } = useService()
 
   useEffect(() => {
     const handleAnnounceStateUpdate = ({ previous, current }) => {
       if (!previous?.center || !current?.center) {
+        return
+      }
+
+      // A map focus message already describes this move
+      if (mapFocus.isHoldingAnnouncements()) {
         return
       }
 
@@ -59,5 +64,5 @@ export function useMapAnnouncements () {
     return () => {
       eventBus.off(events.MAP_STATE_UPDATED, handleAnnounceStateUpdate)
     }
-  }, [mapProvider, announce])
+  }, [mapProvider, announce, mapFocus])
 }

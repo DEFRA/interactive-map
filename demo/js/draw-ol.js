@@ -62,7 +62,7 @@ const interactiveMap = new InteractiveMap('map', {
     url: process.env.OS_NEAREST_URL,
     transformRequest: transformGeocodeRequest
   }),
-  mapLabel: 'Map showing Carlisle (OpenLayers)',
+  mapLabel: 'Map for drawing shapes (OpenLayers)',
   minZoom: 6,
   maxZoom: 22,
   autoColorScheme: true,

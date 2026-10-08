@@ -2,8 +2,10 @@
 import React, { createContext, useMemo, useRef } from 'react'
 import { createAnnouncer } from '../../services/announcer.js'
 import { createHints } from '../../services/hints.js'
+import { createMapFocus } from '../../services/mapFocus.js'
 import { reverseGeocode } from '../../services/reverseGeocode.js'
 import { useConfig } from '../store/configContext.js'
+import { useApp } from '../store/appContext.js'
 import { closeApp } from '../../services/closeApp.js'
 import { createSymbolRegistry } from '../../services/symbolRegistry.js'
 import { createPatternRegistry } from '../../services/patternRegistry.js'
@@ -15,6 +17,8 @@ export const ServiceProvider = ({ eventBus, pluginRegistry, children }) => {
   const mapStatusRef = useRef(null)
   const announce = useMemo(() => createAnnouncer(mapStatusRef), [])
   const hints = useMemo(() => createHints(announce), [announce])
+  const { layoutRefs } = useApp()
+  const mapFocus = useMemo(() => createMapFocus({ viewportRef: layoutRefs.viewportRef }), [])
   // One of each per map, so maps on the same page keep their own symbols, symbolDefaults and patterns
   const symbolRegistry = useMemo(() => createSymbolRegistry(), [])
   const patternRegistry = useMemo(() => createPatternRegistry(), [])
@@ -27,12 +31,14 @@ export const ServiceProvider = ({ eventBus, pluginRegistry, children }) => {
     reverseGeocode: (zoom, center) => reverseGeocode(zoom, center),
     eventBus,
     mapStatusRef,
+    focusMap: mapFocus.focus,
+    mapFocus,
     closeApp: () => closeApp(id, handleExitClick, eventBus),
     symbolRegistry,
     patternRegistry,
     // See pluginRegistry.js's getPlugin() for what this does and doesn't guarantee.
     getPlugin: (pluginId) => pluginRegistry?.getPlugin(pluginId)
-  }), [announce, hints, pluginRegistry, symbolRegistry, patternRegistry])
+  }), [announce, hints, mapFocus, pluginRegistry, symbolRegistry, patternRegistry])
 
   return (
     <ServiceContext.Provider value={services}>

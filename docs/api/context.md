@@ -114,6 +114,18 @@ Updates the map's `aria-live` region with a screen reader announcement. Use this
 context.services.announce('3 results found')
 ```
 
+#### `focusMap`
+
+Moves focus to the map viewport. An optional `message` replaces the viewport's accessible name (`mapLabel`), so screen readers speak it as part of the focus announcement. The original name returns when focus leaves the map. While it is set, the automatic map move announcement ("New area approximately…") is skipped until the user next presses a key or pointer on the map.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `message` | `string` | Optional text read out in place of the map's name when it receives focus, e.g. the result of the action that moved focus |
+
+```js
+context.services.focusMap({ message: 'Map moved to Carlisle' })
+```
+
 #### `reverseGeocode`
 
 Returns a location description for the given coordinates. Uses the `reverseGeocodeProvider` if configured in options.
