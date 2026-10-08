@@ -46,18 +46,21 @@ const center = context.mapProvider.getCenter()
 context.mapProvider.setView({ zoom: 10 })
 ```
 
-#### `mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)`
+#### `mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry, pixelRatio)`
 
-Rasterises and registers pattern fill images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
+Rasterises and registers each pattern fill's image with the map engine. Images already registered are reused.
 
 - `patternConfigs` — flat array of style configs that have a `fillPattern` or `fillPatternSvgContent` property
 - `mapStyleId` — current map style ID
-- `patternRegistry` — the core pattern registry instance
+- `patternRegistry` — `services.patternRegistry`
+- `pixelRatio` — optional; defaults to the map's current pixel ratio
 
 ```js
-// In a plugin's MapLibre layer adapter
-await mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)
+// In a plugin's layer adapter
+await mapProvider.addPatternsToMap(patternConfigs, mapStyleId, services.patternRegistry)
 ```
+
+On OpenLayers, `mapProvider.getPatternFill(imageId)` returns a registered pattern's `ol/style/Fill`, for a style function's `fill`.
 
 ---
 

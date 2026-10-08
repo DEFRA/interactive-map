@@ -1,5 +1,5 @@
 import { Dataset } from './dataset.js'
-import { hashString } from '../../../../src/utils/patternUtils.js'
+import { hashString } from '../../../../src/utils/hashString.js'
 
 /**
  * Adds the Mapbox Style Spec's declarative model on top of Dataset: filter expressions,

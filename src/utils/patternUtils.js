@@ -5,14 +5,6 @@ const PATTERN_MIN_PIXEL_RATIO = 2
 
 export const getEffectivePixelRatio = (pixelRatio) => Math.max(PATTERN_MIN_PIXEL_RATIO, pixelRatio * 2)
 
-export const hashString = (str) => {
-  let hash = 0
-  for (const ch of str) {
-    hash = Math.trunc(((hash << 5) - hash) + ch.codePointAt(0))
-  }
-  return Math.abs(hash).toString(36) // NOSONAR: base36 encoding for compact alphanumeric hash string
-}
-
 /**
  * Replaces {{foregroundColor}} and {{backgroundColor}} tokens in SVG content with resolved colour values.
  *

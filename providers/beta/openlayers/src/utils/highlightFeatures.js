@@ -7,6 +7,7 @@ import Stroke from 'ol/style/Stroke.js'
 import Fill from 'ol/style/Fill.js'
 import Icon from 'ol/style/Icon.js'
 import { collectTileFragments } from './vtTileFragments.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 
 const CRS = 'EPSG:27700'
 const geoJsonFormat = new GeoJSON({ dataProjection: CRS, featureProjection: CRS })
@@ -39,8 +40,6 @@ const buildHighlightStyles = (styleEntry, isActive) => {
   return styles
 }
 
-const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
-
 const toStyleArray = (style) => {
   if (!style) {
     return []
@@ -53,7 +52,7 @@ const toStyleArray = (style) => {
 // resolved it at. Returns null (not []) for a non-symbol feature so the caller falls through to
 // buildHighlightStyles.
 const buildSymbolHighlightStyle = (properties, isActive, symbolImages) => {
-  if (!hasSymbolStyle(properties)) {
+  if (!hasSymbol(properties)) {
     return null
   }
   const imageId = isActive ? properties.symbolActiveImageId : properties.symbolSelectedImageId

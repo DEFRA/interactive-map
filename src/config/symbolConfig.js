@@ -11,6 +11,12 @@ export const symbolDefaults = {
   foregroundColor: '#ffffff'
 }
 
+/** The symbol style keys a dataset or draw style can set (see docs/plugins/datasets.md) */
+export const SYMBOL_STYLE_KEYS = [
+  'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor', 'symbolSize',
+  'symbolBackgroundColor', 'symbolForegroundColor', 'symbolHaloWidth', 'symbolGraphic'
+]
+
 /**
  * Scale factor for each symbol size (`size` on markers, `symbolSize` on dataset and draw styles).
  * Scales a symbol's shape and graphic; the halo and the selected/active rings stay a fixed width at

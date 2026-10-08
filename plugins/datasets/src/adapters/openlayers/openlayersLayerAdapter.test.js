@@ -4,6 +4,7 @@ import { createPatternRegistry } from '../../../../../src/services/patternRegist
 import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 import { logger } from '../../../../../src/services/logger.js'
 import { SymbolImageCache } from '../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { PatternImageCache } from '../../../../../providers/beta/openlayers/src/utils/patternImages.js'
 import { buildFilterEvaluator } from '../../../../../providers/beta/openlayers/src/utils/filterEvaluator.js'
 // The OL provider registers British National Grid when it loads
 import '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
@@ -54,10 +55,13 @@ const makeMap = (pixelRatio = 1) => {
 // Stands in for the OL provider's methods the adapter uses, with a real symbol image cache
 const makeMapProvider = (map) => {
   const symbolImages = new SymbolImageCache()
+  const patternImages = new PatternImageCache()
   return {
     map,
     addSymbolsToMap: jest.fn((configs, mapStyle, symbolRegistry, pixelRatio) => symbolImages.registerSymbols(configs, mapStyle, symbolRegistry, pixelRatio)),
     getSymbolDataUri: (imageId) => symbolImages.getDataUri(imageId),
+    addPatternsToMap: jest.fn((configs, mapStyleId, patternRegistry, pixelRatio) => patternImages.registerPatterns(configs, mapStyleId, patternRegistry, pixelRatio)),
+    getPatternFill: (imageId) => patternImages.getFill(imageId),
     buildFilterEvaluator,
     reapplyHighlights: jest.fn()
   }

@@ -105,6 +105,19 @@ describe('Dataset class', () => {
     })
   })
 
+  describe('hasSymbol', () => {
+    it.each([
+      ['a symbol id', { symbol: 'pin' }],
+      ['inline symbolSvgContent', { symbolSvgContent: '<circle r="4"/>' }]
+    ])('is a symbol dataset when its style has %s', (_, style) => {
+      expect(new Dataset({ style }).hasSymbol).toBe(true)
+    })
+
+    it('is not a symbol dataset with neither', () => {
+      expect(new Dataset({ style: { fill: '#ff0000' } }).hasSymbol).toBe(false)
+    })
+  })
+
   describe('hasCustomVisualStyle', () => {
     it.each([
       ['stroke', { stroke: '#ff0000' }],

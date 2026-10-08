@@ -137,7 +137,7 @@ export const createDatasetSource = (registryDataset) => {
  * style function from canvasPatternStyle.js instead — see that module's doc for why flat-style's
  * fill-pattern-src can't achieve this.
  * @param {Object} registryDataset - an OpenLayersDataset
- * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object, symbolRegistry: Object, getSymbolDataUri: Function, buildFilterEvaluator: Function }} context
+ * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object, symbolRegistry: Object, getSymbolDataUri: Function, getPatternFill: Function, buildFilterEvaluator: Function }} context
  * @returns {Object|Array<Object>|import('ol/style/Style.js').StyleFunction}
  */
 export const resolveLayerStyle = (registryDataset, context = {}) => {
@@ -153,7 +153,7 @@ export const resolveLayerStyle = (registryDataset, context = {}) => {
  * style pipeline (see resolveLayerStyle).
  * @param {Object} registryDataset - an OpenLayersDataset
  * @param {import('ol/source/Vector.js').default} olSource
- * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object, symbolRegistry: Object, getSymbolDataUri: Function, buildFilterEvaluator: Function }} context
+ * @param {{ mapStyleId: string, pixelRatio: number, patternRegistry: Object, symbolRegistry: Object, getSymbolDataUri: Function, getPatternFill: Function, buildFilterEvaluator: Function }} context
  * @returns {import('ol/layer/Layer.js').default}
  */
 export const createDatasetLayer = (registryDataset, olSource, context) => {

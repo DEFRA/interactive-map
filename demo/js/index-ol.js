@@ -10,6 +10,7 @@ import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
+import { shieldSymbolSvg } from './customSymbols.js'
 
 const FARMING_TILES_URL = 'https://farming-tiles-702a60f45633.herokuapp.com'
 const FARMING_API_URL = process.env.FARMING_API_URL
@@ -218,7 +219,8 @@ const datasetsPlugin = createDatasetsPlugin({
       label: 'Medieval',
       filter: ['in', ['get', 'category'], ['literal', ['medieval']]],
       showInMenu: true,
-      style: { symbol: 'hexagon', symbolBackgroundColor: '#1565C0' }
+      // A custom shield, to show symbolSvgContent with all its variants (see customSymbols.js)
+      style: { symbolSvgContent: shieldSymbolSvg, symbolBackgroundColor: '#1565C0' }
     }, {
       id: 'industrial',
       label: 'Industrial',

@@ -3,68 +3,16 @@ import { symbolDefaults, pin, circle, square, hexagon, triangle, diamond, graphi
 import { getSymbolStyleColors, getSymbolScale } from '../utils/symbolUtils.js'
 import { THEME_COLORS } from '../config/mapTheme.js'
 import { rasteriseToImageData } from '../utils/rasteriseToImageData.js'
+import { hashString } from '../utils/hashString.js'
+import { createImageDataCache } from '../utils/imageDataCache.js'
 import {
   composeSymbolDef, applyAnchorOverride, scaleSvgSymbolDef, renderComposed, renderTemplate
 } from './symbolComposer.js'
 
-// Module-level cache: imageId → ImageData. Avoids re-rasterising identical symbols. Bounded —
-// every style or pixel-ratio change brings new ids — dropping the least recently used entry,
-// which at worst means re-rasterising it.
-const imageDataCache = new Map()
+// Shared by every registry: imageId → ImageData. Every style or pixel-ratio change brings new
+// ids, so it's bounded.
 const IMAGE_DATA_CACHE_SIZE = 256
-
-const getCachedImageData = (imageId) => {
-  const imageData = imageDataCache.get(imageId)
-  if (imageData) {
-    // Re-insert so Map order tracks recency — the first key is always the least recently used
-    imageDataCache.delete(imageId)
-    imageDataCache.set(imageId, imageData)
-  }
-  return imageData
-}
-
-const cacheImageData = (imageId, imageData) => {
-  imageDataCache.set(imageId, imageData)
-  if (imageDataCache.size > IMAGE_DATA_CACHE_SIZE) {
-    imageDataCache.delete(imageDataCache.keys().next().value)
-  }
-}
-
-// Rasterisations in progress: imageId → Promise<ImageData>, so callers asking for the same image
-// at once (e.g. the datasets and draw plugins) share one rather than each drawing it
-const pendingImageData = new Map()
-
-const rasteriseOnce = (imageId, rasterise) => {
-  if (!pendingImageData.has(imageId)) {
-    const pending = rasterise()
-      .then((imageData) => {
-        cacheImageData(imageId, imageData)
-        return imageData
-      })
-      .finally(() => pendingImageData.delete(imageId))
-    pendingImageData.set(imageId, pending)
-  }
-  return pendingImageData.get(imageId)
-}
-
-const HASH_BASE = 36
-const HASH_MULTIPLIER = 31
-const FNV_OFFSET = 0x811c9dc5
-const FNV_PRIME = 0x01000193
-
-// Two independent 32-bit hashes (×31 and FNV-1a), together about 64 bits, so two different
-// symbols sharing an image id — and one showing the other's image — is vanishingly unlikely
-const hashString = (str) => {
-  let multiplied = 0
-  let fnv = FNV_OFFSET
-  for (const character of str) {
-    const code = character.codePointAt(0)
-    // Math.imul takes its inputs as 32-bit integers, so multiplied wraps to 32 bits each pass
-    multiplied = Math.imul(multiplied, HASH_MULTIPLIER) + code
-    fnv = Math.imul(fnv ^ code, FNV_PRIME)
-  }
-  return (multiplied >>> 0).toString(HASH_BASE) + (fnv >>> 0).toString(HASH_BASE)
-}
+const imageDataCache = createImageDataCache(IMAGE_DATA_CACHE_SIZE)
 
 // The viewBox is part of the id: it sets the rasterised image's size, so the same SVG content at
 // two viewBoxes (e.g. symbolSvgContent with different symbolViewBox values) is two images.
@@ -161,9 +109,61 @@ function resolveValues (symbolDef, markerValues, mapStyle, constructorDefaults) 
   )
 }
 
-// Sizing, image ids and rasterising. They read the registry only through `this` (its symbols,
-// defaults and resolve methods), so every registry shares them.
+// Sizing, variants, image ids, rasterising and the key symbol. They read the registry only through
+// `this` (its symbols, defaults and resolve methods), so every registry shares them.
 const symbolImageMethods = {
+  /**
+   * The sized symbol definition for a marker's options, falling back to this map's defaults for
+   * each: `svgContent` or `symbol`, `size`, `viewBox` and `anchor`.
+   *
+   * @param {Object} options - marker options
+   * @returns {Object|undefined} undefined when neither names a known symbol
+   */
+  getMarkerSymbolDef (options) {
+    const defaults = this.getDefaults()
+    const svgContent = options.svgContent || defaults.svgContent
+    const baseDef = svgContent ? { svg: svgContent } : this.get(options.symbol || defaults.symbol)
+    if (!baseDef) {
+      return undefined
+    }
+    return this.getSizedSymbolDef(baseDef, {
+      viewBox: options.viewBox || defaults.viewBox,
+      size: options.size ?? defaults.size,
+      anchor: options.anchor ?? defaults.anchor
+    })
+  },
+
+  /**
+   * A symbol's SVG for one variant: normal (no rings), active (both rings) or selected (black ring).
+   *
+   * @param {Object} symbolDef
+   * @param {Object} styleColors - token overrides
+   * @param {Object} mapStyle
+   * @param {'normal'|'active'|'selected'} variant
+   * @returns {string}
+   */
+  resolveVariant (symbolDef, styleColors, mapStyle, variant) {
+    const { resolveWith } = SYMBOL_VARIANTS[variant] ?? SYMBOL_VARIANTS.normal
+    return this[resolveWith](symbolDef, styleColors, mapStyle)
+  },
+
+  /**
+   * A dataset style's symbol as the map key draws it: always medium, whatever size the map uses,
+   * and in the page's colour scheme (mapStyle.appColorScheme) rather than the map's.
+   *
+   * @param {Object} style - a dataset style
+   * @param {Object} mapStyle - current map style config
+   * @returns {{ svg: string, viewBox: string }|null} null when the style has no known symbol
+   */
+  getKeySymbol (style, mapStyle) {
+    const symbolDef = this.getSymbolDef({ ...style, symbolSize: 'medium' })
+    if (!symbolDef) {
+      return null
+    }
+    const keyMapStyle = { ...mapStyle, mapColorScheme: mapStyle?.appColorScheme ?? 'light' }
+    return { svg: this.resolve(symbolDef, getSymbolStyleColors(style), keyMapStyle), viewBox: symbolDef.viewBox }
+  },
+
   /**
    * A symbol variant's resolved SVG and image id, from the hash of that SVG, its viewBox and the
    * pixel ratio.
@@ -179,8 +179,8 @@ const symbolImageMethods = {
     if (!symbolDef) {
       return null
     }
-    const { resolveWith, prefix } = SYMBOL_VARIANTS[variant] ?? SYMBOL_VARIANTS.normal
-    const resolvedContent = this[resolveWith](symbolDef, getSymbolStyleColors(style), mapStyle)
+    const { prefix } = SYMBOL_VARIANTS[variant] ?? SYMBOL_VARIANTS.normal
+    const resolvedContent = this.resolveVariant(symbolDef, getSymbolStyleColors(style), mapStyle, variant)
     return { symbolDef, resolvedContent, imageId: imageIdFor(prefix, resolvedContent, symbolDef.viewBox, pixelRatio) }
   },
 
@@ -195,6 +195,26 @@ const symbolImageMethods = {
    */
   getSymbolImageId (style, mapStyle, variant, pixelRatio) {
     return this.resolveSymbolImage(style, mapStyle, variant, pixelRatio)?.imageId ?? null
+  },
+
+  /**
+   * The image ids of all three variants of a symbol, without rasterising them.
+   *
+   * @param {Object} style
+   * @param {Object} mapStyle
+   * @param {number} pixelRatio - Device pixel ratio × map size scale factor
+   * @returns {{ normal: string, active: string, selected: string }|null} null for an unknown symbol
+   */
+  getSymbolImageIds (style, mapStyle, pixelRatio) {
+    const normal = this.getSymbolImageId(style, mapStyle, 'normal', pixelRatio)
+    if (!normal) {
+      return null
+    }
+    return {
+      normal,
+      active: this.getSymbolImageId(style, mapStyle, 'active', pixelRatio),
+      selected: this.getSymbolImageId(style, mapStyle, 'selected', pixelRatio)
+    }
   },
 
   /**
@@ -259,13 +279,13 @@ const symbolImageMethods = {
     }
     const { symbolDef: { viewBox }, resolvedContent, imageId } = resolved
 
-    let imageData = getCachedImageData(imageId)
+    let imageData = imageDataCache.get(imageId)
     if (!imageData) {
       const [,, width, height] = viewBox.split(' ').map(Number)
       // Render at pixelRatio× to keep icons crisp at the current device DPI and map size.
       // The provider registers it at the same pixelRatio, so it displays at its logical size.
       const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${width * pixelRatio}" height="${height * pixelRatio}" viewBox="${viewBox}">${resolvedContent}</svg>`
-      imageData = await rasteriseOnce(imageId, () => rasteriseToImageData(svgString, width * pixelRatio, height * pixelRatio))
+      imageData = await imageDataCache.rasteriseOnce(imageId, () => rasteriseToImageData(svgString, width * pixelRatio, height * pixelRatio))
     }
 
     return { imageId, imageData }

@@ -5,7 +5,8 @@ import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './draw
 import { ADAPTER_EVENTS } from '../../adapterEvents.js'
 import { createLiveStroke } from '../../validation/liveStroke.js'
 import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
-import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
+import { resolvePointSymbol } from './pointSymbolImages.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 import { getCoords, getMidpointCoords } from './modes/editVertexMode/geometryHelpers.js'
 import { logger } from '../../../../../src/services/logger.js'
 
@@ -338,7 +339,7 @@ export class MaplibreDrawAdapter {
       : feature.properties
     const withSortKey = { ...feature, properties }
     const ids = this._draw.add(withSortKey)
-    if (withSortKey.geometry?.type === 'Point' && hasSymbolStyle(properties)) {
+    if (withSortKey.geometry?.type === 'Point' && hasSymbol(properties)) {
       this._resolvePointSymbol(ids[0], properties)
     }
     return ids

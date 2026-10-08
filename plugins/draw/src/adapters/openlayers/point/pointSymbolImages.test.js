@@ -1,4 +1,4 @@
-import { hasSymbolStyle, getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
+import { getPixelRatio, resolvePointSymbol, refreshAllPointSymbols } from './pointSymbolImages.js'
 import { createSymbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
 import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 
@@ -58,21 +58,6 @@ beforeEach(() => {
 })
 
 afterEach(() => jest.restoreAllMocks())
-
-describe('hasSymbolStyle', () => {
-  it('is true when symbol is set', () => {
-    expect(hasSymbolStyle({ symbol: 'pin' })).toBe(true)
-  })
-
-  it('is true when symbolSvgContent is set', () => {
-    expect(hasSymbolStyle({ symbolSvgContent: '<path/>' })).toBe(true)
-  })
-
-  it('is false with neither, or no properties at all', () => {
-    expect(hasSymbolStyle({})).toBe(false)
-    expect(hasSymbolStyle(undefined)).toBe(false)
-  })
-})
 
 describe('getPixelRatio', () => {
   it('reads the map\'s own pixelRatio (device pixel ratio × map-size scale)', () => {

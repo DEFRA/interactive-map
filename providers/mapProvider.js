@@ -22,6 +22,20 @@ export class MapProvider {
   }
 
   /**
+   * Rasterises and registers each pattern's image with the map. Images already registered are
+   * reused.
+   *
+   * @param {Object[]} patternConfigs - pattern styles (fillPattern/fillPatternSvgContent plus colours)
+   * @param {string} mapStyleId
+   * @param {Object} patternRegistry
+   * @param {number} [pixelRatio] - defaults to the map's current pixel ratio
+   * @returns {Promise<void>}
+   */
+  addPatternsToMap () {
+    this._notImplemented('addPatternsToMap')
+  }
+
+  /**
    * The imageId of a registered symbol's active (keyboard cursor) variant.
    *
    * @param {string} normalImageId

@@ -25,6 +25,7 @@ import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import { shieldSymbolSvg } from './customSymbols.js'
 
 const POINT_DATA = {
   type: 'FeatureCollection',
@@ -247,7 +248,8 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], 'medieval'],
       showInMenu: true,
       style: {
-        symbol: 'hexagon',
+        // A custom shield, to show symbolSvgContent with all its variants (see customSymbols.js)
+        symbolSvgContent: shieldSymbolSvg,
         symbolBackgroundColor: '#1565C0',
       }
     },{

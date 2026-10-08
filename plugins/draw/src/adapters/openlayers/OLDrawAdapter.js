@@ -1,5 +1,5 @@
 import { createOLDraw } from './olDraw.js'
-import { hasSymbolStyle } from './point/pointSymbolImages.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 
 // split.js passes this literal — MapLibre's own always-present "already-drawn
 // shapes" style layer id — as a snapLayers entry so the split line snaps to the
@@ -102,7 +102,7 @@ export class OLDrawAdapter {
   // drawend handler, so it must be resolved here instead — mirrors MaplibreDrawAdapter.js.
   add (feature) {
     const olFeature = this._manager.add(feature)
-    if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {
+    if (feature.geometry?.type === 'Point' && hasSymbol(feature.properties)) {
       this._manager.updatePointSymbol(olFeature)
     }
     return olFeature
@@ -117,7 +117,7 @@ export class OLDrawAdapter {
       return
     }
     olFeature.setProperties(properties)
-    if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(olFeature.getProperties())) {
+    if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbol(olFeature.getProperties())) {
       this._manager.updatePointSymbol(olFeature)
     }
   }

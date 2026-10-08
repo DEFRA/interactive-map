@@ -1,9 +1,17 @@
 import { BUILT_IN_PATTERNS } from '../config/patternConfig.js'
 import { getValueForStyle } from '../utils/getValueForStyle.js'
-import { KEY_BORDER_PATH, getEffectivePixelRatio, injectColors, hashString } from '../utils/patternUtils.js'
+import { KEY_BORDER_PATH, getEffectivePixelRatio, injectColors } from '../utils/patternUtils.js'
 import { rasteriseToImageData } from '../utils/rasteriseToImageData.js'
-// Module-level cache: imageId → ImageData. Avoids re-rasterising identical patterns.
-const imageDataCache = new Map()
+import { hashString } from '../utils/hashString.js'
+import { createImageDataCache } from '../utils/imageDataCache.js'
+
+// Shared by every registry: imageId → ImageData. Every style or pixel-ratio change brings new
+// ids, so it's bounded.
+const IMAGE_DATA_CACHE_SIZE = 128
+const imageDataCache = createImageDataCache(IMAGE_DATA_CACHE_SIZE)
+
+const PATTERN_VIEWBOX_SIZE = 16 // patterns are authored in a 16×16 space...
+const PATTERN_TILE_SIZE = 8 // ...and tiled at 8 CSS pixels
 
 // Colouring, image ids and rasterising. They read the registry only through `this` (its
 // registered patterns), so every registry shares them.
@@ -54,10 +62,10 @@ const patternImageMethods = {
    *
    * @param {Object} dataset
    * @param {string} mapStyleId
-   * @param {number} [pixelRatio=1]
+   * @param {number} pixelRatio - Device pixel ratio × map size scale factor
    * @returns {string|null}
    */
-  getPatternImageId (dataset, mapStyleId, pixelRatio = 1) {
+  getPatternImageId (dataset, mapStyleId, pixelRatio) {
     const innerContent = this.getPatternInnerContent(dataset)
     if (!innerContent) {
       return null
@@ -69,17 +77,14 @@ const patternImageMethods = {
   },
 
   /**
-   * Rasterise a pattern to ImageData, cached by imageId — shared by MapLibre's map.addImage()
-   * and OpenLayers' CanvasPattern (canvasPatternStyle.js). Note: the two currently render the
-   * pattern tile at different on-screen sizes (8px vs 16px CSS) — not yet confirmed if that
-   * needs aligning.
+   * Rasterise a pattern to ImageData, cached by imageId, for a map provider to register.
    *
    * @param {Object} style - Dataset or marker config with fillPattern* properties
    * @param {string} mapStyleId - Current style/theme identifier
-   * @param {number} [pixelRatio=1] - Device pixel ratio × map size scale factor
+   * @param {number} pixelRatio - Device pixel ratio × map size scale factor
    * @returns {Promise<{imageId: string, imageData: ImageData}|null>}
    */
-  async rasterisePatternImage (style, mapStyleId, pixelRatio = 1) {
+  async rasterisePatternImage (style, mapStyleId, pixelRatio) {
     const innerContent = this.getPatternInnerContent(style)
     if (!innerContent) {
       return null
@@ -93,12 +98,10 @@ const patternImageMethods = {
       const fg = getValueForStyle(style.fillPatternForegroundColor, mapStyleId) || 'black'
       const bg = getValueForStyle(style.fillPatternBackgroundColor, mapStyleId) || 'transparent'
       const colored = injectColors(innerContent, fg, bg)
-      const bgRect = `<rect width="16" height="16" fill="${bg}"/>`
-      const effectiveRatio = getEffectivePixelRatio(pixelRatio)
-      const physicalSize = Math.round(8 * effectiveRatio)
-      const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${physicalSize}" height="${physicalSize}" viewBox="0 0 16 16">${bgRect}${colored}</svg>`
-      imageData = await rasteriseToImageData(svgString, physicalSize, physicalSize)
-      imageDataCache.set(imageId, imageData)
+      const bgRect = `<rect width="${PATTERN_VIEWBOX_SIZE}" height="${PATTERN_VIEWBOX_SIZE}" fill="${bg}"/>`
+      const physicalSize = Math.round(PATTERN_TILE_SIZE * getEffectivePixelRatio(pixelRatio))
+      const svgString = `<svg xmlns="http://www.w3.org/2000/svg" width="${physicalSize}" height="${physicalSize}" viewBox="0 0 ${PATTERN_VIEWBOX_SIZE} ${PATTERN_VIEWBOX_SIZE}">${bgRect}${colored}</svg>`
+      imageData = await imageDataCache.rasteriseOnce(imageId, () => rasteriseToImageData(svgString, physicalSize, physicalSize))
     }
     return { imageId, imageData }
   }

@@ -19,6 +19,10 @@ describe('hasSymbol', () => {
     expect(hasSymbol({ symbolSvgContent: '<circle/>' })).toBe(true)
   })
 
+  it('returns false with no style at all', () => {
+    expect(hasSymbol(undefined)).toBe(false)
+  })
+
   it('returns false when symbol is absent', () => {
     expect(hasSymbol({})).toBe(false)
   })

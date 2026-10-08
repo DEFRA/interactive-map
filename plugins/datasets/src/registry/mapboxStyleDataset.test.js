@@ -2,7 +2,7 @@ import { Dataset } from './dataset.js'
 import { MapboxStyleDataset } from './mapboxStyleDataset.js'
 import { datasetRegistry } from './datasetRegistry.js'
 import { attachGlobalState } from './globalDataset.js'
-import { hashString } from '../../../../src/utils/patternUtils.js'
+import { hashString } from '../../../../src/utils/hashString.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 jest.mock('./datasetRegistry.js')
 

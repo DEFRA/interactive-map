@@ -14,11 +14,11 @@ const SYMBOL_STYLE_PROPS = new Set([
 ])
 
 /**
- * Returns true if this dataset should be rendered as a symbol (point) layer.
- * @param {Object} dataset
+ * Whether a dataset or draw style draws a symbol: a `symbol` id or inline `symbolSvgContent`.
+ * @param {Object} [style]
  * @returns {boolean}
  */
-export const hasSymbol = (dataset) => !!(dataset.symbol || dataset.symbolSvgContent)
+export const hasSymbol = (style) => !!(style?.symbol || style?.symbolSvgContent)
 
 /**
  * Returns true if a marker item should render as a standalone label with no symbol.

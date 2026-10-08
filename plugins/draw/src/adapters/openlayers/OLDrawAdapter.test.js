@@ -1,6 +1,5 @@
 import { OLDrawAdapter } from './OLDrawAdapter.js'
 import { createOLDraw } from './olDraw.js'
-import { hasSymbolStyle } from './point/pointSymbolImages.js'
 
 // The literal split.js passes — see OLDrawAdapter.js's DRAW_OUTLINE_STYLE_LAYER comment.
 const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
@@ -37,10 +36,6 @@ const fakeManager = () => ({
 jest.mock('./olDraw.js', () => ({
   createOLDraw: jest.fn(({ mapProvider }) => ({ manager: mapProvider._testManager, remove: jest.fn() }))
 }))
-jest.mock('./point/pointSymbolImages.js', () => ({
-  hasSymbolStyle: jest.fn()
-}))
-
 const setup = (extraOptions = {}) => {
   const manager = fakeManager()
   const mapProvider = { _testManager: manager }
@@ -160,13 +155,11 @@ describe('add() and point symbol resolution', () => {
     const { manager, adapter } = setup()
     const olFeature = {}
     manager.add.mockReturnValue(olFeature)
-    hasSymbolStyle.mockReturnValue(true)
     const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
 
     const result = adapter.add(feature)
 
     expect(manager.add).toHaveBeenCalledWith(feature)
-    expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin' })
     expect(manager.updatePointSymbol).toHaveBeenCalledWith(olFeature)
     expect(result).toBe(olFeature)
   })
@@ -174,7 +167,6 @@ describe('add() and point symbol resolution', () => {
   test('does not attempt resolution for a Point with no symbol properties', () => {
     const { manager, adapter } = setup()
     manager.add.mockReturnValue({})
-    hasSymbolStyle.mockReturnValue(false)
     adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
     expect(manager.updatePointSymbol).not.toHaveBeenCalled()
   })
@@ -183,7 +175,6 @@ describe('add() and point symbol resolution', () => {
     const { manager, adapter } = setup()
     manager.add.mockReturnValue({})
     adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
-    expect(hasSymbolStyle).not.toHaveBeenCalled()
     expect(manager.updatePointSymbol).not.toHaveBeenCalled()
   })
 
@@ -196,10 +187,10 @@ describe('add() and point symbol resolution', () => {
 })
 
 describe('setStyle()', () => {
-  const fakeOLFeature = (geometryType) => ({
+  const fakeOLFeature = (geometryType, properties = {}) => ({
     setProperties: jest.fn(),
     getGeometry: jest.fn(() => ({ getType: () => geometryType })),
-    getProperties: jest.fn(() => ({}))
+    getProperties: jest.fn(() => properties)
   })
 
   test('patches the feature\'s properties (not silently, so VectorSource still redraws)', () => {
@@ -216,9 +207,8 @@ describe('setStyle()', () => {
   // setStyle re-resolves a Point's icon the same way add() does for a directly-added one.
   test('re-resolves the icon for a Point patched with symbol properties', () => {
     const { manager, adapter } = setup()
-    const olFeature = fakeOLFeature('Point')
+    const olFeature = fakeOLFeature('Point', { symbol: 'pin' })
     manager.store.getOL.mockReturnValue(olFeature)
-    hasSymbolStyle.mockReturnValue(true)
 
     adapter.setStyle('p1', { symbolBackgroundColor: '#ca3535' })
 

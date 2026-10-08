@@ -13,7 +13,7 @@ import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
 import { queryFeatures } from './utils/queryFeatures.js'
 import { setupHoverCursor } from './utils/hoverCursor.js'
 import { SymbolImageVariants, getSymbolIconLayout } from './utils/symbolImages.js'
-import { addPatternsToMap } from './utils/patternImages.js'
+import { PatternImages } from './utils/patternImages.js'
 
 /**
  * MapLibre GL JS implementation of the MapProvider interface.
@@ -78,6 +78,7 @@ export default class MapLibreProvider extends MapProvider {
     // map.showPadding = true
     this.map = map
     this.symbolImages = new SymbolImageVariants(map)
+    this.patternImages = new PatternImages(map)
 
     // Set padding before bounds
     this.map.setPadding(padding)
@@ -370,18 +371,17 @@ export default class MapLibreProvider extends MapProvider {
   }
 
   /**
-   * Rasterise and register pattern images for the given pre-resolved pattern configs.
-   * Delegates to the shared pattern image utility so any plugin's MapLibre adapter can
-   * register patterns without importing provider internals directly.
+   * Rasterises each pattern's image and adds it to the map. Images the map already has are
+   * reused.
    *
    * @param {Object[]} patternConfigs - an array of pattern configs
    * @param {string} mapStyleId
    * @param {Object} patternRegistry
+   * @param {number} [pixelRatio] - defaults to the map's current pixel ratio
    * @returns {Promise<void>}
    */
-  async addPatternsToMap (patternConfigs, mapStyleId, patternRegistry) {
-    const pixelRatio = this.map.getPixelRatio() || 1
-    return addPatternsToMap(this.map, patternConfigs, mapStyleId, patternRegistry, pixelRatio)
+  async addPatternsToMap (patternConfigs, mapStyleId, patternRegistry, pixelRatio = this.map.getPixelRatio() || 1) {
+    return this.patternImages.registerPatterns(patternConfigs, mapStyleId, patternRegistry, pixelRatio)
   }
 
   // ==========================
