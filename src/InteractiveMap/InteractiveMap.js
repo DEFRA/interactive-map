@@ -99,7 +99,7 @@ export default class InteractiveMap {
     this._hybridBehaviourCleanup = setupBehavior(this)
 
     if (shouldLoadComponent(this.config)) {
-      this.loadApp()
+      this.loadApp() // NOSONAR: Not changing for now as used in production
     } else {
       removeLoadingState()
     }
@@ -120,7 +120,7 @@ export default class InteractiveMap {
         history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
       }
       // Only a genuine launcher click moves focus into the map — never a resize/breakpoint transition.
-      this.loadApp({ focusOnMount: true })
+      this.loadApp({ focusOnMount: true }) // NOSONAR: Not changing for now as used in production
     }
   }
 
@@ -564,7 +564,7 @@ export default class InteractiveMap {
     } else if (this._root) {
       // App is already open — no-op
     } else {
-      this.loadApp()
+      this.loadApp() // NOSONAR: Not changing for now as used in production
     }
   }
 

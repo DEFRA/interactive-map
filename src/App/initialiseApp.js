@@ -38,7 +38,7 @@ const getOrCreateRegistries = (rootElement, eventBus) => {
 const loadPlugins = async (plugins, registerPlugin) => {
   for (const plugin of plugins) {
     if (typeof plugin.load === 'function') {
-      const module = await plugin.load()
+      const module = await plugin.load() // NOSONAR: Await inside a for loop is fine, parent function is async
       const { id: pluginId, load, manifest: overrideManifest, ...config } = plugin
       const { InitComponent, api, reducer, ...baseManifest } = module
 

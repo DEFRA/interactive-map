@@ -174,7 +174,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate }) =
   mapProvider.map.on('moveend', handleMoveEnd)
 
   // Initial fetch
-  fetchData()
+  fetchData() // NOSONAR: Not changing for now as used in production
 
   return {
     /**
@@ -203,7 +203,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate }) =
     refresh () {
       state.features.clear()
       state.fetchedBbox = null
-      fetchData()
+      fetchData() // NOSONAR: Not changing for now as used in production
     },
 
     /**
