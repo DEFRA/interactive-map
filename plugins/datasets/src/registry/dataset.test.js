@@ -190,6 +190,15 @@ describe('Dataset class', () => {
       expect(new Dataset({}).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 2, symbolDescription: 'red outline' })
     })
 
+    it('applies the whole default style when the style only sets opacity', () => {
+      expect(new Dataset({ style: { opacity: 0.5 } }).style).toEqual({
+        opacity: 0.5,
+        stroke: '#d4351c',
+        strokeWidth: 2,
+        symbolDescription: 'red outline'
+      })
+    })
+
     it('applies the default stroke when the style only adjusts it', () => {
       expect(new Dataset({ style: { strokeWidth: 4, opacity: 0.5 } }).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 4, opacity: 0.5 })
     })
