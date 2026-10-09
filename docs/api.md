@@ -308,13 +308,21 @@ HTML string shown as a tooltip on the viewport when it receives keyboard focus, 
 
 ### `mapLabel`
 **Type:** `string`
-**Required**
+**Default:** `'Interactive map application'`
 
-Accessible name for the map viewport, which has a role of `application`. This label is announced by screen readers when the viewport receives focus and should describe the purpose of the map.
+The name of the map, read out by screen readers when the map is focused. Always set your own.
+
+Describe what the map shows or what it's for, not where it is. Users can move the map, so a place name soon stops being true.
+
+- Name the data or the task, for example 'Flood risk areas map' or 'Map for drawing your field boundaries'.
+- Include the word 'map'.
+- Only name a place if the map's data covers just that place.
+- Leave out things that change as the map is used, such as location or zoom level.
+- Keep it short, and give each map on a page a different name.
 
 ```js
 new InteractiveMap('map', {
-  mapLabel: 'Flood risk areas in England'
+  mapLabel: 'Flood risk areas map'
 })
 ```
 

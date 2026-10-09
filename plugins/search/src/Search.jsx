@@ -36,7 +36,6 @@ export function Search ({ appConfig, iconRegistry, pluginState, pluginConfig, ap
       datasets: mergedDatasets,
       services,
       mapProvider,
-      viewportRef,
       searchContainerRef,
       markers: mapState.markers,
       markerOptions,

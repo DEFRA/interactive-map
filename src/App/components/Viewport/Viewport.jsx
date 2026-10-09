@@ -22,7 +22,7 @@ export const Viewport = () => {
   const { id, mapProvider, mapLabel, keyboardHintText, focusOnMount } = useConfig()
   const { layoutRefs, safeZoneInset, dispatch } = useApp()
   const { mapSize, isMapReady } = useMap()
-  const { eventBus, hints } = useService()
+  const { eventBus, hints, mapFocus } = useService()
 
   const mapContainerRef = useRef(null)
   const spatialListRef = useRef(null)
@@ -75,7 +75,7 @@ export const Viewport = () => {
   return (
     <>
       <MapController mapContainerRef={mapContainerRef} />
-      <div
+      <div // NOSONAR - role="application" is interactive: the map handles its own keyboard and pointer input
         id={`${id}-viewport`}
         className={`im-c-viewport im-c-viewport--${mapSize}`}
         aria-label={mapLabel}
@@ -83,7 +83,9 @@ export const Viewport = () => {
         tabIndex='0' // nosonar
         data-map-keyboard-scope
         onFocus={handleFocus}
-        onBlur={handleBlur}
+        onBlur={(event) => { handleBlur(event); mapFocus.clear() }}
+        onKeyDown={() => mapFocus.releaseAnnouncements()}
+        onPointerDown={() => mapFocus.releaseAnnouncements()}
         ref={layoutRefs.viewportRef}
         aria-describedby={`${id}-keyboard-desc`}
         aria-controls={`${id}-spatial-list`}

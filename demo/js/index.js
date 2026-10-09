@@ -301,7 +301,7 @@ const interactiveMap = new InteractiveMap('map', {
   }),
   // maxMobileWidth: 700,
   // minDesktopWidth: 960,
-  mapLabel: 'Map showing field parcels and land use',
+  mapLabel: 'Field parcels and land use map',
   // zoom: 14,
   minZoom: 6,
   maxZoom: 20,

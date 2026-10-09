@@ -1,5 +1,5 @@
 import { fetchSuggestions } from './fetchSuggestions.js'
-import { updateMap } from '../utils/updateMap.js'
+import { showResult } from '../utils/showResult.js'
 import { DEFAULTS } from '../defaults.js'
 
 // Resolve the open trigger — a core-rendered MapButton. Prefer the shared buttonRefs
@@ -63,7 +63,6 @@ const tabOutFromTrigger = (event, buttonRefs, searchContainerRef) => {
 export const createFormHandlers = ({
   dispatch,
   services,
-  viewportRef,
   searchContainerRef,
   mapProvider,
   markers,
@@ -100,9 +99,7 @@ export const createFormHandlers = ({
       if (selectedIndex >= 0) {
         const suggestion = suggestions[selectedIndex]
         dispatch({ type: 'SET_VALUE', payload: suggestion.text })
-        viewportRef.current?.focus()
-        updateMap({ mapProvider, bounds: suggestion.bounds, point: suggestion.point, markers, showMarker, markerOptions })
-        services.eventBus.emit('search:match', { query: suggestion.text, ...suggestion })
+        showResult({ suggestion, query: suggestion.text, services, mapProvider, markers, showMarker, markerOptions })
         return
       }
 
@@ -118,14 +115,11 @@ export const createFormHandlers = ({
       }
 
       if (newSuggestions.length) {
-        viewportRef.current?.focus()
         if (appState.breakpoint === 'mobile') {
           dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
           services.eventBus.emit('search:close')
         }
-        const suggestion = newSuggestions[0]
-        updateMap({ mapProvider, bounds: suggestion.bounds, point: suggestion.point, markers, showMarker, markerOptions })
-        services.eventBus.emit('search:match', { query: value, ...suggestion })
+        showResult({ suggestion: newSuggestions[0], query: value, services, mapProvider, markers, showMarker, markerOptions })
       }
     }
   }

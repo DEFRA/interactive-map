@@ -29,6 +29,12 @@ describe('Suggestions', () => {
     expect(listbox.className).toContain('im-c-search-suggestions')
   })
 
+  it('keeps focus in the input when a suggestion is pressed', () => {
+    render(<Suggestions {...baseProps} />)
+    const option = screen.getAllByRole('option')[1]
+    expect(fireEvent.mouseDown(option)).toBe(false) // default prevented
+  })
+
   it('hides the listbox when suggestions are not visible', () => {
     render(
       <Suggestions
