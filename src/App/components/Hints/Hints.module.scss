@@ -8,7 +8,7 @@
   left: 0;
   right: 0;
   margin-inline: auto;
-  z-index: 1001;
+  z-index: 98; // Above non-modal slots, below .im-o-app__modal (99)
   width: fit-content;
   max-width: min(var(--hint-max-width), calc(100% - (2 * var(--primary-gap))));
 }
