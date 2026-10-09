@@ -46,30 +46,33 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
-    const _add = async (registryDataset) => {
-      await this._addLayers(registryDataset)
-      const mapLayer = this._mapVisibilityLayers[registryDataset.id]
-      registryDataset.sublayers?.forEach(sublayer => {
-        if (sublayer.visibility === 'visible') {
-          this._applyStyleLayerPaintProperties(sublayer, mapLayer)
-        }
-      })
-      await this.applyDatasetVisibility(registryDataset.id)
-    }
     // ensure the datasets are added in order, each waiting for the previous one to load
-    const _addInOrder = (registryDatasets) => registryDatasets.reduce(
-      (previous, registryDataset) => previous.then(() => _add(registryDataset)),
-      Promise.resolve()
-    )
-    const visibleDatasets = topLevelDatasets.filter(registryDataset => registryDataset.visibility === 'visible')
-    const hiddenDatasets = topLevelDatasets.filter(registryDataset => registryDataset.visibility !== 'visible')
+    const _add = async (registryDataset) => {
+      return this._addLayers(registryDataset).then(() => {
+        const mapLayer = this._mapVisibilityLayers[registryDataset.id]
+        registryDataset.sublayers?.forEach(sublayer => {
+          if (sublayer.visibility === 'visible') {
+            this._applyStyleLayerPaintProperties(sublayer, mapLayer)
+          }
+        })
+        return this.applyDatasetVisibility(registryDataset.id)
+      })
+    }
 
     // Add the visible datasets first - to speed up rendering
-    await _addInOrder(visibleDatasets)
+    for (const registryDataset of topLevelDatasets) {
+      if (registryDataset.visibility === 'visible') {
+        await _add(registryDataset)
+      }
+    }
     // Reorder layers after adding the initially visible datasets
     this._reorderLayers()
     // Add the non-visible datasets next
-    await _addInOrder(hiddenDatasets)
+    for (const registryDataset of topLevelDatasets) {
+      if (registryDataset.visibility !== 'visible') {
+        await _add(registryDataset)
+      }
+    }
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
     // and updating the paint properties of the layers based on the dataset/mapStyle style
