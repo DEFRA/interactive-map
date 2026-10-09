@@ -76,9 +76,9 @@ beforeEach(() => {
   datasetRegistry.attachCreateDataset(adapter.createDataset)
   datasetRegistry.mockExtend({
     'ds-fill': { id: 'ds-fill', style: { fill: '#0000ff' }, geojson: { type: 'FeatureCollection', features: [point(1, [0, 0])] } },
-    'ds-bare': { id: 'ds-bare' },
+    'ds-bare': { id: 'ds-bare', style: { stroke: null } },
     'ds-tiles': { id: 'ds-tiles', tiles: ['https://example.com/{z}/{x}/{y}'], style: { fill: '#0000ff' } },
-    'ds-tiles-bare': { id: 'ds-tiles-bare', tiles: ['https://example.com/{z}/{x}/{y}'] },
+    'ds-tiles-bare': { id: 'ds-tiles-bare', style: { stroke: null }, tiles: ['https://example.com/{z}/{x}/{y}'] },
     'ds-dynamic': { id: 'ds-dynamic', style: { fill: '#0000ff' }, dynamicGeoJSON: { url: 'https://example.com', idProperty: 'ref' } },
     'ds-parent': { id: 'ds-parent', sublayerIds: ['ds-child-a', 'ds-child-b'], geojson: { type: 'FeatureCollection', features: [point(1, [0, 0])] } },
     'ds-child-a': { id: 'ds-child-a', parentId: 'ds-parent', style: { fill: '#ff0000' }, filter: ['==', ['get', 'cat'], 'a'] },

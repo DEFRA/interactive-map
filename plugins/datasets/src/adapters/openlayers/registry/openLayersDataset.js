@@ -3,7 +3,6 @@ import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 
 const MAX_TILE_ZOOM = 22
-const DEFAULT_STROKE_WIDTH = 1
 
 /**
  * OpenLayers implementation of the shared Dataset registry model.
@@ -162,7 +161,7 @@ export class OpenLayersDataset extends MapboxStyleDataset {
     }
     if (this.hasStroke) {
       style['stroke-color'] = getValueForStyle(this.style.stroke, mapStyleId)
-      style['stroke-width'] = this.style.strokeWidth || DEFAULT_STROKE_WIDTH
+      style['stroke-width'] = this.style.strokeWidth
       if (this.style.strokeDashArray) {
         style['stroke-line-dash'] = this.style.strokeDashArray
       }

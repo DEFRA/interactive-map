@@ -40,7 +40,7 @@ describe('OpenLayersDataset', () => {
       'ds-stroke-only': { id: 'ds-stroke-only', style: { stroke: 'red', strokeWidth: 2 } },
       'ds-dashed-stroke': { id: 'ds-dashed-stroke', style: { stroke: 'red', strokeDashArray: [4, 2] } },
       'ds-transparent-fill': { id: 'ds-transparent-fill', style: { fill: 'transparent' } },
-      'ds-bare': { id: 'ds-bare' },
+      'ds-bare': { id: 'ds-bare', style: { stroke: null } },
       'ds-tiles': { id: 'ds-tiles', tiles: ['https://example.com/{z}/{x}/{y}'], minZoom: 5, maxZoom: 15 },
       'ds-tiles-no-zoom': { id: 'ds-tiles-no-zoom', tiles: ['https://example.com/{z}/{x}/{y}'] },
       'ds-static-geojson': { id: 'ds-static-geojson', geojson: { type: 'FeatureCollection', features: [] }, style: { fill: 'green' } },
@@ -203,14 +203,14 @@ describe('OpenLayersDataset', () => {
       expect(datasetRegistry.getDataset('ds-fill-only').getFlatStyle(context())).toEqual({ 'fill-color': 'blue' })
     })
 
-    it('returns stroke-color and stroke-width, defaulting stroke-width to 1', () => {
+    it('returns stroke-color and stroke-width', () => {
       expect(datasetRegistry.getDataset('ds-stroke-only').getFlatStyle(context())).toEqual({ 'stroke-color': 'red', 'stroke-width': 2 })
     })
 
     it('includes stroke-line-dash when strokeDashArray is set', () => {
       expect(datasetRegistry.getDataset('ds-dashed-stroke').getFlatStyle(context())).toEqual({
         'stroke-color': 'red',
-        'stroke-width': 1,
+        'stroke-width': 2,
         'stroke-line-dash': [4, 2]
       })
     })

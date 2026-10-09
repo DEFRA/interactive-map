@@ -1,4 +1,4 @@
-import { datasetDefaults, hasCustomVisualStyle, applyDatasetDefaults } from './defaults'
+import { datasetDefaults, hasCustomVisualStyle, applyStyleDefaults, applyDatasetDefaultsWithoutFlattening } from './defaults'
 
 describe('datasetDefaults', () => {
   it('has expected top-level defaults', () => {
@@ -54,73 +54,41 @@ describe('hasCustomVisualStyle', () => {
   })
 })
 
-describe('applyDatasetDefaults', () => {
-  const defaults = {
-    minZoom: 6,
-    maxZoom: 24,
-    showInKey: false,
-    style: {
-      stroke: '#d4351c',
-      strokeWidth: 2,
-      symbolDescription: 'red outline'
-    }
-  }
-
-  it('merges top-level dataset properties over defaults', () => {
-    const dataset = { id: 'test', minZoom: 10 }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.minZoom).toBe(10)
-    expect(result.maxZoom).toBe(24)
-    expect(result.showInKey).toBe(false)
+describe('applyStyleDefaults', () => {
+  it('applies the whole default style when there is no style', () => {
+    expect(applyStyleDefaults()).toEqual({ stroke: '#d4351c', strokeWidth: 2, symbolDescription: 'red outline' })
   })
 
-  it('flattens style properties into the result', () => {
-    const dataset = { id: 'test', style: { fill: 'transparent' } }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.fill).toBe('transparent')
-    expect(result.stroke).toBe('#d4351c')
-    expect(result.style).toBeUndefined()
+  it('applies the whole default style under a style without a custom visual style', () => {
+    expect(applyStyleDefaults({ strokeWidth: 4, opacity: 0.5 })).toEqual({
+      stroke: '#d4351c', strokeWidth: 4, symbolDescription: 'red outline', opacity: 0.5
+    })
   })
 
-  it('dataset style properties override default style properties', () => {
-    const dataset = { id: 'test', style: { stroke: '#0000ff' } }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.stroke).toBe('#0000ff')
+  it('applies only the default strokeWidth under a custom visual style', () => {
+    expect(applyStyleDefaults({ fill: 'blue' })).toEqual({ fill: 'blue', strokeWidth: 2 })
   })
 
-  it('drops symbolDescription from defaults when custom visual style is present and no explicit symbolDescription', () => {
-    const dataset = { id: 'test', style: { stroke: '#0000ff' } }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.symbolDescription).toBeUndefined()
+  it('treats an explicitly empty stroke as a custom visual style', () => {
+    expect(applyStyleDefaults({ stroke: null })).toEqual({ stroke: null, strokeWidth: 2 })
+  })
+})
+
+describe('applyDatasetDefaultsWithoutFlattening', () => {
+  it('applies top-level defaults but keeps the style as given', () => {
+    const result = applyDatasetDefaultsWithoutFlattening({ id: 'test', style: { fill: 'blue' } })
+    expect(result).toMatchObject({ id: 'test', minZoom: 6, maxZoom: 24, visible: true })
+    expect(result.style).toEqual({ fill: 'blue' })
   })
 
-  it('keeps symbolDescription when dataset provides its own, even with custom visual style', () => {
-    const dataset = { id: 'test', style: { stroke: '#0000ff', symbolDescription: 'blue outline' } }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.symbolDescription).toBe('blue outline')
+  it('gives a dataset without a style an empty style', () => {
+    expect(applyDatasetDefaultsWithoutFlattening({ id: 'test' }).style).toEqual({})
   })
 
-  it('keeps symbolDescription from defaults when no custom visual style is present', () => {
-    const dataset = { id: 'test', style: { strokeWidth: 4 } }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.symbolDescription).toBe('red outline')
-  })
-
-  it('keeps symbolDescription from defaults when dataset has no style', () => {
-    const dataset = { id: 'test' }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.symbolDescription).toBe('red outline')
-  })
-
-  it('ignores style properties set at top level of dataset', () => {
-    const dataset = { id: 'test', stroke: '#ignored' }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result.stroke).toBe('#d4351c')
-  })
-
-  it('does not include style key in the result', () => {
-    const dataset = { id: 'test', style: { fill: 'blue' } }
-    const result = applyDatasetDefaults(dataset, defaults)
-    expect(result).not.toHaveProperty('style')
+  it('ignores style properties set at the top level of the dataset', () => {
+    const result = applyDatasetDefaultsWithoutFlattening({ id: 'test', stroke: '#ignored', fill: '#ignored' })
+    expect(result).not.toHaveProperty('stroke')
+    expect(result).not.toHaveProperty('fill')
+    expect(result.style).toEqual({})
   })
 })
