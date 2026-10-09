@@ -135,18 +135,20 @@ const datasetsPlugin = createDatasetsPlugin({
       fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
       fillPatternBackgroundColor: 'transparent'
     },
-    sublayers: [{
-      id: '130-131',
-      label: 'Permanent grassland',
-      filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
-      showInMenu: true,
-      style: {
-        stroke: { outdoor: '#00897B', dark: '#ffffff' },
-        fillPattern: 'diagonal-cross-hatch',
-        fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
-        fillPatternBackgroundColor: 'transparent'
-      }
-    },{
+    sublayers: [
+    // {
+    //   id: '130-131',
+    //   label: 'Permanent grassland',
+    //   filter: ['in', ['get', 'dominant_land_cover'], ['literal', ['130', '131']]], // 'dominant_land_cover = "130"'
+    //   showInMenu: true,
+    //   style: {
+    //     stroke: { outdoor: '#00897B', dark: '#ffffff' },
+    //     fillPattern: 'diagonal-cross-hatch',
+    //     fillPatternForegroundColor: { outdoor: '#00897B', dark: '#ffffff' },
+    //     fillPatternBackgroundColor: 'transparent'
+    //   }
+    // },
+    {
       id: '332',
       label: 'Woodland',
       filter: ['==', ['get', 'dominant_land_cover'], '332'],
@@ -356,7 +358,11 @@ const interactiveMap = new InteractiveMap('map', {
       }
     }),
     datasetsPlugin,
-    createMapKeyPlugin(),
+    createMapKeyPlugin({
+      groups: {
+        'land-covers': { groupLabel: 'Land covers', groupStyle: 'ramp' }
+      }
+    }),
     mapStylesPlugin({
       mapStyles: vtsMapStyles3857
     }),

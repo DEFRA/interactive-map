@@ -1,5 +1,10 @@
 import { render, screen } from '@testing-library/react'
 import { KeyGroupItem } from './KeyGroupItem'
+import { useRampOrientation } from './useRampOrientation.js'
+
+jest.mock('./useRampOrientation.js', () => ({
+  useRampOrientation: jest.fn(() => 'horizontal')
+}))
 
 jest.mock('./KeyItem.jsx', () => ({
   KeyItem: ({ keyDefinition }) => <div data-testid='key-item'>{keyDefinition.id}</div>
@@ -52,8 +57,38 @@ describe('KeyGroupItem', () => {
   })
 
   it('appends the groupStyle modifier class to the dl when groupStyle is provided', () => {
-    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='horizontal-ramp' />)
-    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list-horizontal-ramp')
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='other' />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list--other')
+  })
+
+  it('adds the measured orientation to a ramp', () => {
+    const keyDefinitions = [{ id: 'a', label: 'Low', style: {} }, { id: 'b', label: 'High', style: {} }]
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='ramp' keyDefinitions={keyDefinitions} />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list--ramp im-c-map-key-list--ramp-horizontal')
+    expect(useRampOrientation).toHaveBeenLastCalledWith(expect.anything(), ['Low', 'High'], true, false)
+  })
+
+  it('renders a vertical ramp when the labels do not fit', () => {
+    useRampOrientation.mockReturnValueOnce('vertical')
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='ramp' />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list--ramp im-c-map-key-list--ramp-vertical')
+  })
+
+  it('does not measure groups that are not ramps', () => {
+    render(<KeyGroupItem {...baseProps} />)
+    expect(useRampOrientation).toHaveBeenLastCalledWith(expect.anything(), [], false, false)
+  })
+
+  it('adds the has-stroke modifier to a ramp when any item has a stroke', () => {
+    const keyDefinitions = [{ id: 'a', style: { fill: '#000' } }, { id: 'b', style: { stroke: { default: '#123' } } }]
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='ramp' keyDefinitions={keyDefinitions} />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list--ramp im-c-map-key-list--ramp-horizontal im-c-map-key-list--has-stroke')
+  })
+
+  it('omits the has-stroke modifier when no ramp item has a stroke', () => {
+    const keyDefinitions = [{ id: 'a', style: { fill: '#000' } }, { id: 'b', style: { fillPattern: 'dot' } }]
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='ramp' keyDefinitions={keyDefinitions} />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list--ramp im-c-map-key-list--ramp-horizontal')
   })
 
   it('uses the base dl class when groupStyle is not provided', () => {

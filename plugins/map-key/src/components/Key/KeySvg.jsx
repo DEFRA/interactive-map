@@ -3,7 +3,7 @@ import { KeySvgSymbol } from './KeySvgSymbol.jsx'
 import { KeySvgLine } from './KeySvgLine.jsx'
 import { KeySvgRect } from './KeySvgRect.jsx'
 import { KeySvgRamp } from './KeySvgRamp.jsx'
-import { HORIZONTAL_RAMP } from '../../utils/groupStyles.js'
+import { RAMP } from '../../utils/groupStyles.js'
 
 // Pure derivation of keyDefinition — computed directly during render (see KeyItem.jsx for why:
 // staging this through useState/useEffect meant every fresh mount painted a blank symbol first).
@@ -13,8 +13,8 @@ const getSymbolShape = (keyDefinition, groupStyle, mapStyle, symbolRegistry) => 
     return { symbolShape: null, keySymbol: null }
   }
   const { hasSymbol, hasPattern, style } = keyDefinition
-  if (groupStyle === HORIZONTAL_RAMP) {
-    return { symbolShape: HORIZONTAL_RAMP, keySymbol: null }
+  if (groupStyle === RAMP) {
+    return { symbolShape: RAMP, keySymbol: null }
   }
   if (hasSymbol) {
     const keySymbol = symbolRegistry.getKeySymbol(style, mapStyle)
@@ -42,8 +42,8 @@ export const KeySvg = ({ keyDefinition, groupStyle, mapStyle, symbolRegistry, pa
     return <KeySvgPattern mapStyle={mapStyle} keyDefinition={keyDefinition} patternRegistry={patternRegistry} />
   } else if (symbolShape === 'line') {
     return <KeySvgLine mapStyle={mapStyle} keyDefinition={keyDefinition} />
-  } else if (symbolShape === HORIZONTAL_RAMP) {
-    return <KeySvgRamp mapStyle={mapStyle} keyDefinition={keyDefinition} />
+  } else if (symbolShape === RAMP) {
+    return <KeySvgRamp mapStyle={mapStyle} keyDefinition={keyDefinition} patternRegistry={patternRegistry} />
   } else {
     return <KeySvgRect mapStyle={mapStyle} keyDefinition={keyDefinition} />
   }

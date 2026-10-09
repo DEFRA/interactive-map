@@ -1,7 +1,10 @@
-export const HORIZONTAL_RAMP = 'horizontal-ramp'
+/**
+ * `groupStyle` value that lays a group's entries out as a ramp of touching bands.
+ */
+export const RAMP = 'ramp'
 
 const groupStyles = {
-  HORIZONTAL_RAMP
+  RAMP
 }
 
 export default groupStyles
