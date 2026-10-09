@@ -1,5 +1,5 @@
 import { fetchSuggestions } from './fetchSuggestions.js'
-import { updateMap } from '../utils/updateMap.js'
+import { showResult } from '../utils/showResult.js'
 import { DEFAULTS } from '../defaults.js'
 
 // Resolve the open trigger — a core-rendered MapButton. Prefer the shared buttonRefs
@@ -31,10 +31,39 @@ const restoreTriggerFocus = (buttonRefs) => {
   requestAnimationFrame(focusWhenReady)
 }
 
+// Every focusable element on the page in tab order — including [tabindex] elements (e.g. the features
+// list) and visually hidden but still-rendered ones (e.g. buttons search hides with opacity while open).
+const TAB_STOP_SELECTOR = 'input, button, select, textarea, a[href], [tabindex]'
+const getTabStops = () => Array.from(document.querySelectorAll(TAB_STOP_SELECTOR))
+  .filter(el => el.tabIndex >= 0 && !el.disabled && el.getClientRects().length > 0)
+
+// The form renders apart from its trigger (a slot's controls come before its buttons), so native
+// Tab order would leave the form for whatever happens to follow it in the DOM. Continue from the
+// trigger's position instead: Tab past the last element goes to whatever follows the trigger,
+// Shift+Tab past the first returns to the trigger. handleOutside then closes search as usual.
+const tabOutFromTrigger = (event, buttonRefs, searchContainerRef) => {
+  const trigger = getTriggerButton(buttonRefs)
+  if (event.key !== 'Tab' || !trigger) {
+    return
+  }
+  const stops = getTabStops()
+  const adjacent = stops[stops.indexOf(event.target) + (event.shiftKey ? -1 : 1)]
+  if (searchContainerRef.current?.contains(adjacent)) {
+    return
+  }
+  // Nothing after the trigger means it's the page's last tab stop: let focus leave the page natively.
+  const target = event.shiftKey ? trigger : stops[stops.indexOf(trigger) + 1]
+  if (!target) {
+    return
+  }
+  event.preventDefault()
+  target.focus()
+}
+
 export const createFormHandlers = ({
   dispatch,
   services,
-  viewportRef,
+  searchContainerRef,
   mapProvider,
   markers,
   datasets,
@@ -45,6 +74,10 @@ export const createFormHandlers = ({
   let lastFetchedValue = ''
 
   return {
+    handleTabOut (event, buttonRefs) {
+      tabOutFromTrigger(event, buttonRefs, searchContainerRef)
+    },
+
     handleCloseClick (_e, appState) {
       dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
       dispatch({ type: 'UPDATE_SUGGESTIONS', payload: { results: [], hasError: false } })
@@ -66,9 +99,7 @@ export const createFormHandlers = ({
       if (selectedIndex >= 0) {
         const suggestion = suggestions[selectedIndex]
         dispatch({ type: 'SET_VALUE', payload: suggestion.text })
-        viewportRef.current?.focus()
-        updateMap({ mapProvider, bounds: suggestion.bounds, point: suggestion.point, markers, showMarker, markerOptions })
-        services.eventBus.emit('search:match', { query: suggestion.text, ...suggestion })
+        showResult({ suggestion, query: suggestion.text, services, mapProvider, markers, showMarker, markerOptions })
         return
       }
 
@@ -84,14 +115,11 @@ export const createFormHandlers = ({
       }
 
       if (newSuggestions.length) {
-        viewportRef.current?.focus()
         if (appState.breakpoint === 'mobile') {
           dispatch({ type: 'TOGGLE_EXPANDED', payload: false })
           services.eventBus.emit('search:close')
         }
-        const suggestion = newSuggestions[0]
-        updateMap({ mapProvider, bounds: suggestion.bounds, point: suggestion.point, markers, showMarker, markerOptions })
-        services.eventBus.emit('search:match', { query: value, ...suggestion })
+        showResult({ suggestion: newSuggestions[0], query: value, services, mapProvider, markers, showMarker, markerOptions })
       }
     }
   }

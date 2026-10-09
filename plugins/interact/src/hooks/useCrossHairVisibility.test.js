@@ -73,13 +73,13 @@ describe('useCrossHairVisibility', () => {
     expect(crossHair.hide).toHaveBeenCalledTimes(2)
   })
 
-  it('shows the crosshair for a control (e.g. MoveControl) that forwards arrow keys to the map without moving DOM focus onto the viewport', () => {
+  it('shows the crosshair for a control (e.g. MapControl) that forwards arrow keys to the map without moving DOM focus onto the viewport', () => {
     const container = appState.layoutRefs.appContainerRef.current
-    const moveControlButton = document.createElement('button')
-    const moveControlScope = document.createElement('div')
-    moveControlScope.setAttribute('data-map-keyboard-scope', '')
-    moveControlScope.appendChild(moveControlButton)
-    container.appendChild(moveControlScope)
+    const mapControlButton = document.createElement('button')
+    const mapControlScope = document.createElement('div')
+    mapControlScope.setAttribute('data-map-keyboard-scope', '')
+    mapControlScope.appendChild(mapControlButton)
+    container.appendChild(mapControlScope)
     appState.interfaceType = 'keyboard'
 
     renderHook(() => useCrossHairVisibility({ crossHair, enabled: true, selectMarkerOnly: false, appState }))
@@ -87,7 +87,7 @@ describe('useCrossHairVisibility', () => {
 
     // Focus lands on a direction button nested inside the scoped control, not
     // on the scope element itself — closest() must still pick it up.
-    act(() => moveControlButton.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
+    act(() => mapControlButton.dispatchEvent(new FocusEvent('focusin', { bubbles: true })))
     expect(crossHair.fixAtCenter).toHaveBeenCalled()
   })
 

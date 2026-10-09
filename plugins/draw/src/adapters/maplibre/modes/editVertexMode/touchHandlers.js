@@ -66,7 +66,7 @@ export const touchHandlers = {
       // alignment. Left uncorrected, the next onTouchstart's delta math re-anchors off that
       // drifted position, compounding a little further with every snapped drag (same fix as
       // editPointMode's own onTouchend, for the same reason).
-      const vertex = state.vertecies[state.selectedVertexIndex]
+      const vertex = state.vertices[state.selectedVertexIndex]
       if (vertex) {
         this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
       }
@@ -101,7 +101,7 @@ export const touchHandlers = {
   onTouchstart (state, e) {
     clearSnapState(getSnapInstance(this.map))
     // Always get fresh vertex data in case coordinates changed during previous edits
-    const freshVertices = this.getVerticies(state.featureId)
+    const freshVertices = this.getVertices(state.featureId)
     const vertex = freshVertices?.[state.selectedVertexIndex]
     if (!vertex || !isOnSVG(e.target.parentNode)) {
       return

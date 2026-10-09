@@ -39,7 +39,7 @@ export const pointOperations = {
   },
 
   // Moves the point by an explicit (dx, dy) unit direction — the entry point for
-  // MoveControls' D-pad (see mapProvider.activeMoveTarget in events.js). Each call is one
+  // MapControls' D-pad (see mapProvider.activeMoveTarget in events.js). Each call is one
   // complete, undoable action (no held-key sequencing — a button click has no "held" state
   // the way arrow keys do), honouring snap via the shared resolveSnapTarget above.
   nudgePointByDelta (state, dx, dy, isLargeStep) {

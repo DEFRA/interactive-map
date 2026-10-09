@@ -179,7 +179,7 @@ describe('draw event handlers', () => {
     expect(() => drawHandler(draw, 'cancel')()).not.toThrow()
   })
 
-  test('vertexselection dispatches, emits, and claims mapProvider.activeMoveTarget for MoveControls', () => {
+  test('vertexselection dispatches, emits, and claims mapProvider.activeMoveTarget for MapControls', () => {
     const { draw, dispatch, eventBus, mapProvider } = setup()
     drawHandler(draw, 'vertexselection')({ index: 2 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: 2 } })

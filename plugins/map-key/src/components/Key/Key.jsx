@@ -6,18 +6,21 @@ import { KeyGroupItem } from './KeyGroupItem.jsx'
 const keyClassName = 'im-c-map-key'
 const keyGroupsClassName = 'im-c-map-key--has-groups'
 
-const KeyItemWrapper = ({ item, mapStyle }) => {
+const KeyItemWrapper = ({ item, groupStyle, mapStyle, symbolRegistry, patternRegistry }) => {
   if (item.type === 'group') {
     return (
       <KeyGroupItem
         headingId={`key-heading-${item.id}`}
         label={item.groupLabel}
+        groupStyle={groupStyle}
         keyDefinitions={item.keyDefinitions}
         mapStyle={mapStyle}
+        symbolRegistry={symbolRegistry}
+        patternRegistry={patternRegistry}
       />
     )
   } else {
-    return (<KeyItem keyDefinition={item.keyDefinition} mapStyle={mapStyle} />)
+    return (<KeyItem keyDefinition={item.keyDefinition} mapStyle={mapStyle} symbolRegistry={symbolRegistry} patternRegistry={patternRegistry} />)
   }
 }
 
@@ -25,7 +28,9 @@ export const Key = ({
   noKeyItemText,
   keyGroups,
   hasGroups,
-  mapStyle
+  mapStyle,
+  symbolRegistry,
+  patternRegistry
 }) => {
   if (!keyGroups?.length) {
     return (<EmptyKey text={noKeyItemText} />)
@@ -34,10 +39,9 @@ export const Key = ({
   // staging this through useState/useEffect meant a mount with groups briefly rendered without
   // the --has-groups modifier, using flat spacing before the effect corrected it).
   const className = hasGroups ? `${keyClassName} ${keyGroupsClassName}` : keyClassName
-
   return (
     <div className={className}>
-      {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} />)}
+      {keyGroups.map(item => <KeyItemWrapper key={item.id} item={item} mapStyle={mapStyle} symbolRegistry={symbolRegistry} patternRegistry={patternRegistry} groupStyle={item.groupStyle} />)}
     </div>
   )
 }

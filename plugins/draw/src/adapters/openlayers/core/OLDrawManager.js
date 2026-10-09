@@ -12,6 +12,7 @@ import { resolvePointSymbol } from '../point/pointSymbolImages.js'
 import { TOLERANCES } from '../defaults.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from './internalEvents.js'
+import { logger } from '../../../../../../src/services/logger.js'
 
 /**
  * Mode machine for the OL draw plugin.
@@ -24,9 +25,19 @@ import { STYLES_CHANGED_EVENT } from './internalEvents.js'
  * listening to the manager's internal events.
  */
 export class OLDrawManager {
-  constructor (map, pluginConfig = {}) {
+  /**
+   * @param {Object} map - OL map
+   * @param {Object} [pluginConfig]
+   * @param {Object} [symbols]
+   * @param {Object} [symbols.mapProvider] - registers and holds symbol images (OpenLayersProvider)
+   * @param {Object} [symbols.symbolRegistry] - the app's symbol registry (services.symbolRegistry)
+   */
+  constructor (map, pluginConfig = {}, { mapProvider, symbolRegistry } = {}) {
     this._map = map
     this._pluginConfig = pluginConfig
+    this.mapProvider = mapProvider
+    this.symbolRegistry = symbolRegistry
+    this._getSymbolImage = (imageId) => this.mapProvider?.getSymbolImage(imageId)
     this._mode = 'disabled'
     this._modeInstance = null
     this._listeners = new Map()
@@ -34,13 +45,13 @@ export class OLDrawManager {
     this.store = createFeatureStore()
     this.undoStack = createUndoStack((length) => this.emit(ADAPTER_EVENTS.UNDO_CHANGE, length))
 
-    // Tracked (not just derived into colors/styles) so point/pointSymbolImages.js has
-    // something to pass to symbolRegistry.rasteriseSymbolImage() when resolving a point's
-    // icon on demand, independent of whatever triggered the resolve.
+    // Tracked (not just derived into colors/styles) so point/pointSymbolImages.js has a map
+    // style to register a point's icon against on demand, independent of whatever triggered
+    // the resolve.
     this.mapStyle = null
 
     this.colors = resolveColors(null, pluginConfig)
-    this.styles = createStyles(this.colors)
+    this.styles = createStyles(this.colors, this._getSymbolImage)
     this.snap = createSnapManager(map, pluginConfig.snapLayers ?? null, this.colors, pluginConfig.snapRadius ?? TOLERANCES.snapRadius)
 
     this._layer = new VectorLayer({
@@ -49,6 +60,11 @@ export class OLDrawManager {
       zIndex: 100
     })
     this._layer.set('layerId', 'draw')
+    // Tagged rather than left to `instanceof VectorLayer` on the reading side — a UMD
+    // consumer loads the provider and this plugin as independently-bundled scripts, each
+    // with its own copy of ol, so a class reference from one bundle never matches an
+    // instance from another.
+    this._layer.set('layerType', 'vector')
     map.addLayer(this._layer)
   }
 
@@ -57,7 +73,7 @@ export class OLDrawManager {
   setMapStyle (mapStyle) {
     this.mapStyle = mapStyle
     this.colors = resolveColors(mapStyle, this._pluginConfig)
-    this.styles = createStyles(this.colors)
+    this.styles = createStyles(this.colors, this._getSymbolImage)
     this._layer.setStyle(this.styles.createFeatureStyle())
     this.store.source.changed()
     this.snap?.updateColors(this.colors)
@@ -82,13 +98,13 @@ export class OLDrawManager {
     // Array.from, not [...handlers] — see the comment in utils/eventBus.js:
     // under a loose-mode Babel build (Docusaurus's docs site), spreading a Set
     // compiles to [].concat(handlers), which doesn't flatten it — it appends
-    // the whole Set as one non-function element, and h(...) throws.
-    if (handlers) { Array.from(handlers).forEach(h => h(detail)) }
+    // the whole Set as one non-function element, and handler(...) throws.
+    if (handlers) { Array.from(handlers).forEach(handler => handler(detail)) }
   }
 
   // --- Mode machine ---
 
-  async changeMode (modeName, options = {}) {
+  changeMode (modeName, options = {}) {
     this._modeInstance?.destroy()
     this._modeInstance = null
     this._mode = modeName
@@ -105,7 +121,7 @@ export class OLDrawManager {
       // ever calls options.resolvePointSymbol(...) and stays free of a direct dependency on
       // symbolRegistry/mapProvider — mirrors the ML adapter's own state.resolvePointSymbol
       // convention (see MaplibreDrawAdapter.js's changeMode).
-      const pointOptions = { ...modeOptions, resolvePointSymbol: (olFeature) => resolvePointSymbol({ manager: this, mapProvider: options.mapProvider, olFeature }) }
+      const pointOptions = { ...modeOptions, resolvePointSymbol: (olFeature) => this.updatePointSymbol(olFeature) }
       this._modeInstance = createDrawPointMode({ map: this._map, manager: this, options: pointOptions })
     } else if (modeName === 'edit_vertex') {
       this._modeInstance = createEditMode({ map: this._map, manager: this, options: modeOptions })
@@ -146,6 +162,19 @@ export class OLDrawManager {
     this._modeInstance?.nudgeSelectedVertex?.(dx, dy, isLargeStep)
   }
 
+  // Read-only vertex/midpoint coordinates for the shared spatial listbox.
+  getVertexItems () {
+    return this._modeInstance?.getVertexItems?.() ?? { vertices: [], midpoints: [] }
+  }
+
+  selectVertex (index) {
+    this._modeInstance?.selectVertex?.(index)
+  }
+
+  insertVertexAtMidpoint (index) {
+    this._modeInstance?.insertVertexAtMidpoint?.(index)
+  }
+
   // Show/hide the dashed invalid stroke on the active draw sketch or edit feature.
   setInvalid (invalid) {
     this._modeInstance?.setInvalid?.(invalid)
@@ -162,6 +191,13 @@ export class OLDrawManager {
     // Parity with the ML adapter: an explicit interface-type write is echoed on
     // the bus so events.js can relay it as draw:interfacetypechange.
     this.emit(ADAPTER_EVENTS.INTERFACE_TYPE_CHANGE, { interfaceType: type })
+  }
+
+  // Resolves a point's symbol icon in the background; a failure leaves the point without its
+  // icon, so it's logged rather than lost.
+  updatePointSymbol (olFeature) {
+    resolvePointSymbol({ manager: this, mapProvider: this.mapProvider, olFeature })
+      .catch((error) => logger.error('[draw] failed to resolve point symbol', olFeature.getId(), error))
   }
 
   // --- Feature store delegation ---

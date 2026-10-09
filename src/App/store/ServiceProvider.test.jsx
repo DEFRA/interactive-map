@@ -24,6 +24,11 @@ jest.mock('../../services/closeApp.js', () => ({
   closeApp: jest.fn()
 }))
 
+const mockViewportRef = { current: { focus: jest.fn(), getAttribute: jest.fn(), setAttribute: jest.fn() } }
+jest.mock('../store/appContext.js', () => ({
+  useApp: jest.fn(() => ({ layoutRefs: { viewportRef: mockViewportRef } }))
+}))
+
 // Mock config values including id + handleExitClick
 jest.mock('../store/configContext.js', () => ({
   useConfig: jest.fn(() => ({
@@ -54,6 +59,40 @@ describe('ServiceProvider', () => {
     expect(typeof result.current.closeApp).toBe('function')
     expect(result.current.mapStatusRef).toBeDefined()
     expect(result.current.mapStatusRef.current).toBeNull()
+  })
+
+  test('focusMap names and focuses the viewport from layoutRefs', () => {
+    const { result } = renderHook(() => React.useContext(ServiceContext), { wrapper })
+
+    result.current.focusMap({ message: 'Map moved to Carlisle' })
+
+    expect(mockViewportRef.current.setAttribute).toHaveBeenCalledWith('aria-label', 'Map moved to Carlisle')
+    expect(mockViewportRef.current.focus).toHaveBeenCalled()
+    expect(result.current.mapFocus.isHoldingAnnouncements()).toBe(true)
+  })
+
+  test('gives each map its own symbol registry, kept across renders, with that map\'s symbolDefaults', () => {
+    const { useConfig } = jest.requireMock('../store/configContext.js')
+    useConfig.mockReturnValue({ id: 'map-a', symbolDefaults: { backgroundColor: '#111111' } })
+    const first = renderHook(() => React.useContext(ServiceContext), { wrapper })
+    const firstRegistry = first.result.current.symbolRegistry
+    first.rerender()
+    expect(first.result.current.symbolRegistry).toBe(firstRegistry)
+
+    useConfig.mockReturnValue({ id: 'map-b', symbolDefaults: { backgroundColor: '#222222' } })
+    const second = renderHook(() => React.useContext(ServiceContext), { wrapper })
+    expect(second.result.current.symbolRegistry).not.toBe(firstRegistry)
+    expect(firstRegistry.getDefaults().backgroundColor).toBe('#111111')
+    expect(second.result.current.symbolRegistry.getDefaults().backgroundColor).toBe('#222222')
+  })
+
+  test('gives each map its own pattern registry, kept across renders', () => {
+    const first = renderHook(() => React.useContext(ServiceContext), { wrapper })
+    const firstRegistry = first.result.current.patternRegistry
+    first.rerender()
+    expect(first.result.current.patternRegistry).toBe(firstRegistry)
+    const second = renderHook(() => React.useContext(ServiceContext), { wrapper })
+    expect(second.result.current.patternRegistry).not.toBe(firstRegistry)
   })
 
   test('renders children', () => {

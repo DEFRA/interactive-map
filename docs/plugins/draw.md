@@ -1,6 +1,9 @@
 # Draw Plugin
 
-The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure.
+The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure in the plugin itself.
+
+> [!IMPORTANT]
+> **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
 
 ## ESM usage
 
@@ -58,7 +61,7 @@ Vector tile source-layer names to snap new and edited vertices against. Can be o
 
 The layer names available depend entirely on your basemap style — there's no universal default, so check your style's vector tile source(s) for the source-layer names to use. The example below (`'OS/TopographicArea_1/Agricultural Land'`) is specific to an Ordnance Survey basemap style.
 
-When set (globally or per call), a "Snap to feature" toggle appears in the draw menu, letting the user turn snapping on and off during a session.
+When set (globally or per call), a "Snap" toggle button appears in the top row, letting the user turn snapping on and off during a session.
 
 ```js
 createDrawPlugin({
@@ -73,22 +76,6 @@ createDrawPlugin({
 **Type:** `Function`
 
 Plugin-level validation callback, called throughout the draw/edit lifecycle so you can enforce your own rules (e.g. "shapes must stay inside a boundary") alongside the built-in ones. Can be overridden per call — see [Validation](#validation) below for the full contract, and `newPolygon`, `newLine`, `newPoint`, `editFeature` for the per-call override.
-
----
-
-### `includeModes`
-
-**Type:** `string[]`
-
-When set, the plugin only initialises when the app is in one of the specified modes.
-
----
-
-### `excludeModes`
-
-**Type:** `string[]`
-
-When set, the plugin does not initialise when the app is in one of the specified modes.
 
 ---
 
@@ -235,7 +222,7 @@ Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as 
 | `options.snapLayers` | `string[]` | Overrides the plugin-level `snapLayers` for this session |
 | `options.onGeometryChange` | `Function` | Overrides the plugin-level `onGeometryChange` for this session — see [Validation](#validation) |
 | `options.properties` | `Object` | Custom GeoJSON properties to set on the finished feature |
-| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, or `'square'` |
+| `options.symbol` | `string` | Built-in symbol id — `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, or `'diamond'` |
 | `options.symbolSvgContent` | `string` | Custom SVG markup, used instead of `symbol` |
 | `options.symbolBackgroundColor` | `string \| Record<string, string>` | Symbol background colour |
 | `options.symbolForegroundColor` | `string \| Record<string, string>` | Symbol foreground colour |
@@ -243,6 +230,7 @@ Start drawing a new point. Unlike `newPolygon`/`newLine`, it commits as soon as 
 | `options.symbolHaloWidth` | `number` | Symbol halo width |
 | `options.symbolViewBox` | `string` | SVG `viewBox`, for use with `symbolSvgContent` |
 | `options.symbolAnchor` | `[number, number]` | Normalised `[x, y]` anchor point |
+| `options.symbolSize` | `'small' \| 'medium' \| 'large'` | Symbol size — see [Symbol Config](../api/symbol-config.md#size) |
 
 These mirror [MarkerOptions](../api/marker-config.md#markeroptions)' `symbol`-family properties (prefixed with `symbol` here to sit alongside other feature properties) — see [Symbol Config](../api/symbol-config.md) for the full resolution order and SVG token structure. Points with no symbol config render with the plugin's default marker.
 
@@ -394,21 +382,46 @@ interactiveMap.on('draw:merge', (e) => {
 })
 ```
 
+## Application mode
+
+While drawing or editing, the plugin sets the `'draw'` [application mode](../api.md#setapplicationmodeid-options), which gives the interface over to drawing: every button, panel and control, in every slot, is hidden except draw's own and these defaults:
+
+```js
+['mapStyles', 'mapControls', 'scaleBar']
+```
+
+Everything reappears as it was when the draw or edit mode ends. Hidden items stay mounted, so open panels keep their state and scroll position, and modal panels are never hidden. The app root also gets the class `im-o-app--mode-draw`.
+
+Adjust it with the [`applicationModes`](../api.md#applicationmodes) option, keyed by the mode id. For example, to also keep search and a control of your own, and hide the scale bar:
+
+```js
+new InteractiveMap('map', {
+  applicationModes: {
+    draw: { include: ['search', 'myControl'], exclude: ['scaleBar'] }
+  }
+})
+```
+
+Or set `draw: false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden.
+
+> [!NOTE]
+> The mode only changes the interface. Other plugins' own behaviour keeps running while their buttons are hidden, so disable any that shouldn't respond while drawing — for example, call `interactPlugin.disable()` on [`draw:started`](#drawstarted) and [`draw:editstart`](#draweditstart), and `interactPlugin.enable()` on [`draw:created`](#drawcreated), [`draw:edited`](#drawedited) and [`draw:cancelled`](#drawcancelled).
+
 ## Buttons and keyboard shortcuts
 
-The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only), Done, and a Draw actions menu (Undo, Snap to feature, Delete point) — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
+The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only) and Done in the actions bar, plus Undo, Snap and Delete point in the middle of the top row — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
 
 | Shortcut | Action |
 |----------|--------|
 | <kbd>Enter</kbd> | Add point (draw) |
 | <kbd>Spacebar</kbd> | Select nearest point (edit) |
-| <kbd>Alt</kbd> + <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Select adjacent point (edit) |
+| <kbd>Option</kbd>/<kbd>Alt</kbd> + <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Select adjacent point (edit) |
 | <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Move point (edit) |
 | <kbd>Shift</kbd> + <kbd>↑</kbd>/<kbd>↓</kbd>/<kbd>←</kbd>/<kbd>→</kbd> | Nudge point, fine step (edit) |
 | <kbd>Delete</kbd> | Delete point (edit) |
 | <kbd>Command</kbd>/<kbd>Ctrl</kbd> + <kbd>Z</kbd> | Undo |
 
-A selected edit vertex also claims the map's [`enableMoveControls`](../api.md#enablemovecontrols) D-pad, if enabled, so it can be nudged with the on-screen directional buttons as well as the keyboard.
+A selected edit vertex also claims the map's [`enableMapControls`](../api.md#enablemapcontrols) D-pad, if enabled, so it can be nudged with the on-screen directional buttons as well as the keyboard.
 
 ## Events
 

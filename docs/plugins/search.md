@@ -197,20 +197,6 @@ searchPlugin({
 
 ---
 
-### `includeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin only renders when the app is in one of these modes.
-
----
-
-### `excludeModes`
-**Type:** `string[]`
-
-Array of mode identifiers. When set, the plugin does not render when the app is in one of these modes.
-
----
-
 ## Custom datasets
 
 Custom datasets let you add your own search sources alongside or instead of OS Names. Pass them via the `customDatasets` option as an array of dataset configuration objects.
@@ -315,6 +301,10 @@ If provided, the dataset is skipped when the input matches this pattern.
 When `true`, if this dataset returns results no other datasets will be queried. Useful for high-confidence lookups where you want to suppress the OS Names fallback.
 
 ---
+
+## Application mode
+
+While the search form is open, the plugin sets the `'search'` [application mode](../api.md#setapplicationmodeid-options), adding `im-o-app--mode-search` to the app root. It doesn't hide anything through the mode itself: search's own styles fade out the rest of the top row and side panels, keeping them in the tab order so <kbd>Tab</kbd> can move on from the form. You can still use the [`applicationModes`](../api.md#applicationmodes) option to hide extra items while search is open, e.g. `{ search: { exclude: ['myControl'] } }`.
 
 ## Methods
 

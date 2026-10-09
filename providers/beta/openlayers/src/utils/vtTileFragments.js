@@ -1,5 +1,9 @@
-import VectorTileLayer from 'ol/layer/VectorTile.js'
 import TileState from 'ol/TileState.js'
+import GeoJSON from 'ol/format/GeoJSON.js'
+
+const CRS = 'EPSG:27700'
+const geoJsonFormat = new GeoJSON({ dataProjection: CRS, featureProjection: CRS })
+
 const toPairs = (flat, start, end) => {
   const coords = []
   for (let i = start; i < end; i += 2) {
@@ -47,17 +51,24 @@ export const renderFeatureToGeoJSON = (feature) => {
   return { type, coordinates: toPairs(flat, 0, flat.length) }
 }
 
+// draw-ol's basemap MVT tiles are RenderFeatures (no getGeometry()); tiles-backed datasets use
+// real ol/Feature instances instead — branch on which shape this actually is.
+const fragmentToGeoJSON = (feature) =>
+  feature.getGeometry ? geoJsonFormat.writeGeometryObject(feature.getGeometry()) : renderFeatureToGeoJSON(feature)
+
 /**
- * Collects all loaded VT tile fragments for a feature across all VectorTileLayers.
- * OL clips VT features at tile boundaries, so a single logical feature appears as
- * multiple RenderFeature instances (one per tile). This gathers them all so callers
- * can work with the full feature geometry rather than a single clipped fragment.
+ * Collects all loaded VT tile fragments for a feature across all VectorTile/WebGLVectorTile
+ * layers. OL clips VT features at tile boundaries, so a single logical feature appears as
+ * multiple feature instances (one per tile). This gathers them all so callers can work with
+ * the full feature geometry rather than a single clipped fragment.
  */
 export const collectTileFragments = (map, layerId, featureId, idProperty) => {
   const fragments = []
 
   map.getLayers().forEach(mapLayer => {
-    if (!(mapLayer instanceof VectorTileLayer)) {
+    // Tagged with a 'layerType' property rather than checked via `instanceof VectorTileLayer`,
+    // since a UMD consumer's independently-bundled ol copy would never match this one's class.
+    if (mapLayer.get('layerType') !== 'vectorTile') {
       return
     }
     const source = mapLayer.getSource()
@@ -70,14 +81,15 @@ export const collectTileFragments = (map, layerId, featureId, idProperty) => {
         return
       }
       tile.getFeatures().forEach(feature => {
-        if (feature.get('mapbox-layer')?.id !== layerId) {
+        const styleLayerId = feature.get('mapbox-layer')?.id ?? mapLayer.get('layerId')
+        if (styleLayerId !== layerId) {
           return
         }
         const fid = idProperty ? feature.get(idProperty) : feature.getId()
         if (String(fid) !== String(featureId)) {
           return
         }
-        fragments.push(renderFeatureToGeoJSON(feature))
+        fragments.push(fragmentToGeoJSON(feature))
       })
     })
   })

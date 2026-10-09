@@ -4,18 +4,26 @@ import { useApp } from '../store/appContext.js'
 import { useMap } from '../store/mapContext.js'
 import { EVENTS as events } from '../../config/events.js'
 import { getSafeZoneInset } from '../../utils/getSafeZoneInset.js'
+import { calculateLayout } from './useLayoutMeasurements.js'
 import { scalePoints } from '../../utils/scalePoints.js'
 import { scaleFactor } from '../../config/appConfig.js'
 
 export const useMapProviderOverrides = () => {
   const { mapProvider, eventBus } = useConfig()
-  const { dispatch: appDispatch, layoutRefs } = useApp()
+  const { dispatch: appDispatch, layoutRefs, breakpoint } = useApp()
   const { mapSize } = useMap()
 
   const latestMapSize = useRef(mapSize)
   latestMapSize.current = mapSize
+  const latestBreakpoint = useRef(breakpoint)
+  latestBreakpoint.current = breakpoint
 
   const updatePadding = () => {
+    // Refresh the derived layout CSS vars (e.g. --left-offset-top) before reading them —
+    // callers often trigger this right after a state change that resizes the header/columns
+    // (e.g. collapsing mobile search), and those vars are only otherwise refreshed by a
+    // separate ResizeObserver callback that isn't guaranteed to have run yet.
+    calculateLayout(layoutRefs, latestBreakpoint.current)
     const safeZoneInset = getSafeZoneInset(layoutRefs)
     const padding = scalePoints(safeZoneInset, scaleFactor[latestMapSize.current])
 
@@ -43,12 +51,18 @@ export const useMapProviderOverrides = () => {
         return undefined
       }
 
-      // Calculate and set safe zone padding unless explicitly skipped
-      if (!skipPaddingCalc) {
-        updatePadding()
+      if (skipPaddingCalc) {
+        return originalFitToBounds.call(mapProvider, bounds)
       }
 
-      return originalFitToBounds.call(mapProvider, bounds)
+      // Callers often dispatch layout-affecting state (e.g. collapsing the mobile search
+      // form) immediately before calling this, so measuring on the same tick can capture
+      // the DOM mid-transition. Wait a frame so React has painted first.
+      requestAnimationFrame(() => {
+        updatePadding()
+        originalFitToBounds.call(mapProvider, bounds)
+      })
+      return undefined
     }
 
     const originalSetView = mapProvider.setView
@@ -58,9 +72,11 @@ export const useMapProviderOverrides = () => {
         return undefined
       }
 
-      updatePadding()
-
-      return originalSetView.call(mapProvider, { center, zoom })
+      requestAnimationFrame(() => {
+        updatePadding()
+        originalSetView.call(mapProvider, { center, zoom })
+      })
+      return undefined
     }
 
     return () => {

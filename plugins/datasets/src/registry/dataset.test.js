@@ -72,18 +72,34 @@ describe('Dataset class', () => {
   })
 
   describe('style', () => {
-    it('returns the dataset style directly when there is no parent', () => {
+    it('returns a default style object when none are provided', () => {
+      const dataset = new Dataset({ id: 'dataset' })
+      expect(dataset.style).toEqual({
+        stroke: '#d4351c',
+        strokeWidth: 2,
+        symbolDescription: 'red outline'
+      })
+    })
+
+    it('returns the style object when one are provided', () => {
+      const dataset = new Dataset({ id: 'dataset', style: { stroke: '#0000ff' } })
+      expect(dataset.style).toEqual({
+        stroke: '#0000ff',
+        strokeWidth: 2
+      })
+    })
+
+    it('returns the dataset style, with the default strokeWidth, when there is no parent', () => {
       const dataset = new Dataset({ style: { stroke: '#ff0000', fill: 'transparent' } })
-      expect(dataset.style).toEqual({ stroke: '#ff0000', fill: 'transparent' })
+      expect(dataset.style).toEqual({ stroke: '#ff0000', fill: 'transparent', strokeWidth: 2 })
     })
 
     it('merges parent style with the sublayer style', () => {
       const parentDef = { id: 'parent', style: { stroke: '#ff0000', strokeWidth: 2 } }
       const childDef = { id: 'child', parentId: 'parent', style: { fill: 'blue' } }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-
-      const dataset = new Dataset(childDef)
-      expect(dataset.style).toMatchObject({ stroke: '#ff0000', strokeWidth: 2, fill: 'blue' })
+      const dataset = datasetRegistry.getDataset('child')
+      expect(dataset.style).toEqual({ stroke: '#ff0000', strokeWidth: 2, fill: 'blue' })
     })
 
     it('overrides parent style properties with the sublayer own style', () => {
@@ -91,8 +107,11 @@ describe('Dataset class', () => {
       const childDef = { id: 'child', parentId: 'parent', style: { stroke: '#00ff00' } }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
 
-      const dataset = new Dataset(childDef)
-      expect(dataset.style.stroke).toBe('#00ff00')
+      const dataset = datasetRegistry.getDataset('child')
+      expect(dataset.style).toEqual({
+        stroke: '#00ff00',
+        strokeWidth: 2
+      })
     })
 
     it('includes symbolDescription in the merged sublayer style', () => {
@@ -100,8 +119,26 @@ describe('Dataset class', () => {
       const childDef = { id: 'child', parentId: 'parent', style: { symbolDescription: 'custom' } }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
 
-      const dataset = new Dataset(childDef)
-      expect(dataset.style.symbolDescription).toBe('custom')
+      const dataset = datasetRegistry.getDataset('child')
+
+      expect(dataset.style).toEqual({
+        stroke: '#ff0000',
+        strokeWidth: 2,
+        symbolDescription: 'custom'
+      })
+    })
+  })
+
+  describe('hasSymbol', () => {
+    it.each([
+      ['a symbol id', { symbol: 'pin' }],
+      ['inline symbolSvgContent', { symbolSvgContent: '<circle r="4"/>' }]
+    ])('is a symbol dataset when its style has %s', (_, style) => {
+      expect(new Dataset({ style }).hasSymbol).toBe(true)
+    })
+
+    it('is not a symbol dataset with neither', () => {
+      expect(new Dataset({ style: { fill: '#ff0000' } }).hasSymbol).toBe(false)
     })
   })
 
@@ -134,14 +171,19 @@ describe('Dataset class', () => {
       expect(dataset.symbolDescription).toBe('a circle')
     })
 
+    it("returns the dataset's own symbolDescription alongside a custom visual style", () => {
+      const dataset = new Dataset({ style: { stroke: '#0000ff', symbolDescription: 'blue outline' } })
+      expect(dataset.symbolDescription).toBe('blue outline')
+    })
+
     it('returns undefined when the dataset has a custom visual style but no symbolDescription', () => {
       const dataset = new Dataset({ style: { stroke: '#ff0000' } })
       expect(dataset.symbolDescription).toBeUndefined()
     })
 
-    it('returns undefined when the dataset has no style', () => {
+    it('returns the default symbolDescription when the dataset has no style', () => {
       const dataset = new Dataset({})
-      expect(dataset.symbolDescription).toBeUndefined()
+      expect(dataset.symbolDescription).toBe('red outline')
     })
 
     it("inherits the parent's symbolDescription when the sublayer has no custom visual style", () => {
@@ -162,6 +204,67 @@ describe('Dataset class', () => {
       // child has no visual style → inherits undefined from parent
       const dataset = new Dataset(childDef)
       expect(dataset.symbolDescription).toBeUndefined()
+    })
+  })
+
+  describe('style defaults', () => {
+    const attachChild = (parentStyle, childStyle) => {
+      const parentDef = { id: 'parent', sublayerIds: ['child'], style: parentStyle }
+      const childDef = { id: 'child', parentId: 'parent', style: childStyle }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      return new Dataset(childDef)
+    }
+
+    it('applies the default stroke when there is no style', () => {
+      expect(new Dataset({}).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 2, symbolDescription: 'red outline' })
+    })
+
+    it('applies the whole default style when the style only sets opacity', () => {
+      expect(new Dataset({ style: { opacity: 0.5 } }).style).toEqual({
+        opacity: 0.5,
+        stroke: '#d4351c',
+        strokeWidth: 2,
+        symbolDescription: 'red outline'
+      })
+    })
+
+    it('applies the default stroke when the style only adjusts it', () => {
+      expect(new Dataset({ style: { strokeWidth: 4, opacity: 0.5 } }).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 4, opacity: 0.5 })
+    })
+
+    it.each([
+      ['a fill', { fill: '#00ff00' }],
+      ['a fill pattern', { fillPattern: 'dot' }],
+      ['custom fill pattern content', { fillPatternSvgContent: '<path/>' }],
+      ['a symbol', { symbol: 'pin' }],
+      ['custom symbol content', { symbolSvgContent: '<path/>' }],
+      ['an explicitly empty stroke', { stroke: null }]
+    ])('does not apply the default stroke to a style with %s', (_, style) => {
+      const dataset = new Dataset({ style })
+      expect(dataset.style.stroke ?? null).toBeNull()
+      expect(dataset.hasStroke).toBe(false)
+      expect(dataset.symbolDescription).toBeUndefined()
+    })
+
+    it('applies the default strokeWidth to a custom stroke', () => {
+      expect(new Dataset({ style: { stroke: '#0000ff' } }).style.strokeWidth).toBe(2)
+    })
+
+    it('does not apply the default stroke to a sublayer with a fill when the parent has no style', () => {
+      const dataset = attachChild(undefined, { fill: '#00ff00' })
+      expect(dataset.style.fill).toBe('#00ff00')
+      expect(dataset.hasStroke).toBe(false)
+    })
+
+    it("lets a sublayer inherit the parent's stroke and strokeWidth", () => {
+      const dataset = attachChild({ stroke: '#0000ff', strokeWidth: 4 }, { fill: '#00ff00' })
+      expect(dataset.style).toMatchObject({ stroke: '#0000ff', strokeWidth: 4, fill: '#00ff00' })
+    })
+
+    it('applies the default stroke to a sublayer when neither it nor its parent has a visual style', () => {
+      const dataset = attachChild({ strokeWidth: 4 }, {})
+      expect(dataset.style).toMatchObject({ stroke: '#d4351c', strokeWidth: 4 })
+      expect(dataset.symbolDescription).toBe('red outline')
     })
   })
 
@@ -553,6 +656,23 @@ describe('Dataset class', () => {
       const dg = dataset.dynamicGeoJSON
       expect(dg.source.generateId).toBe(true)
       expect(dg.source.promoteId).toBeUndefined()
+    })
+  })
+
+  describe('groupId', () => {
+    it('returns the groupId from the dataset definition', () => {
+      const dataset = new Dataset({ id: 'dataset', groupId: 'group-1' })
+      expect(dataset.groupId).toBe('group-1')
+    })
+
+    it('builds a groupId from the dataset definitions groupLabel', () => {
+      const dataset = new Dataset({ id: 'dataset', groupLabel: 'Roast Potatoes' })
+      expect(dataset.groupId).toBe('roast-potatoes')
+    })
+
+    it('returns null if no groupId is set', () => {
+      const dataset = new Dataset({ id: 'dataset' })
+      expect(dataset.groupId).toBeNull()
     })
   })
 })

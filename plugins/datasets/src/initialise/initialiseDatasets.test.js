@@ -137,7 +137,7 @@ describe('initialiseDatasets', () => {
 
       expect(createDynamicSource).toHaveBeenCalledWith(expect.objectContaining({
         dynamicGeoJSON: dynamicDataset.dynamicGeoJSON,
-        map: args.mapProvider.map
+        mapProvider: args.mapProvider
       }))
     })
 

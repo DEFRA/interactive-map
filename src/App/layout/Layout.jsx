@@ -5,23 +5,32 @@ import { useApp } from '../store/appContext'
 import { useMap } from '../store/mapContext'
 import { useLayoutMeasurements } from '../hooks/useLayoutMeasurements'
 import { useFocusVisible } from '../hooks/useFocusVisible'
+import { useApplicationModeFocus } from '../hooks/useApplicationModeFocus.js'
 import { Logo } from '../components/Logo/Logo'
 import { Attributions } from '../components/Attributions/Attributions'
 import { layoutSlots } from '../renderer/slots'
 import { SlotRenderer } from '../renderer/SlotRenderer'
 import { HtmlElementHost } from '../renderer/HtmlElementHost'
 import { Hints } from '../components/Hints/Hints.jsx'
+import { hasOpenModalPanel } from '../renderer/slotHelpers.js'
 import { getMapThemeVars } from '../../config/mapTheme.js'
+import { getApplicationModeClass, selectApplicationModes } from '../renderer/applicationModes.js'
 
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Layout = () => {
-  const { id, mapLabel, mapHintText } = useConfig()
-  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, hasExclusiveControl, isFullscreen } = useApp()
+  const appConfig = useConfig()
+  const { id, mapLabel, mapHintText } = appConfig
+  const appState = useApp()
+  const { breakpoint, interfaceType, preferredColorScheme, layoutRefs, isLayoutReady, isFullscreen, openPanels, panelConfig } = appState
   const { mapStyle } = useMap()
+  const showModalBackdrop = hasOpenModalPanel(openPanels ?? {}, panelConfig ?? {}, breakpoint)
+
+  const applicationModes = selectApplicationModes(appState, appConfig)
 
   useLayoutMeasurements()
   useFocusVisible()
+  useApplicationModeFocus()
 
   return (
     <div
@@ -32,7 +41,7 @@ export const Layout = () => {
         `im-o-app--${interfaceType}`,
         `im-o-app--${isFullscreen ? 'fullscreen' : 'inline'}`,
         `im-o-app--${mapStyle?.appColorScheme || preferredColorScheme}-app`,
-        hasExclusiveControl && 'im-o-app--exclusive-control'
+        getApplicationModeClass(applicationModes)
       ].filter(Boolean).join(' ')}
       style={{ backgroundColor: mapStyle?.backgroundColor || undefined, ...getMapThemeVars(mapStyle) }}
       ref={layoutRefs.appContainerRef}
@@ -95,9 +104,13 @@ export const Layout = () => {
               <div className='im-o-app__bottom-right' ref={layoutRefs.bottomRightRef}>
                 <SlotRenderer slot={layoutSlots.BOTTOM_RIGHT} />
               </div>
-              <div className='im-o-app__attributions' ref={layoutRefs.attributionsRef}>
-                <Attributions />
-              </div>
+            </div>
+            {/* A sibling of both bottom-cols (not nested in one) so a stacked attribution
+                (useLayoutMeasurements) can wrap onto its own full row and genuinely grow
+                .im-o-app__bottom, pushing the logo up — nesting it in a column can't do that,
+                since only .im-o-app__bottom's own flex-wrap can force a new line. */}
+            <div className='im-o-app__attributions' ref={layoutRefs.attributionsRef}>
+              <Attributions />
             </div>
           </div>
           <div className='im-o-app__drawer' ref={layoutRefs.drawerRef}>
@@ -108,7 +121,7 @@ export const Layout = () => {
           </div>
           <div className='im-o-app__modal' ref={layoutRefs.modalRef}>
             <SlotRenderer slot={layoutSlots.MODAL} />
-            <div className='im-o-app__modal-backdrop' />
+            <div className={`im-o-app__modal-backdrop${showModalBackdrop ? ' im-o-app__modal-backdrop--visible' : ''}`} />
           </div>
         </div>
       </div>

@@ -1,7 +1,8 @@
 import { createMapboxDraw } from './mapboxDraw.js'
 import { getSnapInstance, clearSnapState, clearSnapIndicator } from './utils/snapHelpers.js'
 import { createEventBus } from '../../utils/eventBus.js'
-import { resolvePointSymbol, hasSymbolStyle } from './pointSymbolImages.js'
+import { resolvePointSymbol } from './pointSymbolImages.js'
+import { logger } from '../../../../../src/services/logger.js'
 import { MAPBOX_DRAW_EVENTS, CUSTOM_DRAW_EVENTS, STYLE_DATA_EVENT } from './drawEvents.js'
 import { MaplibreDrawAdapter, displayedShape } from './MaplibreDrawAdapter.js'
 
@@ -13,16 +14,15 @@ jest.mock('./utils/snapHelpers.js', () => ({
 }))
 jest.mock('../../utils/eventBus.js', () => ({ createEventBus: jest.fn() }))
 jest.mock('./pointSymbolImages.js', () => ({
-  resolvePointSymbol: jest.fn(),
-  refreshAllPointSymbols: jest.fn(),
-  hasSymbolStyle: jest.fn()
+  resolvePointSymbol: jest.fn(() => Promise.resolve()),
+  refreshAllPointSymbols: jest.fn()
 }))
 
 const SNAP_LAYER = 'snap-helper-circle'
 
 const onHandler = (map, event) => map.on.mock.calls.find(([name]) => name === event)?.[1]
 
-const setup = () => {
+const setup = (extraOptions = {}) => {
   const map = {
     on: jest.fn(),
     off: jest.fn(),
@@ -54,7 +54,8 @@ const setup = () => {
     mapStyle: 'light',
     events: { MAP_SET_STYLE: 'mss' },
     eventBus: { on: jest.fn() },
-    snapLayers: ['layer-a']
+    snapLayers: ['layer-a'],
+    ...extraOptions
   }
   const adapter = new MaplibreDrawAdapter(mapProvider, options)
 
@@ -76,6 +77,12 @@ describe('construction', () => {
       snapLayers: ['layer-a'],
       pluginConfig: {}
     })
+  })
+
+  test('passes the app\'s symbol registry through to createMapboxDraw', () => {
+    const symbolRegistry = { id: 'app-symbol-registry' }
+    setup({ symbolRegistry })
+    expect(createMapboxDraw).toHaveBeenCalledWith(expect.objectContaining({ symbolRegistry }))
   })
 
   test('forwards a provided pluginConfig through to createMapboxDraw', () => {
@@ -179,11 +186,11 @@ describe('map event normalisation', () => {
     expect(bus.emit).toHaveBeenCalledWith('cancel')
   })
 
-  test('vertexselection/vertexchange normalise the numVertecies typo', () => {
+  test('vertexselection/vertexchange forward the raw event', () => {
     const { map, bus } = setup()
 
-    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_SELECTION)({ numVertecies: 3, index: 1 })
-    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_CHANGE)({ numVertecies: 2 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_SELECTION)({ numVertices: 3, index: 1 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.VERTEX_CHANGE)({ numVertices: 2 })
 
     expect(bus.emit).toHaveBeenCalledWith('vertexselection', expect.objectContaining({ numVertices: 3, index: 1 }))
     expect(bus.emit).toHaveBeenCalledWith('vertexchange', expect.objectContaining({ numVertices: 2 }))
@@ -197,16 +204,16 @@ describe('map event normalisation', () => {
 
   test('geometrychange forwards the raw event', () => {
     const { map, bus } = setup()
-    const e = { type: 'Polygon' }
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(e)
-    expect(bus.emit).toHaveBeenCalledWith('geometrychange', e)
+    const event = { type: 'Polygon' }
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)(event)
+    expect(bus.emit).toHaveBeenCalledWith('geometrychange', event)
   })
 
   test('placementblocked forwards the raw event', () => {
     const { map, bus } = setup()
-    const e = { phase: 'place', reason: 'outside region' }
-    onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)(e)
-    expect(bus.emit).toHaveBeenCalledWith('placementblocked', e)
+    const event = { phase: 'place', reason: 'outside region' }
+    onHandler(map, CUSTOM_DRAW_EVENTS.PLACEMENT_BLOCKED)(event)
+    expect(bus.emit).toHaveBeenCalledWith('placementblocked', event)
   })
 })
 
@@ -582,6 +589,18 @@ describe('simple delegations', () => {
     expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, { dx: 1, dy: 0, isLargeStep: true })
   })
 
+  test('selectVertex fires the select-vertex event with the given index', () => {
+    const { adapter, map } = setup()
+    adapter.selectVertex(3)
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, { index: 3 })
+  })
+
+  test('insertVertexAtMidpoint fires the insert-vertex-at-midpoint event with the given index', () => {
+    const { adapter, map } = setup()
+    adapter.insertVertexAtMidpoint(4)
+    expect(map.fire).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, { index: 4 })
+  })
+
   test('deleteVertex is a no-op', () => {
     const { adapter, draw, map } = setup()
     expect(() => adapter.deleteVertex()).not.toThrow()
@@ -609,22 +628,33 @@ describe('simple delegations', () => {
     test('resolves the symbol for a Point feature with symbol properties, using the id draw.add() returns', () => {
       const { adapter, draw, map, mapProvider } = setup()
       draw.add.mockReturnValue(['generated-id'])
-      hasSymbolStyle.mockReturnValue(true)
       const feature = { geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
 
       const result = adapter.add(feature)
 
-      expect(hasSymbolStyle).toHaveBeenCalledWith({ symbol: 'pin', sortKey: 1 })
       expect(resolvePointSymbol).toHaveBeenCalledWith({
         draw, mapProvider, map, featureId: 'generated-id', properties: { symbol: 'pin', sortKey: 1 }
       })
       expect(result).toEqual(['generated-id'])
     })
 
+    test('logs a failed resolution rather than leaving the rejection unhandled', async () => {
+      const { adapter, draw } = setup()
+      draw.add.mockReturnValue(['p1'])
+      const error = new Error('rasterise failed')
+      resolvePointSymbol.mockRejectedValueOnce(error)
+      const loggerError = jest.spyOn(logger, 'error').mockImplementation(() => {})
+
+      adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } })
+      await Promise.resolve()
+
+      expect(loggerError).toHaveBeenCalledWith('[draw] failed to resolve point symbol', 'p1', error)
+      loggerError.mockRestore()
+    })
+
     test('does not attempt resolution for a Point with no symbol properties', () => {
       const { adapter, draw } = setup()
       draw.add.mockReturnValue(['id-1'])
-      hasSymbolStyle.mockReturnValue(false)
       adapter.add({ geometry: { type: 'Point', coordinates: [0, 0] }, properties: {} })
       expect(resolvePointSymbol).not.toHaveBeenCalled()
     })
@@ -633,7 +663,6 @@ describe('simple delegations', () => {
       const { adapter, draw } = setup()
       draw.add.mockReturnValue(['id-1'])
       adapter.add({ geometry: { type: 'Polygon', coordinates: [[]] }, properties: { symbol: 'pin' } })
-      expect(hasSymbolStyle).not.toHaveBeenCalled()
       expect(resolvePointSymbol).not.toHaveBeenCalled()
     })
 
@@ -696,7 +725,6 @@ describe('simple delegations', () => {
       const feature = { id: 'p1', type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] }, properties: { symbol: 'pin' } }
       draw.get.mockReturnValue(feature)
       draw.add.mockReturnValue(['p1'])
-      hasSymbolStyle.mockReturnValue(true)
 
       adapter.setStyle('p1', { symbolBackgroundColor: '#ca3535' })
 
@@ -758,6 +786,67 @@ describe('simple delegations', () => {
     expect(adapter.isSnapEnabled()).toBe(false)
     mapProvider.snapEnabled = true
     expect(adapter.isSnapEnabled()).toBe(true)
+  })
+})
+
+describe('getVertexItems', () => {
+  test('returns empty vertices/midpoints when not in edit_vertex mode', () => {
+    const { adapter, draw } = setup()
+    draw.getMode.mockReturnValue('draw_polygon')
+    expect(adapter.getVertexItems()).toEqual({ vertices: [], midpoints: [] })
+  })
+
+  test('returns empty vertices/midpoints when in edit_vertex but no editing feature id is set', () => {
+    const { adapter, draw } = setup()
+    draw.getMode.mockReturnValue('edit_vertex')
+    expect(adapter.getVertexItems()).toEqual({ vertices: [], midpoints: [] })
+  })
+
+  test('returns empty vertices/midpoints when the editing feature no longer exists', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue(undefined)
+    expect(adapter.getVertexItems()).toEqual({ vertices: [], midpoints: [] })
+  })
+
+  test('flattens a LineString — no closing duplicate to strip', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue({ geometry: { type: 'LineString', coordinates: [[0, 0], [10, 0], [10, 10]] } })
+    const result = adapter.getVertexItems()
+    expect(result.vertices).toEqual([[0, 0], [10, 0], [10, 10]])
+    expect(result.midpoints).toEqual([[5, 0], [10, 5]])
+  })
+
+  test('strips the closing duplicate coordinate for a Polygon ring — index-aligned with the mode\'s own selectedVertexIndex', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue({ geometry: { type: 'Polygon', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 0]]] } })
+    const result = adapter.getVertexItems()
+    expect(result.vertices).toEqual([[0, 0], [10, 0], [10, 10]])
+  })
+
+  test('strips the closing duplicate for every ring/part of a MultiPolygon, keeping index continuity across parts', () => {
+    const { adapter, draw } = setup()
+    adapter.changeMode('edit_vertex', { featureId: 'f1' })
+    draw.getMode.mockReturnValue('edit_vertex')
+    draw.get.mockReturnValue({
+      geometry: {
+        type: 'MultiPolygon',
+        coordinates: [
+          [[[0, 0], [10, 0], [10, 10], [0, 0]]],
+          [[[20, 20], [30, 20], [30, 30], [20, 20]]]
+        ]
+      }
+    })
+    const result = adapter.getVertexItems()
+    expect(result.vertices).toEqual([
+      [0, 0], [10, 0], [10, 10],
+      [20, 20], [30, 20], [30, 30]
+    ])
   })
 })
 

@@ -60,7 +60,7 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
   dispatchVertexChange (coords) {
     // Both polygon ring and LineString store [v0...vN, rubber_band] during drawing — subtract 1 to get placed vertex count
     this.map.fire('draw.vertexchange', {
-      numVertecies: Math.max(0, coords.length - 1)
+      numVertices: Math.max(0, coords.length - 1)
     })
   },
 
@@ -179,6 +179,14 @@ const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, 
       this.pushDrawUndo(state)
       this.dispatchVertexChange(newCoords)
       this.emitDrawValidation(state)
+    },
+
+    // Alias for lifecycle.js's shared crosshair.activate wiring (createLifecycle calls
+    // this._placeAtCrossHair?.(state)) — drawPointMode.js defines its own _placeAtCrossHair
+    // directly, but polygon/line's equivalent "commit at crosshair" action is doClick above
+    // (also used by the touch add-vertex button), just under a different name.
+    _placeAtCrossHair (state) {
+      this.doClick(state)
     }
   }
 }

@@ -1,9 +1,10 @@
 import {
   getCoords,
+  getMidpointCoords,
   getRingSegments,
   getSegmentForIndex
 } from './geometryHelpers.js'
-import { spatialNavigate } from '../../../../utils/spatial.js'
+import { spatialNavigate } from '../../../../../../../src/utils/spatialNavigate.js'
 
 export const vertexQueries = {
   findVertexIndex (coords, targetCoord, currentIdx) {
@@ -40,56 +41,35 @@ export const vertexQueries = {
   },
 
   syncVertices (state) {
-    state.vertecies = this.getVerticies(state.featureId)
+    state.vertices = this.getVertices(state.featureId)
     state.midpoints = this.getMidpoints(state.featureId)
   },
 
-  getVerticies (featureId) {
+  getVertices (featureId) {
     return getCoords(this.getFeature(featureId))
   },
 
   getMidpoints (featureId) {
-    const feature = this.getFeature(featureId)
-    const coords = getCoords(feature)
-    const segments = getRingSegments(feature)
-    if (!coords?.length || !segments.length) {
-      return []
-    }
-
-    const midpoints = []
-    // Create midpoints within each segment, respecting boundaries
-    for (const seg of segments) {
-      // For closed rings, create midpoint between every vertex including last→first
-      // For open lines, create midpoints only between consecutive vertices (no wrap-around)
-      const count = seg.closed ? seg.length : seg.length - 1
-      for (let i = 0; i < count; i++) {
-        const idx = seg.start + i
-        const nextIdx = seg.start + ((i + 1) % seg.length)
-        const [x1, y1] = coords[idx]
-        const [x2, y2] = coords[nextIdx]
-        midpoints.push([(x1 + x2) / 2, (y1 + y2) / 2])
-      }
-    }
-    return midpoints
+    return getMidpointCoords(this.getFeature(featureId))
   },
 
   getVertexOrMidpoint (state, direction) {
     // Ensure vertices and midpoints are populated
-    if (!state.vertecies?.length) {
-      state.vertecies = this.getVerticies(state.featureId)
+    if (!state.vertices?.length) {
+      state.vertices = this.getVertices(state.featureId)
       state.midpoints = this.getMidpoints(state.featureId)
     }
-    if (!state.vertecies?.length) {
+    if (!state.vertices?.length) {
       return [-1, null]
     }
     const project = (p) => p ? Object.values(this.map.project(p)) : null
-    const pixels = [...state.vertecies.map(project), ...state.midpoints.map(project)].filter(Boolean)
+    const pixels = [...state.vertices.map(project), ...state.midpoints.map(project)].filter(Boolean)
     if (!pixels.length) {
       return [-1, null]
     }
     const start = pixels[state.selectedVertexIndex] || Object.values(this.map.project(this.map.getCenter()))
     const idx = spatialNavigate(start, pixels, direction)
-    return [idx, idx < state.vertecies.length ? 'vertex' : 'midpoint']
+    return [idx, idx < state.vertices.length ? 'vertex' : 'midpoint']
   },
 
   getVertexIndexFromMidpoint (state, coordPath) {
@@ -108,7 +88,7 @@ export const vertexQueries = {
         const insertionIdx = parts[parts.length - 1]
         const localMidpointIdx = insertionIdx > 0 ? insertionIdx - 1 : seg.length - 2
         // Midpoints are indexed after all vertices
-        return state.vertecies.length + midpointOffset + localMidpointIdx
+        return state.vertices.length + midpointOffset + localMidpointIdx
       }
       // Count midpoints in this segment (must match getMidpoints calculation)
       const segMidpoints = seg.closed ? seg.length : seg.length - 1
@@ -116,6 +96,6 @@ export const vertexQueries = {
     }
 
     // Fallback
-    return state.vertecies.length
+    return state.vertices.length
   }
 }

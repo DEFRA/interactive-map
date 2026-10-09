@@ -1,4 +1,4 @@
-import { spatialNavigate } from './spatial.js'
+import { spatialNavigate } from '../../../../src/utils/spatialNavigate.js'
 import { calculateLinearTextSize } from './calculateLinearTextSize.js'
 
 const HIGHLIGHT_SCALE_FACTOR = 1.5
@@ -47,7 +47,7 @@ export function evalInterpolate (expr, zoom) {
       return v0 + (v1 - v0) * ((zoom - z0) / (z1 - z0))
     }
   }
-  return stops[stops.length - 1]
+  return stops[stops.length - 1] // NOSONAR array.at() would exclude pre Chrome 92
 }
 
 export function getHighlightColors (isDarkStyle) {
@@ -166,7 +166,7 @@ export function navigateToNextLabel (direction, state) {
     return null
   }
   const pixelArray = filtered.map(l => l.pixel)
-  let nextFilteredIndex = spatialNavigate(direction, [state.currentPixel.x, state.currentPixel.y], pixelArray)
+  let nextFilteredIndex = spatialNavigate([state.currentPixel.x, state.currentPixel.y], pixelArray, direction)
   if (nextFilteredIndex == null || nextFilteredIndex < 0 || nextFilteredIndex >= filtered.length) {
     nextFilteredIndex = 0
   }
@@ -235,7 +235,7 @@ export function createMapLabelNavigator (map, mapColorScheme, events, eventBus) 
     const closest = findClosestLabel(state.labels, centerPoint)
     state.currentPixel = { x: closest.x, y: closest.y }
     applyHighlight(map, closest, state)
-    return `${closest.text} (${closest.layer.id})`
+    return closest.text
   }
 
   function highlightNext (direction) {
@@ -252,7 +252,7 @@ export function createMapLabelNavigator (map, mapColorScheme, events, eventBus) 
     }
     state.currentPixel = { x: labelData.x, y: labelData.y }
     applyHighlight(map, labelData, state)
-    return `${labelData.text} (${labelData.layer.id})`
+    return labelData.text
   }
 
   setSymbolTextOpacity(map)

@@ -1,5 +1,9 @@
+import { RecentImageSets } from '../../../../src/utils/recentImageSets.js'
+
 const ANCHOR_LOW = 0.25
 const ANCHOR_HIGH = 0.75
+const ANCHOR_CENTRE = 0.5
+const HUNDREDTHS = 100
 
 // ─── MapLibre-specific anchor conversion ──────────────────────────────────────
 
@@ -39,10 +43,10 @@ export const anchorToMaplibre = ([ax, ay]) => {
 // The discrete fraction (0, 0.5 or 1) icon-anchor actually renders a given axis at — the
 // same left/right/top/bottom/center snapping xAnchor/yAnchor above already do, expressed as
 // a number instead of a string so it can be compared against the true, unsnapped fraction.
-const discreteFraction = (a) => {
-  if (a <= ANCHOR_LOW) { return 0 }
-  if (a >= ANCHOR_HIGH) { return 1 }
-  return 0.5
+const discreteFraction = (fraction) => {
+  if (fraction <= ANCHOR_LOW) { return 0 }
+  if (fraction >= ANCHOR_HIGH) { return 1 }
+  return ANCHOR_CENTRE
 }
 
 /**
@@ -61,7 +65,7 @@ const discreteFraction = (a) => {
  */
 // Rounded to 2dp: sub-hundredth-of-a-pixel precision is meaningless for rendering, and
 // without it fractions like 0.8 produce float noise (8.799999999999997, not 8.8).
-const round2dp = (n) => Math.round(n * 100) / 100
+const round2dp = (value) => Math.round(value * HUNDREDTHS) / HUNDREDTHS
 
 export const anchorToMaplibreOffset = ([ax, ay], viewBox) => {
   const [,, width, height] = viewBox.split(' ').map(Number)
@@ -72,48 +76,85 @@ export const anchorToMaplibreOffset = ([ax, ay], viewBox) => {
 }
 
 /**
- * Register normal, active (both rings) and selected (black ring) symbol images.
- * Skips images that are already registered (safe to call on style change).
- * Merges into `map._activeSymbolImageMap` (normal→active) and `map._selectedSymbolImageMap`
- * (normal→selected) rather than replacing them — more than one caller (e.g. the datasets
- * and draw plugins) can register symbols on the same map, and each call must add to that
- * shared registry, not wipe out whatever another caller already registered there.
+ * The icon-anchor and icon-offset layout properties that place a symbol image on its point.
  *
- * @param {Object} map - MapLibre map instance
- * @param {Object[]} styleArray - an array of symbol configs
- * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
- * @param {Object} symbolRegistry
- * @param {number} [pixelRatio=2] - Device pixel ratio × map size scale factor (computed by caller)
- * @returns {Promise<void>}
+ * @param {Object} symbolDef - a sized symbol definition (symbolRegistry.getSymbolDef)
+ * @returns {{ 'icon-anchor': string, 'icon-offset': number[] }}
  */
-export const addSymbolsToMap = async (map, styleArray, mapStyle, symbolRegistry, pixelRatio = 2) => {
-  if (!styleArray.length) {
-    return
+export const getSymbolIconLayout = ({ anchor, viewBox }) => ({
+  'icon-anchor': anchorToMaplibre(anchor),
+  'icon-offset': anchorToMaplibreOffset(anchor, viewBox)
+})
+
+/**
+ * The MapLibre provider's record of its registered symbol images. The images themselves live in
+ * the map's own image store (map.addImage); this keeps which active (both rings) and selected
+ * (black ring) image belongs to each normal one. One per map, shared by every caller that
+ * registers symbols on it (e.g. the datasets and draw plugins).
+ *
+ * Images are kept for the current and previous map size and style; ones only older sizes and
+ * styles used are removed from the map, so they don't build up as the map size or style changes.
+ */
+export class SymbolImageVariants {
+  activeImageIds = new Map() // normal imageId → active imageId
+  selectedImageIds = new Map() // normal imageId → selected imageId
+  recentImageSets = new RecentImageSets()
+
+  /** @param {Object} map - MapLibre map instance */
+  constructor (map) {
+    this.map = map
   }
 
-  map._activeSymbolImageMap ??= {}
-  map._selectedSymbolImageMap ??= {}
+  /** A symbol's active (keyboard cursor) variant, from its normal imageId */
+  getActiveImageId (normalId) {
+    return this.activeImageIds.get(normalId) ?? null
+  }
 
-  await Promise.all(styleArray.flatMap(config => {
-    const normalId = symbolRegistry.getSymbolImageId(config, mapStyle, false, pixelRatio)
-    const activeId = symbolRegistry.getSymbolImageId(config, mapStyle, true, pixelRatio)
-    if (normalId && activeId) {
-      map._activeSymbolImageMap[normalId] = activeId
+  /** A symbol's selected variant, from its normal imageId */
+  getSelectedImageId (normalId) {
+    return this.selectedImageIds.get(normalId) ?? null
+  }
+
+  removeImage (imageId) {
+    if (this.map.hasImage(imageId)) {
+      this.map.removeImage(imageId)
     }
-    return ['normal', 'active', 'selected'].map(async (variant) => {
-      const imageId = variant === 'active' ? activeId : normalId
-      if (variant !== 'selected' && (!imageId || map.hasImage(imageId))) {
-        return
+    this.activeImageIds.delete(imageId)
+    this.selectedImageIds.delete(imageId)
+  }
+
+  /**
+   * Rasterises and adds each symbol's normal, active and selected images to the map, and maps
+   * its normal imageId to the other two. Images the map already has are reused. Then removes
+   * images only map sizes and styles older than the previous one used.
+   *
+   * @param {Object[]} styleArray - an array of symbol configs
+   * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
+   * @param {Object} symbolRegistry
+   * @param {number} pixelRatio - Device pixel ratio × map size scale factor
+   * @returns {Promise<void>}
+   */
+  async registerSymbols (styleArray, mapStyle, symbolRegistry, pixelRatio) {
+    const { map } = this
+    const imageIds = await Promise.all(styleArray.map(async (config) => {
+      const variantIds = symbolRegistry.getSymbolImageIds(config, mapStyle, pixelRatio)
+      if (!variantIds) {
+        return []
       }
-      const result = await symbolRegistry.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
-      if (result) {
-        if (variant === 'selected' && normalId) {
-          map._selectedSymbolImageMap[normalId] = result.imageId
+      this.activeImageIds.set(variantIds.normal, variantIds.active)
+      this.selectedImageIds.set(variantIds.normal, variantIds.selected)
+      await Promise.all(Object.entries(variantIds).map(async ([variant, imageId]) => {
+        if (map.hasImage(imageId)) {
+          return
         }
-        if (!map.hasImage(result.imageId)) {
+        const result = await symbolRegistry.rasteriseSymbolImage(config, mapStyle, variant, pixelRatio)
+        if (result && !map.hasImage(result.imageId)) {
           map.addImage(result.imageId, result.imageData, { pixelRatio })
         }
-      }
-    })
-  }))
+      }))
+      return Object.values(variantIds)
+    }))
+    this.recentImageSets.add(`${mapStyle?.id}|${pixelRatio}`, imageIds.flat())
+      .forEach((imageId) => this.removeImage(imageId))
+  }
 }

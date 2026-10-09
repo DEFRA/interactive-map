@@ -20,7 +20,7 @@ export const sharedSnapMovement = {
   },
 
   // Explicit-delta counterpart to getOffset, driven by a unit direction vector and
-  // MoveControls' own Precision toggle rather than a KeyboardEvent — used by
+  // MapControls' own Precision toggle rather than a KeyboardEvent — used by
   // nudgeVertexByDelta/nudgePointByDelta.
   getOffsetByDelta (coord, dx, dy, isLargeStep) {
     const pt = this.map.project(coord)
@@ -30,7 +30,7 @@ export const sharedSnapMovement = {
 
   // Resolves the destination coordinate for a nudge by (dx, dy) unit direction, applying
   // snap or breaking out of an already-active one — shared by the keyboard arrow-key path
-  // and MoveControls' explicit-delta path so both snap identically. dx/dy are only needed
+  // and MapControls' explicit-delta path so both snap identically. dx/dy are only needed
   // for the snap-escape offset; getCandidate computes the raw, un-snapped destination the
   // caller would otherwise have used.
   resolveSnapTarget (state, dx, dy, currentCoord, getCandidate) {

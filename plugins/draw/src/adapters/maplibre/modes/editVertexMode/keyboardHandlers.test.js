@@ -4,6 +4,23 @@ describe('keyboardHandlers', () => {
   const keydown = (ctx, state, key, extra = {}) => ctx.onKeydown(state, { key, preventDefault: jest.fn(), stopPropagation: jest.fn(), ...extra })
   const keyup = (ctx, state, key) => ctx.onKeyup(state, { key, stopPropagation: jest.fn() })
 
+  // stopIfGlobalAltKey's own branches are covered by src/utils/globalAltShortcuts.test.js —
+  // this just checks onKeyup only calls it once a vertex/midpoint is actually selected, same
+  // condition its own local Alt+Arrow handling already requires; with nothing selected there's
+  // no local meaning to protect, so the app-wide map-label shortcuts should keep working.
+  test('shadows Alt+Enter/Alt+Arrow from the app-wide label shortcuts only while something is selected', () => {
+    const { ctx, state } = createHarness()
+    const altEnter = (extra) => ({ key: 'Enter', altKey: true, stopPropagation: jest.fn(), ...extra })
+
+    const whileSelected = altEnter()
+    ctx.onKeyup({ ...state, selectedVertexIndex: 0 }, whileSelected)
+    expect(whileSelected.stopPropagation).toHaveBeenCalled()
+
+    const whileUnselected = altEnter()
+    ctx.onKeyup({ ...state, selectedVertexIndex: -1 }, whileUnselected)
+    expect(whileUnselected.stopPropagation).not.toHaveBeenCalled()
+  })
+
   // isInteractiveElementFocused's own branches are covered by utils/keyboardShortcuts.test.js
   // — this just checks onKeydown/onKeyup actually consult it.
   test('shortcuts are ignored while a form control outside the viewport has focus', () => {
@@ -28,7 +45,7 @@ describe('keyboardHandlers', () => {
     expect(updateSpy).toHaveBeenCalledTimes(1)
 
     map._snapInstance = null // no snap indicator to clear
-    const s = { ...state, featureId: 'missing', vertecies: [], selectedVertexIndex: -1, isPanEnabled: true }
+    const s = { ...state, featureId: 'missing', vertices: [], selectedVertexIndex: -1, isPanEnabled: true }
     keydown(ctx, s, ' ')
     expect(s.isPanEnabled).toBe(true)
   })
@@ -43,7 +60,7 @@ describe('keyboardHandlers', () => {
     keydown(ctx, state, 'ArrowRight')
     expect(state._keyboardMoveStartIndex).toBe(1)
     expect(state._keyboardMoveStartPosition).toEqual([10, 0])
-    expect(state.vertecies[1]).not.toEqual([10, 0])
+    expect(state.vertices[1]).not.toEqual([10, 0])
 
     // Still held → start position isn't reset to the intermediate (already-moved) position
     keydown(ctx, state, 'ArrowRight')
@@ -53,7 +70,7 @@ describe('keyboardHandlers', () => {
   test('an arrow key on a midpoint inserts a vertex; guards a missing feature or out-of-range vertex', () => {
     const { ctx, state } = createHarness()
     const insertSpy = jest.spyOn(ctx, 'insertVertex').mockImplementation(() => {})
-    keydown(ctx, { ...state, selectedVertexIndex: state.vertecies.length, selectedVertexType: 'midpoint' }, 'ArrowRight')
+    keydown(ctx, { ...state, selectedVertexIndex: state.vertices.length, selectedVertexType: 'midpoint' }, 'ArrowRight')
     expect(insertSpy).toHaveBeenCalled()
 
     keydown(ctx, { ...state, featureId: 'missing', selectedVertexIndex: 0 }, 'ArrowRight')

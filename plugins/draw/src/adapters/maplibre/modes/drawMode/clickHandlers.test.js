@@ -10,7 +10,7 @@ describe('mouse clicks (polygon)', () => {
     expect(state.polygon.coordinates[0]).toHaveLength(3)
     expect(state.polygon.coordinates[0][0]).toEqual([0, 0])
     expect(state.polygon.coordinates[0][1]).toEqual([10, 0])
-    expect(firedWith(ctx.map, 'draw.vertexchange').pop()).toEqual({ numVertecies: 2 })
+    expect(firedWith(ctx.map, 'draw.vertexchange').pop()).toEqual({ numVertices: 2 })
     expect(ctx.map._undoStack.length).toBe(2)
   })
 
@@ -128,6 +128,16 @@ describe('add-vertex button and doClick', () => {
   test('clicking the add-vertex button places a vertex at map center', () => {
     const { ctx, state, button } = setup(DrawPolygonMode, { interfaceType: 'keyboard' })
     ctx.vertexButtonClickHandler({ target: button })
+    expect(state.polygon.coordinates[0][0]).toEqual([CENTER.lng, CENTER.lat])
+    expect(ctx.map._undoStack.length).toBe(1)
+  })
+
+  // Regression: lifecycle.js's shared crosshair.activate wiring calls this._placeAtCrossHair
+  // for every create mode — drawPointMode.js defines its own, but polygon/line only had
+  // doClick under a different name, so "Click Target" (Voice Control) silently no-opped.
+  test('_placeAtCrossHair aliases doClick — Voice Control\'s "Click Target" places a vertex too', () => {
+    const { ctx, state } = setup(DrawPolygonMode, { interfaceType: 'keyboard' })
+    ctx._placeAtCrossHair(state)
     expect(state.polygon.coordinates[0][0]).toEqual([CENTER.lng, CENTER.lat])
     expect(ctx.map._undoStack.length).toBe(1)
   })

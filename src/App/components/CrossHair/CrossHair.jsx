@@ -16,24 +16,38 @@ export const CrossHair = () => {
   const { isVisible, isPinnedToMap, state } = crossHair
 
   return (
-    <svg
-      id={`${id}-cross-hair`}
+    <button
+      tabIndex='-1'
       ref={crossHairRef}
-      className='im-c-cross-hair'
-      width='38'
-      height='38'
-      viewBox='0 0 38 38'
-      fillRule='evenodd'
-      fill='currentColor'
+      id={`${id}-cross-hair`}
+      className='im-c-cross-hair-button'
+      // "Target" — short for Voice Control to say ("Click Target"). A plain attribute, not a
+      // hidden child <span>, so there's no separate text node for Chrome's AX tree to expose.
+      aria-label='Target'
+      // This button should never take real DOM focus — a screen reader's virtual cursor and
+      // Voice Control can both reach it without that, and real focus landing here would break
+      // keyboard drawing (which requires focus to stay on the viewport container).
+      onMouseDown={(event) => event.preventDefault()}
+      onClick={() => crossHair.activate?.()}
       style={{
         position: 'absolute',
         left: isPinnedToMap ? 0 : '50%',
         top: isPinnedToMap ? 0 : '50%',
-        pointerEvents: 'none',
         display: isVisible ? 'block' : 'none'
       }}
     >
-      <path d={paths[state || 'active']} />
-    </svg>
+      {/* aria-hidden: without it, WebKit exposes the <path> as its own accessibility node, and
+          Voice Control activates that instead of bubbling a click up to this button. */}
+      <svg
+        width='38'
+        height='38'
+        viewBox='0 0 38 38'
+        fillRule='evenodd'
+        fill='currentColor'
+        aria-hidden='true'
+      >
+        <path d={paths[state || 'active']} />
+      </svg>
+    </button>
   )
 }

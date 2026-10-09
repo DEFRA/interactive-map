@@ -3,10 +3,12 @@ import { MapButton } from '../components/MapButton/MapButton.jsx'
 import { allowedSlots } from './slots.js'
 import { groupByKey } from './groupByKey.js'
 import { orderItems } from './orderItems.js'
+import { classifyPanel, getPanelRole } from '../../utils/getPanelRole.js'
 import { logger } from '../../services/logger.js'
+import { hidesNothing } from './applicationModes.js'
 
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
-  const { breakpoint, mode } = appState
+  const { breakpoint } = appState
   if (!buttonConfig) {
     return []
   }
@@ -21,12 +23,6 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
 
     // Dynamic exclusion
     if (typeof config.excludeWhen === 'function' && evaluateProp(config.excludeWhen, config.pluginId)) {
-      return false
-    }
-    if (config.includeModes && !config.includeModes?.includes(mode)) {
-      return false
-    }
-    if (config.excludeModes?.includes(mode)) {
       return false
     }
 
@@ -94,19 +90,23 @@ function applySlotExclusivity (matching, appState) {
   return matching.filter(([_, config]) => config.pluginId === exclusivePluginId)
 }
 
+// Hidden via toggleButtonState/hiddenWhen, or by an application mode. Either way the button stays
+// mounted (hidden), so its refs, focus-return target and state survive.
+const isButtonHidden = (buttonId, config, { appState, isHiddenByApplicationMode }) =>
+  appState.hiddenButtons.has(buttonId) || isHiddenByApplicationMode({ ids: [buttonId], pluginId: config.pluginId })
+
 /**
- * Builds the props for a <SlotButton>. isHidden/variant are included here (not just derived
- * inside SlotButton) because Actions.jsx also reads them directly off the 'actions' slot's
- * immediate children via React.Children.toArray — they need to be top-level props on whatever
- * element ends up there, not just used internally to build MapButton.
+ * Builds the props for a <SlotButton>. isHidden/variant are top-level props (not derived inside
+ * SlotButton) because Actions.jsx also reads them directly off the 'actions' slot's immediate
+ * children via React.Children.toArray — they need to be on whatever element ends up there.
  */
-const slotButtonProps = ({ buttonId, config, appState, appConfig, evaluateProp }) => ({
+const slotButtonProps = ({ buttonId, config, isHidden, appState, appConfig, evaluateProp }) => ({
   buttonId,
   config,
   appState,
   appConfig,
   evaluateProp,
-  isHidden: appState.hiddenButtons.has(buttonId),
+  isHidden,
   variant: config.variant
 })
 
@@ -114,10 +114,12 @@ const slotButtonProps = ({ buttonId, config, appState, appConfig, evaluateProp }
  * Renders a single button's MapButton element for its slot, computing its click handler
  * and derived state (panel-open, showLabel fallback, etc.) from its config and appState.
  */
-function SlotButton ({ buttonId, config, appState, appConfig, evaluateProp }) {
+function SlotButton ({ buttonId, config, isHidden = false, appState, appConfig, evaluateProp }) {
   const bpConfig = config[appState.breakpoint] ?? {}
   const handleClick = createButtonClickHandler(config, appState, evaluateProp)
   const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
+  const panelBpConfig = config.panelId ? appState.panelConfig?.[config.panelId]?.[appState.breakpoint] : undefined
+  const panelRole = panelBpConfig ? getPanelRole(classifyPanel(panelBpConfig)) : undefined
 
   return (
     <MapButton
@@ -129,10 +131,11 @@ function SlotButton ({ buttonId, config, appState, appConfig, evaluateProp }) {
       href={evaluateProp(config.href, config.pluginId)}
       showLabel={bpConfig.showLabel ?? true}
       isDisabled={appState.disabledButtons.has(buttonId)}
-      isHidden={appState.hiddenButtons.has(buttonId)}
+      isHidden={isHidden}
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
       isExpanded={(config.isExpanded !== undefined || config.expandedWhen) ? appState.expandedButtons.has(buttonId) : undefined}
       isPanelOpen={isPanelOpen}
+      panelRole={panelRole}
       onClick={handleClick}
       panelId={config.panelId}
       menuItems={config.menuItems}
@@ -151,7 +154,7 @@ function buildUngroupedItems (members, ctx) {
     id: buttonId,
     type: 'button',
     order: config[ctx.breakpoint]?.order ?? 0,
-    element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, ...ctx })} />
+    element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, isHidden: isButtonHidden(buttonId, config, ctx), ...ctx })} />
   }))
 }
 
@@ -181,7 +184,7 @@ function buildGroupItem (key, members, ctx) {
       id: buttonId,
       type: 'button',
       order,
-      element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, ...ctx })} />
+      element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, isHidden: isButtonHidden(buttonId, config, ctx), ...ctx })} />
     }
   }
 
@@ -190,7 +193,8 @@ function buildGroupItem (key, members, ctx) {
     id: buttonId,
     order: config[ctx.breakpoint]?.order ?? 0,
     buttonId,
-    config
+    config,
+    isHidden: isButtonHidden(buttonId, config, ctx)
   })))
 
   return {
@@ -198,14 +202,21 @@ function buildGroupItem (key, members, ctx) {
     type: 'group',
     order,
     element: (
-      <div key={`group-${key}`} role='group' aria-label={firstConfig.group.label} className='im-c-button-group'>{/* NOSONAR - div with role="group" is correct for a button group */}
-        {sorted.map(({ buttonId, config }) => <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, ...ctx })} />)}
+      <div // NOSONAR - div with role="group" is correct for a button group
+        key={`group-${key}`}
+        role='group'
+        aria-label={firstConfig.group.label}
+        className='im-c-button-group'
+        // Hidden too once every member is, so an empty group doesn't hold a gap in its slot
+        hidden={sorted.every(member => member.isHidden)}
+      >
+        {sorted.map(({ buttonId, config, isHidden }) => <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, isHidden, ...ctx })} />)}
       </div>
     )
   }
 }
 
-function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
+function mapButtons ({ slot, appState, appConfig, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
   const { buttonConfig, breakpoint } = appState
 
   const raw = getMatchingButtons({ appState, appConfig, buttonConfig, slot, evaluateProp })
@@ -217,7 +228,7 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp }) {
 
   // Partition into named groups (keyed by kebab-cased group.label) plus one ungrouped bucket
   const buckets = groupByKey({ items: matching, keyFn: ([, config]) => config.group?.label })
-  const ctx = { breakpoint, appState, appConfig, evaluateProp }
+  const ctx = { breakpoint, appState, appConfig, evaluateProp, isHiddenByApplicationMode }
 
   const result = []
   for (const [key, members] of buckets) {

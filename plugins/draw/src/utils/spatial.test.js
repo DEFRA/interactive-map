@@ -7,8 +7,7 @@ import {
   extendLine,
   isNewCoordinate,
   isValidClick,
-  isValidLineClick,
-  spatialNavigate
+  isValidLineClick
 } from './spatial.js'
 
 jest.mock('polygon-splitter', () => jest.fn())
@@ -217,27 +216,5 @@ describe('isValidLineClick', () => {
 
   test('is false when the last two coordinates coincide', () => {
     expect(isValidLineClick([[0, 0], [0, 0]])).toBe(false)
-  })
-})
-
-describe('spatialNavigate', () => {
-  const start = [0, 0]
-  const pixels = [[0, 0], [0, -10], [0, 10], [-10, 0], [10, 0]]
-
-  test.each([
-    ['ArrowUp', 1],
-    ['ArrowDown', 2],
-    ['ArrowLeft', 3],
-    ['ArrowRight', 4]
-  ])('finds the nearest pixel for %s', (direction, expectedIndex) => {
-    expect(spatialNavigate(start, pixels, direction)).toBe(expectedIndex)
-  })
-
-  test('considers all pixels for an unrecognised direction', () => {
-    expect(spatialNavigate(start, pixels, 'Tab')).toBe(1)
-  })
-
-  test('falls back to the start point when no pixel is in the quadrant', () => {
-    expect(spatialNavigate(start, [[0, 0]], 'ArrowUp')).toBe(0)
   })
 })

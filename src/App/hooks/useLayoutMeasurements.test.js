@@ -10,11 +10,21 @@ jest.mock('../store/appContext.js')
 jest.mock('../store/mapContext.js')
 jest.mock('../../utils/getSafeZoneInset.js')
 
-const el = (props = {}) => {
+const el = ({ rect, ...props } = {}) => {
   const e = document.createElement('div')
   e.style.setProperty = jest.fn()
   Object.entries(props).forEach(([k, v]) => Object.defineProperty(e, k, { value: v, configurable: true }))
+  if (rect) {
+    e.getBoundingClientRect = () => ({ top: 0, left: 0, right: 0, bottom: 0, width: 0, height: 0, ...rect })
+  }
   return e
+}
+
+// For firstElementChild-based reads (logo column width, attribution text natural width).
+const appendChild = (parent, props = {}) => {
+  const child = el(props)
+  parent.appendChild(child)
+  return child
 }
 
 const refs = (o = {}) => ({
@@ -67,20 +77,69 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalled()
   })
 
+  test('treats a top column whose children are all hidden as empty, ignoring its trailing padding', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
+    // jsdom gives every element empty client rects, i.e. the same as display:none
+    appendChild(layoutRefs.topRightColRef.current)
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
+  })
+
+  test('counts a control wrapper as rendered when anything inside it is', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 50 }, top: { offsetTop: 15 } } })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'im-c-control-wrapper'
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper, { getClientRects: () => [{}] })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '65px')
+  })
+
+  test('treats a control wrapper with nothing rendered inside as hidden', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'im-c-control-wrapper'
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper)
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
+  })
+
+  test('treats a hidden wrapper as hidden, whatever is inside it', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 10 }, top: { offsetTop: 15 } } })
+    const wrapper = document.createElement('div')
+    wrapper.className = 'im-c-control-wrapper'
+    wrapper.hidden = true
+    layoutRefs.topRightColRef.current.appendChild(wrapper)
+    appendChild(wrapper, { getClientRects: () => [{}] })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '15px')
+  })
+
+  test('measures a top column normally when any child is rendered', () => {
+    const { layoutRefs } = setup({ refs: { topRightCol: { offsetHeight: 50 }, top: { offsetTop: 15 } } })
+    appendChild(layoutRefs.topRightColRef.current)
+    appendChild(layoutRefs.topRightColRef.current, { getClientRects: () => [{}] })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-top', '65px')
+  })
+
   test('calculates and sets all CSS custom properties', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     const spy = layoutRefs.appContainerRef.current.style.setProperty
-    ;['--right-offset-top', '--right-offset-bottom', '--top-col-width']
+    ;['--right-offset-top', '--right-offset-bottom']
       .forEach(prop => expect(spy).toHaveBeenCalledWith(prop, expect.any(String)))
   })
 
   test.each([
     ['right-offset-top', { topRightCol: { offsetHeight: 80 }, top: { offsetTop: 15 } }, '95px'],
     ['right-offset-bottom', { main: { offsetHeight: 600 }, bottom: { offsetTop: 500 } }, '116px'],
-    // leftColumnHeight = 400 - (50+10) - 8 = 332; rightColumnHeight = 400 - (40+10) - 8 = 342
+    // leftColumnHeight = 400 - (50+10) - 8 = 332
+    // rightColumnHeight: rightEffectiveBottom = 400 - 0 (bottomRightHeight) - 16 (bottom-right-clearance,
+    // since default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8 = 16) = 384; 384 - 50 - 8 = 326
     ['left-top-max-height', {}, '332px'],
-    ['right-top-max-height', {}, '342px']
+    ['right-top-max-height', {}, '326px']
   ])('calculates %s correctly', (name, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
@@ -93,10 +152,11 @@ describe('useLayoutMeasurements', () => {
     ['--left-top-panel-max-height', { leftBottom: { offsetHeight: 50 } }, '274px'], // 332 - 50 - 8
     ['--left-bottom-panel-max-height', {}, '332px'],
     ['--left-bottom-panel-max-height', { leftTop: { offsetHeight: 40 } }, '284px'], // 332 - 40 - 8
-    ['--right-top-panel-max-height', {}, '342px'],
-    ['--right-top-panel-max-height', { rightBottom: { offsetHeight: 60 } }, '274px'], // 342 - 60 - 8
-    ['--right-bottom-panel-max-height', {}, '342px'],
-    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '304px'] // 342 - 30 - 8
+    // rightColumnHeight is 326 by default here (see the right-top-max-height case above)
+    ['--right-top-panel-max-height', {}, '326px'],
+    ['--right-top-panel-max-height', { rightBottom: { offsetHeight: 60 } }, '258px'], // 326 - 60 - 8
+    ['--right-bottom-panel-max-height', {}, '326px'],
+    ['--right-bottom-panel-max-height', { rightTop: { offsetHeight: 30 } }, '288px'] // 326 - 30 - 8
   ])('calculates %s with sibling buttons=%o correctly', (varName, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
     renderHook(() => useLayoutMeasurements())
@@ -105,19 +165,19 @@ describe('useLayoutMeasurements', () => {
 
   test.each([
     [
-      'no actions (height 0) — uses base gap',
+      'no actions (height 0) — clears the bottom row',
       { main: { offsetHeight: 500 }, bottom: { offsetTop: 400 }, actions: { offsetTop: 450, offsetHeight: 0 } },
-      '100px' // baseBottom = 500 - 400 - 0 = 100
+      '108px' // clearsBottomRow = 500 - 400 + dividerGap (8) = 108
     ],
     [
-      'actions floating above base gap (tablet/desktop) — uses actionsOffset + dividerGap',
+      'actions floating above the row (tablet/desktop) — uses actionsOffset + dividerGap',
       { main: { offsetHeight: 500 }, bottom: { offsetTop: 440, offsetHeight: 20 }, actions: { offsetTop: 408, offsetHeight: 60 } },
-      '100px' // actionsOffset = 500 - 408 = 92, 92 + 8 = 100 > baseBottom (40)
+      '100px' // actionsOffset = 500 - 408 = 92, 92 + 8 = 100 > clearsBottomRow (68)
     ],
     [
-      'base gap already larger than actionsOffset (mobile in-flow) — base gap wins',
+      'row clearance already larger than actionsOffset (mobile in-flow) — row clearance wins',
       { main: { offsetHeight: 500 }, bottom: { offsetTop: 350 }, actions: { offsetTop: 430, offsetHeight: 40 } },
-      '150px' // baseBottom = 150 > actionsOffset (70) + dividerGap (8) = 78
+      '158px' // clearsBottomRow = 500 - 350 + 8 = 158 > actionsOffset (70) + dividerGap (8) = 78
     ]
   ])('calculates --hint-bottom for %s', (_, refOverrides, expected) => {
     const { layoutRefs } = setup({ refs: refOverrides })
@@ -129,18 +189,8 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     layoutRefs.actionsRef.current = null
     renderHook(() => useLayoutMeasurements())
-    // actionsHeight = 0, falls back to baseBottom = 500 - 400 - 0 = 100
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '100px')
-  })
-
-  test.each([
-    [{ offsetWidth: 250 }, { offsetWidth: 200 }, '250px'],
-    [{ offsetWidth: 0 }, { offsetWidth: 200 }, '200px'],
-    [{ offsetWidth: 0 }, { offsetWidth: 0 }, '0px']
-  ])('calculates top-col-width for left=%o right=%o', (left, right, expected) => {
-    const { layoutRefs } = setup({ refs: { topLeftCol: { offsetHeight: 50, ...left }, topRightCol: { offsetHeight: 40, ...right } } })
-    renderHook(() => useLayoutMeasurements())
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--top-col-width', expected)
+    // actionsHeight = 0, falls back to clearsBottomRow = 500 - 400 + dividerGap (8) = 108
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--hint-bottom', '108px')
   })
 
   test('clears inline banner panel widths on mobile', () => {
@@ -200,6 +250,41 @@ describe('useLayoutMeasurements', () => {
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-top', '48px')
   })
 
+  test('keeps attributions docked beside the logo when the natural text width fits', () => {
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } } } })
+    appendChild(layoutRefs.bottomRef.current, {}) // logo column
+    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
+    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 150 }) // attribution text, fits
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(false)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--attributions-left', '115px')
+    // docked: attributions.offsetHeight (16) + dividerGap (8) - primaryGap (8) = 16 — the
+    // bled attribution creeps 16px back up into the row, so bottom-right needs pushing clear
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '16px')
+  })
+
+  test('stacks attributions onto their own row when the text is wider than the space beside the logo', () => {
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } } } })
+    appendChild(layoutRefs.bottomRef.current, {}) // logo column
+    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
+    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // attribution text, too wide to fit
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
+    // stacked is lifted by its own extra flex line, not a margin, so no clearance is needed here
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
+  })
+
+  test('never gives bottom-right negative clearance when attributions is shorter than the bleed', () => {
+    const { layoutRefs } = setup({ refs: { bottom: { rect: { left: 0 } }, attributions: { offsetHeight: 0 } } })
+    appendChild(layoutRefs.bottomRef.current, {}) // logo column
+    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
+    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
+  })
+
   test('uses 0 when bottomRightRef current is null', () => {
     const { layoutRefs } = setup()
     layoutRefs.bottomRightRef.current = null
@@ -215,9 +300,53 @@ describe('useLayoutMeasurements', () => {
     })
     renderHook(() => useLayoutMeasurements())
     // bottomContainerPad = 500 - 400 - 0 = 100
-    // expected = 100 + (20 + 8) = 128
+    // attributions lift = 16 (default attributions offsetHeight 16 + dividerGap 8 - primaryGap 8)
+    // expected = 100 + (20 + 16 + 8) = 144
     expect(layoutRefs.appContainerRef.current.style.setProperty)
-      .toHaveBeenCalledWith('--right-offset-bottom', '128px')
+      .toHaveBeenCalledWith('--right-offset-bottom', '144px')
+  })
+
+  test('adds the attributions lift into right-offset-bottom so .im-o-app__right does not overlap a bottom-right box pushed up by tall docked attributions', () => {
+    const { layoutRefs } = setup({
+      refs: {
+        bottomRight: { offsetHeight: 20 },
+        attributions: { offsetHeight: 40 } // lift = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
+      }
+    })
+    renderHook(() => useLayoutMeasurements())
+    // bottomContainerPad = 500 - 400 - 0 = 100; expected = 100 + (20 + 40 + 8) = 168
+    // Without the lift term this regressed to 128px, letting .im-o-app__right's
+    // bottom offset sit below the (margin-bottom-raised) bottom-right box's real top edge.
+    expect(layoutRefs.appContainerRef.current.style.setProperty)
+      .toHaveBeenCalledWith('--right-offset-bottom', '168px')
+  })
+
+  // Stacked attributions takes a flex line of its own BELOW the bottom-right row, lifting the
+  // row by the same amount the docked box's margin-bottom does — but as part of
+  // .im-o-app__bottom's own grown height, not as a margin, so --bottom-right-clearance is 0.
+  // Reading the clearance here (rather than the mode-independent lift) left the right column's
+  // bottom offset at the un-lifted position, so a right-bottom scale bar overlapped a
+  // bottom-right draw menu on mobile — the breakpoint where attributions always stacks.
+  test('adds the attributions lift into right-offset-bottom when attributions is stacked, not just docked', () => {
+    const { layoutRefs } = setup({
+      refs: {
+        bottom: { rect: { left: 0 } },
+        bottomRight: { offsetHeight: 20 },
+        attributions: { offsetHeight: 40 } // lift = 40 + 8 (dividerGap) - 8 (primaryGap) = 40
+      }
+    })
+    appendChild(layoutRefs.bottomRef.current, {}) // logo column
+    appendChild(layoutRefs.bottomRef.current, { offsetWidth: 192, rect: { left: 115 } }) // bottom-right column
+    layoutRefs.bottomRef.current.appendChild(layoutRefs.attributionsRef.current) // sibling of both columns
+    appendChild(layoutRefs.attributionsRef.current, { scrollWidth: 250 }) // too wide to fit beside the logo
+    renderHook(() => useLayoutMeasurements())
+    const spy = layoutRefs.appContainerRef.current.style.setProperty
+    expect(layoutRefs.attributionsRef.current.classList.contains('im-o-app__attributions--stacked')).toBe(true)
+    expect(spy).toHaveBeenCalledWith('--bottom-right-clearance', '0px')
+    // Same 168px as the docked case above, despite the 0px clearance.
+    expect(spy).toHaveBeenCalledWith('--right-offset-bottom', '168px')
+    // rightEffectiveBottom = 400 + 0 - 20 - 40 = 340; 340 - 50 (rightOffsetTop) - 8 = 282
+    expect(spy).toHaveBeenCalledWith('--right-top-max-height', '282px')
   })
 
   test('uses 0 when sub-slot refs have null current', () => {
@@ -229,7 +358,7 @@ describe('useLayoutMeasurements', () => {
     renderHook(() => useLayoutMeasurements())
     // With all sub-slot refs null, buttons = 0 ?? 0 = 0, so max-heights equal full column height
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-top-panel-max-height', '332px')
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-bottom-panel-max-height', '342px')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-bottom-panel-max-height', '326px')
   })
 
   test('dispatches safe zone inset on desktop (post-batch RAF read only)', () => {
@@ -324,7 +453,7 @@ describe('useLayoutMeasurements', () => {
     const { layoutRefs } = setup()
     renderHook(() => useLayoutMeasurements())
     expect(useResizeObserver).toHaveBeenCalledWith(
-      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
+      [layoutRefs.bannerRef, layoutRefs.mainRef, layoutRefs.headerRef, layoutRefs.topRef, layoutRefs.topLeftColRef, layoutRefs.topRightColRef, layoutRefs.actionsRef, layoutRefs.bottomRef, layoutRefs.bottomRightRef, layoutRefs.attributionsRef, layoutRefs.leftTopRef, layoutRefs.leftBottomRef, layoutRefs.rightTopRef, layoutRefs.rightBottomRef, layoutRefs.drawerRef, layoutRefs.leftRef, layoutRefs.rightRef],
       expect.any(Function)
     )
     layoutRefs.appContainerRef.current.style.setProperty.mockClear()

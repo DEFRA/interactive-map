@@ -17,9 +17,9 @@ describe('vertexQueries', () => {
     expect(ctx.getCoordPath({ featureId: 'missing' }, 0)).toBe('0')
   })
 
-  test('getVerticies / getMidpoints for closed rings, open lines and missing features', () => {
+  test('getVertices / getMidpoints for closed rings, open lines and missing features', () => {
     const { ctx } = createHarness()
-    expect(ctx.getVerticies('feat-1')).toHaveLength(4)
+    expect(ctx.getVertices('feat-1')).toHaveLength(4)
     expect(ctx.getMidpoints('feat-1')).toHaveLength(4)
     expect(ctx.getMidpoints('missing')).toEqual([])
     const line = createHarness(LINE())
@@ -28,29 +28,29 @@ describe('vertexQueries', () => {
 
   test('syncVertices refreshes the cached vertex and midpoint lists', () => {
     const { ctx, state } = createHarness()
-    state.vertecies = []
+    state.vertices = []
     state.midpoints = []
     ctx.syncVertices(state)
-    expect(state.vertecies).toHaveLength(4)
+    expect(state.vertices).toHaveLength(4)
     expect(state.midpoints).toHaveLength(4)
   })
 
   test('getVertexOrMidpoint repopulates empty lists, navigates, and guards empty features', () => {
     const { ctx, state } = createHarness()
-    state.vertecies = []
+    state.vertices = []
     state.selectedVertexIndex = 0
     const [idx, type] = ctx.getVertexOrMidpoint(state, 'ArrowRight')
     expect(idx).toBeGreaterThanOrEqual(0)
     expect(['vertex', 'midpoint']).toContain(type)
 
-    expect(ctx.getVertexOrMidpoint({ featureId: 'missing', vertecies: [] }, 'ArrowRight')).toEqual([-1, null])
-    expect(ctx.getVertexOrMidpoint({ ...state, vertecies: [null], midpoints: [], selectedVertexIndex: 0 }, 'ArrowRight')).toEqual([-1, null])
+    expect(ctx.getVertexOrMidpoint({ featureId: 'missing', vertices: [] }, 'ArrowRight')).toEqual([-1, null])
+    expect(ctx.getVertexOrMidpoint({ ...state, vertices: [null], midpoints: [], selectedVertexIndex: 0 }, 'ArrowRight')).toEqual([-1, null])
 
     // Falls back to the map centre when the current index has no pixel, and can resolve a vertex target
     const fresh = createHarness()
     expect(fresh.ctx.getVertexOrMidpoint({ ...fresh.state, selectedVertexIndex: -1 }, 'ArrowRight')[0]).toBeGreaterThanOrEqual(0)
     const types = new Set()
-    for (let s = 0; s < fresh.state.vertecies.length + fresh.state.midpoints.length; s++) {
+    for (let s = 0; s < fresh.state.vertices.length + fresh.state.midpoints.length; s++) {
       for (const d of ['ArrowRight', 'ArrowLeft', 'ArrowUp', 'ArrowDown']) {
         types.add(fresh.ctx.getVertexOrMidpoint({ ...fresh.state, selectedVertexIndex: s }, d)[1])
       }
@@ -66,8 +66,8 @@ describe('vertexQueries', () => {
 
     // Counts earlier segments for multi-part geometry (closed and open)
     features.set('multipoly', { type: 'MultiPolygon', coordinates: [[[[0, 0], [1, 0], [1, 1], [0, 0]]], [[[5, 5], [6, 5], [6, 6], [5, 5]]]] })
-    expect(ctx.getVertexIndexFromMidpoint({ ...state, featureId: 'multipoly', vertecies: new Array(8).fill([0, 0]) }, '1.0.1')).toBeGreaterThan(8)
+    expect(ctx.getVertexIndexFromMidpoint({ ...state, featureId: 'multipoly', vertices: new Array(8).fill([0, 0]) }, '1.0.1')).toBeGreaterThan(8)
     features.set('multiline', { type: 'MultiLineString', coordinates: [[[0, 0], [1, 1]], [[5, 5], [6, 6]]] })
-    expect(ctx.getVertexIndexFromMidpoint({ ...state, featureId: 'multiline', vertecies: new Array(4).fill([0, 0]) }, '1.1')).toBeGreaterThan(4)
+    expect(ctx.getVertexIndexFromMidpoint({ ...state, featureId: 'multiline', vertices: new Array(4).fill([0, 0]) }, '1.1')).toBeGreaterThan(4)
   })
 })

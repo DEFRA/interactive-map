@@ -21,7 +21,7 @@ describe('createDrawMode composition', () => {
     const mode = build()
     const contributed = [
       'onSetup', 'onStop', // lifecycle
-      'onClick', 'onTap', 'doClick', 'onVertexButtonClick', 'onCreate', // click
+      'onClick', 'onTap', 'doClick', '_placeAtCrossHair', 'onVertexButtonClick', 'onCreate', // click
       'pushDrawUndo', 'undoVertex', 'onUndo', // undo
       'onKeydown', 'onKeyup', 'onKeyUp', // keyboard
       'onMove', 'onMouseMove', 'onTouchStart', 'onBlur', // pointer

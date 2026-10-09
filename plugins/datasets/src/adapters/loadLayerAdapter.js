@@ -8,7 +8,11 @@ const importLayerAdapter = async (mapProvider) => {
       const { default: LayerAdapter } = await import(/* webpackChunkName: "im-datasets-esri-adapter" */ './esri/esriLayerAdapter.js')
       return LayerAdapter
     }
-    // Once they are ready, add cases for OpenLayersProvider and potentially LeafletProvider
+    case 'OpenLayersProvider': {
+      const { default: LayerAdapter } = await import(/* webpackChunkName: "im-datasets-ol-adapter" */ './openlayers/openlayersLayerAdapter.js')
+      return LayerAdapter
+    }
+    // Once ready, add a case for LeafletProvider
     default: {
       throw new Error(`No layer adapter available for map provider ${mapProvider.name}. Please provide a compatible layer adapter.`)
     }
@@ -18,9 +22,9 @@ const importLayerAdapter = async (mapProvider) => {
 let _layerAdapter
 export const layerAdapter = {}
 
-export const loadLayerAdapter = async (mapProvider, symbolRegistry, patternRegistry) => {
+export const loadLayerAdapter = async (mapProvider, symbolRegistry, patternRegistry, adapterConfig = {}) => {
   const LayerAdapter = await importLayerAdapter(mapProvider)
-  _layerAdapter = new LayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+  _layerAdapter = new LayerAdapter(mapProvider, symbolRegistry, patternRegistry, adapterConfig)
 
   // Assign the adapter methods that are consumed by the api
   layerAdapter.removeDataset = _layerAdapter.removeDataset.bind(_layerAdapter)

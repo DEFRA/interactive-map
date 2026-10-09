@@ -24,9 +24,13 @@ const makeDataset = (overrides = {}) => ({
   opacity: 1,
   getFillSource: jest.fn(paint => ({ id: 'test-ds', type: 'fill', paint })),
   getStrokeSource: jest.fn(paint => ({ id: 'test-ds-stroke', type: 'line', paint })),
-  getSymbolSource: jest.fn((imageId, anchor) => ({ id: 'test-ds', type: 'symbol', layout: { 'icon-image': imageId } })),
+  getSymbolSource: jest.fn((imageId, iconLayout) => ({ id: 'test-ds', type: 'symbol', layout: { 'icon-image': imageId, ...iconLayout } })),
   ...overrides
 })
+
+const ICON_LAYOUT = { 'icon-anchor': 'bottom', 'icon-offset': [0, 4.7] }
+
+const makeMapProvider = (map) => ({ map, getSymbolIconLayout: jest.fn(() => ICON_LAYOUT) })
 
 // ─── addFillLayer ─────────────────────────────────────────────────────────────
 
@@ -43,11 +47,11 @@ describe('addFillLayer', () => {
 // ─── addStrokeLayer ───────────────────────────────────────────────────────────
 
 describe('addStrokeLayer', () => {
-  it('defaults line-width to 1 when strokeWidth is not set on the style', () => {
+  it("uses the style's strokeWidth for line-width", () => {
     const map = makeMap()
-    const ds = makeDataset({ hasStroke: true, strokeLayerId: 'test-ds-stroke', style: { stroke: '#000000' } })
+    const ds = makeDataset({ hasStroke: true, strokeLayerId: 'test-ds-stroke', style: { stroke: '#000000', strokeWidth: 3 } })
     addStrokeLayer(map, ds, 'outdoor')
-    expect(ds.getStrokeSource).toHaveBeenCalledWith(expect.objectContaining({ 'line-width': 1 }))
+    expect(ds.getStrokeSource).toHaveBeenCalledWith(expect.objectContaining({ 'line-width': 3 }))
   })
 
   it('includes line-dasharray in the paint when strokeDashArray is set', () => {
@@ -69,7 +73,7 @@ describe('addSymbolLayer', () => {
     const map = makeMap()
     const symbolRegistry = { getSymbolDef: jest.fn(() => null), getSymbolImageId: jest.fn() }
     const ds = makeDataset({ hasSymbol: true, symbolLayerId: 'test-ds', style: {} })
-    addSymbolLayer(map, ds, { id: 'outdoor' }, symbolRegistry, 1)
+    addSymbolLayer(makeMapProvider(map), ds, { id: 'outdoor' }, symbolRegistry, 1)
     expect(map.addLayer).not.toHaveBeenCalled()
   })
 
@@ -77,7 +81,19 @@ describe('addSymbolLayer', () => {
     const map = makeMap()
     const symbolRegistry = { getSymbolDef: jest.fn(() => ({})), getSymbolImageId: jest.fn(() => null) }
     const ds = makeDataset({ hasSymbol: true, symbolLayerId: 'test-ds', style: {} })
-    addSymbolLayer(map, ds, { id: 'outdoor' }, symbolRegistry, 1)
+    addSymbolLayer(makeMapProvider(map), ds, { id: 'outdoor' }, symbolRegistry, 1)
     expect(map.addLayer).not.toHaveBeenCalled()
+  })
+
+  it('places the icon with the provider\'s icon layout for the sized symbol', () => {
+    const map = makeMap()
+    const mapProvider = makeMapProvider(map)
+    const symbolDef = { viewBox: '0 0 44 47', anchor: [0.5, 0.9] }
+    const symbolRegistry = { getSymbolDef: jest.fn(() => symbolDef), getSymbolImageId: jest.fn(() => 'img') }
+    const ds = makeDataset({ hasSymbol: true, symbolLayerId: 'test-ds', style: { symbol: 'pin' } })
+    addSymbolLayer(mapProvider, ds, { id: 'outdoor' }, symbolRegistry, 1)
+    expect(mapProvider.getSymbolIconLayout).toHaveBeenCalledWith(symbolDef)
+    expect(ds.getSymbolSource).toHaveBeenCalledWith('img', ICON_LAYOUT)
+    expect(map.addLayer).toHaveBeenCalledWith(expect.objectContaining({ layout: { 'icon-image': 'img', ...ICON_LAYOUT } }))
   })
 })

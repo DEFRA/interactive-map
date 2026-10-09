@@ -72,9 +72,9 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
             label: 'Arable',
             filter: ['==', ['get', 'land_use'], 'Arable'],
             style: {
-              stroke: '#6D4C41',
+              stroke: '#573C34',
               fillPattern: 'horizontal-hatch',
-              fillPatternForegroundColor: '#6D4C41',
+              fillPatternForegroundColor: '#573C34',
               fillPatternBackgroundColor: 'transparent'
             }
           }, {
@@ -82,9 +82,9 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
             label: 'Permanent grassland',
             filter: ['==', ['get', 'land_use'], 'Permanent grassland'],
             style: {
-              stroke: '#00897B',
+              stroke: '#005149',
               fillPattern: 'diagonal-cross-hatch',
-              fillPatternForegroundColor: '#00897B',
+              fillPatternForegroundColor: '#005149',
               fillPatternBackgroundColor: 'transparent'
             }
           }, {
@@ -92,9 +92,9 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
             label: 'Woodland',
             filter: ['==', ['get', 'land_use'], 'Woodland'],
             style: {
-              stroke: '#2E7D32',
+              stroke: '#1E5020',
               fillPattern: 'dot',
-              fillPatternForegroundColor: '#2E7D32',
+              fillPatternForegroundColor: '#1E5020',
               fillPatternBackgroundColor: 'transparent'
             }
           }]
@@ -108,6 +108,8 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
         mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
+          logo: '/path/to/logo.svg',
+          logoAltText: 'Your logo alt text',
           attribution: 'Your tile attribution'
         },
         center: [-2.464, 54.558],
@@ -182,9 +184,9 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
             label: 'Arable',
             filter: ['==', ['get', 'land_use'], 'Arable'],
             style: {
-              stroke: '#6D4C41',
+              stroke: '#573C34',
               fillPattern: 'horizontal-hatch',
-              fillPatternForegroundColor: '#6D4C41',
+              fillPatternForegroundColor: '#573C34',
               fillPatternBackgroundColor: 'transparent'
             }
           }, {
@@ -192,9 +194,9 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
             label: 'Permanent grassland',
             filter: ['==', ['get', 'land_use'], 'Permanent grassland'],
             style: {
-              stroke: '#00897B',
+              stroke: '#005149',
               fillPattern: 'diagonal-cross-hatch',
-              fillPatternForegroundColor: '#00897B',
+              fillPatternForegroundColor: '#005149',
               fillPatternBackgroundColor: 'transparent'
             }
           }, {
@@ -202,9 +204,9 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
             label: 'Woodland',
             filter: ['==', ['get', 'land_use'], 'Woodland'],
             style: {
-              stroke: '#2E7D32',
+              stroke: '#1E5020',
               fillPattern: 'dot',
-              fillPatternForegroundColor: '#2E7D32',
+              fillPatternForegroundColor: '#1E5020',
               fillPatternBackgroundColor: 'transparent'
             }
           }]
@@ -218,6 +220,8 @@ Use the datasets plugin to overlay GeoJSON polygon data on your map. This exampl
         mapProvider: defra.maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
+          logo: '/path/to/logo.svg',
+          logoAltText: 'Your logo alt text',
           attribution: 'Your tile attribution'
         },
         center: [-2.464, 54.558],

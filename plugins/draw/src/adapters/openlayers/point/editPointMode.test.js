@@ -208,7 +208,7 @@ describe('mouse hit-testing respects the icon\'s own rendered pixels, not a fixe
   })
 })
 
-test('nudgeSelectedVertex (MoveControls D-pad) moves the point and is undoable', () => {
+test('nudgeSelectedVertex (MapControls D-pad) moves the point and is undoable', () => {
   const { manager, mode, coord } = setup()
   mode.nudgeSelectedVertex(1, 0, true)
   expect(coord()).not.toEqual([5, 5])
@@ -247,6 +247,22 @@ test('keyboard: Delete is a no-op — there is no delete-vertex action for a poi
   const { coord } = setup()
   key('keyup', { key: 'Delete' })
   expect(coord()).toEqual([5, 5])
+})
+
+// A point is "always selected" (pointSelectionState.js's selectedVertexIndex never leaves 0),
+// so the shared keyboardHandler.js's Alt+<key> shadow guard (gated on selectedVertexIndex >= 0)
+// stays unconditionally true here — unlike edit_vertex, where it only applies once a vertex is
+// actually selected.
+test('keyboard: Alt+Enter/Alt+Arrow keyup are shadowed from the app-wide label shortcuts for the whole session', () => {
+  setup()
+  const enterEvent = new KeyboardEvent('keyup', { key: 'Enter', altKey: true, cancelable: true, bubbles: true })
+  const arrowEvent = new KeyboardEvent('keyup', { key: 'ArrowRight', altKey: true, cancelable: true, bubbles: true })
+  const enterSpy = jest.spyOn(enterEvent, 'stopPropagation')
+  const arrowSpy = jest.spyOn(arrowEvent, 'stopPropagation')
+  window.dispatchEvent(enterEvent)
+  window.dispatchEvent(arrowEvent)
+  expect(enterSpy).toHaveBeenCalled()
+  expect(arrowSpy).toHaveBeenCalled()
 })
 
 test('keyboard: Cmd/Ctrl+Z undoes via the same op-popping logic as mode.undo()', () => {

@@ -1,6 +1,4 @@
 import { transform as projTransform } from 'ol/proj.js'
-import VectorLayer from 'ol/layer/Vector.js'
-import VectorTileLayer from 'ol/layer/VectorTile.js'
 import { testOLFeature, testRenderFeature, bestOf } from './snapGeometry.js'
 
 // VectorTile geometry is clipped to a rectangle (tile extent + buffer), producing fake
@@ -27,7 +25,14 @@ const buildTileBoundaryState = (layer, map) => {
 const getClipContext = (state, coord) => {
   if (!state) { return null }
   const { tileGrid, viewProj, sourceProj, zoom } = state
-  const toSource = (c) => c ? projTransform(c, viewProj, sourceProj) : null
+  // Same-code projections need no reprojection — skipping the call also avoids depending
+  // on ol/proj's registry having a transform for the pair, which can be missing when the
+  // draw plugin and the map provider ship as separate bundles each with their own ol/proj4.
+  const codeOf = (projection) => (typeof projection === 'string' ? projection : projection.getCode())
+  const toSource = (coordinate) => {
+    if (!coordinate) { return null }
+    return codeOf(sourceProj) === codeOf(viewProj) ? coordinate : projTransform(coordinate, viewProj, sourceProj)
+  }
   const anchor = toSource(coord)
   const tileCoord = tileGrid.getTileCoordForCoordAndZ(anchor, zoom)
   const extent = tileGrid.getTileCoordExtent(tileCoord)
@@ -136,11 +141,15 @@ const pickVisibleCandidates = (best, candidates, context) => {
   return result
 }
 
-// Collected on each query — VectorTileLayers are replaced when the map style changes
+// Collected on each query — VectorTileLayers are replaced when the map style changes.
+// Classified by the `layerType` tag the provider sets at creation, not `instanceof
+// VectorTileLayer` — this adapter and the provider are independently-bundled scripts in
+// a UMD consumer, each with its own copy of ol, so a class reference from this bundle
+// never matches an instance the provider built.
 const getVTLayers = (map) => {
   const layers = []
   map.getLayers().forEach(l => {
-    if (l instanceof VectorTileLayer) { layers.push(l) }
+    if (l.get('layerType') === 'vectorTile') { layers.push(l) }
   })
   return layers
 }
@@ -155,7 +164,10 @@ export const createSnapEngine = (map, snapLayers = []) => {
     for (const entry of layers ?? []) {
       if (typeof entry === 'string') {
         vtLayerNames.add(entry)
-      } else if (entry instanceof VectorLayer) {
+      } else if (typeof entry?.getSource === 'function') {
+        // Duck-typed rather than `instanceof VectorLayer` — an entry here can be a live
+        // layer object a consumer built themselves with their own copy of ol, which would
+        // never satisfy an instanceof check against this bundle's own copy of the class.
         olLayers.push(entry)
       } else {
         // unsupported layer type — skip

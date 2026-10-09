@@ -7,15 +7,13 @@ import {
   isGeometryObscured
 } from './spatial.js'
 
-jest.mock('ol/proj.js', () => ({
-  __esModule: true,
-  transform: (coord) => coord,
-  transformExtent: (extent) => extent
-}))
-
 describe('formatDimension', () => {
-  it('formats sub-mile distances in meters', () => {
-    expect(formatDimension(400)).toBe('400m')
+  it('formats sub-mile distances in metres', () => {
+    expect(formatDimension(400)).toBe('400 metres')
+  })
+
+  it('formats a single metre as singular', () => {
+    expect(formatDimension(1)).toBe('1 metre')
   })
 
   it('formats exactly 1 mile', () => {
@@ -38,7 +36,7 @@ describe('getAreaDimensions', () => {
 
   it('returns height by width as formatted strings', () => {
     // 1609m height (~1 mile), 804m width (sub-mile)
-    expect(getAreaDimensions([0, 0, 804, 1609])).toBe('1 mile by 804m')
+    expect(getAreaDimensions([0, 0, 804, 1609])).toBe('1 mile by 804 metres')
   })
 })
 
@@ -48,22 +46,22 @@ describe('getCardinalMove', () => {
   })
 
   it('describes north and east movement', () => {
-    expect(getCardinalMove([0, 0], [100, 100])).toBe('north 100m, east 100m')
+    expect(getCardinalMove([0, 0], [100, 100])).toBe('north 100 metres, east 100 metres')
   })
 
   it('describes south and west movement', () => {
-    expect(getCardinalMove([100, 100], [0, 0])).toBe('south 100m, west 100m')
+    expect(getCardinalMove([100, 100], [0, 0])).toBe('south 100 metres, west 100 metres')
   })
 
   it('describes single-axis movement', () => {
-    expect(getCardinalMove([0, 0], [0, 100])).toBe('north 100m')
+    expect(getCardinalMove([0, 0], [0, 100])).toBe('north 100 metres')
   })
 })
 
 describe('getExtentFromGeoJSON', () => {
-  it('returns a 4-element extent from a GeoJSON point', () => {
-    const point = { type: 'Feature', geometry: { type: 'Point', coordinates: [0, 51] } }
-    expect(getExtentFromGeoJSON(point)).toEqual([0, 51, 0, 51])
+  it('returns a 4-element extent from a GeoJSON point, unchanged (no reprojection)', () => {
+    const point = { type: 'Feature', geometry: { type: 'Point', coordinates: [432500, 250000] } }
+    expect(getExtentFromGeoJSON(point)).toEqual([432500, 250000, 432500, 250000])
   })
 })
 

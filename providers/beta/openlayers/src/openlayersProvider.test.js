@@ -1,5 +1,8 @@
 // Mock-prefixed variables are allowed in jest.mock factories by babel-plugin-jest-hoist
 import OpenLayersProvider from './openlayersProvider.js'
+import { updateHighlightedFeatures } from './utils/highlightFeatures.js'
+import { SymbolImageCache } from './utils/symbolImages.js'
+import { PatternImageCache } from './utils/patternImages.js'
 import { attachMapEvents } from './mapEvents.js'
 import { attachAppEvents, createMapStyleLayer } from './appEvents.js'
 import { getExtentFromGeoJSON, isGeometryObscured } from './utils/spatial.js'
@@ -26,13 +29,15 @@ const mockMapGetSize = jest.fn(() => [800, 600])
 const mockMapSetTarget = jest.fn()
 const mockMapGetPixel = jest.fn(() => [100, 200])
 const mockMapGetCoord = jest.fn(() => [400000, 300000])
+const mockMapGetLayers = jest.fn(() => ({ forEach: jest.fn() }))
 const mockMapInstance = {
   once: mockMapOnce,
   getSize: mockMapGetSize,
   setTarget: mockMapSetTarget,
   getPixelFromCoordinate: mockMapGetPixel,
   getCoordinateFromPixel: mockMapGetCoord,
-  getView: jest.fn(() => mockViewInstance)
+  getView: jest.fn(() => mockViewInstance),
+  getLayers: mockMapGetLayers
 }
 
 const mockSource = {}
@@ -59,6 +64,7 @@ jest.mock('./appEvents.js', () => ({
   createMapStyleLayer: jest.fn(async () => ({ layer: mockVectorTileLayer, source: mockSource })),
   attachAppEvents: jest.fn(() => ({ remove: mockAppEventHandlesRemove }))
 }))
+jest.mock('./utils/highlightFeatures.js', () => ({ __esModule: true, updateHighlightedFeatures: jest.fn() }))
 jest.mock('./utils/spatial.js', () => ({
   __esModule: true,
   getAreaDimensions: jest.fn(() => '1 mile by 2 miles'),
@@ -125,6 +131,19 @@ describe('OpenLayersProvider', () => {
     })
   })
 
+  describe('isBaseMapReady', () => {
+    it('returns false before initMap has run', () => {
+      const { provider } = makeProvider()
+      expect(provider.isBaseMapReady()).toBe(false)
+    })
+
+    it('returns true once initMap has set this.map', async () => {
+      const { provider } = makeProvider()
+      await provider.initMap(defaultInitConfig)
+      expect(provider.isBaseMapReady()).toBe(true)
+    })
+  })
+
   describe('initMap', () => {
     it('creates vector tile layer, OL objects, and emits MAP_READY by default', async () => {
       const { provider, eventBus } = makeProvider()
@@ -170,6 +189,28 @@ describe('OpenLayersProvider', () => {
       const bounds = [100, 200, 300, 400]
       await provider.initMap({ ...defaultInitConfig, center: [400000, 300000], bounds })
       expect(View).toHaveBeenCalledWith(expect.objectContaining({ center: [400000, 300000] }))
+    })
+
+    it('passes minZoom and maxZoom through to the View unchanged', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: 8, maxZoom: 12 })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 8, maxZoom: 12 }))
+    })
+
+    // Regression: minZoom used to be floored at the zoom alignment's default via Math.max(),
+    // silently overriding any caller-supplied minZoom that was more permissive (lower) than
+    // that default — e.g. a consumer trying to let people zoom out further than the 'world'
+    // alignment's default minZoom of 6 had their config ignored.
+    it('does not clamp a minZoom below the zoom alignment default', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: 0 })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 0 }))
+    })
+
+    it('falls back to the zoom alignment defaults when minZoom/maxZoom are not provided', async () => {
+      const { provider } = makeProvider({ zoomAlignment: 'world' })
+      await provider.initMap({ ...defaultInitConfig, minZoom: null, maxZoom: null })
+      expect(View).toHaveBeenCalledWith(expect.objectContaining({ minZoom: 6, maxZoom: 20 }))
     })
 
     it('creates the initial layer from the map style', async () => {
@@ -329,8 +370,9 @@ describe('OpenLayersProvider', () => {
       expect(provider.getBounds()).toEqual([1.13, 2.46, 3.99, 4])
     })
 
-    it('getVisibleFeatures returns empty array', () => {
-      expect(provider.getVisibleFeatures()).toEqual([])
+    it('getVisibleFeatures delegates to the map (no layers registered here — see queryFeatures.test.js)', () => {
+      expect(provider.getVisibleFeatures(['draw'])).toEqual([])
+      expect(mockMapGetLayers).toHaveBeenCalled()
     })
 
     it('getResolution delegates to view.getResolution', () => {
@@ -382,6 +424,97 @@ describe('OpenLayersProvider', () => {
       const panelRect = { left: 0, top: 0, right: 100, bottom: 100 }
       provider.isGeometryObscured(geojson, panelRect)
       expect(isGeometryObscured).toHaveBeenCalledWith(geojson, panelRect, mockMapInstance)
+    })
+  })
+
+  describe('pattern images', () => {
+    const patternRegistry = { id: 'app-pattern-registry' }
+
+    it('gives each provider (each map) its own pattern cache', () => {
+      const { provider: first } = makeProvider()
+      const { provider: second } = makeProvider()
+      expect(first.patternImages).toBeInstanceOf(PatternImageCache)
+      expect(first.patternImages).not.toBe(second.patternImages)
+    })
+
+    it('addPatternsToMap registers at the map\'s pixel ratio unless given one, and getPatternFill reads its cache', async () => {
+      const { provider } = makeProvider()
+      provider.map = { getPixelRatio: () => 2 }
+      const register = jest.spyOn(provider.patternImages, 'registerPatterns').mockResolvedValue()
+      const configs = [{ fillPattern: 'dot' }]
+
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 2)
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry, 3)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 3)
+      provider.map = { getPixelRatio: () => 0 }
+      await provider.addPatternsToMap(configs, 'outdoor', patternRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, 'outdoor', patternRegistry, 1)
+
+      jest.spyOn(provider.patternImages, 'getFill').mockReturnValue('fill')
+      expect(provider.getPatternFill('pattern-id')).toBe('fill')
+    })
+  })
+
+  describe('symbol images', () => {
+    const symbolRegistry = { id: 'app-symbol-registry' }
+
+    it('gives each provider (each map) its own symbol image cache', () => {
+      const { provider: first } = makeProvider()
+      const { provider: second } = makeProvider()
+      expect(first.symbolImages).toBeInstanceOf(SymbolImageCache)
+      expect(first.symbolImages).not.toBe(second.symbolImages)
+    })
+
+    it('addSymbolsToMap registers at the map\'s pixel ratio unless given one', async () => {
+      const { provider } = makeProvider()
+      provider.map = { getPixelRatio: () => 2 }
+      const register = jest.spyOn(provider.symbolImages, 'registerSymbols').mockResolvedValue()
+      const configs = [{ symbol: 'pin' }]
+
+      await provider.addSymbolsToMap(configs, { id: 'outdoor' }, symbolRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, { id: 'outdoor' }, symbolRegistry, 2)
+
+      await provider.addSymbolsToMap(configs, { id: 'outdoor' }, symbolRegistry, 3)
+      expect(register).toHaveBeenLastCalledWith(configs, { id: 'outdoor' }, symbolRegistry, 3)
+
+      provider.map = { getPixelRatio: () => 0 }
+      await provider.addSymbolsToMap(configs, { id: 'outdoor' }, symbolRegistry)
+      expect(register).toHaveBeenLastCalledWith(configs, { id: 'outdoor' }, symbolRegistry, 1)
+    })
+
+    it('looks up registered images, data URIs and active/selected variants in its own cache', () => {
+      const { provider } = makeProvider()
+      const cache = provider.symbolImages
+      jest.spyOn(cache, 'getImage').mockReturnValue('canvas')
+      jest.spyOn(cache, 'getDataUri').mockReturnValue('data:uri')
+      jest.spyOn(cache, 'getActiveImageId').mockReturnValue('active-id')
+      jest.spyOn(cache, 'getSelectedImageId').mockReturnValue('selected-id')
+
+      expect(provider.getSymbolImage('img')).toBe('canvas')
+      expect(provider.getSymbolDataUri('img')).toBe('data:uri')
+      expect(provider.getActiveSymbolImageId('img')).toBe('active-id')
+      expect(provider.getSelectedSymbolImageId('img')).toBe('selected-id')
+      expect(cache.getImage).toHaveBeenCalledWith('img')
+    })
+
+    it('compiles a dataset filter into a per-feature predicate', () => {
+      const { provider } = makeProvider()
+      const matches = provider.buildFilterEvaluator(['==', ['get', 'kind'], 'field'])
+      expect(matches({ getProperties: () => ({ kind: 'field' }), getId: () => 1, getGeometry: () => null })).toBe(true)
+      expect(matches({ getProperties: () => ({ kind: 'hedge' }), getId: () => 2, getGeometry: () => null })).toBe(false)
+      expect(provider.buildFilterEvaluator(null)).toBeNull()
+    })
+
+    it('highlights with its own symbol image cache, including when re-applying', () => {
+      const { provider } = makeProvider()
+      provider.map = { id: 'map' }
+      updateHighlightedFeatures.mockClear()
+      provider.updateHighlightedFeatures(['selected'], ['active'], { styles: true })
+      expect(updateHighlightedFeatures).toHaveBeenLastCalledWith(provider.map, ['selected'], ['active'], { styles: true }, provider.symbolImages)
+      provider.reapplyHighlights()
+      expect(updateHighlightedFeatures).toHaveBeenCalledTimes(2)
+      expect(updateHighlightedFeatures).toHaveBeenLastCalledWith(provider.map, ['selected'], ['active'], { styles: true }, provider.symbolImages)
     })
   })
 })

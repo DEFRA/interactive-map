@@ -1,15 +1,20 @@
-import VectorTileLayer from 'ol/layer/VectorTile.js'
-import VectorLayer from 'ol/layer/Vector.js'
-
 const HIGHLIGHT_MARKER = '_highlight'
 const HIT_TOLERANCE = 8
 
+// Layers are classified by a `layerType` tag ('vector' | 'vectorTile') set at creation,
+// not `instanceof VectorLayer`/`VectorTileLayer` — a UMD consumer loads this provider and
+// other plugins (e.g. draw) as independently-bundled scripts, each with its own copy of
+// ol, so a class reference from this bundle never matches an instance built by another.
 const isInteractiveFeature = (feature, layer, layerSet) => {
-  if (layer instanceof VectorTileLayer) {
-    const styleLayerId = feature.get('mapbox-layer')?.id
+  if (layer.get('layerType') === 'vectorTile') {
+    // Two different vector-tile producers share this tag: draw-ol's basemap MVT tiles (a
+    // 'mapbox-layer' object per feature) and the datasets plugin's own tiles-backed datasets
+    // (no 'mapbox-layer' — the id lives on the OL layer itself, as 'layerId'). See
+    // plugins/datasets/src/adapters/openlayers/layerBuilders.js's createDatasetLayer.
+    const styleLayerId = feature.get('mapbox-layer')?.id ?? layer.get('layerId')
     return Boolean(styleLayerId && layerSet.has(styleLayerId))
   }
-  if (layer instanceof VectorLayer && !layer.get(HIGHLIGHT_MARKER)) {
+  if (layer.get('layerType') === 'vector' && !layer.get(HIGHLIGHT_MARKER)) {
     const layerId = layer.get('layerId')
     return Boolean(layerId && layerSet.has(layerId))
   }

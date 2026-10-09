@@ -37,7 +37,6 @@ describe('initialState', () => {
       initialInterfaceType: 'mobile',
       appColorScheme: 'light',
       autoColorScheme: true,
-      mode: 'edit',
       ...createMockRegistries({ panelConfig: { panel1: {} } })
     }
 
@@ -45,7 +44,7 @@ describe('initialState', () => {
 
     expect(result.breakpoint).toBe('sm')
     expect(result.preferredColorScheme).toBe('dark')
-    expect(result.mode).toBe('edit')
+    expect(result.applicationModeEntries).toEqual([])
     expect(result.panelConfig).toEqual({ panel1: {} })
     expect(result.nudgeStepSize).toBe('large')
   })
@@ -61,7 +60,6 @@ describe('initialState', () => {
       initialInterfaceType: 'desktop',
       appColorScheme: 'light',
       autoColorScheme: false,
-      mode: null,
       ...createMockRegistries()
     }
 
@@ -108,7 +106,7 @@ describe('initialState', () => {
     expect(result.disabledButtons.has('journeyContinue')).toBe(false)
   })
 
-  test('defaults mode to null when missing', () => {
+  test('starts with no application mode entries', () => {
     mockMedia({ prefersReducedMotion: false })
     mockPanels({})
     mockFullscreen(false)
@@ -124,7 +122,7 @@ describe('initialState', () => {
 
     const result = initialState(config)
 
-    expect(result.mode).toBeNull()
+    expect(result.applicationModeEntries).toEqual([])
   })
 })
 

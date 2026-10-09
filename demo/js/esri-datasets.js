@@ -7,7 +7,12 @@ import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 import createMenuPlugin from '/plugins/menu/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
+import { drawPlugin, framePlugin, attachDrawPlugin } from './planning/drawPlugin.js'
+import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import searchPlugin from '/plugins/search/src/index.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
+import createInteractPlugin from '/plugins/interact/src/index.js'
+import { siteBoundary } from './planning/siteBoundary.js'
 
 const nonFloodZoneLight = '#2b8cbe'
 const nonFloodZoneDark = '#7fcdbb'
@@ -49,7 +54,7 @@ const datasetFloodZonesCC =   {
   showInKey: true,
   visible: true,
   sourceLayer: 'Flood Zones 2 and 3 Rivers and Sea CCP1',
-  visibleWhen: { menu: { dataset: ['floodzones'] } },
+  visibleWhen: { menu: { dataset: ['floodzones'], timeframe: ['climatechange'] } },
   sublayers: [
     {
       id: 'climate-change',
@@ -148,8 +153,15 @@ const datasetFloodZones = {
   ]
 }
 
+let depthsKey = null
+const extentsStyle = { 
+  fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, 
+  stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, 
+}
+
 const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep}) => {
   const visibleWhenMenu = { dataset: ['surfacewater'], timeframe, aep }
+
   const extentsDataset = {
     id: `${id}-extents`,
     label: 'Surface Water',
@@ -157,49 +169,57 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
     showInKey: true,
     sourceLayer,
-    style: { fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark }, },
+    style: extentsStyle,
     visibleWhen: { menu: visibleWhenMenu },
     sublayers: [
       {
         id: 'depthOver2300',
         esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300', 'depthOver2300'] } },
+
       },
       {
         id: 'depth2300',
         esriStyleLayerId: `${sourceLayer}/1200-2300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200', 'depth2300'] } },
       },
       {
         id: 'depth1200',
         esriStyleLayerId: `${sourceLayer}/900-1200mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900', 'depth1200'] } },
       },
       {
         id: 'depth900',
         esriStyleLayerId: `${sourceLayer}/600-900mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600', 'depth900'] } },
       },
       {
         id: 'depth600',
         esriStyleLayerId: `${sourceLayer}/300-600mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300', 'depth600'] } },
       },
       {
         id: 'depth300',
         esriStyleLayerId: `${sourceLayer}/150-300mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150', 'depth300'] } },
       },
       {
         id: 'depth150',
         esriStyleLayerId: `${sourceLayer}/<150mm/1`,
         showInKey: false,
+        style: extentsStyle,
         visibleWhen: { menu: {...visibleWhenMenu, depth: ['depth150'] } },
       },
     ]
@@ -210,16 +230,17 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
     label: 'Surface Water Depth All',
     groupLabel: 'Surface Water',
     tiles: `https://tiles.arcgis.com/tiles/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/${tileName}/VectorTileServer`,
-    showInKey: true,
+    showInKey: false,
     sourceLayer,
     visibleWhen: { menu: {...visibleWhenMenu, depth: ['depthAll'] } },
     sublayers: [
       {
         id: 'depthOver2300',
         esriStyleLayerId: `${sourceLayer}/>2300mm/1`,
-        label: 'Extent over 2300mm',
+        label: 'Extent over 2300mm X',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[0], dark: nonFloodZoneDepthBandsDark[0] },
         }
       },
       {
@@ -228,6 +249,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 1200mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[1], dark: nonFloodZoneDepthBandsDark[1] },
         }
       },
       {
@@ -236,6 +258,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 900mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[2], dark: nonFloodZoneDepthBandsDark[2] },
         }
       },
       {
@@ -244,6 +267,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 600mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[3], dark: nonFloodZoneDepthBandsDark[3] },
         }
       },
       {
@@ -252,6 +276,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 300mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[4], dark: nonFloodZoneDepthBandsDark[4] },
         }
       },
       {
@@ -260,6 +285,7 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent over 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[5], dark: nonFloodZoneDepthBandsDark[5] },
         }
       },
       {
@@ -268,11 +294,29 @@ const surfaceWaterDatasetGenerator = ({id, tileName, sourceLayer, timeframe, aep
         label: 'Extent up to 150mm',
         style: {
           fill: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
+          stroke: { outdoor: nonFloodZoneDepthBandsLight[6], dark: nonFloodZoneDepthBandsDark[6] },
         }
       },
     ]
   }
-  return [extentsDataset, depthDataset]
+  if (depthsKey) {
+    return [extentsDataset, depthDataset]
+  }
+  // We only need one depthsKey, so we only return it here if it isn't already defined
+  depthsKey = {
+    id: 'depths-key',
+    groupId: 'surface-water-depth-in-millimetres',
+    showInKey: true,
+    visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthAll'] } },
+    sublayers: depthDataset.sublayers.map((sublayer) => {
+      return {
+        ...sublayer,
+        esriStyleLayerId: null,
+        label: sublayer.label.match(/[0-9]+/)[0],
+      }
+    })
+  }
+  return [depthsKey, extentsDataset, depthDataset]
 }
 
 const surfaceWaterExtentsKey = {
@@ -280,51 +324,56 @@ const surfaceWaterExtentsKey = {
   label: 'Surface Water',
   groupLabel: 'Surface Water',
   showInKey: true,
-  style: {
-    stroke: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-    fill: { outdoor: nonFloodZoneLight, dark: nonFloodZoneDark },
-  },
+  style: extentsStyle,
+  visibleWhen: { menu: { dataset: ['surfacewater'] } },
   sublayers: [
     {
       id: 'key-150',
       label: 'Full extend of flooding',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth150'] } }
     },
     {
       id: 'key-300',
       label: 'Extent over 150mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth300'] } }
     },
     {
       id: 'key-600',
       label: 'Extent over 300mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth600'] } }
     },
     {
       id: 'key-900',
       label: 'Extent over 600mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth900'] } }
     },
     {
       id: 'key-1200',
       label: 'Extent over 900mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth1200'] } }
     },
     {
       id: 'key-2300',
       label: 'Extent over 1200mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depth2300'] } }
     },
     {
       id: 'key-over-2300',
       label: 'Extent over 2300mm',
       showInKey: true,
+      style: extentsStyle,
       visibleWhen: { menu: { dataset: ['surfacewater'], depth: ['depthOver2300'] } }
     }
   ]
@@ -338,7 +387,7 @@ const datasetMainRivers = {
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Statutory_Main_River_Map/FeatureServer',
   showInKey: true,
   sourceLayer: 'Statutory_Main_River_Map',
-  visible: false,
+  visibleWhen: {menu: { mainrivers: [true] }},
   style: {
     renderer: {
       type: 'simple',
@@ -349,12 +398,11 @@ const datasetMainRivers = {
       }
     },
     stroke: { outdoor: darkTeal, dark: white },
-    fill: 'transparent',
     symbolDescription: { outdoor: 'dark teal line', dark: 'white line' },
-    keySymbolShape: 'line',
     strokeWidth: 3
   }
 }
+
 
 const datasetWaterStorageAreas = {
   id: 'waterstorage',
@@ -364,7 +412,7 @@ const datasetWaterStorageAreas = {
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Flood_Storage_Areas_NON_PRODUCTION/FeatureServer',
   showInKey: true,
   sourceLayer: 'Flood_Storage_Areas',
-  visible: false,
+  visibleWhen: {menu: { waterstorage: [true] }},
   style: {
     renderer: {
       type: 'simple',
@@ -394,7 +442,7 @@ const datasetFloodDefences = {
   tiles: 'https://services1.arcgis.com/JZM7qJpmv7vJ0Hzx/arcgis/rest/services/Defences_NON_PRODUCTION/FeatureServer',
   showInKey: true,
   sourceLayer: 'Defences',
-  visible: false,
+  visibleWhen: {menu: { flooddefence: [true] }},
   style: {
     renderer: {
       type: 'simple',
@@ -405,9 +453,7 @@ const datasetFloodDefences = {
       }
     },
     stroke: '#f47738',
-    fill: 'transparent',
     symbolDescription: 'orange line',
-    keySymbolShape: 'line',
     strokeWidth: 3
   }
 }
@@ -463,8 +509,6 @@ const datasets = [
 
   datasetWaterStorageAreas, datasetFloodDefences, datasetMainRivers
 ]
-
-const getCheckboxOnChangeHandler = (datasetId) => (checked) => datasetsPlugin.setDatasetVisibility(checked, { datasetId })
 
 const menu = [
   {
@@ -532,12 +576,13 @@ const menu = [
     type: 'checkbox',
     visibleWhen: true,
     items: [
-      { id: 'waterstorage', label: 'Water storage', handleOnChange: getCheckboxOnChangeHandler('waterstorage') },
-      { id: 'flooddefence', label: 'Flood defence', handleOnChange: getCheckboxOnChangeHandler('flooddefence') },
-      { id: 'mainrivers', label: 'Main rivers', handleOnChange: getCheckboxOnChangeHandler('mainrivers') },
+      { id: 'waterstorage', label: 'Water storage' },
+      { id: 'flooddefence', label: 'Flood defence' },
+      { id: 'mainrivers', label: 'Main rivers', checked: false },
     ]
   }
 ]
+
 
 const datasetsPlugin = createDatasetsPlugin({
   globals: {
@@ -547,6 +592,33 @@ const datasetsPlugin = createDatasetsPlugin({
   },
   hasMenu: false,
   datasets
+  // datasets: [datasetFloodZonesCC, datasetFloodZones]
+})
+
+const interactPlugin = createInteractPlugin({
+  marker: {
+    symbol: 'pin',
+    backgroundColor: { outdoor: '#0b0c0c', dark: '#ffffff' },
+    foregroundColor: { outdoor: '#ffff', dark: '#0b0c0c' }
+  },
+  interactionModes: ['placeMarker'],
+})
+
+const mapKeyPlugin = createMapKeyPlugin({
+  groups: {
+    'surface-water-depth-in-millimetres': {
+      groupLabel: 'Surface water depth in millimetres',
+      groupStyle: 'horizontal-ramp'
+    }
+  },
+  manifest: {
+    panels: [{
+      id: 'mapKey',
+      mobile: { slot: 'drawer', modal: false },
+      tablet: { slot: 'left-top', width: '360px' },
+      desktop: { slot: 'left-top', width: '360px' },
+    }]
+  },
 })
 
 const interactiveMap = new InteractiveMap('map', {
@@ -557,14 +629,38 @@ const interactiveMap = new InteractiveMap('map', {
   autoColorScheme: true,
   center: [481146,484971],
   zoom: 13,
+  maxMobileWidth: 795,
+  minDesktopWidth: 796,
+  enableMapControls: false,
+  enableZoomControls: true,
   plugins: [
-    createMapKeyPlugin(),
+    interactPlugin,
+    searchPlugin({
+      transformRequest: transformGeocodeRequest,
+      placeholder: 'Search for a place in England',
+      manifest: {
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-left', showLabel: true },
+          desktop: { slot: 'top-left', showLabel: true }
+        }]
+      },
+      osNamesURL: process.env.OS_NAMES_URL,
+      regions: ['england'],
+      width: '300px',
+      showMarker: true,
+    }),
+    scaleBarPlugin({ units: 'metric' }),
+    drawPlugin,
+    framePlugin,
+    mapKeyPlugin,
     createMenuPlugin({
       manifest: {
         panels: [{
           id: 'menu',
           desktop: { open: true, slot: 'side', width: '280px', dismissible: false, exclusive: false, },
-          tablet: { slot: 'side', width: '280px', modal: true }
+          tablet: { open: false, slot: 'side', width: '280px', dismissible: true, exclusive: true },
+          mobile: { open: false, slot: 'drawer', modal: false, dismissible: true },
         }],
         buttons: [
           {
@@ -594,6 +690,66 @@ const interactiveMap = new InteractiveMap('map', {
   ]
 })
 
+interactiveMap.on('interact:markerchange', function (e) {
+  interactiveMap.addPanel('info', {
+    label: 'Info',
+    html: '<p>Some info</p>',
+    visibleGeometry: {type: 'Feature', geometry: {type: 'Point', coordinates: e.coords}}
+  })
+})
+
+const siteBoundaryKeyDefinition = {
+    id: 'site-boundary',
+    label: 'Location boundary',
+    // groupLabel: 'Other features',
+    style: {
+      strokeWidth: 2,
+      fill: 'none',
+      stroke: { outdoor: '#D4351D', dark: '#ffffff' }
+    },
+}
+
+siteBoundary.onSetFeature = (feature) => {
+  if (feature) {
+    mapKeyPlugin.addSymbol(siteBoundaryKeyDefinition)
+  } else {
+    mapKeyPlugin.removeSymbol(siteBoundaryKeyDefinition)
+  }
+}
+
+  interactiveMap.on('map-key:ready', function () {
+    siteBoundary.onSetFeature(true)
+  })
+
+  const getBreakpoint = () => {
+    const mapElement = document.getElementById('map')
+    return mapElement?.getAttribute('data-breakpoint') || 'desktop'
+  }
+
+
+const onEditPolygon = (isEditing) => {
+    // toggleKeyWhenEditing(isEditing)
+    if (isEditing) {
+      // interactiveMap.removePanel(interactPlugin.panelId)
+      interactiveMap.removeMarker('search')
+      interactiveMap.hidePanel('menu')
+      // Disable the selectAtTarget (infoPanel) button
+      interactiveMap.toggleButtonState('selectAtTarget', 'disabled', true)
+      if (datasetsPlugin.ready) { // hide layers
+        datasetsPlugin.setDatasetVisibility(false)
+      }
+    } else {
+      if (getBreakpoint() === 'desktop') {
+        interactiveMap.showPanel('menu')
+      }
+      if (datasetsPlugin.ready) {
+        datasetsPlugin.setDatasetVisibility(true)
+      }
+      // interactPlugin.triggerHitTest()
+    }
+  }
+attachDrawPlugin(interactiveMap, onEditPolygon)
+
 const testGlobalVisibility = () => {
   setTimeout(() => datasetsPlugin.setDatasetVisibility(false), 3000)
   setTimeout(() => datasetsPlugin.setDatasetVisibility(true), 6000)
@@ -610,6 +766,7 @@ interactiveMap.on('datasets:ready', function () {
   // testAddRemoveDataset()
   updateVisibleLayers()
   initPointerMove(mapState.view)
+  datasetsPlugin.ready = true
 })
 
 const mapState = {}
@@ -618,6 +775,7 @@ interactiveMap.on('map:ready', function ({ map, view, mapStyleId, mapSize, crs }
   // console.log('map:ready', { map, view, mapStyleId, mapSize, crs })
   mapState.map = map
   mapState.view = view
+  interactPlugin.enable()
 })
 
 let visibleLayers = null

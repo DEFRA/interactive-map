@@ -1,5 +1,6 @@
 import { coordToPixel } from '../utils/olCoords.js'
-import { spatialNavigate } from '../../../utils/spatial.js'
+import { spatialNavigate } from '../../../../../../src/utils/spatialNavigate.js'
+import { stopIfGlobalAltKey } from '../../../../../../src/utils/globalAltShortcuts.js'
 import { wireNudge } from './nudge.js'
 
 const ARROW_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown'])
@@ -54,34 +55,34 @@ const isInteractiveElementFocused = (appViewport) => {
 }
 
 const buildKeydownHandler = ({ map, getState, setState, nudge, keyMove, onUndo, onKeyboardActive, isFocused }) => {
-  const handleArrowKey = (e) => {
-    if (e.altKey) {
-      e.preventDefault()
-      e.stopPropagation()
-      navigateTo(e.key, map, getState, setState)
+  const handleArrowKey = (event) => {
+    if (event.altKey) {
+      event.preventDefault()
+      event.stopPropagation()
+      navigateTo(event.key, map, getState, setState)
     } else if (getState().selectedVertexIndex >= 0) {
-      e.preventDefault()
-      e.stopPropagation()
-      nudge(e)
+      event.preventDefault()
+      event.stopPropagation()
+      nudge(event)
     } else {
       // No action: arrow with no selection and no alt modifier
     }
   }
 
-  const handleKey = (e) => {
+  const handleKey = (event) => {
     onKeyboardActive?.()
-    if (e.key === ' ') {
-      e.preventDefault()
+    if (event.key === ' ') {
+      event.preventDefault()
       if (getState().selectedVertexIndex < 0) {
         selectNearest(map, getState, setState)
       }
-    } else if (ARROW_KEYS.has(e.key)) {
-      handleArrowKey(e)
-    } else if (e.key === 'z' && (e.metaKey || e.ctrlKey)) {
+    } else if (ARROW_KEYS.has(event.key)) {
+      handleArrowKey(event)
+    } else if (event.key === 'z' && (event.metaKey || event.ctrlKey)) {
       const tag = document.activeElement?.tagName
       if (!INTERACTIVE_TAGS.has(tag)) {
-        e.preventDefault()
-        e.stopPropagation()
+        event.preventDefault()
+        event.stopPropagation()
         onUndo()
       }
     } else {
@@ -89,33 +90,42 @@ const buildKeydownHandler = ({ map, getState, setState, nudge, keyMove, onUndo, 
     }
   }
 
-  return (e) => {
+  return (event) => {
     if (isFocused()) {
       return
     }
-    if (e.key === 'Escape' && getState().selectedVertexIndex >= 0) {
-      e.preventDefault()
+    if (event.key === 'Escape' && getState().selectedVertexIndex >= 0) {
+      event.preventDefault()
       keyMove.start = null
       keyMove.index = null
       setState({ selectedVertexIndex: -1, selectedVertexType: null })
     } else {
-      handleKey(e)
+      handleKey(event)
     }
   }
 }
 
-const buildKeyupHandler = ({ keyMove, onVertexMoved, onDeleted, isFocused }) => (e) => {
+const buildKeyupHandler = ({ getState, keyMove, onVertexMoved, onDeleted, isFocused }) => (event) => {
   if (isFocused()) {
     return
   }
-  if (ARROW_KEYS.has(e.key) && keyMove.start && keyMove.index != null) {
+  // Registered with capture:true below, so this runs first — shadows global Alt+<key>
+  // shortcuts (src/utils/globalAltShortcuts.js) only while something is actually selected —
+  // the same condition navigateTo/nudge already require locally. edit_point's state always
+  // reports selectedVertexIndex: 0 (a point is "always selected" — see pointSelectionState.js),
+  // so this naturally stays unconditional for that mode while genuinely gating on selection
+  // for edit_vertex, without needing to special-case either.
+  if (getState().selectedVertexIndex >= 0) {
+    stopIfGlobalAltKey(event)
+  }
+  if (ARROW_KEYS.has(event.key) && keyMove.start && keyMove.index != null) {
     // Not hiding the snap indicator here — nudge.js's own snap.apply() already left it showing
     // correctly, and it should stay that way after the key is released.
     onVertexMoved({ vertexIndex: keyMove.index, previousCoord: keyMove.start })
     keyMove.start = null
     keyMove.index = null
   }
-  if (e.key === 'Delete') {
+  if (event.key === 'Delete') {
     onDeleted()
   }
 }
@@ -146,7 +156,7 @@ export const createKeyboardHandler = (options) => {
   const isFocused = () => isInteractiveElementFocused(appViewport)
 
   const onKeydown = buildKeydownHandler({ map, getState, setState, nudge, keyMove, onUndo, onKeyboardActive, isFocused })
-  const onKeyup = buildKeyupHandler({ keyMove, onVertexMoved, onDeleted, isFocused })
+  const onKeyup = buildKeyupHandler({ getState, keyMove, onVertexMoved, onDeleted, isFocused })
 
   globalThis.addEventListener('keydown', onKeydown, { capture: true })
   globalThis.addEventListener('keyup', onKeyup, { capture: true })

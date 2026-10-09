@@ -35,7 +35,7 @@ describe('useCrossHair', () => {
     eventBus.off = jest.fn()
 
     useConfig.mockReturnValue({ mapProvider: mockMapProvider })
-    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 } })
+    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set() })
     useService.mockReturnValue({ eventBus: mockEventBus })
     useMap.mockReturnValue({
       crossHair: mockCrossHair,
@@ -96,6 +96,22 @@ describe('useCrossHair', () => {
 
     act(() => mockCrossHair.hide())
     expect(mockElement.style.display).toBe('none')
+  })
+
+  it('hide() is a no-op while isMapControlsOpen is set', () => {
+    setup()
+    act(() => mockCrossHair.show())
+    mockCrossHair.isMapControlsOpen = true
+
+    act(() => mockCrossHair.hide())
+    expect(mockElement.style.display).toBe('block')
+    expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
+  })
+
+  it('keeps crossHair.isMapControlsOpen synced with expandedButtons, set synchronously during render (not a useEffect) so it is never stale relative to another component\'s own effect reacting to the same change', () => {
+    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set(['mapControls']) })
+    setup()
+    expect(mockCrossHair.isMapControlsOpen).toBe(true)
   })
 
   it('setStyle updates state', () => {

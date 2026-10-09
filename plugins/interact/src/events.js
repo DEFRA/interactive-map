@@ -12,11 +12,15 @@ const createFeatureHandler = (mapState, getPluginState) => (args, addToExisting)
   })
 }
 
+// A modified Enter (Alt+Enter, Ctrl+Enter, etc.) is a different shortcut, not a
+// select-at-target trigger — e.g. Alt+Enter is core's highlightLabelAtCenter.
+const isPlainEnter = (event) => event.key === 'Enter' && !event.altKey && !event.ctrlKey && !event.metaKey && !event.shiftKey
+
 const createKeyboardHandlers = (viewportRef, onSelectAtTarget) => {
   let enterOnViewport = false
-  const handleKeydown = (event) => { enterOnViewport = event.key === 'Enter' && viewportRef.current === event.target }
+  const handleKeydown = (event) => { enterOnViewport = isPlainEnter(event) && viewportRef.current === event.target }
   const handleKeyup = (event) => {
-    if (event.key === 'Enter' && enterOnViewport) {
+    if (isPlainEnter(event) && enterOnViewport) {
       event.preventDefault()
       onSelectAtTarget()
     }
@@ -51,6 +55,11 @@ export function attachEvents ({
   eventBus.on('interact:selectFeature', handleSelect)
   eventBus.on('interact:unselectFeature', handleUnselect)
   selectAtTarget.onClick = handleSelectAtTarget
+  // The crosshair's own "Click Target" (Voice Control) is wired separately, in
+  // useAttachEvents.js — mapState.crossHair is dispatch-managed state that gets replaced by a
+  // new object on almost every render, which a plain assignment made only once here (this
+  // function only re-runs when pluginState.enabled/buttonConfig/eventBus change, not when
+  // crossHair itself does) can't keep up with.
 
   return () => {
     selectAtTarget.onClick = null

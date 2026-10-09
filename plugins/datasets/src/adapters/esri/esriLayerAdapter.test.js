@@ -21,10 +21,18 @@ jest.mock('@arcgis/core/layers/GroupLayer.js', () =>
     return {
       ...opts,
       layers,
+      allLayers: { items: layers },
       add: jest.fn(layer => layers.push(layer)),
       remove: jest.fn(layer => {
         const idx = layers.indexOf(layer)
         if (idx !== -1) layers.splice(idx, 1)
+      }),
+      reorder: jest.fn((layer, index) => {
+        const current = layers.indexOf(layer)
+        if (current !== -1) {
+          layers.splice(current, 1)
+        }
+        layers.splice(index, 0, layer)
       })
     }
   })
@@ -300,16 +308,94 @@ describe('esriLayerAdapter', () => {
   // ─── _reorderLayers with sketch layers ───────────────────────────────────────
 
   describe('_reorderLayers', () => {
-    it('reorders sketch layers to the top when allLayers is present', () => {
-      const sketchLayer = { id: 'ketchLayer-0' }
-      const normalLayer = { id: 'roads' }
-      map.allLayers = { items: [normalLayer, sketchLayer] }
+    it('does nothing when allLayers is empty', () => {
+      map.allLayers = { items: [] }
       map.reorder = jest.fn()
 
       adapter._reorderLayers()
 
-      expect(map.reorder).toHaveBeenCalledWith(sketchLayer, 2)
-      expect(map.reorder).not.toHaveBeenCalledWith(normalLayer, expect.anything())
+      expect(map.reorder).not.toHaveBeenCalled()
+    })
+
+    it('orders baseLayer first, then registry order, then sketch layers last', () => {
+      datasetRegistry._orderedDatasets = ['roads']
+      const sketchLayer = { id: 'ketchLayer-0' }
+      const normalLayer = { id: 'roads' }
+      const baseLayer = { id: 'baseLayer' }
+      map.allLayers = { items: [normalLayer, sketchLayer, baseLayer] }
+      map.reorder = jest.fn()
+
+      adapter._reorderLayers()
+
+      expect(map.reorder).toHaveBeenNthCalledWith(1, baseLayer, 0)
+      expect(map.reorder).toHaveBeenNthCalledWith(2, normalLayer, 1)
+      expect(map.reorder).toHaveBeenNthCalledWith(3, sketchLayer, 2)
+    })
+
+    it('excludes child layers of a group from reordering', () => {
+      const baseLayer = { id: 'baseLayer' }
+      const groupLayer = { id: 'group-1', type: 'group', layers: { items: [{ id: 'roads' }] } }
+      const childLayer = { id: 'roads', parent: { type: 'group' } }
+      map.allLayers = { items: [groupLayer, childLayer, baseLayer] }
+      map.reorder = jest.fn()
+
+      adapter._reorderLayers()
+
+      expect(map.reorder).toHaveBeenCalledTimes(2)
+      expect(map.reorder).toHaveBeenCalledWith(baseLayer, 0)
+      expect(map.reorder).toHaveBeenCalledWith(groupLayer, 1)
+    })
+
+    it('handles a group layer with no child layers without throwing', () => {
+      const baseLayer = { id: 'baseLayer' }
+      const emptyGroupLayer = { id: 'empty-group', type: 'group' }
+      map.allLayers = { items: [emptyGroupLayer, baseLayer] }
+      map.reorder = jest.fn()
+
+      adapter._reorderLayers()
+
+      expect(map.reorder).toHaveBeenCalledWith(baseLayer, 0)
+      expect(map.reorder).toHaveBeenCalledWith(emptyGroupLayer, 1)
+    })
+
+    it('reorders the child layers within a group by registry order', () => {
+      datasetRegistry._orderedDatasets = ['roads', 'schools']
+      const roads = { id: 'roads' }
+      const schools = { id: 'schools' }
+      const sketch = { id: 'ketchLayer-0' }
+      const baseLayer = { id: 'baseLayer' }
+      const groupLayer = {
+        id: 'group-1',
+        type: 'group',
+        allLayers: { items: [schools, sketch, roads] },
+        reorder: jest.fn()
+      }
+      adapter._groupLayers[groupLayer.id] = groupLayer
+      map.allLayers = { items: [groupLayer, baseLayer] }
+      map.reorder = jest.fn()
+
+      adapter._reorderLayers()
+
+      expect(groupLayer.reorder).toHaveBeenNthCalledWith(1, roads, 0)
+      expect(groupLayer.reorder).toHaveBeenNthCalledWith(2, schools, 1)
+      expect(groupLayer.reorder).toHaveBeenNthCalledWith(3, sketch, 2)
+    })
+
+    it('Copes when a groupLayer has no items', () => {
+      datasetRegistry._orderedDatasets = ['roads', 'schools']
+      const baseLayer = { id: 'baseLayer' }
+      const groupLayer = {
+        id: 'group-1',
+        type: 'group',
+        reorder: jest.fn()
+      }
+      adapter._groupLayers[groupLayer.id] = groupLayer
+      map.allLayers = { items: [groupLayer, baseLayer] }
+      map.reorder = jest.fn()
+
+      adapter._reorderLayers()
+
+      expect(groupLayer.reorder).not.toHaveBeenCalled()
     })
   })
 

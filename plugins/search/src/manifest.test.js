@@ -4,6 +4,10 @@ import { manifest } from './manifest.js'
 describe('search manifest', () => {
   const getButton = () => manifest.buttons.find(b => b.id === 'search')
 
+  it('declares the search application mode with no lists (search.scss does the hiding)', () => {
+    expect(manifest.applicationModes).toEqual({ search: {} })
+  })
+
   it('declares a single search button and control', () => {
     expect(manifest.buttons).toHaveLength(1)
     expect(getButton()).toBeDefined()
@@ -22,6 +26,11 @@ describe('search manifest', () => {
 
   it('points aria-controls at the form rendered by the control', () => {
     expect(getButton().ariaControls({ appConfig: { id: 'map' } })).toBe('map-search-form')
+  })
+
+  it('mirrors pluginState.isExpanded for aria-expanded', () => {
+    expect(getButton().expandedWhen({ pluginState: { isExpanded: true } })).toBe(true)
+    expect(getButton().expandedWhen({ pluginState: { isExpanded: false } })).toBe(false)
   })
 
   it('excludes the trigger in default-expanded mode', () => {

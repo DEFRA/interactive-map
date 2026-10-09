@@ -1,18 +1,22 @@
+import { logger } from '../../../src/services/logger.js'
 import { render, act } from '@testing-library/react'
 import { EVENTS } from '../../../src/config/events.js'
 import { DrawInit } from './DrawInit.jsx'
 import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
+import { useSpatialList } from './hooks/useSpatialList.js'
 
 jest.mock('./adapters/loadDrawAdapter.js', () => ({ loadDrawAdapter: jest.fn() }))
+jest.mock('../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 jest.mock('./events.js', () => ({ attachEvents: jest.fn(() => jest.fn()) }))
+jest.mock('./hooks/useSpatialList.js', () => ({ useSpatialList: jest.fn() }))
 
 const makeProps = (overrides = {}) => {
   const adapter = { remove: jest.fn(), setInterfaceType: jest.fn() }
   loadDrawAdapter.mockResolvedValue(adapter)
 
   const props = {
-    appState: { interfaceType: 'mouse', mode: null },
+    appState: { interfaceType: 'mouse', mode: null, spatialListRegistry: { registerItemProvider: jest.fn() }, layoutRefs: { viewportRef: { current: null } } },
     appConfig: { id: 'app' },
     mapState: {
       isMapReady: true,
@@ -21,9 +25,11 @@ const makeProps = (overrides = {}) => {
     },
     pluginConfig: { snapLayers: ['a'] },
     pluginState: { dispatch: jest.fn(), mode: null },
-    services: { eventBus: { emit: jest.fn() } },
+    services: { eventBus: { emit: jest.fn() }, symbolRegistry: { id: 'app-symbol-registry' } },
     mapProvider: { draw: null },
     buttonConfig: {},
+    setApplicationMode: jest.fn(),
+    clearApplicationMode: jest.fn(),
     ...overrides
   }
   return { props, adapter }
@@ -34,6 +40,18 @@ const renderInit = async (props) => render(<DrawInit {...props} />)
 beforeEach(() => jest.clearAllMocks())
 
 describe('adapter lifecycle', () => {
+  test('logs, rather than leaving unhandled, a failure to load the adapter', async () => {
+    const { props } = makeProps()
+    const failure = new Error('no adapter for this provider')
+    loadDrawAdapter.mockRejectedValueOnce(failure)
+
+    await renderInit(props)
+    await new Promise((resolve) => setTimeout(resolve, 0))
+
+    expect(logger.error).toHaveBeenCalledWith('[draw] failed to load the draw adapter', failure)
+    expect(props.services.eventBus.emit).not.toHaveBeenCalledWith('draw:ready')
+  })
+
   test('loads the adapter and announces readiness when the map is ready', async () => {
     const { props, adapter } = makeProps()
 
@@ -43,7 +61,9 @@ describe('adapter lifecycle', () => {
       mapStyle: props.mapState.mapStyle,
       snapLayers: props.pluginConfig.snapLayers,
       events: EVENTS,
-      eventBus: props.services.eventBus
+      eventBus: props.services.eventBus,
+      // the app's registry, so drawn points see its symbols and defaults
+      symbolRegistry: props.services.symbolRegistry
     }))
     expect(props.mapProvider.draw).toBe(adapter)
     expect(props.pluginState.dispatch).toHaveBeenCalledWith({ type: 'SET_HAS_SNAP_LAYERS', payload: true })
@@ -53,24 +73,6 @@ describe('adapter lifecycle', () => {
   test('does not load when the map is not ready', async () => {
     const { props } = makeProps({
       mapState: { isMapReady: false, mapStyle: {}, crossHair: { isVisible: false, fixAtCenter: jest.fn(), hide: jest.fn() } }
-    })
-    await renderInit(props)
-    expect(loadDrawAdapter).not.toHaveBeenCalled()
-  })
-
-  test('does not load when the app mode is excluded', async () => {
-    const { props } = makeProps({
-      appState: { interfaceType: 'mouse', mode: 'measure' },
-      pluginConfig: { snapLayers: [], excludeModes: ['measure'] }
-    })
-    await renderInit(props)
-    expect(loadDrawAdapter).not.toHaveBeenCalled()
-  })
-
-  test('does not load when the app mode is outside the include list', async () => {
-    const { props } = makeProps({
-      appState: { interfaceType: 'mouse', mode: 'other' },
-      pluginConfig: { snapLayers: [], includeModes: ['draw'] }
     })
     await renderInit(props)
     expect(loadDrawAdapter).not.toHaveBeenCalled()
@@ -108,7 +110,17 @@ describe('features list suppression', () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
     await renderInit(props)
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: true }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: true }
+    )
+  })
+
+  // edit_vertex is the one exception — useSpatialList.js supplies its own list there
+  // (claimed exclusively via the registry) instead of hiding it.
+  test('does not suppress during edit_vertex', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    await renderInit(props)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
     )
   })
 
@@ -116,15 +128,15 @@ describe('features list suppression', () => {
     const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: null } })
     await renderInit(props)
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
     )
   })
 
   test('re-suppresses/unsuppresses as the mode changes across re-renders', async () => {
-    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
     const result = await renderInit(props)
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: true }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: true }
     )
 
     props.services.eventBus.emit.mockClear()
@@ -132,7 +144,23 @@ describe('features list suppression', () => {
     result.rerender(<DrawInit {...props} />)
 
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
+    )
+  })
+
+  test('unsuppresses on entering edit_vertex, then re-suppresses leaving it for another mode', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    const result = await renderInit(props)
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
+    )
+
+    props.services.eventBus.emit.mockClear()
+    props.pluginState = { ...props.pluginState, mode: 'draw_polygon' }
+    result.rerender(<DrawInit {...props} />)
+
+    expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: true }
     )
   })
 
@@ -144,15 +172,30 @@ describe('features list suppression', () => {
     result.unmount()
 
     expect(props.services.eventBus.emit).toHaveBeenCalledWith(
-      EVENTS.MAP_SET_FEATURES_SUPPRESSED, { suppressed: false }
+      EVENTS.MAP_SET_SPATIAL_LIST_SUPPRESSED, { suppressed: false }
     )
+  })
+})
+
+describe('useSpatialList wiring', () => {
+  test('is called with the plugin state/services/mapProvider, the app-level spatialListRegistry, and the viewport ref', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    await renderInit(props)
+    expect(useSpatialList).toHaveBeenCalledWith({
+      mapState: props.mapState,
+      pluginState: props.pluginState,
+      services: props.services,
+      mapProvider: props.mapProvider,
+      spatialListRegistry: props.appState.spatialListRegistry,
+      viewportRef: props.appState.layoutRefs.viewportRef
+    })
   })
 })
 
 describe('crosshair', () => {
   test('fixes the crosshair at centre while drawing on a touch interface', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'touch', mode: null },
+      appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },
       pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' }
     })
     await renderInit(props)
@@ -161,7 +204,7 @@ describe('crosshair', () => {
 
   test('leaves the crosshair alone when not drawing', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'touch', mode: null },
+      appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },
       pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' }
     })
     await renderInit(props)
@@ -170,7 +213,7 @@ describe('crosshair', () => {
 
   test('hides the crosshair on cleanup when it was hidden before and the interface has left touch/keyboard', async () => {
     const { props } = makeProps({
-      appState: { interfaceType: 'touch', mode: null },
+      appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },
       pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' }
     })
     const result = await renderInit(props)
@@ -221,5 +264,28 @@ describe('event attachment', () => {
     })
     await renderInit(props)
     expect(attachEvents).not.toHaveBeenCalled()
+  })
+})
+
+describe('application mode', () => {
+  test('enters the draw application mode (lists come from the manifest) in a draw/edit mode', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'edit_vertex' } })
+    await renderInit(props)
+    expect(props.setApplicationMode).toHaveBeenLastCalledWith('draw')
+  })
+
+  test('leaves the draw application mode when the draw/edit mode ends', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' } })
+    const { rerender } = await renderInit(props)
+    rerender(<DrawInit {...props} pluginState={{ dispatch: jest.fn(), mode: null }} />)
+    expect(props.clearApplicationMode).toHaveBeenLastCalledWith('draw')
+  })
+
+  test('leaves the draw application mode on unmount', async () => {
+    const { props } = makeProps({ pluginState: { dispatch: jest.fn(), mode: 'draw_line' } })
+    const { unmount } = await renderInit(props)
+    props.clearApplicationMode.mockClear()
+    unmount()
+    expect(props.clearApplicationMode).toHaveBeenCalledWith('draw')
   })
 })

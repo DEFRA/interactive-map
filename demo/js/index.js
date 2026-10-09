@@ -25,52 +25,59 @@ import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import { shieldSymbolSvg } from './customSymbols.js'
 
-const pointData = {
+const POINT_DATA = {
   type: 'FeatureCollection',
-  features: [{
-    type: 'Feature',
-    properties:  { category:'prehistoric', name: 'Prehistoric feature' }, 
-    geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }
-  },
-  { 
-    type: 'Feature', 
-    properties: { category: 'roman', name: 'Roman feature' }, 
-    geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }
-  },
-  { 
-    type: 'Feature', 
-    properties: { category:'medieval', name: 'Medieval feature' }, 
-    geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} 
-  }]
+  features: [
+    {type: 'Feature', properties:  { category:'prehistoric', name: 'Prehistoric feature' }, geometry: { coordinates: [-2.4558622,54.5617135], type: 'Point' }},
+    { type: 'Feature', properties: { category: 'roman', name: 'Roman feature' }, geometry: { coordinates: [-2.439823,54.5525437], type: 'Point' }},
+    { type: 'Feature', properties: { category:'medieval', name: 'Medieval feature' }, geometry: { coordinates: [-2.4481939,54.5575261], type: 'Point'} },
+    { type: 'Feature', properties: { category:'industrial', name: 'Industrial feature' }, geometry: { coordinates: [-2.4432,54.5601], type: 'Point'} },
+    { type: 'Feature', properties: { category:'modern', name: 'Modern feature' }, geometry: { coordinates: [-2.4400,54.5568], type: 'Point'} }
+  ]
 }
 
 const interactPlugin = createInteractPlugin({
   layers: [{
     layerId: 'historic-monuments-prehistoric',
+    idProperty: 'name',
+    labelProperty: 'name'
   }, {
     layerId: 'historic-monuments-roman',
+    idProperty: 'name',
+    labelProperty: 'name'
   }, {
     layerId: 'historic-monuments-medieval',
+    idProperty: 'name',
+    labelProperty: 'name'
+  }, {
+    layerId: 'historic-monuments-industrial',
+    idProperty: 'name',
+    labelProperty: 'name'
+  }, {
+    layerId: 'historic-monuments-modern',
+    idProperty: 'name',
+    labelProperty: 'name'
   }, {
     layerId: 'land-covers-110',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-130-131',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-332',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-379',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },{
     layerId: 'land-covers-other',
-    // labelProperty: 'gid'
+    labelProperty: 'ngc'
     // idProperty: 'gid'
   },
   // {
@@ -111,8 +118,8 @@ const datasetsPlugin = createDatasetsPlugin({
     //   ['!=', ['get', 'sbi'], '106223377'],
     //   ['==', ['get', 'is_dominant_land_cover'], true]
     // ],
-    // tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-    // sourceLayer: 'field_parcels_filtered',
+    // tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}'],
+    // sourceLayer: 'field_parcels_wgs84',
     // featureLayer: '',
     // idProperty: 'id',  // Enables dynamic fetching + deduplication
     // filter: ['get', ['propertyName', 'warning']],
@@ -191,8 +198,8 @@ const datasetsPlugin = createDatasetsPlugin({
     label: 'Existing fields',
     // groupLabel: 'Test group',
     filter: ['all',['==', ['get', 'sbi'], '106223377'],['==', ['get', 'is_dominant_land_cover'], true]],
-    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-    sourceLayer: 'field_parcels_filtered',
+    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}'],
+    sourceLayer: 'field_parcels_wgs84',
     minZoom: 10,
     maxZoom: 24,
     showInKey: true,
@@ -206,13 +213,13 @@ const datasetsPlugin = createDatasetsPlugin({
   },{
     id: 'historic-monuments',
     label: 'Historic monuments',
-    geojson: pointData,
+    geojson: POINT_DATA,
     minZoom: 10,
     maxZoom: 24,
     showInKey: true,
     showInMenu: true,
     style: {
-      symbol: 'square',
+      symbol: 'pin',
       symbolGraphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z', // Historic monument
       // symbolBackgroundColor: { outdoor: '#ca3535', dark: '#ffffff' },
       // symbolForegroundColor: { outdoor: '#ffffff', dark: '#0b0c0c' }
@@ -223,6 +230,7 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], 'prehistoric'],
       showInMenu: true,
       style: {
+        symbol: 'circle',
         symbolBackgroundColor: '#00897B',
       }
     },{
@@ -231,6 +239,7 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], 'roman'],
       showInMenu: true,
       style: {
+        symbol: 'square',
         symbolBackgroundColor: '#ca3535',
       }
     },{
@@ -239,14 +248,34 @@ const datasetsPlugin = createDatasetsPlugin({
       filter: ['in', ['get', 'category'], 'medieval'],
       showInMenu: true,
       style: {
+        // A custom shield, to show symbolSvgContent with all its variants (see customSymbols.js)
+        symbolSvgContent: shieldSymbolSvg,
         symbolBackgroundColor: '#1565C0',
+      }
+    },{
+      id: 'industrial',
+      label: 'Industrial',
+      filter: ['in', ['get', 'category'], 'industrial'],
+      showInMenu: true,
+      style: {
+        symbol: 'triangle',
+        symbolBackgroundColor: '#54319f',
+      }
+    },{
+      id: 'modern',
+      label: 'Modern',
+      filter: ['in', ['get', 'category'], 'modern'],
+      showInMenu: true,
+      style: {
+        symbol: 'diamond',
+        symbolBackgroundColor: '#d53880',
       }
     }]
   },{
     id: 'hedge-control',
     label: 'Hedge control',
     // groupLabel: 'Test group',
-    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+    tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}'],
     sourceLayer: 'hedge_control',
     minZoom: 10,
     maxZoom: 24,
@@ -255,10 +284,8 @@ const datasetsPlugin = createDatasetsPlugin({
     // visibility: 'hidden',
     style: {
       stroke: '#b58840',
-      fill: 'transparent',
       strokeWidth: 4,
       symbolDescription: { outdoor: 'blue outline' },
-      keySymbolShape: 'line',
     }
   }]
 })
@@ -274,7 +301,7 @@ const interactiveMap = new InteractiveMap('map', {
   }),
   // maxMobileWidth: 700,
   // minDesktopWidth: 960,
-  mapLabel: 'Map showing field parcels and land use',
+  mapLabel: 'Field parcels and land use map',
   // zoom: 14,
   minZoom: 6,
   maxZoom: 20,
@@ -284,7 +311,7 @@ const interactiveMap = new InteractiveMap('map', {
   containerHeight: '650px',
   transformRequest: transformVtsRequest3857,
   enableZoomControls: false,
-  // readMapText: true,
+  readMapText: true,
   // urlPosition: 'none',
   enableFullscreen: true,
   // hasExitButton: true,
@@ -313,7 +340,20 @@ const interactiveMap = new InteractiveMap('map', {
       customDatasets: [parcelSearch, gridRefSearchETRS89],
       width: '300px',
       showMarker: true,
-      showLabel: true
+      showLabel: true,
+      // Search trigger and form in the top-right on tablet/desktop (mobile keeps its defaults)
+      manifest: {
+        buttons: [{
+          id: 'search',
+          tablet: { slot: 'top-right', showLabel: false },
+          desktop: { slot: 'top-right', showLabel: false }
+        }],
+        controls: [{
+          id: 'search',
+          tablet: { slot: 'top-right' },
+          desktop: { slot: 'top-right' }
+        }]
+      }
     }),
     datasetsPlugin,
     createMapKeyPlugin(),
@@ -341,7 +381,7 @@ interactiveMap.on('map:ready', function (e) {
   // })
   interactPlugin.enable()
   interactiveMap.addMarker('my-marker-1', [-2.4555608,54.5655407], { label: 'My label', showLabel: true })
-  interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], { label: 'Another marker', symbol: 'square' })
+  interactiveMap.addMarker('my-marker-2', [-2.4511636,54.5638338], { label: 'Another marker', symbol: 'square', graphic: 'M3 15H1V1h2v2h2V1h2v5h2V4h2v2h2V4h2v11H6V9H3v6z' })
 })
 
 interactiveMap.on('datasets:ready', function () {

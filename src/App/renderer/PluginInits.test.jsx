@@ -144,17 +144,17 @@ describe('PluginInits', () => {
     expect(container.textContent).toBe('')
   })
 
-  it('respects includeModes and excludeModes for InitComponent rendering', () => {
-    const InitComp = () => <div data-testid='initMode' />
+  it('always renders a plugin\'s InitComponent (application modes hide UI, they never stop plugins initialising)', () => {
+    const InitComp = () => <div data-testid='initAlways' />
     const plugin = {
-      id: 'pluginMode',
+      id: 'pluginAlways',
       _originalPlugin: {},
-      config: { includeModes: ['edit'], excludeModes: ['view'], api: {} },
+      config: { api: {} },
       InitComponent: InitComp
     }
     pluginRegistryMock.registeredPlugins.push(plugin)
 
-    const { container } = render(<PluginInits />)
-    expect(container.textContent).toBe('')
+    const { getByTestId } = render(<PluginInits />)
+    expect(getByTestId('initAlways')).toBeInTheDocument()
   })
 })

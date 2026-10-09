@@ -33,6 +33,21 @@ describe('useInterfaceAPI', () => {
     useService.mockReturnValue({ eventBus: mockEventBus })
   })
 
+  it('sets a mode on app:setapplicationmode', () => {
+    renderHook(() => useInterfaceAPI())
+    act(() => mockEventBus.emit('app:setapplicationmode', { id: 'review', include: ['mapStyles'], exclude: null }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'SET_APPLICATION_MODE',
+      payload: { id: 'review', include: ['mapStyles'], exclude: null }
+    })
+  })
+
+  it('clears a mode on app:clearapplicationmode', () => {
+    renderHook(() => useInterfaceAPI())
+    act(() => mockEventBus.emit('app:clearapplicationmode', 'review'))
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLEAR_APPLICATION_MODE', payload: 'review' })
+  })
+
   it('dispatches ADD_BUTTON on app:addbutton', () => {
     renderHook(() => useInterfaceAPI())
     act(() => mockEventBus.emit('app:addbutton', { id: 'btn1', config: { label: 'Test' } }))
@@ -90,6 +105,15 @@ describe('useInterfaceAPI', () => {
     renderHook(() => useInterfaceAPI())
     act(() => mockEventBus.emit('app:showpanel', { id: 'panel1', focus: false }))
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'OPEN_PANEL', payload: { panelId: 'panel1', focusOnOpen: false } })
+  })
+
+  it('dispatches OPEN_PANEL with props.triggeringElement when one is given, so Panel can return focus to it on close', () => {
+    const triggeringElement = document.createElement('button')
+    renderHook(() => useInterfaceAPI())
+    act(() => mockEventBus.emit('app:showpanel', { id: 'panel1', triggeringElement }))
+    expect(mockDispatch).toHaveBeenCalledWith({
+      type: 'OPEN_PANEL', payload: { panelId: 'panel1', focusOnOpen: true, props: { triggeringElement } }
+    })
   })
 
   it('dispatches CLOSE_PANEL on app:hidepanel', () => {

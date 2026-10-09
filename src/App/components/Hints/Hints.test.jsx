@@ -52,13 +52,13 @@ describe('Hints — rendering', () => {
     expect(desc.innerHTML).toBe('Shift + ?')
   })
 
-  it('appends the move-controls hint text when enableMoveControls is true', () => {
+  it('appends the map-controls hint text when enableMapControls is true', () => {
     const mainEl = setup()
     useConfig.mockReturnValue({
       id: 'test-map',
       keyboardHintText: '<kbd>Shift</kbd> + <kbd>?</kbd>',
-      enableMoveControls: true,
-      moveControlsHintText: '<kbd>Arrow keys</kbd> to move'
+      enableMapControls: true,
+      mapControlsHintText: '<kbd>Arrow keys</kbd> to move'
     })
     render(<Hints />)
     const desc = mainEl.querySelector('#test-map-keyboard-desc')

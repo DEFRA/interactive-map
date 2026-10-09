@@ -45,6 +45,38 @@ describe('attachEvents — keyboard', () => {
     expect(params.handleInteraction).toHaveBeenCalled()
   })
 
+  it('ignores Alt+Enter (a different shortcut, e.g. highlightLabelAtCenter) on viewport', () => {
+    const params = createParams()
+    cleanup = attachEvents(params)
+
+    const keydown = new KeyboardEvent('keydown', { key: 'Enter', altKey: true })
+    Object.defineProperty(keydown, 'target', { value: document.body })
+    document.dispatchEvent(keydown)
+
+    const keyup = new KeyboardEvent('keyup', { key: 'Enter', altKey: true })
+    Object.defineProperty(keyup, 'target', { value: document.body })
+    document.dispatchEvent(keyup)
+
+    expect(params.handleInteraction).not.toHaveBeenCalled()
+  })
+
+  it('ignores other modified Enter combinations (Ctrl/Meta/Shift+Enter) on viewport', () => {
+    const params = createParams()
+    cleanup = attachEvents(params)
+
+    ;['ctrlKey', 'metaKey', 'shiftKey'].forEach((modifier) => {
+      const keydown = new KeyboardEvent('keydown', { key: 'Enter', [modifier]: true })
+      Object.defineProperty(keydown, 'target', { value: document.body })
+      document.dispatchEvent(keydown)
+
+      const keyup = new KeyboardEvent('keyup', { key: 'Enter', [modifier]: true })
+      Object.defineProperty(keyup, 'target', { value: document.body })
+      document.dispatchEvent(keyup)
+    })
+
+    expect(params.handleInteraction).not.toHaveBeenCalled()
+  })
+
   it('ignores Enter outside viewport or other keys', () => {
     const params = createParams()
     cleanup = attachEvents(params)

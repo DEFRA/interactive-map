@@ -31,6 +31,7 @@ jest.mock('../store/appContext', () => ({ useApp: jest.fn() }))
 jest.mock('../store/mapContext', () => ({ useMap: jest.fn() }))
 jest.mock('../hooks/useLayoutMeasurements', () => ({ useLayoutMeasurements: jest.fn() }))
 jest.mock('../hooks/useFocusVisible', () => ({ useFocusVisible: jest.fn() }))
+jest.mock('../hooks/useApplicationModeFocus.js', () => ({ useApplicationModeFocus: jest.fn() }))
 
 describe('Layout', () => {
   const mockRefs = {
@@ -55,7 +56,7 @@ describe('Layout', () => {
       preferredColorScheme: 'dark',
       layoutRefs: mockRefs,
       isLayoutReady: true,
-      hasExclusiveControl: true,
+      applicationModeEntries: [{ id: 'search', include: null, exclude: null }],
       isFullscreen: false
     })
     useMap.mockReturnValue({
@@ -76,7 +77,7 @@ describe('Layout', () => {
     expect(root.className).toContain('im-o-app--map')
     expect(root.className).toContain('im-o-app--inline')
     expect(root.className).toContain('im-o-app--light-app')
-    expect(root.className).toContain('im-o-app--exclusive-control')
+    expect(root.className).toContain('im-o-app--mode-search')
     expect(root.style.backgroundColor).toBe('pink')
     expect(root.style.getPropertyValue('--map-overlay-halo-color')).toBe('#0b0c0c')
     expect(root.style.getPropertyValue('--map-overlay-selected-color')).toBe('#ffffff')
@@ -95,6 +96,61 @@ describe('Layout', () => {
     expect(screen.getByTestId('slot-top-left')).toBeInTheDocument()
     expect(screen.getByTestId('slot-bottom-right')).toBeInTheDocument()
     expect(screen.getByTestId('slot-modal')).toBeInTheDocument()
+
+    const backdrop = root.querySelector('.im-o-app__modal-backdrop')
+    expect(backdrop).toBeInTheDocument()
+    expect(backdrop).not.toHaveClass('im-o-app__modal-backdrop--visible')
+  })
+
+  test('adds the class for the current mode (the top of the stack) only', () => {
+    useApp.mockReturnValueOnce({
+      breakpoint: 'desktop',
+      interfaceType: 'map',
+      preferredColorScheme: 'dark',
+      layoutRefs: mockRefs,
+      isLayoutReady: true,
+      applicationModeEntries: [
+        { id: 'draw', include: [], exclude: null },
+        { id: 'search', include: null, exclude: null }
+      ],
+      isFullscreen: false
+    })
+    render(<Layout />)
+    const root = document.getElementById('myApp-im-app')
+    expect(root).toHaveClass('im-o-app--mode-search')
+    expect(root).not.toHaveClass('im-o-app--mode-draw')
+  })
+
+  test('adds no class for a mode the consumer\'s config disables', () => {
+    useApp.mockReturnValueOnce({
+      breakpoint: 'desktop',
+      interfaceType: 'map',
+      preferredColorScheme: 'dark',
+      layoutRefs: mockRefs,
+      isLayoutReady: true,
+      applicationModeEntries: [{ id: 'draw', include: [], exclude: null }],
+      isFullscreen: false
+    })
+    useConfig.mockReturnValueOnce({ id: 'myApp', applicationModes: { draw: false } })
+    render(<Layout />)
+    expect(document.getElementById('myApp-im-app').className).not.toContain('im-o-app--mode-')
+  })
+
+  test('shows the modal backdrop only while a modal-configured panel is open', () => {
+    useApp.mockReturnValue({
+      breakpoint: 'mobile',
+      interfaceType: 'map',
+      preferredColorScheme: 'dark',
+      layoutRefs: mockRefs,
+      isLayoutReady: true,
+      applicationModeEntries: [],
+      isFullscreen: true,
+      openPanels: { settings: { props: {} } },
+      panelConfig: { settings: { mobile: { modal: true } } }
+    })
+    render(<Layout />)
+    const root = document.getElementById('myApp-im-app')
+    expect(root.querySelector('.im-o-app__modal-backdrop')).toHaveClass('im-o-app__modal-backdrop--visible')
   })
 
   test('applies "not-ready" class when layout is not ready', () => {
@@ -104,7 +160,7 @@ describe('Layout', () => {
       preferredColorScheme: 'dark',
       layoutRefs: mockRefs,
       isLayoutReady: false,
-      hasExclusiveControl: false,
+      applicationModeEntries: [],
       isFullscreen: true
     })
     render(<Layout />)
@@ -122,7 +178,7 @@ describe('Layout', () => {
       preferredColorScheme: 'dark',
       layoutRefs: mockRefs,
       isLayoutReady: true,
-      hasExclusiveControl: false,
+      applicationModeEntries: [],
       isFullscreen: false
     })
 
@@ -132,7 +188,7 @@ describe('Layout', () => {
     expect(root.className).toContain('im-o-app--dark-app')
     expect(root.className).not.toContain('im-o-app--light-map')
     expect(root.style.backgroundColor).toBe('')
-    expect(root.className).not.toContain('exclusive-control')
+    expect(root.className).not.toContain('im-o-app--mode-')
   })
 
   test('calls layout measurement and focus visible hooks', () => {

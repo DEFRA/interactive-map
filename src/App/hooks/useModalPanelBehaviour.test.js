@@ -218,6 +218,65 @@ describe('useModalPanelBehaviour', () => {
     })
   })
 
+  // Regression: panels are mounted permanently and only toggle `hidden` (see mapPanels.js), so
+  // opening one doesn't itself resize mainRef. This uses the *real* useResizeObserver (backed by
+  // a fake ResizeObserver, not the blanket `(_, cb) => cb()` mock used above) so its size-change
+  // dedupe is actually exercised — that dedupe is what silently swallowed the reposition on open.
+  describe('repositioning on open when mainRef never resizes', () => {
+    const buttonSlot = 'map-styles-button'
+
+    beforeEach(() => {
+      const { useResizeObserver: actualUseResizeObserver } = jest.requireActual('./useResizeObserver.js')
+      useResizeObserverModule.useResizeObserver.mockImplementation(actualUseResizeObserver)
+
+      // Real ResizeObserver always delivers once per observe() call — mirror that, and let the
+      // real hook's own prevSizes dedupe decide whether the wrapped callback actually runs.
+      global.ResizeObserver = jest.fn(function (cb) {
+        this.observe = (target) => {
+          const entries = [{ target, contentRect: { width: 100, height: 50 } }]
+          cb(entries)
+        }
+        this.disconnect = jest.fn()
+      })
+      jest.spyOn(global, 'requestAnimationFrame').mockImplementation(cb => { cb(); return 0 })
+      jest.spyOn(global, 'cancelAnimationFrame').mockImplementation(() => {})
+      jest.spyOn(globalThis, 'getComputedStyle').mockReturnValue({ getPropertyValue: () => '8' })
+
+      Object.defineProperty(refs.main.current, 'getBoundingClientRect', {
+        value: () => ({ top: 0, right: 100, bottom: 50, left: 0, width: 100, height: 50 }),
+        configurable: true
+      })
+      Object.defineProperty(elements.buttonContainer, 'getBoundingClientRect', {
+        value: () => ({ top: 10, right: 80, bottom: 40, left: 20, width: 60, height: 30 }),
+        configurable: true
+      })
+
+      refs.panel.current.dataset.slot = buttonSlot
+      const button = document.createElement('button')
+      button.setAttribute(ARIA_CONTROLS, PANEL_ID)
+      elements.buttonContainer.appendChild(button)
+      document.body.appendChild(elements.buttonContainer)
+    })
+
+    afterEach(() => {
+      jest.restoreAllMocks()
+    })
+
+    it('positions the panel the moment it opens, not just when mainRef resizes', () => {
+      // Mounted closed, as it would be permanently — mainRef's size gets recorded but the
+      // calc no-ops on the isModal guard.
+      const { rerender } = render(<TestComponent isModal={false} />)
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toBe('')
+
+      // Open it. mainRef hasn't resized, so the resize observer's own delivery is deduped
+      // away — only the open-triggered layout effect can position it here.
+      rerender(<TestComponent isModal />)
+
+      expect(document.documentElement.style.getPropertyValue(MODAL_INSET)).toContain('10px')
+      expect(document.documentElement.style.getPropertyValue(MODAL_MAX_HEIGHT)).toContain('px')
+    })
+  })
+
   describe('focus management', () => {
     it('redirects focus into panel when focus enters app but outside panel', () => {
       refs.panel.current.focus = jest.fn()

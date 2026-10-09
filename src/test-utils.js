@@ -37,6 +37,14 @@ export const createMockRegistries = (overrides = {}) => {
       registerKeyboardShortcut: jest.fn(),
       setProviderSupportedShortcuts: jest.fn(),
       getKeyboardShortcuts: jest.fn(() => [])
+    },
+    spatialListRegistry: {
+      registerItemProvider: jest.fn(),
+      unregisterItemProvider: jest.fn(),
+      claimExclusive: jest.fn(),
+      releaseExclusive: jest.fn(),
+      notifyItemsChanged: jest.fn(),
+      clear: jest.fn()
     }
   }
 }
@@ -47,7 +55,6 @@ export const createMockAppState = (overrides = {}) => {
 
   return {
     breakpoint: 'desktop',
-    mode: 'view',
     openPanels: {},
     dispatch: jest.fn(),
     disabledButtons: new Set(),

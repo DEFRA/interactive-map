@@ -22,14 +22,15 @@ const setup = (overrides = {}) => {
   }
 
   useConfig.mockReturnValue({ mapProvider, ...overrides.config })
-  useService.mockReturnValue({ announce, eventBus, ...overrides.service })
+  const mapFocus = { isHoldingAnnouncements: jest.fn(() => false) }
+  useService.mockReturnValue({ announce, eventBus, mapFocus, ...overrides.service })
 
   getMapStatusMessage.moved = jest.fn(() => 'Moved north')
   getMapStatusMessage.zoomed = jest.fn(() => 'Zoomed in')
   getMapStatusMessage.noChange = jest.fn(() => 'No change')
   getMapStatusMessage.newArea = jest.fn(() => 'New area')
 
-  return { announce, mapProvider, eventBus }
+  return { announce, mapProvider, eventBus, mapFocus }
 }
 
 describe('useMapAnnouncements', () => {
@@ -48,6 +49,16 @@ describe('useMapAnnouncements', () => {
     const { unmount } = renderHook(() => useMapAnnouncements())
     unmount()
     expect(eventBus.off).toHaveBeenCalledWith('map:stateupdated', expect.any(Function))
+  })
+
+  test('does not announce while a map focus message is holding announcements', () => {
+    const { announce, eventBus, mapFocus } = setup()
+    mapFocus.isHoldingAnnouncements.mockReturnValue(true)
+    renderHook(() => useMapAnnouncements())
+    const handler = eventBus.on.mock.calls[0][1]
+
+    handler({ previous: { center: [0, 0], zoom: 1 }, current: { center: [1, 1], zoom: 2 } })
+    expect(announce).not.toHaveBeenCalled()
   })
 
   test('early returns when previous or current center is missing', () => {

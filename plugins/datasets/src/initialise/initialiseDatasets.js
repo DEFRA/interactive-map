@@ -1,6 +1,4 @@
 import { createDynamicSource } from '../fetch/createDynamicSource.js'
-// NOSONAR: applyDatasetDefaults and datasetDefaults are used in processedDatasets.map
-import { applyDatasetDefaults, datasetDefaults } from './defaults.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { attachMenuStateRef } from '../registry/isVisibleWhen.js'
@@ -23,13 +21,12 @@ export const initialiseDatasets = ({
   }
 
   // Initialise all datasets via the adapter, then set up dynamic sources
-  const processedDatasets = datasets.map(d => applyDatasetDefaults(d, datasetDefaults))
   const { mappedDatasets, orderedDatasets } = mappedDatasetsReducer({ datasets })
   if (adapter.createDataset) {
     datasetRegistry.attachCreateDataset(adapter.createDataset)
   }
   datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
-  const menu = datasetsToMenu({ datasets: processedDatasets })
+  const menu = datasetsToMenu({ datasets })
 
   eventBus.requestOnce('menu:state', attachMenuStateRef) // Request the menu state from the menu plugin
 
@@ -44,7 +41,7 @@ export const initialiseDatasets = ({
       const { dynamicGeoJSON } = registryDataset
       const dynamicSource = createDynamicSource({
         dynamicGeoJSON,
-        map: mapProvider.map,
+        mapProvider,
         onUpdate: (datasetId, geojson) => adapter.setData(datasetId, geojson)
       })
       dynamicSources.set(registryDataset.id, dynamicSource)

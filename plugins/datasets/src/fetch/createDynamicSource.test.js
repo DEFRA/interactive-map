@@ -9,22 +9,19 @@ jest.mock('./fetchGeoJSON.js', () => ({
 
 const DEBOUNCE_DELAY = 200
 
-const makeBounds = ([west, south, east, north]) => ({
-  getWest: () => west,
-  getSouth: () => south,
-  getEast: () => east,
-  getNorth: () => north
-})
-
-// Minimal map stub: tracks a mutable bbox/zoom and the registered moveend handler
-const makeMap = ({ bbox = [-1, -1, 1, 1], zoom = 10 } = {}) => {
+// Minimal mapProvider stub: getBounds()/getZoom() live on the provider (as they do on both
+// MapLibreProvider and OpenLayersProvider), while 'moveend' is subscribed on the raw map —
+// tracks a mutable bbox/zoom and the registered moveend handler.
+const makeMapProvider = ({ bbox = [-1, -1, 1, 1], zoom = 10 } = {}) => {
   const state = { bbox, zoom }
   const handlers = {}
   return {
     getZoom: jest.fn(() => state.zoom),
-    getBounds: jest.fn(() => makeBounds(state.bbox)),
-    on: jest.fn((event, handler) => { handlers[event] = handler }),
-    off: jest.fn(),
+    getBounds: jest.fn(() => state.bbox),
+    map: {
+      on: jest.fn((event, handler) => { handlers[event] = handler }),
+      off: jest.fn()
+    },
     pan (bbox) { state.bbox = bbox },
     fireMoveEnd () { handlers.moveend?.() }
   }
@@ -74,7 +71,7 @@ afterEach(() => {
 
 describe('createDynamicSource', () => {
   it('fetches the initial viewport on creation and pushes features to onUpdate', async () => {
-    const map = makeMap({ bbox: [-1, -1, 1, 1], zoom: 10 })
+    const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1], zoom: 10 })
     const onUpdate = jest.fn()
     const dynamicGeoJSON = makeDynamicGeoJSON({ idProperty: 'featureId' })
     const feature = makePointFeature('ignored', [0, 0], { featureId: 'abc' })
@@ -82,7 +79,7 @@ describe('createDynamicSource', () => {
     const featureWithoutIdProperty = makePointFeature('fallback-id', [0, 0])
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature, featureWithoutIdProperty]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, map, onUpdate })
+    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
     await flushMicrotasks()
 
     expect(fetchGeoJSON).toHaveBeenCalledWith(
@@ -96,14 +93,14 @@ describe('createDynamicSource', () => {
   })
 
   it('falls back to feature.id when no idProperty is configured, and skips features with no resolvable id', async () => {
-    const map = makeMap()
+    const mapProvider = makeMapProvider()
     const onUpdate = jest.fn()
     const dynamicGeoJSON = makeDynamicGeoJSON()
     const withId = makePointFeature('has-id', [0, 0])
     const withoutId = { type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: [0, 0] } }
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([withId, withoutId]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, map, onUpdate })
+    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate })
     await flushMicrotasks()
 
     expect(instance.getFeatureCount()).toBe(1)
@@ -111,46 +108,46 @@ describe('createDynamicSource', () => {
   })
 
   it('skips fetching below minZoom, and destroy() is a no-op with no in-flight request', async () => {
-    const map = makeMap({ zoom: 2 })
+    const mapProvider = makeMapProvider({ zoom: 2 })
     const dynamicGeoJSON = makeDynamicGeoJSON({ minZoom: 5 })
 
-    const instance = createDynamicSource({ dynamicGeoJSON, map, onUpdate: jest.fn() })
+    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn() })
     await flushMicrotasks()
 
     expect(fetchGeoJSON).not.toHaveBeenCalled()
     expect(() => instance.destroy()).not.toThrow()
-    expect(map.off).toHaveBeenCalledWith('moveend', expect.any(Function))
+    expect(mapProvider.map.off).toHaveBeenCalledWith('moveend', expect.any(Function))
   })
 
   it('skips re-fetching when the new viewport is already covered by the last fetch', async () => {
-    const map = makeMap({ bbox: [-1, -1, 1, 1] })
+    const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
     const dynamicGeoJSON = makeDynamicGeoJSON()
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([]))
 
-    createDynamicSource({ dynamicGeoJSON, map, onUpdate: jest.fn() })
+    createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn() })
     await flushMicrotasks()
 
-    map.pan([-0.5, -0.5, 0.5, 0.5]) // fully inside the fetched bbox
-    map.fireMoveEnd()
+    mapProvider.pan([-0.5, -0.5, 0.5, 0.5]) // fully inside the fetched bbox
+    mapProvider.fireMoveEnd()
     await advanceDebounce()
 
     expect(fetchGeoJSON).toHaveBeenCalledTimes(1)
   })
 
   it('debounces rapid map movement into a single re-fetch', async () => {
-    const map = makeMap({ bbox: [-1, -1, 1, 1] })
+    const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
     const dynamicGeoJSON = makeDynamicGeoJSON()
     fetchGeoJSON.mockResolvedValue(featureCollection([]))
 
-    createDynamicSource({ dynamicGeoJSON, map, onUpdate: jest.fn() })
+    createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn() })
     await flushMicrotasks()
 
-    map.pan([10, 10, 12, 12])
-    map.fireMoveEnd()
+    mapProvider.pan([10, 10, 12, 12])
+    mapProvider.fireMoveEnd()
     jest.advanceTimersByTime(50)
-    map.fireMoveEnd()
+    mapProvider.fireMoveEnd()
     jest.advanceTimersByTime(50)
-    map.fireMoveEnd()
+    mapProvider.fireMoveEnd()
     await advanceDebounce()
 
     expect(fetchGeoJSON).toHaveBeenCalledTimes(2) // initial + one debounced re-fetch
@@ -159,16 +156,16 @@ describe('createDynamicSource', () => {
   it('aborts the previous in-flight request when a new viewport is fetched before it resolves', async () => {
     let resolveFirst
     fetchGeoJSON.mockImplementationOnce(() => new Promise((resolve) => { resolveFirst = resolve }))
-    const map = makeMap({ bbox: [-1, -1, 1, 1] })
+    const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
 
-    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), map, onUpdate: jest.fn() })
+    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider, onUpdate: jest.fn() })
     await flushMicrotasks()
     const firstSignal = fetchGeoJSON.mock.calls[0][3]
     expect(firstSignal.aborted).toBe(false)
 
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([]))
-    map.pan([10, 10, 12, 12])
-    map.fireMoveEnd()
+    mapProvider.pan([10, 10, 12, 12])
+    mapProvider.fireMoveEnd()
     await advanceDebounce()
 
     expect(firstSignal.aborted).toBe(true)
@@ -176,11 +173,11 @@ describe('createDynamicSource', () => {
   })
 
   it('evicts least-recently-seen features once over the maxFeatures threshold, out-of-view first then in-view', async () => {
-    const map = makeMap({ bbox: [-1, -1, 1, 1] })
+    const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
     const dynamicGeoJSON = makeDynamicGeoJSON({ maxFeatures: 1 })
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('a', [0, 0])]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, map, onUpdate: jest.fn() })
+    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn() })
     await flushMicrotasks()
     expect(instance.getFeatureCount()).toBe(1) // under threshold (1 <= 1 * 1.2), no eviction yet
 
@@ -188,8 +185,8 @@ describe('createDynamicSource', () => {
     // Evicting the single out-of-view feature ('a') alone reaches the target, so the
     // in-view eviction pass is skipped.
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('b', [10, 10])]))
-    map.pan([10, 10, 12, 12])
-    map.fireMoveEnd()
+    mapProvider.pan([10, 10, 12, 12])
+    mapProvider.fireMoveEnd()
     await advanceDebounce()
     expect(instance.getFeatureCount()).toBe(1)
 
@@ -200,29 +197,29 @@ describe('createDynamicSource', () => {
       makePointFeature('c', [20, 20]),
       makePointFeature('d', [21, 21])
     ]))
-    map.pan([20, 20, 22, 22])
-    map.fireMoveEnd()
+    mapProvider.pan([20, 20, 22, 22])
+    mapProvider.fireMoveEnd()
     await advanceDebounce()
     expect(instance.getFeatureCount()).toBe(1)
   })
 
   it('sorts multiple out-of-view features by lastSeenAt when evicting', async () => {
-    const map = makeMap({ bbox: [-1, -1, 1, 1] })
+    const mapProvider = makeMapProvider({ bbox: [-1, -1, 1, 1] })
     const dynamicGeoJSON = makeDynamicGeoJSON({ maxFeatures: 2 })
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([
       makePointFeature('a', [0, 0]),
       makePointFeature('b', [0.5, 0.5])
     ]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON, map, onUpdate: jest.fn() })
+    const instance = createDynamicSource({ dynamicGeoJSON, mapProvider, onUpdate: jest.fn() })
     await flushMicrotasks()
     expect(instance.getFeatureCount()).toBe(2) // under threshold (2 <= 2 * 1.2), no eviction yet
 
     // New viewport, far from 'a' and 'b': both become out-of-view at once, exercising the
     // out-of-view sort-by-lastSeenAt comparator (a no-op array has nothing to compare)
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('c', [10, 10])]))
-    map.pan([10, 10, 12, 12])
-    map.fireMoveEnd()
+    mapProvider.pan([10, 10, 12, 12])
+    mapProvider.fireMoveEnd()
     await advanceDebounce()
 
     expect(instance.getFeatureCount()).toBe(2) // one of a/b evicted, 'c' kept
@@ -233,7 +230,7 @@ describe('createDynamicSource', () => {
     fetchGeoJSON.mockRejectedValueOnce(error)
     const onUpdate = jest.fn()
 
-    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), map: makeMap(), onUpdate })
+    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate })
     await flushMicrotasks()
 
     expect(console.error).not.toHaveBeenCalled()
@@ -244,7 +241,7 @@ describe('createDynamicSource', () => {
     const error = new Error('network down')
     fetchGeoJSON.mockRejectedValueOnce(error)
 
-    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), map: makeMap(), onUpdate: jest.fn() })
+    createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate: jest.fn() })
     await flushMicrotasks()
 
     expect(console.error).toHaveBeenCalledWith(
@@ -255,27 +252,39 @@ describe('createDynamicSource', () => {
 
   it('destroy() unregisters moveend, cancels the pending debounce, and aborts the in-flight request', async () => {
     fetchGeoJSON.mockImplementationOnce(() => new Promise(() => {})) // never resolves
-    const map = makeMap()
+    const mapProvider = makeMapProvider()
 
-    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), map, onUpdate: jest.fn() })
+    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider, onUpdate: jest.fn() })
     await flushMicrotasks()
     const signal = fetchGeoJSON.mock.calls[0][3]
 
-    map.fireMoveEnd() // schedule a debounced re-fetch
+    mapProvider.fireMoveEnd() // schedule a debounced re-fetch
     instance.destroy()
 
-    expect(map.off).toHaveBeenCalledWith('moveend', expect.any(Function))
+    expect(mapProvider.map.off).toHaveBeenCalledWith('moveend', expect.any(Function))
     expect(signal.aborted).toBe(true)
 
     await advanceDebounce()
     expect(fetchGeoJSON).toHaveBeenCalledTimes(1) // debounced call never fired
   })
 
+  it('unregisters moveend via un() when the raw map has no off() (OpenLayers)', async () => {
+    const mapProvider = makeMapProvider()
+    mapProvider.map.un = jest.fn()
+    delete mapProvider.map.off
+
+    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider, onUpdate: jest.fn() })
+    await flushMicrotasks()
+    instance.destroy()
+
+    expect(mapProvider.map.un).toHaveBeenCalledWith('moveend', expect.any(Function))
+  })
+
   it('clear() empties the cache and pushes an empty FeatureCollection', async () => {
     const onUpdate = jest.fn()
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('a', [0, 0])]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), map: makeMap(), onUpdate })
+    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate })
     await flushMicrotasks()
 
     instance.clear()
@@ -286,7 +295,7 @@ describe('createDynamicSource', () => {
 
   it('refresh() clears the cache and re-fetches the current viewport', async () => {
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('a', [0, 0])]))
-    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), map: makeMap(), onUpdate: jest.fn() })
+    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate: jest.fn() })
     await flushMicrotasks()
 
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([makePointFeature('b', [0, 0])]))
@@ -302,7 +311,7 @@ describe('createDynamicSource', () => {
     const feature = makePointFeature('a', [0, 0])
     fetchGeoJSON.mockResolvedValueOnce(featureCollection([feature]))
 
-    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), map: makeMap(), onUpdate })
+    const instance = createDynamicSource({ dynamicGeoJSON: makeDynamicGeoJSON(), mapProvider: makeMapProvider(), onUpdate })
     await flushMicrotasks()
     onUpdate.mockClear()
 

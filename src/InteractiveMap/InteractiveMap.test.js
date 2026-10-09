@@ -550,14 +550,12 @@ describe('InteractiveMap — Public API Methods', () => {
     map.addMarker('marker-1', coords, options)
     map.updateMarker('marker-1', options)
     map.removeMarker('marker-1')
-    map.setMode('test-mode')
     expect(map.eventBus.on).toHaveBeenCalledWith('testEvent', cb)
     expect(map.eventBus.off).toHaveBeenCalledWith('testEvent', cb)
     expect(map.eventBus.emit).toHaveBeenCalledWith('customEvent', 123)
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:addmarker', { id: 'marker-1', coords, options })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:updatemarker', { id: 'marker-1', options })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:removemarker', 'marker-1')
-    expect(map.eventBus.emit).toHaveBeenCalledWith('app:setmode', 'test-mode')
   })
 
   it('delegates Panel, Button, and Control API calls', () => {
@@ -571,6 +569,12 @@ describe('InteractiveMap — Public API Methods', () => {
     map.showPanel('panel2')
     map.hidePanel('panel3')
     map.toggleButtonState('btn-1', 'disabled', true)
+    map.setApplicationMode('review', { include: ['mapStyles'] })
+    map.setApplicationMode('focus')
+    map.clearApplicationMode('review')
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:setapplicationmode', { id: 'review', include: ['mapStyles'], exclude: null })
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:setapplicationmode', { id: 'focus', include: null, exclude: null })
+    expect(map.eventBus.emit).toHaveBeenCalledWith('app:clearapplicationmode', 'review')
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:addbutton', { id: 'btn1', config: buttonConfig })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:addpanel', { id: 'panel1', config: panelConfig })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:addcontrol', { id: 'ctrl1', config: controlConfig })
@@ -578,6 +582,39 @@ describe('InteractiveMap — Public API Methods', () => {
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel2', focus: true })
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:hidepanel', 'panel3')
     expect(map.eventBus.emit).toHaveBeenCalledWith('app:togglebuttonstate', { id: 'btn-1', prop: 'disabled', value: true })
+  })
+
+  describe('showPanel — triggeringElement', () => {
+    afterEach(() => { document.body.innerHTML = '' })
+
+    it('passes an explicit triggeringElement through unchanged', () => {
+      const el = document.createElement('button')
+      map.showPanel('panel1', { triggeringElement: el })
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: el })
+    })
+
+    it('auto-captures the currently focused element when none is given', () => {
+      const el = document.createElement('button')
+      document.body.appendChild(el)
+      el.focus()
+      map.showPanel('panel1')
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: el })
+    })
+
+    it('does not fall back to document.body as a triggeringElement', () => {
+      document.body.focus?.() // no-op in jsdom, but document.activeElement defaults to body regardless
+      map.showPanel('panel1')
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: undefined })
+    })
+
+    it('an explicit triggeringElement takes priority over the currently focused element', () => {
+      const focused = document.createElement('button')
+      document.body.appendChild(focused)
+      focused.focus()
+      const explicit = document.createElement('button')
+      map.showPanel('panel1', { triggeringElement: explicit })
+      expect(map.eventBus.emit).toHaveBeenCalledWith('app:showpanel', { id: 'panel1', focus: true, triggeringElement: explicit })
+    })
   })
 
   it('setContinueEnabled enables and disables the journey continue button', () => {

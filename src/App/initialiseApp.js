@@ -6,6 +6,7 @@ import { createPanelRegistry } from './registry/panelRegistry.js'
 import { createControlRegistry } from './registry/controlRegistry.js'
 import { createPluginRegistry } from './registry/pluginRegistry.js'
 import { createKeyboardShortcutRegistry } from './registry/keyboardShortcutRegistry.js'
+import { createSpatialListRegistry } from './registry/spatialListRegistry.js'
 import { mergeManifests } from './registry/mergeManifests.js'
 import { App } from './App.jsx'
 
@@ -13,13 +14,14 @@ const rootMap = new WeakMap()
 const mapProviderMap = new WeakMap()
 const registryMap = new WeakMap()
 
-const getOrCreateRegistries = (rootElement) => {
+const getOrCreateRegistries = (rootElement, eventBus) => {
   let registries = registryMap.get(rootElement)
   if (!registries) {
     const buttonRegistry = createButtonRegistry()
     const panelRegistry = createPanelRegistry()
     const controlRegistry = createControlRegistry()
     const keyboardShortcutRegistry = createKeyboardShortcutRegistry()
+    const spatialListRegistry = createSpatialListRegistry({ eventBus })
     const pluginRegistry = createPluginRegistry({
       registerButton: buttonRegistry.registerButton,
       registerPanel: panelRegistry.registerPanel,
@@ -27,7 +29,7 @@ const getOrCreateRegistries = (rootElement) => {
       registerKeyboardShortcut: keyboardShortcutRegistry.registerKeyboardShortcut
     })
 
-    registries = { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry, keyboardShortcutRegistry }
+    registries = { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry, keyboardShortcutRegistry, spatialListRegistry }
     registryMap.set(rootElement, registries)
   }
   return registries
@@ -73,7 +75,7 @@ export async function initialiseApp (rootElement, {
   }
 
   // Reuse or create registries (persist across app open/close cycles)
-  const { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry, keyboardShortcutRegistry } = getOrCreateRegistries(rootElement)
+  const { buttonRegistry, panelRegistry, controlRegistry, pluginRegistry, keyboardShortcutRegistry, spatialListRegistry } = getOrCreateRegistries(rootElement, eventBus)
   const { registerPlugin } = pluginRegistry
 
   // Register provider-supported shortcuts
@@ -124,6 +126,7 @@ export async function initialiseApp (rootElement, {
     controlRegistry={controlRegistry}
     pluginRegistry={pluginRegistry}
     keyboardShortcutRegistry={keyboardShortcutRegistry}
+    spatialListRegistry={spatialListRegistry}
     mapProvider={mapProvider}
               />)
 

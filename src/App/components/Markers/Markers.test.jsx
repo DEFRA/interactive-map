@@ -20,17 +20,17 @@ const SVG_SEL = 'svg'
 const makeEventBus = () => {
   const listeners = {}
   return {
-    on: jest.fn((e, fn) => { listeners[e] = fn }),
+    on: jest.fn((eventName, fn) => { listeners[eventName] = fn }),
     off: jest.fn(),
-    emit: (e, payload) => listeners[e]?.(payload)
+    emit: (eventName, payload) => listeners[eventName]?.(payload)
   }
 }
 
+// Stands in for the registry: every marker resolves to a 38×38 symbol anchored at its bottom centre
 const makeSymbolRegistry = (overrides = {}) => ({
-  get: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 38 38', anchor: [0.5, 1] })),
-  getDefaults: jest.fn(() => ({ symbol: 'pin', viewBox: '0 0 38 38', anchor: [0.5, 1] })),
-  resolve: jest.fn(() => '<circle/>'),
-  resolveSelected: jest.fn(() => '<circle class="selected"/>'),
+  getDefaults: jest.fn(() => ({ symbol: 'pin' })),
+  getMarkerSymbolDef: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 38 38', anchor: [0.5, 1] })),
+  resolveVariant: jest.fn((symbolDef, styleValues, mapStyle, variant) => `<circle class="${variant}"/>`),
   ...overrides
 })
 
@@ -76,7 +76,7 @@ describe('Markers — basic rendering', () => {
 
 describe('Markers — routing', () => {
   it('renders a LabelMarker for a marker with symbol: null', () => {
-    const marker = makeMarker({ id: 'lbl', label: 'My label', symbol: null, symbolSvgContent: null })
+    const marker = makeMarker({ id: 'lbl', label: 'My label', symbol: null, svgContent: null })
     const { result } = setup({ markers: [marker] })
     const wrapper = result.container.querySelector('.im-c-marker-wrapper--label')
     expect(wrapper).toBeTruthy()
@@ -103,42 +103,30 @@ describe('Markers — routing', () => {
 // ─── Markers — symbol resolution ─────────────────────────────────────────────
 
 describe('Markers — symbol resolution', () => {
-  it('uses inline symbolSvgContent over the symbol registry', () => {
-    const sr = makeSymbolRegistry()
-    setup({ markers: [makeMarker({ symbolSvgContent: '<rect/>' })], symbolRegistry: sr })
-    expect(sr.get).not.toHaveBeenCalled()
+  it('asks the registry for the marker\'s symbol definition', () => {
+    const marker = makeMarker({ size: 'large', viewBox: '0 0 50 60' })
+    const { sr } = setup({ markers: [marker] })
+    expect(sr.getMarkerSymbolDef).toHaveBeenCalledWith(marker)
   })
 
-  it('falls back to defaults.symbolSvgContent', () => {
-    const sr = makeSymbolRegistry({
-      getDefaults: jest.fn(() => ({ symbolSvgContent: '<default-svg/>', viewBox: '0 0 38 38', anchor: [0.5, 1] }))
-    })
-    setup({ markers: [makeMarker({ symbol: null })], symbolRegistry: sr })
-    expect(sr.get).not.toHaveBeenCalled()
+  it('renders at the definition\'s viewBox and anchor, and keeps marker options out of the style values', () => {
+    const sr = makeSymbolRegistry({ getMarkerSymbolDef: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 30 40', anchor: [0.5, 1] })) })
+    const { result } = setup({ markers: [makeMarker({ size: 'large', anchor: [0, 0], backgroundColor: '#123456' })], symbolRegistry: sr })
+    const svg = result.container.querySelector(SVG_SEL)
+    expect(svg.getAttribute('width')).toBe('30')
+    expect(svg.getAttribute('height')).toBe('40')
+    expect(svg).toHaveStyle({ marginLeft: '-15px', marginTop: '-40px' })
+    const styleValues = sr.resolveVariant.mock.calls[0][1]
+    expect(styleValues).toEqual({ backgroundColor: '#123456' })
   })
 
-  it('uses marker.viewBox when provided', () => {
-    const svg = setup({ markers: [makeMarker({ viewBox: '0 0 50 60' })] }).result.container.querySelector(SVG_SEL)
-    expect(svg.getAttribute('viewBox')).toBe('0 0 50 60')
-    expect(svg.getAttribute('width')).toBe('50')
-    expect(svg.getAttribute('height')).toBe('60')
-  })
-
-  it("falls back to '0 0 44 44' viewBox when none is provided", () => {
-    const sr = makeSymbolRegistry({
-      get: jest.fn(() => ({ svg: '<circle/>' })),
-      getDefaults: jest.fn(() => ({ symbol: 'pin' }))
-    })
-    expect(setup({ markers: [makeMarker()], symbolRegistry: sr }).result.container.querySelector(SVG_SEL).getAttribute('viewBox')).toBe('0 0 44 44')
-  })
-
-  it.each([
-    ['marker.anchor', makeMarker({ anchor: [0, 0] }), null, '0px', '0px'],
-    ['symbolDef.anchor', makeMarker(), { get: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 38 38', anchor: [0, 0.5] })), getDefaults: jest.fn(() => ({ symbol: 'pin', viewBox: '0 0 38 38' })) }, '0px', '-19px'],
-    ['[0.5, 0.5] fallback', makeMarker(), { get: jest.fn(() => ({ svg: '<circle/>', viewBox: '0 0 38 38' })), getDefaults: jest.fn(() => ({ symbol: 'pin', viewBox: '0 0 38 38' })) }, '-19px', '-19px']
-  ])('resolveAnchor uses %s', (_, marker, srOverrides, left, top) => {
-    const sr = srOverrides ? makeSymbolRegistry(srOverrides) : null
-    expect(setup({ markers: [marker], symbolRegistry: sr }).result.container.querySelector(SVG_SEL)).toHaveStyle({ marginLeft: left, marginTop: top })
+  it('falls back to a centred 44×44 viewBox for a marker with no known symbol', () => {
+    const sr = makeSymbolRegistry({ getMarkerSymbolDef: jest.fn(() => undefined) })
+    const { result } = setup({ markers: [makeMarker({ symbol: 'not-registered' })], symbolRegistry: sr })
+    const svg = result.container.querySelector(SVG_SEL)
+    expect(sr.resolveVariant).toHaveBeenCalledWith(undefined, expect.any(Object), 'outdoor', 'normal')
+    expect(svg.getAttribute('viewBox')).toBe('0 0 44 44')
+    expect(svg).toHaveStyle({ marginLeft: '-22px', marginTop: '-22px' })
   })
 
   it.each([
@@ -161,27 +149,25 @@ describe('Markers — symbol resolution', () => {
 // ─── Markers — selection ──────────────────────────────────────────────────────
 
 describe('Markers — selection', () => {
-  it('adds selected class and calls resolveSelected when marker is selected', () => {
+  it('adds selected class and resolves the selected variant when marker is selected', () => {
     const { eb, sr, result } = setup({ markers: [makeMarker()] })
     act(() => eb.emit(SEL_CHANGE, { selectedMarkers: [MARKER_ID] }))
     expect(result.container.querySelector(SVG_SEL)).toHaveClass(SELECTED_CLASS)
-    expect(sr.resolveSelected).toHaveBeenCalled()
-    expect(sr.resolve).not.toHaveBeenCalledAfter?.(sr.resolveSelected)
+    expect(sr.resolveVariant).toHaveBeenLastCalledWith(expect.anything(), expect.any(Object), 'outdoor', 'selected')
   })
 
-  it('calls resolveActive when the marker is the active listbox item', () => {
-    const SET_ACTIVE = 'map:setactivefeature'
-    const sr = makeSymbolRegistry({ resolveActive: jest.fn(() => '<circle class="active"/>') })
-    const { eb } = setup({ markers: [makeMarker()], symbolRegistry: sr })
+  it('resolves the active variant for the active listbox item, even when selected', () => {
+    const SET_ACTIVE = 'map:setactiveitem'
+    const { eb, sr } = setup({ markers: [makeMarker()] })
+    act(() => eb.emit(SEL_CHANGE, { selectedMarkers: [MARKER_ID] }))
     act(() => eb.emit(SET_ACTIVE, { id: MARKER_ID }))
-    expect(sr.resolveActive).toHaveBeenCalled()
-    expect(sr.resolveSelected).not.toHaveBeenCalled()
+    expect(sr.resolveVariant).toHaveBeenLastCalledWith(expect.anything(), expect.any(Object), 'outdoor', 'active')
   })
 
-  it('uses resolve (not resolveSelected) for unselected markers', () => {
+  it('resolves the normal variant for unselected markers', () => {
     const { sr } = setup({ markers: [makeMarker()] })
-    expect(sr.resolve).toHaveBeenCalled()
-    expect(sr.resolveSelected).not.toHaveBeenCalled()
+    expect(sr.resolveVariant).toHaveBeenCalledWith(expect.anything(), expect.any(Object), 'outdoor', 'normal')
+    expect(sr.resolveVariant).not.toHaveBeenCalledWith(expect.anything(), expect.any(Object), 'outdoor', 'selected')
   })
 
   it.each([

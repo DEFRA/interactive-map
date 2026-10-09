@@ -10,7 +10,10 @@ const DEFAULT_GROUP = 'Navigate'
 const ShortcutList = ({ items }) => (
   <dl className='im-c-keyboard-help__list'>
     {items.map((item) => (
-      <div key={item.id} className='im-c-keyboard-help__item'>
+      <div
+        key={item.id}
+        className={`im-c-keyboard-help__item${item.visuallyHidden ? ' im-u-visually-hidden' : ''}`}
+      >
         <dt className='im-c-keyboard-help__title'>{item.title}</dt>
         <dd className='im-c-keyboard-help__description' dangerouslySetInnerHTML={{ __html: item.command }} />
       </div>

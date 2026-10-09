@@ -1,3 +1,5 @@
+import { stopIfGlobalAltKey } from '../../../../../../../src/utils/globalAltShortcuts.js'
+
 /**
  * Setup / teardown for the shared draw mode: binds the window/container/map event
  * handlers on entry and removes them on exit. Part of createDrawMode.
@@ -31,6 +33,15 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
       this._hideCrossHair(state)
     }
 
+    // A single, shared "commit here" entry point for the crosshair button's own onClick
+    // (CrossHair.jsx) — the same action Enter/the touch add-vertex button already trigger via
+    // _placeAtCrossHair, so a click (real, touch, or Voice Control's "Click Target") does
+    // exactly what those already do rather than needing its own separate implementation.
+    // Optional chaining: not every mode built on this lifecycle defines _placeAtCrossHair.
+    if (state.crossHair) {
+      state.crossHair.activate = () => this._placeAtCrossHair?.(state)
+    }
+
     // Bind all handlers once
     const bind = (name, fn) => (this[name] = fn.bind(this, state))
     const handlers = {
@@ -52,6 +63,10 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
     this._listeners = [
       [window, 'keydown', this.keydownHandler],
       [window, 'keyup', this.keyupHandler],
+      // Capture phase (unlike keyupHandler above) so it runs before the event ever bubbles to
+      // useKeyboardShortcuts.js's app-wide listener — shadows global Alt+<key> shortcuts
+      // (src/utils/globalAltShortcuts.js) unconditionally while drawing.
+      [window, 'keyup', stopIfGlobalAltKey, { capture: true }],
       [window, 'click', this.vertexButtonClickHandler],
       [container, 'blur', this.blurHandler],
       [container, 'pointermove', this.pointermoveHandler],
@@ -62,14 +77,20 @@ export const createLifecycle = ({ ParentMode, featureProp, excludeFeatureIdFromS
       [map, 'draw.undo', this.undoHandler],
       [map, 'draw.interfacetypechange', this.interfaceTypeChangeHandler]
     ]
-    this._listeners.forEach(([t, e, h]) => t.addEventListener ? t.addEventListener(e, h) : t.on(e, h))
+    this._listeners.forEach(([target, eventName, handler, opts]) => target.addEventListener ? target.addEventListener(eventName, handler, opts) : target.on(eventName, handler))
 
     return state
   },
 
   onStop (state) {
     ParentMode.onStop.call(this, state)
-    this._listeners.forEach(([t, e, h]) => t.removeEventListener ? t.removeEventListener(e, h) : t.off(e, h))
+    this._listeners.forEach(([target, eventName, handler, opts]) => target.removeEventListener ? target.removeEventListener(eventName, handler, opts) : target.off(eventName, handler))
+    // Don't leave a stale closure over this mode's state on the shared crossHair object once
+    // it's gone — the next owner (e.g. interact re-enabling) assigns its own before this one
+    // could ever be invoked again, but this avoids relying on that ordering.
+    if (state.crossHair?.activate) {
+      state.crossHair.activate = null
+    }
     // A touch/keyboard session leaving draw mode is about to land in interact mode, which
     // needs the same crosshair to select the just-placed feature — only a mouse session (which
     // selects by direct click) has no further use for it. onCreate's mode change to 'disabled'

@@ -25,7 +25,7 @@ describe('svgProps', () => {
   })
 
   it('has the correct className', () => {
-    expect(svgProps.className).toBe('am-c-map-key-symbol')
+    expect(svgProps.className).toBe('im-c-map-key-symbol')
   })
 
   it('is aria-hidden', () => {
@@ -55,7 +55,7 @@ describe('svgSymbolProps', () => {
   })
 
   it('className includes the base class and a modifier', () => {
-    expect(svgSymbolProps.className).toContain('am-c-map-key-symbol')
+    expect(svgSymbolProps.className).toContain('im-c-map-key-symbol')
     expect(svgSymbolProps.className).toContain('--point')
   })
 })

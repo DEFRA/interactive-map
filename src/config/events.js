@@ -29,10 +29,6 @@ export const EVENTS = {
   APP_UPDATE_MARKER: 'app:updatemarker',
   /** @internal Remove a marker. Payload: id */
   APP_REMOVE_MARKER: 'app:removemarker',
-  /** @internal Set application mode. Payload: mode */
-  APP_SET_MODE: 'app:setmode',
-  /** @internal Revert to previous mode. */
-  APP_REVERT_MODE: 'app:revertmode',
   /** @internal Add a button. Payload: { id, config } */
   APP_ADD_BUTTON: 'app:addbutton',
   /** @internal Set a buttons state. Payload: { id, prop, value? } */
@@ -47,6 +43,10 @@ export const EVENTS = {
   APP_HIDE_PANEL: 'app:hidepanel',
   /** @internal Add a control. Payload: { id, config } */
   APP_ADD_CONTROL: 'app:addcontrol',
+  /** @internal Set the host's entry for an application mode. Payload: { id, include, exclude } */
+  APP_SET_APPLICATION_MODE: 'app:setapplicationmode',
+  /** @internal Clear the host's entry for an application mode. Payload: id */
+  APP_CLEAR_APPLICATION_MODE: 'app:clearapplicationmode',
   /** @internal Show a toast hint, announced to screen readers. Payload: { text, options } */
   APP_SHOW_HINT: 'app:showhint',
   /** @internal Dismiss the active toast hint, if any. */
@@ -145,14 +145,14 @@ export const EVENTS = {
   MAP_SET_STYLE: 'map:setstyle',
   /** @internal Set map size. Payload: { width, height } */
   MAP_SET_SIZE: 'map:setsize',
-  /** @internal Set the accessible features list. Payload: { items: { id: string, label: string }[] } */
-  MAP_SET_FEATURES: 'map:setfeatures',
-  /** @internal Suppress/restore the accessible features list. Payload: { suppressed: boolean } */
-  MAP_SET_FEATURES_SUPPRESSED: 'map:setfeaturessuppressed',
-  /** @internal Set the active feature in the accessible features list. Payload: { id: string | null } */
-  MAP_SET_ACTIVE_FEATURE: 'map:setactivefeature',
-  /** @internal Select the active listbox feature as the real selection (Enter key). Payload: none */
-  MAP_SELECT_FEATURE: 'map:selectfeature',
+  /** @internal Set the accessible spatial list's items. Payload: { items: { id: string, label: string }[], multiselectable: boolean, label?: string } */
+  MAP_SET_SPATIAL_LIST: 'map:setspatiallist',
+  /** @internal Suppress/restore the accessible spatial list. Payload: { suppressed: boolean } */
+  MAP_SET_SPATIAL_LIST_SUPPRESSED: 'map:setspatiallistsuppressed',
+  /** @internal Set the active item in the accessible spatial list (roving tabindex position). Payload: { id: string | null } */
+  MAP_SET_ACTIVE_ITEM: 'map:setactiveitem',
+  /** @internal Select the active spatial list item as the real selection (Enter key). Payload: none */
+  MAP_SELECT_ITEM: 'map:selectitem',
   /** @internal Set pixel ratio. Payload: pixelRatio */
   MAP_SET_PIXEL_RATIO: 'map:setpixelratio',
   /** @internal Fit the map to a bounding box. Payload: [west, south, east, north] */

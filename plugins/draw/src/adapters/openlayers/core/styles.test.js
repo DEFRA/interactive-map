@@ -5,7 +5,7 @@ import Icon from 'ol/style/Icon.js'
 import { createStyles } from './styles.js'
 import { SIZES } from '../defaults.js'
 import { polygonFeature, lineFeature, pointFeature } from '../__helpers__/harness.js'
-import { getOrCreateSymbolImage, clearSymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
 
 const colors = {
   editStroke: '#e5',
@@ -23,7 +23,13 @@ const colors = {
   mapStyleId: 'road'
 }
 
-const styles = createStyles(colors)
+// The OL provider's symbol images — createStyles reads drawn points' icons through this lookup
+const symbolImages = new SymbolImageCache()
+const addImage = (imageId, imageData) => {
+  symbolImages.addImage(imageId, imageData)
+  return symbolImages.getImage(imageId)
+}
+const styles = createStyles(colors, (imageId) => symbolImages.getImage(imageId))
 
 // Records each canvas fill as { radius, fillStyle } so ring order/colours can be asserted
 const fakeCanvas = () => {
@@ -161,11 +167,10 @@ describe('createFeatureStyle (inactive shapes)', () => {
       this._ctx ??= { putImageData: jest.fn() }
       return this._ctx
     })
-    clearSymbolImageCache()
-    const canvas = getOrCreateSymbolImage('symbol-pin-1x', { width: 10, height: 10 })
+    const canvas = addImage('symbol-pin-1x', { width: 10, height: 10 })
 
     const feature = pointFeature([5, 5])
-    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-1x' })
+    feature.setProperties({ symbol: 'pin', symbolImageAnchor: [0.5, 1], symbolImageId: 'symbol-pin-1x' })
 
     const style = styles.createFeatureStyle()(feature)[0]
     expect(style.getImage()).toBeInstanceOf(Icon)
@@ -177,11 +182,10 @@ describe('createFeatureStyle (inactive shapes)', () => {
       this._ctx ??= { putImageData: jest.fn() }
       return this._ctx
     })
-    clearSymbolImageCache()
-    getOrCreateSymbolImage('symbol-pin-cache', { width: 10, height: 10 })
+    addImage('symbol-pin-cache', { width: 10, height: 10 })
 
     const feature = pointFeature([5, 5])
-    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-cache' })
+    feature.setProperties({ symbol: 'pin', symbolImageAnchor: [0.5, 1], symbolImageId: 'symbol-pin-cache' })
 
     const styleFn = styles.createFeatureStyle()
     const first = styleFn(feature)[0]
@@ -194,11 +198,10 @@ describe('createFeatureStyle (inactive shapes)', () => {
       this._ctx ??= { putImageData: jest.fn() }
       return this._ctx
     })
-    clearSymbolImageCache()
-    getOrCreateSymbolImage('symbol-pin-4x', { width: 176, height: 176 }) // 44 viewBox × pixelRatio 4
+    addImage('symbol-pin-4x', { width: 176, height: 176 }) // 44 viewBox × pixelRatio 4
 
     const feature = pointFeature([5, 5])
-    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-4x', symbolPixelRatio: 4 })
+    feature.setProperties({ symbol: 'pin', symbolImageAnchor: [0.5, 1], symbolImageId: 'symbol-pin-4x', symbolPixelRatio: 4 })
 
     const style = styles.createFeatureStyle()(feature)[0]
     expect(style.getImage().getScale()).toBe(0.25)
@@ -209,11 +212,10 @@ describe('createFeatureStyle (inactive shapes)', () => {
       this._ctx ??= { putImageData: jest.fn() }
       return this._ctx
     })
-    clearSymbolImageCache()
-    getOrCreateSymbolImage('symbol-pin-no-ratio', { width: 44, height: 44 })
+    addImage('symbol-pin-no-ratio', { width: 44, height: 44 })
 
     const feature = pointFeature([5, 5])
-    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-no-ratio' })
+    feature.setProperties({ symbol: 'pin', symbolImageAnchor: [0.5, 1], symbolImageId: 'symbol-pin-no-ratio' })
 
     const style = styles.createFeatureStyle()(feature)[0]
     expect(style.getImage().getScale()).toBe(1)
@@ -227,19 +229,18 @@ describe('createFeatureStyle (inactive shapes)', () => {
       this._ctx ??= { putImageData: jest.fn() }
       return this._ctx
     })
-    clearSymbolImageCache()
-    const selectedCanvas = getOrCreateSymbolImage('symbol-pin-selected', { width: 10, height: 10 })
+    const selectedCanvas = addImage('symbol-pin-selected', { width: 10, height: 10 })
 
     const selected = pointFeature([5, 5])
-    selected.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-normal', symbolSelectedImageId: 'symbol-pin-selected' })
+    selected.setProperties({ symbol: 'pin', symbolImageAnchor: [0.5, 1], symbolImageId: 'symbol-pin-normal', symbolSelectedImageId: 'symbol-pin-selected' })
     const selectedStyle = styles.selectedPointStyleFor(selected)
     expect(selectedStyle.getImage()).toBeInstanceOf(Icon)
     expect(selectedStyle.getImage().getImage(1)).toBe(selectedCanvas)
 
     // No selected variant resolved yet → falls back to the normal icon
-    const normalCanvas = getOrCreateSymbolImage('symbol-pin-normal-only', { width: 10, height: 10 })
+    const normalCanvas = addImage('symbol-pin-normal-only', { width: 10, height: 10 })
     const normalOnly = pointFeature([5, 5])
-    normalOnly.setProperties({ symbol: 'pin', symbolImageId: 'symbol-pin-normal-only' })
+    normalOnly.setProperties({ symbol: 'pin', symbolImageAnchor: [0.5, 1], symbolImageId: 'symbol-pin-normal-only' })
     const fallbackStyle = styles.selectedPointStyleFor(normalOnly)
     expect(fallbackStyle.getImage().getImage(1)).toBe(normalCanvas)
 
@@ -249,10 +250,35 @@ describe('createFeatureStyle (inactive shapes)', () => {
     expect(placeholderStyle.getImage()).not.toBeInstanceOf(Icon)
   })
 
-  test('a Point feature whose symbolImageId has not been rasterised/cached yet falls back to the placeholder', () => {
-    clearSymbolImageCache()
+  test('uses the anchor resolved alongside the image', () => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+      this._ctx ??= { putImageData: jest.fn() }
+      return this._ctx
+    })
+    addImage('symbol-anchor', { width: 40, height: 40 })
     const feature = pointFeature([5, 5])
-    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-not-cached' })
+    feature.setProperties({ symbol: 'pin', symbolImageAnchor: [0.25, 0.75], symbolImageId: 'symbol-anchor' })
+
+    const style = styles.createFeatureStyle()(feature)[0]
+    expect(style.getImage().getAnchor()).toEqual([10, 30])
+  })
+
+  test('falls back to the placeholder until the anchor has been resolved', () => {
+    HTMLCanvasElement.prototype.getContext = jest.fn(function () {
+      this._ctx ??= { putImageData: jest.fn() }
+      return this._ctx
+    })
+    addImage('symbol-no-anchor', { width: 10, height: 10 })
+    const feature = pointFeature([5, 5])
+    feature.setProperties({ symbol: 'pin', symbolImageId: 'symbol-no-anchor' })
+
+    const style = styles.createFeatureStyle()(feature)[0]
+    expect(style.getImage()).not.toBeInstanceOf(Icon)
+  })
+
+  test('a Point feature whose symbolImageId has not been rasterised/cached yet falls back to the placeholder', () => {
+    const feature = pointFeature([5, 5])
+    feature.setProperties({ symbol: 'pin', symbolImageAnchor: [0.5, 1], symbolImageId: 'symbol-not-cached' })
 
     const style = styles.createFeatureStyle()(feature)[0]
     expect(style.getImage()).not.toBeInstanceOf(Icon)

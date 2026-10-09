@@ -1,5 +1,4 @@
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
-import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
 
 // ─── Fill layer ───────────────────────────────────────────────────────────────
 
@@ -25,7 +24,7 @@ export const addStrokeLayer = (map, registryDataset, mapStyleId) => {
   }
   const paint = {
     'line-color': getValueForStyle(registryDataset.style.stroke, mapStyleId),
-    'line-width': registryDataset.style.strokeWidth || 1,
+    'line-width': registryDataset.style.strokeWidth,
     'line-opacity': registryDataset.opacity,
     ...(registryDataset.style.strokeDashArray ? { 'line-dasharray': registryDataset.style.strokeDashArray } : {})
   }
@@ -35,15 +34,15 @@ export const addStrokeLayer = (map, registryDataset, mapStyleId) => {
 
 // ─── Symbol layer ─────────────────────────────────────────────────────────────
 
-export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, pixelRatio) => {
+export const addSymbolLayer = (mapProvider, registryDataset, mapStyle, symbolRegistry, pixelRatio) => {
+  const { map } = mapProvider
   const { hasSymbol, symbolLayerId } = registryDataset
   if (!hasSymbol || !symbolRegistry || !symbolLayerId || map.getLayer(symbolLayerId)) { return }
   const symbolDef = symbolRegistry.getSymbolDef(registryDataset.style)
   if (!symbolDef) { return }
-  const imageId = symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, false, pixelRatio)
+  const imageId = symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, 'normal', pixelRatio)
   if (!imageId) { return }
-  const anchor = getSymbolAnchor(registryDataset.style, symbolDef)
-  map.addLayer(registryDataset.getSymbolSource(imageId, anchor, symbolDef))
+  map.addLayer(registryDataset.getSymbolSource(imageId, mapProvider.getSymbolIconLayout(symbolDef)))
 }
 
 // ─── Dataset layers ───────────────────────────────────────────────────────────
@@ -51,7 +50,7 @@ export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, p
 /**
  * Add all layers (and source if needed) for a dataset.
  * Returns the sourceId so the caller can track the datasetId → sourceId mapping.
- * @param {Object} map - MapLibre map instance
+ * @param {Object} mapProvider - MapLibreProvider (its map, and symbol icon placement)
  * @param {Object} registryDataset
  * @param {Object} mapStyle - Current map style config (provides id, selectedColor, haloColor)
  * @param {Object} symbolRegistry
@@ -59,19 +58,20 @@ export const addSymbolLayer = (map, registryDataset, mapStyle, symbolRegistry, p
  * @param {number} pixelRatio - Device pixel ratio × map size scale factor
  * @returns {string} sourceId
  */
-export const addDatasetLayers = (map, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
+export const addDatasetLayers = (mapProvider, registryDataset, mapStyle, symbolRegistry, patternRegistry, pixelRatio) => {
+  const { map } = mapProvider
   const { sourceId, source } = registryDataset
   if (source && !map.getSource(sourceId)) {
     map.addSource(sourceId, source)
   }
   const mapStyleId = mapStyle.id
-  addSymbolLayer(map, registryDataset, mapStyle, symbolRegistry, pixelRatio)
+  addSymbolLayer(mapProvider, registryDataset, mapStyle, symbolRegistry, pixelRatio)
   addFillLayer(map, registryDataset, mapStyleId, patternRegistry, pixelRatio)
   addStrokeLayer(map, registryDataset, mapStyleId)
 
   if (registryDataset.sublayers?.length) {
     registryDataset.sublayers.forEach(sublayer => {
-      addDatasetLayers(map, sublayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio)
+      addDatasetLayers(mapProvider, sublayer, mapStyle, symbolRegistry, patternRegistry, pixelRatio)
     })
     return sourceId
   }

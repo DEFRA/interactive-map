@@ -55,7 +55,7 @@ export const Form = ({
       className={classNames}
       style={getFormStyle(pluginConfig, pluginState, appState)}
       aria-controls={`${id}-viewport`}
-      onSubmit={(e) => events.handleSubmit(e, appState, pluginState)}
+      onSubmit={(event) => events.handleSubmit(event, appState, pluginState)}
     >
       {/* Hidden submit button - required for Enter key to trigger form submission */}
       <button type='submit' style={{ display: 'none' }} aria-hidden='true' tabIndex={-1}>
@@ -63,9 +63,9 @@ export const Form = ({
       </button>
 
       <div className={`im-c-search__input-container${pluginState.hasKeyboardFocusWithin ? ' im-c-search__input-container--keyboard-focus-within' : ''}`}>
-        <label htmlFor={`${id}-search`} className='im-u-visually-hidden'>{pluginConfig.placeholder}</label>
+        <label htmlFor={`${id}-search-input`} className='im-u-visually-hidden'>{pluginConfig.placeholder}</label>
         <input
-          id={`${id}-search`}
+          id={`${id}-search-input`}
           className='im-c-search__input'
           type='search'
           role='combobox'
@@ -76,15 +76,15 @@ export const Form = ({
           aria-autocomplete='list'
           autoComplete='off'
           placeholder={pluginConfig.placeholder}
-          name={`${id}-search`}
+          name={`${id}-search-input`}
           spellCheck={false}
           enterKeyHint='search'
           value={pluginState.value}
           onClick={events.handleInputClick}
-          onChange={events.handleInputChange}
+          onChange={(event) => events.handleInputChange(event, pluginState)}
           onFocus={() => events.handleInputFocus(appState.interfaceType)}
           onBlur={() => events.handleInputBlur(appState.interfaceType)}
-          onKeyDown={(e) => events.handleInputKeyDown(e, pluginState)}
+          onKeyDown={(event) => events.handleInputKeyDown(event, pluginState)}
           ref={inputRef}
         />
         <span id={`${id}-search-hint`} className='im-c-search__hint'>

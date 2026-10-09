@@ -46,33 +46,39 @@ const center = context.mapProvider.getCenter()
 context.mapProvider.setView({ zoom: 10 })
 ```
 
-#### `mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)`
+#### `mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry, pixelRatio)`
 
-Rasterises and registers pattern fill images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
+Rasterises and registers each pattern fill's image with the map engine. Images already registered are reused.
 
 - `patternConfigs` — flat array of style configs that have a `fillPattern` or `fillPatternSvgContent` property
 - `mapStyleId` — current map style ID
-- `patternRegistry` — the core pattern registry instance
+- `patternRegistry` — `services.patternRegistry`
+- `pixelRatio` — optional; defaults to the map's current pixel ratio
 
 ```js
-// In a plugin's MapLibre layer adapter
-await mapProvider.addPatternsToMap(patternConfigs, mapStyleId, patternRegistry)
+// In a plugin's layer adapter
+await mapProvider.addPatternsToMap(patternConfigs, mapStyleId, services.patternRegistry)
 ```
+
+On OpenLayers, `mapProvider.getPatternFill(imageId)` returns a registered pattern's `ol/style/Fill`, for a style function's `fill`.
 
 ---
 
-#### `mapProvider.addSymbolsToMap(symbolConfigs, mapStyleId, symbolRegistry)`
+#### `mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, symbolRegistry, pixelRatio)`
 
-Rasterises and registers symbol images with the map engine. Plugin layer adapters call this instead of importing provider internals directly, keeping cross-package boundaries clean.
+Rasterises and registers each symbol's normal, active and selected images with the map engine. Images already registered are reused.
 
-- `symbolConfigs` — flat array of style configs that have a `symbol` property
-- `mapStyleId` — current map style ID, used to resolve style-variant token values
-- `symbolRegistry` — the core symbol registry instance
+- `symbolConfigs` — flat array of style configs that have a `symbol` or `symbolSvgContent` property
+- `mapStyle` — current map style config, used to resolve style-variant token values and ring colours
+- `symbolRegistry` — `services.symbolRegistry`
+- `pixelRatio` — optional; defaults to the map's current pixel ratio
 
 ```js
-// In a plugin's MapLibre layer adapter
-await mapProvider.addSymbolsToMap(symbolConfigs, mapStyleId, symbolRegistry)
+// In a plugin's layer adapter
+await mapProvider.addSymbolsToMap(symbolConfigs, mapStyle, services.symbolRegistry)
 ```
+
+`mapProvider.getActiveSymbolImageId(imageId)` and `mapProvider.getSelectedSymbolImageId(imageId)` return the image id of a registered symbol's active (keyboard cursor) and selected variants.
 
 ---
 
@@ -106,6 +112,18 @@ Updates the map's `aria-live` region with a screen reader announcement. Use this
 
 ```js
 context.services.announce('3 results found')
+```
+
+#### `focusMap`
+
+Moves focus to the map viewport. An optional `message` replaces the viewport's accessible name (`mapLabel`), so screen readers speak it as part of the focus announcement. The original name returns when focus leaves the map. While it is set, the automatic map move announcement ("New area approximately…") is skipped until the user next presses a key or pointer on the map.
+
+| Option | Type | Description |
+|--------|------|-------------|
+| `message` | `string` | Optional text read out in place of the map's name when it receives focus, e.g. the result of the action that moved focus |
+
+```js
+context.services.focusMap({ message: 'Map moved to Carlisle' })
 ```
 
 #### `reverseGeocode`

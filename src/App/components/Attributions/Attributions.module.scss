@@ -5,9 +5,13 @@
     background-color: var(--attributions-background-color);
     padding: var(--attributions-padding);
     font-size: var(--attributions-font-size);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    // Wraps rather than truncating so the text stays fully readable, capped to whatever
+    // width .im-o-app__attributions (layout.module.scss) currently gives it — the space
+    // beside the logo when docked, or the full row (--attributions--stacked) when it doesn't fit there.
+    max-width: 100%;
+    white-space: normal;
+    overflow-wrap: break-word;
+    text-align: right;
     pointer-events: auto;
 }
 

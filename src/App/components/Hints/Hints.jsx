@@ -17,7 +17,7 @@ import { htmlToPlainText } from '../../../utils/htmlToPlainText.js'
 // eslint-disable-next-line camelcase, react/jsx-pascal-case
 // sonarjs/disable-next-line function-name
 export const Hints = () => {
-  const { id, keyboardHintText, enableMoveControls, moveControlsHintText } = useConfig()
+  const { id, keyboardHintText, enableMapControls, mapControlsHintText } = useConfig()
   const { hints } = useService()
   const { layoutRefs } = useApp()
   const [activeHint, setActiveHint] = useState(null)
@@ -33,8 +33,8 @@ export const Hints = () => {
   }
 
   // Composed at render time so overriding one text doesn't drop the other.
-  const keyboardDescriptionHtml = enableMoveControls
-    ? `${keyboardHintText} ${moveControlsHintText}`
+  const keyboardDescriptionHtml = enableMapControls
+    ? `${keyboardHintText} ${mapControlsHintText}`
     : keyboardHintText
 
   return createPortal(

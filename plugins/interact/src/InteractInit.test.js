@@ -4,14 +4,14 @@ import { InteractInit } from './InteractInit.jsx'
 import { useInteractionHandlers } from './hooks/useInteractionHandlers.js'
 import { useHighlightSync } from './hooks/useHighlightSync.js'
 import { useHoverCursor } from './hooks/useHoverCursor.js'
-import { useMapItemList } from './hooks/useMapItemList.js'
+import { useSpatialList } from './hooks/useSpatialList.js'
 
 const LISTBOX_CAPABLE = 'interact:listboxcapable'
 
 jest.mock('./hooks/useInteractionHandlers.js')
 jest.mock('./hooks/useHighlightSync.js')
 jest.mock('./hooks/useHoverCursor.js')
-jest.mock('./hooks/useMapItemList.js')
+jest.mock('./hooks/useSpatialList.js')
 jest.mock('./hooks/useCrossHairVisibility.js')
 jest.mock('./hooks/useAttachEvents.js')
 
@@ -24,7 +24,7 @@ beforeEach(() => {
   useInteractionHandlers.mockReturnValue({ handleInteraction: handleInteractionMock })
   useHighlightSync.mockReturnValue(undefined)
   useHoverCursor.mockReturnValue(undefined)
-  useMapItemList.mockReturnValue(undefined)
+  useSpatialList.mockReturnValue(undefined)
 
   props = {
     appState: { interfaceType: 'mouse', layoutRefs: { viewportRef: { current: document.createElement('div') }, appContainerRef: { current: document.createElement('div') } } },

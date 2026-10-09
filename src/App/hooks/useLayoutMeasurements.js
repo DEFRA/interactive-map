@@ -6,9 +6,31 @@ import { getSafeZoneInset } from '../../utils/getSafeZoneInset.js'
 
 const BANNER_DOCKED_CLASS = 'im-o-app__banner--docked'
 const BANNER_PANEL_SELECTOR = '.im-c-panel--banner'
+const ATTRIBUTIONS_STACKED_CLASS = 'im-o-app__attributions--stacked'
 
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
+
+// Whether an element renders anything. The control wrapper core puts around each plugin control is
+// display: contents, with no box of its own, so it counts as rendered if any child is.
+const isRendered = (element) => {
+  if (element.hidden) {
+    return false
+  }
+  if (element.getClientRects().length > 0) {
+    return true
+  }
+  return element.classList.contains('im-c-control-wrapper') && Array.from(element.children).some(isRendered)
+}
+
+// A top column whose children are all display:none (hiddenWhen buttons, or items an application mode
+// hides) isn't :empty, so it keeps its trailing padding-bottom — which would push the side column
+// below it down by a gap. Treat it as empty instead.
+const topColHeight = (col) => {
+  const children = Array.from(col.children)
+  const isAllHidden = children.length > 0 && !children.some(isRendered)
+  return isAllHidden ? 0 : col.offsetHeight
+}
 
 // Max of both sides, so centred content doesn't lean toward the emptier one.
 const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 0
@@ -16,15 +38,23 @@ const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 
 const subSlotMaxHeight = (columnHeight, siblingButtons, gap) => columnHeight - (siblingButtons ? siblingButtons + gap : 0)
 
 // bottomRightHeight is 0 when empty, falling back to the attributions' own height for spacing.
-const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, gap) =>
-  containerPad + (bottomRightHeight > 0 ? bottomRightHeight + gap : attributionsHeight)
+// rise is how far attributions has lifted .im-o-app__bottom-right above .im-o-app__bottom's
+// own bottom edge (see attributionsRise below) — without adding it here, .im-o-app__right's
+// computed bottom offset stays at the box's un-lifted position and the floating right column
+// overlaps the now-raised bottom-right buttons.
+const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, rise, gap) =>
+  containerPad + (bottomRightHeight > 0 ? bottomRightHeight + rise + gap : attributionsHeight)
 
-// Mobile's actions bar sits in flow (already reflected in baseBottom); tablet/desktop's floats, so this clears it too.
+// Clears the bottom row's own TOP edge (not just its trailing gap below), so the hint
+// never overlaps the logo/attribution row itself, plus a gap above it. That trivially
+// also clears anything after the row in flow — mobile's in-flow actions bar included.
+// Tablet/desktop's floating actions bar can sit independently higher than the row, so
+// still needs its own explicit clearance, hence the Math.max with actionsOffset below.
 const hintBottom = (main, bottom, actionsEl, gap) => {
-  const baseBottom = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
+  const clearsBottomRow = main.offsetHeight - bottom.offsetTop + gap
   const actionsHeight = actionsEl?.offsetHeight ?? 0
   const actionsOffset = actionsHeight > 0 ? main.offsetHeight - actionsEl.offsetTop : 0
-  return Math.max(baseBottom, actionsOffset + gap)
+  return Math.max(clearsBottomRow, actionsOffset + gap)
 }
 
 // Space between .im-o-app__left/.im-o-app__right for the banner to dock in.
@@ -49,42 +79,48 @@ const clearBannerPanelWidths = (bannerEl) => {
 const bannerInset = (isDocked, primaryGap, sideColWidth, gap) =>
   isDocked ? primaryGap + sideColWidth + gap : primaryGap
 
-/**
- * Computes layout CSS vars for the map overlay and dispatches the safe zone inset used
- * for `fitBounds`/`setView`. Waits for `arePluginsEvaluated` so the inset reflects final
- * button visibility rather than a mid-evaluation state, which would make the map jump.
- */
-function calculateLayout (layoutRefs, breakpoint) {
-  const {
-    appContainerRef, mainRef, topRef, topLeftColRef, topRightColRef,
-    bottomRef, attributionsRef, bottomRightRef, leftTopRef, leftBottomRef,
-    rightTopRef, rightBottomRef, actionsRef, bannerRef, leftRef, rightRef
-  } = layoutRefs
-
-  const appContainer = appContainerRef.current
-  const main = mainRef.current
-  const top = topRef.current
-  const topLeftCol = topLeftColRef.current
-  const topRightCol = topRightColRef.current
-  const bottom = bottomRef.current
-  const attributions = attributionsRef.current
-  const banner = bannerRef?.current
-
-  if ([main, top, bottom].some(r => !r)) {
-    return
+// Natural (unwrapped) width of the attribution text, measured by forcing nowrap just long
+// enough to read scrollWidth, then restoring — same "mutate, measure, restore" approach as
+// clearBannerPanelWidths/bannerConfiguredWidth above. Needed because once wrapping is
+// allowed, scrollWidth alone can't tell us how wide the text *would* be on one line.
+const attributionsNaturalWidth = (attributionsEl) => {
+  const textEl = attributionsEl?.firstElementChild
+  if (!textEl) {
+    return 0
   }
+  const previousWhiteSpace = textEl.style.whiteSpace
+  textEl.style.whiteSpace = 'nowrap'
+  const width = textEl.scrollWidth
+  textEl.style.whiteSpace = previousWhiteSpace
+  return width
+}
 
-  const root = document.documentElement
-  const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
-  const primaryGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--primary-gap'), 10)
+// Stacks (drops to its own full-width row below the logo) once the attribution text no
+// longer fits, at its natural width, in the space beside the logo column.
+const isAttributionsStacked = (naturalWidth, availableWidth) => naturalWidth > availableWidth
 
-  // === Top column width ===
-  const topColWidthPx = symmetricWidth(topLeftCol.offsetWidth, topRightCol.offsetWidth)
-  appContainer.style.setProperty('--top-col-width', `${topColWidthPx}px`)
+// How far attributions lifts .im-o-app__bottom-right above .im-o-app__bottom's own bottom
+// edge. The same figure covers both modes, because both bleed primaryGap past that edge and
+// then take attributionsHeight (plus a dividerGap) back up from there:
+//  - docked: the box grows upward from the bleed into the row itself, where
+//    .im-o-app__bottom-right shares the same horizontal space, so the row needs an explicit
+//    margin-bottom (--bottom-right-clearance) to stay clear of it;
+//  - stacked: the box is an extra flex line *below* the row, so it lifts the row by exactly
+//    that much on its own — no margin needed, hence bottomRightClearance's isStacked branch.
+// Either way .im-o-app__right must clear the lift, so the offsets below use this, not the
+// clearance. Clamped at 0: a box shorter than its own bleed lifts nothing.
+const attributionsRise = (attributionsHeight, dividerGap, primaryGap) =>
+  Math.max(0, attributionsHeight + dividerGap - primaryGap)
 
-  // === Banner: docks centred between the side columns when there's room, otherwise
-  // stacks full-width. Mobile always stacks. ===
-  const isMobile = breakpoint === 'mobile'
+// Stacked gets its lift from the extra flex line itself (see attributionsRise above), so only
+// docked needs the row pushed up by a margin.
+const bottomRightClearance = (isStacked, rise) => isStacked ? 0 : rise
+
+// Docks centred between the side columns when there's room, otherwise stacks full-width
+// (mobile always stacks). Sets the banner's own CSS vars and returns what the side-column
+// offset calc below needs.
+function applyBannerLayout ({ appContainer, root, top, bannerRef, leftRef, rightRef, isMobile, dividerGap, primaryGap }) {
+  const banner = bannerRef?.current
   if (isMobile) {
     clearBannerPanelWidths(banner)
   }
@@ -107,14 +143,72 @@ function calculateLayout (layoutRefs, breakpoint) {
   const bannerTop = hasBanner ? top.offsetTop + top.offsetHeight : 0
   appContainer.style.setProperty('--banner-top', `${bannerTop}px`)
 
+  return { isBannerStacked, bannerTop, bannerHeight }
+}
+
+// Docks attributions beside the logo when its natural width fits there, otherwise stacks it
+// onto its own full-width row below (im-o-app__attributions--stacked, in layout.module.scss),
+// genuinely growing .im-o-app__bottom and pushing the logo and bottom-right buttons up. Must
+// run before the offsets below, since toggling the stacked class changes
+// bottom.offsetTop/offsetHeight that they read.
+function applyAttributionsLayout ({ appContainer, bottom, attributions, dividerGap, primaryGap }) {
+  const attributionsCol = bottom.children[1] // the bottom-right column, a DOM sibling of attributions
+  const isStacked = isAttributionsStacked(attributionsNaturalWidth(attributions), attributionsCol?.offsetWidth ?? 0)
+  attributions.classList.toggle(ATTRIBUTIONS_STACKED_CLASS, isStacked)
+  // getBoundingClientRect, not offset math, because .im-o-app__bottom's `justify-content:
+  // space-between` gap between the two columns isn't a fixed value (unlike `gap`) to reconstruct.
+  const left = attributionsCol ? Math.round(attributionsCol.getBoundingClientRect().left - bottom.getBoundingClientRect().left) : 0
+  appContainer.style.setProperty('--attributions-left', `${left}px`)
+  const rise = attributionsRise(attributions.offsetHeight, dividerGap, primaryGap)
+  appContainer.style.setProperty('--bottom-right-clearance', `${bottomRightClearance(isStacked, rise)}px`)
+  return { rise }
+}
+
+/**
+ * Computes layout CSS vars for the map overlay and dispatches the safe zone inset used
+ * for `fitBounds`/`setView`. Waits for `arePluginsEvaluated` so the inset reflects final
+ * button visibility rather than a mid-evaluation state, which would make the map jump.
+ */
+export function calculateLayout (layoutRefs, breakpoint) {
+  const {
+    appContainerRef, mainRef, topRef, topLeftColRef, topRightColRef,
+    bottomRef, attributionsRef, bottomRightRef, leftTopRef, leftBottomRef,
+    rightTopRef, rightBottomRef, actionsRef, bannerRef, leftRef, rightRef
+  } = layoutRefs
+
+  const appContainer = appContainerRef.current
+  const main = mainRef.current
+  const top = topRef.current
+  const topLeftCol = topLeftColRef.current
+  const topRightCol = topRightColRef.current
+  const bottom = bottomRef.current
+  const attributions = attributionsRef.current
+
+  if ([main, top, bottom].some(r => !r)) {
+    return
+  }
+
+  const root = document.documentElement
+  const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
+  const primaryGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--primary-gap'), 10)
+
+  // Banner: docks centred between the side columns when there's room, otherwise stacks
+  // full-width. Mobile always stacks.
+  const isMobile = breakpoint === 'mobile'
+  const { isBannerStacked, bannerTop, bannerHeight } = applyBannerLayout({
+    appContainer, root, top, bannerRef, leftRef, rightRef, isMobile, dividerGap, primaryGap
+  })
+
   // Stacked pushes the side columns below the banner plus a trailing gap — added here, not
   // via a CSS last-child margin, since closed consumer HTML panels stay in the DOM (display:none).
   const sideOffsetTop = (colHeight) => isBannerStacked
     ? bannerTop + bannerHeight + dividerGap
     : colHeight + top.offsetTop
 
+  const { rise: attributionsLift } = applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
+
   // === Left container offsets ===
-  const leftOffsetTop = sideOffsetTop(topLeftCol.offsetHeight)
+  const leftOffsetTop = sideOffsetTop(topColHeight(topLeftCol))
   const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap
   appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
   appContainer.style.setProperty('--left-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
@@ -123,11 +217,11 @@ function calculateLayout (layoutRefs, breakpoint) {
   // === Right container offsets === (mirrors the left formula)
   const bottomRightHeight = buttonHeight(bottomRightRef)
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
-  const rightOffsetTop = sideOffsetTop(topRightCol.offsetHeight)
-  const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight
+  const rightOffsetTop = sideOffsetTop(topColHeight(topRightCol))
+  const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - attributionsLift
   const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
   appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, dividerGap)}px`)
+  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, attributionsLift, dividerGap)}px`)
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
 
   // === Keyboard hint bottom offset ===
@@ -144,7 +238,7 @@ export function useLayoutMeasurements () {
   const { dispatch, breakpoint, layoutRefs, arePluginsEvaluated, appVisible, isFullscreen } = useApp()
   const { mapSize, isMapReady } = useMap()
 
-  const { bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
+  const { bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
 
   // 1. Clear the evaluated flag on structural changes, gating the safe zone until re-evaluated.
   useLayoutEffect(() => {
@@ -168,7 +262,9 @@ export function useLayoutMeasurements () {
   // 3. Recalculate CSS vars on resize; safe zone dispatch stays Effect 2's job.
   // Memoized so useResizeObserver doesn't re-run (and cancel its RAF) on every render.
   const observedRefs = useMemo(
-    () => [bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
+    // attributionsRef included so its height (now variable, since attribution text can wrap
+    // onto multiple lines) recalculates --right-offset-bottom when the wrap changes.
+    () => [bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
     []
   )
 

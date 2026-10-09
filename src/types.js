@@ -112,7 +112,41 @@
  * Plugin-specific state.
  *
  * @property {Object} [services]
- * Core services (announce, reverseGeocode, closeApp, etc.).
+ * Core services (announce, focusMap, reverseGeocode, closeApp, etc.).
+ *
+ * @property {(id: string, options?: ApplicationModeOptions) => void} [setApplicationMode]
+ * Plugin components only. Enters an application mode, putting it on top of the stack (or moving it to
+ * the top if it's already set). Its lists usually come from the manifest's applicationModes; options
+ * adjust them for this call, applied last.
+ *
+ * @property {(id: string) => void} [clearApplicationMode]
+ * Plugin components only. Leaves an application mode, so the mode underneath (if any) takes over.
+ */
+
+/**
+ * What an application mode shows while it's the current mode (the top of the stack; modes underneath
+ * don't apply). The current mode adds `im-o-app--mode-{id}` to the app root. A mode is defined by the
+ * plugin manifests that declare it (combined), else the host's applicationModes config, else the
+ * options it was set with; later rules append (include) and remove (exclude) items. Hidden items stay
+ * mounted (display: none), so their state survives, and modal panels are never hidden. Without any
+ * lists, nothing is hidden.
+ *
+ * @typedef {Object} ApplicationModeOptions
+ *
+ * @property {string[] | null} [include]
+ * In a mode's definition: only these buttons, panels and controls (by id), plus the declaring
+ * plugins' own items, stay visible. In a later rule: these are added.
+ *
+ * @property {string[] | null} [exclude]
+ * These buttons, panels and controls (by id) are hidden.
+ */
+
+/**
+ * The host's application modes, keyed by mode id. For a mode a plugin declares, include appends
+ * items and exclude removes them; for any other mode it's the definition. false disables a mode
+ * entirely (no class, nothing hidden), whoever sets it.
+ *
+ * @typedef {Object<string, ApplicationModeOptions | false>} ApplicationModesConfig
  */
 
 /**
@@ -306,10 +340,10 @@
  * Get the dimensions of the visible map area as a formatted string (e.g., '400m by 750m').
  *
  * @property {(from: [number, number], to: [number, number]) => string} getCardinalMove
- * Get cardinal direction and distance between two coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider). Returns a formatted string (e.g., 'north 400m' or 'south 400m, west 750m').
+ * Get cardinal direction and distance between two coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider). Returns a formatted string (e.g., 'north 400 metres' or 'south 400 metres, west 750 metres').
  *
  * @property {() => number} getResolution
- * Get map resolution in meters per pixel.
+ * Get map resolution in metres per pixel.
  *
  * @property {(coords: [number, number]) => { x: number, y: number }} mapToScreen
  * Convert map coordinates ([lng, lat] or [easting, northing] depending on the crs of the map provider) to screen pixel position (x from left edge, y from top edge of viewport).
@@ -357,6 +391,17 @@
  */
 
 /**
+ * Configuration options for the OpenLayers provider.
+ *
+ * @typedef {Object} OpenLayersProviderConfig
+ *
+ * @property {'uk' | 'world'} [zoomAlignment='uk']
+ * Which zoom-level sequence the map's view resolutions follow. 'uk' uses the OS tile
+ * grid zoom levels (0–13, zoom 0 shows all of Great Britain). 'world' uses the ESRI LOD
+ * sequence, for zoom levels that match the ESRI SDK (full UK visible around zoom 7).
+ */
+
+/**
  * Descriptor for lazy-loading a map provider.
  *
  * @typedef {Object} MapProviderDescriptor
@@ -393,6 +438,11 @@
  *
  * @property {string} [attribution]
  * Attribution text.
+ *
+ * @property {boolean} [showAttributionOnMobile]
+ * Some basemap providers' terms require attribution to remain visible on all devices, while
+ * others are content for it to be hidden on mobile to save space. Attribution is hidden on
+ * mobile by default; set to `true` to keep it visible on mobile for this style.
  *
  * @property {string} [backgroundColor]
  * CSS background color. Allows the viewport background to matche the background layer of the style.
@@ -457,6 +507,15 @@
  * @property {Object} [params]
  * WMS request parameters. Passed directly to the OpenLayers `TileWMS` source when `type` is `'wms'`.
  * Most WMS GetMap requests should include `LAYERS`. Example: `{ LAYERS: 'MyLayer', FORMAT: 'image/jpeg' }`.
+ *
+ * @property {[number, number, number, number]} [extent]
+ * Bounding box [minX, minY, maxX, maxY] in EPSG:27700, the units the OpenLayers provider's
+ * tile grid is built in. When set, no tiles outside this area are requested — a plain XYZ tile
+ * URL template has no capabilities document to determine real coverage from, so the consumer
+ * configuring the style must supply it directly. **Currently only supported by the OpenLayers
+ * provider's `'raster'` type.** Omit to request tiles across the whole tile grid regardless of
+ * real coverage. Panning/zooming outside the extent is unaffected;
+ * only tile requests are limited.
  */
 
 /**
@@ -466,9 +525,12 @@
  * @typedef {Object} SymbolDefaults
  *
  * @property {string} [symbol='pin']
- * Default symbol ID. Built-in values: `'pin'`, `'circle'`.
+ * Default symbol ID. Built-in values: `'pin'`, `'circle'`, `'square'`, `'hexagon'`, `'triangle'`, `'diamond'`.
  *
- * @property {string} [symbolSvgContent]
+ * @property {'small' | 'medium' | 'large'} [size='medium']
+ * Default symbol size: small is 75% and large 125% of medium. Rings and halo stay a fixed width.
+ *
+ * @property {string} [svgContent]
  * Default inner SVG path content. When set, overrides `symbol`.
  *
  * @property {string} [viewBox='0 0 44 44']
@@ -513,7 +575,10 @@
  * @property {string} [symbol]
  * Symbol id to use for this marker (e.g. 'pin', 'circle'). Overrides the default `symbolDefaults.symbol` option.
  *
- * @property {string} [symbolSvgContent]
+ * @property {'small' | 'medium' | 'large'} [size]
+ * Symbol size for this marker. Overrides the default `symbolDefaults.size` option.
+ *
+ * @property {string} [svgContent]
  * Inner SVG path content (no `<svg>` wrapper) to use instead of a registered symbol.
  * Use `{{token}}` placeholders for colours — e.g. `fill="{{backgroundColor}}"`.
  * When set, `symbol` is ignored.
@@ -630,12 +695,54 @@
  */
 
 /**
+ * Describes a single row in the keyboard shortcuts help panel (opened via Shift+?).
+ * Plugins register these via `PluginManifest.keyboardShortcuts`; core (built-in)
+ * shortcuts share this same shape internally.
+ *
+ * @typedef {Object} KeyboardShortcutDefinition
+ *
+ * @property {string} command
+ * HTML string describing the key combination, rendered as markup — wrap keys in
+ * `<kbd>` tags, e.g. `'<kbd>Shift</kbd> + <kbd>K</kbd>'`. If it uses the Alt key,
+ * label it per platform (macOS calls it Option, not Alt) — see the shared `isMac()`
+ * helper and its use in the app's own core shortcuts.
+ *
+ * @property {'viewport' | 'listbox' | 'global'} [context='viewport']
+ * Which help-panel context this shortcut applies to. Used only to choose the panel's
+ * default open tab — it doesn't affect whether the row is shown.
+ *
+ * @property {string} [group='Navigate']
+ * Tab label the shortcut is grouped under in the help panel. Shortcuts sharing a group
+ * (case/whitespace-insensitive) appear together under one tab; if every visible shortcut
+ * shares one group, the panel renders as a flat list with no tabs.
+ *
+ * @property {string} id
+ * Unique shortcut identifier.
+ *
+ * @property {string[]} [requiredConfig]
+ * App config keys that must all be truthy for the shortcut to appear in the help panel.
+ *
+ * @property {string} title
+ * Accessible title shown in the help panel.
+ *
+ * @property {boolean} [visuallyHidden=false]
+ * When true, the row is hidden from sighted users but stays in the DOM and remains
+ * discoverable by assistive technology. Use for a shortcut with no visual affordance to
+ * discover it by otherwise — e.g. one whose only effect is a screen reader announcement.
+ */
+
+/**
  * Manifest defining a plugin's buttons, panels, controls, API methods, and state.
  *
  * @typedef {Object} PluginManifest
  *
  * @property {Record<string, Function>} [api]
  * API methods.
+ *
+ * @property {Object<string, ApplicationModeOptions>} [applicationModes]
+ * Application modes this plugin enters (with setApplicationMode), keyed by mode id, and what each
+ * shows. With an include, the mode hides everything except the included items and this plugin's own
+ * items. Several plugins can declare the same mode; their lists combine.
  *
  * @property {ButtonDefinition[]} [buttons]
  * Button definitions.
@@ -648,6 +755,9 @@
  *
  * @property {ComponentType} [InitComponent]
  * Initialization component.
+ *
+ * @property {KeyboardShortcutDefinition[]} [keyboardShortcuts]
+ * Keyboard shortcut definitions shown in the keyboard shortcuts help panel.
  *
  * @property {PanelDefinition[]} [panels]
  * Panel definitions.
@@ -695,6 +805,10 @@
  * @property {'light' | 'dark'} [appColorScheme='light']
  * Application colour scheme.
  *
+ * @property {ApplicationModesConfig} [applicationModes]
+ * Defines, adjusts or disables application modes, keyed by mode id, e.g. `{ draw: { include: ['search'] } }`.
+ * Applied whenever that mode is current, whoever sets it, after the plugins' manifests.
+ *
  * @property {boolean} [autoColorScheme=false]
  * Whether to automatically determine the colour scheme based on system preferences.
  *
@@ -725,16 +839,18 @@
  * @property {boolean} [enableFullscreen=false]
  * Whether a toggle fullscreen button is displayed.
  *
- * @property {boolean} [enableMoveControls=true]
- * Whether the move controls are displayed — a button that reveals directional pan,
- * zoom, and step-size buttons, providing a non-dragging alternative to panning
- * and zooming the map (WCAG 2.5.7). Unlike enableZoomControls, it remains visible
- * when the interface type is 'touch'. When enabled, enableZoomControls' buttons
- * are hidden to avoid duplicating zoom controls.
+ * @property {boolean} [enableMapControls=true]
+ * Whether the map controls are displayed — a button that reveals on-screen move,
+ * zoom, and precision buttons, plus a target point, typically used to place or
+ * select features on the map without a drag gesture. This gives a non-dragging way
+ * to operate the map, for anyone who can't perform a drag/pinch gesture (e.g.
+ * switch access users) and for voice interfaces such as Voice Control, which can
+ * trigger a button click but not a drag. When enabled, enableZoomControls' buttons
+ * are hidden to avoid duplication.
  *
  * @property {boolean} [enableZoomControls=true]
  * Whether zoom control buttons are displayed. Not displayed when the interface
- * type is 'touch', or when enableMoveControls is enabled.
+ * type is 'touch', or when enableMapControls is enabled.
  *
  * @property {[number, number, number, number]} [extent]
  * Initial extent [minX, minY, maxX, maxY]. Equivalent to bounds; use whichever matches your map provider's terminology.
@@ -763,11 +879,11 @@
  * @property {string} [mapHintText]
  * Visually hidden text, rendered immediately before the map for screen reader users, explaining that it must be focused before keyboard commands work. Prefixed with mapLabel, so multiple maps on one page can be told apart.
  *
- * @property {string} [mapLabel='Interactive map']
+ * @property {string} [mapLabel='Interactive map application']
  * Accessible label for the map, announced by screen readers. Also prefixed onto mapHintText, so give each map on a page a distinct label.
  *
- * @property {string} [moveControlsHintText]
- * Visually hidden text describing the move controls button, appended to keyboardHintText when enableMoveControls is true.
+ * @property {string} [mapControlsHintText]
+ * Visually hidden text describing the map controls button, appended to keyboardHintText when enableMapControls is true.
  *
  * @property {MapProviderDescriptor} [mapProvider]
  * A factory function that returns a map provider instance (e.g. maplibreProvider()).

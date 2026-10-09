@@ -64,7 +64,7 @@ export const undoHandlers = {
     this._applyUndoAndSync(state, geojson, featureId)
 
     // Update touch vertex target position
-    const vertex = state.vertecies[state.selectedVertexIndex]
+    const vertex = state.vertices[state.selectedVertexIndex]
     if (vertex) {
       this.updateTouchVertexTarget(state, scalePoint(this.map.project(vertex), state.scale))
     }
@@ -122,13 +122,13 @@ export const undoHandlers = {
     this._applyUndoAndSync(state, geojson, featureId)
 
     // Re-insertion always lands the vertex back at vertexIndex, so it is guaranteed present
-    this.updateTouchVertexTarget(state, scalePoint(this.map.project(state.vertecies[vertexIndex]), state.scale))
+    this.updateTouchVertexTarget(state, scalePoint(this.map.project(state.vertices[vertexIndex]), state.scale))
     this.changeMode(state, { selectedVertexIndex: vertexIndex, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, vertexIndex) })
   },
 
   _applyUndoAndSync (state, geojson, featureId) {
     this._ctx.api.add(geojson)
-    state.vertecies = this.getVerticies(featureId)
+    state.vertices = this.getVertices(featureId)
     state.midpoints = this.getMidpoints(featureId)
     this._ctx.store.render()
     this.fireGeometryChange(state)

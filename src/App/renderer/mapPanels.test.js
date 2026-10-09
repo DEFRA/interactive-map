@@ -16,14 +16,13 @@ jest.mock('./slots.js', () => ({ allowedSlots: { panel: ['header', 'modal', 'lef
 describe('mapPanels', () => {
   const baseConfig = {
     desktop: { slot: 'header', order: 1 },
-    includeModes: ['view'],
     pluginId: 'plug1'
   }
 
   let defaultAppState
 
-  const map = (state = defaultAppState, slot = 'header') =>
-    mapPanels({ slot, appState: state, evaluateProp: (p) => p })
+  const map = (state = defaultAppState, slot = 'header', isHiddenByApplicationMode) =>
+    mapPanels({ slot, appState: state, evaluateProp: (prop) => prop, isHiddenByApplicationMode })
 
   beforeEach(() => {
     jest.clearAllMocks()
@@ -31,7 +30,6 @@ describe('mapPanels', () => {
     registeredPlugins.length = 0
     defaultAppState = {
       breakpoint: 'desktop',
-      mode: 'view',
       isFullscreen: true,
       openPanels: { p1: { props: { foo: 'bar' } } },
       panelConfig: { p1: baseConfig },
@@ -40,12 +38,34 @@ describe('mapPanels', () => {
     defaultAppState.panelConfig = ({ p1: baseConfig })
   })
 
-  it('returns empty array when no panels are open', () => {
-    expect(map({ ...defaultAppState, openPanels: {} })).toEqual([])
+  it('renders a closed shell (not nothing) for an eligible panel that is not open', () => {
+    const result = map({ ...defaultAppState, openPanels: {} })
+    expect(result).toHaveLength(1)
+    expect(result[0]).toMatchObject({ id: 'p1', type: 'panel', order: 1 })
+    expect(result[0].element.props.isOpen).toBe(false)
+  })
+
+  it('does not build a closed panel\'s body before it opens', () => {
+    const renderFn = jest.fn(() => <div>child</div>)
+    defaultAppState.panelConfig = ({ p1: { ...baseConfig, render: renderFn } })
+    const result = map({ ...defaultAppState, openPanels: {} })
+    expect(mapControls).not.toHaveBeenCalled()
+    expect(withPluginContexts).not.toHaveBeenCalled()
+    expect(result[0].element.props.items).toBeUndefined()
+    expect(result[0].element.props.tabs).toBeUndefined()
+  })
+
+  it('returns an empty array only when there is nothing eligible for the slot at all', () => {
+    expect(map({ ...defaultAppState, panelConfig: {} })).toEqual([])
   })
 
   it('skips panel if config is missing', () => {
     defaultAppState.panelConfig = ({})
+    expect(map()).toEqual([])
+  })
+
+  it('skips a registered panelId whose config is falsy', () => {
+    defaultAppState.panelConfig = ({ p1: null })
     expect(map()).toEqual([])
   })
 
@@ -55,53 +75,42 @@ describe('mapPanels', () => {
   })
 
   it('skips panel if slot does not match requested slot', () => {
-    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' } } })
     const state = { ...defaultAppState, openPanels: { p1: { props: {} } } }
     expect(map(state, 'sidebar')).toEqual([])
   })
 
-  it('skips panel if mode does not match includeModes/excludeModes or slot invalid', () => {
+  it('skips panel if its slot is invalid or it belongs to another slot', () => {
     defaultAppState.panelConfig = ({
-      p1: { desktop: { slot: 'invalid' }, includeModes: ['view'] },
-      p2: { desktop: { slot: 'header' }, includeModes: ['edit'] },
-      p3: { desktop: { slot: 'header' }, excludeModes: ['view'] },
-      p4: { desktop: { modal: true }, includeModes: ['view'] }
+      p1: { desktop: { slot: 'invalid' } },
+      p4: { desktop: { modal: true } }
     })
     expect(map()).toEqual([])
   })
 
-  it('skips panel if mode is not allowed (isModeAllowed returns false)', () => {
-    // 1. Define config that only allows 'edit' mode
-    const panelConfig = {
-      p1: {
-        desktop: { slot: 'header' },
-        includeModes: ['edit']
-      }
-    }
-
-    // 2. Mock appState with 'view' mode
-    const state = {
-      ...defaultAppState,
-      mode: 'view',
-      panelConfig,
-      openPanels: { p1: { props: {} } }
-    }
-
-    // 3. Verify it's filtered out even though it's the right slot
-    const result = map(state, 'header')
-    expect(result).toEqual([])
+  it('hides a panel the application mode filter hides, telling it whether the panel is modal', () => {
+    const isHiddenByApplicationMode = jest.fn(() => true)
+    expect(map(defaultAppState, 'header', isHiddenByApplicationMode)[0].element.props.isHidden).toBe(true)
+    expect(isHiddenByApplicationMode).toHaveBeenCalledWith({ ids: ['p1'], pluginId: undefined, isModal: false })
+    expect(map(defaultAppState)[0].element.props.isHidden).toBe(false)
+    defaultAppState.panelConfig = ({ p1: { desktop: { modal: true } } })
+    map(defaultAppState, 'modal', isHiddenByApplicationMode)
+    expect(isHiddenByApplicationMode).toHaveBeenLastCalledWith({ ids: ['p1'], pluginId: undefined, isModal: true })
   })
 
-  it('only allows last opened modal panel', () => {
+  it('renders both modal panels\' shells but only marks the last-opened one as open', () => {
     defaultAppState.panelConfig = ({
-      p1: { desktop: { modal: true }, includeModes: ['view'] },
-      p2: { desktop: { modal: true }, includeModes: ['view'] }
+      p1: { desktop: { modal: true } },
+      p2: { desktop: { modal: true } }
     })
     const state = {
       ...defaultAppState,
       openPanels: { p1: { props: {} }, p2: { props: {} } }
     }
-    expect(map(state, 'modal').map(r => r.id)).toEqual(['p2'])
+    const result = map(state, 'modal')
+    expect(result.map(r => r.id).sort()).toEqual(['p1', 'p2'])
+    expect(result.find(r => r.id === 'p1').element.props.isOpen).toBe(false)
+    expect(result.find(r => r.id === 'p2').element.props.isOpen).toBe(true)
   })
 
   it('wraps render function with plugin context', () => {
@@ -151,13 +160,13 @@ describe('mapPanels', () => {
 
   it('returns just the injected controls when the panel has neither render nor html', () => {
     mapControls.mockReturnValue([{ id: 'injected1', order: 0, element: <span>injected</span> }])
-    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' } } })
     const result = map()
     expect(result[0].element.props.items.map(i => i.id)).toEqual(['injected1'])
   })
 
   it('does not build an items list for a static-html panel (dangerouslySetInnerHTML can\'t host injected controls)', () => {
-    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'], pluginId: 'plug1', html: '<p>Hi</p>' } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, pluginId: 'plug1', html: '<p>Hi</p>' } })
     const result = map()
     expect(result[0].element.props.items).toBeUndefined()
     expect(result[0].element.props.html).toBe('<p>Hi</p>')
@@ -165,7 +174,7 @@ describe('mapPanels', () => {
 
   it('warns in dev when controls target a static-html panel', () => {
     mapControls.mockReturnValue([{ id: 'injected1', order: 0, element: <span>injected</span> }])
-    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'], pluginId: 'plug1', html: '<p>Hi</p>' } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, pluginId: 'plug1', html: '<p>Hi</p>' } })
     map()
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('p1'))
   })
@@ -175,7 +184,7 @@ describe('mapPanels', () => {
       { id: 'first', order: 2, element: <span>first</span> },
       { id: 'second', order: 1, element: <span>second</span> }
     ])
-    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' } } })
     const result = map()
     expect(result[0].element.props.items.map(i => i.id)).toEqual(['second', 'first'])
   })
@@ -215,7 +224,7 @@ describe('mapPanels', () => {
   })
 
   it('returns correct structure and defaults', () => {
-    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' }, includeModes: ['view'] } })
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' } } })
     const result = map()
     expect(result[0]).toMatchObject({ id: 'p1', type: 'panel', order: 0 })
     expect(result[0].element.props).toMatchObject({ panelId: 'p1', props: { foo: 'bar' } })
@@ -224,7 +233,7 @@ describe('mapPanels', () => {
   it('allows panel next to a button slot', () => {
     const panelId = 'p-1'
     defaultAppState.panelConfig = ({
-      [panelId]: { desktop: { slot: 'p-1-button' }, includeModes: ['view'] }
+      [panelId]: { desktop: { slot: 'p-1-button' } }
     })
     const state = { ...defaultAppState, openPanels: { [panelId]: { props: {} } } }
     expect(map(state, 'p-1-button')).toHaveLength(1)
@@ -241,8 +250,7 @@ describe('mapPanels', () => {
   it('replaces drawer slot with left-top on non-mobile breakpoints', () => {
     defaultAppState.panelConfig = ({
       p1: {
-        desktop: { slot: 'drawer' },
-        includeModes: ['view']
+        desktop: { slot: 'drawer' }
       }
     })
 
@@ -277,7 +285,7 @@ describe('mapPanels', () => {
 
   it('filters out consumer HTML panels (handled by HtmlElementHost)', () => {
     defaultAppState.panelConfig = ({
-      p1: { desktop: { slot: 'header' }, html: '<p>Hi</p>', includeModes: ['view'] }
+      p1: { desktop: { slot: 'header' }, html: '<p>Hi</p>' }
     })
     expect(map()).toEqual([])
   })

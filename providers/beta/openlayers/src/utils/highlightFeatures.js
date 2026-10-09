@@ -1,4 +1,3 @@
-import VectorTileLayer from 'ol/layer/VectorTile.js'
 import VectorLayer from 'ol/layer/Vector.js'
 import VectorSource from 'ol/source/Vector.js'
 import Feature from 'ol/Feature.js'
@@ -8,15 +7,18 @@ import Stroke from 'ol/style/Stroke.js'
 import Fill from 'ol/style/Fill.js'
 import Icon from 'ol/style/Icon.js'
 import { collectTileFragments } from './vtTileFragments.js'
-import { getCachedSymbolImage } from './symbolImages.js'
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
-import { getSymbolAnchor } from '../../../../../src/utils/symbolUtils.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 
 const CRS = 'EPSG:27700'
 const geoJsonFormat = new GeoJSON({ dataProjection: CRS, featureProjection: CRS })
 
 const HIGHLIGHT_MARKER = '_highlight'
 const HIGHLIGHT_Z = 999
+
+// Layers are classified by a `layerType` tag ('vector' | 'vectorTile') set at creation,
+// not `instanceof VectorLayer`/`VectorTileLayer` — a UMD consumer loads this provider and
+// other plugins (e.g. draw) as independently-bundled scripts, each with its own copy of
+// ol, so a class reference from this bundle never matches an instance built by another.
 
 const buildHighlightStyles = (styleEntry, isActive) => {
   if (!styleEntry) {
@@ -38,26 +40,30 @@ const buildHighlightStyles = (styleEntry, isActive) => {
   return styles
 }
 
-const hasSymbolStyle = (properties) => !!(properties?.symbol || properties?.symbolSvgContent)
+const toStyleArray = (style) => {
+  if (!style) {
+    return []
+  }
+  return Array.isArray(style) ? style : [style]
+}
 
 // A drawn point renders as a real symbol icon, not Stroke/Fill, so its selected/active ring is
-// the active/selected variant of that same icon instead. Returns null (not []) for a
-// non-symbol feature so the caller falls through to buildHighlightStyles.
-const buildSymbolHighlightStyle = (properties, isActive) => {
-  if (!hasSymbolStyle(properties)) {
+// the active/selected variant of that same icon instead — with the anchor and pixel ratio draw
+// resolved it at. Returns null (not []) for a non-symbol feature so the caller falls through to
+// buildHighlightStyles.
+const buildSymbolHighlightStyle = (properties, isActive, symbolImages) => {
+  if (!hasSymbol(properties)) {
     return null
   }
   const imageId = isActive ? properties.symbolActiveImageId : properties.symbolSelectedImageId
-  const canvas = imageId && getCachedSymbolImage(imageId)
-  if (!canvas) {
+  const canvas = imageId && symbolImages?.getImage(imageId)
+  if (!canvas || !properties.symbolImageAnchor) {
     return null
   }
-  const symbolDef = symbolRegistry.getSymbolDef(properties)
-  const anchor = getSymbolAnchor(properties, symbolDef)
   // The cached canvas is rasterised at symbolPixelRatio for crispness — ol/style/Icon draws
   // it at native size, so the inverse scale keeps the displayed size correct.
   const scale = 1 / (properties.symbolPixelRatio || 1)
-  return [new Style({ image: new Icon({ img: canvas, anchor, scale }), zIndex: HIGHLIGHT_Z })]
+  return [new Style({ image: new Icon({ img: canvas, anchor: properties.symbolImageAnchor, scale }), zIndex: HIGHLIGHT_Z })]
 }
 
 // ---------------------------------------------------------------------------
@@ -83,7 +89,7 @@ const buildFeatureKeyIndex = (features) => {
 
 const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
   map.getLayers().forEach(layer => {
-    if (!(layer instanceof VectorTileLayer)) {
+    if (layer.get('layerType') !== 'vectorTile') {
       return
     }
 
@@ -97,14 +103,19 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
       return
     }
 
-    if (!layer._highlightOriginalStyle) {
+    // A restyle made directly via layer.setStyle() while a selection stays active (e.g. a
+    // theme switch) replaces our wrap with a fresh style function — comparing against our own
+    // last-installed wrap detects this and re-captures the new live style instead of going stale.
+    if (!layer._highlightOriginalStyle || layer.getStyleFunction() !== layer._highlightWrappedStyle) {
       layer._highlightOriginalStyle = layer.getStyleFunction()
     }
     const orig = layer._highlightOriginalStyle
 
-    layer.setStyle((feature, resolution) => {
+    const wrappedStyle = (feature, resolution) => {
       const base = orig(feature, resolution)
-      const styleLayerId = feature.get('mapbox-layer')?.id
+      // draw-ol's MVT tiles carry a 'mapbox-layer' object; tiles-backed datasets tag the OL
+      // layer itself with 'layerId' instead.
+      const styleLayerId = feature.get('mapbox-layer')?.id ?? layer.get('layerId')
       if (!styleLayerId) {
         return base
       }
@@ -124,9 +135,10 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
         return base
       }
 
-      const baseArr = base ? (Array.isArray(base) ? base : [base]) : []
-      return [...baseArr, ...highlightStyles]
-    })
+      return [...toStyleArray(base), ...highlightStyles]
+    }
+    layer._highlightWrappedStyle = wrappedStyle
+    layer.setStyle(wrappedStyle)
     // setStyle() calls layer.changed() internally — no source.changed() needed
     // (source.changed() works but causes a visible flicker on selection)
   })
@@ -139,19 +151,20 @@ const wrapVtLayers = (map, selectedKeys, activeKeys, idPropsMap, stylesMap) => {
 // ---------------------------------------------------------------------------
 
 const getOrCreateHighlightLayer = (map) => {
-  let layer = null
-  map.getLayers().forEach(l => {
-    if (l.get(HIGHLIGHT_MARKER)) {
-      layer = l
-    }
-  })
+  let layer = map.getLayers().getArray().find(mapLayer => mapLayer.get(HIGHLIGHT_MARKER))
   if (!layer) {
     layer = new VectorLayer({ source: new VectorSource(), zIndex: HIGHLIGHT_Z + 2 })
     layer.set(HIGHLIGHT_MARKER, true)
+    layer.set('layerType', 'vector')
     map.addLayer(layer)
   }
   return layer
 }
+
+const findVectorLayer = (map, layerId) =>
+  map.getLayers().getArray().find(mapLayer =>
+    mapLayer.get('layerType') === 'vector' && !mapLayer.get(HIGHLIGHT_MARKER) && mapLayer.get('layerId') === layerId
+  )
 
 // interact's selectedFeatures carry a `properties` snapshot taken at selection time, which
 // goes stale for the symbol icon path once a map style change re-resolves the point's image
@@ -160,32 +173,39 @@ const getLiveProperties = (map, layerId, featureId) => {
   if (featureId == null) {
     return undefined
   }
-  let properties
-  map.getLayers().forEach(l => {
-    if (properties || !(l instanceof VectorLayer) || l.get(HIGHLIGHT_MARKER) || l.get('layerId') !== layerId) {
-      return
-    }
-    const feature = l.getSource()?.getFeatureById(String(featureId))
-    if (feature) {
-      properties = feature.getProperties()
-    }
-  })
-  return properties
+  const feature = findVectorLayer(map, layerId)?.getSource()?.getFeatureById(String(featureId))
+  return feature?.getProperties()
 }
 
-const addVectorHighlights = (map, source, features, isActive, stylesMap) => {
+// A dataset symbol point (unlike a drawn one) has no active/selected id of its own — every
+// feature in the layer shares one base imageId, so the variant is resolved from that instead.
+const buildDatasetSymbolHighlightStyle = (map, layerId, isActive, symbolImages) => {
+  const symbolMeta = findVectorLayer(map, layerId)?.get('symbolMeta')
+  if (!symbolMeta || !symbolImages) {
+    return null
+  }
+  const targetId = isActive ? symbolImages.getActiveImageId(symbolMeta.imageId) : symbolImages.getSelectedImageId(symbolMeta.imageId)
+  const canvas = targetId && symbolImages.getImage(targetId)
+  if (!canvas) {
+    return null
+  }
+  return [new Style({ image: new Icon({ img: canvas, anchor: symbolMeta.anchor, scale: 1 / symbolMeta.pixelRatio }), zIndex: HIGHLIGHT_Z })]
+}
+
+const addVectorHighlights = (map, source, features, isActive, stylesMap, symbolImages) => {
   for (const { layerId, featureId, geometry } of features ?? []) {
     if (!geometry) {
       continue
     }
     const liveProperties = getLiveProperties(map, layerId, featureId)
-    const styles = buildSymbolHighlightStyle(liveProperties, isActive) ?? buildHighlightStyles(stylesMap?.[layerId], isActive)
-    if (!styles.length) {
-      continue
+    const styles = buildSymbolHighlightStyle(liveProperties, isActive, symbolImages) ??
+      buildDatasetSymbolHighlightStyle(map, layerId, isActive, symbolImages) ??
+      buildHighlightStyles(stylesMap?.[layerId], isActive)
+    if (styles.length) {
+      const olFeature = new Feature({ geometry: geoJsonFormat.readGeometry(geometry) })
+      olFeature.setStyle(styles)
+      source.addFeature(olFeature)
     }
-    const olFeature = new Feature({ geometry: geoJsonFormat.readGeometry(geometry) })
-    olFeature.setStyle(styles)
-    source.addFeature(olFeature)
   }
 }
 
@@ -206,6 +226,8 @@ const expandBoundsFromGeometry = (geometry, cb) => {
     coordinates.forEach(visitRing)
   } else if (type === 'MultiPolygon') {
     coordinates.forEach(poly => poly.forEach(visitRing))
+  } else {
+    // unsupported/unrecognised geometry type — nothing to expand bounds by
   }
 }
 
@@ -252,7 +274,7 @@ const computeBounds = (geometries) => {
  * - VectorLayers (draw etc.): overlay Feature at zIndex 1001.
  * Returns EPSG:27700 bounds [minX, minY, maxX, maxY] for selected features, or null.
  */
-export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures, stylesMap) => {
+export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures, stylesMap, symbolImages) => {
   if (!map) {
     return null
   }
@@ -260,7 +282,7 @@ export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures,
   // Determine which layerIds belong to plain VectorLayers vs VT layers
   const vectorLayerIds = new Set()
   map.getLayers().forEach(l => {
-    if (l instanceof VectorLayer && !l.get(HIGHLIGHT_MARKER)) {
+    if (l.get('layerType') === 'vector' && !l.get(HIGHLIGHT_MARKER)) {
       const id = l.get('layerId')
       if (id) {
         vectorLayerIds.add(id)
@@ -283,8 +305,8 @@ export const updateHighlightedFeatures = (map, selectedFeatures, activeFeatures,
   const vecActive = (activeFeatures ?? []).filter(f => vectorLayerIds.has(f.layerId))
 
   // VT features are handled by style-wrap; only add vector features to overlay
-  addVectorHighlights(map, hlSource, vecActive, true, stylesMap)
-  addVectorHighlights(map, hlSource, vecSelected, false, stylesMap)
+  addVectorHighlights(map, hlSource, vecActive, true, stylesMap, symbolImages)
+  addVectorHighlights(map, hlSource, vecSelected, false, stylesMap, symbolImages)
 
   // Bounds from all tile fragments of selected features
   const allGeoms = (selectedFeatures ?? []).flatMap(feat => resolveGeometries(map, feat))

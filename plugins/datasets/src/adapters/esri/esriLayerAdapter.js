@@ -6,6 +6,17 @@ import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { EsriDataset } from './registry/esriDataset.js'
 import { logger } from '../../../../../src/services/logger.js'
 
+const getLayerSortOrder = (layer) => {
+  if (layer.id === 'baseLayer') {
+    return -Infinity
+  }
+  if (layer.id.includes('ketchLayer')) {
+    return Infinity
+  }
+  const layerId = layer.type === 'group' ? layer.layers?.items?.[0]?.id : layer.id
+  return datasetRegistry._orderedDatasets.indexOf(layerId)
+}
+
 export default class EsriLayerAdapter extends LayerAdapter {
   constructor (mapProvider) {
     super()
@@ -36,8 +47,31 @@ export default class EsriLayerAdapter extends LayerAdapter {
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
     // ensure the datasets are added in order
+    const _add = async (registryDataset) => {
+      return this._addLayers(registryDataset).then(() => {
+        const mapLayer = this._mapVisibilityLayers[registryDataset.id]
+        registryDataset.sublayers?.forEach(sublayer => {
+          if (sublayer.visibility === 'visible') {
+            this._applyStyleLayerPaintProperties(sublayer, mapLayer)
+          }
+        })
+        this.applyDatasetVisibility(registryDataset.id)
+      })
+    }
+
+    // Add the visible datasets first - to speed up rendering
     for (const registryDataset of topLevelDatasets) {
-      await this._addLayers(registryDataset)
+      if (registryDataset.visibility === 'visible') {
+        await _add(registryDataset)
+      }
+    }
+    // Reorder layers after adding the initially visible datasets
+    this._reorderLayers()
+    // Add the non-visible datasets next
+    for (const registryDataset of topLevelDatasets) {
+      if (registryDataset.visibility !== 'visible') {
+        await _add(registryDataset)
+      }
     }
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
@@ -54,14 +88,29 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   _reorderLayers () {
-    // Ensure that all sketch layers are on top of the map, so that they are not obscured by other layers
-    // Only applicable when the draw plugin is in use, but safe to call regardless
-    const layersLength = this._map?.allLayers?.items?.length
-    if (layersLength) {
-      this._map.allLayers.items
-        .filter((layer) => layer.id.includes('ketchLayer'))
-        .forEach((layer) => this._map.reorder(layer, layersLength))
+    // Order: baseLayer first, then datasets by their registry order, then sketch layers last
+    const allLayers = this._map?.allLayers?.items
+    if (!allLayers?.length) {
+      return
     }
+
+    const topLevelLayers = allLayers.filter(layer => layer.parent?.type !== 'group')
+    const orderedLayers = [...topLevelLayers].sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))
+    orderedLayers.forEach((layer, index) => this._map.reorder(layer, index))
+    // Finally reorder the items within the group layers
+    this._reorderGroupLayers()
+  }
+
+  _reorderGroupLayers () {
+    const groupLayers = Object.values(this._groupLayers)
+    groupLayers.forEach((groupLayer) => {
+      const children = groupLayer?.allLayers?.items || []
+      const orderedChildren = [...children]
+        .filter(Boolean)
+        .sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))
+
+      orderedChildren.forEach((layer, index) => groupLayer?.reorder?.(layer, index))
+    })
   }
 
   _addGroupLayer (esriGroupId) {
@@ -228,7 +277,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
     const layerPaintProperties = vectorTileLayer.getPaintProperties(esriStyleLayerId)
     if (layerPaintProperties) {
-      registryDataset.applyLayerPaintProperties(layerPaintProperties)
       vectorTileLayer.setPaintProperties(esriStyleLayerId, registryDataset.applyLayerPaintProperties(layerPaintProperties))
     }
   }
@@ -239,6 +287,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
       // mapLayer could be a VectorTileLayer or a FeatureLayer, depending on the dataset type
       const mapLayer = this._mapVisibilityLayers[isSublayer ? parent.id : id]
+      if (!mapLayer) {
+        return
+      }
       if (registryDataset.type === 'FeatureService') {
         // FeatureLayers don't have style layers, so we don't need to apply style layer visibility or paint properties
         mapLayer.renderer = registryDataset.renderer

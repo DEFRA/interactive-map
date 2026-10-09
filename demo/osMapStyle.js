@@ -1,8 +1,20 @@
 import useDocusaurusContext from '@docusaurus/useDocusaurusContext'
+import osLogo from '../assets/images/os-logo.svg'
+import osLogoWhite from '../assets/images/os-logo-white.svg'
+import osLogoBlack from '../assets/images/os-logo-black.svg'
 
 const WEB_MERCATOR_SRS = 3857
 
 export const OS_ATTRIBUTION = `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`
+
+export const OS_LOGO_ALT = 'Ordnance Survey logo'
+
+// Each OS Vector Tile style has its own logo variant, coloured to stay legible against that style's background
+export const OS_LOGO_URLS = {
+  outdoor: osLogo,
+  dark: osLogoWhite,
+  blackWhite: osLogoBlack
+}
 
 export const OS_VTS_STYLE_URLS = {
   outdoor: 'https://raw.githubusercontent.com/OrdnanceSurvey/OS-Vector-Tile-API-Stylesheets/main/OS_VTS_3857_Open_Outdoor.json',

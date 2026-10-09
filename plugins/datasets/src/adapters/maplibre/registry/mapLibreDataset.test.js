@@ -1,10 +1,15 @@
 import { MapLibreDataset } from './mapLibreDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { logger } from '../../../../../../src/services/logger.js'
+import { hashString } from '../../../../../../src/utils/hashString.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('../../../registry/datasetRegistry.js')
 jest.mock('../../../../../../src/services/logger.js')
+
+// The demo existing-fields tiles URL and static geojson URL, as sourceId hashes them
+const EXISTING_FIELDS_SOURCE_ID = `tiles-${hashString('https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}')}`
+const STATIC_GEOJSON_SOURCE_ID = `geojson-${hashString('https://example.com/static.geojson')}`
 
 describe('MapLibreDataset', () => {
   beforeEach(() => {
@@ -17,7 +22,7 @@ describe('MapLibreDataset', () => {
       'ds-transparent-fill': { id: 'ds-transparent-fill', style: { fill: 'transparent' } },
       // shared: no special properties — used by layerIds, sourceId, source, visibility,
       //   _hiddenFeaturesIdExpression, _hiddenFeaturesFilter, and filter tests
-      'ds-bare': { id: 'ds-bare' },
+      'ds-bare': { id: 'ds-bare', style: { stroke: null } },
       'ds-no-id-prop': { id: 'ds-no-id-prop', geojson: 'https://example.com/data', transformRequest: () => {} },
       'ds-no-transform': { id: 'ds-no-transform', geojson: 'https://example.com/data', idProperty: 'id' },
       'ds-static-url': { id: 'ds-static-url', geojson: 'https://example.com/static.geojson' },
@@ -212,12 +217,12 @@ describe('MapLibreDataset', () => {
 
     it('returns a tiles-based id for a tile dataset (array tiles)', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-3delfuv')
+      expect(dataset.sourceId).toBe(EXISTING_FIELDS_SOURCE_ID)
     })
 
     it('returns a tiles-based id when tiles is a plain string (line 76 non-array branch)', () => {
       const dataset = datasetRegistry.getDataset('existing-fields')
-      expect(dataset.sourceId).toBe('tiles-3delfuv')
+      expect(dataset.sourceId).toBe(EXISTING_FIELDS_SOURCE_ID)
     })
 
     it('returns geojson-dynamic-{id} for a dynamic geojson source', () => {
@@ -225,7 +230,7 @@ describe('MapLibreDataset', () => {
     })
 
     it('returns geojson-{hash} for a static string geojson url', () => {
-      expect(datasetRegistry.getDataset('ds-static-url').sourceId).toBe('geojson-1u4xay')
+      expect(datasetRegistry.getDataset('ds-static-url').sourceId).toBe(STATIC_GEOJSON_SOURCE_ID)
     })
 
     it('returns geojson-{id} for an object geojson source', () => {
@@ -242,7 +247,7 @@ describe('MapLibreDataset', () => {
     it('returns a vector source for a tile dataset', () => {
       expect(datasetRegistry.getDataset('existing-fields').source).toEqual({
         type: 'vector',
-        tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}',
+        tiles: 'https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}',
         minzoom: 10,
         maxzoom: 24
       })
@@ -328,43 +333,31 @@ describe('MapLibreDataset', () => {
       filter: ['in', ['get', 'category'], 'prehistoric']
     }
 
+    const ICON_LAYOUT = { 'icon-anchor': 'bottom', 'icon-offset': [0, 4.7] }
+
     it('returns a symbol layer spec with the correct shape', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('my-icon', null, null)).toEqual({
+      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('my-icon', ICON_LAYOUT)).toEqual({
         ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'my-icon', 'icon-anchor': 'center', 'icon-allow-overlap': true }
-      })
-    })
-
-    it('uses the provided anchor when given', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', [0.1, 0.9], null)).toEqual({
-        ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'bottom-left', 'icon-allow-overlap': true }
-      })
-    })
-
-    it('falls back to symbolDef.anchor when no anchor is provided', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', null, { anchor: [0.5, 0] })).toEqual({
-        ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'top', 'icon-allow-overlap': true }
+        layout: { visibility: 'visible', 'icon-image': 'my-icon', ...ICON_LAYOUT, 'icon-allow-overlap': true }
       })
     })
 
     it('does not include a filter property when filter is null', () => {
-      expect(datasetRegistry.getDataset('historic-monuments').getSymbolSource('icon', null, null)).toEqual({
+      expect(datasetRegistry.getDataset('historic-monuments').getSymbolSource('icon', ICON_LAYOUT)).toEqual({
         id: null,
         type: 'symbol',
         source: 'geojson-historic-monuments',
         'source-layer': undefined,
         minzoom: 10,
         maxzoom: 24,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'center', 'icon-allow-overlap': true }
+        layout: { visibility: 'visible', 'icon-image': 'icon', ...ICON_LAYOUT, 'icon-allow-overlap': true }
       })
     })
 
     it('includes a filter property when the dataset has a filter', () => {
-      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', null, null)).toEqual({
+      expect(datasetRegistry.getDataset('historic-monuments-prehistoric').getSymbolSource('icon', ICON_LAYOUT)).toEqual({
         ...prehistoricBase,
-        layout: { visibility: 'visible', 'icon-image': 'icon', 'icon-anchor': 'center', 'icon-allow-overlap': true }
+        layout: { visibility: 'visible', 'icon-image': 'icon', ...ICON_LAYOUT, 'icon-allow-overlap': true }
       })
     })
   })
@@ -395,8 +388,8 @@ describe('MapLibreDataset', () => {
       expect(datasetRegistry.getDataset('existing-fields').getFillSource({})).toEqual({
         id: 'existing-fields',
         type: 'fill',
-        source: 'tiles-3delfuv',
-        'source-layer': 'field_parcels_filtered',
+        source: EXISTING_FIELDS_SOURCE_ID,
+        'source-layer': 'field_parcels_wgs84',
         minzoom: 10,
         maxzoom: 24,
         layout: { visibility: 'visible' },
@@ -413,7 +406,7 @@ describe('MapLibreDataset', () => {
         .toEqual({
           id: 'hedge-control',
           type: 'line',
-          source: 'tiles-3delfuv',
+          source: EXISTING_FIELDS_SOURCE_ID,
           'source-layer': 'hedge_control',
           minzoom: 10,
           maxzoom: 24,
@@ -428,8 +421,8 @@ describe('MapLibreDataset', () => {
         .toEqual({
           id: 'existing-fields-stroke',
           type: 'line',
-          source: 'tiles-3delfuv',
-          'source-layer': 'field_parcels_filtered',
+          source: EXISTING_FIELDS_SOURCE_ID,
+          'source-layer': 'field_parcels_wgs84',
           minzoom: 10,
           maxzoom: 24,
           layout: { visibility: 'visible' },

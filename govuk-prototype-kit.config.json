@@ -65,6 +65,7 @@
     "/plugins/search/dist",
     "/plugins/draw/dist",
     "/providers/beta/open-names/dist",
+    "/providers/beta/openlayers/dist",
     "/plugins/datasets/dist",
     "/plugins/map-key/dist",
     "/plugins/menu/dist",

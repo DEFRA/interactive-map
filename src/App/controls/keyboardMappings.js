@@ -1,3 +1,8 @@
+import { isMac } from '../../utils/isMac.js'
+
+// getInfo uses Ctrl on Windows/Linux (Alt+letter is reserved for menu mnemonics there) and Alt/Option on Mac — keep in sync with keyboardShortcuts.js's `infoKeyHtml`.
+const infoModifier = isMac() ? 'Alt' : 'Ctrl'
+
 export const keyboardMappings = {
   keydown: {
     ArrowUp: 'panUp',
@@ -17,8 +22,8 @@ export const keyboardMappings = {
     'Alt+ArrowUp': 'highlightNextLabel',
     'Alt+ArrowDown': 'highlightNextLabel',
     'Alt+Enter': 'highlightLabelAtCenter',
-    'Alt+i': 'getInfo',
-    'Alt+I': 'getInfo',
+    [`${infoModifier}+i`]: 'getInfo',
+    [`${infoModifier}+I`]: 'getInfo',
     Escape: 'clearSelection'
   }
 }

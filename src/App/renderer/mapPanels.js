@@ -2,8 +2,8 @@
 import React from 'react'
 import { withPluginContexts } from './pluginWrapper.js'
 import { Panel } from '../components/Panel/Panel.jsx'
-import { allowedSlots } from './slots.js'
-import { resolveTargetSlot, isModeAllowed, isConsumerHtml } from './slotHelpers.js'
+import { resolveTargetSlot, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId } from './slotHelpers.js'
+import { hidesNothing } from './applicationModes.js'
 import { mapControls } from './mapControls.js'
 import { orderItems } from './orderItems.js'
 import { groupIntoTabs } from './groupIntoTabs.js'
@@ -11,72 +11,54 @@ import { stringToKebab } from '../../utils/stringToKebab.js'
 import { logger } from '../../services/logger.js'
 
 /**
- * Determines whether a panel should be rendered in the given slot.
- * Checks slot eligibility, mode restrictions, inline/fullscreen constraints,
- * and ensures only the topmost modal panel is shown.
+ * Maps every configured panel eligible for the given layout slot to a renderable entry — open or
+ * closed alike, so a button's aria-controls id always resolves to a stable, permanently-mounted
+ * <Panel> (hidden when closed). buildPanelBody only runs while open, so nothing expensive mounts
+ * before then.
  */
-const isPanelVisible = (panelId, config, bpConfig, { targetSlot, slot, mode, isFullscreen, allowedModalPanelId }) => {
-  const isNextToButton = targetSlot.endsWith('-button')
-  if (!allowedSlots.panel.includes(targetSlot) && !isNextToButton) {
-    return false
+// Consumer HTML panels are managed by HtmlElementHost; the rest need a breakpoint config and to
+// be eligible for this slot. Returns null (skip) or the pieces the caller needs.
+const getEligiblePanelConfig = (panelId, panelConfig, breakpoint, { slot, isFullscreen }) => {
+  const config = panelConfig[panelId]
+  if (!config || isConsumerHtml(config)) {
+    return null
   }
-  if (!isModeAllowed(config, mode)) {
-    return false
+  const bpConfig = config[breakpoint]
+  if (!bpConfig) {
+    return null
   }
-  if (config.inline === false && !isFullscreen) {
-    return false
+  const targetSlot = resolveTargetSlot(bpConfig, breakpoint)
+  if (!isPanelSlotEligible(config, { targetSlot, slot, isFullscreen })) {
+    return null
   }
-  if (targetSlot !== slot) {
-    return false
-  }
-  if (bpConfig.modal && panelId !== allowedModalPanelId) {
-    return false
-  }
-  return true
+  return { config, bpConfig }
 }
 
-/**
- * Maps open panels to renderable entries for a given layout slot.
- * Filters panels by slot, breakpoint, mode, and modal state, then wraps
- * each panel's render function with the appropriate plugin contexts.
- */
-export function mapPanels ({ slot, appState, evaluateProp }) {
-  const { breakpoint, pluginRegistry, panelConfig, mode, openPanels } = appState
+// A losing modal panel (see getAllowedModalPanelId) still gets a shell — it's just not open.
+const resolveIsOpen = (openEntry, bpConfig, panelId, allowedModalPanelId) =>
+  Boolean(openEntry) && (!bpConfig.modal || panelId === allowedModalPanelId)
 
-  const openPanelEntries = Object.entries(openPanels)
+export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
+  const { breakpoint, pluginRegistry, panelConfig, openPanels } = appState
 
-  const modalPanels = openPanelEntries.filter(([panelId]) => {
-    const cfg = panelConfig[panelId]?.[breakpoint]
-    return cfg?.modal
-  })
-  const allowedModalPanelId = modalPanels.length > 0 ? modalPanels[modalPanels.length - 1][0] : null // NOSONAR, .at() is only Chrome 90+
+  // Only the most-recently-opened modal panel is ever actually shown — see isOpen below.
+  const allowedModalPanelId = getAllowedModalPanelId(openPanels, panelConfig, breakpoint)
 
-  return openPanelEntries.map(([panelId, { props, focusOnOpen }]) => {
-    const config = panelConfig[panelId]
-    if (!config) {
+  return Object.keys(panelConfig).map((panelId) => {
+    const eligible = getEligiblePanelConfig(panelId, panelConfig, breakpoint, { slot, isFullscreen: appState.isFullscreen })
+    if (!eligible) {
       return null
     }
+    const { config, bpConfig } = eligible
 
-    // Consumer HTML panels are managed by HtmlElementHost
-    if (isConsumerHtml(config)) {
-      return null
-    }
-
-    const bpConfig = config[breakpoint]
-    if (!bpConfig) {
-      return null
-    }
-
-    const targetSlot = resolveTargetSlot(bpConfig, breakpoint)
-
-    if (!isPanelVisible(panelId, config, bpConfig, {
-      targetSlot, slot, mode, isFullscreen: appState.isFullscreen, allowedModalPanelId
-    })) {
-      return null
-    }
+    const openEntry = openPanels[panelId]
+    const isOpen = resolveIsOpen(openEntry, bpConfig, panelId, allowedModalPanelId)
+    const { props = {}, focusOnOpen } = openEntry ?? {}
 
     const plugin = pluginRegistry.registeredPlugins.find(p => p.id === config.pluginId)
     const pluginId = plugin?.id
+
+    const isHidden = isHiddenByApplicationMode({ ids: [panelId], pluginId, isModal: !!bpConfig.modal })
 
     const html = pluginId ? evaluateProp(config.html, pluginId) : config.html
     const label = evaluateProp(config.label, pluginId)
@@ -92,7 +74,9 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
           panelConfig={config}
           props={props}
           focusOnOpen={focusOnOpen}
-          {...buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp })}
+          isOpen={isOpen}
+          isHidden={isHidden}
+          {...(isOpen ? buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode }) : {})}
           label={label}
           html={html}
         />
@@ -112,11 +96,12 @@ export function mapPanels ({ slot, appState, evaluateProp }) {
  * @returns {{ items?: object[], tabs?: object[] }} spread directly onto `<Panel>` — exactly one
  *   of `items`/`tabs` is set (or neither, for a static-html panel).
  */
-function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp }) {
+function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode }) {
   const injectedItems = mapControls({
     slot: `${stringToKebab(panelId)}-panel`,
     appState,
-    evaluateProp
+    evaluateProp,
+    isHiddenByApplicationMode
   })
 
   if (html) {

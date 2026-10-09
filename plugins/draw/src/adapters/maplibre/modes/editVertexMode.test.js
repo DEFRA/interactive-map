@@ -1,4 +1,5 @@
 import { createHarness, POLYGON } from './editVertexMode/__helpers__/harness.js'
+import { CUSTOM_DRAW_EVENTS } from '../drawEvents.js'
 
 /**
  * Tests for EditVertexMode's own methods: setup/teardown lifecycle, selection/scale/update
@@ -12,7 +13,7 @@ describe('onSetup / onStop lifecycle', () => {
     const { ctx, state, map } = createHarness()
     expect(state.featureId).toBe('feat-1')
     // Real PolygonFeature stores rings without the duplicate closing coordinate
-    expect(state.vertecies).toHaveLength(4)
+    expect(state.vertices).toHaveLength(4)
     expect(state.midpoints).toHaveLength(4)
     expect(map._lastEditFeatureId).toBe('feat-1')
     expect(map._drawEditContainer).toBe(state.container)
@@ -73,7 +74,7 @@ describe('selection, scale and update events', () => {
     const geom = ctx.getFeature('feat-1').toGeoJSON().geometry
     ctx.onSelectionChange(state, { points: [{ geometry: { coordinates: [10, 0] } }], features: [{ geometry: geom }] })
     expect(state.selectedVertexIndex).toBe(1)
-    expect(map.fire).toHaveBeenCalledWith('draw.vertexselection', expect.objectContaining({ numVertecies: 4 }))
+    expect(map.fire).toHaveBeenCalledWith('draw.vertexselection', expect.objectContaining({ numVertices: 4 }))
 
     state.coordPath = '0.2'
     state.selectedVertexIndex = 2
@@ -101,14 +102,14 @@ describe('selection, scale and update events', () => {
     ctx.onInterfaceTypeChange({ ...state, selectedVertexIndex: -1 }, { interfaceType: 'mouse' })
   })
 
-  test('draw.nudgevertex moves the selected vertex and repositions the touch target — the inbound bridge for MoveControls.mapProvider.activeMoveTarget', () => {
+  test('draw.nudgevertex moves the selected vertex and repositions the touch target — the inbound bridge for MapControls.mapProvider.activeMoveTarget', () => {
     jest.useFakeTimers()
     const { state, map } = createHarness(POLYGON(), { interfaceType: 'touch', selectedVertexIndex: 0, selectedVertexType: 'vertex' })
     jest.runAllTimers() // flush onSetup's deferred initial touch-target positioning
-    const before = [...state.vertecies[0]]
+    const before = [...state.vertices[0]]
     const targetBefore = { top: state.touchVertexTarget.style.top, left: state.touchVertexTarget.style.left }
     map.fire('draw.nudgevertex', { dx: 1, dy: 0, isLargeStep: true })
-    expect(state.vertecies[0]).not.toEqual(before)
+    expect(state.vertices[0]).not.toEqual(before)
     expect({ top: state.touchVertexTarget.style.top, left: state.touchVertexTarget.style.left }).not.toEqual(targetBefore)
   })
 
@@ -120,7 +121,7 @@ describe('selection, scale and update events', () => {
   test('onUpdate re-selects a changed vertex only when the vertex count is ambiguous', () => {
     const { ctx, state } = createHarness()
     ctx.onUpdate(state) // unique coords → no change
-    state.vertecies = [[0, 0], [0, 0], [1, 1]]
+    state.vertices = [[0, 0], [0, 0], [1, 1]]
     ctx.onUpdate(state)
     expect(state.selectedVertexIndex).toBe(-1)
   })
@@ -156,5 +157,72 @@ describe('move, button and changeMode routing', () => {
     const { ctx, api } = createHarness()
     ctx.changeMode({ featureId: null }, { selectedVertexIndex: -1 })
     expect(api.changeMode).not.toHaveBeenCalled()
+  })
+})
+
+// onSelectVertex/onInsertVertexAtMidpoint bridge MaplibreDrawAdapter.selectVertex/
+// insertVertexAtMidpoint into the running mode (see drawEvents.js's SELECT_VERTEX/
+// INSERT_VERTEX_AT_MIDPOINT) for the shared spatial listbox.
+describe('onSelectVertex / onInsertVertexAtMidpoint (spatial listbox bridge)', () => {
+  test('registers the select-vertex/insert-vertex-at-midpoint listeners on setup', () => {
+    const { map } = createHarness()
+    expect(map.on).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, expect.any(Function))
+    expect(map.on).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, expect.any(Function))
+  })
+
+  test('onSelectVertex moves the cursor to a real vertex, including its coordPath', () => {
+    const { ctx, state } = createHarness()
+    const changeModeSpy = jest.spyOn(ctx, 'changeMode')
+    ctx.onSelectVertex(state, { index: 2 })
+    expect(changeModeSpy).toHaveBeenCalledWith(state, {
+      selectedVertexIndex: 2,
+      selectedVertexType: 'vertex',
+      coordPath: expect.any(String)
+    })
+  })
+
+  test('onSelectVertex moves the cursor to a midpoint, without a coordPath', () => {
+    const { ctx, state } = createHarness()
+    const changeModeSpy = jest.spyOn(ctx, 'changeMode')
+    const midpointIndex = state.vertices.length
+    ctx.onSelectVertex(state, { index: midpointIndex })
+    expect(changeModeSpy).toHaveBeenCalledWith(state, {
+      selectedVertexIndex: midpointIndex,
+      selectedVertexType: 'midpoint'
+    })
+  })
+
+  test('onSelectVertex lazily (re)populates vertices/midpoints when not already cached', () => {
+    const { ctx, state } = createHarness()
+    state.vertices = []
+    state.midpoints = []
+    const changeModeSpy = jest.spyOn(ctx, 'changeMode')
+    ctx.onSelectVertex(state, { index: 0 })
+    expect(state.vertices.length).toBeGreaterThan(0)
+    expect(changeModeSpy).toHaveBeenCalled()
+  })
+
+  test('onInsertVertexAtMidpoint commits a new vertex exactly at the midpoint — no directional offset', () => {
+    const { ctx, state } = createHarness()
+    const midpointFlatIndex = state.vertices.length // first midpoint, between vertex 0 and 1
+    const expectedCoord = state.midpoints[0]
+    ctx.onInsertVertexAtMidpoint(state, { index: midpointFlatIndex })
+    const updated = ctx.getVertices(state.featureId)
+    expect(updated).toHaveLength(state.vertices.length + 1)
+    expect(updated[1]).toEqual(expectedCoord)
+  })
+
+  test('onInsertVertexAtMidpoint lazily (re)populates vertices/midpoints when not already cached', () => {
+    const { ctx, state } = createHarness()
+    state.vertices = []
+    state.midpoints = []
+    expect(() => ctx.onInsertVertexAtMidpoint(state, { index: 4 })).not.toThrow()
+  })
+
+  test('unregisters the select-vertex/insert-vertex-at-midpoint listeners on stop', () => {
+    const { ctx, state, map } = createHarness()
+    ctx.onStop(state)
+    expect(map.off).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.SELECT_VERTEX, expect.any(Function))
+    expect(map.off).toHaveBeenCalledWith(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, expect.any(Function))
   })
 })

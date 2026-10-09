@@ -6,8 +6,26 @@
  */
 export const symbolDefaults = {
   symbol: 'pin',
+  size: 'medium',
   backgroundColor: '#ca3535',
   foregroundColor: '#ffffff'
+}
+
+/** The symbol style keys a dataset or draw style can set (see docs/plugins/datasets.md) */
+export const SYMBOL_STYLE_KEYS = [
+  'symbol', 'symbolSvgContent', 'symbolViewBox', 'symbolAnchor', 'symbolSize',
+  'symbolBackgroundColor', 'symbolForegroundColor', 'symbolHaloWidth', 'symbolGraphic'
+]
+
+/**
+ * Scale factor for each symbol size (`size` on markers, `symbolSize` on dataset and draw styles).
+ * Scales a symbol's shape and graphic; the halo and the selected/active rings stay a fixed width at
+ * every size (see getSymbolScale in symbolUtils.js).
+ */
+export const SYMBOL_SIZES = {
+  small: 0.75, // NOSONAR
+  medium: 1,
+  large: 1.25 // NOSONAR
 }
 
 /** Stroke width for the halo (background shape outline) in SVG units */
@@ -16,17 +34,36 @@ export const HALO_STROKE_WIDTH = 2
 /** Stroke width for the selected state — symbol rings and feature highlight lines */
 export const SELECTED_STROKE_WIDTH = 3
 
+// A stroke is centred on its path, so it reaches half its width either side
+const BOTH_SIDES = 2
+
 /** Stroke width for the active (keyboard cursor) state — double selected, extends 1× each side */
-export const ACTIVE_STROKE_WIDTH = SELECTED_STROKE_WIDTH * 2
+export const ACTIVE_STROKE_WIDTH = SELECTED_STROKE_WIDTH * BOTH_SIDES
+
+// Built-in symbols draw their halo and rings as strokes centred on the body outline, so each
+// stroke is twice the distance its visible edge reaches beyond the body: halo 1, selected ring
+// 1 + 3 = 4, active ring 4 + 3 = 7. A stroke is an exact offset, so rings stay even round corners.
+export const SELECTED_RING_STROKE_WIDTH = HALO_STROKE_WIDTH + SELECTED_STROKE_WIDTH * BOTH_SIDES
+export const ACTIVE_RING_STROKE_WIDTH = SELECTED_RING_STROKE_WIDTH + ACTIVE_STROKE_WIDTH
+
+const CENTRE = 0.5
+
+/** Anchor used when a symbol doesn't set one — its centre */
+export const DEFAULT_SYMBOL_ANCHOR = [CENTRE, CENTRE]
+
+/** View box used when a custom SVG symbol doesn't set one */
+export const DEFAULT_SYMBOL_VIEWBOX = '0 0 44 44'
+
+/** Space around a built-in symbol's body: its outermost (active) ring plus 1px clearance */
+export const SYMBOL_PADDING = ACTIVE_RING_STROKE_WIDTH / BOTH_SIDES + 1
 
 /**
  * Built-in graphic path data strings for use with the `graphic` token.
  *
  * Each value is an SVG `d` attribute string in a 16×16 coordinate space,
- * centred at (8, 8). The built-in symbols (`pin`, `circle`, `square`) apply a
- * `translate` transform to position this 16×16 area correctly within their
- * 38×38 viewBox — so graphic path data does not need to account for symbol
- * positioning.
+ * centred at (8, 8). The built-in symbols (`pin`, `circle`, `square`, `hexagon`, `triangle`, `diamond`)
+ * centre this 16×16 area on their `graphicCentre` at 0.8 scale — so graphic path data does not
+ * need to account for symbol positioning or size.
  *
  * @example
  * markers.add('id', coords, { symbol: 'pin', graphic: graphics.dot })
@@ -53,35 +90,74 @@ export const graphics = {
 }
 
 // ─── Built-in symbol definitions ─────────────────────────────────────────────
-// Each symbol uses a 44×44 viewBox. SVG templates use {{token}} placeholders
-// resolved at render time by the symbolRegistry.
+// Each is a single body `path` in its own coordinates, with:
+//   bounds        [x, y, width, height] — the body path's tight bounding box
+//   anchorPoint   [x, y] — the point that sits on the map coordinate
+//   graphicCentre [x, y] — where the 16×16 graphic is centred (drawn at 0.8 scale)
+// symbolRegistry composes the rendered SVG, viewBox and fractional anchor from these for each
+// size: the body and graphic scale, the halo and rings don't.
 
+// Circle-headed pin, head r=13. The anchor is the halo's tip, 1 below the body's.
 export const pin = {
   id: 'pin',
-  viewBox: '0 0 44 44',
-  anchor: [0.5, 0.9], // NOSONAR
-  graphic: graphics.dot,
-  svg: `<path d="M22 40.999c-3.621 0-8.306-5.864-10.258-8.3C9.02 29.302 6 23.66 6 19.002a16.01 16.01 0 0 1 16-16 16.01 16.01 0 0 1 16 16c0 4.658-3.02 10.3-5.742 13.697-1.952 2.437-6.637 8.3-10.258 8.3z" fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
-  <path d="M22 7.001a12.01 12.01 0 0 1 12 12c0 7.623-10.377 17.998-12 17.998S10 26.624 10 19.001a12.01 12.01 0 0 1 12-12z" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
-  <g transform="translate(22, 19) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
+  path: 'M22 7a13 13 0 0 1 13 13C35 28.258 23.758 39.499 22 39.499S9 28.259 9 20.001a13 13 0 0 1 13-13z',
+  bounds: [9, 7, 26, 32.499], // NOSONAR
+  anchorPoint: [22, 40.5], // NOSONAR
+  graphicCentre: [22, 20], // NOSONAR
+  graphic: graphics.dot
 }
 
+// r=13 — the reference size the other shapes' areas are compared against.
 export const circle = {
   id: 'circle',
-  viewBox: '0 0 44 44',
-  anchor: [0.5, 0.5],
-  graphic: graphics.dot,
-  svg: `<circle cx="22" cy="22" r="16" fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
-  <circle cx="22" cy="22" r="12" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
-  <g transform="translate(22, 22) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
+  path: 'M22 9a13 13 0 1 1 0 26 13 13 0 1 1 0-26z',
+  bounds: [9, 9, 26, 26], // NOSONAR
+  anchorPoint: [22, 22], // NOSONAR
+  graphicCentre: [22, 22], // NOSONAR
+  graphic: graphics.dot
 }
 
+// 23.6 body with 3px corner radii — ~103% of circle's area, Material's square-to-circle keyline
+// ratio (18×18 square vs 20 circle).
 export const square = {
   id: 'square',
-  viewBox: '0 0 44 44',
-  anchor: [0.5, 0.5],
-  graphic: graphics.dot,
-  svg: `<path d="M13 6h18c3.863 0 7 3.137 7 7v18c0 3.863-3.137 7-7 7H13c-3.863 0-7-3.137-7-7V13c0-3.863 3.137-7 7-7" fill="{{selectedColor}}" stroke="{{activeColor}}" stroke-width="6" paint-order="stroke fill"/>
-  <path d="M13 34a3 3 0 0 1-3-3V13a3 3 0 0 1 3-3h18a3 3 0 0 1 3 3v18a3 3 0 0 1-3 3H13z" fill-rule="nonzero" fill="{{backgroundColor}}" stroke="{{haloColor}}" stroke-width="2" paint-order="stroke fill"/>
-  <g transform="translate(22, 22) scale(0.8) translate(-8, -8)"><path d="{{graphic}}" fill="{{foregroundColor}}"/></g>`
+  path: 'M13.2 33.8a3 3 0 0 1-3-3V13.2a3 3 0 0 1 3-3h17.6a3 3 0 0 1 3 3v17.6a3 3 0 0 1-3 3H13.2z',
+  bounds: [10.2, 10.2, 23.6, 23.6], // NOSONAR
+  anchorPoint: [22, 22], // NOSONAR
+  graphicCentre: [22, 22], // NOSONAR
+  graphic: graphics.dot
+}
+
+// Pointy-top hexagon, flat sides 12.6 from the centre, 3px corner radii — ~103% of circle's
+// area, between circle and square (cornered shapes need slightly more area than a circle to
+// read as the same size).
+export const hexagon = {
+  id: 'hexagon',
+  path: 'M23.5 8.317L33.1 13.859A3 3 0 0 1 34.6 16.457L34.6 27.543A3 3 0 0 1 33.1 30.141L23.5 35.683A3 3 0 0 1 20.5 35.683L10.9 30.141A3 3 0 0 1 9.4 27.543L9.4 16.457A3 3 0 0 1 10.9 13.859L20.5 8.317A3 3 0 0 1 23.5 8.317z',
+  bounds: [9.4, 7.915, 25.2, 28.17], // NOSONAR
+  anchorPoint: [22, 22], // NOSONAR
+  graphicCentre: [22, 22], // NOSONAR
+  graphic: graphics.dot
+}
+
+// Point-up equilateral triangle, edges 10.4 from the centroid, 3px corner radii — ~102% of
+// circle's area. Anchored at the centroid; the graphic sits 0.5 below it.
+export const triangle = {
+  id: 'triangle',
+  path: 'M25.598 9.7L38.415 31.9A3 3 0 0 1 35.817 36.4L10.183 36.4A3 3 0 0 1 7.585 31.9L20.402 9.7A3 3 0 0 1 25.598 9.7z',
+  bounds: [7.183, 8.2, 31.634, 28.2], // NOSONAR
+  anchorPoint: [23, 26], // NOSONAR
+  graphicCentre: [23, 26.5], // NOSONAR
+  graphic: graphics.dot
+}
+
+// A square rotated 45°, edges 11.6 from the centre, 3px corner radii — the same area as circle
+// (less than square's, since its points reach further and make it read larger).
+export const diamond = {
+  id: 'diamond',
+  path: 'M25.121 8.716L37.284 20.879A3 3 0 0 1 37.284 25.121L25.121 37.284A3 3 0 0 1 20.879 37.284L8.716 25.121A3 3 0 0 1 8.716 20.879L20.879 8.716A3 3 0 0 1 25.121 8.716z',
+  bounds: [7.838, 7.838, 30.325, 30.325], // NOSONAR
+  anchorPoint: [23, 23], // NOSONAR
+  graphicCentre: [23, 23], // NOSONAR
+  graphic: graphics.dot
 }

@@ -126,7 +126,7 @@ describe('undo via draw.undo event and reinitialisation', () => {
     expect(ctx._ctx.store.delete).toHaveBeenCalledWith([id])
     expect(state.polygon.id).toBe(id)
     expect(state.currentVertexPosition).toBe(0)
-    expect(firedWith(ctx.map, 'draw.vertexchange').pop()).toEqual({ numVertecies: 1 })
+    expect(firedWith(ctx.map, 'draw.vertexchange').pop()).toEqual({ numVertices: 1 })
   })
 
   test('undoing the only line vertex restarts draw_line with the same feature id', () => {

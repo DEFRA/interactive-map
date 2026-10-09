@@ -16,9 +16,7 @@ export const DrawInit = ({
   const { mapColorScheme } = mapState.mapStyle || {}
 
   // Check if plugin should be active
-  const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
-  const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
-  const isActive = mapState.isMapReady && inModeWhitelist && !inExcludeModes
+  const isActive = mapState.isMapReady
 
   // Initialize sketch components once
   useEffect(() => {
@@ -42,7 +40,7 @@ export const DrawInit = ({
       mapProvider.sketchLayer = null
       mapProvider.emptySketchLayer = null
     }
-  }, [mapState.isMapReady, appState.mode])
+  }, [mapState.isMapReady])
 
   // Attach/detach events
   useEffect(() => {

@@ -11,7 +11,7 @@ describe('EsriDataset', () => {
     datasetRegistry.attachCreateDataset(def => new EsriDataset(def))
     datasetRegistry.mockExtend({
       // applyLayerPaintProperties
-      'esri-bare': { id: 'esri-bare' },
+      'esri-bare': { id: 'esri-bare', style: { stroke: null } },
       // esriGroupId — parent owns the id, child inherits it
       'esri-group': { id: 'esri-group', esriGroupId: 'group-123', sublayerIds: ['esri-child'] },
       'esri-child': { id: 'esri-child', parentId: 'esri-group' },

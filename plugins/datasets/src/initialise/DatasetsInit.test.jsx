@@ -24,6 +24,7 @@ jest.mock('./initialiseDatasets.js')
 
 const makeEventBus = () => ({
   emit: jest.fn(),
+  emitWhenReady: jest.fn(),
   on: jest.fn(),
   off: jest.fn()
 })
@@ -46,7 +47,7 @@ const makeProps = (overrides = {}) => ({
     datasets: [{ id: 'roads', label: 'Roads', showInMenu: true }]
   },
   pluginState: makePluginState(),
-  appState: { mode: 'default' },
+  appState: {},
   mapState: { mapStyle: { id: 'outdoor' } },
   mapProvider: { isBaseMapReady: jest.fn().mockReturnValue(true) },
   services: {
@@ -80,10 +81,10 @@ describe('DatasetsInit', () => {
         pluginConfig: { datasets: [{ id: 'roads', label: 'Roads' }] }
       })
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
-      expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true }
       )
     })
@@ -91,7 +92,7 @@ describe('DatasetsInit', () => {
     it('does not remove the panel when at least one dataset has showInMenu', async () => {
       const props = makeProps()
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).not.toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
     })
@@ -101,7 +102,7 @@ describe('DatasetsInit', () => {
         pluginConfig: { hasMenu: false, datasets: [{ id: 'roads', label: 'Roads', showInMenu: true }] }
       })
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
     })
@@ -117,7 +118,7 @@ describe('DatasetsInit', () => {
         }
       })
       await render(<DatasetsInit {...props} />)
-      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).not.toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
     })
@@ -143,24 +144,6 @@ describe('DatasetsInit', () => {
       expect(loadLayerAdapter).not.toHaveBeenCalled()
     })
 
-    it('does not initialise when mode is not in includeModes', async () => {
-      const props = makeProps({
-        pluginConfig: { datasets: [], includeModes: ['edit'] },
-        appState: { mode: 'default' }
-      })
-      await render(<DatasetsInit {...props} />)
-      expect(loadLayerAdapter).not.toHaveBeenCalled()
-    })
-
-    it('does not initialise when mode is in excludeModes', async () => {
-      const props = makeProps({
-        pluginConfig: { datasets: [], excludeModes: ['default'] },
-        appState: { mode: 'default' }
-      })
-      await render(<DatasetsInit {...props} />)
-      expect(loadLayerAdapter).not.toHaveBeenCalled()
-    })
-
     it('does not initialise twice when re-rendered', async () => {
       const props = makeProps()
       const { rerender } = render(<DatasetsInit {...props} />)
@@ -170,13 +153,16 @@ describe('DatasetsInit', () => {
       expect(loadLayerAdapter).toHaveBeenCalledTimes(1)
     })
 
-    it('skips init when datasetsInstanceRef is already populated (mode change)', async () => {
+    it('skips init when datasetsInstanceRef is already populated (base map reloads)', async () => {
       const props = makeProps()
       const { rerender } = render(<DatasetsInit {...props} />)
       await act(async () => {})
-      // Change appState.mode — that's in the effect deps, so the effect re-runs
+      // Toggle base map readiness — that's the effect's dependency, so the effect re-runs
       await act(async () => {
-        rerender(<DatasetsInit {...props} appState={{ mode: 'edit' }} />)
+        rerender(<DatasetsInit {...props} mapProvider={{ isBaseMapReady: () => false }} />)
+      })
+      await act(async () => {
+        rerender(<DatasetsInit {...props} mapProvider={{ isBaseMapReady: () => true }} />)
       })
       // loadLayerAdapter should only be called once despite the re-run
       expect(loadLayerAdapter).toHaveBeenCalledTimes(1)
@@ -218,6 +204,26 @@ describe('DatasetsInit', () => {
       const props = makeProps()
       await render(<DatasetsInit {...props} />)
       expect(onMapStyleChange).toHaveBeenCalled()
+      delete layerAdapter.onMapStyleChange
+    })
+
+    // MapLibre gets this re-apply for free (map.addImage()/setPaintProperty() naturally
+    // re-trigger its own MAP_DATA_CHANGE via the GL engine's styledata event) — OL doesn't (its
+    // MAP_DATA_CHANGE is tied only to the basemap tile source's tileloadend, see appEvents.js),
+    // so this emit is what lets the interact plugin's settle-window re-apply pick up newly
+    // re-resolved symbols/patterns after a style change, instead of a stale highlight sticking.
+    it('emits MAP_DATA_CHANGE once onMapStyleChange resolves, so highlights re-resolve for the new theme', async () => {
+      let resolveOnMapStyleChange
+      const onMapStyleChange = jest.fn(() => new Promise(resolve => { resolveOnMapStyleChange = resolve }))
+      Object.assign(layerAdapter, { onMapStyleChange })
+      const props = makeProps()
+      await render(<DatasetsInit {...props} />)
+      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
+      await act(async () => {
+        resolveOnMapStyleChange()
+        await Promise.resolve()
+      })
+      expect(props.services.eventBus.emit).toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
       delete layerAdapter.onMapStyleChange
     })
   })

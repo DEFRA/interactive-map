@@ -9,6 +9,7 @@ import openNamesProvider from '/providers/beta/open-names/dist/esm/index.js'
 import mapStylesPlugin from '/plugins/beta/map-styles/dist/esm/index.js'
 import createDatasetsPlugin from '/plugins/datasets/dist/esm/index.js'
 import createMapKeyPlugin from '/plugins/map-key/dist/esm/index.js'
+import createDrawPlugin from '/plugins/draw/dist/esm/index.js'
 import scaleBarPlugin from '/plugins/beta/scale-bar/dist/esm/index.js'
 import searchPlugin from '/plugins/search/dist/esm/index.js'
 import createInteractPlugin from '/plugins/interact/dist/esm/index.js'
@@ -107,6 +108,8 @@ const interactPlugin = createInteractPlugin({
 
 const framePlugin = createFramePlugin({ aspectRatio: 1.5 })
 
+const drawPlugin = createDrawPlugin()
+
 const landCoversDataset = {
   id: 'land-covers',
   label: 'Land covers',
@@ -122,8 +125,8 @@ const landCoversDataset = {
   //   ['!=', ['get', 'sbi'], '106223377'],
   //   ['==', ['get', 'is_dominant_land_cover'], true]
   // ],
-  // tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-  // sourceLayer: 'field_parcels_filtered',
+  // tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}'],
+  // sourceLayer: 'field_parcels_wgs84',
   // featureLayer: '',
   // idProperty: 'id',  // Enables dynamic fetching + deduplication
   // filter: ['get', ['propertyName', 'warning']],
@@ -214,8 +217,8 @@ const existingFieldsDataset = {
   label: 'Existing fields',
   groupLabel: 'Test group',
   filter: ['all', ['==', ['get', 'sbi'], '106223377'], ['==', ['get', 'is_dominant_land_cover'], true]],
-  tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
-  sourceLayer: 'field_parcels_filtered',
+  tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}'],
+  sourceLayer: 'field_parcels_wgs84',
   minZoom: 10,
   maxZoom: 24,
   showInKey: true,
@@ -282,7 +285,7 @@ const hedgeControlDataset = {
   id: 'hedge-control',
   label: 'Hedge control',
   groupLabel: 'Test group',
-  tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges/{z}/{x}/{y}'],
+  tiles: ['https://farming-tiles-702a60f45633.herokuapp.com/field_parcels_with_hedges_wgs84/{z}/{x}/{y}'],
   sourceLayer: 'hedge_control',
   minZoom: 10,
   maxZoom: 24,
@@ -291,10 +294,8 @@ const hedgeControlDataset = {
   visibility: 'hidden',
   style: {
     stroke: '#b58840',
-    fill: 'transparent',
     strokeWidth: 4,
     symbolDescription: { outdoor: 'blue outline' },
-    keySymbolShape: 'line',
   }
 }
 
@@ -351,7 +352,8 @@ const interactiveMap = new InteractiveMap('map', {
       units: 'metric'
     }),
     interactPlugin,
-    framePlugin
+    framePlugin,
+    drawPlugin
   ]
 })
 
@@ -361,6 +363,24 @@ interactiveMap.on('app:ready', function (e) {
 
 interactiveMap.on('map:ready', function (e) {
   interactPlugin.enable()
+  interactiveMap.addButton('geometryActions', {
+    label: 'Draw tools',
+    mobile: { slot: 'bottom-right', order: 3 },
+    tablet: { slot: 'top-middle', order: 3 },
+    desktop: { slot: 'top-middle', order: 3 },
+    menuItems: [{
+      id: 'drawPolygon',
+      label: 'Draw polygon',
+      iconSvgContent: '<path d="M19.5 7v10M4.5 7v10M7 19.5h10M7 4.5h10"/><path d="M22 18v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zm0-15v3a1 1 0 0 1-1 1h-3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 18v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1v-3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1zM7 3v3a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1z"/>',
+      onClick: function () {
+        interactiveMap.toggleButtonState('geometryActions', 'hidden', true)
+        drawPlugin.newPolygon(crypto.randomUUID(), {
+          stroke: '#e6c700',
+          fill: 'rgba(255, 221, 0, 0.1)'
+        })
+      }
+    }]
+  })
 })
 
 // Datasets apiTests
@@ -524,6 +544,27 @@ interactiveMap.on('search:match', function (e) {
 // Hide selected feature
 interactiveMap.on('search:clear', function (e) {
   // console.log('Search clear')
+})
+
+// Draw events
+interactiveMap.on('draw:started', function (e) {
+  interactPlugin.disable()
+})
+
+interactiveMap.on('draw:created', function (e) {
+  console.log('draw:created', e)
+  interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+  interactPlugin.enable()
+})
+
+interactiveMap.on('draw:edited', function (e) {
+  interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+  interactPlugin.enable()
+})
+
+interactiveMap.on('draw:cancelled', function (e) {
+  interactiveMap.toggleButtonState('geometryActions', 'hidden', false)
+  interactPlugin.enable()
 })
 
 // Frame events

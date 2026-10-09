@@ -1,17 +1,18 @@
 import turfBbox from '@turf/bbox'
-import { transformExtent } from 'ol/proj.js'
 
-// In EPSG:27700 coordinates are projected meters — distances are Pythagorean, no geodesy needed
+// In EPSG:27700 coordinates are projected metres — distances are Pythagorean, no geodesy needed
 
-const formatDimension = (meters) => {
+const formatDimension = (metres) => {
   const WHOLE_MILE_THRESHOLD = 10
   const MILE_THRESHOLD = 0.5
-  const METERS_PER_MILE = 1609.344
+  const METRES_PER_MILE = 1609.344
 
-  const miles = meters / METERS_PER_MILE
+  const miles = metres / METRES_PER_MILE
 
   if (miles < MILE_THRESHOLD) {
-    return `${Math.round(meters)}m`
+    const roundedMetres = Math.round(metres)
+    const units = roundedMetres === 1 ? 'metre' : 'metres'
+    return `${roundedMetres} ${units}`
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {
@@ -25,35 +26,35 @@ const formatDimension = (meters) => {
 }
 
 /**
- * Returns "400m by 1.4 miles" for the visible (padded) map area.
- * extent: [xmin, ymin, xmax, ymax] in EPSG:27700 meters
+ * Returns "400 metres by 1.4 miles" for the visible (padded) map area.
+ * extent: [xmin, ymin, xmax, ymax] in EPSG:27700 metres
  */
 const getAreaDimensions = (extent) => {
   if (!extent) {
     return ''
   }
   const [xmin, ymin, xmax, ymax] = extent
-  const widthMeters = xmax - xmin
-  const heightMeters = ymax - ymin
-  return `${formatDimension(heightMeters)} by ${formatDimension(widthMeters)}`
+  const widthMetres = xmax - xmin
+  const heightMetres = ymax - ymin
+  return `${formatDimension(heightMetres)} by ${formatDimension(widthMetres)}`
 }
 
 /**
- * Returns "north 400m, east 750m" for moves between two EPSG:27700 [easting, northing] coords.
+ * Returns "north 400 metres, east 750 metres" for moves between two EPSG:27700 [easting, northing] coords.
  */
 const getCardinalMove = (from, to) => {
-  const THRESHOLD_METERS = 1
+  const THRESHOLD_METRES = 1
 
   const dEasting = to[0] - from[0]
   const dNorthing = to[1] - from[1]
 
   const moves = []
 
-  if (Math.abs(dNorthing) > THRESHOLD_METERS) {
+  if (Math.abs(dNorthing) > THRESHOLD_METRES) {
     moves.push(`${dNorthing > 0 ? 'north' : 'south'} ${formatDimension(Math.abs(dNorthing))}`)
   }
 
-  if (Math.abs(dEasting) > THRESHOLD_METERS) {
+  if (Math.abs(dEasting) > THRESHOLD_METRES) {
     moves.push(`${dEasting > 0 ? 'east' : 'west'} ${formatDimension(Math.abs(dEasting))}`)
   }
 
@@ -61,18 +62,11 @@ const getCardinalMove = (from, to) => {
 }
 
 /**
- * Get a flat bbox [west, south, east, north] in WGS84 from any GeoJSON object.
+ * Get a flat extent [xmin, ymin, xmax, ymax] from any GeoJSON object.
+ * GeoJSON fed into the OL provider is already in EPSG:27700 (the view's native
+ * CRS), not WGS84, so this is a straight bbox — no reprojection.
  */
-const getBboxFromGeoJSON = (geojson) => turfBbox(geojson)
-
-/**
- * Get a flat extent [xmin, ymin, xmax, ymax] in EPSG:27700 from any GeoJSON object.
- * GeoJSON is always WGS84, so this transforms the bbox.
- */
-const getExtentFromGeoJSON = (geojson) => {
-  const wgs84Bbox = turfBbox(geojson)
-  return transformExtent(wgs84Bbox, 'EPSG:4326', 'EPSG:27700')
-}
+const getExtentFromGeoJSON = (geojson) => turfBbox(geojson)
 
 /**
  * Returns the visible (padded) extent [xmin, ymin, xmax, ymax] in EPSG:27700.
@@ -112,9 +106,9 @@ const isGeometryObscured = (geojson, panelRect, map) => {
   const scaleX = viewportRect.width / containerRect.width
   const scaleY = viewportRect.height / containerRect.height
 
-  const [west, south, east, north] = getBboxFromGeoJSON(geojson)
+  const [xmin, ymin, xmax, ymax] = getExtentFromGeoJSON(geojson)
 
-  const corners = [[west, south], [west, north], [east, south], [east, north]].map(coord => {
+  const corners = [[xmin, ymin], [xmin, ymax], [xmax, ymin], [xmax, ymax]].map(coord => {
     return map.getPixelFromCoordinate(coord)
   }).filter(Boolean)
 
@@ -138,7 +132,6 @@ const isGeometryObscured = (geojson, panelRect, map) => {
 export {
   getAreaDimensions,
   getCardinalMove,
-  getBboxFromGeoJSON,
   getExtentFromGeoJSON,
   getPaddedExtent,
   isGeometryObscured,

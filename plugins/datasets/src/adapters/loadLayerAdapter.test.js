@@ -23,6 +23,10 @@ jest.mock('./esri/esriLayerAdapter.js', () => ({
   __esModule: true,
   default: jest.fn().mockImplementation(() => makeAdapterInstance('esri'))
 }))
+jest.mock('./openlayers/openlayersLayerAdapter.js', () => ({
+  __esModule: true,
+  default: jest.fn().mockImplementation(() => makeAdapterInstance('openlayers'))
+}))
 
 const makeMapProvider = (name) => ({ name })
 const symbolRegistry = {}
@@ -43,6 +47,19 @@ describe('loadLayerAdapter', () => {
     const mapProvider = makeMapProvider('EsriProvider')
     const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
     expect(adapter.type).toBe('esri')
+  })
+
+  it('loads the OpenLayers adapter for OpenLayersProvider', async () => {
+    const mapProvider = makeMapProvider('OpenLayersProvider')
+    const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+    expect(adapter.type).toBe('openlayers')
+  })
+
+  it('passes adapterConfig through to the adapter constructor', async () => {
+    const OpenLayersLayerAdapter = (await import('./openlayers/openlayersLayerAdapter.js')).default
+    const mapProvider = makeMapProvider('OpenLayersProvider')
+    await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, { renderer: 'webgl' })
+    expect(OpenLayersLayerAdapter).toHaveBeenCalledWith(mapProvider, symbolRegistry, patternRegistry, { renderer: 'webgl' })
   })
 
   it('throws for an unknown provider', async () => {

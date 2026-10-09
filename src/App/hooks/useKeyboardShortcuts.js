@@ -5,6 +5,71 @@ import { useConfig } from '../store/configContext.js'
 import { useApp } from '../store/appContext.js'
 import { useService } from '../store/serviceContext.js'
 
+const normalizeKey = (e) => {
+  let key
+
+  // Use e.code for letters to avoid 'dead' keys with Alt/AltGr
+  if (/^Key[A-Z]$/.test(e.code)) {
+    key = e.code.slice(3) // NOSONAR: strip "Key" prefix, e.g. "KeyI" -> "I"
+  } else {
+    key = e.key // works for arrows, numpad, punctuation
+  }
+
+  // Normalize numpad add/subtract to symbols
+  if (key === 'Add' || key === 'NumpadAdd') {
+    key = '+'
+  } else if (key === 'Subtract' || key === 'NumpadSubtract') {
+    key = '-'
+  } else {
+    // No action
+  }
+
+  // Check altKey first: AltGr (used on many non-US keyboards) reports both altKey
+  // and ctrlKey as true, and should still resolve to the Alt+ binding, not Ctrl+.
+  if (e.altKey) {
+    return `Alt+${key}`
+  }
+  if (e.ctrlKey) {
+    return `Ctrl+${key}`
+  }
+  return key
+}
+
+const resolveAction = (actions, type, key) => {
+  const actionName = keyboardMappings[type][key]
+  return actionName && actions[actionName] ? actionName : null
+}
+
+// keydown (pan/zoom) stays on the viewport so arrows only fire when the map has focus.
+// keyup (Alt+K and other global shortcuts) attaches to the app container so it fires
+// from anywhere within the app, including the features listbox.
+const createKeyEventHandlers = (actions) => {
+  const handleKeyDown = (e) => {
+    const key = normalizeKey(e)
+    const actionName = resolveAction(actions, 'keydown', key)
+    if (actionName) {
+      actions[actionName](e)
+      e.preventDefault()
+      return
+    }
+    // A keyup-bound shortcut (e.g. Alt+Arrow label navigation) still acts on release,
+    // but its browser default (e.g. arrow-key scroll) must be suppressed now or it's too late.
+    if (resolveAction(actions, 'keyup', key)) {
+      e.preventDefault()
+    }
+  }
+
+  const handleKeyUp = (e) => {
+    const actionName = resolveAction(actions, 'keyup', normalizeKey(e))
+    if (actionName) {
+      actions[actionName](e)
+      e.preventDefault()
+    }
+  }
+
+  return { handleKeyDown, handleKeyUp }
+}
+
 export function useKeyboardShortcuts (containerRef) {
   const { mapProvider, panDelta, nudgePanDelta, zoomDelta, nudgeZoomDelta, readMapText } = useConfig()
   const { dispatch, layoutRefs } = useApp()
@@ -27,42 +92,8 @@ export function useKeyboardShortcuts (containerRef) {
       readMapText
     })
 
-    const normalizeKey = (e) => {
-      let key
+    const { handleKeyDown, handleKeyUp } = createKeyEventHandlers(actions)
 
-      // Use e.code for letters to avoid 'dead' keys with Alt/AltGr
-      if (/^Key[A-Z]$/.test(e.code)) {
-        key = e.code.slice(3) // NOSONAR: strip "Key" prefix, e.g. "KeyI" -> "I"
-      } else {
-        key = e.key // works for arrows, numpad, punctuation
-      }
-
-      // Normalize numpad add/subtract to symbols
-      if (key === 'Add' || key === 'NumpadAdd') {
-        key = '+'
-      } else if (key === 'Subtract' || key === 'NumpadSubtract') {
-        key = '-'
-      } else {
-        // No action
-      }
-
-      return e.altKey ? `Alt+${key}` : key
-    }
-
-    const handle = (type) => (e) => {
-      const actionName = keyboardMappings[type][normalizeKey(e)]
-      if (actionName && actions[actionName]) {
-        actions[actionName](e)
-        e.preventDefault()
-      }
-    }
-
-    const handleKeyDown = handle('keydown')
-    const handleKeyUp = handle('keyup')
-
-    // keydown (pan/zoom) stays on the viewport so arrows only fire when the map has focus.
-    // keyup (Alt+K and other global shortcuts) attaches to the app container so it fires
-    // from anywhere within the app, including the features listbox.
     el.addEventListener('keydown', handleKeyDown)
     appEl.addEventListener('keyup', handleKeyUp)
 

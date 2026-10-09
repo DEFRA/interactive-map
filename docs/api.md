@@ -58,6 +58,40 @@ Uses a dark colour scheme. |
 
 ---
 
+### `applicationModes`
+**Type:** `Object<string, { include?: string[], exclude?: string[] } | false>`
+
+Adjusts plugins' [application modes](#setapplicationmodeid-options), or defines your own, keyed by mode id. Plugins document the modes they set — for example the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'` while drawing or editing. Your settings apply whenever that mode is current, whoever sets it.
+
+Each mode's value is either:
+
+- **an object**, with either or both of:
+  - `include` — for a plugin's mode, adds items to what it shows (including any a plugin excluded). For your own mode, makes it take over the interface: only these items stay visible.
+  - `exclude` — hides items.
+- **`false`** — turns the mode off entirely, so it adds no class and hides nothing.
+
+Ids name buttons, panels and controls, and don't need to exist yet — an item you add later with [`addControl`](#addcontrolid-config) or similar is picked up when it appears.
+
+```js
+new InteractiveMap('map', {
+  applicationModes: {
+    draw: { include: ['search', 'shapeDimensions'], exclude: ['scaleBar'] }
+  }
+})
+```
+
+Or, when every item on your map is deliberate (e.g. a single-task map that goes straight into editing a shape), turn a mode off so it hides nothing and adds no class:
+
+```js
+new InteractiveMap('map', {
+  applicationModes: {
+    draw: false
+  }
+})
+```
+
+---
+
 ### `autoColorScheme`
 **Type:** `boolean`
 **Default:** `false`
@@ -197,16 +231,24 @@ The button is only displayed when the map is rendered inline.
 
 ---
 
-### `enableMoveControls`
+### `enableMapControls`
 **Type:** `boolean`
 **Default:** `true`
 
-Whether the move controls are displayed — a button that reveals directional pan, zoom,
-and step-size buttons, providing a non-dragging alternative to panning and zooming the
-map ([WCAG 2.5.7](https://www.w3.org/WAI/WCAG21/Understanding/dragging-movements.html)).
-Unlike the standard zoom control buttons, the move controls remain visible when the
-interface type is 'touch'. When enabled, the standard zoom control buttons
-(`enableZoomControls`) are hidden to avoid duplicating zoom controls.
+Whether the map controls are displayed — a button that reveals on-screen move, zoom,
+and precision buttons, plus a target point, typically used to place or select features
+on the map without a drag gesture.
+
+This gives a non-dragging way to operate the map, for anyone who can't perform a drag
+or pinch gesture (e.g. switch access users) and for voice interfaces such as Voice
+Control, which can trigger a button click but not a drag. When enabled, the standard
+zoom control buttons (`enableZoomControls`) are hidden to avoid duplication.
+
+> [!CAUTION]
+> Disabling this leaves dragging as the only way to pan or reposition the map/features,
+> which can fail [WCAG 2.5.7 (Dragging Movements)](https://www.w3.org/WAI/WCAG21/Understanding/dragging-movements.html)
+> and make the map unusable for the users described above. Only disable it if you provide
+> an equivalent non-dragging alternative elsewhere.
 
 ---
 
@@ -216,7 +258,7 @@ interface type is 'touch'. When enabled, the standard zoom control buttons
 
 Whether zoom control buttons are displayed.
 Zoom controls are not displayed when the interface type is 'touch', or when
-`enableMoveControls` is enabled.
+`enableMapControls` is enabled.
 
 ---
 
@@ -266,13 +308,21 @@ HTML string shown as a tooltip on the viewport when it receives keyboard focus, 
 
 ### `mapLabel`
 **Type:** `string`
-**Required**
+**Default:** `'Interactive map application'`
 
-Accessible name for the map viewport, which has a role of `application`. This label is announced by screen readers when the viewport receives focus and should describe the purpose of the map.
+The name of the map, read out by screen readers when the map is focused. Always set your own.
+
+Describe what the map shows or what it's for, not where it is. Users can move the map, so a place name soon stops being true.
+
+- Name the data or the task, for example 'Flood risk areas map' or 'Map for drawing your field boundaries'.
+- Include the word 'map'.
+- Only name a place if the map's data covers just that place.
+- Leave out things that change as the map is used, such as location or zoom level.
+- Keep it short, and give each map on a page a different name.
 
 ```js
 new InteractiveMap('map', {
-  mapLabel: 'Flood risk areas in England'
+  mapLabel: 'Flood risk areas map'
 })
 ```
 
@@ -314,6 +364,25 @@ maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
 
 ```js
 defra.maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
+```
+
+#### OpenLayers provider options
+
+`openLayersProvider()` accepts an optional config object. The provider renders in British National Grid (EPSG:27700) — this isn't configurable.
+
+##### `zoomAlignment`
+**Type:** `string`
+**Default:** `'uk'`
+
+Which zoom-level sequence the map's view resolutions follow.
+
+| Possible values | Description |
+| :--- | :--- |
+| `'uk'` | OS tile grid zoom levels (0–13); zoom 0 shows all of Great Britain. |
+| `'world'` | ESRI LOD sequence, for zoom levels that match the ESRI SDK; full UK visible around zoom 7. |
+
+```js
+openLayersProvider({ zoomAlignment: 'world' })
 ```
 
 ---
@@ -403,16 +472,6 @@ Passed directly to the underlying map engine.
 
 ---
 
-### `mode`
-**Type:** `string | null`
-**Default:** `null`
-
-Initial application mode. Modes facilitate attaching behaviour to certain states, enabling short user journey steps within the map interface. Plugins can be configured to respect modes, only rendering content when the app is in a specific mode.
-
-See also: [`setMode()`](#setmodemode) method.
-
----
-
 ### `nudgePanDelta`
 **Type:** `number`
 **Default:** `5`
@@ -477,6 +536,8 @@ Whether map text labels can be selected and read aloud by assistive technologies
 **Type:** `function | null`
 
 A function that returns a reverse geocode provider used to convert map coordinates to a place name, for example when announcing the current map position to screen reader users. Like the map provider, it is only called when the map is opened so the provider code is not sent to the user unless needed.
+
+When set, this also enables a <kbd>Option</kbd>/<kbd>Alt</kbd> + <kbd>I</kbd> (<kbd>Ctrl</kbd> + <kbd>I</kbd> on Windows/Linux — Alt+letter is reserved there for browser/OS menu mnemonics) keyboard shortcut that announces the place name at the map's current centre along with the visible area's dimensions. It has no visual affordance, so its keyboard shortcuts help panel entry is screen-reader-only.
 
 ```js
 new InteractiveMap('map', {
@@ -750,13 +811,50 @@ interactiveMap.hidePanel('info-panel')
 
 ---
 
+### `setApplicationMode(id, options?)`
+
+Enters an application mode — for example for a step in a journey that needs a pared-down interface. Modes form a stack: the new mode goes on top, and setting a mode that's already on the stack replaces its lists and moves it to the top. Only the current mode, the top of the stack, applies: the app root gets the class `im-o-app--mode-{id}`, and modes underneath wait until they're current again. Hidden items stay mounted, so their state is preserved, and modal panels are never hidden.
+
+Plugins set modes too (e.g. the [draw plugin](./plugins/draw.md#application-mode) sets `'draw'`). Define your own mode's lists in the [`applicationModes`](#applicationmodes) option and call `setApplicationMode(id)`, or pass them here. Options passed here are applied last, after the plugins' manifests and your `applicationModes` option.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Mode id, used as-is in the class, so keep it class-safe |
+| `options.include` | `string[]` | Buttons, panels and controls to keep visible. If nothing else defines the mode, only these stay visible |
+| `options.exclude` | `string[]` | Buttons, panels and controls to hide |
+
+Without any lists, nothing is hidden and only the class is added.
+
+```js
+// Only the map styles button and panel, and your own button, stay visible
+interactiveMap.setApplicationMode('review', { include: ['mapStyles', 'myButton'] })
+
+// Later, bring everything back
+interactiveMap.clearApplicationMode('review')
+```
+
+> [!NOTE]
+> Don't set or clear a plugin's mode id yourself (e.g. `'draw'`): it only changes the interface, so clearing it mid-draw would show everything again while drawing carries on. To adjust or disable a plugin's mode, use [`applicationModes`](#applicationmodes) instead.
+
+---
+
+### `clearApplicationMode(id)`
+
+Leaves an application mode, removing it from the stack so the mode underneath (if any) takes over.
+
+| Parameter | Type | Description |
+|-----------|------|-------------|
+| `id` | `string` | Mode id |
+
+---
+
 ### `addControl(id, config)`
 
 Add a custom control to the UI at runtime.
 
 | Parameter | Type | Description |
 |-----------|------|-------------|
-| `id` | `string` | Unique control identifier |
+| `id` | `string` | Unique control identifier. Also the id to list in an application mode's `include`/`exclude`, e.g. in [`applicationModes`](#applicationmodes) |
 | `config` | `ControlDefinition` | Control configuration |
 
 See [ControlDefinition](./api/control-definition.md) for configuration options.
@@ -816,20 +914,6 @@ interactiveMap.on('draw:merged', () => {
 interactiveMap.on('draw:unmerged', () => {
   interactiveMap.setContinueEnabled(false)
 })
-```
-
----
-
-### `setMode(mode)`
-
-Programmatically set the application mode. See the [`mode`](#mode) option for more detail.
-
-| Parameter | Type | Description |
-|-----------|------|-------------|
-| `mode` | `string` | Mode identifier |
-
-```js
-interactiveMap.setMode('fullscreen')
 ```
 
 ---

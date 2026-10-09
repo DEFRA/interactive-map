@@ -1,5 +1,5 @@
 import {
-  getCoords, getRingSegments, getSegmentForIndex, getModifiableCoords, coordPathToFlatIndex
+  getCoords, getMidpointCoords, getRingSegments, getSegmentForIndex, getModifiableCoords, coordPathToFlatIndex
 } from './geometryHelpers.js'
 
 const POLYGON = () => ({ type: 'Polygon', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]] })
@@ -24,6 +24,13 @@ describe('geometryHelpers', () => {
       .toEqual([{ start: 0, length: 2, path: [0, 0], closed: true }, { start: 2, length: 1, path: [1, 0], closed: true }])
     expect(getRingSegments({ type: 'Point', coordinates: [0, 0] })).toEqual([])
     expect(getRingSegments(null)).toEqual([])
+  })
+
+  test('getMidpointCoords finds the midpoint between each adjacent pair — no wrap for an open line, wrapping last→first for a closed ring', () => {
+    expect(getMidpointCoords(LINE())).toEqual([[5, 0], [10, 5]])
+    expect(getMidpointCoords(POLYGON())).toHaveLength(5) // closed ring: wraps, including the duplicate closing point
+    expect(getMidpointCoords({ type: 'Point', coordinates: [0, 0] })).toEqual([])
+    expect(getMidpointCoords(null)).toEqual([])
   })
 
   test('getSegmentForIndex finds the owning segment or returns null', () => {

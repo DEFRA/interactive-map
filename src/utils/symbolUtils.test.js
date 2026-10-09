@@ -2,9 +2,11 @@ import {
   hasSymbol,
   isStandaloneLabel,
   getSymbolStyleColors,
-  getSymbolViewBox,
-  getSymbolAnchor
+  getSymbolScale
 } from './symbolUtils.js'
+import { logger } from '../services/logger.js'
+
+jest.mock('../services/logger.js', () => ({ logger: { warn: jest.fn() } }))
 
 // ─── hasSymbol ────────────────────────────────────────────────────────────────
 
@@ -15,6 +17,10 @@ describe('hasSymbol', () => {
 
   it('returns true when dataset has symbolSvgContent', () => {
     expect(hasSymbol({ symbolSvgContent: '<circle/>' })).toBe(true)
+  })
+
+  it('returns false with no style at all', () => {
+    expect(hasSymbol(undefined)).toBe(false)
   })
 
   it('returns false when symbol is absent', () => {
@@ -38,11 +44,11 @@ describe('isStandaloneLabel', () => {
     expect(isStandaloneLabel({ label: 'My label', symbol: 'pin' })).toBe(false)
   })
 
-  it('returns false when marker has symbolSvgContent (line 28)', () => {
-    expect(isStandaloneLabel({ label: 'My label', symbolSvgContent: '<circle/>' })).toBe(false)
+  it('returns false when marker has svgContent (line 28)', () => {
+    expect(isStandaloneLabel({ label: 'My label', svgContent: '<circle/>' })).toBe(false)
   })
 
-  it('returns false when label is present but both symbol and symbolSvgContent are undefined (line 31)', () => {
+  it('returns false when label is present but both symbol and svgContent are undefined (line 31)', () => {
     expect(isStandaloneLabel({ label: 'My label' })).toBe(false)
   })
 
@@ -50,8 +56,8 @@ describe('isStandaloneLabel', () => {
     expect(isStandaloneLabel({ label: 'My label', symbol: null })).toBe(true)
   })
 
-  it('returns true when label is present and symbolSvgContent is explicitly null (line 31)', () => {
-    expect(isStandaloneLabel({ label: 'My label', symbolSvgContent: null })).toBe(true)
+  it('returns true when label is present and svgContent is explicitly null (line 31)', () => {
+    expect(isStandaloneLabel({ label: 'My label', svgContent: null })).toBe(true)
   })
 })
 
@@ -103,46 +109,26 @@ describe('getSymbolStyleColors', () => {
   })
 })
 
-// ─── getSymbolViewBox ─────────────────────────────────────────────────────────
+// ─── getSymbolScale ───────────────────────────────────────────────────────────
 
-describe('getSymbolViewBox', () => {
-  it('returns symbolViewBox from dataset', () => {
-    const dataset = { symbol: 'custom', symbolViewBox: '0 0 24 24' }
-    expect(getSymbolViewBox(dataset, undefined)).toBe('0 0 24 24')
+describe('getSymbolScale', () => {
+  it.each([['small', 0.75], ['medium', 1], ['large', 1.25]])('maps %s to %s', (size, scale) => {
+    expect(getSymbolScale(size)).toBe(scale)
   })
 
-  it('falls back to symbolDef viewBox', () => {
-    const symbolDef = { id: 'pin', viewBox: '0 0 38 38' }
-    expect(getSymbolViewBox({ symbol: 'pin' }, symbolDef)).toBe('0 0 38 38')
+  it('treats a missing size as medium, without a warning', () => {
+    expect(getSymbolScale(undefined)).toBe(1)
+    expect(logger.warn).not.toHaveBeenCalled()
   })
 
-  it('returns default viewBox when neither source has one', () => {
-    expect(getSymbolViewBox({ symbol: 'pin' }, {})).toBe('0 0 38 38')
+  it('warns once about an unknown size, and treats it as medium', () => {
+    expect(getSymbolScale('huge')).toBe(1)
+    expect(getSymbolScale('huge')).toBe(1)
+    expect(logger.warn).toHaveBeenCalledTimes(1)
+    expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('Unknown symbol size "huge"'))
   })
 
-  it('returns default viewBox when symbolDef is undefined', () => {
-    expect(getSymbolViewBox({ symbol: 'pin' }, undefined)).toBe('0 0 38 38')
-  })
-})
-
-// ─── getSymbolAnchor ──────────────────────────────────────────────────────────
-
-describe('getSymbolAnchor', () => {
-  it('returns symbolAnchor from dataset', () => {
-    const dataset = { symbol: 'custom', symbolAnchor: [0.5, 0.9] }
-    expect(getSymbolAnchor(dataset, undefined)).toEqual([0.5, 0.9])
-  })
-
-  it('falls back to symbolDef anchor', () => {
-    const symbolDef = { id: 'pin', anchor: [0.5, 0.9] }
-    expect(getSymbolAnchor({ symbol: 'pin' }, symbolDef)).toEqual([0.5, 0.9])
-  })
-
-  it('returns default [0.5, 0.5] when neither source has an anchor', () => {
-    expect(getSymbolAnchor({ symbol: 'pin' }, {})).toEqual([0.5, 0.5])
-  })
-
-  it('returns default [0.5, 0.5] when symbolDef is undefined', () => {
-    expect(getSymbolAnchor({ symbol: 'pin' }, undefined)).toEqual([0.5, 0.5])
+  it('doesn\'t mistake inherited object keys for sizes', () => {
+    expect(getSymbolScale('toString')).toBe(1)
   })
 })

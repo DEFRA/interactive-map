@@ -18,13 +18,11 @@ describe('actionsMap full coverage', () => {
     }
 
     state = {
-      mode: 'view',
-      previousMode: 'edit',
       breakpoint: 'desktop',
       interfaceType: 'default',
       openPanels: { panel1: { props: {} } },
       previousOpenPanels: {},
-      hasExclusiveControl: false,
+      applicationModeEntries: [],
       nudgeStepSize: 'small',
       safeZoneInset: { top: 0, bottom: 0 },
       isLayoutReady: false,
@@ -60,22 +58,8 @@ describe('actionsMap full coverage', () => {
   afterEach(() => jest.restoreAllMocks())
 
   // ---------------------- EXISTING COVERAGE ----------------------
-  test('SET_MODE updates mode, previousMode, and openPanels', () => {
-    const result = actionsMap.SET_MODE(state, 'edit')
-    expect(result.mode).toBe('edit')
-    expect(result.previousMode).toBe('view')
-    expect(result.openPanels).toHaveProperty('panel1')
-  })
-
-  test('REVERT_MODE swaps mode and previousMode and updates openPanels', () => {
-    const result = actionsMap.REVERT_MODE(state)
-    expect(result.mode).toBe('edit')
-    expect(result.previousMode).toBe('view')
-    expect(result.openPanels).toHaveProperty('panel1')
-  })
-
   test('SET_MEDIA merges payload into state', () => {
-    const payload = { interfaceType: 'compact', mode: 'edit' }
+    const payload = { interfaceType: 'compact', breakpoint: 'mobile' }
     const result = actionsMap.SET_MEDIA(state, payload)
     expect(result).toMatchObject(payload)
   })
@@ -134,9 +118,42 @@ describe('actionsMap full coverage', () => {
     expect(result.previousOpenPanels).toBe(localState.openPanels)
   })
 
-  test('TOGGLE_HAS_EXCLUSIVE_CONTROL sets flag', () => {
-    const result = actionsMap.TOGGLE_HAS_EXCLUSIVE_CONTROL(state, true)
-    expect(result.hasExclusiveControl).toBe(true)
+  describe('application modes', () => {
+    const mode = (id, lists = {}) => ({ id, include: null, exclude: null, ...lists })
+    const withModes = (entries) => ({ ...state, applicationModeEntries: entries })
+
+    test('SET_APPLICATION_MODE adds the mode, with null lists by default', () => {
+      const result = actionsMap.SET_APPLICATION_MODE(state, { id: 'search' })
+      expect(result.applicationModeEntries).toEqual([mode('search')])
+    })
+
+    test('SET_APPLICATION_MODE stores the include and exclude lists', () => {
+      const result = actionsMap.SET_APPLICATION_MODE(state, { id: 'draw', include: ['mapStyles'], exclude: ['search'] })
+      expect(result.applicationModeEntries).toEqual([mode('draw', { include: ['mapStyles'], exclude: ['search'] })])
+    })
+
+    test('SET_APPLICATION_MODE replaces an existing mode with the same id and moves it last', () => {
+      const localState = withModes([mode('draw', { include: ['mapStyles'] }), mode('search')])
+      const result = actionsMap.SET_APPLICATION_MODE(localState, { id: 'draw', include: ['scaleBar'] })
+      expect(result.applicationModeEntries).toEqual([mode('search'), mode('draw', { include: ['scaleBar'] })])
+    })
+
+    test('SET_APPLICATION_MODE returns the same state when the top mode is set again unchanged', () => {
+      const localState = withModes([mode('draw', { include: ['mapStyles'] })])
+      const result = actionsMap.SET_APPLICATION_MODE(localState, { id: 'draw', include: ['mapStyles'] })
+      expect(result).toBe(localState)
+    })
+
+    test('CLEAR_APPLICATION_MODE removes the mode, so the one underneath takes over', () => {
+      const localState = withModes([mode('draw'), mode('search')])
+      const result = actionsMap.CLEAR_APPLICATION_MODE(localState, 'search')
+      expect(result.applicationModeEntries).toEqual([mode('draw')])
+    })
+
+    test('CLEAR_APPLICATION_MODE returns the same state when the mode isn\'t set', () => {
+      const localState = withModes([mode('draw')])
+      expect(actionsMap.CLEAR_APPLICATION_MODE(localState, 'search')).toBe(localState)
+    })
   })
 
   test('TOGGLE_NUDGE_STEP flips small to large', () => {
@@ -281,18 +298,6 @@ describe('actionsMap full coverage', () => {
   })
 
   // ---------------------- FALLBACK / OPTIONAL BRANCHES ----------------------
-  test('SET_MODE uses panelRegistry.getPanelConfig() when panelConfig missing', () => {
-    const tmp = { ...state, panelConfig: undefined }
-    const result = actionsMap.SET_MODE(tmp, 'edit')
-    expect(result.openPanels.panel1).toBeDefined()
-  })
-
-  test('REVERT_MODE uses panelRegistry.getPanelConfig() when panelConfig missing', () => {
-    const tmp = { ...state, panelConfig: undefined }
-    const result = actionsMap.REVERT_MODE(tmp)
-    expect(result.openPanels.panel1).toBeDefined()
-  })
-
   test('OPEN_PANEL uses panelRegistry.getPanelConfig() when panelConfig missing', () => {
     const tmp = { ...state, panelConfig: undefined }
     const result = actionsMap.OPEN_PANEL(tmp, { panelId: 'panel2' })

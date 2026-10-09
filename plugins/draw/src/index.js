@@ -1,3 +1,5 @@
+import './draw.scss'
+
 export default function createPlugin (options = {}) {
   return {
     ...options,

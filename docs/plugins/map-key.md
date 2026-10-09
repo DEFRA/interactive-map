@@ -99,19 +99,44 @@ createMapKeyPlugin({ noKeyItemText: 'No layers to show' })
 
 ---
 
-### `includeModes`
+### `groups`
 
-**Type:** `string[]`
+**Type:** `Record<string, MapKeyGroupConfig>`
 
-When set, the plugin only initialises when the app is in one of the specified modes.
+Display options for groups of key entries, keyed by group id.
 
----
+A dataset's group id is its `groupId`, or otherwise its group label in lower case with spaces replaced by hyphens. Sublayers are grouped under their parent dataset, so a dataset labelled `'Land covers'` with sublayers has the group id `'land-covers'`.
 
-### `excludeModes`
+```js
+createMapKeyPlugin({
+  groups: {
+    'land-covers': { groupStyle: 'ramp' }
+  }
+})
+```
 
-**Type:** `string[]`
+#### `groupLabel`
 
-When set, the plugin does not initialise when the app is in one of the specified modes.
+**Type:** `string`
+
+Heading shown above the group. Replaces the heading the group's entries provide.
+
+#### `groupStyle`
+
+**Type:** `'ramp'`
+
+How the group's entries are laid out. Without a `groupStyle`, each entry shows its symbol beside its label.
+
+`'ramp'` shows the entries as touching bands, in order. Each band is filled with the entry's `fill` or fill pattern, and outlined in its `stroke` colour:
+
+- **Horizontal** — bands of equal width in a row, with each label centred below its band. Used when every label fits on one line under its band.
+- **Vertical** — bands stacked with each label beside its band. Used when any label doesn't fit.
+
+The layout is chosen again when the key panel resizes, or when the text size changes.
+
+When any entry in the group has a `stroke`, the bands are separated by a small gap.
+
+A ramp suits polygon entries. If any entry in the group has a `symbol` or `symbolSvgContent`, the group is shown without a `groupStyle`.
 
 ---
 
@@ -121,12 +146,14 @@ These properties control how an entry looks in the key panel — they have no ef
 
 ---
 
-### `keySymbolShape`
+### Key symbol shape
 
-**Type:** `'polygon' | 'line'`
-**Default:** `'polygon'`
+A polygon/line entry's key symbol is inferred from its style:
 
-Overrides the shape used to render a polygon/line entry's symbol in the key.
+- a `stroke` with no `fill` shows as a **line**
+- any `fill` shows as a **shape**. For an outline-only shape, set `fill: 'transparent'` — it draws nothing on the map
+
+Symbols and fill patterns show as themselves, whatever the stroke and fill.
 
 ---
 

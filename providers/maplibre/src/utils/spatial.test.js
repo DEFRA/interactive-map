@@ -12,18 +12,21 @@ jest.mock('@turf/bbox', () => jest.fn(() => [-1, 50, 1, 52]))
 describe('spatial utils', () => {
   test('formatDimension hits all branches', () => {
     // < 0.5 miles
-    expect(spatial.formatDimension(500)).toMatch(/m$/)
+    expect(spatial.formatDimension(500)).toMatch(/metres?$/)
+
+    // Singular metre (exactly 1) - hits roundedMetres === 1 branch
+    expect(spatial.formatDimension(1)).toBe('1 metre')
 
     // Singular mile (exactly 1.0) - hits value === 1 branch
     expect(spatial.formatDimension(1609.344)).toBe('1 mile')
 
     // 5 miles
-    const metersSmallMiles = 5 * 1609.344
-    expect(spatial.formatDimension(metersSmallMiles)).toMatch(/^5\s*miles$/)
+    const metresSmallMiles = 5 * 1609.344
+    expect(spatial.formatDimension(metresSmallMiles)).toMatch(/^5\s*miles$/)
 
     // >= WHOLE_MILE_THRESHOLD
-    const metersLarge = 15 * 1609.344
-    expect(spatial.formatDimension(metersLarge)).toBe('15 miles')
+    const metresLarge = 15 * 1609.344
+    expect(spatial.formatDimension(metresLarge)).toBe('15 miles')
   })
 
   test('array bounds triggers all branches', () => {
@@ -48,33 +51,6 @@ describe('spatial utils', () => {
     expect(spatial.getCardinalMove([0, 0], [-0.5, 0])).toMatch(/west/)
     expect(spatial.getCardinalMove([0, 0], [0.5, 0.5])).toMatch(/north.*east|east.*north/)
     expect(spatial.getCardinalMove([0, 0], [0.00001, 0.00001])).toBe('')
-  })
-
-  test('spatialNavigate all directions and fallback', () => {
-    const pixels = [[0, 0], [0, -1], [1, 0], [0, 1], [-1, 0]]
-    expect(spatial.spatialNavigate('ArrowUp', [0, 0], pixels)).toBe(1)
-    expect(spatial.spatialNavigate('ArrowDown', [0, 0], pixels)).toBe(3)
-    expect(spatial.spatialNavigate('ArrowLeft', [0, 0], pixels)).toBe(4)
-    expect(spatial.spatialNavigate('ArrowRight', [0, 0], pixels)).toBe(2)
-    expect(spatial.spatialNavigate('InvalidDir', [0, 0], pixels)).toBe(0)
-  })
-
-  test('spatialNavigate finds closer candidates (hits dist < minDist)', () => {
-    const start = [0, 0]
-    const pixels = [[0, 0], [10, 0], [2, 0]]
-    expect(spatial.spatialNavigate('ArrowRight', start, pixels)).toBe(2)
-  })
-
-  test('spatialNavigate skips farther candidate (dist >= minDist false branch)', () => {
-    // Closer candidate first → second candidate fails dist < minDist
-    const pixels = [[0, 0], [2, 0], [10, 0]]
-    expect(spatial.spatialNavigate('ArrowRight', [0, 0], pixels)).toBe(1)
-  })
-
-  test('spatialNavigate diagonal with dx>dy', () => {
-    const start = [0, 0]
-    const pixels = [[0, 0], [3, 1], [1, 0]] // dx>dy
-    expect(spatial.spatialNavigate('ArrowRight', start, pixels)).toBe(2)
   })
 
   test('getResolution returns positive value', () => {

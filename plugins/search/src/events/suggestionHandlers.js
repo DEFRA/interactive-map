@@ -1,6 +1,6 @@
-import { updateMap } from '../utils/updateMap.js'
+import { showResult } from '../utils/showResult.js'
 
-export const createSuggestionHandlers = ({ dispatch, services, mapProvider, markers, showMarker, markerOptions, viewportRef }) => {
+export const createSuggestionHandlers = ({ dispatch, services, mapProvider, markers, showMarker, markerOptions }) => {
   const selectionMessage = (suggestions, index) =>
     index >= 0
       ? `${suggestions[index]?.text}. ${index + 1} of ${suggestions.length} is highlighted`
@@ -17,9 +17,7 @@ export const createSuggestionHandlers = ({ dispatch, services, mapProvider, mark
         services.eventBus.emit('search:close')
       }
 
-      viewportRef.current?.focus()
-      updateMap({ mapProvider, bounds: suggestion.bounds, point: suggestion.point, markers, showMarker, markerOptions })
-      services.eventBus.emit('search:match', { query: suggestion.text, ...suggestion })
+      showResult({ suggestion, query: suggestion.text, services, mapProvider, markers, showMarker, markerOptions })
     },
 
     handleInputKeyDown (e, pluginState) {

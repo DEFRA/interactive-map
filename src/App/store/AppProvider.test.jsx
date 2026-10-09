@@ -10,7 +10,6 @@ jest.mock('../hooks/useMediaQueryDispatch.js')
 jest.mock('../../utils/detectInterfaceType.js')
 
 describe('AppProvider', () => {
-  let capturedSetMode, capturedRevertMode
   let mockOptions
   let mockBreakpointDetector
 
@@ -33,13 +32,8 @@ describe('AppProvider', () => {
       buttonConfig: { save: { label: 'Save' } }
     })
 
-    capturedSetMode = null
-    capturedRevertMode = null
     const mockEventBus = {
-      on: jest.fn((event, handler) => {
-        if (event === 'app:setmode') capturedSetMode = handler
-        if (event === 'app:revertmode') capturedRevertMode = handler
-      }),
+      on: jest.fn(),
       off: jest.fn()
     }
 
@@ -87,20 +81,6 @@ describe('AppProvider', () => {
     expect(detectInterface.subscribeToInterfaceChanges).toHaveBeenCalledWith(expect.any(Function))
   })
 
-  test('handles eventBus setmode and revertmode', () => {
-    render(<AppProvider options={mockOptions}><div>Child</div></AppProvider>)
-    act(() => {
-      capturedSetMode('newMode')
-      capturedRevertMode()
-    })
-    act(() => {
-      mockOptions.eventBus.off('app:setmode', capturedSetMode)
-      mockOptions.eventBus.off('app:revertmode', capturedRevertMode)
-    })
-    expect(mockOptions.eventBus.on).toHaveBeenCalledWith('app:setmode', capturedSetMode)
-    expect(mockOptions.eventBus.on).toHaveBeenCalledWith('app:revertmode', capturedRevertMode)
-  })
-
   test('provides state, dispatch, and layoutRefs via context', () => {
     let contextValue
     render(
@@ -112,7 +92,7 @@ describe('AppProvider', () => {
     )
 
     expect(contextValue).toHaveProperty('dispatch')
-    expect(contextValue).toHaveProperty('mode')
+    expect(contextValue).toHaveProperty('applicationModeEntries')
     expect(contextValue).toHaveProperty('openPanels')
     expect(contextValue.layoutRefs).toHaveProperty('mainRef')
     expect(contextValue.layoutRefs).toHaveProperty('bottomRef')
@@ -123,18 +103,18 @@ describe('AppProvider', () => {
 
     // Mock initialState to return state without panelConfig but with panelRegistry
     jest.spyOn(appReducerModule, 'initialState').mockImplementation(() => ({
-      mode: 'view',
-      previousMode: 'edit',
       openPanels: {},
       previousOpenPanels: {},
       interfaceType: 'default',
       isFullscreen: false,
-      hasExclusiveControl: false,
+      applicationModeEntries: [],
       panelRegistry: { getPanelConfig: getPanelConfigMock } // <-- provide it here!
     }))
 
     const mockEventBus = { on: jest.fn(), off: jest.fn() }
     const mockBreakpointDetector = { subscribe: jest.fn(() => jest.fn()) }
+    let interfaceChangeCallback
+    detectInterface.subscribeToInterfaceChanges.mockImplementation((callback) => { interfaceChangeCallback = callback; return jest.fn() })
     const mockOptions = {
       ...createMockRegistries({ panelConfig: undefined }),
       eventBus: mockEventBus,
@@ -147,13 +127,10 @@ describe('AppProvider', () => {
       </AppProvider>
     )
 
-    // Trigger a dispatch via eventBus to hit the dispatch wrapper
-    act(() => {
-      mockEventBus.on.mock.calls.forEach(([event, handler]) => {
-        if (event === 'app:setmode') handler('newMode')
-      })
-    })
+    // Trigger a dispatch (an interface type change) to hit the dispatch wrapper
+    const optionsGetPanelConfig = jest.spyOn(mockOptions.panelRegistry, 'getPanelConfig')
+    act(() => interfaceChangeCallback('touch'))
 
-    expect(getPanelConfigMock).toHaveBeenCalled()
+    expect(optionsGetPanelConfig).toHaveBeenCalled()
   })
 })

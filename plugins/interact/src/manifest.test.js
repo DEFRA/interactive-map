@@ -53,3 +53,23 @@ describe('manifest', () => {
     })
   })
 })
+
+// altKeyHtml is resolved once at module load (see manifest.js), so exercising both branches
+// needs a fresh require() under each platform value — same approach as
+// src/App/controls/keyboardShortcuts.test.js's own isMac coverage.
+describe('manifest — Alt/Option key label', () => {
+  beforeEach(() => jest.resetModules())
+
+  const loadSpatialShortcut = () =>
+    require('./manifest.js').manifest.keyboardShortcuts.find(s => s.id === 'navigateFeaturesSpatially')
+
+  it('uses Option on Mac', () => {
+    Object.defineProperty(navigator, 'platform', { value: 'MacIntel', configurable: true })
+    expect(loadSpatialShortcut().command).toContain('<kbd>Option</kbd>')
+  })
+
+  it('uses Alt on non-Mac', () => {
+    Object.defineProperty(navigator, 'platform', { value: 'Win32', configurable: true })
+    expect(loadSpatialShortcut().command).toContain('<kbd>Alt</kbd>')
+  })
+})

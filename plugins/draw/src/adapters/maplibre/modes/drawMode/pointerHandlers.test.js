@@ -33,7 +33,7 @@ describe('touch and pointer interface', () => {
     clickAt(ctx, state, 0, 0)
     ctx.map.fire.mockClear()
     ctx.pointerupHandler({})
-    expect(firedWith(ctx.map, 'draw.vertexchange')).toEqual([{ numVertecies: 1 }])
+    expect(firedWith(ctx.map, 'draw.vertexchange')).toEqual([{ numVertices: 1 }])
   })
 
   test('blur away from the container hides the crosshair; blur on the container does not', () => {
@@ -44,7 +44,7 @@ describe('touch and pointer interface', () => {
     expect(marker.style.display).toBe('none')
   })
 
-  test('draw.interfacetypechange (e.g. switching to touch and panning via MoveControls mid-session) updates the interface and refreshes the rubber band immediately', () => {
+  test('draw.interfacetypechange (e.g. switching to touch and panning via MapControls mid-session) updates the interface and refreshes the rubber band immediately', () => {
     const { ctx, state } = setup(DrawPolygonMode)
     clickAt(ctx, state, 0, 0)
     ctx.map.fire('draw.interfacetypechange', { interfaceType: 'touch' })
@@ -113,6 +113,21 @@ describe('rubber band and snapping while moving', () => {
     clickAt(ctx, state, 0, 0)
     const before = [...state.polygon.coordinates[0].map((c) => [...c])]
     ctx.map.fire('move')
+    expect(state.polygon.coordinates[0]).toEqual(before)
+  })
+
+  test('a programmatic map move (e.g. MapControls panBy while Voice Control keeps interfaceType mouse) still tracks the rubber band to center', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    ctx.map.fire('move', { type: 'move' }) // no originalEvent — matches a programmatic move, unlike a real drag/scroll
+    expect(state.polygon.coordinates[0].at(-1)).toEqual([CENTER.lng, CENTER.lat])
+  })
+
+  test('a real mouse-driven map move (dragPan/scrollZoom) still leaves the rubber band alone', () => {
+    const { ctx, state } = setup(DrawPolygonMode)
+    clickAt(ctx, state, 0, 0)
+    const before = [...state.polygon.coordinates[0].map((c) => [...c])]
+    ctx.map.fire('move', { type: 'move', originalEvent: new MouseEvent('mousemove') })
     expect(state.polygon.coordinates[0]).toEqual(before)
   })
 

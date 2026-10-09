@@ -7,7 +7,7 @@ import turfBbox from '@turf/bbox'
 // -----------------------------------------------------------------------------
 
 /**
- * Calculate distance in meters between two [lng, lat] coordinates
+ * Calculate distance in metres between two [lng, lat] coordinates
  */
 const getDistance = (from, to) => {
   const [lng1, lat1] = from
@@ -16,22 +16,24 @@ const getDistance = (from, to) => {
   const fromLatLon = new LatLon(lat1, lng1)
   const toLatLon = new LatLon(lat2, lng2)
 
-  return fromLatLon.distanceTo(toLatLon) // meters
+  return fromLatLon.distanceTo(toLatLon) // metres
 }
 
 /**
- * Format dimension, meters if less than 0.5 miles, otherwise miles
+ * Format dimension, metres if less than 0.5 miles, otherwise miles
  */
-const formatDimension = (meters) => {
+const formatDimension = (metres) => {
   const WHOLE_MILE_THRESHOLD = 10
   const MILE_THRESHOLD = 0.5
-  const METERS_PER_MILE = 1609.344
+  const METRES_PER_MILE = 1609.344
 
-  const miles = meters / METERS_PER_MILE
+  const miles = metres / METRES_PER_MILE
 
   // Check if we are under the half-mile threshold
   if (miles < MILE_THRESHOLD) {
-    return `${Math.round(meters)}m`
+    const roundedMetres = Math.round(metres)
+    const units = roundedMetres === 1 ? 'metre' : 'metres'
+    return `${roundedMetres} ${units}`
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {
@@ -50,7 +52,7 @@ const formatDimension = (meters) => {
 
 /**
  * bounds: [[west, south], [east, north]]
- * Returns: "400m by 1.4 miles"
+ * Returns: "400 metres by 1.4 miles"
  */
 const getAreaDimensions = (bounds) => {
   let west, south, east, north
@@ -69,12 +71,12 @@ const getAreaDimensions = (bounds) => {
   }
 
   // Width: west <-> east at the southern latitude
-  const widthMeters = getDistance([west, south], [east, south])
+  const widthMetres = getDistance([west, south], [east, south])
   // Height: south <-> north at the western longitude
-  const heightMeters = getDistance([west, south], [west, north])
+  const heightMetres = getDistance([west, south], [west, north])
 
-  const widthLabel = formatDimension(widthMeters)
-  const heightLabel = formatDimension(heightMeters)
+  const widthLabel = formatDimension(widthMetres)
+  const heightLabel = formatDimension(heightMetres)
 
   return `${heightLabel} by ${widthLabel}`
 }
@@ -82,7 +84,7 @@ const getAreaDimensions = (bounds) => {
 /**
  * Generate a cardinal direction move description.
  * Only non-zero moves are announced.
- * Example: "north 400m", "east 750m", or "south 400m, west 750m"
+ * Example: "north 400 metres", "east 750 metres", or "south 400 metres, west 750 metres"
  */
 const getCardinalMove = (from, to) => {
   const [lng1, lat1] = from
@@ -94,72 +96,16 @@ const getCardinalMove = (from, to) => {
   const moves = []
 
   if (Math.abs(dLat) > 0.0001) { // threshold to ignore tiny movement
-    const meters = Math.round(getDistance([lng1, lat1], [lng1, lat2]))
-    moves.push(`${dLat > 0 ? 'north' : 'south'} ${formatDimension(meters)}`)
+    const metres = Math.round(getDistance([lng1, lat1], [lng1, lat2]))
+    moves.push(`${dLat > 0 ? 'north' : 'south'} ${formatDimension(metres)}`)
   }
 
   if (Math.abs(dLng) > 0.0001) {
-    const meters = Math.round(getDistance([lng1, lat1], [lng2, lat1]))
-    moves.push(`${dLng > 0 ? 'east' : 'west'} ${formatDimension(meters)}`)
+    const metres = Math.round(getDistance([lng1, lat1], [lng2, lat1]))
+    moves.push(`${dLng > 0 ? 'east' : 'west'} ${formatDimension(metres)}`)
   }
 
   return moves.join(', ')
-}
-
-/**
- * Find the index of the nearest pixel in a given cardinal direction.
- *
- * The function:
- * - Filters candidate points that lie in the specified direction
- *   (up, down, left, right) relative to a start pixel.
- * - Selects the nearest valid candidate using Euclidean distance.
- * - Falls back to returning the start pixel index if no candidate exists.
- *
- * Example:
- *   spatialNavigate('up', [100, 200], [[100, 100], [150, 250], [90, 180]])
- *   → returns the index of [100, 100]
- *
- * @param {'ArrowUp'|'ArrowDown'|'ArrowLeft'|'ArrowRight'} direction - The direction to search.
- * @param {[number, number]} start - The starting pixel coordinate [x, y].
- * @param {Array<[number, number]>} pixels - Array of pixel coordinates.
- * @returns {number} Index of the closest pixel in the given direction.
- */
-const isInDirection = (direction, dx, dy) => {
-  switch (direction) {
-    case 'ArrowUp': return dy < 0 && Math.abs(dy) >= Math.abs(dx)
-    case 'ArrowDown': return dy > 0 && Math.abs(dy) >= Math.abs(dx)
-    case 'ArrowLeft': return dx < 0 && Math.abs(dx) > Math.abs(dy)
-    case 'ArrowRight': return dx > 0 && Math.abs(dx) > Math.abs(dy)
-    default: return false
-  }
-}
-
-const spatialNavigate = (direction, start, pixels) => {
-  const [sx, sy] = start
-
-  // Direction filters
-  const candidates = pixels.filter(([x, y]) =>
-    (x !== sx || y !== sy) && isInDirection(direction, x - sx, y - sy)
-  )
-
-  if (!candidates.length) {
-    return pixels.findIndex(p => p[0] === sx && p[1] === sy)
-  }
-
-  // Choose the closest by Euclidean distance
-  let closestIndex = -1
-  let minDist = Infinity
-  candidates.forEach(c => {
-    const dx = c[0] - sx
-    const dy = c[1] - sy
-    const dist = dx * dx + dy * dy // squared distance is enough
-    if (dist < minDist) {
-      minDist = dist
-      closestIndex = pixels.indexOf(c)
-    }
-  })
-
-  return closestIndex
 }
 
 const getResolution = (center, zoom) => {
@@ -239,7 +185,6 @@ export {
   getCardinalMove,
   getBboxFromGeoJSON,
   isGeometryObscured,
-  spatialNavigate,
   getResolution,
   getPaddedBounds,
   formatDimension

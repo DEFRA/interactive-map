@@ -67,12 +67,17 @@
     "./plugins/draw-es": {
       "import": "./plugins/beta/draw-es/dist/esm/index.js"
     },
+    "./plugins/draw": {
+      "import": "./plugins/draw/dist/esm/index.js",
+      "require": "./plugins/draw/dist/umd/index.js"
+    },
     "./plugins/frame": {
       "import": "./plugins/beta/frame/dist/esm/index.js",
       "require": "./plugins/beta/frame/dist/umd/index.js"
     },
     "./css": "./dist/css/index.css",
     "./plugins/draw-ml/css": "./plugins/beta/draw-ml/dist/css/index.css",
+    "./plugins/draw/css": "./plugins/draw/dist/css/index.css",
     "./plugins/scale-bar/css": "./plugins/beta/scale-bar/dist/css/index.css",
     "./plugins/datasets/css": "./plugins/datasets/dist/css/index.css",
     "./plugins/menu/css": "./plugins/menu/dist/css/index.css",
@@ -129,7 +134,7 @@
   },
   "peerDependencies": {
     "@arcgis/core": "^5.0.9",
-    "ol": "^10.9.0",
+    "ol": "^10.10.0",
     "proj4": "^2.20.8"
   },
   "peerDependenciesMeta": {
@@ -188,7 +193,7 @@
     "mini-css-extract-plugin": "^2.9.2",
     "node-fetch": "^3.3.2",
     "npm-run-all": "^4.1.5",
-    "ol": "^10.9.0",
+    "ol": "^10.10.0",
     "ol-mapbox-style": "^13.4.1",
     "proj4": "^2.20.8",
     "react": "^19.2.4",

@@ -5,10 +5,10 @@ import {
   navigateToNextLabel, createMapLabelNavigator
 } from './labels.js'
 
-import { spatialNavigate } from './spatial.js'
+import { spatialNavigate } from '../../../../src/utils/spatialNavigate.js'
 import { calculateLinearTextSize } from './calculateLinearTextSize.js'
 
-jest.mock('./spatial.js', () => ({ spatialNavigate: jest.fn() }))
+jest.mock('../../../../src/utils/spatialNavigate.js', () => ({ spatialNavigate: jest.fn() }))
 jest.mock('./calculateLinearTextSize.js', () => ({ calculateLinearTextSize: jest.fn(() => 12) }))
 
 describe('labels utils', () => {
@@ -183,7 +183,7 @@ describe('labels utils', () => {
       expect(nav.highlightNextLabel('ArrowRight')).toBeNull()
 
       // Zoom handler: no active highlight → no-op
-      const zoomHandler = map.on.mock.calls.find(([e]) => e === 'zoom')[1]
+      const zoomHandler = map.on.mock.calls.find(([eventName]) => eventName === 'zoom')[1]
       map.setLayoutProperty.mockClear()
       zoomHandler()
       expect(map.setLayoutProperty).not.toHaveBeenCalled()
@@ -191,7 +191,7 @@ describe('labels utils', () => {
       // One feat: highlightNext without currentPixel falls back to highlightCenter (lines 249-251)
       const feat1 = { layer: { id: 's2' }, properties: { name: 'City1' }, geometry: { type: 'Point', coordinates: [1, 2] } }
       map.queryRenderedFeatures.mockReturnValue([feat1])
-      expect(nav.highlightNextLabel('ArrowRight')).toContain('City1')
+      expect(nav.highlightNextLabel('ArrowRight')).toBe('City1')
 
       // Single label at currentPixel → navigateToNextLabel → null (lines 253-255)
       expect(nav.highlightNextLabel('ArrowRight')).toBeNull()
@@ -205,7 +205,7 @@ describe('labels utils', () => {
       const feat2 = { layer: { id: 's2' }, properties: { name: 'City2' }, geometry: { type: 'Point', coordinates: [3, 4] } }
       map.queryRenderedFeatures.mockReturnValue([feat1, feat2])
       spatialNavigate.mockReturnValue(0)
-      expect(nav.highlightNextLabel('ArrowRight')).toContain('City2')
+      expect(nav.highlightNextLabel('ArrowRight')).toBe('City2')
 
       // clearHighlightedLabel removes layer
       map.getLayer.mockReturnValue(true)
@@ -222,10 +222,10 @@ describe('labels utils', () => {
       // Fire MAP_SET_STYLE → styledata → idle → setLineCenterPlacement + initLabelSource
       const styleHandler = eventBus.on.mock.calls[0][1]
       styleHandler({ mapColorScheme: 'dark' })
-      const styleDataHandler = map.once.mock.calls.find(([e]) => e === 'styledata')[1]
+      const styleDataHandler = map.once.mock.calls.find(([eventName]) => eventName === 'styledata')[1]
       styleDataHandler()
       map.setLayoutProperty.mockClear()
-      const idleHandler = map.once.mock.calls.find(([e]) => e === 'idle')[1]
+      const idleHandler = map.once.mock.calls.find(([eventName]) => eventName === 'idle')[1]
       idleHandler()
       expect(map.setLayoutProperty).toHaveBeenCalledWith('s1', 'symbol-placement', 'line-center')
     })

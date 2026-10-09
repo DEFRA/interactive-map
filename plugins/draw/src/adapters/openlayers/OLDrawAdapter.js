@@ -1,5 +1,5 @@
 import { createOLDraw } from './olDraw.js'
-import { resolvePointSymbol, hasSymbolStyle } from './point/pointSymbolImages.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 
 // split.js passes this literal — MapLibre's own always-present "already-drawn
 // shapes" style layer id — as a snapLayers entry so the split line snaps to the
@@ -26,6 +26,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   setInterfaceType(type)
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
+ *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
  *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
@@ -38,6 +39,7 @@ export class OLDrawAdapter {
   constructor (mapProvider, options) {
     const { manager, remove } = createOLDraw({
       mapProvider,
+      symbolRegistry: options.symbolRegistry,
       events: options.events,
       eventBus: options.eventBus,
       // The full pluginConfig, not just snapLayers — OLDrawManager also reads
@@ -77,6 +79,11 @@ export class OLDrawAdapter {
   deleteVertex () { this._manager.deleteVertex() }
   nudgeSelectedVertex (dx, dy, isLargeStep) { this._manager.nudgeSelectedVertex(dx, dy, isLargeStep) }
 
+  // Read-only vertex/midpoint coordinates for the shared spatial listbox.
+  getVertexItems () { return this._manager.getVertexItems() }
+  selectVertex (index) { this._manager.selectVertex(index) }
+  insertVertexAtMidpoint (index) { this._manager.insertVertexAtMidpoint(index) }
+
   // Record the current geometry validity so the draw mode can block finish gestures
   // (double-click / click-to-close) while the in-progress shape is invalid.
   setGeometryValid (valid) { this._manager._geometryValid = valid }
@@ -95,8 +102,8 @@ export class OLDrawAdapter {
   // drawend handler, so it must be resolved here instead — mirrors MaplibreDrawAdapter.js.
   add (feature) {
     const olFeature = this._manager.add(feature)
-    if (feature.geometry?.type === 'Point' && hasSymbolStyle(feature.properties)) {
-      resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
+    if (feature.geometry?.type === 'Point' && hasSymbol(feature.properties)) {
+      this._manager.updatePointSymbol(olFeature)
     }
     return olFeature
   }
@@ -110,8 +117,8 @@ export class OLDrawAdapter {
       return
     }
     olFeature.setProperties(properties)
-    if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbolStyle(olFeature.getProperties())) {
-      resolvePointSymbol({ manager: this._manager, mapProvider: this._mapProvider, olFeature })
+    if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbol(olFeature.getProperties())) {
+      this._manager.updatePointSymbol(olFeature)
     }
   }
 
@@ -124,7 +131,7 @@ export class OLDrawAdapter {
   }
 
   setSnapLayers (layers) {
-    const translated = layers?.map((l) => (l === DRAW_OUTLINE_STYLE_LAYER ? this._manager._layer : l))
+    const translated = layers?.map((layer) => (layer === DRAW_OUTLINE_STYLE_LAYER ? this._manager._layer : layer))
     this._manager.snap?.setSnapLayers(translated)
   }
 

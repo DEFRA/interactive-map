@@ -1,7 +1,6 @@
 import { manifest } from './manifest.js'
 
 const findButton = (id) => manifest.buttons.find((b) => b.id === id)
-const findMenuItem = (menuId, itemId) => findButton(menuId).menuItems.find((m) => m.id === itemId)
 
 describe('manifest structure', () => {
   test('exposes the reducer, init component and api surface', () => {
@@ -11,6 +10,12 @@ describe('manifest structure', () => {
     expect(Object.keys(manifest.api)).toEqual(expect.arrayContaining([
       'newPolygon', 'newLine', 'newPoint', 'editFeature', 'addFeature', 'setStyle', 'deleteFeature', 'split', 'merge'
     ]))
+  })
+})
+
+describe('application mode', () => {
+  test('declares the draw mode, keeping map styles, map controls and the scale bar (its own items are kept automatically)', () => {
+    expect(manifest.applicationModes).toEqual({ draw: { include: ['mapStyles', 'mapControls', 'scaleBar'] } })
   })
 })
 
@@ -63,32 +68,21 @@ describe('drawDone', () => {
   })
 })
 
-describe('drawMenu', () => {
-  test('is hidden outside draw/edit modes', () => {
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: null } })).toBe(true)
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_vertex' } })).toBe(false)
+describe('top row buttons', () => {
+  test('sit in the top-middle slot as Undo, Snap, Delete point, with only Snap showing its label', () => {
+    const topMiddle = manifest.buttons.filter(button => button.desktop?.slot === 'top-middle').map(button => button.id)
+    expect(topMiddle).toEqual(['drawUndo', 'drawSnap', 'drawDeletePoint'])
+    expect(findButton('drawUndo').desktop).toEqual({ slot: 'top-middle', showLabel: false })
+    expect(findButton('drawSnap').desktop).toEqual({ slot: 'top-middle', showLabel: true })
+    expect(findButton('drawDeletePoint').desktop).toEqual({ slot: 'top-middle', showLabel: false })
   })
 
-  // draw_point has no Undo and no delete-vertex, but it does support snapping, and Snap is
-  // a menuItem inside this same button — so the button itself must stay visible for it even
-  // though drawUndo/drawDeletePoint (below) correctly keep excluding it.
-  test('is visible during draw_point, for the Snap toggle, even though it has no undo/delete', () => {
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'draw_point' } })).toBe(false)
-  })
-
-  test('labels "Edit actions" in edit mode, "Draw actions" otherwise', () => {
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_vertex' } })).toBe('Edit actions')
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'edit_point' } })).toBe('Edit actions')
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_polygon' } })).toBe('Draw actions')
-    expect(findButton('drawMenu').label({ pluginState: { mode: 'draw_line' } })).toBe('Draw actions')
-  })
-
-  test('is visible during edit_point', () => {
-    expect(findButton('drawMenu').hiddenWhen({ pluginState: { mode: 'edit_point' } })).toBe(false)
+  test('replace the draw/edit actions menu', () => {
+    expect(findButton('drawMenu')).toBeUndefined()
   })
 
   describe('drawUndo', () => {
-    const item = () => findMenuItem('drawMenu', 'drawUndo')
+    const item = () => findButton('drawUndo')
 
     test('is hidden outside draw/edit modes', () => {
       expect(item().hiddenWhen({ pluginState: { mode: null } })).toBe(true)
@@ -114,12 +108,16 @@ describe('drawMenu', () => {
   })
 
   describe('drawSnap', () => {
-    const item = () => findMenuItem('drawMenu', 'drawSnap')
+    const item = () => findButton('drawSnap')
 
     test('is hidden without a mode or snap layers', () => {
       expect(item().hiddenWhen({ pluginState: { mode: null, hasSnapLayers: true } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: false } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true } })).toBe(false)
+    })
+
+    test('is visible during draw_point, which supports snapping but has no undo/delete', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_point', hasSnapLayers: true } })).toBe(false)
     })
 
     test('is pressed when snapping is enabled', () => {
@@ -129,7 +127,7 @@ describe('drawMenu', () => {
   })
 
   describe('drawDeletePoint', () => {
-    const item = () => findMenuItem('drawMenu', 'drawDeletePoint')
+    const item = () => findButton('drawDeletePoint')
 
     test('is hidden outside edit mode', () => {
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_polygon' } })).toBe(true)
@@ -152,13 +150,13 @@ describe('drawMenu', () => {
   })
 })
 
-describe('drawUndo keyboard shortcut (platform-specific command)', () => {
-  const loadUndoCommand = (mac) => {
+describe('platform-specific keyboard shortcut commands', () => {
+  const loadCommand = (mac, id) => {
     let command
     jest.isolateModules(() => {
       jest.doMock('../../../src/utils/isMac.js', () => ({ isMac: () => mac }))
       const { manifest: reloaded } = require('./manifest.js')
-      command = reloaded.keyboardShortcuts.find((s) => s.id === 'drawUndo').command
+      command = reloaded.keyboardShortcuts.find((s) => s.id === id).command
     })
     return command
   }
@@ -168,11 +166,23 @@ describe('drawUndo keyboard shortcut (platform-specific command)', () => {
     jest.resetModules()
   })
 
-  test('uses Command on macOS', () => {
-    expect(loadUndoCommand(true)).toBe('<kbd>Command</kbd> + <kbd>Z</kbd>')
+  describe('drawUndo', () => {
+    test('uses Command on macOS', () => {
+      expect(loadCommand(true, 'drawUndo')).toBe('<kbd>Command</kbd> + <kbd>Z</kbd>')
+    })
+
+    test('uses Ctrl on non-mac platforms', () => {
+      expect(loadCommand(false, 'drawUndo')).toBe('<kbd>Ctrl</kbd> + <kbd>Z</kbd>')
+    })
   })
 
-  test('uses Ctrl on non-mac platforms', () => {
-    expect(loadUndoCommand(false)).toBe('<kbd>Ctrl</kbd> + <kbd>Z</kbd>')
+  describe('drawSelectAdjacentPoint', () => {
+    test('uses Option on macOS', () => {
+      expect(loadCommand(true, 'drawSelectAdjacentPoint')).toBe('<kbd>Option</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>')
+    })
+
+    test('uses Alt on non-mac platforms', () => {
+      expect(loadCommand(false, 'drawSelectAdjacentPoint')).toBe('<kbd>Alt</kbd> + <kbd>↑</kbd> <kbd>↓</kbd> <kbd>←</kbd> or <kbd>→</kbd>')
+    })
   })
 })

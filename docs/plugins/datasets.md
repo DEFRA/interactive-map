@@ -5,6 +5,9 @@ The datasets plugin renders GeoJSON and vector tile datasets on the map, with su
 > [!IMPORTANT]
 > **Upgrading?** This plugin no longer renders key of symbols itself — that button and panel have been removed. Add the [Map Key](./map-key.md) plugin to restore it. Your `showInKey` config is unaffected and needs no changes.
 
+> [!IMPORTANT]
+> **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
+
 ## ESM usage
 
 ```js
@@ -86,22 +89,6 @@ Options are passed to the factory function when creating the plugin.
 **Required**
 
 Array of dataset configurations to render on the map. See [Dataset configuration](#dataset-configuration) below.
-
----
-
-### `includeModes`
-
-**Type:** `string[]`
-
-When set, the plugin only initialises when the app is in one of the specified modes.
-
----
-
-### `excludeModes`
-
-**Type:** `string[]`
-
-When set, the plugin does not initialise when the app is in one of the specified modes.
 
 ---
 
@@ -202,7 +189,7 @@ The layer name within the vector tile source to render. Required when using `til
 
 **Type:** `string`
 
-Property name used to uniquely identify features in a static `geojson` source. When set, the plugin promotes this property to the MapLibre feature ID (`promoteId`) so that feature IDs are stable and derived from your data rather than auto-generated.
+Property name used to uniquely identify features in a static `geojson` source. When set, the plugin promotes this property to the underlying engine's feature ID (MapLibre's `promoteId`; OpenLayers' `ol/Feature` id) so that feature IDs are stable and derived from your data rather than auto-generated.
 
 Required for `setFeatureVisibility` to work correctly — the IDs you pass must match the values of this property in your data.
 
@@ -227,6 +214,9 @@ Required for `setFeatureVisibility` to work correctly — the IDs you pass must 
 When `true`, MapLibre auto-generates integer IDs for GeoJSON features by their array index position (0-based). Use this when your features have no natural unique ID property and you need `setFeatureVisibility` to work.
 
 > [!NOTE]
+> MapLibre only. The OpenLayers provider has no equivalent auto-generated ID concept — use `idProperty` instead.
+
+> [!NOTE]
 > Auto-generated IDs are positional and reset on every `setData` call. If your data changes between calls, the same integer ID may refer to a different feature. Prefer `idProperty` whenever your data has a stable unique field.
 
 ```js
@@ -243,7 +233,10 @@ When `true`, MapLibre auto-generates integer IDs for GeoJSON features by their a
 
 **Type:** `FilterExpression`
 
-A MapLibre filter expression applied to the dataset's map layers. Features not matching the filter are not rendered.
+A MapLibre-style filter expression applied to the dataset's map layers (also evaluated by the OpenLayers provider's own expression engine). Features not matching the filter are not rendered.
+
+> [!NOTE]
+> OpenLayers' expression parser is stricter than MapLibre's in places — e.g. `in`'s second argument must be a real array (`['literal', [...]]`), where MapLibre also accepts a bare scalar.
 
 ```js
 filter: ['==', ['get', 'status'], 'active']
@@ -307,17 +300,13 @@ Groups this dataset with others sharing the same `groupLabel` in the LayersMenu 
 
 ---
 
-### `keySymbolShape`
-
-Set within [`style`](#style) — not a top-level dataset property. See [Map Key: `keySymbolShape`](./map-key.md#keysymbolshape).
-
----
-
 ### `style`
 
 **Type:** `Object`
 
 Visual style for the dataset. All style properties must be nested within this object.
+
+A style that sets none of `stroke`, `fill`, `fillPattern`, `fillPatternSvgContent`, `symbol` or `symbolSvgContent` draws a default red outline (`stroke: '#d4351c'`), described in the key as `'red outline'`. Setting any of them replaces that default, including an empty value such as `stroke: null` or `fill: 'transparent'`. Other properties, such as `strokeWidth` or `opacity`, apply to the default outline. For a sublayer, this applies to its style merged with the parent's.
 
 **Common properties:**
 
@@ -333,12 +322,11 @@ Visual style for the dataset. All style properties must be nested within this ob
 | `stroke` | `string \| Record<string, string>` | Stroke (outline) colour. Accepts a plain colour string or a map-style-keyed object e.g. `{ outdoor: '#ff0000', dark: '#ffffff' }` |
 | `strokeWidth` | `number` | Stroke width in pixels. **Default:** `2` |
 | `strokeDashArray` | `number[]` | Dash pattern for the stroke e.g. `[4, 2]` |
-| `fill` | `string \| Record<string, string>` | Fill colour. Use `'transparent'` for no fill |
+| `fill` | `string \| Record<string, string>` | Fill colour. Use `'transparent'` for no fill. Also sets the key symbol: with a `fill` it's a shape, without one (stroke only) it's a line — see [Map Key: Key symbol shape](./map-key.md#key-symbol-shape) |
 | `fillPattern` | `string` | Named fill pattern e.g. `'diagonal-cross-hatch'`, `'horizontal-hatch'`, `'dot'`, `'vertical-hatch'` |
 | `fillPatternSvgContent` | `string` | Raw SVG content for a custom fill pattern |
 | `fillPatternForegroundColor` | `string \| Record<string, string>` | Foreground colour for the fill pattern |
 | `fillPatternBackgroundColor` | `string \| Record<string, string>` | Background colour for the fill pattern |
-| `keySymbolShape` | `'polygon' \| 'line'` | Shape used for the key symbol |
 
 **Symbol (point) properties:**
 
@@ -349,9 +337,10 @@ Each is documented in full in [Symbol Config](../api/symbol-config.md), under a 
 | Property | Symbol Config property |
 |----------|-------------------------|
 | `symbol` | [`symbol`](../api/symbol-config.md#symbol) |
-| `symbolSvgContent` | [`symbolSvgContent`](../api/symbol-config.md#symbolsvgcontent) |
+| `symbolSvgContent` | [`svgContent`](../api/symbol-config.md#svgcontent) |
 | `symbolViewBox` | [`viewBox`](../api/symbol-config.md#viewbox) |
 | `symbolAnchor` | [`anchor`](../api/symbol-config.md#anchor) |
+| `symbolSize` | [`size`](../api/symbol-config.md#size) |
 | `symbolBackgroundColor` | [`backgroundColor`](../api/symbol-config.md#backgroundcolor) |
 | `symbolForegroundColor` | [`foregroundColor`](../api/symbol-config.md#foregroundcolor) |
 | `symbolHaloWidth` | Stroke width of the halo in SVG units. Not currently documented in Symbol Config |
@@ -361,7 +350,7 @@ They follow the same resolution order and support style-keyed colour objects in 
 
 `haloColor` and `selectedColor` are not settable here — they are basemap-level properties set on [`MapStyleConfig`](../api/map-style-config.md).
 
-`symbolDescription` and `keySymbolShape` only affect how an entry looks in the Key panel — see [Map Key: Key display properties](./map-key.md#key-display-properties) for details.
+`symbolDescription` only affects how an entry looks in the Key panel — see [Map Key: Key display properties](./map-key.md#key-display-properties) for details.
 
 ```js
 // Polygon/line dataset
@@ -410,7 +399,7 @@ Sublayer styles merge over the parent's — the sublayer wins on any property it
 |----------|------|-------------|
 | `id` | `string` | **Required.** Unique identifier within the dataset |
 | `label` | `string` | Human-readable name shown in the LayersMenu and Key panels |
-| `filter` | `FilterExpression` | MapLibre filter expression to match features for this sublayer |
+| `filter` | `FilterExpression` | MapLibre-style filter expression to match features for this sublayer |
 | `style` | `Object` | Style overrides. Accepts the same properties as the dataset `style` object |
 | `showInKey` | `boolean` | Shows this sublayer in the Key panel. Inherits from the dataset when not set; explicit `false` overrides a dataset-level `true` |
 | `showInMenu` | `boolean` | Shows this sublayer in the LayersMenu panel. Inherits from the dataset when not set; explicit `false` overrides a dataset-level `true` |

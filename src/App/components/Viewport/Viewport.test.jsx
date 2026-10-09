@@ -21,7 +21,13 @@ jest.mock('../Markers/Markers', () => ({ Markers: jest.fn(() => <div data-testid
 
 const KEYBOARD_HINT_TEXT = 'Test keyboad hint text'
 
-const mockMapProvider = { initMap: jest.fn(), updateMap: jest.fn(), clearHighlightedLabel: jest.fn() }
+const mockMapProvider = {
+  initMap: jest.fn(),
+  updateMap: jest.fn(),
+  clearHighlightedLabel: jest.fn(),
+  getCenter: jest.fn(() => [0, 0]),
+  mapToScreen: jest.fn(() => ({ x: 100, y: 100 }))
+}
 
 function setupHookMocks (mainEl, viewportEl) {
   useConfig.mockReturnValue({
@@ -32,17 +38,16 @@ function setupHookMocks (mainEl, viewportEl) {
   })
   useApp.mockReturnValue({
     interfaceType: 'desktop',
-    mode: 'default',
-    previousMode: 'default',
     layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewportEl }, safeZoneRef: { current: null } },
     safeZoneInset: {},
     dispatch: jest.fn()
   })
-  useMap.mockReturnValue({ mapSize: 'medium', dispatch: jest.fn() })
+  useMap.mockReturnValue({ mapSize: 'medium', isMapReady: true, dispatch: jest.fn() })
   useService.mockReturnValue({
     announce: jest.fn(),
     hints: { show: jest.fn(), dismiss: jest.fn(), subscribe: jest.fn(() => jest.fn()) },
-    eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() }
+    eventBus: { on: jest.fn(), off: jest.fn(), emit: jest.fn() },
+    mapFocus: { clear: jest.fn(), releaseAnnouncements: jest.fn() }
   })
   useKeyboardHint.mockImplementation(({ onViewportFocusChange }) => ({
     handleFocus: () => onViewportFocusChange(true),
@@ -89,6 +94,16 @@ describe('Viewport rendering', () => {
     expect(markers).toBeInTheDocument()
   })
 
+  // Regression: Viewport (and MapController, which kicks off map creation) render before the
+  // underlying map engine actually exists — mapProvider.getCenter()/mapToScreen() throw until
+  // then, so the spatial listbox's "nearest to center" entry point must not call them yet.
+  it('does not throw, and skips mapProvider.getCenter/mapToScreen, before the map is ready', () => {
+    useMap.mockReturnValue({ mapSize: 'medium', isMapReady: false, dispatch: jest.fn() })
+    expect(() => renderViewport()).not.toThrow()
+    expect(mockMapProvider.getCenter).not.toHaveBeenCalled()
+    expect(mockMapProvider.mapToScreen).not.toHaveBeenCalled()
+  })
+
   it('renders viewport with correct id and class based on mapSize', () => {
     const { viewport } = renderViewport()
     expect(viewport.id).toBe('test-map-viewport')
@@ -98,6 +113,22 @@ describe('Viewport rendering', () => {
   it('sets aria-describedby to the shared hints container id', () => {
     const { viewport } = renderViewport()
     expect(viewport).toHaveAttribute('aria-describedby', 'test-map-keyboard-desc')
+  })
+
+  it('restores the map label via mapFocus when the viewport loses focus', () => {
+    const { mapFocus } = useService()
+    const { viewport } = renderViewport()
+    fireEvent.blur(viewport)
+    expect(mapFocus.clear).toHaveBeenCalled()
+  })
+
+  it('releases held map announcements on a key or pointer press in the viewport', () => {
+    const { mapFocus } = useService()
+    const { viewport } = renderViewport()
+    fireEvent.keyDown(viewport, { key: 'ArrowUp' })
+    fireEvent.pointerDown(viewport)
+    expect(mapFocus.releaseAnnouncements).toHaveBeenCalledTimes(2)
+    expect(mapFocus.clear).not.toHaveBeenCalled()
   })
 
   it('calls hints.show() with keyboardHintText when viewport gains keyboard focus', () => {
@@ -180,19 +211,5 @@ describe('Viewport interactions', () => {
     const { container } = renderViewport()
     fireEvent.blur(container.querySelector('[role="listbox"]'))
     expect(hints.dismiss).toHaveBeenCalled()
-  })
-
-  it('focuses viewport when mode changes', () => {
-    const { viewport, rerender } = renderViewport()
-    const focusMock = jest.spyOn(viewport, 'focus')
-    useApp.mockReturnValueOnce({
-      interfaceType: 'desktop',
-      mode: 'edit',
-      previousMode: 'default',
-      layoutRefs: { mainRef: { current: mainEl }, viewportRef: { current: viewport }, safeZoneRef: { current: null } },
-      safeZoneInset: {}
-    })
-    rerender(<Viewport />)
-    expect(focusMock).toHaveBeenCalled()
   })
 })

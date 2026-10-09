@@ -20,7 +20,7 @@ describe('mappedDatasetsReducer', () => {
     }
     const result = mappedDatasetsReducer(state)
     expect(result.mappedDatasets).toEqual({
-      roads: { ...datasetDefaults, id: 'roads', label: 'Roads', minZoom: 10 }
+      roads: { ...datasetDefaults, id: 'roads', label: 'Roads', minZoom: 10, style: {} }
     })
     expect(result.orderedDatasets).toEqual(['roads'])
   })

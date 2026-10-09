@@ -7,17 +7,19 @@ import { getBboxFromGeoJSON } from './coords.js'
 // -----------------------------------------------------------------------------
 
 /**
- * Format dimension, meters if less than 0.5 miles, otherwise miles
+ * Format dimension, metres if less than 0.5 miles, otherwise miles
  */
-const formatDimension = (meters) => {
+const formatDimension = (metres) => {
   const WHOLE_MILE_THRESHOLD = 10
   const MILE_THRESHOLD = 0.5
-  const METERS_PER_MILE = 1609.344
+  const METRES_PER_MILE = 1609.344
 
-  const miles = meters / METERS_PER_MILE
+  const miles = metres / METRES_PER_MILE
 
-  if (miles < MILE_THRESHOLD / METERS_PER_MILE) {
-    return `${Math.round(meters)}m`
+  if (miles < MILE_THRESHOLD / METRES_PER_MILE) {
+    const roundedMetres = Math.round(metres)
+    const units = roundedMetres === 1 ? 'metre' : 'metres'
+    return `${roundedMetres} ${units}`
   }
 
   if (miles < WHOLE_MILE_THRESHOLD) {
@@ -37,7 +39,7 @@ const formatDimension = (meters) => {
 
 /**
  * Returns a string like "height by width" for an Esri Extent in 27700
- * @param {Extent} extent - The Esri extent (projected in meters)
+ * @param {Extent} extent - The Esri extent (projected in metres)
  * @returns {string}
  */
 const getAreaDimensions = (extent) => {
@@ -51,12 +53,12 @@ const getAreaDimensions = (extent) => {
   const north = extent.ymax
 
   // Width: west <-> east
-  const widthMeters = east - west
+  const widthMetres = east - west
   // Height: south <-> north
-  const heightMeters = north - south
+  const heightMetres = north - south
 
-  const widthLabel = formatDimension(widthMeters)
-  const heightLabel = formatDimension(heightMeters)
+  const widthLabel = formatDimension(widthMetres)
+  const heightLabel = formatDimension(heightMetres)
 
   return `${heightLabel} by ${widthLabel}`
 }
@@ -64,7 +66,7 @@ const getAreaDimensions = (extent) => {
 /**
  * Generate a cardinal direction move description for projected coordinates (e.g., EPSG:27700)
  * Only non-zero moves are announced.
- * Example: "north 400m", "east 750m", or "south 400m, west 750m"
+ * Example: "north 400 metres", "east 750 metres", or "south 400 metres, west 750 metres"
  * @param {number[]} from - [easting, northing]
  * @param {number[]} to - [easting, northing]
  * @returns {string}
@@ -78,7 +80,7 @@ function getCardinalMove (from, to) {
 
   const moves = []
 
-  // Threshold to ignore tiny movements (in meters)
+  // Threshold to ignore tiny movements (in metres)
   const THRESHOLD = 0.1
 
   if (Math.abs(dY) > THRESHOLD) {

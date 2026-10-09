@@ -10,7 +10,7 @@ const pluginConfigHasMenuItems = (pluginConfig) =>
   pluginConfig.datasets
     .some(dataset => dataset.showInMenu || dataset.sublayers?.some(sublayer => sublayer.showInMenu))
 
-export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
+export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
@@ -19,8 +19,8 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     const hasMenu = pluginConfig.hasMenu !== false && pluginConfigHasMenuItems(pluginConfig)
 
     if (!hasMenu) {
-      eventBus.emit(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
-      eventBus.emit(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
+      eventBus.emitWhenReady(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
+      eventBus.emitWhenReady(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
     }
   }, [pluginConfig.hasMenu])
 
@@ -32,10 +32,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   const datasetsInstanceRef = useRef(null)
 
   useEffect(() => {
-    const inModeWhitelist = pluginConfig.includeModes?.includes(appState.mode) ?? true
-    const inExcludeModes = pluginConfig.excludeModes?.includes(appState.mode) ?? false
-
-    if (!isBaseMapReady || !inModeWhitelist || inExcludeModes) {
+    if (!isBaseMapReady) {
       return
     }
 
@@ -60,7 +57,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
     }
 
     initDatasets()
-  }, [isBaseMapReady, appState.mode])
+  }, [isBaseMapReady])
 
   useEffect(() => {
     datasetRegistry.attach(pluginState.mappedDatasets, pluginState.orderedDatasets)
@@ -71,7 +68,19 @@ export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, m
   useEffect(() => {
     datasetRegistry.attachMapStyle(mapState.mapStyle)
     if (layerAdapter?.onMapStyleChange) {
-      layerAdapter.onMapStyleChange()
+      // MapLibre's own map.addImage()/setPaintProperty() calls (made while re-registering
+      // symbols/patterns below) naturally re-trigger MAP_DATA_CHANGE via the GL engine's own
+      // styledata event — nothing extra needed there. OL has no such generic signal (its
+      // MAP_DATA_CHANGE is tied only to the basemap tile source's own tileloadend — see
+      // providers/beta/openlayers/src/appEvents.js's comment), so re-registering a symbol on a
+      // plain ol/layer/Vector never fires it. Emitting it explicitly once re-registration
+      // genuinely finishes lets the interact plugin's settle-window re-apply (armed by
+      // MAP_STYLE_CHANGE, see useHighlightSync.js) pick up the new theme's selected/active
+      // symbol images, instead of a highlight staying stuck on whatever was cached moments
+      // before the switch.
+      Promise.resolve(layerAdapter.onMapStyleChange()).then(() => {
+        eventBus.emit(EVENTS.MAP_DATA_CHANGE)
+      })
     }
   },
   [mapState.mapStyle])

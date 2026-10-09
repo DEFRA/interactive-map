@@ -1,9 +1,10 @@
 import { render } from '@testing-library/react'
 import { KeySvg } from './KeySvg'
+import { createSymbolRegistry } from '../../../../../src/services/symbolRegistry.js'
 
-import { symbolRegistry } from '../../../../../src/services/symbolRegistry.js'
+const symbolRegistry = createSymbolRegistry()
 
-const getSymbolDef = jest.spyOn(symbolRegistry, 'getSymbolDef')
+const getKeySymbol = jest.spyOn(symbolRegistry, 'getKeySymbol')
 
 jest.mock('./KeySvgPattern.jsx', () => ({
   KeySvgPattern: () => <svg data-testid='key-svg-pattern' />
@@ -21,6 +22,10 @@ jest.mock('./KeySvgRect.jsx', () => ({
   KeySvgRect: () => <svg data-testid='key-svg-rect' />
 }))
 
+jest.mock('./KeySvgRamp.jsx', () => ({
+  KeySvgRamp: () => <svg data-testid='key-svg-ramp' />
+}))
+
 const baseKeyDefinition = {
   hasSymbol: false,
   hasPattern: false,
@@ -29,16 +34,17 @@ const baseKeyDefinition = {
 
 const baseProps = {
   mapStyle: { id: 'default' },
-  keyDefinition: baseKeyDefinition
+  keyDefinition: baseKeyDefinition,
+  symbolRegistry
 }
 
 beforeEach(() => {
-  getSymbolDef.mockReturnValue(null)
+  getKeySymbol.mockReturnValue(null)
 })
 
 describe('KeySvg', () => {
-  it('renders KeySvgSymbol when a symbolDef is resolved', () => {
-    getSymbolDef.mockReturnValue({ id: 'marker' })
+  it('renders KeySvgSymbol when the style resolves to a key symbol', () => {
+    getKeySymbol.mockReturnValue({ svg: '<path/>', viewBox: '0 0 44 44' })
     const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasSymbol: true }} />)
     expect(getByTestId('key-svg-symbol')).toBeTruthy()
   })
@@ -48,9 +54,14 @@ describe('KeySvg', () => {
     expect(getByTestId('key-svg-pattern')).toBeTruthy()
   })
 
-  it('renders KeySvgLine when keySymbolShape is line and no symbol or pattern', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { keySymbolShape: 'line' } }} />)
+  it('renders KeySvgLine for a stroke with no fill, and no symbol or pattern', () => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { stroke: '#b58840' } }} />)
     expect(getByTestId('key-svg-line')).toBeTruthy()
+  })
+
+  it.each(['transparent', 'none', '#ff0000'])('renders KeySvgRect for a stroke with fill %s', (fill) => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { stroke: '#b58840', fill } }} />)
+    expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
 
   it('renders KeySvgRect as the default fallback', () => {
@@ -59,25 +70,25 @@ describe('KeySvg', () => {
   })
 
   it('prefers symbol over pattern when both are present', () => {
-    getSymbolDef.mockReturnValue({ id: 'marker' })
+    getKeySymbol.mockReturnValue({ svg: '<path/>', viewBox: '0 0 44 44' })
     const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasSymbol: true, hasPattern: true }} />)
     expect(getByTestId('key-svg-symbol')).toBeTruthy()
     expect(queryByTestId('key-svg-pattern')).toBeNull()
   })
 
   it('prefers pattern over line when both conditions are met', () => {
-    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasPattern: true, style: { keySymbolShape: 'line' } }} />)
+    const { getByTestId, queryByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasPattern: true, style: { stroke: '#b58840' } }} />)
     expect(getByTestId('key-svg-pattern')).toBeTruthy()
     expect(queryByTestId('key-svg-line')).toBeNull()
   })
 
-  it('renders KeySvgRect when keySymbolShape is not line and no symbol or pattern', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { keySymbolShape: 'polygon' } }} />)
+  it('renders KeySvgRect for a fill with no stroke', () => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, style: { fill: '#ff0000' } }} />)
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
 
-  it('does not render KeySvgSymbol when hasSymbol is true but getSymbolDef returns null', () => {
-    getSymbolDef.mockReturnValue(null)
+  it('does not render KeySvgSymbol when hasSymbol is true but there is no key symbol', () => {
+    getKeySymbol.mockReturnValue(null)
     const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition, hasSymbol: true }} />)
     expect(getByTestId('key-svg-rect')).toBeTruthy()
   })
@@ -85,5 +96,10 @@ describe('KeySvg', () => {
   it('should return null if keyDefinition is undefined', () => {
     const { container } = render(<KeySvg {...baseProps} keyDefinition={null} />)
     expect(container.firstChild).toBeNull()
+  })
+
+  it('renders KeySvgRamp when groupStyle is ramp', () => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition }} groupStyle='ramp' />)
+    expect(getByTestId('key-svg-ramp')).toBeTruthy()
   })
 })

@@ -1,7 +1,8 @@
 import { datasetRegistry } from './datasetRegistry.js'
 import { isVisibleWhen } from './isVisibleWhen.js'
-import { hasCustomVisualStyle } from '../initialise/defaults.js'
+import { datasetDefaults, hasCustomVisualStyle, applyStyleDefaults } from '../initialise/defaults.js'
 import { hasPattern } from '../../../../src/utils/patternUtils.js'
+import { hasSymbol } from '../../../../src/utils/symbolUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
 import { calculateOpacity, getGlobalVisibility } from './globalDataset.js'
 
@@ -12,7 +13,7 @@ export class Dataset {
 
   get id () { return this._datasetDefinition.id }
   get label () { return this._datasetDefinition.label }
-  get hasSymbol () { return !this.hasSublayers && Boolean(this.style?.symbol) }
+  get hasSymbol () { return !this.hasSublayers && hasSymbol(this.style) }
   get hasPattern () { return !this.hasSublayers && !this.hasSymbol && hasPattern(this.style) }
   get hasFill () { return !this.hasSublayers && !this.hasSymbol && (this.hasPattern || (this.style?.fill && this.style?.fill !== 'transparent')) }
   get hasStroke () { return !this.hasSublayers && !this.hasSymbol && Boolean(this.style?.stroke) }
@@ -44,6 +45,14 @@ export class Dataset {
   // A sublayer effectively has a groupLabel, even if it or its parent doesn't,
   // as it will be grouped with its siblings under the parents label if it doesn't.
   get groupLabel () { return this._datasetDefinition.groupLabel || this.parent?.groupLabel || this.parent?.label }
+
+  get groupId () {
+    const groupId = this._datasetDefinition.groupId || this.parent?.groupId
+    if (groupId) {
+      return groupId
+    }
+    return this.groupLabel ? this.groupLabel.toLowerCase().replace(/\s+/g, '-') : null
+  }
 
   get opacity () {
     const myOpacity = this.style?.opacity
@@ -155,21 +164,26 @@ export class Dataset {
     return undefined
   }
 
-  get style () {
-    const parentStyle = this.parent?.style
-    if (parentStyle) {
-      // Here - we must set the merge styles opacity to undefined before the specific child opacity
-      // so that we can correctly calculate opacity in the Dataset.opacity getter
-      // - otherwise if opacity mode multiply is set,
-      // any child with a parent opacity only would be multiplied by itself
-      return {
-        ...parentStyle,
-        opacity: undefined, // NOSONAR - we need to set this to undefined so that the opacity getter can calculate the correct opacity
-        ...this._datasetDefinition.style,
-        symbolDescription: this.symbolDescription
-      }
+  // The style as configured, merged with the parent's for a sublayer, before defaults are applied
+  get inheritedStyle () {
+    const ownStyle = this._datasetDefinition.style || {}
+    const parent = this.parent
+    if (!parent) {
+      return ownStyle
     }
-    return this._datasetDefinition.style || {}
+    // Here - we must set the merge styles opacity to undefined before the specific child opacity
+    // so that we can correctly calculate opacity in the Dataset.opacity getter
+    // - otherwise if opacity mode multiply is set,
+    // any child with a parent opacity only would be multiplied by itself
+    return {
+      ...parent.inheritedStyle,
+      opacity: undefined, // NOSONAR - we need to set this to undefined so that the opacity getter can calculate the correct opacity
+      ...ownStyle
+    }
+  }
+
+  get style () {
+    return { ...applyStyleDefaults(this.inheritedStyle), symbolDescription: this.symbolDescription }
   }
 
   get hasCustomVisualStyle () {
@@ -183,7 +197,7 @@ export class Dataset {
     if (this.hasCustomVisualStyle) {
       return undefined
     }
-    return this.parent?.symbolDescription
+    return this.parent ? this.parent.symbolDescription : datasetDefaults.style.symbolDescription
   }
 
   get patternConfigs () {

@@ -134,6 +134,7 @@ For detailed specifications, see:
 - [PanelDefinition](./api/panel-definition.md) - Panel configuration
 - [ControlDefinition](./api/control-definition.md) - Custom control configuration
 - [IconDefinition](./api/icon-definition.md) - Icon registration
+- [KeyboardShortcutDefinition](./api/keyboard-shortcut-definition.md) - Keyboard shortcut help panel entries
 - [Slots](./api/slots.md) - UI slot system for positioning elements
 
 ## Events
