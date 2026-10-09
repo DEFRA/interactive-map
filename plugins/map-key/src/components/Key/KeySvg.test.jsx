@@ -23,7 +23,7 @@ jest.mock('./KeySvgRect.jsx', () => ({
 }))
 
 jest.mock('./KeySvgRamp.jsx', () => ({
-  KeySvgRamp: () => <svg data-testid='key-svg-horizontal-ramp' />
+  KeySvgRamp: () => <svg data-testid='key-svg-ramp' />
 }))
 
 const baseKeyDefinition = {
@@ -98,8 +98,8 @@ describe('KeySvg', () => {
     expect(container.firstChild).toBeNull()
   })
 
-  it('renders KeySvgRamp when groupStyle is horizontal-ramp', () => {
-    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition }} groupStyle='horizontal-ramp' />)
-    expect(getByTestId('key-svg-horizontal-ramp')).toBeTruthy()
+  it('renders KeySvgRamp when groupStyle is ramp', () => {
+    const { getByTestId } = render(<KeySvg {...baseProps} keyDefinition={{ ...baseKeyDefinition }} groupStyle='ramp' />)
+    expect(getByTestId('key-svg-ramp')).toBeTruthy()
   })
 })
