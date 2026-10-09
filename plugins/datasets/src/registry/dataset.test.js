@@ -72,9 +72,9 @@ describe('Dataset class', () => {
   })
 
   describe('style', () => {
-    it('returns the dataset style directly when there is no parent', () => {
+    it('returns the dataset style, with the default strokeWidth, when there is no parent', () => {
       const dataset = new Dataset({ style: { stroke: '#ff0000', fill: 'transparent' } })
-      expect(dataset.style).toEqual({ stroke: '#ff0000', fill: 'transparent' })
+      expect(dataset.style).toEqual({ stroke: '#ff0000', fill: 'transparent', strokeWidth: 2 })
     })
 
     it('merges parent style with the sublayer style', () => {
@@ -152,9 +152,9 @@ describe('Dataset class', () => {
       expect(dataset.symbolDescription).toBeUndefined()
     })
 
-    it('returns undefined when the dataset has no style', () => {
+    it('returns the default symbolDescription when the dataset has no style', () => {
       const dataset = new Dataset({})
-      expect(dataset.symbolDescription).toBeUndefined()
+      expect(dataset.symbolDescription).toBe('red outline')
     })
 
     it("inherits the parent's symbolDescription when the sublayer has no custom visual style", () => {
@@ -175,6 +175,58 @@ describe('Dataset class', () => {
       // child has no visual style → inherits undefined from parent
       const dataset = new Dataset(childDef)
       expect(dataset.symbolDescription).toBeUndefined()
+    })
+  })
+
+  describe('style defaults', () => {
+    const attachChild = (parentStyle, childStyle) => {
+      const parentDef = { id: 'parent', sublayerIds: ['child'], style: parentStyle }
+      const childDef = { id: 'child', parentId: 'parent', style: childStyle }
+      datasetRegistry.attach({ parent: parentDef, child: childDef })
+      return new Dataset(childDef)
+    }
+
+    it('applies the default stroke when there is no style', () => {
+      expect(new Dataset({}).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 2, symbolDescription: 'red outline' })
+    })
+
+    it('applies the default stroke when the style only adjusts it', () => {
+      expect(new Dataset({ style: { strokeWidth: 4, opacity: 0.5 } }).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 4, opacity: 0.5 })
+    })
+
+    it.each([
+      ['a fill', { fill: '#00ff00' }],
+      ['a fill pattern', { fillPattern: 'dot' }],
+      ['custom fill pattern content', { fillPatternSvgContent: '<path/>' }],
+      ['a symbol', { symbol: 'pin' }],
+      ['custom symbol content', { symbolSvgContent: '<path/>' }],
+      ['an explicitly empty stroke', { stroke: null }]
+    ])('does not apply the default stroke to a style with %s', (_, style) => {
+      const dataset = new Dataset({ style })
+      expect(dataset.style.stroke ?? null).toBeNull()
+      expect(dataset.hasStroke).toBe(false)
+      expect(dataset.symbolDescription).toBeUndefined()
+    })
+
+    it('applies the default strokeWidth to a custom stroke', () => {
+      expect(new Dataset({ style: { stroke: '#0000ff' } }).style.strokeWidth).toBe(2)
+    })
+
+    it('does not apply the default stroke to a sublayer with a fill when the parent has no style', () => {
+      const dataset = attachChild(undefined, { fill: '#00ff00' })
+      expect(dataset.style.fill).toBe('#00ff00')
+      expect(dataset.hasStroke).toBe(false)
+    })
+
+    it("lets a sublayer inherit the parent's stroke and strokeWidth", () => {
+      const dataset = attachChild({ stroke: '#0000ff', strokeWidth: 4 }, { fill: '#00ff00' })
+      expect(dataset.style).toMatchObject({ stroke: '#0000ff', strokeWidth: 4, fill: '#00ff00' })
+    })
+
+    it('applies the default stroke to a sublayer when neither it nor its parent has a visual style', () => {
+      const dataset = attachChild({ strokeWidth: 4 }, {})
+      expect(dataset.style).toMatchObject({ stroke: '#d4351c', strokeWidth: 4 })
+      expect(dataset.symbolDescription).toBe('red outline')
     })
   })
 

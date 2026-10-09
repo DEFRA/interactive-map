@@ -24,7 +24,7 @@ export const addStrokeLayer = (map, registryDataset, mapStyleId) => {
   }
   const paint = {
     'line-color': getValueForStyle(registryDataset.style.stroke, mapStyleId),
-    'line-width': registryDataset.style.strokeWidth || 1,
+    'line-width': registryDataset.style.strokeWidth,
     'line-opacity': registryDataset.opacity,
     ...(registryDataset.style.strokeDashArray ? { 'line-dasharray': registryDataset.style.strokeDashArray } : {})
   }

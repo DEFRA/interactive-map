@@ -306,6 +306,8 @@ Groups this dataset with others sharing the same `groupLabel` in the LayersMenu 
 
 Visual style for the dataset. All style properties must be nested within this object.
 
+A style that sets none of `stroke`, `fill`, `fillPattern`, `fillPatternSvgContent`, `symbol` or `symbolSvgContent` draws a default red outline (`stroke: '#d4351c'`), described in the key as `'red outline'`. Setting any of them replaces that default, including an empty value such as `stroke: null` or `fill: 'transparent'`. Other properties, such as `strokeWidth` or `opacity`, apply to the default outline. For a sublayer, this applies to its style merged with the parent's.
+
 **Common properties:**
 
 | Property | Type | Description |

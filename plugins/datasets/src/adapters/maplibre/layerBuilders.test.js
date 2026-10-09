@@ -47,11 +47,11 @@ describe('addFillLayer', () => {
 // ─── addStrokeLayer ───────────────────────────────────────────────────────────
 
 describe('addStrokeLayer', () => {
-  it('defaults line-width to 1 when strokeWidth is not set on the style', () => {
+  it("uses the style's strokeWidth for line-width", () => {
     const map = makeMap()
-    const ds = makeDataset({ hasStroke: true, strokeLayerId: 'test-ds-stroke', style: { stroke: '#000000' } })
+    const ds = makeDataset({ hasStroke: true, strokeLayerId: 'test-ds-stroke', style: { stroke: '#000000', strokeWidth: 3 } })
     addStrokeLayer(map, ds, 'outdoor')
-    expect(ds.getStrokeSource).toHaveBeenCalledWith(expect.objectContaining({ 'line-width': 1 }))
+    expect(ds.getStrokeSource).toHaveBeenCalledWith(expect.objectContaining({ 'line-width': 3 }))
   })
 
   it('includes line-dasharray in the paint when strokeDashArray is set', () => {

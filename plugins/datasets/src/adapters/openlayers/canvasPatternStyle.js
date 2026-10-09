@@ -2,8 +2,6 @@ import Style from 'ol/style/Style.js'
 import Stroke from 'ol/style/Stroke.js'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
 
-const DEFAULT_STROKE_WIDTH = 1
-
 /**
  * The Canvas-only style for genuinely crisp fill patterns, at any pixelRatio.
  *
@@ -24,7 +22,7 @@ const buildStroke = (registryDataset, mapStyleId) => {
   }
   return new Stroke({
     color: getValueForStyle(registryDataset.style.stroke, mapStyleId),
-    width: registryDataset.style.strokeWidth || DEFAULT_STROKE_WIDTH,
+    width: registryDataset.style.strokeWidth,
     lineDash: registryDataset.style.strokeDashArray
   })
 }

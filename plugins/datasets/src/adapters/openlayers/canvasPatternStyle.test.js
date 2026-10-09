@@ -74,18 +74,6 @@ describe('buildCanvasPatternStyle', () => {
     expect(style.getStroke().getWidth()).toBe(3)
   })
 
-  it('defaults the Stroke width to 1 when strokeWidth is not set', async () => {
-    const patternRegistry = makePatternRegistry()
-    await registerPattern({ fillPattern: 'dot' }, patternRegistry)
-    const registryDataset = {
-      style: { fillPattern: 'dot', stroke: '#ff0000' },
-      filter: null,
-      hasStroke: true
-    }
-    const styleFn = buildCanvasPatternStyle(registryDataset, styleContext(patternRegistry))
-    expect(styleFn(feature()).getStroke().getWidth()).toBe(1)
-  })
-
   it('evaluates a filter correctly for a feature with no geometry', async () => {
     const patternRegistry = makePatternRegistry()
     await registerPattern({ fillPattern: 'dot' }, patternRegistry)

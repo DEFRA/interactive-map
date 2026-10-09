@@ -22,7 +22,7 @@ describe('MapLibreDataset', () => {
       'ds-transparent-fill': { id: 'ds-transparent-fill', style: { fill: 'transparent' } },
       // shared: no special properties — used by layerIds, sourceId, source, visibility,
       //   _hiddenFeaturesIdExpression, _hiddenFeaturesFilter, and filter tests
-      'ds-bare': { id: 'ds-bare' },
+      'ds-bare': { id: 'ds-bare', style: { stroke: null } },
       'ds-no-id-prop': { id: 'ds-no-id-prop', geojson: 'https://example.com/data', transformRequest: () => {} },
       'ds-no-transform': { id: 'ds-no-transform', geojson: 'https://example.com/data', idProperty: 'id' },
       'ds-static-url': { id: 'ds-static-url', geojson: 'https://example.com/static.geojson' },

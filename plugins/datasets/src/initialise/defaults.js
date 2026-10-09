@@ -21,25 +21,30 @@ const STYLE_PROPS = [
   ...SYMBOL_STYLE_KEYS
 ]
 
-// Props whose presence in a style object indicates a custom visual style.
-// When any are set, the default symbolDescription is not appropriate.
+// Props that set what a style draws. Their presence, even with an empty value such as
+// `stroke: null` or `fill: 'transparent'`, indicates a custom visual style.
 const VISUAL_STYLE_PROPS = ['stroke', 'fill', 'fillPattern', 'fillPatternSvgContent', 'symbol', 'symbolSvgContent']
 
 const hasCustomVisualStyle = (style) =>
   VISUAL_STYLE_PROPS.some(prop => prop in style)
 
 /**
+ * Apply the default style to a style. The default stroke and symbolDescription apply only when
+ * the style has no custom visual style; the default strokeWidth always applies.
+ */
+const applyStyleDefaults = (style = {}, defaultStyle = datasetDefaults.style) => {
+  if (!hasCustomVisualStyle(style)) {
+    return { ...defaultStyle, ...style }
+  }
+  return { strokeWidth: defaultStyle.strokeWidth, ...style }
+}
+
+/**
  * Merge a dataset config with defaults, flattening the nested `style` object.
  * Style properties must be provided via dataset.style — top-level occurrences are ignored.
- * symbolDescription from defaults.style is dropped when custom visual styles
- * are present and the dataset doesn't explicitly set its own symbolDescription.
  */
 const applyDatasetDefaults = (dataset, defaults) => {
-  const style = dataset.style || {}
-  const mergedStyle = { ...defaults.style, ...style }
-  if (!('symbolDescription' in style) && hasCustomVisualStyle(style)) {
-    delete mergedStyle.symbolDescription
-  }
+  const mergedStyle = applyStyleDefaults(dataset.style, defaults.style)
   const topLevel = { ...dataset }
   delete topLevel.style
   STYLE_PROPS.forEach(prop => delete topLevel[prop])
@@ -48,19 +53,16 @@ const applyDatasetDefaults = (dataset, defaults) => {
   return { ...topLevelDefaults, ...topLevel, ...mergedStyle }
 }
 
+// The dataset's own style is kept as given. Style defaults are applied by Dataset.style, after a
+// sublayer's style is merged with its parent's, so a sublayer can inherit any style prop.
 const applyDatasetDefaultsWithoutFlattening = (dataset) => {
   // Allow for existing configs that use visibility instead of visible, but default to visible if neither is set
   if (dataset.visible !== true && dataset.visible !== false) {
     dataset.visible = dataset.visibility !== 'hidden'
   }
-  const datasetWithDefaults = { ...datasetDefaults, ...dataset, style: { ...datasetDefaults.style, ...dataset.style } }
-
-  const style = dataset.style || {}
-  if (!('symbolDescription' in style) && hasCustomVisualStyle(style)) {
-    delete datasetWithDefaults.style.symbolDescription
-  }
+  const datasetWithDefaults = { ...datasetDefaults, ...dataset, style: { ...dataset.style } }
   STYLE_PROPS.forEach(prop => delete datasetWithDefaults[prop])
   return datasetWithDefaults
 }
 
-export { datasetDefaults, hasCustomVisualStyle, applyDatasetDefaults, applyDatasetDefaultsWithoutFlattening }
+export { datasetDefaults, hasCustomVisualStyle, applyStyleDefaults, applyDatasetDefaults, applyDatasetDefaultsWithoutFlattening }
