@@ -46,8 +46,6 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
-    // _addLayers adds each layer to the map synchronously before awaiting it,
-    // so mapping over the datasets keeps them added in order
     const _add = async (registryDataset) => {
       await this._addLayers(registryDataset)
       const mapLayer = this._mapVisibilityLayers[registryDataset.id]
@@ -58,15 +56,20 @@ export default class EsriLayerAdapter extends LayerAdapter {
       })
       await this.applyDatasetVisibility(registryDataset.id)
     }
+    // ensure the datasets are added in order, each waiting for the previous one to load
+    const _addInOrder = (registryDatasets) => registryDatasets.reduce(
+      (previous, registryDataset) => previous.then(() => _add(registryDataset)),
+      Promise.resolve()
+    )
     const visibleDatasets = topLevelDatasets.filter(registryDataset => registryDataset.visibility === 'visible')
     const hiddenDatasets = topLevelDatasets.filter(registryDataset => registryDataset.visibility !== 'visible')
 
     // Add the visible datasets first - to speed up rendering
-    await Promise.all(visibleDatasets.map(_add))
+    await _addInOrder(visibleDatasets)
     // Reorder layers after adding the initially visible datasets
     this._reorderLayers()
     // Add the non-visible datasets next
-    await Promise.all(hiddenDatasets.map(_add))
+    await _addInOrder(hiddenDatasets)
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
     // and updating the paint properties of the layers based on the dataset/mapStyle style
