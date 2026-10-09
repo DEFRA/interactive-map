@@ -32,25 +32,11 @@ const hasCustomVisualStyle = (style) =>
  * Apply the default style to a style. The default stroke and symbolDescription apply only when
  * the style has no custom visual style; the default strokeWidth always applies.
  */
-const applyStyleDefaults = (style = {}, defaultStyle = datasetDefaults.style) => {
+const applyStyleDefaults = (style = {}) => {
   if (!hasCustomVisualStyle(style)) {
-    return { ...defaultStyle, ...style }
+    return { ...datasetDefaults.style, ...style }
   }
-  return { strokeWidth: defaultStyle.strokeWidth, ...style }
-}
-
-/**
- * Merge a dataset config with defaults, flattening the nested `style` object.
- * Style properties must be provided via dataset.style — top-level occurrences are ignored.
- */
-const applyDatasetDefaults = (dataset, defaults) => {
-  const mergedStyle = applyStyleDefaults(dataset.style, defaults.style)
-  const topLevel = { ...dataset }
-  delete topLevel.style
-  STYLE_PROPS.forEach(prop => delete topLevel[prop])
-  const topLevelDefaults = { ...defaults }
-  delete topLevelDefaults.style
-  return { ...topLevelDefaults, ...topLevel, ...mergedStyle }
+  return { strokeWidth: datasetDefaults.style.strokeWidth, ...style }
 }
 
 // The dataset's own style is kept as given. Style defaults are applied by Dataset.style, after a
@@ -65,4 +51,4 @@ const applyDatasetDefaultsWithoutFlattening = (dataset) => {
   return datasetWithDefaults
 }
 
-export { datasetDefaults, hasCustomVisualStyle, applyStyleDefaults, applyDatasetDefaults, applyDatasetDefaultsWithoutFlattening }
+export { datasetDefaults, hasCustomVisualStyle, applyStyleDefaults, applyDatasetDefaultsWithoutFlattening }

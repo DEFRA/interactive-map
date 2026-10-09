@@ -147,6 +147,11 @@ describe('Dataset class', () => {
       expect(dataset.symbolDescription).toBe('a circle')
     })
 
+    it("returns the dataset's own symbolDescription alongside a custom visual style", () => {
+      const dataset = new Dataset({ style: { stroke: '#0000ff', symbolDescription: 'blue outline' } })
+      expect(dataset.symbolDescription).toBe('blue outline')
+    })
+
     it('returns undefined when the dataset has a custom visual style but no symbolDescription', () => {
       const dataset = new Dataset({ style: { stroke: '#ff0000' } })
       expect(dataset.symbolDescription).toBeUndefined()
