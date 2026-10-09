@@ -72,6 +72,23 @@ describe('Dataset class', () => {
   })
 
   describe('style', () => {
+    it('returns a default style object when none are provided', () => {
+      const dataset = new Dataset({ id: 'dataset' })
+      expect(dataset.style).toEqual({
+        stroke: '#d4351c',
+        strokeWidth: 2,
+        symbolDescription: 'red outline'
+      })
+    })
+
+    it('returns the style object when one are provided', () => {
+      const dataset = new Dataset({ id: 'dataset', style: { stroke: '#0000ff' } })
+      expect(dataset.style).toEqual({
+        stroke: '#0000ff',
+        strokeWidth: 2
+      })
+    })
+
     it('returns the dataset style, with the default strokeWidth, when there is no parent', () => {
       const dataset = new Dataset({ style: { stroke: '#ff0000', fill: 'transparent' } })
       expect(dataset.style).toEqual({ stroke: '#ff0000', fill: 'transparent', strokeWidth: 2 })
@@ -81,9 +98,8 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', style: { stroke: '#ff0000', strokeWidth: 2 } }
       const childDef = { id: 'child', parentId: 'parent', style: { fill: 'blue' } }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-
-      const dataset = new Dataset(childDef)
-      expect(dataset.style).toMatchObject({ stroke: '#ff0000', strokeWidth: 2, fill: 'blue' })
+      const dataset = datasetRegistry.getDataset('child')
+      expect(dataset.style).toEqual({ stroke: '#ff0000', strokeWidth: 2, fill: 'blue' })
     })
 
     it('overrides parent style properties with the sublayer own style', () => {
@@ -91,8 +107,11 @@ describe('Dataset class', () => {
       const childDef = { id: 'child', parentId: 'parent', style: { stroke: '#00ff00' } }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
 
-      const dataset = new Dataset(childDef)
-      expect(dataset.style.stroke).toBe('#00ff00')
+      const dataset = datasetRegistry.getDataset('child')
+      expect(dataset.style).toEqual({
+        stroke: '#00ff00',
+        strokeWidth: 2
+      })
     })
 
     it('includes symbolDescription in the merged sublayer style', () => {
@@ -100,8 +119,13 @@ describe('Dataset class', () => {
       const childDef = { id: 'child', parentId: 'parent', style: { symbolDescription: 'custom' } }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
 
-      const dataset = new Dataset(childDef)
-      expect(dataset.style.symbolDescription).toBe('custom')
+      const dataset = datasetRegistry.getDataset('child')
+
+      expect(dataset.style).toEqual({
+        stroke: '#ff0000',
+        strokeWidth: 2,
+        symbolDescription: 'custom'
+      })
     })
   })
 
