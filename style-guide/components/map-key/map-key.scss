@@ -1,19 +1,9 @@
-// Specimen: Map key — base component (im-c-map-key)
+// Specimen: Map key — base component (im-c-map-key), including ramp group styles
 //
-// Duplicated snapshot of plugins/map-key/src/components/Key/Key.module.scss as it stands
-// on the (unmerged) IM-482 branch, not main — that branch's "corrected the dl list markup
-// in the map-key" commit (ddce2a5) fixes a real bug this style guide inherited too: each
-// item used to be its own separate <dl>, which meant :first-child rules scoped under a
-// group (`.im-c-map-key__group &:first-child` in the old CSS) could never match, since a
-// group's actual first child is its <h3> heading, not the first item. The fix removes the
-// per-item <dl> entirely — items are plain <div>s — and, only when grouped, wraps them all
-// in one shared <dl class="im-c-map-key-list">, which is what the (kept) :first-child rules
-// below now correctly target. Also renamed on that branch: am-c-map-key-symbol ->
-// im-c-map-key-symbol (dropped the am- prefix), im-c-map-key__item(-symbol/-label) ->
-// im-c-map-key-list__item(-symbol/-label).
-//
-// Everything below is copied verbatim from that branch's version of the file; see
-// style-guide/README.md for why this style guide duplicates rather than @uses production.
+// Duplicated snapshot of plugins/map-key/src/components/Key/Key.module.scss on main, copied
+// verbatim down to the prototype addition at the end. Re-copy it from that file when the
+// production styles change; see style-guide/README.md for why this style guide duplicates
+// rather than @uses production.
 
 // When groups are present, every direct child gets a border-top
 .im-c-map-key > *:first-child {
@@ -63,9 +53,11 @@
   padding-bottom: 15px;
 }
 
+$map-key-item-padding: 10px;
+
 .im-c-map-key__group > .im-c-map-key-list .im-c-map-key-list__item {
-  padding-top: 10px;
-  padding-bottom: 10px;
+  padding-top: $map-key-item-padding;
+  padding-bottom: $map-key-item-padding;
 }
 
 // Last item in all scenarios — flat or inside the last group
@@ -76,14 +68,157 @@
 
 // Symbol
 
+$map-key-symbol-inset: 3px;
+$map-key-symbol-label-gap: 13px;
+
+// Block, not inline, so the symbol cell is exactly the symbol's height, with no space below
+// it for the text baseline
 .im-c-map-key-symbol {
+  display: block;
   position: relative;
   flex-shrink: 0;
-  margin: 0 13px 0 3px;
+  margin: 0 $map-key-symbol-label-gap 0 $map-key-symbol-inset;
 }
 
 .im-c-map-key-symbol--point {
   margin: -12px 1px -12px -9px;
+}
+
+// Ramp: bands butt up to each other unless any band has a stroke, then they're separated by a
+// gap. Horizontal when every label fits on one line under its band (see useRampOrientation.js),
+// otherwise vertical.
+
+$map-key-symbol-size: 20px;
+$map-key-ramp-gap: 2px;
+$map-key-ramp-radius: 3px;
+
+// Inset on both sides by the standard symbol's left margin, so the ramp lines up with the
+// symbols in other groups. Both orientations share this padding and gap, so the available
+// width measured for the labels is the same whichever orientation is rendered.
+.im-c-map-key-list--ramp {
+  display: flex;
+  padding: 0 $map-key-symbol-inset;
+
+  &.im-c-map-key-list--has-stroke {
+    gap: $map-key-ramp-gap;
+  }
+
+  .im-c-map-key-symbol {
+    margin: 0;
+    overflow: hidden;
+  }
+}
+
+// Horizontal: each item is an equal-width band in a row, with its label centred below
+
+.im-c-map-key-list--ramp-horizontal {
+  padding-bottom: 10px;
+
+  .im-c-map-key-list__item {
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: stretch;
+    min-width: 0;
+  }
+
+  .im-c-map-key-symbol {
+    display: block;
+    width: 100%;
+    height: $map-key-symbol-size;
+  }
+
+  // Butted bands sit at fractional pixel positions, and each svg anti-aliases its own edges,
+  // so the panel shows through as a hairline at each seam. Extending every band but the last
+  // 1px under the next one puts a band, not the panel, behind each seam.
+  &:not(.im-c-map-key-list--has-stroke) .im-c-map-key-list__item:not(:last-child) .im-c-map-key-symbol {
+    width: calc(100% + 1px);
+  }
+
+  .im-c-map-key-list__item:first-child .im-c-map-key-symbol {
+    border-top-left-radius: $map-key-ramp-radius;
+    border-bottom-left-radius: $map-key-ramp-radius;
+  }
+
+  .im-c-map-key-list__item:last-child .im-c-map-key-symbol {
+    border-top-right-radius: $map-key-ramp-radius;
+    border-bottom-right-radius: $map-key-ramp-radius;
+  }
+
+  .im-c-map-key-list__item-label {
+    margin-top: 4px;
+    text-align: center;
+    white-space: nowrap;
+  }
+}
+
+// Same specificity as the standard list item rules above, so horizontal items have no padding
+.im-c-map-key__group > .im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item,
+.im-c-map-key__group:last-child > .im-c-map-key-list--ramp-horizontal .im-c-map-key-list__item:last-child {
+  padding-top: 0;
+  padding-bottom: 0;
+}
+
+.im-c-map-key__group:last-child > .im-c-map-key-list--ramp-horizontal {
+  padding-bottom: 5px;
+}
+
+// Vertical: bands the width of a standard symbol, stacked, with the label beside each one.
+// Rows have the standard item padding, so labels sit where they would in other groups, and
+// each band is drawn over its whole item, padding included.
+
+.im-c-map-key-list--ramp-vertical {
+  flex-direction: column;
+
+  .im-c-map-key-list__item {
+    position: relative;
+  }
+
+  .im-c-map-key-list__item-symbol {
+    flex-shrink: 0;
+    width: $map-key-symbol-size;
+    height: $map-key-symbol-size;
+    margin-right: $map-key-symbol-label-gap;
+  }
+
+  .im-c-map-key-symbol {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: $map-key-symbol-size;
+    height: 100%;
+  }
+
+  // As for horizontal, extend every band but the last 1px under the next one
+  &:not(.im-c-map-key-list--has-stroke) .im-c-map-key-list__item:not(:last-child) .im-c-map-key-symbol {
+    height: calc(100% + 1px);
+  }
+
+  .im-c-map-key-list__item:first-child .im-c-map-key-symbol {
+    border-top-left-radius: $map-key-ramp-radius;
+    border-top-right-radius: $map-key-ramp-radius;
+  }
+
+  .im-c-map-key-list__item:last-child .im-c-map-key-symbol {
+    border-bottom-left-radius: $map-key-ramp-radius;
+    border-bottom-right-radius: $map-key-ramp-radius;
+  }
+}
+
+// Same specificity as the standard last item rule above, so the last band is full height
+.im-c-map-key__group:last-child > .im-c-map-key-list--ramp-vertical .im-c-map-key-list__item:last-child {
+  padding-bottom: $map-key-item-padding;
+}
+
+// Stroked bands are separated by the gap, so the padding either side of it gives up half the
+// gap each, keeping the label spacing the same as in other groups
+.im-c-map-key__group > .im-c-map-key-list--ramp-vertical.im-c-map-key-list--has-stroke .im-c-map-key-list__item {
+  &:not(:first-child) {
+    padding-top: $map-key-item-padding - $map-key-ramp-gap * 0.5;
+  }
+
+  &:not(:last-child) {
+    padding-bottom: $map-key-item-padding - $map-key-ramp-gap * 0.5;
+  }
 }
 
 // --- Prototype addition: not yet in production ---

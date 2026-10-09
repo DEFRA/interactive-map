@@ -1,0 +1,5 @@
+// Specimen: Map key ramp — vertical, solid and stroked
+//
+// Layout is production CSS, duplicated in map-key.scss. Reuses the solid ramp's sample
+// colours and the stroked ramp's dark-mode border rule.
+@use '../map-key-ramp-fills/map-key-ramp-fills';

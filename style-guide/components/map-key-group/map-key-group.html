@@ -1,16 +1,12 @@
 <!--
   Specimen: Map key — with a section title (im-c-map-key--has-groups)
 
-  Mirrors what Key.jsx + KeyGroupItem.jsx render when keyGroups contains a 'group' item, on
-  the (unmerged) IM-482 branch: the outer container gets the --has-groups modifier, and each
-  group is a <section> with its own heading, followed by ONE shared
-  <dl class="im-c-map-key-list"> wrapping all its items — each item now a plain
-  <div class="im-c-map-key-list__item"> (see map-key.scss for why: this replaces what used
-  to be a separate <dl> per item, which broke :first-child rules scoped under a group).
-  Same three items/patterns as the flat map-key specimen — see that specimen's header
-  comment for where the colours/patterns come from. This is a duplicated snapshot, not a
-  live import — see map-key-group.scss and style-guide/README.md for the
-  duplicate → approve → port-back workflow.
+  Mirrors what Key.jsx + KeyGroupItem.jsx render when the key has a group: the container gets
+  the --has-groups modifier, and the group is a <section> with its heading, followed by one
+  shared <dl class="im-c-map-key-list"> wrapping its items. Same three items as the flat
+  map-key specimen.
+
+  A duplicated snapshot, not a live import — see style-guide/README.md.
 -->
 <div class="im-c-map-key im-c-map-key--has-groups">
   <section class="im-c-map-key__group" aria-labelledby="key-heading-land-use">

@@ -1,26 +1,19 @@
 <!--
   Specimen: Map key — base component (im-c-map-key), three pattern-fill items
 
-  Mirrors what plugins/map-key/src/components/Key/KeyItem.jsx + KeySvg.jsx +
-  KeySvgPattern.jsx render for a flat (no groups) key with pattern-fill datasets, on the
-  (unmerged) IM-482 branch — a plain <div class="im-c-map-key-list__item"> per item, no
-  per-item <dl> (see map-key.scss for why: each item used to be its own separate <dl>,
-  which broke :first-child rules scoped under a group). This is a duplicated snapshot, not
-  a live import — see map-key.scss and style-guide/README.md for the
-  duplicate → approve → port-back workflow.
+  Mirrors what plugins/map-key/src/components/Key/Key.jsx + KeyItem.jsx + KeySvgPattern.jsx
+  render for a flat key (no groups) with pattern-fill datasets: a plain
+  <div class="im-c-map-key-list__item"> per item, each with a 20×20 symbol whose border path
+  is KEY_BORDER_PATH (src/utils/patternUtils.js) and whose fill is one 16×16 tile of its named
+  pattern (src/config/patternConfig.js), with {{foregroundColor}}/{{backgroundColor}}
+  resolved by hand as patternRegistry.getKeyPatternPaths() would.
 
-  Source data — the three sublayer styles in demo/DemoMapPolygons.js (fillPatternBackgroundColor
-  is 'transparent' for all three):
-    Arable              stroke / fillPatternForegroundColor #6D4C41, fillPattern 'horizontal-hatch'
-    Permanent grassland stroke / fillPatternForegroundColor #00897B, fillPattern 'diagonal-cross-hatch'
-    Woodland            stroke / fillPatternForegroundColor #2E7D32, fillPattern 'dot'
+  Colours and patterns are the land cover sublayers in demo/DemoMapPolygons.js:
+    Arable              #6D4C41  horizontal-hatch
+    Permanent grassland #00897B  diagonal-cross-hatch
+    Woodland            #2E7D32  dot
 
-  Each symbol's border path is KEY_BORDER_PATH (src/utils/patternUtils.js); each fill path is
-  its named pattern from src/config/patternConfig.js. {{foregroundColor}}/{{backgroundColor}}
-  tokens are resolved by hand, as patternRegistry.getKeyPatternPaths() would resolve them.
-
-  If this ever looks wrong next to the real map key, re-derive it from those source files —
-  this fragment is a snapshot of their output, not the other way round.
+  A duplicated snapshot, not a live import — see style-guide/README.md.
 -->
 <div class="im-c-map-key">
   <div class="im-c-map-key-list__item">
