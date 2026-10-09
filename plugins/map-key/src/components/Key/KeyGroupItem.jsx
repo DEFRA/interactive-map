@@ -1,5 +1,6 @@
 import { useRef } from 'react'
 import { getValueForStyle } from '../../../../../src/utils/getValueForStyle.js'
+import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
 import { KeyItem } from './KeyItem.jsx'
 import { RAMP } from '../../utils/groupStyles.js'
 import { useRampOrientation } from './useRampOrientation.js'
@@ -17,8 +18,16 @@ const getListClassName = (groupStyle, orientation, hasStroke) => {
   return hasStroke ? `${rampClassName} im-c-map-key-list--has-stroke` : rampClassName
 }
 
-export const KeyGroupItem = ({ headingId, label, groupStyle, keyDefinitions, mapStyle, symbolRegistry, patternRegistry }) => {
+// A ramp's bands stretch to fill their row or column, which point symbols can't, so a ramp
+// group with any symbol entries is shown as a standard group
+const getGroupStyle = (groupStyle, keyDefinitions) =>
+  groupStyle === RAMP && keyDefinitions.some(keyDefinition => hasSymbol(keyDefinition.style))
+    ? undefined
+    : groupStyle
+
+export const KeyGroupItem = ({ headingId, label, groupStyle: configuredGroupStyle, keyDefinitions, mapStyle, symbolRegistry, patternRegistry }) => {
   const listRef = useRef(null)
+  const groupStyle = getGroupStyle(configuredGroupStyle, keyDefinitions)
   const isRamp = groupStyle === RAMP
   const hasStroke = isRamp &&
     keyDefinitions.some(keyDefinition => getValueForStyle(keyDefinition.style?.stroke, mapStyle.id))

@@ -9,9 +9,11 @@ import './mapKey.scss'
  * Heading shown above the group. Replaces the heading the group's entries provide.
  *
  * @property {'ramp'} [groupStyle]
- * How the group's entries are laid out. `'ramp'` shows them as touching bands: in a row with each
- * label centred below its band when every label fits on one line, otherwise stacked with each
- * label beside its band. When any entry has a stroke, the bands are separated by a small gap.
+ * How the group's entries are laid out. `'ramp'` shows them as touching bands, each filled with the
+ * entry's fill or fill pattern and outlined in its stroke colour: in a row with each label centred
+ * below its band when every label fits on one line, otherwise stacked with each label beside its
+ * band. When any entry has a stroke, the bands are separated by a small gap. A group with any
+ * symbol entries is shown without a groupStyle.
  */
 
 /**

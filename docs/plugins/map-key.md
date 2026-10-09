@@ -127,14 +127,16 @@ Heading shown above the group. Replaces the heading the group's entries provide.
 
 How the group's entries are laid out. Without a `groupStyle`, each entry shows its symbol beside its label.
 
-`'ramp'` shows the entries as touching bands, in order, each filled with the entry's `fill` or fill pattern:
+`'ramp'` shows the entries as touching bands, in order. Each band is filled with the entry's `fill` or fill pattern, and outlined in its `stroke` colour:
 
 - **Horizontal** — bands of equal width in a row, with each label centred below its band. Used when every label fits on one line under its band.
 - **Vertical** — bands stacked with each label beside its band. Used when any label doesn't fit.
 
 The layout is chosen again when the key panel resizes, or when the text size changes.
 
-When any entry in the group has a `stroke`, each band is outlined and the bands are separated by a small gap.
+When any entry in the group has a `stroke`, the bands are separated by a small gap.
+
+A ramp suits polygon entries. If any entry in the group has a `symbol` or `symbolSvgContent`, the group is shown without a `groupStyle`.
 
 ---
 

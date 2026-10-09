@@ -74,6 +74,13 @@ describe('KeyGroupItem', () => {
     expect(container.querySelector('dl').className).toBe('im-c-map-key-list im-c-map-key-list--ramp im-c-map-key-list--ramp-vertical')
   })
 
+  it('shows a ramp with any symbol entries as a standard group', () => {
+    const keyDefinitions = [{ id: 'a', label: 'Low', style: { fill: '#000' } }, { id: 'b', label: 'High', style: { symbol: 'pin' } }]
+    const { container } = render(<KeyGroupItem {...baseProps} groupStyle='ramp' keyDefinitions={keyDefinitions} />)
+    expect(container.querySelector('dl').className).toBe('im-c-map-key-list')
+    expect(useRampOrientation).toHaveBeenLastCalledWith(expect.anything(), ['Low', 'High'], false, false)
+  })
+
   it('does not measure groups that are not ramps', () => {
     render(<KeyGroupItem {...baseProps} />)
     expect(useRampOrientation).toHaveBeenLastCalledWith(expect.anything(), [], false, false)
