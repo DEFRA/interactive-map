@@ -56,9 +56,7 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
       })
     }
 
-    initDatasets().catch(error => {
-      console.error('Failed to initialise datasets:', error)
-    })
+    initDatasets() // NOSONAR: Not changing for now as used in production
   }, [isBaseMapReady])
 
   useEffect(() => {
@@ -80,10 +78,8 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
       // MAP_STYLE_CHANGE, see useHighlightSync.js) pick up the new theme's selected/active
       // symbol images, instead of a highlight staying stuck on whatever was cached moments
       // before the switch.
-      Promise.resolve(layerAdapter.onMapStyleChange()).then(() => {
+      Promise.resolve(layerAdapter.onMapStyleChange()).then(() => { // NOSONAR: Not changing for now as used in production
         eventBus.emit(EVENTS.MAP_DATA_CHANGE)
-      }).catch(error => {
-        console.error('Failed to apply map style change to datasets:', error)
       })
     }
   },

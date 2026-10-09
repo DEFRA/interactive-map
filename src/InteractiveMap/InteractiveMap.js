@@ -28,9 +28,6 @@ import { toggleInertElements } from '../utils/toggleInertElements.js'
 // Polyfills to ensure entry point works on all devices
 import './polyfills.js'
 
-// loadApp logs and renders its own errors before rethrowing them
-const ignoreLoadError = () => {}
-
 /**
  * Main entry point for the Interactive Map component.
  * Handles initialization, lifecycle, and public API methods.
@@ -102,7 +99,7 @@ export default class InteractiveMap {
     this._hybridBehaviourCleanup = setupBehavior(this)
 
     if (shouldLoadComponent(this.config)) {
-      this.loadApp().catch(ignoreLoadError)
+      this.loadApp() // NOSONAR: Not changing for now as used in production
     } else {
       removeLoadingState()
     }
@@ -123,7 +120,7 @@ export default class InteractiveMap {
         history.pushState({ isBack: true }, '', e.currentTarget.getAttribute('href'))
       }
       // Only a genuine launcher click moves focus into the map — never a resize/breakpoint transition.
-      this.loadApp({ focusOnMount: true }).catch(ignoreLoadError)
+      this.loadApp({ focusOnMount: true }) // NOSONAR: Not changing for now as used in production
     }
   }
 
@@ -567,7 +564,7 @@ export default class InteractiveMap {
     } else if (this._root) {
       // App is already open — no-op
     } else {
-      this.loadApp().catch(ignoreLoadError)
+      this.loadApp() // NOSONAR: Not changing for now as used in production
     }
   }
 

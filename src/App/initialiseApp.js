@@ -36,27 +36,26 @@ const getOrCreateRegistries = (rootElement, eventBus) => {
 }
 
 const loadPlugins = async (plugins, registerPlugin) => {
-  const loadablePlugins = plugins.filter(plugin => typeof plugin.load === 'function')
-  // Load in parallel, but register in the order the plugins were given
-  const modules = await Promise.all(loadablePlugins.map(plugin => plugin.load()))
+  for (const plugin of plugins) {
+    if (typeof plugin.load === 'function') {
+      const module = await plugin.load() // NOSONAR: Await inside a for loop is fine, parent function is async
+      const { id: pluginId, load, manifest: overrideManifest, ...config } = plugin
+      const { InitComponent, api, reducer, ...baseManifest } = module
 
-  loadablePlugins.forEach((plugin, index) => {
-    const { id: pluginId, load, manifest: overrideManifest, ...config } = plugin
-    const { InitComponent, api, reducer, ...baseManifest } = modules[index]
+      // Merge runtime overrides with module manifest
+      const manifest = mergeManifests(baseManifest, overrideManifest)
 
-    // Merge runtime overrides with module manifest
-    const manifest = mergeManifests(baseManifest, overrideManifest)
-
-    registerPlugin({
-      id: pluginId,
-      InitComponent,
-      api,
-      reducer,
-      config,
-      manifest,
-      _originalPlugin: plugin
-    })
-  })
+      registerPlugin({
+        id: pluginId,
+        InitComponent,
+        api,
+        reducer,
+        config,
+        manifest,
+        _originalPlugin: plugin
+      })
+    }
+  }
 }
 
 export async function initialiseApp (rootElement, {

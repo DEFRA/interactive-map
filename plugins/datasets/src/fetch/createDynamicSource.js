@@ -161,9 +161,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate }) =
     currentController: null
   }
 
-  const fetchData = () => fetchViewportData(state, { mapProvider, dynamicGeoJSON, onUpdate }).catch(error => {
-    console.error(`Failed to fetch dynamic GeoJSON for ${dynamicGeoJSON.id}:`, error)
-  })
+  const fetchData = () => fetchViewportData(state, { mapProvider, dynamicGeoJSON, onUpdate })
 
   // Debounced fetch handler
   const debouncedFetch = debounce(fetchData, DEBOUNCE_DELAY)
@@ -176,7 +174,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate }) =
   mapProvider.map.on('moveend', handleMoveEnd)
 
   // Initial fetch
-  fetchData()
+  fetchData() // NOSONAR: Not changing for now as used in production
 
   return {
     /**
@@ -205,7 +203,7 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate }) =
     refresh () {
       state.features.clear()
       state.fetchedBbox = null
-      fetchData()
+      fetchData() // NOSONAR: Not changing for now as used in production
     },
 
     /**

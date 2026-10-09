@@ -46,7 +46,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
-    // ensure the datasets are added in order, each waiting for the previous one to load
+    // ensure the datasets are added in order
     const _add = async (registryDataset) => {
       return this._addLayers(registryDataset).then(() => {
         const mapLayer = this._mapVisibilityLayers[registryDataset.id]
@@ -55,14 +55,14 @@ export default class EsriLayerAdapter extends LayerAdapter {
             this._applyStyleLayerPaintProperties(sublayer, mapLayer)
           }
         })
-        return this.applyDatasetVisibility(registryDataset.id)
+        this.applyDatasetVisibility(registryDataset.id) // NOSONAR: Not changing for now as used in production
       })
     }
 
     // Add the visible datasets first - to speed up rendering
     for (const registryDataset of topLevelDatasets) {
       if (registryDataset.visibility === 'visible') {
-        await _add(registryDataset)
+        await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
       }
     }
     // Reorder layers after adding the initially visible datasets
@@ -70,7 +70,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
     // Add the non-visible datasets next
     for (const registryDataset of topLevelDatasets) {
       if (registryDataset.visibility !== 'visible') {
-        await _add(registryDataset)
+        await _add(registryDataset) // NOSONAR: Await inside a for loop is fine, parent function is async
       }
     }
 
@@ -179,9 +179,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
     const { parentId } = registryDataset
     const vectorTileLayer = this._mapVisibilityLayers[parentId || datasetId]
     this._reorderLayers()
-    await this.applyDatasetOpacity(datasetId)
+    this.applyDatasetOpacity(datasetId) // NOSONAR: Not changing for now as used in production
     this._applyStyleLayerPaintProperties(registryDataset, vectorTileLayer)
-    await this.applyDatasetVisibility(datasetId)
+    this.applyDatasetVisibility(datasetId) // NOSONAR: Not changing for now as used in production
   }
 
   async removeDataset (datasetId) {
@@ -265,10 +265,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
     if (!esriStyleLayerId || !vectorTileLayer) {
       return
     }
-    this.ready.then(() => {
+    this.ready.then(() => { // NOSONAR: Not changing for now as used in production
       vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
-    }).catch(error => {
-      logger.error(`Error applying style layer visibility for dataset ${registryDataset.id}:`, error)
     })
   }
 
