@@ -161,7 +161,9 @@ export const createDynamicSource = ({ dynamicGeoJSON, mapProvider, onUpdate }) =
     currentController: null
   }
 
-  const fetchData = () => fetchViewportData(state, { mapProvider, dynamicGeoJSON, onUpdate })
+  const fetchData = () => fetchViewportData(state, { mapProvider, dynamicGeoJSON, onUpdate }).catch(error => {
+    console.error(`Failed to fetch dynamic GeoJSON for ${dynamicGeoJSON.id}:`, error)
+  })
 
   // Debounced fetch handler
   const debouncedFetch = debounce(fetchData, DEBOUNCE_DELAY)

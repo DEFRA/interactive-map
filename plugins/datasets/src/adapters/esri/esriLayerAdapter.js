@@ -46,33 +46,27 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async init () {
     const topLevelDatasets = datasetRegistry.topLevelDatasets()
-    // ensure the datasets are added in order
+    // _addLayers adds each layer to the map synchronously before awaiting it,
+    // so mapping over the datasets keeps them added in order
     const _add = async (registryDataset) => {
-      return this._addLayers(registryDataset).then(() => {
-        const mapLayer = this._mapVisibilityLayers[registryDataset.id]
-        registryDataset.sublayers?.forEach(sublayer => {
-          if (sublayer.visibility === 'visible') {
-            this._applyStyleLayerPaintProperties(sublayer, mapLayer)
-          }
-        })
-        this.applyDatasetVisibility(registryDataset.id)
+      await this._addLayers(registryDataset)
+      const mapLayer = this._mapVisibilityLayers[registryDataset.id]
+      registryDataset.sublayers?.forEach(sublayer => {
+        if (sublayer.visibility === 'visible') {
+          this._applyStyleLayerPaintProperties(sublayer, mapLayer)
+        }
       })
+      await this.applyDatasetVisibility(registryDataset.id)
     }
+    const visibleDatasets = topLevelDatasets.filter(registryDataset => registryDataset.visibility === 'visible')
+    const hiddenDatasets = topLevelDatasets.filter(registryDataset => registryDataset.visibility !== 'visible')
 
     // Add the visible datasets first - to speed up rendering
-    for (const registryDataset of topLevelDatasets) {
-      if (registryDataset.visibility === 'visible') {
-        await _add(registryDataset)
-      }
-    }
+    await Promise.all(visibleDatasets.map(_add))
     // Reorder layers after adding the initially visible datasets
     this._reorderLayers()
     // Add the non-visible datasets next
-    for (const registryDataset of topLevelDatasets) {
-      if (registryDataset.visibility !== 'visible') {
-        await _add(registryDataset)
-      }
-    }
+    await Promise.all(hiddenDatasets.map(_add))
 
     // onMapStyleChange: handles showing and hiding sublayers based on the current mapStyle
     // and updating the paint properties of the layers based on the dataset/mapStyle style
@@ -179,9 +173,9 @@ export default class EsriLayerAdapter extends LayerAdapter {
     const { parentId } = registryDataset
     const vectorTileLayer = this._mapVisibilityLayers[parentId || datasetId]
     this._reorderLayers()
-    this.applyDatasetOpacity(datasetId)
+    await this.applyDatasetOpacity(datasetId)
     this._applyStyleLayerPaintProperties(registryDataset, vectorTileLayer)
-    this.applyDatasetVisibility(datasetId)
+    await this.applyDatasetVisibility(datasetId)
   }
 
   async removeDataset (datasetId) {
@@ -267,6 +261,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
     }
     this.ready.then(() => {
       vectorTileLayer.setStyleLayerVisibility(esriStyleLayerId, registryDataset.visibility)
+    }).catch(error => {
+      logger.error(`Error applying style layer visibility for dataset ${registryDataset.id}:`, error)
     })
   }
 

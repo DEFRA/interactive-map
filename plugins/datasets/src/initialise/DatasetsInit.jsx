@@ -56,7 +56,9 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
       })
     }
 
-    initDatasets()
+    initDatasets().catch(error => {
+      console.error('Failed to initialise datasets:', error)
+    })
   }, [isBaseMapReady])
 
   useEffect(() => {
@@ -80,6 +82,8 @@ export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider
       // before the switch.
       Promise.resolve(layerAdapter.onMapStyleChange()).then(() => {
         eventBus.emit(EVENTS.MAP_DATA_CHANGE)
+      }).catch(error => {
+        console.error('Failed to apply map style change to datasets:', error)
       })
     }
   },
