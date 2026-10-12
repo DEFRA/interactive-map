@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { updateDOMState, removeLoadingState } from './domStateManager.js'
+import { updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
 import * as queryString from '../utils/queryString.js'
 import * as toggleInertElements from '../utils/toggleInertElements.js'
 
@@ -143,5 +143,52 @@ describe('removeLoadingState', () => {
     document.body.classList.add('im-is-loading')
     removeLoadingState()
     expect(document.body.classList.contains('im-is-loading')).toBe(false)
+  })
+})
+
+describe('showPageIfMapInline', () => {
+  let rootEl
+
+  const createMapInstance = (config) => ({
+    config: { id: 'map', pageTitle: 'Map View', containerHeight: '500px', hybridWidth: null, maxMobileWidth: 640, ...config },
+    rootEl
+  })
+
+  beforeEach(() => {
+    rootEl = document.createElement('div')
+    document.body.appendChild(rootEl)
+    document.body.classList.add('im-is-loading')
+    queryString.getQueryParam.mockReturnValue(null)
+    window.matchMedia = jest.fn().mockImplementation(() => ({ matches: false }))
+  })
+
+  afterEach(() => {
+    document.body.innerHTML = ''
+    document.body.classList.remove('im-is-loading')
+  })
+
+  it.each([
+    ['inline', {}],
+    ['hybrid above hybridWidth', { behaviour: 'hybrid' }]
+  ])('shows the page and reserves the container height for %s', (_label, config) => {
+    showPageIfMapInline(createMapInstance({ behaviour: 'inline', ...config }))
+
+    expect(document.body.classList.contains('im-is-loading')).toBe(false)
+    expect(rootEl.style.height).toBe('500px')
+    expect(document.documentElement.classList.contains('im-is-fullscreen')).toBe(false)
+  })
+
+  it.each([
+    ['mapOnly', { behaviour: 'mapOnly' }, null, false],
+    ['buttonFirst opened from the URL', { behaviour: 'buttonFirst' }, 'map', false],
+    ['hybrid below hybridWidth opened from the URL', { behaviour: 'hybrid' }, 'map', true]
+  ])('keeps the page hidden when the map opens fullscreen: %s', (_label, config, viewParam, isNarrow) => {
+    queryString.getQueryParam.mockReturnValue(viewParam)
+    window.matchMedia = jest.fn().mockImplementation(() => ({ matches: isNarrow }))
+
+    showPageIfMapInline(createMapInstance(config))
+
+    expect(document.body.classList.contains('im-is-loading')).toBe(true)
+    expect(rootEl.style.height).toBe('')
   })
 })

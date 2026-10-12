@@ -34,22 +34,24 @@ Trigger the map to show on button press, allowing users to access the map when n
     label: 'UMD',
     language: 'html',
     code: `
-      <script src="/your-assets-path/interactive-map/index.js"></script>
-      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script defer src="/your-assets-path/interactive-map/index.js"></script>
+      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
 
       <script>
-      new defra.InteractiveMap('my-map', {
-        behaviour: 'buttonFirst',
-        mapProvider: defra.maplibreProvider(),
-        mapStyle: {
-          url: 'https://your-tile-url/style.json',
-          logo: '/path/to/logo.svg',
-          logoAltText: 'Your logo alt text',
-          attribution: 'Your tile attribution'
-        },
-        center: [-1.6, 53.1],
-        zoom: 6,
-        hasExitButton: true
+      document.addEventListener('DOMContentLoaded', function () {
+        new defra.InteractiveMap('my-map', {
+          behaviour: 'buttonFirst',
+          mapProvider: defra.maplibreProvider(),
+          mapStyle: {
+            url: 'https://your-tile-url/style.json',
+            logo: '/path/to/logo.svg',
+            logoAltText: 'Your logo alt text',
+            attribution: 'Your tile attribution'
+          },
+          center: [-1.6, 53.1],
+          zoom: 6,
+          hasExitButton: true
+        })
       })
       </script>
     `

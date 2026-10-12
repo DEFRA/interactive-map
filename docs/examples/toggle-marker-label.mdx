@@ -52,40 +52,42 @@ Add a marker with a hidden label, then use the interact plugin to show the label
     label: 'UMD',
     language: 'html',
     code: `
-      <script src="/your-assets-path/interactive-map/index.js"></script>
-      <script src="/your-assets-path/maplibre-provider/index.js"></script>
-      <script src="/your-assets-path/interact-plugin/index.js"></script>
+      <script defer src="/your-assets-path/interactive-map/index.js"></script>
+      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script defer src="/your-assets-path/interact-plugin/index.js"></script>
 
       <script>
-      const interactPlugin = defra.interactPlugin({
-        deselectOnClickOutside: true
-      })
-
-      const map = new defra.InteractiveMap('my-map', {
-        behaviour: 'inline',
-        mapProvider: defra.maplibreProvider(),
-        mapStyle: {
-          url: 'https://your-tile-url/style.json',
-          logo: '/path/to/logo.svg',
-          logoAltText: 'Your logo alt text',
-          attribution: 'Your tile attribution'
-        },
-        center: [-2.96, 54.43],
-        zoom: 15,
-        containerHeight: '516px',
-        plugins: [interactPlugin]
-      })
-
-      map.on('map:ready', function () {
-        map.addMarker('my-marker', [-2.96, 54.43], {
-          label: 'My location',
-          showLabel: false
+      document.addEventListener('DOMContentLoaded', function () {
+        const interactPlugin = defra.interactPlugin({
+          deselectOnClickOutside: true
         })
-        interactPlugin.enable()
-      })
 
-      map.on('interact:selectionchange', function (event) {
-        map.updateMarker('my-marker', { showLabel: event.selectedMarkers.includes('my-marker') })
+        const map = new defra.InteractiveMap('my-map', {
+          behaviour: 'inline',
+          mapProvider: defra.maplibreProvider(),
+          mapStyle: {
+            url: 'https://your-tile-url/style.json',
+            logo: '/path/to/logo.svg',
+            logoAltText: 'Your logo alt text',
+            attribution: 'Your tile attribution'
+          },
+          center: [-2.96, 54.43],
+          zoom: 15,
+          containerHeight: '516px',
+          plugins: [interactPlugin]
+        })
+
+        map.on('map:ready', function () {
+          map.addMarker('my-marker', [-2.96, 54.43], {
+            label: 'My location',
+            showLabel: false
+          })
+          interactPlugin.enable()
+        })
+
+        map.on('interact:selectionchange', function (event) {
+          map.updateMarker('my-marker', { showLabel: event.selectedMarkers.includes('my-marker') })
+        })
       })
       </script>
     `

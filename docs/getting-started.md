@@ -153,7 +153,7 @@ const interactiveMap = new InteractiveMap('map', {
     <link rel="stylesheet" href="/your-assets-path/interactive-map.css">
     <script defer src="/your-assets-path/interactive-map/index.js"></script>
     <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
-    <script defer>
+    <script>
       document.addEventListener('DOMContentLoaded', function () {
         const interactiveMap = new defra.InteractiveMap('map', {
           mapProvider: defra.maplibreProvider(),
@@ -178,6 +178,8 @@ const interactiveMap = new InteractiveMap('map', {
 ```
 
 > [!NOTE]
+> Load the scripts with `defer` and create the map inside a `DOMContentLoaded` listener, as above, so the page isn't blocked while they download. Don't use `async`, as the scripts must run in order.
+>
 > Scripts are loaded dynamically — all files in each `umd/` folder must be served from the same directory as their `index.js`.
 
 ## Using plugins

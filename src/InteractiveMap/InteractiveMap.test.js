@@ -7,7 +7,7 @@ import historyManager from './historyManager.js'
 import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
 import { setupBehavior, shouldLoadComponent } from './behaviourController.js'
-import { updateDOMState, removeLoadingState } from './domStateManager.js'
+import { updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
 import { renderError } from './renderError.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
 import { createInterfaceDetector } from '../utils/detectInterfaceType.js'
@@ -23,7 +23,7 @@ jest.mock('./behaviourController.js', () => ({
   setupBehavior: jest.fn(),
   shouldLoadComponent: jest.fn(() => true)
 }))
-jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }), removeLoadingState: jest.fn() }))
+jest.mock('./domStateManager.js', () => ({ updateDOMState: jest.fn().mockReturnValue({ isFullscreen: false }), removeLoadingState: jest.fn(), showPageIfMapInline: jest.fn() }))
 jest.mock('./renderError.js', () => ({ renderError: jest.fn() }))
 jest.mock('../config/mergeConfig.js', () => ({ mergeConfig: jest.fn(cfg => cfg) }))
 const mockBreakpointDetector = {
@@ -144,6 +144,13 @@ describe('InteractiveMap — loadApp', () => {
     await new Promise(resolve => setTimeout(resolve, 0))
     expect(initialiseApp).toHaveBeenCalled()
     expect(map).toBeDefined()
+  })
+
+  it('shows the page before loading the app when shouldLoadComponent returns true', () => {
+    shouldLoadComponent.mockReturnValue(true)
+    const map = new InteractiveMap('map', { behaviour: 'inline', mapProvider: mapProviderMock })
+    expect(showPageIfMapInline).toHaveBeenCalledWith(map)
+    expect(removeLoadingState).not.toHaveBeenCalled()
   })
 
   it('calls removeLoadingState if shouldLoadComponent returns false', () => {
