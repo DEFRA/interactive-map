@@ -10,6 +10,7 @@ import replace from '@rollup/plugin-replace'
 import terser from '@rollup/plugin-terser'
 import postcss from 'rollup-plugin-postcss'
 import { visualizer } from 'rollup-plugin-visualizer'
+import { transformAsync } from '@babel/core'
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) // NOSONAR - Standard Node.js convention in bundler configs
 
@@ -26,6 +27,40 @@ const cleanPlugin = (dirs) => ({
       }
       fs.mkdirSync(dir, { recursive: true })
     }
+  }
+})
+
+/**
+ * Compiles the chunks that load before the device check (entries and the chunks
+ * they import statically) to ES5, so older browsers can parse them and show the
+ * not-supported message. Hosts' bundlers usually don't transpile node_modules.
+ * Lazily loaded chunks keep modern syntax; they only load once the check passes.
+ * import/export, import() and import.meta are left for the host's bundler.
+ */
+const es5InitialChunksPlugin = () => ({
+  name: 'es5-initial-chunks',
+  async renderChunk (code, chunk, _outputOptions, { chunks }) {
+    const initial = new Set()
+    const addWithStaticImports = (fileName) => {
+      if (initial.has(fileName)) {
+        return
+      }
+      initial.add(fileName)
+      chunks[fileName]?.imports.forEach(addWithStaticImports)
+    }
+    Object.values(chunks).filter(c => c.isEntry).forEach(c => addWithStaticImports(c.fileName))
+
+    if (!initial.has(chunk.fileName)) {
+      return null
+    }
+    const result = await transformAsync(code, {
+      babelrc: false,
+      configFile: false,
+      sourceType: 'module',
+      presets: [['@babel/preset-env', { targets: { ie: '11' }, modules: false }]],
+      plugins: ['@babel/plugin-transform-runtime']
+    })
+    return { code: result.code, map: null }
   }
 })
 
@@ -158,7 +193,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
         // This avoids transpiling classes, arrow functions, async/await etc.
         // into verbose ES5 — the single biggest driver of ESM bundle size.
         presets: [
-          ['@babel/preset-env', { targets: { esmodules: true } }],
+          ['@babel/preset-env', { targets: { chrome: '92', edge: '92', firefox: '90', safari: '15.4', ios: '15.4' }, bugfixes: true }],
           ['@babel/preset-react', { runtime: 'automatic' }]
         ]
       }),
@@ -170,6 +205,8 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
         use: ['sass'],
         minimize: true
       }),
+
+      es5InitialChunksPlugin(),
 
       terser(),
 
