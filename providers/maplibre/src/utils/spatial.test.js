@@ -1,12 +1,6 @@
 // tests/utils/spatial.test.js
 import * as spatial from '../../src/utils/spatial.js'
 
-jest.mock('geodesy/latlon-spherical.js', () =>
-  jest.fn().mockImplementation((lat, lng) => ({
-    distanceTo: jest.fn((other) => Math.abs(lat - (other.lat || 0)) * 1609 + Math.abs(lng - (other.lon || 0)) * 1609)
-  }))
-)
-
 jest.mock('@turf/bbox', () => jest.fn(() => [-1, 50, 1, 52]))
 
 describe('spatial utils', () => {
@@ -51,6 +45,12 @@ describe('spatial utils', () => {
     expect(spatial.getCardinalMove([0, 0], [-0.5, 0])).toMatch(/west/)
     expect(spatial.getCardinalMove([0, 0], [0.5, 0.5])).toMatch(/north.*east|east.*north/)
     expect(spatial.getCardinalMove([0, 0], [0.00001, 0.00001])).toBe('')
+  })
+
+  test('cardinal moves use great-circle distance', () => {
+    // 1 degree of latitude on a 6371 km sphere is 111,195 metres (69.09 miles)
+    expect(spatial.getCardinalMove([0, 0], [0, 1])).toBe('north 69 miles')
+    expect(spatial.getCardinalMove([-0.12, 51.5], [-0.12, 51.5009])).toBe('north 100 metres')
   })
 
   test('getResolution returns positive value', () => {

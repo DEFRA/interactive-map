@@ -1,22 +1,31 @@
 // src/utils/spatial.js
-import LatLon from 'geodesy/latlon-spherical.js'
 import turfBbox from '@turf/bbox'
 
 // -----------------------------------------------------------------------------
 // Internal (not exported)
 // -----------------------------------------------------------------------------
 
+const EARTH_RADIUS_METRES = 6371e3
+const RADIANS_PER_DEGREE = Math.PI / 180
+const MIN_MOVE_DEGREES = 0.0001 // moves smaller than this aren't announced
+
+const toRadians = (degrees) => degrees * RADIANS_PER_DEGREE
+
 /**
- * Calculate distance in metres between two [lng, lat] coordinates
+ * Calculate distance in metres between two [lng, lat] coordinates (haversine)
  */
 const getDistance = (from, to) => {
   const [lng1, lat1] = from
   const [lng2, lat2] = to
 
-  const fromLatLon = new LatLon(lat1, lng1)
-  const toLatLon = new LatLon(lat2, lng2)
+  const lat1Rad = toRadians(lat1)
+  const lat2Rad = toRadians(lat2)
+  const dLat = lat2Rad - lat1Rad
+  const dLng = toRadians(lng2 - lng1)
 
-  return fromLatLon.distanceTo(toLatLon) // metres
+  const haversine = Math.sin(dLat / 2) ** 2 + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLng / 2) ** 2
+  const centralAngle = 2 * Math.atan2(Math.sqrt(haversine), Math.sqrt(1 - haversine))
+  return EARTH_RADIUS_METRES * centralAngle
 }
 
 /**
@@ -95,12 +104,12 @@ const getCardinalMove = (from, to) => {
 
   const moves = []
 
-  if (Math.abs(dLat) > 0.0001) { // threshold to ignore tiny movement
+  if (Math.abs(dLat) > MIN_MOVE_DEGREES) {
     const metres = Math.round(getDistance([lng1, lat1], [lng1, lat2]))
     moves.push(`${dLat > 0 ? 'north' : 'south'} ${formatDimension(metres)}`)
   }
 
-  if (Math.abs(dLng) > 0.0001) {
+  if (Math.abs(dLng) > MIN_MOVE_DEGREES) {
     const metres = Math.round(getDistance([lng1, lat1], [lng2, lat1]))
     moves.push(`${dLng > 0 ? 'east' : 'west'} ${formatDimension(metres)}`)
   }
@@ -113,7 +122,7 @@ const getResolution = (center, zoom) => {
   const TILE_SIZE = 512
   const lat = center.lat
   const scale = Math.pow(2, zoom)
-  const resolution = (EARTH_CIRCUMFERENCE * Math.cos((lat * Math.PI) / 180)) / (scale * TILE_SIZE) // NOSONAR - 180 is degrees-to-radians conversion
+  const resolution = (EARTH_CIRCUMFERENCE * Math.cos(toRadians(lat))) / (scale * TILE_SIZE)
   return resolution
 }
 
@@ -161,10 +170,10 @@ const isGeometryObscured = (geojson, panelRect, map) => {
     map.project([east, north])
   ]
 
-  const screenMinX = Math.min(...corners.map(c => c.x))
-  const screenMaxX = Math.max(...corners.map(c => c.x))
-  const screenMinY = Math.min(...corners.map(c => c.y))
-  const screenMaxY = Math.max(...corners.map(c => c.y))
+  const screenMinX = Math.min(...corners.map(corner => corner.x))
+  const screenMaxX = Math.max(...corners.map(corner => corner.x))
+  const screenMinY = Math.min(...corners.map(corner => corner.y))
+  const screenMaxY = Math.max(...corners.map(corner => corner.y))
 
   // Convert panelRect from viewport coords to map-container-relative coords
   const panelLeft = panelRect.left - containerRect.left
