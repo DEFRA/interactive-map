@@ -265,10 +265,10 @@ This example configures snapping (`snapLayers`) against the base map style's woo
       })
 
       interactiveMap.on('interact:selectionchange', function (e) {
-        var singleFeature = e.selectedFeatures.length === 1
-        var anyFeature = e.selectedFeatures.length > 0
-        var isDrawFeature = singleFeature && DRAW_LAYERS.includes(e.selectedFeatures[0].layerId)
-        var allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return DRAW_LAYERS.includes(f.layerId) })
+        const singleFeature = e.selectedFeatures.length === 1
+        const anyFeature = e.selectedFeatures.length > 0
+        const isDrawFeature = singleFeature && DRAW_LAYERS.includes(e.selectedFeatures[0].layerId)
+        const allDrawFeatures = anyFeature && e.selectedFeatures.every(function (f) { return DRAW_LAYERS.includes(f.layerId) })
         selectedFeatureIds = e.selectedFeatures.map(function (f) { return f.featureId })
         interactiveMap.toggleButtonState('drawPolygon', 'disabled', singleFeature)
         interactiveMap.toggleButtonState('drawLine', 'disabled', singleFeature)

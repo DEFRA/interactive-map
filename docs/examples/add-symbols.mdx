@@ -140,7 +140,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             filter: ['in', ['get', 'category'], 'prehistoric'],
             style: {
               symbol: 'square',
-              symbolGraphic,
+              symbolGraphic: symbolGraphic,
               symbolBackgroundColor: '#00897B'
             }
           }, {
@@ -149,7 +149,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             filter: ['in', ['get', 'category'], 'roman'],
             style: {
               symbol: 'square',
-              symbolGraphic,
+              symbolGraphic: symbolGraphic,
               symbolBackgroundColor: '#ca3535'
             }
           }, {
@@ -158,7 +158,7 @@ Use the datasets plugin to overlay GeoJSON data on your map. Each dataset can co
             filter: ['in', ['get', 'category'], 'medieval'],
             style: {
               symbol: 'square',
-              symbolGraphic,
+              symbolGraphic: symbolGraphic,
               symbolBackgroundColor: '#1565C0'
             }
           }]

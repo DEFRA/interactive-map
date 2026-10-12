@@ -45,11 +45,11 @@
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
 
   <script>
-    var interactPlugin = defra.interactPlugin({
+    const interactPlugin = defra.interactPlugin({
       interactionModes: ['placeMarker']
     })
 
-    var map = new defra.InteractiveMap('map', {
+    const map = new defra.InteractiveMap('map', {
       behaviour: 'hybrid',
       mapProvider: defra.maplibreProvider(),
       mapStyle: {
@@ -75,15 +75,15 @@
     })
 
     map.on('app:continue', function (context) {
-      var marker = context.mapState.markers.items.find(function (m) { return m.id === 'location' })
+      const marker = context.mapState.markers.items.find(function (m) { return m.id === 'location' })
       // navigate to next step with marker.coords
       if (marker) {
         console.log('Continuing with marker at:', marker.coords)
       }
     })
 
-    var continueBtn = document.getElementById('continue-btn')
-    var externalButtons = document.getElementById('external-buttons')
+    const continueBtn = document.getElementById('continue-btn')
+    const externalButtons = document.getElementById('external-buttons')
 
     function setInline(isFullscreen) {
       externalButtons.hidden = isFullscreen

@@ -125,7 +125,7 @@
       plugins: [datasetsPlugin, interactPlugin]
     })
 
-    map.on('map:ready', () => {
+    map.on('map:ready', function () {
       interactPlugin.enable()
 
       map.addPanel(PANEL_ID, {
@@ -138,19 +138,19 @@
       })
     })
 
-    map.on('interact:selectionchange', ({ selectedFeatures }) => {
-      if (selectedFeatures.length > 0) {
-        const { name } = selectedFeatures[0].properties
+    map.on('interact:selectionchange', function (e) {
+      if (e.selectedFeatures.length > 0) {
+        const name = e.selectedFeatures[0].properties.name
         document.getElementById('parcel-info-content').innerHTML =
-          `<p class="govuk-body govuk-!-margin-bottom-1">${name}</p>`
+          '<p class="govuk-body govuk-!-margin-bottom-1">' + name + '</p>'
         map.showPanel(PANEL_ID)
       } else {
         map.hidePanel(PANEL_ID)
       }
     })
 
-    map.on('app:panelclosed', ({ panelId }) => {
-      if (panelId === PANEL_ID) {
+    map.on('app:panelclosed', function (e) {
+      if (e.panelId === PANEL_ID) {
         interactPlugin.clear()
       }
     })

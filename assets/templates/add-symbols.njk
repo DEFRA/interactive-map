@@ -79,7 +79,7 @@
           filter: ['in', ['get', 'category'], 'prehistoric'],
           style: {
             symbol: 'square',
-            symbolGraphic,
+            symbolGraphic: symbolGraphic,
             symbolBackgroundColor: '#00897B'
           }
         }, {
@@ -88,7 +88,7 @@
           filter: ['in', ['get', 'category'], 'roman'],
           style: {
             symbol: 'square',
-            symbolGraphic,
+            symbolGraphic: symbolGraphic,
             symbolBackgroundColor: '#ca3535'
           }
         }, {
@@ -97,7 +97,7 @@
           filter: ['in', ['get', 'category'], 'medieval'],
           style: {
             symbol: 'square',
-            symbolGraphic,
+            symbolGraphic: symbolGraphic,
             symbolBackgroundColor: '#1565C0'
           }
         }]
@@ -111,7 +111,7 @@
       mapProvider: defra.maplibreProvider(),
       mapStyle: {
         url: 'https://labs.os.uk/tiles/styles/open-zoomstack-outdoor/style.json',
-        attribution: `Contains OS data © Crown copyright and database rights ${new Date().getFullYear()}`,
+        attribution: 'Contains OS data © Crown copyright and database rights ' + new Date().getFullYear(),
         backgroundColor: '#f5f5f0'
       },
       center: [-2.4608, 54.5574],

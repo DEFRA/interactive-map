@@ -50,7 +50,7 @@
         label: 'Road',
         url: 'https://tiles.openfreemap.org/styles/liberty',
         thumbnail: '/plugin-assets/%40defra%2Finteractive-map/assets/images/road-ofm-thumb.jpg',
-        attribution,
+        attribution: attribution,
         backgroundColor: '#f5f5f0'
       },
       {
@@ -58,7 +58,7 @@
         label: 'Bright',
         url: 'https://tiles.openfreemap.org/styles/bright',
         thumbnail: '/plugin-assets/%40defra%2Finteractive-map/assets/images/bright-ofm-thumb.jpg',
-        attribution,
+        attribution: attribution,
         backgroundColor: '#f5f5f0'
       },
       {
@@ -66,13 +66,13 @@
         label: 'Dark',
         url: 'https://tiles.openfreemap.org/styles/fiord',
         thumbnail: '/plugin-assets/%40defra%2Finteractive-map/assets/images/dark-ofm-thumb.jpg',
-        attribution,
+        attribution: attribution,
         mapColorScheme: 'dark',
         appColorScheme: 'dark'
       }
     ]
 
-    const mapStylesPlugin = defra.mapStylesPlugin({ mapStyles })
+    const mapStylesPlugin = defra.mapStylesPlugin({ mapStyles: mapStyles })
 
     new defra.InteractiveMap('map', {
       behaviour: 'inline',

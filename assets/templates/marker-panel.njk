@@ -59,7 +59,7 @@
       plugins: [interactPlugin]
     })
 
-    map.on('map:ready', () => {
+    map.on('map:ready', function () {
       map.addMarker('my-marker', [-2.968, 54.425])
       interactPlugin.enable()
       interactPlugin.selectMarker('my-marker')
@@ -74,16 +74,16 @@
       })
     })
 
-    map.on('interact:selectionchange', ({ selectedMarkers }) => {
-      if (selectedMarkers.length > 0) {
+    map.on('interact:selectionchange', function (e) {
+      if (e.selectedMarkers.length > 0) {
         map.showPanel('marker-info')
       } else {
         map.hidePanel('marker-info')
       }
     })
 
-    map.on('app:panelclosed', ({ panelId }) => {
-      if (panelId === 'marker-info') {
+    map.on('app:panelclosed', function (e) {
+      if (e.panelId === 'marker-info') {
         interactPlugin.unselectMarker('my-marker')
       }
     })
