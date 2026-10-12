@@ -65,7 +65,7 @@
         backLabel: 'Back',
         continueLabel: 'Continue',
         continueEnabledWhen: function (context) {
-          return context.mapState.markers.items.some(function (m) { return m.id === 'location' })
+          return context.mapState.markers.items.some(function (item) { return item.id === 'location' })
         }
       }
     })
@@ -75,7 +75,7 @@
     })
 
     map.on('app:continue', function (context) {
-      const marker = context.mapState.markers.items.find(function (m) { return m.id === 'location' })
+      const marker = context.mapState.markers.items.find(function (item) { return item.id === 'location' })
       // navigate to next step with marker.coords
       if (marker) {
         console.log('Continuing with marker at:', marker.coords)
@@ -89,9 +89,9 @@
       externalButtons.hidden = isFullscreen
     }
 
-    map.on('app:opened', function (e) { setInline(e.isFullscreen) })
+    map.on('app:opened', function (event) { setInline(event.isFullscreen) })
     map.on('app:closed', function () { externalButtons.hidden = true })
-    map.on('app:fullscreenchange', function (e) { setInline(e.isFullscreen) })
+    map.on('app:fullscreenchange', function (event) { setInline(event.isFullscreen) })
 
     map.on('interact:markerchange', function () {
       continueBtn.disabled = false

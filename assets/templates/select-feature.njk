@@ -138,9 +138,9 @@
       })
     })
 
-    map.on('interact:selectionchange', function (e) {
-      if (e.selectedFeatures.length > 0) {
-        const name = e.selectedFeatures[0].properties.name
+    map.on('interact:selectionchange', function (event) {
+      if (event.selectedFeatures.length > 0) {
+        const name = event.selectedFeatures[0].properties.name
         document.getElementById('parcel-info-content').innerHTML =
           '<p class="govuk-body govuk-!-margin-bottom-1">' + name + '</p>'
         map.showPanel(PANEL_ID)
@@ -149,8 +149,8 @@
       }
     })
 
-    map.on('app:panelclosed', function (e) {
-      if (e.panelId === PANEL_ID) {
+    map.on('app:panelclosed', function (event) {
+      if (event.panelId === PANEL_ID) {
         interactPlugin.clear()
       }
     })

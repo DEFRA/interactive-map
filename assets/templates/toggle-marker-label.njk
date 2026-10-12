@@ -67,8 +67,8 @@
       interactPlugin.enable()
     })
 
-    map.on('interact:selectionchange', function (e) {
-      map.updateMarker('my-marker', { showLabel: e.selectedMarkers.includes('my-marker') })
+    map.on('interact:selectionchange', function (event) {
+      map.updateMarker('my-marker', { showLabel: event.selectedMarkers.includes('my-marker') })
     })
   </script>
 {% endblock %}

@@ -84,8 +84,8 @@ Add a marker with a hidden label, then use the interact plugin to show the label
         interactPlugin.enable()
       })
 
-      map.on('interact:selectionchange', function (e) {
-        map.updateMarker('my-marker', { showLabel: e.selectedMarkers.includes('my-marker') })
+      map.on('interact:selectionchange', function (event) {
+        map.updateMarker('my-marker', { showLabel: event.selectedMarkers.includes('my-marker') })
       })
       </script>
     `

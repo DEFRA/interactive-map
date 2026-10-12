@@ -340,9 +340,9 @@ The full suggestion object returned by the dataset's `parseResults` function, pl
 ```
 
 ```js
-interactiveMap.on('search:match', (e) => {
-  if (e.type === 'parcel') {
-    interactPlugin.selectFeature({ featureId: e.properties.id, layerId: 'parcels' })
+interactiveMap.on('search:match', (event) => {
+  if (event.type === 'parcel') {
+    interactPlugin.selectFeature({ featureId: event.properties.id, layerId: 'parcels' })
   }
 })
 ```
