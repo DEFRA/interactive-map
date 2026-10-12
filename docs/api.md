@@ -348,22 +348,12 @@ new InteractiveMap('map', {
 **Type:** `string`
 **Default:** `undefined`
 
-URL to a separately hosted MapLibre worker file (`maplibre-gl-csp-worker.js`). Required when running under a Content Security Policy that blocks `blob:` worker URLs — a common restriction on government and enterprise platforms.
+URL of the MapLibre worker file. This is set automatically with webpack, Vite and the UMD build.
 
-When set, MapLibre loads its rendering worker from this URL instead of generating an inline blob, so your CSP only needs `worker-src 'self'` rather than `worker-src blob:`.
-
-The worker file ships with maplibre-gl and must be served from your own origin (copy from `node_modules/maplibre-gl/dist/maplibre-gl-csp-worker.js`).
-
-**ESM:**
+With other bundlers (such as esbuild), copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here:
 
 ```js
-maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
-```
-
-**UMD:**
-
-```js
-defra.maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-csp-worker.js' })
+maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' })
 ```
 
 #### OpenLayers provider options

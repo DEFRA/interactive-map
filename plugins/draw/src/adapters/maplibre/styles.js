@@ -13,8 +13,9 @@ const getUserProp = (mapStyle, prop, defaultValue) => [
 // Every feature gets an incrementing user_sortKey property when it's created (see
 // MaplibreDrawAdapter.js's _nextSortKey) — later-drawn features paint on top of earlier ones
 // within the same shared layer, instead of the order being incidental to which of mapbox-gl-
-// draw's cold/hot buckets a feature happens to be in.
-const SORT_KEY_PROP = ['get', 'user_sortKey']
+// draw's cold/hot buckets a feature happens to be in. Defaults to 0 for the tick between a
+// feature's creation and its sortKey being set.
+const SORT_KEY_PROP = ['coalesce', ['get', 'user_sortKey'], 0]
 
 // Inactive lines and fills
 const fillInactive = (mapStyle, colors) => ({

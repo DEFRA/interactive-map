@@ -59,6 +59,10 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
   return {
     mode: 'production',
 
+    // ES5 so the code that runs before the device check (webpack's runtime and the
+    // entry chunks) parses in old browsers, which then show the not-supported message
+    target: ['web', 'es5'],
+
     entry: { [entryName]: entryPath },
 
     parallelism: 100,
@@ -80,7 +84,8 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
         export: 'default',
         umdNamedDefine: true
       },
-      globalObject: 'this',
+      // Not plain `this`: with the ES5 target the bundle runs in a strict-mode function, where it's undefined
+      globalObject: "typeof self !== 'undefined' ? self : this",
       chunkLoadingGlobal: 'webpackChunkdefra_DefraMap',
       auxiliaryComment: {
         root: 'Root Export',
@@ -109,23 +114,39 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 
     resolve: {
       extensions: ['.tsx', '.ts', '.jsx', '.js'],
-      alias: {
-        preact: false,
-        'preact/compat': false,
-        'preact/hooks': false,
-        'preact/jsx-runtime': false
-      }
+      // Plugins use the core's Preact through the externals above. The core bundles Preact
+      // in place of React, as the ESM and dev builds do; React's module code also uses
+      // Symbol, which would stop the entry point loading in old browsers.
+      alias: externalPreact
+        ? {
+            preact: false,
+            'preact/compat': false,
+            'preact/hooks': false,
+            'preact/jsx-runtime': false
+          }
+        : {
+            react: path.resolve(__dirname, 'node_modules/preact/compat'),
+            'react-dom/client': path.resolve(__dirname, 'node_modules/preact/compat/client'),
+            'react-dom': path.resolve(__dirname, 'node_modules/preact/compat'),
+            'react/jsx-runtime': path.resolve(__dirname, 'node_modules/preact/jsx-runtime')
+          }
     },
 
     module: {
       rules: [
         { test: /\.jsx?$/, loader: 'babel-loader', exclude: /node_modules/ },
+        // Emitted with a .js extension because some servers don't send a JavaScript
+        // content type for .mjs, which module workers require
+        { test: /maplibre-gl-worker\.mjs$/, type: 'asset/resource', generator: { filename: 'im-maplibre-worker.js' } },
         { test: /\.css$/i, use: [MiniCssExtractPlugin.loader, 'css-loader'] },
         { test: /\.s[ac]ss$/i, use: [MiniCssExtractPlugin.loader, 'css-loader', 'sass-loader'] }
       ]
     },
 
     plugins,
+
+    // maplibre-gl builds a URL from an expression when its worker is cross-origin; harmless
+    ignoreWarnings: [{ module: /maplibre-gl/, message: /Critical dependency/ }],
 
     optimization: {
       splitChunks: { chunks: () => false },

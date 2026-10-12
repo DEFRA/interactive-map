@@ -6,17 +6,49 @@
  */
 
 import { getWebGL } from './utils/detectWebgl.js'
+import { supportsModuleWorkers } from './utils/detectModuleWorker.js'
+import { getWorkerUrl } from './utils/workerUrl.js'
 
 /**
- * Checks whether the browser supports the ES2020+ feature set required by
- * MapLibre, using `String.prototype.replaceAll` as a proxy. This method
- * landed in Chrome 85 / Firefox 77 / Safari 13.1 — the same cohort that
- * supports optional chaining `?.` and nullish coalescing `??`.
+ * Checks whether the browser can parse and run MapLibre. Its newest syntax is class
+ * static blocks (Chrome 94 / Firefox 93 / Safari 16.4), which cannot be detected
+ * without `eval`, so two proxies that polyfills don't provide are used:
+ * `Intl.supportedValuesOf` (Chrome 99 / Firefox 93) and RegExp lookbehind, which
+ * Safari gained in 16.4.
  *
  * @returns {boolean} true if modern syntax is supported, false otherwise
  */
 function supportsModernMaplibre () {
-  return typeof ''.replaceAll === 'function'
+  if (typeof Intl?.supportedValuesOf !== 'function') {
+    return false
+  }
+  try {
+    return new RegExp('(?<=a)b').test('ab') // eslint-disable-line prefer-regex-literals -- NOSONAR: a literal would be a syntax error in browsers without lookbehind
+  } catch (_) { // NOSONAR - a SyntaxError means lookbehind is unsupported
+    return false
+  }
+}
+
+/**
+ * Returns the reason the device cannot run MapLibre, or undefined if it can.
+ *
+ * @returns {string|undefined}
+ */
+function getUnsupportedReason () {
+  if (document.documentMode) {
+    return 'Internet Explorer is not supported'
+  }
+  const webGL = getWebGL(['webgl2'])
+  if (!webGL.isEnabled) {
+    return webGL.error
+  }
+  if (!supportsModernMaplibre()) {
+    return 'Browser does not support the JavaScript features MapLibre requires'
+  }
+  if (!supportsModuleWorkers()) {
+    return 'Browser does not support module workers'
+  }
+  return undefined
 }
 
 /**
@@ -28,20 +60,17 @@ function supportsModernMaplibre () {
 export default function createMapLibreProvider (config = {}) {
   return {
     checkDeviceCapabilities: () => {
-      const webGL = getWebGL(['webgl2', 'webgl1'])
-      const isIE = document.documentMode
+      const error = getUnsupportedReason()
       return {
-        isSupported: webGL.isEnabled && supportsModernMaplibre(),
-        error: (isIE && 'Internet Explorer is not supported') || webGL.error
+        isSupported: !error,
+        error
       }
     },
     /** @returns {Promise<MapProviderLoadResult>} */
     load: async () => {
       const mapFramework = await import(/* webpackChunkName: "im-maplibre-framework" */ 'maplibre-gl')
 
-      if (config.workerUrl) {
-        mapFramework.setWorkerUrl(config.workerUrl)
-      }
+      mapFramework.setWorkerUrl(config.workerUrl || getWorkerUrl(mapFramework.getVersion()))
 
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 

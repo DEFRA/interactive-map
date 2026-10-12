@@ -19,10 +19,7 @@ See [GOV.UK Prototype Kit - Install and use plugins](https://prototype-kit.servi
 
 ## Manual setup
 
-The package is distributed in two formats:
-
-- **ESM** (ECMAScript Modules) — for projects using a bundler such as Webpack or Rollup. Import directly from the package in your JavaScript.
-- **UMD** (Universal Module Definition) — for projects without a bundler. Copy the built files to your assets and load them via `<script>` tags.
+The package is shipped in two formats, **ESM** (ECMAScript Modules) and **UMD** (Universal Module Definition). If your project uses a bundler, such as webpack or Vite, use the ESM build and import the package directly in your JavaScript. If it doesn't, use the UMD build: copy the built files to your assets and load them with `<script>` tags.
 
 The map component also requires a **map provider** — a separate library that handles the underlying tile rendering engine. The provider is passed in at initialisation, which keeps the core package lean and lets you choose the engine that fits your needs.
 
@@ -30,13 +27,8 @@ The map component also requires a **map provider** — a separate library that h
 
 `maplibre-gl` is installed with this package (ESM) or bundled (UMD) — no separate install needed.
 
-### ESRI provider (optional)
-
-The ESRI provider is available for ESM projects only. Install `@arcgis/core` separately:
-
-```shell
-npm install @arcgis/core
-```
+> [!NOTE]
+> With a bundler other than webpack or Vite (such as esbuild), set the MapLibre [`workerUrl`](./api.md#workerurl) option.
 
 ### OpenLayers provider (optional)
 
@@ -48,7 +40,15 @@ npm install ol proj4
 
 **UMD:** `ol` and `proj4` are bundled — no separate install needed.
 
-### Bundler configuration (ESM)
+### ESRI provider (optional)
+
+The ESRI provider is built for specific use cases, so it currently has a more limited set of features than MapLibre and OpenLayers. It's available for ESM projects only. Install `@arcgis/core` separately:
+
+```shell
+npm install @arcgis/core
+```
+
+## Bundler configuration (ESM)
 
 Some plugins work with more than one map provider. They load an adapter for your provider at runtime, and each adapter imports its own map engine. Only the adapter for your provider is ever loaded in the browser, but your bundler still builds every adapter, so it fails to resolve the engines you haven't installed:
 
@@ -64,9 +64,11 @@ Tell your bundler to ignore the engines for the providers you don't use. Plugins
 | OpenLayers | `@arcgis/core` | `/^@arcgis\/core(\/\|$)/` |
 | ESRI | `ol`, `proj4` | `/^(ol\|proj4)(\/\|$)/` |
 
+The ignored engines are only used by adapters for other providers, which are never loaded, so nothing is missing at runtime. If you switch provider, update the pattern to match.
+
 The examples below are for the MapLibre provider. For another provider, swap in its pattern.
 
-**Webpack**
+### Webpack
 
 ```js
 import webpack from 'webpack'
@@ -79,7 +81,9 @@ export default {
 }
 ```
 
-**Vite** (production builds; the dev server only warns)
+### Vite
+
+This applies to production builds; the dev server only warns.
 
 ```js
 export default {
@@ -91,7 +95,7 @@ export default {
 }
 ```
 
-**Rollup**
+### Rollup
 
 ```js
 export default {
@@ -100,7 +104,7 @@ export default {
 }
 ```
 
-**esbuild**
+### esbuild
 
 ```js
 await esbuild.build({
@@ -108,8 +112,6 @@ await esbuild.build({
   external: ['ol', 'ol/*', 'proj4', '@arcgis/core', '@arcgis/core/*']
 })
 ```
-
-The ignored engines are only used by adapters for other providers, which are never loaded, so nothing is missing at runtime. If you switch provider, update the pattern to match.
 
 ## Basic usage
 

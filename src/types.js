@@ -383,11 +383,9 @@
  * @typedef {Object} MaplibreProviderConfig
  *
  * @property {string} [workerUrl]
- * URL to a separately hosted MapLibre worker file (`maplibre-gl-csp-worker.js`).
- * Required when running under a Content Security Policy that blocks `blob:` worker
- * URLs. The file ships with maplibre-gl and must be served from your own origin.
- * When set, MapLibre loads the worker from this URL instead of generating an
- * inline blob, so your CSP only needs `worker-src 'self'`.
+ * URL of the MapLibre worker file. Set automatically with webpack, Vite and the UMD
+ * build; with other bundlers (such as esbuild), serve `maplibre-gl/dist/maplibre-gl-worker.mjs`
+ * and set its URL here.
  */
 
 /**
