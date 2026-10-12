@@ -6,7 +6,8 @@ import turfBbox from '@turf/bbox'
 // -----------------------------------------------------------------------------
 
 const EARTH_RADIUS_METRES = 6371e3
-const RADIANS_PER_DEGREE = Math.PI / 180
+const DEGREES_PER_HALF_TURN = 180
+const RADIANS_PER_DEGREE = Math.PI / DEGREES_PER_HALF_TURN
 const MIN_MOVE_DEGREES = 0.0001 // moves smaller than this aren't announced
 
 const toRadians = (degrees) => degrees * RADIANS_PER_DEGREE
