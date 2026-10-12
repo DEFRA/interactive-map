@@ -106,6 +106,8 @@ export default {
       }
     })
   ],
+  // maplibre-gl builds a URL from an expression when its worker is cross-origin; harmless
+  ignoreWarnings: [{ module: /maplibre-gl/, message: /Critical dependency/ }],
   module: {
     rules: [
       {

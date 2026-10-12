@@ -1,26 +1,30 @@
 import createMapLibreProvider from './index.js'
 import { getWebGL } from './utils/detectWebgl.js'
+import { supportsModuleWorkers } from './utils/detectModuleWorker.js'
 import * as maplibreGl from 'maplibre-gl'
 
 jest.mock('./utils/detectWebgl.js', () => ({ getWebGL: jest.fn() }))
-jest.mock('maplibre-gl', () => ({ VERSION: '3.x', setWorkerUrl: jest.fn() }))
+jest.mock('./utils/detectModuleWorker.js', () => ({ supportsModuleWorkers: jest.fn() }))
+jest.mock('./utils/workerUrl.js', () => ({ getWorkerUrl: (version) => `http://localhost/maplibre-gl-worker.mjs?v=${version}` }))
+jest.mock('maplibre-gl', () => ({ getVersion: () => '6.0.0', setWorkerUrl: jest.fn() }))
 jest.mock('./maplibreProvider.js', () => ({ default: class MockProvider {} }))
 
 describe('createMapLibreProvider', () => {
   beforeEach(() => {
     getWebGL.mockReturnValue({ isEnabled: true, error: null })
+    supportsModuleWorkers.mockReturnValue(true)
   })
 
   afterEach(() => {
     jest.clearAllMocks()
   })
 
-  test('checkDeviceCapabilities: WebGL enabled, modern browser, no IE → isSupported true', () => {
+  test('checkDeviceCapabilities: WebGL2, modern browser, module workers, no IE → isSupported true', () => {
     const result = createMapLibreProvider().checkDeviceCapabilities()
 
     expect(result.isSupported).toBe(true)
     expect(result.error).toBeFalsy()
-    expect(getWebGL).toHaveBeenCalledWith(['webgl2', 'webgl1'])
+    expect(getWebGL).toHaveBeenCalledWith(['webgl2'])
   })
 
   test('checkDeviceCapabilities: WebGL disabled → isSupported false, returns webGL error', () => {
@@ -40,6 +44,7 @@ describe('createMapLibreProvider', () => {
 
     try {
       const result = createMapLibreProvider().checkDeviceCapabilities()
+      expect(result.isSupported).toBe(false)
       expect(result.error).toBe('Internet Explorer is not supported')
     } finally {
       Object.defineProperty(document, 'documentMode', {
@@ -49,14 +54,40 @@ describe('createMapLibreProvider', () => {
     }
   })
 
-  test('checkDeviceCapabilities: no replaceAll support → isSupported false', () => {
-    const restoreReplaceAll = String.prototype.replaceAll
-    delete String.prototype.replaceAll
+  // Not Object.hasOwn: polyfills.js adds it before this check runs
+  test('checkDeviceCapabilities: no Intl.supportedValuesOf → isSupported false', () => {
+    const restoreSupportedValuesOf = Intl.supportedValuesOf
+    delete Intl.supportedValuesOf
+
+    try {
+      const result = createMapLibreProvider().checkDeviceCapabilities()
+      expect(result.isSupported).toBe(false)
+      expect(result.error).toBe('Browser does not support the JavaScript features MapLibre requires')
+    } finally {
+      Intl.supportedValuesOf = restoreSupportedValuesOf
+    }
+  })
+
+  test('checkDeviceCapabilities: no RegExp lookbehind → isSupported false', () => {
+    const NativeRegExp = globalThis.RegExp
+    globalThis.RegExp = function () { throw new SyntaxError('Invalid regular expression') }
+
+    try {
+      const result = createMapLibreProvider().checkDeviceCapabilities()
+      expect(result.isSupported).toBe(false)
+      expect(result.error).toBe('Browser does not support the JavaScript features MapLibre requires')
+    } finally {
+      globalThis.RegExp = NativeRegExp
+    }
+  })
+
+  test('checkDeviceCapabilities: no module workers → isSupported false', () => {
+    supportsModuleWorkers.mockReturnValue(false)
 
     const result = createMapLibreProvider().checkDeviceCapabilities()
 
     expect(result.isSupported).toBe(false)
-    String.prototype.replaceAll = restoreReplaceAll // eslint-disable-line
+    expect(result.error).toBe('Browser does not support module workers')
   })
 
   test('load returns MapProvider, mapFramework, and merged mapProviderConfig', async () => {
@@ -76,15 +107,15 @@ describe('createMapLibreProvider', () => {
     expect(mapProviderConfig).toEqual({ crs: 'EPSG:4326' })
   })
 
-  test('load calls setWorkerUrl on mapFramework when workerUrl is provided', async () => {
-    await createMapLibreProvider({ workerUrl: '/assets/maplibre-gl-csp-worker.js' }).load()
+  test('load sets the configured workerUrl when provided', async () => {
+    await createMapLibreProvider({ workerUrl: '/assets/maplibre-gl-worker.mjs' }).load()
 
-    expect(maplibreGl.setWorkerUrl).toHaveBeenCalledWith('/assets/maplibre-gl-csp-worker.js')
+    expect(maplibreGl.setWorkerUrl).toHaveBeenCalledWith('/assets/maplibre-gl-worker.mjs')
   })
 
-  test('load does not call setWorkerUrl on mapFramework when workerUrl is not provided', async () => {
+  test('load sets the bundled worker URL when workerUrl is not provided', async () => {
     await createMapLibreProvider().load()
 
-    expect(maplibreGl.setWorkerUrl).not.toHaveBeenCalled()
+    expect(maplibreGl.setWorkerUrl).toHaveBeenCalledWith('http://localhost/maplibre-gl-worker.mjs?v=6.0.0')
   })
 })

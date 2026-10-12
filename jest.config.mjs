@@ -43,6 +43,10 @@ export default {
       '<rootDir>/build/assets/js',
       '/dist/'
     ],
+    // maplibre-gl only exports an `import` condition, which Jest's resolver does not use
+    moduleNameMapper: {
+      '^maplibre-gl$': '<rootDir>/node_modules/maplibre-gl/dist/maplibre-gl.mjs'
+    },
     transformIgnorePatterns: []
   }]
 }

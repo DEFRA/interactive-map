@@ -6,6 +6,26 @@
  */
 
 /**
+ * Returns the reason the device cannot run OpenLayers, or undefined if it can.
+ * OpenLayers uses class fields and private methods (Chrome 84 / Firefox 90 /
+ * Safari 15); `Array.prototype.at` (Chrome 92 / Firefox 90 / Safari 15.4) is the proxy.
+ *
+ * @returns {string|undefined}
+ */
+function getUnsupportedReason () {
+  if (document.documentMode) {
+    return 'Internet Explorer is not supported'
+  }
+  if (!document.createElement('canvas').getContext) {
+    return 'Canvas is not supported in this browser'
+  }
+  if (typeof [].at !== 'function') {
+    return 'Browser does not support the JavaScript features OpenLayers requires'
+  }
+  return undefined
+}
+
+/**
  * Creates an OpenLayers provider descriptor for lazy-loading the map provider.
  *
  * @param {OpenLayersProviderConfig} [config={}] - Optional provider configuration overrides.
@@ -13,10 +33,13 @@
  */
 export default function createOpenLayersProvider ({ zoomAlignment } = {}) {
   return {
-    checkDeviceCapabilities: () => ({
-      isSupported: !!document.createElement('canvas').getContext,
-      error: 'Canvas is not supported in this browser'
-    }),
+    checkDeviceCapabilities: () => {
+      const error = getUnsupportedReason()
+      return {
+        isSupported: !error,
+        error
+      }
+    },
     /** @returns {Promise<MapProviderLoadResult>} */
     load: async () => {
       const MapProvider = (await import(/* webpackChunkName: "im-openlayers-provider" */ './openlayersProvider.js')).default

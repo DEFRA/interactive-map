@@ -58,6 +58,29 @@ const config = {
         },
       };
     },
+    // Maps only render in the browser, and maplibre-gl only exports an `import`
+    // condition, which the server build doesn't resolve.
+    //
+    // The client build must emit MapLibre's worker as a file. The GOV.UK theme types
+    // every .mjs file as `javascript/auto`, which would bundle the worker as a module
+    // instead, so this rule is added last, after all plugins' rules, to take precedence.
+    function maplibrePlugin() {
+      return {
+        name: 'maplibre',
+        configureWebpack(_webpackConfig, isServer) {
+          if (isServer) {
+            return { resolve: { alias: { 'maplibre-gl$': false } } };
+          }
+          return {
+            plugins: [{
+              apply(compiler) {
+                compiler.options.module.rules.push({ test: /maplibre-gl-worker\.mjs$/, type: 'asset/resource' });
+              },
+            }],
+          };
+        },
+      };
+    },
     [
       '@docusaurus/plugin-content-docs',
       {
