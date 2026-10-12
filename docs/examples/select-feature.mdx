@@ -117,7 +117,7 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
 
       map.on('interact:selectionchange', ({ selectedFeatures }) => {
         if (selectedFeatures.length > 0) {
-          const name = selectedFeatures[0].properties.name
+          const name = event.selectedFeatures[0].properties.name
           document.getElementById('parcel-info-content').innerHTML =
             '<p class="govuk-body govuk-!-margin-bottom-1">' + name + '</p>'
           map.showPanel(PANEL_ID)
@@ -224,7 +224,7 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
         plugins: [datasetsPlugin, interactPlugin]
       })
 
-      map.on('map:ready', () => {
+      map.on('map:ready', function () {
         interactPlugin.enable()
 
         map.addPanel(PANEL_ID, {
@@ -237,9 +237,9 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
         })
       })
 
-      map.on('interact:selectionchange', ({ selectedFeatures }) => {
-        if (selectedFeatures.length > 0) {
-          const name = selectedFeatures[0].properties.name
+      map.on('interact:selectionchange', function (event) {
+        if (event.selectedFeatures.length > 0) {
+          const name = event.selectedFeatures[0].properties.name
           document.getElementById('parcel-info-content').innerHTML =
             '<p class="govuk-body govuk-!-margin-bottom-1">' + name + '</p>'
           map.showPanel(PANEL_ID)
@@ -248,8 +248,8 @@ The layer ID used here (`field-parcels`) comes from the datasets plugin — a da
         }
       })
 
-      map.on('app:panelclosed', ({ panelId }) => {
-        if (panelId === PANEL_ID) {
+      map.on('app:panelclosed', function (event) {
+        if (event.panelId === PANEL_ID) {
           interactPlugin.clear()
         }
       })

@@ -93,7 +93,7 @@ Add markers to the map and allow users to select them. Selecting a marker fires 
         plugins: [interactPlugin]
       })
 
-      map.on('map:ready', () => {
+      map.on('map:ready', function () {
         map.addMarker('my-marker', [-2.96, 54.43])
         interactPlugin.enable()
         interactPlugin.selectMarker('my-marker')
@@ -108,16 +108,16 @@ Add markers to the map and allow users to select them. Selecting a marker fires 
         })
       })
 
-      map.on('interact:selectionchange', ({ selectedMarkers }) => {
-        if (selectedMarkers.length > 0) {
+      map.on('interact:selectionchange', function (event) {
+        if (event.selectedMarkers.length > 0) {
           map.showPanel('marker-info')
         } else {
           map.hidePanel('marker-info')
         }
       })
 
-      map.on('app:panelclosed', ({ panelId }) => {
-        if (panelId === 'marker-info') {
+      map.on('app:panelclosed', function (event) {
+        if (event.panelId === 'marker-info') {
           interactPlugin.unselectMarker('my-marker')
         }
       })

@@ -45,11 +45,11 @@
   <script src="/plugin-assets/%40defra%2Finteractive-map/plugins/interact/dist/umd/index.js"></script>
 
   <script>
-    var interactPlugin = defra.interactPlugin({
+    const interactPlugin = defra.interactPlugin({
       interactionModes: ['placeMarker']
     })
 
-    var map = new defra.InteractiveMap('map', {
+    const map = new defra.InteractiveMap('map', {
       behaviour: 'hybrid',
       mapProvider: defra.maplibreProvider(),
       mapStyle: {
@@ -65,7 +65,7 @@
         backLabel: 'Back',
         continueLabel: 'Continue',
         continueEnabledWhen: function (context) {
-          return context.mapState.markers.items.some(function (m) { return m.id === 'location' })
+          return context.mapState.markers.items.some(function (item) { return item.id === 'location' })
         }
       }
     })
@@ -75,23 +75,23 @@
     })
 
     map.on('app:continue', function (context) {
-      var marker = context.mapState.markers.items.find(function (m) { return m.id === 'location' })
+      const marker = context.mapState.markers.items.find(function (item) { return item.id === 'location' })
       // navigate to next step with marker.coords
       if (marker) {
         console.log('Continuing with marker at:', marker.coords)
       }
     })
 
-    var continueBtn = document.getElementById('continue-btn')
-    var externalButtons = document.getElementById('external-buttons')
+    const continueBtn = document.getElementById('continue-btn')
+    const externalButtons = document.getElementById('external-buttons')
 
     function setInline(isFullscreen) {
       externalButtons.hidden = isFullscreen
     }
 
-    map.on('app:opened', function (e) { setInline(e.isFullscreen) })
+    map.on('app:opened', function (event) { setInline(event.isFullscreen) })
     map.on('app:closed', function () { externalButtons.hidden = true })
-    map.on('app:fullscreenchange', function (e) { setInline(e.isFullscreen) })
+    map.on('app:fullscreenchange', function (event) { setInline(event.isFullscreen) })
 
     map.on('interact:markerchange', function () {
       continueBtn.disabled = false

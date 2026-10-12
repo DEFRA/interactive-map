@@ -343,11 +343,11 @@ Always snaps to the polygon's own outline, in addition to any layers in `snapLay
 ```js
 drawPlugin.split(selectedFeatureId)
 
-interactiveMap.on('draw:split', (e) => {
-  drawPlugin.deleteFeature([e.originalFeatureId])
-  e.featureCollection.features.forEach((feature, index) => {
+interactiveMap.on('draw:split', (event) => {
+  drawPlugin.deleteFeature([event.originalFeatureId])
+  event.featureCollection.features.forEach((feature, index) => {
     drawPlugin.addFeature({
-      id: `${e.originalFeatureId}-${index === 0 ? 'a' : 'b'}`,
+      id: `${event.originalFeatureId}-${index === 0 ? 'a' : 'b'}`,
       type: feature.type,
       geometry: feature.geometry,
       properties: feature.properties
@@ -371,13 +371,13 @@ Merge multiple contiguous polygons into one. Like `split`, this is a pure comput
 ```js
 drawPlugin.merge(selectedFeatureIds)
 
-interactiveMap.on('draw:merge', (e) => {
-  drawPlugin.deleteFeature(e.originalFeatureIds)
+interactiveMap.on('draw:merge', (event) => {
+  drawPlugin.deleteFeature(event.originalFeatureIds)
   drawPlugin.addFeature({
-    id: e.originalFeatureIds[0],
-    type: e.feature.type,
-    geometry: e.feature.geometry,
-    properties: e.feature.properties
+    id: event.originalFeatureIds[0],
+    type: event.feature.type,
+    geometry: event.feature.geometry,
+    properties: event.feature.properties
   })
 })
 ```

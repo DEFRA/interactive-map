@@ -288,15 +288,15 @@ Emitted when the user confirms their selection (clicks "Done").
 ```
 
 ```js
-interactiveMap.on('interact:done', (e) => {
-  if (e.coords) {
-    console.log('Location selected:', e.coords)
+interactiveMap.on('interact:done', (event) => {
+  if (event.coords) {
+    console.log('Location selected:', event.coords)
   }
-  if (e.selectedFeatures) {
-    console.log('Features selected:', e.selectedFeatures)
+  if (event.selectedFeatures) {
+    console.log('Features selected:', event.selectedFeatures)
   }
-  if (e.selectedMarkers) {
-    console.log('Markers selected:', e.selectedMarkers)
+  if (event.selectedMarkers) {
+    console.log('Markers selected:', event.selectedMarkers)
   }
 })
 ```
@@ -333,8 +333,8 @@ Emitted whenever the selected features or selected markers change.
 ```
 
 ```js
-interactiveMap.on('interact:selectionchange', (e) => {
-  console.log('Selected features:', e.selectedFeatures)
+interactiveMap.on('interact:selectionchange', (event) => {
+  console.log('Selected features:', event.selectedFeatures)
 })
 ```
 

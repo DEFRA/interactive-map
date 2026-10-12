@@ -72,7 +72,7 @@
               bounds: [bb[2], bb[0], bb[3], bb[1]]
             }
           })
-        return Array.from(new Map(results.map(function (r) { return [r.text, r] })).values())
+        return Array.from(new Map(results.map(function (result) { return [result.text, result] })).values())
       }
     }
 
