@@ -53,9 +53,6 @@
     "./plugins/map-key": {
       "import": "./plugins/map-key/dist/esm/index.js"
     },
-    "./plugins/datasets/adapters/maplibre": {
-      "import": "./plugins/datasets/dist/adapters/maplibre/esm/index.js"
-    },
     "./plugins/map-styles": {
       "import": "./plugins/beta/map-styles/dist/esm/index.js",
       "require": "./plugins/beta/map-styles/dist/umd/index.js"
@@ -76,7 +73,6 @@
       "require": "./plugins/beta/frame/dist/umd/index.js"
     },
     "./css": "./dist/css/index.css",
-    "./plugins/draw-ml/css": "./plugins/beta/draw-ml/dist/css/index.css",
     "./plugins/draw/css": "./plugins/draw/dist/css/index.css",
     "./plugins/scale-bar/css": "./plugins/beta/scale-bar/dist/css/index.css",
     "./plugins/datasets/css": "./plugins/datasets/dist/css/index.css",
@@ -85,7 +81,6 @@
     "./plugins/frame/css": "./plugins/beta/frame/dist/css/index.css",
     "./plugins/map-styles/css": "./plugins/beta/map-styles/dist/css/index.css",
     "./plugins/search/css": "./plugins/search/dist/css/index.css",
-    "./plugins/interact/css": "./plugins/interact/dist/css/index.css",
     "./providers/esri/css": "./providers/beta/esri/dist/css/index.css"
   },
   "type": "module",
