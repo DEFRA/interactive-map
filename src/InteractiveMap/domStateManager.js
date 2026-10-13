@@ -85,11 +85,31 @@ function removeLoadingState () {
   document.body.classList.remove('im-is-loading')
 }
 
+/**
+ * Show the page straight away when the map will render inline.
+ *
+ * Reserves the map container's height and removes the loading state, so the
+ * page's own content can render while the map app loads. When the map will
+ * open fullscreen, the loading state stays until the app has rendered, so the
+ * page doesn't show through before the map covers it.
+ *
+ * @param {Object} mapInstance - Map instance containing config and root element.
+ * @returns {void}
+ */
+function showPageIfMapInline (mapInstance) {
+  if (getIsFullscreen(mapInstance.config)) {
+    return
+  }
+  updateDOMState(mapInstance, { isFullscreen: false })
+  removeLoadingState()
+}
+
 // -----------------------------------------------------------------------------
 // Exports
 // -----------------------------------------------------------------------------
 
 export {
   updateDOMState,
-  removeLoadingState
+  removeLoadingState,
+  showPageIfMapInline
 }

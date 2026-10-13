@@ -15,7 +15,7 @@ import { parseDataProperties } from './parseDataProperties.js'
 import { checkDeviceSupport } from './deviceChecker.js'
 import { createButton } from './buttonManager.js'
 import { setupBehavior, shouldLoadComponent } from './behaviourController.js'
-import { updateDOMState, removeLoadingState } from './domStateManager.js'
+import { updateDOMState, removeLoadingState, showPageIfMapInline } from './domStateManager.js'
 import { renderError } from './renderError.js'
 import { mergeConfig } from '../config/mergeConfig.js'
 import { createBreakpointDetector } from '../utils/detectBreakpoint.js'
@@ -99,6 +99,7 @@ export default class InteractiveMap {
     this._hybridBehaviourCleanup = setupBehavior(this)
 
     if (shouldLoadComponent(this.config)) {
+      showPageIfMapInline(this)
       this.loadApp() // NOSONAR: Not changing for now as used in production
     } else {
       removeLoadingState()

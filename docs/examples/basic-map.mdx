@@ -34,22 +34,24 @@ Embed an interactive map directly on the page, allowing users to explore and int
     label: 'UMD',
     language: 'html',
     code: `
-      <script src="/your-assets-path/interactive-map/index.js"></script>
-      <script src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script defer src="/your-assets-path/interactive-map/index.js"></script>
+      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
 
       <script>
-      new defra.InteractiveMap('my-map', {
-        behaviour: 'inline',
-        mapProvider: defra.maplibreProvider(),
-        mapStyle: {
-          url: 'https://your-tile-url/style.json',
-          logo: '/path/to/logo.svg',
-          logoAltText: 'Your logo alt text',
-          attribution: 'Your tile attribution'
-        },
-        center: [-1.6, 53.1],
-        zoom: 6,
-        containerHeight: '516px'
+      document.addEventListener('DOMContentLoaded', function () {
+        new defra.InteractiveMap('my-map', {
+          behaviour: 'inline',
+          mapProvider: defra.maplibreProvider(),
+          mapStyle: {
+            url: 'https://your-tile-url/style.json',
+            logo: '/path/to/logo.svg',
+            logoAltText: 'Your logo alt text',
+            attribution: 'Your tile attribution'
+          },
+          center: [-1.6, 53.1],
+          zoom: 6,
+          containerHeight: '516px'
+        })
       })
       </script>
     `

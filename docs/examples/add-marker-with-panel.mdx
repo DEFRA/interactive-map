@@ -69,57 +69,59 @@ Add markers to the map and allow users to select them. Selecting a marker fires 
     label: 'UMD',
     language: 'html',
     code: `
-      <script src="/your-assets-path/interactive-map/index.js"></script>
-      <script src="/your-assets-path/maplibre-provider/index.js"></script>
-      <script src="/your-assets-path/interact-plugin/index.js"></script>
+      <script defer src="/your-assets-path/interactive-map/index.js"></script>
+      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
+      <script defer src="/your-assets-path/interact-plugin/index.js"></script>
 
       <script>
-      const interactPlugin = defra.interactPlugin({
-        deselectOnClickOutside: true
-      })
-
-      const map = new defra.InteractiveMap('my-map', {
-        behaviour: 'inline',
-        mapProvider: defra.maplibreProvider(),
-        mapStyle: {
-          url: 'https://your-tile-url/style.json',
-          logo: '/path/to/logo.svg',
-          logoAltText: 'Your logo alt text',
-          attribution: 'Your tile attribution'
-        },
-        center: [-2.96, 54.43],
-        zoom: 15,
-        containerHeight: '516px',
-        plugins: [interactPlugin]
-      })
-
-      map.on('map:ready', function () {
-        map.addMarker('my-marker', [-2.96, 54.43])
-        interactPlugin.enable()
-        interactPlugin.selectMarker('my-marker')
-
-        map.addPanel('marker-info', {
-          focus: false,
-          label: 'Marker',
-          html: '<p class="govuk-body">Information about the selected marker</p>',
-          mobile: { slot: 'drawer', dismissible: true },
-          tablet: { slot: 'left-top', dismissible: true, width: '280px' },
-          desktop: { slot: 'left-top', dismissible: true, width: '280px' }
+      document.addEventListener('DOMContentLoaded', function () {
+        const interactPlugin = defra.interactPlugin({
+          deselectOnClickOutside: true
         })
-      })
 
-      map.on('interact:selectionchange', function (event) {
-        if (event.selectedMarkers.length > 0) {
-          map.showPanel('marker-info')
-        } else {
-          map.hidePanel('marker-info')
-        }
-      })
+        const map = new defra.InteractiveMap('my-map', {
+          behaviour: 'inline',
+          mapProvider: defra.maplibreProvider(),
+          mapStyle: {
+            url: 'https://your-tile-url/style.json',
+            logo: '/path/to/logo.svg',
+            logoAltText: 'Your logo alt text',
+            attribution: 'Your tile attribution'
+          },
+          center: [-2.96, 54.43],
+          zoom: 15,
+          containerHeight: '516px',
+          plugins: [interactPlugin]
+        })
 
-      map.on('app:panelclosed', function (event) {
-        if (event.panelId === 'marker-info') {
-          interactPlugin.unselectMarker('my-marker')
-        }
+        map.on('map:ready', function () {
+          map.addMarker('my-marker', [-2.96, 54.43])
+          interactPlugin.enable()
+          interactPlugin.selectMarker('my-marker')
+
+          map.addPanel('marker-info', {
+            focus: false,
+            label: 'Marker',
+            html: '<p class="govuk-body">Information about the selected marker</p>',
+            mobile: { slot: 'drawer', dismissible: true },
+            tablet: { slot: 'left-top', dismissible: true, width: '280px' },
+            desktop: { slot: 'left-top', dismissible: true, width: '280px' }
+          })
+        })
+
+        map.on('interact:selectionchange', function (event) {
+          if (event.selectedMarkers.length > 0) {
+            map.showPanel('marker-info')
+          } else {
+            map.hidePanel('marker-info')
+          }
+        })
+
+        map.on('app:panelclosed', function (event) {
+          if (event.panelId === 'marker-info') {
+            interactPlugin.unselectMarker('my-marker')
+          }
+        })
       })
       </script>
     `
