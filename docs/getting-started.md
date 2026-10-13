@@ -184,11 +184,10 @@ const interactiveMap = new InteractiveMap('map', {
 
 ## Using plugins
 
-**ESM** — add the plugin import and its CSS alongside your existing core imports, then pass it to `plugins`:
+**ESM** — add the plugin import alongside your existing core imports, then pass it to `plugins`:
 
 ```js
 import createInteractPlugin from '@defra/interactive-map/plugins/interact'
-import '@defra/interactive-map/plugins/interact/css'
 
 const interactiveMap = new InteractiveMap('map', {
   // ...your existing options
@@ -196,10 +195,9 @@ const interactiveMap = new InteractiveMap('map', {
 })
 ```
 
-**UMD** — copy the plugin's `dist/umd/` folder to your assets if you haven't already, then add its script and CSS to your page skeleton:
+**UMD** — copy the plugin's `dist/umd/` folder to your assets if you haven't already, then add its script to your page skeleton:
 
 ```html
-<link rel="stylesheet" href="/your-assets-path/interact-plugin.css">
 <script defer src="/your-assets-path/interact-plugin/index.js"></script>
 ```
 
@@ -212,4 +210,4 @@ const interactiveMap = new defra.InteractiveMap('map', {
 })
 ```
 
-Each plugin distributes its own CSS. Import or copy only the CSS for the plugins you use. See [Plugins](./plugins.md) for the full list including their CSS paths.
+The datasets, draw, frame, map-key, map-styles, menu, scale-bar and search plugins also have their own CSS. With ESM, import it alongside the plugin, for example `import '@defra/interactive-map/plugins/datasets/css'`. With UMD, copy the plugin's `dist/css/index.css` to your assets and add it to your page with a `<link>`.
