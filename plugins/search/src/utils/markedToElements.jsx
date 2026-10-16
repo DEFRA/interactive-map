@@ -20,6 +20,6 @@ export const markedToElements = (marked = '') => {
       return []
     }
     // Keyed by the segment's offset in `marked`, which is unique per segment
-    return isMarked ? <mark key={start}>{part}</mark> : part
+    return [isMarked ? <mark key={start}>{part}</mark> : part]
   })
 }
