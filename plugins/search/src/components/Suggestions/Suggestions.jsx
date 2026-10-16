@@ -1,4 +1,6 @@
 // src/plugins/search/Suggestions.jsx
+import { markedToElements } from '../../utils/markedToElements'
+
 export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
   return (
     <ul // NOSONAR
@@ -21,7 +23,7 @@ export const Suggestions = ({ id, pluginState, handleSuggestionClick }) => {
           aria-posinset={i + 1}
           onClick={() => handleSuggestionClick(suggestion)} // NOSONAR
         >
-          <span className='im-c-search-suggestions__label' dangerouslySetInnerHTML={{ __html: suggestion.marked }} />
+          <span className='im-c-search-suggestions__label'>{markedToElements(suggestion.marked)}</span>
         </li>
       ))}
     </ul>
