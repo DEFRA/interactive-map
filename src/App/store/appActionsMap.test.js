@@ -441,6 +441,47 @@ describe('actionsMap full coverage', () => {
       expect(res.openPanels).toHaveProperty('p2')
       expect(res.openPanels).toHaveProperty('p1')
     })
+
+    test('missing panel is a no-op and does not throw', () => {
+      const getPanelConfig = jest.fn(() => ({ keyboardHelp: { desktop: { exclusive: false } } }))
+      const tmp = {
+        ...state,
+        panelConfig: { keyboardHelp: { desktop: { exclusive: false } } },
+        openPanels: { keyboardHelp: { props: {} } },
+        panelRegistry: { getPanelConfig }
+      }
+      const res = actionsMap.OPEN_PANEL(tmp, { panelId: 'datasetsLayers' })
+      expect(res).toBe(tmp)
+      expect(getPanelConfig).toHaveBeenCalled()
+    })
+
+    test('missing breakpoint config does not throw', () => {
+      const tmp = {
+        ...state,
+        panelConfig: { p1: { mobile: { exclusive: true, modal: false } } },
+        openPanels: { p2: { props: {} } },
+        breakpoint: 'desktop'
+      }
+      const res = actionsMap.OPEN_PANEL(tmp, { panelId: 'p1', props: {} })
+      expect(res.openPanels).toHaveProperty('p1')
+      expect(res.openPanels).toHaveProperty('p2')
+    })
+
+    test('uses the registry when the panel is absent from a populated panelConfig', () => {
+      const registryConfig = {
+        keyboardHelp: { desktop: { exclusive: false } },
+        datasetsLayers: { desktop: { exclusive: true, modal: false } }
+      }
+      const tmp = {
+        ...state,
+        panelConfig: { keyboardHelp: { desktop: { exclusive: false } } },
+        openPanels: { other: { props: {} } },
+        panelRegistry: { getPanelConfig: jest.fn(() => registryConfig) },
+        breakpoint: 'desktop'
+      }
+      const res = actionsMap.OPEN_PANEL(tmp, { panelId: 'datasetsLayers', props: { foo: 1 } })
+      expect(res.openPanels).toEqual({ datasetsLayers: { props: { foo: 1 } } })
+    })
   })
 
   describe('SET_LISTBOX_ACTIVE', () => {
