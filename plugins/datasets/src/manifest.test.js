@@ -39,6 +39,16 @@ describe('manifest', () => {
     expect(Array.isArray(manifest.buttons)).toBe(true)
   })
 
+  it.each([
+    ['empty menu', {}, [], true],
+    ['populated menu', {}, [{ id: 'roads' }], false],
+    ['explicitly disabled menu', { hasMenu: false }, [{ id: 'roads' }], true],
+    ['removed initial dataset', { datasets: [{ showInMenu: true }] }, [], true]
+  ])('excludes the Layers button for %s as appropriate', (_, pluginConfig, menu, excluded) => {
+    const button = manifest.buttons.find(button => button.id === 'datasetsLayers')
+    expect(button.excludeWhen({ pluginConfig, pluginState: { menu } })).toBe(excluded)
+  })
+
   it('has an api with all expected methods', () => {
     expect(manifest.api.addDataset).toBeDefined()
     expect(manifest.api.removeDataset).toBeDefined()
