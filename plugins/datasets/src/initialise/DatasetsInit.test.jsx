@@ -5,6 +5,7 @@ import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { EVENTS } from '../../../../src/config/events.js'
+import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
 jest.mock('../registry/datasetRegistry.js', () => ({
   datasetRegistry: {
@@ -37,26 +38,30 @@ const makePluginState = (overrides = {}) => ({
   dispatch: jest.fn(),
   mappedDatasets: {},
   orderedDatasets: [],
+  menu: [],
   globals: { visible: true, opacity: 1 },
   actionsArray: [],
   ...overrides
 })
 
-const makeProps = (overrides = {}) => ({
-  pluginConfig: {
+const makeProps = (overrides = {}) => {
+  const pluginConfig = overrides.pluginConfig ?? {
     datasets: [{ id: 'roads', label: 'Roads', showInMenu: true }]
-  },
-  pluginState: makePluginState(),
-  appState: {},
-  mapState: { mapStyle: { id: 'outdoor' } },
-  mapProvider: { isBaseMapReady: jest.fn().mockReturnValue(true) },
-  services: {
-    eventBus: makeEventBus(),
-    symbolRegistry: {},
-    patternRegistry: {}
-  },
-  ...overrides
-})
+  }
+  return {
+    pluginConfig,
+    pluginState: makePluginState({ menu: datasetsToMenu(pluginConfig) }),
+    appState: { panelConfig: { datasetsLayers: { label: 'Layers', pluginId: 'datasets' } } },
+    mapState: { mapStyle: { id: 'outdoor' } },
+    mapProvider: { isBaseMapReady: jest.fn().mockReturnValue(true) },
+    services: {
+      eventBus: makeEventBus(),
+      symbolRegistry: {},
+      patternRegistry: {}
+    },
+    ...overrides
+  }
+}
 
 describe('DatasetsInit', () => {
   let adapter
@@ -84,7 +89,7 @@ describe('DatasetsInit', () => {
       expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
-      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
+      expect(props.services.eventBus.emitWhenReady).not.toHaveBeenCalledWith(
         EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true }
       )
     })
@@ -119,6 +124,35 @@ describe('DatasetsInit', () => {
       })
       await render(<DatasetsInit {...props} />)
       expect(props.services.eventBus.emitWhenReady).not.toHaveBeenCalledWith(
+        EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
+      )
+    })
+
+    it('restores the effective panel configuration when a menu dataset is added', async () => {
+      const props = makeProps({ pluginConfig: { datasets: [] } })
+      const panelConfig = props.appState.panelConfig.datasetsLayers
+      const { rerender } = render(<DatasetsInit {...props} />)
+      await act(async () => {})
+
+      rerender(<DatasetsInit
+        {...props}
+        appState={{ panelConfig: {} }}
+        pluginState={makePluginState({ menu: [{ id: 'roads', items: [{ id: 'roads' }] }] })}
+               />)
+
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
+        EVENTS.APP_ADD_PANEL, { id: 'datasetsLayers', config: panelConfig }
+      )
+    })
+
+    it('removes the panel when the live menu is empty even if initial datasets had menu items', async () => {
+      const props = makeProps()
+      const { rerender } = render(<DatasetsInit {...props} />)
+      await act(async () => {})
+
+      rerender(<DatasetsInit {...props} pluginState={makePluginState()} />)
+
+      expect(props.services.eventBus.emitWhenReady).toHaveBeenCalledWith(
         EVENTS.APP_REMOVE_PANEL, 'datasetsLayers'
       )
     })

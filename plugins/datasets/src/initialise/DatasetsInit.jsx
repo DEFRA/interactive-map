@@ -5,24 +5,27 @@ import { initialiseDatasets } from './initialiseDatasets.js'
 import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
+import { hasLayersMenu } from '../utils/hasLayersMenu.js'
 
-const pluginConfigHasMenuItems = (pluginConfig) =>
-  pluginConfig.datasets
-    .some(dataset => dataset.showInMenu || dataset.sublayers?.some(sublayer => sublayer.showInMenu))
-
-export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider, services }) {
+export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
+  const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
+  const panelConfig = appState.panelConfig.datasetsLayers
+  const removedPanelConfigRef = useRef(null)
 
   useEffect(() => {
-    const hasMenu = pluginConfig.hasMenu !== false && pluginConfigHasMenuItems(pluginConfig)
-
-    if (!hasMenu) {
+    if (!hasMenu && panelConfig) {
+      // Preserve the effective configuration, including consumer overrides and pluginId.
+      removedPanelConfigRef.current = panelConfig
       eventBus.emitWhenReady(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
-      eventBus.emitWhenReady(EVENTS.APP_TOGGLE_BUTTON_STATE, { id: 'datasetsLayers', prop: 'hidden', value: true })
+    } else if (hasMenu && removedPanelConfigRef.current) {
+      const config = removedPanelConfigRef.current
+      removedPanelConfigRef.current = null
+      eventBus.emitWhenReady(EVENTS.APP_ADD_PANEL, { id: 'datasetsLayers', config })
     }
-  }, [pluginConfig.hasMenu])
+  }, [hasMenu, panelConfig, eventBus])
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
