@@ -202,6 +202,33 @@ describe('crosshair', () => {
     expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
   })
 
+  test('fixes the crosshair at centre while drawing on a keyboard interface', async () => {
+    const { props } = makeProps({
+      appState: { interfaceType: 'keyboard', mode: null, layoutRefs: { viewportRef: { current: null } } },
+      pluginState: { dispatch: jest.fn(), mode: 'draw_line' }
+    })
+    await renderInit(props)
+    expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
+  })
+
+  test('fixes the crosshair at centre while drawing with a mouse once the map controls are open', async () => {
+    const { props } = makeProps({
+      appState: { interfaceType: 'mouse', mode: null, expandedButtons: new Set(['mapControls']), layoutRefs: { viewportRef: { current: null } } },
+      pluginState: { dispatch: jest.fn(), mode: 'draw_point' }
+    })
+    await renderInit(props)
+    expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
+  })
+
+  test('leaves the crosshair alone while drawing with a mouse and the map controls closed', async () => {
+    const { props } = makeProps({
+      appState: { interfaceType: 'mouse', mode: null, expandedButtons: new Set(), layoutRefs: { viewportRef: { current: null } } },
+      pluginState: { dispatch: jest.fn(), mode: 'draw_polygon' }
+    })
+    await renderInit(props)
+    expect(props.mapState.crossHair.fixAtCenter).not.toHaveBeenCalled()
+  })
+
   test('leaves the crosshair alone when not drawing', async () => {
     const { props } = makeProps({
       appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },

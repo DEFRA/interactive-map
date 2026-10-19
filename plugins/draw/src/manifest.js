@@ -11,6 +11,7 @@ import { split } from './api/split.js'
 import { merge } from './api/merge.js'
 import { isMac } from '../../../src/utils/isMac.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
+import { needsDrawTarget } from './utils/needsDrawTarget.js'
 
 // edit_point behaves like edit_vertex for Done/Undo, but stays out of drawDeletePoint and mergeShapes (neither applies to a single coordinate).
 const EDIT_MODES = new Set(['edit_vertex', 'edit_point'])
@@ -59,8 +60,8 @@ export const manifest = {
       label: 'Add point',
       variant: 'primary',
       exclusiveSlot: true,
-      hiddenWhen: ({ appState, pluginState }) =>
-        !['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) || appState.interfaceType !== 'touch',
+      // Shown with the crosshair, using the same needsDrawTarget rule. Not shown for keyboard (Enter places).
+      hiddenWhen: ({ appState, pluginState }) => !needsDrawTarget({ appState, pluginState }),
       // Disabled while placing at the crosshair would be vetoed (validatePlacement) —
       // driven live so the button never looks active when a tap would do nothing.
       enableWhen: ({ pluginState }) => pluginState.canAddPoint,
