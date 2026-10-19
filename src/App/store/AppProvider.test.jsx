@@ -98,6 +98,47 @@ describe('AppProvider', () => {
     expect(contextValue.layoutRefs).toHaveProperty('bottomRef')
   })
 
+  test('emits panel opened when a panel is added and opened before the next render', async () => {
+    mockOptions.initialBreakpoint = 'desktop'
+    mockOptions.eventBus.emit = jest.fn()
+    let dispatch
+    render(
+      <AppProvider options={mockOptions}>
+        <AppContext.Consumer>
+          {value => { dispatch = value.dispatch; return null }}
+        </AppContext.Consumer>
+      </AppProvider>
+    )
+
+    await act(async () => {
+      dispatch({ type: 'ADD_PANEL', payload: { id: 'newPanel', config: { desktop: { slot: 'left-top', open: false } } } })
+      dispatch({ type: 'OPEN_PANEL', payload: { panelId: 'newPanel', props: {} } })
+    })
+
+    expect(mockOptions.eventBus.emit).toHaveBeenCalledWith('app:panelopened', { panelId: 'newPanel', props: {} })
+  })
+
+  test('does not emit panel opened when a panel is removed and opened before the next render', async () => {
+    mockOptions.initialBreakpoint = 'desktop'
+    mockOptions.eventBus.emit = jest.fn()
+    let dispatch
+    render(
+      <AppProvider options={mockOptions}>
+        <AppContext.Consumer>
+          {value => { dispatch = value.dispatch; return null }}
+        </AppContext.Consumer>
+      </AppProvider>
+    )
+
+    await act(async () => {
+      dispatch({ type: 'ADD_PANEL', payload: { id: 'oldPanel', config: { desktop: { slot: 'left-top', open: false } } } })
+      dispatch({ type: 'REMOVE_PANEL', payload: 'oldPanel' })
+      dispatch({ type: 'OPEN_PANEL', payload: { panelId: 'oldPanel', props: {} } })
+    })
+
+    expect(mockOptions.eventBus.emit).not.toHaveBeenCalled()
+  })
+
   test('dispatch fallback uses options.panelRegistry.getPanelConfig() when state.panelConfig missing', () => {
     const getPanelConfigMock = jest.fn(() => ({ panel1: {} }))
 
