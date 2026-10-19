@@ -43,6 +43,35 @@ describe('manifest', () => {
     expect(atTarget.hiddenWhen({ appState: { interfaceType: 'touch' }, pluginState: { enabled: false } })).toBe(true)
   })
 
+  describe('selectAtTarget visibility', () => {
+    const atTarget = () => manifest.buttons.find(b => b.id === 'selectAtTarget')
+    const mapControlsOpen = new Set(['mapControls'])
+    const isShown = (appState, pluginState = {}) =>
+      !atTarget().hiddenWhen({ appState, pluginState: { enabled: true, interactionModes: ['selectFeature'], ...pluginState } })
+
+    it.each([
+      ['touch', true],
+      ['mouse', false],
+      ['keyboard', false]
+    ])('%s with map controls closed: shown %s', (interfaceType, expected) => {
+      expect(isShown({ interfaceType, expandedButtons: new Set() })).toBe(expected)
+    })
+
+    it.each(['touch', 'mouse', 'keyboard'])('%s with map controls open: shown', (interfaceType) => {
+      expect(isShown({ interfaceType, expandedButtons: mapControlsOpen })).toBe(true)
+    })
+
+    it('touchTarget: false hides it on touch until the map controls are opened', () => {
+      expect(isShown({ interfaceType: 'touch' }, { touchTarget: false })).toBe(false)
+      expect(isShown({ interfaceType: 'touch', expandedButtons: mapControlsOpen }, { touchTarget: false })).toBe(true)
+    })
+
+    it('hidden while the listbox has focus, even with map controls open', () => {
+      expect(isShown({ interfaceType: 'touch' }, { listboxFocused: true })).toBe(false)
+      expect(isShown({ interfaceType: 'mouse', expandedButtons: mapControlsOpen }, { listboxFocused: true })).toBe(false)
+    })
+  })
+
   it('keyboardShortcuts array exists', () => {
     expect(Array.isArray(manifest.keyboardShortcuts)).toBe(true)
   })
