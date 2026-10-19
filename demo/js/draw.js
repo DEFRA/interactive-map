@@ -43,6 +43,7 @@ const interactPlugin = createInteractPlugin({
   multiSelect: true,
   contiguous: false,
   deselectOnClickOutside: true,
+  touchTarget: false, // touch users tap features directly; opening the map controls brings the crosshair and Select back
   debug: true
 })
 
