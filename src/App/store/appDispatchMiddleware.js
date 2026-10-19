@@ -67,6 +67,12 @@ export function handleActionSideEffects (action, previousState, panelConfig, eve
 
   if (type === 'OPEN_PANEL') {
     const { panelId, props } = payload
+    // The reducer leaves this panel unopened. Skip the opened event, and don't
+    // close exclusive panels that would have closed for a real open.
+    if (!panelConfig?.[panelId]?.[previousState.breakpoint]) {
+      return
+    }
+
     const closedPanelIds = getClosedPanelIds(
       panelId,
       previousState.openPanels,

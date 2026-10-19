@@ -117,6 +117,37 @@ describe('OPEN_PANEL — opening regular closes exclusive non-modal', () => {
   })
 })
 
+describe('OPEN_PANEL — missing panel', () => {
+  it('does not emit opened or closed events', async () => {
+    run(
+      { type: 'OPEN_PANEL', payload: { panelId: 'missing', props: {} } },
+      { openPanels: { exclusivePanel: {} }, breakpoint: 'desktop' },
+      { exclusivePanel: { desktop: { exclusive: true, modal: false } } }
+    )
+
+    await flushMicrotasks()
+
+    expect(eventBus.emit).not.toHaveBeenCalled()
+  })
+})
+
+describe('OPEN_PANEL — no config for the current breakpoint', () => {
+  it('does not emit opened or closed events', async () => {
+    run(
+      { type: 'OPEN_PANEL', payload: { panelId: 'panel', props: {} } },
+      { openPanels: { exclusivePanel: {} }, breakpoint: 'desktop' },
+      {
+        panel: { mobile: { exclusive: false, modal: false } },
+        exclusivePanel: { desktop: { exclusive: true, modal: false } }
+      }
+    )
+
+    await flushMicrotasks()
+
+    expect(eventBus.emit).not.toHaveBeenCalled()
+  })
+})
+
 describe('OPEN_PANEL — modal panel', () => {
   it('does not close any panels when opening modal', async () => {
     run(

@@ -5,28 +5,17 @@ import { registerButton as registerButtonFn, addButton as addButtonFn } from '..
 import { registerPanel as registerPanelFn, addPanel as addPanelFn, removePanel as removePanelFn } from '../registry/panelRegistry.js'
 import { registerControl as registerControlFn, addControl as addControlFn } from '../registry/controlRegistry.js'
 
-// state.panelConfig is truthy as soon as any default panel is registered, so
-// `state.panelConfig || registry` never reaches a panel that exists only on the
-// registry. Resolve that panel from the registry; leave an unknown panel unopened.
-function resolveOpenPanelConfig (state, panelId) {
-  const config = state.panelConfig
-  if (config?.[panelId]) {
-    return config
-  }
-  return state.panelRegistry?.getPanelConfig?.() ?? config ?? {}
-}
-
 // Interal helper
 function buildOpenPanels (state, panelId, breakpoint, props, focusOnOpen) {
-  const panelConfig = resolveOpenPanelConfig(state, panelId)
-  const panel = panelConfig[panelId]
-  if (!panel) {
+  const panelConfig = state.panelConfig || state.panelRegistry.getPanelConfig()
+  const bpConfig = panelConfig[panelId]?.[breakpoint]
+  // Missing panel, or no config at this breakpoint: leave the open panels unchanged.
+  if (!bpConfig) {
     return state.openPanels
   }
 
-  const bpConfig = panel[breakpoint]
-  const isExclusiveNonModal = !!bpConfig?.exclusive && !bpConfig?.modal
-  const isModal = !!bpConfig?.modal
+  const isExclusiveNonModal = !!bpConfig.exclusive && !bpConfig.modal
+  const isModal = !!bpConfig.modal
 
   // Remove exclusive panels
   const filteredPanels = Object.fromEntries(
