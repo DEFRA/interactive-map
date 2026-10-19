@@ -5,9 +5,8 @@
 function parseAttribute (attr) {
   try {
     return JSON.parse(attr)
-  } catch (err) {
-    console.log(err)
-    return null
+  } catch {
+    return attr
   }
 }
 
@@ -17,7 +16,8 @@ function parseAttribute (attr) {
 
 /**
  * Parses all `data-*` attributes from a DOM element into an object,
- * converting JSON strings to JavaScript values where possible.
+ * converting JSON strings to JavaScript values where possible. Values that
+ * aren't valid JSON are returned as the original string.
  *
  * @param {HTMLElement} el - The element whose dataset will be parsed.
  * @returns {Object} An object containing the parsed data attributes.
