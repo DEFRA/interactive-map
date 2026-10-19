@@ -30,10 +30,22 @@ describe('drawAddPoint', () => {
   const hidden = (interfaceType, mode) =>
     findButton('drawAddPoint').hiddenWhen({ appState: { interfaceType }, pluginState: { mode } })
 
-  test('is shown only while drawing on a touch interface', () => {
+  const hiddenWithMapControls = (interfaceType, mode) =>
+    findButton('drawAddPoint').hiddenWhen({ appState: { interfaceType, expandedButtons: new Set(['mapControls']) }, pluginState: { mode } })
+
+  test('is shown while drawing on a touch interface', () => {
     expect(hidden('touch', 'draw_polygon')).toBe(false)
     expect(hidden('mouse', 'draw_polygon')).toBe(true)
+    expect(hidden('keyboard', 'draw_polygon')).toBe(true)
     expect(hidden('touch', 'edit_vertex')).toBe(true)
+  })
+
+  test.each(['touch', 'mouse', 'keyboard'])('is shown while drawing with the map controls open: %s', (interfaceType) => {
+    expect(hiddenWithMapControls(interfaceType, 'draw_line')).toBe(false)
+  })
+
+  test.each(['edit_vertex', 'edit_point'])('stays hidden in %s with the map controls open', (mode) => {
+    expect(hiddenWithMapControls('mouse', mode)).toBe(true)
   })
 
   test('is disabled while placing at the crosshair would be vetoed', () => {

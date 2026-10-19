@@ -131,6 +131,9 @@ createInteractPlugin({
 > [!IMPORTANT]
 > Only set `touchTarget: false` when the features users select are at least 44×44 CSS pixels at the zoom levels they use ([WCAG 2.2 Target Size (Enhanced)](https://www.w3.org/WAI/WCAG22/Understanding/target-size-enhanced)), for example field parcels at a sensible zoom. Thin lines and small shapes are hard to tap accurately, especially for users with motor impairments, who rely on the crosshair to position the map instead.
 
+> [!NOTE]
+> If you also use the [draw plugin](draw.md), disable interact while drawing or editing, so the two plugins don't both control the crosshair. See [Application mode](draw.md#application-mode).
+
 ---
 
 ### `closeOnAction`

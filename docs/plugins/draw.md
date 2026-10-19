@@ -405,11 +405,17 @@ new InteractiveMap('map', {
 Or set `draw: false` when every button on the map is deliberate — for example a single-task map that goes straight into editing a shape — so nothing is hidden.
 
 > [!NOTE]
-> The mode only changes the interface. Other plugins' own behaviour keeps running while their buttons are hidden, so disable any that shouldn't respond while drawing — for example, call `interactPlugin.disable()` on [`draw:started`](#drawstarted) and [`draw:editstart`](#draweditstart), and `interactPlugin.enable()` on [`draw:created`](#drawcreated), [`draw:edited`](#drawedited) and [`draw:cancelled`](#drawcancelled).
+> The mode only changes the interface. Other plugins' own behaviour keeps running while their buttons are hidden, so disable any that shouldn't respond while drawing.
+
+> [!IMPORTANT]
+> If you use the [interact plugin](interact.md), disable it while drawing or editing. Otherwise map clicks select features as well as placing points, and both plugins show and hide the same crosshair. Call `interactPlugin.disable()` on [`draw:started`](#drawstarted) and [`draw:editstart`](#draweditstart), and `interactPlugin.enable()` on [`draw:created`](#drawcreated), [`draw:edited`](#drawedited) and [`draw:cancelled`](#drawcancelled).
 
 ## Buttons and keyboard shortcuts
 
-The plugin registers its own toolbar buttons automatically — Cancel, Add point (touch only) and Done in the actions bar, plus Undo, Snap and Delete point in the middle of the top row — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
+The plugin registers its own toolbar buttons automatically — Cancel, Add point and Done in the actions bar, plus Undo, Snap and Delete point in the middle of the top row — which show and enable themselves based on the current draw/edit state. You don't need to render these yourself; augment them with your own trigger buttons (e.g. "Draw polygon", "Draw line") the way the [Draw tools example](../examples/draw-tools.mdx) does.
+
+> [!NOTE]
+> While drawing, a crosshair marks where the next point is placed. On touch, it's shown with the Add point button. Keyboard users get the crosshair and press <kbd>Enter</kbd> to add a point. Opening the map controls shows the crosshair and Add point button for every input type. Edit modes don't use the crosshair: vertices and midpoints are selected directly.
 
 | Shortcut | Action |
 |----------|--------|

@@ -4,6 +4,7 @@ import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
+import { needsDrawTarget, isDrawingMode } from './utils/needsDrawTarget.js'
 import { logger } from '../../../src/services/logger.js'
 
 // Loads the draw adapter once the map is ready; tears it down (and releases MapControls' D-pad)
@@ -43,15 +44,14 @@ function useLoadDrawAdapter ({ mapState, pluginConfig, pluginState, mapProvider,
 export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginState, services, mapProvider, buttonConfig, setApplicationMode, clearApplicationMode }) => {
   const { eventBus, hints, symbolRegistry } = services
   const { crossHair } = mapState
-  const isTouchOrKeyboard = ['touch', 'keyboard'].includes(appState.interfaceType)
 
   useSpatialList({ mapState, pluginState, services, mapProvider, spatialListRegistry: appState.spatialListRegistry, viewportRef: appState.layoutRefs.viewportRef })
 
   // Mirrored in the render body so the crosshair effect's cleanup below can read the CURRENT
   // shouldShowCrosshair decision, not the stale one its closure captured when it last ran.
   const shouldShowCrosshairRef = useRef(false)
-  shouldShowCrosshairRef.current = ['draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) &&
-    (isTouchOrKeyboard || appState.expandedButtons?.has('mapControls'))
+  shouldShowCrosshairRef.current = needsDrawTarget({ appState, pluginState }) ||
+    (isDrawingMode(pluginState.mode) && appState.interfaceType === 'keyboard')
 
   useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus, symbolRegistry })
 
