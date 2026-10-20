@@ -1,5 +1,7 @@
 export const hasLayersMenu = ({ pluginConfig, pluginState }) => {
-  if (pluginConfig.hasMenu === false) return false
+  if (pluginConfig.hasMenu === false) {
+    return false
+  }
 
   // Before initialisation the live menu is empty, so use the configured datasets.
   // Once initialised, an empty live menu also covers removal of the last dataset.
