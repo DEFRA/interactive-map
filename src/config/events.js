@@ -178,12 +178,12 @@ export const EVENTS = {
    */
   MAP_STYLE_CHANGE: 'map:stylechange',
 
-  /** Emitted once, when the initial base map style has loaded. */
+  /** Emitted once, when the initial base map has loaded. */
   MAP_LOADED: 'map:loaded',
 
   /**
    * Emitted when the map instance has been created and initial app state (style and size) is settled.
-   * The base map style may still be loading; wait for `MAP_LOADED` before adding sources or layers
+   * The base map may still be loading; wait for `MAP_LOADED` before adding sources or layers
    * to the underlying map.
    *
    * Payload:

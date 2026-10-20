@@ -1056,9 +1056,9 @@ interactiveMap.on('app:continue', ({ pluginStates, mapState }) => {
 
 ### `map:ready`
 
-Emitted when the underlying map instance has been created and initial app state (style and size) has settled. The map is created once the layout and safe zone have been calculated, so the initial padding, bounds and centre already account for the interface.
+Emitted when the underlying map instance has been created and initial app state (style and size) has settled. The map is created once the layout and safe zone have been calculated, and uses the safe zone as its initial padding.
 
-The base map style may still be loading when `map:ready` fires. Wait for [`map:loaded`](#maploaded) before adding sources or layers to the underlying map.
+The base map may still be loading when `map:ready` fires. Wait for [`map:loaded`](#maploaded) before adding sources or layers to the underlying map.
 
 **Payload:**
 
@@ -1080,9 +1080,9 @@ interactiveMap.on('map:ready', ({ map, mapStyleId, mapSize }) => {
 
 ### `map:loaded`
 
-Emitted once, when the initial base map style has loaded. Emitted after `map:ready`. Sources and layers can be added to the underlying map from this point.
+Emitted once, when the initial base map has loaded. Emitted after `map:ready`. Sources and layers can be added to the underlying map from this point.
 
-**Payload:** None
+**Payload:** None on MapLibre and OpenLayers. ESRI passes the current map state (`center`, `bounds`, `resolution`, `zoom`, `isAtMaxZoom`, `isAtMinZoom`).
 
 ```js
 interactiveMap.on('map:loaded', () => {

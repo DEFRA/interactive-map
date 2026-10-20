@@ -96,7 +96,7 @@ Current map state, including:
 }
 ```
 
-`mapState.isMapReady` is `true` once the map instance has been created (`map:ready`). The base map style may still be loading at that point; check `mapProvider.isBaseMapReady()` before adding sources or layers to the underlying map.
+`mapState.isMapReady` is `true` once the map instance has been created (`map:ready`). The base map may still be loading at that point; check `mapProvider.isBaseMapReady()` before adding sources or layers to the underlying map.
 
 ---
 
