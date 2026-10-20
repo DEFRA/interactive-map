@@ -7,25 +7,40 @@ import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 import { hasLayersMenu } from '../utils/hasLayersMenu.js'
 
-export function DatasetsInit ({ pluginConfig, pluginState, appState, mapState, mapProvider, services }) {
+export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
-  const { eventBus, symbolRegistry, patternRegistry } = services
+  const { eventBus, symbolRegistry, patternRegistry, focusMap } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
   const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
-  const panelConfig = appState.panelConfig.datasetsLayers
-  const removedPanelConfigRef = useRef(null)
+  const isPanelOpenRef = useRef(false)
 
   useEffect(() => {
-    if (!hasMenu && panelConfig) {
-      // Preserve the effective configuration, including consumer overrides and pluginId.
-      removedPanelConfigRef.current = panelConfig
-      eventBus.emitWhenReady(EVENTS.APP_REMOVE_PANEL, 'datasetsLayers')
-    } else if (hasMenu && removedPanelConfigRef.current) {
-      const config = removedPanelConfigRef.current
-      removedPanelConfigRef.current = null
-      eventBus.emitWhenReady(EVENTS.APP_ADD_PANEL, { id: 'datasetsLayers', config })
+    let focusFrame
+    const closeEmptyPanel = () => {
+      if (hasMenu || !isPanelOpenRef.current) return
+      isPanelOpenRef.current = false
+      eventBus.emit(EVENTS.APP_HIDE_PANEL, 'datasetsLayers')
+      // Let the panel close and release modal focus/inert behaviour first.
+      focusFrame = requestAnimationFrame(() => focusMap())
     }
-  }, [hasMenu, panelConfig, eventBus])
+    const handleOpened = ({ panelId }) => {
+      if (panelId !== 'datasetsLayers') return
+      isPanelOpenRef.current = true
+      closeEmptyPanel()
+    }
+    const handleClosed = ({ panelId }) => {
+      if (panelId === 'datasetsLayers') isPanelOpenRef.current = false
+    }
+    eventBus.on(EVENTS.APP_PANEL_OPENED, handleOpened)
+    eventBus.on(EVENTS.APP_PANEL_CLOSED, handleClosed)
+    closeEmptyPanel()
+
+    return () => {
+      eventBus.off(EVENTS.APP_PANEL_OPENED, handleOpened)
+      eventBus.off(EVENTS.APP_PANEL_CLOSED, handleClosed)
+      cancelAnimationFrame(focusFrame)
+    }
+  }, [hasMenu, eventBus, focusMap])
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)

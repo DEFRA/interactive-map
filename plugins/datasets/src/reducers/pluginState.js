@@ -18,7 +18,8 @@ const initialState = {
   mappedDatasets: {},
   orderedDatasets: [],
   actionsArray: [],
-  menu: []
+  menu: [],
+  menuInitialised: false
 }
 
 const validateDatasetExists = (state, datasetId, prefix, suffix = 'not found') => {
@@ -48,7 +49,8 @@ const setMenu = (state, payload) => {
   const { menu } = payload
   return {
     ...state,
-    menu
+    menu,
+    menuInitialised: true
   }
 }
 
