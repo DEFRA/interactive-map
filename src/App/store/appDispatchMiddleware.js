@@ -45,6 +45,34 @@ function getClosedPanelIds (panelId, previousOpenPanels, breakpoint, panelConfig
 }
 
 /**
+ * Emits close events for implicitly closed panels, then the open event
+ */
+function emitOpenPanelEvents ({ panelId, props }, previousState, panelConfig, eventBus) {
+  // The reducer leaves this panel unopened. Skip the opened event, and don't
+  // close exclusive panels that would have closed for a real open.
+  if (!panelConfig?.[panelId]?.[previousState.breakpoint]) {
+    return
+  }
+
+  const closedPanelIds = getClosedPanelIds(
+    panelId,
+    previousState.openPanels,
+    previousState.breakpoint,
+    panelConfig
+  )
+
+  queueMicrotask(() => {
+    // Emit close events for implicitly closed panels
+    closedPanelIds.forEach(closedPanelId => {
+      eventBus.emit(events.APP_PANEL_CLOSED, { panelId: closedPanelId })
+    })
+
+    // Emit open event for the new panel
+    eventBus.emit(events.APP_PANEL_OPENED, { panelId, props })
+  })
+}
+
+/**
  * Handles side effects for actions
  */
 export function handleActionSideEffects (action, previousState, panelConfig, eventBus) {
@@ -66,23 +94,7 @@ export function handleActionSideEffects (action, previousState, panelConfig, eve
   }
 
   if (type === 'OPEN_PANEL') {
-    const { panelId, props } = payload
-    const closedPanelIds = getClosedPanelIds(
-      panelId,
-      previousState.openPanels,
-      previousState.breakpoint,
-      panelConfig
-    )
-
-    queueMicrotask(() => {
-      // Emit close events for implicitly closed panels
-      closedPanelIds.forEach(closedPanelId => {
-        eventBus.emit(events.APP_PANEL_CLOSED, { panelId: closedPanelId })
-      })
-
-      // Emit open event for the new panel
-      eventBus.emit(events.APP_PANEL_OPENED, { panelId, props })
-    })
+    emitOpenPanelEvents(payload, previousState, panelConfig, eventBus)
   }
 
   if (type === 'ADD_BUTTON') {
