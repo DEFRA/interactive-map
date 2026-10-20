@@ -92,6 +92,15 @@ Array of dataset configurations to render on the map. See [Dataset configuration
 
 ---
 
+### `hasMenu`
+
+**Type:** `boolean`
+**Default:** `true`
+
+Shows the Layers button and LayersMenu panel. Set to `false` to leave them out, for example when the layers are controlled by your own UI.
+
+---
+
 ## Dataset configuration
 
 Each entry in the `datasets` array describes one data source and how it should be rendered.
@@ -289,6 +298,8 @@ When `true`, the dataset appears in the Key panel with its style symbol and labe
 **Default:** `false`
 
 When `true`, the dataset appears in the LayersMenu panel and can be toggled on and off by the user. Sublayers inherit this value — set `showInMenu: false` on an individual sublayer to opt it out.
+
+If no dataset or sublayer has `showInMenu: true` when the map loads, the Layers button and LayersMenu panel are not shown.
 
 ---
 
