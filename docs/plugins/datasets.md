@@ -299,7 +299,7 @@ When `true`, the dataset appears in the Key panel with its style symbol and labe
 
 When `true`, the dataset appears in the LayersMenu panel and can be toggled on and off by the user. Sublayers inherit this value — set `showInMenu: false` on an individual sublayer to opt it out.
 
-If no dataset or sublayer has `showInMenu: true` when the map loads, the Layers button and LayersMenu panel are not shown.
+The Layers button is only shown while at least one dataset or sublayer is in the menu.
 
 ---
 

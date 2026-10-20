@@ -190,6 +190,12 @@ describe('SET_MENU', () => {
     expect(result.menu).toBe(menu)
   })
 
+  it('marks the menu as initialised', () => {
+    const state = makeState()
+    const result = actions.SET_MENU(state, { menu: [] })
+    expect(result.menuInitialised).toBe(true)
+  })
+
   it('does not add to actionsArray', () => {
     const state = makeState()
     const result = actions.SET_MENU(state, { menu: [] })

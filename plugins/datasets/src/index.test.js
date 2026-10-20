@@ -1,8 +1,9 @@
 import createPlugin from './index.js'
+import { createManifest } from './manifest.js'
 
 jest.mock('./datasets.scss', () => {})
 jest.mock('./manifest.js', () => ({
-  manifest: { InitComponent: jest.fn(), reducer: {} }
+  createManifest: jest.fn(() => ({ InitComponent: jest.fn(), reducer: {} }))
 }))
 
 describe('createPlugin', () => {
@@ -32,5 +33,11 @@ describe('createPlugin', () => {
     const plugin = createPlugin()
     const result = await plugin.load()
     expect(result).toBeDefined()
+  })
+
+  it('load() builds the manifest from the plugin options', async () => {
+    const options = { hasMenu: false }
+    await createPlugin(options).load()
+    expect(createManifest).toHaveBeenCalledWith(options)
   })
 })
