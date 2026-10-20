@@ -6,41 +6,33 @@ import { datasetRegistry } from '../registry/datasetRegistry.js'
 import { attachGlobalState } from '../registry/globalDataset.js'
 import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
 import { hasLayersMenu } from '../utils/hasLayersMenu.js'
+import { getPanelElementId } from '../../../../src/utils/getPanelElementId.js'
 
-export function DatasetsInit ({ pluginConfig, pluginState, mapState, mapProvider, services }) {
+const LAYERS_PANEL_ID = 'datasetsLayers'
+
+export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
   const { dispatch } = pluginState
   const { eventBus, symbolRegistry, patternRegistry, focusMap } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
   const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
-  const isPanelOpenRef = useRef(false)
+  const isLayersPanelOpen = Boolean(appState.openPanels[LAYERS_PANEL_ID])
+  const focusFrameRef = useRef(null)
 
+  // Close the Layers panel if its menu empties while it's open
   useEffect(() => {
-    let focusFrame
-    const closeEmptyPanel = () => {
-      if (hasMenu || !isPanelOpenRef.current) return
-      isPanelOpenRef.current = false
-      eventBus.emit(EVENTS.APP_HIDE_PANEL, 'datasetsLayers')
-      // Let the panel close and release modal focus/inert behaviour first.
-      focusFrame = requestAnimationFrame(() => focusMap())
+    if (hasMenu || !isLayersPanelOpen) {
+      return
     }
-    const handleOpened = ({ panelId }) => {
-      if (panelId !== 'datasetsLayers') return
-      isPanelOpenRef.current = true
-      closeEmptyPanel()
+    const panelEl = document.getElementById(getPanelElementId(appConfig.id, LAYERS_PANEL_ID))
+    const hadFocus = Boolean(panelEl?.contains(document.activeElement))
+    eventBus.emit(EVENTS.APP_HIDE_PANEL, LAYERS_PANEL_ID)
+    if (hadFocus) {
+      // Let the panel close and release modal focus/inert first, as Panel's handleClose does
+      focusFrameRef.current = requestAnimationFrame(() => focusMap())
     }
-    const handleClosed = ({ panelId }) => {
-      if (panelId === 'datasetsLayers') isPanelOpenRef.current = false
-    }
-    eventBus.on(EVENTS.APP_PANEL_OPENED, handleOpened)
-    eventBus.on(EVENTS.APP_PANEL_CLOSED, handleClosed)
-    closeEmptyPanel()
+  }, [hasMenu, isLayersPanelOpen])
 
-    return () => {
-      eventBus.off(EVENTS.APP_PANEL_OPENED, handleOpened)
-      eventBus.off(EVENTS.APP_PANEL_CLOSED, handleClosed)
-      cancelAnimationFrame(focusFrame)
-    }
-  }, [hasMenu, eventBus, focusMap])
+  useEffect(() => () => cancelAnimationFrame(focusFrameRef.current), [])
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
