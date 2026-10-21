@@ -6,7 +6,9 @@ import { orderItems } from './orderItems.js'
 import { classifyPanel, getPanelRole } from '../../utils/getPanelRole.js'
 import { logger } from '../../services/logger.js'
 import { hidesNothing } from './applicationModes.js'
+import { groupBySlot } from './slotHelpers.js'
 
+// With no slot, matches buttons for every slot
 function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
   const { breakpoint } = appState
   if (!buttonConfig) {
@@ -39,7 +41,7 @@ function getMatchingButtons ({ appState, buttonConfig, slot, evaluateProp }) {
       }
     }
 
-    if (bpConfig?.slot !== slot || !allowedSlots.button.includes(bpConfig.slot)) {
+    if ((slot !== undefined && bpConfig?.slot !== slot) || !allowedSlots.button.includes(bpConfig?.slot)) {
       return false
     }
 
@@ -153,6 +155,7 @@ function buildUngroupedItems (members, ctx) {
   return members.map(([buttonId, config]) => ({
     id: buttonId,
     type: 'button',
+    slot: config[ctx.breakpoint].slot,
     order: config[ctx.breakpoint]?.order ?? 0,
     element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, isHidden: isButtonHidden(buttonId, config, ctx), ...ctx })} />
   }))
@@ -183,6 +186,7 @@ function buildGroupItem (key, members, ctx) {
     return {
       id: buttonId,
       type: 'button',
+      slot: config[ctx.breakpoint].slot,
       order,
       element: <SlotButton key={buttonId} {...slotButtonProps({ buttonId, config, isHidden: isButtonHidden(buttonId, config, ctx), ...ctx })} />
     }
@@ -200,6 +204,7 @@ function buildGroupItem (key, members, ctx) {
   return {
     id: `group-${key}`,
     type: 'group',
+    slot: firstConfig[ctx.breakpoint].slot,
     order,
     element: (
       <div // NOSONAR - div with role="group" is correct for a button group
@@ -216,19 +221,12 @@ function buildGroupItem (key, members, ctx) {
   }
 }
 
-function mapButtons ({ slot, appState, appConfig, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
-  const { buttonConfig, breakpoint } = appState
-
-  const raw = getMatchingButtons({ appState, appConfig, buttonConfig, slot, evaluateProp })
-  const matching = applySlotExclusivity(raw, appState)
-
-  if (!matching.length) {
-    return []
-  }
+// Builds one slot's items from the buttons matched for it
+function buildSlotItems (raw, ctx) {
+  const matching = applySlotExclusivity(raw, ctx.appState)
 
   // Partition into named groups (keyed by kebab-cased group.label) plus one ungrouped bucket
   const buckets = groupByKey({ items: matching, keyFn: ([, config]) => config.group?.label })
-  const ctx = { breakpoint, appState, appConfig, evaluateProp, isHiddenByApplicationMode }
 
   const result = []
   for (const [key, members] of buckets) {
@@ -240,6 +238,19 @@ function mapButtons ({ slot, appState, appConfig, evaluateProp, isHiddenByApplic
   }
 
   return result
+}
+
+// Maps buttons for the given slot or, with no slot, for every slot. Exclusivity and groups apply
+// within a slot, so matching buttons are split by slot first.
+function mapButtons ({ slot, appState, appConfig, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
+  const { buttonConfig, breakpoint } = appState
+
+  const raw = getMatchingButtons({ appState, appConfig, buttonConfig, slot, evaluateProp })
+  const ctx = { breakpoint, appState, appConfig, evaluateProp, isHiddenByApplicationMode }
+
+  const bySlot = groupBySlot(raw, ([, config]) => config[breakpoint].slot)
+
+  return [...bySlot.values()].flatMap(entries => buildSlotItems(entries, ctx))
 }
 
 export {

@@ -158,6 +158,36 @@ describe('mapPanels', () => {
     expect(result[0].element.props.items.map(i => i.id)).toEqual(['injected1', 'p1'])
   })
 
+  it('maps panels for every slot, each tagged with its resolved slot, when no slot is given', () => {
+    defaultAppState.panelConfig = ({
+      p1: baseConfig,
+      p2: { desktop: { slot: 'left-top' } },
+      p3: { desktop: { slot: 'search-button' } },
+      p4: { desktop: { slot: 'header', modal: true } }
+    })
+    const result = mapPanels({ appState: defaultAppState, evaluateProp: (prop) => prop })
+    expect(result.map(({ id, slot }) => ({ id, slot }))).toEqual([
+      { id: 'p1', slot: 'header' },
+      { id: 'p2', slot: 'left-top' },
+      { id: 'p3', slot: 'search-button' },
+      { id: 'p4', slot: 'modal' }
+    ])
+  })
+
+  it('takes injected controls from controlsBySlot, when given, instead of mapping them again', () => {
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' } } })
+    const controlsBySlot = new Map([['p1-panel', [{ id: 'injected1', order: 0, element: <span>injected</span> }]]])
+    const result = mapPanels({ slot: 'header', appState: defaultAppState, evaluateProp: (prop) => prop, controlsBySlot })
+    expect(mapControls).not.toHaveBeenCalled()
+    expect(result[0].element.props.items.map(i => i.id)).toEqual(['injected1'])
+  })
+
+  it('builds an empty body when controlsBySlot has nothing for the panel', () => {
+    defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' } } })
+    const result = mapPanels({ slot: 'header', appState: defaultAppState, evaluateProp: (prop) => prop, controlsBySlot: new Map() })
+    expect(result[0].element.props.items).toEqual([])
+  })
+
   it('returns just the injected controls when the panel has neither render nor html', () => {
     mapControls.mockReturnValue([{ id: 'injected1', order: 0, element: <span>injected</span> }])
     defaultAppState.panelConfig = ({ p1: { desktop: { slot: 'header' } } })

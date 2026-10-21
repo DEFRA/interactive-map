@@ -73,3 +73,16 @@ export const getAllowedModalPanelId = (openPanels, panelConfig, breakpoint) => {
 export const hasOpenModalPanel = (openPanels, panelConfig, breakpoint) => {
   return getAllowedModalPanelId(openPanels, panelConfig, breakpoint) !== null
 }
+
+// Splits items into a Map of slot -> items, keeping each slot's items in their original order.
+export const groupBySlot = (items, getSlot = item => item.slot) => {
+  const bySlot = new Map()
+  for (const item of items) {
+    const slot = getSlot(item)
+    if (!bySlot.has(slot)) {
+      bySlot.set(slot, [])
+    }
+    bySlot.get(slot).push(item)
+  }
+  return bySlot
+}
