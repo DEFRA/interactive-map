@@ -173,7 +173,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
         extensions: ['.js', '.jsx'],
         // Force these packages to resolve from root node_modules only,
         // preventing nested copies inside geojson-rbush and mapbox-gl-snap
-        // from being bundled separately (saves ~200 KB in draw-ml).
+        // from being bundled separately (saves ~200 KB in draw).
         dedupe: ['@turf/meta', '@turf/helpers', 'robust-predicates']
       }),
       commonjs({ include: /node_modules/ }),
@@ -260,30 +260,30 @@ const ALL_BUILDS = [
     manualChunks: (id) => id.includes('/maplibreProvider') ? 'im-maplibre-provider' : undefined
   },
   {
-    entryPath: './providers/beta/open-names/src/index.js',
-    outDir: 'providers/beta/open-names/dist/esm',
+    entryPath: './providers/open-names/src/index.js',
+    outDir: 'providers/open-names/dist/esm',
     manualChunks: (id) => id.includes('/reverseGeocode') ? 'im-reverse-geocode' : undefined
   },
   {
-    entryPath: './providers/beta/esri/src/index.js',
-    outDir: 'providers/beta/esri/dist/esm',
+    entryPath: './providers/esri/src/index.js',
+    outDir: 'providers/esri/dist/esm',
     manualChunks: (id) => id.includes('/esriProvider') ? 'im-esri-provider' : undefined
   },
   {
-    entryPath: './providers/beta/openlayers/src/index.js',
-    outDir: 'providers/beta/openlayers/dist/esm',
+    entryPath: './providers/openlayers/src/index.js',
+    outDir: 'providers/openlayers/dist/esm',
     manualChunks: (id) => id.includes('/openlayersProvider') ? 'im-openlayers-provider' : undefined
   },
 
   // Plugins — each lazy-loads ./manifest.js; manualChunks names that split chunk
   {
-    entryPath: './plugins/beta/scale-bar/src/index.js',
-    outDir: 'plugins/beta/scale-bar/dist/esm',
+    entryPath: './plugins/scale-bar/src/index.js',
+    outDir: 'plugins/scale-bar/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-scale-bar-plugin' : undefined
   },
   {
-    entryPath: './plugins/beta/use-location/src/index.js',
-    outDir: 'plugins/beta/use-location/dist/esm',
+    entryPath: './plugins/use-location/src/index.js',
+    outDir: 'plugins/use-location/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-use-location-plugin' : undefined
   },
   {
@@ -304,8 +304,8 @@ const ALL_BUILDS = [
     chunkNames: { maplibreLayerAdapter: 'im-datasets-ml-adapter', openlayersLayerAdapter: 'im-datasets-ol-adapter', esriLayerAdapter: 'im-datasets-esri-adapter' }
   },
   {
-    entryPath: './plugins/beta/map-styles/src/index.js',
-    outDir: 'plugins/beta/map-styles/dist/esm',
+    entryPath: './plugins/map-styles/src/index.js',
+    outDir: 'plugins/map-styles/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-map-styles-plugin' : undefined
   },
   {
@@ -319,23 +319,13 @@ const ALL_BUILDS = [
     chunkNames: { MaplibreDrawAdapter: 'im-draw-ml-adapter', OLDrawAdapter: 'im-draw-ol-adapter' }
   },
   {
-    entryPath: './plugins/beta/draw-ml/src/index.js',
-    outDir: 'plugins/beta/draw-ml/dist/esm',
-    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-ml-plugin' : undefined
-  },
-  {
-    entryPath: './plugins/beta/draw-es/src/index.js',
-    outDir: 'plugins/beta/draw-es/dist/esm',
+    entryPath: './plugins/draw-es/src/index.js',
+    outDir: 'plugins/draw-es/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-draw-es-plugin' : undefined
   },
   {
-    entryPath: './plugins/beta/draw-ol/src/index.js',
-    outDir: 'plugins/beta/draw-ol/dist/esm',
-    manualChunks: (id) => id.includes('/manifest') ? 'im-draw-ol-plugin' : undefined
-  },
-  {
-    entryPath: './plugins/beta/frame/src/index.js',
-    outDir: 'plugins/beta/frame/dist/esm',
+    entryPath: './plugins/frame/src/index.js',
+    outDir: 'plugins/frame/dist/esm',
     manualChunks: (id) => id.includes('/manifest') ? 'im-frame-plugin' : undefined
   },
   {

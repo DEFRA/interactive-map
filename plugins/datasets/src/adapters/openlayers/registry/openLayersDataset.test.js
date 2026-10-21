@@ -1,7 +1,7 @@
 import { OpenLayersDataset } from './openLayersDataset.js'
 import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { createSymbolRegistry } from '../../../../../../src/services/symbolRegistry.js'
-import { SymbolImageCache } from '../../../../../../providers/beta/openlayers/src/utils/symbolImages.js'
+import { SymbolImageCache } from '../../../../../../providers/openlayers/src/utils/symbolImages.js'
 
 const symbolRegistry = createSymbolRegistry()
 // Use the mock datasetRegistry with the demo datasets attached before each test

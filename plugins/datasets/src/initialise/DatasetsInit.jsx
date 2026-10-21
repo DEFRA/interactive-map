@@ -82,7 +82,7 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
       // symbols/patterns below) naturally re-trigger MAP_DATA_CHANGE via the GL engine's own
       // styledata event — nothing extra needed there. OL has no such generic signal (its
       // MAP_DATA_CHANGE is tied only to the basemap tile source's own tileloadend — see
-      // providers/beta/openlayers/src/appEvents.js's comment), so re-registering a symbol on a
+      // providers/openlayers/src/appEvents.js's comment), so re-registering a symbol on a
       // plain ol/layer/Vector never fires it. Emitting it explicitly once re-registration
       // genuinely finishes lets the interact plugin's settle-window re-apply (armed by
       // MAP_STYLE_CHANGE, see useHighlightSync.js) pick up the new theme's selected/active

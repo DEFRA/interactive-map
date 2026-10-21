@@ -1,5 +1,5 @@
-import createDrawPlugin from '/plugins/beta/draw-es/src/index.js';
-import createFramePlugin from '/plugins/beta/frame/src/index.js'
+import createDrawPlugin from '/plugins/draw-es/src/index.js';
+import createFramePlugin from '/plugins/frame/src/index.js'
 import { SiteBoundary, siteBoundary } from './siteBoundary.js'
 import { terms } from './terms.js'
 

@@ -64,15 +64,14 @@
     "/plugins/interact/dist",
     "/plugins/search/dist",
     "/plugins/draw/dist",
-    "/providers/beta/open-names/dist",
-    "/providers/beta/openlayers/dist",
+    "/providers/open-names/dist",
+    "/providers/openlayers/dist",
     "/plugins/datasets/dist",
     "/plugins/map-key/dist",
     "/plugins/menu/dist",
-    "/plugins/beta/map-styles/dist",
-    "/plugins/beta/scale-bar/dist",
-    "/plugins/beta/use-location/dist",
-    "/plugins/beta/draw-ml/dist",
-    "/plugins/beta/frame/dist"
+    "/plugins/map-styles/dist",
+    "/plugins/scale-bar/dist",
+    "/plugins/use-location/dist",
+    "/plugins/frame/dist"
   ]
 }
