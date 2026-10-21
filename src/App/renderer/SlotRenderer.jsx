@@ -1,22 +1,11 @@
 // src/core/renderers/SlotRenderer.jsx
 import React from 'react'
-import { useConfig } from '../store/configContext.js'
-import { useApp } from '../store/appContext.js'
-import { getSlotItems } from './slotAggregator.js'
+import { useSlotItems } from './SlotItemsProvider.jsx'
 import { Actions } from '../components/Actions/Actions.jsx'
-import { useEvaluateProp } from '../hooks/useEvaluateProp.js'
-import { useApplicationModeFilter } from '../hooks/useApplicationModeFilter.js'
 
 export const SlotRenderer = ({ slot }) => {
-  const appConfig = useConfig()
-  const appState = useApp()
-
-  // Shared evaluateProp hook for this render cycle
-  const evaluateProp = useEvaluateProp()
-  const isHiddenByApplicationMode = useApplicationModeFilter()
-
-  // Get all slot items (controls, panels, buttons)
-  const slotItems = getSlotItems({ slot, appConfig, appState, evaluateProp, isHiddenByApplicationMode })
+  // Built for every slot at once by SlotItemsProvider
+  const slotItems = useSlotItems(slot)
 
   if (!slotItems.length) {
     return null

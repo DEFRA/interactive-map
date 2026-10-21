@@ -11,8 +11,8 @@ import { stringToKebab } from '../../utils/stringToKebab.js'
 import { logger } from '../../services/logger.js'
 
 /**
- * Maps every configured panel eligible for the given layout slot to a renderable entry — open or
- * closed alike, so a button's aria-controls id always resolves to a stable, permanently-mounted
+ * Maps every configured panel eligible for the given layout slot (or, with no slot, for every
+ * slot) to a renderable entry — open or closed alike, so a button's aria-controls id always resolves to a stable, permanently-mounted
  * <Panel> (hidden when closed). buildPanelBody only runs while open, so nothing expensive mounts
  * before then.
  */
@@ -31,14 +31,16 @@ const getEligiblePanelConfig = (panelId, panelConfig, breakpoint, { slot, isFull
   if (!isPanelSlotEligible(config, { targetSlot, slot, isFullscreen })) {
     return null
   }
-  return { config, bpConfig }
+  return { config, bpConfig, targetSlot }
 }
 
 // A losing modal panel (see getAllowedModalPanelId) still gets a shell — it's just not open.
 const resolveIsOpen = (openEntry, bpConfig, panelId, allowedModalPanelId) =>
   Boolean(openEntry) && (!bpConfig.modal || panelId === allowedModalPanelId)
 
-export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplicationMode = hidesNothing }) {
+// controlsBySlot (optional): controls already mapped for every slot, so a panel body can look up
+// its `<panelId>-panel` controls instead of mapping them again.
+export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplicationMode = hidesNothing, controlsBySlot }) {
   const { breakpoint, pluginRegistry, panelConfig, openPanels } = appState
 
   // Only the most-recently-opened modal panel is ever actually shown — see isOpen below.
@@ -49,7 +51,7 @@ export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplication
     if (!eligible) {
       return null
     }
-    const { config, bpConfig } = eligible
+    const { config, bpConfig, targetSlot } = eligible
 
     const openEntry = openPanels[panelId]
     const isOpen = resolveIsOpen(openEntry, bpConfig, panelId, allowedModalPanelId)
@@ -66,6 +68,7 @@ export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplication
     return {
       id: panelId,
       type: 'panel',
+      slot: targetSlot,
       order: bpConfig.order ?? 0,
       element: (
         <Panel
@@ -76,7 +79,7 @@ export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplication
           focusOnOpen={focusOnOpen}
           isOpen={isOpen}
           isHidden={isHidden}
-          {...(isOpen ? buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode }) : {})}
+          {...(isOpen ? buildPanelBody({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode, controlsBySlot }) : {})}
           label={label}
           html={html}
         />
@@ -96,13 +99,11 @@ export function mapPanels ({ slot, appState, evaluateProp, isHiddenByApplication
  * @returns {{ items?: object[], tabs?: object[] }} spread directly onto `<Panel>` — exactly one
  *   of `items`/`tabs` is set (or neither, for a static-html panel).
  */
-function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode }) {
-  const injectedItems = mapControls({
-    slot: `${stringToKebab(panelId)}-panel`,
-    appState,
-    evaluateProp,
-    isHiddenByApplicationMode
-  })
+function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, html, label, appState, evaluateProp, isHiddenByApplicationMode, controlsBySlot }) {
+  const panelSlot = `${stringToKebab(panelId)}-panel`
+  const injectedItems = controlsBySlot
+    ? controlsBySlot.get(panelSlot) ?? []
+    : mapControls({ slot: panelSlot, appState, evaluateProp, isHiddenByApplicationMode })
 
   if (html) {
     /* istanbul ignore next */

@@ -1,4 +1,4 @@
-import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, hasOpenModalPanel } from './slotHelpers.js'
+import { resolveTargetSlot, isControlVisible, isConsumerHtml, isPanelSlotEligible, getAllowedModalPanelId, hasOpenModalPanel, groupBySlot } from './slotHelpers.js'
 
 jest.mock('./slots.js', () => ({ allowedSlots: { control: ['inset', 'banner', 'actions'], panel: ['header', 'modal', 'left-top'] } }))
 
@@ -134,5 +134,20 @@ describe('hasOpenModalPanel', () => {
 
   it('returns true when a modal panel is open', () => {
     expect(hasOpenModalPanel({ p1: { props: {} } }, panelConfig, 'desktop')).toBe(true)
+  })
+})
+
+describe('groupBySlot', () => {
+  it('groups items by their slot, keeping each slot\'s items in order', () => {
+    const items = [{ id: 'a', slot: 'header' }, { id: 'b', slot: 'banner' }, { id: 'c', slot: 'header' }]
+    expect([...groupBySlot(items)]).toEqual([
+      ['header', [items[0], items[2]]],
+      ['banner', [items[1]]]
+    ])
+  })
+
+  it('reads the slot with getSlot when given', () => {
+    const entries = [['b1', { slot: 'header' }]]
+    expect([...groupBySlot(entries, ([, config]) => config.slot)]).toEqual([['header', entries]])
   })
 })

@@ -257,7 +257,29 @@ describe('mapButtons module', () => {
     it('returns a flat list of buttons with type and order', () => {
       appState.buttonConfig = ({ b1: baseBtn })
       const result = map()
-      expect(result[0]).toMatchObject({ id: 'b1', type: 'button', order: 1 })
+      expect(result[0]).toMatchObject({ id: 'b1', type: 'button', slot: 'header', order: 1 })
+    })
+
+    it('maps buttons for every slot, each tagged with its slot, when no slot is given', () => {
+      appState.buttonConfig = ({ b1: baseBtn, b2: { ...baseBtn, desktop: { slot: 'sidebar' } } })
+      const result = mapButtons({ appState, appConfig, evaluateProp })
+      expect(result.map(({ id, slot }) => ({ id, slot }))).toEqual([{ id: 'b1', slot: 'header' }, { id: 'b2', slot: 'sidebar' }])
+    })
+
+    it('applies slot exclusivity within each slot when mapping every slot', () => {
+      appState.buttonConfig = {
+        drawCancel: { ...baseBtn, pluginId: 'draw', exclusiveSlot: true },
+        journeyBack: { ...baseBtn },
+        sidebarBtn: { ...baseBtn, desktop: { slot: 'sidebar' } }
+      }
+      const result = mapButtons({ appState, appConfig, evaluateProp })
+      expect(result.map(r => r.id)).toEqual(['drawCancel', 'sidebarBtn'])
+    })
+
+    it('tags a button group with its members\' slot', () => {
+      const group = { label: 'G1' }
+      appState.buttonConfig = ({ b1: { ...baseBtn, group }, b2: { ...baseBtn, group } })
+      expect(map()[0]).toMatchObject({ id: 'group-g1', type: 'group', slot: 'header' })
     })
 
     it('renders grouped buttons as a single group item with role=group, keyed by kebab-cased label', () => {
