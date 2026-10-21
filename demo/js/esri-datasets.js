@@ -1,14 +1,14 @@
 import InteractiveMap from '../../src/index.js'
-import esriProvider from '/providers/beta/esri/src/index.js'
+import esriProvider from '/providers/esri/src/index.js'
 // Plugins
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
+import mapStylesPlugin from '/plugins/map-styles/src/index.js'
 import createDatasetsPlugin from '/plugins/datasets/src/index.js'
 import createMapKeyPlugin from '/plugins/map-key/src/index.js'
 import createMenuPlugin from '/plugins/menu/src/index.js'
 // Setup
 import { vtsMapStyles27700 } from './mapStyles.js'
 import { drawPlugin, framePlugin, attachDrawPlugin } from './planning/drawPlugin.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import { transformGeocodeRequest, transformVtsRequest3857, setupEsriConfig } from './auth.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'

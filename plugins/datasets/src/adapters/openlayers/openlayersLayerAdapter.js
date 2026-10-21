@@ -66,7 +66,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     this._sourcesById.clear()
   }
 
-  // OL's basemap swap (see providers/beta/openlayers's appEvents.js) only replaces the base
+  // OL's basemap swap (see providers/openlayers's appEvents.js) only replaces the base
   // tile layer — dataset layers are separate map.addLayer() entries and are never wiped, so
   // unlike MapLibre there's nothing to rebuild here, just colour tokens to re-resolve. Pattern
   // fg/bg colours can be mapStyle-keyed too, so re-registering (not just re-styling) is needed.

@@ -18,23 +18,23 @@
       "require": "./providers/maplibre/dist/umd/index.js"
     },
     "./providers/open-names": {
-      "import": "./providers/beta/open-names/dist/esm/index.js",
-      "require": "./providers/beta/open-names/dist/umd/index.js"
+      "import": "./providers/open-names/dist/esm/index.js",
+      "require": "./providers/open-names/dist/umd/index.js"
     },
     "./providers/esri": {
-      "import": "./providers/beta/esri/dist/esm/index.js"
+      "import": "./providers/esri/dist/esm/index.js"
     },
     "./providers/openlayers": {
-      "import": "./providers/beta/openlayers/dist/esm/index.js",
-      "require": "./providers/beta/openlayers/dist/umd/index.js"
+      "import": "./providers/openlayers/dist/esm/index.js",
+      "require": "./providers/openlayers/dist/umd/index.js"
     },
     "./plugins/scale-bar": {
-      "import": "./plugins/beta/scale-bar/dist/esm/index.js",
-      "require": "./plugins/beta/scale-bar/dist/umd/index.js"
+      "import": "./plugins/scale-bar/dist/esm/index.js",
+      "require": "./plugins/scale-bar/dist/umd/index.js"
     },
     "./plugins/use-location": {
-      "import": "./plugins/beta/use-location/dist/esm/index.js",
-      "require": "./plugins/beta/use-location/dist/umd/index.js"
+      "import": "./plugins/use-location/dist/esm/index.js",
+      "require": "./plugins/use-location/dist/umd/index.js"
     },
     "./plugins/search": {
       "import": "./plugins/search/dist/esm/index.js",
@@ -54,34 +54,30 @@
       "import": "./plugins/map-key/dist/esm/index.js"
     },
     "./plugins/map-styles": {
-      "import": "./plugins/beta/map-styles/dist/esm/index.js",
-      "require": "./plugins/beta/map-styles/dist/umd/index.js"
-    },
-    "./plugins/draw-ml": {
-      "import": "./plugins/beta/draw-ml/dist/esm/index.js",
-      "require": "./plugins/beta/draw-ml/dist/umd/index.js"
+      "import": "./plugins/map-styles/dist/esm/index.js",
+      "require": "./plugins/map-styles/dist/umd/index.js"
     },
     "./plugins/draw-es": {
-      "import": "./plugins/beta/draw-es/dist/esm/index.js"
+      "import": "./plugins/draw-es/dist/esm/index.js"
     },
     "./plugins/draw": {
       "import": "./plugins/draw/dist/esm/index.js",
       "require": "./plugins/draw/dist/umd/index.js"
     },
     "./plugins/frame": {
-      "import": "./plugins/beta/frame/dist/esm/index.js",
-      "require": "./plugins/beta/frame/dist/umd/index.js"
+      "import": "./plugins/frame/dist/esm/index.js",
+      "require": "./plugins/frame/dist/umd/index.js"
     },
     "./css": "./dist/css/index.css",
     "./plugins/draw/css": "./plugins/draw/dist/css/index.css",
-    "./plugins/scale-bar/css": "./plugins/beta/scale-bar/dist/css/index.css",
+    "./plugins/scale-bar/css": "./plugins/scale-bar/dist/css/index.css",
     "./plugins/datasets/css": "./plugins/datasets/dist/css/index.css",
     "./plugins/menu/css": "./plugins/menu/dist/css/index.css",
     "./plugins/map-key/css": "./plugins/map-key/dist/css/index.css",
-    "./plugins/frame/css": "./plugins/beta/frame/dist/css/index.css",
-    "./plugins/map-styles/css": "./plugins/beta/map-styles/dist/css/index.css",
+    "./plugins/frame/css": "./plugins/frame/dist/css/index.css",
+    "./plugins/map-styles/css": "./plugins/map-styles/dist/css/index.css",
     "./plugins/search/css": "./plugins/search/dist/css/index.css",
-    "./providers/esri/css": "./providers/beta/esri/dist/css/index.css"
+    "./providers/esri/css": "./providers/esri/dist/css/index.css"
   },
   "type": "module",
   "sideEffects": [

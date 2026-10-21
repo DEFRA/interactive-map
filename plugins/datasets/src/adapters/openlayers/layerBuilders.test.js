@@ -5,7 +5,7 @@ import VectorTileLayer from 'ol/layer/VectorTile.js'
 import { createDatasetSource, createDatasetLayer, readGeoJSONFeatures } from './layerBuilders.js'
 import { logger } from '../../../../../src/services/logger.js'
 // The OL provider registers British National Grid when it loads
-import '../../../../../providers/beta/openlayers/src/utils/bngProjection.js'
+import '../../../../../providers/openlayers/src/utils/bngProjection.js'
 
 jest.mock('../../../../../src/services/logger.js', () => ({ logger: { warn: jest.fn() } }))
 

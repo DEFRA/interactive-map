@@ -3,11 +3,11 @@ import { vtsMapStyles27700, apgbAerialStyle } from './mapStyles.js'
 import { transformGeocodeRequest, transformVtsRequest27700 } from './auth.js'
 import '/plugins/datasets/src/datasets.scss' // in a separate repo: import '@defra/interactive-map/plugins/datasets/css'
 // Providers
-import openLayersProvider from '/providers/beta/openlayers/src/index.js'
-import openNamesProvider from '/providers/beta/open-names/src/index.js'
+import openLayersProvider from '/providers/openlayers/src/index.js'
+import openNamesProvider from '/providers/open-names/src/index.js'
 // Plugins
-import mapStylesPlugin from '/plugins/beta/map-styles/src/index.js'
-import scaleBarPlugin from '/plugins/beta/scale-bar/src/index.js'
+import mapStylesPlugin from '/plugins/map-styles/src/index.js'
+import scaleBarPlugin from '/plugins/scale-bar/src/index.js'
 import searchPlugin from '/plugins/search/src/index.js'
 import createInteractPlugin from '/plugins/interact/src/index.js'
 // GEP demo utils
