@@ -1,5 +1,6 @@
 // @ts-check
-const path = require('path');
+const path = require('node:path');
+const { getBabelOptions } = require('@docusaurus/babel');
 require('dotenv').config({ path: path.join(__dirname, '.env'), quiet: true });
 
 /** @type {import('@docusaurus/types').Config} */
@@ -31,8 +32,29 @@ const config = {
 
   presets: [],
 
+  // Docusaurus compiles the map's source with loose Babel, which assumes every iterable
+  // is an array: [...map.values()] becomes [].concat(map.values()), an array holding the
+  // iterator rather than its values. Turning off that one assumption spreads iterables
+  // properly and keeps the rest of the Docusaurus Babel setup.
+  //
+  // It's limited to the map's own source because Docusaurus also compiles its own
+  // CommonJS packages, where the helper imports this adds break their `exports`.
+  webpack: {
+    jsLoader: (isServer) => ({
+      loader: require.resolve('babel-loader'),
+      options: {
+        ...getBabelOptions({ isServer }),
+        overrides: [{
+          include: ['src', 'plugins', 'providers'].map((dir) => path.join(__dirname, dir)),
+          assumptions: { iterableIsArray: false },
+        }],
+      },
+    }),
+  },
+
   themes: [
-    [
+    /** @type {import('@docusaurus/types').PluginConfig} */
+    ([
       require.resolve('@easyops-cn/docusaurus-search-local'),
       /** @type {import("@easyops-cn/docusaurus-search-local").PluginOptions} */
       ({
@@ -45,7 +67,7 @@ const config = {
         highlightSearchTermsOnTargetPage: true,
         searchResultContextMaxLength: 60,
       }),
-    ],
+    ]),
     '@defra/docusaurus-theme-govuk',
   ],
 
