@@ -14,6 +14,10 @@ import { transformAsync } from '@babel/core'
 
 const __dirname = dirname(fileURLToPath(import.meta.url)) // NOSONAR - Standard Node.js convention in bundler configs
 
+// The @babel/runtime range we ship. Without it, the runtime transform assumes an old runtime and
+// imports the CommonJS-only @babel/runtime/regenerator, which Rollup can't load without a plugin.
+const BABEL_RUNTIME_VERSION = JSON.parse(fs.readFileSync(path.resolve(__dirname, 'package.json'), 'utf8')).dependencies['@babel/runtime']
+
 /**
  * Cleans output directories before each build starts.
  * Mirrors the RemoveFilesPlugin (before) behaviour from webpack.esm.mjs.
@@ -58,7 +62,7 @@ const es5InitialChunksPlugin = () => ({
       configFile: false,
       sourceType: 'module',
       presets: [['@babel/preset-env', { targets: { ie: '11' }, modules: false }]],
-      plugins: ['@babel/plugin-transform-runtime']
+      plugins: [['@babel/plugin-transform-runtime', { version: BABEL_RUNTIME_VERSION }]]
     })
     return { code: result.code, map: null }
   }
@@ -116,6 +120,26 @@ const PREACT_EXTERNALS = [
 // from index.js and defeating lazy loading.  @babel/runtime is a regular
 // dependency so it auto-installs for consumers and is resolved transparently.
 const BABEL_RUNTIME_EXTERNAL = /@babel\/runtime/
+
+const babelPlugin = () => babel({
+  // 'runtime' mode imports helpers from @babel/runtime rather than
+  // inlining them.  This prevents Rollup from deduplicating helpers across
+  // chunks (which caused static imports between entry and lazy chunks).
+  babelHelpers: 'runtime',
+  exclude: /node_modules/,
+  extensions: ['.js', '.jsx'],
+  plugins: [['@babel/plugin-transform-runtime', { version: BABEL_RUNTIME_VERSION }]],
+  // Override babel.config.json targets for ESM: target browsers that
+  // natively support ES modules (Chrome 61+, Firefox 60+, Safari 10.1+).
+  // The UMD build targets old browsers; the ESM build ships modern syntax
+  // and lets the consumer's bundler handle their own browser targets.
+  // This avoids transpiling classes, arrow functions, async/await etc.
+  // into verbose ES5 — the single biggest driver of ESM bundle size.
+  presets: [
+    ['@babel/preset-env', { targets: { chrome: '92', edge: '92', firefox: '90', safari: '15.4', ios: '15.4' }, bugfixes: true }],
+    ['@babel/preset-react', { runtime: 'automatic' }]
+  ]
+})
 
 const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null, chunkNames = {}) => {
   const esmDir = path.resolve(__dirname, outDir)
@@ -178,25 +202,7 @@ const createESMConfig = (entryPath, outDir, isCore = false, manualChunks = null,
       }),
       commonjs({ include: /node_modules/ }),
 
-      babel({
-        // 'runtime' mode imports helpers from @babel/runtime rather than
-        // inlining them.  This prevents Rollup from deduplicating helpers across
-        // chunks (which caused static imports between entry and lazy chunks).
-        babelHelpers: 'runtime',
-        exclude: /node_modules/,
-        extensions: ['.js', '.jsx'],
-        plugins: ['@babel/plugin-transform-runtime'],
-        // Override babel.config.json targets for ESM: target browsers that
-        // natively support ES modules (Chrome 61+, Firefox 60+, Safari 10.1+).
-        // The UMD build targets old browsers; the ESM build ships modern syntax
-        // and lets the consumer's bundler handle their own browser targets.
-        // This avoids transpiling classes, arrow functions, async/await etc.
-        // into verbose ES5 — the single biggest driver of ESM bundle size.
-        presets: [
-          ['@babel/preset-env', { targets: { chrome: '92', edge: '92', firefox: '90', safari: '15.4', ios: '15.4' }, bugfixes: true }],
-          ['@babel/preset-react', { runtime: 'automatic' }]
-        ]
-      }),
+      babelPlugin(),
 
       // extract is an absolute path; Rollup resolves it relative to output.dir
       // (rootDir) → "css/index.css" — no ".." in the emitted fileName.
