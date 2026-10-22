@@ -37,6 +37,12 @@ const makeProps = (overrides = {}) => {
 
 const renderInit = async (props) => render(<DrawInit {...props} />)
 
+// The adapter load starts a task after the effect; let that task and the load finish
+const waitForAdapter = () => act(async () => {
+  await Promise.resolve()
+  await new Promise((resolve) => setTimeout(resolve, 0))
+})
+
 beforeEach(() => jest.clearAllMocks())
 
 describe('adapter lifecycle', () => {
@@ -56,6 +62,7 @@ describe('adapter lifecycle', () => {
     const { props, adapter } = makeProps()
 
     await renderInit(props)
+    await waitForAdapter()
 
     expect(loadDrawAdapter).toHaveBeenCalledWith(props.mapProvider, expect.objectContaining({
       mapStyle: props.mapState.mapStyle,
@@ -70,6 +77,56 @@ describe('adapter lifecycle', () => {
     expect(props.services.eventBus.emit).toHaveBeenCalledWith('draw:ready')
   })
 
+  describe('with fake timers, to control when the next task runs', () => {
+    beforeEach(() => jest.useFakeTimers())
+    afterEach(() => jest.useRealTimers())
+
+    const runNextTask = () => act(async () => {
+      jest.runOnlyPendingTimers()
+      for (let i = 0; i < 5; i++) { await Promise.resolve() }
+    })
+
+    test('starts loading in a later task, not straight after the effect', async () => {
+      const { props, adapter } = makeProps()
+
+      await renderInit(props)
+      await act(async () => { await Promise.resolve() })
+
+      expect(loadDrawAdapter).not.toHaveBeenCalled()
+      expect(props.mapProvider.draw).toBeNull()
+
+      await runNextTask()
+
+      expect(loadDrawAdapter).toHaveBeenCalledTimes(1)
+      expect(props.mapProvider.draw).toBe(adapter)
+      expect(props.pluginState.dispatch).toHaveBeenCalledWith({ type: 'SET_HAS_SNAP_LAYERS', payload: true })
+    })
+
+    test('does not load at all if unmounted before the load starts', async () => {
+      const { props } = makeProps()
+
+      const result = await renderInit(props)
+      result.unmount()
+      await runNextTask()
+
+      expect(loadDrawAdapter).not.toHaveBeenCalled()
+      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith('draw:ready')
+    })
+  })
+
+  test('loads the adapter at most once per mount', async () => {
+    const { props } = makeProps()
+    const notReady = { ...props.mapState, isMapReady: false }
+
+    const result = await renderInit(props)
+    result.rerender(<DrawInit {...props} mapState={notReady} />)
+    result.rerender(<DrawInit {...props} />)
+    await waitForAdapter()
+
+    expect(loadDrawAdapter).toHaveBeenCalledTimes(1)
+    expect(props.services.eventBus.emit.mock.calls.filter(([name]) => name === 'draw:ready')).toHaveLength(1)
+  })
+
   test('does not load when the map is not ready', async () => {
     const { props } = makeProps({
       mapState: { isMapReady: false, mapStyle: {}, crossHair: { isVisible: false, fixAtCenter: jest.fn(), hide: jest.fn() } }
@@ -81,6 +138,7 @@ describe('adapter lifecycle', () => {
   test('removes the adapter, clears the reference, and releases activeMoveTarget on unmount', async () => {
     const { props, adapter } = makeProps()
     const result = await renderInit(props)
+    await waitForAdapter()
     expect(props.mapProvider.draw).toBe(adapter)
     props.mapProvider.activeMoveTarget = { move: jest.fn(), label: 'vertex' }
 
@@ -91,15 +149,18 @@ describe('adapter lifecycle', () => {
     expect(props.mapProvider.activeMoveTarget).toBeNull()
   })
 
-  test('ignores a late-resolving adapter after unmount', async () => {
+  test('removes, rather than uses, an adapter that loads after unmount', async () => {
     const { props, adapter } = makeProps()
     let resolveAdapter
     loadDrawAdapter.mockReturnValue(new Promise((resolve) => { resolveAdapter = resolve }))
 
     const result = render(<DrawInit {...props} />)
+    await waitForAdapter()
+    expect(loadDrawAdapter).toHaveBeenCalled()
     result.unmount()
-    await act(async () => { resolveAdapter(adapter); await Promise.resolve() })
+    await act(async () => { resolveAdapter(adapter) })
 
+    expect(adapter.remove).toHaveBeenCalled()
     expect(props.mapProvider.draw).toBeNull()
     expect(props.services.eventBus.emit).not.toHaveBeenCalledWith('draw:ready')
   })
