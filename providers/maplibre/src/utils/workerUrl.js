@@ -13,3 +13,15 @@ export const getWorkerUrl = (version) => {
   url.searchParams.set('v', version)
   return url.href
 }
+
+// The path getWorkerUrl()'s URL keeps when a bundler hasn't rewritten it (Rollup and esbuild don't)
+const UNBUNDLED_WORKER_PATH = /\/maplibre-gl\/dist\/maplibre-gl-worker\.mjs$/
+
+/**
+ * Whether a worker URL from getWorkerUrl() was left as written by the bundler, so points at a file
+ * that was never copied into the build.
+ *
+ * @param {string} url - The worker URL.
+ * @returns {boolean} true if the worker wasn't included in the build.
+ */
+export const isUnbundledWorkerUrl = (url) => UNBUNDLED_WORKER_PATH.test(new URL(url).pathname)

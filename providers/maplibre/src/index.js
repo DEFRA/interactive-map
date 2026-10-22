@@ -7,7 +7,12 @@
 
 import { getWebGL } from './utils/detectWebgl.js'
 import { supportsModuleWorkers } from './utils/detectModuleWorker.js'
-import { getWorkerUrl } from './utils/workerUrl.js'
+import { getWorkerUrl, isUnbundledWorkerUrl } from './utils/workerUrl.js'
+import { logger } from '../../../src/services/logger.js'
+
+const MISSING_WORKER_MESSAGE = "MapLibre's worker file wasn't included in the build, so the map can't load. " +
+  "Some bundlers, such as Rollup and esbuild, don't copy it: copy node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs " +
+  'to your assets and set the MapLibre provider\'s workerUrl option. See https://defra.github.io/interactive-map/api#workerurl'
 
 /**
  * Checks whether the browser can parse and run MapLibre. Its newest syntax is class
@@ -70,7 +75,11 @@ export default function createMapLibreProvider (config = {}) {
     load: async () => {
       const mapFramework = await import(/* webpackChunkName: "im-maplibre-framework" */ 'maplibre-gl')
 
-      mapFramework.setWorkerUrl(config.workerUrl || getWorkerUrl(mapFramework.getVersion()))
+      const workerUrl = config.workerUrl || getWorkerUrl(mapFramework.getVersion())
+      if (!config.workerUrl && isUnbundledWorkerUrl(workerUrl)) {
+        logger.error(MISSING_WORKER_MESSAGE)
+      }
+      mapFramework.setWorkerUrl(workerUrl)
 
       const MapProvider = (await import(/* webpackChunkName: "im-maplibre-provider" */ './maplibreProvider.js')).default
 
