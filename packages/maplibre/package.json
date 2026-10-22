@@ -1,0 +1,88 @@
+{
+  "name": "@defra/interactive-map-maplibre",
+  "version": "0.0.0-development",
+  "description": "An accessible map component for MapLibre",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/DEFRA/interactive-map",
+    "directory": "packages/maplibre"
+  },
+  "license": "MIT",
+  "type": "module",
+  "main": "dist/umd/index.js",
+  "module": "dist/esm/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/esm/index.js",
+      "require": "./dist/umd/index.js"
+    },
+    "./css": "./dist/css/index.css",
+    "./providers/open-names": {
+      "import": "./providers/open-names/dist/esm/index.js",
+      "require": "./providers/open-names/dist/umd/index.js"
+    },
+    "./plugins/datasets": {
+      "import": "./plugins/datasets/dist/esm/index.js",
+      "require": "./plugins/datasets/dist/umd/index.js"
+    },
+    "./plugins/datasets/css": "./plugins/datasets/dist/css/index.css",
+    "./plugins/draw": {
+      "import": "./plugins/draw/dist/esm/index.js",
+      "require": "./plugins/draw/dist/umd/index.js"
+    },
+    "./plugins/draw/css": "./plugins/draw/dist/css/index.css",
+    "./plugins/frame": {
+      "import": "./plugins/frame/dist/esm/index.js",
+      "require": "./plugins/frame/dist/umd/index.js"
+    },
+    "./plugins/frame/css": "./plugins/frame/dist/css/index.css",
+    "./plugins/interact": {
+      "import": "./plugins/interact/dist/esm/index.js",
+      "require": "./plugins/interact/dist/umd/index.js"
+    },
+    "./plugins/map-key": {
+      "import": "./plugins/map-key/dist/esm/index.js",
+      "require": "./plugins/map-key/dist/umd/index.js"
+    },
+    "./plugins/map-key/css": "./plugins/map-key/dist/css/index.css",
+    "./plugins/map-styles": {
+      "import": "./plugins/map-styles/dist/esm/index.js",
+      "require": "./plugins/map-styles/dist/umd/index.js"
+    },
+    "./plugins/map-styles/css": "./plugins/map-styles/dist/css/index.css",
+    "./plugins/menu": {
+      "import": "./plugins/menu/dist/esm/index.js",
+      "require": "./plugins/menu/dist/umd/index.js"
+    },
+    "./plugins/menu/css": "./plugins/menu/dist/css/index.css",
+    "./plugins/scale-bar": {
+      "import": "./plugins/scale-bar/dist/esm/index.js",
+      "require": "./plugins/scale-bar/dist/umd/index.js"
+    },
+    "./plugins/scale-bar/css": "./plugins/scale-bar/dist/css/index.css",
+    "./plugins/search": {
+      "import": "./plugins/search/dist/esm/index.js",
+      "require": "./plugins/search/dist/umd/index.js"
+    },
+    "./plugins/search/css": "./plugins/search/dist/css/index.css",
+    "./plugins/use-location": {
+      "import": "./plugins/use-location/dist/esm/index.js",
+      "require": "./plugins/use-location/dist/umd/index.js"
+    },
+    "./package.json": "./package.json"
+  },
+  "files": [
+    "dist",
+    "plugins",
+    "providers",
+    "govuk-prototype-kit.config.json"
+  ],
+  "sideEffects": [
+    "**/*.css"
+  ],
+  "dependencies": {
+    "@babel/runtime": "^7.28.6",
+    "maplibre-gl": "^6.14.0",
+    "preact": "^10.27.2"
+  }
+}

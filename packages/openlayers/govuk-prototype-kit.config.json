@@ -1,0 +1,16 @@
+{
+  "assets": [
+    "/dist",
+    "/providers/open-names/dist",
+    "/plugins/datasets/dist",
+    "/plugins/draw/dist",
+    "/plugins/frame/dist",
+    "/plugins/interact/dist",
+    "/plugins/map-key/dist",
+    "/plugins/map-styles/dist",
+    "/plugins/menu/dist",
+    "/plugins/scale-bar/dist",
+    "/plugins/search/dist",
+    "/plugins/use-location/dist"
+  ]
+}
