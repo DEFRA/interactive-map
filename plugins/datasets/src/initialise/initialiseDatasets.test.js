@@ -1,17 +1,15 @@
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { createDynamicSource } from '../fetch/createDynamicSource.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
 
 jest.mock('../fetch/createDynamicSource.js')
-jest.mock('../registry/datasetRegistry.js', () => ({
-  datasetRegistry: {
-    attach: jest.fn(),
-    attachCreateDataset: jest.fn(),
-    forEachDataset: jest.fn(),
-    invalidateKeyItemsOnMenuStateChange: jest.fn(),
-    _invalidateCache: jest.fn()
-  }
-}))
+
+const datasetRegistry = {
+  attach: jest.fn(),
+  attachCreateDataset: jest.fn(),
+  attachMenuStateRef: jest.fn(),
+  forEachDataset: jest.fn(),
+  invalidateKeyItemsOnMenuStateChange: jest.fn()
+}
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 
@@ -43,6 +41,7 @@ const makeArgs = (overrides = {}) => {
   const eventBus = makeEventBus()
   return {
     adapter: makeAdapter(),
+    datasetRegistry,
     pluginConfig: { datasets: [{ id: 'roads', label: 'Roads' }] },
     pluginStateRef: {},
     mapStyle: { layers: [] },
@@ -278,6 +277,20 @@ describe('onUpdate callback', () => {
     const geojson = { type: 'FeatureCollection', features: [] }
     capturedOnUpdate('parcels', geojson)
     expect(args.adapter.setData).toHaveBeenCalledWith('parcels', geojson)
+  })
+})
+
+// ─── menu:state request ───────────────────────────────────────────────────────
+
+describe('menu:state request', () => {
+  it('attaches the menu state ref to the registry', () => {
+    const args = makeArgs()
+    initialiseDatasets(args)
+
+    const menuStateRef = { current: { menuState: { timeframe: 'present' } } }
+    args.eventBus._handlers['menu:state'](menuStateRef)
+
+    expect(datasetRegistry.attachMenuStateRef).toHaveBeenCalledWith(menuStateRef)
   })
 })
 

@@ -1,12 +1,4 @@
-import { datasetRegistry } from './datasetRegistry.js'
-
-let _menuStateRef = {}
-export const attachMenuStateRef = (menuStateRef) => {
-  _menuStateRef = menuStateRef
-}
-
-const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
-  const menuState = _menuStateRef?.current?.menuState || {}
+const _isVisibleWhenMenuCheck = (menuVisibleWhen, menuState = {}) => {
   for (const [key, valueArray] of Object.entries(menuVisibleWhen)) {
     const menuValue = menuState[key]
     if (!valueArray.includes(menuValue)) {
@@ -16,13 +8,10 @@ const _isVisibleWhenMenuCheck = (menuVisibleWhen) => {
   return true
 }
 
-const _isVisibleWhenMapStyleCheck = (visibleWhenValue) => {
+const _isVisibleWhenMapStyleCheck = (visibleWhenValue, mapStyleId) => {
   const mapStylesArray = Array.isArray(visibleWhenValue) ? visibleWhenValue : [visibleWhenValue]
-  return mapStylesArray.includes(_getMapStyleId())
+  return mapStylesArray.includes(mapStyleId)
 }
-
-// exported so it can be mocked and overridden when testing
-export const _getMapStyleId = () => datasetRegistry.mapStyle.id
 
 /**
  * receives a visibleWhen boolean or object
@@ -32,9 +21,12 @@ export const _getMapStyleId = () => datasetRegistry.mapStyle.id
  * if visibleWhen is an object, it checks the properties of the object, against the relevant pluginState properties,
  * and returns true if all properties are satisfied:
  * @param {boolean|object} visibleWhen - the visibleWhen property of a dataset
+ * @param {object} context
+ * @param {string} context.mapStyleId - the current map style id
+ * @param {object} context.menuState - the current menu state
  * @returns {boolean} - true if the dataset should be visible, false otherwise
  */
-export const isVisibleWhen = (visibleWhen) => {
+export const isVisibleWhen = (visibleWhen, { mapStyleId, menuState } = {}) => {
   if (visibleWhen === undefined || visibleWhen === null) {
     return true
   }
@@ -44,10 +36,10 @@ export const isVisibleWhen = (visibleWhen) => {
   if (typeof visibleWhen === 'object') {
     // check each property of the visibleWhen object against the relevant pluginState property
     for (const [visibleWhenKey, visibleWhenValue] of Object.entries(visibleWhen)) {
-      if (visibleWhenKey === 'mapStyleId' && !_isVisibleWhenMapStyleCheck(visibleWhenValue)) {
+      if (visibleWhenKey === 'mapStyleId' && !_isVisibleWhenMapStyleCheck(visibleWhenValue, mapStyleId)) {
         return false
       }
-      if (visibleWhenKey === 'menu' && !_isVisibleWhenMenuCheck(visibleWhenValue)) {
+      if (visibleWhenKey === 'menu' && !_isVisibleWhenMenuCheck(visibleWhenValue, menuState)) {
         return false
       }
     }

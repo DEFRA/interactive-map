@@ -1,14 +1,13 @@
-import { datasetRegistry } from './datasetRegistry.js'
-import { isVisibleWhen } from './isVisibleWhen.js'
 import { datasetDefaults, hasCustomVisualStyle, applyStyleDefaults } from '../initialise/defaults.js'
 import { hasPattern } from '../../../../src/utils/patternUtils.js'
 import { hasSymbol } from '../../../../src/utils/symbolUtils.js'
 import { DynamicGeoJson } from './dynamicGeoJson.js'
-import { calculateOpacity, getGlobalVisibility } from './globalDataset.js'
+import { calculateOpacity } from './globalDataset.js'
 
 export class Dataset {
-  constructor (dataset) {
+  constructor (dataset, registry) {
     this._datasetDefinition = dataset
+    this._registry = registry
   }
 
   get id () { return this._datasetDefinition.id }
@@ -57,7 +56,7 @@ export class Dataset {
   get opacity () {
     const myOpacity = this.style?.opacity
     const parentOpacity = this.parent?.style?.opacity
-    return calculateOpacity(myOpacity, parentOpacity)
+    return calculateOpacity(this._registry.globals, myOpacity, parentOpacity)
   }
 
   get hasDynamicGeoJSON () {
@@ -85,7 +84,7 @@ export class Dataset {
     if (this.isSublayer) {
       return !this.parent?.visible
     }
-    return !getGlobalVisibility()
+    return !this._registry.globals.visible
   }
 
   // Returns true if this dataset is visible based on its own visibility setting,
@@ -103,7 +102,7 @@ export class Dataset {
     if (this.isSublayer) {
       return this._datasetDefinition.visible && (this.parent?.visible)
     }
-    return this._datasetDefinition.visible && getGlobalVisibility()
+    return this._datasetDefinition.visible && this._registry.globals.visible
   }
 
   get esriStyleLayerId () { return this._datasetDefinition.esriStyleLayerId }
@@ -111,7 +110,7 @@ export class Dataset {
   get visibility () {
     const { visible, visibleWhen } = this
     if (visible && visibleWhen) {
-      return isVisibleWhen(visibleWhen) ? 'visible' : 'none'
+      return this._registry.isVisibleWhen(visibleWhen) ? 'visible' : 'none'
     }
     return visible ? 'visible' : 'none'
   }
@@ -152,14 +151,14 @@ export class Dataset {
   get sublayers () {
     const { sublayerIds } = this
     if (sublayerIds) {
-      return sublayerIds.map(id => datasetRegistry.getDataset(id))
+      return sublayerIds.map(id => this._registry.getDataset(id))
     }
     return []
   }
 
   get parent () {
     if (this._datasetDefinition.parentId) {
-      return datasetRegistry.getDataset(this._datasetDefinition.parentId)
+      return this._registry.getDataset(this._datasetDefinition.parentId)
     }
     return undefined
   }

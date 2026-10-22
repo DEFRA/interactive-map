@@ -1,6 +1,5 @@
 import { Dataset } from './dataset.js'
 import { datasetRegistry } from './datasetRegistry.js'
-import { attachGlobalState } from './globalDataset.js'
 // Use the mock datasetRegistry with the demo datasets attached before each test
 // so we can test Dataset methods that depend on parent/sublayer relationships and styles
 jest.mock('./datasetRegistry.js')
@@ -35,7 +34,7 @@ describe('Dataset class', () => {
     })
 
     it('returns false for a dataset with an empty sublayerIds array', () => {
-      const dataset = new Dataset({ sublayerIds: [] })
+      const dataset = new Dataset({ sublayerIds: [] }, datasetRegistry)
       expect(dataset.hasSublayers).toBe(false)
     })
   })
@@ -73,7 +72,7 @@ describe('Dataset class', () => {
 
   describe('style', () => {
     it('returns a default style object when none are provided', () => {
-      const dataset = new Dataset({ id: 'dataset' })
+      const dataset = new Dataset({ id: 'dataset' }, datasetRegistry)
       expect(dataset.style).toEqual({
         stroke: '#d4351c',
         strokeWidth: 2,
@@ -82,7 +81,7 @@ describe('Dataset class', () => {
     })
 
     it('returns the style object when one are provided', () => {
-      const dataset = new Dataset({ id: 'dataset', style: { stroke: '#0000ff' } })
+      const dataset = new Dataset({ id: 'dataset', style: { stroke: '#0000ff' } }, datasetRegistry)
       expect(dataset.style).toEqual({
         stroke: '#0000ff',
         strokeWidth: 2
@@ -90,7 +89,7 @@ describe('Dataset class', () => {
     })
 
     it('returns the dataset style, with the default strokeWidth, when there is no parent', () => {
-      const dataset = new Dataset({ style: { stroke: '#ff0000', fill: 'transparent' } })
+      const dataset = new Dataset({ style: { stroke: '#ff0000', fill: 'transparent' } }, datasetRegistry)
       expect(dataset.style).toEqual({ stroke: '#ff0000', fill: 'transparent', strokeWidth: 2 })
     })
 
@@ -134,11 +133,11 @@ describe('Dataset class', () => {
       ['a symbol id', { symbol: 'pin' }],
       ['inline symbolSvgContent', { symbolSvgContent: '<circle r="4"/>' }]
     ])('is a symbol dataset when its style has %s', (_, style) => {
-      expect(new Dataset({ style }).hasSymbol).toBe(true)
+      expect(new Dataset({ style }, datasetRegistry).hasSymbol).toBe(true)
     })
 
     it('is not a symbol dataset with neither', () => {
-      expect(new Dataset({ style: { fill: '#ff0000' } }).hasSymbol).toBe(false)
+      expect(new Dataset({ style: { fill: '#ff0000' } }, datasetRegistry).hasSymbol).toBe(false)
     })
   })
 
@@ -151,38 +150,38 @@ describe('Dataset class', () => {
       ['symbol', { symbol: 'square' }],
       ['symbolSvgContent', { symbolSvgContent: '<svg/>' }]
     ])('returns true when style contains %s', (_, style) => {
-      expect(new Dataset({ style }).hasCustomVisualStyle).toBe(true)
+      expect(new Dataset({ style }, datasetRegistry).hasCustomVisualStyle).toBe(true)
     })
 
     it('returns false when style contains no visual style properties', () => {
-      const dataset = new Dataset({ style: { symbolBackgroundColor: '#ff0000', strokeWidth: 3 } })
+      const dataset = new Dataset({ style: { symbolBackgroundColor: '#ff0000', strokeWidth: 3 } }, datasetRegistry)
       expect(dataset.hasCustomVisualStyle).toBe(false)
     })
 
     it('returns false when there is no style', () => {
-      const dataset = new Dataset({})
+      const dataset = new Dataset({}, datasetRegistry)
       expect(dataset.hasCustomVisualStyle).toBe(false)
     })
   })
 
   describe('symbolDescription', () => {
     it("returns the dataset's own symbolDescription", () => {
-      const dataset = new Dataset({ style: { symbolDescription: 'a circle' } })
+      const dataset = new Dataset({ style: { symbolDescription: 'a circle' } }, datasetRegistry)
       expect(dataset.symbolDescription).toBe('a circle')
     })
 
     it("returns the dataset's own symbolDescription alongside a custom visual style", () => {
-      const dataset = new Dataset({ style: { stroke: '#0000ff', symbolDescription: 'blue outline' } })
+      const dataset = new Dataset({ style: { stroke: '#0000ff', symbolDescription: 'blue outline' } }, datasetRegistry)
       expect(dataset.symbolDescription).toBe('blue outline')
     })
 
     it('returns undefined when the dataset has a custom visual style but no symbolDescription', () => {
-      const dataset = new Dataset({ style: { stroke: '#ff0000' } })
+      const dataset = new Dataset({ style: { stroke: '#ff0000' } }, datasetRegistry)
       expect(dataset.symbolDescription).toBeUndefined()
     })
 
     it('returns the default symbolDescription when the dataset has no style', () => {
-      const dataset = new Dataset({})
+      const dataset = new Dataset({}, datasetRegistry)
       expect(dataset.symbolDescription).toBe('red outline')
     })
 
@@ -191,7 +190,7 @@ describe('Dataset class', () => {
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
 
-      const dataset = new Dataset(childDef)
+      const dataset = new Dataset(childDef, datasetRegistry)
       expect(dataset.symbolDescription).toBe('parent symbol')
     })
 
@@ -202,7 +201,7 @@ describe('Dataset class', () => {
 
       // parent has a custom visual style (stroke) → parent.symbolDescription = undefined
       // child has no visual style → inherits undefined from parent
-      const dataset = new Dataset(childDef)
+      const dataset = new Dataset(childDef, datasetRegistry)
       expect(dataset.symbolDescription).toBeUndefined()
     })
   })
@@ -212,15 +211,15 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', sublayerIds: ['child'], style: parentStyle }
       const childDef = { id: 'child', parentId: 'parent', style: childStyle }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      return new Dataset(childDef)
+      return new Dataset(childDef, datasetRegistry)
     }
 
     it('applies the default stroke when there is no style', () => {
-      expect(new Dataset({}).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 2, symbolDescription: 'red outline' })
+      expect(new Dataset({}, datasetRegistry).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 2, symbolDescription: 'red outline' })
     })
 
     it('applies the whole default style when the style only sets opacity', () => {
-      expect(new Dataset({ style: { opacity: 0.5 } }).style).toEqual({
+      expect(new Dataset({ style: { opacity: 0.5 } }, datasetRegistry).style).toEqual({
         opacity: 0.5,
         stroke: '#d4351c',
         strokeWidth: 2,
@@ -229,7 +228,7 @@ describe('Dataset class', () => {
     })
 
     it('applies the default stroke when the style only adjusts it', () => {
-      expect(new Dataset({ style: { strokeWidth: 4, opacity: 0.5 } }).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 4, opacity: 0.5 })
+      expect(new Dataset({ style: { strokeWidth: 4, opacity: 0.5 } }, datasetRegistry).style).toMatchObject({ stroke: '#d4351c', strokeWidth: 4, opacity: 0.5 })
     })
 
     it.each([
@@ -240,14 +239,14 @@ describe('Dataset class', () => {
       ['custom symbol content', { symbolSvgContent: '<path/>' }],
       ['an explicitly empty stroke', { stroke: null }]
     ])('does not apply the default stroke to a style with %s', (_, style) => {
-      const dataset = new Dataset({ style })
+      const dataset = new Dataset({ style }, datasetRegistry)
       expect(dataset.style.stroke ?? null).toBeNull()
       expect(dataset.hasStroke).toBe(false)
       expect(dataset.symbolDescription).toBeUndefined()
     })
 
     it('applies the default strokeWidth to a custom stroke', () => {
-      expect(new Dataset({ style: { stroke: '#0000ff' } }).style.strokeWidth).toBe(2)
+      expect(new Dataset({ style: { stroke: '#0000ff' } }, datasetRegistry).style.strokeWidth).toBe(2)
     })
 
     it('does not apply the default stroke to a sublayer with a fill when the parent has no style', () => {
@@ -270,24 +269,24 @@ describe('Dataset class', () => {
 
   describe('label', () => {
     it('returns the dataset label', () => {
-      const dataset = new Dataset({ label: 'My dataset' })
+      const dataset = new Dataset({ label: 'My dataset' }, datasetRegistry)
       expect(dataset.label).toBe('My dataset')
     })
 
     it('returns undefined when no label is set', () => {
-      const dataset = new Dataset({})
+      const dataset = new Dataset({}, datasetRegistry)
       expect(dataset.label).toBeUndefined()
     })
   })
 
   describe('showInKey', () => {
     it('returns true when showInKey is set on the dataset', () => {
-      const dataset = new Dataset({ showInKey: true })
+      const dataset = new Dataset({ showInKey: true }, datasetRegistry)
       expect(dataset.showInKey).toBe(true)
     })
 
     it('returns false when showInKey is not set and there is no parent', () => {
-      const dataset = new Dataset({})
+      const dataset = new Dataset({}, datasetRegistry)
       expect(dataset.showInKey).toBe(false)
     })
 
@@ -295,58 +294,58 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', showInKey: true, style: {} }
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).showInKey).toBe(true)
+      expect(new Dataset(childDef, datasetRegistry).showInKey).toBe(true)
     })
 
     it('returns false when neither the sublayer nor the parent has showInKey set', () => {
       const parentDef = { id: 'parent', style: {} }
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).showInKey).toBe(false)
+      expect(new Dataset(childDef, datasetRegistry).showInKey).toBe(false)
     })
 
     it('allows a sublayer to opt out with showInKey: false even when parent has showInKey: true', () => {
       const parentDef = { id: 'parent', showInKey: true, style: {} }
       const childDef = { id: 'child', parentId: 'parent', showInKey: false, style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).showInKey).toBe(false)
+      expect(new Dataset(childDef, datasetRegistry).showInKey).toBe(false)
     })
 
     it('allows a sublayer to opt in with showInKey: true even when parent has showInKey: false', () => {
       const parentDef = { id: 'parent', showInKey: false, style: {} }
       const childDef = { id: 'child', parentId: 'parent', showInKey: true, style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).showInKey).toBe(true)
+      expect(new Dataset(childDef, datasetRegistry).showInKey).toBe(true)
     })
   })
 
   describe('tiles, geojson, idProperty, parentId', () => {
     it('returns tiles from the definition', () => {
       const tiles = ['https://example.com/{z}/{x}/{y}']
-      const dataset = new Dataset({ tiles })
+      const dataset = new Dataset({ tiles }, datasetRegistry)
       expect(dataset.tiles).toBe(tiles)
     })
 
     it('returns geojson from the definition', () => {
       const geojson = { type: 'FeatureCollection', features: [] }
-      const dataset = new Dataset({ geojson })
+      const dataset = new Dataset({ geojson }, datasetRegistry)
       expect(dataset.geojson).toBe(geojson)
     })
 
     it('returns idProperty from the definition', () => {
-      const dataset = new Dataset({ idProperty: 'gid' })
+      const dataset = new Dataset({ idProperty: 'gid' }, datasetRegistry)
       expect(dataset.idProperty).toBe('gid')
     })
 
     it('returns parentId from the definition', () => {
-      const dataset = new Dataset({ parentId: 'parent' })
+      const dataset = new Dataset({ parentId: 'parent' }, datasetRegistry)
       expect(dataset.parentId).toBe('parent')
     })
   })
 
   describe('minZoom / maxZoom', () => {
     it('returns minZoom from the definition', () => {
-      const dataset = new Dataset({ minZoom: 8 })
+      const dataset = new Dataset({ minZoom: 8 }, datasetRegistry)
       expect(dataset.minZoom).toBe(8)
     })
 
@@ -354,11 +353,11 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', minZoom: 10, style: {} }
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).minZoom).toBe(10)
+      expect(new Dataset(childDef, datasetRegistry).minZoom).toBe(10)
     })
 
     it('returns maxZoom from the definition', () => {
-      const dataset = new Dataset({ maxZoom: 20 })
+      const dataset = new Dataset({ maxZoom: 20 }, datasetRegistry)
       expect(dataset.maxZoom).toBe(20)
     })
 
@@ -366,7 +365,7 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', maxZoom: 22, style: {} }
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).maxZoom).toBe(22)
+      expect(new Dataset(childDef, datasetRegistry).maxZoom).toBe(22)
     })
   })
 
@@ -444,7 +443,7 @@ describe('Dataset class', () => {
 
     describe('with opacityMode set to "multiply"', () => {
       beforeEach(() => {
-        attachGlobalState({
+        datasetRegistry.attachGlobals({
           ...globalState,
           opacityMode: 'multiply',
           opacity: 0.75
@@ -480,7 +479,7 @@ describe('Dataset class', () => {
 
     describe('with opacityMode set to "global"', () => {
       beforeEach(() => {
-        attachGlobalState({
+        datasetRegistry.attachGlobals({
           ...globalState,
           opacityMode: 'global',
           opacity: 0.6
@@ -521,27 +520,27 @@ describe('Dataset class', () => {
 
   describe('hiddenFeatures / hasHiddenFeatures', () => {
     it('returns hiddenFeatures from the definition', () => {
-      const dataset = new Dataset({ hiddenFeatures: [1, 2] })
+      const dataset = new Dataset({ hiddenFeatures: [1, 2] }, datasetRegistry)
       expect(dataset.hiddenFeatures).toEqual([1, 2])
     })
 
     it('returns undefined when hiddenFeatures is not set', () => {
-      const dataset = new Dataset({})
+      const dataset = new Dataset({}, datasetRegistry)
       expect(dataset.hiddenFeatures).toBeUndefined()
     })
 
     it('returns true from hasHiddenFeatures when hiddenFeatures is a non-empty array', () => {
-      const dataset = new Dataset({ hiddenFeatures: [42] })
+      const dataset = new Dataset({ hiddenFeatures: [42] }, datasetRegistry)
       expect(dataset.hasHiddenFeatures).toBe(true)
     })
 
     it('returns false from hasHiddenFeatures when hiddenFeatures is empty', () => {
-      const dataset = new Dataset({ hiddenFeatures: [] })
+      const dataset = new Dataset({ hiddenFeatures: [] }, datasetRegistry)
       expect(dataset.hasHiddenFeatures).toBe(false)
     })
 
     it('returns false from hasHiddenFeatures when hiddenFeatures is not set', () => {
-      const dataset = new Dataset({})
+      const dataset = new Dataset({}, datasetRegistry)
       expect(dataset.hasHiddenFeatures).toBe(false)
     })
 
@@ -549,25 +548,25 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', hiddenFeatures: [7], style: {} }
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).hasHiddenFeatures).toBe(true)
+      expect(new Dataset(childDef, datasetRegistry).hasHiddenFeatures).toBe(true)
     })
   })
 
   describe('filter', () => {
     it('returns null', () => {
-      const dataset = new Dataset({ filter: ['==', ['get', 'type'], 'foo'] })
+      const dataset = new Dataset({ filter: ['==', ['get', 'type'], 'foo'] }, datasetRegistry)
       expect(dataset.filter).toBeNull()
     })
   })
 
   describe('symbolAnchor', () => {
     it('returns symbolAnchor from its own style', () => {
-      const dataset = new Dataset({ style: { symbolAnchor: [0.5, 1] } })
+      const dataset = new Dataset({ style: { symbolAnchor: [0.5, 1] } }, datasetRegistry)
       expect(dataset.symbolAnchor).toEqual([0.5, 1])
     })
 
     it('returns undefined when no symbolAnchor is set and there is no parent', () => {
-      const dataset = new Dataset({ style: {} })
+      const dataset = new Dataset({ style: {} }, datasetRegistry)
       expect(dataset.symbolAnchor).toBeUndefined()
     })
 
@@ -575,18 +574,18 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', style: { symbolAnchor: [0.1, 0.9] } }
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).symbolAnchor).toEqual([0.1, 0.9])
+      expect(new Dataset(childDef, datasetRegistry).symbolAnchor).toEqual([0.1, 0.9])
     })
   })
 
   describe('sourceLayer', () => {
     it('returns the sourceLayer from a tile-based top-level dataset', () => {
-      const dataset = new Dataset({ tiles: ['https://example.com/{z}/{x}/{y}'], sourceLayer: 'my_layer' })
+      const dataset = new Dataset({ tiles: ['https://example.com/{z}/{x}/{y}'], sourceLayer: 'my_layer' }, datasetRegistry)
       expect(dataset.sourceLayer).toBe('my_layer')
     })
 
     it('returns undefined for a geojson dataset with no tiles', () => {
-      const dataset = new Dataset({ geojson: { type: 'FeatureCollection', features: [] } })
+      const dataset = new Dataset({ geojson: { type: 'FeatureCollection', features: [] } }, datasetRegistry)
       expect(dataset.sourceLayer).toBeUndefined()
     })
 
@@ -594,7 +593,7 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', tiles: ['https://example.com/{z}/{x}/{y}'], sourceLayer: 'parent_layer', style: {} }
       const childDef = { id: 'child', parentId: 'parent', style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).sourceLayer).toBe('parent_layer')
+      expect(new Dataset(childDef, datasetRegistry).sourceLayer).toBe('parent_layer')
     })
   })
 
@@ -603,35 +602,35 @@ describe('Dataset class', () => {
       const parentDef = { id: 'parent', visible: false, style: {} }
       const childDef = { id: 'child', parentId: 'parent', visible: true, style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).isHiddenByInheritance).toBe(true)
+      expect(new Dataset(childDef, datasetRegistry).isHiddenByInheritance).toBe(true)
     })
 
     it('returns false for a sublayer whose parent is visible', () => {
       const parentDef = { id: 'parent', visible: true, style: {} }
       const childDef = { id: 'child', parentId: 'parent', visible: true, style: {} }
       datasetRegistry.attach({ parent: parentDef, child: childDef })
-      expect(new Dataset(childDef).isHiddenByInheritance).toBe(false)
+      expect(new Dataset(childDef, datasetRegistry).isHiddenByInheritance).toBe(false)
     })
 
     it('returns false for a top-level dataset when global visibility is true', () => {
-      const dataset = new Dataset({ id: 'top', visible: true, style: {} })
+      const dataset = new Dataset({ id: 'top', visible: true, style: {} }, datasetRegistry)
       expect(dataset.isHiddenByInheritance).toBe(false)
     })
   })
 
   describe('isLocallyVisible', () => {
     it('returns the raw visible flag from the definition when not visible', () => {
-      const dataset = new Dataset({ visible: false })
+      const dataset = new Dataset({ visible: false }, datasetRegistry)
       expect(dataset.isLocallyVisible).toBe(false)
     })
 
     it('returns undefined when visible is not set and dataset is not visible', () => {
-      const dataset = new Dataset({})
+      const dataset = new Dataset({}, datasetRegistry)
       expect(dataset.isLocallyVisible).toBeUndefined()
     })
 
     it('returns true when isVisible is truthy (subclass override scenario)', () => {
-      const dataset = new Dataset({ visible: false })
+      const dataset = new Dataset({ visible: false }, datasetRegistry)
       Object.defineProperty(dataset, 'isVisible', { get: () => true, configurable: true })
       expect(dataset.isLocallyVisible).toBe(true)
     })
@@ -642,7 +641,7 @@ describe('Dataset class', () => {
       const dataset = new Dataset({
         id: 'parcels',
         dynamicGeoJSON: { url: 'http://example.com', idProperty: 'parcel_id' }
-      })
+      }, datasetRegistry)
       const dg = dataset.dynamicGeoJSON
       expect(dg.source.promoteId).toBe('parcel_id')
       expect(dg.source.generateId).toBeUndefined()
@@ -652,7 +651,7 @@ describe('Dataset class', () => {
       const dataset = new Dataset({
         id: 'parcels',
         dynamicGeoJSON: { url: 'http://example.com' }
-      })
+      }, datasetRegistry)
       const dg = dataset.dynamicGeoJSON
       expect(dg.source.generateId).toBe(true)
       expect(dg.source.promoteId).toBeUndefined()
@@ -661,17 +660,17 @@ describe('Dataset class', () => {
 
   describe('groupId', () => {
     it('returns the groupId from the dataset definition', () => {
-      const dataset = new Dataset({ id: 'dataset', groupId: 'group-1' })
+      const dataset = new Dataset({ id: 'dataset', groupId: 'group-1' }, datasetRegistry)
       expect(dataset.groupId).toBe('group-1')
     })
 
     it('builds a groupId from the dataset definitions groupLabel', () => {
-      const dataset = new Dataset({ id: 'dataset', groupLabel: 'Roast Potatoes' })
+      const dataset = new Dataset({ id: 'dataset', groupLabel: 'Roast Potatoes' }, datasetRegistry)
       expect(dataset.groupId).toBe('roast-potatoes')
     })
 
     it('returns null if no groupId is set', () => {
-      const dataset = new Dataset({ id: 'dataset' })
+      const dataset = new Dataset({ id: 'dataset' }, datasetRegistry)
       expect(dataset.groupId).toBeNull()
     })
   })

@@ -57,7 +57,7 @@ beforeEach(() => {
 
   map = makeMap()
   mapProvider = makeMapProvider(map)
-  adapter = new MaplibreLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+  adapter = new MaplibreLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
   adapter.attachDynamicSources(dynamicSources)
   datasetRegistry.attachCreateDataset(adapter.createDataset)
 })

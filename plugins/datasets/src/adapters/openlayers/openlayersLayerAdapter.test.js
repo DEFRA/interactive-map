@@ -72,7 +72,7 @@ let map, mapProvider, adapter
 beforeEach(() => {
   map = makeMap()
   mapProvider = makeMapProvider(map)
-  adapter = new OpenLayersLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+  adapter = new OpenLayersLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
   datasetRegistry.attachCreateDataset(adapter.createDataset)
   datasetRegistry.mockExtend({
     'ds-fill': { id: 'ds-fill', style: { fill: '#0000ff' }, geojson: { type: 'FeatureCollection', features: [point(1, [0, 0])] } },

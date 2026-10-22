@@ -1,11 +1,10 @@
 import { createDynamicSource } from '../fetch/createDynamicSource.js'
 import { mappedDatasetsReducer } from '../reducers/mappedDatasetsReducer.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { attachMenuStateRef } from '../registry/isVisibleWhen.js'
 import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
 export const initialiseDatasets = ({
   adapter,
+  datasetRegistry,
   pluginConfig,
   mapStyle,
   mapProvider,
@@ -28,7 +27,7 @@ export const initialiseDatasets = ({
   datasetRegistry.attach(mappedDatasets, orderedDatasets, mapStyle)
   const menu = datasetsToMenu({ datasets })
 
-  eventBus.requestOnce('menu:state', attachMenuStateRef) // Request the menu state from the menu plugin
+  eventBus.requestOnce('menu:state', menuStateRef => datasetRegistry.attachMenuStateRef(menuStateRef)) // Request the menu state from the menu plugin
 
   dispatch({ type: 'SET_MENU', payload: { menu } })
   dispatch({ type: 'SET_DATASETS', payload: { mappedDatasets, orderedDatasets } })

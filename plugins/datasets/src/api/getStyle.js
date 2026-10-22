@@ -1,9 +1,8 @@
 import { logger } from '../../../../src/services/logger.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
 
-export const getStyle = ({ _pluginState }, { datasetId, sublayerId } = {}) => {
+export const getStyle = ({ pluginState: { datasetRegistry } }, { datasetId, sublayerId } = {}) => {
   datasetId = sublayerId ? `${datasetId}-${sublayerId}` : datasetId
-  const registryDataset = datasetRegistry.getDataset(datasetId)
+  const registryDataset = datasetRegistry?.getDataset(datasetId)
   if (!registryDataset) {
     logger.warn(`getStyle: Dataset with id ${datasetId} not found`)
     return null

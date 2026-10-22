@@ -44,6 +44,11 @@ describe('initialState', () => {
   it('has an empty actionsArray', () => {
     expect(initialState.actionsArray).toEqual([])
   })
+
+  it('has no registry or adapter until the plugin creates them', () => {
+    expect(initialState.datasetRegistry).toBeNull()
+    expect(initialState.layerAdapter).toBeNull()
+  })
 })
 
 // ─── SET_DATASETS ─────────────────────────────────────────────────────────────
@@ -200,6 +205,26 @@ describe('SET_MENU', () => {
     const state = makeState()
     const result = actions.SET_MENU(state, { menu: [] })
     expect(result.actionsArray).toEqual([])
+  })
+})
+
+// ─── SET_DATASET_REGISTRY / SET_LAYER_ADAPTER ────────────────────────────────
+
+describe('SET_DATASET_REGISTRY', () => {
+  it('stores the registry without changing the rest of the state', () => {
+    const state = makeStateWithDataset()
+    const datasetRegistry = { getDataset: jest.fn() }
+    const result = actions.SET_DATASET_REGISTRY(state, datasetRegistry)
+    expect(result).toEqual({ ...state, datasetRegistry })
+  })
+})
+
+describe('SET_LAYER_ADAPTER', () => {
+  it('stores the adapter without changing the rest of the state', () => {
+    const state = makeStateWithDataset()
+    const layerAdapter = { setData: jest.fn() }
+    const result = actions.SET_LAYER_ADAPTER(state, layerAdapter)
+    expect(result).toEqual({ ...state, layerAdapter })
   })
 })
 

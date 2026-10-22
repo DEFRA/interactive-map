@@ -1,10 +1,9 @@
 // src/plugins/datasets/datasetsInit.jsx
-import { useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { attachGlobalState } from '../registry/globalDataset.js'
-import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
+import { createDatasetRegistry } from '../registry/datasetRegistry.js'
+import { loadLayerAdapter } from '../adapters/loadLayerAdapter.js'
 import { hasLayersMenu } from '../utils/hasLayersMenu.js'
 import { getPanelElementId } from '../../../../src/utils/getPanelElementId.js'
 
@@ -17,6 +16,15 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
   const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
   const isLayersPanelOpen = Boolean(appState.openPanels[LAYERS_PANEL_ID])
   const focusFrameRef = useRef(null)
+
+  // One registry and layer adapter per plugin instance, so several maps can share a page
+  const [datasetRegistry] = useState(createDatasetRegistry)
+  const layerAdapterRef = useRef(null)
+
+  // Make the registry available to the API and the layers menu
+  useEffect(() => {
+    dispatch({ type: 'SET_DATASET_REGISTRY', payload: datasetRegistry })
+  }, [])
 
   // Close the Layers panel if its menu empties while it's open
   useEffect(() => {
@@ -52,10 +60,12 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
     }
 
     const initDatasets = async () => {
-      const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+      const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
+      layerAdapterRef.current = adapter
 
       datasetsInstanceRef.current = initialiseDatasets({
         adapter,
+        datasetRegistry,
         pluginConfig,
         pluginStateRef,
         mapStyle: mapState.mapStyle,
@@ -64,6 +74,7 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
         dispatch,
         eventBus
       })
+      dispatch({ type: 'SET_LAYER_ADAPTER', payload: adapter })
     }
 
     initDatasets() // NOSONAR: Not changing for now as used in production
@@ -77,6 +88,7 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
 
   useEffect(() => {
     datasetRegistry.attachMapStyle(mapState.mapStyle)
+    const layerAdapter = layerAdapterRef.current
     if (layerAdapter?.onMapStyleChange) {
       // MapLibre's own map.addImage()/setPaintProperty() calls (made while re-registering
       // symbols/patterns below) naturally re-trigger MAP_DATA_CHANGE via the GL engine's own
@@ -95,15 +107,16 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
   },
   [mapState.mapStyle])
 
-  useEffect(() => attachGlobalState(pluginState.globals), [pluginState.globals])
+  useEffect(() => datasetRegistry.attachGlobals(pluginState.globals), [pluginState.globals])
 
-  // Call layerAdapter methods that are queued from state updates
+  // Call layerAdapter methods that are queued from state updates, once the adapter has loaded
   useEffect(() => {
     const { actionsArray } = pluginState
-    if (!actionsArray.length) { return }
+    const layerAdapter = layerAdapterRef.current
+    if (!actionsArray.length || !layerAdapter) { return }
     actionsArray.forEach(({ method, parameters }) => layerAdapter[method](...parameters))
     dispatch({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actionsArray })
-  }, [pluginState.actionsArray])
+  }, [pluginState.actionsArray, pluginState.layerAdapter])
 
   // Cleanup only on unmount
   useEffect(() => {

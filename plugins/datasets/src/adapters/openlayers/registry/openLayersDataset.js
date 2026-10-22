@@ -1,5 +1,4 @@
 import { MapboxStyleDataset } from '../../../registry/mapboxStyleDataset.js'
-import { datasetRegistry } from '../../../registry/datasetRegistry.js'
 import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.js'
 
 const MAX_TILE_ZOOM = 22
@@ -111,7 +110,7 @@ export class OpenLayersDataset extends MapboxStyleDataset {
     if (!this.hasSymbol) {
       return null
     }
-    const imageId = symbolRegistry.getSymbolImageId(this.style, datasetRegistry.mapStyle, 'normal', pixelRatio)
+    const imageId = symbolRegistry.getSymbolImageId(this.style, this._registry.mapStyle, 'normal', pixelRatio)
     if (!imageId) {
       return null
     }
@@ -154,7 +153,7 @@ export class OpenLayersDataset extends MapboxStyleDataset {
     if (this.hasSymbol) {
       return this._symbolStyle(context)
     }
-    const mapStyleId = datasetRegistry.mapStyle?.id
+    const mapStyleId = this._registry.mapStyle?.id
     const style = {}
     if (this.hasFill && !this.hasPattern) {
       style['fill-color'] = getValueForStyle(this.style.fill, mapStyleId)

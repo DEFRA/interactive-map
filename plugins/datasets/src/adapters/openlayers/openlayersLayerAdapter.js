@@ -1,5 +1,4 @@
 import { OpenLayersDataset } from './registry/openLayersDataset.js'
-import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 import { createDatasetSource, createDatasetLayer, resolveLayerStyle, readGeoJSONFeatures } from './layerBuilders.js'
 import { logger } from '../../../../../src/services/logger.js'
@@ -21,9 +20,10 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
    * @param {Object} mapProvider - Map provider instance (e.g. OpenLayersProvider)
    * @param {Object} symbolRegistry
    * @param {Object} patternRegistry
+   * @param {Object} datasetRegistry - This plugin instance's dataset registry
    */
-  constructor (mapProvider, symbolRegistry, patternRegistry) {
-    super(mapProvider, symbolRegistry, patternRegistry)
+  constructor (mapProvider, symbolRegistry, patternRegistry, datasetRegistry) {
+    super(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
     // sourceId → OL source, shared across sublayers of the same dataset
     this._sourcesById = new Map()
     // leaf layer id (== dataset/sublayer id) → OL layer
@@ -34,8 +34,8 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     this.createDataset = this.createDataset.bind(this)
   }
 
-  createDataset (datasetDefinition) {
-    return new OpenLayersDataset(datasetDefinition)
+  createDataset (datasetDefinition, registry) {
+    return new OpenLayersDataset(datasetDefinition, registry)
   }
 
   // What layer styles are resolved against — see layerBuilders.js's resolveLayerStyle. Symbol
@@ -43,7 +43,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   // from there rather than from a module of its own.
   get _styleContext () {
     return {
-      mapStyleId: datasetRegistry.mapStyle?.id,
+      mapStyleId: this._datasetRegistry.mapStyle?.id,
       pixelRatio: this._pixelRatio,
       patternRegistry: this._patternRegistry,
       symbolRegistry: this._symbolRegistry,
@@ -57,7 +57,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
 
   async init () {
     await Promise.all([this._registerPatterns(), this._registerSymbols()])
-    datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset))
+    this._datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset))
   }
 
   destroy () {
@@ -72,7 +72,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   // fg/bg colours can be mapStyle-keyed too, so re-registering (not just re-styling) is needed.
   async onMapStyleChange () {
     await Promise.all([this._registerPatterns(), this._registerSymbols()])
-    datasetRegistry.forEachDataset(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
+    this._datasetRegistry.forEachDataset(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
       this._setLayerStyle(leaf)
     }))
     this._reapplyHighlights()
@@ -91,7 +91,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     if (this._pixelRatio !== pixelRatio) {
       return
     }
-    datasetRegistry.forEachDataset(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
+    this._datasetRegistry.forEachDataset(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
       if (leaf.hasPattern || leaf.hasSymbol) {
         this._setLayerStyle(leaf)
       }
@@ -116,7 +116,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   }
 
   removeDataset (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       return
     }
@@ -129,7 +129,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     })
 
     const { sourceId } = registryDataset
-    const sourceIsShared = datasetRegistry.topLevelDatasets()
+    const sourceIsShared = this._datasetRegistry.topLevelDatasets()
       .some(dataset => dataset.id !== datasetId && dataset.sourceId === sourceId)
     if (!sourceIsShared) {
       this._sourcesById.delete(sourceId)
@@ -137,7 +137,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   }
 
   async applyStyle (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       return
     }
@@ -167,7 +167,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   // filter means recomputing and re-setting style rather than a separate declarative call like
   // MapLibre's map.setFilter.
   applyFeatureFilter (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       return
     }
@@ -177,7 +177,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   }
 
   setData (datasetId, geojson) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     const olSource = registryDataset && this._sourcesById.get(registryDataset.sourceId)
     if (!olSource) {
       return
@@ -194,7 +194,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
   // pixelRatio, so resolveLayerStyle (synchronous) can find it already resolved — mirrors
   // MapLibreLayerAdapter's addPatternsAndSymbolsToMap, which likewise runs before _addLayers
   // reads the dataset's style. See canvasPatternStyle.js for how the fill is used.
-  async _registerPatterns (registryDatasets = datasetRegistry.topLevelDatasets()) {
+  async _registerPatterns (registryDatasets = this._datasetRegistry.topLevelDatasets()) {
     const styles = []
     registryDatasets.forEach(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
       if (leaf.hasPattern) {
@@ -202,14 +202,14 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
       }
     }))
     if (styles.length) {
-      await this._mapProvider.addPatternsToMap(styles, datasetRegistry.mapStyle?.id, this._patternRegistry, this._pixelRatio)
+      await this._mapProvider.addPatternsToMap(styles, this._datasetRegistry.mapStyle?.id, this._patternRegistry, this._pixelRatio)
     }
   }
 
   // Rasterises and caches each symbol's icon image ahead of time, at the map's current
   // pixelRatio, so OpenLayersDataset.getFlatStyle (synchronous) can find it already resolved —
   // same convention as _registerPatterns.
-  async _registerSymbols (registryDatasets = datasetRegistry.topLevelDatasets()) {
+  async _registerSymbols (registryDatasets = this._datasetRegistry.topLevelDatasets()) {
     const styles = []
     registryDatasets.forEach(registryDataset => this._forEachLeafDataset(registryDataset, leaf => {
       if (leaf.hasSymbol) {
@@ -217,7 +217,7 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
       }
     }))
     if (styles.length) {
-      await this._mapProvider.addSymbolsToMap(styles, datasetRegistry.mapStyle, this._symbolRegistry, this._pixelRatio)
+      await this._mapProvider.addSymbolsToMap(styles, this._datasetRegistry.mapStyle, this._symbolRegistry, this._pixelRatio)
     }
   }
 
