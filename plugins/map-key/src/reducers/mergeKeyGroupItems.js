@@ -1,5 +1,5 @@
 // Turns the key groups and symbols added through the map-key API into key group items
-const getStateKeyGroups = ({ groups = [], keyDefinitions = [] } = {}) => groups.map(group => {
+const getStateKeyGroups = ({ groups = [], keyDefinitions = [] }) => groups.map(group => {
   if (group.type === 'flat') {
     return {
       ...group,
@@ -15,7 +15,7 @@ const getStateKeyGroups = ({ groups = [], keyDefinitions = [] } = {}) => groups.
 
 // Merges this map's key groups from the map-key plugin state with items provided by another plugin,
 // specifically the datasets plugin
-export const mergeKeyGroupItems = (keyGroupItemsToMerge = [], pluginState) => {
+export const mergeKeyGroupItems = (keyGroupItemsToMerge = [], pluginState = {}) => {
   const stateKeyGroups = getStateKeyGroups(pluginState)
   if (stateKeyGroups.length === 0) {
     // if there is nothing in the state key groups, just return the items that were passed in
