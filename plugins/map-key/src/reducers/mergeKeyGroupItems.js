@@ -1,41 +1,22 @@
-let _pluginStateRef = {}
-export const attachPluginStateRef = (pluginStateRef) => { _pluginStateRef = pluginStateRef }
-
-let previousRef = null
-let addedKeyGroups = []
-
-const getStateKeyGroups = () => {
-  if (!_pluginStateRef?.current) {
-    return []
-  }
-  if (previousRef === _pluginStateRef.current) {
-    return addedKeyGroups
-  }
-  previousRef = _pluginStateRef.current
-  const { groups = [], keyDefinitions = [] } = _pluginStateRef.current
-
-  addedKeyGroups = groups.map(group => {
-    if (group.type === 'flat') {
-      return {
-        ...group,
-        keyDefinition: keyDefinitions.find(item => item.id === group.id)
-      }
-    }
-
+// Turns the key groups and symbols added through the map-key API into key group items
+const getStateKeyGroups = ({ groups = [], keyDefinitions = [] } = {}) => groups.map(group => {
+  if (group.type === 'flat') {
     return {
       ...group,
-      keyDefinitions: keyDefinitions.filter(item => item.groupId === group.id)
+      keyDefinition: keyDefinitions.find(item => item.id === group.id)
     }
-  })
-  return addedKeyGroups
-}
+  }
 
-// Merges the state key group items with items provided by another plugin,
+  return {
+    ...group,
+    keyDefinitions: keyDefinitions.filter(item => item.groupId === group.id)
+  }
+})
+
+// Merges this map's key groups from the map-key plugin state with items provided by another plugin,
 // specifically the datasets plugin
-export const mergeKeyGroupItems = (keyGroupItemsToMerge = []) => {
-  // Clone the current state key groups from the plugin state reference
-  // to avoid mutating the original array
-  const stateKeyGroups = [...getStateKeyGroups()]
+export const mergeKeyGroupItems = (keyGroupItemsToMerge = [], pluginState) => {
+  const stateKeyGroups = getStateKeyGroups(pluginState)
   if (stateKeyGroups.length === 0) {
     // if there is nothing in the state key groups, just return the items that were passed in
     return keyGroupItemsToMerge
