@@ -1,11 +1,5 @@
 import { render } from '@testing-library/react'
 import { MapKeyInit } from './MapKeyInit.jsx'
-import { setDatasetRegistry } from '../registry/getDatasetRegistry.js'
-
-jest.mock('../registry/getDatasetRegistry.js', () => ({
-  setDatasetRegistry: jest.fn()
-}))
-
 const eventBus = { requestOnce: jest.fn(), emit: jest.fn() }
 const pluginState = { dispatch: jest.fn() }
 const pluginConfig = {
@@ -35,7 +29,15 @@ describe('MapKeyInit', () => {
 
   it('calls requestOnce for datasets:registry when map is ready', () => {
     renderInit({ isMapReady: true })
-    expect(eventBus.requestOnce).toHaveBeenCalledWith('datasets:registry', setDatasetRegistry)
+    expect(eventBus.requestOnce).toHaveBeenCalledWith('datasets:registry', expect.any(Function))
+  })
+
+  it('puts the datasets registry it receives in this map\'s plugin state', () => {
+    renderInit({ isMapReady: true })
+    const datasetRegistry = { keyItems: jest.fn() }
+    const [, onRegistry] = eventBus.requestOnce.mock.calls[0]
+    onRegistry(datasetRegistry)
+    expect(pluginState.dispatch).toHaveBeenCalledWith({ type: 'SET_DATASET_REGISTRY', payload: datasetRegistry })
   })
 
   it('dispatches configured groups when pluginConfig.groups is provided', () => {
