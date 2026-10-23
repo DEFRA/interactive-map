@@ -10,7 +10,7 @@ import RemoveFilesPlugin from 'remove-files-webpack-plugin'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = false, externalPreact = true, cssOutDir = null) => {
+export const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = false, externalPreact = true, cssOutDir = null) => {
   const outPath = path.resolve(__dirname, outDir)
   const cssFolder = cssOutDir
     ? path.resolve(__dirname, cssOutDir, 'css')
@@ -160,7 +160,7 @@ const createUMDConfig = (entryName, entryPath, libraryPath, outDir, isCore = fal
 }
 
 // === All builds ===
-const ALL_BUILDS = [
+export const ALL_BUILDS = [
   // Core UMD
   { entryPath: './src/index.umd.js', libraryPath: 'InteractiveMap', outDir: 'dist/umd', isCore: true, externalPreact: false },
 
