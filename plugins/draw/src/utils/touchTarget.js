@@ -33,13 +33,13 @@ function generateSvgHtml () {
  * @returns {SVGElement} The touch target element
  */
 export const createTouchTarget = (container) => {
-  let el = container.querySelector('[data-im-draw-touch-target]')
-  if (!el) {
+  let element = container.querySelector('[data-im-draw-touch-target]')
+  if (!element) {
     container.insertAdjacentHTML('beforeend', generateSvgHtml())
-    el = container.querySelector('[data-im-draw-touch-target]')
+    element = container.querySelector('[data-im-draw-touch-target]')
     // Set through the element rather than a style attribute, which a Content Security Policy
     // without 'unsafe-inline' blocks
-    Object.assign(el.style, {
+    Object.assign(element.style, {
       display: 'none',
       position: 'absolute',
       top: '0',
@@ -48,56 +48,56 @@ export const createTouchTarget = (container) => {
       cursor: 'grab'
     })
   }
-  return el
+  return element
 }
 
 /**
  * Apply color scheme to touch target SVG
- * @param {SVGElement} el - Touch target element
+ * @param {SVGElement} element - Touch target element
  * @param {object} colors - Color object with editActive, editHalo, editVertex properties
  */
-export const applyTouchTargetColors = (el, colors) => {
-  if (!el) {
+export const applyTouchTargetColors = (element, colors) => {
+  if (!element) {
     return
   }
-  el.style.setProperty('--draw-halo', colors.editActive)
-  el.style.setProperty('--draw-bg', colors.editHalo)
-  el.style.setProperty('--draw-primary', colors.editVertex)
+  element.style.setProperty('--draw-halo', colors.editActive)
+  element.style.setProperty('--draw-bg', colors.editHalo)
+  element.style.setProperty('--draw-primary', colors.editVertex)
 }
 
 /**
  * Show touch target at specified pixel position
- * @param {SVGElement} el - Touch target element
+ * @param {SVGElement} element - Touch target element
  * @param {object} pixel - Position object with x, y properties
  */
-export const showTouchTarget = (el, pixel) => {
-  if (!pixel || !el) {
+export const showTouchTarget = (element, pixel) => {
+  if (!pixel || !element) {
     return
   }
-  el.style.left = `${pixel.x}px`
-  el.style.top = `${pixel.y}px`
-  el.style.display = 'block'
+  element.style.left = `${pixel.x}px`
+  element.style.top = `${pixel.y}px`
+  element.style.display = 'block'
 }
 
 /**
  * Hide touch target
- * @param {SVGElement} el - Touch target element
+ * @param {SVGElement} element - Touch target element
  */
-export const hideTouchTarget = (el) => {
-  if (el) {
-    el.style.display = 'none'
+export const hideTouchTarget = (element) => {
+  if (element) {
+    element.style.display = 'none'
   }
 }
 
 /**
  * Check if event target is part of the touch target SVG
- * @param {HTMLElement} el - Element to check
+ * @param {HTMLElement} element - Element to check
  * @returns {boolean} True if element is part of touch target
  */
-export const isOnTouchTarget = (el) => {
-  if (!el) {
+export const isOnTouchTarget = (element) => {
+  if (!element) {
     return false
   }
-  const parent = el.parentNode
+  const parent = element.parentNode
   return (parent instanceof globalThis.SVGElement) || (parent?.ownerSVGElement != null)
 }
