@@ -1,7 +1,5 @@
 import { editFeature } from './editFeature.js'
 
-jest.mock('../defaults.js', () => ({ MAP_SIZE_SCALES: { medium: 1.5, large: 2 } }))
-
 const makeContext = (overrides = {}) => {
   const dispatch = jest.fn()
   const eventBus = { emit: jest.fn() }
@@ -14,7 +12,7 @@ const makeContext = (overrides = {}) => {
   const context = {
     appState: { layoutRefs: { viewportRef: { current: 'viewport' } }, interfaceType: 'mouse' },
     appConfig: { id: 'app' },
-    mapState: { mapSize: 'medium' },
+    mapState: { mapSizeScale: 1.5 },
     pluginConfig: { snapLayers: ['pc-layer'] },
     pluginState: { dispatch },
     mapProvider: { draw },

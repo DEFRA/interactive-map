@@ -6,3 +6,6 @@ export const scaleFactor = {
   medium: 1.5,
   large: 2
 }
+
+// Scale for a map size, falling back to 1 for an unknown or unset size
+export const getMapSizeScale = (mapSize) => scaleFactor[mapSize] ?? 1

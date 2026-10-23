@@ -96,6 +96,8 @@ Current map state, including:
 }
 ```
 
+`mapState.mapSizeScale` is the scale for the current map size (`small`: 1, `medium`: 1.5, `large`: 2). Multiply screen positions from `mapProvider.mapToScreen` by it to position elements over the map.
+
 `mapState.isMapReady` is `true` once the map instance has been created (`map:ready`). The base map may still be loading at that point; check `mapProvider.isBaseMapReady()` before adding sources or layers to the underlying map.
 
 ---

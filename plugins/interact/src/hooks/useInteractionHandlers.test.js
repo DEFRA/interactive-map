@@ -55,7 +55,8 @@ const makeMarkerEl = (rect) => ({
 const setup = (pluginOverrides = {}, markerItems = [], markerRefs = new Map()) => {
   const deps = {
     mapState: {
-      markers: { add: jest.fn(), remove: jest.fn(), items: markerItems, markerRefs }
+      markers: { add: jest.fn(), remove: jest.fn(), items: markerItems, markerRefs },
+      mapSizeScale: 1
     },
     pluginState: {
       dispatch: jest.fn(),
@@ -346,7 +347,7 @@ it('does not check markers when selectMarker is not in interactionModes', () => 
 
 it('emits selectionchange when features are selected', () => {
   const deps = {
-    mapState: { markers: { add: jest.fn(), remove: jest.fn(), items: [], markerRefs: new Map() } },
+    mapState: { markers: { add: jest.fn(), remove: jest.fn(), items: [], markerRefs: new Map() }, mapSizeScale: 1 },
     pluginState: {
       selectedFeatures: [{ featureId: 'F1', layerId: 'l1', idProperty: 'id', properties: { name: 'A' }, geometry: { type: 'Point', coordinates: [0, 0] } }],
       selectedMarkers: []
@@ -373,7 +374,7 @@ it('skips emission when selection remains empty after being cleared', () => {
   // 1. First render with a feature (prev is null, emission happens)
   const { rerender } = renderHook(
     ({ features }) => useInteractionHandlers({
-      mapState: { markers: { items: [], markerRefs: new Map() } },
+      mapState: { markers: { items: [], markerRefs: new Map() }, mapSizeScale: 1 },
       pluginState: { selectedFeatures: features, selectedMarkers: [] },
       services: { eventBus },
       mapProvider: { getFeatureGeometry: jest.fn(() => null) }

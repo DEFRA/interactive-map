@@ -41,7 +41,7 @@ const makeMapProvider = (draw) => ({
 
 const makeViewportRef = () => ({ current: { focus: jest.fn() } })
 
-const setup = ({ mode = 'edit_vertex', draw, eventBus, mapSize = 'small', registry, viewportRef, announce } = {}) => {
+const setup = ({ mode = 'edit_vertex', draw, eventBus, mapSizeScale = 1, registry, viewportRef, announce } = {}) => {
   const eb = eventBus ?? makeEventBus()
   const adapter = draw ?? makeDrawAdapter()
   const mp = makeMapProvider(adapter)
@@ -53,7 +53,7 @@ const setup = ({ mode = 'edit_vertex', draw, eventBus, mapSize = 'small', regist
   const spatialListRegistry = registry ?? createSpatialListRegistry({ eventBus: eb })
   const { result, unmount, rerender } = renderHook(
     ({ mode }) => useSpatialList({
-      mapState: { mapSize },
+      mapState: { mapSizeScale },
       pluginState: { mode },
       services: { eventBus: eb, announce: announceSpy },
       mapProvider: mp,
@@ -97,7 +97,7 @@ describe('useSpatialList — lifecycle', () => {
     const eb = makeEventBus()
     const mp = { draw: null, mapToScreen: jest.fn() }
     expect(() => renderHook(() => useSpatialList({
-      mapState: { mapSize: 'small' },
+      mapState: { mapSizeScale: 1 },
       pluginState: { mode: 'edit_vertex' },
       services: { eventBus: eb },
       mapProvider: mp,
