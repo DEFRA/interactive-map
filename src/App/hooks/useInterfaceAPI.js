@@ -3,6 +3,9 @@ import { useEffect, useRef } from 'react'
 import { EVENTS as events } from '../../config/events.js'
 import { useApp } from '../store/appContext.js'
 import { useService } from '../store/serviceContext.js'
+import { useConfig } from '../store/configContext.js'
+import { getPanelElementId } from '../../utils/getPanelElementId.js'
+import { focusAfterPanelClose } from '../../utils/focusAfterPanelClose.js'
 
 // Handlers for the public interface API events (addButton, showPanel, setApplicationMode, ...), as
 // [event, handler] pairs. They read dispatch and state through refs, so they're created once and
@@ -53,7 +56,15 @@ const createInterfaceSubscriptions = (dispatchRef, stateRef) => {
   const handleRemovePanel = (id) => dispatchRef.current({ type: 'REMOVE_PANEL', payload: id })
   const handleShowPanel = ({ id, focus = true, triggeringElement }) =>
     dispatchRef.current({ type: 'OPEN_PANEL', payload: { panelId: id, focusOnOpen: focus, props: triggeringElement ? { triggeringElement } : undefined } })
-  const handleHidePanel = (id) => dispatchRef.current({ type: 'CLOSE_PANEL', payload: id })
+  const handleHidePanel = (id) => {
+    const { appId, openPanels, layoutRefs, interfaceType } = stateRef.current
+    // Checked before closing: once the panel is hidden the browser moves focus to <body>
+    const panelEl = document.getElementById(getPanelElementId(appId, id))
+    if (panelEl?.contains(document.activeElement)) {
+      focusAfterPanelClose({ triggeringElement: openPanels[id]?.props?.triggeringElement, viewportRef: layoutRefs.viewportRef, interfaceType })
+    }
+    dispatchRef.current({ type: 'CLOSE_PANEL', payload: id })
+  }
   const handleAddControl = ({ id, config }) => dispatchRef.current({ type: 'ADD_CONTROL', payload: { id, config } })
   const handleSetApplicationMode = ({ id, include, exclude }) =>
     dispatchRef.current({ type: 'SET_APPLICATION_MODE', payload: { id, include, exclude } })
@@ -75,14 +86,15 @@ const createInterfaceSubscriptions = (dispatchRef, stateRef) => {
 }
 
 export const useInterfaceAPI = () => {
-  const { dispatch, hiddenButtons, disabledButtons, pressedButtons, expandedButtons } = useApp()
+  const { id: appId } = useConfig()
+  const { dispatch, hiddenButtons, disabledButtons, pressedButtons, expandedButtons, openPanels, layoutRefs, interfaceType } = useApp()
   const { eventBus } = useService()
 
   // Refs so event handlers always use the latest dispatch/state without re-subscribing
   const dispatchRef = useRef(dispatch)
-  const stateRef = useRef({ hiddenButtons, disabledButtons, pressedButtons, expandedButtons })
+  const stateRef = useRef(null)
   dispatchRef.current = dispatch
-  stateRef.current = { hiddenButtons, disabledButtons, pressedButtons, expandedButtons }
+  stateRef.current = { hiddenButtons, disabledButtons, pressedButtons, expandedButtons, appId, openPanels, layoutRefs, interfaceType }
 
   useEffect(() => {
     const subscriptions = createInterfaceSubscriptions(dispatchRef, stateRef)

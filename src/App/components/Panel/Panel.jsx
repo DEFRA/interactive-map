@@ -3,6 +3,7 @@ import { useConfig } from '../../store/configContext'
 import { useApp } from '../../store/appContext'
 import { stringToKebab } from '../../../utils/stringToKebab.js'
 import { getPanelElementId } from '../../../utils/getPanelElementId.js'
+import { focusAfterPanelClose } from '../../../utils/focusAfterPanelClose.js'
 import { useModalPanelBehaviour } from '../../hooks/useModalPanelBehaviour.js'
 import { useIsScrollable } from '../../hooks/useIsScrollable.js'
 import { classifyPanel, getPanelRole } from '../../../utils/getPanelRole.js'
@@ -121,15 +122,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
   const panelRef = rootRef || internalPanelRef
 
   const handleClose = () => {
-    requestAnimationFrame(() => {
-      // Re-checked here, not at handleClose-call time — the triggering element (a button, a
-      // Features-list item, ...) may have been removed from the DOM while the panel was open
-      // (e.g. the map panned and the feature it came from dropped out of the current list).
-      // document.contains() on a detached node is false, not a throw, so this is a plain check.
-      const triggeringElement = props?.triggeringElement
-      const focusTarget = triggeringElement && document.contains(triggeringElement) ? triggeringElement : layoutRefs.viewportRef.current
-      focusTarget?.focus?.({ preventScroll: interfaceType !== 'keyboard' })
-    })
+    focusAfterPanelClose({ triggeringElement: props?.triggeringElement, viewportRef: layoutRefs.viewportRef, interfaceType })
     dispatch({ type: 'CLOSE_PANEL', payload: panelId })
   }
 

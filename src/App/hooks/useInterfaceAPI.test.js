@@ -2,9 +2,11 @@ import { renderHook, act } from '@testing-library/react'
 import { useInterfaceAPI } from './useInterfaceAPI.js'
 import { useApp } from '../store/appContext.js'
 import { useService } from '../store/serviceContext.js'
+import { useConfig } from '../store/configContext.js'
 
 jest.mock('../store/appContext.js')
 jest.mock('../store/serviceContext.js')
+jest.mock('../store/configContext.js')
 
 const makeEventBus = () => {
   const handlers = {}
@@ -26,11 +28,15 @@ describe('useInterfaceAPI', () => {
       hiddenButtons: new Set(),
       disabledButtons: new Set(),
       pressedButtons: new Set(),
-      expandedButtons: new Set()
+      expandedButtons: new Set(),
+      openPanels: {},
+      layoutRefs: { viewportRef: { current: { focus: jest.fn() } } },
+      interfaceType: 'keyboard'
     }
 
     useApp.mockReturnValue({ dispatch: mockDispatch, ...mockState })
     useService.mockReturnValue({ eventBus: mockEventBus })
+    useConfig.mockReturnValue({ id: 'map' })
   })
 
   it('sets a mode on app:setapplicationmode', () => {
@@ -120,6 +126,65 @@ describe('useInterfaceAPI', () => {
     renderHook(() => useInterfaceAPI())
     act(() => mockEventBus.emit('app:hidepanel', 'panel1'))
     expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLOSE_PANEL', payload: 'panel1' })
+  })
+
+  describe('focus on app:hidepanel', () => {
+    let panelEl, panelButton, triggeringElement, outsideButton
+
+    beforeEach(() => {
+      jest.spyOn(window, 'requestAnimationFrame').mockImplementation((cb) => cb())
+      panelEl = document.createElement('div')
+      panelEl.id = 'map-panel-panel1'
+      panelButton = panelEl.appendChild(document.createElement('button'))
+      triggeringElement = document.createElement('button')
+      outsideButton = document.createElement('button')
+      document.body.append(panelEl, triggeringElement, outsideButton)
+      jest.spyOn(triggeringElement, 'focus')
+    })
+
+    afterEach(() => {
+      window.requestAnimationFrame.mockRestore()
+      document.body.innerHTML = ''
+    })
+
+    const renderWithOpenPanel = (props) => {
+      useApp.mockReturnValue({ dispatch: mockDispatch, ...mockState, openPanels: { panel1: { props } } })
+      renderHook(() => useInterfaceAPI())
+    }
+
+    it('focuses the triggering element when focus is inside the panel', () => {
+      renderWithOpenPanel({ triggeringElement })
+      panelButton.focus()
+      act(() => mockEventBus.emit('app:hidepanel', 'panel1'))
+      expect(triggeringElement.focus).toHaveBeenCalledWith({ preventScroll: false })
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLOSE_PANEL', payload: 'panel1' })
+    })
+
+    it('focuses the map when focus is inside the panel and the triggering element has gone', () => {
+      triggeringElement.remove()
+      renderWithOpenPanel({ triggeringElement })
+      panelButton.focus()
+      act(() => mockEventBus.emit('app:hidepanel', 'panel1'))
+      expect(triggeringElement.focus).not.toHaveBeenCalled()
+      expect(mockState.layoutRefs.viewportRef.current.focus).toHaveBeenCalled()
+    })
+
+    it('focuses the map when focus is inside a panel opened without a triggering element', () => {
+      renderWithOpenPanel({})
+      panelButton.focus()
+      act(() => mockEventBus.emit('app:hidepanel', 'panel1'))
+      expect(mockState.layoutRefs.viewportRef.current.focus).toHaveBeenCalled()
+    })
+
+    it('leaves focus where it is when focus is outside the panel', () => {
+      renderWithOpenPanel({ triggeringElement })
+      outsideButton.focus()
+      act(() => mockEventBus.emit('app:hidepanel', 'panel1'))
+      expect(triggeringElement.focus).not.toHaveBeenCalled()
+      expect(mockState.layoutRefs.viewportRef.current.focus).not.toHaveBeenCalled()
+      expect(document.activeElement).toBe(outsideButton)
+      expect(mockDispatch).toHaveBeenCalledWith({ type: 'CLOSE_PANEL', payload: 'panel1' })
+    })
   })
 
   it('dispatches ADD_CONTROL on app:addcontrol', () => {

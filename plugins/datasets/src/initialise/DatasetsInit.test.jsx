@@ -55,7 +55,6 @@ const makeProps = (overrides = {}) => {
     mapProvider: { isBaseMapReady: jest.fn().mockReturnValue(true) },
     services: {
       eventBus: makeEventBus(),
-      focusMap: jest.fn(),
       symbolRegistry: {},
       patternRegistry: {}
     },
@@ -80,20 +79,6 @@ describe('DatasetsInit', () => {
 
   describe('menu panel management', () => {
     const openPanelState = { openPanels: { datasetsLayers: {} } }
-    let panelEl
-
-    beforeEach(() => {
-      jest.useFakeTimers()
-      panelEl = document.createElement('div')
-      panelEl.id = 'test-map-panel-datasets-layers'
-      panelEl.tabIndex = -1
-      document.body.appendChild(panelEl)
-    })
-
-    afterEach(() => {
-      panelEl.remove()
-      jest.useRealTimers()
-    })
 
     it('does not remove the panel or hide the button when there is no menu', () => {
       const props = makeProps({ pluginConfig: { datasets: [] } })
@@ -103,28 +88,13 @@ describe('DatasetsInit', () => {
       expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(EVENTS.APP_TOGGLE_BUTTON_STATE, expect.anything())
     })
 
-    it('closes the open panel and focuses the map when the menu empties with focus inside it', () => {
+    it('closes the open panel when the menu empties', () => {
       const props = makeProps({ appState: openPanelState })
-      const { eventBus, focusMap } = props.services
       const { rerender } = render(<DatasetsInit {...props} />)
-      panelEl.focus()
+      expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(EVENTS.APP_HIDE_PANEL, 'datasetsLayers')
 
       rerender(<DatasetsInit {...props} pluginState={makePluginState()} />)
-      expect(eventBus.emit).toHaveBeenCalledWith(EVENTS.APP_HIDE_PANEL, 'datasetsLayers')
-      expect(focusMap).not.toHaveBeenCalled()
-      act(() => jest.runOnlyPendingTimers())
-      expect(focusMap).toHaveBeenCalledTimes(1)
-    })
-
-    it('closes the open panel without moving focus when focus is outside it', () => {
-      const props = makeProps({ appState: openPanelState })
-      const { eventBus, focusMap } = props.services
-      const { rerender } = render(<DatasetsInit {...props} />)
-
-      rerender(<DatasetsInit {...props} pluginState={makePluginState()} />)
-      act(() => jest.runOnlyPendingTimers())
-      expect(eventBus.emit).toHaveBeenCalledWith(EVENTS.APP_HIDE_PANEL, 'datasetsLayers')
-      expect(focusMap).not.toHaveBeenCalled()
+      expect(props.services.eventBus.emit).toHaveBeenCalledWith(EVENTS.APP_HIDE_PANEL, 'datasetsLayers')
     })
 
     it('closes a panel that is open on load when there is no menu', () => {
@@ -141,16 +111,6 @@ describe('DatasetsInit', () => {
       const props = makeProps({ appState: { openPanels } })
       render(<DatasetsInit {...props} pluginState={pluginState} />)
       expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(EVENTS.APP_HIDE_PANEL, 'datasetsLayers')
-    })
-
-    it('cancels a pending map focus on unmount', () => {
-      const props = makeProps({ appState: openPanelState })
-      const { rerender, unmount } = render(<DatasetsInit {...props} />)
-      panelEl.focus()
-      rerender(<DatasetsInit {...props} pluginState={makePluginState()} />)
-      unmount()
-      act(() => jest.runOnlyPendingTimers())
-      expect(props.services.focusMap).not.toHaveBeenCalled()
     })
   })
 

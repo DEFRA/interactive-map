@@ -1,4 +1,3 @@
-import { MAP_SIZE_SCALES } from '../defaults.js'
 import { validateGeometry } from '../validation/validateGeometry.js'
 
 export const editFeature = ({ appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services }, featureId, options = {}) => {
@@ -34,7 +33,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
     undoButtonId: `${appConfig.id}-draw-undo`,
     isPanEnabled: appState.interfaceType !== 'keyboard',
     interfaceType: appState.interfaceType,
-    scale: MAP_SIZE_SCALES[mapState.mapSize],
+    scale: mapState.mapSizeScale,
     featureId,
     getSnapEnabled: () => draw.isSnapEnabled()
   })

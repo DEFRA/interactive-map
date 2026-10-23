@@ -1,7 +1,7 @@
 import React from 'react'
 import { EVENTS } from '../../../src/config/events.js'
 import { textSizeSvgPath } from './config.js'
-import { scaleFactor } from '../../../src/config/appConfig.js'
+import { scaleFactor } from '../../../src/config/mapSizeScales.js'
 
 export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => {
   const { mapStyle: currentMapStyle, mapSize: currentMapSize } = mapState
@@ -42,7 +42,7 @@ export const MapStyles = ({ mapState, pluginConfig, services, mapProvider }) => 
               <div className='im-c-map-styles__item' key={size}>
                 <button className='im-c-map-styles__button' onClick={() => handleMapSizeClick(size)} aria-pressed={size === currentMapSize}>
                   <div className='im-c-map-styles__image'>
-                    <svg width='60' height='60' viewBox='0 0 60 60' fillRule='evenodd'>
+                    <svg width='60' height='60' viewBox='0 0 60 60' fillRule='evenodd' aria-hidden='true'>
                       <rect className='im-c-map-styles__image-bg' width='100%' height='100%' />
                       <g style={{ transform: `scale(${scaleFactor[size]})`, transformOrigin: '8px 52px' }}>
                         <path d={textSizeSvgPath} />

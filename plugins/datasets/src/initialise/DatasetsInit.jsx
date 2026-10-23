@@ -4,39 +4,28 @@ import { EVENTS } from '../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { loadLayerAdapter } from '../adapters/loadLayerAdapter.js'
 import { hasLayersMenu } from '../utils/hasLayersMenu.js'
-import { getPanelElementId } from '../../../../src/utils/getPanelElementId.js'
 
 const LAYERS_PANEL_ID = 'datasetsLayers'
 
 // Closes the Layers panel if its menu empties while it's open
-function useCloseEmptyLayersPanel ({ appConfig, appState, pluginConfig, pluginState, services }) {
-  const { eventBus, focusMap } = services
+function useCloseEmptyLayersPanel ({ appState, pluginConfig, pluginState, services }) {
+  const { eventBus } = services
   const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
   const isLayersPanelOpen = Boolean(appState.openPanels[LAYERS_PANEL_ID])
-  const focusFrameRef = useRef(null)
 
   useEffect(() => {
-    if (hasMenu || !isLayersPanelOpen) {
-      return
-    }
-    const panelEl = document.getElementById(getPanelElementId(appConfig.id, LAYERS_PANEL_ID))
-    const hadFocus = Boolean(panelEl?.contains(document.activeElement))
-    eventBus.emit(EVENTS.APP_HIDE_PANEL, LAYERS_PANEL_ID)
-    if (hadFocus) {
-      // Let the panel close and release modal focus/inert first, as Panel's handleClose does
-      focusFrameRef.current = requestAnimationFrame(() => focusMap())
+    if (!hasMenu && isLayersPanelOpen) {
+      eventBus.emit(EVENTS.APP_HIDE_PANEL, LAYERS_PANEL_ID)
     }
   }, [hasMenu, isLayersPanelOpen])
-
-  useEffect(() => () => cancelAnimationFrame(focusFrameRef.current), [])
 }
 
-export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
+export function DatasetsInit ({ appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
   const { dispatch, datasetRegistry } = pluginState
   const { eventBus, symbolRegistry, patternRegistry } = services
   const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
 
-  useCloseEmptyLayersPanel({ appConfig, appState, pluginConfig, pluginState, services })
+  useCloseEmptyLayersPanel({ appState, pluginConfig, pluginState, services })
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)

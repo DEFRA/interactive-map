@@ -8,7 +8,6 @@
 import { ADAPTER_EVENTS } from './adapterEvents.js'
 import { validateGeometry } from './validation/validateGeometry.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
-import { MAP_SIZE_SCALES } from './defaults.js'
 import { stripInternalProperties } from './utils/stripInternalProperties.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
@@ -68,7 +67,7 @@ const enterEditVertexMode = ({ draw, appState, appConfig, mapState, dispatch }, 
     undoButtonId: `${appConfig?.id}-draw-undo`,
     isPanEnabled: appState?.interfaceType !== 'keyboard',
     interfaceType: appState?.interfaceType,
-    scale: MAP_SIZE_SCALES[mapState?.mapSize],
+    scale: mapState?.mapSizeScale,
     featureId,
     getSnapEnabled: () => draw.isSnapEnabled()
   })

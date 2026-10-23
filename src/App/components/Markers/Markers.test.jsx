@@ -9,7 +9,6 @@ jest.mock('../../hooks/useMarkersAPI.js', () => ({ useMarkers: jest.fn() }))
 jest.mock('../../store/configContext.js', () => ({ useConfig: jest.fn() }))
 jest.mock('../../store/mapContext.js', () => ({ useMap: jest.fn() }))
 jest.mock('../../store/serviceContext.js', () => ({ useService: jest.fn() }))
-jest.mock('../../../config/appConfig.js', () => ({ scaleFactor: { small: 1, medium: 1.5, large: 2 } }))
 
 const MARKER_ID = 'marker-1'
 const SEL_CHANGE = 'interact:selectionchange'
@@ -38,12 +37,12 @@ const makeMarker = (overrides = {}) => ({
   id: MARKER_ID, isVisible: true, symbol: 'pin', ...overrides
 })
 
-const setup = ({ markers = [], mapSize = 'small', eventBus, symbolRegistry, mapStyle = 'outdoor' } = {}) => {
+const setup = ({ markers = [], mapSizeScale = 1, eventBus, symbolRegistry, mapStyle = 'outdoor' } = {}) => {
   const eb = eventBus ?? makeEventBus()
   const sr = symbolRegistry ?? makeSymbolRegistry()
   const markerRefs = new Map()
   useConfig.mockReturnValue({ id: 'test-app' })
-  useMap.mockReturnValue({ mapStyle, mapSize })
+  useMap.mockReturnValue({ mapStyle, mapSizeScale })
   useService.mockReturnValue({ symbolRegistry: sr, eventBus: eb })
   useMarkers.mockReturnValue({
     markers: { items: markers, markerRefs },
@@ -130,18 +129,17 @@ describe('Markers — symbol resolution', () => {
   })
 
   it.each([
-    ['small', '38', '38'],
-    ['medium', '57', '57'],
-    ['large', '76', '76'],
-    ['huge', '38', '38']
-  ])('scales svg dimensions for mapSize=%s', (mapSize, width, height) => {
-    const svg = setup({ markers: [makeMarker()], mapSize }).result.container.querySelector(SVG_SEL)
+    [1, '38', '38'],
+    [1.5, '57', '57'],
+    [2, '76', '76']
+  ])('scales svg dimensions for mapSizeScale=%s', (mapSizeScale, width, height) => {
+    const svg = setup({ markers: [makeMarker()], mapSizeScale }).result.container.querySelector(SVG_SEL)
     expect(svg.getAttribute('width')).toBe(width)
     expect(svg.getAttribute('height')).toBe(height)
   })
 
-  it('scales anchor offsets for medium mapSize', () => {
-    expect(setup({ markers: [makeMarker()], mapSize: 'medium' }).result.container.querySelector(SVG_SEL))
+  it('scales anchor offsets for a 1.5 mapSizeScale', () => {
+    expect(setup({ markers: [makeMarker()], mapSizeScale: 1.5 }).result.container.querySelector(SVG_SEL))
       .toHaveStyle({ marginLeft: '-28.5px', marginTop: '-57px' })
   })
 })

@@ -54,7 +54,7 @@ const makeMapProvider = (features = []) => ({
   mapToScreen: jest.fn(() => ({ x: 10, y: 20 }))
 })
 
-const setup = ({ interactionModes = [], markers, layers = [], mapProvider, eventBus, dispatch, multiSelect = false, mapSize = 'small' } = {}) => {
+const setup = ({ interactionModes = [], markers, layers = [], mapProvider, eventBus, dispatch, multiSelect = false, mapSizeScale = 1 } = {}) => {
   const eb = eventBus ?? makeEventBus()
   const mp = mapProvider ?? makeMapProvider()
   const dp = dispatch ?? jest.fn()
@@ -65,7 +65,7 @@ const setup = ({ interactionModes = [], markers, layers = [], mapProvider, event
   // spatialListRegistry.test.js.
   const spatialListRegistry = createSpatialListRegistry({ eventBus: eb })
   const { result, unmount } = renderHook(() => useSpatialList({
-    mapState: { markers: markers ?? makeMarkers(), mapSize },
+    mapState: { markers: markers ?? makeMarkers(), mapSizeScale },
     pluginState: { interactionModes, layers, dispatch: dp, multiSelect },
     services: { eventBus: eb },
     mapProvider: mp,
@@ -97,7 +97,7 @@ describe('useSpatialList — lifecycle', () => {
     const spatialListRegistry = createSpatialListRegistry({ eventBus: eb })
     const registerSpy = jest.spyOn(spatialListRegistry, 'registerItemProvider')
     const { unmount } = renderHook(() => useSpatialList({
-      mapState: { markers: makeMarkers(), mapSize: 'small' },
+      mapState: { markers: makeMarkers(), mapSizeScale: 1 },
       pluginState: { interactionModes: [], layers: [], dispatch: jest.fn(), multiSelect: false },
       services: { eventBus: eb },
       mapProvider: makeMapProvider(),
@@ -252,19 +252,19 @@ describe('useSpatialList — selectMarker mode', () => {
     container.remove()
   })
 
-  it('includes x/y screen position, scaled for mapSize, when the marker has coords', () => {
+  it('includes x/y screen position, scaled for mapSizeScale, when the marker has coords', () => {
     const { el, container } = makeMarkerEl({ inViewport: true })
     const markers = makeMarkers([{ id: 'm1', label: MARKER_LABEL, symbol: 'pin', isVisible: true, coords: [-2.4, 54.5] }])
     markers.markerRefs.set('m1', el)
     const mp = makeMapProvider()
     mp.mapToScreen.mockReturnValue({ x: 100, y: 200 })
 
-    const { eb } = setup({ interactionModes: ['selectMarker'], markers, mapProvider: mp, mapSize: 'medium' })
+    const { eb } = setup({ interactionModes: ['selectMarker'], markers, mapProvider: mp, mapSizeScale: 1.5 })
     act(() => eb.emit(MOVE_END, {}))
 
     expect(mp.mapToScreen).toHaveBeenCalledWith([-2.4, 54.5])
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [markerItem({ id: 'm1', label: MARKER_LABEL, x: 150, y: 300 })], multiselectable: false, label: 'Map features' // scaleFactor.medium = 1.5
+      items: [markerItem({ id: 'm1', label: MARKER_LABEL, x: 150, y: 300 })], multiselectable: false, label: 'Map features'
     })
     container.remove()
   })
@@ -375,7 +375,7 @@ describe('useSpatialList — selectFeature mode: label resolution', () => {
     })
   })
 
-  it('includes x/y at the bbox centre of the feature geometry, scaled for mapSize', () => {
+  it('includes x/y at the bbox centre of the feature geometry, scaled for mapSizeScale', () => {
     const features = [{
       layer: { id: 'roads' },
       properties: { road_id: '1', road_name: 'High Street' },
@@ -384,12 +384,12 @@ describe('useSpatialList — selectFeature mode: label resolution', () => {
     const mp = makeMapProvider(features)
     mp.mapToScreen.mockReturnValue({ x: 100, y: 200 })
 
-    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: mp, mapSize: 'medium' })
+    const { eb } = setup({ interactionModes: ['selectFeature'], layers, mapProvider: mp, mapSizeScale: 1.5 })
     act(() => eb.emit(MOVE_END, {}))
 
     expect(mp.mapToScreen).toHaveBeenCalledWith([2, 1]) // bbox centre of the polygon above
     expect(eb.emit).toHaveBeenCalledWith(SET_FEATURES, {
-      items: [featureItem({ id: '1', label: 'High Street', x: 150, y: 300 })], multiselectable: false, label: 'Map features' // scaleFactor.medium = 1.5
+      items: [featureItem({ id: '1', label: 'High Street', x: 150, y: 300 })], multiselectable: false, label: 'Map features'
     })
   })
 
