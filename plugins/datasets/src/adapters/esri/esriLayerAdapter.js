@@ -40,8 +40,8 @@ export default class EsriLayerAdapter extends LayerAdapter {
     this._groupLayers = {}
   }
 
-  createDataset (datasetDefinition, registry) {
-    return new EsriDataset(datasetDefinition, registry)
+  createDataset (datasetDefinition, datasetRegistry) {
+    return new EsriDataset(datasetDefinition, datasetRegistry)
   }
 
   async init () {

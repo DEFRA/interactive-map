@@ -110,7 +110,7 @@ export class OpenLayersDataset extends MapboxStyleDataset {
     if (!this.hasSymbol) {
       return null
     }
-    const imageId = symbolRegistry.getSymbolImageId(this.style, this._registry.mapStyle, 'normal', pixelRatio)
+    const imageId = symbolRegistry.getSymbolImageId(this.style, this._datasetRegistry.mapStyle, 'normal', pixelRatio)
     if (!imageId) {
       return null
     }
@@ -153,7 +153,7 @@ export class OpenLayersDataset extends MapboxStyleDataset {
     if (this.hasSymbol) {
       return this._symbolStyle(context)
     }
-    const mapStyleId = this._registry.mapStyle?.id
+    const mapStyleId = this._datasetRegistry.mapStyle?.id
     const style = {}
     if (this.hasFill && !this.hasPattern) {
       style['fill-color'] = getValueForStyle(this.style.fill, mapStyleId)

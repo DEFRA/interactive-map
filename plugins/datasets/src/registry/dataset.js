@@ -5,9 +5,9 @@ import { DynamicGeoJson } from './dynamicGeoJson.js'
 import { calculateOpacity } from './globalDataset.js'
 
 export class Dataset {
-  constructor (dataset, registry) {
+  constructor (dataset, datasetRegistry) {
     this._datasetDefinition = dataset
-    this._registry = registry
+    this._datasetRegistry = datasetRegistry
   }
 
   get id () { return this._datasetDefinition.id }
@@ -56,7 +56,7 @@ export class Dataset {
   get opacity () {
     const myOpacity = this.style?.opacity
     const parentOpacity = this.parent?.style?.opacity
-    return calculateOpacity(this._registry.globals, myOpacity, parentOpacity)
+    return calculateOpacity(this._datasetRegistry.globals, myOpacity, parentOpacity)
   }
 
   get hasDynamicGeoJSON () {
@@ -84,7 +84,7 @@ export class Dataset {
     if (this.isSublayer) {
       return !this.parent?.visible
     }
-    return !this._registry.globals.visible
+    return !this._datasetRegistry.globals.visible
   }
 
   // Returns true if this dataset is visible based on its own visibility setting,
@@ -102,7 +102,7 @@ export class Dataset {
     if (this.isSublayer) {
       return this._datasetDefinition.visible && (this.parent?.visible)
     }
-    return this._datasetDefinition.visible && this._registry.globals.visible
+    return this._datasetDefinition.visible && this._datasetRegistry.globals.visible
   }
 
   get esriStyleLayerId () { return this._datasetDefinition.esriStyleLayerId }
@@ -110,7 +110,7 @@ export class Dataset {
   get visibility () {
     const { visible, visibleWhen } = this
     if (visible && visibleWhen) {
-      return this._registry.isVisibleWhen(visibleWhen) ? 'visible' : 'none'
+      return this._datasetRegistry.isVisibleWhen(visibleWhen) ? 'visible' : 'none'
     }
     return visible ? 'visible' : 'none'
   }
@@ -151,14 +151,14 @@ export class Dataset {
   get sublayers () {
     const { sublayerIds } = this
     if (sublayerIds) {
-      return sublayerIds.map(id => this._registry.getDataset(id))
+      return sublayerIds.map(id => this._datasetRegistry.getDataset(id))
     }
     return []
   }
 
   get parent () {
     if (this._datasetDefinition.parentId) {
-      return this._registry.getDataset(this._datasetDefinition.parentId)
+      return this._datasetRegistry.getDataset(this._datasetDefinition.parentId)
     }
     return undefined
   }

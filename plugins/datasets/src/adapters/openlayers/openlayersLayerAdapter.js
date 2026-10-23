@@ -29,13 +29,13 @@ export default class OpenLayersLayerAdapter extends MapboxStyleLayerAdapter {
     // leaf layer id (== dataset/sublayer id) → OL layer
     this._layersById = new Map()
     // initialiseDatasets.js passes this to datasetRegistry.attachCreateDataset unbound, then
-    // calls it as registry._createDataset(...) — bind so `this` still resolves here, not to
-    // the registry.
+    // calls it as datasetRegistry._createDataset(...) — bind so `this` still resolves here, not to
+    // the dataset registry.
     this.createDataset = this.createDataset.bind(this)
   }
 
-  createDataset (datasetDefinition, registry) {
-    return new OpenLayersDataset(datasetDefinition, registry)
+  createDataset (datasetDefinition, datasetRegistry) {
+    return new OpenLayersDataset(datasetDefinition, datasetRegistry)
   }
 
   // What layer styles are resolved against — see layerBuilders.js's resolveLayerStyle. Symbol

@@ -3,7 +3,7 @@ import { getValueForStyle } from '../../../../../../src/utils/getValueForStyle.j
 
 export class EsriDataset extends Dataset {
   applyLayerPaintProperties (layerPaintProperties) {
-    const { mapStyle } = this._registry
+    const { mapStyle } = this._datasetRegistry
     if (this.hasStroke) {
       layerPaintProperties['line-color'] = getValueForStyle(this.style.stroke, mapStyle.id)
     }
@@ -32,7 +32,7 @@ export class EsriDataset extends Dataset {
     if (!rendererDefinition) {
       return undefined
     }
-    const { mapStyle } = this._registry
+    const { mapStyle } = this._datasetRegistry
     const renderer = structuredClone(rendererDefinition)
     if (renderer.symbol?.color) {
       renderer.symbol.color = getValueForStyle(renderer.symbol.color, mapStyle.id)

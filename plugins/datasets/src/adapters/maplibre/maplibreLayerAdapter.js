@@ -30,8 +30,8 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     this._symbolLayerIds = new Set()
   }
 
-  createDataset (datasetDefinition, registry) {
-    return new MapLibreDataset(datasetDefinition, registry)
+  createDataset (datasetDefinition, datasetRegistry) {
+    return new MapLibreDataset(datasetDefinition, datasetRegistry)
   }
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
