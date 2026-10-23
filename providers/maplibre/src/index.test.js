@@ -2,10 +2,16 @@ import createMapLibreProvider from './index.js'
 import { getWebGL } from './utils/detectWebgl.js'
 import { supportsModuleWorkers } from './utils/detectModuleWorker.js'
 import * as maplibreGl from 'maplibre-gl'
+import { isUnbundledWorkerUrl } from './utils/workerUrl.js'
+import { logger } from '../../../src/services/logger.js'
 
 jest.mock('./utils/detectWebgl.js', () => ({ getWebGL: jest.fn() }))
 jest.mock('./utils/detectModuleWorker.js', () => ({ supportsModuleWorkers: jest.fn() }))
-jest.mock('./utils/workerUrl.js', () => ({ getWorkerUrl: (version) => `http://localhost/maplibre-gl-worker.mjs?v=${version}` }))
+jest.mock('./utils/workerUrl.js', () => ({
+  getWorkerUrl: (version) => `http://localhost/maplibre-gl-worker.mjs?v=${version}`,
+  isUnbundledWorkerUrl: jest.fn(() => false)
+}))
+jest.mock('../../../src/services/logger.js', () => ({ logger: { error: jest.fn() } }))
 jest.mock('maplibre-gl', () => ({ getVersion: () => '6.0.0', setWorkerUrl: jest.fn() }))
 jest.mock('./maplibreProvider.js', () => ({ default: class MockProvider {} }))
 
@@ -117,5 +123,21 @@ describe('createMapLibreProvider', () => {
     await createMapLibreProvider().load()
 
     expect(maplibreGl.setWorkerUrl).toHaveBeenCalledWith('http://localhost/maplibre-gl-worker.mjs?v=6.0.0')
+  })
+
+  test("load explains how to set workerUrl when the build didn't include the worker", async () => {
+    isUnbundledWorkerUrl.mockReturnValueOnce(true)
+
+    await createMapLibreProvider().load()
+
+    expect(logger.error).toHaveBeenCalledWith(expect.stringContaining('workerUrl'))
+    expect(maplibreGl.setWorkerUrl).toHaveBeenCalled()
+  })
+
+  test('load does not check the worker URL when workerUrl is provided', async () => {
+    await createMapLibreProvider({ workerUrl: '/assets/maplibre-gl-worker.mjs' }).load()
+
+    expect(isUnbundledWorkerUrl).not.toHaveBeenCalled()
+    expect(logger.error).not.toHaveBeenCalled()
   })
 })

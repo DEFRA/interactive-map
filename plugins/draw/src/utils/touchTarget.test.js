@@ -19,6 +19,18 @@ describe('createTouchTarget', () => {
     expect(container.querySelectorAll('[data-im-draw-touch-target]')).toHaveLength(1)
   })
 
+  test('styles the target through the element, not a style attribute in the markup', () => {
+    const container = document.createElement('div')
+    const insertAdjacentHTML = jest.spyOn(container, 'insertAdjacentHTML')
+
+    const el = createTouchTarget(container)
+
+    expect(insertAdjacentHTML.mock.calls[0][1]).not.toMatch(/style=/)
+    expect(el.style.display).toBe('none')
+    expect(el.style.position).toBe('absolute')
+    expect(el.style.margin).toBe('24px 0px 0px -24px')
+  })
+
   test('returns the existing target without inserting a second one', () => {
     const container = document.createElement('div')
     const first = createTouchTarget(container)

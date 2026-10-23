@@ -350,7 +350,7 @@ new InteractiveMap('map', {
 
 URL of the MapLibre worker file. This is set automatically with webpack, Vite and the UMD build.
 
-With other bundlers (such as esbuild), copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here:
+With other bundlers (such as Rollup and esbuild), copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here. If it's missing, the console explains this.
 
 ```js
 maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' })
