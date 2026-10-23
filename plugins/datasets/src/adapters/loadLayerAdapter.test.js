@@ -1,4 +1,4 @@
-import { loadLayerAdapter, layerAdapter } from './loadLayerAdapter.js'
+import { loadLayerAdapter } from './loadLayerAdapter.js'
 
 const makeAdapterInstance = (type) => ({
   type,
@@ -31,6 +31,7 @@ jest.mock('./openlayers/openlayersLayerAdapter.js', () => ({
 const makeMapProvider = (name) => ({ name })
 const symbolRegistry = {}
 const patternRegistry = {}
+const datasetRegistry = {}
 
 describe('loadLayerAdapter', () => {
   beforeEach(() => {
@@ -55,11 +56,11 @@ describe('loadLayerAdapter', () => {
     expect(adapter.type).toBe('openlayers')
   })
 
-  it('passes adapterConfig through to the adapter constructor', async () => {
+  it('passes the registries through to the adapter constructor', async () => {
     const OpenLayersLayerAdapter = (await import('./openlayers/openlayersLayerAdapter.js')).default
     const mapProvider = makeMapProvider('OpenLayersProvider')
-    await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, { renderer: 'webgl' })
-    expect(OpenLayersLayerAdapter).toHaveBeenCalledWith(mapProvider, symbolRegistry, patternRegistry, { renderer: 'webgl' })
+    await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
+    expect(OpenLayersLayerAdapter).toHaveBeenCalledWith(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
   })
 
   it('throws for an unknown provider', async () => {
@@ -68,11 +69,10 @@ describe('loadLayerAdapter', () => {
       .rejects.toThrow('No layer adapter available for map provider UnknownProvider')
   })
 
-  it('assigns adapter methods to the layerAdapter proxy object', async () => {
+  it('returns a new adapter instance for each call', async () => {
     const mapProvider = makeMapProvider('MapLibreProvider')
-    await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
-    expect(typeof layerAdapter.addDataset).toBe('function')
-    expect(typeof layerAdapter.removeDataset).toBe('function')
-    expect(typeof layerAdapter.setData).toBe('function')
+    const adapterA = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
+    const adapterB = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
+    expect(adapterA).not.toBe(adapterB)
   })
 })

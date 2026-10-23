@@ -119,15 +119,13 @@ describe('mapPanels', () => {
     registeredPlugins.push(plugin)
     defaultAppState.pluginRegistry = { registeredPlugins: [plugin] }
     defaultAppState.panelConfig = ({ p1: { ...baseConfig, render: renderFn } })
-    map()
-    expect(withPluginContexts).toHaveBeenCalledWith(
-      renderFn,
-      expect.objectContaining({
-        pluginId: 'plug1',
-        pluginConfig: { a: 1 },
-        foo: 'bar'
-      })
-    )
+    const result = map()
+    expect(withPluginContexts).toHaveBeenCalledWith(renderFn)
+    expect(result[0].element.props.items[0].element.props).toEqual(expect.objectContaining({
+      pluginId: 'plug1',
+      pluginConfig: { a: 1 },
+      foo: 'bar'
+    }))
   })
 
   it('builds an empty items list if there is no render function and no injected controls', () => {

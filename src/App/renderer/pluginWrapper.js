@@ -12,7 +12,8 @@ import { getIconRegistry } from '../registry/iconRegistry.js'
  *
  * Using the original component function as the key ensures that each plugin component
  * is wrapped exactly once. This prevents unnecessary unmounting and remounting in React,
- * which can break state and focus management.
+ * which can break state and focus management. The cache is shared by every map on the page,
+ * so a wrapper takes its plugin id and config as props rather than keeping them.
  *
  * @type {Map<Function, React.ComponentType>}
  */
@@ -24,7 +25,7 @@ export const wrapperCache = new Map()
  * This function returns a stable React component type that:
  * - Always receives app-level context: config, appState, mapState
  * - Always receives core services: eventBus, announcer, reverseGeocode, etc
- * - Always receives plugin-level config from the manifest
+ * - Always receives plugin-level config, passed to the wrapper as the `pluginConfig` prop
  * - Always receives plugin-specific state from PluginProvider
  * - Receives mapProvider from appConfig
  *
@@ -32,17 +33,18 @@ export const wrapperCache = new Map()
  * Without caching, each call would produce a new component type, causing unmounts
  * and remounts of child components, which can break focus, local state, or other effects.
  *
+ * Render the wrapper with these props, which aren't passed on to the component:
+ * - `pluginId` - The unique ID of the plugin
+ * - `pluginConfig` - Static plugin configuration for this map's plugin
+ *
  * @param {Function} Component - The original plugin component (can be anonymous)
- * @param {Object} options
- * @param {string} options.pluginId - The unique ID of the plugin
- * @param {Object} options.pluginConfig - Static plugin configuration applied at implementation time
  * @returns {React.ComponentType} - The wrapped component with all contexts injected
  */
-export function withPluginContexts (Component, { pluginId, pluginConfig }) {
+export function withPluginContexts (Component) {
   const key = Component
 
   if (!wrapperCache.has(key)) {
-    wrapperCache.set(key, function WrappedComponent (props) {
+    wrapperCache.set(key, function WrappedComponent ({ pluginId, pluginConfig, ...props }) {
       const appConfig = useConfig()
       const appState = useApp()
       const mapState = useMap()
@@ -80,7 +82,7 @@ export function withPluginContexts (Component, { pluginId, pluginConfig }) {
             Object.entries(appState.buttonConfig).filter(
               ([_, btn]) => btn.pluginId === pluginId
             )
-          ), [appState.buttonConfig])}
+          ), [appState.buttonConfig, pluginId])}
         />
       )
     })

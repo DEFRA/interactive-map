@@ -1,6 +1,5 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
-import { scaleFactor } from '../../../../src/config/appConfig.js'
 import { ADAPTER_EVENTS } from '../adapterEvents.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
@@ -9,9 +8,9 @@ const DRAW_PROVIDER_ID = 'draw'
 // Mirrors interact's own projectToScreen (plugins/interact/src/hooks/useSpatialList.js) —
 // mapProvider.mapToScreen is the provider-agnostic projection every mapProvider implements,
 // not any adapter-internal pixel conversion.
-const projectToScreen = (mapProvider, mapSize, coord) => {
+const projectToScreen = (mapProvider, mapSizeScale, coord) => {
   const { x, y } = mapProvider.mapToScreen(coord)
-  return { x: x * scaleFactor[mapSize], y: y * scaleFactor[mapSize] }
+  return { x: x * mapSizeScale, y: y * mapSizeScale }
 }
 
 // ids stay flat vertices-then-midpoints indices — matches the mode's own selectedVertexIndex
@@ -21,13 +20,13 @@ const projectToScreen = (mapProvider, mapSize, coord) => {
 // N and M" label (and this interleave) only reads correctly for a single ring/part (the
 // common case); a shape with holes or multiple parts would need ring-aware numbering to stay
 // accurate, not done here.
-const buildVertexItems = (mapProvider, mapSize) => {
+const buildVertexItems = (mapProvider, mapSizeScale) => {
   const { vertices, midpoints } = mapProvider.draw?.getVertexItems?.() ?? { vertices: [], midpoints: [] }
   const toVertexItem = (coord, i) => ({
     id: String(i),
     label: `Point ${i + 1}`,
     isMidpoint: false,
-    ...projectToScreen(mapProvider, mapSize, coord)
+    ...projectToScreen(mapProvider, mapSizeScale, coord)
   })
   const toMidpointItem = (coord, i) => ({
     id: String(vertices.length + i),
@@ -35,7 +34,7 @@ const buildVertexItems = (mapProvider, mapSize) => {
     // "Insert point between N and M" was long enough to lose.
     label: `Insert ${i + 1}-${((i + 1) % vertices.length) + 1}`,
     isMidpoint: true,
-    ...projectToScreen(mapProvider, mapSize, coord)
+    ...projectToScreen(mapProvider, mapSizeScale, coord)
   })
   const items = []
   vertices.forEach((coord, i) => {
@@ -57,10 +56,10 @@ const buildVertexItems = (mapProvider, mapSize) => {
  * meanwhile, restored automatically once the claim is released) rather than contributing
  * additively like interact does.
  */
-function useVertexItemSync ({ pluginState, mapProvider, mapSize, spatialListRegistry, itemsRef, eventBus }) {
+function useVertexItemSync ({ pluginState, mapProvider, mapSizeScale, spatialListRegistry, itemsRef, eventBus }) {
   useEffect(() => {
     const rebuild = () => {
-      itemsRef.current = pluginState.mode === EDIT_VERTEX_MODE ? buildVertexItems(mapProvider, mapSize) : []
+      itemsRef.current = pluginState.mode === EDIT_VERTEX_MODE ? buildVertexItems(mapProvider, mapSizeScale) : []
       spatialListRegistry.notifyItemsChanged(DRAW_PROVIDER_ID)
     }
     rebuild()
@@ -74,7 +73,7 @@ function useVertexItemSync ({ pluginState, mapProvider, mapSize, spatialListRegi
       eventBus.off(EVENTS.MAP_MOVE_END, rebuild)
       draw.off(ADAPTER_EVENTS.UPDATE, rebuild)
     }
-  }, [pluginState.mode, mapProvider, mapSize, spatialListRegistry, itemsRef, eventBus])
+  }, [pluginState.mode, mapProvider, mapSizeScale, spatialListRegistry, itemsRef, eventBus])
 
   // Registers once, for the lifetime of the hook — safe outside edit_vertex too, since an
   // exclusive-capable provider only ever contributes while it holds the claim (see
@@ -170,11 +169,11 @@ function useConfirmHandler ({ eventBus, mapProvider, pluginState, activeIdRef, i
  * @param {{ mapState: object, pluginState: object, services: object, mapProvider: object, spatialListRegistry: object, viewportRef: React.RefObject }} params
  */
 export function useSpatialList ({ mapState, pluginState, services, mapProvider, spatialListRegistry, viewportRef }) {
-  const { mapSize } = mapState
+  const { mapSizeScale } = mapState
   const { eventBus, announce } = services
   const itemsRef = useRef([])
   const activeIdRef = useRef(null)
-  useVertexItemSync({ pluginState, mapProvider, mapSize, spatialListRegistry, itemsRef, eventBus })
+  useVertexItemSync({ pluginState, mapProvider, mapSizeScale, spatialListRegistry, itemsRef, eventBus })
   useActiveVertexHandler({ eventBus, mapProvider, pluginState, activeIdRef })
   useConfirmHandler({ eventBus, mapProvider, pluginState, activeIdRef, itemsRef, viewportRef, announce })
 }

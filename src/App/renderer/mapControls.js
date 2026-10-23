@@ -65,10 +65,7 @@ export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicati
         )
       } else {
         // Plugin control: wrap render with plugin context
-        const Wrapped = withPluginContexts(control.render, {
-          pluginId,
-          pluginConfig: plugin?.config
-        })
+        const Wrapped = withPluginContexts(control.render)
         // Core's own element around the plugin's control, as MapButton's wrapper is for buttons and
         // Panel's root for panels — so hiding it (application mode) never remounts it: display:
         // contents leaves layout untouched while shown, hidden hides it with its state intact.
@@ -79,7 +76,7 @@ export function mapControls ({ slot, appState, evaluateProp, isHiddenByApplicati
             className={`im-c-control-wrapper im-c-control-wrapper--${stringToKebab(control.id)}`}
             hidden={isHidden}
           >
-            <Wrapped />
+            <Wrapped pluginId={pluginId} pluginConfig={plugin?.config} />
           </div>
         )
       }

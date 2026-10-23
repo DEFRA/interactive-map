@@ -125,6 +125,30 @@ describe('MapProvider', () => {
     expect(contextValue.isMapReady).toBe(true)
   })
 
+  test.each([
+    ['small', 1],
+    ['medium', 1.5],
+    ['large', 2],
+    ['unknown', 1]
+  ])('provides mapSizeScale for map size %s', (mapSize, expected) => {
+    let contextValue
+    const Child = () => {
+      contextValue = React.useContext(MapContext)
+      return null
+    }
+    render(
+      <MapProvider options={{ id: 'map1', mapSize: 'small', eventBus: mockEventBus }}>
+        <Child />
+      </MapProvider>
+    )
+
+    act(() => {
+      capturedHandlers['map:setsize'](mapSize)
+    })
+
+    expect(contextValue.mapSizeScale).toBe(expected)
+  })
+
   test('emits map:sizechange when mapSize changes after initial value', () => {
     render(
       <MapProvider options={{ id: 'map1', mapSize: '100x100', eventBus: mockEventBus }}>

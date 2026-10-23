@@ -1,33 +1,25 @@
-let globalState = {}
-
-export const attachGlobalState = (globalStateRef) => {
-  globalState = globalStateRef
-}
-
-const calculateLocalOpacity = (opacityValue, parentOpacityValue) => {
+const calculateLocalOpacity = (globals, opacityValue, parentOpacityValue) => {
   if (opacityValue === undefined) {
     if (parentOpacityValue === undefined) {
-      return globalState.opacity
+      return globals.opacity
     }
     return parentOpacityValue
   }
   return opacityValue
 }
 
-const multiplyOpacities = (opacityValue = 1, parentOpacityValue = 1) => {
-  return Math.round((opacityValue * parentOpacityValue * globalState.opacity + Number.EPSILON) * 100) / 100
+const multiplyOpacities = (globals, opacityValue = 1, parentOpacityValue = 1) => {
+  return Math.round((opacityValue * parentOpacityValue * globals.opacity + Number.EPSILON) * 100) / 100
 }
 
-export const calculateOpacity = (opacityValue, parentOpacityValue) => {
-  switch (globalState.opacityMode) {
+export const calculateOpacity = (globals, opacityValue, parentOpacityValue) => {
+  switch (globals.opacityMode) {
     case 'global':
-      return globalState.opacity
+      return globals.opacity
     case 'multiply':
-      return multiplyOpacities(opacityValue, parentOpacityValue)
+      return multiplyOpacities(globals, opacityValue, parentOpacityValue)
     case 'dataset':
     default:
-      return calculateLocalOpacity(opacityValue, parentOpacityValue)
+      return calculateLocalOpacity(globals, opacityValue, parentOpacityValue)
   }
 }
-
-export const getGlobalVisibility = () => globalState.visible

@@ -17,13 +17,14 @@ describe('withPluginContexts', () => {
 
   it('creates a new wrapper and injects all contexts and plugin config/state', () => {
     const Inner = jest.fn(() => <div>Inner</div>)
-    const Wrapped = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: { foo: 'bar' } })
+    const Wrapped = withPluginContexts(Inner)
 
-    render(<Wrapped customProp='xyz' />)
+    render(<Wrapped pluginId='plugin1' pluginConfig={{ foo: 'bar' }} customProp='xyz' />)
 
     expect(Inner).toHaveBeenCalled()
 
     const props = Inner.mock.calls[0][0]
+    expect(props).not.toHaveProperty('pluginId')
     expect(props).toEqual(expect.objectContaining({
       customProp: 'xyz',
       pluginConfig: { foo: 'bar' },
@@ -42,8 +43,8 @@ describe('withPluginContexts', () => {
       const dispatch = jest.fn()
       require('../store/appContext.js').useApp.mockReturnValue({ buttonConfig: {}, dispatch })
       const Inner = jest.fn(() => <div>Inner</div>)
-      const Wrapped = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: {} })
-      const { rerender } = render(<Wrapped />)
+      const Wrapped = withPluginContexts(Inner)
+      const { rerender } = render(<Wrapped pluginId='plugin1' pluginConfig={{}} />)
       return { dispatch, Inner, Wrapped, rerender }
     }
 
@@ -77,7 +78,7 @@ describe('withPluginContexts', () => {
 
     it('passes the same functions on every render, so effects can depend on them', () => {
       const { Inner, Wrapped, rerender } = setup()
-      rerender(<Wrapped />)
+      rerender(<Wrapped pluginId='plugin1' pluginConfig={{}} />)
       const [firstProps, secondProps] = Inner.mock.calls.map(([props]) => props)
       expect(secondProps.setApplicationMode).toBe(firstProps.setApplicationMode)
       expect(secondProps.clearApplicationMode).toBe(firstProps.clearApplicationMode)
@@ -86,10 +87,23 @@ describe('withPluginContexts', () => {
 
   it('returns the cached wrapper if called again with the same component', () => {
     const Inner = jest.fn(() => <div>Inner</div>)
-    const Wrapped1 = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: { foo: 'bar' } })
-    const Wrapped2 = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: { foo: 'bar' } })
+    const Wrapped1 = withPluginContexts(Inner)
+    const Wrapped2 = withPluginContexts(Inner)
 
     expect(Wrapped2).toBe(Wrapped1)
+  })
+
+  it('gives each map its own plugin config when maps share a component', () => {
+    const Inner = jest.fn(() => <div>Inner</div>)
+    const WrappedMapA = withPluginContexts(Inner)
+    const WrappedMapB = withPluginContexts(Inner)
+
+    render(<WrappedMapA pluginId='datasets' pluginConfig={{ datasets: ['map-a'] }} />)
+    render(<WrappedMapB pluginId='datasets' pluginConfig={{ datasets: ['map-b'] }} />)
+
+    expect(WrappedMapB).toBe(WrappedMapA)
+    expect(Inner.mock.calls[0][0].pluginConfig).toEqual({ datasets: ['map-a'] })
+    expect(Inner.mock.calls[1][0].pluginConfig).toEqual({ datasets: ['map-b'] })
   })
 
   it('filters buttonConfig by pluginId', () => {
@@ -108,9 +122,9 @@ describe('withPluginContexts', () => {
     const { useApp } = require('../store/appContext.js')
     useApp.mockImplementation(() => appStateMock)
 
-    const Wrapped = withPluginContexts(Inner, { pluginId: 'plugin1', pluginConfig: { foo: 'bar' } })
+    const Wrapped = withPluginContexts(Inner)
 
-    render(<Wrapped customProp='xyz' />)
+    render(<Wrapped pluginId='plugin1' pluginConfig={{ foo: 'bar' }} customProp='xyz' />)
 
     const props = Inner.mock.calls[0][0]
 

@@ -13,6 +13,7 @@ import { getOpacity } from './api/getOpacity.js'
 import { setData } from './api/setData.js'
 import { setGlobals } from './api/setGlobals.js'
 import { hasLayersMenu } from './utils/hasLayersMenu.js'
+import { createDatasetRegistry } from './registry/datasetRegistry.js'
 
 const layersPanel = {
   id: 'datasetsLayers',
@@ -62,8 +63,9 @@ const layersButton = {
 export const createManifest = ({ hasMenu } = {}) => ({
   InitComponent: DatasetsInit,
 
+  // load() calls createManifest once per map, so each map gets its own dataset registry
   reducer: {
-    initialState,
+    initialState: { ...initialState, datasetRegistry: createDatasetRegistry() },
     actions
   },
 

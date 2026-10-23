@@ -2,37 +2,30 @@
 import { useEffect, useRef } from 'react'
 import { EVENTS } from '../../../../src/config/events.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { attachGlobalState } from '../registry/globalDataset.js'
-import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
+import { loadLayerAdapter } from '../adapters/loadLayerAdapter.js'
 import { hasLayersMenu } from '../utils/hasLayersMenu.js'
-import { getPanelElementId } from '../../../../src/utils/getPanelElementId.js'
 
 const LAYERS_PANEL_ID = 'datasetsLayers'
 
-export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
-  const { dispatch } = pluginState
-  const { eventBus, symbolRegistry, patternRegistry, focusMap } = services
-  const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
+// Closes the Layers panel if its menu empties while it's open
+function useCloseEmptyLayersPanel ({ appState, pluginConfig, pluginState, services }) {
+  const { eventBus } = services
   const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
   const isLayersPanelOpen = Boolean(appState.openPanels[LAYERS_PANEL_ID])
-  const focusFrameRef = useRef(null)
 
-  // Close the Layers panel if its menu empties while it's open
   useEffect(() => {
-    if (hasMenu || !isLayersPanelOpen) {
-      return
-    }
-    const panelEl = document.getElementById(getPanelElementId(appConfig.id, LAYERS_PANEL_ID))
-    const hadFocus = Boolean(panelEl?.contains(document.activeElement))
-    eventBus.emit(EVENTS.APP_HIDE_PANEL, LAYERS_PANEL_ID)
-    if (hadFocus) {
-      // Let the panel close and release modal focus/inert first, as Panel's handleClose does
-      focusFrameRef.current = requestAnimationFrame(() => focusMap())
+    if (!hasMenu && isLayersPanelOpen) {
+      eventBus.emit(EVENTS.APP_HIDE_PANEL, LAYERS_PANEL_ID)
     }
   }, [hasMenu, isLayersPanelOpen])
+}
 
-  useEffect(() => () => cancelAnimationFrame(focusFrameRef.current), [])
+export function DatasetsInit ({ appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
+  const { dispatch, datasetRegistry } = pluginState
+  const { eventBus, symbolRegistry, patternRegistry } = services
+  const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
+
+  useCloseEmptyLayersPanel({ appState, pluginConfig, pluginState, services })
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
@@ -40,6 +33,14 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
 
   // Track initialisation and store cleanup function
   const datasetsInstanceRef = useRef(null)
+
+  // Call layerAdapter methods queued from state updates. They wait until the adapter has loaded.
+  const runQueuedActions = (actionsArray) => {
+    const layerAdapter = mapProvider?.datasets
+    if (!actionsArray.length || !layerAdapter) { return }
+    actionsArray.forEach(({ method, parameters }) => layerAdapter[method](...parameters))
+    dispatch({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actionsArray })
+  }
 
   useEffect(() => {
     if (!isBaseMapReady) {
@@ -52,10 +53,11 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
     }
 
     const initDatasets = async () => {
-      const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry)
+      const adapter = await loadLayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
 
       datasetsInstanceRef.current = initialiseDatasets({
         adapter,
+        datasetRegistry,
         pluginConfig,
         pluginStateRef,
         mapStyle: mapState.mapStyle,
@@ -64,6 +66,9 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
         dispatch,
         eventBus
       })
+      // Each map has its own provider, so its API calls reach its own adapter
+      mapProvider.datasets = adapter
+      runQueuedActions(pluginStateRef.current.actionsArray)
     }
 
     initDatasets() // NOSONAR: Not changing for now as used in production
@@ -77,6 +82,7 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
 
   useEffect(() => {
     datasetRegistry.attachMapStyle(mapState.mapStyle)
+    const layerAdapter = mapProvider?.datasets
     if (layerAdapter?.onMapStyleChange) {
       // MapLibre's own map.addImage()/setPaintProperty() calls (made while re-registering
       // symbols/patterns below) naturally re-trigger MAP_DATA_CHANGE via the GL engine's own
@@ -95,15 +101,9 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
   },
   [mapState.mapStyle])
 
-  useEffect(() => attachGlobalState(pluginState.globals), [pluginState.globals])
+  useEffect(() => datasetRegistry.attachGlobals(pluginState.globals), [pluginState.globals])
 
-  // Call layerAdapter methods that are queued from state updates
-  useEffect(() => {
-    const { actionsArray } = pluginState
-    if (!actionsArray.length) { return }
-    actionsArray.forEach(({ method, parameters }) => layerAdapter[method](...parameters))
-    dispatch({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actionsArray })
-  }, [pluginState.actionsArray])
+  useEffect(() => runQueuedActions(pluginState.actionsArray), [pluginState.actionsArray])
 
   // Cleanup only on unmount
   useEffect(() => {
@@ -111,6 +111,7 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
       if (datasetsInstanceRef.current) {
         datasetsInstanceRef.current.remove()
         datasetsInstanceRef.current = null
+        mapProvider.datasets = null
       }
     }
   }, [])

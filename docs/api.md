@@ -791,6 +791,8 @@ interactiveMap.showPanel('info-panel', { focus: false })
 
 Hides a panel without removing it, preserving its content for when it is shown again.
 
+If focus is inside the panel, it moves to the element that opened the panel, or to the map if that element is no longer on the page. Otherwise focus stays where it is.
+
 | Parameter | Type | Description |
 |-----------|------|-------------|
 | `id` | `string` | Panel identifier to hide |

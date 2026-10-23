@@ -66,10 +66,10 @@ describe('esriLayerAdapter', () => {
   beforeEach(() => {
     datasetRegistry.useEsriDatasets()
     datasetRegistry.attachMapStyle(MAP_STYLE)
-    datasetRegistry.attachCreateDataset(def => new EsriDataset(def))
+    datasetRegistry.attachCreateDataset((def, datasetRegistry) => new EsriDataset(def, datasetRegistry))
     map = makeMap()
     mapProvider = makeMapProvider(map)
-    adapter = new EsriLayerAdapter(mapProvider, null, null)
+    adapter = new EsriLayerAdapter(mapProvider, null, null, datasetRegistry)
     adapter.resolveReady()
   })
 

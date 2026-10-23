@@ -1,24 +1,6 @@
 import { importLayerAdapter } from './importLayerAdapter.js'
 
-let _layerAdapter
-export const layerAdapter = {}
-
-export const loadLayerAdapter = async (mapProvider, symbolRegistry, patternRegistry, adapterConfig = {}) => {
+export const loadLayerAdapter = async (mapProvider, symbolRegistry, patternRegistry, datasetRegistry) => {
   const LayerAdapter = await importLayerAdapter(mapProvider)
-  _layerAdapter = new LayerAdapter(mapProvider, symbolRegistry, patternRegistry, adapterConfig)
-
-  // Assign the adapter methods that are consumed by the api
-  layerAdapter.removeDataset = _layerAdapter.removeDataset.bind(_layerAdapter)
-  layerAdapter.setData = _layerAdapter.setData.bind(_layerAdapter)
-  layerAdapter.applyStyle = _layerAdapter.applyStyle.bind(_layerAdapter)
-  layerAdapter.applyDatasetVisibility = _layerAdapter.applyDatasetVisibility.bind(_layerAdapter)
-  layerAdapter.applyGlobalVisibility = _layerAdapter.applyGlobalVisibility.bind(_layerAdapter)
-  layerAdapter.applyDatasetOpacity = _layerAdapter.applyDatasetOpacity.bind(_layerAdapter)
-  layerAdapter.applyGlobalOpacity = _layerAdapter.applyGlobalOpacity.bind(_layerAdapter)
-  layerAdapter.addDataset = _layerAdapter.addDataset.bind(_layerAdapter)
-  layerAdapter.applyFeatureFilter = _layerAdapter.applyFeatureFilter.bind(_layerAdapter)
-  layerAdapter.onMapStyleChange = _layerAdapter.onMapStyleChange?.bind(_layerAdapter)
-  layerAdapter.onMapSizeChange = _layerAdapter.onMapSizeChange?.bind(_layerAdapter)
-
-  return _layerAdapter
+  return new LayerAdapter(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
 }

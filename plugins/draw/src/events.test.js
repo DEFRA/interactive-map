@@ -30,7 +30,7 @@ const setup = (overrides = {}) => {
   const buttonConfig = { drawDone: {}, drawCancel: {}, drawUndo: {}, drawDeletePoint: {}, drawSnap: {}, ...overrides.buttonConfig }
   const appState = { layoutRefs: { viewportRef: { current: 'viewport' } }, interfaceType: 'mouse' }
   const appConfig = { id: 'app' }
-  const mapState = { mapSize: 'medium' }
+  const mapState = { mapSizeScale: 1.5 }
 
   const detach = attachEvents({ appState, appConfig, mapState, pluginState, mapProvider, buttonConfig, eventBus, hints })
   return { draw, dispatch, pluginState, mapProvider, eventBus, hints, buttonConfig, detach }

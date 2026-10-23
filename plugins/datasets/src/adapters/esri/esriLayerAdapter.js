@@ -2,11 +2,10 @@ import VectorTileLayer from '@arcgis/core/layers/VectorTileLayer.js'
 import FeatureLayer from '@arcgis/core/layers/FeatureLayer.js'
 import GroupLayer from '@arcgis/core/layers/GroupLayer.js'
 import { LayerAdapter } from '../layerAdapter.js'
-import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { EsriDataset } from './registry/esriDataset.js'
 import { logger } from '../../../../../src/services/logger.js'
 
-const getLayerSortOrder = (layer) => {
+const getLayerSortOrder = (layer, orderedDatasets) => {
   if (layer.id === 'baseLayer') {
     return -Infinity
   }
@@ -14,12 +13,13 @@ const getLayerSortOrder = (layer) => {
     return Infinity
   }
   const layerId = layer.type === 'group' ? layer.layers?.items?.[0]?.id : layer.id
-  return datasetRegistry._orderedDatasets.indexOf(layerId)
+  return orderedDatasets.indexOf(layerId)
 }
 
 export default class EsriLayerAdapter extends LayerAdapter {
-  constructor (mapProvider) {
+  constructor (mapProvider, _symbolRegistry, _patternRegistry, datasetRegistry) {
     super()
+    this._datasetRegistry = datasetRegistry
     this.ready = new Promise((resolve) => {
       this.resolveReady = resolve
     })
@@ -40,12 +40,12 @@ export default class EsriLayerAdapter extends LayerAdapter {
     this._groupLayers = {}
   }
 
-  createDataset (datasetDefinition) {
-    return new EsriDataset(datasetDefinition)
+  createDataset (datasetDefinition, datasetRegistry) {
+    return new EsriDataset(datasetDefinition, datasetRegistry)
   }
 
   async init () {
-    const topLevelDatasets = datasetRegistry.topLevelDatasets()
+    const topLevelDatasets = this._datasetRegistry.topLevelDatasets()
     // ensure the datasets are added in order
     const _add = async (registryDataset) => {
       return this._addLayers(registryDataset).then(() => {
@@ -94,20 +94,22 @@ export default class EsriLayerAdapter extends LayerAdapter {
       return
     }
 
+    const orderedDatasets = this._datasetRegistry._orderedDatasets
     const topLevelLayers = allLayers.filter(layer => layer.parent?.type !== 'group')
-    const orderedLayers = [...topLevelLayers].sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))
+    const orderedLayers = [...topLevelLayers].sort((a, b) => getLayerSortOrder(a, orderedDatasets) - getLayerSortOrder(b, orderedDatasets))
     orderedLayers.forEach((layer, index) => this._map.reorder(layer, index))
     // Finally reorder the items within the group layers
     this._reorderGroupLayers()
   }
 
   _reorderGroupLayers () {
+    const orderedDatasets = this._datasetRegistry._orderedDatasets
     const groupLayers = Object.values(this._groupLayers)
     groupLayers.forEach((groupLayer) => {
       const children = groupLayer?.allLayers?.items || []
       const orderedChildren = [...children]
         .filter(Boolean)
-        .sort((a, b) => getLayerSortOrder(a) - getLayerSortOrder(b))
+        .sort((a, b) => getLayerSortOrder(a, orderedDatasets) - getLayerSortOrder(b, orderedDatasets))
 
       orderedChildren.forEach((layer, index) => groupLayer?.reorder?.(layer, index))
     })
@@ -170,7 +172,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async addDataset (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       logger.warn(`addDataset called, but Dataset with id ${datasetId} not found in registry`)
       return
@@ -185,7 +187,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async removeDataset (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       return
     }
@@ -233,19 +235,19 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async applyDatasetVisibility (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (registryDataset) {
       this._applyRegistryDatasetVisibility(registryDataset)
     }
   }
 
   async applyGlobalVisibility () {
-    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
+    this._datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
   }
 
   async applyDatasetOpacity (datasetId) {
     const vectorTileLayer = this._mapOpacityLayers[datasetId]
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (vectorTileLayer && registryDataset) {
       vectorTileLayer.opacity = registryDataset.opacity
     }
@@ -253,7 +255,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
 
   async applyGlobalOpacity () {
     Object.entries(this._mapOpacityLayers).forEach(([datasetId, vectorTileLayer]) => {
-      const registryDataset = datasetRegistry.getDataset(datasetId)
+      const registryDataset = this._datasetRegistry.getDataset(datasetId)
       if (registryDataset) {
         vectorTileLayer.opacity = registryDataset.opacity
       }
@@ -282,7 +284,7 @@ export default class EsriLayerAdapter extends LayerAdapter {
   }
 
   async onMapStyleChange () {
-    datasetRegistry.forEach(registryDataset => {
+    this._datasetRegistry.forEach(registryDataset => {
       const { id, isSublayer, parent } = registryDataset
 
       // mapLayer could be a VectorTileLayer or a FeatureLayer, depending on the dataset type

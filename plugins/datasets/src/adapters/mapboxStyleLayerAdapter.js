@@ -1,5 +1,4 @@
 import { LayerAdapter } from './layerAdapter.js'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
 
 /**
  * Shared orchestration for adapters whose registry Dataset extends MapboxStyleDataset
@@ -16,12 +15,13 @@ import { datasetRegistry } from '../registry/datasetRegistry.js'
  * much (e.g. OpenLayers has no per-layer setFilter, so it rebuilds the whole style instead).
  */
 export class MapboxStyleLayerAdapter extends LayerAdapter {
-  constructor (mapProvider, symbolRegistry, patternRegistry) {
+  constructor (mapProvider, symbolRegistry, patternRegistry, datasetRegistry) {
     super()
     this._mapProvider = mapProvider
     this._map = mapProvider.map
     this._symbolRegistry = symbolRegistry
     this._patternRegistry = patternRegistry
+    this._datasetRegistry = datasetRegistry
   }
 
   // Live — reflects the map's current pixelRatio, which can change on resize.
@@ -30,7 +30,7 @@ export class MapboxStyleLayerAdapter extends LayerAdapter {
   }
 
   async addDataset (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       return
     }
@@ -39,7 +39,7 @@ export class MapboxStyleLayerAdapter extends LayerAdapter {
   }
 
   applyDatasetOpacity (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (registryDataset) {
       this._applyRegistryDatasetOpacity(registryDataset)
     }
@@ -52,11 +52,11 @@ export class MapboxStyleLayerAdapter extends LayerAdapter {
   }
 
   applyGlobalOpacity () {
-    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetOpacity(registryDataset))
+    this._datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetOpacity(registryDataset))
   }
 
   applyDatasetVisibility (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (registryDataset) {
       this._applyRegistryDatasetVisibility(registryDataset)
     }
@@ -69,6 +69,6 @@ export class MapboxStyleLayerAdapter extends LayerAdapter {
   }
 
   applyGlobalVisibility () {
-    datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
+    this._datasetRegistry.forEachDataset(registryDataset => this._applyRegistryDatasetVisibility(registryDataset))
   }
 }

@@ -12,10 +12,10 @@ describe('createTouchTarget', () => {
   test('inserts the SVG target once and returns it', () => {
     const container = document.createElement('div')
 
-    const el = createTouchTarget(container)
+    const element = createTouchTarget(container)
 
-    expect(el).not.toBeNull()
-    expect(el.hasAttribute('data-im-draw-touch-target')).toBe(true)
+    expect(element).not.toBeNull()
+    expect(element.hasAttribute('data-im-draw-touch-target')).toBe(true)
     expect(container.querySelectorAll('[data-im-draw-touch-target]')).toHaveLength(1)
   })
 
@@ -23,12 +23,12 @@ describe('createTouchTarget', () => {
     const container = document.createElement('div')
     const insertAdjacentHTML = jest.spyOn(container, 'insertAdjacentHTML')
 
-    const el = createTouchTarget(container)
+    const element = createTouchTarget(container)
 
     expect(insertAdjacentHTML.mock.calls[0][1]).not.toMatch(/style=/)
-    expect(el.style.display).toBe('none')
-    expect(el.style.position).toBe('absolute')
-    expect(el.style.margin).toBe('24px 0px 0px -24px')
+    expect(element.style.display).toBe('none')
+    expect(element.style.position).toBe('absolute')
+    expect(element.style.margin).toBe('24px 0px 0px -24px')
   })
 
   test('returns the existing target without inserting a second one', () => {
@@ -43,13 +43,13 @@ describe('createTouchTarget', () => {
 
 describe('applyTouchTargetColors', () => {
   test('sets the CSS custom properties from the colours', () => {
-    const el = document.createElement('div')
+    const element = document.createElement('div')
 
-    applyTouchTargetColors(el, { editActive: 'a', editHalo: 'h', editVertex: 'v' })
+    applyTouchTargetColors(element, { editActive: 'a', editHalo: 'h', editVertex: 'v' })
 
-    expect(el.style.getPropertyValue('--draw-halo')).toBe('a')
-    expect(el.style.getPropertyValue('--draw-bg')).toBe('h')
-    expect(el.style.getPropertyValue('--draw-primary')).toBe('v')
+    expect(element.style.getPropertyValue('--draw-halo')).toBe('a')
+    expect(element.style.getPropertyValue('--draw-bg')).toBe('h')
+    expect(element.style.getPropertyValue('--draw-primary')).toBe('v')
   })
 
   test('does nothing for a null element', () => {
@@ -59,19 +59,19 @@ describe('applyTouchTargetColors', () => {
 
 describe('showTouchTarget', () => {
   test('positions and shows the element', () => {
-    const el = document.createElement('div')
+    const element = document.createElement('div')
 
-    showTouchTarget(el, { x: 10, y: 20 })
+    showTouchTarget(element, { x: 10, y: 20 })
 
-    expect(el.style.left).toBe('10px')
-    expect(el.style.top).toBe('20px')
-    expect(el.style.display).toBe('block')
+    expect(element.style.left).toBe('10px')
+    expect(element.style.top).toBe('20px')
+    expect(element.style.display).toBe('block')
   })
 
   test('does nothing without a pixel or an element', () => {
-    const el = document.createElement('div')
-    showTouchTarget(el, null)
-    expect(el.style.display).toBe('')
+    const element = document.createElement('div')
+    showTouchTarget(element, null)
+    expect(element.style.display).toBe('')
 
     expect(() => showTouchTarget(null, { x: 0, y: 0 })).not.toThrow()
   })
@@ -79,12 +79,12 @@ describe('showTouchTarget', () => {
 
 describe('hideTouchTarget', () => {
   test('hides the element', () => {
-    const el = document.createElement('div')
-    el.style.display = 'block'
+    const element = document.createElement('div')
+    element.style.display = 'block'
 
-    hideTouchTarget(el)
+    hideTouchTarget(element)
 
-    expect(el.style.display).toBe('none')
+    expect(element.style.display).toBe('none')
   })
 
   test('does nothing for a null element', () => {
