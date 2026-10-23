@@ -115,12 +115,8 @@ function buildPanelBody ({ panelId, config, bpConfig, props, plugin, pluginId, h
 
   let ownItem = null
   if (config.render) {
-    const WrappedChild = withPluginContexts(config.render, {
-      ...props,
-      pluginId,
-      pluginConfig: plugin?.config
-    })
-    ownItem = { id: panelId, order: 0, tab: bpConfig.tab, element: <WrappedChild {...props} /> }
+    const WrappedChild = withPluginContexts(config.render)
+    ownItem = { id: panelId, order: 0, tab: bpConfig.tab, element: <WrappedChild {...props} pluginId={pluginId} pluginConfig={plugin?.config} /> }
   }
 
   const allItems = ownItem ? [ownItem, ...injectedItems] : injectedItems
