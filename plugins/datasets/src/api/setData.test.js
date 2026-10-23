@@ -16,7 +16,7 @@ describe('setData', () => {
   it('calls layerAdapter.setData with datasetId and geojson', () => {
     datasetRegistry.getDataset.mockReturnValue({ id: 'my-dataset' })
 
-    setData({ pluginState: { layerAdapter, datasetRegistry } }, geojson, { datasetId: 'my-dataset' })
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'my-dataset' })
 
     expect(layerAdapter.setData).toHaveBeenCalledWith('my-dataset', geojson)
   })
@@ -24,7 +24,7 @@ describe('setData', () => {
   it('does nothing when the dataset is not found in the registry', () => {
     datasetRegistry.getDataset.mockReturnValue(undefined)
 
-    setData({ pluginState: { layerAdapter, datasetRegistry } }, geojson, { datasetId: 'missing' })
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'missing' })
 
     expect(layerAdapter.setData).not.toHaveBeenCalled()
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('missing'))
@@ -36,7 +36,7 @@ describe('setData', () => {
       tiles: ['https://example.com/{z}/{x}/{y}']
     })
 
-    setData({ pluginState: { layerAdapter, datasetRegistry } }, geojson, { datasetId: 'tiles-dataset' })
+    setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: layerAdapter } }, geojson, { datasetId: 'tiles-dataset' })
 
     expect(layerAdapter.setData).not.toHaveBeenCalled()
     expect(logger.warn).toHaveBeenCalledWith(expect.stringContaining('tiles-dataset'))
@@ -46,7 +46,7 @@ describe('setData', () => {
     datasetRegistry.getDataset.mockReturnValue({ id: 'my-dataset' })
     // Should not throw even if layerAdapter is undefined
     expect(() =>
-      setData({ pluginState: { layerAdapter: undefined, datasetRegistry } }, geojson, { datasetId: 'my-dataset' })
+      setData({ pluginState: { datasetRegistry }, mapProvider: { datasets: undefined } }, geojson, { datasetId: 'my-dataset' })
     ).not.toThrow()
   })
 })

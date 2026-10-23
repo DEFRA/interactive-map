@@ -21,13 +21,6 @@ beforeEach(() => {
 })
 
 describe('LayersMenuCheckbox', () => {
-  describe('when the registry has not been created yet', () => {
-    it('returns null', () => {
-      const { container } = render(<LayersMenuCheckbox menuGroupItem={menuGroupItem} onChange={onChange} />)
-      expect(container.firstChild).toBeNull()
-    })
-  })
-
   describe('when the dataset is not in the registry', () => {
     it('returns null', () => {
       datasetRegistry.getDataset.mockReturnValue(undefined)

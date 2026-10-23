@@ -1,5 +1,5 @@
 export const LayersMenuCheckbox = ({ menuGroupItem, datasetRegistry, onChange }) => {
-  const registryDataset = datasetRegistry?.getDataset(menuGroupItem.id)
+  const registryDataset = datasetRegistry.getDataset(menuGroupItem.id)
   if (!registryDataset) {
     return null
   }

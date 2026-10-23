@@ -1,14 +1,10 @@
 import { render, act } from '@testing-library/react'
 import { DatasetsInit } from './DatasetsInit.jsx'
-import { createDatasetRegistry } from '../registry/datasetRegistry.js'
 import { loadLayerAdapter } from '../adapters/loadLayerAdapter.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { EVENTS } from '../../../../src/config/events.js'
 import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
-jest.mock('../registry/datasetRegistry.js', () => ({
-  createDatasetRegistry: jest.fn()
-}))
 jest.mock('../adapters/loadLayerAdapter.js', () => ({
   loadLayerAdapter: jest.fn()
 }))
@@ -31,8 +27,12 @@ const makeDatasetRegistry = () => ({
   attachGlobals: jest.fn()
 })
 
+// The registry the manifest put in this map's plugin state; clearAllMocks resets it between tests
+const datasetRegistry = makeDatasetRegistry()
+
 const makePluginState = (overrides = {}) => ({
   dispatch: jest.fn(),
+  datasetRegistry,
   mappedDatasets: {},
   orderedDatasets: [],
   menu: [],
@@ -65,13 +65,10 @@ const makeProps = (overrides = {}) => {
 
 describe('DatasetsInit', () => {
   let adapter
-  let datasetRegistry
 
   beforeEach(() => {
     jest.clearAllMocks()
     adapter = makeAdapter()
-    datasetRegistry = makeDatasetRegistry()
-    createDatasetRegistry.mockImplementation(() => datasetRegistry)
     loadLayerAdapter.mockResolvedValue(adapter)
     initialiseDatasets.mockReturnValue({ remove: jest.fn() })
   })
@@ -169,39 +166,31 @@ describe('DatasetsInit', () => {
       expect(initialiseDatasets).toHaveBeenCalled()
     })
 
-    it('passes its own registry and adapter to initialiseDatasets', async () => {
+    it('passes the registry from plugin state and its adapter to initialiseDatasets', async () => {
       const props = makeProps()
       render(<DatasetsInit {...props} />)
       await act(async () => {})
       expect(initialiseDatasets).toHaveBeenCalledWith(expect.objectContaining({ adapter, datasetRegistry }))
     })
 
-    it('dispatches its registry, then its adapter once loaded', async () => {
-      const dispatch = jest.fn()
-      const props = makeProps({ pluginState: makePluginState({ dispatch }) })
-      render(<DatasetsInit {...props} />)
-      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_DATASET_REGISTRY', payload: datasetRegistry })
-      await act(async () => {})
-      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_LAYER_ADAPTER', payload: adapter })
-    })
-
-    it('creates a separate registry for each instance', () => {
-      const registryA = makeDatasetRegistry()
-      const registryB = makeDatasetRegistry()
-      createDatasetRegistry.mockImplementationOnce(() => registryA).mockImplementationOnce(() => registryB)
-      const dispatchA = jest.fn()
-      const dispatchB = jest.fn()
-      render(<DatasetsInit {...makeProps({ pluginState: makePluginState({ dispatch: dispatchA }) })} />)
-      render(<DatasetsInit {...makeProps({ pluginState: makePluginState({ dispatch: dispatchB }) })} />)
-      expect(dispatchA).toHaveBeenCalledWith({ type: 'SET_DATASET_REGISTRY', payload: registryA })
-      expect(dispatchB).toHaveBeenCalledWith({ type: 'SET_DATASET_REGISTRY', payload: registryB })
-    })
-
-    it('keeps the same registry across re-renders', () => {
+    it('puts the adapter on its map provider once loaded', async () => {
       const props = makeProps()
-      const { rerender } = render(<DatasetsInit {...props} />)
-      rerender(<DatasetsInit {...props} mapState={{ mapStyle: { id: 'dark' } }} />)
-      expect(createDatasetRegistry).toHaveBeenCalledTimes(1)
+      render(<DatasetsInit {...props} />)
+      expect(props.mapProvider.datasets).toBeUndefined()
+      await act(async () => {})
+      expect(props.mapProvider.datasets).toBe(adapter)
+    })
+
+    it('gives each map provider its own adapter', async () => {
+      const otherAdapter = makeAdapter()
+      loadLayerAdapter.mockResolvedValueOnce(adapter).mockResolvedValueOnce(otherAdapter)
+      const propsA = makeProps()
+      const propsB = makeProps()
+      render(<DatasetsInit {...propsA} />)
+      render(<DatasetsInit {...propsB} />)
+      await act(async () => {})
+      expect(propsA.mapProvider.datasets).toBe(adapter)
+      expect(propsB.mapProvider.datasets).toBe(otherAdapter)
     })
 
     it('does not initialise when base map is not ready', async () => {
@@ -244,6 +233,7 @@ describe('DatasetsInit', () => {
       await act(async () => {})
       unmount()
       expect(removeFn).toHaveBeenCalled()
+      expect(props.mapProvider.datasets).toBeNull()
     })
   })
 
@@ -311,18 +301,28 @@ describe('DatasetsInit', () => {
   // ─── actionsArray effect ─────────────────────────────────────────────────────
 
   describe('actionsArray effect', () => {
-    it('calls each queued adapter method once the adapter has loaded, and dispatches REMOVE_ADAPTER_ACTIONS', async () => {
+    it('runs actions queued before the adapter loads once it has loaded, and dispatches REMOVE_ADAPTER_ACTIONS', async () => {
       adapter.applyStyle = jest.fn()
       const actions = [{ method: 'applyStyle', parameters: ['roads', {}] }]
       const dispatch = jest.fn()
       const props = makeProps({
         pluginState: makePluginState({ actionsArray: actions, dispatch })
       })
-      const { rerender } = render(<DatasetsInit {...props} />)
+      render(<DatasetsInit {...props} />)
       expect(adapter.applyStyle).not.toHaveBeenCalled()
       await act(async () => {})
-      // The adapter reaches pluginState through SET_LAYER_ADAPTER
-      rerender(<DatasetsInit {...props} pluginState={makePluginState({ actionsArray: actions, dispatch, layerAdapter: adapter })} />)
+      expect(adapter.applyStyle).toHaveBeenCalledWith('roads', {})
+      expect(dispatch).toHaveBeenCalledWith({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actions })
+    })
+
+    it('runs actions queued after the adapter has loaded straight away', async () => {
+      adapter.applyStyle = jest.fn()
+      const actions = [{ method: 'applyStyle', parameters: ['roads', {}] }]
+      const dispatch = jest.fn()
+      const props = makeProps({ pluginState: makePluginState({ dispatch }) })
+      const { rerender } = render(<DatasetsInit {...props} />)
+      await act(async () => {})
+      rerender(<DatasetsInit {...props} pluginState={makePluginState({ actionsArray: actions, dispatch })} />)
       expect(adapter.applyStyle).toHaveBeenCalledWith('roads', {})
       expect(dispatch).toHaveBeenCalledWith({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actions })
     })

@@ -1,7 +1,8 @@
 import { createManifest } from './manifest.js'
 import { hasLayersMenu } from './utils/hasLayersMenu.js'
 
-jest.mock('./reducers/pluginState.js', () => ({ initialState: {}, actions: {} }))
+jest.mock('./reducers/pluginState.js', () => ({ initialState: { menu: [] }, actions: {} }))
+jest.mock('./registry/datasetRegistry.js', () => ({ createDatasetRegistry: jest.fn(() => ({})) }))
 jest.mock('./utils/hasLayersMenu.js', () => ({ hasLayersMenu: jest.fn() }))
 jest.mock('./initialise/DatasetsInit.jsx', () => ({ DatasetsInit: jest.fn() }))
 jest.mock('./components/LayersMenu/LayersMenu.jsx', () => ({ LayersMenu: jest.fn() }))
@@ -32,6 +33,15 @@ describe('createManifest', () => {
     expect(manifest.reducer).toBeDefined()
     expect(manifest.reducer.initialState).toBeDefined()
     expect(manifest.reducer.actions).toBeDefined()
+  })
+
+  it('adds a dataset registry to the initial state', () => {
+    expect(manifest.reducer.initialState).toEqual({ menu: [], datasetRegistry: expect.any(Object) })
+  })
+
+  it('creates a separate dataset registry for each manifest, so each map has its own', () => {
+    const otherManifest = createManifest()
+    expect(otherManifest.reducer.initialState.datasetRegistry).not.toBe(manifest.reducer.initialState.datasetRegistry)
   })
 
   it('has panels with a datasetsLayers panel', () => {
