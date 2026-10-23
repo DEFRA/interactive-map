@@ -370,6 +370,15 @@ describe('datasetRegistry', () => {
       expect(registryA.getDataset('features').geojson).toBe('/map-a.geojson')
     })
 
+    it('gives each registry its own state while sharing its methods', () => {
+      const registryA = createDatasetRegistry()
+      const registryB = createDatasetRegistry()
+
+      expect(registryA.getDataset).toBe(registryB.getDataset)
+      const stateKeys = ['_definitionCache', '_globals', '_menuStateRef', '_lastMenuState', '_lastKeyItems']
+      stateKeys.forEach(key => expect(registryA[key]).not.toBe(registryB[key]))
+    })
+
     it('only iterates its own datasets', () => {
       const registryA = createMapRegistry([{ id: 'a' }])
       const registryB = createMapRegistry([{ id: 'b' }])

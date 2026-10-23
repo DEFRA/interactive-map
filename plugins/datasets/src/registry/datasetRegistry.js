@@ -2,17 +2,14 @@ import { createDataset } from './createDataset.js'
 import { DatasetDefinitionCache } from './datasetDefinitionCache.js'
 import { isVisibleWhen } from './isVisibleWhen.js'
 
-// Each datasets plugin instance (one per map) creates its own registry, so maps on the same page
-// never see each other's datasets
-export const createDatasetRegistry = () => ({
+// Shared by every registry; each registry's own state is set in createDatasetRegistry
+const datasetRegistryMethods = {
   attach (datasetsRef, orderedDatasetsRef, mapStyle) {
     this._datasets = datasetsRef
     this._orderedDatasets = orderedDatasetsRef
     this.attachMapStyle(mapStyle)
     this._invalidateChangedDatasets()
   },
-
-  _definitionCache: new DatasetDefinitionCache(),
 
   _invalidateCache () { // used in tests to clear the cache between runs
     this._definitionCache = new DatasetDefinitionCache()
@@ -41,7 +38,6 @@ export const createDatasetRegistry = () => ({
     return this._mapStyle
   },
 
-  _globals: {},
   attachGlobals (globals) {
     if (globals) {
       this._globals = globals
@@ -52,7 +48,6 @@ export const createDatasetRegistry = () => ({
     return this._globals
   },
 
-  _menuStateRef: {},
   attachMenuStateRef (menuStateRef) {
     this._menuStateRef = menuStateRef
   },
@@ -113,7 +108,6 @@ export const createDatasetRegistry = () => ({
     }, { patternConfigs: [], symbolConfigs: [] })
   },
 
-  _lastMenuState: {},
   invalidateKeyItemsOnMenuStateChange (menuState) {
     if (menuState === this._lastMenuState) {
       return
@@ -121,7 +115,6 @@ export const createDatasetRegistry = () => ({
     this._lastMenuState = menuState
     this._lastKeyItemsDatasets = null
   },
-  _lastKeyItems: {},
   keyItems () {
     if (this.datasets === this._lastKeyItemsDatasets) {
       return this._lastKeyItems
@@ -167,4 +160,14 @@ export const createDatasetRegistry = () => ({
     this._lastKeyItems = { items, hasGroups }
     return this._lastKeyItems
   }
+}
+
+// Each datasets plugin instance (one per map) creates its own registry, so maps on the same page
+// never see each other's datasets
+export const createDatasetRegistry = () => Object.assign(Object.create(datasetRegistryMethods), {
+  _definitionCache: new DatasetDefinitionCache(),
+  _globals: {},
+  _menuStateRef: {},
+  _lastMenuState: {},
+  _lastKeyItems: {}
 })

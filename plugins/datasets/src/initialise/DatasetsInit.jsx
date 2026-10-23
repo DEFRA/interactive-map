@@ -8,15 +8,13 @@ import { getPanelElementId } from '../../../../src/utils/getPanelElementId.js'
 
 const LAYERS_PANEL_ID = 'datasetsLayers'
 
-export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
-  const { dispatch, datasetRegistry } = pluginState
-  const { eventBus, symbolRegistry, patternRegistry, focusMap } = services
-  const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
+// Closes the Layers panel if its menu empties while it's open
+function useCloseEmptyLayersPanel ({ appConfig, appState, pluginConfig, pluginState, services }) {
+  const { eventBus, focusMap } = services
   const hasMenu = hasLayersMenu({ pluginConfig, pluginState })
   const isLayersPanelOpen = Boolean(appState.openPanels[LAYERS_PANEL_ID])
   const focusFrameRef = useRef(null)
 
-  // Close the Layers panel if its menu empties while it's open
   useEffect(() => {
     if (hasMenu || !isLayersPanelOpen) {
       return
@@ -31,6 +29,14 @@ export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, 
   }, [hasMenu, isLayersPanelOpen])
 
   useEffect(() => () => cancelAnimationFrame(focusFrameRef.current), [])
+}
+
+export function DatasetsInit ({ appConfig, appState, pluginConfig, pluginState, mapState, mapProvider, services }) {
+  const { dispatch, datasetRegistry } = pluginState
+  const { eventBus, symbolRegistry, patternRegistry } = services
+  const isBaseMapReady = Boolean(mapProvider?.isBaseMapReady())
+
+  useCloseEmptyLayersPanel({ appConfig, appState, pluginConfig, pluginState, services })
 
   // Keep a ref to the latest pluginState so event handlers can access current data
   const pluginStateRef = useRef(pluginState)
