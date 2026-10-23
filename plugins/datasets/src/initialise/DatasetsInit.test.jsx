@@ -1,25 +1,12 @@
 import { render, act } from '@testing-library/react'
 import { DatasetsInit } from './DatasetsInit.jsx'
-import { datasetRegistry } from '../registry/datasetRegistry.js'
-import { attachGlobalState } from '../registry/globalDataset.js'
-import { loadLayerAdapter, layerAdapter } from '../adapters/loadLayerAdapter.js'
+import { loadLayerAdapter } from '../adapters/loadLayerAdapter.js'
 import { initialiseDatasets } from './initialiseDatasets.js'
 import { EVENTS } from '../../../../src/config/events.js'
 import { datasetsToMenu } from '../reducers/datasetsToMenu.js'
 
-jest.mock('../registry/datasetRegistry.js', () => ({
-  datasetRegistry: {
-    attach: jest.fn(),
-    attachMapStyle: jest.fn(),
-    attachCreateDataset: jest.fn()
-  }
-}))
-jest.mock('../registry/globalDataset.js', () => ({
-  attachGlobalState: jest.fn()
-}))
 jest.mock('../adapters/loadLayerAdapter.js', () => ({
-  loadLayerAdapter: jest.fn(),
-  layerAdapter: {}
+  loadLayerAdapter: jest.fn()
 }))
 jest.mock('./initialiseDatasets.js')
 
@@ -34,8 +21,18 @@ const makeAdapter = () => ({
   init: jest.fn().mockResolvedValue(undefined)
 })
 
+const makeDatasetRegistry = () => ({
+  attach: jest.fn(),
+  attachMapStyle: jest.fn(),
+  attachGlobals: jest.fn()
+})
+
+// The registry the manifest put in this map's plugin state; clearAllMocks resets it between tests
+const datasetRegistry = makeDatasetRegistry()
+
 const makePluginState = (overrides = {}) => ({
   dispatch: jest.fn(),
+  datasetRegistry,
   mappedDatasets: {},
   orderedDatasets: [],
   menu: [],
@@ -164,9 +161,36 @@ describe('DatasetsInit', () => {
       const props = makeProps()
       await render(<DatasetsInit {...props} />)
       expect(loadLayerAdapter).toHaveBeenCalledWith(
-        props.mapProvider, props.services.symbolRegistry, props.services.patternRegistry
+        props.mapProvider, props.services.symbolRegistry, props.services.patternRegistry, datasetRegistry
       )
       expect(initialiseDatasets).toHaveBeenCalled()
+    })
+
+    it('passes the registry from plugin state and its adapter to initialiseDatasets', async () => {
+      const props = makeProps()
+      render(<DatasetsInit {...props} />)
+      await act(async () => {})
+      expect(initialiseDatasets).toHaveBeenCalledWith(expect.objectContaining({ adapter, datasetRegistry }))
+    })
+
+    it('puts the adapter on its map provider once loaded', async () => {
+      const props = makeProps()
+      render(<DatasetsInit {...props} />)
+      expect(props.mapProvider.datasets).toBeUndefined()
+      await act(async () => {})
+      expect(props.mapProvider.datasets).toBe(adapter)
+    })
+
+    it('gives each map provider its own adapter', async () => {
+      const otherAdapter = makeAdapter()
+      loadLayerAdapter.mockResolvedValueOnce(adapter).mockResolvedValueOnce(otherAdapter)
+      const propsA = makeProps()
+      const propsB = makeProps()
+      render(<DatasetsInit {...propsA} />)
+      render(<DatasetsInit {...propsB} />)
+      await act(async () => {})
+      expect(propsA.mapProvider.datasets).toBe(adapter)
+      expect(propsB.mapProvider.datasets).toBe(otherAdapter)
     })
 
     it('does not initialise when base map is not ready', async () => {
@@ -209,6 +233,7 @@ describe('DatasetsInit', () => {
       await act(async () => {})
       unmount()
       expect(removeFn).toHaveBeenCalled()
+      expect(props.mapProvider.datasets).toBeNull()
     })
   })
 
@@ -231,13 +256,14 @@ describe('DatasetsInit', () => {
       expect(datasetRegistry.attachMapStyle).toHaveBeenCalledWith(props.mapState.mapStyle)
     })
 
-    it('calls layerAdapter.onMapStyleChange when available', async () => {
-      const onMapStyleChange = jest.fn()
-      Object.assign(layerAdapter, { onMapStyleChange })
+    it('calls layerAdapter.onMapStyleChange when the map style changes after the adapter loads', async () => {
+      adapter.onMapStyleChange = jest.fn()
       const props = makeProps()
-      await render(<DatasetsInit {...props} />)
-      expect(onMapStyleChange).toHaveBeenCalled()
-      delete layerAdapter.onMapStyleChange
+      const { rerender } = render(<DatasetsInit {...props} />)
+      await act(async () => {})
+      expect(adapter.onMapStyleChange).not.toHaveBeenCalled()
+      rerender(<DatasetsInit {...props} mapState={{ mapStyle: { id: 'dark' } }} />)
+      expect(adapter.onMapStyleChange).toHaveBeenCalled()
     })
 
     // MapLibre gets this re-apply for free (map.addImage()/setPaintProperty() naturally
@@ -247,46 +273,58 @@ describe('DatasetsInit', () => {
     // re-resolved symbols/patterns after a style change, instead of a stale highlight sticking.
     it('emits MAP_DATA_CHANGE once onMapStyleChange resolves, so highlights re-resolve for the new theme', async () => {
       let resolveOnMapStyleChange
-      const onMapStyleChange = jest.fn(() => new Promise(resolve => { resolveOnMapStyleChange = resolve }))
-      Object.assign(layerAdapter, { onMapStyleChange })
+      adapter.onMapStyleChange = jest.fn(() => new Promise(resolve => { resolveOnMapStyleChange = resolve }))
       const props = makeProps()
-      await render(<DatasetsInit {...props} />)
+      const { rerender } = render(<DatasetsInit {...props} />)
+      await act(async () => {})
+      rerender(<DatasetsInit {...props} mapState={{ mapStyle: { id: 'dark' } }} />)
       expect(props.services.eventBus.emit).not.toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
       await act(async () => {
         resolveOnMapStyleChange()
         await Promise.resolve()
       })
       expect(props.services.eventBus.emit).toHaveBeenCalledWith(EVENTS.MAP_DATA_CHANGE)
-      delete layerAdapter.onMapStyleChange
     })
   })
 
   // ─── globals effect ──────────────────────────────────────────────────────────
 
   describe('globals effect', () => {
-    it('calls attachGlobalState with the current globals', async () => {
+    it('attaches the current globals to the registry', async () => {
       const globals = { visible: false, opacity: 0.5 }
       const props = makeProps({ pluginState: makePluginState({ globals }) })
       await render(<DatasetsInit {...props} />)
-      expect(attachGlobalState).toHaveBeenCalledWith(globals)
+      expect(datasetRegistry.attachGlobals).toHaveBeenCalledWith(globals)
     })
   })
 
   // ─── actionsArray effect ─────────────────────────────────────────────────────
 
   describe('actionsArray effect', () => {
-    it('calls each queued adapter method and dispatches REMOVE_ADAPTER_ACTIONS', async () => {
-      const applyStyle = jest.fn()
-      Object.assign(layerAdapter, { applyStyle })
+    it('runs actions queued before the adapter loads once it has loaded, and dispatches REMOVE_ADAPTER_ACTIONS', async () => {
+      adapter.applyStyle = jest.fn()
       const actions = [{ method: 'applyStyle', parameters: ['roads', {}] }]
       const dispatch = jest.fn()
       const props = makeProps({
         pluginState: makePluginState({ actionsArray: actions, dispatch })
       })
-      await render(<DatasetsInit {...props} />)
-      expect(applyStyle).toHaveBeenCalledWith('roads', {})
+      render(<DatasetsInit {...props} />)
+      expect(adapter.applyStyle).not.toHaveBeenCalled()
+      await act(async () => {})
+      expect(adapter.applyStyle).toHaveBeenCalledWith('roads', {})
       expect(dispatch).toHaveBeenCalledWith({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actions })
-      delete layerAdapter.applyStyle
+    })
+
+    it('runs actions queued after the adapter has loaded straight away', async () => {
+      adapter.applyStyle = jest.fn()
+      const actions = [{ method: 'applyStyle', parameters: ['roads', {}] }]
+      const dispatch = jest.fn()
+      const props = makeProps({ pluginState: makePluginState({ dispatch }) })
+      const { rerender } = render(<DatasetsInit {...props} />)
+      await act(async () => {})
+      rerender(<DatasetsInit {...props} pluginState={makePluginState({ actionsArray: actions, dispatch })} />)
+      expect(adapter.applyStyle).toHaveBeenCalledWith('roads', {})
+      expect(dispatch).toHaveBeenCalledWith({ type: 'REMOVE_ADAPTER_ACTIONS', payload: actions })
     })
 
     it('skips dispatching when actionsArray is empty', async () => {

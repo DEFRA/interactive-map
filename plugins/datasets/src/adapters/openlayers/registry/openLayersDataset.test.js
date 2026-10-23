@@ -34,7 +34,7 @@ beforeAll(() => {
 
 describe('OpenLayersDataset', () => {
   beforeEach(() => {
-    datasetRegistry.attachCreateDataset(def => new OpenLayersDataset(def))
+    datasetRegistry.attachCreateDataset(def => new OpenLayersDataset(def, datasetRegistry))
     datasetRegistry.mockExtend({
       'ds-fill-only': { id: 'ds-fill-only', style: { fill: 'blue' } },
       'ds-stroke-only': { id: 'ds-stroke-only', style: { stroke: 'red', strokeWidth: 2 } },

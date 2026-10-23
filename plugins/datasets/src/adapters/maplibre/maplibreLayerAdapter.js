@@ -1,6 +1,5 @@
 import { addDatasetLayers } from './layerBuilders.js'
 import { MapLibreDataset } from './registry/mapLibreDataset.js'
-import { datasetRegistry } from '../../registry/datasetRegistry.js'
 import { MapboxStyleLayerAdapter } from '../mapboxStyleLayerAdapter.js'
 
 /**
@@ -20,9 +19,10 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @param {Object} mapProvider - Map provider instance (e.g. MapLibreProvider)
    * @param {Object} symbolRegistry
    * @param {Object} patternRegistry
+   * @param {Object} datasetRegistry - This plugin instance's dataset registry
    */
-  constructor (mapProvider, symbolRegistry, patternRegistry) {
-    super(mapProvider, symbolRegistry, patternRegistry)
+  constructor (mapProvider, symbolRegistry, patternRegistry, datasetRegistry) {
+    super(mapProvider, symbolRegistry, patternRegistry, datasetRegistry)
     // datasetId → sourceId, used by setData to update the correct source
     this._datasetSourceMap = new Map()
     window._datasetSourceMap = this._datasetSourceMap // Expose for debugging
@@ -30,8 +30,8 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     this._symbolLayerIds = new Set()
   }
 
-  createDataset (datasetDefinition) {
-    return new MapLibreDataset(datasetDefinition)
+  createDataset (datasetDefinition, datasetRegistry) {
+    return new MapLibreDataset(datasetDefinition, datasetRegistry)
   }
 
   // ─── Lifecycle ──────────────────────────────────────────────────────────────
@@ -41,11 +41,11 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @returns {Promise<void>} Resolves once the map has processed all layers.
    */
   async init () {
-    const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
+    const { patternConfigs, symbolConfigs } = this._datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs)
 
     this._symbolLayerIds.clear()
-    datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset))
+    this._datasetRegistry.forEachDataset(registryDataset => this._addLayers(registryDataset))
     await new Promise(resolve => this._map.once('idle', resolve))
   }
 
@@ -57,7 +57,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
   }
 
   async addPatternsAndSymbolsToMap (patterns, symbols) {
-    const mapStyle = datasetRegistry.mapStyle
+    const mapStyle = this._datasetRegistry.mapStyle
     const mapStyleId = mapStyle.id
     return Promise.all([
       this._mapProvider.addPatternsToMap(patterns, mapStyleId, this._patternRegistry),
@@ -70,7 +70,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    */
   destroy () {
     const removedSourceIds = new Set()
-    datasetRegistry.forEachDataset(registryDataset => {
+    this._datasetRegistry.forEachDataset(registryDataset => {
       const sourceId = registryDataset.sourceId
       this._getLayersUsingSource(sourceId).forEach(layerId => this.removeLayer(layerId))
       if (!removedSourceIds.has(sourceId) && this._map.getSource(sourceId)) {
@@ -90,11 +90,11 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     // MapLibre wipes all sources/layers on style change — must wait for idle first
     await new Promise(resolve => this._map.once('idle', resolve))
 
-    const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
+    const { patternConfigs, symbolConfigs } = this._datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs)
     this._symbolLayerIds.clear()
 
-    datasetRegistry.forEachDataset(registryDataset => {
+    this._datasetRegistry.forEachDataset(registryDataset => {
       this._addLayers(registryDataset)
       this._applyFeatureFilter(registryDataset)
     })
@@ -109,9 +109,9 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @returns {Promise<void>}
    */
   async onMapSizeChange () {
-    const { mapStyle } = datasetRegistry
+    const { mapStyle } = this._datasetRegistry
     const pixelRatio = this._pixelRatio
-    const { patternConfigs, symbolConfigs } = datasetRegistry.getPatternAndSymbolConfigs()
+    const { patternConfigs, symbolConfigs } = this._datasetRegistry.getPatternAndSymbolConfigs()
     await this.addPatternsAndSymbolsToMap(patternConfigs, symbolConfigs)
     // A later size change has moved the map on to another ratio while these images were being
     // registered — its own call applies that ratio's images, which may not be registered yet
@@ -119,7 +119,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
       return
     }
 
-    datasetRegistry.forEach(registryDataset => {
+    this._datasetRegistry.forEach(registryDataset => {
       const { fillLayerId, symbolLayerId } = registryDataset
       if (symbolLayerId && this._symbolLayerIds.has(symbolLayerId) && this._map.getLayer(symbolLayerId)) {
         const imageId = this._symbolRegistry.getSymbolImageId(registryDataset.style, mapStyle, 'normal', pixelRatio)
@@ -152,7 +152,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @param {string} datasetId
    */
   removeDataset (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       return
     }
@@ -161,7 +161,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
     layerIds.forEach(layerId => this.removeLayer(layerId))
 
     // Remove source if no other dataset is using it
-    const sourceIsShared = datasetRegistry.topLevelDatasets()
+    const sourceIsShared = this._datasetRegistry.topLevelDatasets()
       .some(dataset => dataset.id !== datasetId && dataset.sourceId === sourceId)
 
     if (!sourceIsShared && this._map.getSource(sourceId)) {
@@ -178,7 +178,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @param {string} datasetId
    */
   applyFeatureFilter (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     if (!registryDataset) {
       return
     }
@@ -192,7 +192,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
    * @returns {Promise<void>}
    */
   async applyStyle (datasetId) {
-    const registryDataset = datasetRegistry.getDataset(datasetId)
+    const registryDataset = this._datasetRegistry.getDataset(datasetId)
     registryDataset.layerIds.forEach(layerId => this.removeLayer(layerId))
     await this._registerPatternsAndSymbols(registryDataset)
     this._addLayers(registryDataset)
@@ -219,7 +219,7 @@ export default class MaplibreLayerAdapter extends MapboxStyleLayerAdapter {
   // ─── Private ─────────────────────────────────────────────────────────────────
 
   _addLayers (registryDataset) {
-    const { mapStyle } = datasetRegistry
+    const { mapStyle } = this._datasetRegistry
     const sourceId = addDatasetLayers(this._mapProvider, registryDataset, mapStyle, this._symbolRegistry, this._patternRegistry, this._pixelRatio)
     this._datasetSourceMap.set(registryDataset.id, sourceId)
     this._maintainSymbolOrdering(registryDataset)
