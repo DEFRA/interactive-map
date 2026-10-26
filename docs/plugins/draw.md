@@ -185,6 +185,7 @@ It runs on every frame of a drag, so keep it quick, using only the shape and dat
 | `'commit-move'` | A vertex was dragged or nudged |
 | `'commit-insert'` | A vertex was inserted at a midpoint |
 | `'commit-delete'` | A vertex was removed |
+| `'commit-replace'` | The shape was replaced with [`setGeometry`](#setgeometrygeometry) |
 | `'recheck'` | [`recheckGeometry`](#recheckgeometry) was called |
 | `'create'` | A shape was finished without a result for its final geometry, such as a new point |
 
@@ -225,7 +226,7 @@ createDrawPlugin({
 
 ## Methods
 
-Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `deleteFeature`, `split`, `merge` and `recheckGeometry` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
+Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `deleteFeature`, `split`, `merge`, `setGeometry` and `recheckGeometry` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
 
 ---
 
@@ -436,6 +437,20 @@ interactiveMap.on('draw:merge', (event) => {
     properties: event.feature.properties
   })
 })
+```
+
+---
+
+### `setGeometry(geometry)`
+
+Replace the shape in the current edit session, for example with a corrected boundary from a service. The change can be undone, and is checked like any other change, with phase `'commit-replace'`. Returns `false` (without doing anything) outside an edit session, or when the geometry type differs from the shape being edited.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `geometry` | `GeoJSON.Geometry` | **Required.** The new geometry, of the same type as the shape being edited |
+
+```js
+drawPlugin.setGeometry(correctedBoundary)
 ```
 
 ---

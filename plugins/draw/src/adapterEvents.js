@@ -6,7 +6,8 @@
  *   - every other phase goes to `onGeometryChange`, which may return a Promise
  *
  * @typedef {'preview' | 'place' | 'create' | 'edit-start' | 'recheck' |
- *   'commit-add' | 'commit-move' | 'commit-insert' | 'commit-delete'} GeometryChangePhase
+ *   'commit-add' | 'commit-move' | 'commit-insert' | 'commit-delete' |
+ *   'commit-replace'} GeometryChangePhase
  *
  *   'preview'        - live, in-progress feedback (drag / rubber-band); nothing
  *                      has committed yet, and nothing can be vetoed at this stage.
@@ -27,6 +28,7 @@
  *   'commit-move'    - a vertex was dragged/nudged while editing.
  *   'commit-insert'  - a vertex was inserted at a midpoint while editing.
  *   'commit-delete'  - a vertex was removed while editing.
+ *   'commit-replace' - the whole shape was replaced (setGeometry).
  */
 
 /**
@@ -54,8 +56,8 @@
  *   the active draw mode. Always present.
  * @property {number} [vertexIndex] - index of the vertex being placed, added,
  *   moved, inserted, or deleted. Present on 'place' and the vertex 'commit-*'
- *   phases; absent on 'preview', 'create', 'edit-start' and 'recheck' (those
- *   have no single vertex to point at).
+ *   phases; absent on 'preview', 'create', 'edit-start', 'recheck' and
+ *   'commit-replace' (those have no single vertex to point at).
  * @property {number} [numVertices] - count of already-committed vertices,
  *   excluding any in-progress rubber-band cursor point. Present on every
  *   'preview' call, with no minimum — including 0, against the very first
@@ -100,7 +102,7 @@
  *                              feature itself (has `coordinates`, no `phase`).
  *                            - Commit-level validation: `{ feature, phase, vertexIndex }`
  *                              where phase ∈ 'commit-add' | 'commit-move' |
- *                              'commit-insert' | 'commit-delete'
+ *                              'commit-insert' | 'commit-delete' | 'commit-replace'
  *                              (see GeometryChangePhase). events.js checks these
  *                              (validation/commitChecks.js) to gate Done; it never
  *                              reverts them.

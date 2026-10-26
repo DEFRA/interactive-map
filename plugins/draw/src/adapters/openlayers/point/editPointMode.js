@@ -14,6 +14,7 @@ const TOUCH_INTERFACE = 'touch'
 // same way (validation/rules.js has no Point-specific rule, so this only ever gates a
 // consumer's own onGeometryChange callback).
 const MOVE_VERTEX = 'commit-move'
+const REPLACE_GEOMETRY = 'commit-replace'
 
 // A symbol icon renders far bigger than buildModifyCondition's fixed-radius hit-test (tuned
 // for a plain vertex dot), so this hit-tests the icon's own rendered pixels instead. No touch
@@ -99,7 +100,7 @@ const createUndoAction = ({ olFeature, undoStack, selection }) => () => {
   selection.syncGeom()
   // An undo commits the inverse change, so it must re-validate like any other commit —
   // otherwise the Done gate could go stale. Always vertexIndex 0 — a point has only one.
-  selection.emitGeometryValidation(MOVE_VERTEX, 0)
+  selection.emitGeometryValidation(op.type === 'replace_geometry' ? REPLACE_GEOMETRY : MOVE_VERTEX, 0)
 }
 
 const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touchHandler, doUndo }) => {
@@ -253,6 +254,17 @@ export const createEditPointMode = ({ map, manager, options }) => {
     // MapControls' D-pad, routed here via mapProvider.activeMoveTarget (events.js) — claimed
     // once at construction (pointSelectionState's VERTEX_SELECTION) and held for the session.
     nudgeSelectedVertex: keyboardHandler.nudgeByDelta,
+
+    // Moves the point to the given geometry's coordinate as one undoable commit.
+    setGeometry (geometry) {
+      undoStack.push({ type: 'replace_geometry', vertexIndex: 0, previousCoord: olFeature.getGeometry().getCoordinates() })
+      movePoint(olFeature, 0, geometry.coordinates)
+      selection.syncGeom()
+      selection.emitGeometryValidation(REPLACE_GEOMETRY, 0)
+      if (getState().interfaceType === TOUCH_INTERFACE) {
+        touchHandler.updateTargetPosition()
+      }
+    },
 
     destroy () {
       live.destroy()

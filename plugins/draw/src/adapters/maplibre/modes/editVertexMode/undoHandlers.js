@@ -11,7 +11,8 @@ import { sharedUndoHandlers } from '../../utils/geometryValidation.js'
 const UNDO_OP_PHASE = {
   move_vertex: 'commit-move',
   insert_vertex: 'commit-insert',
-  delete_vertex: 'commit-delete'
+  delete_vertex: 'commit-delete',
+  replace_geometry: 'commit-replace'
 }
 
 // Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
@@ -19,7 +20,8 @@ const UNDO_OP_PHASE = {
 const UNDO_INVERSE_PHASE = {
   move_vertex: 'commit-move',
   insert_vertex: 'commit-delete',
-  delete_vertex: 'commit-insert'
+  delete_vertex: 'commit-insert',
+  replace_geometry: 'commit-replace'
 }
 
 export const undoHandlers = {
@@ -41,6 +43,8 @@ export const undoHandlers = {
       this.undoInsertVertex(state, op)
     } else if (op.type === 'delete_vertex') {
       this.undoDeleteVertex(state, op)
+    } else if (op.type === 'replace_geometry') {
+      this.replaceGeometry(state, op.featureId, op.previousGeometry)
     } else {
       // No action
     }
@@ -124,6 +128,17 @@ export const undoHandlers = {
     // Re-insertion always lands the vertex back at vertexIndex, so it is guaranteed present
     this.updateTouchVertexTarget(state, scalePoint(this.map.project(state.vertices[vertexIndex]), state.scale))
     this.changeMode(state, { selectedVertexIndex: vertexIndex, selectedVertexType: 'vertex', coordPath: this.getCoordPath(state, vertexIndex) })
+  },
+
+  // Swaps in a whole new geometry (setGeometry, or undoing one) and clears the selection,
+  // since vertex indices no longer refer to the same points.
+  replaceGeometry (state, featureId, geometry) {
+    const feature = this.getFeature(featureId)
+    if (!feature) { return }
+    this._applyUndoAndSync(state, { ...feature.toGeoJSON(), geometry }, featureId)
+    this.clearSelectedCoordinates()
+    this.hideTouchVertexIndicator(state)
+    this.changeMode(state, { selectedVertexIndex: -1, selectedVertexType: null })
   },
 
   _applyUndoAndSync (state, geojson, featureId) {

@@ -458,6 +458,15 @@ describe('live invalid stroke (edit mode)', () => {
   })
 })
 
+describe('setGeometry', () => {
+  test('bridges into the active mode via a custom event', () => {
+    const { adapter, map } = setup()
+    const geometry = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }
+    adapter.setGeometry(geometry)
+    expect(map.fire).toHaveBeenCalledWith('draw.setgeometry', { geometry })
+  })
+})
+
 describe('_geometryValidator accessor', () => {
   test('stores the validator on the map for modes to read, and reads it back', () => {
     const { adapter, map } = setup()

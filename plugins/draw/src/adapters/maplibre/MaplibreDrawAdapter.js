@@ -64,6 +64,7 @@ export const displayedShape = (mode, coordinates) => {
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
+ *   setGeometry(geometry)
  *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
@@ -280,6 +281,12 @@ export class MaplibreDrawAdapter {
   // keyboard/D-pad path) — the destructive counterpart to selectVertex's preview-only move.
   insertVertexAtMidpoint (index) {
     this._map.fire(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, { index })
+  }
+
+  // Replaces the edited shape as a single undoable commit ('commit-replace'). Bridged into
+  // the mode via a custom event, same pattern as insertVertexAtMidpoint.
+  setGeometry (geometry) {
+    this._map.fire(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, { geometry })
   }
 
   // Record the current geometry validity so the draw mode can block finish gestures

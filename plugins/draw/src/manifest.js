@@ -9,6 +9,7 @@ import { setStyle } from './api/setStyle.js'
 import { deleteFeature } from './api/deleteFeature.js'
 import { split } from './api/split.js'
 import { merge } from './api/merge.js'
+import { setGeometry } from './api/setGeometry.js'
 import { recheckGeometry } from './api/recheckGeometry.js'
 import { isMac } from '../../../src/utils/isMac.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
@@ -180,6 +181,7 @@ export const manifest = {
     deleteFeature,
     split,
     merge,
+    setGeometry,
     recheckGeometry
   }
 }

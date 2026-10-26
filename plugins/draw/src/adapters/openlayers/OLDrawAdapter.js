@@ -27,6 +27,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
+ *   setGeometry(geometry)
  *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
@@ -83,6 +84,7 @@ export class OLDrawAdapter {
   getVertexItems () { return this._manager.getVertexItems() }
   selectVertex (index) { this._manager.selectVertex(index) }
   insertVertexAtMidpoint (index) { this._manager.insertVertexAtMidpoint(index) }
+  setGeometry (geometry) { this._manager.setGeometry(geometry) }
 
   // Record the current geometry validity so the draw mode can block finish gestures
   // (double-click / click-to-close) while the in-progress shape is invalid.
