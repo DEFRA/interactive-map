@@ -198,7 +198,7 @@ Undo also calls it, with the phase of the change the undo makes (undoing a delet
 
 It's only called once the built-in rules pass. When a built-in rule fails, [`draw:geometryinvalid`](#drawgeometryinvalid) is emitted instead.
 
-The Done button is enabled only when the result for the latest change is valid. A result for an earlier change is ignored, whenever it arrives. While a returned Promise is pending, Done is disabled and reads "Checking…". Screen readers hear "Checking shape" when the check starts, then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A thrown error or rejected Promise also keeps Done disabled — call `recheckGeometry()` to retry.
+The Done button is enabled only when the result for the latest change is valid. A result for an earlier change is ignored, whenever it arrives. While a returned Promise is pending, Done is disabled, reads "Checking…" and has `aria-busy`. Screen readers hear "Checking shape" when the check starts, then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A thrown error or rejected Promise also keeps Done disabled — call `recheckGeometry()` to retry.
 
 A shape finished with a gesture (double-click, <kbd>Enter</kbd> or clicking the first vertex) only completes when the latest result is valid. Otherwise it reopens in edit mode, where Done waits for the result. This includes a new point whose check fails or is still pending.
 

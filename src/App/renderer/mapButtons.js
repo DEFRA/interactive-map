@@ -136,6 +136,7 @@ function SlotButton ({ buttonId, config, isHidden = false, appState, appConfig, 
       isHidden={isHidden}
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
       isExpanded={(config.isExpanded !== undefined || config.expandedWhen) ? appState.expandedButtons.has(buttonId) : undefined}
+      isBusy={config.busyWhen ? !!evaluateProp(config.busyWhen, config.pluginId) : undefined}
       isPanelOpen={isPanelOpen}
       panelRole={panelRole}
       onClick={handleClick}

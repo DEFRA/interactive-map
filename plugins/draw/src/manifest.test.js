@@ -91,6 +91,11 @@ describe('drawDone', () => {
     expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'invalid', previewValid: true } })).toBe(false)
   })
 
+  test('is busy while a check is pending', () => {
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending' } })).toBe(true)
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'valid' } })).toBe(false)
+  })
+
   test('reads "Checking…" while a check is pending', () => {
     expect(btn().label({ pluginState: { validationStatus: 'pending' } })).toBe('Checking…')
     expect(btn().label({ pluginState: { validationStatus: 'valid' } })).toBe('Done')

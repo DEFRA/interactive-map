@@ -70,6 +70,7 @@ export const manifest = {
     {
       id: 'drawDone',
       label: ({ pluginState }) => (pluginState.validationStatus === 'pending' ? 'Checking…' : 'Done'),
+      busyWhen: ({ pluginState }) => pluginState.validationStatus === 'pending',
       variant: 'primary',
       exclusiveSlot: true,
       hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode),

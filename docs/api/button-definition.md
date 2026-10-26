@@ -252,6 +252,17 @@ expandedWhen: (context) => context.pluginState.isExpanded
 
 ---
 
+### `busyWhen`
+**Type:** `function`
+
+Callback to determine if the action behind the button is in progress, for example while a check it depends on is running. Sets `aria-busy` accordingly.
+
+```js
+busyWhen: (context) => context.pluginState.isChecking
+```
+
+---
+
 ## Breakpoint Configuration
 
 Each breakpoint (`mobile`, `tablet`, `desktop`) accepts the following properties:
