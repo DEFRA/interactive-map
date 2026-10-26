@@ -1,3 +1,5 @@
+import { isShapeDrawMode } from './utils/drawModes.js'
+
 const initialState = {
   mode: null,
   action: null,
@@ -17,12 +19,10 @@ const initialState = {
   undoStackLength: 0
 }
 
-const DRAW_MODES = new Set(['draw_polygon', 'draw_line'])
-
 const setMode = (state, payload) => ({
   ...state,
   mode: payload,
-  numVertices: DRAW_MODES.has(payload) ? 0 : state.numVertices,
+  numVertices: isShapeDrawMode(payload) ? 0 : state.numVertices,
   // A new/empty shape has no passing check yet; its first commit (or edit mode's
   // edit-start check in api/editFeature) settles it.
   validationStatus: 'idle',

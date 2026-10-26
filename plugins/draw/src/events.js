@@ -9,16 +9,10 @@ import { ADAPTER_EVENTS } from './adapterEvents.js'
 import { getCommitChecks, isSameGeometry } from './validation/commitChecks.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { stripInternalProperties } from './utils/stripInternalProperties.js'
+import { isEditMode, isCheckedMode } from './utils/drawModes.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
 const GEOMETRY_INVALID_EVENT = 'draw:geometryinvalid'
-
-// edit_point behaves like edit_vertex for restore-on-cancel and the committed invalid
-// stroke — a relocate session, just with one coordinate instead of a ring.
-const EDIT_MODES = new Set([EDIT_VERTEX_MODE, 'edit_point'])
-
-// Modes whose committed changes are checked (onGeometryChange)
-const CHECKED_MODES = new Set(['draw_polygon', 'draw_line', 'edit_vertex', 'edit_point'])
 
 // A shape that finished without a passing check is reopened in edit mode, and its
 // eventual edit-finish must report as a creation. Kept per draw adapter, not in
@@ -27,7 +21,7 @@ const pendingCreateIds = new WeakMap()
 
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
-// even though it's a genuine SOFT_RULES failure like any other.
+// even though it's a genuine COMMIT_RULES failure like any other.
 const isIncompleteShape = (reason) => Object.values(MIN_VERTICES_REASONS).includes(reason)
 
 // A discrete, one-shot invalid result (a rejected placement, a finished-but-invalid
@@ -122,7 +116,7 @@ const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce
   if (status === 'pending' || status === 'error') { return }
   // The invalid stroke is committed-validity-driven in edit mode only; in draw mode the
   // adapters drive it live from the displayed geometry (placed vertices + cursor).
-  if (EDIT_MODES.has(draw.getMode())) {
+  if (isEditMode(draw.getMode())) {
     draw.setInvalid?.(!valid)
   }
   // edit-start is the baseline check on opening a feature, not a change the user made
@@ -141,7 +135,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     handleDone: () => { draw.done() },
     handleCancel: () => {
       const mode = draw.getMode()
-      if (EDIT_MODES.has(mode) && tempFeature?.id) { draw.add(feature) }
+      if (isEditMode(mode) && tempFeature?.id) { draw.add(feature) }
       pendingCreateIds.delete(draw)
       draw.cancel(); resetState()
       eventBus.emit('draw:cancelled', stripInternalProperties(feature))
@@ -194,7 +188,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // A commit that lands after the session has ended (the adapters defer them a tick)
       // is dropped rather than calling onGeometryChange.
       const mode = draw.getMode()
-      if (!CHECKED_MODES.has(mode)) { return }
+      if (!isCheckedMode(mode)) { return }
 
       // Rules only gate the Done button — never revert. A shape can pass through
       // interim invalid states while being built or reshaped. The result is applied
@@ -205,7 +199,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
         onGeometryChange: draw._commitValidator
       })
     },
-    // A vertex placement was rejected (hard rule or user callback veto). Surface it
+    // A vertex placement was rejected (placement rule or user callback veto). Surface it
     // on the public bus with phase 'place', and as a hint toast, so the reason is visible.
     onPlacementBlocked: (e) => {
       emitGeometryInvalid({ ...e, feature: stripInternalProperties(e.feature) })

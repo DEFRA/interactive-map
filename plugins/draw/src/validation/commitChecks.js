@@ -1,5 +1,5 @@
 import { validateGeometry, normaliseResult } from './validateGeometry.js'
-import { SOFT_RULES } from './rules.js'
+import { COMMIT_RULES } from './rules.js'
 import { logger } from '../../../../src/services/logger.js'
 
 const IDLE = { revision: 0, status: 'idle', result: null, feature: null, context: null, afterPending: false }
@@ -9,7 +9,7 @@ const isThenable = (value) => typeof value?.then === 'function'
 const statusFor = (result) => (result.valid ? 'valid' : 'invalid')
 
 /**
- * Runs the commit-level check for each committed change: the built-in SOFT_RULES first,
+ * Runs the commit-level check for each committed change: the built-in COMMIT_RULES first,
  * synchronously, then the consumer's `onGeometryChange`, which may return a Promise.
  *
  * Every run gets a new revision and aborts the previous run's signal. A result only
@@ -56,9 +56,9 @@ export const createCommitChecks = () => {
      * @param {object} params.feature - the committed GeoJSON feature
      * @param {object} params.context - { phase, mode, vertexIndex }
      * @param {Function} [params.onGeometryChange] - consumer callback
-     * @param {Array<Function>} [params.rules] - built-in rules, defaults to SOFT_RULES
+     * @param {Array<Function>} [params.rules] - built-in rules, defaults to COMMIT_RULES
      */
-    run ({ feature, context, onGeometryChange, rules = SOFT_RULES }) {
+    run ({ feature, context, onGeometryChange, rules = COMMIT_RULES }) {
       abortPending()
       revision++
       const rev = revision
@@ -144,12 +144,12 @@ export const isSameGeometry = (a, b) => {
  * adapter and ends any previous session's check. A per-call callback replaces the
  * plugin-level one.
  *
- *   - `draw._geometryValidator` — onGeometryPreview, read by the adapters for the
+ *   - `draw._previewValidator` — onGeometryPreview, read by the adapters for the
  *     'preview' and 'place' phases
  *   - `draw._commitValidator`  — onGeometryChange, read by events.js for committed changes
  */
 export const startCheckSession = (draw, options = {}, pluginConfig = {}) => {
-  draw._geometryValidator = options.onGeometryPreview ?? pluginConfig.onGeometryPreview
+  draw._previewValidator = options.onGeometryPreview ?? pluginConfig.onGeometryPreview
   draw._commitValidator = options.onGeometryChange ?? pluginConfig.onGeometryChange
   getCommitChecks(draw).reset()
 }

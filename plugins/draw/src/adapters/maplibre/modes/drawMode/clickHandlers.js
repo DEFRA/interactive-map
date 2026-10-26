@@ -38,7 +38,7 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
     return e.originalEvent.button > 0 || this.map._undoInProgress || e.originalEvent.target !== this.map.getCanvas()
   },
 
-  // Attempt a placement through the shared hard rules + user callback. On a veto
+  // Attempt a placement through the shared placement rules + user callback. On a veto
   // the vertex never appears and a draw.placementblocked event carries the
   // reason. The trailing rubber-band coord is dropped so the candidate is placed
   // vertices + the point about to be placed.
@@ -49,7 +49,7 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
       placed: getCoords(feature).slice(0, -1),
       point,
       geometryType,
-      onGeometryChange: this.map._drawGeometryValidator
+      onGeometryPreview: this.map._drawPreviewValidator
     })
     if (!result.valid) {
       this.map.fire('draw.placementblocked', result.blocked)

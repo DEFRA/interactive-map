@@ -75,7 +75,7 @@ const wireLiveStroke = ({ map, manager, olFeature }) => {
       feature: { type: 'Feature', geometry: { type, coordinates } },
       context: { mode: 'edit_vertex' },
       numVertices,
-      onGeometryChange: manager._geometryValidator
+      onGeometryPreview: manager._previewValidator
     })
   }
   olFeature.getGeometry().on('change', updateLiveValidity)

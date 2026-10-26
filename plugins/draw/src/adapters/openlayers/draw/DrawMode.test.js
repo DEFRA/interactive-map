@@ -87,7 +87,7 @@ describe('buildCanPlaceVertex', () => {
   const gateFor = (ring, manager) =>
     buildCanPlaceVertex({ manager, geometryType: 'Polygon', getSketch: () => (ring ? polygonFeature(ring) : null) })
 
-  test('a hard-rule veto emits PLACEMENT_BLOCKED with the candidate and reason', () => {
+  test('a placement-rule veto emits PLACEMENT_BLOCKED with the candidate and reason', () => {
     const manager = createFakeManager()
     const gate = gateFor([[0, 0], [2, 2], [2, 0], [9, 9], [0, 0]], manager)
     expect(gate([0, 2])).toBe(false)
@@ -102,7 +102,7 @@ describe('buildCanPlaceVertex', () => {
 
   test('the user callback can veto a placement (and receives phase "place")', () => {
     const manager = createFakeManager()
-    manager._geometryValidator = jest.fn((event) =>
+    manager._previewValidator = jest.fn((event) =>
       event.phase === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
     const gate = gateFor([[0, 0], [2, 0], [9, 9], [0, 0]], manager)
     expect(gate([5, 5])).toBe(false)
@@ -112,7 +112,7 @@ describe('buildCanPlaceVertex', () => {
 
   test('the user callback can veto the very first vertex (no sketch yet)', () => {
     const manager = createFakeManager()
-    manager._geometryValidator = () => ({ valid: false, reason: 'outside region' })
+    manager._previewValidator = () => ({ valid: false, reason: 'outside region' })
     const gate = gateFor(null, manager)
     expect(gate([5, 5])).toBe(false)
     expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.PLACEMENT_BLOCKED,
@@ -121,7 +121,7 @@ describe('buildCanPlaceVertex', () => {
 
   test('a valid placement passes and emits nothing', () => {
     const manager = createFakeManager()
-    manager._geometryValidator = jest.fn(() => true)
+    manager._previewValidator = jest.fn(() => true)
     const gate = gateFor([[0, 0], [2, 0], [9, 9], [0, 0]], manager)
     expect(gate([2, 2])).toBe(true)
     expect(manager.emit).not.toHaveBeenCalled()
@@ -239,14 +239,14 @@ describe('drawing lifecycle', () => {
   test('the user callback runs ONCE per sketch change, with phase preview, driving both the stroke and Add point from that single call', () => {
     jest.useFakeTimers()
     const { manager, emitted, interaction } = setup('Polygon')
-    manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    manager._previewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
     const sketch = polygonFeature([[0, 0], [5, 5], [0, 0]])
     interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
     sketch.getGeometry().setCoordinates([[[0, 0], [10, 0], [10, 10], [0, 10], [0, 0]]])
-    expect(manager._geometryValidator).not.toHaveBeenCalled() // deferred to the frame
+    expect(manager._previewValidator).not.toHaveBeenCalled() // deferred to the frame
     jest.runAllTimers()
-    expect(manager._geometryValidator).toHaveBeenCalledTimes(1) // not once per gate
-    expect(manager._geometryValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'preview' }))
+    expect(manager._previewValidator).toHaveBeenCalledTimes(1) // not once per gate
+    expect(manager._previewValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'preview' }))
     expect(manager.styles.createSketchStyle).toHaveBeenLastCalledWith('Polygon', true)
     expect(emitted().find((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE)?.payload)
       .toEqual(expect.objectContaining({ canPlace: false, reason: 'outside region' }))
@@ -256,12 +256,12 @@ describe('drawing lifecycle', () => {
   test('the user callback runs even before any vertex is placed, gating Add point from the very first candidate point', () => {
     jest.useFakeTimers()
     const { manager, emitted, interaction } = setup('Polygon')
-    manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    manager._previewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
     const sketch = polygonFeature([[5, 5], [5, 5]]) // no committed vertices yet — rubber-band + closing dupe only
     interaction.dispatchEvent({ type: 'drawstart', feature: sketch })
     sketch.getGeometry().setCoordinates([[[5, 5], [5, 5]]])
     jest.runAllTimers()
-    expect(manager._geometryValidator).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
+    expect(manager._previewValidator).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
     expect(emitted().find((e) => e.type === ADAPTER_EVENTS.CAN_PLACE_CHANGE)?.payload)
       .toEqual(expect.objectContaining({ canPlace: false, reason: 'outside region' }))
     jest.useRealTimers()

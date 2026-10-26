@@ -32,7 +32,7 @@ const applySplitCommit = ({ draw, dispatch, polygonFeature, feature }) => {
 
 const toResult = (isValid) => (isValid ? { valid: true } : { valid: false, reason: INVALID_REASON })
 
-// Installed as draw._geometryValidator. 'place' is a no-op — a split isn't complete
+// Installed as draw._previewValidator. 'place' is a no-op — a split isn't complete
 // until its last vertex, so checking it would block placement.
 const createSplitPreviewValidator = ({ draw, polygonFeature }) => ({ feature, phase }) =>
   phase === 'preview' ? toResult(applySplitPreview({ draw, polygonFeature, feature })) : { valid: true }
@@ -61,9 +61,9 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
   const polygonFeature = draw.get(featureId)
 
   // Swap in split's own rules; restored in stopListening.
-  const previousPreviewValidator = draw._geometryValidator
+  const previousPreviewValidator = draw._previewValidator
   const previousValidator = draw._commitValidator
-  draw._geometryValidator = createSplitPreviewValidator({ draw, polygonFeature })
+  draw._previewValidator = createSplitPreviewValidator({ draw, polygonFeature })
   draw._commitValidator = createSplitCommitValidator({ draw, dispatch, polygonFeature })
   getCommitChecks(draw).reset()
 
@@ -84,7 +84,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
 
   // Unregister everything scoped to this session.
   const stopListening = () => {
-    draw._geometryValidator = previousPreviewValidator
+    draw._previewValidator = previousPreviewValidator
     draw._commitValidator = previousValidator
     draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)

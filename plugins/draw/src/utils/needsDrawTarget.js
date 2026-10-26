@@ -1,8 +1,4 @@
-// Modes that place vertices at the crosshair. Edit modes aren't included: users of every
-// input type select a vertex or midpoint directly.
-const DRAWING_MODES = new Set(['draw_polygon', 'draw_line', 'draw_point'])
-
-export const isDrawingMode = (mode) => DRAWING_MODES.has(mode)
+import { isDrawingMode } from './drawModes.js'
 
 /**
  * Returns true when the user needs the crosshair and Add point button to place a vertex.

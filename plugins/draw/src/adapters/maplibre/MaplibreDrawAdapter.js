@@ -203,9 +203,9 @@ export class MaplibreDrawAdapter {
     const shape = displayedShape(mode, event.coordinates)
     if (!shape) { return }
     if (mode === 'draw_polygon' || mode === 'draw_line') {
-      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryChange: this._geometryValidator })
+      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryPreview: this._previewValidator })
     } else {
-      this._liveStroke.update({ ...shape, context: { mode }, onGeometryChange: this._geometryValidator })
+      this._liveStroke.update({ ...shape, context: { mode }, onGeometryPreview: this._previewValidator })
     }
   }
 
@@ -295,10 +295,11 @@ export class MaplibreDrawAdapter {
     this._map._drawGeometryValid = valid
   }
 
-  // The api entry points assign the active user validator to the adapter; store it
-  // on the map (like _drawGeometryValid) so modes can veto placements synchronously.
-  set _geometryValidator (fn) { this._map._drawGeometryValidator = fn }
-  get _geometryValidator () { return this._map._drawGeometryValidator }
+  // The api entry points assign the session's onGeometryPreview callback to the adapter
+  // (see validation/commitChecks.js's startCheckSession); store it on the map (like
+  // _drawGeometryValid) so modes can veto placements synchronously.
+  set _previewValidator (fn) { this._map._drawPreviewValidator = fn }
+  get _previewValidator () { return this._map._drawPreviewValidator }
 
   // Committed-verdict write (events.js, edit mode): routed through the live-stroke
   // controller so its cached state stays in sync with the rendered layers.

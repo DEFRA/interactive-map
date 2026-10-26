@@ -1,4 +1,4 @@
-const EDIT_MODES = new Set(['edit_vertex', 'edit_point'])
+import { isEditMode } from '../utils/drawModes.js'
 
 // Not structuredClone: it's missing from older browsers we still support, and coordinates
 // are plain arrays of numbers, which JSON copies exactly
@@ -18,7 +18,7 @@ const copyCoordinates = (coordinates) => JSON.parse(JSON.stringify(coordinates))
 export const setGeometry = ({ mapProvider, pluginState }, geometry) => {
   const { draw } = mapProvider
 
-  if (!draw || !EDIT_MODES.has(draw.getMode())) {
+  if (!draw || !isEditMode(draw.getMode())) {
     return false
   }
 

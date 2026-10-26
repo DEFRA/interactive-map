@@ -19,7 +19,7 @@ const canPlace = (map, coord) => {
   const { valid, reason } = validatePlacement(
     candidate,
     { mode: MODE, vertexIndex: 0 },
-    { onGeometryChange: map._drawGeometryValidator }
+    { onGeometryPreview: map._drawPreviewValidator }
   )
   if (!valid) {
     map.fire('draw.placementblocked', { feature: candidate, reason: reason ?? null, phase: 'place', mode: MODE, vertexIndex: 0 })

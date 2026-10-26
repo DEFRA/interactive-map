@@ -47,7 +47,7 @@ describe('split', () => {
 
     split(context, 'poly')
 
-    expect(typeof draw._geometryValidator).toBe('function')
+    expect(typeof draw._previewValidator).toBe('function')
     expect(typeof draw._commitValidator).toBe('function')
     expect(draw.setSnapLayers).toHaveBeenCalledWith(['stroke-inactive.cold'])
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HAS_SNAP_LAYERS', payload: true })
@@ -80,7 +80,7 @@ describe('split', () => {
     const previousValidator = jest.fn()
     const previousPreviewValidator = jest.fn()
     draw._commitValidator = previousValidator
-    draw._geometryValidator = previousPreviewValidator
+    draw._previewValidator = previousPreviewValidator
     draw.get.mockReturnValue(polygonFeature)
     splitPolygon.mockReturnValue(featureCollection)
 
@@ -95,7 +95,7 @@ describe('split', () => {
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:split', { originalFeatureId: 'poly', featureCollection })
     expect(draw._commitValidator).toBe(previousValidator)
-    expect(draw._geometryValidator).toBe(previousPreviewValidator)
+    expect(draw._previewValidator).toBe(previousPreviewValidator)
     // The splitter line only ever existed to compute the split — it must not
     // linger in the draw store afterwards.
     expect(draw.delete).toHaveBeenCalledWith('_splitter')
@@ -134,7 +134,7 @@ describe('split', () => {
       split(context, 'poly')
       dispatch.mockClear()
 
-      const result = draw._geometryValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'place', mode: 'draw_line', vertexIndex: 1 })
+      const result = draw._previewValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'place', mode: 'draw_line', vertexIndex: 1 })
 
       expect(result).toEqual({ valid: true })
       expect(splitPolygon).not.toHaveBeenCalled()
@@ -166,7 +166,7 @@ describe('split', () => {
       // gates the built-in rules by numVertices, not a caller's own rule, so this
       // must still reach the validator (numVertices: 1, below MIN_VERTICES.LineString).
       const feature = lineFeature([[0, 0], [1, 1]])
-      const result = draw._geometryValidator({ feature, phase: 'preview', mode: 'draw_line', numVertices: 1 })
+      const result = draw._previewValidator({ feature, phase: 'preview', mode: 'draw_line', numVertices: 1 })
 
       expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, { id: '_splitter', geometry: feature.geometry })
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
@@ -209,7 +209,7 @@ describe('split', () => {
       split(context, 'poly')
 
       const feature = lineFeature([[0, 0]])
-      const result = draw._geometryValidator({ feature, phase: 'preview', mode: 'draw_line', numVertices: 0 })
+      const result = draw._previewValidator({ feature, phase: 'preview', mode: 'draw_line', numVertices: 0 })
 
       expect(splitPolygon).not.toHaveBeenCalled()
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')

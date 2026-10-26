@@ -112,7 +112,7 @@ test('a LineString edit computes numVertices directly from coordinates.length (n
 
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_CHANGE, { numVertices: 3 })
 
-  // LIVE_RULES (self-intersect/area) only ever apply to Polygon (see rules.js's getPolygon
+  // PREVIEW_RULES (self-intersect/area) only ever apply to Polygon (see rules.js's getPolygon
   // guard) — a self-crossing LineString still drives updateLiveValidity, but never flips
   // the stroke invalid, unlike the Polygon case above.
   olFeature.getGeometry().setCoordinates([[0, 0], [100, 100], [100, 0], [0, 100]])
@@ -122,12 +122,12 @@ test('a LineString edit computes numVertices directly from coordinates.length (n
 test('the user callback runs throttled during an edit drag', () => {
   jest.useFakeTimers()
   const { manager, olFeature } = setup()
-  manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+  manager._previewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
   olFeature.getGeometry().setCoordinates([[[0, 0], [110, 0], [100, 100], [0, 100], [0, 0]]])
   olFeature.getGeometry().setCoordinates([[[0, 0], [120, 0], [100, 100], [0, 100], [0, 0]]])
-  expect(manager._geometryValidator).not.toHaveBeenCalled() // deferred to the frame
+  expect(manager._previewValidator).not.toHaveBeenCalled() // deferred to the frame
   jest.runAllTimers()
-  expect(manager._geometryValidator).toHaveBeenCalledTimes(1) // trailing edge only
+  expect(manager._previewValidator).toHaveBeenCalledTimes(1) // trailing edge only
   expect(currentStyle(olFeature)).toBe(manager.styles.editFeatureStyleInvalid)
   jest.useRealTimers()
 })

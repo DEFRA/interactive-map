@@ -66,10 +66,10 @@ test('destroy restores the feature\'s pre-edit style', () => {
   expect(olFeature.getStyle()).not.toBe(selectedStyleFn)
 })
 
-test('validity flips (user callback only — a Point has no built-in HARD_RULES violation) gate the Done button', () => {
+test('validity flips (user callback only — a Point has no built-in PLACE_RULES violation) gate the Done button', () => {
   jest.useFakeTimers()
   const { manager, olFeature } = setup()
-  manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+  manager._previewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
   olFeature.getGeometry().setCoordinates([9, 9])
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VALIDITY_CHANGE,

@@ -3,17 +3,19 @@ import turfArea from '@turf/area'
 /**
  * Engine-agnostic geometry validation.
  *
- * A rule is a pure `(feature, context) => { valid, reason }`. Two classes:
- *   - SOFT_RULES gate the Done button (validationStatus) — the change is always
- *     kept, so a shape can pass through interim invalid states while being
- *     built or reshaped.
- *   - HARD_RULES gate vertex placement — a failure rejects the placement and
- *     the vertex never appears (used for unrecoverable states, e.g. a vertex
- *     that would force the drawn path to cross itself).
+ * A rule is a pure `(feature, context) => { valid, reason }`. The built-in rules come in
+ * three sets, each run at the same moment as one of the consumer's callbacks:
+ *   - PREVIEW_RULES run with onGeometryPreview's 'preview' phase, against the displayed
+ *     shape on every rubber-band move or drag — they drive the dashed outline.
+ *   - PLACE_RULES run with onGeometryPreview's 'place' phase — a failure rejects the
+ *     placement and the vertex never appears (used for unrecoverable states, e.g. a
+ *     vertex that would force the drawn path to cross itself).
+ *   - COMMIT_RULES run before onGeometryChange on every committed change and gate the
+ *     Done button (validationStatus) — the change is always kept, so a shape can pass
+ *     through interim invalid states while being built or reshaped.
  *
  * `context` is `{ phase, vertexIndex, mode }` (phase: import('../adapterEvents.js').GeometryChangePhase)
  * so rules can vary by phase or mode.
- * Add a rule by appending it to SOFT_RULES or HARD_RULES.
  */
 
 // Minimum vertices for a finishable shape — the single source for every
@@ -103,7 +105,7 @@ const pathSelfIntersects = (feature) => {
   return edgesSelfIntersect(vertices, false)
 }
 
-/** Rule-shaped wrapper for pathSelfIntersects (see HARD_RULES). */
+/** Rule-shaped wrapper for pathSelfIntersects (see PLACE_RULES). */
 export const noPathSelfIntersection = (feature) =>
   pathSelfIntersects(feature)
     ? { valid: false, reason: 'Shape must not intersect itself' }
@@ -170,17 +172,17 @@ export const minVertices = (feature) => {
   return { valid: true }
 }
 
-// Validation rules. A failure disables the Done button (validationStatus).
+// Commit rules. A failure disables the Done button (validationStatus).
 // Order sets which reason surfaces first.
-export const SOFT_RULES = [noSelfIntersection, nonZeroArea, minVertices]
+export const COMMIT_RULES = [noSelfIntersection, nonZeroArea, minVertices]
 
 // Rules that drive the live invalid stroke while drawing, run against the displayed
-// geometry (placed vertices + cursor) on every rubber-band move. Everything soft
+// geometry (placed vertices + cursor) on every rubber-band move. Every commit rule
 // EXCEPT minVertices — an incomplete shape is "part-drawn", not invalid.
 // validateDisplayedGeometry applies the minimum-placed-vertex threshold instead.
-export const LIVE_RULES = [noSelfIntersection, nonZeroArea]
+export const PREVIEW_RULES = [noSelfIntersection, nonZeroArea]
 
 // Placement rules. Run by validatePlacement against the candidate geometry
 // (placed vertices + the point about to be placed); a failure rejects the
 // placement outright — the vertex never appears.
-export const HARD_RULES = [noPathSelfIntersection]
+export const PLACE_RULES = [noPathSelfIntersection]

@@ -101,7 +101,7 @@ describe('editFeature', () => {
     const onGeometryPreview = jest.fn(() => true)
     const { context, draw } = makeContext({ pluginConfig: { onGeometryPreview: jest.fn() } })
     editFeature(context, 'f1', { onGeometryPreview })
-    draw._geometryValidator({ phase: 'preview' })
+    draw._previewValidator({ phase: 'preview' })
     expect(onGeometryPreview).toHaveBeenCalledWith({ phase: 'preview' })
   })
 
