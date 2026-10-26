@@ -138,7 +138,8 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       pluginState,
       events: EVENTS,
       eventBus,
-      hints
+      hints,
+      announce: services.announce
     })
   }, [mapProvider, appState, pluginState])
 }

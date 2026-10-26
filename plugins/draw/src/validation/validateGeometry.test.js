@@ -1,4 +1,4 @@
-import { validateGeometry, validatePlacement, attemptPlacement, validateDisplayedGeometry } from './validateGeometry.js'
+import { validateGeometry, validatePlacement, attemptPlacement, validateDisplayedGeometry, normaliseResult } from './validateGeometry.js'
 
 const poly = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [coordinates] } })
 
@@ -196,5 +196,12 @@ describe('validatePlacement (hard gating)', () => {
     const onGeometryChange = jest.fn()
     validatePlacement(crossingPath, {}, { onGeometryChange })
     expect(onGeometryChange).not.toHaveBeenCalled()
+  })
+})
+
+// onGeometryPreview must answer synchronously; a Promise it returns can't be waited for
+describe('normaliseResult', () => {
+  test('treats a returned Promise as valid', () => {
+    expect(normaliseResult(Promise.resolve(false)).valid).toBe(true)
   })
 })

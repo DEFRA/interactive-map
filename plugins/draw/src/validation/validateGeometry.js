@@ -9,7 +9,7 @@ import { SOFT_RULES, HARD_RULES, LIVE_RULES, MIN_VERTICES } from './rules.js'
  *   - `false`                → invalid (no reason)
  *   - `{ valid, reason }`    → passed through
  */
-const normaliseResult = (result) => {
+export const normaliseResult = (result) => {
   if (result === undefined || result === true) { return { valid: true } }
   if (result === false) { return { valid: false, reason: null } }
   return { valid: result.valid !== false, reason: result.reason }

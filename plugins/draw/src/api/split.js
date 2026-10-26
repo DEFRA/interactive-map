@@ -1,5 +1,6 @@
 import { splitPolygon } from '../utils/spatial.js'
 import { ADAPTER_EVENTS } from '../adapterEvents.js'
+import { getCommitChecks } from '../validation/commitChecks.js'
 
 const INVALID_REASON = 'Line does not split the shape into two parts'
 const MIN_LINE_VERTICES = 2
@@ -21,29 +22,25 @@ const applySplitPreview = ({ draw, polygonFeature, feature }) => {
   return isValid
 }
 
-// Colours the preview and gates Done/the finish gesture for a committed vertex.
+// Colours the preview for a committed vertex and records whether the split is valid.
+// Its returned verdict gates Done and the finish gesture (events.js).
 const applySplitCommit = ({ draw, dispatch, polygonFeature, feature }) => {
   const isValid = applySplitPreview({ draw, polygonFeature, feature })
   dispatch({ type: 'SET_ACTION', payload: { name: 'split', isValid } })
-  dispatch({ type: 'SET_GEOMETRY_VALID', payload: isValid })
-  draw.setGeometryValid(isValid)
   return isValid
 }
 
-// Installed as draw._geometryValidator. 'place' and 'create' are no-ops — a split
-// isn't complete until its last vertex, so checking those would block placement
-// and hijack an early finish into edit mode.
-const createSplitValidator = ({ draw, dispatch, polygonFeature }) => ({ feature, phase }) => {
-  let isValid
-  if (phase === 'preview') {
-    isValid = applySplitPreview({ draw, polygonFeature, feature })
-  } else if (phase?.startsWith('commit-')) {
-    isValid = applySplitCommit({ draw, dispatch, polygonFeature, feature })
-  } else {
-    return { valid: true }
-  }
-  return isValid ? { valid: true } : { valid: false, reason: INVALID_REASON }
-}
+const toResult = (isValid) => (isValid ? { valid: true } : { valid: false, reason: INVALID_REASON })
+
+// Installed as draw._geometryValidator. 'place' is a no-op — a split isn't complete
+// until its last vertex, so checking it would block placement.
+const createSplitPreviewValidator = ({ draw, polygonFeature }) => ({ feature, phase }) =>
+  phase === 'preview' ? toResult(applySplitPreview({ draw, polygonFeature, feature })) : { valid: true }
+
+// Installed as draw._commitValidator. 'create' is a no-op — checking it would
+// hijack an early finish into edit mode.
+const createSplitCommitValidator = ({ draw, dispatch, polygonFeature }) => ({ feature, phase }) =>
+  phase?.startsWith('commit-') ? toResult(applySplitCommit({ draw, dispatch, polygonFeature, feature })) : { valid: true }
 
 /**
  * Start drawing a split line for a polygon.
@@ -63,9 +60,12 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
 
   const polygonFeature = draw.get(featureId)
 
-  // Swap in split's own rule; restored in stopListening.
-  const previousValidator = draw._geometryValidator
-  draw._geometryValidator = createSplitValidator({ draw, dispatch, polygonFeature })
+  // Swap in split's own rules; restored in stopListening.
+  const previousPreviewValidator = draw._geometryValidator
+  const previousValidator = draw._commitValidator
+  draw._geometryValidator = createSplitPreviewValidator({ draw, polygonFeature })
+  draw._commitValidator = createSplitCommitValidator({ draw, dispatch, polygonFeature })
+  getCommitChecks(draw).reset()
 
   // Always include the draw outline layer so the split line snaps to it
   const snapLayers = ['stroke-inactive.cold', ...(options.snapLayers || [])]
@@ -84,7 +84,8 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
 
   // Unregister everything scoped to this session.
   const stopListening = () => {
-    draw._geometryValidator = previousValidator
+    draw._geometryValidator = previousPreviewValidator
+    draw._commitValidator = previousValidator
     draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)
   }

@@ -4,7 +4,7 @@ import turfArea from '@turf/area'
  * Engine-agnostic geometry validation.
  *
  * A rule is a pure `(feature, context) => { valid, reason }`. Two classes:
- *   - SOFT_RULES gate the Done button (geometryValid) — the change is always
+ *   - SOFT_RULES gate the Done button (validationStatus) — the change is always
  *     kept, so a shape can pass through interim invalid states while being
  *     built or reshaped.
  *   - HARD_RULES gate vertex placement — a failure rejects the placement and
@@ -170,7 +170,7 @@ export const minVertices = (feature) => {
   return { valid: true }
 }
 
-// Validation rules. A failure disables the Done button (geometryValid).
+// Validation rules. A failure disables the Done button (validationStatus).
 // Order sets which reason surfaces first.
 export const SOFT_RULES = [noSelfIntersection, nonZeroArea, minVertices]
 
