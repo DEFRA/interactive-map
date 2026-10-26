@@ -1,6 +1,8 @@
 const EDIT_MODES = new Set(['edit_vertex', 'edit_point'])
 
-const copyCoordinates = (coordinates) => JSON.parse(JSON.stringify(coordinates))
+// Not structuredClone: it's missing from older browsers we still support, and coordinates
+// are plain arrays of numbers, which JSON copies exactly
+const copyCoordinates = (coordinates) => JSON.parse(JSON.stringify(coordinates)) // NOSONAR
 
 /**
  * Replace the shape being edited, e.g. with a corrected boundary. The change can be
