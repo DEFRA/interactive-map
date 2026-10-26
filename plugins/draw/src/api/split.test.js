@@ -48,6 +48,7 @@ describe('split', () => {
     split(context, 'poly')
 
     expect(typeof draw._geometryValidator).toBe('function')
+    expect(typeof draw._commitValidator).toBe('function')
     expect(draw.setSnapLayers).toHaveBeenCalledWith(['stroke-inactive.cold'])
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HAS_SNAP_LAYERS', payload: true })
     expect(draw.changeMode).toHaveBeenCalledWith('draw_line', expect.objectContaining({
@@ -72,12 +73,14 @@ describe('split', () => {
     expect(draw.setSnapLayers).toHaveBeenCalledWith(['stroke-inactive.cold', 'extra'])
   })
 
-  test('finalising the line computes a valid split, emits the result, and restores the previous validator', () => {
+  test('finalising the line computes a valid split, emits the result, and restores the previous validators', () => {
     const { context, dispatch, draw, eventBus } = makeContext()
     const polygonFeature = { id: 'poly' }
     const featureCollection = { type: 'FeatureCollection' }
     const previousValidator = jest.fn()
-    draw._geometryValidator = previousValidator
+    const previousPreviewValidator = jest.fn()
+    draw._commitValidator = previousValidator
+    draw._geometryValidator = previousPreviewValidator
     draw.get.mockReturnValue(polygonFeature)
     splitPolygon.mockReturnValue(featureCollection)
 
@@ -91,7 +94,8 @@ describe('split', () => {
     expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, geojson)
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:split', { originalFeatureId: 'poly', featureCollection })
-    expect(draw._geometryValidator).toBe(previousValidator)
+    expect(draw._commitValidator).toBe(previousValidator)
+    expect(draw._geometryValidator).toBe(previousPreviewValidator)
     // The splitter line only ever existed to compute the split — it must not
     // linger in the draw store afterwards.
     expect(draw.delete).toHaveBeenCalledWith('_splitter')
@@ -100,7 +104,7 @@ describe('split', () => {
   test('cancelling the splitter line stops listening and restores the previous validator', () => {
     const { context, draw } = makeContext()
     const previousValidator = jest.fn()
-    draw._geometryValidator = previousValidator
+    draw._commitValidator = previousValidator
 
     split(context, 'poly')
     const onCancel = handlerFor(draw, 'cancel')
@@ -109,7 +113,7 @@ describe('split', () => {
     expect(draw.off).toHaveBeenCalledWith('create', expect.any(Function))
     expect(draw.off).toHaveBeenCalledWith('cancel', onCancel)
     expect(splitPolygon).not.toHaveBeenCalled()
-    expect(draw._geometryValidator).toBe(previousValidator)
+    expect(draw._commitValidator).toBe(previousValidator)
   })
 
   test('finalising the line computes an invalid split and does not emit', () => {
@@ -124,7 +128,7 @@ describe('split', () => {
     expect(draw.delete).toHaveBeenCalledWith('_splitter')
   })
 
-  describe('the installed draw._geometryValidator', () => {
+  describe('the installed validators', () => {
     test('never blocks a hard placement veto (phase: place)', () => {
       const { context, dispatch, draw } = makeContext()
       split(context, 'poly')
@@ -143,7 +147,7 @@ describe('split', () => {
       split(context, 'poly')
       dispatch.mockClear()
 
-      const result = draw._geometryValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'create', mode: 'draw_line' })
+      const result = draw._commitValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'create', mode: 'draw_line' })
 
       expect(result).toEqual({ valid: true })
       expect(splitPolygon).not.toHaveBeenCalled()
@@ -174,19 +178,30 @@ describe('split', () => {
       expect(result).toEqual({ valid: true })
     })
 
-    test('a committed vertex (phase: commit-add) updates both the visual colour and Done-gating', () => {
+    test('a committed vertex (phase: commit-add) updates the visual colour and returns the verdict that gates Done', () => {
       const { context, dispatch, draw } = makeContext()
       splitPolygon.mockReturnValue(null)
       split(context, 'poly')
 
       const feature = lineFeature([[0, 0], [1, 1]])
-      const result = draw._geometryValidator({ feature, phase: 'commit-add', mode: 'draw_line', vertexIndex: 1 })
+      const result = draw._commitValidator({ feature, phase: 'commit-add', mode: 'draw_line', vertexIndex: 1 })
 
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })
-      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_GEOMETRY_VALID', payload: false })
-      expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
+      // The Done gate is applied by events.js from the returned verdict, not written here
+      expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_VALIDATION_STATUS' }))
+      expect(draw.setGeometryValid).not.toHaveBeenCalled()
       expect(result).toEqual({ valid: false, reason: expect.any(String) })
+    })
+
+    test('the commit validator ignores the live preview phase', () => {
+      const { context, draw } = makeContext()
+      split(context, 'poly')
+
+      const result = draw._commitValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'preview', mode: 'draw_line' })
+
+      expect(result).toEqual({ valid: true })
+      expect(splitPolygon).not.toHaveBeenCalled()
     })
 
     test('a line with fewer than two coordinates is treated as invalid without calling splitPolygon', () => {

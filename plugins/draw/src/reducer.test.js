@@ -29,6 +29,11 @@ describe('SET_MODE', () => {
     expect(actions.SET_MODE(state, 'draw_polygon')).toMatchObject({ canAddPoint: true })
   })
 
+  test('a fresh mode starts with no check and a valid preview', () => {
+    const state = { ...initialState, validationStatus: 'pending', previewValid: false }
+    expect(actions.SET_MODE(state, 'edit_vertex')).toMatchObject({ validationStatus: 'idle', previewValid: true })
+  })
+
   test('preserves numVertices for non-draw modes', () => {
     const state = { ...initialState, numVertices: 5 }
     expect(actions.SET_MODE(state, 'edit_vertex')).toMatchObject({ mode: 'edit_vertex', numVertices: 5 })
@@ -77,10 +82,17 @@ describe('SET_UNDO_STACK_LENGTH', () => {
   })
 })
 
-describe('SET_GEOMETRY_VALID', () => {
+describe('SET_VALIDATION_STATUS', () => {
+  test('stores the status', () => {
+    expect(actions.SET_VALIDATION_STATUS(initialState, 'pending').validationStatus).toBe('pending')
+    expect(actions.SET_VALIDATION_STATUS(initialState, 'valid').validationStatus).toBe('valid')
+  })
+})
+
+describe('SET_PREVIEW_VALID', () => {
   test('coerces the payload to a boolean', () => {
-    expect(actions.SET_GEOMETRY_VALID(initialState, false).geometryValid).toBe(false)
-    expect(actions.SET_GEOMETRY_VALID(initialState, 1).geometryValid).toBe(true)
+    expect(actions.SET_PREVIEW_VALID(initialState, false).previewValid).toBe(false)
+    expect(actions.SET_PREVIEW_VALID(initialState, 1).previewValid).toBe(true)
   })
 })
 

@@ -47,7 +47,7 @@ const isEastOfWalesBorder = (geometry) =>
 
 const drawPlugin = createDrawPlugin({
   snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
-  onGeometryChange: (event) => { console.log(event.phase); return {
+  onGeometryPreview: (event) => { console.log(event.phase); return {
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
   }}

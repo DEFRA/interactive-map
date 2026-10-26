@@ -9,6 +9,7 @@ import { setStyle } from './api/setStyle.js'
 import { deleteFeature } from './api/deleteFeature.js'
 import { split } from './api/split.js'
 import { merge } from './api/merge.js'
+import { recheckGeometry } from './api/recheckGeometry.js'
 import { isMac } from '../../../src/utils/isMac.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
 import { needsDrawTarget } from './utils/needsDrawTarget.js'
@@ -69,15 +70,15 @@ export const manifest = {
     },
     {
       id: 'drawDone',
-      label: 'Done',
+      label: ({ pluginState }) => (pluginState.validationStatus === 'pending' ? 'Checking…' : 'Done'),
       variant: 'primary',
       exclusiveSlot: true,
       hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
       enableWhen: ({ pluginState }) => {
-        const { mode, geometryValid } = pluginState
-        // Min-vertices, area and self-intersection are all enforced by the validation
-        // rules via geometryValid, so the gate is simply "is the geometry valid now".
-        return (['draw_polygon', 'draw_line'].includes(mode) || isEditMode(mode)) && geometryValid
+        const { mode, validationStatus, previewValid } = pluginState
+        // validationStatus is the latest commit-level check (built-in rules + onGeometryChange);
+        // previewValid is the live check of a shape being edited.
+        return (['draw_polygon', 'draw_line'].includes(mode) || isEditMode(mode)) && validationStatus === 'valid' && previewValid
       },
       ...createButtonSlots(true)
     },
@@ -178,6 +179,7 @@ export const manifest = {
     setStyle,
     deleteFeature,
     split,
-    merge
+    merge,
+    recheckGeometry
   }
 }

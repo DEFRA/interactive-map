@@ -1,4 +1,5 @@
 import { SYMBOL_KEYS } from '../utils/symbolKeys.js'
+import { startCheckSession } from '../validation/commitChecks.js'
 
 export const newPoint = ({ appState, appConfig, pluginConfig, pluginState, mapState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
@@ -9,15 +10,14 @@ export const newPoint = ({ appState, appConfig, pluginConfig, pluginState, mapSt
     return
   }
 
-  eventBus.emit('draw:started', { mode: 'draw_point' })
+  eventBus.emit('draw:started', { mode: 'draw_point', featureId })
 
   const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
-  const { properties: customProperties, onGeometryChange, ...modeOptions } = options
-  // Per-call callback overrides the plugin-level one; events.js reads this on every commit.
-  draw._geometryValidator = onGeometryChange ?? pluginConfig.onGeometryChange
+  const { properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
+  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig)
 
   const symbolStyle = {}
   SYMBOL_KEYS.forEach((key) => {
