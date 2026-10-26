@@ -39,4 +39,36 @@ describe('undoHandlers', () => {
     ctx.undoMovePoint(state, { previousPosition: [3, 4], featureId: 'feat-1' })
     expect(ctx.getFeature('feat-1').coordinates).toEqual([3, 4])
   })
+
+  describe('setGeometry', () => {
+    test('moves the point on draw.setgeometry and re-validates as commit-replace', () => {
+      jest.useFakeTimers()
+      const { ctx, map } = createHarness()
+      map.fire.mockClear()
+      map.fire('draw.setgeometry', { geometry: { type: 'Point', coordinates: [7, 8] } })
+      expect(ctx.getFeature('feat-1').coordinates).toEqual([7, 8])
+      jest.runAllTimers()
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-replace' }))
+      jest.useRealTimers()
+    })
+
+    test('undo moves the point back and re-validates as commit-replace', () => {
+      jest.useFakeTimers()
+      const { ctx, state, map } = createHarness()
+      const original = [...ctx.getFeature('feat-1').coordinates]
+      map.fire('draw.setgeometry', { geometry: { type: 'Point', coordinates: [7, 8] } })
+      jest.runAllTimers()
+      map.fire.mockClear()
+      ctx.handleUndo(state)
+      expect(ctx.getFeature('feat-1').coordinates).toEqual(original)
+      jest.runAllTimers()
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-replace' }))
+      jest.useRealTimers()
+    })
+
+    test('guards a missing feature', () => {
+      const { ctx, state } = createHarness()
+      expect(() => ctx.onSetGeometry({ ...state, featureId: 'missing' }, { geometry: { type: 'Point', coordinates: [1, 1] } })).not.toThrow()
+    })
+  })
 })

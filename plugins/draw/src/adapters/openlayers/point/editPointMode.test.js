@@ -341,3 +341,28 @@ test('destroy removes the point drag interaction and listeners', () => {
   expect(map.removeInteraction).toHaveBeenCalled()
   expect(map.interactions.length).toBeLessThan(interactionsBefore)
 })
+
+test('setGeometry moves the point as one undoable commit-replace', () => {
+  jest.useFakeTimers()
+  const { manager, mode, coord } = setup([5, 5])
+  manager.emit.mockClear()
+
+  mode.setGeometry({ type: 'Point', coordinates: [9, 9] })
+  expect(coord()).toEqual([9, 9])
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace', vertexIndex: 0 }))
+
+  manager.emit.mockClear()
+  mode.undo()
+  expect(coord()).toEqual([5, 5])
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace' }))
+  jest.useRealTimers()
+})
+
+test('setGeometry repositions the touch target in touch mode', () => {
+  const { mode, coord } = setup([5, 5])
+  mode.setInterfaceType('touch')
+  expect(() => mode.setGeometry({ type: 'Point', coordinates: [9, 9] })).not.toThrow()
+  expect(coord()).toEqual([9, 9])
+})

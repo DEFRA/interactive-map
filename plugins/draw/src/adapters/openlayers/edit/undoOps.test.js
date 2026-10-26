@@ -61,4 +61,11 @@ describe('applyUndo dispatch', () => {
     expect(applyUndo(feature, { type: 'insert_vertex', vertexIndex: 1 })).toBe(-1)
     expect(applyUndo(feature, { type: 'resize' })).toBe(-1)
   })
+
+  test('replace_geometry restores the whole previous geometry, with nothing to re-select', () => {
+    const feature = polygonFeature(SQUARE)
+    const previousCoordinates = [[[0, 0], [5, 0], [5, 5], [0, 0]]]
+    expect(applyUndo(feature, { type: 'replace_geometry', previousCoordinates })).toBe(-1)
+    expect(feature.getGeometry().getCoordinates()).toEqual(previousCoordinates)
+  })
 })

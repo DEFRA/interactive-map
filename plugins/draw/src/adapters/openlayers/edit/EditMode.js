@@ -17,12 +17,14 @@ const VERTEX_TYPE = 'vertex'
 const MOVE_VERTEX = 'commit-move'
 const INSERT_VERTEX = 'commit-insert'
 const DELETE_VERTEX = 'commit-delete'
+const REPLACE_GEOMETRY = 'commit-replace'
 
 // Map an undo-op type onto the geometry-change `phase` consumed by validation.
 const OP_PHASE = {
   move_vertex: MOVE_VERTEX,
   insert_vertex: INSERT_VERTEX,
-  delete_vertex: DELETE_VERTEX
+  delete_vertex: DELETE_VERTEX,
+  replace_geometry: REPLACE_GEOMETRY
 }
 
 // Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
@@ -30,7 +32,8 @@ const OP_PHASE = {
 const UNDO_INVERSE_PHASE = {
   move_vertex: MOVE_VERTEX,
   insert_vertex: DELETE_VERTEX,
-  delete_vertex: INSERT_VERTEX
+  delete_vertex: INSERT_VERTEX,
+  replace_geometry: REPLACE_GEOMETRY
 }
 
 // Live invalid-stroke wiring: re-validate the displayed geometry on every geometry
@@ -324,6 +327,18 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
       emitGeometryValidation(INSERT_VERTEX, result.insertedIndex)
       setState({ selectedVertexIndex: result.insertedIndex, selectedVertexType: VERTEX_TYPE })
       touchHandler.updateTargetPosition()
+    },
+
+    // Replaces the whole shape (e.g. a corrected boundary from the consumer) as one undoable
+    // commit. Vertex indices no longer refer to the same points, so the selection is cleared.
+    setGeometry (geometry) {
+      const geom = olFeature.getGeometry()
+      undoStack.push({ type: 'replace_geometry', previousCoordinates: geom.getCoordinates() })
+      geom.setCoordinates(geometry.coordinates)
+      syncGeom()
+      emitGeometryValidation(REPLACE_GEOMETRY)
+      setState({ selectedVertexIndex: -1, selectedVertexType: null })
+      touchHandler.hide()
     },
 
     destroy () {

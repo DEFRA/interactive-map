@@ -88,4 +88,41 @@ describe('undoHandlers', () => {
     ctx.undoDeleteVertex(state, { vertexIndex: seg.start + seg.length, position: [2, 2], featureId: 'feat-1' })
     expect(ctx.getVertices('feat-1')).toHaveLength(6)
   })
+
+  describe('setGeometry', () => {
+    const replacement = { type: 'Polygon', coordinates: [[[0, 0], [20, 0], [20, 20], [0, 20], [0, 0]]] }
+
+    test('replaces the shape on draw.setgeometry, clears the selection and re-validates as commit-replace', () => {
+      jest.useFakeTimers()
+      const { ctx, map } = createHarness()
+      const changeMode = jest.spyOn(ctx, 'changeMode')
+      map.fire.mockClear()
+      map.fire('draw.setgeometry', { geometry: replacement })
+      expect(ctx.getFeature('feat-1').toGeoJSON().geometry).toEqual(replacement)
+      expect(changeMode).toHaveBeenCalledWith(expect.anything(), { selectedVertexIndex: -1, selectedVertexType: null })
+      jest.runAllTimers()
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-replace' }))
+      jest.useRealTimers()
+    })
+
+    test('undo restores the previous shape and re-validates as commit-replace', () => {
+      jest.useFakeTimers()
+      const { ctx, state, map } = createHarness()
+      const original = ctx.getFeature('feat-1').toGeoJSON().geometry
+      map.fire('draw.setgeometry', { geometry: replacement })
+      jest.runAllTimers()
+      map.fire.mockClear()
+      ctx.handleUndo(state)
+      expect(ctx.getFeature('feat-1').toGeoJSON().geometry).toEqual(original)
+      jest.runAllTimers()
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-replace' }))
+      jest.useRealTimers()
+    })
+
+    test('guards a missing feature', () => {
+      const { ctx, state } = createHarness()
+      expect(() => ctx.onSetGeometry({ ...state, featureId: 'missing' }, { geometry: replacement })).not.toThrow()
+      expect(() => ctx.replaceGeometry(state, 'missing', replacement)).not.toThrow()
+    })
+  })
 })

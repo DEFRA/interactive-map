@@ -19,6 +19,7 @@ const fakeManager = () => ({
   getVertexItems: jest.fn(() => ({ vertices: [[0, 0]], midpoints: [] })),
   selectVertex: jest.fn(),
   insertVertexAtMidpoint: jest.fn(),
+  setGeometry: jest.fn(),
   setInvalid: jest.fn(),
   setDrawingPreviewProperty: jest.fn(),
   get: jest.fn(() => 'feature'),
@@ -147,6 +148,10 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   adapter.insertVertexAtMidpoint(3)
   expect(manager.selectVertex).toHaveBeenCalledWith(2)
   expect(manager.insertVertexAtMidpoint).toHaveBeenCalledWith(3)
+
+  const geometry = { type: 'Polygon', coordinates: [] }
+  adapter.setGeometry(geometry)
+  expect(manager.setGeometry).toHaveBeenCalledWith(geometry)
 })
 
 // A directly-added Point skips draw_point's own icon-resolving drawend handler.

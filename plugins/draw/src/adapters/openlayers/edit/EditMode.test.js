@@ -372,3 +372,24 @@ test('destroy removes interactions, layers and listeners, and restores the featu
   expect(map.layers).toHaveLength(0)
   expect(olFeature.getStyle()).toBeNull()
 })
+
+test('setGeometry replaces the shape as one undoable commit-replace, clearing the selection', () => {
+  jest.useFakeTimers()
+  const { manager, mode, ring } = setup()
+  const replacement = [[0, 0], [200, 0], [200, 200], [0, 200], [0, 0]]
+  mode.selectVertex(1)
+  manager.emit.mockClear()
+
+  mode.setGeometry({ type: 'Polygon', coordinates: [replacement] })
+  expect(ring()).toEqual(replacement)
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_SELECTION, { index: -1, numVertices: 4 })
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace' }))
+
+  manager.emit.mockClear()
+  mode.undo()
+  expect(ring()).toEqual(RING)
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace' }))
+  jest.useRealTimers()
+})
