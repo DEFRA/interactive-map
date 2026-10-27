@@ -121,7 +121,7 @@ describe('startCheckSession', () => {
     const onGeometryPreview = jest.fn(() => true)
     startCheckSession(draw, { onGeometryChange, onGeometryPreview }, { onGeometryChange: jest.fn(), onGeometryPreview: jest.fn() })
     expect(draw._commitValidator).toBe(onGeometryChange)
-    expect(draw._geometryValidator).toBe(onGeometryPreview)
+    expect(draw._previewValidator).toBe(onGeometryPreview)
   })
 
   test('falls back to the plugin-level callbacks', () => {
@@ -129,7 +129,7 @@ describe('startCheckSession', () => {
     const onGeometryChange = jest.fn()
     startCheckSession(draw, {}, { onGeometryChange })
     expect(draw._commitValidator).toBe(onGeometryChange)
-    expect(draw._geometryValidator).toBeUndefined()
+    expect(draw._previewValidator).toBeUndefined()
   })
 
   test('ends the previous session’s check', () => {

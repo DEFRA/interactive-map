@@ -49,7 +49,7 @@ describe('mouse clicks (polygon)', () => {
 
   test('the user callback can veto a mouse placement (and receives phase "place")', () => {
     const { ctx, state } = setup(DrawPolygonMode)
-    ctx.map._drawGeometryValidator = jest.fn((event) =>
+    ctx.map._drawPreviewValidator = jest.fn((event) =>
       event.phase === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
     clickAt(ctx, state, 0, 0)
     expect(state.polygon.coordinates[0]).toHaveLength(0) // first vertex vetoed
@@ -178,7 +178,7 @@ describe('add-vertex button and doClick', () => {
 
   test('the user callback can veto a doClick placement', () => {
     const { ctx, state } = setup(DrawPolygonMode)
-    ctx.map._drawGeometryValidator = () => ({ valid: false, reason: 'outside region' })
+    ctx.map._drawPreviewValidator = () => ({ valid: false, reason: 'outside region' })
     ctx.doClick(state)
     expect(state.polygon.coordinates[0]).toHaveLength(0)
     expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(

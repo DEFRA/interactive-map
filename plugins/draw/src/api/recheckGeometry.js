@@ -1,6 +1,5 @@
 import { getCommitChecks } from '../validation/commitChecks.js'
-
-const CHECKED_MODES = new Set(['draw_polygon', 'draw_line', 'edit_vertex', 'edit_point'])
+import { isCheckedMode } from '../utils/drawModes.js'
 
 /**
  * Check the current shape again, unchanged, by calling `onGeometryChange` with
@@ -22,7 +21,7 @@ export const recheckGeometry = ({ mapProvider }) => {
   const mode = draw.getMode()
   const checks = getCommitChecks(draw)
   const { feature } = checks.state
-  if (!CHECKED_MODES.has(mode) || !feature) {
+  if (!isCheckedMode(mode) || !feature) {
     return false
   }
 

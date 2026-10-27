@@ -11,7 +11,7 @@ const createMap = () => {
     _undoInProgress: false,
     _undoStack: null,
     _snapInstance: null,
-    _drawGeometryValidator: undefined,
+    _drawPreviewValidator: undefined,
     getCanvas: () => canvas,
     getCenter: () => ({ ...CENTER }),
     project: jest.fn(() => ({ x: 50, y: 50 })),
@@ -179,9 +179,9 @@ describe('DrawPointMode', () => {
       expect(state.point.coordinates).toEqual([])
     })
 
-    it('vetoes placement via onGeometryChange and never commits', () => {
+    it('vetoes placement via onGeometryPreview and never commits', () => {
       const { ctx, state } = setup()
-      ctx.map._drawGeometryValidator = () => ({ valid: false, reason: 'not allowed here' })
+      ctx.map._drawPreviewValidator = () => ({ valid: false, reason: 'not allowed here' })
       ctx.onClick(state, clickEvent(ctx, 1, 2))
       expect(state.point.coordinates).toEqual([])
       const blocked = firedWith(ctx.map, 'draw.placementblocked')
@@ -192,7 +192,7 @@ describe('DrawPointMode', () => {
 
     it('defaults the blocked reason to null when the veto gives none', () => {
       const { ctx, state } = setup()
-      ctx.map._drawGeometryValidator = () => false // no {reason} shape
+      ctx.map._drawPreviewValidator = () => false // no {reason} shape
       ctx.onClick(state, clickEvent(ctx, 1, 2))
       const blocked = firedWith(ctx.map, 'draw.placementblocked')
       expect(blocked[0].reason).toBeNull()

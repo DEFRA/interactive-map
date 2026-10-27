@@ -16,9 +16,8 @@ export const sharedUndoHandlers = {
   },
 
   // Emit a commit-level geometrychange (feature + change phase + vertex index) so the
-  // validation layer can accept or reject the change. Deferred a tick to avoid
-  // re-entrancy: rejection calls draw.undo(), which must run after the current
-  // mutation (and its undo bookkeeping) has fully settled.
+  // validation layer can gate the Done button. Deferred a tick so it reports the shape
+  // after the current mutation (and its undo bookkeeping) has fully settled.
   emitGeometryValidation (phase, vertexIndex, featureId) {
     if (!phase) { return }
     setTimeout(() => {

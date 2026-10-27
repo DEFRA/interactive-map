@@ -14,7 +14,7 @@ const canPlaceVertex = (manager) => (coordinate) => {
   const { valid, reason } = validatePlacement(
     candidate,
     { mode: MODE, vertexIndex: 0 },
-    { onGeometryChange: manager._geometryValidator }
+    { onGeometryPreview: manager._previewValidator }
   )
   if (!valid) {
     manager.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, { feature: candidate, reason: reason ?? null, phase: 'place', mode: MODE, vertexIndex: 0 })

@@ -40,8 +40,8 @@ describe.each([
     expect(typeof Adapter.prototype[method]).toBe('function')
   })
 
-  test('exposes the _geometryValidator accessor pair (user callback storage)', () => {
-    const descriptor = Object.getOwnPropertyDescriptor(Adapter.prototype, '_geometryValidator')
+  test('exposes the _previewValidator accessor pair (onGeometryPreview storage)', () => {
+    const descriptor = Object.getOwnPropertyDescriptor(Adapter.prototype, '_previewValidator')
     expect(typeof descriptor?.get).toBe('function')
     expect(typeof descriptor?.set).toBe('function')
   })

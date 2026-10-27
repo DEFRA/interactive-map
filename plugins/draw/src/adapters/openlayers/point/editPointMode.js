@@ -44,7 +44,7 @@ const wirePointLiveValidity = ({ manager, olFeature }) => {
       feature: { type: 'Feature', geometry: { type: 'Point', coordinates } },
       context: { mode: 'edit_point' },
       numVertices: 1,
-      onGeometryChange: manager._geometryValidator
+      onGeometryPreview: manager._previewValidator
     })
   }
   olFeature.getGeometry().on('change', updateLiveValidity)

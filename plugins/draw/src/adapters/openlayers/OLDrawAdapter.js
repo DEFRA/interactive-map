@@ -90,10 +90,11 @@ export class OLDrawAdapter {
   // (double-click / click-to-close) while the in-progress shape is invalid.
   setGeometryValid (valid) { this._manager._geometryValid = valid }
 
-  // The api entry points assign the active user validator to the adapter; store it
-  // on the manager so the draw mode can veto placements synchronously.
-  set _geometryValidator (fn) { this._manager._geometryValidator = fn }
-  get _geometryValidator () { return this._manager._geometryValidator }
+  // The api entry points assign the session's onGeometryPreview callback to the adapter
+  // (see validation/commitChecks.js's startCheckSession); store it on the manager so the
+  // draw mode can veto placements synchronously.
+  set _previewValidator (fn) { this._manager._previewValidator = fn }
+  get _previewValidator () { return this._manager._previewValidator }
 
   // Show/hide the dashed invalid stroke on the active sketch or edit feature.
   setInvalid (invalid) { this._manager.setInvalid(invalid) }

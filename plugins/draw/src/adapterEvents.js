@@ -16,7 +16,7 @@
  *                      it also gates Done.
  *   'place'          - a candidate vertex is genuinely about to be committed
  *                      (a real click/tap/Add-point press), evaluated once,
- *                      synchronously; a HARD_RULES failure vetoes it outright
+ *                      synchronously; a PLACE_RULES failure vetoes it outright
  *                      and it never appears. Never fires continuously — that's
  *                      'preview''s job (see above).
  *   'create'         - a whole new feature finished without a result for its
@@ -62,7 +62,7 @@
  *   excluding any in-progress rubber-band cursor point. Present on every
  *   'preview' call, with no minimum — including 0, against the very first
  *   candidate point, before any vertex is committed. Note this is a lower bar
- *   than the built-in live rules, which stay skipped until the geometry type's
+ *   than the built-in preview rules, which stay skipped until the geometry type's
  *   minimum vertex count is reached (self-intersection/area are meaningless
  *   below that).
  */
@@ -110,7 +110,7 @@
  *   INTERFACE_TYPE_CHANGE  { interfaceType: 'mouse' | 'touch' | 'keyboard' }
  *   PLACEMENT_BLOCKED      { feature, reason, phase: 'place', mode, vertexIndex } —
  *                          a REAL placement attempt (click/tap/Add-point press)
- *                          was rejected by validatePlacement (hard rule or user
+ *                          was rejected by validatePlacement (placement rule or user
  *                          callback), evaluated once, synchronously; feature is
  *                          the candidate geometry that was refused. Distinct from
  *                          CAN_PLACE_CHANGE below, which is a continuous forecast

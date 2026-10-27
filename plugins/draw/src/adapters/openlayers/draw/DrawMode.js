@@ -52,7 +52,7 @@ const placedFeatureGeoJSON = (store, sketchFeature) => {
 }
 
 // Attempt a placement (mouse click, crosshair tap, Enter) through the shared
-// hard rules + user callback. On a veto the vertex never appears and a
+// placement rules + user callback. On a veto the vertex never appears and a
 // PLACEMENT_BLOCKED event carries the reason.
 export const buildCanPlaceVertex = ({ manager, geometryType, getSketch }) => (coordinate) => {
   const sketch = getSketch()
@@ -60,7 +60,7 @@ export const buildCanPlaceVertex = ({ manager, geometryType, getSketch }) => (co
     placed: sketch ? getPlacedSketchCoords(sketch.getGeometry()) : [],
     point: coordinate,
     geometryType,
-    onGeometryChange: manager._geometryValidator
+    onGeometryPreview: manager._previewValidator
   })
   if (!result.valid) {
     manager.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, result.blocked)
@@ -102,8 +102,8 @@ const attachDrawListeners = (drawInteraction, { manager, featureId, properties, 
 }
 
 // Tracks placed-vertex count and emits VERTEX_CHANGE plus, on each genuine placement,
-// a commit-level GEOMETRY_CHANGE ('commit-add') for validation. Deferred a tick so a
-// rejection's revert runs after the current click settles.
+// a commit-level GEOMETRY_CHANGE ('commit-add') for validation. Deferred a tick so it
+// reports the shape after the current click settles.
 const createVertexTracker = (manager, getSketch) => {
   let lastPlacedCount = 0
   const emit = (phase, vertexIndex) => {
@@ -221,7 +221,7 @@ export const createDrawMode = ({ map, manager, options }) => {
   const updateLiveValidity = () => {
     if (!sketchFeature) { return }
     const { feature, numVertices } = displayedSketch(geometryType, sketchFeature)
-    liveDrawChecks.update({ feature, context: { mode: liveMode }, numVertices, onGeometryChange: manager._geometryValidator })
+    liveDrawChecks.update({ feature, context: { mode: liveMode }, numVertices, onGeometryPreview: manager._previewValidator })
   }
 
   // Update sketch style when map style changes
