@@ -5,7 +5,7 @@
  *   - 'preview' and 'place' go to `onGeometryPreview`, which must answer synchronously
  *   - every other phase goes to `onGeometryChange`, which may return a Promise
  *
- * @typedef {'preview' | 'place' | 'change' | 'create' | 'edit-start' | 'recheck'} GeometryChangePhase
+ * @typedef {'preview' | 'place' | 'change' | 'create' | 'edit-start' | 'edit-finish' | 'recheck'} GeometryChangePhase
  *
  *   'preview'        - live, in-progress feedback (drag / rubber-band); nothing
  *                      has committed yet, and nothing can be vetoed at this stage.
@@ -22,6 +22,8 @@
  *                      last result asked for recheckOnFinish, so it's checked now.
  *   'edit-start'     - an existing feature was just loaded into an edit session;
  *                      nothing has changed yet, this is the baseline check.
+ *   'edit-finish'    - Done was pressed on an edit whose last result asked for
+ *                      recheckOnFinish, so it's checked now.
  *   'recheck'        - the unchanged shape is checked again (recheckGeometry), with
  *                      any detail it was given as `event.detail`.
  *   'change'         - the shape changed: a vertex was added, moved, inserted or
@@ -57,7 +59,7 @@ export const CHANGE_PHASE = 'change'
  *   the active draw mode. Always present.
  * @property {number} [vertexIndex] - index of the vertex being placed, added,
  *   moved, inserted, or deleted. Present on 'place' and on a 'change' to a single
- *   vertex; absent on 'preview', 'create', 'edit-start', 'recheck' and a
+ *   vertex; absent on 'preview', 'create', 'edit-start', 'edit-finish', 'recheck' and a
  *   setGeometry 'change' (those have no single vertex to point at).
  * @property {number} [numVertices] - count of already-committed vertices,
  *   excluding any in-progress rubber-band cursor point. Present on every

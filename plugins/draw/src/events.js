@@ -26,8 +26,9 @@ const pendingCreateIds = new WeakMap()
 const editFinishRevisions = new WeakMap()
 
 // A result can ask for the shape to be checked again once it's finished (recheckOnFinish),
-// e.g. when the consumer skips its own check while drawing. Ignored on that 'create' check.
-const wantsRecheckOnFinish = ({ result, context }) => !!result?.recheckOnFinish && context?.phase !== 'create'
+// e.g. when the consumer skips its own check while drawing. Ignored on that finishing check.
+const FINISH_PHASES = new Set(['create', 'edit-finish'])
+const wantsRecheckOnFinish = ({ result, context }) => !!result?.recheckOnFinish && !FINISH_PHASES.has(context?.phase)
 
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
@@ -225,16 +226,40 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
 }
 
 // Done, and finishing an edit: pressed while editing with a check pending, Done waits for
-// that check (see editFinishRevisions above) instead of finishing straight away.
+// that check (see editFinishRevisions above) instead of finishing straight away. A result
+// that asks for recheckOnFinish is checked again first, with phase 'edit-finish'.
 function createEditFinishHandlers ({ draw, dispatch }) {
   const checks = getCommitChecks(draw)
 
+  const waitFor = (revision) => {
+    editFinishRevisions.set(draw, revision)
+    dispatch({ type: 'SET_HOLDING', payload: true })
+  }
+
+  const finishEdit = (state) => {
+    if (state.status === 'pending') {
+      waitFor(state.revision)
+      return
+    }
+    if (!wantsRecheckOnFinish(state)) {
+      draw.done()
+      return
+    }
+    checks.run({ feature: state.feature, context: { phase: 'edit-finish', mode: draw.getMode() }, onGeometryChange: draw._commitValidator })
+    const next = checks.state
+    if (next.status === 'pending') {
+      waitFor(next.revision)
+    } else if (next.status === 'valid') {
+      draw.done()
+    } else {
+      dispatch({ type: 'SET_HOLDING', payload: false })
+    }
+  }
+
   return {
     handleDone: () => {
-      const { status, revision } = checks.state
-      if (isEditMode(draw.getMode()) && status === 'pending') {
-        editFinishRevisions.set(draw, revision)
-        dispatch({ type: 'SET_HOLDING', payload: true })
+      if (isEditMode(draw.getMode())) {
+        finishEdit(checks.state)
         return
       }
       draw.done()
@@ -245,7 +270,7 @@ function createEditFinishHandlers ({ draw, dispatch }) {
       if (isAwaitedCheck && state.status === 'pending') { return }
       editFinishRevisions.delete(draw)
       if (isAwaitedCheck && state.status === 'valid') {
-        draw.done()
+        finishEdit(state)
         return
       }
       dispatch({ type: 'SET_HOLDING', payload: false })

@@ -166,7 +166,7 @@ Both return the same result:
 |---|---|---|
 | `reason` | `string` | Why the shape is invalid. Shown as a hint toast and sent with [`draw:geometryinvalid`](#drawgeometryinvalid) |
 | `announcement` | `string` | Announced to screen readers instead of draw's own message, whether the result is valid or not. When set, `reason` isn't shown as a hint toast, so you can present the issue yourself. From `onGeometryPreview`, only a rejected placement is announced |
-| `recheckOnFinish` | `boolean` | `onGeometryChange` only. When the shape is finished, check it again with phase `'create'` rather than reusing this result. See [Checking once a shape is finished](#checking-once-a-shape-is-finished) |
+| `recheckOnFinish` | `boolean` | `onGeometryChange` only. When the shape is finished, check it again with phase `'create'` or `'edit-finish'` rather than reusing this result. See [Checking once a shape is finished](#checking-once-a-shape-is-finished) |
 
 Both receive the same event:
 
@@ -195,47 +195,52 @@ It runs on every frame of a drag, so keep it quick, using only the shape and dat
 
 **Signature:** `onGeometryChange(event, { signal, revision }) => boolean | { valid: boolean, reason?: string, announcement?: string, recheckOnFinish?: boolean } | undefined | Promise<…>`
 
+Called after each change to a shape. It can return a Promise, so you can check the shape with a service.
+
 | Phase | When |
 |-------|------|
-| `'change'` | The shape changed: a vertex was added, moved, inserted or removed, the shape was replaced with [`setGeometry`](#setgeometrygeometry), or a change was undone |
-| `'edit-start'` | `editFeature` opened the feature, before anything has changed |
-| `'recheck'` | [`recheckGeometry`](#recheckgeometrydetail) was called. Its `detail`, if given, is passed as `event.detail` |
-| `'create'` | A shape was finished without a passing or pending result for its final geometry, such as a new point, or its last result set [`recheckOnFinish`](#checking-once-a-shape-is-finished) |
+| `'change'` | The shape changed, including with [`setGeometry`](#setgeometrygeometry) or undo |
+| `'create'` | A new shape was finished without a passing result, such as a new point, or with [`recheckOnFinish`](#checking-once-a-shape-is-finished) |
+| `'edit-start'` | `editFeature` opened the shape |
+| `'edit-finish'` | Done was pressed on an edit, with [`recheckOnFinish`](#checking-once-a-shape-is-finished) |
+| `'recheck'` | [`recheckGeometry`](#recheckgeometrydetail) was called. Its `detail` is on `event.detail` |
 
 | Context property | Type | Description |
 |----------|------|-------------|
-| `signal` | `AbortSignal` | Aborted when a newer change is made or the session ends. Pass it to `fetch` to cancel a request that's no longer needed |
+| `signal` | `AbortSignal` | Aborted when the shape changes again or the session ends. Pass it to `fetch` to cancel the request |
 | `revision` | `number` | Increases with every check |
 
-It's only called once the built-in rules pass. When a built-in rule fails, [`draw:geometryinvalid`](#drawgeometryinvalid) is emitted instead.
-
-Only the result for the latest change counts. A result for an earlier change is ignored, whenever it arrives. A failed result disables Done and blocks the finishing gestures (double-click, <kbd>Enter</kbd> or clicking the first vertex), and so does a thrown error or rejected Promise — call `recheckGeometry()` to retry.
-
-A pending result doesn't stop a shape being finished. If a new polygon or line is finished, or a point is placed, while its check is pending, Done is disabled until the result arrives, then the shape is created, or reopened in edit mode with [`draw:reopened`](#drawreopened) if the check failed. If Done is pressed while editing with a check pending, the edit finishes once the check passes. If it fails, or the shape is changed again first, editing carries on.
-
-If a check takes longer than 300ms while Done is waiting on it, Done reads "Checking…" and has `aria-busy`. Screen readers hear "Checking shape" for any check that takes that long, then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A quicker answer settles without any of these. A result's own `announcement` is always announced.
+- It's only called once the built-in rules pass.
+- Only the result for the latest change counts.
+- A shape that fails, or whose check throws or rejects, can't be finished. Call `recheckGeometry()` to retry.
+- If the user finishes while a check is running, draw waits for it. A new shape that then fails is reopened in edit mode ([`draw:reopened`](#drawreopened)). An edit that fails stays open.
 
 ### Checking once a shape is finished
 
-By default, finishing a shape reuses the result for its final change. To make one check, such as a single service call, once the whole shape exists, return `recheckOnFinish: true` while drawing. `onGeometryChange` is then called again with phase `'create'` when the shape is finished, and that result decides whether it's created or reopened in edit mode.
+When a shape is finished, the result for its last change is used. To check the whole shape once at the end instead, such as with a single service call, return `recheckOnFinish: true` for each change. `onGeometryChange` is then called again when the shape is finished, with phase `'create'` for a new shape or `'edit-finish'` when Done is pressed on an edit.
 
-The same callback can keep a panel of measurements up to date while drawing:
+This updates a panel on every change, and calls a validation service once, when the shape is finished:
 
 ```js
 createDrawPlugin({
-  onGeometryChange: ({ feature, phase, mode }, { signal }) => {
-    panel.update(measureArea(feature))
-    if (mode.startsWith('draw_') && phase === 'change') {
+  onGeometryChange: ({ feature, phase }, { signal }) => {
+    // Update the panel without waiting for it, so finishing never waits on it.
+    // The signal cancels the request if the shape changes again.
+    contextPanel.update(feature, { signal })
+
+    // Let each change through, and check once the shape is finished
+    if (phase === 'change' || phase === 'edit-start') {
       return { valid: true, recheckOnFinish: true }
     }
-    return checkWithService(feature, { signal })
+    // 'create', 'edit-finish' and 'recheck' are checked by the service
+    return validateWithService(feature, { signal })
   }
 })
 ```
 
-An `async` function works here too. Its Promise for a change you don't check settles straight away, well inside the 300ms before anything is shown or announced.
+This works with an `async` function too, as long as the panel update isn't awaited. Otherwise draw treats the check as pending until the panel replies.
 
-Changes made after the shape reopens in edit mode are checked as usual, including [`setGeometry`](#setgeometrygeometry). Undo starts empty in a reopened session. Cancel, while the shape is reopened or waiting on its check, discards it.
+In a reopened shape, Undo starts empty, and Cancel discards the shape, as it does while the shape is waiting on its check.
 
 ### Debouncing
 

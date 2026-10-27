@@ -817,6 +817,61 @@ describe('async geometry checks', () => {
     })
   })
 
+  describe('pressing Done while editing when the last result asked for recheckOnFinish', () => {
+    const editing = (finishCheck) => {
+      const context = setup()
+      context.draw.getMode.mockReturnValue('edit_vertex')
+      context.draw._commitValidator = jest.fn(({ phase }) =>
+        phase === 'edit-finish' ? finishCheck() : { valid: true, recheckOnFinish: true })
+      commit(context.draw, square, 'change')
+      return context
+    }
+
+    test('checks the shape again with phase edit-finish, then finishes the edit if it passes', async () => {
+      const reply = deferred()
+      const { draw, dispatch, buttonConfig } = editing(() => reply.promise)
+
+      buttonConfig.drawDone.onClick()
+      expect(draw._commitValidator).toHaveBeenLastCalledWith(
+        expect.objectContaining({ phase: 'edit-finish', mode: 'edit_vertex', feature: square }), expect.anything())
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
+      expect(draw.done).not.toHaveBeenCalled()
+
+      reply.resolve({ valid: true, recheckOnFinish: true }) // not asked again on the finishing check
+      await flush()
+      expect(draw._commitValidator).toHaveBeenCalledTimes(2)
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('finishes straight away when the finishing check answers synchronously', () => {
+      const { draw, buttonConfig } = editing(() => true)
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('stays in edit mode if the finishing check fails', () => {
+      const { draw, dispatch, buttonConfig, hints } = editing(() => ({ valid: false, reason: 'overlap' }))
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_HOLDING', payload: false })
+      expect(hints.show).toHaveBeenCalledWith('overlap')
+    })
+
+    test('a pending change that asks for it is checked again once it passes', async () => {
+      const { draw, buttonConfig } = setup()
+      draw.getMode.mockReturnValue('edit_vertex')
+      const reply = deferred()
+      draw._commitValidator = jest.fn(({ phase }) => (phase === 'edit-finish' ? true : reply.promise))
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      reply.resolve({ valid: true, recheckOnFinish: true })
+      await flush()
+      expect(draw._commitValidator).toHaveBeenLastCalledWith(expect.objectContaining({ phase: 'edit-finish' }), expect.anything())
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+  })
+
   describe('finishing while the check is pending', () => {
     test('a pending check doesn\u2019t block the finishing gestures, but a failed one does', async () => {
       const { draw } = setup()
