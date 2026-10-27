@@ -108,8 +108,8 @@ const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, 
       if (this._isIgnorableClick(e)) {
         return
       }
-      // Block a finish/close gesture (clicking a placed vertex) while the shape is invalid.
-      if (this.map._drawGeometryValid === false && e.featureTarget?.properties?.meta === 'vertex') {
+      // Block a finish/close gesture (clicking a placed vertex) while the shape can't be finished.
+      if (this.map._drawCanFinish === false && e.featureTarget?.properties?.meta === 'vertex') {
         return
       }
       const snap = getSnapInstance(this.map)
@@ -147,9 +147,9 @@ const createClickActions = ({ ParentMode, getFeature, getCoords, validateClick, 
 
       if (!validateClick(feature)) {
         // For lines: clicking same spot (like double-click) should finish the line — but
-        // only when the geometry is valid, so an invalid line can't be completed.
+        // only when it can be finished, so a line whose check failed can't be completed.
         // isValidLineClick only returns false with 2+ coords, so coords.length is always > 1 here.
-        if (finishOnInvalidClick && this.map._drawGeometryValid !== false) {
+        if (finishOnInvalidClick && this.map._drawCanFinish !== false) {
           coords.pop()
           this.map.fire('draw.create', { features: [feature.toGeoJSON()] })
           this.changeMode('simple_select', { featureIds: [feature.id] })

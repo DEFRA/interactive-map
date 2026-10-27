@@ -160,12 +160,13 @@ Both return the same result:
 |---|---|
 | `true` / `undefined` | Valid |
 | `false` | Invalid, no reason shown |
-| `{ valid, reason, announcement }` | Valid or invalid, with these optional fields |
+| `{ valid, reason, announcement, recheckOnFinish }` | Valid or invalid, with these optional fields |
 
 | Result field | Type | Description |
 |---|---|---|
 | `reason` | `string` | Why the shape is invalid. Shown as a hint toast and sent with [`draw:geometryinvalid`](#drawgeometryinvalid) |
 | `announcement` | `string` | Announced to screen readers instead of draw's own message, whether the result is valid or not. When set, `reason` isn't shown as a hint toast, so you can present the issue yourself. From `onGeometryPreview`, only a rejected placement is announced |
+| `recheckOnFinish` | `boolean` | `onGeometryChange` only. When the shape is finished, check it again with phase `'create'` rather than reusing this result. See [Checking once a shape is finished](#checking-once-a-shape-is-finished) |
 
 Both receive the same event:
 
@@ -192,14 +193,14 @@ It runs on every frame of a drag, so keep it quick, using only the shape and dat
 
 ### `onGeometryChange(event, context)`
 
-**Signature:** `onGeometryChange(event, { signal, revision }) => boolean | { valid: boolean, reason?: string, announcement?: string } | undefined | Promise<…>`
+**Signature:** `onGeometryChange(event, { signal, revision }) => boolean | { valid: boolean, reason?: string, announcement?: string, recheckOnFinish?: boolean } | undefined | Promise<…>`
 
 | Phase | When |
 |-------|------|
 | `'change'` | The shape changed: a vertex was added, moved, inserted or removed, the shape was replaced with [`setGeometry`](#setgeometrygeometry), or a change was undone |
 | `'edit-start'` | `editFeature` opened the feature, before anything has changed |
 | `'recheck'` | [`recheckGeometry`](#recheckgeometrydetail) was called. Its `detail`, if given, is passed as `event.detail` |
-| `'create'` | A shape was finished without a result for its final geometry, such as a new point |
+| `'create'` | A shape was finished without a passing or pending result for its final geometry, such as a new point, or its last result set [`recheckOnFinish`](#checking-once-a-shape-is-finished) |
 
 | Context property | Type | Description |
 |----------|------|-------------|
@@ -208,9 +209,35 @@ It runs on every frame of a drag, so keep it quick, using only the shape and dat
 
 It's only called once the built-in rules pass. When a built-in rule fails, [`draw:geometryinvalid`](#drawgeometryinvalid) is emitted instead.
 
-The Done button is enabled only when the result for the latest change is valid. A result for an earlier change is ignored, whenever it arrives. While a returned Promise is pending, Done is disabled. If it takes longer than 300ms, Done also reads "Checking…" and has `aria-busy`, and screen readers hear "Checking shape", then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A quicker answer settles without any of these. A result's own `announcement` is always announced. A thrown error or rejected Promise also keeps Done disabled — call `recheckGeometry()` to retry.
+Only the result for the latest change counts. A result for an earlier change is ignored, whenever it arrives. A failed result disables Done and blocks the finishing gestures (double-click, <kbd>Enter</kbd> or clicking the first vertex), and so does a thrown error or rejected Promise — call `recheckGeometry()` to retry.
 
-A shape finished with a gesture (double-click, <kbd>Enter</kbd> or clicking the first vertex) only completes when the latest result is valid. Otherwise it reopens in edit mode, where Done waits for the result. This includes a new point whose check fails or is still pending.
+While a new shape is being drawn, a pending result doesn't stop it being finished. If a polygon or line is finished, or a point is placed, while its check is pending, Done is disabled until the result arrives, then the shape is created, or reopened in edit mode with [`draw:reopened`](#drawreopened) if the check failed. While editing, Done is disabled until a pending check settles.
+
+If a check takes longer than 300ms while Done is waiting on it, Done reads "Checking…" and has `aria-busy`. Screen readers hear "Checking shape" for any check that takes that long, then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A quicker answer settles without any of these. A result's own `announcement` is always announced.
+
+### Checking once a shape is finished
+
+By default, finishing a shape reuses the result for its final change. To make one check, such as a single service call, once the whole shape exists, return `recheckOnFinish: true` while drawing. `onGeometryChange` is then called again with phase `'create'` when the shape is finished, and that result decides whether it's created or reopened in edit mode.
+
+The same callback can keep a panel of measurements up to date while drawing:
+
+```js
+createDrawPlugin({
+  onGeometryChange: ({ feature, phase, mode }, { signal }) => {
+    panel.update(measureArea(feature))
+    if (mode.startsWith('draw_') && phase === 'change') {
+      return { valid: true, recheckOnFinish: true }
+    }
+    return checkWithService(feature, { signal })
+  }
+})
+```
+
+An `async` function works here too. Its Promise for a change you don't check settles straight away, well inside the 300ms before anything is shown or announced.
+
+Changes made after the shape reopens in edit mode are checked as usual, including [`setGeometry`](#setgeometrygeometry). Undo starts empty in a reopened session. Cancel, while the shape is reopened or waiting on its check, discards it.
+
+### Debouncing
 
 Debouncing and timeouts are up to you. Waiting on `signal` gives a debounce that cancels itself when the shape changes again:
 
@@ -591,9 +618,17 @@ Emitted when an existing feature finishes an edit session (via `editFeature`).
 
 ---
 
+### `draw:reopened`
+
+Emitted when a new shape is finished, its `onGeometryChange` check fails, and it reopens in edit mode. See [Validation](#validation).
+
+**Payload:** `{ feature, status: 'invalid' | 'error', reason }` — `reason` is `null` unless an invalid result gave one
+
+---
+
 ### `draw:cancelled`
 
-Emitted when the Cancel button is pressed during a draw or edit session.
+Emitted when the Cancel button is pressed during a draw or edit session. Cancelling a new shape that's waiting on its check, or has reopened in edit mode, removes it from the map. Also emitted when a new session starts while a finished shape is still waiting on its check, which discards it.
 
 **Payload:** the feature being drawn/edited at the time of cancellation
 

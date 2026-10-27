@@ -86,9 +86,9 @@ export class OLDrawAdapter {
   insertVertexAtMidpoint (index) { this._manager.insertVertexAtMidpoint(index) }
   setGeometry (geometry) { this._manager.setGeometry(geometry) }
 
-  // Record the current geometry validity so the draw mode can block finish gestures
-  // (double-click / click-to-close) while the in-progress shape is invalid.
-  setGeometryValid (valid) { this._manager._geometryValid = valid }
+  // Record whether the in-progress shape can be finished, so the draw mode can block finish
+  // gestures (double-click / click-to-close) while its latest check has failed.
+  setCanFinish (canFinish) { this._manager._canFinish = canFinish }
 
   // The api entry points assign the session's onGeometryPreview callback to the adapter
   // (see validation/commitChecks.js's startCheckSession); store it on the manager so the

@@ -10,14 +10,13 @@ export const newPoint = ({ appState, appConfig, pluginConfig, pluginState, mapSt
     return
   }
 
+  const { properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
+  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig, eventBus)
   eventBus.emit('draw:started', { mode: 'draw_point', featureId })
 
   const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
-
-  const { properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
-  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig)
 
   const symbolStyle = {}
   SYMBOL_KEYS.forEach((key) => {

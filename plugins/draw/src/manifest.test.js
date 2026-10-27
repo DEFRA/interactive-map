@@ -102,6 +102,38 @@ describe('drawDone', () => {
     expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: false } })).toBe('Done')
     expect(btn().label({ pluginState: { validationStatus: 'valid', checkSlow: false } })).toBe('Done')
   })
+
+  describe('while drawing', () => {
+    const drawing = { mode: 'draw_polygon', previewValid: true }
+
+    test('stays enabled while a check is pending, reading "Done", so the shape can be finished', () => {
+      const pluginState = { ...drawing, validationStatus: 'pending', checkSlow: true }
+      expect(btn().enableWhen({ pluginState })).toBe(true)
+      expect(btn().label({ pluginState })).toBe('Done')
+      expect(btn().busyWhen({ pluginState })).toBe(false)
+    })
+
+    test('is disabled once the shape is held, reading "Checking…" once the check is slow', () => {
+      const held = { ...drawing, validationStatus: 'pending', holding: true }
+      expect(btn().enableWhen({ pluginState: held })).toBe(false)
+      expect(btn().label({ pluginState: { ...held, checkSlow: false } })).toBe('Done')
+      expect(btn().label({ pluginState: { ...held, checkSlow: true } })).toBe('Checking…')
+      expect(btn().busyWhen({ pluginState: { ...held, checkSlow: true } })).toBe(true)
+    })
+
+    test('shows while a new point is held, disabled and reading "Checking…" once the check is slow', () => {
+      const pluginState = { mode: 'draw_point', validationStatus: 'pending', holding: true, checkSlow: true, previewValid: true }
+      expect(btn().hiddenWhen({ pluginState })).toBe(false)
+      expect(btn().enableWhen({ pluginState })).toBe(false)
+      expect(btn().label({ pluginState })).toBe('Checking…')
+      expect(btn().hiddenWhen({ pluginState: { ...pluginState, holding: false } })).toBe(true)
+    })
+
+    test('stays disabled while a check has failed', () => {
+      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'invalid' } })).toBe(false)
+      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'error' } })).toBe(false)
+    })
+  })
 })
 
 describe('top row buttons', () => {

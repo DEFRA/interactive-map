@@ -17,8 +17,9 @@
  *                      synchronously; a PLACE_RULES failure vetoes it outright
  *                      and it never appears. Never fires continuously — that's
  *                      'preview''s job (see above).
- *   'create'         - a whole new feature finished without a result for its
- *                      final geometry (e.g. a new point), so it's checked now.
+ *   'create'         - a whole new feature finished without a passing or pending
+ *                      result for its final geometry (e.g. a new point), or its
+ *                      last result asked for recheckOnFinish, so it's checked now.
  *   'edit-start'     - an existing feature was just loaded into an edit session;
  *                      nothing has changed yet, this is the baseline check.
  *   'recheck'        - the unchanged shape is checked again (recheckGeometry), with
@@ -79,6 +80,8 @@ export const CHANGE_PHASE = 'change'
  * @property {string} [reason] - shown as a hint toast and sent with draw:geometryinvalid
  * @property {string} [announcement] - announced to screen readers in place of draw's own
  *   message; the reason then isn't shown as a hint, as the consumer presents it
+ * @property {boolean} [recheckOnFinish] - `onGeometryChange` only: don't reuse this
+ *   result when the shape is finished, check it again with phase 'create'
  */
 
 /**

@@ -27,6 +27,10 @@ const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 // Undo, Snap and Delete point sit together in the middle of the top row
 const TOOLBAR_SLOT = 'top-middle'
 
+// Done waits on a slow check (SLOW_CHECK_MS) while editing, or once a drawn shape is held.
+// A check on a shape still being drawn doesn't hold up Done, so it reads "Done".
+const isWaitingOnCheck = ({ mode, checkSlow, holding }) => checkSlow && (holding || !isShapeDrawMode(mode))
+
 const createButtonSlots = (showLabel, slot = 'actions') => ({
   mobile: { slot, showLabel },
   tablet: { slot, showLabel },
@@ -69,17 +73,19 @@ export const manifest = {
     },
     {
       id: 'drawDone',
-      // Disabled as soon as a check is pending, but only reads "Checking…" once it's slow
-      label: ({ pluginState }) => (pluginState.checkSlow ? 'Checking…' : 'Done'),
-      busyWhen: ({ pluginState }) => pluginState.checkSlow,
+      label: ({ pluginState }) => (isWaitingOnCheck(pluginState) ? 'Checking…' : 'Done'),
+      busyWhen: ({ pluginState }) => isWaitingOnCheck(pluginState),
       variant: 'primary',
       exclusiveSlot: true,
-      hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode),
+      // Also shown while a new point waits on its check, to read "Checking…"
+      hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode) && !pluginState.holding,
       enableWhen: ({ pluginState }) => {
-        const { mode, validationStatus, previewValid } = pluginState
+        const { mode, validationStatus, previewValid, holding } = pluginState
         // validationStatus is the latest commit-level check (built-in rules + onGeometryChange);
-        // previewValid is the live check of a shape being edited.
-        return isCheckedMode(mode) && validationStatus === 'valid' && previewValid
+        // previewValid is the live check of a shape being edited. A shape being drawn can be
+        // finished while its check is pending: it's held until the check settles.
+        const canFinish = validationStatus === 'valid' || (validationStatus === 'pending' && isShapeDrawMode(mode))
+        return isCheckedMode(mode) && canFinish && previewValid && !holding
       },
       ...createButtonSlots(true)
     },

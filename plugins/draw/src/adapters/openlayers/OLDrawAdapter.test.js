@@ -236,10 +236,10 @@ describe('setStyle()', () => {
   })
 })
 
-test('setGeometryValid records validity on the manager for finish gating', () => {
+test('setCanFinish records validity on the manager for finish gating', () => {
   const { adapter, manager } = setup()
-  adapter.setGeometryValid(false)
-  expect(manager._geometryValid).toBe(false)
+  adapter.setCanFinish(false)
+  expect(manager._canFinish).toBe(false)
 })
 
 test('_previewValidator accessor stores and retrieves the preview callback on the manager', () => {

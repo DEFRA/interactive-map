@@ -1,22 +1,23 @@
 import { COMMIT_RULES, PLACE_RULES, PREVIEW_RULES, MIN_VERTICES } from './rules.js'
 
 /**
- * Normalise a rule / callback result into `{ valid, reason, announcement? }`.
+ * Normalise a rule / callback result into `{ valid, reason, announcement?, recheckOnFinish? }`.
  *
  * Supports three return shapes so a user `onGeometryPreview`/`onGeometryChange` callback can stay
  * terse:
  *   - `true`  / `undefined`  → valid
  *   - `false`                → invalid (no reason)
- *   - `{ valid, reason, announcement }` → passed through
+ *   - `{ valid, reason, announcement, recheckOnFinish }` → passed through
  */
 export const normaliseResult = (result) => {
   if (result === undefined || result === true) { return { valid: true } }
   if (result === false) { return { valid: false, reason: null } }
-  const { valid, reason, announcement } = result
+  const { valid, reason, announcement, recheckOnFinish } = result
   return {
     valid: valid !== false,
     reason,
-    ...(announcement && { announcement })
+    ...(announcement && { announcement }),
+    ...(recheckOnFinish && { recheckOnFinish: true })
   }
 }
 

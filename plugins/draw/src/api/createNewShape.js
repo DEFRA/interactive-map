@@ -13,14 +13,14 @@ export const createNewShape = (mode) => ({ appState, appConfig, pluginConfig, pl
     return
   }
 
+  const { stroke, fill, strokeWidth, properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
+  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig, eventBus)
   eventBus.emit('draw:started', { mode, featureId })
 
   const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
-  const { stroke, fill, strokeWidth, properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
-  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig)
   const properties = {
     ...customProperties,
     ...flattenStyleProperties({ stroke, fill, strokeWidth })
