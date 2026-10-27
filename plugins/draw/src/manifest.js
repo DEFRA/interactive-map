@@ -27,9 +27,9 @@ const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 // Undo, Snap and Delete point sit together in the middle of the top row
 const TOOLBAR_SLOT = 'top-middle'
 
-// Done waits on a slow check (SLOW_CHECK_MS) while editing, or once a drawn shape is held.
-// A check on a shape still being drawn doesn't hold up Done, so it reads "Done".
-const isWaitingOnCheck = ({ mode, checkSlow, holding }) => checkSlow && (holding || !isShapeDrawMode(mode))
+// Done reads "Checking…" only once it's been pressed and is waiting on a slow check
+// (SLOW_CHECK_MS). A pending check before then doesn't hold Done up, so it reads "Done".
+const isWaitingOnCheck = ({ checkSlow, holding }) => !!(checkSlow && holding)
 
 const createButtonSlots = (showLabel, slot = 'actions') => ({
   mobile: { slot, showLabel },
@@ -82,9 +82,9 @@ export const manifest = {
       enableWhen: ({ pluginState }) => {
         const { mode, validationStatus, previewValid, holding } = pluginState
         // validationStatus is the latest commit-level check (built-in rules + onGeometryChange);
-        // previewValid is the live check of a shape being edited. A shape being drawn can be
-        // finished while its check is pending: it's held until the check settles.
-        const canFinish = validationStatus === 'valid' || (validationStatus === 'pending' && isShapeDrawMode(mode))
+        // previewValid is the live check of a shape being edited. Done can be pressed while a
+        // check is pending: finishing then waits for it (holding) until it settles.
+        const canFinish = validationStatus === 'valid' || validationStatus === 'pending'
         return isCheckedMode(mode) && canFinish && previewValid && !holding
       },
       ...createButtonSlots(true)
@@ -121,7 +121,7 @@ export const manifest = {
       label: 'Delete point',
       iconId: 'trash',
       enableWhen: ({ pluginState }) => {
-        if (pluginState.selectedVertexIndex < 0) { return false }
+        if (pluginState.holding || pluginState.selectedVertexIndex < 0) { return false }
         const isPolygon = pluginState.feature?.geometry?.type === 'Polygon'
         return isPolygon ? pluginState.numVertices > 3 : pluginState.numVertices > 2 // NOSONAR
       },

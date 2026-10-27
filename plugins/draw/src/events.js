@@ -20,6 +20,11 @@ const CREATED_EVENT = 'draw:created'
 // createHandlers, which is rebuilt on every plugin state change.
 const pendingCreateIds = new WeakMap()
 
+// While editing, Done pressed during a pending check waits for that check (by revision): the
+// edit finishes if it passes, and stays open if it fails or the shape changes again. Kept
+// apart from a held new shape, which a new session discards — an edited feature must stay.
+const editFinishRevisions = new WeakMap()
+
 // A result can ask for the shape to be checked again once it's finished (recheckOnFinish),
 // e.g. when the consumer skips its own check while drawing. Ignored on that 'create' check.
 const wantsRecheckOnFinish = ({ result, context }) => !!result?.recheckOnFinish && context?.phase !== 'create'
@@ -226,7 +231,26 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
   const checks = getCommitChecks(draw)
 
   return {
-    handleDone: () => { draw.done() },
+    handleDone: () => {
+      const { status, revision } = checks.state
+      if (isEditMode(draw.getMode()) && status === 'pending') {
+        editFinishRevisions.set(draw, revision)
+        dispatch({ type: 'SET_HOLDING', payload: true })
+        return
+      }
+      draw.done()
+    },
+    onEditCheckSettled: (state) => {
+      if (!editFinishRevisions.has(draw)) { return }
+      const isAwaitedCheck = editFinishRevisions.get(draw) === state.revision
+      if (isAwaitedCheck && state.status === 'pending') { return }
+      editFinishRevisions.delete(draw)
+      if (isAwaitedCheck && state.status === 'valid') {
+        draw.done()
+        return
+      }
+      dispatch({ type: 'SET_HOLDING', payload: false })
+    },
     handleCancel: () => {
       const mode = draw.getMode()
       const isEditing = isEditMode(mode) && !!tempFeature?.id
@@ -353,8 +377,10 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     // Release MapControls' D-pad back to panning the map whenever a draw/edit
     // session ends — a stale claim here would silently hijack it for good.
     mapProvider.activeMoveTarget = null
-    // Ends the check session too, so a reply still in flight is dropped.
+    // Ends the check session too, so a reply still in flight is dropped, along with any
+    // Done that was waiting on it.
     getCommitChecks(draw).reset()
+    editFinishRevisions.delete(draw)
   }
   const emitGeometryInvalid = createGeometryInvalidEmitter(eventBus, hints)
   const handlers = createHandlers({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, emitGeometryInvalid, announce, resetState })
@@ -363,6 +389,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
   checks.setOnSettle((state) => {
     applyCheckState(state)
     handlers.onCheckSettled(state)
+    handlers.onEditCheckSettled(state)
   })
   attachButtonHandlers(buttonConfig, handlers)
   attachDrawEvents(draw, handlers)

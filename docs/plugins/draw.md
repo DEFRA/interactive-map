@@ -211,7 +211,7 @@ It's only called once the built-in rules pass. When a built-in rule fails, [`dra
 
 Only the result for the latest change counts. A result for an earlier change is ignored, whenever it arrives. A failed result disables Done and blocks the finishing gestures (double-click, <kbd>Enter</kbd> or clicking the first vertex), and so does a thrown error or rejected Promise — call `recheckGeometry()` to retry.
 
-While a new shape is being drawn, a pending result doesn't stop it being finished. If a polygon or line is finished, or a point is placed, while its check is pending, Done is disabled until the result arrives, then the shape is created, or reopened in edit mode with [`draw:reopened`](#drawreopened) if the check failed. While editing, Done is disabled until a pending check settles.
+A pending result doesn't stop a shape being finished. If a new polygon or line is finished, or a point is placed, while its check is pending, Done is disabled until the result arrives, then the shape is created, or reopened in edit mode with [`draw:reopened`](#drawreopened) if the check failed. If Done is pressed while editing with a check pending, the edit finishes once the check passes. If it fails, or the shape is changed again first, editing carries on.
 
 If a check takes longer than 300ms while Done is waiting on it, Done reads "Checking…" and has `aria-busy`. Screen readers hear "Checking shape" for any check that takes that long, then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A quicker answer settles without any of these. A result's own `announcement` is always announced.
 

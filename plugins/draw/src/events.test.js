@@ -730,6 +730,93 @@ describe('async geometry checks', () => {
     expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', { id: 'new' })
   })
 
+  describe('pressing Done while editing with a check pending', () => {
+    const editing = () => {
+      const context = setup()
+      context.draw.getMode.mockReturnValue('edit_vertex')
+      return context
+    }
+
+    test('waits for the check, then finishes the edit if it passes', async () => {
+      const { draw, dispatch, buttonConfig } = editing()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, square, 'change')
+
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
+
+      // Still waiting once the check is slow, when Done reads "Checking…"
+      slow()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_CHECK_SLOW' })
+      expect(draw.done).not.toHaveBeenCalled()
+
+      reply.resolve(true)
+      await flush()
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('stays in edit mode if the check fails', async () => {
+      const { draw, dispatch, buttonConfig, hints } = editing()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      reply.resolve({ valid: false, reason: 'overlap' })
+      await flush()
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_HOLDING', payload: false })
+      expect(hints.show).toHaveBeenCalledWith('overlap')
+    })
+
+    test('stops waiting if the shape changes again, even when the new check passes', () => {
+      const { draw, dispatch, buttonConfig } = editing()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      draw._commitValidator = () => true
+      commit(draw, otherSquare, 'change')
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_HOLDING', payload: false })
+    })
+
+    test('finishes straight away when the check has already passed', () => {
+      const { draw, buttonConfig } = editing()
+      draw._commitValidator = () => true
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('ending the session while waiting drops the wait, so a later check doesn\u2019t act on it', () => {
+      const { draw, dispatch, buttonConfig } = editing()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      buttonConfig.drawCancel.onClick()
+
+      dispatch.mockClear()
+      draw._commitValidator = () => true
+      commit(draw, otherSquare, 'change')
+      expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: false })
+      expect(draw.done).not.toHaveBeenCalled()
+    })
+
+    test('cancelling while waiting keeps the edited feature', () => {
+      const { draw, buttonConfig } = editing()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      buttonConfig.drawCancel.onClick()
+      expect(draw.delete).not.toHaveBeenCalled()
+      expect(draw.add).toHaveBeenCalledWith({ id: 'F' })
+    })
+  })
+
   describe('finishing while the check is pending', () => {
     test('a pending check doesn\u2019t block the finishing gestures, but a failed one does', async () => {
       const { draw } = setup()
