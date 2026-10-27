@@ -3,7 +3,7 @@ import { isActiveFeature } from '../../../../../../../node_modules/@mapbox/mapbo
 import {
   getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState, setAutoSnapSuspended
 } from '../../utils/snapHelpers.js'
-import { validatePlacement } from '../../../../validation/validateGeometry.js'
+import { validatePlacement, toPlacementBlocked } from '../../../../validation/validateGeometry.js'
 
 const MODE = 'edit_point'
 
@@ -13,15 +13,12 @@ const MODE = 'edit_point'
 // Point candidate is built and validated directly instead.
 const canPlaceAt = (map, coord) => {
   const candidate = { type: 'Feature', geometry: { type: 'Point', coordinates: coord }, properties: {} }
-  const { valid, reason } = validatePlacement(
-    candidate,
-    { mode: MODE, vertexIndex: 0 },
-    { onGeometryPreview: map._drawPreviewValidator }
-  )
-  if (!valid) {
-    map.fire('draw.placementblocked', { feature: candidate, reason: reason ?? null, phase: 'place', mode: MODE, vertexIndex: 0 })
+  const context = { mode: MODE, vertexIndex: 0 }
+  const result = validatePlacement(candidate, context, { onGeometryPreview: map._drawPreviewValidator })
+  if (!result.valid) {
+    map.fire('draw.placementblocked', toPlacementBlocked(candidate, result, context))
   }
-  return valid
+  return result.valid
 }
 
 /**

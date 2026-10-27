@@ -1,4 +1,4 @@
-import { createCommitChecks, getCommitChecks, isSameGeometry, startCheckSession } from './commitChecks.js'
+import { createCommitChecks, getCommitChecks, isSameGeometry, startCheckSession, SLOW_CHECK_MS } from './commitChecks.js'
 
 const square = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] } }
 const context = { phase: 'change', mode: 'draw_polygon', vertexIndex: 3 }
@@ -27,25 +27,55 @@ describe('createCommitChecks', () => {
   test('normalises a synchronous result', () => {
     const checks = createCommitChecks()
     checks.run({ feature: square, context, onGeometryChange: () => ({ valid: false, reason: 'too big' }) })
-    expect(checks.state).toEqual(expect.objectContaining({ status: 'invalid', result: { valid: false, reason: 'too big' } }))
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'invalid', result: { valid: false, reason: 'too big', source: 'callback' } }))
   })
 
-  test('goes pending for a Promise, then settles with its result', async () => {
+  test('goes pending for a Promise, turns slow, then settles with its result', async () => {
+    jest.useFakeTimers()
     const checks = createCommitChecks()
     const sink = jest.fn()
     checks.setSink(sink)
     let resolve
     checks.run({ feature: square, context, onGeometryChange: () => new Promise((_resolve) => { resolve = _resolve }) })
-    expect(checks.state.status).toBe('pending')
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'pending', slow: false }))
+
+    jest.advanceTimersByTime(SLOW_CHECK_MS)
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'pending', slow: true }))
 
     resolve(false)
     await flush()
     expect(checks.state).toEqual(expect.objectContaining({ status: 'invalid', afterPending: true }))
-    expect(sink.mock.calls.map(([state]) => state.status)).toEqual(['pending', 'invalid'])
+    expect(sink.mock.calls.map(([state]) => [state.status, state.slow])).toEqual([['pending', false], ['pending', true], ['invalid', false]])
 
     // The next check settles straight away, so it doesn't follow a pending state
     checks.run({ feature: square, context, onGeometryChange: () => true })
     expect(checks.state.afterPending).toBe(false)
+    jest.useRealTimers()
+  })
+
+  test('a quick async reply settles without turning slow', async () => {
+    jest.useFakeTimers()
+    const checks = createCommitChecks()
+    const sink = jest.fn()
+    checks.setSink(sink)
+    checks.run({ feature: square, context, onGeometryChange: () => Promise.resolve(true) })
+    await flush()
+    jest.advanceTimersByTime(SLOW_CHECK_MS)
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'valid', afterPending: false }))
+    expect(sink.mock.calls.map(([state]) => state.status)).toEqual(['pending', 'valid'])
+    jest.useRealTimers()
+  })
+
+  test('marks a built-in rule failure and a callback error with their source', () => {
+    const checks = createCommitChecks()
+    const partDrawn = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] } }
+    checks.run({ feature: partDrawn, context })
+    expect(checks.state.result.source).toBe('rules')
+
+    jest.spyOn(console, 'warn').mockImplementation(() => {})
+    checks.run({ feature: square, context, onGeometryChange: () => { throw new Error('503') } })
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'error', result: { valid: false, reason: null, source: 'callback' } }))
+    console.warn.mockRestore()
   })
 
   test('reset aborts the check in flight, drops its reply and returns to idle', async () => {

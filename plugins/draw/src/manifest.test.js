@@ -91,15 +91,16 @@ describe('drawDone', () => {
     expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'invalid', previewValid: true } })).toBe(false)
   })
 
-  test('is busy while a check is pending', () => {
-    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending' } })).toBe(true)
-    expect(btn().busyWhen({ pluginState: { validationStatus: 'valid' } })).toBe(false)
+  test('is busy once a pending check is slow', () => {
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending', checkSlow: true } })).toBe(true)
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending', checkSlow: false } })).toBe(false)
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'valid', checkSlow: false } })).toBe(false)
   })
 
-  test('reads "Checking…" while a check is pending', () => {
-    expect(btn().label({ pluginState: { validationStatus: 'pending' } })).toBe('Checking…')
-    expect(btn().label({ pluginState: { validationStatus: 'valid' } })).toBe('Done')
-    expect(btn().label({ pluginState: { validationStatus: 'invalid' } })).toBe('Done')
+  test('reads "Checking…" once a pending check is slow', () => {
+    expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: true } })).toBe('Checking…')
+    expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: false } })).toBe('Done')
+    expect(btn().label({ pluginState: { validationStatus: 'valid', checkSlow: false } })).toBe('Done')
   })
 })
 

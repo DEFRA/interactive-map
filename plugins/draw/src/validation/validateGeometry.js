@@ -1,19 +1,27 @@
 import { COMMIT_RULES, PLACE_RULES, PREVIEW_RULES, MIN_VERTICES } from './rules.js'
 
 /**
- * Normalise a rule / callback result into `{ valid, reason }`.
+ * Normalise a rule / callback result into `{ valid, reason, announcement? }`.
  *
  * Supports three return shapes so a user `onGeometryPreview`/`onGeometryChange` callback can stay
  * terse:
  *   - `true`  / `undefined`  → valid
  *   - `false`                → invalid (no reason)
- *   - `{ valid, reason }`    → passed through
+ *   - `{ valid, reason, announcement }` → passed through
  */
 export const normaliseResult = (result) => {
   if (result === undefined || result === true) { return { valid: true } }
   if (result === false) { return { valid: false, reason: null } }
-  return { valid: result.valid !== false, reason: result.reason }
+  const { valid, reason, announcement } = result
+  return {
+    valid: valid !== false,
+    reason,
+    ...(announcement && { announcement })
+  }
 }
+
+// Marks a failure with who gave it: a built-in rule ('rules') or the consumer ('callback')
+export const withSource = (result, source) => (result.valid ? result : { ...result, source })
 
 /**
  * Validate an in-progress geometry against the default rules and an optional user
@@ -28,18 +36,18 @@ export const normaliseResult = (result) => {
  *   - user callback, called as onGeometryPreview({ feature, ...context }) — a single
  *   event object, unlike the internal rules above, matching the shape of the
  *   PLACEMENT_BLOCKED adapter event
- * @returns {{ valid: boolean, reason?: string }}
+ * @returns {{ valid: boolean, reason?: string, source?: 'rules'|'callback', announcement?: string }}
  */
 export const validateGeometry = (feature, context = {}, config = {}) => {
   const { rules = COMMIT_RULES, onGeometryPreview } = config
 
   for (const rule of rules) {
     const result = normaliseResult(rule(feature, context))
-    if (!result.valid) { return result }
+    if (!result.valid) { return withSource(result, 'rules') }
   }
 
   if (typeof onGeometryPreview === 'function') {
-    return normaliseResult(onGeometryPreview({ feature, ...context }))
+    return withSource(normaliseResult(onGeometryPreview({ feature, ...context })), 'callback')
   }
 
   return { valid: true }
@@ -65,6 +73,23 @@ export const validatePlacement = (feature, context = {}, config = {}) => {
 export const MODE_BY_GEOMETRY = { Polygon: 'draw_polygon', LineString: 'draw_line' }
 
 /**
+ * The PLACEMENT_BLOCKED payload for a vetoed placement.
+ *
+ * @param {object} feature - candidate GeoJSON feature
+ * @param {{ reason?: string, source?: string, announcement?: string }} result - the failed validatePlacement result
+ * @param {{ mode: string, vertexIndex: number }} context
+ */
+export const toPlacementBlocked = (feature, { reason, source, announcement }, { mode, vertexIndex }) => ({
+  feature,
+  reason: reason ?? null,
+  source,
+  ...(announcement && { announcement }),
+  phase: 'place',
+  mode,
+  vertexIndex
+})
+
+/**
  * Attempt to place a vertex — shared by both adapters. Builds the candidate
  * geometry, validates it, and on a veto returns the PLACEMENT_BLOCKED payload
  * for the caller to emit.
@@ -83,9 +108,10 @@ export const attemptPlacement = ({ placed, point, geometryType, onGeometryPrevie
     : { type: 'LineString', coordinates: candidate }
   const feature = { type: 'Feature', geometry, properties: {} }
   const mode = MODE_BY_GEOMETRY[geometryType]
-  const { valid, reason } = validatePlacement(feature, { mode, vertexIndex: placed.length }, { onGeometryPreview })
-  if (valid) { return { valid: true } }
-  return { valid: false, blocked: { feature, reason: reason ?? null, phase: 'place', mode, vertexIndex: placed.length } }
+  const vertexIndex = placed.length
+  const result = validatePlacement(feature, { mode, vertexIndex }, { onGeometryPreview })
+  if (result.valid) { return { valid: true } }
+  return { valid: false, blocked: toPlacementBlocked(feature, result, { mode, vertexIndex }) }
 }
 
 /**

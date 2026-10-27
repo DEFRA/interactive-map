@@ -30,9 +30,10 @@ const isIncompleteShape = (reason) => Object.values(MIN_VERTICES_REASONS).includ
 // alongside the existing public event, so the reason is visible without every
 // consumer having to wire up their own listener for it. The public event still
 // fires either way — only the hint is skipped for an incomplete shape.
-const createGeometryInvalidEmitter = (eventBus, hints) => (payload) => {
+// A result with its own `announcement` is presented by the consumer, so it gets no hint.
+const createGeometryInvalidEmitter = (eventBus, hints) => ({ announcement, ...payload }) => {
   eventBus.emit(GEOMETRY_INVALID_EVENT, payload)
-  if (payload.reason && !isIncompleteShape(payload.reason)) { hints.show(payload.reason) }
+  if (!announcement && payload.reason && !isIncompleteShape(payload.reason)) { hints.show(payload.reason) }
 }
 
 // Claims MapControls' D-pad for the currently selected vertex — see the generic
@@ -82,8 +83,9 @@ const enterEditMode = ({ draw, appState, appConfig, mapState, dispatch }, featur
   draw.setInvalid?.(status === 'invalid')
 }
 
-// Screen reader messages for an async check. A check that settles straight away says
-// nothing new — Done enabling, or the hint for a failure, is enough.
+// Screen reader messages for a slow check (see SLOW_CHECK_MS). A check that settles quickly
+// says nothing new — Done enabling, or the hint for a failure, is enough. A result's own
+// `announcement` replaces these, however quickly it settles.
 const CHECK_MESSAGES = {
   pending: 'Checking shape',
   valid: 'Shape check passed',
@@ -93,9 +95,11 @@ const CHECK_MESSAGES = {
 
 // Announced as an 'action' so a run of quick changes collapses to the latest message,
 // and so the failure hint's own ambient announcement yields rather than repeating it.
-const announceCheck = (announce, { status, result, afterPending }) => {
-  if (status === 'pending') {
-    announce?.(CHECK_MESSAGES.pending, 'action')
+const announceCheck = (announce, { status, result, slow, afterPending }) => {
+  if (result?.announcement) {
+    announce?.(result.announcement, 'action')
+  } else if (status === 'pending') {
+    if (slow) { announce?.(CHECK_MESSAGES.pending, 'action') }
   } else if (afterPending) {
     announce?.((status === 'invalid' && result.reason) || CHECK_MESSAGES[status], 'action')
   } else {
@@ -108,7 +112,8 @@ const announceCheck = (announce, { status, result, afterPending }) => {
 const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce }) => (state) => {
   const { status, result, context, feature } = state
   const valid = status === 'valid'
-  dispatch({ type: 'SET_VALIDATION_STATUS', payload: status })
+  // A slow check is the same pending check, now shown as "Checking…"
+  dispatch(state.slow ? { type: 'SET_CHECK_SLOW' } : { type: 'SET_VALIDATION_STATUS', payload: status })
   announceCheck(announce, state)
   // Also blocks the adapters' finish gestures (double-click, clicking the first vertex)
   // while the check is pending or failing.
@@ -121,11 +126,12 @@ const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce
   }
   // edit-start is the baseline check on opening a feature, not a change the user made
   if (!valid && context?.phase !== 'edit-start') {
-    emitGeometryInvalid({ reason: result.reason, ...context, feature: stripInternalProperties(feature) })
+    const { reason, source, announcement } = result
+    emitGeometryInvalid({ reason, source, announcement, ...context, feature: stripInternalProperties(feature) })
   }
 }
 
-function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, emitGeometryInvalid, resetState }) {
+function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, emitGeometryInvalid, announce, resetState }) {
   const { draw } = mapProvider
   const { feature, tempFeature } = pluginState
   const { dispatch } = pluginState
@@ -202,6 +208,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     // A vertex placement was rejected (placement rule or user callback veto). Surface it
     // on the public bus with phase 'place', and as a hint toast, so the reason is visible.
     onPlacementBlocked: (e) => {
+      if (e.announcement) { announce?.(e.announcement, 'action') }
       emitGeometryInvalid({ ...e, feature: stripInternalProperties(e.feature) })
     },
     // Live (mid-drag) validity flip while editing — the displayed shape is exactly
@@ -283,7 +290,7 @@ export function attachEvents ({ appState, appConfig, mapState, pluginState, mapP
     getCommitChecks(draw).reset()
   }
   const emitGeometryInvalid = createGeometryInvalidEmitter(eventBus, hints)
-  const handlers = createHandlers({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, emitGeometryInvalid, resetState })
+  const handlers = createHandlers({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, emitGeometryInvalid, announce, resetState })
   const checks = getCommitChecks(draw)
   checks.setSink(createCheckStateHandler({ draw, dispatch: pluginState.dispatch, emitGeometryInvalid, announce }))
   attachButtonHandlers(buttonConfig, handlers)
