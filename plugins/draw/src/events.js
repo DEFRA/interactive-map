@@ -224,10 +224,9 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
   }
 }
 
-function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, emitGeometryInvalid, announce, resetState }) {
-  const { draw } = mapProvider
-  const { feature, tempFeature } = pluginState
-  const { dispatch } = pluginState
+// Done, and finishing an edit: pressed while editing with a check pending, Done waits for
+// that check (see editFinishRevisions above) instead of finishing straight away.
+function createEditFinishHandlers ({ draw, dispatch }) {
   const checks = getCommitChecks(draw)
 
   return {
@@ -250,7 +249,18 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
         return
       }
       dispatch({ type: 'SET_HOLDING', payload: false })
-    },
+    }
+  }
+}
+
+function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvider, eventBus, emitGeometryInvalid, announce, resetState }) {
+  const { draw } = mapProvider
+  const { feature, tempFeature } = pluginState
+  const { dispatch } = pluginState
+  const checks = getCommitChecks(draw)
+
+  return {
+    ...createEditFinishHandlers({ draw, dispatch }),
     handleCancel: () => {
       const mode = draw.getMode()
       const isEditing = isEditMode(mode) && !!tempFeature?.id
