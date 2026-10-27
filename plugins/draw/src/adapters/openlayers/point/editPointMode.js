@@ -98,6 +98,17 @@ const createUndoAction = ({ olFeature, undoStack, selection }) => () => {
   selection.emitGeometryValidation(0)
 }
 
+// Moves the point to the given geometry's coordinate as one undoable commit (setGeometry).
+const createSetGeometryAction = ({ olFeature, undoStack, selection, touchHandler }) => (geometry) => {
+  undoStack.push({ type: 'replace_geometry', vertexIndex: 0, previousCoord: olFeature.getGeometry().getCoordinates() })
+  movePoint(olFeature, 0, geometry.coordinates)
+  selection.syncGeom()
+  selection.emitGeometryValidation(0)
+  if (selection.getState().interfaceType === TOUCH_INTERFACE) {
+    touchHandler.updateTargetPosition()
+  }
+}
+
 const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touchHandler, doUndo }) => {
   const { getState, setState, syncGeom, emitGeometryValidation } = selection
 
@@ -250,16 +261,7 @@ export const createEditPointMode = ({ map, manager, options }) => {
     // once at construction (pointSelectionState's VERTEX_SELECTION) and held for the session.
     nudgeSelectedVertex: keyboardHandler.nudgeByDelta,
 
-    // Moves the point to the given geometry's coordinate as one undoable commit.
-    setGeometry (geometry) {
-      undoStack.push({ type: 'replace_geometry', vertexIndex: 0, previousCoord: olFeature.getGeometry().getCoordinates() })
-      movePoint(olFeature, 0, geometry.coordinates)
-      selection.syncGeom()
-      selection.emitGeometryValidation(0)
-      if (getState().interfaceType === TOUCH_INTERFACE) {
-        touchHandler.updateTargetPosition()
-      }
-    },
+    setGeometry: createSetGeometryAction({ olFeature, undoStack, selection, touchHandler }),
 
     destroy () {
       live.destroy()
