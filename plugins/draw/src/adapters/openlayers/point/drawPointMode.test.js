@@ -90,9 +90,9 @@ describe('createDrawPointMode', () => {
     expect(nonGeometryProps).toEqual({})
   })
 
-  test('condition vetoes placement via onGeometryChange', () => {
+  test('condition vetoes placement via onGeometryPreview', () => {
     const { interaction, manager, emitted } = setup()
-    manager._geometryValidator = () => ({ valid: false, reason: 'not allowed here' })
+    manager._previewValidator = () => ({ valid: false, reason: 'not allowed here' })
     const condition = interaction.condition_
     const allowed = condition({ coordinate: [1, 2], originalEvent: {} })
     expect(allowed).toBe(false)
@@ -154,7 +154,7 @@ describe('createDrawPointMode', () => {
     test('a vetoed crosshair placement never commits', () => {
       const { wireArgs, manager, emitted, interaction } = setup()
       const { append, finish } = spyOnCommit(interaction)
-      manager._geometryValidator = () => false
+      manager._previewValidator = () => false
       wireArgs.placeVertex()
       expect(append).not.toHaveBeenCalled()
       expect(finish).not.toHaveBeenCalled()

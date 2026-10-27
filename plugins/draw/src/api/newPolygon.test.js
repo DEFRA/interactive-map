@@ -36,7 +36,7 @@ describe('newPolygon', () => {
 
     newPolygon(context, 'f1', { stroke: 'red', fill: 'blue', strokeWidth: 3, properties: { name: 'x' }, extra: 'opt' })
 
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_polygon' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_polygon', featureId: 'f1' })
     expect(flattenStyleProperties).toHaveBeenCalledWith({ stroke: 'red', fill: 'blue', strokeWidth: 3 })
 
     expect(draw.changeMode).toHaveBeenCalledWith('draw_polygon', expect.objectContaining({
@@ -80,7 +80,7 @@ describe('newPolygon', () => {
     const { context, draw } = makeContext()
     const onGeometryChange = jest.fn()
     newPolygon(context, 'f1', { onGeometryChange })
-    expect(draw._geometryValidator).toBe(onGeometryChange)
+    expect(draw._commitValidator).toBe(onGeometryChange)
     expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryChange')
   })
 
@@ -88,6 +88,6 @@ describe('newPolygon', () => {
     const pluginOnGeometryChange = jest.fn()
     const { context, draw } = makeContext({ pluginConfig: { onGeometryChange: pluginOnGeometryChange } })
     newPolygon(context, 'f1')
-    expect(draw._geometryValidator).toBe(pluginOnGeometryChange)
+    expect(draw._commitValidator).toBe(pluginOnGeometryChange)
   })
 })

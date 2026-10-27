@@ -1,4 +1,4 @@
-import { noSelfIntersection, nonZeroArea, minVertices, noPathSelfIntersection, SOFT_RULES, HARD_RULES, MIN_VERTICES_REASONS } from './rules.js'
+import { noSelfIntersection, nonZeroArea, minVertices, noPathSelfIntersection, COMMIT_RULES, PLACE_RULES, MIN_VERTICES_REASONS } from './rules.js'
 
 const poly = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [coordinates] } })
 const line = (coordinates) => ({ type: 'Feature', geometry: { type: 'LineString', coordinates } })
@@ -107,14 +107,14 @@ describe('consecutive duplicate vertices (zero-length edges)', () => {
   })
 })
 
-describe('SOFT_RULES', () => {
+describe('COMMIT_RULES', () => {
   test('are the gating rules in reason-priority order', () => {
-    expect(SOFT_RULES).toEqual([noSelfIntersection, nonZeroArea, minVertices])
+    expect(COMMIT_RULES).toEqual([noSelfIntersection, nonZeroArea, minVertices])
   })
 })
 
-describe('HARD_RULES', () => {
+describe('PLACE_RULES', () => {
   test('are the placement-veto rules', () => {
-    expect(HARD_RULES).toEqual([noPathSelfIntersection])
+    expect(PLACE_RULES).toEqual([noPathSelfIntersection])
   })
 })

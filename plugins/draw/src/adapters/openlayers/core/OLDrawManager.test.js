@@ -29,7 +29,8 @@ jest.mock('../edit/EditMode.js', () => ({
     setInvalid: jest.fn(),
     getVertexItems: jest.fn(() => ({ vertices: [[0, 0]], midpoints: [] })),
     selectVertex: jest.fn(),
-    insertVertexAtMidpoint: jest.fn()
+    insertVertexAtMidpoint: jest.fn(),
+    setGeometry: jest.fn()
   }))
 }))
 jest.mock('../point/editPointMode.js', () => ({
@@ -144,7 +145,7 @@ describe('mode machine', () => {
     manager.done(); manager.undo(); manager.deleteVertex(); manager.nudgeSelectedVertex(1, 0, true); manager.setInterfaceType('touch'); manager.setInvalid(true) // no mode — no throw
     manager.setDrawingPreviewProperty('splitter', 'valid') // no mode — no throw
     expect(manager.getVertexItems()).toEqual({ vertices: [], midpoints: [] }) // no mode — safe default
-    manager.selectVertex(1); manager.insertVertexAtMidpoint(1) // no mode — no throw
+    manager.selectVertex(1); manager.insertVertexAtMidpoint(1); manager.setGeometry({}) // no mode — no throw
 
     manager.changeMode('draw_polygon')
     const instance = createDrawMode.mock.results[0].value
@@ -172,7 +173,7 @@ describe('mode machine', () => {
     expect(manager.getMode()).toBe('disabled')
   })
 
-  test('getVertexItems/selectVertex/insertVertexAtMidpoint delegate to the edit_vertex mode instance', () => {
+  test('getVertexItems/selectVertex/insertVertexAtMidpoint/setGeometry delegate to the edit_vertex mode instance', () => {
     const { manager } = setup()
     manager.changeMode('edit_vertex', { featureId: 'f1' })
     const instance = createEditMode.mock.results[0].value
@@ -180,8 +181,11 @@ describe('mode machine', () => {
     expect(manager.getVertexItems()).toEqual({ vertices: [[0, 0]], midpoints: [] })
     manager.selectVertex(2)
     manager.insertVertexAtMidpoint(3)
+    const geometry = { type: 'Polygon', coordinates: [] }
+    manager.setGeometry(geometry)
     expect(instance.selectVertex).toHaveBeenCalledWith(2)
     expect(instance.insertVertexAtMidpoint).toHaveBeenCalledWith(3)
+    expect(instance.setGeometry).toHaveBeenCalledWith(geometry)
   })
 })
 

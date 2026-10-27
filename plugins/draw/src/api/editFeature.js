@@ -1,4 +1,4 @@
-import { validateGeometry } from '../validation/validateGeometry.js'
+import { startCheckSession, getCommitChecks } from '../validation/commitChecks.js'
 
 export const editFeature = ({ appState, appConfig, mapState, pluginConfig, pluginState, mapProvider, services }, featureId, options = {}) => {
   const { dispatch } = pluginState
@@ -14,14 +14,13 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
     return false
   }
 
-  // Per-call callback overrides the plugin-level one; events.js reads this on every commit.
-  draw._geometryValidator = options.onGeometryChange ?? pluginConfig.onGeometryChange
+  startCheckSession(draw, options, pluginConfig, eventBus)
 
   // A Point has no ring of vertices to edit — edit_point relocates the single coordinate
   // instead of edit_vertex's ring-of-vertices machinery.
   const editModeMap = { LineString: 'edit_line', Polygon: 'edit_polygon', Point: 'edit_point' }
   const mode = existingFeature.geometry.type === 'Point' ? 'edit_point' : 'edit_vertex'
-  eventBus.emit('draw:editstart', { mode: editModeMap[existingFeature.geometry.type] })
+  eventBus.emit('draw:editstart', { mode: editModeMap[existingFeature.geometry.type], featureId })
 
   const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
   draw.setSnapLayers(snapLayers)
@@ -46,11 +45,10 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
 
   dispatch({ type: 'SET_MODE', payload: mode })
 
-  // Seed the Done-button gate and the stroke from the feature's starting validity
-  // so an already invalid feature opens dashed and cannot be "finished" until fixed.
-  const { valid } = validateGeometry(feature, { phase: 'edit-start', mode }, { onGeometryChange: draw._geometryValidator })
-  dispatch({ type: 'SET_GEOMETRY_VALID', payload: valid })
-  draw.setInvalid?.(!valid)
+  // Seed the Done-button gate and the stroke from the feature's starting check, so an
+  // already invalid feature opens dashed and cannot be "finished" until fixed. events.js
+  // applies the result once it settles (straight away unless onGeometryChange is async).
+  getCommitChecks(draw).run({ feature, context: { phase: 'edit-start', mode }, onGeometryChange: draw._commitValidator })
 
   return true
 }

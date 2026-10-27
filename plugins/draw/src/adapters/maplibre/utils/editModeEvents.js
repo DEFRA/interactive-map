@@ -4,7 +4,7 @@ import { getSnapInstance, clearSnapIndicator } from './snapHelpers.js'
 // Builds the `handlers` map both modes' setupEventListeners bind to bindEditModeListeners —
 // the base set of window/container/scale/move/interface-type-change handlers is identical
 // in both, bound to whichever mode instance is passed in; `extra` supplies the handlers that
-// differ per mode (nudge, plus edit_vertex's own selectionchange/update).
+// differ per mode (nudge and setgeometry, plus edit_vertex's own selectionchange/update).
 export const buildEditModeHandlers = (mode, state, extra = {}) => {
   const bind = (handler) => (event) => handler.call(mode, state, event)
   const handlers = {
@@ -48,6 +48,7 @@ export const bindEditModeListeners = (state, map, handlers) => {
   map.on('move', handlers.move)
   map.on(CUSTOM_DRAW_EVENTS.INTERFACE_TYPE_CHANGE, handlers.interfacetypechange)
   map.on(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, handlers.nudge)
+  map.on(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, handlers.setgeometry)
 }
 
 // Mirrors bindEditModeListeners, plus the dragPan re-enable both modes' onStop does right
@@ -63,6 +64,7 @@ export const unbindEditModeListeners = (state, map, handlers) => {
   map.off('move', handlers.move)
   map.off(CUSTOM_DRAW_EVENTS.INTERFACE_TYPE_CHANGE, handlers.interfacetypechange)
   map.off(CUSTOM_DRAW_EVENTS.NUDGE_VERTEX, handlers.nudge)
+  map.off(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, handlers.setgeometry)
   map.dragPan.enable()
   window.removeEventListener('click', handlers.click)
   window.removeEventListener('keydown', handlers.keydown, { capture: true })

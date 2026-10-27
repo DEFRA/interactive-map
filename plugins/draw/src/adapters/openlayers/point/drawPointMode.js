@@ -2,7 +2,7 @@ import Draw from 'ol/interaction/Draw.js'
 import { noModifierKeys } from 'ol/events/condition.js'
 import { wireInputEvents, applyCrossHairVisibility } from '../draw/drawInput.js'
 import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
-import { validatePlacement } from '../../../validation/validateGeometry.js'
+import { validatePlacement, toPlacementBlocked } from '../../../validation/validateGeometry.js'
 import { TOLERANCES } from '../defaults.js'
 
 const MODE = 'draw_point'
@@ -11,15 +11,12 @@ const MODE = 'draw_point'
 // directly rather than via validateGeometry.js's Polygon/LineString-only attemptPlacement.
 const canPlaceVertex = (manager) => (coordinate) => {
   const candidate = { type: 'Feature', geometry: { type: 'Point', coordinates: coordinate }, properties: {} }
-  const { valid, reason } = validatePlacement(
-    candidate,
-    { mode: MODE, vertexIndex: 0 },
-    { onGeometryChange: manager._geometryValidator }
-  )
-  if (!valid) {
-    manager.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, { feature: candidate, reason: reason ?? null, phase: 'place', mode: MODE, vertexIndex: 0 })
+  const context = { mode: MODE, vertexIndex: 0 }
+  const result = validatePlacement(candidate, context, { onGeometryPreview: manager._previewValidator })
+  if (!result.valid) {
+    manager.emit(ADAPTER_EVENTS.PLACEMENT_BLOCKED, toPlacementBlocked(candidate, result, context))
   }
-  return valid
+  return result.valid
 }
 
 // Commit a finished point to the store under the requested id and emit CREATE. Symbol

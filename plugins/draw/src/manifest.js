@@ -9,14 +9,14 @@ import { setStyle } from './api/setStyle.js'
 import { deleteFeature } from './api/deleteFeature.js'
 import { split } from './api/split.js'
 import { merge } from './api/merge.js'
+import { setGeometry } from './api/setGeometry.js'
+import { recheckGeometry } from './api/recheckGeometry.js'
 import { isMac } from '../../../src/utils/isMac.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
 import { needsDrawTarget } from './utils/needsDrawTarget.js'
+import { isShapeDrawMode, isCheckedMode } from './utils/drawModes.js'
 
 // edit_point behaves like edit_vertex for Done/Undo, but stays out of drawDeletePoint and mergeShapes (neither applies to a single coordinate).
-const EDIT_MODES = new Set(['edit_vertex', 'edit_point'])
-// .has(), not spread — [...aSet] can silently misbehave under a loose-mode Babel build (see OLDrawManager.js's emit()).
-const isEditMode = (mode) => EDIT_MODES.has(mode)
 
 // Show the platform-appropriate undo modifier (⌘ on macOS, Ctrl elsewhere).
 const undoCommand = isMac() ? '<kbd>Command</kbd> + <kbd>Z</kbd>' : '<kbd>Ctrl</kbd> + <kbd>Z</kbd>'
@@ -26,6 +26,10 @@ const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 
 // Undo, Snap and Delete point sit together in the middle of the top row
 const TOOLBAR_SLOT = 'top-middle'
+
+// Done reads "Checking…" only once it's been pressed and is waiting on a slow check
+// (SLOW_CHECK_MS). A pending check before then doesn't hold Done up, so it reads "Done".
+const isWaitingOnCheck = ({ checkSlow, holding }) => !!(checkSlow && holding)
 
 const createButtonSlots = (showLabel, slot = 'actions') => ({
   mobile: { slot, showLabel },
@@ -63,21 +67,26 @@ export const manifest = {
       // Shown with the crosshair, using the same needsDrawTarget rule. Not shown for keyboard (Enter places).
       hiddenWhen: ({ appState, pluginState }) => !needsDrawTarget({ appState, pluginState }),
       // Disabled while placing at the crosshair would be vetoed (validatePlacement) —
-      // driven live so the button never looks active when a tap would do nothing.
-      enableWhen: ({ pluginState }) => pluginState.canAddPoint,
+      // driven live so the button never looks active when a tap would do nothing. Also
+      // disabled, though the crosshair hides, while a finished shape waits on its check.
+      enableWhen: ({ pluginState }) => pluginState.canAddPoint && !pluginState.holding,
       ...createButtonSlots(true)
     },
     {
       id: 'drawDone',
-      label: 'Done',
+      label: ({ pluginState }) => (isWaitingOnCheck(pluginState) ? 'Checking…' : 'Done'),
+      busyWhen: ({ pluginState }) => isWaitingOnCheck(pluginState),
       variant: 'primary',
       exclusiveSlot: true,
-      hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
+      // Also shown while a new point waits on its check, to read "Checking…"
+      hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode) && !pluginState.holding,
       enableWhen: ({ pluginState }) => {
-        const { mode, geometryValid } = pluginState
-        // Min-vertices, area and self-intersection are all enforced by the validation
-        // rules via geometryValid, so the gate is simply "is the geometry valid now".
-        return (['draw_polygon', 'draw_line'].includes(mode) || isEditMode(mode)) && geometryValid
+        const { mode, validationStatus, previewValid, holding } = pluginState
+        // validationStatus is the latest commit-level check (built-in rules + onGeometryChange);
+        // previewValid is the live check of a shape being edited. Done can be pressed while a
+        // check is pending: finishing then waits for it (holding) until it settles.
+        const canFinish = validationStatus === 'valid' || validationStatus === 'pending'
+        return isCheckedMode(mode) && canFinish && previewValid && !holding
       },
       ...createButtonSlots(true)
     },
@@ -88,9 +97,12 @@ export const manifest = {
       label: 'Undo',
       iconId: 'undo',
       // Hidden for draw_point — nothing to undo before a single-click commit.
-      hiddenWhen: ({ pluginState }) => !(['draw_polygon', 'draw_line'].includes(pluginState.mode) || isEditMode(pluginState.mode)),
+      hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode),
       enableWhen: ({ pluginState }) => {
-        if (['draw_polygon', 'draw_line'].includes(pluginState.mode)) {
+        if (pluginState.holding) {
+          return false
+        }
+        if (isShapeDrawMode(pluginState.mode)) {
           return pluginState.numVertices > 0
         }
         return pluginState.undoStackLength > 0
@@ -102,6 +114,7 @@ export const manifest = {
       label: 'Snap',
       iconId: 'magnet',
       hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
+      enableWhen: ({ pluginState }) => !pluginState.holding,
       pressedWhen: ({ pluginState }) => !!pluginState.snap,
       ...createButtonSlots(true, TOOLBAR_SLOT)
     },
@@ -110,7 +123,7 @@ export const manifest = {
       label: 'Delete point',
       iconId: 'trash',
       enableWhen: ({ pluginState }) => {
-        if (pluginState.selectedVertexIndex < 0) { return false }
+        if (pluginState.holding || pluginState.selectedVertexIndex < 0) { return false }
         const isPolygon = pluginState.feature?.geometry?.type === 'Polygon'
         return isPolygon ? pluginState.numVertices > 3 : pluginState.numVertices > 2 // NOSONAR
       },
@@ -178,6 +191,8 @@ export const manifest = {
     setStyle,
     deleteFeature,
     split,
-    merge
+    merge,
+    setGeometry,
+    recheckGeometry
   }
 }

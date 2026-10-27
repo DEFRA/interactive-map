@@ -314,6 +314,21 @@ describe('crosshair', () => {
 
     expect(props.mapState.crossHair.hide).toHaveBeenCalled()
   })
+
+  test('hides the crosshair while a finished shape is held waiting on its check', async () => {
+    const { props } = makeProps({
+      appState: { interfaceType: 'touch', mode: null, layoutRefs: { viewportRef: { current: null } } },
+      pluginState: { dispatch: jest.fn(), mode: 'draw_polygon', holding: false }
+    })
+    const result = await renderInit(props)
+    expect(props.mapState.crossHair.fixAtCenter).toHaveBeenCalled()
+
+    // Holding doesn't change the mode, so the effect must re-run on holding itself
+    props.pluginState.holding = true
+    result.rerender(<DrawInit {...props} />)
+
+    expect(props.mapState.crossHair.hide).toHaveBeenCalled()
+  })
 })
 
 describe('interface type sync', () => {

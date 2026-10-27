@@ -127,6 +127,7 @@ const getControlledElement = ({ idPrefix, panelId, buttonId, hasMenu, panelRole 
  * @param {boolean} options.isDisabled - Whether the button is disabled
  * @param {boolean} options.isPressed - Whether the button is in pressed state
  * @param {boolean} options.isExpanded - Whether content controlled by button is expanded
+ * @param {boolean} [options.isBusy] - Whether the action behind the button is in progress (aria-busy)
  * @param {boolean} options.isPanelOpen - Whether the controlled panel is open
  * @param {boolean} options.isPopupOpen - Whether the popup menu is open
  * @param {Object|null} options.controlledElement - The element controlled by this button
@@ -147,6 +148,7 @@ const buildButtonProps = ({
   isDisabled,
   isPressed,
   isExpanded,
+  isBusy,
   isPanelOpen,
   isPopupOpen,
   controlledElement,
@@ -174,6 +176,7 @@ const buildButtonProps = ({
     'aria-disabled': isDisabled || undefined,
     'aria-expanded': ariaExpanded,
     'aria-pressed': typeof isPressed === 'boolean' ? isPressed : undefined,
+    'aria-busy': isBusy || undefined,
     'aria-controls': controlledElement?.id ?? ariaControls,
     'aria-haspopup': HASPOPUP_ROLES.has(controlledElement?.role) ? controlledElement.role : undefined,
     ...(href
@@ -196,6 +199,7 @@ const buildButtonProps = ({
  * @param {boolean} [props.isDisabled=false] - Whether the button is disabled
  * @param {boolean} [props.isPressed] - Whether the button is in pressed state (aria-pressed)
  * @param {boolean} [props.isExpanded] - Whether content controlled by the button is expanded
+ * @param {boolean} [props.isBusy] - Whether the action behind the button is in progress (aria-busy)
  * @param {boolean} [props.isHidden=false] - Whether to hide the button (hidden attribute, so it stays mounted)
  * @param {boolean} [props.isPanelOpen=false] - Whether the controlled panel is open
  * @param {string} [props.panelRole] - The controlled panel's own ARIA role, used for aria-haspopup
@@ -218,6 +222,7 @@ export const MapButton = ({
   isDisabled,
   isPressed,
   isExpanded,
+  isBusy,
   isHidden,
   isPanelOpen,
   panelRole,
@@ -288,6 +293,7 @@ export const MapButton = ({
     isDisabled,
     isPressed,
     isExpanded,
+    isBusy,
     isPanelOpen,
     isPopupOpen,
     controlledElement,

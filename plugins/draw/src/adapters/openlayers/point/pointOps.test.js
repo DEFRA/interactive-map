@@ -24,6 +24,12 @@ describe('applyPointUndo', () => {
     expect(feature.getGeometry().getCoordinates()).toEqual([3, 4])
   })
 
+  test('dispatches replace_geometry (a setGeometry) the same way', () => {
+    const feature = pointFeature([5, 5])
+    expect(applyPointUndo(feature, { type: 'replace_geometry', previousCoord: [1, 2] })).toBe(0)
+    expect(feature.getGeometry().getCoordinates()).toEqual([1, 2])
+  })
+
   test('returns -1 for an unknown operation type', () => {
     const feature = pointFeature([5, 5])
     expect(applyPointUndo(feature, { type: 'unknown' })).toBe(-1)

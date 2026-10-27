@@ -66,10 +66,10 @@ test('destroy restores the feature\'s pre-edit style', () => {
   expect(olFeature.getStyle()).not.toBe(selectedStyleFn)
 })
 
-test('validity flips (user callback only — a Point has no built-in HARD_RULES violation) gate the Done button', () => {
+test('validity flips (user callback only — a Point has no built-in PLACE_RULES violation) gate the Done button', () => {
   jest.useFakeTimers()
   const { manager, olFeature } = setup()
-  manager._geometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+  manager._previewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
   olFeature.getGeometry().setCoordinates([9, 9])
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VALIDITY_CHANGE,
@@ -219,7 +219,7 @@ test('nudgeSelectedVertex (MapControls D-pad) moves the point and is undoable', 
   mode.undo() // empty stack — no-op
 })
 
-test('undo re-validates with the commit-move phase', () => {
+test('undo re-validates with the change phase', () => {
   jest.useFakeTimers()
   const { manager, mode } = setup()
   mode.nudgeSelectedVertex(1, 0, true)
@@ -228,7 +228,7 @@ test('undo re-validates with the commit-move phase', () => {
   mode.undo()
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({
-    phase: 'commit-move',
+    phase: 'change',
     vertexIndex: 0,
     feature: expect.any(Object)
   }))
@@ -340,4 +340,29 @@ test('destroy removes the point drag interaction and listeners', () => {
   mode.destroy()
   expect(map.removeInteraction).toHaveBeenCalled()
   expect(map.interactions.length).toBeLessThan(interactionsBefore)
+})
+
+test('setGeometry moves the point as one undoable change', () => {
+  jest.useFakeTimers()
+  const { manager, mode, coord } = setup([5, 5])
+  manager.emit.mockClear()
+
+  mode.setGeometry({ type: 'Point', coordinates: [9, 9] })
+  expect(coord()).toEqual([9, 9])
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'change', vertexIndex: 0 }))
+
+  manager.emit.mockClear()
+  mode.undo()
+  expect(coord()).toEqual([5, 5])
+  jest.runAllTimers()
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'change' }))
+  jest.useRealTimers()
+})
+
+test('setGeometry repositions the touch target in touch mode', () => {
+  const { mode, coord } = setup([5, 5])
+  mode.setInterfaceType('touch')
+  expect(() => mode.setGeometry({ type: 'Point', coordinates: [9, 9] })).not.toThrow()
+  expect(coord()).toEqual([9, 9])
 })

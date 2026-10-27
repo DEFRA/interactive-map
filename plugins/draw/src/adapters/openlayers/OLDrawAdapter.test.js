@@ -19,6 +19,7 @@ const fakeManager = () => ({
   getVertexItems: jest.fn(() => ({ vertices: [[0, 0]], midpoints: [] })),
   selectVertex: jest.fn(),
   insertVertexAtMidpoint: jest.fn(),
+  setGeometry: jest.fn(),
   setInvalid: jest.fn(),
   setDrawingPreviewProperty: jest.fn(),
   get: jest.fn(() => 'feature'),
@@ -147,6 +148,10 @@ test('remaining calls delegate straight through; setFeatureProperty is a deliber
   adapter.insertVertexAtMidpoint(3)
   expect(manager.selectVertex).toHaveBeenCalledWith(2)
   expect(manager.insertVertexAtMidpoint).toHaveBeenCalledWith(3)
+
+  const geometry = { type: 'Polygon', coordinates: [] }
+  adapter.setGeometry(geometry)
+  expect(manager.setGeometry).toHaveBeenCalledWith(geometry)
 })
 
 // A directly-added Point skips draw_point's own icon-resolving drawend handler.
@@ -231,18 +236,18 @@ describe('setStyle()', () => {
   })
 })
 
-test('setGeometryValid records validity on the manager for finish gating', () => {
+test('setCanFinish records validity on the manager for finish gating', () => {
   const { adapter, manager } = setup()
-  adapter.setGeometryValid(false)
-  expect(manager._geometryValid).toBe(false)
+  adapter.setCanFinish(false)
+  expect(manager._canFinish).toBe(false)
 })
 
-test('_geometryValidator accessor stores and retrieves the user callback on the manager', () => {
+test('_previewValidator accessor stores and retrieves the preview callback on the manager', () => {
   const { adapter, manager } = setup()
   const validator = jest.fn(() => ({ valid: true }))
-  adapter._geometryValidator = validator
-  expect(manager._geometryValidator).toBe(validator)
-  expect(adapter._geometryValidator).toBe(validator)
+  adapter._previewValidator = validator
+  expect(manager._previewValidator).toBe(validator)
+  expect(adapter._previewValidator).toBe(validator)
 })
 
 test('setInvalid delegates to the manager to toggle the dashed stroke', () => {

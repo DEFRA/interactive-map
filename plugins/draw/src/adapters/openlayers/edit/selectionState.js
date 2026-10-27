@@ -1,13 +1,12 @@
 import { getCoords, getMidpoints } from '../utils/geometryHelpers.js'
-import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
+import { ADAPTER_EVENTS, CHANGE_PHASE } from '../../../adapterEvents.js'
 
 // Deferred commit-level geometrychange emitter (feature + change phase + vertex index)
-// consumed by the validation layer. Deferred a tick so that a rejection's revert runs
-// after the current mutation's undo bookkeeping has settled.
-const createGeometryValidationEmitter = (manager, store, olFeature) => (phase, vertexIndex) => {
-  if (!phase) { return }
+// consumed by the validation layer. Deferred a tick so it reports the shape after the
+// current mutation's undo bookkeeping has settled.
+const createGeometryValidationEmitter = (manager, store, olFeature) => (vertexIndex) => {
   setTimeout(() => {
-    manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: store.toGeoJSON(olFeature), phase, vertexIndex })
+    manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: store.toGeoJSON(olFeature), phase: CHANGE_PHASE, vertexIndex })
   }, 0)
 }
 
