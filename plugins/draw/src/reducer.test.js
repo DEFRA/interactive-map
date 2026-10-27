@@ -93,6 +93,16 @@ describe('SET_VALIDATION_STATUS', () => {
   })
 })
 
+describe('SET_HOLDING', () => {
+  test('marks a finished shape as waiting on its check', () => {
+    expect(actions.SET_HOLDING(initialState, true).holding).toBe(true)
+  })
+
+  test('is cleared by a new mode', () => {
+    expect(actions.SET_MODE({ ...initialState, holding: true }, 'edit_vertex').holding).toBe(false)
+  })
+})
+
 describe('SET_CHECK_SLOW', () => {
   test('marks the pending check as slow', () => {
     expect(actions.SET_CHECK_SLOW({ ...initialState, validationStatus: 'pending' }).checkSlow).toBe(true)

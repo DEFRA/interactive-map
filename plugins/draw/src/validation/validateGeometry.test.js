@@ -206,9 +206,9 @@ describe('normaliseResult', () => {
     expect(normaliseResult(Promise.resolve(false)).valid).toBe(true)
   })
 
-  test('keeps an announcement, and drops anything else', () => {
-    expect(normaliseResult({ valid: true, announcement: 'Area 2 hectares', other: 1 }))
-      .toEqual({ valid: true, reason: undefined, announcement: 'Area 2 hectares' })
+  test('keeps an announcement and recheckOnFinish, and drops anything else', () => {
+    expect(normaliseResult({ valid: true, announcement: 'Area 2 hectares', recheckOnFinish: true, other: 1 }))
+      .toEqual({ valid: true, reason: undefined, announcement: 'Area 2 hectares', recheckOnFinish: true })
     expect(normaliseResult({ valid: false, reason: 'too big' })).not.toHaveProperty('announcement')
   })
 })

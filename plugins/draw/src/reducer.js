@@ -8,11 +8,15 @@ const initialState = {
   tempFeature: null,
   selectedVertexIndex: -1,
   numVertices: null,
-  // Commit-level check status: 'idle' | 'pending' | 'valid' | 'invalid' | 'error'.
-  // Only 'valid' enables Done.
+  // Copies of the commit-check controller's state (validation/commitChecks.js), so the
+  // buttons can read it. Written only by events.js, from setOnSettle and hold(); nothing
+  // else should set them.
+  // Status of the latest check: 'idle' | 'pending' | 'valid' | 'invalid' | 'error'
   validationStatus: 'idle',
   // Whether a pending check has run long enough to show as "Checking…" (SLOW_CHECK_MS)
   checkSlow: false,
+  // A finished shape is waiting on its pending check before it's created
+  holding: false,
   // Live validity of the displayed shape while editing (drag/nudge in progress)
   previewValid: true,
   canAddPoint: true,
@@ -29,6 +33,7 @@ const setMode = (state, payload) => ({
   // edit-start check in api/editFeature) settles it.
   validationStatus: 'idle',
   checkSlow: false,
+  holding: false,
   previewValid: true,
   // A fresh mode can always place; the live placement gate flips this on veto.
   canAddPoint: true
@@ -62,6 +67,8 @@ const setValidationStatus = (state, payload) => ({ ...state, validationStatus: p
 
 const setCheckSlow = (state) => ({ ...state, checkSlow: true })
 
+const setHolding = (state, payload) => ({ ...state, holding: !!payload })
+
 const setPreviewValid = (state, payload) => ({ ...state, previewValid: !!payload })
 
 const setCanAddPoint = (state, payload) => ({ ...state, canAddPoint: !!payload })
@@ -76,6 +83,7 @@ const actions = {
   SET_UNDO_STACK_LENGTH: setUndoStackLength,
   SET_VALIDATION_STATUS: setValidationStatus,
   SET_CHECK_SLOW: setCheckSlow,
+  SET_HOLDING: setHolding,
   SET_PREVIEW_VALID: setPreviewValid,
   SET_CAN_ADD_POINT: setCanAddPoint
 }

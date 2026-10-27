@@ -53,6 +53,11 @@ describe('drawAddPoint', () => {
     expect(btn.enableWhen({ pluginState: { canAddPoint: true } })).toBe(true)
     expect(btn.enableWhen({ pluginState: { canAddPoint: false } })).toBe(false)
   })
+
+  test('is disabled, not hidden, while a finished shape waits on its check', () => {
+    expect(findButton('drawAddPoint').hiddenWhen({ appState: { interfaceType: 'touch' }, pluginState: { mode: 'draw_polygon', holding: true } })).toBe(false)
+    expect(findButton('drawAddPoint').enableWhen({ pluginState: { canAddPoint: true, holding: true } })).toBe(false)
+  })
 })
 
 describe('drawDone', () => {
@@ -82,8 +87,12 @@ describe('drawDone', () => {
 
   // A live edit-mode flip back to valid must not enable Done while the commit check
   // still fails or is pending, and vice versa.
-  test('stays disabled while a check is pending', () => {
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'pending', previewValid: true } })).toBe(false)
+  test('stays enabled while a check is pending, so pressing it can wait for the check', () => {
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'pending', previewValid: true } })).toBe(true)
+  })
+
+  test('is disabled while waiting on a check after being pressed', () => {
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'pending', previewValid: true, holding: true } })).toBe(false)
   })
 
   test('needs both the commit check and the live preview to pass', () => {
@@ -91,16 +100,49 @@ describe('drawDone', () => {
     expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'invalid', previewValid: true } })).toBe(false)
   })
 
-  test('is busy once a pending check is slow', () => {
-    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending', checkSlow: true } })).toBe(true)
-    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending', checkSlow: false } })).toBe(false)
-    expect(btn().busyWhen({ pluginState: { validationStatus: 'valid', checkSlow: false } })).toBe(false)
+  test('is busy once it\u2019s waiting on a slow check', () => {
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending', checkSlow: true, holding: true } })).toBe(true)
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending', checkSlow: false, holding: true } })).toBe(false)
+    expect(btn().busyWhen({ pluginState: { validationStatus: 'pending', checkSlow: true } })).toBe(false)
   })
 
-  test('reads "Checking…" once a pending check is slow', () => {
-    expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: true } })).toBe('Checking…')
-    expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: false } })).toBe('Done')
+  test('reads "Checking…" only once it\u2019s waiting on a slow check', () => {
+    expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: true, holding: true } })).toBe('Checking…')
+    expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: false, holding: true } })).toBe('Done')
+    expect(btn().label({ pluginState: { validationStatus: 'pending', checkSlow: true } })).toBe('Done')
     expect(btn().label({ pluginState: { validationStatus: 'valid', checkSlow: false } })).toBe('Done')
+  })
+
+  describe('while drawing', () => {
+    const drawing = { mode: 'draw_polygon', previewValid: true }
+
+    test('stays enabled while a check is pending, reading "Done", so the shape can be finished', () => {
+      const pluginState = { ...drawing, validationStatus: 'pending', checkSlow: true }
+      expect(btn().enableWhen({ pluginState })).toBe(true)
+      expect(btn().label({ pluginState })).toBe('Done')
+      expect(btn().busyWhen({ pluginState })).toBe(false)
+    })
+
+    test('is disabled once the shape is held, reading "Checking…" once the check is slow', () => {
+      const held = { ...drawing, validationStatus: 'pending', holding: true }
+      expect(btn().enableWhen({ pluginState: held })).toBe(false)
+      expect(btn().label({ pluginState: { ...held, checkSlow: false } })).toBe('Done')
+      expect(btn().label({ pluginState: { ...held, checkSlow: true } })).toBe('Checking…')
+      expect(btn().busyWhen({ pluginState: { ...held, checkSlow: true } })).toBe(true)
+    })
+
+    test('shows while a new point is held, disabled and reading "Checking…" once the check is slow', () => {
+      const pluginState = { mode: 'draw_point', validationStatus: 'pending', holding: true, checkSlow: true, previewValid: true }
+      expect(btn().hiddenWhen({ pluginState })).toBe(false)
+      expect(btn().enableWhen({ pluginState })).toBe(false)
+      expect(btn().label({ pluginState })).toBe('Checking…')
+      expect(btn().hiddenWhen({ pluginState: { ...pluginState, holding: false } })).toBe(true)
+    })
+
+    test('stays disabled while a check has failed', () => {
+      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'invalid' } })).toBe(false)
+      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'error' } })).toBe(false)
+    })
   })
 })
 
@@ -141,6 +183,11 @@ describe('top row buttons', () => {
       expect(item().enableWhen({ pluginState: { mode: 'edit_point', undoStackLength: 1 } })).toBe(true)
       expect(item().enableWhen({ pluginState: { mode: 'edit_point', undoStackLength: 0 } })).toBe(false)
     })
+
+    test('is disabled while Done waits on a check', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_polygon', holding: true } })).toBe(false)
+      expect(item().enableWhen({ pluginState: { mode: 'draw_polygon', numVertices: 3, holding: true } })).toBe(false)
+    })
   })
 
   describe('drawSnap', () => {
@@ -150,6 +197,12 @@ describe('top row buttons', () => {
       expect(item().hiddenWhen({ pluginState: { mode: null, hasSnapLayers: true } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: false } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true } })).toBe(false)
+    })
+
+    test('is disabled while Done waits on a check', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true, holding: true } })).toBe(false)
+      expect(item().enableWhen({ pluginState: { holding: true } })).toBe(false)
+      expect(item().enableWhen({ pluginState: { holding: false } })).toBe(true)
     })
 
     test('is visible during draw_point, which supports snapping but has no undo/delete', () => {
@@ -164,6 +217,11 @@ describe('top row buttons', () => {
 
   describe('drawDeletePoint', () => {
     const item = () => findButton('drawDeletePoint')
+
+    test('is disabled while Done waits on a check', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'edit_vertex', holding: true } })).toBe(false)
+      expect(item().enableWhen({ pluginState: { selectedVertexIndex: 1, numVertices: 5, feature: { geometry: { type: 'Polygon' } }, holding: true } })).toBe(false)
+    })
 
     test('is hidden outside edit mode', () => {
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_polygon' } })).toBe(true)

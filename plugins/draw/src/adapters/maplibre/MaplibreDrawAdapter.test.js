@@ -520,13 +520,13 @@ describe('changeMode', () => {
   })
 })
 
-describe('setGeometryValid', () => {
+describe('setCanFinish', () => {
   test('records validity on the map for the draw mode to read', () => {
     const { adapter, map } = setup()
-    adapter.setGeometryValid(false)
-    expect(map._drawGeometryValid).toBe(false)
-    adapter.setGeometryValid(true)
-    expect(map._drawGeometryValid).toBe(true)
+    adapter.setCanFinish(false)
+    expect(map._drawCanFinish).toBe(false)
+    adapter.setCanFinish(true)
+    expect(map._drawCanFinish).toBe(true)
   })
 })
 

@@ -14,7 +14,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
     return false
   }
 
-  startCheckSession(draw, options, pluginConfig)
+  startCheckSession(draw, options, pluginConfig, eventBus)
 
   // A Point has no ring of vertices to edit — edit_point relocates the single coordinate
   // instead of edit_vertex's ring-of-vertices machinery.

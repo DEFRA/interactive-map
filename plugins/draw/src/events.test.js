@@ -11,9 +11,10 @@ const setup = (overrides = {}) => {
     done: jest.fn(),
     cancel: jest.fn(),
     add: jest.fn(),
+    delete: jest.fn(),
     get: jest.fn(() => ({ id: 'F' })),
     undo: jest.fn(),
-    setGeometryValid: jest.fn(),
+    setCanFinish: jest.fn(),
     setInvalid: jest.fn(),
     deleteVertex: jest.fn(),
     nudgeSelectedVertex: jest.fn(),
@@ -254,7 +255,7 @@ describe('geometrychange validation', () => {
     const { draw, dispatch, eventBus, hints } = setup()
     drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'change', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'invalid' })
-    expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
+    expect(draw.setCanFinish).toHaveBeenCalledWith(false)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
     expect(hints.show).toHaveBeenCalledWith(expect.stringMatching(/intersect/i))
   })
@@ -334,7 +335,7 @@ describe('geometrychange validation', () => {
     // A live flip never writes the commit-level gate, so it can't enable Done while a
     // commit check is still pending or failing.
     expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_VALIDATION_STATUS' }))
-    expect(draw.setGeometryValid).not.toHaveBeenCalled()
+    expect(draw.setCanFinish).not.toHaveBeenCalled()
   })
 
   test('a live placement-veto flip drives the Add point gate', () => {
@@ -388,7 +389,7 @@ describe('async geometry checks', () => {
   const slow = () => jest.advanceTimersByTime(SLOW_CHECK_MS)
   const lastStatus = (dispatch) => dispatch.mock.calls.filter(([a]) => a.type === 'SET_VALIDATION_STATUS').map(([a]) => a.payload).pop()
 
-  test('blocks Done while a check is pending, then applies its result', async () => {
+  test('marks a check as pending, then applies its result', async () => {
     const { draw, dispatch } = setup()
     const reply = deferred()
     draw.getMode.mockReturnValue('edit_vertex')
@@ -396,13 +397,12 @@ describe('async geometry checks', () => {
 
     commit(draw, square)
     expect(lastStatus(dispatch)).toBe('pending')
-    expect(draw.setGeometryValid).toHaveBeenLastCalledWith(false)
     expect(draw.setInvalid).not.toHaveBeenCalled() // pending doesn't change the stroke
 
     reply.resolve({ valid: true })
     await flush()
     expect(lastStatus(dispatch)).toBe('valid')
-    expect(draw.setGeometryValid).toHaveBeenLastCalledWith(true)
+    expect(draw.setCanFinish).toHaveBeenLastCalledWith(true)
     expect(draw.setInvalid).toHaveBeenLastCalledWith(false)
   })
 
@@ -460,7 +460,7 @@ describe('async geometry checks', () => {
     await flush()
     await flush()
     expect(lastStatus(dispatch)).toBe('error')
-    expect(draw.setGeometryValid).toHaveBeenLastCalledWith(false)
+    expect(draw.setCanFinish).toHaveBeenLastCalledWith(false)
     expect(eventBus.emit).not.toHaveBeenCalledWith('draw:geometryinvalid', expect.anything())
     console.warn.mockRestore()
   })
@@ -539,29 +539,39 @@ describe('async geometry checks', () => {
     expect(validator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'create' }), expect.anything())
   })
 
-  test('finishing while a check is pending reopens the shape in edit mode, and the check carries on', async () => {
+  test('a point placed while its check is pending is held, then created once the check passes', async () => {
     const { draw, dispatch, eventBus } = setup()
     const reply = deferred()
-    const validator = jest.fn(() => reply.promise)
-    draw._commitValidator = validator
-    draw.get.mockReturnValue({ id: 'new', ...square })
+    draw.getMode.mockReturnValue('draw_point')
+    draw._commitValidator = () => reply.promise
+    const point = { id: 'p1', type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] } }
+    draw.get.mockReturnValue(point)
 
-    commit(draw, square, 'change')
-    drawHandler(draw, 'create')({ id: 'new', ...square })
-    expect(validator).toHaveBeenCalledTimes(1) // the pending check is reused
-    expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
-
+    drawHandler(draw, 'create')(point)
+    expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
     jest.runAllTimers()
-    expect(draw.changeMode).toHaveBeenCalledWith('edit_vertex', expect.objectContaining({ featureId: 'new' }))
-    expect(lastStatus(dispatch)).toBe('pending')
+    expect(draw.changeMode).not.toHaveBeenCalledWith('edit_point', expect.anything())
 
-    draw.getMode.mockReturnValue('edit_vertex')
     reply.resolve(true)
     await flush()
-    expect(lastStatus(dispatch)).toBe('valid')
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:created', point)
+  })
 
-    drawHandler(draw, 'editfinish')({ id: 'new' })
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:created', { id: 'new' })
+  test('a held point whose check fails reopens in point edit mode', async () => {
+    const { draw, eventBus } = setup()
+    const reply = deferred()
+    draw.getMode.mockReturnValue('draw_point')
+    draw._commitValidator = () => reply.promise
+    const point = { id: 'p1', type: 'Feature', geometry: { type: 'Point', coordinates: [0, 0] } }
+    draw.get.mockReturnValue(point)
+
+    drawHandler(draw, 'create')(point)
+    jest.runAllTimers()
+    reply.resolve({ valid: false, reason: 'inside another parcel' })
+    await flush()
+    jest.runAllTimers()
+    expect(draw.changeMode).toHaveBeenCalledWith('edit_point', expect.objectContaining({ featureId: 'p1' }))
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'invalid', reason: 'inside another parcel' }))
   })
 
   test('a point that fails its check reopens in point edit mode', () => {
@@ -697,6 +707,306 @@ describe('async geometry checks', () => {
     expect(eventBus.emit).toHaveBeenLastCalledWith('draw:geometryinvalid', expect.objectContaining({ source: 'rules' }))
   })
 
+  test('reopening emits draw:reopened with the check\u2019s status and reason', () => {
+    const { draw, eventBus } = setup()
+    draw._commitValidator = () => ({ valid: false, reason: 'inside another parcel' })
+    draw.get.mockReturnValue({ id: 'new', ...square })
+    drawHandler(draw, 'create')({ id: 'new', ...square })
+    jest.runAllTimers()
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', { feature: { id: 'new', ...square }, status: 'invalid', reason: 'inside another parcel' })
+  })
+
+  test('cancelling a reopened shape discards it rather than keeping it', () => {
+    const { draw, eventBus, buttonConfig } = setup({ pluginState: { feature: { id: 'new' }, tempFeature: { id: 'new' } } })
+    draw._commitValidator = () => false
+    drawHandler(draw, 'create')({ id: 'new', ...square })
+    jest.runAllTimers()
+    draw.getMode.mockReturnValue('edit_vertex')
+
+    buttonConfig.drawCancel.onClick()
+    expect(draw.add).not.toHaveBeenCalled()
+    expect(draw.cancel).toHaveBeenCalled()
+    expect(draw.delete).toHaveBeenCalledWith('new')
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', { id: 'new' })
+  })
+
+  describe('pressing Done while editing with a check pending', () => {
+    const editing = () => {
+      const context = setup()
+      context.draw.getMode.mockReturnValue('edit_vertex')
+      return context
+    }
+
+    test('waits for the check, then finishes the edit if it passes', async () => {
+      const { draw, dispatch, buttonConfig } = editing()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, square, 'change')
+
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
+
+      // Still waiting once the check is slow, when Done reads "Checking…"
+      slow()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_CHECK_SLOW' })
+      expect(draw.done).not.toHaveBeenCalled()
+
+      reply.resolve(true)
+      await flush()
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('stays in edit mode if the check fails', async () => {
+      const { draw, dispatch, buttonConfig, hints } = editing()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      reply.resolve({ valid: false, reason: 'overlap' })
+      await flush()
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_HOLDING', payload: false })
+      expect(hints.show).toHaveBeenCalledWith('overlap')
+    })
+
+    test('stops waiting if the shape changes again, even when the new check passes', () => {
+      const { draw, dispatch, buttonConfig } = editing()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      draw._commitValidator = () => true
+      commit(draw, otherSquare, 'change')
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_HOLDING', payload: false })
+    })
+
+    test('finishes straight away when the check has already passed', () => {
+      const { draw, buttonConfig } = editing()
+      draw._commitValidator = () => true
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('ending the session while waiting drops the wait, so a later check doesn\u2019t act on it', () => {
+      const { draw, dispatch, buttonConfig } = editing()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      buttonConfig.drawCancel.onClick()
+
+      dispatch.mockClear()
+      draw._commitValidator = () => true
+      commit(draw, otherSquare, 'change')
+      expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: false })
+      expect(draw.done).not.toHaveBeenCalled()
+    })
+
+    test('cancelling while waiting keeps the edited feature', () => {
+      const { draw, buttonConfig } = editing()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      buttonConfig.drawCancel.onClick()
+      expect(draw.delete).not.toHaveBeenCalled()
+      expect(draw.add).toHaveBeenCalledWith({ id: 'F' })
+    })
+  })
+
+  describe('pressing Done while editing when the last result asked for recheckOnFinish', () => {
+    const editing = (finishCheck) => {
+      const context = setup()
+      context.draw.getMode.mockReturnValue('edit_vertex')
+      context.draw._commitValidator = jest.fn(({ phase }) =>
+        phase === 'edit-finish' ? finishCheck() : { valid: true, recheckOnFinish: true })
+      commit(context.draw, square, 'change')
+      return context
+    }
+
+    test('checks the shape again with phase edit-finish, then finishes the edit if it passes', async () => {
+      const reply = deferred()
+      const { draw, dispatch, buttonConfig } = editing(() => reply.promise)
+
+      buttonConfig.drawDone.onClick()
+      expect(draw._commitValidator).toHaveBeenLastCalledWith(
+        expect.objectContaining({ phase: 'edit-finish', mode: 'edit_vertex', feature: square }), expect.anything())
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
+      expect(draw.done).not.toHaveBeenCalled()
+
+      reply.resolve({ valid: true, recheckOnFinish: true }) // not asked again on the finishing check
+      await flush()
+      expect(draw._commitValidator).toHaveBeenCalledTimes(2)
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('finishes straight away when the finishing check answers synchronously', () => {
+      const { draw, buttonConfig } = editing(() => true)
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('stays in edit mode if the finishing check fails', () => {
+      const { draw, dispatch, buttonConfig, hints } = editing(() => ({ valid: false, reason: 'overlap' }))
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_HOLDING', payload: false })
+      expect(hints.show).toHaveBeenCalledWith('overlap')
+    })
+
+    test('a pending change that asks for it is checked again once it passes', async () => {
+      const { draw, buttonConfig } = setup()
+      draw.getMode.mockReturnValue('edit_vertex')
+      const reply = deferred()
+      draw._commitValidator = jest.fn(({ phase }) => (phase === 'edit-finish' ? true : reply.promise))
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+
+      reply.resolve({ valid: true, recheckOnFinish: true })
+      await flush()
+      expect(draw._commitValidator).toHaveBeenLastCalledWith(expect.objectContaining({ phase: 'edit-finish' }), expect.anything())
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('finishing while the check is pending', () => {
+    test('a pending check doesn\u2019t block the finishing gestures, but a failed one does', async () => {
+      const { draw } = setup()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, square, 'change')
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(true)
+      reply.resolve(false)
+      await flush()
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(false)
+    })
+
+    test('a held shape is marked as holding, so Done waits', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
+    })
+
+    test('holds the shape, then creates it once the check passes', async () => {
+      const { draw, dispatch, announce, eventBus } = setup()
+      const reply = deferred()
+      draw._commitValidator = jest.fn(() => reply.promise)
+      draw.get.mockReturnValue({ id: 'new', ...square })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      expect(draw._commitValidator).toHaveBeenCalledTimes(1) // the pending check is reused
+
+      jest.runAllTimers()
+      expect(draw.changeMode).toHaveBeenCalledWith('disabled')
+      expect(draw.changeMode).not.toHaveBeenCalledWith('edit_vertex', expect.anything())
+      expect(lastStatus(dispatch)).toBe('pending')
+
+      reply.resolve(true)
+      await flush()
+      expect(announce).toHaveBeenLastCalledWith('Shape check passed', 'action')
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: null })
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', { id: 'new', ...square })
+    })
+
+    test('reopens a held shape in edit mode when its check fails', async () => {
+      const { draw, eventBus, hints } = setup()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      draw.get.mockReturnValue({ id: 'new', ...square })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+
+      reply.resolve({ valid: false, reason: 'inside another parcel' })
+      await flush()
+      expect(hints.show).toHaveBeenCalledWith('inside another parcel')
+      jest.runAllTimers()
+      expect(draw.changeMode).toHaveBeenCalledWith('edit_vertex', expect.objectContaining({ featureId: 'new' }))
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'invalid', reason: 'inside another parcel' }))
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+    })
+
+    test('cancelling a held shape discards it and drops its check', async () => {
+      const { draw, eventBus, buttonConfig } = setup()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+      draw.getMode.mockReturnValue('disabled')
+
+      buttonConfig.drawCancel.onClick()
+      expect(draw.delete).toHaveBeenCalledWith('new')
+      reply.resolve(true)
+      await flush()
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+    })
+  })
+
+  describe('recheckOnFinish', () => {
+    const drawing = () => {
+      const context = setup()
+      context.draw.get.mockReturnValue({ id: 'new', ...square })
+      return context
+    }
+    // Skips the real check while drawing, as a consumer would
+    const consumer = (check) => jest.fn((event) => (event.phase === 'create' ? check(event) : { valid: true, recheckOnFinish: true }))
+
+    test('a finished shape is checked again with phase create', () => {
+      const { draw, eventBus } = drawing()
+      draw._commitValidator = consumer(() => true)
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      expect(draw._commitValidator).toHaveBeenCalledTimes(2)
+      expect(draw._commitValidator).toHaveBeenLastCalledWith(expect.objectContaining({ phase: 'create' }), expect.anything())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+    })
+
+    test('a single async check on create holds the shape, then creates it', async () => {
+      const { draw, eventBus } = drawing()
+      const reply = deferred()
+      draw._commitValidator = consumer(() => reply.promise)
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+      expect(draw.changeMode).not.toHaveBeenCalledWith('edit_vertex', expect.anything())
+
+      reply.resolve(true)
+      await flush()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+    })
+
+    test('a pending result that turns out to want a recheck is checked again once it settles', async () => {
+      const { draw, eventBus } = drawing()
+      const reply = deferred()
+      draw._commitValidator = jest.fn()
+        .mockReturnValueOnce(reply.promise) // the last change while drawing, still pending at finish
+        .mockReturnValueOnce({ valid: false, reason: 'overlap' }) // the create check
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+
+      reply.resolve({ valid: true, recheckOnFinish: true })
+      await flush()
+      expect(draw._commitValidator).toHaveBeenLastCalledWith(expect.objectContaining({ phase: 'create' }), expect.anything())
+      jest.runAllTimers()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'invalid', reason: 'overlap' }))
+    })
+
+    test('is ignored on the create check itself', () => {
+      const { draw, eventBus } = drawing()
+      draw._commitValidator = jest.fn(() => ({ valid: true, recheckOnFinish: true }))
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      expect(draw._commitValidator).toHaveBeenCalledTimes(1)
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+    })
+  })
+
   test('survives the handlers being rebuilt mid-check', async () => {
     const first = setup()
     const { draw, eventBus } = first
@@ -721,12 +1031,11 @@ describe('async geometry checks', () => {
       hints: { show: jest.fn() }
     })
 
-    draw.getMode.mockReturnValue('edit_vertex')
+    // The held shape is created by the new handlers once its check passes
     reply.resolve(true)
     await flush()
     expect(lastStatus(dispatch)).toBe('valid')
-    drawHandler(draw, 'editfinish')({ id: 'new' })
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:created', { id: 'new' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'F' }))
   })
 })
 

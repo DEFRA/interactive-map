@@ -13,7 +13,7 @@ const makeContext = (overrides = {}) => {
     on: jest.fn(),
     off: jest.fn(),
     isSnapEnabled: jest.fn(() => true),
-    setGeometryValid: jest.fn(),
+    setCanFinish: jest.fn(),
     setDrawingPreviewProperty: jest.fn(),
     delete: jest.fn()
   }
@@ -170,11 +170,11 @@ describe('split', () => {
 
       expect(splitPolygon).toHaveBeenCalledWith(polygonFeature, { id: '_splitter', geometry: feature.geometry })
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
-      // Committed Done-gating (pluginState.geometryValid / map._drawGeometryValid) must only
+      // Committed Done-gating (pluginState.geometryValid / map._drawCanFinish) must only
       // change on an actual commit — otherwise a live "what if you added a point here" check
       // could flicker a just-committed valid split back to disabled.
       expect(dispatch).not.toHaveBeenCalled()
-      expect(draw.setGeometryValid).not.toHaveBeenCalled()
+      expect(draw.setCanFinish).not.toHaveBeenCalled()
       expect(result).toEqual({ valid: true })
     })
 
@@ -190,7 +190,7 @@ describe('split', () => {
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })
       // The Done gate is applied by events.js from the returned verdict, not written here
       expect(dispatch).not.toHaveBeenCalledWith(expect.objectContaining({ type: 'SET_VALIDATION_STATUS' }))
-      expect(draw.setGeometryValid).not.toHaveBeenCalled()
+      expect(draw.setCanFinish).not.toHaveBeenCalled()
       expect(result).toEqual({ valid: false, reason: expect.any(String) })
     })
 

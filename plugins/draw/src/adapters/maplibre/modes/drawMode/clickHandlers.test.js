@@ -116,7 +116,7 @@ describe('mouse clicks (polygon)', () => {
     clickAt(ctx, state, 0, 0)
     clickAt(ctx, state, 10, 0)
     clickAt(ctx, state, 5, 10)
-    ctx.map._drawGeometryValid = false
+    ctx.map._drawCanFinish = false
     const lenBefore = state.polygon.coordinates[0].length
     ctx.onClick(state, { ...clickEvent(ctx, 0, 0), featureTarget: { properties: { meta: 'vertex' } } })
     expect(state.polygon.coordinates[0].length).toBe(lenBefore) // finish gesture ignored
@@ -146,7 +146,7 @@ describe('add-vertex button and doClick', () => {
     const { ctx, state } = setup(DrawLineMode)
     clickAt(ctx, state, 0, 0)
     clickAt(ctx, state, 10, 0)
-    ctx.map._drawGeometryValid = false
+    ctx.map._drawCanFinish = false
     // Rubber-band duplicates the last placed vertex → a finish gesture.
     state.line.setCoordinates([[0, 0], [10, 0], [10, 0]])
     ctx.doClick(state)

@@ -27,6 +27,10 @@ const altKeyHtml = isMac() ? '<kbd>Option</kbd>' : '<kbd>Alt</kbd>'
 // Undo, Snap and Delete point sit together in the middle of the top row
 const TOOLBAR_SLOT = 'top-middle'
 
+// Done reads "Checking…" only once it's been pressed and is waiting on a slow check
+// (SLOW_CHECK_MS). A pending check before then doesn't hold Done up, so it reads "Done".
+const isWaitingOnCheck = ({ checkSlow, holding }) => !!(checkSlow && holding)
+
 const createButtonSlots = (showLabel, slot = 'actions') => ({
   mobile: { slot, showLabel },
   tablet: { slot, showLabel },
@@ -63,23 +67,26 @@ export const manifest = {
       // Shown with the crosshair, using the same needsDrawTarget rule. Not shown for keyboard (Enter places).
       hiddenWhen: ({ appState, pluginState }) => !needsDrawTarget({ appState, pluginState }),
       // Disabled while placing at the crosshair would be vetoed (validatePlacement) —
-      // driven live so the button never looks active when a tap would do nothing.
-      enableWhen: ({ pluginState }) => pluginState.canAddPoint,
+      // driven live so the button never looks active when a tap would do nothing. Also
+      // disabled, though the crosshair hides, while a finished shape waits on its check.
+      enableWhen: ({ pluginState }) => pluginState.canAddPoint && !pluginState.holding,
       ...createButtonSlots(true)
     },
     {
       id: 'drawDone',
-      // Disabled as soon as a check is pending, but only reads "Checking…" once it's slow
-      label: ({ pluginState }) => (pluginState.checkSlow ? 'Checking…' : 'Done'),
-      busyWhen: ({ pluginState }) => pluginState.checkSlow,
+      label: ({ pluginState }) => (isWaitingOnCheck(pluginState) ? 'Checking…' : 'Done'),
+      busyWhen: ({ pluginState }) => isWaitingOnCheck(pluginState),
       variant: 'primary',
       exclusiveSlot: true,
-      hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode),
+      // Also shown while a new point waits on its check, to read "Checking…"
+      hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode) && !pluginState.holding,
       enableWhen: ({ pluginState }) => {
-        const { mode, validationStatus, previewValid } = pluginState
+        const { mode, validationStatus, previewValid, holding } = pluginState
         // validationStatus is the latest commit-level check (built-in rules + onGeometryChange);
-        // previewValid is the live check of a shape being edited.
-        return isCheckedMode(mode) && validationStatus === 'valid' && previewValid
+        // previewValid is the live check of a shape being edited. Done can be pressed while a
+        // check is pending: finishing then waits for it (holding) until it settles.
+        const canFinish = validationStatus === 'valid' || validationStatus === 'pending'
+        return isCheckedMode(mode) && canFinish && previewValid && !holding
       },
       ...createButtonSlots(true)
     },
@@ -92,6 +99,9 @@ export const manifest = {
       // Hidden for draw_point — nothing to undo before a single-click commit.
       hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode),
       enableWhen: ({ pluginState }) => {
+        if (pluginState.holding) {
+          return false
+        }
         if (isShapeDrawMode(pluginState.mode)) {
           return pluginState.numVertices > 0
         }
@@ -104,6 +114,7 @@ export const manifest = {
       label: 'Snap',
       iconId: 'magnet',
       hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
+      enableWhen: ({ pluginState }) => !pluginState.holding,
       pressedWhen: ({ pluginState }) => !!pluginState.snap,
       ...createButtonSlots(true, TOOLBAR_SLOT)
     },
@@ -112,7 +123,7 @@ export const manifest = {
       label: 'Delete point',
       iconId: 'trash',
       enableWhen: ({ pluginState }) => {
-        if (pluginState.selectedVertexIndex < 0) { return false }
+        if (pluginState.holding || pluginState.selectedVertexIndex < 0) { return false }
         const isPolygon = pluginState.feature?.geometry?.type === 'Polygon'
         return isPolygon ? pluginState.numVertices > 3 : pluginState.numVertices > 2 // NOSONAR
       },

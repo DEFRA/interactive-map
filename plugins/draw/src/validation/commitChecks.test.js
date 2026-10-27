@@ -11,10 +11,10 @@ describe('createCommitChecks', () => {
 
   test('settles a passing built-in check straight away when there is no callback', () => {
     const checks = createCommitChecks()
-    const sink = jest.fn()
-    checks.setSink(sink)
+    const onSettle = jest.fn()
+    checks.setOnSettle(onSettle)
     checks.run({ feature: square, context })
-    expect(sink).toHaveBeenCalledWith(expect.objectContaining({ status: 'valid', feature: square, context, revision: 1 }))
+    expect(onSettle).toHaveBeenCalledWith(expect.objectContaining({ status: 'valid', feature: square, context, revision: 1 }))
   })
 
   test('passes the event and a { signal, revision } second argument to the callback', () => {
@@ -33,8 +33,8 @@ describe('createCommitChecks', () => {
   test('goes pending for a Promise, turns slow, then settles with its result', async () => {
     jest.useFakeTimers()
     const checks = createCommitChecks()
-    const sink = jest.fn()
-    checks.setSink(sink)
+    const onSettle = jest.fn()
+    checks.setOnSettle(onSettle)
     let resolve
     checks.run({ feature: square, context, onGeometryChange: () => new Promise((_resolve) => { resolve = _resolve }) })
     expect(checks.state).toEqual(expect.objectContaining({ status: 'pending', slow: false }))
@@ -45,7 +45,7 @@ describe('createCommitChecks', () => {
     resolve(false)
     await flush()
     expect(checks.state).toEqual(expect.objectContaining({ status: 'invalid', afterPending: true }))
-    expect(sink.mock.calls.map(([state]) => [state.status, state.slow])).toEqual([['pending', false], ['pending', true], ['invalid', false]])
+    expect(onSettle.mock.calls.map(([state]) => [state.status, state.slow])).toEqual([['pending', false], ['pending', true], ['invalid', false]])
 
     // The next check settles straight away, so it doesn't follow a pending state
     checks.run({ feature: square, context, onGeometryChange: () => true })
@@ -56,13 +56,13 @@ describe('createCommitChecks', () => {
   test('a quick async reply settles without turning slow', async () => {
     jest.useFakeTimers()
     const checks = createCommitChecks()
-    const sink = jest.fn()
-    checks.setSink(sink)
+    const onSettle = jest.fn()
+    checks.setOnSettle(onSettle)
     checks.run({ feature: square, context, onGeometryChange: () => Promise.resolve(true) })
     await flush()
     jest.advanceTimersByTime(SLOW_CHECK_MS)
     expect(checks.state).toEqual(expect.objectContaining({ status: 'valid', afterPending: false }))
-    expect(sink.mock.calls.map(([state]) => state.status)).toEqual(['pending', 'valid'])
+    expect(onSettle.mock.calls.map(([state]) => state.status)).toEqual(['pending', 'valid'])
     jest.useRealTimers()
   })
 
@@ -105,7 +105,24 @@ describe('createCommitChecks', () => {
     warn.mockRestore()
   })
 
-  test('works without a sink', () => {
+  test('a held shape belongs to the latest check, and is released or returned on reset', () => {
+    const checks = createCommitChecks()
+    checks.run({ feature: square, context })
+    checks.hold('a')
+    expect(checks.heldId).toBe('a')
+    checks.release()
+    expect(checks.heldId).toBeUndefined()
+
+    checks.hold('b')
+    checks.run({ feature: square, context }) // a newer check
+    expect(checks.heldId).toBeUndefined()
+    expect(checks.reset()).toBeUndefined()
+
+    checks.hold('c')
+    expect(checks.reset()).toBe('c')
+  })
+
+  test('works without an onSettle callback', () => {
     const checks = createCommitChecks()
     expect(() => checks.run({ feature: square, context })).not.toThrow()
   })
@@ -160,6 +177,21 @@ describe('startCheckSession', () => {
     startCheckSession(draw, {}, { onGeometryChange })
     expect(draw._commitValidator).toBe(onGeometryChange)
     expect(draw._previewValidator).toBeUndefined()
+  })
+
+  test('discards a shape still held for the previous session\u2019s check, as Cancel would', () => {
+    const shape = { id: 'held', type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [[[0, 0], [0, 1], [1, 1], [0, 0]]] } }
+    const draw = { get: jest.fn(() => shape), delete: jest.fn() }
+    const eventBus = { emit: jest.fn() }
+    const checks = getCommitChecks(draw)
+    checks.run({ feature: shape, context: { phase: 'change' }, onGeometryChange: () => new Promise(() => {}) })
+    checks.hold('held')
+    expect(checks.heldId).toBe('held')
+
+    startCheckSession(draw, {}, {}, eventBus)
+    expect(draw.delete).toHaveBeenCalledWith('held')
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', shape)
+    expect(checks.heldId).toBeUndefined()
   })
 
   test('ends the previous session’s check', () => {

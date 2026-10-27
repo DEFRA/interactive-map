@@ -139,9 +139,9 @@ describe('drawing lifecycle', () => {
 
   test('finishCondition blocks finishing while the geometry is invalid', () => {
     const { manager, interaction } = setup()
-    manager._geometryValid = false
+    manager._canFinish = false
     expect(interaction.finishCondition_()).toBe(false)
-    manager._geometryValid = true
+    manager._canFinish = true
     expect(interaction.finishCondition_()).toBe(true)
   })
 

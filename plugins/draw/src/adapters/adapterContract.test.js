@@ -25,7 +25,7 @@ const CONTRACT_METHODS = [
   'setSnapLayers',
   'isSnapEnabled',
   'setFeatureProperty',
-  'setGeometryValid',
+  'setCanFinish',
   'setInvalid',
   'on',
   'off',

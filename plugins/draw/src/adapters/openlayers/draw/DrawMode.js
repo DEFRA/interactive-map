@@ -196,7 +196,7 @@ export const createDrawMode = ({ map, manager, options }) => {
     snapTolerance: TOLERANCES.snapRadius,
     condition: buildCondition(map, geometryType, () => sketchFeature, canPlaceVertex),
     // Block finish gestures (double-click / click-to-close) while the shape is invalid.
-    finishCondition: () => manager._geometryValid !== false
+    finishCondition: () => manager._canFinish !== false
   })
   map.addInteraction(drawInteraction)
 

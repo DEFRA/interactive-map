@@ -1,6 +1,7 @@
 import { validateGeometry, normaliseResult, withSource } from './validateGeometry.js'
 import { COMMIT_RULES } from './rules.js'
 import { logger } from '../../../../src/services/logger.js'
+import { stripInternalProperties } from '../utils/stripInternalProperties.js'
 
 const IDLE = { revision: 0, status: 'idle', result: null, feature: null, context: null, slow: false, afterPending: false }
 
@@ -23,12 +24,15 @@ const statusFor = (result) => (result.valid ? 'valid' : 'invalid')
  * with `slow: true` once it has run for SLOW_CHECK_MS. A result that follows a slow
  * 'pending' state for the same revision has `afterPending: true`.
  *
+ * A finished shape waiting on the latest check can be held (`hold`), and is released when
+ * that check settles or the session ends — `reset` returns its id, so it can be discarded.
+ *
  * Lives per draw adapter (see getCommitChecks) rather than in events.js's handlers,
  * which are rebuilt on every plugin state change.
  *
  * States: 'idle' | 'pending' | 'valid' | 'invalid' | 'error'
  *
- * @returns {{ run: Function, reset: Function, setSink: Function, readonly state: object }}
+ * @returns {{ run: Function, reset: Function, setOnSettle: Function, hold: Function, release: Function, readonly heldId: string|undefined, readonly state: object }}
  */
 export const createCommitChecks = () => {
   let revision = 0
@@ -36,7 +40,8 @@ export const createCommitChecks = () => {
   let slowTimer = null
   let abortController = null
   let latest = IDLE
-  let sink = null
+  let onSettle = null
+  let held = null
 
   const abortPending = () => {
     abortController?.abort()
@@ -54,13 +59,20 @@ export const createCommitChecks = () => {
     const afterPending = next.status !== 'pending' && slowRevision === rev
     slowRevision = slow ? rev : null
     latest = { ...next, revision: rev, slow, afterPending }
-    sink?.(latest)
+    onSettle?.(latest)
   }
 
   return {
     get state () { return latest },
 
-    setSink (fn) { sink = fn },
+    setOnSettle (fn) { onSettle = fn },
+
+    // The finished shape held for the latest check, if any
+    get heldId () { return held?.revision === revision ? held.id : undefined },
+
+    hold (featureId) { held = { id: featureId, revision } },
+
+    release () { held = null },
 
     /**
      * @param {object} params
@@ -81,8 +93,7 @@ export const createCommitChecks = () => {
         return
       }
 
-      const controller = new AbortController()
-      abortController = controller
+      abortController = new AbortController()
       const onError = (error) => {
         // A superseded check rejecting (e.g. on its aborted signal) isn't a failure
         if (rev !== revision) { return }
@@ -92,7 +103,7 @@ export const createCommitChecks = () => {
 
       let output
       try {
-        output = onGeometryChange({ feature, ...context }, { signal: controller.signal, revision: rev })
+        output = onGeometryChange({ feature, ...context }, { signal: abortController.signal, revision: rev })
       } catch (error) {
         onError(error)
         return
@@ -103,21 +114,22 @@ export const createCommitChecks = () => {
         settle(rev, { ...base, status: statusFor(result), result })
       }
 
-      if (!isThenable(output)) {
-        settleResult(output)
-        return
-      }
+      if (!isThenable(output)) { settleResult(output); return }
 
       settle(rev, { ...base, status: 'pending', result: null })
       slowTimer = setTimeout(() => settle(rev, { ...base, status: 'pending', result: null, slow: true }), SLOW_CHECK_MS)
       output.then(settleResult, onError)
     },
 
-    // Ends the session: aborts any check in flight and drops whatever it returns.
+    // Ends the session: aborts any check in flight and drops whatever it returns. Returns
+    // the id of a shape that was held for it, which nothing will now create.
     reset () {
+      const heldId = held?.revision === revision ? held.id : undefined
       abortPending()
       revision++
       latest = IDLE
+      held = null
+      return heldId
     }
   }
 }
@@ -155,14 +167,19 @@ export const isSameGeometry = (a, b) => {
 /**
  * Starts a draw/edit session's checks: installs the session's two callbacks on the
  * adapter and ends any previous session's check. A per-call callback replaces the
- * plugin-level one.
+ * plugin-level one. A shape still waiting on that check is discarded, as Cancel would.
  *
  *   - `draw._previewValidator` — onGeometryPreview, read by the adapters for the
  *     'preview' and 'place' phases
  *   - `draw._commitValidator`  — onGeometryChange, read by events.js for committed changes
  */
-export const startCheckSession = (draw, options = {}, pluginConfig = {}) => {
+export const startCheckSession = (draw, options = {}, pluginConfig = {}, eventBus = null) => {
   draw._previewValidator = options.onGeometryPreview ?? pluginConfig.onGeometryPreview
   draw._commitValidator = options.onGeometryChange ?? pluginConfig.onGeometryChange
-  getCommitChecks(draw).reset()
+  const heldId = getCommitChecks(draw).reset()
+  if (heldId !== undefined) {
+    const discarded = draw.get(heldId)
+    draw.delete(heldId)
+    eventBus?.emit('draw:cancelled', stripInternalProperties(discarded))
+  }
 }
