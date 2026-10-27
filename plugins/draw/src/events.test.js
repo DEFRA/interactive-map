@@ -245,13 +245,13 @@ describe('geometrychange validation', () => {
 
   test('opens the gate for a valid geometry', () => {
     const { draw, dispatch } = setup()
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'change', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'valid' })
   })
 
   test('gates a self-intersecting shape while drawing', () => {
     const { draw, dispatch, eventBus, hints } = setup()
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'change', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'invalid' })
     expect(draw.setGeometryValid).toHaveBeenCalledWith(false)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
@@ -260,7 +260,7 @@ describe('geometrychange validation', () => {
 
   test('gates a part-drawn shape below the minimum vertex count, but skips the hint — an incomplete shape is expected, not a mistake', () => {
     const { draw, dispatch, eventBus, hints } = setup()
-    drawHandler(draw, 'geometrychange')({ feature: partDrawnFeature, phase: 'commit-add', vertexIndex: 1 })
+    drawHandler(draw, 'geometrychange')({ feature: partDrawnFeature, phase: 'change', vertexIndex: 1 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'invalid' })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/at least 3 points/) }))
     expect(hints.show).not.toHaveBeenCalled()
@@ -268,14 +268,14 @@ describe('geometrychange validation', () => {
 
   test('gates a zero-area shape while drawing', () => {
     const { draw, dispatch } = setup()
-    drawHandler(draw, 'geometrychange')({ feature: collinearFeature, phase: 'commit-add', vertexIndex: 2 })
+    drawHandler(draw, 'geometrychange')({ feature: collinearFeature, phase: 'change', vertexIndex: 2 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'invalid' })
   })
 
   test('gates a self-intersecting move in edit mode (never reverts)', () => {
     const { draw, dispatch, eventBus } = setup()
     draw.getMode.mockReturnValue('edit_vertex')
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-move', vertexIndex: 2 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'change', vertexIndex: 2 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'invalid' })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: expect.stringMatching(/intersect/i) }))
   })
@@ -283,14 +283,14 @@ describe('geometrychange validation', () => {
   test('keeps a valid edit move (gate open)', () => {
     const { draw, dispatch } = setup()
     draw.getMode.mockReturnValue('edit_vertex')
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-move', vertexIndex: 1 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'change', vertexIndex: 1 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'valid' })
   })
 
   test('applies the per-session user validator as a gate', () => {
     const { draw, dispatch, eventBus, hints } = setup()
     draw._commitValidator = () => ({ valid: false, reason: 'too big' })
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'change', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'invalid' })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: 'too big' }))
     expect(hints.show).toHaveBeenCalledWith('too big')
@@ -299,7 +299,7 @@ describe('geometrychange validation', () => {
   test('a user validator that vetoes with no reason (plain `false`) still emits, but skips the hint', () => {
     const { draw, dispatch, eventBus, hints } = setup()
     draw._commitValidator = () => false
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'change', vertexIndex: 3 })
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'invalid' })
     expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: null }))
     expect(hints.show).not.toHaveBeenCalled()
@@ -308,18 +308,18 @@ describe('geometrychange validation', () => {
   test('drives the invalid stroke from committed validity in edit mode only', () => {
     const { draw } = setup()
     draw.getMode.mockReturnValue('draw_polygon')
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'change', vertexIndex: 3 })
     expect(draw.setInvalid).not.toHaveBeenCalled() // draw mode: the adapter's live check owns the stroke
 
     draw.getMode.mockReturnValue('edit_vertex')
-    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'commit-move', vertexIndex: 2 })
+    drawHandler(draw, 'geometrychange')({ feature: bowtieFeature, phase: 'change', vertexIndex: 2 })
     expect(draw.setInvalid).toHaveBeenCalledWith(true)
   })
 
   test('drives the invalid stroke from committed validity in a point edit too', () => {
     const { draw } = setup()
     draw.getMode.mockReturnValue('edit_point')
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-move', vertexIndex: 0 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'change', vertexIndex: 0 })
     expect(draw.setInvalid).toHaveBeenCalledWith(false)
   })
 
@@ -364,9 +364,9 @@ describe('geometrychange validation', () => {
     draw.getMode.mockReturnValue('draw_polygon')
     const validator = jest.fn(() => true)
     draw._commitValidator = validator
-    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'commit-add', vertexIndex: 3 })
+    drawHandler(draw, 'geometrychange')({ feature: squareFeature, phase: 'change', vertexIndex: 3 })
     expect(validator).toHaveBeenCalledWith(
-      { feature: squareFeature, phase: 'commit-add', vertexIndex: 3, mode: 'draw_polygon' },
+      { feature: squareFeature, phase: 'change', vertexIndex: 3, mode: 'draw_polygon' },
       { signal: expect.any(AbortSignal), revision: expect.any(Number) }
     )
   })
@@ -383,7 +383,7 @@ describe('async geometry checks', () => {
     return handles
   }
   const flush = () => Promise.resolve()
-  const commit = (draw, feature, phase = 'commit-move') => drawHandler(draw, 'geometrychange')({ feature, phase, vertexIndex: 0 })
+  const commit = (draw, feature, phase = 'change') => drawHandler(draw, 'geometrychange')({ feature, phase, vertexIndex: 0 })
   const lastStatus = (dispatch) => dispatch.mock.calls.filter(([a]) => a.type === 'SET_VALIDATION_STATUS').map(([a]) => a.payload).pop()
 
   test('blocks Done while a check is pending, then applies its result', async () => {
@@ -442,8 +442,8 @@ describe('async geometry checks', () => {
     const { draw } = setup()
     const revisions = []
     draw._commitValidator = (_event, { revision }) => { revisions.push(revision); return true }
-    commit(draw, square, 'commit-add')
-    commit(draw, otherSquare, 'commit-add')
+    commit(draw, square, 'change')
+    commit(draw, otherSquare, 'change')
     expect(revisions[1]).toBeGreaterThan(revisions[0])
   })
 
@@ -453,7 +453,7 @@ describe('async geometry checks', () => {
     draw._commitValidator = () => reply.promise
     jest.spyOn(console, 'warn').mockImplementation(() => {})
 
-    commit(draw, square, 'commit-add')
+    commit(draw, square, 'change')
     reply.reject(new Error('503'))
     await flush()
     await flush()
@@ -468,7 +468,7 @@ describe('async geometry checks', () => {
     draw._commitValidator = () => { throw new Error('boom') }
     jest.spyOn(console, 'warn').mockImplementation(() => {})
 
-    expect(() => commit(draw, square, 'commit-add')).not.toThrow()
+    expect(() => commit(draw, square, 'change')).not.toThrow()
     expect(lastStatus(dispatch)).toBe('error')
     console.warn.mockRestore()
   })
@@ -476,7 +476,7 @@ describe('async geometry checks', () => {
   test('a synchronous callback never shows the pending state', () => {
     const { draw, dispatch } = setup()
     draw._commitValidator = () => true
-    commit(draw, square, 'commit-add')
+    commit(draw, square, 'change')
     expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_VALIDATION_STATUS', payload: 'pending' })
     expect(lastStatus(dispatch)).toBe('valid')
   })
@@ -486,7 +486,7 @@ describe('async geometry checks', () => {
     const validator = jest.fn(() => true)
     draw._commitValidator = validator
     const partDrawn = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] } }
-    commit(draw, partDrawn, 'commit-add')
+    commit(draw, partDrawn, 'change')
     expect(validator).not.toHaveBeenCalled()
   })
 
@@ -496,7 +496,7 @@ describe('async geometry checks', () => {
     let signal
     draw._commitValidator = (_event, ctx) => { signal = ctx.signal; return reply.promise }
 
-    commit(draw, square, 'commit-add')
+    commit(draw, square, 'change')
     buttonConfig.drawCancel.onClick()
     expect(signal.aborted).toBe(true)
 
@@ -511,7 +511,7 @@ describe('async geometry checks', () => {
     const validator = jest.fn(() => true)
     draw._commitValidator = validator
     draw.getMode.mockReturnValue('disabled')
-    commit(draw, square, 'commit-add')
+    commit(draw, square, 'change')
     expect(validator).not.toHaveBeenCalled()
   })
 
@@ -521,7 +521,7 @@ describe('async geometry checks', () => {
     draw._commitValidator = validator
     // A draw-mode commit carries the placed vertices as an open ring
     const placed = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [0, 1], [1, 1], [1, 0]]] } }
-    commit(draw, placed, 'commit-add')
+    commit(draw, placed, 'change')
     expect(validator).toHaveBeenCalledTimes(1)
 
     drawHandler(draw, 'create')({ id: 'new', ...square })
@@ -544,7 +544,7 @@ describe('async geometry checks', () => {
     draw._commitValidator = validator
     draw.get.mockReturnValue({ id: 'new', ...square })
 
-    commit(draw, square, 'commit-add')
+    commit(draw, square, 'change')
     drawHandler(draw, 'create')({ id: 'new', ...square })
     expect(validator).toHaveBeenCalledTimes(1) // the pending check is reused
     expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
@@ -578,9 +578,9 @@ describe('async geometry checks', () => {
     test('a check that settles straight away announces nothing new', () => {
       const { draw, announce } = setup()
       draw._commitValidator = () => ({ valid: false, reason: 'too big' })
-      commit(draw, square, 'commit-add')
+      commit(draw, square, 'change')
       draw._commitValidator = () => true
-      commit(draw, otherSquare, 'commit-add')
+      commit(draw, otherSquare, 'change')
       expect(announce).not.toHaveBeenCalled()
     })
 
@@ -588,7 +588,7 @@ describe('async geometry checks', () => {
       const { draw, announce } = setup()
       const reply = deferred()
       draw._commitValidator = () => reply.promise
-      commit(draw, square, 'commit-add')
+      commit(draw, square, 'change')
       expect(announce).toHaveBeenLastCalledWith('Checking shape', 'action')
       reply.resolve(true)
       await flush()
@@ -599,7 +599,7 @@ describe('async geometry checks', () => {
       const { draw, announce, hints } = setup()
       const reply = deferred()
       draw._commitValidator = () => reply.promise
-      commit(draw, square, 'commit-add')
+      commit(draw, square, 'change')
       reply.resolve({ valid: false, reason: 'Overlaps a neighbouring parcel' })
       await flush()
       expect(announce).toHaveBeenLastCalledWith('Overlaps a neighbouring parcel', 'action')
@@ -614,12 +614,12 @@ describe('async geometry checks', () => {
       draw._commitValidator = jest.fn().mockReturnValueOnce(first.promise).mockReturnValueOnce(second.promise)
       jest.spyOn(console, 'warn').mockImplementation(() => {})
 
-      commit(draw, square, 'commit-add')
+      commit(draw, square, 'change')
       first.resolve(false)
       await flush()
       expect(announce).toHaveBeenLastCalledWith('Shape check failed', 'action')
 
-      commit(draw, otherSquare, 'commit-add')
+      commit(draw, otherSquare, 'change')
       second.reject(new Error('503'))
       await flush()
       await flush()
@@ -633,7 +633,7 @@ describe('async geometry checks', () => {
     const { draw, eventBus } = first
     const reply = deferred()
     draw._commitValidator = () => reply.promise
-    commit(draw, square, 'commit-add')
+    commit(draw, square, 'change')
     drawHandler(draw, 'create')({ id: 'new', ...square })
     jest.runAllTimers()
 

@@ -1,7 +1,7 @@
 import { createCommitChecks, getCommitChecks, isSameGeometry, startCheckSession } from './commitChecks.js'
 
 const square = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] } }
-const context = { phase: 'commit-add', mode: 'draw_polygon', vertexIndex: 3 }
+const context = { phase: 'change', mode: 'draw_polygon', vertexIndex: 3 }
 const flush = () => Promise.resolve()
 
 describe('createCommitChecks', () => {

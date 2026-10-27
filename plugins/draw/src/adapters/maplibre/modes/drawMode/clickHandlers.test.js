@@ -87,7 +87,7 @@ describe('mouse clicks (polygon)', () => {
     clickAt(ctx, state, 10, 0)
     jest.runAllTimers()
     const geomChange = firedWith(ctx.map, 'draw.geometrychange').pop()
-    expect(geomChange).toEqual(expect.objectContaining({ phase: 'commit-add', feature: expect.any(Object) }))
+    expect(geomChange).toEqual(expect.objectContaining({ phase: 'change', feature: expect.any(Object) }))
     jest.useRealTimers()
   })
 

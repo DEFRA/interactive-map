@@ -3,7 +3,7 @@ import { noModifierKeys } from 'ol/events/condition.js'
 import { createDrawInput } from './drawInput.js'
 import { getPlacedSketchCoords, getLastPlacedSketchCoord } from '../utils/sketchHelpers.js'
 import { TOLERANCES } from '../defaults.js'
-import { ADAPTER_EVENTS } from '../../../adapterEvents.js'
+import { ADAPTER_EVENTS, CHANGE_PHASE } from '../../../adapterEvents.js'
 import { STYLES_CHANGED_EVENT } from '../core/internalEvents.js'
 import { attemptPlacement, MODE_BY_GEOMETRY } from '../../../validation/validateGeometry.js'
 import { MIN_VERTICES } from '../../../validation/rules.js'
@@ -102,15 +102,15 @@ const attachDrawListeners = (drawInteraction, { manager, featureId, properties, 
 }
 
 // Tracks placed-vertex count and emits VERTEX_CHANGE plus, on each genuine placement,
-// a commit-level GEOMETRY_CHANGE ('commit-add') for validation. Deferred a tick so it
+// a commit-level GEOMETRY_CHANGE ('change') for validation. Deferred a tick so it
 // reports the shape after the current click settles.
 const createVertexTracker = (manager, getSketch) => {
   let lastPlacedCount = 0
-  const emit = (phase, vertexIndex) => {
+  const emit = (vertexIndex) => {
     setTimeout(() => {
       const sketch = getSketch()
       if (!sketch) { return }
-      manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: placedFeatureGeoJSON(manager.store, sketch), phase, vertexIndex })
+      manager.emit(ADAPTER_EVENTS.GEOMETRY_CHANGE, { feature: placedFeatureGeoJSON(manager.store, sketch), phase: CHANGE_PHASE, vertexIndex })
     }, 0)
   }
   return {
@@ -120,7 +120,7 @@ const createVertexTracker = (manager, getSketch) => {
       if (!sketch) { return }
       const placed = getPlacedSketchCoords(sketch.getGeometry()).length
       manager.emit(ADAPTER_EVENTS.VERTEX_CHANGE, { numVertices: placed })
-      if (placed > lastPlacedCount) { emit('commit-add', placed - 1) }
+      if (placed > lastPlacedCount) { emit(placed - 1) }
       lastPlacedCount = placed
     },
     // An undo commits a vertex removal, so it must re-validate like any other
@@ -128,7 +128,7 @@ const createVertexTracker = (manager, getSketch) => {
     emitUndoValidation: () => {
       const sketch = getSketch()
       if (!sketch) { return }
-      emit('commit-delete', getPlacedSketchCoords(sketch.getGeometry()).length)
+      emit(getPlacedSketchCoords(sketch.getGeometry()).length)
     }
   }
 }

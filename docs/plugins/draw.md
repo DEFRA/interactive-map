@@ -158,7 +158,7 @@ Both receive the same event:
 | `feature` | `GeoJSON.Feature` | The shape being checked — the in-progress feature during `'preview'`, the committed or candidate feature in every other phase |
 | `phase` | `string` | Why the callback was called — see each callback's phases below |
 | `mode` | `'draw_polygon' \| 'draw_line' \| 'draw_point' \| 'edit_vertex' \| 'edit_point'` | The active draw mode |
-| `vertexIndex` | `number` | Index of the vertex being placed, added, moved, inserted or deleted. Present on `'place'` and the vertex `'commit-*'` phases |
+| `vertexIndex` | `number` | Index of the vertex being placed, added, moved, inserted or deleted. Present on `'place'`, and on a `'change'` to a single vertex |
 | `numVertices` | `number` | Count of already-committed vertices, excluding any in-progress cursor point. Present on every `'preview'` call |
 
 ### `onGeometryPreview(event)`
@@ -180,16 +180,10 @@ It runs on every frame of a drag, so keep it quick, using only the shape and dat
 
 | Phase | When |
 |-------|------|
+| `'change'` | The shape changed: a vertex was added, moved, inserted or removed, the shape was replaced with [`setGeometry`](#setgeometrygeometry), or a change was undone |
 | `'edit-start'` | `editFeature` opened the feature, before anything has changed |
-| `'commit-add'` | A vertex was added while drawing |
-| `'commit-move'` | A vertex was dragged or nudged |
-| `'commit-insert'` | A vertex was inserted at a midpoint |
-| `'commit-delete'` | A vertex was removed |
-| `'commit-replace'` | The shape was replaced with [`setGeometry`](#setgeometrygeometry) |
 | `'recheck'` | [`recheckGeometry`](#recheckgeometry) was called |
 | `'create'` | A shape was finished without a result for its final geometry, such as a new point |
-
-Undo also calls it, with the phase of the change the undo makes (undoing a delete reports `'commit-insert'`).
 
 | Context property | Type | Description |
 |----------|------|-------------|
@@ -443,7 +437,7 @@ interactiveMap.on('draw:merge', (event) => {
 
 ### `setGeometry(geometry)`
 
-Replace the shape in the current edit session, for example with a corrected boundary from a service. The change can be undone, and is checked like any other change, with phase `'commit-replace'`. Returns `false` (without doing anything) outside an edit session, or when the geometry type differs from the shape being edited.
+Replace the shape in the current edit session, for example with a corrected boundary from a service. The change can be undone, and is checked like any other change, with phase `'change'`. Returns `false` (without doing anything) outside an edit session, or when the geometry type differs from the shape being edited.
 
 | Argument | Type | Description |
 |----------|------|-------------|

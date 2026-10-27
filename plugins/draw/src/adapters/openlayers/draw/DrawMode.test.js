@@ -294,7 +294,7 @@ describe('drawing lifecycle', () => {
     expect(changed).toHaveBeenCalled()
   })
 
-  test('undo re-validates the committed shape (deferred, phase commit-delete)', () => {
+  test('undo re-validates the committed shape (deferred, phase change)', () => {
     jest.useFakeTimers()
     const { mode, manager, emitted, interaction } = setup()
     const sketch = polygonFeature([[0, 0], [10, 0], [5, 5], [0, 0]])
@@ -304,7 +304,7 @@ describe('drawing lifecycle', () => {
     mode.undo()
     jest.runAllTimers()
     expect(emitted().filter((e) => e.type === ADAPTER_EVENTS.GEOMETRY_CHANGE).pop()?.payload).toEqual(
-      expect.objectContaining({ phase: 'commit-delete', feature: expect.any(Object) }))
+      expect.objectContaining({ phase: 'change', feature: expect.any(Object) }))
     jest.useRealTimers()
   })
 
@@ -318,7 +318,7 @@ describe('drawing lifecycle', () => {
     expect(emitted().some((e) => e.type === ADAPTER_EVENTS.GEOMETRY_CHANGE)).toBe(false)
     jest.runAllTimers()
     const geom = emitted().find((e) => e.type === ADAPTER_EVENTS.GEOMETRY_CHANGE)
-    expect(geom.payload).toEqual(expect.objectContaining({ phase: 'commit-add' }))
+    expect(geom.payload).toEqual(expect.objectContaining({ phase: 'change' }))
     jest.useRealTimers()
   })
 

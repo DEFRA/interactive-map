@@ -75,26 +75,16 @@ test('emitGeometryValidation emits a deferred commit-level geometrychange with t
   const { selection, manager, store } = setup()
   manager.emit.mockClear()
 
-  selection.emitGeometryValidation('commit-move', 2)
+  selection.emitGeometryValidation(2)
   // Deferred a tick to avoid re-entrancy — nothing emitted synchronously.
   expect(manager.emit).not.toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.anything())
 
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, {
     feature: store.toGeoJSON(),
-    phase: 'commit-move',
+    phase: 'change',
     vertexIndex: 2
   })
-  jest.useRealTimers()
-})
-
-test('emitGeometryValidation is a no-op without a change phase', () => {
-  jest.useFakeTimers()
-  const { selection, manager } = setup()
-  manager.emit.mockClear()
-  selection.emitGeometryValidation(undefined, 0)
-  jest.runAllTimers()
-  expect(manager.emit).not.toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.anything())
   jest.useRealTimers()
 })
 

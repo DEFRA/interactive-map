@@ -1,5 +1,5 @@
 import { splitPolygon } from '../utils/spatial.js'
-import { ADAPTER_EVENTS } from '../adapterEvents.js'
+import { ADAPTER_EVENTS, CHANGE_PHASE } from '../adapterEvents.js'
 import { getCommitChecks } from '../validation/commitChecks.js'
 
 const INVALID_REASON = 'Line does not split the shape into two parts'
@@ -40,7 +40,7 @@ const createSplitPreviewValidator = ({ draw, polygonFeature }) => ({ feature, ph
 // Installed as draw._commitValidator. 'create' is a no-op — checking it would
 // hijack an early finish into edit mode.
 const createSplitCommitValidator = ({ draw, dispatch, polygonFeature }) => ({ feature, phase }) =>
-  phase?.startsWith('commit-') ? toResult(applySplitCommit({ draw, dispatch, polygonFeature, feature })) : { valid: true }
+  phase === CHANGE_PHASE ? toResult(applySplitCommit({ draw, dispatch, polygonFeature, feature })) : { valid: true }
 
 /**
  * Start drawing a split line for a polygon.

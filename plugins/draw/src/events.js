@@ -181,7 +181,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
     onUpdate: (f) => { eventBus.emit('draw:updated', stripInternalProperties(f)) },
     onGeometryChange: (e) => {
-      // Only commit-level changes (commit-add/move/insert/delete/replace) carry a `phase`.
+      // Only commit-level changes carry a `phase` ('change').
       // Preview events (e.g. split's live preview) have none and are ignored.
       if (!e?.phase) { return }
 

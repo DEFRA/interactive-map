@@ -4,16 +4,16 @@ import { getRingSegments } from './geometryHelpers.js'
 // fireGeometryChange/emitGeometryValidation/pushUndo are the shared mixin from
 // utils/geometryValidation.js — their own behaviour is covered by
 // utils/geometryValidation.test.js. This file only tests what's specific to editVertexMode:
-// pushUndo's UNDO_OP_PHASE wiring, handleUndo's per-op-type dispatch, and the
+// pushUndo's validation, handleUndo's per-op-type dispatch, and the
 // undoMoveVertex/undoInsertVertex/undoDeleteVertex ring operations themselves.
 describe('undoHandlers', () => {
-  test('pushUndo maps each op type to its commit phase', () => {
+  test('pushUndo validates each op type as a change', () => {
     jest.useFakeTimers()
     const { ctx, map } = createHarness()
     map.fire.mockClear()
     ctx.pushUndo({ type: 'move_vertex', featureId: 'feat-1', vertexIndex: 2 })
     jest.runAllTimers()
-    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-move', vertexIndex: 2 }))
+    expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'change', vertexIndex: 2 }))
     jest.useRealTimers()
   })
 
@@ -42,7 +42,7 @@ describe('undoHandlers', () => {
     ctx.handleUndo(state)
     jest.runAllTimers()
     expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({
-      phase: 'commit-insert',
+      phase: 'change',
       vertexIndex: 1,
       feature: expect.any(Object)
     }))
@@ -92,7 +92,7 @@ describe('undoHandlers', () => {
   describe('setGeometry', () => {
     const replacement = { type: 'Polygon', coordinates: [[[0, 0], [20, 0], [20, 20], [0, 20], [0, 0]]] }
 
-    test('replaces the shape on draw.setgeometry, clears the selection and re-validates as commit-replace', () => {
+    test('replaces the shape on draw.setgeometry, clears the selection and re-validates as a change', () => {
       jest.useFakeTimers()
       const { ctx, map } = createHarness()
       const changeMode = jest.spyOn(ctx, 'changeMode')
@@ -101,11 +101,11 @@ describe('undoHandlers', () => {
       expect(ctx.getFeature('feat-1').toGeoJSON().geometry).toEqual(replacement)
       expect(changeMode).toHaveBeenCalledWith(expect.anything(), { selectedVertexIndex: -1, selectedVertexType: null })
       jest.runAllTimers()
-      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-replace' }))
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'change' }))
       jest.useRealTimers()
     })
 
-    test('undo restores the previous shape and re-validates as commit-replace', () => {
+    test('undo restores the previous shape and re-validates as a change', () => {
       jest.useFakeTimers()
       const { ctx, state, map } = createHarness()
       const original = ctx.getFeature('feat-1').toGeoJSON().geometry
@@ -115,7 +115,7 @@ describe('undoHandlers', () => {
       ctx.handleUndo(state)
       expect(ctx.getFeature('feat-1').toGeoJSON().geometry).toEqual(original)
       jest.runAllTimers()
-      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'commit-replace' }))
+      expect(map.fire).toHaveBeenCalledWith('draw.geometrychange', expect.objectContaining({ phase: 'change' }))
       jest.useRealTimers()
     })
 

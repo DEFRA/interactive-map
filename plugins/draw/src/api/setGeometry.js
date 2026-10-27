@@ -6,7 +6,7 @@ const copyCoordinates = (coordinates) => JSON.parse(JSON.stringify(coordinates))
 
 /**
  * Replace the shape being edited, e.g. with a corrected boundary. The change can be
- * undone and is checked like any other, with `phase: 'commit-replace'`.
+ * undone and is checked like any other, with `phase: 'change'`.
  *
  * Does nothing outside an edit session, or when the geometry type differs from the
  * shape being edited.
