@@ -9,10 +9,11 @@ import { isDrawingMode } from './drawModes.js'
  * - Map controls open: an explicit "I can't drag/pinch this map" signal from the user, so it
  *   counts for every interface type (a Voice Control user never registers as anything but 'mouse').
  * - Touch: always, while drawing.
+ * - Never while a finished shape is held waiting on its check — there's nothing left to place.
  *
  * @param {{ appState: Object, pluginState: Object }} context
  * @returns {boolean}
  */
 export const needsDrawTarget = ({ appState, pluginState }) =>
-  isDrawingMode(pluginState.mode) &&
+  isDrawingMode(pluginState.mode) && !pluginState.holding &&
   (appState.interfaceType === 'touch' || !!appState.expandedButtons?.has('mapControls'))

@@ -173,6 +173,10 @@ describe('top row buttons', () => {
       expect(item().enableWhen({ pluginState: { mode: 'edit_point', undoStackLength: 1 } })).toBe(true)
       expect(item().enableWhen({ pluginState: { mode: 'edit_point', undoStackLength: 0 } })).toBe(false)
     })
+
+    test('is disabled while a finished shape is held waiting on its check', () => {
+      expect(item().enableWhen({ pluginState: { mode: 'draw_polygon', numVertices: 3, holding: true } })).toBe(false)
+    })
   })
 
   describe('drawSnap', () => {
@@ -182,6 +186,10 @@ describe('top row buttons', () => {
       expect(item().hiddenWhen({ pluginState: { mode: null, hasSnapLayers: true } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: false } })).toBe(true)
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true } })).toBe(false)
+    })
+
+    test('is hidden while a finished shape is held waiting on its check', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true, holding: true } })).toBe(true)
     })
 
     test('is visible during draw_point, which supports snapping but has no undo/delete', () => {

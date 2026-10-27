@@ -98,6 +98,9 @@ export const manifest = {
       // Hidden for draw_point — nothing to undo before a single-click commit.
       hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode),
       enableWhen: ({ pluginState }) => {
+        if (pluginState.holding) {
+          return false
+        }
         if (isShapeDrawMode(pluginState.mode)) {
           return pluginState.numVertices > 0
         }
@@ -109,7 +112,7 @@ export const manifest = {
       id: 'drawSnap',
       label: 'Snap',
       iconId: 'magnet',
-      hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
+      hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers || !!pluginState.holding,
       pressedWhen: ({ pluginState }) => !!pluginState.snap,
       ...createButtonSlots(true, TOOLBAR_SLOT)
     },

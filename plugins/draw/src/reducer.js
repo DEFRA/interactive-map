@@ -8,8 +8,10 @@ const initialState = {
   tempFeature: null,
   selectedVertexIndex: -1,
   numVertices: null,
-  // Commit-level check status: 'idle' | 'pending' | 'valid' | 'invalid' | 'error'.
-  // Only 'valid' enables Done.
+  // Copies of the commit-check controller's state (validation/commitChecks.js), so the
+  // buttons can read it. Written only by events.js, from setOnSettle and hold(); nothing
+  // else should set them.
+  // Status of the latest check: 'idle' | 'pending' | 'valid' | 'invalid' | 'error'
   validationStatus: 'idle',
   // Whether a pending check has run long enough to show as "Checking…" (SLOW_CHECK_MS)
   checkSlow: false,

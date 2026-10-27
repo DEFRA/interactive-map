@@ -26,6 +26,10 @@ describe('needsDrawTarget', () => {
     expect(check('touch', mapControlsOpen, mode)).toBe(false)
   })
 
+  test('is false while a finished shape is held waiting on its check', () => {
+    expect(needsDrawTarget({ appState: { interfaceType: 'touch', expandedButtons: mapControlsOpen }, pluginState: { mode: 'draw_polygon', holding: true } })).toBe(false)
+  })
+
   test('treats a missing expandedButtons as map controls closed', () => {
     expect(check('mouse', undefined)).toBe(false)
   })
