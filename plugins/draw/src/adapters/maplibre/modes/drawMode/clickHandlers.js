@@ -2,25 +2,26 @@ import {
   getSnapInstance, isSnapActive, isSnapEnabled, createSnappedEvent, createSnappedClickEvent
 } from '../../utils/snapHelpers.js'
 import { attemptPlacement } from '../../../../validation/validateGeometry.js'
+import { CHANGE_PHASE } from '../../../../adapterEvents.js'
 
 // The commit-level geometrychange payload for a vertex commit: the placed-only
 // geometry (trailing rubber-band point dropped so validation tests the committed shape).
-const placedDrawGeometryChange = (feature, getCoords, phase) => {
+const placedDrawGeometryChange = (feature, getCoords) => {
   const placed = getCoords(feature).slice(0, -1)
   const type = feature.toGeoJSON().geometry.type
   const geometry = type === 'Polygon'
     ? { type: 'Polygon', coordinates: [placed] }
     : { type: 'LineString', coordinates: placed }
-  return { feature: { type: 'Feature', geometry, properties: {} }, phase, vertexIndex: Math.max(0, placed.length - 1) }
+  return { feature: { type: 'Feature', geometry, properties: {} }, phase: CHANGE_PHASE, vertexIndex: Math.max(0, placed.length - 1) }
 }
 
 // Fire a commit-level geometrychange for validation, deferred a tick so it runs after
 // the current click settles.
-const scheduleDrawValidation = (map, getFeature, getCoords, state, phase) => {
+const scheduleDrawValidation = (map, getFeature, getCoords, state) => {
   setTimeout(() => {
     const feature = getFeature(state)
     if (!feature) { return }
-    map.fire('draw.geometrychange', placedDrawGeometryChange(feature, getCoords, phase))
+    map.fire('draw.geometrychange', placedDrawGeometryChange(feature, getCoords))
   }, 0)
 }
 
@@ -66,8 +67,8 @@ const createClickHelpers = ({ geometryType, getFeature, getCoords }) => ({
 
   // Emit a commit-level geometrychange after a vertex commit (placement or undo)
   // so the validation layer can gate the Done button.
-  emitDrawValidation (state, phase = 'commit-add') {
-    scheduleDrawValidation(this.map, getFeature, getCoords, state, phase)
+  emitDrawValidation (state) {
+    scheduleDrawValidation(this.map, getFeature, getCoords, state)
   },
 
   onTap () {

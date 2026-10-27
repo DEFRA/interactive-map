@@ -215,7 +215,7 @@ test('undo re-validates with the inverse change phase (undo of a delete re-inser
   mode.undo()
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({
-    phase: 'commit-insert',
+    phase: 'change',
     vertexIndex: 1,
     feature: expect.any(Object)
   }))
@@ -373,7 +373,7 @@ test('destroy removes interactions, layers and listeners, and restores the featu
   expect(olFeature.getStyle()).toBeNull()
 })
 
-test('setGeometry replaces the shape as one undoable commit-replace, clearing the selection', () => {
+test('setGeometry replaces the shape as one undoable change, clearing the selection', () => {
   jest.useFakeTimers()
   const { manager, mode, ring } = setup()
   const replacement = [[0, 0], [200, 0], [200, 200], [0, 200], [0, 0]]
@@ -384,12 +384,12 @@ test('setGeometry replaces the shape as one undoable commit-replace, clearing th
   expect(ring()).toEqual(replacement)
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.VERTEX_SELECTION, { index: -1, numVertices: 4 })
   jest.runAllTimers()
-  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace' }))
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'change' }))
 
   manager.emit.mockClear()
   mode.undo()
   expect(ring()).toEqual(RING)
   jest.runAllTimers()
-  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace' }))
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'change' }))
   jest.useRealTimers()
 })

@@ -283,7 +283,7 @@ export class MaplibreDrawAdapter {
     this._map.fire(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, { index })
   }
 
-  // Replaces the edited shape as a single undoable commit ('commit-replace'). Bridged into
+  // Replaces the edited shape as a single undoable change. Bridged into
   // the mode via a custom event, same pattern as insertVertexAtMidpoint.
   setGeometry (geometry) {
     this._map.fire(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, { geometry })

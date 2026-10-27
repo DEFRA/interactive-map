@@ -5,9 +5,7 @@
  *   - 'preview' and 'place' go to `onGeometryPreview`, which must answer synchronously
  *   - every other phase goes to `onGeometryChange`, which may return a Promise
  *
- * @typedef {'preview' | 'place' | 'create' | 'edit-start' | 'recheck' |
- *   'commit-add' | 'commit-move' | 'commit-insert' | 'commit-delete' |
- *   'commit-replace'} GeometryChangePhase
+ * @typedef {'preview' | 'place' | 'change' | 'create' | 'edit-start' | 'recheck'} GeometryChangePhase
  *
  *   'preview'        - live, in-progress feedback (drag / rubber-band); nothing
  *                      has committed yet, and nothing can be vetoed at this stage.
@@ -24,12 +22,13 @@
  *   'edit-start'     - an existing feature was just loaded into an edit session;
  *                      nothing has changed yet, this is the baseline check.
  *   'recheck'        - the unchanged shape is checked again (recheckGeometry).
- *   'commit-add'     - a vertex was added while drawing.
- *   'commit-move'    - a vertex was dragged/nudged while editing.
- *   'commit-insert'  - a vertex was inserted at a midpoint while editing.
- *   'commit-delete'  - a vertex was removed while editing.
- *   'commit-replace' - the whole shape was replaced (setGeometry).
+ *   'change'         - the shape changed: a vertex was added, moved, inserted or
+ *                      removed, the whole shape was replaced (setGeometry), or a
+ *                      change was undone.
  */
+
+// The phase every committed change reports (see GeometryChangePhase)
+export const CHANGE_PHASE = 'change'
 
 /**
  * The event object passed to a user's `onGeometryPreview` or `onGeometryChange`
@@ -55,9 +54,9 @@
  * @property {'draw_polygon' | 'draw_line' | 'draw_point' | 'edit_vertex' | 'edit_point'} mode -
  *   the active draw mode. Always present.
  * @property {number} [vertexIndex] - index of the vertex being placed, added,
- *   moved, inserted, or deleted. Present on 'place' and the vertex 'commit-*'
- *   phases; absent on 'preview', 'create', 'edit-start', 'recheck' and
- *   'commit-replace' (those have no single vertex to point at).
+ *   moved, inserted, or deleted. Present on 'place' and on a 'change' to a single
+ *   vertex; absent on 'preview', 'create', 'edit-start', 'recheck' and a
+ *   setGeometry 'change' (those have no single vertex to point at).
  * @property {number} [numVertices] - count of already-committed vertices,
  *   excluding any in-progress rubber-band cursor point. Present on every
  *   'preview' call, with no minimum — including 0, against the very first
@@ -101,9 +100,8 @@
  *                            - Preview (draw/split live update): the in-progress
  *                              feature itself (has `coordinates`, no `phase`).
  *                            - Commit-level validation: `{ feature, phase, vertexIndex }`
- *                              where phase ∈ 'commit-add' | 'commit-move' |
- *                              'commit-insert' | 'commit-delete' | 'commit-replace'
- *                              (see GeometryChangePhase). events.js checks these
+ *                              where phase is 'change' (CHANGE_PHASE, see
+ *                              GeometryChangePhase). events.js checks these
  *                              (validation/commitChecks.js) to gate Done; it never
  *                              reverts them.
  *                          Listeners must guard for the shape they expect.

@@ -36,7 +36,7 @@ describe('validateGeometry (soft gating)', () => {
   test('passes the context to rules as (feature, context), and to the callback as a single flattened event object', () => {
     const rule = jest.fn(() => ({ valid: true }))
     const onGeometryPreview = jest.fn(() => ({ valid: true }))
-    const context = { phase: 'commit-move', vertexIndex: 2, mode: 'edit_vertex' }
+    const context = { phase: 'change', vertexIndex: 2, mode: 'edit_vertex' }
     validateGeometry(square, context, { rules: [rule], onGeometryPreview })
     expect(rule).toHaveBeenCalledWith(square, context)
     expect(onGeometryPreview).toHaveBeenCalledWith({ feature: square, ...context })

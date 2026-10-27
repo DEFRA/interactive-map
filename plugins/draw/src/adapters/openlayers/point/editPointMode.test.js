@@ -219,7 +219,7 @@ test('nudgeSelectedVertex (MapControls D-pad) moves the point and is undoable', 
   mode.undo() // empty stack — no-op
 })
 
-test('undo re-validates with the commit-move phase', () => {
+test('undo re-validates with the change phase', () => {
   jest.useFakeTimers()
   const { manager, mode } = setup()
   mode.nudgeSelectedVertex(1, 0, true)
@@ -228,7 +228,7 @@ test('undo re-validates with the commit-move phase', () => {
   mode.undo()
   jest.runAllTimers()
   expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({
-    phase: 'commit-move',
+    phase: 'change',
     vertexIndex: 0,
     feature: expect.any(Object)
   }))
@@ -342,7 +342,7 @@ test('destroy removes the point drag interaction and listeners', () => {
   expect(map.interactions.length).toBeLessThan(interactionsBefore)
 })
 
-test('setGeometry moves the point as one undoable commit-replace', () => {
+test('setGeometry moves the point as one undoable change', () => {
   jest.useFakeTimers()
   const { manager, mode, coord } = setup([5, 5])
   manager.emit.mockClear()
@@ -350,13 +350,13 @@ test('setGeometry moves the point as one undoable commit-replace', () => {
   mode.setGeometry({ type: 'Point', coordinates: [9, 9] })
   expect(coord()).toEqual([9, 9])
   jest.runAllTimers()
-  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace', vertexIndex: 0 }))
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'change', vertexIndex: 0 }))
 
   manager.emit.mockClear()
   mode.undo()
   expect(coord()).toEqual([5, 5])
   jest.runAllTimers()
-  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'commit-replace' }))
+  expect(manager.emit).toHaveBeenCalledWith(ADAPTER_EVENTS.GEOMETRY_CHANGE, expect.objectContaining({ phase: 'change' }))
   jest.useRealTimers()
 })
 

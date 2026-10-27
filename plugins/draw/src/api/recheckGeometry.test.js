@@ -12,7 +12,7 @@ describe('recheckGeometry', () => {
       .mockReturnValueOnce({ valid: false, reason: 'near a parcel' })
       .mockReturnValueOnce(true)
     const checks = getCommitChecks(draw)
-    checks.run({ feature: square, context: { phase: 'commit-move', mode: 'edit_vertex' }, onGeometryChange: draw._commitValidator })
+    checks.run({ feature: square, context: { phase: 'change', mode: 'edit_vertex' }, onGeometryChange: draw._commitValidator })
     expect(checks.state.status).toBe('invalid')
 
     expect(recheckGeometry({ mapProvider: { draw } })).toBe(true)
@@ -33,7 +33,7 @@ describe('recheckGeometry', () => {
   test('does nothing outside a draw/edit session', () => {
     const draw = makeDraw('disabled')
     draw._commitValidator = jest.fn(() => true)
-    getCommitChecks(draw).run({ feature: square, context: { phase: 'commit-move' } })
+    getCommitChecks(draw).run({ feature: square, context: { phase: 'change' } })
     expect(recheckGeometry({ mapProvider: { draw } })).toBe(false)
     expect(draw._commitValidator).not.toHaveBeenCalled()
   })

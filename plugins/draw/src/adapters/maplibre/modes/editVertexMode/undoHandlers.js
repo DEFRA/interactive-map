@@ -6,28 +6,8 @@ import {
 import { scalePoint } from './helpers.js'
 import { sharedUndoHandlers } from '../../utils/geometryValidation.js'
 
-// Map an undo-stack op type onto the geometry-change `phase` consumed by validation. Read off
-// `this` by the shared pushUndo mixin (utils/geometryValidation.js) — see that file's comment.
-const UNDO_OP_PHASE = {
-  move_vertex: 'commit-move',
-  insert_vertex: 'commit-insert',
-  delete_vertex: 'commit-delete',
-  replace_geometry: 'commit-replace'
-}
-
-// Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
-// so its re-validation reports the inverse phase.
-const UNDO_INVERSE_PHASE = {
-  move_vertex: 'commit-move',
-  insert_vertex: 'commit-delete',
-  delete_vertex: 'commit-insert',
-  replace_geometry: 'commit-replace'
-}
-
 export const undoHandlers = {
   ...sharedUndoHandlers,
-  UNDO_OP_PHASE,
-  UNDO_INVERSE_PHASE,
 
   handleUndo (state) {
     const undoStack = this.map._undoStack
@@ -50,7 +30,7 @@ export const undoHandlers = {
     }
     // An undo commits the inverse change, so it must re-validate like any other
     // commit — otherwise the invalid stroke and the Done gate go stale.
-    this.emitGeometryValidation(UNDO_INVERSE_PHASE[op.type], op.vertexIndex, op.featureId)
+    this.emitGeometryValidation(op.vertexIndex, op.featureId)
   },
 
   undoMoveVertex (state, op) {

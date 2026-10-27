@@ -178,13 +178,13 @@ describe('split', () => {
       expect(result).toEqual({ valid: true })
     })
 
-    test('a committed vertex (phase: commit-add) updates the visual colour and returns the verdict that gates Done', () => {
+    test('a committed vertex (phase: change) updates the visual colour and returns the verdict that gates Done', () => {
       const { context, dispatch, draw } = makeContext()
       splitPolygon.mockReturnValue(null)
       split(context, 'poly')
 
       const feature = lineFeature([[0, 0], [1, 1]])
-      const result = draw._commitValidator({ feature, phase: 'commit-add', mode: 'draw_line', vertexIndex: 1 })
+      const result = draw._commitValidator({ feature, phase: 'change', mode: 'draw_line', vertexIndex: 1 })
 
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
       expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: false } })

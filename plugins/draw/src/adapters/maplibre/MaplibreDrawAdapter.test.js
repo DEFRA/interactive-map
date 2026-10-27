@@ -315,7 +315,7 @@ describe('live invalid stroke (draw mode)', () => {
 
   test('commit-level (has a phase) events do not drive the stroke; events.js owns those', () => {
     const { map } = drawPolygonSetup()
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: bowtie, phase: 'commit-add', vertexIndex: 3 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: bowtie, phase: 'change', vertexIndex: 3 })
     expect(map.setLayoutProperty).not.toHaveBeenCalled()
   })
 
@@ -775,7 +775,7 @@ describe('simple delegations', () => {
     const render = jest.fn()
     // A commit event (has a phase) must not become the cached preview target — it
     // carries a `feature`, not the live `properties` object rubber-band moves do.
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: {}, phase: 'commit-add', ctx: { store: { render } } })
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: {}, phase: 'change', ctx: { store: { render } } })
 
     expect(() => adapter.setDrawingPreviewProperty('splitter', 'valid')).not.toThrow()
     expect(render).not.toHaveBeenCalled()
