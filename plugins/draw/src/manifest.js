@@ -67,8 +67,9 @@ export const manifest = {
       // Shown with the crosshair, using the same needsDrawTarget rule. Not shown for keyboard (Enter places).
       hiddenWhen: ({ appState, pluginState }) => !needsDrawTarget({ appState, pluginState }),
       // Disabled while placing at the crosshair would be vetoed (validatePlacement) —
-      // driven live so the button never looks active when a tap would do nothing.
-      enableWhen: ({ pluginState }) => pluginState.canAddPoint,
+      // driven live so the button never looks active when a tap would do nothing. Also
+      // disabled, though the crosshair hides, while a finished shape waits on its check.
+      enableWhen: ({ pluginState }) => pluginState.canAddPoint && !pluginState.holding,
       ...createButtonSlots(true)
     },
     {
@@ -112,7 +113,8 @@ export const manifest = {
       id: 'drawSnap',
       label: 'Snap',
       iconId: 'magnet',
-      hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers || !!pluginState.holding,
+      hiddenWhen: ({ pluginState }) => !pluginState.mode || !pluginState.hasSnapLayers,
+      enableWhen: ({ pluginState }) => !pluginState.holding,
       pressedWhen: ({ pluginState }) => !!pluginState.snap,
       ...createButtonSlots(true, TOOLBAR_SLOT)
     },

@@ -72,8 +72,9 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   // Mirrored in the render body so the crosshair effect's cleanup below can read the CURRENT
   // shouldShowCrosshair decision, not the stale one its closure captured when it last ran.
   const shouldShowCrosshairRef = useRef(false)
-  shouldShowCrosshairRef.current = needsDrawTarget({ appState, pluginState }) ||
-    (isDrawingMode(pluginState.mode) && appState.interfaceType === 'keyboard')
+  // Not while a finished shape is held waiting on its check — there's nothing left to place.
+  shouldShowCrosshairRef.current = !pluginState.holding && (needsDrawTarget({ appState, pluginState }) ||
+    (isDrawingMode(pluginState.mode) && appState.interfaceType === 'keyboard'))
 
   useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus, symbolRegistry })
 

@@ -53,6 +53,11 @@ describe('drawAddPoint', () => {
     expect(btn.enableWhen({ pluginState: { canAddPoint: true } })).toBe(true)
     expect(btn.enableWhen({ pluginState: { canAddPoint: false } })).toBe(false)
   })
+
+  test('is disabled, not hidden, while a finished shape waits on its check', () => {
+    expect(findButton('drawAddPoint').hiddenWhen({ appState: { interfaceType: 'touch' }, pluginState: { mode: 'draw_polygon', holding: true } })).toBe(false)
+    expect(findButton('drawAddPoint').enableWhen({ pluginState: { canAddPoint: true, holding: true } })).toBe(false)
+  })
 })
 
 describe('drawDone', () => {
@@ -179,7 +184,8 @@ describe('top row buttons', () => {
       expect(item().enableWhen({ pluginState: { mode: 'edit_point', undoStackLength: 0 } })).toBe(false)
     })
 
-    test('is disabled while a finished shape is held waiting on its check', () => {
+    test('is disabled while Done waits on a check', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_polygon', holding: true } })).toBe(false)
       expect(item().enableWhen({ pluginState: { mode: 'draw_polygon', numVertices: 3, holding: true } })).toBe(false)
     })
   })
@@ -193,8 +199,10 @@ describe('top row buttons', () => {
       expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true } })).toBe(false)
     })
 
-    test('is hidden while a finished shape is held waiting on its check', () => {
-      expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true, holding: true } })).toBe(true)
+    test('is disabled while Done waits on a check', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'draw_line', hasSnapLayers: true, holding: true } })).toBe(false)
+      expect(item().enableWhen({ pluginState: { holding: true } })).toBe(false)
+      expect(item().enableWhen({ pluginState: { holding: false } })).toBe(true)
     })
 
     test('is visible during draw_point, which supports snapping but has no undo/delete', () => {
@@ -211,6 +219,7 @@ describe('top row buttons', () => {
     const item = () => findButton('drawDeletePoint')
 
     test('is disabled while Done waits on a check', () => {
+      expect(item().hiddenWhen({ pluginState: { mode: 'edit_vertex', holding: true } })).toBe(false)
       expect(item().enableWhen({ pluginState: { selectedVertexIndex: 1, numVertices: 5, feature: { geometry: { type: 'Polygon' } }, holding: true } })).toBe(false)
     })
 

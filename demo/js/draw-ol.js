@@ -45,12 +45,26 @@ const getAllCoordinates = (coordinates) => {
 const isEastOfWalesBorder = (geometry) =>
   getAllCoordinates(geometry.coordinates).every(([lng]) => lng > WALES_BORDER_EASTING)
 
+// Stands in for a server-side check: resolves after a delay, or rejects if the shape
+// changes again first
+const wait = (ms, signal) => new Promise((resolve, reject) => {
+  const timer = setTimeout(resolve, ms)
+  signal.addEventListener('abort', () => { clearTimeout(timer); reject(signal.reason) }, { once: true })
+})
+
 const drawPlugin = createDrawPlugin({
   snapLayers: ['OS/TopographicArea_1/Agricultural Land', 'OS/TopographicLine/Building Outline'],
-  onGeometryPreview: (event) => { console.log(event.phase); return {
+  onGeometryPreview: (event) => ({
     valid: isEastOfWalesBorder(event.feature.geometry),
     reason: 'Points must be placed east of the England/Wales border'
-  }}
+  }),
+  onGeometryChange: async (event, { signal }) => {
+    await wait(800, signal)
+    return {
+      valid: isEastOfWalesBorder(event.feature.geometry),
+      reason: 'Shapes must be east of the England/Wales border'
+    }
+  }
 })
 
 const interactiveMap = new InteractiveMap('map', {
