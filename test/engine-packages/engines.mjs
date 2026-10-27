@@ -39,7 +39,7 @@ const RASTER_STYLE = { id: 'test', type: 'raster', url: 'tiles/{z}/{x}/{y}.png' 
 export const ENGINE_CHECKS = {
   maplibre: {
     name: 'maplibre',
-    packageName: '@defra/interactive-map-maplibre',
+    packageName: '@defra/interactive-map',
     mapStyle: VECTOR_STYLE,
     center: [-1.5, 53],
     zoom: 12,
