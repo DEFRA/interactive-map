@@ -328,51 +328,54 @@ new InteractiveMap('map', {
 
 ---
 
-### `mapProvider`
-**Type:** `function`
-**Required**
+### `mapProviderOptions`
+**Type:** `Object`
 
-A function that returns a map provider — the abstraction layer that interfaces with the underlying map engine. It is called only when the map is opened so the provider code is not sent to the user unless needed.
+Settings for the map engine. Which settings apply depends on the package.
 
-```js
-new InteractiveMap('map', {
-  mapProvider: maplibreProvider()
-})
-```
-
-#### MapLibre provider options
-
-`maplibreProvider()` accepts an optional config object.
+#### MapLibre (`@defra/interactive-map`)
 
 ##### `workerUrl`
 **Type:** `string`
-**Default:** `undefined`
 
-URL of the MapLibre worker file. This is set automatically with webpack, Vite and the UMD build.
+URL of the MapLibre worker file. This is set for you with webpack, Vite and the UMD scripts.
 
-With other bundlers (such as Rollup and esbuild), copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here. If it's missing, the console explains this.
+With Rollup or esbuild, copy `node_modules/maplibre-gl/dist/maplibre-gl-worker.mjs` to your assets and set its URL here. If it's missing, the console explains this.
 
 ```js
-maplibreProvider({ workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' })
+mapProviderOptions: { workerUrl: '/your-assets-path/maplibre-gl-worker.mjs' }
 ```
 
-#### OpenLayers provider options
+#### OpenLayers (`@defra/interactive-map-openlayers`)
 
-`openLayersProvider()` accepts an optional config object. The provider renders in British National Grid (EPSG:27700) — this isn't configurable.
+The map is always in British National Grid (EPSG:27700).
 
 ##### `zoomAlignment`
 **Type:** `string`
 **Default:** `'uk'`
 
-Which zoom-level sequence the map's view resolutions follow.
+Which zoom levels the map uses.
 
 | Possible values | Description |
 | :--- | :--- |
-| `'uk'` | OS tile grid zoom levels (0–13); zoom 0 shows all of Great Britain. |
-| `'world'` | ESRI LOD sequence, for zoom levels that match the ESRI SDK; full UK visible around zoom 7. |
+| `'uk'` | OS tile grid zoom levels (0–13). Zoom 0 shows all of Great Britain. |
+| `'world'` | The same zoom levels as the ArcGIS SDK. All of the UK shows at about zoom 7. |
 
 ```js
-openLayersProvider({ zoomAlignment: 'world' })
+mapProviderOptions: { zoomAlignment: 'world' }
+```
+
+#### Esri (`@defra/interactive-map-esri`)
+
+##### `setupConfig`
+**Type:** `function`
+
+Called with the ArcGIS SDK's `esriConfig` before the map is created, for example to set an API key.
+
+```js
+mapProviderOptions: {
+  setupConfig: (esriConfig) => { esriConfig.apiKey = 'YOUR_API_KEY' }
+}
 ```
 
 ---

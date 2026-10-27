@@ -1,9 +1,11 @@
 # Draw Plugin
 
-The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure in the plugin itself.
+The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged.
 
-> [!IMPORTANT]
-> **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
+It works the same with `@defra/interactive-map` (MapLibre) and `@defra/interactive-map-openlayers`.
+
+> [!NOTE]
+> `@defra/interactive-map-esri` has a separate draw plugin, imported the same way, with limited features. It only draws and edits polygons, and doesn't support the options, validation or most of the methods below.
 
 ## ESM usage
 
@@ -26,7 +28,7 @@ interactiveMap.on('map:ready', () => {
 
 ## UMD usage
 
-Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins/draw/umd/`. The plugin uses dynamic imports to load MapLibre or OpenLayers support on demand, so all files in the directory must be served from the same location. Then add the script tag:
+Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins/draw/umd/`. The plugin loads the rest of its files when it's used, so all files in the directory must be served from the same location. Then add the script tag:
 
 ```html
 <script defer src="/your-assets-path/plugins/draw/umd/index.js"></script>
@@ -36,7 +38,6 @@ Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins
 const drawPlugin = defra.drawPlugin()
 
 const interactiveMap = new defra.InteractiveMap('map', {
-  mapProvider: defra.maplibreProvider(),
   plugins: [drawPlugin]
 })
 ```

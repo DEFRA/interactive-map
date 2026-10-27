@@ -13,7 +13,6 @@ Add markers to the map and allow users to select them. Selecting a marker fires 
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createInteractPlugin from '@defra/interactive-map/plugins/interact'
 
       const interactPlugin = createInteractPlugin({
@@ -22,7 +21,6 @@ Add markers to the map and allow users to select them. Selecting a marker fires 
 
       const map = new InteractiveMap('my-map', {
         behaviour: 'inline',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -70,7 +68,6 @@ Add markers to the map and allow users to select them. Selecting a marker fires 
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
       <script defer src="/your-assets-path/interact-plugin/index.js"></script>
 
       <script>
@@ -81,7 +78,6 @@ Add markers to the map and allow users to select them. Selecting a marker fires 
 
         const map = new defra.InteractiveMap('my-map', {
           behaviour: 'inline',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: {
             url: 'https://your-tile-url/style.json',
             logo: '/path/to/logo.svg',
