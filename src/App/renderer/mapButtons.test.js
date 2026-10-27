@@ -165,6 +165,15 @@ describe('mapButtons module', () => {
       expect(result.props).toMatchObject({ isDisabled: true, isHidden: true, isPressed: true, isExpanded: true })
     })
 
+    it('evaluates busyWhen on render, and leaves isBusy undefined without it', () => {
+      const busyEvaluate = jest.fn((prop) => (typeof prop === 'function' ? prop() : prop))
+      const busy = SlotButton({ buttonId: 'id', config: { ...baseBtn, busyWhen: () => true }, appState, appConfig, evaluateProp: busyEvaluate })
+      expect(busy.props.isBusy).toBe(true)
+      const idle = SlotButton({ buttonId: 'id', config: { ...baseBtn, busyWhen: () => false }, appState, appConfig, evaluateProp: busyEvaluate })
+      expect(idle.props.isBusy).toBe(false)
+      expect(render(baseBtn).props.isBusy).toBeUndefined()
+    })
+
     it.each([
       [{ slot: 'right-top', open: false }, 'dialog'],
       [{ slot: 'right-top', open: false, dismissible: false }, 'region'],
