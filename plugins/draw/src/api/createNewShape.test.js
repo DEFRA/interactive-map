@@ -37,7 +37,7 @@ describe('createNewShape', () => {
     const { context, dispatch, eventBus, draw } = makeContext()
     createNewShape('draw_custom')(context, 'f1')
 
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_custom' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:started', { mode: 'draw_custom', featureId: 'f1' })
     expect(draw.changeMode).toHaveBeenCalledWith('draw_custom', expect.objectContaining({ featureId: 'f1' }))
     expect(dispatch).toHaveBeenCalledWith({ type: 'SET_MODE', payload: 'draw_custom' })
   })

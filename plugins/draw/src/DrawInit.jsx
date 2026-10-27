@@ -4,7 +4,8 @@ import { loadDrawAdapter } from './adapters/loadDrawAdapter.js'
 import { attachEvents } from './events.js'
 import { useSpatialList } from './hooks/useSpatialList.js'
 import { APPLICATION_MODE_ID } from './defaults.js'
-import { needsDrawTarget, isDrawingMode } from './utils/needsDrawTarget.js'
+import { needsDrawTarget } from './utils/needsDrawTarget.js'
+import { isDrawingMode, isSessionMode } from './utils/drawModes.js'
 import { logger } from '../../../src/services/logger.js'
 
 // Resolves in a later task, after any effects Preact is still running
@@ -71,8 +72,9 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
   // Mirrored in the render body so the crosshair effect's cleanup below can read the CURRENT
   // shouldShowCrosshair decision, not the stale one its closure captured when it last ran.
   const shouldShowCrosshairRef = useRef(false)
-  shouldShowCrosshairRef.current = needsDrawTarget({ appState, pluginState }) ||
-    (isDrawingMode(pluginState.mode) && appState.interfaceType === 'keyboard')
+  // Not while a finished shape is held waiting on its check — there's nothing left to place.
+  shouldShowCrosshairRef.current = !pluginState.holding && (needsDrawTarget({ appState, pluginState }) ||
+    (isDrawingMode(pluginState.mode) && appState.interfaceType === 'keyboard'))
 
   useLoadDrawAdapter({ mapState, pluginConfig, pluginState, mapProvider, eventBus, symbolRegistry })
 
@@ -111,12 +113,12 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
         crossHair.hide()
       }
     }
-  }, [pluginState.mode, appState.interfaceType, appState.expandedButtons])
+  }, [pluginState.mode, pluginState.holding, appState.interfaceType, appState.expandedButtons])
 
   // Keep the active draw/edit session's interface type in sync so the touch offset target and
   // rubber band update immediately if the input device changes mid-session.
   useEffect(() => {
-    if (!['edit_vertex', 'edit_point', 'draw_polygon', 'draw_line', 'draw_point'].includes(pluginState.mode) || !mapProvider.draw) {
+    if (!isSessionMode(pluginState.mode) || !mapProvider.draw) {
       return undefined
     }
     mapProvider.draw.setInterfaceType(appState.interfaceType)
@@ -138,7 +140,8 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
       pluginState,
       events: EVENTS,
       eventBus,
-      hints
+      hints,
+      announce: services.announce
     })
   }, [mapProvider, appState, pluginState])
 }

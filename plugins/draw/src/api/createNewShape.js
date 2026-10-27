@@ -1,4 +1,5 @@
 import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
+import { startCheckSession } from '../validation/commitChecks.js'
 
 // Shared body for newLine/newPolygon — the two are identical except which draw_* mode they
 // enter, so that's the only thing parameterised here. Kept out of newPoint.js: a Point also
@@ -12,15 +13,14 @@ export const createNewShape = (mode) => ({ appState, appConfig, pluginConfig, pl
     return
   }
 
-  eventBus.emit('draw:started', { mode })
+  const { stroke, fill, strokeWidth, properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
+  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig, eventBus)
+  eventBus.emit('draw:started', { mode, featureId })
 
   const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
   draw.setSnapLayers(snapLayers)
   dispatch({ type: 'SET_HAS_SNAP_LAYERS', payload: snapLayers?.length > 0 })
 
-  const { stroke, fill, strokeWidth, properties: customProperties, onGeometryChange, ...modeOptions } = options
-  // Per-call callback overrides the plugin-level one; events.js reads this on every commit.
-  draw._geometryValidator = onGeometryChange ?? pluginConfig.onGeometryChange
   const properties = {
     ...customProperties,
     ...flattenStyleProperties({ stroke, fill, strokeWidth })

@@ -27,6 +27,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
+ *   setGeometry(geometry)
  *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
@@ -83,15 +84,17 @@ export class OLDrawAdapter {
   getVertexItems () { return this._manager.getVertexItems() }
   selectVertex (index) { this._manager.selectVertex(index) }
   insertVertexAtMidpoint (index) { this._manager.insertVertexAtMidpoint(index) }
+  setGeometry (geometry) { this._manager.setGeometry(geometry) }
 
-  // Record the current geometry validity so the draw mode can block finish gestures
-  // (double-click / click-to-close) while the in-progress shape is invalid.
-  setGeometryValid (valid) { this._manager._geometryValid = valid }
+  // Record whether the in-progress shape can be finished, so the draw mode can block finish
+  // gestures (double-click / click-to-close) while its latest check has failed.
+  setCanFinish (canFinish) { this._manager._canFinish = canFinish }
 
-  // The api entry points assign the active user validator to the adapter; store it
-  // on the manager so the draw mode can veto placements synchronously.
-  set _geometryValidator (fn) { this._manager._geometryValidator = fn }
-  get _geometryValidator () { return this._manager._geometryValidator }
+  // The api entry points assign the session's onGeometryPreview callback to the adapter
+  // (see validation/commitChecks.js's startCheckSession); store it on the manager so the
+  // draw mode can veto placements synchronously.
+  set _previewValidator (fn) { this._manager._previewValidator = fn }
+  get _previewValidator () { return this._manager._previewValidator }
 
   // Show/hide the dashed invalid stroke on the active sketch or edit feature.
   setInvalid (invalid) { this._manager.setInvalid(invalid) }

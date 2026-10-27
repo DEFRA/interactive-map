@@ -1,6 +1,6 @@
 import MapboxDraw from '@mapbox/mapbox-gl-draw'
 import { createLifecycle } from './drawMode/lifecycle.js'
-import { validatePlacement } from '../../../validation/validateGeometry.js'
+import { validatePlacement, toPlacementBlocked } from '../../../validation/validateGeometry.js'
 import {
   getSnapInstance, isSnapEnabled, isSnapActive, getSnapLngLat, triggerSnapAtPoint, triggerSnapAtCenter
 } from '../utils/snapHelpers.js'
@@ -16,15 +16,12 @@ const INTERFACE_KEYS = new Set(['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown
 // Polygon/LineString via MODE_BY_GEOMETRY, so a Point candidate is built and validated directly.
 const canPlace = (map, coord) => {
   const candidate = { type: 'Feature', geometry: { type: 'Point', coordinates: coord }, properties: {} }
-  const { valid, reason } = validatePlacement(
-    candidate,
-    { mode: MODE, vertexIndex: 0 },
-    { onGeometryChange: map._drawGeometryValidator }
-  )
-  if (!valid) {
-    map.fire('draw.placementblocked', { feature: candidate, reason: reason ?? null, phase: 'place', mode: MODE, vertexIndex: 0 })
+  const context = { mode: MODE, vertexIndex: 0 }
+  const result = validatePlacement(candidate, context, { onGeometryPreview: map._drawPreviewValidator })
+  if (!result.valid) {
+    map.fire('draw.placementblocked', toPlacementBlocked(candidate, result, context))
   }
-  return valid
+  return result.valid
 }
 
 const ParentMode = MapboxDraw.modes.draw_point

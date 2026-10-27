@@ -77,7 +77,7 @@ describe('pointerHandlers', () => {
 
   test('onClick is vetoed by a rejecting geometry validator, firing draw.placementblocked with a fallback null reason, and leaving the point untouched', () => {
     const { ctx, state, map } = createHarness()
-    map._drawGeometryValidator = () => false // no {reason} shape
+    map._drawPreviewValidator = () => false // no {reason} shape
     ctx.onClick(state, { featureTarget: undefined, lngLat: { lng: 9, lat: 9 }, point: { x: 90, y: 90 } })
     expect(state.feature.coordinates).toEqual([5, 5])
     expect(map.fire).toHaveBeenCalledWith('draw.placementblocked', expect.objectContaining({ reason: null }))

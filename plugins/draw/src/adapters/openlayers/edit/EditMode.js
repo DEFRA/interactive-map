@@ -14,25 +14,6 @@ import { createLiveStroke } from '../../../validation/liveStroke.js'
 
 const TOUCH_INTERFACE = 'touch'
 const VERTEX_TYPE = 'vertex'
-const MOVE_VERTEX = 'commit-move'
-const INSERT_VERTEX = 'commit-insert'
-const DELETE_VERTEX = 'commit-delete'
-
-// Map an undo-op type onto the geometry-change `phase` consumed by validation.
-const OP_PHASE = {
-  move_vertex: MOVE_VERTEX,
-  insert_vertex: INSERT_VERTEX,
-  delete_vertex: DELETE_VERTEX
-}
-
-// Undoing an op commits the inverse change (undo of a delete re-inserts, etc.),
-// so its re-validation reports the inverse phase.
-const UNDO_INVERSE_PHASE = {
-  move_vertex: MOVE_VERTEX,
-  insert_vertex: DELETE_VERTEX,
-  delete_vertex: INSERT_VERTEX
-}
-
 // Live invalid-stroke wiring: re-validate the displayed geometry on every geometry
 // change (Modify drag, touch drag, keyboard nudge) via the shared controller —
 // default rules synchronously, user callback throttled. All committed vertices are
@@ -72,7 +53,7 @@ const wireLiveStroke = ({ map, manager, olFeature }) => {
       feature: { type: 'Feature', geometry: { type, coordinates } },
       context: { mode: 'edit_vertex' },
       numVertices,
-      onGeometryChange: manager._geometryValidator
+      onGeometryPreview: manager._previewValidator
     })
   }
   olFeature.getGeometry().on('change', updateLiveValidity)
@@ -109,7 +90,7 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
     }
     undoStack.push({ type: 'delete_vertex', vertexIndex: result.deletedIndex, deletedCoord: result.deletedCoord })
     syncGeom()
-    emitGeometryValidation(DELETE_VERTEX, result.deletedIndex)
+    emitGeometryValidation(result.deletedIndex)
     setState({ selectedVertexIndex: -1, selectedVertexType: null })
   }
 
@@ -123,7 +104,7 @@ const createVertexActions = ({ olFeature, undoStack, selection, getTouchHandler 
     syncGeom()
     // An undo commits the inverse change, so it must re-validate like any other
     // commit — otherwise the invalid stroke and the Done gate go stale.
-    emitGeometryValidation(UNDO_INVERSE_PHASE[op.type], restoredIndex)
+    emitGeometryValidation(restoredIndex)
     // Only re-select if a vertex was already active — undo must not create a new selection
     const newIndex = previousIndex >= 0 ? restoredIndex : -1
     setState({
@@ -152,7 +133,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
+      emitGeometryValidation(vertexIndex)
       selectVertex(vertexIndex)
       touchHandler.updateTargetPosition()
     },
@@ -173,7 +154,7 @@ const wireTouchHandler = ({ map, container, manager, snap, olFeature, undoStack,
       }
       undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
       syncGeom()
-      emitGeometryValidation(INSERT_VERTEX, result.insertedIndex)
+      emitGeometryValidation(result.insertedIndex)
       selectVertex(result.insertedIndex)
       touchHandler.updateTargetPosition()
     }
@@ -202,13 +183,13 @@ const wireKeyboardHandler = ({ map, container, snap, undoStack, selection, touch
     onVertexMoved ({ vertexIndex, previousCoord }) {
       undoStack.push({ type: 'move_vertex', vertexIndex, previousCoord })
       syncGeom()
-      emitGeometryValidation(MOVE_VERTEX, vertexIndex)
+      emitGeometryValidation(vertexIndex)
       setState({ selectedVertexIndex: vertexIndex, selectedVertexType: VERTEX_TYPE })
     },
     onInserted ({ insertedIndex }) {
       undoStack.push({ type: 'insert_vertex', vertexIndex: insertedIndex })
       syncGeom()
-      emitGeometryValidation(INSERT_VERTEX, insertedIndex)
+      emitGeometryValidation(insertedIndex)
     },
     onDeleted: actions.doDeleteVertex,
     onUndo: actions.doUndo,
@@ -321,9 +302,21 @@ const buildModeApi = ({ manager, store, olFeature, originalFeatureStyle, selecti
       }
       undoStack.push({ type: 'insert_vertex', vertexIndex: result.insertedIndex })
       syncGeom()
-      emitGeometryValidation(INSERT_VERTEX, result.insertedIndex)
+      emitGeometryValidation(result.insertedIndex)
       setState({ selectedVertexIndex: result.insertedIndex, selectedVertexType: VERTEX_TYPE })
       touchHandler.updateTargetPosition()
+    },
+
+    // Replaces the whole shape (e.g. a corrected boundary from the consumer) as one undoable
+    // commit. Vertex indices no longer refer to the same points, so the selection is cleared.
+    setGeometry (geometry) {
+      const geom = olFeature.getGeometry()
+      undoStack.push({ type: 'replace_geometry', previousCoordinates: geom.getCoordinates() })
+      geom.setCoordinates(geometry.coordinates)
+      syncGeom()
+      emitGeometryValidation()
+      setState({ selectedVertexIndex: -1, selectedVertexType: null })
+      touchHandler.hide()
     },
 
     destroy () {
@@ -381,7 +374,7 @@ export const createEditMode = ({ map, manager, options }) => {
         return
       }
       undoStack.push(op)
-      emitGeometryValidation(OP_PHASE[op.type], op.vertexIndex)
+      emitGeometryValidation(op.vertexIndex)
       setState({ selectedVertexIndex: op.vertexIndex, selectedVertexType: VERTEX_TYPE })
     }
   })
