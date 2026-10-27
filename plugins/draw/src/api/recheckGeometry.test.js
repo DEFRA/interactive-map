@@ -23,6 +23,17 @@ describe('recheckGeometry', () => {
     expect(checks.state.status).toBe('valid')
   })
 
+  test('passes a detail through to onGeometryChange', () => {
+    const draw = makeDraw()
+    draw._commitValidator = jest.fn(() => true)
+    getCommitChecks(draw).run({ feature: square, context: { phase: 'change', mode: 'edit_vertex' }, onGeometryChange: draw._commitValidator })
+    recheckGeometry({ mapProvider: { draw } }, { refresh: false })
+    expect(draw._commitValidator).toHaveBeenLastCalledWith(
+      { feature: square, phase: 'recheck', mode: 'edit_vertex', detail: { refresh: false } },
+      expect.anything()
+    )
+  })
+
   test('does nothing before the shape has been checked', () => {
     const draw = makeDraw()
     draw._commitValidator = jest.fn()

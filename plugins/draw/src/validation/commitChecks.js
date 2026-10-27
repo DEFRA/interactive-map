@@ -1,8 +1,12 @@
-import { validateGeometry, normaliseResult } from './validateGeometry.js'
+import { validateGeometry, normaliseResult, withSource } from './validateGeometry.js'
 import { COMMIT_RULES } from './rules.js'
 import { logger } from '../../../../src/services/logger.js'
 
-const IDLE = { revision: 0, status: 'idle', result: null, feature: null, context: null, afterPending: false }
+const IDLE = { revision: 0, status: 'idle', result: null, feature: null, context: null, slow: false, afterPending: false }
+
+// How long an async check runs before it counts as slow: Done reads "Checking…" and the
+// check is announced. A quicker reply settles without either.
+export const SLOW_CHECK_MS = 300
 
 const isThenable = (value) => typeof value?.then === 'function'
 
@@ -15,8 +19,9 @@ const statusFor = (result) => (result.valid ? 'valid' : 'invalid')
  * Every run gets a new revision and aborts the previous run's signal. A result only
  * settles if its revision is still the latest, so a slow reply for an older shape can
  * never overwrite the verdict for the current one. `onSettle(state)` fires for each
- * settled state, including 'pending' while an async check is in flight. A result that
- * follows a 'pending' state for the same revision has `afterPending: true`.
+ * settled state, including 'pending' as soon as an async check starts, and 'pending' again
+ * with `slow: true` once it has run for SLOW_CHECK_MS. A result that follows a slow
+ * 'pending' state for the same revision has `afterPending: true`.
  *
  * Lives per draw adapter (see getCommitChecks) rather than in events.js's handlers,
  * which are rebuilt on every plugin state change.
@@ -27,7 +32,8 @@ const statusFor = (result) => (result.valid ? 'valid' : 'invalid')
  */
 export const createCommitChecks = () => {
   let revision = 0
-  let pendingRevision = null
+  let slowRevision = null
+  let slowTimer = null
   let abortController = null
   let latest = IDLE
   let sink = null
@@ -35,14 +41,19 @@ export const createCommitChecks = () => {
   const abortPending = () => {
     abortController?.abort()
     abortController = null
+    clearTimeout(slowTimer)
   }
 
   const settle = (rev, next) => {
     if (rev !== revision) { return }
-    if (next.status !== 'pending') { abortController = null }
-    const afterPending = next.status !== 'pending' && pendingRevision === rev
-    pendingRevision = next.status === 'pending' ? rev : null
-    latest = { ...next, revision: rev, afterPending }
+    if (next.status !== 'pending') {
+      abortController = null
+      clearTimeout(slowTimer)
+    }
+    const slow = !!next.slow
+    const afterPending = next.status !== 'pending' && slowRevision === rev
+    slowRevision = slow ? rev : null
+    latest = { ...next, revision: rev, slow, afterPending }
     sink?.(latest)
   }
 
@@ -76,7 +87,7 @@ export const createCommitChecks = () => {
         // A superseded check rejecting (e.g. on its aborted signal) isn't a failure
         if (rev !== revision) { return }
         logger.warn('[draw] onGeometryChange failed', error)
-        settle(rev, { ...base, status: 'error', result: { valid: false, reason: null }, error })
+        settle(rev, { ...base, status: 'error', result: { valid: false, reason: null, source: 'callback' }, error })
       }
 
       let output
@@ -87,17 +98,19 @@ export const createCommitChecks = () => {
         return
       }
 
-      if (!isThenable(output)) {
-        const result = normaliseResult(output)
+      const settleResult = (value) => {
+        const result = withSource(normaliseResult(value), 'callback')
         settle(rev, { ...base, status: statusFor(result), result })
+      }
+
+      if (!isThenable(output)) {
+        settleResult(output)
         return
       }
 
       settle(rev, { ...base, status: 'pending', result: null })
-      output.then((value) => {
-        const result = normaliseResult(value)
-        settle(rev, { ...base, status: statusFor(result), result })
-      }, onError)
+      slowTimer = setTimeout(() => settle(rev, { ...base, status: 'pending', result: null, slow: true }), SLOW_CHECK_MS)
+      output.then(settleResult, onError)
     },
 
     // Ends the session: aborts any check in flight and drops whatever it returns.

@@ -141,6 +141,17 @@ Rule failures gate the Done button (the shape can pass through interim invalid s
 
 Both callbacks are set at the plugin level (`createDrawPlugin({ onGeometryPreview, onGeometryChange })`) or per call, in the options of `newPolygon`, `newLine`, `newPoint` and `editFeature`. A per-call callback replaces the plugin-level one for that session. To run both, call the plugin-level callback from the per-call one.
 
+Each session has one of each callback. When more than one part of your app needs `onGeometryChange`, such as a measurements panel and a rules service, pass a single callback that calls each of them and returns the result that should gate Done:
+
+```js
+createDrawPlugin({
+  onGeometryChange: (event, context) => {
+    measurements.update(event.feature)
+    return rules.check(event, context)
+  }
+})
+```
+
 Neither is used by `split` (which checks that the line divides the shape in two) or by `merge`, `addFeature` and `setStyle`.
 
 Both return the same result:
@@ -149,7 +160,12 @@ Both return the same result:
 |---|---|
 | `true` / `undefined` | Valid |
 | `false` | Invalid, no reason shown |
-| `{ valid, reason }` | Valid or invalid, with an optional reason shown as a hint toast |
+| `{ valid, reason, announcement }` | Valid or invalid, with these optional fields |
+
+| Result field | Type | Description |
+|---|---|---|
+| `reason` | `string` | Why the shape is invalid. Shown as a hint toast and sent with [`draw:geometryinvalid`](#drawgeometryinvalid) |
+| `announcement` | `string` | Announced to screen readers instead of draw's own message, whether the result is valid or not. When set, `reason` isn't shown as a hint toast, so you can present the issue yourself. From `onGeometryPreview`, only a rejected placement is announced |
 
 Both receive the same event:
 
@@ -163,7 +179,7 @@ Both receive the same event:
 
 ### `onGeometryPreview(event)`
 
-**Signature:** `onGeometryPreview(event) => boolean | { valid: boolean, reason?: string } | undefined`
+**Signature:** `onGeometryPreview(event) => boolean | { valid: boolean, reason?: string, announcement?: string } | undefined`
 
 Must return synchronously. A returned Promise is treated as valid.
 
@@ -176,13 +192,13 @@ It runs on every frame of a drag, so keep it quick, using only the shape and dat
 
 ### `onGeometryChange(event, context)`
 
-**Signature:** `onGeometryChange(event, { signal, revision }) => boolean | { valid: boolean, reason?: string } | undefined | Promise<…>`
+**Signature:** `onGeometryChange(event, { signal, revision }) => boolean | { valid: boolean, reason?: string, announcement?: string } | undefined | Promise<…>`
 
 | Phase | When |
 |-------|------|
 | `'change'` | The shape changed: a vertex was added, moved, inserted or removed, the shape was replaced with [`setGeometry`](#setgeometrygeometry), or a change was undone |
 | `'edit-start'` | `editFeature` opened the feature, before anything has changed |
-| `'recheck'` | [`recheckGeometry`](#recheckgeometry) was called |
+| `'recheck'` | [`recheckGeometry`](#recheckgeometrydetail) was called. Its `detail`, if given, is passed as `event.detail` |
 | `'create'` | A shape was finished without a result for its final geometry, such as a new point |
 
 | Context property | Type | Description |
@@ -192,7 +208,7 @@ It runs on every frame of a drag, so keep it quick, using only the shape and dat
 
 It's only called once the built-in rules pass. When a built-in rule fails, [`draw:geometryinvalid`](#drawgeometryinvalid) is emitted instead.
 
-The Done button is enabled only when the result for the latest change is valid. A result for an earlier change is ignored, whenever it arrives. While a returned Promise is pending, Done is disabled, reads "Checking…" and has `aria-busy`. Screen readers hear "Checking shape" when the check starts, then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A thrown error or rejected Promise also keeps Done disabled — call `recheckGeometry()` to retry.
+The Done button is enabled only when the result for the latest change is valid. A result for an earlier change is ignored, whenever it arrives. While a returned Promise is pending, Done is disabled. If it takes longer than 300ms, Done also reads "Checking…" and has `aria-busy`, and screen readers hear "Checking shape", then the result: "Shape check passed", the `reason` it failed, or "Shape could not be checked". A quicker answer settles without any of these. A result's own `announcement` is always announced. A thrown error or rejected Promise also keeps Done disabled — call `recheckGeometry()` to retry.
 
 A shape finished with a gesture (double-click, <kbd>Enter</kbd> or clicking the first vertex) only completes when the latest result is valid. Otherwise it reopens in edit mode, where Done waits for the result. This includes a new point whose check fails or is still pending.
 
@@ -449,24 +465,35 @@ drawPlugin.setGeometry(correctedBoundary)
 
 ---
 
-### `recheckGeometry()`
+### `recheckGeometry(detail?)`
 
 Call `onGeometryChange` again for the current shape, unchanged, with phase `'recheck'`. Use it when your answer may have changed without the shape changing — for example after the user chooses to ignore a warning — or to retry a check that failed. Returns `false` (without doing anything) outside a draw or edit session, or before the shape has been checked.
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `detail` | `any` | Passed to `onGeometryChange` as `event.detail`, for example to tell an ignored warning from a retry |
 
 ```js
 const ignoredWarnings = new Set()
 
+let warnings = []
+
 createDrawPlugin({
-  onGeometryChange: async ({ feature }, { signal }) => {
-    const warnings = await checkBoundary(feature, { signal })
+  onGeometryChange: async ({ feature, detail }, { signal }) => {
+    // Ignoring a warning reuses the last answer; anything else, including a retry, asks again
+    if (detail?.reason !== 'ignore') {
+      warnings = await checkBoundary(feature, { signal })
+    }
     return { valid: warnings.every((warning) => ignoredWarnings.has(warning.id)) }
   }
 })
 
 const onIgnoreWarning = (warning) => {
   ignoredWarnings.add(warning.id)
-  drawPlugin.recheckGeometry()
+  drawPlugin.recheckGeometry({ reason: 'ignore' })
 }
+
+const onRetry = () => drawPlugin.recheckGeometry({ reason: 'retry' })
 ```
 
 ---
@@ -598,9 +625,9 @@ Emitted when the input device changes mid-session (e.g. switching from mouse to 
 
 ### `draw:geometryinvalid`
 
-Emitted whenever a check — a built-in rule, a placement rejected by `onGeometryPreview`, or an invalid result from `onGeometryChange` for the latest change — fails, alongside the same hint toast shown to the user (skipped only for an in-progress shape that simply hasn't reached its minimum vertex count yet). See [Validation](#validation).
+Emitted whenever a check — a built-in rule, a placement rejected by `onGeometryPreview`, or an invalid result from `onGeometryChange` for the latest change — fails. Not emitted for the `'edit-start'` check of a feature that was already invalid. The `reason` is also shown as a hint toast, unless the result has its own `announcement`, or the shape simply hasn't reached its minimum vertex count yet. See [Validation](#validation).
 
-**Payload:** `{ feature, reason, phase, mode, vertexIndex? }`
+**Payload:** `{ feature, reason, source, phase, mode, vertexIndex? }` — `source` is `'rules'` for a built-in rule and `'callback'` for `onGeometryPreview` or `onGeometryChange`
 
 ---
 

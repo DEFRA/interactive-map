@@ -87,6 +87,16 @@ describe('SET_VALIDATION_STATUS', () => {
     expect(actions.SET_VALIDATION_STATUS(initialState, 'pending').validationStatus).toBe('pending')
     expect(actions.SET_VALIDATION_STATUS(initialState, 'valid').validationStatus).toBe('valid')
   })
+
+  test('a new status is not slow yet', () => {
+    expect(actions.SET_VALIDATION_STATUS({ ...initialState, checkSlow: true }, 'pending').checkSlow).toBe(false)
+  })
+})
+
+describe('SET_CHECK_SLOW', () => {
+  test('marks the pending check as slow', () => {
+    expect(actions.SET_CHECK_SLOW({ ...initialState, validationStatus: 'pending' }).checkSlow).toBe(true)
+  })
 })
 
 describe('SET_PREVIEW_VALID', () => {

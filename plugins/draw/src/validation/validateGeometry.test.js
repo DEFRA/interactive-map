@@ -1,4 +1,4 @@
-import { validateGeometry, validatePlacement, attemptPlacement, validateDisplayedGeometry, normaliseResult } from './validateGeometry.js'
+import { validateGeometry, validatePlacement, attemptPlacement, validateDisplayedGeometry, normaliseResult, toPlacementBlocked } from './validateGeometry.js'
 
 const poly = (coordinates) => ({ type: 'Feature', geometry: { type: 'Polygon', coordinates: [coordinates] } })
 
@@ -29,7 +29,7 @@ describe('validateGeometry (soft gating)', () => {
   test('short-circuits on the first failing rule', () => {
     const first = jest.fn(() => ({ valid: false, reason: 'first' }))
     const second = jest.fn(() => ({ valid: true }))
-    expect(validateGeometry(square, {}, { rules: [first, second] })).toEqual({ valid: false, reason: 'first' })
+    expect(validateGeometry(square, {}, { rules: [first, second] })).toEqual({ valid: false, reason: 'first', source: 'rules' })
     expect(second).not.toHaveBeenCalled()
   })
 
@@ -44,11 +44,11 @@ describe('validateGeometry (soft gating)', () => {
 
   test('runs the user callback after the rules pass', () => {
     expect(validateGeometry(square, {}, { rules: [], onGeometryPreview: () => false }))
-      .toEqual({ valid: false, reason: null })
+      .toEqual({ valid: false, reason: null, source: 'callback' })
     expect(validateGeometry(square, {}, { rules: [], onGeometryPreview: () => true }))
       .toEqual({ valid: true })
     expect(validateGeometry(square, {}, { rules: [], onGeometryPreview: () => ({ valid: false, reason: 'too big' }) }))
-      .toEqual({ valid: false, reason: 'too big' })
+      .toEqual({ valid: false, reason: 'too big', source: 'callback' })
   })
 
   test('does not run the callback when a rule fails', () => {
@@ -76,6 +76,7 @@ describe('attemptPlacement (shared engine gate)', () => {
     expect(result.blocked).toEqual({
       feature: expect.objectContaining({ type: 'Feature' }),
       reason: expect.stringMatching(/intersect/i),
+      source: 'rules',
       phase: 'place',
       mode: 'draw_polygon',
       vertexIndex: 3
@@ -134,7 +135,7 @@ describe('validateDisplayedGeometry edge cases', () => {
     const result = validateDisplayedGeometry(feature, { numVertices: 3 }, { onGeometryPreview })
 
     expect(onGeometryPreview).toHaveBeenCalledWith(expect.objectContaining({ feature, numVertices: 3, phase: 'preview' }))
-    expect(result).toEqual({ valid: false, reason: 'too few for my rule' })
+    expect(result).toEqual({ valid: false, reason: 'too few for my rule', source: 'callback' })
   })
 
   test('skips the built-in rules with zero committed vertices, but still runs the caller\'s onGeometryPreview — a location-based rule is meaningful against the very first candidate point', () => {
@@ -146,7 +147,7 @@ describe('validateDisplayedGeometry edge cases', () => {
 
     expect(failingRule).not.toHaveBeenCalled()
     expect(onGeometryPreview).toHaveBeenCalledWith(expect.objectContaining({ feature, numVertices: 0, phase: 'preview' }))
-    expect(result).toEqual({ valid: false, reason: 'outside region' })
+    expect(result).toEqual({ valid: false, reason: 'outside region', source: 'callback' })
   })
 
   test('runs the caller\'s onGeometryPreview from the first committed vertex, even while the built-in rules are still skipped', () => {
@@ -161,7 +162,7 @@ describe('validateDisplayedGeometry edge cases', () => {
 
     expect(failingRule).not.toHaveBeenCalled()
     expect(onGeometryPreview).toHaveBeenCalledWith(expect.objectContaining({ feature, numVertices: 1, phase: 'preview' }))
-    expect(result).toEqual({ valid: false, reason: 'outside region' })
+    expect(result).toEqual({ valid: false, reason: 'outside region', source: 'callback' })
   })
 })
 
@@ -189,7 +190,7 @@ describe('validatePlacement (hard gating)', () => {
   test('the user callback can veto a placement with a reason', () => {
     const onGeometryPreview = () => ({ valid: false, reason: 'outside region' })
     expect(validatePlacement(simplePath, {}, { onGeometryPreview }))
-      .toEqual({ valid: false, reason: 'outside region' })
+      .toEqual({ valid: false, reason: 'outside region', source: 'callback' })
   })
 
   test('placement rules run before the user callback', () => {
@@ -203,5 +204,21 @@ describe('validatePlacement (hard gating)', () => {
 describe('normaliseResult', () => {
   test('treats a returned Promise as valid', () => {
     expect(normaliseResult(Promise.resolve(false)).valid).toBe(true)
+  })
+
+  test('keeps an announcement, and drops anything else', () => {
+    expect(normaliseResult({ valid: true, announcement: 'Area 2 hectares', other: 1 }))
+      .toEqual({ valid: true, reason: undefined, announcement: 'Area 2 hectares' })
+    expect(normaliseResult({ valid: false, reason: 'too big' })).not.toHaveProperty('announcement')
+  })
+})
+
+describe('toPlacementBlocked', () => {
+  test('carries the reason, source and any announcement', () => {
+    const feature = { type: 'Feature' }
+    expect(toPlacementBlocked(feature, { reason: 'outside', source: 'callback', announcement: 'Outside the area' }, { mode: 'draw_point', vertexIndex: 0 }))
+      .toEqual({ feature, reason: 'outside', source: 'callback', announcement: 'Outside the area', phase: 'place', mode: 'draw_point', vertexIndex: 0 })
+    expect(toPlacementBlocked(feature, { source: 'rules' }, { mode: 'draw_polygon', vertexIndex: 2 }))
+      .toEqual({ feature, reason: null, source: 'rules', phase: 'place', mode: 'draw_polygon', vertexIndex: 2 })
   })
 })

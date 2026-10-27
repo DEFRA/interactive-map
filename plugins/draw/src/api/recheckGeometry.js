@@ -9,9 +9,10 @@ import { isCheckedMode } from '../utils/drawModes.js'
  * Does nothing outside a draw/edit session, or before the shape has been checked.
  *
  * @param {object} context - plugin context
+ * @param {*} [detail] - passed to `onGeometryChange` as `event.detail`, e.g. to say why
  * @returns {boolean} whether a check was started
  */
-export const recheckGeometry = ({ mapProvider }) => {
+export const recheckGeometry = ({ mapProvider }, detail) => {
   const { draw } = mapProvider
 
   if (!draw) {
@@ -25,6 +26,7 @@ export const recheckGeometry = ({ mapProvider }) => {
     return false
   }
 
-  checks.run({ feature, context: { phase: 'recheck', mode }, onGeometryChange: draw._commitValidator })
+  const context = { phase: 'recheck', mode, ...(detail !== undefined && { detail }) }
+  checks.run({ feature, context, onGeometryChange: draw._commitValidator })
   return true
 }

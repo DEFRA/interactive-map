@@ -1,4 +1,5 @@
 import { attachEvents } from './events.js'
+import { SLOW_CHECK_MS } from './validation/commitChecks.js'
 
 jest.useFakeTimers()
 
@@ -384,6 +385,7 @@ describe('async geometry checks', () => {
   }
   const flush = () => Promise.resolve()
   const commit = (draw, feature, phase = 'change') => drawHandler(draw, 'geometrychange')({ feature, phase, vertexIndex: 0 })
+  const slow = () => jest.advanceTimersByTime(SLOW_CHECK_MS)
   const lastStatus = (dispatch) => dispatch.mock.calls.filter(([a]) => a.type === 'SET_VALIDATION_STATUS').map(([a]) => a.payload).pop()
 
   test('blocks Done while a check is pending, then applies its result', async () => {
@@ -589,6 +591,8 @@ describe('async geometry checks', () => {
       const reply = deferred()
       draw._commitValidator = () => reply.promise
       commit(draw, square, 'change')
+      expect(announce).not.toHaveBeenCalled()
+      slow()
       expect(announce).toHaveBeenLastCalledWith('Checking shape', 'action')
       reply.resolve(true)
       await flush()
@@ -600,6 +604,7 @@ describe('async geometry checks', () => {
       const reply = deferred()
       draw._commitValidator = () => reply.promise
       commit(draw, square, 'change')
+      slow()
       reply.resolve({ valid: false, reason: 'Overlaps a neighbouring parcel' })
       await flush()
       expect(announce).toHaveBeenLastCalledWith('Overlaps a neighbouring parcel', 'action')
@@ -615,17 +620,81 @@ describe('async geometry checks', () => {
       jest.spyOn(console, 'warn').mockImplementation(() => {})
 
       commit(draw, square, 'change')
+      slow()
       first.resolve(false)
       await flush()
       expect(announce).toHaveBeenLastCalledWith('Shape check failed', 'action')
 
       commit(draw, otherSquare, 'change')
+      slow()
       second.reject(new Error('503'))
       await flush()
       await flush()
       expect(announce).toHaveBeenLastCalledWith('Shape could not be checked', 'action')
       console.warn.mockRestore()
     })
+
+    test('a quick async check announces nothing and never reads "Checking…"', async () => {
+      const { draw, dispatch, announce } = setup()
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, square, 'change')
+      expect(lastStatus(dispatch)).toBe('pending')
+      reply.resolve(true)
+      await flush()
+      slow()
+      expect(announce).not.toHaveBeenCalled()
+      expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_CHECK_SLOW' })
+    })
+
+    test('a slow check is marked as slow', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, square, 'change')
+      slow()
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_CHECK_SLOW' })
+    })
+
+    test('a result\u2019s own announcement replaces draw\u2019s, and its hint', () => {
+      const { draw, announce, hints, eventBus } = setup()
+      draw._commitValidator = () => ({ valid: false, reason: 'overlap', announcement: 'Overlaps parcel 12. See the issues panel.' })
+      commit(draw, square, 'change')
+      expect(announce).toHaveBeenLastCalledWith('Overlaps parcel 12. See the issues panel.', 'action')
+      expect(hints.show).not.toHaveBeenCalled()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: 'overlap', source: 'callback' }))
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ announcement: expect.anything() }))
+    })
+
+    test('an announcement is made for a passing result, and for the edit-start check', () => {
+      const { draw, announce } = setup()
+      draw._commitValidator = () => ({ valid: true, announcement: 'Area 2 hectares' })
+      commit(draw, square, 'change')
+      expect(announce).toHaveBeenLastCalledWith('Area 2 hectares', 'action')
+
+      draw._commitValidator = () => ({ valid: false, announcement: 'Already overlaps parcel 12' })
+      draw.getMode.mockReturnValue('edit_vertex')
+      commit(draw, otherSquare, 'edit-start')
+      expect(announce).toHaveBeenLastCalledWith('Already overlaps parcel 12', 'action')
+    })
+
+    test('a placement veto with an announcement is announced, without a hint', () => {
+      const { draw, announce, hints, eventBus } = setup()
+      drawHandler(draw, 'placementblocked')({ feature: square, reason: 'outside', source: 'callback', announcement: 'Outside the holding', phase: 'place', mode: 'draw_polygon', vertexIndex: 0 })
+      expect(announce).toHaveBeenCalledWith('Outside the holding', 'action')
+      expect(hints.show).not.toHaveBeenCalled()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: 'outside', source: 'callback' }))
+    })
+  })
+
+  test('draw:geometryinvalid says whether a built-in rule or onGeometryChange failed', () => {
+    const { draw, eventBus } = setup()
+    draw._commitValidator = () => ({ valid: false, reason: 'overlap' })
+    commit(draw, square, 'change')
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:geometryinvalid', expect.objectContaining({ reason: 'overlap', source: 'callback' }))
+    draw.getMode.mockReturnValue('edit_vertex')
+    const bowtie = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 1], [1, 0], [0, 1], [0, 0]]] } }
+    commit(draw, bowtie, 'change')
+    expect(eventBus.emit).toHaveBeenLastCalledWith('draw:geometryinvalid', expect.objectContaining({ source: 'rules' }))
   })
 
   test('survives the handlers being rebuilt mid-check', async () => {

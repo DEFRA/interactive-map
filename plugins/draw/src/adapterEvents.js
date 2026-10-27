@@ -21,7 +21,8 @@
  *                      final geometry (e.g. a new point), so it's checked now.
  *   'edit-start'     - an existing feature was just loaded into an edit session;
  *                      nothing has changed yet, this is the baseline check.
- *   'recheck'        - the unchanged shape is checked again (recheckGeometry).
+ *   'recheck'        - the unchanged shape is checked again (recheckGeometry), with
+ *                      any detail it was given as `event.detail`.
  *   'change'         - the shape changed: a vertex was added, moved, inserted or
  *                      removed, the whole shape was replaced (setGeometry), or a
  *                      change was undone.
@@ -64,6 +65,20 @@ export const CHANGE_PHASE = 'change'
  *   than the built-in preview rules, which stay skipped until the geometry type's
  *   minimum vertex count is reached (self-intersection/area are meaningless
  *   below that).
+ * @property {*} [detail] - the value passed to recheckGeometry(detail). Present on
+ *   'recheck' only, when one was given.
+ */
+
+/**
+ * What a user's `onGeometryPreview` or `onGeometryChange` callback returns, after
+ * normaliseResult (validation/validateGeometry.js). `true`/`undefined` and `false`
+ * are shorthands for valid and invalid.
+ *
+ * @typedef {object} GeometryCheckResult
+ * @property {boolean} valid
+ * @property {string} [reason] - shown as a hint toast and sent with draw:geometryinvalid
+ * @property {string} [announcement] - announced to screen readers in place of draw's own
+ *   message; the reason then isn't shown as a hint, as the consumer presents it
  */
 
 /**
@@ -106,7 +121,9 @@ export const CHANGE_PHASE = 'change'
  *                              reverts them.
  *                          Listeners must guard for the shape they expect.
  *   INTERFACE_TYPE_CHANGE  { interfaceType: 'mouse' | 'touch' | 'keyboard' }
- *   PLACEMENT_BLOCKED      { feature, reason, phase: 'place', mode, vertexIndex } —
+ *   PLACEMENT_BLOCKED      { feature, reason, source, announcement?, phase: 'place', mode, vertexIndex } —
+ *                          built by validateGeometry.js's toPlacementBlocked; source is
+ *                          'rules' or 'callback'.
  *                          a REAL placement attempt (click/tap/Add-point press)
  *                          was rejected by validatePlacement (placement rule or user
  *                          callback), evaluated once, synchronously; feature is

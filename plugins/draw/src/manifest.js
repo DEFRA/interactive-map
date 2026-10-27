@@ -69,8 +69,9 @@ export const manifest = {
     },
     {
       id: 'drawDone',
-      label: ({ pluginState }) => (pluginState.validationStatus === 'pending' ? 'Checking…' : 'Done'),
-      busyWhen: ({ pluginState }) => pluginState.validationStatus === 'pending',
+      // Disabled as soon as a check is pending, but only reads "Checking…" once it's slow
+      label: ({ pluginState }) => (pluginState.checkSlow ? 'Checking…' : 'Done'),
+      busyWhen: ({ pluginState }) => pluginState.checkSlow,
       variant: 'primary',
       exclusiveSlot: true,
       hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode),
