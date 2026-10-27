@@ -1,7 +1,7 @@
 {
   "name": "@defra/interactive-map-openlayers",
   "version": "0.0.0-development",
-  "description": "An accessible map component for OpenLayers",
+  "description": "An accessible map component, using OpenLayers. An alternative to @defra/interactive-map, which uses MapLibre",
   "repository": {
     "type": "git",
     "url": "https://github.com/DEFRA/interactive-map",

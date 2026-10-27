@@ -1,7 +1,7 @@
 {
-  "name": "@defra/interactive-map-maplibre",
+  "name": "@defra/interactive-map",
   "version": "0.0.0-development",
-  "description": "An accessible map component for MapLibre",
+  "description": "An accessible map component, using MapLibre. For OpenLayers or Esri (ArcGIS), use @defra/interactive-map-openlayers or @defra/interactive-map-esri",
   "repository": {
     "type": "git",
     "url": "https://github.com/DEFRA/interactive-map",
