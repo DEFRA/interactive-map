@@ -1,0 +1,33 @@
+name: Seed new packages to NPM
+
+# Creates any package in packages/ that doesn't exist on npm yet, so its trusted publishing
+# can be set up. Uses a temporary NPM_TOKEN secret: add it, run this workflow, then delete
+# the secret and revoke the token. See RELEASING.md.
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry run: list what would be seeded without publishing'
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v5
+        with:
+          node-version-file: .nvmrc
+          registry-url: 'https://registry.npmjs.org'
+
+      - name: Seed new packages
+        run: ./scripts/seed-packages.sh "${{ inputs.dry_run }}"
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
