@@ -113,7 +113,7 @@ export const DrawInit = ({ appState, appConfig, mapState, pluginConfig, pluginSt
         crossHair.hide()
       }
     }
-  }, [pluginState.mode, appState.interfaceType, appState.expandedButtons])
+  }, [pluginState.mode, pluginState.holding, appState.interfaceType, appState.expandedButtons])
 
   // Keep the active draw/edit session's interface type in sync so the touch offset target and
   // rubber band update immediately if the input device changes mid-session.
