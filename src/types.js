@@ -257,6 +257,10 @@
  * Callback to determine if the button should appear pressed. Sets aria-pressed accordingly.
  * Only evaluated for plugin-defined buttons; use toggleButtonState() for host buttons.
  *
+ * @property {(context: PluginContext) => boolean} [busyWhen]
+ * Callback to determine if the action behind the button is in progress. Sets aria-busy
+ * accordingly. Evaluated on every render, like a function label.
+ *
  * @property {ButtonBreakpointConfig} tablet
  * Tablet breakpoint configuration.
  */

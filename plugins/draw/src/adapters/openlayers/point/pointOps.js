@@ -23,11 +23,12 @@ export const undoMovePoint = (olFeature, op) => {
 
 /**
  * Dispatch the correct undo handler based on operation type — mirrors edit/undoOps.js's
- * applyUndo, but with the single op type a Point ever produces.
+ * applyUndo, but with the two op types a Point produces (a move, or a setGeometry).
  * @returns {number} vertex index to re-select after undo (always 0), or -1 for none
  */
 export const applyPointUndo = (olFeature, op) => {
-  if (op.type === 'move_vertex') {
+  // A replace_geometry op (setGeometry) stores the previous coordinate the same way
+  if (op.type === 'move_vertex' || op.type === 'replace_geometry') {
     return undoMovePoint(olFeature, op)
   }
   return -1

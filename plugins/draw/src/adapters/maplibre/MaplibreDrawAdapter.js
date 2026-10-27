@@ -64,6 +64,7 @@ export const displayedShape = (mode, coordinates) => {
  *   done() / cancel() / undo() / deleteVertex()
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
+ *   setGeometry(geometry)
  *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
@@ -202,9 +203,9 @@ export class MaplibreDrawAdapter {
     const shape = displayedShape(mode, event.coordinates)
     if (!shape) { return }
     if (mode === 'draw_polygon' || mode === 'draw_line') {
-      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryChange: this._geometryValidator })
+      this._liveDrawChecks.update({ feature: shape.feature, numVertices: shape.numVertices, context: { mode }, onGeometryPreview: this._previewValidator })
     } else {
-      this._liveStroke.update({ ...shape, context: { mode }, onGeometryChange: this._geometryValidator })
+      this._liveStroke.update({ ...shape, context: { mode }, onGeometryPreview: this._previewValidator })
     }
   }
 
@@ -282,16 +283,23 @@ export class MaplibreDrawAdapter {
     this._map.fire(CUSTOM_DRAW_EVENTS.INSERT_VERTEX_AT_MIDPOINT, { index })
   }
 
-  // Record the current geometry validity so the draw mode can block finish gestures
-  // (double-click / click-to-close) while the in-progress shape is invalid.
-  setGeometryValid (valid) {
-    this._map._drawGeometryValid = valid
+  // Replaces the edited shape as a single undoable change. Bridged into
+  // the mode via a custom event, same pattern as insertVertexAtMidpoint.
+  setGeometry (geometry) {
+    this._map.fire(CUSTOM_DRAW_EVENTS.SET_GEOMETRY, { geometry })
   }
 
-  // The api entry points assign the active user validator to the adapter; store it
-  // on the map (like _drawGeometryValid) so modes can veto placements synchronously.
-  set _geometryValidator (fn) { this._map._drawGeometryValidator = fn }
-  get _geometryValidator () { return this._map._drawGeometryValidator }
+  // Record whether the in-progress shape can be finished, so the draw mode can block finish
+  // gestures (double-click / click-to-close) while its latest check has failed.
+  setCanFinish (canFinish) {
+    this._map._drawCanFinish = canFinish
+  }
+
+  // The api entry points assign the session's onGeometryPreview callback to the adapter
+  // (see validation/commitChecks.js's startCheckSession); store it on the map (like
+  // _drawCanFinish) so modes can veto placements synchronously.
+  set _previewValidator (fn) { this._map._drawPreviewValidator = fn }
+  get _previewValidator () { return this._map._drawPreviewValidator }
 
   // Committed-verdict write (events.js, edit mode): routed through the live-stroke
   // controller so its cached state stays in sync with the rendered layers.
