@@ -107,6 +107,16 @@ describe('MapButton', () => {
     else expect(button).not.toHaveAttribute('aria-pressed')
   })
 
+  it.each([
+    [{ isBusy: true }, true],
+    [{ isBusy: false }, false],
+    [{}, false]
+  ])('sets aria-busy only while busy (%j)', (props, expected) => {
+    renderButton(props)
+    if (expected) expect(getButton()).toHaveAttribute('aria-busy', 'true')
+    else expect(getButton()).not.toHaveAttribute('aria-busy')
+  })
+
   it('sets aria-expanded when no panelId and isExpanded', () => {
     renderButton({ isExpanded: true })
     expect(getButton()).toHaveAttribute('aria-expanded', 'true')

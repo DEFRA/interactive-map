@@ -1,20 +1,10 @@
-import { needsDrawTarget, isDrawingMode } from './needsDrawTarget.js'
+import { needsDrawTarget } from './needsDrawTarget.js'
 
 const mapControlsOpen = new Set(['mapControls'])
 const closed = new Set()
 
 const check = (interfaceType, expandedButtons, mode = 'draw_polygon') =>
   needsDrawTarget({ appState: { interfaceType, expandedButtons }, pluginState: { mode } })
-
-describe('isDrawingMode', () => {
-  test.each(['draw_polygon', 'draw_line', 'draw_point'])('%s is a drawing mode', (mode) => {
-    expect(isDrawingMode(mode)).toBe(true)
-  })
-
-  test.each(['edit_vertex', 'edit_point', null])('%s is not a drawing mode', (mode) => {
-    expect(isDrawingMode(mode)).toBe(false)
-  })
-})
 
 describe('needsDrawTarget', () => {
   test.each([

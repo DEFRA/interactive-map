@@ -1,22 +1,22 @@
 import { validateGeometry } from './validateGeometry.js'
-import { LIVE_RULES, HARD_RULES, MIN_VERTICES } from './rules.js'
+import { PREVIEW_RULES, PLACE_RULES, MIN_VERTICES } from './rules.js'
 import { requestFrame, cancelFrame } from './liveStroke.js'
 
 /**
  * Live validation driver for DRAW mode (draw_polygon/draw_line) only — edit mode
  * has no Add-point gate and keeps using the plain createLiveStroke (liveStroke.js).
  *
- * On every rubber-band move, a user `onGeometryChange` callback is called ONCE,
+ * On every rubber-band move, a user `onGeometryPreview` callback is called ONCE,
  * throttled to one call per animation frame (phase 'preview', with NO
  * vertex-count floor — a location-based rule is meaningful even against the
  * very first candidate point, before any vertex is committed). Its verdict is
  * combined with two INDEPENDENTLY-floored built-in rule checks, each flip-guarded
  * and reported through its own callback — `onChange(invalid, reason)` fires only
  * when THAT gate's own state flips, same contract as createLiveStroke:
- *   - LIVE_RULES (closed-ring self-intersect/area), floored at the geometry
+ *   - PREVIEW_RULES (closed-ring self-intersect/area), floored at the geometry
  *     type's minimum vertex count — self-intersection/area are meaningless
  *     below that — reported via onStrokeChange (dashed stroke / Done gate).
- *   - HARD_RULES (open-path self-intersect), never floored, so it still
+ *   - PLACE_RULES (open-path self-intersect), never floored, so it still
  *     protects placing an invalid first vertex — reported via onPlaceChange
  *     (Add-point gate).
  * Previously each gate ran its own independently-throttled call to the same
@@ -76,15 +76,15 @@ export const createLiveDrawChecks = ({ onStrokeChange, onPlaceChange }) => {
     if (!pending) { return }
     const { feature, context } = pending
     const min = MIN_VERTICES[feature?.geometry?.type] ?? 0
-    evaluateGate(feature, context, LIVE_RULES, min, flipStroke)
-    evaluateGate(feature, context, HARD_RULES, 0, flipPlace)
+    evaluateGate(feature, context, PREVIEW_RULES, min, flipStroke)
+    evaluateGate(feature, context, PLACE_RULES, 0, flipPlace)
   }
 
   const runUserRule = () => {
     frame = null
     if (!pending) { return }
-    const { feature, context, onGeometryChange } = pending
-    const result = validateGeometry(feature, { ...context, phase: 'preview' }, { rules: [], onGeometryChange })
+    const { feature, context, onGeometryPreview } = pending
+    const result = validateGeometry(feature, { ...context, phase: 'preview' }, { rules: [], onGeometryPreview })
     customInvalid = !result.valid
     customReason = result.reason
     recompute()
@@ -92,13 +92,13 @@ export const createLiveDrawChecks = ({ onStrokeChange, onPlaceChange }) => {
 
   return {
     // Re-evaluate the displayed geometry after a rubber-band move.
-    update ({ feature, context = {}, numVertices, onGeometryChange }) {
-      pending = { feature, context: { ...context, numVertices }, onGeometryChange }
+    update ({ feature, context = {}, numVertices, onGeometryPreview }) {
+      pending = { feature, context: { ...context, numVertices }, onGeometryPreview }
       // Built-in rules first, synchronously — immediate feedback either gate.
       recompute()
       // A user rule (if any) decides last, throttled to one frame; its cached
       // verdict (customInvalid) feeds the next recompute() once it lands.
-      if (typeof onGeometryChange === 'function' && frame == null) {
+      if (typeof onGeometryPreview === 'function' && frame == null) {
         frame = requestFrame(runUserRule)
       }
     },

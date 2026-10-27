@@ -315,7 +315,7 @@ describe('live invalid stroke (draw mode)', () => {
 
   test('commit-level (has a phase) events do not drive the stroke; events.js owns those', () => {
     const { map } = drawPolygonSetup()
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: bowtie, phase: 'commit-add', vertexIndex: 3 })
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: bowtie, phase: 'change', vertexIndex: 3 })
     expect(map.setLayoutProperty).not.toHaveBeenCalled()
   })
 
@@ -355,13 +355,13 @@ describe('live invalid stroke (draw mode)', () => {
   test('the user callback runs ONCE per frame in draw mode, with phase preview, driving both the stroke and Add point from that single call', () => {
     jest.useFakeTimers()
     const { map, bus } = drawPolygonSetup()
-    map._drawGeometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    map._drawPreviewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
     const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
     fire(square)
-    expect(map._drawGeometryValidator).not.toHaveBeenCalled() // deferred to the frame
+    expect(map._drawPreviewValidator).not.toHaveBeenCalled() // deferred to the frame
     jest.runAllTimers()
-    expect(map._drawGeometryValidator).toHaveBeenCalledTimes(1) // not once per gate
-    expect(map._drawGeometryValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'preview' }))
+    expect(map._drawPreviewValidator).toHaveBeenCalledTimes(1) // not once per gate
+    expect(map._drawPreviewValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'preview' }))
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
     expect(bus.emit).toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: false, reason: 'outside region' }))
     jest.useRealTimers()
@@ -370,12 +370,12 @@ describe('live invalid stroke (draw mode)', () => {
   test('the user callback runs even before any vertex is placed, gating both the stroke and Add point from the very first candidate point', () => {
     jest.useFakeTimers()
     const { map, bus } = drawPolygonSetup()
-    map._drawGeometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    map._drawPreviewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
     const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
     // Zero committed vertices — coordinates is just the rubber-band cursor point.
     fire({ type: 'draw.geometrychange', coordinates: [[[5, 5]]] })
     jest.runAllTimers()
-    expect(map._drawGeometryValidator).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
+    expect(map._drawPreviewValidator).toHaveBeenCalledWith(expect.objectContaining({ numVertices: 0, phase: 'preview' }))
     expect(bus.emit).toHaveBeenCalledWith('canplacechange', expect.objectContaining({ canPlace: false, reason: 'outside region' }))
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
     jest.useRealTimers()
@@ -430,7 +430,7 @@ describe('live invalid stroke (edit mode)', () => {
     const { map, draw, bus } = editSetup()
     draw.getMode.mockReturnValue('edit_point')
     const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
-    map._drawGeometryValidator = () => ({ valid: false, reason: 'outside region' })
+    map._drawPreviewValidator = () => ({ valid: false, reason: 'outside region' })
     fire({ type: 'draw.geometrychange', coordinates: [5, 5] })
     jest.runAllTimers()
     expect(bus.emit).toHaveBeenCalledWith('validitychange', expect.objectContaining({ valid: false, reason: 'outside region' }))
@@ -446,25 +446,34 @@ describe('live invalid stroke (edit mode)', () => {
   test('the user callback runs throttled during an edit drag', () => {
     jest.useFakeTimers()
     const { map } = editSetup()
-    map._drawGeometryValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
+    map._drawPreviewValidator = jest.fn(() => ({ valid: false, reason: 'outside region' }))
     const fire = onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)
     fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 10]]] })
     fire({ type: 'draw.geometrychange', coordinates: [[[0, 0], [10, 0], [10, 10], [0, 11]]] })
-    expect(map._drawGeometryValidator).not.toHaveBeenCalled() // deferred to the frame
+    expect(map._drawPreviewValidator).not.toHaveBeenCalled() // deferred to the frame
     jest.runAllTimers()
-    expect(map._drawGeometryValidator).toHaveBeenCalledTimes(1) // trailing edge only
+    expect(map._drawPreviewValidator).toHaveBeenCalledTimes(1) // trailing edge only
     expect(map.setLayoutProperty).toHaveBeenCalledWith('stroke-active-invalid.hot', 'visibility', 'visible')
     jest.useRealTimers()
   })
 })
 
-describe('_geometryValidator accessor', () => {
-  test('stores the validator on the map for modes to read, and reads it back', () => {
+describe('_previewValidator accessor', () => {
+  test('stores the preview validator on the map for modes to read, and reads it back', () => {
     const { adapter, map } = setup()
     const validator = () => true
-    adapter._geometryValidator = validator
-    expect(map._drawGeometryValidator).toBe(validator)
-    expect(adapter._geometryValidator).toBe(validator)
+    adapter._previewValidator = validator
+    expect(map._drawPreviewValidator).toBe(validator)
+    expect(adapter._previewValidator).toBe(validator)
+  })
+})
+
+describe('setGeometry', () => {
+  test('bridges into the active mode via a custom event', () => {
+    const { adapter, map } = setup()
+    const geometry = { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [1, 1], [0, 0]]] }
+    adapter.setGeometry(geometry)
+    expect(map.fire).toHaveBeenCalledWith('draw.setgeometry', { geometry })
   })
 })
 
@@ -511,13 +520,13 @@ describe('changeMode', () => {
   })
 })
 
-describe('setGeometryValid', () => {
+describe('setCanFinish', () => {
   test('records validity on the map for the draw mode to read', () => {
     const { adapter, map } = setup()
-    adapter.setGeometryValid(false)
-    expect(map._drawGeometryValid).toBe(false)
-    adapter.setGeometryValid(true)
-    expect(map._drawGeometryValid).toBe(true)
+    adapter.setCanFinish(false)
+    expect(map._drawCanFinish).toBe(false)
+    adapter.setCanFinish(true)
+    expect(map._drawCanFinish).toBe(true)
   })
 })
 
@@ -766,7 +775,7 @@ describe('simple delegations', () => {
     const render = jest.fn()
     // A commit event (has a phase) must not become the cached preview target — it
     // carries a `feature`, not the live `properties` object rubber-band moves do.
-    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: {}, phase: 'commit-add', ctx: { store: { render } } })
+    onHandler(map, CUSTOM_DRAW_EVENTS.GEOMETRY_CHANGE)({ feature: {}, phase: 'change', ctx: { store: { render } } })
 
     expect(() => adapter.setDrawingPreviewProperty('splitter', 'valid')).not.toThrow()
     expect(render).not.toHaveBeenCalled()

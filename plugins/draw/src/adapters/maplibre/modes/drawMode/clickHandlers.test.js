@@ -49,7 +49,7 @@ describe('mouse clicks (polygon)', () => {
 
   test('the user callback can veto a mouse placement (and receives phase "place")', () => {
     const { ctx, state } = setup(DrawPolygonMode)
-    ctx.map._drawGeometryValidator = jest.fn((event) =>
+    ctx.map._drawPreviewValidator = jest.fn((event) =>
       event.phase === 'place' ? { valid: false, reason: 'outside region' } : { valid: true })
     clickAt(ctx, state, 0, 0)
     expect(state.polygon.coordinates[0]).toHaveLength(0) // first vertex vetoed
@@ -87,7 +87,7 @@ describe('mouse clicks (polygon)', () => {
     clickAt(ctx, state, 10, 0)
     jest.runAllTimers()
     const geomChange = firedWith(ctx.map, 'draw.geometrychange').pop()
-    expect(geomChange).toEqual(expect.objectContaining({ phase: 'commit-add', feature: expect.any(Object) }))
+    expect(geomChange).toEqual(expect.objectContaining({ phase: 'change', feature: expect.any(Object) }))
     jest.useRealTimers()
   })
 
@@ -116,7 +116,7 @@ describe('mouse clicks (polygon)', () => {
     clickAt(ctx, state, 0, 0)
     clickAt(ctx, state, 10, 0)
     clickAt(ctx, state, 5, 10)
-    ctx.map._drawGeometryValid = false
+    ctx.map._drawCanFinish = false
     const lenBefore = state.polygon.coordinates[0].length
     ctx.onClick(state, { ...clickEvent(ctx, 0, 0), featureTarget: { properties: { meta: 'vertex' } } })
     expect(state.polygon.coordinates[0].length).toBe(lenBefore) // finish gesture ignored
@@ -146,7 +146,7 @@ describe('add-vertex button and doClick', () => {
     const { ctx, state } = setup(DrawLineMode)
     clickAt(ctx, state, 0, 0)
     clickAt(ctx, state, 10, 0)
-    ctx.map._drawGeometryValid = false
+    ctx.map._drawCanFinish = false
     // Rubber-band duplicates the last placed vertex → a finish gesture.
     state.line.setCoordinates([[0, 0], [10, 0], [10, 0]])
     ctx.doClick(state)
@@ -178,7 +178,7 @@ describe('add-vertex button and doClick', () => {
 
   test('the user callback can veto a doClick placement', () => {
     const { ctx, state } = setup(DrawPolygonMode)
-    ctx.map._drawGeometryValidator = () => ({ valid: false, reason: 'outside region' })
+    ctx.map._drawPreviewValidator = () => ({ valid: false, reason: 'outside region' })
     ctx.doClick(state)
     expect(state.polygon.coordinates[0]).toHaveLength(0)
     expect(firedWith(ctx.map, 'draw.placementblocked').pop()).toEqual(

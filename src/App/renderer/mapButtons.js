@@ -116,7 +116,7 @@ const slotButtonProps = ({ buttonId, config, isHidden, appState, appConfig, eval
  * Renders a single button's MapButton element for its slot, computing its click handler
  * and derived state (panel-open, showLabel fallback, etc.) from its config and appState.
  */
-function SlotButton ({ buttonId, config, isHidden = false, appState, appConfig, evaluateProp }) {
+function SlotButton ({ buttonId, config, isHidden = false, appState, appConfig, evaluateProp }) { // NOSONAR, the inline props read more clearly than a helper would
   const bpConfig = config[appState.breakpoint] ?? {}
   const handleClick = createButtonClickHandler(config, appState, evaluateProp)
   const isPanelOpen = !!(config.panelId && appState.openPanels[config.panelId])
@@ -136,6 +136,7 @@ function SlotButton ({ buttonId, config, isHidden = false, appState, appConfig, 
       isHidden={isHidden}
       isPressed={(config.isPressed !== undefined || config.pressedWhen) ? appState.pressedButtons.has(buttonId) : undefined}
       isExpanded={(config.isExpanded !== undefined || config.expandedWhen) ? appState.expandedButtons.has(buttonId) : undefined}
+      isBusy={config.busyWhen ? !!evaluateProp(config.busyWhen, config.pluginId) : undefined}
       isPanelOpen={isPanelOpen}
       panelRole={panelRole}
       onClick={handleClick}
