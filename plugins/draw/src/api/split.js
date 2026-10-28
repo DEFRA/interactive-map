@@ -63,8 +63,10 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
   // Swap in split's own rules; restored in stopListening.
   const previousPreviewValidator = draw._previewValidator
   const previousValidator = draw._commitValidator
+  const previousFinishValidator = draw._finishValidator
   draw._previewValidator = createSplitPreviewValidator({ draw, polygonFeature })
   draw._commitValidator = createSplitCommitValidator({ draw, dispatch, polygonFeature })
+  draw._finishValidator = null
   getCommitChecks(draw).reset()
 
   // Always include the draw outline layer so the split line snaps to it
@@ -86,6 +88,7 @@ export const split = ({ appState, appConfig, pluginState, mapState, mapProvider,
   const stopListening = () => {
     draw._previewValidator = previousPreviewValidator
     draw._commitValidator = previousValidator
+    draw._finishValidator = previousFinishValidator
     draw.off(ADAPTER_EVENTS.CREATE, onSplitCreate)
     draw.off(ADAPTER_EVENTS.CANCEL, onSplitCancel)
   }
