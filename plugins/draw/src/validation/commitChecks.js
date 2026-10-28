@@ -165,17 +165,19 @@ export const isSameGeometry = (a, b) => {
 }
 
 /**
- * Starts a draw/edit session's checks: installs the session's two callbacks on the
+ * Starts a draw/edit session's checks: installs the session's callbacks on the
  * adapter and ends any previous session's check. A per-call callback replaces the
  * plugin-level one. A shape still waiting on that check is discarded, as Cancel would.
  *
  *   - `draw._previewValidator` — onGeometryPreview, read by the adapters for the
  *     'preview' and 'place' phases
  *   - `draw._commitValidator`  — onGeometryChange, read by events.js for committed changes
+ *   - `draw._finishValidator`  — onGeometryFinish, read by events.js when a shape is finished
  */
 export const startCheckSession = (draw, options = {}, pluginConfig = {}, eventBus = null) => {
   draw._previewValidator = options.onGeometryPreview ?? pluginConfig.onGeometryPreview
   draw._commitValidator = options.onGeometryChange ?? pluginConfig.onGeometryChange
+  draw._finishValidator = options.onGeometryFinish ?? pluginConfig.onGeometryFinish
   const heldId = getCommitChecks(draw).reset()
   if (heldId !== undefined) {
     const discarded = draw.get(heldId)

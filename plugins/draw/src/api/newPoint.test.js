@@ -114,4 +114,12 @@ describe('newPoint', () => {
     newPoint(context, 'f1')
     expect(draw._commitValidator).toBe(pluginOnGeometryChange)
   })
+
+  test('stores a per-call onGeometryFinish without leaking it into mode options', () => {
+    const { context, draw } = makeContext()
+    const onGeometryFinish = jest.fn()
+    newPoint(context, 'f1', { onGeometryFinish })
+    expect(draw._finishValidator).toBe(onGeometryFinish)
+    expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryFinish')
+  })
 })
