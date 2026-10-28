@@ -13,8 +13,8 @@ export const createNewShape = (mode) => ({ appState, appConfig, pluginConfig, pl
     return
   }
 
-  const { stroke, fill, strokeWidth, properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
-  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig, eventBus)
+  const { stroke, fill, strokeWidth, properties: customProperties, onGeometryChange, onGeometryPreview, onGeometryFinish, ...modeOptions } = options
+  startCheckSession(draw, { onGeometryChange, onGeometryPreview, onGeometryFinish }, pluginConfig, eventBus)
   eventBus.emit('draw:started', { mode, featureId })
 
   const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
