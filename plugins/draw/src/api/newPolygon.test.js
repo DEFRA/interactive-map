@@ -84,6 +84,14 @@ describe('newPolygon', () => {
     expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryChange')
   })
 
+  test('stores a per-call onGeometryFinish without leaking it into mode options', () => {
+    const { context, draw } = makeContext()
+    const onGeometryFinish = jest.fn()
+    newPolygon(context, 'f1', { onGeometryFinish })
+    expect(draw._finishValidator).toBe(onGeometryFinish)
+    expect(draw.changeMode.mock.calls[0][1]).not.toHaveProperty('onGeometryFinish')
+  })
+
   test('falls back to the plugin-level onGeometryChange validator', () => {
     const pluginOnGeometryChange = jest.fn()
     const { context, draw } = makeContext({ pluginConfig: { onGeometryChange: pluginOnGeometryChange } })
