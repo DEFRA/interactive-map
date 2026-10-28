@@ -79,12 +79,16 @@ describe('split', () => {
     const featureCollection = { type: 'FeatureCollection' }
     const previousValidator = jest.fn()
     const previousPreviewValidator = jest.fn()
+    const previousFinishValidator = jest.fn()
     draw._commitValidator = previousValidator
     draw._previewValidator = previousPreviewValidator
+    draw._finishValidator = previousFinishValidator
     draw.get.mockReturnValue(polygonFeature)
     splitPolygon.mockReturnValue(featureCollection)
 
     split(context, 'poly')
+    // The split line is never passed to the consumer's onGeometryFinish
+    expect(draw._finishValidator).toBeNull()
     const onCreate = handlerFor(draw, 'create')
     const geojson = { id: 'line' }
     onCreate(geojson)
@@ -96,6 +100,7 @@ describe('split', () => {
     expect(eventBus.emit).toHaveBeenCalledWith('draw:split', { originalFeatureId: 'poly', featureCollection })
     expect(draw._commitValidator).toBe(previousValidator)
     expect(draw._previewValidator).toBe(previousPreviewValidator)
+    expect(draw._finishValidator).toBe(previousFinishValidator)
     // The splitter line only ever existed to compute the split — it must not
     // linger in the draw store afterwards.
     expect(draw.delete).toHaveBeenCalledWith('_splitter')

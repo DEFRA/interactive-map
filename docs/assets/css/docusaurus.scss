@@ -245,3 +245,9 @@
 .govuk-\!-margin-top-4 {
   margin-top: 20px !important;
 }
+
+/* The theme drops the last row's border on a table followed by a section break, but its
+   tr:last-child also matches the header row (the only row in thead). Restore that one. */
+.app-prose-scope table:has(+ hr) thead tr:last-child th:not(.app-no-prose *) {
+  border-bottom: 1px solid #cecece;
+}

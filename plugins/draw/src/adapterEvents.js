@@ -3,6 +3,7 @@
  * `context.phase` through validateGeometry (validation/validateGeometry.js) to the
  * default rules (validation/rules.js) and to the user's callbacks:
  *   - 'preview' and 'place' go to `onGeometryPreview`, which must answer synchronously
+ *   - 'create' and 'edit-finish' go to `onGeometryFinish` when it's set
  *   - every other phase goes to `onGeometryChange`, which may return a Promise
  *
  * @typedef {'preview' | 'place' | 'change' | 'create' | 'edit-start' | 'edit-finish' | 'recheck'} GeometryChangePhase
@@ -17,13 +18,15 @@
  *                      synchronously; a PLACE_RULES failure vetoes it outright
  *                      and it never appears. Never fires continuously — that's
  *                      'preview''s job (see above).
- *   'create'         - a whole new feature finished without a passing or pending
- *                      result for its final geometry (e.g. a new point), or its
- *                      last result asked for recheckOnFinish, so it's checked now.
+ *   'create'         - a whole new feature finished. Always checked with
+ *                      onGeometryFinish; otherwise only without a passing or pending
+ *                      result for its final geometry (e.g. a new point), or when its
+ *                      last result asked for recheckOnFinish.
  *   'edit-start'     - an existing feature was just loaded into an edit session;
  *                      nothing has changed yet, this is the baseline check.
- *   'edit-finish'    - Done was pressed on an edit whose last result asked for
- *                      recheckOnFinish, so it's checked now.
+ *   'edit-finish'    - Done was pressed on an edit. Always checked with
+ *                      onGeometryFinish; otherwise only when its last result asked
+ *                      for recheckOnFinish.
  *   'recheck'        - the unchanged shape is checked again (recheckGeometry), with
  *                      any detail it was given as `event.detail`.
  *   'change'         - the shape changed: a vertex was added, moved, inserted or
@@ -73,7 +76,7 @@ export const CHANGE_PHASE = 'change'
  */
 
 /**
- * What a user's `onGeometryPreview` or `onGeometryChange` callback returns, after
+ * What a user's `onGeometryPreview`, `onGeometryChange` or `onGeometryFinish` callback returns, after
  * normaliseResult (validation/validateGeometry.js). `true`/`undefined` and `false`
  * are shorthands for valid and invalid.
  *
@@ -82,12 +85,13 @@ export const CHANGE_PHASE = 'change'
  * @property {string} [reason] - shown as a hint toast and sent with draw:geometryinvalid
  * @property {string} [announcement] - announced to screen readers in place of draw's own
  *   message; the reason then isn't shown as a hint, as the consumer presents it
- * @property {boolean} [recheckOnFinish] - `onGeometryChange` only: don't reuse this
- *   result when the shape is finished, check it again with phase 'create'
+ * @property {boolean} [recheckOnFinish] - deprecated, use onGeometryFinish.
+ *   `onGeometryChange` only: don't reuse this result when the shape is finished, check
+ *   it again with phase 'create' or 'edit-finish'
  */
 
 /**
- * The second argument passed to a user's `onGeometryChange` callback —
+ * The second argument passed to a user's `onGeometryChange` or `onGeometryFinish` callback —
  * `onGeometryChange(event, { signal, revision })` (validation/commitChecks.js).
  *
  * @typedef {object} GeometryCheckContext
