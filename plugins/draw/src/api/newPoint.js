@@ -10,8 +10,8 @@ export const newPoint = ({ appState, appConfig, pluginConfig, pluginState, mapSt
     return
   }
 
-  const { properties: customProperties, onGeometryChange, onGeometryPreview, ...modeOptions } = options
-  startCheckSession(draw, { onGeometryChange, onGeometryPreview }, pluginConfig, eventBus)
+  const { properties: customProperties, onGeometryChange, onGeometryPreview, onGeometryFinish, ...modeOptions } = options
+  startCheckSession(draw, { onGeometryChange, onGeometryPreview, onGeometryFinish }, pluginConfig, eventBus)
   eventBus.emit('draw:started', { mode: 'draw_point', featureId })
 
   const snapLayers = options.snapLayers === undefined ? (pluginConfig.snapLayers ?? null) : options.snapLayers
