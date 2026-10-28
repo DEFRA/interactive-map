@@ -151,7 +151,7 @@ While a rule fails, the shape has a dashed outline.
 
 #### Setting the callbacks
 
-Set them at plugin level, `createDrawPlugin({ onGeometryPreview, onGeometryChange, onGeometryFinish })`, or per call in the options of `newPolygon`, `newLine`, `newPoint` and `editFeature`. A per-call callback replaces the plugin-level one for that session. To do more than one thing on a change, call each from one callback.
+Set them at plugin level, `createDrawPlugin({ onGeometryPreview, onGeometryChange, onGeometryFinish })`, or per call in the options of `newPolygon`, `newLine`, `newPoint` and `editFeature`. Each per-call callback replaces only its plugin-level equivalent for that session. The others still apply. To do more than one thing on a change, call each from one callback.
 
 They aren't used by `split`, `merge`, `addFeature` or `setStyle`.
 
@@ -236,14 +236,14 @@ It's only called once the built-in rules pass, and only the result for the lates
 
 **Signature:** `onGeometryFinish(event, context) => result | Promise<result>`
 
-Called when a shape is finished, to check the whole shape once. Without it, finishing uses the latest `onGeometryChange` result.
+Called when a shape is finished, to check the whole shape once. Without it, finishing uses the latest `onGeometryChange` result. If `onGeometryChange` already checks the shape with your service, you don't need `onGeometryFinish`.
 
 | Phase | When |
 |-------|------|
 | `'create'` | A new shape or point was finished |
 | `'edit-finish'` | Done was pressed on an edit |
 
-Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open.
+Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called.
 
 This updates a panel on every change, and validates the shape once it's finished:
 
