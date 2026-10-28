@@ -25,10 +25,13 @@ const pendingCreateIds = new WeakMap()
 // apart from a held new shape, which a new session discards — an edited feature must stay.
 const editFinishRevisions = new WeakMap()
 
-// A result can ask for the shape to be checked again once it's finished (recheckOnFinish),
-// e.g. when the consumer skips its own check while drawing. Ignored on that finishing check.
+// A finished shape is checked again, rather than reusing the latest result, when there's an
+// onGeometryFinish, or the result asked for it (recheckOnFinish, deprecated). Never on that
+// finishing check itself. onGeometryFinish runs the finishing check; without it, onGeometryChange.
 const FINISH_PHASES = new Set(['create', 'edit-finish'])
-const wantsRecheckOnFinish = ({ result, context }) => !!result?.recheckOnFinish && !FINISH_PHASES.has(context?.phase)
+const needsFinishCheck = (draw, { result, context }) =>
+  !FINISH_PHASES.has(context?.phase) && (typeof draw._finishValidator === 'function' || !!result?.recheckOnFinish)
+const finishValidatorFor = (draw) => draw._finishValidator ?? draw._commitValidator
 
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
@@ -172,13 +175,13 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
   // the first vertex, Enter), so the latest check is re-applied here — a shape without a
   // passing check must never be finalised. A passing or still-pending result for this
   // same geometry is reused, so finishing doesn't repeat a server call; otherwise (a
-  // point, which has no commits before it's created, a failed result, or a result asking
-  // for recheckOnFinish) the shape is checked now with phase 'create'.
+  // point, which has no commits before it's created, a failed result, or a finishing check
+  // — see needsFinishCheck) the shape is checked now with phase 'create'.
   const checkFinished = (f) => {
     const { status, feature: checkedFeature } = checks.state
-    const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, f) && !wantsRecheckOnFinish(checks.state)
+    const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, f) && !needsFinishCheck(draw, checks.state)
     if (!isReusable) {
-      checks.run({ feature: f, context: { phase: 'create', mode: draw.getMode() }, onGeometryChange: draw._commitValidator })
+      checks.run({ feature: f, context: { phase: 'create', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
     }
     return checks.state
   }
@@ -197,13 +200,13 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
   return {
     onCreate: finish,
     // A held shape is created once its check passes, or reopened in edit mode. A result that
-    // asks for recheckOnFinish, unknown until the pending check settled, is checked again.
+    // needs a finishing check, unknown until the pending check settled, is checked again.
     onCheckSettled: (state) => {
       const heldId = checks.heldId
       if (heldId === undefined || state.status === 'pending') { return }
       checks.release()
       const finished = draw.get(heldId)
-      if (wantsRecheckOnFinish(state)) {
+      if (needsFinishCheck(draw, state)) {
         finish(finished)
       } else if (state.status === 'valid') {
         create(finished)
@@ -226,8 +229,9 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
 }
 
 // Done, and finishing an edit: pressed while editing with a check pending, Done waits for
-// that check (see editFinishRevisions above) instead of finishing straight away. A result
-// that asks for recheckOnFinish is checked again first, with phase 'edit-finish'.
+// that check (see editFinishRevisions above) instead of finishing straight away. With an
+// onGeometryFinish, or a result asking for recheckOnFinish, the shape is checked again first,
+// with phase 'edit-finish' — straight away for onGeometryFinish, which decides on its own.
 function createEditFinishHandlers ({ draw, dispatch }) {
   const checks = getCommitChecks(draw)
 
@@ -237,15 +241,15 @@ function createEditFinishHandlers ({ draw, dispatch }) {
   }
 
   const finishEdit = (state) => {
-    if (state.status === 'pending') {
+    if (state.status === 'pending' && !draw._finishValidator) {
       waitFor(state.revision)
       return
     }
-    if (!wantsRecheckOnFinish(state)) {
+    if (!needsFinishCheck(draw, state)) {
       draw.done()
       return
     }
-    checks.run({ feature: state.feature, context: { phase: 'edit-finish', mode: draw.getMode() }, onGeometryChange: draw._commitValidator })
+    checks.run({ feature: state.feature, context: { phase: 'edit-finish', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
     const next = checks.state
     if (next.status === 'pending') {
       waitFor(next.revision)

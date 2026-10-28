@@ -1007,6 +1007,77 @@ describe('async geometry checks', () => {
     })
   })
 
+  describe('onGeometryFinish', () => {
+    const drawing = () => {
+      const context = setup()
+      context.draw.get.mockReturnValue({ id: 'new', ...square })
+      context.draw._commitValidator = jest.fn(() => undefined)
+      return context
+    }
+
+    test('checks a finished new shape with phase create, instead of reusing onGeometryChange', () => {
+      const { draw, eventBus } = drawing()
+      draw._finishValidator = jest.fn(() => true)
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      expect(draw._commitValidator).toHaveBeenCalledTimes(1)
+      expect(draw._finishValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'create', feature: { id: 'new', ...square } }), expect.anything())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+    })
+
+    test('holds the shape while it runs, then reopens it if it fails', async () => {
+      const { draw, eventBus } = drawing()
+      const reply = deferred()
+      draw._finishValidator = () => reply.promise
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+
+      reply.resolve({ valid: false, reason: 'overlap' })
+      await flush()
+      jest.runAllTimers()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'invalid', reason: 'overlap' }))
+    })
+
+    test('runs on Done while editing with phase edit-finish, then finishes the edit if it passes', async () => {
+      const { draw, buttonConfig } = drawing()
+      draw.getMode.mockReturnValue('edit_vertex')
+      const reply = deferred()
+      draw._finishValidator = jest.fn(() => reply.promise)
+      commit(draw, square, 'change')
+
+      buttonConfig.drawDone.onClick()
+      expect(draw._finishValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'edit-finish', mode: 'edit_vertex' }), expect.anything())
+      expect(draw.done).not.toHaveBeenCalled()
+
+      reply.resolve(true)
+      await flush()
+      expect(draw._finishValidator).toHaveBeenCalledTimes(1)
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('keeps an edit open if it fails', () => {
+      const { draw, buttonConfig } = drawing()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._finishValidator = () => false
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+    })
+
+    test('doesn’t wait for a pending onGeometryChange before running', () => {
+      const { draw, buttonConfig } = drawing()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._commitValidator = () => new Promise(() => {})
+      draw._finishValidator = jest.fn(() => true)
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      expect(draw._finishValidator).toHaveBeenCalledTimes(1)
+      expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+  })
+
   test('survives the handlers being rebuilt mid-check', async () => {
     const first = setup()
     const { draw, eventBus } = first
