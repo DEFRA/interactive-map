@@ -32,10 +32,13 @@ const applySplitCommit = ({ draw, dispatch, polygonFeature, feature }) => {
 
 const toResult = (isValid) => (isValid ? { valid: true } : { valid: false, reason: INVALID_REASON })
 
-// Installed as draw._previewValidator. 'place' is a no-op — a split isn't complete
-// until its last vertex, so checking it would block placement.
-const createSplitPreviewValidator = ({ draw, polygonFeature }) => ({ feature, phase }) =>
-  phase === 'preview' ? toResult(applySplitPreview({ draw, polygonFeature, feature })) : { valid: true }
+// Installed as draw._previewValidator. 'preview' only colours the line and 'place' is a
+// no-op — a split isn't complete until its last vertex, so an invalid verdict would
+// disable the Add point button and block placement.
+const createSplitPreviewValidator = ({ draw, polygonFeature }) => ({ feature, phase }) => {
+  if (phase === 'preview') { applySplitPreview({ draw, polygonFeature, feature }) }
+  return { valid: true }
+}
 
 // Installed as draw._commitValidator. 'create' is a no-op — checking it would
 // hijack an early finish into edit mode.
