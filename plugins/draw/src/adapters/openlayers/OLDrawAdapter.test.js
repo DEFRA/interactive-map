@@ -248,6 +248,22 @@ describe('setStyle()', () => {
   })
 })
 
+describe('setProperties()', () => {
+  test('merges the properties into the OL feature', () => {
+    const { manager, adapter } = setup()
+    const olFeature = { setProperties: jest.fn() }
+    manager.store.getOL.mockReturnValue(olFeature)
+    adapter.setProperties('a', { name: 'North field', ref: null })
+    expect(olFeature.setProperties).toHaveBeenCalledWith({ name: 'North field', ref: null })
+  })
+
+  test('does nothing for an id with no existing feature', () => {
+    const { manager, adapter } = setup()
+    manager.store.getOL.mockReturnValue(null)
+    expect(() => adapter.setProperties('missing', { name: 'x' })).not.toThrow()
+  })
+})
+
 test('setCanFinish records validity on the manager for finish gating', () => {
   const { adapter, manager } = setup()
   adapter.setCanFinish(false)

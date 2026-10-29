@@ -211,6 +211,15 @@ describe('normaliseResult', () => {
       .toEqual({ valid: true, reason: undefined, announcement: 'Area 2 hectares', recheckOnFinish: true })
     expect(normaliseResult({ valid: false, reason: 'too big' })).not.toHaveProperty('announcement')
   })
+
+  test('keeps properties on a passing result only, and only as an object', () => {
+    const properties = { drawRules: { checked: false } }
+    expect(normaliseResult({ valid: true, properties })).toEqual({ valid: true, reason: undefined, properties })
+    expect(normaliseResult({ properties })).toHaveProperty('properties', properties)
+    expect(normaliseResult({ valid: false, reason: 'overlap', properties })).not.toHaveProperty('properties')
+    expect(normaliseResult({ valid: true, properties: ['a'] })).not.toHaveProperty('properties')
+    expect(normaliseResult({ valid: true, properties: null })).not.toHaveProperty('properties')
+  })
 })
 
 describe('toPlacementBlocked', () => {

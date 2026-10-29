@@ -153,7 +153,7 @@ While a rule fails, the shape has a dashed outline.
 
 Set them at plugin level, `createDrawPlugin({ onGeometryPreview, onGeometryChange, onGeometryFinish })`, or per call in the options of `newPolygon`, `newLine`, `newPoint` and `editFeature`. Each per-call callback replaces only its plugin-level equivalent for that session. The others still apply. To do more than one thing on a change, call each from one callback.
 
-They aren't used by `split`, `merge`, `addFeature` or `setStyle`.
+They aren't used by `split`, `merge`, `addFeature`, `setStyle` or `setProperties`.
 
 #### What they return
 
@@ -165,6 +165,7 @@ They aren't used by `split`, `merge`, `addFeature` or `setStyle`.
 | `result.valid` | Whether the shape is valid |
 | `result.reason` | Why the shape is invalid. Shown as a hint and sent with [`draw:geometryinvalid`](#drawgeometryinvalid) |
 | `result.announcement` | Read out by screen readers instead of draw's own message. When it's set, `reason` isn't shown as a hint, so you can show it yourself. From `onGeometryPreview`, it's only read out for a rejected vertex |
+| `result.properties` | Properties to add to the finished shape. `onGeometryFinish` only, on a passing result. See [Adding properties to the finished shape](#adding-properties-to-the-finished-shape) |
 
 #### What they receive
 
@@ -259,9 +260,28 @@ createDrawPlugin({
 
 Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies, and finishing would wait for it.
 
+#### Adding properties to the finished shape
+
+A passing result can include `properties` to store with the shape, such as what the check found. Draw adds them before the shape is created or the edit finishes, so they're in [`draw:created`](#drawcreated) and [`draw:edited`](#drawedited). They follow the same rules as [`setProperties`](#setpropertiesfeatureid-properties).
+
+```js
+createDrawPlugin({
+  onGeometryFinish: async ({ feature }, { signal }) => {
+    try {
+      return await validateWithService(feature, { signal })
+    } catch {
+      // Let the user finish, but record that the shape wasn't checked
+      return { valid: true, properties: { drawRules: { checked: false, reason: 'error' } } }
+    }
+  }
+})
+```
+
+Keep them under one key of your own, such as `drawRules`, so they don't clash with other properties. `properties` is ignored on a failing result, and from `onGeometryPreview` and `onGeometryChange`.
+
 ## Methods
 
-Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `deleteFeature`, `split`, `merge`, `setGeometry` and `recheckGeometry` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
+Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `setProperties`, `deleteFeature`, `split`, `merge`, `setGeometry` and `recheckGeometry` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
 
 ---
 
@@ -410,6 +430,28 @@ Setting `stroke`, `fill` or `strokeWidth` replaces all of its values, including 
 
 ```js
 drawPlugin.setStyle('monument1', { symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' } })
+```
+
+---
+
+### `setProperties(featureId, properties)`
+
+Add or change a feature's own properties, such as details from a form or an ID from your backend. They're kept on the feature, so later [`draw:edited`](#drawedited) events include them. Returns `false` if the feature doesn't exist.
+
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID of the feature to update |
+| `properties` | **Type:** `Object`<br />**Required**<br />Properties to add or change |
+
+- New values replace old ones with the same name. Objects are replaced, not merged.
+- `undefined` values are skipped. `null` is kept, to clear a property.
+- Style properties are ignored with a warning: use [`setStyle`](#setstylefeatureid-stylechanges). So are draw's internal properties.
+- If the feature is being edited, cancelling the edit keeps the properties.
+
+```js
+detailsForm.addEventListener('submit', () => {
+  drawPlugin.setProperties('field-1', { name: form.name.value, landUse: form.landUse.value })
+})
 ```
 
 ---
@@ -735,6 +777,19 @@ Emitted after `setStyle` updates a feature's style.
 |----------|-------------|
 | `payload.featureId` | **Type:** `string`<br />ID of the updated feature |
 | `payload.properties` | **Type:** `Object`<br />The style properties that changed. A removed colour is `null`, so you can merge this into your saved copy of the feature |
+
+---
+
+### `draw:propertieschange`
+
+Emitted after `setProperties` updates a feature's properties.
+
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.featureId` | **Type:** `string`<br />ID of the updated feature |
+| `payload.properties` | **Type:** `Object`<br />The properties that were changed |
 
 ---
 

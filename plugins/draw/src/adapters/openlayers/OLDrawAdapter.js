@@ -29,7 +29,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
  *   setGeometry(geometry)
- *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
+ *   get(id) / add(feature) / setStyle(id, properties) / setProperties(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -147,6 +147,11 @@ export class OLDrawAdapter {
 
   setFeatureProperty () { /* not implemented for OL */ }
   setDrawingPreviewProperty (property, value) { this._manager.setDrawingPreviewProperty(property, value) }
+
+  // Merges data properties into an existing feature (a shallow merge; setStyle handles style)
+  setProperties (id, properties) {
+    this._manager.store.getOL(id)?.setProperties(properties)
+  }
 
   on (type, handler) { this._manager.on(type, handler) }
   off (type, handler) { this._manager.off(type, handler) }

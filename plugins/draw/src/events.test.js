@@ -1078,6 +1078,94 @@ describe('async geometry checks', () => {
     })
   })
 
+  describe('properties from onGeometryFinish', () => {
+    // A store for the one shape, so a properties write shows up in draw.get
+    const drawing = () => {
+      const context = setup()
+      const { draw } = context
+      let stored = { id: 'new', ...square, properties: { landUse: 'arable' } }
+      draw.get.mockImplementation(() => stored)
+      draw.setProperties = jest.fn((id, properties) => { stored = { ...stored, properties: { ...stored.properties, ...properties } } })
+      draw._commitValidator = jest.fn(() => undefined)
+      return context
+    }
+    const finishedWith = (properties) => ({ id: 'new', ...square, properties })
+    const drawrules = { drawRules: { checked: false, reason: 'error' } }
+
+    test('are merged into a new shape before draw:created', () => {
+      const { draw, eventBus } = drawing()
+      draw._finishValidator = () => ({ valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      expect(draw.setProperties).toHaveBeenCalledWith('new', drawrules)
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable', ...drawrules }))
+    })
+
+    test('are merged into a held shape once its finishing check passes', async () => {
+      const { draw, eventBus } = drawing()
+      const reply = deferred()
+      draw._finishValidator = () => reply.promise
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      reply.resolve({ valid: true, properties: drawrules })
+      await flush()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable', ...drawrules }))
+    })
+
+    test('are merged into an edited shape before draw:edited, replacing earlier values', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._finishValidator = () => ({ valid: true, properties: { drawRules: { checked: true } } })
+      draw.setProperties('new', drawrules)
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).toHaveBeenCalled()
+      drawHandler(draw, 'editfinish')(draw.get()) // the adapter's EDIT_FINISH, fired by done()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:edited', finishedWith({ landUse: 'arable', drawRules: { checked: true } }))
+    })
+
+    test('are merged into a reopened shape that then passes, reported as created', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw._finishValidator = ({ phase }) => (phase === 'create' ? false : { valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      draw.getMode.mockReturnValue('edit_vertex')
+      commit(draw, square, 'change') // Done stays disabled until the reopened shape is changed
+      buttonConfig.drawDone.onClick()
+      drawHandler(draw, 'editfinish')(draw.get())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable', ...drawrules }))
+    })
+
+    test('are ignored on a failing result', () => {
+      const { draw } = drawing()
+      draw._finishValidator = () => ({ valid: false, reason: 'overlap', properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      expect(draw.setProperties).not.toHaveBeenCalled()
+    })
+
+    test('are ignored from onGeometryChange, with or without an onGeometryFinish', () => {
+      const { draw, eventBus } = drawing()
+      draw._commitValidator = () => ({ valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      expect(draw.setProperties).not.toHaveBeenCalled()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable' }))
+    })
+
+    test('are ignored when the finished shape differs from the one checked', () => {
+      const { draw, buttonConfig } = drawing()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._finishValidator = () => ({ valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      drawHandler(draw, 'editfinish')({ id: 'new', ...otherSquare, properties: {} })
+      expect(draw.setProperties).not.toHaveBeenCalled()
+    })
+  })
+
   test('survives the handlers being rebuilt mid-check', async () => {
     const first = setup()
     const { draw, eventBus } = first

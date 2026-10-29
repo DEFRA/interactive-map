@@ -9,15 +9,20 @@ import { COMMIT_RULES, PLACE_RULES, PREVIEW_RULES, MIN_VERTICES } from './rules.
  *   - `false`                → invalid (no reason)
  *   - `{ valid, reason, announcement, recheckOnFinish }` → passed through
  */
+const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
+
 export const normaliseResult = (result) => {
   if (result === undefined || result === true) { return { valid: true } }
   if (result === false) { return { valid: false, reason: null } }
-  const { valid, reason, announcement, recheckOnFinish } = result
+  const { valid, reason, announcement, recheckOnFinish, properties } = result
+  const isValid = valid !== false
   return {
-    valid: valid !== false,
+    valid: isValid,
     reason,
     ...(announcement && { announcement }),
-    ...(recheckOnFinish && { recheckOnFinish: true })
+    ...(recheckOnFinish && { recheckOnFinish: true }),
+    // Only a passing result can add properties: an invalid shape isn't finished
+    ...(isValid && isPlainObject(properties) && { properties })
   }
 }
 

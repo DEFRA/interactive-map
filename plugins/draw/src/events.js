@@ -9,6 +9,8 @@ import { ADAPTER_EVENTS } from './adapterEvents.js'
 import { getCommitChecks, isSameGeometry } from './validation/commitChecks.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { stripInternalProperties } from './utils/stripInternalProperties.js'
+import { mergeFeatureProperties } from './utils/mergeFeatureProperties.js'
+import { mapStyleIds } from './utils/flattenStyleProperties.js'
 import { isEditMode, isCheckedMode } from './utils/drawModes.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
@@ -32,6 +34,19 @@ const FINISH_PHASES = new Set(['create', 'edit-finish'])
 const needsFinishCheck = (draw, { result, context }) =>
   !FINISH_PHASES.has(context?.phase) && (typeof draw._finishValidator === 'function' || !!result?.recheckOnFinish)
 const finishValidatorFor = (draw) => draw._finishValidator ?? draw._commitValidator
+
+// A passing onGeometryFinish result's properties are merged into the finished shape, in
+// draw's store, before any listener sees it. Only that finishing check counts — not
+// onGeometryChange standing in for it, nor a result for different geometry. Called before
+// resetState(), which ends the check session. Returns the shape to emit.
+const applyFinishProperties = (draw, f, mapState) => {
+  const { status, result, context, feature } = getCommitChecks(draw).state
+  const isFinishResult = typeof draw._finishValidator === 'function' && FINISH_PHASES.has(context?.phase) &&
+    status === 'valid' && isSameGeometry(feature, f)
+  if (!isFinishResult || !result.properties) { return f }
+  mergeFeatureProperties(draw, f.id, result.properties, { caller: 'onGeometryFinish', styleIds: mapStyleIds(mapState) })
+  return draw.get(f.id)
+}
 
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
@@ -154,9 +169,10 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
   const checks = getCommitChecks(draw)
 
   const create = (f) => {
+    const finished = applyFinishProperties(draw, f, mapState)
     resetState()
     setTimeout(() => draw.changeMode('disabled'), 0)
-    eventBus.emit(CREATED_EVENT, stripInternalProperties(f))
+    eventBus.emit(CREATED_EVENT, stripInternalProperties(finished))
   }
 
   const reopen = (featureId, geometryType) => {
@@ -215,14 +231,15 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
       }
     },
     onEditFinish: (f) => {
+      const finished = applyFinishProperties(draw, f, mapState)
       resetState()
       setTimeout(() => draw.changeMode('disabled'), 0)
       // A shape that was drawn-then-fixed reports as a creation, not an edit.
       if (pendingCreateIds.get(draw) === f.id) {
         pendingCreateIds.delete(draw)
-        eventBus.emit(CREATED_EVENT, stripInternalProperties(f))
+        eventBus.emit(CREATED_EVENT, stripInternalProperties(finished))
       } else {
-        eventBus.emit('draw:edited', stripInternalProperties(f))
+        eventBus.emit('draw:edited', stripInternalProperties(finished))
       }
     }
   }

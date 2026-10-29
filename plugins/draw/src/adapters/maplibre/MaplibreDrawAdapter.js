@@ -66,7 +66,7 @@ export const displayedShape = (mode, coordinates) => {
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
  *   setGeometry(geometry)
- *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
+ *   get(id) / add(feature) / setStyle(id, properties) / setProperties(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -397,6 +397,16 @@ export class MaplibreDrawAdapter {
 
   setFeatureProperty (id, property, value) {
     this._draw.setFeatureProperty(id, property, value)
+  }
+
+  // Merges data properties into an existing feature (a shallow merge; setStyle handles style).
+  // Written in place rather than re-added like setStyle, so it's safe while the feature is
+  // still in an edit mode.
+  setProperties (id, properties) {
+    if (!this._draw.get(id)) { return }
+    for (const [key, value] of Object.entries(properties)) {
+      this._draw.setFeatureProperty(id, key, value)
+    }
   }
 
   // Tags the in-progress rubber-band feature (no stable id yet) with a property and

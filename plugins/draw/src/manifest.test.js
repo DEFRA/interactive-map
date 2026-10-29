@@ -8,7 +8,7 @@ describe('manifest structure', () => {
     expect(manifest.reducer).toHaveProperty('actions')
     expect(manifest.InitComponent).toBeDefined()
     expect(Object.keys(manifest.api)).toEqual(expect.arrayContaining([
-      'newPolygon', 'newLine', 'newPoint', 'editFeature', 'addFeature', 'setStyle', 'deleteFeature', 'split', 'merge'
+      'newPolygon', 'newLine', 'newPoint', 'editFeature', 'addFeature', 'setStyle', 'setProperties', 'deleteFeature', 'split', 'merge'
     ]))
   })
 })

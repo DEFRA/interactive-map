@@ -1,3 +1,5 @@
+import { SYMBOL_KEYS } from './symbolKeys.js'
+
 const STYLE_PROPS = new Set(['stroke', 'fill', 'strokeWidth'])
 
 const capitalise = (id) => id.charAt(0).toUpperCase() + id.slice(1)
@@ -40,6 +42,13 @@ export const definedOnly = (properties = {}) => {
 
 // The IDs of the map styles a per-style value can be for (mapState.mapStyles)
 export const mapStyleIds = (mapState) => mapState?.mapStyles?.map((mapStyle) => mapStyle.id) ?? []
+
+// A style property, set through setStyle: stroke/fill/strokeWidth, one of their keys for a
+// known map style (see mapStyleIds), or a symbol-family key. A data property such as
+// fillType never is.
+export const isStyleProperty = (key, styleIds = []) =>
+  STYLE_PROPS.has(key) || SYMBOL_KEYS.has(key) ||
+  [...STYLE_PROPS].some((prop) => styleIds.some((styleId) => key === `${prop}${capitalise(styleId)}`))
 
 /**
  * The flattened patch for changing a feature's style props. Setting a style prop replaces
