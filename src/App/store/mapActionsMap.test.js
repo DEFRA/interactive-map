@@ -52,6 +52,13 @@ describe('actionsMap', () => {
     expect(result.otherProp).toBe(state.otherProp)
   })
 
+  test('SET_MAP_STYLES sets mapStyles', () => {
+    const mapStyles = [{ id: 'outdoor' }, { id: 'dark' }]
+    const result = actionsMap.SET_MAP_STYLES(state, mapStyles)
+    expect(result.mapStyles).toBe(mapStyles)
+    expect(result.otherProp).toBe(state.otherProp)
+  })
+
   test('SET_MAP_SIZE sets mapSize', () => {
     const newSize = { width: 200, height: 200 }
     const result = actionsMap.SET_MAP_SIZE(state, newSize)

@@ -21,6 +21,7 @@ export const MapProvider = ({ options, children }) => {
     const mapStyle = mapStyles.find(s => s.id === savedMapStyleId) || mapStyles[0]
     const savedMapSize = localStorage.getItem(`${options.id}:mapSize`)
     const mapSize = savedMapSize || options.mapSize
+    dispatch({ type: 'SET_MAP_STYLES', payload: mapStyles })
     dispatch({ type: 'SET_MAP_STYLE', payload: mapStyle })
     dispatch({ type: 'SET_MAP_SIZE', payload: mapSize })
   }
