@@ -60,7 +60,7 @@ export const toStyleChanges = (existing = {}, changes = {}, styleIds = []) => {
     if (!STYLE_PROPS.has(prop)) { continue }
     for (const styleId of styleIds) {
       const key = `${prop}${capitalise(styleId)}`
-      if (key in existing) { removed[key] = undefined }
+      if (key in existing) { removed[key] = undefined } // NOSONAR — undefined means remove (see setStyle in both adapters); null is a real value to keep
     }
   }
   return { ...removed, ...flattenStyleProperties(defined) }
