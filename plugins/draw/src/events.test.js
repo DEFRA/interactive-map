@@ -662,7 +662,7 @@ describe('async geometry checks', () => {
       draw._commitValidator = () => new Promise(() => {})
       commit(draw, square, 'change')
       slow()
-      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_CHECK_SLOW' })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_CHECK_SLOW' })
     })
 
     test('a result\u2019s own announcement replaces draw\u2019s, and its hint', () => {
@@ -749,7 +749,7 @@ describe('async geometry checks', () => {
 
       // Still waiting once the check is slow, when Done reads "Checking…"
       slow()
-      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_CHECK_SLOW' })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_CHECK_SLOW' })
       expect(draw.done).not.toHaveBeenCalled()
 
       reply.resolve(true)
@@ -1075,6 +1075,98 @@ describe('async geometry checks', () => {
       buttonConfig.drawDone.onClick()
       expect(draw._finishValidator).toHaveBeenCalledTimes(1)
       expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+  })
+
+  describe('Done while the next check runs', () => {
+    const canFinish = (dispatch) => dispatch.mock.calls.filter(([a]) => a.type === 'SET_CAN_FINISH').map(([a]) => a.payload).pop()
+    const partDrawn = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] } }
+
+    test('stays disabled after a failed result, and enables only once the next check passes', async () => {
+      const { draw, dispatch } = setup()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._commitValidator = () => false
+      commit(draw, square)
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, otherSquare)
+      expect(lastStatus(dispatch)).toBe('pending')
+      expect(canFinish(dispatch)).toBe(false)
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(false)
+
+      reply.resolve(true)
+      await flush()
+      expect(canFinish(dispatch)).toBe(true)
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(true)
+    })
+
+    test('stays disabled after an error', () => {
+      const { draw, dispatch } = setup()
+      jest.spyOn(console, 'warn').mockImplementation(() => {})
+      draw._commitValidator = () => { throw new Error('503') }
+      commit(draw, square)
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(false)
+      console.warn.mockRestore()
+    })
+
+    test('stays enabled after a passing result', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => true
+      commit(draw, square)
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(true)
+    })
+
+    test('isn\u2019t held back by a built-in rule failure, such as too few points', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, partDrawn)
+      expect(canFinish(dispatch)).toBe(false)
+      commit(draw, square)
+      expect(canFinish(dispatch)).toBe(true)
+    })
+
+    test('a check cancelled by a newer change doesn\u2019t change it', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => false
+      commit(draw, square)
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      commit(draw, square)
+      expect(canFinish(dispatch)).toBe(false)
+    })
+
+    test('a new shape that onGeometryFinish failed keeps that result when it reopens', () => {
+      const { draw, dispatch } = setup()
+      draw.get.mockReturnValue({ id: 'new', ...square })
+      draw._commitValidator = () => true
+      draw._finishValidator = () => ({ valid: false, reason: 'overlap' })
+      commit(draw, square)
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+      expect(canFinish(dispatch)).toBe(false)
+
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(false)
+    })
+
+    test('an edit that onGeometryFinish failed keeps that result', () => {
+      const { draw, dispatch, buttonConfig } = setup()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._commitValidator = () => true
+      draw._finishValidator = () => false
+      commit(draw, square)
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(false)
     })
   })
 

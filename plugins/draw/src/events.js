@@ -6,7 +6,7 @@
  * All MapLibre / OL specifics live in the adapter.
  */
 import { ADAPTER_EVENTS } from './adapterEvents.js'
-import { getCommitChecks, isSameGeometry } from './validation/commitChecks.js'
+import { getCommitChecks, isSameGeometry, canFinishCheck } from './validation/commitChecks.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { stripInternalProperties } from './utils/stripInternalProperties.js'
 import { mergeFeatureProperties } from './utils/mergeFeatureProperties.js'
@@ -51,6 +51,14 @@ const applyFinishProperties = (draw, feature, mapState) => {
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
 // even though it's a genuine COMMIT_RULES failure like any other.
+// The Done button and the map's finish gestures (double-click, clicking the first vertex)
+// follow the same check state
+const applyCanFinish = (draw, dispatch, state) => {
+  const canFinish = canFinishCheck(state)
+  draw.setCanFinish?.(canFinish)
+  dispatch({ type: 'SET_CAN_FINISH', payload: canFinish })
+}
+
 const isIncompleteShape = (reason) => Object.values(MIN_VERTICES_REASONS).includes(reason)
 
 // A discrete, one-shot invalid result (a rejected placement, a finished-but-invalid
@@ -104,11 +112,12 @@ const enterEditMode = ({ draw, appState, appConfig, mapState, dispatch, eventBus
     getSnapEnabled: () => draw.isSnapEnabled()
   })
   const editing = draw.get(featureId)
-  const { status, result } = getCommitChecks(draw).state
+  const state = getCommitChecks(draw).state
+  const { status, result } = state
   dispatch({ type: 'SET_FEATURE', payload: { feature: editing, tempFeature: editing } })
   dispatch({ type: 'SET_MODE', payload: mode })
   dispatch({ type: 'SET_VALIDATION_STATUS', payload: status })
-  draw.setCanFinish?.(status === 'valid' || status === 'pending')
+  applyCanFinish(draw, dispatch, state)
   draw.setInvalid?.(status === 'invalid')
   eventBus.emit('draw:reopened', { feature: stripInternalProperties(editing), status, reason: result?.reason ?? null })
 }
@@ -145,10 +154,9 @@ const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce
   // A slow check is the same pending check, now shown as "Checking…"
   dispatch(state.slow ? { type: 'SET_CHECK_SLOW' } : { type: 'SET_VALIDATION_STATUS', payload: status })
   announceCheck(announce, state)
-  // Also blocks the adapters' finish gestures (double-click, clicking the first vertex)
-  // while the check is failing. A shape finished while its check is pending is held
-  // until it settles (see createFinishHandlers).
-  draw.setCanFinish?.(valid || status === 'pending')
+  // A shape finished while its check is pending is held until it settles (see
+  // createFinishHandlers).
+  applyCanFinish(draw, dispatch, state)
   if (status === 'pending' || status === 'error') { return }
   // The invalid stroke is committed-validity-driven in edit mode only; in draw mode the
   // adapters drive it live from the displayed geometry (placed vertices + cursor).

@@ -233,6 +233,8 @@ Called after each change to a shape.
 
 It's only called once the built-in rules pass, and only the result for the latest change counts. If it fails, throws or rejects, the shape can't be finished: call `recheckGeometry()` to retry. If the shape is finished while a check is running, draw waits for the result.
 
+While a check is running, Done stays as the last result of `onGeometryChange` or `onGeometryFinish` left it: disabled if that result failed, otherwise enabled.
+
 ## `onGeometryFinish(event, context)`
 
 **Signature:** `onGeometryFinish(event, context) => result | Promise<result>`

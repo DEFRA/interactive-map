@@ -1,4 +1,4 @@
-import { createCommitChecks, getCommitChecks, isSameGeometry, startCheckSession, SLOW_CHECK_MS } from './commitChecks.js'
+import { createCommitChecks, getCommitChecks, isSameGeometry, startCheckSession, canFinishCheck, SLOW_CHECK_MS } from './commitChecks.js'
 
 const square = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] } }
 const context = { phase: 'change', mode: 'draw_polygon', vertexIndex: 3 }
@@ -122,9 +122,50 @@ describe('createCommitChecks', () => {
     expect(checks.reset()).toBe('c')
   })
 
+  test('carries the last callback result into later states, ignoring the built-in rules', () => {
+    const checks = createCommitChecks()
+    const partDrawn = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] } }
+    checks.run({ feature: square, context, onGeometryChange: () => false })
+    expect(checks.state.lastResultStatus).toBe('invalid')
+
+    checks.run({ feature: partDrawn, context, onGeometryChange: () => true })
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'invalid', lastResultStatus: 'invalid' }))
+
+    checks.run({ feature: square, context, onGeometryChange: () => new Promise(() => {}) })
+    checks.run({ feature: square, context, onGeometryChange: () => new Promise(() => {}) })
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'pending', lastResultStatus: 'invalid' }))
+
+    checks.reset()
+    expect(checks.state.lastResultStatus).toBeNull()
+  })
+
+  test('counts a callback error as its last result', () => {
+    const checks = createCommitChecks()
+    jest.spyOn(console, 'warn').mockImplementation(() => {})
+    checks.run({ feature: square, context, onGeometryChange: () => { throw new Error('503') } })
+    expect(checks.state.lastResultStatus).toBe('error')
+    console.warn.mockRestore()
+  })
+
   test('works without an onSettle callback', () => {
     const checks = createCommitChecks()
     expect(() => checks.run({ feature: square, context })).not.toThrow()
+  })
+})
+
+describe('canFinishCheck', () => {
+  test('is true for a passing check, and false for a failed one or none', () => {
+    expect(canFinishCheck({ status: 'valid' })).toBe(true)
+    expect(canFinishCheck({ status: 'invalid' })).toBe(false)
+    expect(canFinishCheck({ status: 'error' })).toBe(false)
+    expect(canFinishCheck({ status: 'idle' })).toBe(false)
+  })
+
+  test('keeps the last callback result while a check is pending', () => {
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: null })).toBe(true)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: 'valid' })).toBe(true)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: 'invalid' })).toBe(false)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: 'error' })).toBe(false)
   })
 })
 

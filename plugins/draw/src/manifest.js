@@ -82,11 +82,11 @@ export const manifest = {
       // Also shown while a new point waits on its check, to read "Checking…"
       hiddenWhen: ({ pluginState }) => !isCheckedMode(pluginState.mode) && !pluginState.holding,
       enableWhen: ({ pluginState }) => {
-        const { mode, validationStatus, previewValid, holding } = pluginState
-        // validationStatus is the latest commit-level check (built-in rules + onGeometryChange);
+        const { mode, canFinish, previewValid, holding } = pluginState
+        // canFinish follows the latest commit-level check (built-in rules + onGeometryChange);
         // previewValid is the live check of a shape being edited. Done can be pressed while a
-        // check is pending: finishing then waits for it (holding) until it settles.
-        const canFinish = validationStatus === 'valid' || validationStatus === 'pending'
+        // check is pending, unless the last result failed: finishing then waits for it
+        // (holding) until it settles.
         return isCheckedMode(mode) && canFinish && previewValid && !holding
       },
       ...createButtonSlots(true)
