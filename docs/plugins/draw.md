@@ -734,7 +734,7 @@ Emitted after `setStyle` updates a feature's style.
 | Property | Description |
 |----------|-------------|
 | `payload.featureId` | **Type:** `string`<br />ID of the updated feature |
-| `payload.properties` | **Type:** `Object`<br />The style and symbol properties that were applied |
+| `payload.properties` | **Type:** `Object`<br />The style properties that changed. A removed colour is `null`, so you can merge this into your saved copy of the feature |
 
 ---
 

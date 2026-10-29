@@ -67,7 +67,7 @@ describe('setStyle', () => {
   })
 
   // Otherwise the renderers would keep reading the old strokeOutdoor over the new stroke
-  test('setting a style prop removes its values for each map style, and the event reports only what was set', () => {
+  test('setting a style prop removes its values for each map style, and the event reports them as null', () => {
     const draw = {
       get: jest.fn(() => ({ id: 'a', properties: { stroke: 'brown', strokeOutdoor: 'brown', strokeDark: 'tan', fillType: 'arable' } })),
       setStyle: jest.fn()
@@ -75,7 +75,10 @@ describe('setStyle', () => {
     const { context, eventBus } = setup(draw, [{ id: 'outdoor' }, { id: 'dark' }])
     setStyle(context, 'a', { stroke: 'red' })
     expect(draw.setStyle).toHaveBeenCalledWith('a', { strokeOutdoor: undefined, strokeDark: undefined, stroke: 'red' })
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:stylechange', { featureId: 'a', properties: { stroke: 'red' } })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:stylechange', {
+      featureId: 'a',
+      properties: { strokeOutdoor: null, strokeDark: null, stroke: 'red' }
+    })
   })
 
   test('defaults styleChanges to {} and still resolves cleanly', () => {
