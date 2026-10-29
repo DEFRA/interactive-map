@@ -1,7 +1,8 @@
 import DirectSelect from '../../../../../../../node_modules/@mapbox/mapbox-gl-draw/src/modes/direct_select.js' // NOSONAR
 import {
-  getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState
+  getSnapInstance, getSnapLngLat, triggerSnapAtPoint, clearSnapState
 } from '../../utils/snapHelpers.js'
+import { handleEditModeDrag } from '../../utils/editModeEvents.js'
 import { getCoords, coordPathToFlatIndex } from './geometryHelpers.js'
 import { CUSTOM_DRAW_EVENTS } from '../../drawEvents.js'
 
@@ -128,31 +129,11 @@ export const pointerHandlers = {
   },
 
   onDrag (state, e) {
-    if (state.interfaceType === 'touch') {
-      return
-    }
-
-    this._dragMove(state, e)
-
-    // dragMoving is only set when a vertex or the shape moved — a map pan leaves it false,
-    // so it never reaches the live stroke or onGeometryPreview
-    if (state.dragMoving) {
-      this.map.fire('draw.geometrychange', state.feature)
-    }
+    handleEditModeDrag(this, state, e, this._snapDrag)
   },
 
-  _dragMove (state, e) {
-    const snap = getSnapInstance(this.map)
-    if (snap) {
-      snap.snapStatus = false
-      snap.snapCoords = null
-    }
-
-    if (!isSnapEnabled(state) || !snap?.status) {
-      DirectSelect.onDrag.call(this, state, e)
-      return
-    }
-
+  // Moves the dragged vertex to the snapped position
+  _snapDrag (state, e, snap) {
     if (!state.selectedCoordPaths?.length || !state.canDragMove) {
       return
     }

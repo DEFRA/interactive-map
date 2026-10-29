@@ -3,6 +3,7 @@ import { isActiveFeature } from '../../../../../../../node_modules/@mapbox/mapbo
 import {
   getSnapInstance, isSnapEnabled, getSnapLngLat, triggerSnapAtPoint, clearSnapState, setAutoSnapSuspended
 } from '../../utils/snapHelpers.js'
+import { handleEditModeDrag } from '../../utils/editModeEvents.js'
 import { validatePlacement, toPlacementBlocked } from '../../../../validation/validateGeometry.js'
 
 const MODE = 'edit_point'
@@ -87,35 +88,15 @@ export const pointerHandlers = {
     return current[0] !== state._moveStartPosition[0] || current[1] !== state._moveStartPosition[1]
   },
 
+  // Without an active snap, selectedCoordPaths is [] for a point (see editPointMode.js), so
+  // DirectSelect.onDrag routes the drag to dragFeature, its built-in whole-feature delta move,
+  // which already handles a Point feature correctly.
   onDrag (state, e) {
-    if (state.interfaceType === 'touch') {
-      return
-    }
-
-    this._dragMove(state, e)
-
-    // dragMoving is only set when the point moved — a map pan leaves it false,
-    // so it never reaches the live validity check or onGeometryPreview
-    if (state.dragMoving) {
-      this.map.fire('draw.geometrychange', state.feature)
-    }
+    handleEditModeDrag(this, state, e, this._snapDrag)
   },
 
-  _dragMove (state, e) {
-    const snap = getSnapInstance(this.map)
-    if (snap) {
-      snap.snapStatus = false
-      snap.snapCoords = null
-    }
-
-    if (!isSnapEnabled(state) || !snap?.status) {
-      // selectedCoordPaths is [] for a point (see editPointMode.js) — DirectSelect.onDrag's
-      // own selectedCoordPaths.length > 0 check routes this to dragFeature, its built-in
-      // whole-feature delta move, which already handles a Point feature correctly.
-      DirectSelect.onDrag.call(this, state, e)
-      return
-    }
-
+  // Moves the point to the snapped position
+  _snapDrag (state, e, snap) {
     if (!state.canDragMove) {
       return
     }
