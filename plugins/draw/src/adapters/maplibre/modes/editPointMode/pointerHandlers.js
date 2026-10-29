@@ -92,8 +92,16 @@ export const pointerHandlers = {
       return
     }
 
-    this.map.fire('draw.geometrychange', state.feature)
+    this._dragMove(state, e)
 
+    // dragMoving is only set when the point moved — a map pan leaves it false,
+    // so it never reaches the live validity check or onGeometryPreview
+    if (state.dragMoving) {
+      this.map.fire('draw.geometrychange', state.feature)
+    }
+  },
+
+  _dragMove (state, e) {
     const snap = getSnapInstance(this.map)
     if (snap) {
       snap.snapStatus = false

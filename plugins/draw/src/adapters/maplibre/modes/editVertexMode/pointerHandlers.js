@@ -132,8 +132,16 @@ export const pointerHandlers = {
       return
     }
 
-    this.map.fire('draw.geometrychange', state.feature)
+    this._dragMove(state, e)
 
+    // dragMoving is only set when a vertex or the shape moved — a map pan leaves it false,
+    // so it never reaches the live stroke or onGeometryPreview
+    if (state.dragMoving) {
+      this.map.fire('draw.geometrychange', state.feature)
+    }
+  },
+
+  _dragMove (state, e) {
     const snap = getSnapInstance(this.map)
     if (snap) {
       snap.snapStatus = false
