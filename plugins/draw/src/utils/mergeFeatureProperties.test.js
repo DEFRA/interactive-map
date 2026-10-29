@@ -35,4 +35,14 @@ describe('mergeFeatureProperties', () => {
     expect(mergeFeatureProperties(draw, 'a', undefined, { caller: 'setProperties' })).toEqual({})
     expect(draw.setProperties).not.toHaveBeenCalled()
   })
+
+  test('refuses properties that aren\'t a plain object with a warning', () => {
+    const draw = { setProperties: jest.fn() }
+    const notPlain = [['North field'], new Map([['name', 'North field']]), new Date()]
+    for (const properties of notPlain) {
+      expect(mergeFeatureProperties(draw, 'a', properties, { caller: 'setProperties' })).toEqual({})
+      expect(logger.warn).toHaveBeenLastCalledWith('setProperties: ignoring properties that aren\'t a plain object', properties)
+    }
+    expect(draw.setProperties).not.toHaveBeenCalled()
+  })
 })

@@ -1,4 +1,5 @@
 import { SYMBOL_KEYS } from './symbolKeys.js'
+import { isPlainObject } from './isPlainObject.js'
 
 const STYLE_PROPS = new Set(['stroke', 'fill', 'strokeWidth'])
 
@@ -12,7 +13,7 @@ export const flattenStyleProperties = (props) => {
   const result = {}
 
   for (const [key, value] of Object.entries(props)) {
-    if (STYLE_PROPS.has(key) && typeof value === 'object' && value !== null) {
+    if (STYLE_PROPS.has(key) && isPlainObject(value)) {
       const entries = Object.entries(value)
       if (entries.length > 0) {
         result[key] = entries[0][1]

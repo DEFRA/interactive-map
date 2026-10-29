@@ -1,12 +1,14 @@
 import { logger } from '../../../../src/services/logger.js'
 import { definedOnly, isStyleProperty } from './flattenStyleProperties.js'
 import { isInternalProperty } from './stripInternalProperties.js'
+import { isPlainObject } from './isPlainObject.js'
 
 /**
  * Shallow-merges data properties into a feature in draw's store, with the new values
  * winning. A property whose value is undefined is left out; null is kept, so a value can
  * be cleared. Draw's internal properties, and style properties (set through setStyle,
- * which restyles the shape), are refused with a warning.
+ * which restyles the shape), are refused with a warning. Properties that aren't a plain
+ * object, such as an array or a Map, are refused whole with a warning.
  *
  * @param {object} draw - the draw adapter
  * @param {string} featureId
@@ -17,6 +19,13 @@ import { isInternalProperty } from './stripInternalProperties.js'
  * @returns {object} the properties that were applied
  */
 export const mergeFeatureProperties = (draw, featureId, properties, { caller, styleIds = [] }) => {
+  if (properties == null) {
+    return {}
+  }
+  if (!isPlainObject(properties)) {
+    logger.warn(`${caller}: ignoring properties that aren't a plain object`, properties)
+    return {}
+  }
   const applied = {}
   const refused = []
   for (const [key, value] of Object.entries(definedOnly(properties))) {

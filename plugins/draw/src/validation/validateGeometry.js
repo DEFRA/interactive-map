@@ -7,10 +7,8 @@ import { COMMIT_RULES, PLACE_RULES, PREVIEW_RULES, MIN_VERTICES } from './rules.
  * terse:
  *   - `true`  / `undefined`  → valid
  *   - `false`                → invalid (no reason)
- *   - `{ valid, reason, announcement, recheckOnFinish }` → passed through
+ *   - `{ valid, reason, announcement, recheckOnFinish, properties }` → passed through
  */
-const isPlainObject = (value) => value !== null && typeof value === 'object' && !Array.isArray(value)
-
 export const normaliseResult = (result) => {
   if (result === undefined || result === true) { return { valid: true } }
   if (result === false) { return { valid: false, reason: null } }
@@ -21,8 +19,9 @@ export const normaliseResult = (result) => {
     reason,
     ...(announcement && { announcement }),
     ...(recheckOnFinish && { recheckOnFinish: true }),
-    // Only a passing result can add properties: an invalid shape isn't finished
-    ...(isValid && isPlainObject(properties) && { properties })
+    // Only a passing result can add properties: an invalid shape isn't finished. Their shape
+    // is checked when they're merged (see mergeFeatureProperties), which warns if it's wrong.
+    ...(isValid && properties != null && { properties })
   }
 }
 
