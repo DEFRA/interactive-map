@@ -1,4 +1,4 @@
-import { flattenStyleProperties } from './flattenStyleProperties.js'
+import { flattenStyleProperties, definedOnly, mapStyleIds, toStyleChanges } from './flattenStyleProperties.js'
 
 describe('flattenStyleProperties', () => {
   test('returns an empty object for nullish input', () => {
@@ -29,5 +29,64 @@ describe('flattenStyleProperties', () => {
 
   test('ignores an empty style-variant object (no base, no variants)', () => {
     expect(flattenStyleProperties({ fill: {} })).toEqual({})
+  })
+})
+
+describe('definedOnly', () => {
+  test('drops undefined values and keeps null', () => {
+    expect(definedOnly({ a: 1, b: undefined, c: null })).toEqual({ a: 1, c: null })
+    expect(definedOnly()).toEqual({})
+  })
+})
+
+describe('mapStyleIds', () => {
+  test('lists the ids of the map styles in map state', () => {
+    expect(mapStyleIds({ mapStyles: [{ id: 'outdoor' }, { id: 'dark' }] })).toEqual(['outdoor', 'dark'])
+    expect(mapStyleIds({})).toEqual([])
+    expect(mapStyleIds(undefined)).toEqual([])
+  })
+})
+
+describe('toStyleChanges', () => {
+  const styleIds = ['outdoor', 'dark']
+  const existing = {
+    stroke: 'brown',
+    strokeOutdoor: 'brown',
+    strokeDark: 'tan',
+    strokeAerial: 'grey', // a style that isn't configured
+    strokeWidth: 4,
+    strokeWidthDark: 6,
+    fill: 'green',
+    fillType: 'arable', // page data
+    strokeNote: 'cut in March' // page data
+  }
+
+  test('a single value removes that prop\'s keys for each known map style', () => {
+    expect(toStyleChanges(existing, { stroke: 'red' }, styleIds)).toEqual({ strokeOutdoor: undefined, strokeDark: undefined, stroke: 'red' })
+  })
+
+  test('a per-style object replaces the old keys, including styles it leaves out', () => {
+    expect(toStyleChanges(existing, { stroke: { outdoor: 'red' } }, styleIds)).toEqual({ strokeOutdoor: 'red', strokeDark: undefined, stroke: 'red' })
+  })
+
+  test('strokeWidth\'s per-style keys belong to strokeWidth, not stroke', () => {
+    expect(toStyleChanges(existing, { strokeWidth: 2 }, styleIds)).toEqual({ strokeWidthDark: undefined, strokeWidth: 2 })
+  })
+
+  test('never touches data properties, or keys for a style that isn\'t configured', () => {
+    const changes = toStyleChanges(existing, { stroke: 'red', fill: 'blue' }, styleIds)
+    expect(changes).not.toHaveProperty('fillType')
+    expect(changes).not.toHaveProperty('strokeNote')
+    expect(changes).not.toHaveProperty('strokeAerial')
+  })
+
+  test('removes nothing without known map styles', () => {
+    expect(toStyleChanges(existing, { stroke: 'red' })).toEqual({ stroke: 'red' })
+  })
+
+  test('props left out, undefined or not style props are passed through', () => {
+    expect(toStyleChanges(existing, { fill: undefined }, styleIds)).toEqual({})
+    expect(toStyleChanges(existing, { name: 'hedge' }, styleIds)).toEqual({ name: 'hedge' })
+    expect(toStyleChanges(undefined, undefined, undefined)).toEqual({})
   })
 })

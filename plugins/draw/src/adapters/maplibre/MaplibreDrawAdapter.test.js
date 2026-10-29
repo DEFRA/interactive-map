@@ -743,6 +743,16 @@ describe('simple delegations', () => {
       }))
     })
 
+    test('removes a key patched to undefined', () => {
+      const { adapter, draw } = setup()
+      draw.get.mockReturnValue({ id: 'a', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] }, properties: { stroke: 'red', strokeDark: 'tan', sortKey: 7 } })
+      draw.add.mockReturnValue(['a'])
+
+      adapter.setStyle('a', { stroke: 'blue', strokeDark: undefined })
+
+      expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({ properties: { stroke: 'blue', sortKey: 7 } }))
+    })
+
     test('does nothing for an id with no existing feature', () => {
       const { adapter, draw } = setup()
       draw.get.mockReturnValue(undefined)

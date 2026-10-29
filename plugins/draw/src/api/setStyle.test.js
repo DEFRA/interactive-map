@@ -5,9 +5,9 @@ jest.mock('../../../../src/services/logger.js', () => ({
   logger: { warn: jest.fn(), error: jest.fn() }
 }))
 
-const setup = (draw) => {
+const setup = (draw, mapStyles = []) => {
   const eventBus = { emit: jest.fn() }
-  return { context: { mapProvider: { draw }, services: { eventBus } }, eventBus }
+  return { context: { mapState: { mapStyles }, mapProvider: { draw }, services: { eventBus } }, eventBus }
 }
 
 beforeEach(() => jest.clearAllMocks())
@@ -64,6 +64,18 @@ describe('setStyle', () => {
     const { context } = setup(draw)
     setStyle(context, 'a', { stroke: 'red', fill: undefined, symbol: 'pin', symbolBackgroundColor: undefined })
     expect(draw.setStyle).toHaveBeenCalledWith('a', { stroke: 'red', symbol: 'pin' })
+  })
+
+  // Otherwise the renderers would keep reading the old strokeOutdoor over the new stroke
+  test('setting a style prop removes its values for each map style, and the event reports only what was set', () => {
+    const draw = {
+      get: jest.fn(() => ({ id: 'a', properties: { stroke: 'brown', strokeOutdoor: 'brown', strokeDark: 'tan', fillType: 'arable' } })),
+      setStyle: jest.fn()
+    }
+    const { context, eventBus } = setup(draw, [{ id: 'outdoor' }, { id: 'dark' }])
+    setStyle(context, 'a', { stroke: 'red' })
+    expect(draw.setStyle).toHaveBeenCalledWith('a', { strokeOutdoor: undefined, strokeDark: undefined, stroke: 'red' })
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:stylechange', { featureId: 'a', properties: { stroke: 'red' } })
   })
 
   test('defaults styleChanges to {} and still resolves cleanly', () => {

@@ -1,17 +1,13 @@
 import { addFeature } from './addFeature.js'
-import { flattenStyleProperties } from '../utils/flattenStyleProperties.js'
 import { logger } from '../../../../src/services/logger.js'
 
-jest.mock('../utils/flattenStyleProperties.js', () => ({
-  flattenStyleProperties: jest.fn(() => ({ _flat: true }))
-}))
 jest.mock('../../../../src/services/logger.js', () => ({
   logger: { warn: jest.fn(), error: jest.fn() }
 }))
 
-const setup = (draw) => {
+const setup = (draw, mapStyles = [{ id: 'outdoor' }, { id: 'dark' }]) => {
   const eventBus = { emit: jest.fn() }
-  return { context: { mapProvider: { draw }, services: { eventBus } }, eventBus }
+  return { context: { mapState: { mapStyles }, mapProvider: { draw }, services: { eventBus } }, eventBus }
 }
 
 beforeEach(() => jest.clearAllMocks())
@@ -29,7 +25,7 @@ describe('addFeature', () => {
     const feature = {
       id: 'a',
       geometry: { type: 'Point', coordinates: [0, 0] },
-      stroke: 'red',
+      stroke: { outdoor: 'red', dark: 'white' },
       fill: 'blue',
       strokeWidth: 2,
       properties: { name: 'x' }
@@ -37,12 +33,11 @@ describe('addFeature', () => {
 
     addFeature(context, feature)
 
-    expect(flattenStyleProperties).toHaveBeenCalledWith({ stroke: 'red', fill: 'blue', strokeWidth: 2 })
     const expected = {
       type: 'Feature',
       id: 'a',
       geometry: { type: 'Point', coordinates: [0, 0] },
-      properties: { name: 'x', _flat: true }
+      properties: { name: 'x', stroke: 'red', strokeOutdoor: 'red', strokeDark: 'white', fill: 'blue', strokeWidth: 2 }
     }
     expect(draw.add).toHaveBeenCalledWith(expected)
     expect(eventBus.emit).toHaveBeenCalledWith('draw:add', expected)
@@ -56,8 +51,40 @@ describe('addFeature', () => {
       type: 'Feature',
       id: 'b',
       geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] },
-      properties: { _flat: true }
+      properties: {}
     })
+  })
+
+  // A feature saved from draw:created carries its style in properties, already flattened
+  test('keeps a saved feature\'s style properties when no top-level style is given', () => {
+    const draw = { add: jest.fn() }
+    const { context } = setup(draw)
+    const properties = { stroke: '#8b5a2b', strokeOutdoor: '#8b5a2b', strokeDark: '#d2a679', strokeWidth: 4, fill: 'green', landUse: 'hedge' }
+    addFeature(context, { id: 'h', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties })
+    expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({ properties }))
+  })
+
+  test('flattens a per-style object given inside properties', () => {
+    const draw = { add: jest.fn() }
+    const { context } = setup(draw)
+    addFeature(context, { id: 'h', geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] }, properties: { stroke: { outdoor: 'red', dark: 'white' } } })
+    expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
+      properties: { stroke: 'red', strokeOutdoor: 'red', strokeDark: 'white' }
+    }))
+  })
+
+  test('a top-level style replaces that prop\'s saved values for each map style, leaving data and other props alone', () => {
+    const draw = { add: jest.fn() }
+    const { context } = setup(draw)
+    addFeature(context, {
+      id: 'h',
+      geometry: { type: 'LineString', coordinates: [[0, 0], [1, 1]] },
+      stroke: '#d4351c',
+      properties: { stroke: '#8b5a2b', strokeOutdoor: '#8b5a2b', strokeDark: '#d2a679', strokeWidth: 4, strokeWidthDark: 6, strokeNote: 'cut in March' }
+    })
+    expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({
+      properties: { stroke: '#d4351c', strokeWidth: 4, strokeWidthDark: 6, strokeNote: 'cut in March' }
+    }))
   })
 
   test('does not override an explicitly supplied type', () => {

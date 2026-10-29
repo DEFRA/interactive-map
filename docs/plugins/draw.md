@@ -366,10 +366,12 @@ Add a `Point`, `LineString`, or `Polygon` feature directly to the map without a 
 | `feature.id` | **Type:** `string`<br />**Required**<br />Feature ID |
 | `feature.type` | **Type:** `string`<br />Defaults to `'Feature'` if omitted |
 | `feature.geometry` | **Type:** `GeoJSON.Geometry`<br />**Required**<br />`Point`, `LineString`, or `Polygon` geometry |
-| `feature.stroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour (`LineString`/`Polygon`) |
-| `feature.fill` | **Type:** `string \| Record<string, string>`<br />Fill colour (`Polygon`) |
-| `feature.strokeWidth` | **Type:** `number`<br />Stroke width in pixels (`LineString`/`Polygon`) |
+| `feature.stroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour (`LineString`/`Polygon`). Replaces any stroke colours in `properties` |
+| `feature.fill` | **Type:** `string \| Record<string, string>`<br />Fill colour (`Polygon`). Replaces any fill colours in `properties` |
+| `feature.strokeWidth` | **Type:** `number`<br />Stroke width in pixels (`LineString`/`Polygon`). Replaces any stroke widths in `properties` |
 | `feature.properties` | **Type:** `Object`<br />Custom GeoJSON properties — a `Point`'s `symbol`-family properties go here (see `newPoint` above) |
+
+A feature saved from [`draw:created`](#drawcreated) or [`draw:edited`](#drawedited) keeps its style in `properties`, so it can be added back as it is.
 
 A feature with a missing/unsupported `geometry.type` or no `geometry.coordinates` is logged as a warning and ignored.
 
@@ -398,6 +400,8 @@ interactiveMap.on('draw:ready', () => {
 ### `setStyle(featureId, styleChanges)`
 
 Update an existing feature's style — stroke/fill/strokeWidth or, for a `Point`, its `symbol`-family properties (see `newPoint` above). Only the keys you pass are changed; anything else the feature already has is left alone. Returns `false` if the feature doesn't exist.
+
+Setting `stroke`, `fill` or `strokeWidth` replaces all of its values, including colours set for each map style: `setStyle(id, { stroke: '#d4351c' })` shows the new colour in every map style. Colours for each style are stored as properties named after the style, such as `strokeDark` for a style with the ID `dark`, so avoid giving your own properties names like these.
 
 | Argument | Description |
 |----------|-------------|
