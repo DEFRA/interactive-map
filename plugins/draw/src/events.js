@@ -48,9 +48,6 @@ const applyFinishProperties = (draw, feature, mapState) => {
   return draw.get(feature.id)
 }
 
-// A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
-// it's the normal, expected state of "still being drawn" — so it's excluded below
-// even though it's a genuine COMMIT_RULES failure like any other.
 // The Done button and the map's finish gestures (double-click, clicking the first vertex)
 // follow the same check state
 const applyCanFinish = (draw, dispatch, state) => {
@@ -59,6 +56,9 @@ const applyCanFinish = (draw, dispatch, state) => {
   dispatch({ type: 'SET_CAN_FINISH', payload: canFinish })
 }
 
+// A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
+// it's the normal, expected state of "still being drawn" — so it's excluded below
+// even though it's a genuine COMMIT_RULES failure like any other.
 const isIncompleteShape = (reason) => Object.values(MIN_VERTICES_REASONS).includes(reason)
 
 // A discrete, one-shot invalid result (a rejected placement, a finished-but-invalid
