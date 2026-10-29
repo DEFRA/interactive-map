@@ -1078,6 +1078,37 @@ describe('async geometry checks', () => {
     })
   })
 
+  test('survives the handlers being rebuilt mid-check', async () => {
+    const first = setup()
+    const { draw, eventBus } = first
+    const reply = deferred()
+    draw._commitValidator = () => reply.promise
+    commit(draw, square, 'change')
+    drawHandler(draw, 'create')({ id: 'new', ...square })
+    jest.runAllTimers()
+
+    // DrawInit re-attaches on every plugin state change
+    first.detach()
+    draw.on.mockClear()
+    const dispatch = jest.fn()
+    attachEvents({
+      appState: { layoutRefs: { viewportRef: { current: 'viewport' } } },
+      appConfig: { id: 'app' },
+      mapState: {},
+      pluginState: { dispatch },
+      mapProvider: { draw },
+      buttonConfig: { drawDone: {}, drawCancel: {}, drawUndo: {} },
+      eventBus,
+      hints: { show: jest.fn() }
+    })
+
+    // The held shape is created by the new handlers once its check passes
+    reply.resolve(true)
+    await flush()
+    expect(lastStatus(dispatch)).toBe('valid')
+    expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'F' }))
+  })
+
   describe('properties from onGeometryFinish', () => {
     // A store for the one shape, so a properties write shows up in draw.get
     const drawing = () => {
@@ -1164,37 +1195,6 @@ describe('async geometry checks', () => {
       drawHandler(draw, 'editfinish')({ id: 'new', ...otherSquare, properties: {} })
       expect(draw.setProperties).not.toHaveBeenCalled()
     })
-  })
-
-  test('survives the handlers being rebuilt mid-check', async () => {
-    const first = setup()
-    const { draw, eventBus } = first
-    const reply = deferred()
-    draw._commitValidator = () => reply.promise
-    commit(draw, square, 'change')
-    drawHandler(draw, 'create')({ id: 'new', ...square })
-    jest.runAllTimers()
-
-    // DrawInit re-attaches on every plugin state change
-    first.detach()
-    draw.on.mockClear()
-    const dispatch = jest.fn()
-    attachEvents({
-      appState: { layoutRefs: { viewportRef: { current: 'viewport' } } },
-      appConfig: { id: 'app' },
-      mapState: {},
-      pluginState: { dispatch },
-      mapProvider: { draw },
-      buttonConfig: { drawDone: {}, drawCancel: {}, drawUndo: {} },
-      eventBus,
-      hints: { show: jest.fn() }
-    })
-
-    // The held shape is created by the new handlers once its check passes
-    reply.resolve(true)
-    await flush()
-    expect(lastStatus(dispatch)).toBe('valid')
-    expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'F' }))
   })
 })
 

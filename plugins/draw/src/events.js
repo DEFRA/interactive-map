@@ -332,7 +332,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     ...createFinishHandlers({ appState, appConfig, mapState, draw, dispatch, eventBus, resetState }),
     ...createVertexSelectionHandlers({ draw, pluginState, mapProvider, eventBus }),
     onUndoChange: (undoStackLength) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: undoStackLength }) },
-    onUpdate: (feature) => { eventBus.emit('draw:updated', stripInternalProperties(feature)) },
+    onUpdate: (updatedFeature) => { eventBus.emit('draw:updated', stripInternalProperties(updatedFeature)) },
     onGeometryChange: (event) => {
       // Only commit-level changes carry a `phase` ('change').
       // Preview events (e.g. split's live preview) have none and are ignored.
