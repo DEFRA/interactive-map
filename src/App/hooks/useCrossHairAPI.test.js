@@ -108,10 +108,35 @@ describe('useCrossHair', () => {
     expect(mockDispatch).not.toHaveBeenCalledWith({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
   })
 
-  it('keeps crossHair.isMapControlsOpen synced with expandedButtons, set synchronously during render (not a useEffect) so it is never stale relative to another component\'s own effect reacting to the same change', () => {
+  it('keeps crossHair.isMapControlsOpen synced with expandedButtons, set during render', () => {
     useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set(['mapControls']) })
     setup()
     expect(mockCrossHair.isMapControlsOpen).toBe(true)
+  })
+
+  // A plugin's updateCrossHair effect can run before this hook re-renders, so its hide() meets
+  // the old isMapControlsOpen value as MapControls closes.
+  const closeMapControlsAfterBlockedHide = ({ showInBetween } = {}) => {
+    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set(['mapControls']) })
+    const hook = setup()
+    act(() => mockCrossHair.show())
+    act(() => mockCrossHair.hide())
+    if (showInBetween) {
+      act(() => mockCrossHair.fixAtCenter())
+    }
+    useApp.mockReturnValue({ safeZoneInset: { left: 10, top: 20 }, expandedButtons: new Set() })
+    hook.rerender()
+  }
+
+  it('carries out a hide() blocked by MapControls once it closes', () => {
+    closeMapControlsAfterBlockedHide()
+    expect(mockElement.style.display).toBe('none')
+    expect(mockDispatch).toHaveBeenLastCalledWith({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
+  })
+
+  it('drops a blocked hide() when the crosshair is shown again before MapControls closes', () => {
+    closeMapControlsAfterBlockedHide({ showInBetween: true })
+    expect(mockElement.style.display).toBe('block')
   })
 
   it('setStyle updates state', () => {

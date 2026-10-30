@@ -9,12 +9,14 @@ import { EVENTS as events } from '../../config/events.js'
 const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition) => {
   crossHair.pinToMap = (coords, state) => {
     const { x, y } = mapProvider.mapToScreen(coords)
+    crossHair.isHidePending = false
     crossHair.coords = coords
     dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isPinnedToMap: true, isVisible: true, coords, state } })
     updatePosition(el, x, y)
   }
 
   crossHair.fixAtCenter = () => {
+    crossHair.isHidePending = false
     el.style.left = '50%'
     el.style.top = '50%'
     el.style.transform = 'translate(0,0)'
@@ -28,23 +30,21 @@ const assignCrossHairAPI = (crossHair, el, mapProvider, dispatch, updatePosition
   }
 
   crossHair.show = () => {
+    crossHair.isHidePending = false
     el.style.display = 'block'
     dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: true } })
   }
 
-  // Fully hidden — display:none, not just faded — rather than staying in the accessibility
-  // tree while invisible. An earlier version kept it ax-tree-present here so Voice Control
-  // could re-summon it by name, but that made "Show Names" put a "Target" label over
-  // nothing whenever it was genuinely hidden, which is more confusing than helpful. Voice
-  // Control's real route back is opening MapControls (a normal, always-visible, always-named
-  // button) — see isMapControlsOpen below — so the crosshair itself doesn't need to stay
-  // discoverable while it's not actually there. Blocked outright while MapControls is open:
-  // that panel is a deliberate, explicit "I can't drag/pinch this map" signal from the user,
-  // which should win over whatever mouse-vs-touch/keyboard inference would otherwise decide.
+  // Hides the crosshair completely, so screen readers and Voice Control don't find a "Target"
+  // that isn't there. While the map controls are open the crosshair stays visible, because the
+  // user has asked for it. A hide asked for then is held back until the controls close, unless
+  // something shows the crosshair again first.
   crossHair.hide = () => {
     if (crossHair.isMapControlsOpen) {
+      crossHair.isHidePending = true
       return
     }
+    crossHair.isHidePending = false
     el.style.display = 'none'
     dispatch({ type: 'UPDATE_CROSS_HAIR', payload: { isVisible: false } })
   }
@@ -110,21 +110,17 @@ export const useCrossHair = () => {
     }
   }, [mapSize])
 
-  // A plain property on the shared crossHair object, not dispatched state — every owner
-  // (draw's per-adapter modes, interact's useCrossHairVisibility) already holds this same
-  // object, so mutating it here is all that's needed for hide()'s own guard above to see the
-  // current value live, however long ago it was last set. This alone never shows or hides
-  // anything by itself — it only ever blocks a hide() call already in flight — so it's safe to
-  // run unconditionally even when no plugin that cares about it is loaded at all.
-  //
-  // Deliberately NOT a useEffect: this component's own effects and interact's/draw's own
-  // updateCrossHair effects both react to the same expandedButtons change, and React gives no
-  // ordering guarantee between two different components' effects — if the consumer's effect
-  // (which decides to call hide()) ran before this one updated the flag, hide()'s guard would
-  // read the stale value and incorrectly block itself. Setting it directly in the render body
-  // (matches DrawInit.jsx's shouldShowCrosshairRef convention) guarantees it's current before
-  // ANY component's effects run, since React finishes rendering the whole tree first.
-  crossHair.isMapControlsOpen = expandedButtons?.has('mapControls')
+  // Tells hide() whether the map controls are open. It's set while rendering so it's up to date
+  // as soon as possible, but a plugin can still call hide() before this component re-renders. So
+  // when the controls close, carry out any hide that was held back.
+  const isMapControlsOpen = !!expandedButtons?.has('mapControls')
+  crossHair.isMapControlsOpen = isMapControlsOpen
+
+  useEffect(() => {
+    if (!isMapControlsOpen && crossHair.isHidePending) {
+      crossHair.hide()
+    }
+  }, [isMapControlsOpen])
 
   return {
     crossHair,

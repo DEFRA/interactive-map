@@ -11,8 +11,8 @@ const ATTRIBUTIONS_STACKED_CLASS = 'im-o-app__attributions--stacked'
 const buttonHeight = (ref) => ref?.current?.offsetHeight ?? 0
 const buttonWidth = (ref) => ref?.current?.offsetWidth ?? 0
 
-// Whether an element renders anything. The control wrapper core puts around each plugin control is
-// display: contents, with no box of its own, so it counts as rendered if any child is.
+// Whether an element shows anything. Plugin controls are wrapped in an element with no box of
+// its own (display: contents), so a wrapper counts as shown if anything inside it is.
 const isRendered = (element) => {
   if (element.hidden) {
     return false
@@ -23,33 +23,24 @@ const isRendered = (element) => {
   return element.classList.contains('im-c-control-wrapper') && Array.from(element.children).some(isRendered)
 }
 
-// A top column whose children are all display:none (hiddenWhen buttons, or items an application mode
-// hides) isn't :empty, so it keeps its trailing padding-bottom — which would push the side column
-// below it down by a gap. Treat it as empty instead.
+// A top column with only hidden items still has its bottom padding, which would push the side
+// column below it down. Treat it as empty instead.
 const topColHeight = (col) => {
   const children = Array.from(col.children)
   const isAllHidden = children.length > 0 && !children.some(isRendered)
   return isAllHidden ? 0 : col.offsetHeight
 }
 
-// Max of both sides, so centred content doesn't lean toward the emptier one.
+// The wider of the two sides, so centred content stays in the middle.
 const symmetricWidth = (left, right) => left || right ? Math.max(left, right) : 0
 
-const subSlotMaxHeight = (columnHeight, siblingButtons, gap) => columnHeight - (siblingButtons ? siblingButtons + gap : 0)
-
-// bottomRightHeight is 0 when empty, falling back to the attributions' own height for spacing.
-// rise is how far attributions has lifted .im-o-app__bottom-right above .im-o-app__bottom's
-// own bottom edge (see attributionsRise below) — without adding it here, .im-o-app__right's
-// computed bottom offset stays at the box's un-lifted position and the floating right column
-// overlaps the now-raised bottom-right buttons.
+// Keeps the right column above the bottom-right buttons, including when the attributions have
+// lifted them. With no bottom-right buttons, it clears the attributions instead.
 const rightOffsetBottom = (containerPad, bottomRightHeight, attributionsHeight, rise, gap) =>
   containerPad + (bottomRightHeight > 0 ? bottomRightHeight + rise + gap : attributionsHeight)
 
-// Clears the bottom row's own TOP edge (not just its trailing gap below), so the hint
-// never overlaps the logo/attribution row itself, plus a gap above it. That trivially
-// also clears anything after the row in flow — mobile's in-flow actions bar included.
-// Tablet/desktop's floating actions bar can sit independently higher than the row, so
-// still needs its own explicit clearance, hence the Math.max with actionsOffset below.
+// Keeps the keyboard hint above the bottom row, and above the actions bar on tablet and desktop,
+// where the bar can sit higher than the row.
 const hintBottom = (main, bottom, actionsEl, gap) => {
   const clearsBottomRow = main.offsetHeight - bottom.offsetTop + gap
   const actionsHeight = actionsEl?.offsetHeight ?? 0
@@ -57,12 +48,74 @@ const hintBottom = (main, bottom, actionsEl, gap) => {
   return Math.max(clearsBottomRow, actionsOffset + gap)
 }
 
-// Space between .im-o-app__left/.im-o-app__right for the banner to dock in.
+const actionsBarRect = (actionsEl) => {
+  const bar = actionsEl?.querySelector('.im-c-actions')
+  return bar?.offsetHeight ? bar.getBoundingClientRect() : null
+}
+
+// The boxes shown in a sub-slot, including those inside control wrappers. The sub-slot itself is
+// as wide as the column, so its own box can't tell us what lines up with the actions bar.
+const renderedBoxes = (element) => Array.from(element?.children ?? []).flatMap(child => {
+  if (child.hidden) {
+    return []
+  }
+  if (child.getClientRects().length > 0) {
+    return [child.getBoundingClientRect()]
+  }
+  return child.classList.contains('im-c-control-wrapper') ? renderedBoxes(child) : []
+})
+
+// How far the actions bar's top is above the bottom of main, when anything in the sub-slot lines
+// up with the bar, or comes within margin of it. Otherwise 0.
+const actionsBarOverlap = (mainRect, barRect, slotRef, margin) => {
+  if (!barRect) {
+    return 0
+  }
+  const isOverlapping = renderedBoxes(slotRef?.current).some(box => barRect.left - margin < box.right && barRect.right + margin > box.left)
+  return isOverlapping ? mainRect.bottom - barRect.top : 0
+}
+
+// On tablet and desktop the actions bar floats over the middle of the map. Only what would
+// overlap it moves: a bottom sub-slot lifts the whole column above the bar, and a top sub-slot
+// is capped above the bar, so the bottom sub-slot stays where it is. On mobile the bar is below
+// the bottom row, so it never moves a column.
+const clearActionsBar = ({ rowOffsetBottom, offsetTop, mainHeight, topOverlap, bottomOverlap, gap }) => ({
+  offsetBottom: bottomOverlap > 0 ? Math.max(rowOffsetBottom, bottomOverlap + gap) : rowOffsetBottom,
+  topSlotMaxHeight: topOverlap > 0 ? `${Math.max(0, mainHeight - topOverlap - gap - offsetTop)}px` : 'none'
+})
+
+// A sub-slot with only hidden items still has a box, so the column would leave a gap next to it.
+// Only add the gap when both sub-slots show something.
+const slotHasContent = (ref) => Array.from(ref?.current?.children ?? []).some(isRendered)
+
+const subSlotGap = (topRef, bottomRef, gap) => slotHasContent(topRef) && slotHasContent(bottomRef) ? gap : 0
+
+const columnContentHeight = (topRef, bottomRef, gap) => buttonHeight(topRef) + buttonHeight(bottomRef) + subSlotGap(topRef, bottomRef, gap)
+
+// How far the actions bar, the last thing in main, runs past the bottom of main.
+const flowOverflow = (main, mainRect, actions) => {
+  if (!actions) {
+    return 0
+  }
+  const marginBottom = Number.parseFloat(getComputedStyle(actions).marginBottom) || 0
+  const paddingBottom = Number.parseFloat(getComputedStyle(main).paddingBottom) || 0
+  return Math.max(0, actions.getBoundingClientRect().bottom + marginBottom - (mainRect.bottom - paddingBottom))
+}
+
+// On mobile the drawer sits below the map, but the side columns float over the map, so a tall
+// drawer would squeeze them until their buttons sit under it, then run off the bottom. Its max
+// height is its own height plus the space left in the fuller side column, less any overflow, so
+// it stops just short of both, and grows again when there's room.
+const drawerMaxHeight = (drawerRef, columnSlack, overflow) => slotHasContent(drawerRef)
+  ? `${Math.max(0, Math.floor(drawerRef.current.offsetHeight + columnSlack - overflow))}px`
+  : 'none'
+
+// The space between the side columns, where a centred banner goes.
 const bannerGutterWidth = (mainWidth, sideColWidth, gap) => mainWidth - (sideColWidth * 2) - (gap * 2)
 
 const isBannerDocked = (gutterWidth, preferredWidth) => gutterWidth >= preferredWidth
 
-// Widest explicit width configured on a banner panel, if any, overriding the default.
+// The widest width set on a banner panel, if any, used instead of the default.
 const bannerConfiguredWidth = (bannerEl) => {
   const widths = Array.from(bannerEl?.querySelectorAll(BANNER_PANEL_SELECTOR) ?? [])
     .map(el => Number.parseInt(el.style.width, 10))
@@ -70,19 +123,17 @@ const bannerConfiguredWidth = (bannerEl) => {
   return widths.length ? Math.max(...widths) : null
 }
 
-// Mobile always stacks full-width, so any inline width Panel.jsx applied is ignored.
+// On mobile the banner is always full width, so remove any width set on its panels.
 const clearBannerPanelWidths = (bannerEl) => {
   bannerEl?.querySelectorAll(BANNER_PANEL_SELECTOR).forEach(el => { el.style.width = '' })
 }
 
-// Docked insets to the side-column width; stacked is full-bleed.
+// A centred banner is inset by the side column width; a full-width one isn't.
 const bannerInset = (isDocked, primaryGap, sideColWidth, gap) =>
   isDocked ? primaryGap + sideColWidth + gap : primaryGap
 
-// Natural (unwrapped) width of the attribution text, measured by forcing nowrap just long
-// enough to read scrollWidth, then restoring — same "mutate, measure, restore" approach as
-// clearBannerPanelWidths/bannerConfiguredWidth above. Needed because once wrapping is
-// allowed, scrollWidth alone can't tell us how wide the text *would* be on one line.
+// The width of the attribution text on one line. Turns wrapping off just long enough to measure
+// it, then turns it back on.
 const attributionsNaturalWidth = (attributionsEl) => {
   const textEl = attributionsEl?.firstElementChild
   if (!textEl) {
@@ -95,30 +146,21 @@ const attributionsNaturalWidth = (attributionsEl) => {
   return width
 }
 
-// Stacks (drops to its own full-width row below the logo) once the attribution text no
-// longer fits, at its natural width, in the space beside the logo column.
+// Stacks the attributions on their own row once the text no longer fits beside the logo.
 const isAttributionsStacked = (naturalWidth, availableWidth) => naturalWidth > availableWidth
 
-// How far attributions lifts .im-o-app__bottom-right above .im-o-app__bottom's own bottom
-// edge. The same figure covers both modes, because both bleed primaryGap past that edge and
-// then take attributionsHeight (plus a dividerGap) back up from there:
-//  - docked: the box grows upward from the bleed into the row itself, where
-//    .im-o-app__bottom-right shares the same horizontal space, so the row needs an explicit
-//    margin-bottom (--bottom-right-clearance) to stay clear of it;
-//  - stacked: the box is an extra flex line *below* the row, so it lifts the row by exactly
-//    that much on its own — no margin needed, hence bottomRightClearance's isStacked branch.
-// Either way .im-o-app__right must clear the lift, so the offsets below use this, not the
-// clearance. Clamped at 0: a box shorter than its own bleed lifts nothing.
+// How far the attributions lift the bottom-right buttons. Docked, they grow up beside the
+// buttons, so the buttons need a bottom margin to clear them. Stacked, they're a row below the
+// buttons, which lifts them by the same amount without a margin. The right column clears this
+// lift either way. Never below 0.
 const attributionsRise = (attributionsHeight, dividerGap, primaryGap) =>
   Math.max(0, attributionsHeight + dividerGap - primaryGap)
 
-// Stacked gets its lift from the extra flex line itself (see attributionsRise above), so only
-// docked needs the row pushed up by a margin.
+// Only docked attributions need the bottom margin (see attributionsRise above).
 const bottomRightClearance = (isStacked, rise) => isStacked ? 0 : rise
 
-// Docks centred between the side columns when there's room, otherwise stacks full-width
-// (mobile always stacks). Sets the banner's own CSS vars and returns what the side-column
-// offset calc below needs.
+// Centres the banner between the side columns when there's room, otherwise puts it on its own
+// full-width row (always on mobile). Returns what the side column offsets below need.
 function applyBannerLayout ({ appContainer, root, top, bannerRef, leftRef, rightRef, isMobile, dividerGap, primaryGap }) {
   const banner = bannerRef?.current
   if (isMobile) {
@@ -138,7 +180,7 @@ function applyBannerLayout ({ appContainer, root, top, bannerRef, leftRef, right
   appContainer.style.setProperty('--banner-left', bannerSideInset)
   appContainer.style.setProperty('--banner-right', bannerSideInset)
 
-  // Sits at the top row's bottom edge; top.offsetHeight already includes a trailing gap.
+  // Sits just below the top row, which already includes a gap at the bottom.
   const isBannerStacked = hasBanner && !isDocked
   const bannerTop = hasBanner ? top.offsetTop + top.offsetHeight : 0
   appContainer.style.setProperty('--banner-top', `${bannerTop}px`)
@@ -146,17 +188,14 @@ function applyBannerLayout ({ appContainer, root, top, bannerRef, leftRef, right
   return { isBannerStacked, bannerTop, bannerHeight }
 }
 
-// Docks attributions beside the logo when its natural width fits there, otherwise stacks it
-// onto its own full-width row below (im-o-app__attributions--stacked, in layout.module.scss),
-// genuinely growing .im-o-app__bottom and pushing the logo and bottom-right buttons up. Must
-// run before the offsets below, since toggling the stacked class changes
-// bottom.offsetTop/offsetHeight that they read.
+// Puts the attributions beside the logo when they fit, otherwise on their own row below, which
+// pushes the logo and bottom-right buttons up. Runs before the offsets below, as it changes the
+// bottom row's size.
 function applyAttributionsLayout ({ appContainer, bottom, attributions, dividerGap, primaryGap }) {
   const attributionsCol = bottom.children[1] // the bottom-right column, a DOM sibling of attributions
   const isStacked = isAttributionsStacked(attributionsNaturalWidth(attributions), attributionsCol?.offsetWidth ?? 0)
   attributions.classList.toggle(ATTRIBUTIONS_STACKED_CLASS, isStacked)
-  // getBoundingClientRect, not offset math, because .im-o-app__bottom's `justify-content:
-  // space-between` gap between the two columns isn't a fixed value (unlike `gap`) to reconstruct.
+  // Measured from the page, because the space between the two bottom columns isn't a fixed gap.
   const left = attributionsCol ? Math.round(attributionsCol.getBoundingClientRect().left - bottom.getBoundingClientRect().left) : 0
   appContainer.style.setProperty('--attributions-left', `${left}px`)
   const rise = attributionsRise(attributions.offsetHeight, dividerGap, primaryGap)
@@ -165,15 +204,14 @@ function applyAttributionsLayout ({ appContainer, bottom, attributions, dividerG
 }
 
 /**
- * Computes layout CSS vars for the map overlay and dispatches the safe zone inset used
- * for `fitBounds`/`setView`. Waits for `arePluginsEvaluated` so the inset reflects final
- * button visibility rather than a mid-evaluation state, which would make the map jump.
+ * Sets the layout CSS variables for the map overlay and the safe zone used by `fitBounds` and
+ * `setView`. Waits until plugins are evaluated, so the map doesn't jump while buttons appear.
  */
 export function calculateLayout (layoutRefs, breakpoint) {
   const {
     appContainerRef, mainRef, topRef, topLeftColRef, topRightColRef,
     bottomRef, attributionsRef, bottomRightRef, leftTopRef, leftBottomRef,
-    rightTopRef, rightBottomRef, actionsRef, bannerRef, leftRef, rightRef
+    rightTopRef, rightBottomRef, drawerRef, actionsRef, bannerRef, leftRef, rightRef
   } = layoutRefs
 
   const appContainer = appContainerRef.current
@@ -192,46 +230,68 @@ export function calculateLayout (layoutRefs, breakpoint) {
   const dividerGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--divider-gap'), 10)
   const primaryGap = Number.parseInt(getComputedStyle(root).getPropertyValue('--primary-gap'), 10)
 
-  // Banner: docks centred between the side columns when there's room, otherwise stacks
-  // full-width. Mobile always stacks.
+  // Banner: centred between the side columns when there's room, otherwise full width
   const isMobile = breakpoint === 'mobile'
   const { isBannerStacked, bannerTop, bannerHeight } = applyBannerLayout({
     appContainer, root, top, bannerRef, leftRef, rightRef, isMobile, dividerGap, primaryGap
   })
 
-  // Stacked pushes the side columns below the banner plus a trailing gap — added here, not
-  // via a CSS last-child margin, since closed consumer HTML panels stay in the DOM (display:none).
+  // A full-width banner pushes the side columns down below it. Done here rather than in CSS,
+  // because closed panels stay in the page, hidden.
   const sideOffsetTop = (colHeight) => isBannerStacked
     ? bannerTop + bannerHeight + dividerGap
     : colHeight + top.offsetTop
 
   const { rise: attributionsLift } = applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
 
+  const actions = actionsRef?.current
+  const mainRect = main.getBoundingClientRect()
+  const barRect = actionsBarRect(actions)
+  const clearBar = (rowOffsetBottom, offsetTop, topSlotRef, bottomSlotRef) => clearActionsBar({
+    rowOffsetBottom,
+    offsetTop,
+    mainHeight: main.offsetHeight,
+    topOverlap: actionsBarOverlap(mainRect, barRect, topSlotRef, dividerGap),
+    bottomOverlap: actionsBarOverlap(mainRect, barRect, bottomSlotRef, dividerGap),
+    gap: dividerGap
+  })
+
   // === Left container offsets ===
   const leftOffsetTop = sideOffsetTop(topColHeight(topLeftCol))
-  const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap
+  const leftRowOffsetBottom = main.offsetHeight - bottom.offsetTop + dividerGap
+  const leftBar = clearBar(leftRowOffsetBottom, leftOffsetTop, leftTopRef, leftBottomRef)
+  const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap - (leftBar.offsetBottom - leftRowOffsetBottom)
   appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
-  appContainer.style.setProperty('--left-offset-bottom', `${main.offsetHeight - bottom.offsetTop + dividerGap}px`)
+  appContainer.style.setProperty('--left-offset-bottom', `${leftBar.offsetBottom}px`)
   appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
+  appContainer.style.setProperty('--left-top-slot-max-height', leftBar.topSlotMaxHeight)
+  appContainer.style.setProperty('--left-slot-gap', `${subSlotGap(leftTopRef, leftBottomRef, dividerGap)}px`)
 
   // === Right container offsets === (mirrors the left formula)
   const bottomRightHeight = buttonHeight(bottomRightRef)
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const rightOffsetTop = sideOffsetTop(topColHeight(topRightCol))
+  const rightRowOffsetBottom = rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, attributionsLift, dividerGap)
+  const rightBar = clearBar(rightRowOffsetBottom, rightOffsetTop, rightTopRef, rightBottomRef)
   const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - attributionsLift
-  const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap
+  const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap - (rightBar.offsetBottom - rightRowOffsetBottom)
   appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
-  appContainer.style.setProperty('--right-offset-bottom', `${rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, attributionsLift, dividerGap)}px`)
+  appContainer.style.setProperty('--right-offset-bottom', `${rightBar.offsetBottom}px`)
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
+  appContainer.style.setProperty('--right-top-slot-max-height', rightBar.topSlotMaxHeight)
+  appContainer.style.setProperty('--right-slot-gap', `${subSlotGap(rightTopRef, rightBottomRef, dividerGap)}px`)
+
+  // === Drawer max height ===
+  if (drawerRef?.current) {
+    const columnSlack = Math.min(
+      leftColumnHeight - columnContentHeight(leftTopRef, leftBottomRef, dividerGap),
+      rightColumnHeight - columnContentHeight(rightTopRef, rightBottomRef, dividerGap)
+    )
+    appContainer.style.setProperty('--drawer-max-height', drawerMaxHeight(drawerRef, columnSlack, flowOverflow(main, mainRect, actions)))
+  }
 
   // === Keyboard hint bottom offset ===
-  appContainer.style.setProperty('--hint-bottom', `${hintBottom(main, bottom, actionsRef?.current, dividerGap)}px`)
-
-  // === Sub-slot panel max-heights ===
-  appContainer.style.setProperty('--left-top-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftBottomRef), dividerGap)}px`)
-  appContainer.style.setProperty('--left-bottom-panel-max-height', `${subSlotMaxHeight(leftColumnHeight, buttonHeight(leftTopRef), dividerGap)}px`)
-  appContainer.style.setProperty('--right-top-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightBottomRef), dividerGap)}px`)
-  appContainer.style.setProperty('--right-bottom-panel-max-height', `${subSlotMaxHeight(rightColumnHeight, buttonHeight(rightTopRef), dividerGap)}px`)
+  appContainer.style.setProperty('--hint-bottom', `${hintBottom(main, bottom, actions, dividerGap)}px`)
 }
 
 export function useLayoutMeasurements () {
@@ -240,12 +300,12 @@ export function useLayoutMeasurements () {
 
   const { bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, bottomRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, actionsRef, leftRef, rightRef } = layoutRefs
 
-  // 1. Clear the evaluated flag on structural changes, gating the safe zone until re-evaluated.
+  // 1. When the layout changes, wait for plugins to be evaluated again before setting the safe zone.
   useLayoutEffect(() => {
     dispatch({ type: 'CLEAR_PLUGINS_EVALUATED' })
   }, [breakpoint, mapSize, isMapReady, appVisible, isFullscreen])
 
-  // 2. Once evaluated, recalculate layout and dispatch the safe zone (RAF waits for layout to commit).
+  // 2. Once they are, set the layout and the safe zone on the next frame, after the page has updated.
   useLayoutEffect(() => {
     if (!arePluginsEvaluated) {
       return
@@ -259,11 +319,10 @@ export function useLayoutMeasurements () {
     })
   }, [arePluginsEvaluated])
 
-  // 3. Recalculate CSS vars on resize; safe zone dispatch stays Effect 2's job.
-  // Memoized so useResizeObserver doesn't re-run (and cancel its RAF) on every render.
+  // 3. Set the layout again whenever any of these change size. The safe zone is left to step 2.
+  // Memoized so the observer isn't set up again on every render.
   const observedRefs = useMemo(
-    // attributionsRef included so its height (now variable, since attribution text can wrap
-    // onto multiple lines) recalculates --right-offset-bottom when the wrap changes.
+    // Includes the attributions, which change height when their text wraps
     () => [bannerRef, mainRef, headerRef, topRef, topLeftColRef, topRightColRef, actionsRef, bottomRef, bottomRightRef, attributionsRef, leftTopRef, leftBottomRef, rightTopRef, rightBottomRef, drawerRef, leftRef, rightRef],
     []
   )
