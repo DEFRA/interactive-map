@@ -48,7 +48,7 @@ export const editFeature = ({ appState, appConfig, mapState, pluginConfig, plugi
   // Seed the Done-button gate and the stroke from the feature's starting check, so an
   // already invalid feature opens dashed and cannot be "finished" until fixed. events.js
   // applies the result once it settles (straight away unless onGeometryChange is async).
-  getCommitChecks(draw).run({ feature, context: { phase: 'edit-start', mode }, onGeometryChange: draw._commitValidator })
+  getCommitChecks(draw).run({ feature, context: { phase: 'edit-start', mode }, consumerCheck: draw._commitValidator })
 
   return true
 }

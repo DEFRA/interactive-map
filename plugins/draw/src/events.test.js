@@ -1,5 +1,6 @@
 import { attachEvents } from './events.js'
-import { SLOW_CHECK_MS } from './validation/commitChecks.js'
+import { SLOW_CHECK_MS, getCommitChecks } from './validation/commitChecks.js'
+import { recheckGeometry } from './api/recheckGeometry.js'
 
 jest.useFakeTimers()
 
@@ -387,7 +388,7 @@ describe('async geometry checks', () => {
   const flush = () => Promise.resolve()
   const commit = (draw, feature, phase = 'change') => drawHandler(draw, 'geometrychange')({ feature, phase, vertexIndex: 0 })
   const slow = () => jest.advanceTimersByTime(SLOW_CHECK_MS)
-  const lastStatus = (dispatch) => dispatch.mock.calls.filter(([a]) => a.type === 'SET_VALIDATION_STATUS').map(([a]) => a.payload).pop()
+  const lastStatus = (dispatch) => dispatch.mock.calls.filter(([action]) => action.type === 'SET_VALIDATION_STATUS').map(([action]) => action.payload).pop()
 
   test('marks a check as pending, then applies its result', async () => {
     const { draw, dispatch } = setup()
@@ -662,7 +663,7 @@ describe('async geometry checks', () => {
       draw._commitValidator = () => new Promise(() => {})
       commit(draw, square, 'change')
       slow()
-      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_CHECK_SLOW' })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_CHECK_SLOW' })
     })
 
     test('a result\u2019s own announcement replaces draw\u2019s, and its hint', () => {
@@ -749,7 +750,7 @@ describe('async geometry checks', () => {
 
       // Still waiting once the check is slow, when Done reads "Checking…"
       slow()
-      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_CHECK_SLOW' })
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_CHECK_SLOW' })
       expect(draw.done).not.toHaveBeenCalled()
 
       reply.resolve(true)
@@ -1066,15 +1067,142 @@ describe('async geometry checks', () => {
       expect(draw.done).not.toHaveBeenCalled()
     })
 
-    test('doesn’t wait for a pending onGeometryChange before running', () => {
+    test('doesn’t wait for a pending onGeometryChange before running, and cancels it', () => {
       const { draw, buttonConfig } = drawing()
       draw.getMode.mockReturnValue('edit_vertex')
-      draw._commitValidator = () => new Promise(() => {})
+      let changeSignal
+      draw._commitValidator = (_event, { signal }) => { changeSignal = signal; return new Promise(() => {}) }
       draw._finishValidator = jest.fn(() => true)
       commit(draw, square, 'change')
       buttonConfig.drawDone.onClick()
+      expect(changeSignal.aborted).toBe(true)
       expect(draw._finishValidator).toHaveBeenCalledTimes(1)
       expect(draw.done).toHaveBeenCalledTimes(1)
+    })
+
+    test('cancels a pending onGeometryChange when a new shape is finished', () => {
+      const { draw, eventBus } = drawing()
+      let changeSignal
+      draw._commitValidator = (_event, { signal }) => { changeSignal = signal; return new Promise(() => {}) }
+      draw._finishValidator = jest.fn(() => true)
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      expect(changeSignal.aborted).toBe(true)
+      expect(draw._finishValidator).toHaveBeenCalledWith(expect.objectContaining({ phase: 'create' }), expect.anything())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+    })
+  })
+
+  describe('Done while the next check runs', () => {
+    const canFinish = (dispatch) => dispatch.mock.calls.filter(([action]) => action.type === 'SET_CAN_FINISH').map(([action]) => action.payload).pop()
+    const partDrawn = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] } }
+
+    test('stays disabled while an existing feature’s edit-start check runs, then follows its result', async () => {
+      const passing = setup()
+      passing.draw.getMode.mockReturnValue('edit_vertex')
+      const passes = deferred()
+      getCommitChecks(passing.draw).run({ feature: square, context: { phase: 'edit-start', mode: 'edit_vertex' }, consumerCheck: () => passes.promise })
+      expect(canFinish(passing.dispatch)).toBe(false)
+      expect(passing.draw.setCanFinish).toHaveBeenLastCalledWith(false)
+      passes.resolve(true)
+      await flush()
+      expect(canFinish(passing.dispatch)).toBe(true)
+
+      const failing = setup()
+      failing.draw.getMode.mockReturnValue('edit_vertex')
+      const fails = deferred()
+      getCommitChecks(failing.draw).run({ feature: square, context: { phase: 'edit-start', mode: 'edit_vertex' }, consumerCheck: () => fails.promise })
+      fails.resolve(false)
+      await flush()
+      // Never enabled on the way to disabled
+      expect(failing.dispatch.mock.calls.filter(([action]) => action.type === 'SET_CAN_FINISH').map(([action]) => action.payload)).toEqual([false, false])
+    })
+
+    test('stays disabled after a failed result, and enables only once the next check passes', async () => {
+      const { draw, dispatch } = setup()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._commitValidator = () => false
+      commit(draw, square)
+      const reply = deferred()
+      draw._commitValidator = () => reply.promise
+      commit(draw, otherSquare)
+      expect(lastStatus(dispatch)).toBe('pending')
+      expect(canFinish(dispatch)).toBe(false)
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(false)
+
+      reply.resolve(true)
+      await flush()
+      expect(canFinish(dispatch)).toBe(true)
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(true)
+    })
+
+    test('stays disabled after an error', () => {
+      const { draw, dispatch } = setup()
+      jest.spyOn(console, 'warn').mockImplementation(() => {})
+      draw._commitValidator = () => { throw new Error('503') }
+      commit(draw, square)
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(false)
+      console.warn.mockRestore()
+    })
+
+    test('stays enabled after a passing result', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => true
+      commit(draw, square)
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(true)
+    })
+
+    test('isn\u2019t held back by a built-in rule failure, such as too few points', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, partDrawn)
+      expect(canFinish(dispatch)).toBe(false)
+      commit(draw, square)
+      expect(canFinish(dispatch)).toBe(true)
+    })
+
+    test('a check cancelled by a newer change doesn\u2019t change it', () => {
+      const { draw, dispatch } = setup()
+      draw._commitValidator = () => false
+      commit(draw, square)
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      commit(draw, square)
+      expect(canFinish(dispatch)).toBe(false)
+    })
+
+    test('a new shape that onGeometryFinish failed keeps that result when it reopens', () => {
+      const { draw, dispatch } = setup()
+      draw.get.mockReturnValue({ id: 'new', ...square })
+      draw._commitValidator = () => true
+      draw._finishValidator = () => ({ valid: false, reason: 'overlap' })
+      commit(draw, square)
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+      expect(canFinish(dispatch)).toBe(false)
+
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(false)
+    })
+
+    test('an edit that onGeometryFinish failed keeps that result', () => {
+      const { draw, dispatch, buttonConfig } = setup()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._commitValidator = () => true
+      draw._finishValidator = () => false
+      commit(draw, square)
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(false)
     })
   })
 
@@ -1107,6 +1235,297 @@ describe('async geometry checks', () => {
     await flush()
     expect(lastStatus(dispatch)).toBe('valid')
     expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'F' }))
+  })
+
+  describe('properties from onGeometryFinish', () => {
+    // A store for the one shape, so a properties write shows up in draw.get
+    const drawing = () => {
+      const context = setup()
+      const { draw } = context
+      let stored = { id: 'new', ...square, properties: { landUse: 'arable' } }
+      draw.get.mockImplementation(() => stored)
+      draw.setProperties = jest.fn((id, properties) => { stored = { ...stored, properties: { ...stored.properties, ...properties } } })
+      draw._commitValidator = jest.fn(() => undefined)
+      return context
+    }
+    const finishedWith = (properties) => ({ id: 'new', ...square, properties })
+    const drawrules = { drawRules: { checked: false, reason: 'error' } }
+
+    test('are merged into a new shape before draw:created', () => {
+      const { draw, eventBus } = drawing()
+      draw._finishValidator = () => ({ valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      expect(draw.setProperties).toHaveBeenCalledWith('new', drawrules)
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable', ...drawrules }))
+    })
+
+    test('are merged into a held shape once its finishing check passes', async () => {
+      const { draw, eventBus } = drawing()
+      const reply = deferred()
+      draw._finishValidator = () => reply.promise
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      reply.resolve({ valid: true, properties: drawrules })
+      await flush()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable', ...drawrules }))
+    })
+
+    test('are merged into an edited shape before draw:edited, replacing earlier values', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._finishValidator = () => ({ valid: true, properties: { drawRules: { checked: true } } })
+      draw.setProperties('new', drawrules)
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).toHaveBeenCalled()
+      drawHandler(draw, 'editfinish')(draw.get()) // the adapter's EDIT_FINISH, fired by done()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:edited', finishedWith({ landUse: 'arable', drawRules: { checked: true } }))
+    })
+
+    test('are merged into a reopened shape that then passes, reported as created', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw._finishValidator = ({ phase }) => (phase === 'create' ? false : { valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      draw.getMode.mockReturnValue('edit_vertex')
+      commit(draw, square, 'change') // Done stays disabled until the reopened shape is changed
+      buttonConfig.drawDone.onClick()
+      drawHandler(draw, 'editfinish')(draw.get())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable', ...drawrules }))
+    })
+
+    test('are ignored on a failing result', () => {
+      const { draw } = drawing()
+      draw._finishValidator = () => ({ valid: false, reason: 'overlap', properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      expect(draw.setProperties).not.toHaveBeenCalled()
+    })
+
+    test('are ignored from onGeometryChange, with or without an onGeometryFinish', () => {
+      const { draw, eventBus } = drawing()
+      draw._commitValidator = () => ({ valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      drawHandler(draw, 'create')(draw.get())
+      expect(draw.setProperties).not.toHaveBeenCalled()
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', finishedWith({ landUse: 'arable' }))
+    })
+
+    test('are ignored when the finished shape differs from the one checked', () => {
+      const { draw, buttonConfig } = drawing()
+      draw.getMode.mockReturnValue('edit_vertex')
+      draw._finishValidator = () => ({ valid: true, properties: drawrules })
+      commit(draw, square, 'change')
+      buttonConfig.drawDone.onClick()
+      drawHandler(draw, 'editfinish')({ id: 'new', ...otherSquare, properties: {} })
+      expect(draw.setProperties).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('a shape that fails its finishing check can always be finished or cancelled', () => {
+    const canFinish = (dispatch) => dispatch.mock.calls.filter(([action]) => action.type === 'SET_CAN_FINISH').map(([action]) => action.payload).pop()
+    const isGeometryOf = (feature, other) => JSON.stringify(feature.geometry) === JSON.stringify(other.geometry)
+
+    // A new shape whose onGeometryChange passed, finished with the given onGeometryFinish
+    const finishNewShape = (onGeometryFinish, overrides) => {
+      const context = setup(overrides)
+      const { draw } = context
+      draw.get.mockReturnValue({ id: 'new', ...square })
+      draw._commitValidator = jest.fn(() => true)
+      draw._finishValidator = onGeometryFinish
+      commit(draw, square)
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+      draw.getMode.mockReturnValue('edit_vertex')
+      return context
+    }
+
+    test('reopens with Done disabled, which stays disabled while edits fail, then finishes once fixed', () => {
+      const { draw, dispatch, eventBus, buttonConfig } = finishNewShape(({ feature }) => isGeometryOf(feature, otherSquare))
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'invalid' }))
+      expect(canFinish(dispatch)).toBe(false)
+      expect(draw.setInvalid).toHaveBeenLastCalledWith(true)
+
+      draw._commitValidator = () => ({ valid: false, reason: 'overlap' })
+      commit(draw, square)
+      expect(canFinish(dispatch)).toBe(false)
+
+      draw._commitValidator = () => true
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(true)
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).toHaveBeenCalledTimes(1)
+      drawHandler(draw, 'editfinish')({ id: 'new', ...otherSquare })
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+    })
+
+    test('keeps the edit open with Done disabled when only onGeometryFinish still fails it', () => {
+      const { draw, dispatch, buttonConfig } = finishNewShape(() => false)
+
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(true)
+      buttonConfig.drawDone.onClick()
+      expect(draw.done).not.toHaveBeenCalled()
+      expect(canFinish(dispatch)).toBe(false)
+      expect(dispatch).toHaveBeenLastCalledWith({ type: 'SET_HOLDING', payload: false })
+    })
+
+    test('reopens an errored check with Done disabled, and recheckGeometry enables it once it passes', () => {
+      jest.spyOn(console, 'warn').mockImplementation(() => {})
+      const { draw, dispatch, eventBus } = finishNewShape(() => { throw new Error('503') })
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'error' }))
+      expect(canFinish(dispatch)).toBe(false)
+
+      expect(recheckGeometry({ mapProvider: { draw } })).toBe(true)
+      expect(canFinish(dispatch)).toBe(true)
+      expect(draw.setInvalid).toHaveBeenLastCalledWith(false)
+      console.warn.mockRestore()
+    })
+
+    test('Cancel discards a reopened shape whose next check never replies', () => {
+      const { draw, dispatch, eventBus, buttonConfig } = finishNewShape(() => false, { pluginState: { tempFeature: { id: 'new' } } })
+
+      draw._commitValidator = () => new Promise(() => {})
+      commit(draw, otherSquare)
+      expect(canFinish(dispatch)).toBe(false)
+      buttonConfig.drawCancel.onClick()
+      expect(draw.delete).toHaveBeenCalledWith('new')
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', expect.anything())
+    })
+
+    test('Cancel discards a new shape held for an onGeometryFinish that never replies', () => {
+      const { draw, eventBus, buttonConfig } = setup()
+      draw.get.mockReturnValue({ id: 'new', ...square })
+      draw._commitValidator = () => true
+      draw._finishValidator = () => new Promise(() => {})
+      commit(draw, square)
+      drawHandler(draw, 'create')({ id: 'new', ...square })
+      jest.runAllTimers()
+      draw.getMode.mockReturnValue('disabled')
+
+      buttonConfig.drawCancel.onClick()
+      expect(draw.delete).toHaveBeenCalledWith('new')
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', expect.anything())
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+    })
+  })
+
+  describe('a passing onGeometryFinish result that asks to reopen a new shape', () => {
+    const canFinish = (dispatch) => dispatch.mock.calls.filter(([action]) => action.type === 'SET_CAN_FINISH').map(([action]) => action.payload).pop()
+    const suggestions = { drawRules: { suggestions: 1 } }
+
+    // A store for the one shape, so a properties write shows up in draw.get
+    const drawing = (overrides) => {
+      const context = setup(overrides)
+      const { draw } = context
+      let stored = { id: 'new', ...square, properties: {} }
+      draw.get.mockImplementation(() => stored)
+      draw.setGeometry = (geometry) => { stored = { ...stored, geometry } }
+      draw.setProperties = jest.fn((id, properties) => { stored = { ...stored, properties: { ...stored.properties, ...properties } } })
+      draw._commitValidator = jest.fn(() => true)
+      commit(draw, square)
+      return context
+    }
+
+    // Finishes the new shape, and lets it reopen in edit mode
+    const finish = (draw) => {
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      draw.getMode.mockReturnValue('edit_vertex')
+    }
+
+    const expectReopenedValid = ({ draw, dispatch, eventBus }) => {
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'valid', reason: null }))
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:geometryinvalid', expect.anything())
+      expect(canFinish(dispatch)).toBe(true)
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(true)
+      expect(draw.setInvalid).toHaveBeenLastCalledWith(false)
+    }
+
+    test('reopens the shape in edit mode, valid, and reads out the announcement', () => {
+      const context = drawing()
+      const { draw, announce } = context
+      draw._finishValidator = () => ({ valid: true, reopen: true, announcement: '1 suggestion for your shape' })
+      finish(draw)
+      expectReopenedValid(context)
+      expect(draw.changeMode).toHaveBeenCalledWith('edit_vertex', expect.objectContaining({ featureId: 'new' }))
+      expect(announce).toHaveBeenCalledWith('1 suggestion for your shape', 'action')
+    })
+
+    test('reopens a shape held while onGeometryFinish runs, with Done disabled until it replies', async () => {
+      const context = drawing()
+      const { draw, dispatch } = context
+      const reply = deferred()
+      draw._finishValidator = () => reply.promise
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
+      expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: false })
+
+      reply.resolve({ valid: true, reopen: true })
+      await flush()
+      jest.runAllTimers()
+      expectReopenedValid(context)
+    })
+
+    test('Done on the unchanged shape creates it with the result’s properties, without checking it again', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw._finishValidator = jest.fn(() => ({ valid: true, reopen: true, properties: suggestions }))
+      finish(draw)
+
+      buttonConfig.drawDone.onClick()
+      expect(draw._finishValidator).toHaveBeenCalledTimes(1)
+      expect(draw.done).toHaveBeenCalledTimes(1)
+      drawHandler(draw, 'editfinish')(draw.get())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new', properties: suggestions }))
+    })
+
+    test('Done on a changed shape checks it again, ignoring reopen, and uses that result’s properties', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw._finishValidator = jest.fn(({ phase }) => phase === 'create'
+        ? { valid: true, reopen: true, properties: suggestions }
+        : { valid: true, reopen: true, properties: { drawRules: { suggestions: 0 } } })
+      finish(draw)
+
+      draw.setGeometry(otherSquare.geometry)
+      commit(draw, otherSquare)
+      buttonConfig.drawDone.onClick()
+      expect(draw._finishValidator).toHaveBeenLastCalledWith(expect.objectContaining({ phase: 'edit-finish' }), expect.anything())
+      expect(draw.done).toHaveBeenCalledTimes(1)
+      drawHandler(draw, 'editfinish')(draw.get())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ properties: { drawRules: { suggestions: 0 } } }))
+    })
+
+    test('a failing result reopens the shape with Done disabled, as without reopen', () => {
+      const { draw, dispatch, eventBus } = drawing()
+      draw._finishValidator = () => ({ valid: false, reason: 'overlap', reopen: true })
+      finish(draw)
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'invalid', reason: 'overlap' }))
+      expect(canFinish(dispatch)).toBe(false)
+    })
+
+    test('has no effect from onGeometryChange, including when it finishes the shape', () => {
+      const { draw, eventBus } = drawing()
+      draw._commitValidator = () => ({ valid: true, reopen: true })
+      commit(draw, square)
+      finish(draw)
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:reopened', expect.anything())
+    })
+
+    test('Cancel discards the reopened shape', () => {
+      const { draw, eventBus, buttonConfig } = drawing({ pluginState: { tempFeature: { id: 'new' } } })
+      draw._finishValidator = () => ({ valid: true, reopen: true })
+      finish(draw)
+      buttonConfig.drawCancel.onClick()
+      expect(draw.delete).toHaveBeenCalledWith('new')
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', expect.anything())
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+    })
   })
 })
 

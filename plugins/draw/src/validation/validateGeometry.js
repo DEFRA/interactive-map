@@ -1,23 +1,30 @@
 import { COMMIT_RULES, PLACE_RULES, PREVIEW_RULES, MIN_VERTICES } from './rules.js'
 
 /**
- * Normalise a rule / callback result into `{ valid, reason, announcement?, recheckOnFinish? }`.
+ * Normalise a rule / callback result into `{ valid, reason, announcement?, recheckOnFinish?, reopen?, properties? }`.
  *
  * Supports three return shapes so a user `onGeometryPreview`/`onGeometryChange` callback can stay
  * terse:
  *   - `true`  / `undefined`  → valid
  *   - `false`                → invalid (no reason)
- *   - `{ valid, reason, announcement, recheckOnFinish }` → passed through
+ *   - `{ valid, reason, announcement, recheckOnFinish, reopen, properties }` → passed through
  */
 export const normaliseResult = (result) => {
   if (result === undefined || result === true) { return { valid: true } }
   if (result === false) { return { valid: false, reason: null } }
-  const { valid, reason, announcement, recheckOnFinish } = result
+  const { valid, reason, announcement, recheckOnFinish, reopen, properties } = result
+  const isValid = valid !== false
   return {
-    valid: valid !== false,
+    valid: isValid,
     reason,
     ...(announcement && { announcement }),
-    ...(recheckOnFinish && { recheckOnFinish: true })
+    ...(recheckOnFinish && { recheckOnFinish: true }),
+    // Only a passing result can ask to reopen: a failing new shape reopens anyway. Acted on
+    // only when a new shape is finished (see createFinishHandlers in events.js).
+    ...(isValid && reopen && { reopen: true }),
+    // Only a passing result can add properties: an invalid shape isn't finished. Their shape
+    // is checked when they're merged (see mergeFeatureProperties), which warns if it's wrong.
+    ...(isValid && properties != null && { properties })
   }
 }
 

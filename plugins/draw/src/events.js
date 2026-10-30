@@ -6,9 +6,11 @@
  * All MapLibre / OL specifics live in the adapter.
  */
 import { ADAPTER_EVENTS } from './adapterEvents.js'
-import { getCommitChecks, isSameGeometry } from './validation/commitChecks.js'
+import { getCommitChecks, isSameGeometry, canFinishCheck } from './validation/commitChecks.js'
 import { MIN_VERTICES_REASONS } from './validation/rules.js'
 import { stripInternalProperties } from './utils/stripInternalProperties.js'
+import { mergeFeatureProperties } from './utils/mergeFeatureProperties.js'
+import { mapStyleIds } from './utils/flattenStyleProperties.js'
 import { isEditMode, isCheckedMode } from './utils/drawModes.js'
 
 const EDIT_VERTEX_MODE = 'edit_vertex'
@@ -32,6 +34,32 @@ const FINISH_PHASES = new Set(['create', 'edit-finish'])
 const needsFinishCheck = (draw, { result, context }) =>
   !FINISH_PHASES.has(context?.phase) && (typeof draw._finishValidator === 'function' || !!result?.recheckOnFinish)
 const finishValidatorFor = (draw) => draw._finishValidator ?? draw._commitValidator
+
+// The latest onGeometryFinish result, if it passed for this shape; otherwise null.
+// onGeometryChange standing in for it, or a result for different geometry, doesn't count.
+const getPassingFinishResult = (draw, { status, result, context, feature: checkedFeature }, feature) => {
+  const isPassingFinishResult = typeof draw._finishValidator === 'function' && FINISH_PHASES.has(context?.phase) &&
+    status === 'valid' && isSameGeometry(checkedFeature, feature)
+  return isPassingFinishResult ? result : null
+}
+
+// A passing onGeometryFinish result's properties are merged into the finished shape, in
+// draw's store, before any listener sees it. Called before resetState(), which ends the
+// check session. Returns the shape to emit.
+const applyFinishProperties = (draw, feature, mapState) => {
+  const properties = getPassingFinishResult(draw, getCommitChecks(draw).state, feature)?.properties
+  if (!properties) { return feature }
+  mergeFeatureProperties(draw, feature.id, properties, { caller: 'onGeometryFinish', styleIds: mapStyleIds(mapState) })
+  return draw.get(feature.id)
+}
+
+// The Done button and the map's finish gestures (double-click, clicking the first vertex)
+// follow the same check state
+const applyCanFinish = (draw, dispatch, state) => {
+  const canFinish = canFinishCheck(state)
+  draw.setCanFinish?.(canFinish)
+  dispatch({ type: 'SET_CAN_FINISH', payload: canFinish })
+}
 
 // A shape that simply hasn't reached its minimum vertex count yet isn't a mistake —
 // it's the normal, expected state of "still being drawn" — so it's excluded below
@@ -61,13 +89,13 @@ const buildVertexMoveTarget = (draw) => ({
 // Vertex-selection handlers: sync pluginState.selectedVertexIndex, and claim/release
 // MapControls' D-pad via buildVertexMoveTarget above.
 const createVertexSelectionHandlers = ({ draw, pluginState, mapProvider, eventBus }) => ({
-  onVertexSelection: (e) => {
-    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: e })
-    mapProvider.activeMoveTarget = e.index >= 0 ? buildVertexMoveTarget(draw) : null
-    eventBus.emit('draw:vertexselection', e)
+  onVertexSelection: (event) => {
+    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: event })
+    mapProvider.activeMoveTarget = event.index >= 0 ? buildVertexMoveTarget(draw) : null
+    eventBus.emit('draw:vertexselection', event)
   },
-  onVertexChange: (e) => {
-    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: e.numVertices } })
+  onVertexChange: (event) => {
+    pluginState.dispatch({ type: 'SET_SELECTED_VERTEX_INDEX', payload: { index: -1, numVertices: event.numVertices } })
     mapProvider.activeMoveTarget = null
   }
 })
@@ -89,11 +117,12 @@ const enterEditMode = ({ draw, appState, appConfig, mapState, dispatch, eventBus
     getSnapEnabled: () => draw.isSnapEnabled()
   })
   const editing = draw.get(featureId)
-  const { status, result } = getCommitChecks(draw).state
+  const state = getCommitChecks(draw).state
+  const { status, result } = state
   dispatch({ type: 'SET_FEATURE', payload: { feature: editing, tempFeature: editing } })
   dispatch({ type: 'SET_MODE', payload: mode })
   dispatch({ type: 'SET_VALIDATION_STATUS', payload: status })
-  draw.setCanFinish?.(status === 'valid' || status === 'pending')
+  applyCanFinish(draw, dispatch, state)
   draw.setInvalid?.(status === 'invalid')
   eventBus.emit('draw:reopened', { feature: stripInternalProperties(editing), status, reason: result?.reason ?? null })
 }
@@ -130,10 +159,9 @@ const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce
   // A slow check is the same pending check, now shown as "Checking…"
   dispatch(state.slow ? { type: 'SET_CHECK_SLOW' } : { type: 'SET_VALIDATION_STATUS', payload: status })
   announceCheck(announce, state)
-  // Also blocks the adapters' finish gestures (double-click, clicking the first vertex)
-  // while the check is failing. A shape finished while its check is pending is held
-  // until it settles (see createFinishHandlers).
-  draw.setCanFinish?.(valid || status === 'pending')
+  // A shape finished while its check is pending is held until it settles (see
+  // createFinishHandlers).
+  applyCanFinish(draw, dispatch, state)
   if (status === 'pending' || status === 'error') { return }
   // The invalid stroke is committed-validity-driven in edit mode only; in draw mode the
   // adapters drive it live from the displayed geometry (placed vertices + cursor).
@@ -147,25 +175,38 @@ const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce
   }
 }
 
-// Finishing a new shape: created when its check passes, otherwise reopened in edit mode.
-// A shape finished while its check is pending is held until it settles, with Done reading
-// "Checking…" — for a point, Done shows just for that.
+// Finishing a new shape: created when its check passes, otherwise reopened in edit mode —
+// as is a shape whose passing onGeometryFinish result asks to reopen it. A shape finished
+// while its check is pending is held until it settles, with Done reading "Checking…" — for
+// a point, Done shows just for that.
 function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, eventBus, resetState }) {
   const checks = getCommitChecks(draw)
 
-  const create = (f) => {
+  const createFeature = (feature) => {
+    const finished = applyFinishProperties(draw, feature, mapState)
     resetState()
     setTimeout(() => draw.changeMode('disabled'), 0)
-    eventBus.emit(CREATED_EVENT, stripInternalProperties(f))
+    eventBus.emit(CREATED_EVENT, stripInternalProperties(finished))
   }
 
-  const reopen = (featureId, geometryType) => {
+  const reopenFeature = (featureId, geometryType) => {
     pendingCreateIds.set(draw, featureId)
     setTimeout(() => enterEditMode({ draw, appState, appConfig, mapState, dispatch, eventBus }, featureId, geometryType), 0)
   }
 
+  // A passing result creates the shape, unless its onGeometryFinish result asked to reopen it,
+  // valid. Finishing it again, unchanged, creates it from that same result.
+  const createOrReopenFeature = (feature, state) => {
+    const shouldReopen = state.context?.phase === 'create' && !!getPassingFinishResult(draw, state, feature)?.reopen
+    if (shouldReopen) {
+      reopenFeature(feature.id, feature.geometry?.type)
+    } else {
+      createFeature(feature)
+    }
+  }
+
   // The map leaves draw mode; Done stays, disabled and reading "Checking…" once the check is slow
-  const hold = (featureId) => {
+  const holdFeature = (featureId) => {
     checks.hold(featureId)
     dispatch({ type: 'SET_HOLDING', payload: true })
     setTimeout(() => draw.changeMode('disabled'), 0)
@@ -177,28 +218,28 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
   // same geometry is reused, so finishing doesn't repeat a server call; otherwise (a
   // point, which has no commits before it's created, a failed result, or a finishing check
   // — see needsFinishCheck) the shape is checked now with phase 'create'.
-  const checkFinished = (f) => {
+  const checkFinishedFeature = (feature) => {
     const { status, feature: checkedFeature } = checks.state
-    const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, f) && !needsFinishCheck(draw, checks.state)
+    const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, feature) && !needsFinishCheck(draw, checks.state)
     if (!isReusable) {
-      checks.run({ feature: f, context: { phase: 'create', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
+      checks.run({ feature, context: { phase: 'create', mode: draw.getMode() }, consumerCheck: finishValidatorFor(draw) })
     }
     return checks.state
   }
 
-  const finish = (f) => {
-    const state = checkFinished(f)
+  const finishFeature = (feature) => {
+    const state = checkFinishedFeature(feature)
     if (state.status === 'valid') {
-      create(f)
+      createOrReopenFeature(feature, state)
     } else if (state.status === 'pending') {
-      hold(f.id)
+      holdFeature(feature.id)
     } else {
-      reopen(f.id, f.geometry?.type)
+      reopenFeature(feature.id, feature.geometry?.type)
     }
   }
 
   return {
-    onCreate: finish,
+    onCreate: finishFeature,
     // A held shape is created once its check passes, or reopened in edit mode. A result that
     // needs a finishing check, unknown until the pending check settled, is checked again.
     onCheckSettled: (state) => {
@@ -207,22 +248,23 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
       checks.release()
       const finished = draw.get(heldId)
       if (needsFinishCheck(draw, state)) {
-        finish(finished)
+        finishFeature(finished)
       } else if (state.status === 'valid') {
-        create(finished)
+        createOrReopenFeature(finished, state)
       } else {
-        reopen(heldId, finished?.geometry?.type)
+        reopenFeature(heldId, finished?.geometry?.type)
       }
     },
-    onEditFinish: (f) => {
+    onEditFinish: (feature) => {
+      const finished = applyFinishProperties(draw, feature, mapState)
       resetState()
       setTimeout(() => draw.changeMode('disabled'), 0)
       // A shape that was drawn-then-fixed reports as a creation, not an edit.
-      if (pendingCreateIds.get(draw) === f.id) {
+      if (pendingCreateIds.get(draw) === feature.id) {
         pendingCreateIds.delete(draw)
-        eventBus.emit(CREATED_EVENT, stripInternalProperties(f))
+        eventBus.emit(CREATED_EVENT, stripInternalProperties(finished))
       } else {
-        eventBus.emit('draw:edited', stripInternalProperties(f))
+        eventBus.emit('draw:edited', stripInternalProperties(finished))
       }
     }
   }
@@ -249,7 +291,7 @@ function createEditFinishHandlers ({ draw, dispatch }) {
       draw.done()
       return
     }
-    checks.run({ feature: state.feature, context: { phase: 'edit-finish', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
+    checks.run({ feature: state.feature, context: { phase: 'edit-finish', mode: draw.getMode() }, consumerCheck: finishValidatorFor(draw) })
     const next = checks.state
     if (next.status === 'pending') {
       waitFor(next.revision)
@@ -314,12 +356,12 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
     onCancel: () => { checks.reset() },
     ...createFinishHandlers({ appState, appConfig, mapState, draw, dispatch, eventBus, resetState }),
     ...createVertexSelectionHandlers({ draw, pluginState, mapProvider, eventBus }),
-    onUndoChange: (l) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: l }) },
-    onUpdate: (f) => { eventBus.emit('draw:updated', stripInternalProperties(f)) },
-    onGeometryChange: (e) => {
+    onUndoChange: (undoStackLength) => { pluginState.dispatch({ type: 'SET_UNDO_STACK_LENGTH', payload: undoStackLength }) },
+    onUpdate: (updatedFeature) => { eventBus.emit('draw:updated', stripInternalProperties(updatedFeature)) },
+    onGeometryChange: (event) => {
       // Only commit-level changes carry a `phase` ('change').
       // Preview events (e.g. split's live preview) have none and are ignored.
-      if (!e?.phase) { return }
+      if (!event?.phase) { return }
 
       // A commit that lands after the session has ended (the adapters defer them a tick)
       // is dropped rather than calling onGeometryChange.
@@ -330,32 +372,32 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       // interim invalid states while being built or reshaped. The result is applied
       // by the check-state handler once it settles.
       checks.run({
-        feature: e.feature,
-        context: { phase: e.phase, vertexIndex: e.vertexIndex, mode },
-        onGeometryChange: draw._commitValidator
+        feature: event.feature,
+        context: { phase: event.phase, vertexIndex: event.vertexIndex, mode },
+        consumerCheck: draw._commitValidator
       })
     },
     // A vertex placement was rejected (placement rule or user callback veto). Surface it
     // on the public bus with phase 'place', and as a hint toast, so the reason is visible.
-    onPlacementBlocked: (e) => {
-      if (e.announcement) { announce?.(e.announcement, 'action') }
-      emitGeometryInvalid({ ...e, feature: stripInternalProperties(e.feature) })
+    onPlacementBlocked: (event) => {
+      if (event.announcement) { announce?.(event.announcement, 'action') }
+      emitGeometryInvalid({ ...event, feature: stripInternalProperties(event.feature) })
     },
     // Live (mid-drag) validity flip while editing — the displayed shape is exactly
     // what Done finishes there, so it gates the Done button in real time alongside
     // the commit-level check. Emitted by the adapters' edit wiring only, on flips only.
-    onValidityChange: (e) => {
-      pluginState.dispatch({ type: 'SET_PREVIEW_VALID', payload: e.valid })
+    onValidityChange: (event) => {
+      pluginState.dispatch({ type: 'SET_PREVIEW_VALID', payload: event.valid })
     },
     // Live placement-veto flip while drawing — gates the Add point button so it
     // never looks active when a tap would be rejected.
-    onCanPlaceChange: (e) => {
-      pluginState.dispatch({ type: 'SET_CAN_ADD_POINT', payload: e.canPlace })
+    onCanPlaceChange: (event) => {
+      pluginState.dispatch({ type: 'SET_CAN_ADD_POINT', payload: event.canPlace })
     },
     // The mode's interface type changed (device switch mid-draw, or the final
     // value on mode exit) — relay so the app can sync appState.interfaceType.
-    onInterfaceTypeChange: (e) => {
-      eventBus.emit('draw:interfacetypechange', { interfaceType: e.interfaceType })
+    onInterfaceTypeChange: (event) => {
+      eventBus.emit('draw:interfacetypechange', { interfaceType: event.interfaceType })
     }
   }
 }
