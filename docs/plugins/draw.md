@@ -1,6 +1,10 @@
 # Draw Plugin
 
-The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged. It works identically with both the MapLibre and OpenLayers map providers, determining the correct adapter to use from the `mapProvider` passed to `InteractiveMap` — there's nothing to configure in the plugin itself.
+The draw plugin lets users draw and edit points, lines and polygons on the map. They can place vertices by click, tap or keyboard, and snap to existing map layers. Shapes are checked as they're built. Polygons can also be split and merged.
+
+Hooks let you add your own checks at each stage: as vertices are placed, as the shape changes, and when it's finished. Use them to apply your own rules, help users fix or review their shapes, and attach your own data.
+
+It works the same with the MapLibre and OpenLayers map providers. The plugin picks the right one from the `mapProvider` you pass to `InteractiveMap`, so there's nothing to configure.
 
 > [!IMPORTANT]
 > **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
@@ -166,6 +170,7 @@ They aren't used by `split`, `merge`, `addFeature`, `setStyle` or `setProperties
 | `result.reason` | Why the shape is invalid. Shown as a hint and sent with [`draw:geometryinvalid`](#drawgeometryinvalid) |
 | `result.announcement` | Read out by screen readers instead of draw's own message. When it's set, `reason` isn't shown as a hint, so you can show it yourself. From `onGeometryPreview`, it's only read out for a rejected vertex |
 | `result.properties` | Properties to add to the finished shape. `onGeometryFinish` only, on a passing result. See [Adding properties to the finished shape](#adding-properties-to-the-finished-shape) |
+| `result.reopen` | `true` to reopen a new shape in edit mode, valid, instead of creating it. `onGeometryFinish` only, on a passing result for phase `'create'`. See [Reopening a shape that passes](#reopening-a-shape-that-passes) |
 
 #### What they receive
 
@@ -246,7 +251,7 @@ Called when a shape is finished, to check the whole shape once. Without it, fini
 | `'create'` | A new shape or point was finished |
 | `'edit-finish'` | Done was pressed on an edit |
 
-Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called. If an `onGeometryChange` check is still running when the shape is finished, it's cancelled and `onGeometryFinish` decides.
+Draw waits for the result. A new shape that fails, or passes with [`reopen`](#reopening-a-shape-that-passes), reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called. If an `onGeometryChange` check is still running when the shape is finished, it's cancelled and `onGeometryFinish` decides.
 
 This updates a panel on every change, and validates the shape once it's finished:
 
@@ -280,6 +285,22 @@ createDrawPlugin({
 ```
 
 Keep them under one key of your own, such as `drawRules`, so they don't clash with other properties. `properties` is ignored on a failing result, and from `onGeometryPreview` and `onGeometryChange`.
+
+#### Reopening a shape that passes
+
+A passing result for a new shape can include `reopen: true`, to show the user something before the shape is created, such as suggestions, without blocking it. The shape reopens in edit mode with Done enabled, and [`draw:reopened`](#drawreopened) is sent with `status: 'valid'`.
+
+Pressing Done on the unchanged shape creates it from that same result, including its `properties`, without calling `onGeometryFinish` again. If the user changes the shape first, `onGeometryFinish` is called with phase `'edit-finish'`.
+
+```js
+createDrawPlugin({
+  onGeometryFinish: async ({ feature, phase }) => phase === 'create' && hasSuggestions(feature)
+    ? { valid: true, reopen: true, announcement: '1 suggestion for your shape. Check the issues panel' }
+    : { valid: true }
+})
+```
+
+`reopen` is ignored on a failing result, which reopens the shape anyway, on `'edit-finish'`, and from `onGeometryPreview` and `onGeometryChange`.
 
 ## Methods
 
@@ -663,7 +684,7 @@ Emitted when `editFeature` opens an existing feature for editing.
 
 ### `draw:created`
 
-Emitted when a new shape finishes drawing and passes its checks. Also fires for a shape that finished invalid, was automatically reopened in edit mode, and was then fixed and finished — from the caller's perspective it's still a creation, not an edit.
+Emitted when a new shape finishes drawing and passes its checks. Also fires for a new shape that was reopened in edit mode ([`draw:reopened`](#drawreopened)) and then finished — from the caller's perspective it's still a creation, not an edit.
 
 **Payload:** the finished `GeoJSON.Feature`
 
@@ -679,15 +700,15 @@ Emitted when an existing feature finishes an edit session (via `editFeature`).
 
 ### `draw:reopened`
 
-Emitted when a new shape is finished, its check fails, and it reopens in edit mode. See [Validation](#validation).
+Emitted when a new shape is finished and reopens in edit mode: because its check failed, or because a passing `onGeometryFinish` result asked to reopen it (see [Reopening a shape that passes](#reopening-a-shape-that-passes)). See [Validation](#validation).
 
 **Payload:**
 
 | Property | Description |
 |----------|-------------|
 | `payload.feature` | **Type:** `GeoJSON.Feature`<br />The reopened shape |
-| `payload.status` | **Type:** `'invalid' \| 'error'`<br />`'invalid'` if the check failed, `'error'` if it threw or rejected |
-| `payload.reason` | **Type:** `string \| null`<br />Why the check failed, or `null` if the result gave no reason |
+| `payload.status` | **Type:** `'valid' \| 'invalid' \| 'error'`<br />`'valid'` if a passing result asked to reopen it, `'invalid'` if the check failed, `'error'` if it threw or rejected |
+| `payload.reason` | **Type:** `string \| null`<br />Why the check failed, or `null` if it passed or the result gave no reason |
 
 ---
 

@@ -35,16 +35,21 @@ const needsFinishCheck = (draw, { result, context }) =>
   !FINISH_PHASES.has(context?.phase) && (typeof draw._finishValidator === 'function' || !!result?.recheckOnFinish)
 const finishValidatorFor = (draw) => draw._finishValidator ?? draw._commitValidator
 
-// A passing onGeometryFinish result's properties are merged into the finished shape, in
-// draw's store, before any listener sees it. Only that finishing check counts — not
-// onGeometryChange standing in for it, nor a result for different geometry. Called before
-// resetState(), which ends the check session. Returns the shape to emit.
-const applyFinishProperties = (draw, feature, mapState) => {
-  const { status, result, context, feature: checkedFeature } = getCommitChecks(draw).state
-  const isFinishResult = typeof draw._finishValidator === 'function' && FINISH_PHASES.has(context?.phase) &&
+// The latest onGeometryFinish result, if it passed for this shape; otherwise null.
+// onGeometryChange standing in for it, or a result for different geometry, doesn't count.
+const getPassingFinishResult = (draw, { status, result, context, feature: checkedFeature }, feature) => {
+  const isPassingFinishResult = typeof draw._finishValidator === 'function' && FINISH_PHASES.has(context?.phase) &&
     status === 'valid' && isSameGeometry(checkedFeature, feature)
-  if (!isFinishResult || !result.properties) { return feature }
-  mergeFeatureProperties(draw, feature.id, result.properties, { caller: 'onGeometryFinish', styleIds: mapStyleIds(mapState) })
+  return isPassingFinishResult ? result : null
+}
+
+// A passing onGeometryFinish result's properties are merged into the finished shape, in
+// draw's store, before any listener sees it. Called before resetState(), which ends the
+// check session. Returns the shape to emit.
+const applyFinishProperties = (draw, feature, mapState) => {
+  const properties = getPassingFinishResult(draw, getCommitChecks(draw).state, feature)?.properties
+  if (!properties) { return feature }
+  mergeFeatureProperties(draw, feature.id, properties, { caller: 'onGeometryFinish', styleIds: mapStyleIds(mapState) })
   return draw.get(feature.id)
 }
 
@@ -170,26 +175,38 @@ const createCheckStateHandler = ({ draw, dispatch, emitGeometryInvalid, announce
   }
 }
 
-// Finishing a new shape: created when its check passes, otherwise reopened in edit mode.
-// A shape finished while its check is pending is held until it settles, with Done reading
-// "Checking…" — for a point, Done shows just for that.
+// Finishing a new shape: created when its check passes, otherwise reopened in edit mode —
+// as is a shape whose passing onGeometryFinish result asks to reopen it. A shape finished
+// while its check is pending is held until it settles, with Done reading "Checking…" — for
+// a point, Done shows just for that.
 function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, eventBus, resetState }) {
   const checks = getCommitChecks(draw)
 
-  const create = (feature) => {
+  const createFeature = (feature) => {
     const finished = applyFinishProperties(draw, feature, mapState)
     resetState()
     setTimeout(() => draw.changeMode('disabled'), 0)
     eventBus.emit(CREATED_EVENT, stripInternalProperties(finished))
   }
 
-  const reopen = (featureId, geometryType) => {
+  const reopenFeature = (featureId, geometryType) => {
     pendingCreateIds.set(draw, featureId)
     setTimeout(() => enterEditMode({ draw, appState, appConfig, mapState, dispatch, eventBus }, featureId, geometryType), 0)
   }
 
+  // A passing result creates the shape, unless its onGeometryFinish result asked to reopen it,
+  // valid. Finishing it again, unchanged, creates it from that same result.
+  const createOrReopenFeature = (feature, state) => {
+    const shouldReopen = state.context?.phase === 'create' && !!getPassingFinishResult(draw, state, feature)?.reopen
+    if (shouldReopen) {
+      reopenFeature(feature.id, feature.geometry?.type)
+    } else {
+      createFeature(feature)
+    }
+  }
+
   // The map leaves draw mode; Done stays, disabled and reading "Checking…" once the check is slow
-  const hold = (featureId) => {
+  const holdFeature = (featureId) => {
     checks.hold(featureId)
     dispatch({ type: 'SET_HOLDING', payload: true })
     setTimeout(() => draw.changeMode('disabled'), 0)
@@ -201,7 +218,7 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
   // same geometry is reused, so finishing doesn't repeat a server call; otherwise (a
   // point, which has no commits before it's created, a failed result, or a finishing check
   // — see needsFinishCheck) the shape is checked now with phase 'create'.
-  const checkFinished = (feature) => {
+  const checkFinishedFeature = (feature) => {
     const { status, feature: checkedFeature } = checks.state
     const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, feature) && !needsFinishCheck(draw, checks.state)
     if (!isReusable) {
@@ -210,19 +227,19 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
     return checks.state
   }
 
-  const finish = (feature) => {
-    const state = checkFinished(feature)
+  const finishFeature = (feature) => {
+    const state = checkFinishedFeature(feature)
     if (state.status === 'valid') {
-      create(feature)
+      createOrReopenFeature(feature, state)
     } else if (state.status === 'pending') {
-      hold(feature.id)
+      holdFeature(feature.id)
     } else {
-      reopen(feature.id, feature.geometry?.type)
+      reopenFeature(feature.id, feature.geometry?.type)
     }
   }
 
   return {
-    onCreate: finish,
+    onCreate: finishFeature,
     // A held shape is created once its check passes, or reopened in edit mode. A result that
     // needs a finishing check, unknown until the pending check settled, is checked again.
     onCheckSettled: (state) => {
@@ -231,11 +248,11 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
       checks.release()
       const finished = draw.get(heldId)
       if (needsFinishCheck(draw, state)) {
-        finish(finished)
+        finishFeature(finished)
       } else if (state.status === 'valid') {
-        create(finished)
+        createOrReopenFeature(finished, state)
       } else {
-        reopen(heldId, finished?.geometry?.type)
+        reopenFeature(heldId, finished?.geometry?.type)
       }
     },
     onEditFinish: (feature) => {

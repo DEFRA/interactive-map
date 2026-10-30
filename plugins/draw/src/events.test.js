@@ -1412,6 +1412,121 @@ describe('async geometry checks', () => {
       expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
     })
   })
+
+  describe('a passing onGeometryFinish result that asks to reopen a new shape', () => {
+    const canFinish = (dispatch) => dispatch.mock.calls.filter(([action]) => action.type === 'SET_CAN_FINISH').map(([action]) => action.payload).pop()
+    const suggestions = { drawRules: { suggestions: 1 } }
+
+    // A store for the one shape, so a properties write shows up in draw.get
+    const drawing = (overrides) => {
+      const context = setup(overrides)
+      const { draw } = context
+      let stored = { id: 'new', ...square, properties: {} }
+      draw.get.mockImplementation(() => stored)
+      draw.setGeometry = (geometry) => { stored = { ...stored, geometry } }
+      draw.setProperties = jest.fn((id, properties) => { stored = { ...stored, properties: { ...stored.properties, ...properties } } })
+      draw._commitValidator = jest.fn(() => true)
+      commit(draw, square)
+      return context
+    }
+
+    // Finishes the new shape, and lets it reopen in edit mode
+    const finish = (draw) => {
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      draw.getMode.mockReturnValue('edit_vertex')
+    }
+
+    const expectReopenedValid = ({ draw, dispatch, eventBus }) => {
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'valid', reason: null }))
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:geometryinvalid', expect.anything())
+      expect(canFinish(dispatch)).toBe(true)
+      expect(draw.setCanFinish).toHaveBeenLastCalledWith(true)
+      expect(draw.setInvalid).toHaveBeenLastCalledWith(false)
+    }
+
+    test('reopens the shape in edit mode, valid, and reads out the announcement', () => {
+      const context = drawing()
+      const { draw, announce } = context
+      draw._finishValidator = () => ({ valid: true, reopen: true, announcement: '1 suggestion for your shape' })
+      finish(draw)
+      expectReopenedValid(context)
+      expect(draw.changeMode).toHaveBeenCalledWith('edit_vertex', expect.objectContaining({ featureId: 'new' }))
+      expect(announce).toHaveBeenCalledWith('1 suggestion for your shape', 'action')
+    })
+
+    test('reopens a shape held while onGeometryFinish runs, with Done disabled until it replies', async () => {
+      const context = drawing()
+      const { draw, dispatch } = context
+      const reply = deferred()
+      draw._finishValidator = () => reply.promise
+      drawHandler(draw, 'create')(draw.get())
+      jest.runAllTimers()
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: true })
+      expect(dispatch).not.toHaveBeenCalledWith({ type: 'SET_HOLDING', payload: false })
+
+      reply.resolve({ valid: true, reopen: true })
+      await flush()
+      jest.runAllTimers()
+      expectReopenedValid(context)
+    })
+
+    test('Done on the unchanged shape creates it with the result’s properties, without checking it again', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw._finishValidator = jest.fn(() => ({ valid: true, reopen: true, properties: suggestions }))
+      finish(draw)
+
+      buttonConfig.drawDone.onClick()
+      expect(draw._finishValidator).toHaveBeenCalledTimes(1)
+      expect(draw.done).toHaveBeenCalledTimes(1)
+      drawHandler(draw, 'editfinish')(draw.get())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new', properties: suggestions }))
+    })
+
+    test('Done on a changed shape checks it again, ignoring reopen, and uses that result’s properties', () => {
+      const { draw, eventBus, buttonConfig } = drawing()
+      draw._finishValidator = jest.fn(({ phase }) => phase === 'create'
+        ? { valid: true, reopen: true, properties: suggestions }
+        : { valid: true, reopen: true, properties: { drawRules: { suggestions: 0 } } })
+      finish(draw)
+
+      draw.setGeometry(otherSquare.geometry)
+      commit(draw, otherSquare)
+      buttonConfig.drawDone.onClick()
+      expect(draw._finishValidator).toHaveBeenLastCalledWith(expect.objectContaining({ phase: 'edit-finish' }), expect.anything())
+      expect(draw.done).toHaveBeenCalledTimes(1)
+      drawHandler(draw, 'editfinish')(draw.get())
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ properties: { drawRules: { suggestions: 0 } } }))
+    })
+
+    test('a failing result reopens the shape with Done disabled, as without reopen', () => {
+      const { draw, dispatch, eventBus } = drawing()
+      draw._finishValidator = () => ({ valid: false, reason: 'overlap', reopen: true })
+      finish(draw)
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:reopened', expect.objectContaining({ status: 'invalid', reason: 'overlap' }))
+      expect(canFinish(dispatch)).toBe(false)
+    })
+
+    test('has no effect from onGeometryChange, including when it finishes the shape', () => {
+      const { draw, eventBus } = drawing()
+      draw._commitValidator = () => ({ valid: true, reopen: true })
+      commit(draw, square)
+      finish(draw)
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:created', expect.objectContaining({ id: 'new' }))
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:reopened', expect.anything())
+    })
+
+    test('Cancel discards the reopened shape', () => {
+      const { draw, eventBus, buttonConfig } = drawing({ pluginState: { tempFeature: { id: 'new' } } })
+      draw._finishValidator = () => ({ valid: true, reopen: true })
+      finish(draw)
+      buttonConfig.drawCancel.onClick()
+      expect(draw.delete).toHaveBeenCalledWith('new')
+      expect(eventBus.emit).toHaveBeenCalledWith('draw:cancelled', expect.anything())
+      expect(eventBus.emit).not.toHaveBeenCalledWith('draw:created', expect.anything())
+    })
+  })
 })
 
 describe('detach', () => {
