@@ -7,6 +7,7 @@ import { createLiveStroke } from '../../validation/liveStroke.js'
 import { createLiveDrawChecks } from '../../validation/liveDrawChecks.js'
 import { resolvePointSymbol } from './pointSymbolImages.js'
 import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
+import { definedOnly } from '../../utils/flattenStyleProperties.js'
 import { getCoords, getMidpointCoords } from './modes/editVertexMode/geometryHelpers.js'
 import { logger } from '../../../../../src/services/logger.js'
 
@@ -354,13 +355,14 @@ export class MaplibreDrawAdapter {
   }
 
   // Patches an existing feature's style properties and re-renders via add(), so a Point's
-  // icon gets re-resolved the same way a directly-added one does.
+  // icon gets re-resolved the same way a directly-added one does. A key patched to undefined
+  // is removed — add() replaces the feature's properties as a whole.
   setStyle (id, properties) {
     const feature = this._draw.get(id)
     if (!feature) {
       return
     }
-    this.add({ ...feature, properties: { ...feature.properties, ...properties } })
+    this.add({ ...feature, properties: definedOnly({ ...feature.properties, ...properties }) })
   }
 
   delete (id) { this._draw.delete(id) }

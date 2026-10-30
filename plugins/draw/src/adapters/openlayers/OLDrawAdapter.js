@@ -1,5 +1,6 @@
 import { createOLDraw } from './olDraw.js'
 import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
+import { definedOnly } from '../../utils/flattenStyleProperties.js'
 
 // split.js passes this literal — MapLibre's own always-present "already-drawn
 // shapes" style layer id — as a snapLayers entry so the split line snaps to the
@@ -113,13 +114,17 @@ export class OLDrawAdapter {
 
   // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
   // keys) and re-renders — setProperties() must not be called silently, since VectorSource
-  // only redraws in response to the propertychange event that triggers.
+  // only redraws in response to the propertychange event that triggers. A key patched to
+  // undefined is removed.
   setStyle (id, properties) {
     const olFeature = this._manager.store.getOL(id)
     if (!olFeature) {
       return
     }
-    olFeature.setProperties(properties)
+    for (const [key, value] of Object.entries(properties)) {
+      if (value === undefined) { olFeature.unset(key) }
+    }
+    olFeature.setProperties(definedOnly(properties))
     if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbol(olFeature.getProperties())) {
       this._manager.updatePointSymbol(olFeature)
     }
