@@ -1,4 +1,4 @@
-import { createCommitChecks, getCommitChecks, isSameGeometry, startCheckSession, SLOW_CHECK_MS } from './commitChecks.js'
+import { createCommitChecks, getCommitChecks, isSameGeometry, startCheckSession, canFinishCheck, SLOW_CHECK_MS } from './commitChecks.js'
 
 const square = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [0, 1], [1, 1], [1, 0], [0, 0]]] } }
 const context = { phase: 'change', mode: 'draw_polygon', vertexIndex: 3 }
@@ -20,13 +20,13 @@ describe('createCommitChecks', () => {
   test('passes the event and a { signal, revision } second argument to the callback', () => {
     const checks = createCommitChecks()
     const onGeometryChange = jest.fn(() => true)
-    checks.run({ feature: square, context, onGeometryChange })
+    checks.run({ feature: square, context, consumerCheck: onGeometryChange })
     expect(onGeometryChange).toHaveBeenCalledWith({ feature: square, ...context }, { signal: expect.any(AbortSignal), revision: 1 })
   })
 
   test('normalises a synchronous result', () => {
     const checks = createCommitChecks()
-    checks.run({ feature: square, context, onGeometryChange: () => ({ valid: false, reason: 'too big' }) })
+    checks.run({ feature: square, context, consumerCheck: () => ({ valid: false, reason: 'too big' }) })
     expect(checks.state).toEqual(expect.objectContaining({ status: 'invalid', result: { valid: false, reason: 'too big', source: 'callback' } }))
   })
 
@@ -36,7 +36,7 @@ describe('createCommitChecks', () => {
     const onSettle = jest.fn()
     checks.setOnSettle(onSettle)
     let resolve
-    checks.run({ feature: square, context, onGeometryChange: () => new Promise((_resolve) => { resolve = _resolve }) })
+    checks.run({ feature: square, context, consumerCheck: () => new Promise((_resolve) => { resolve = _resolve }) })
     expect(checks.state).toEqual(expect.objectContaining({ status: 'pending', slow: false }))
 
     jest.advanceTimersByTime(SLOW_CHECK_MS)
@@ -48,7 +48,7 @@ describe('createCommitChecks', () => {
     expect(onSettle.mock.calls.map(([state]) => [state.status, state.slow])).toEqual([['pending', false], ['pending', true], ['invalid', false]])
 
     // The next check settles straight away, so it doesn't follow a pending state
-    checks.run({ feature: square, context, onGeometryChange: () => true })
+    checks.run({ feature: square, context, consumerCheck: () => true })
     expect(checks.state.afterPending).toBe(false)
     jest.useRealTimers()
   })
@@ -58,7 +58,7 @@ describe('createCommitChecks', () => {
     const checks = createCommitChecks()
     const onSettle = jest.fn()
     checks.setOnSettle(onSettle)
-    checks.run({ feature: square, context, onGeometryChange: () => Promise.resolve(true) })
+    checks.run({ feature: square, context, consumerCheck: () => Promise.resolve(true) })
     await flush()
     jest.advanceTimersByTime(SLOW_CHECK_MS)
     expect(checks.state).toEqual(expect.objectContaining({ status: 'valid', afterPending: false }))
@@ -73,8 +73,17 @@ describe('createCommitChecks', () => {
     expect(checks.state.result.source).toBe('rules')
 
     jest.spyOn(console, 'warn').mockImplementation(() => {})
-    checks.run({ feature: square, context, onGeometryChange: () => { throw new Error('503') } })
+    checks.run({ feature: square, context, consumerCheck: () => { throw new Error('503') } })
     expect(checks.state).toEqual(expect.objectContaining({ status: 'error', result: { valid: false, reason: null, source: 'callback' } }))
+    console.warn.mockRestore()
+  })
+
+  test('logs a callback error with the phase, so it names the finishing check too', () => {
+    const checks = createCommitChecks()
+    jest.spyOn(console, 'warn').mockImplementation(() => {})
+    const error = new Error('503')
+    checks.run({ feature: square, context: { phase: 'edit-finish' }, consumerCheck: () => { throw error } })
+    expect(console.warn).toHaveBeenCalledWith('[interactive-map]', '[draw] geometry check failed (edit-finish)', error)
     console.warn.mockRestore()
   })
 
@@ -82,7 +91,7 @@ describe('createCommitChecks', () => {
     const checks = createCommitChecks()
     let resolve
     let signal
-    checks.run({ feature: square, context, onGeometryChange: (_event, ctx) => { signal = ctx.signal; return new Promise((_resolve) => { resolve = _resolve }) } })
+    checks.run({ feature: square, context, consumerCheck: (_event, ctx) => { signal = ctx.signal; return new Promise((_resolve) => { resolve = _resolve }) } })
     checks.reset()
     expect(signal.aborted).toBe(true)
 
@@ -97,8 +106,8 @@ describe('createCommitChecks', () => {
     const onGeometryChange = (_event, { signal }) => new Promise((_resolve, reject) => {
       signal.addEventListener('abort', () => reject(new Error('aborted')))
     })
-    checks.run({ feature: square, context, onGeometryChange })
-    checks.run({ feature: square, context, onGeometryChange: () => true })
+    checks.run({ feature: square, context, consumerCheck: onGeometryChange })
+    checks.run({ feature: square, context, consumerCheck: () => true })
     await flush()
     expect(checks.state.status).toBe('valid')
     expect(warn).not.toHaveBeenCalled()
@@ -122,9 +131,56 @@ describe('createCommitChecks', () => {
     expect(checks.reset()).toBe('c')
   })
 
+  test('carries the last callback result into later states, ignoring the built-in rules', () => {
+    const checks = createCommitChecks()
+    const partDrawn = { type: 'Feature', geometry: { type: 'Polygon', coordinates: [[[0, 0], [1, 0], [0, 0]]] } }
+    checks.run({ feature: square, context, consumerCheck: () => false })
+    expect(checks.state.lastResultStatus).toBe('invalid')
+
+    checks.run({ feature: partDrawn, context, consumerCheck: () => true })
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'invalid', lastResultStatus: 'invalid' }))
+
+    checks.run({ feature: square, context, consumerCheck: () => new Promise(() => {}) })
+    checks.run({ feature: square, context, consumerCheck: () => new Promise(() => {}) })
+    expect(checks.state).toEqual(expect.objectContaining({ status: 'pending', lastResultStatus: 'invalid' }))
+
+    checks.reset()
+    expect(checks.state.lastResultStatus).toBeNull()
+  })
+
+  test('counts a callback error as its last result', () => {
+    const checks = createCommitChecks()
+    jest.spyOn(console, 'warn').mockImplementation(() => {})
+    checks.run({ feature: square, context, consumerCheck: () => { throw new Error('503') } })
+    expect(checks.state.lastResultStatus).toBe('error')
+    console.warn.mockRestore()
+  })
+
   test('works without an onSettle callback', () => {
     const checks = createCommitChecks()
     expect(() => checks.run({ feature: square, context })).not.toThrow()
+  })
+})
+
+describe('canFinishCheck', () => {
+  test('is true for a passing check, and false for a failed one or none', () => {
+    expect(canFinishCheck({ status: 'valid' })).toBe(true)
+    expect(canFinishCheck({ status: 'invalid' })).toBe(false)
+    expect(canFinishCheck({ status: 'error' })).toBe(false)
+    expect(canFinishCheck({ status: 'idle' })).toBe(false)
+  })
+
+  test('keeps the last callback result while a check is pending', () => {
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: null })).toBe(true)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: 'valid' })).toBe(true)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: 'invalid' })).toBe(false)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: 'error' })).toBe(false)
+  })
+
+  test('is false while an existing feature’s edit-start check is pending', () => {
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: null, context: { phase: 'edit-start' } })).toBe(false)
+    expect(canFinishCheck({ status: 'valid', lastResultStatus: 'valid', context: { phase: 'edit-start' } })).toBe(true)
+    expect(canFinishCheck({ status: 'pending', lastResultStatus: null, context: { phase: 'change' } })).toBe(true)
   })
 })
 
@@ -188,7 +244,7 @@ describe('startCheckSession', () => {
     const draw = { get: jest.fn(() => shape), delete: jest.fn() }
     const eventBus = { emit: jest.fn() }
     const checks = getCommitChecks(draw)
-    checks.run({ feature: shape, context: { phase: 'change' }, onGeometryChange: () => new Promise(() => {}) })
+    checks.run({ feature: shape, context: { phase: 'change' }, consumerCheck: () => new Promise(() => {}) })
     checks.hold('held')
     expect(checks.heldId).toBe('held')
 

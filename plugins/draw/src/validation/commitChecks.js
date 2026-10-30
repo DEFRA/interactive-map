@@ -3,7 +3,7 @@ import { COMMIT_RULES } from './rules.js'
 import { logger } from '../../../../src/services/logger.js'
 import { stripInternalProperties } from '../utils/stripInternalProperties.js'
 
-const IDLE = { revision: 0, status: 'idle', result: null, feature: null, context: null, slow: false, afterPending: false }
+const IDLE = { revision: 0, status: 'idle', result: null, feature: null, context: null, slow: false, afterPending: false, lastResultStatus: null }
 
 // How long an async check runs before it counts as slow: Done reads "Checking…" and the
 // check is announced. A quicker reply settles without either.
@@ -13,9 +13,21 @@ const isThenable = (value) => typeof value?.then === 'function'
 
 const statusFor = (result) => (result.valid ? 'valid' : 'invalid')
 
+const BLOCKING_STATUSES = new Set(['invalid', 'error'])
+
+// Whether the shape can be finished (the Done button and the map's finish gestures). While a
+// check is pending, Done keeps the state from the last callback result, so a shape that
+// failed can't be finished in the gap before the next result. With no earlier result, it can
+// — except an existing feature opened by editFeature, which may already be invalid, so it
+// waits for its 'edit-start' check rather than showing Done enabled and then disabled.
+export const canFinishCheck = ({ status, lastResultStatus, context }) =>
+  status === 'valid' ||
+  (status === 'pending' && context?.phase !== 'edit-start' && !BLOCKING_STATUSES.has(lastResultStatus))
+
 /**
  * Runs the commit-level check for each committed change: the built-in COMMIT_RULES first,
- * synchronously, then the consumer's `onGeometryChange`, which may return a Promise.
+ * synchronously, then the consumer's callback, which may return a Promise: `onGeometryChange`,
+ * or `onGeometryFinish` when a shape is finished.
  *
  * Every run gets a new revision and aborts the previous run's signal. A result only
  * settles if its revision is still the latest, so a slow reply for an older shape can
@@ -23,6 +35,11 @@ const statusFor = (result) => (result.valid ? 'valid' : 'invalid')
  * settled state, including 'pending' as soon as an async check starts, and 'pending' again
  * with `slow: true` once it has run for SLOW_CHECK_MS. A result that follows a slow
  * 'pending' state for the same revision has `afterPending: true`.
+ *
+ * Every state carries `lastResultStatus`: the status of the last result from the consumer's
+ * callback (onGeometryChange, or onGeometryFinish, which runs through here too), whatever its
+ * revision. The built-in rules' results don't count, so a shape that has just reached its
+ * minimum vertices isn't held back by them. A superseded check never settles, so never counts.
  *
  * A finished shape waiting on the latest check can be held (`hold`), and is released when
  * that check settles or the session ends — `reset` returns its id, so it can be discarded.
@@ -49,8 +66,9 @@ export const createCommitChecks = () => {
     clearTimeout(slowTimer)
   }
 
-  const settle = (rev, next) => {
+  const settle = (rev, next, { fromCallback = false } = {}) => {
     if (rev !== revision) { return }
+    const lastResultStatus = fromCallback ? next.status : latest.lastResultStatus
     if (next.status !== 'pending') {
       abortController = null
       clearTimeout(slowTimer)
@@ -58,7 +76,7 @@ export const createCommitChecks = () => {
     const slow = !!next.slow
     const afterPending = next.status !== 'pending' && slowRevision === rev
     slowRevision = slow ? rev : null
-    latest = { ...next, revision: rev, slow, afterPending }
+    latest = { ...next, revision: rev, slow, afterPending, lastResultStatus }
     onSettle?.(latest)
   }
 
@@ -78,17 +96,17 @@ export const createCommitChecks = () => {
      * @param {object} params
      * @param {object} params.feature - the committed GeoJSON feature
      * @param {object} params.context - { phase, mode, vertexIndex }
-     * @param {Function} [params.onGeometryChange] - consumer callback
+     * @param {Function} [params.consumerCheck] - the consumer's onGeometryChange or onGeometryFinish
      * @param {Array<Function>} [params.rules] - built-in rules, defaults to COMMIT_RULES
      */
-    run ({ feature, context, onGeometryChange, rules = COMMIT_RULES }) {
+    run ({ feature, context, consumerCheck, rules = COMMIT_RULES }) {
       abortPending()
       revision++
       const rev = revision
       const base = { feature, context }
 
       const builtIn = validateGeometry(feature, context, { rules })
-      if (!builtIn.valid || typeof onGeometryChange !== 'function') {
+      if (!builtIn.valid || typeof consumerCheck !== 'function') {
         settle(rev, { ...base, status: statusFor(builtIn), result: builtIn })
         return
       }
@@ -97,13 +115,13 @@ export const createCommitChecks = () => {
       const onError = (error) => {
         // A superseded check rejecting (e.g. on its aborted signal) isn't a failure
         if (rev !== revision) { return }
-        logger.warn('[draw] onGeometryChange failed', error)
-        settle(rev, { ...base, status: 'error', result: { valid: false, reason: null, source: 'callback' }, error })
+        logger.warn(`[draw] geometry check failed (${context?.phase})`, error)
+        settle(rev, { ...base, status: 'error', result: { valid: false, reason: null, source: 'callback' }, error }, { fromCallback: true })
       }
 
       let output
       try {
-        output = onGeometryChange({ feature, ...context }, { signal: abortController.signal, revision: rev })
+        output = consumerCheck({ feature, ...context }, { signal: abortController.signal, revision: rev })
       } catch (error) {
         onError(error)
         return
@@ -111,7 +129,7 @@ export const createCommitChecks = () => {
 
       const settleResult = (value) => {
         const result = withSource(normaliseResult(value), 'callback')
-        settle(rev, { ...base, status: statusFor(result), result })
+        settle(rev, { ...base, status: statusFor(result), result }, { fromCallback: true })
       }
 
       if (!isThenable(output)) { settleResult(output); return }
