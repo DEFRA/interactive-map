@@ -13,6 +13,9 @@ const initialState = {
   // else should set them.
   // Status of the latest check: 'idle' | 'pending' | 'valid' | 'invalid' | 'error'
   validationStatus: 'idle',
+  // Whether the shape can be finished: the latest check passed, or it's pending and the last
+  // callback result didn't fail (canFinishCheck)
+  canFinish: false,
   // Whether a pending check has run long enough to show as "Checking…" (SLOW_CHECK_MS)
   checkSlow: false,
   // A finished shape is waiting on its pending check before it's created
@@ -32,6 +35,7 @@ const setMode = (state, payload) => ({
   // A new/empty shape has no passing check yet; its first commit (or edit mode's
   // edit-start check in api/editFeature) settles it.
   validationStatus: 'idle',
+  canFinish: false,
   checkSlow: false,
   holding: false,
   previewValid: true,
@@ -65,6 +69,8 @@ const setUndoStackLength = (state, payload) => ({ ...state, undoStackLength: pay
 
 const setValidationStatus = (state, payload) => ({ ...state, validationStatus: payload, checkSlow: false })
 
+const setCanFinish = (state, payload) => ({ ...state, canFinish: !!payload })
+
 const setCheckSlow = (state) => ({ ...state, checkSlow: true })
 
 const setHolding = (state, payload) => ({ ...state, holding: !!payload })
@@ -82,6 +88,7 @@ const actions = {
   SET_HAS_SNAP_LAYERS: setHasSnapLayers,
   SET_UNDO_STACK_LENGTH: setUndoStackLength,
   SET_VALIDATION_STATUS: setValidationStatus,
+  SET_CAN_FINISH: setCanFinish,
   SET_CHECK_SLOW: setCheckSlow,
   SET_HOLDING: setHolding,
   SET_PREVIEW_VALID: setPreviewValid,

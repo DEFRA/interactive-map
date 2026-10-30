@@ -1,5 +1,6 @@
 import { createOLDraw } from './olDraw.js'
 import { hasSymbol } from '../../../../../src/utils/symbolUtils.js'
+import { definedOnly } from '../../utils/flattenStyleProperties.js'
 
 // split.js passes this literal — MapLibre's own always-present "already-drawn
 // shapes" style layer id — as a snapLayers entry so the split line snaps to the
@@ -28,7 +29,7 @@ const DRAW_OUTLINE_STYLE_LAYER = 'stroke-inactive.cold'
  *   nudgeSelectedVertex(dx, dy, isLargeStep)
  *   getVertexItems() / selectVertex(index) / insertVertexAtMidpoint(index)
  *   setGeometry(geometry)
- *   get(id) / add(feature) / setStyle(id, properties) / delete(id) / deleteAll()
+ *   get(id) / add(feature) / setStyle(id, properties) / setProperties(id, properties) / delete(id) / deleteAll()
  *   setSnapEnabled(bool) / setSnapLayers(layers) / isSnapEnabled()
  *   setFeatureProperty(id, property, value) / setDrawingPreviewProperty(property, value)
  *   on(event, handler) / off(event, handler)
@@ -113,13 +114,17 @@ export class OLDrawAdapter {
 
   // Patches an existing feature's style properties (stroke/fill/strokeWidth or symbol-family
   // keys) and re-renders — setProperties() must not be called silently, since VectorSource
-  // only redraws in response to the propertychange event that triggers.
+  // only redraws in response to the propertychange event that triggers. A key patched to
+  // undefined is removed.
   setStyle (id, properties) {
     const olFeature = this._manager.store.getOL(id)
     if (!olFeature) {
       return
     }
-    olFeature.setProperties(properties)
+    for (const [key, value] of Object.entries(properties)) {
+      if (value === undefined) { olFeature.unset(key) }
+    }
+    olFeature.setProperties(definedOnly(properties))
     if (olFeature.getGeometry()?.getType() === 'Point' && hasSymbol(olFeature.getProperties())) {
       this._manager.updatePointSymbol(olFeature)
     }
@@ -142,6 +147,11 @@ export class OLDrawAdapter {
 
   setFeatureProperty () { /* not implemented for OL */ }
   setDrawingPreviewProperty (property, value) { this._manager.setDrawingPreviewProperty(property, value) }
+
+  // Merges data properties into an existing feature (a shallow merge; setStyle handles style)
+  setProperties (id, properties) {
+    this._manager.store.getOL(id)?.setProperties(properties)
+  }
 
   on (type, handler) { this._manager.on(type, handler) }
   off (type, handler) { this._manager.off(type, handler) }

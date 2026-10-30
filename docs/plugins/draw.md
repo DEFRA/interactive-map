@@ -1,6 +1,8 @@
 # Draw Plugin
 
-The draw plugin lets users draw and edit point, polygon and line features on the map — placing vertices by click, tap, or keyboard, snapping to existing map layers, and validating geometry as it's built. Polygons can also be split and merged.
+The draw plugin lets users draw and edit points, lines and polygons on the map. They can place vertices by click, tap or keyboard, and snap to existing map layers. Shapes are checked as they're built. Polygons can also be split and merged.
+
+Hooks let you add your own checks at each stage: as vertices are placed, as the shape changes, and when it's finished. Use them to apply your own rules, help users fix or review their shapes, and attach your own data.
 
 It works the same with `@defra/interactive-map` (MapLibre) and `@defra/interactive-map-openlayers`.
 
@@ -154,7 +156,7 @@ While a rule fails, the shape has a dashed outline.
 
 Set them at plugin level, `createDrawPlugin({ onGeometryPreview, onGeometryChange, onGeometryFinish })`, or per call in the options of `newPolygon`, `newLine`, `newPoint` and `editFeature`. Each per-call callback replaces only its plugin-level equivalent for that session. The others still apply. To do more than one thing on a change, call each from one callback.
 
-They aren't used by `split`, `merge`, `addFeature` or `setStyle`.
+They aren't used by `split`, `merge`, `addFeature`, `setStyle` or `setProperties`.
 
 #### What they return
 
@@ -166,6 +168,8 @@ They aren't used by `split`, `merge`, `addFeature` or `setStyle`.
 | `result.valid` | Whether the shape is valid |
 | `result.reason` | Why the shape is invalid. Shown as a hint and sent with [`draw:geometryinvalid`](#drawgeometryinvalid) |
 | `result.announcement` | Read out by screen readers instead of draw's own message. When it's set, `reason` isn't shown as a hint, so you can show it yourself. From `onGeometryPreview`, it's only read out for a rejected vertex |
+| `result.properties` | Properties to add to the finished shape. `onGeometryFinish` only, on a passing result. See [Adding properties to the finished shape](#adding-properties-to-the-finished-shape) |
+| `result.reopen` | `true` to reopen a new shape in edit mode, valid, instead of creating it. `onGeometryFinish` only, on a passing result for phase `'create'`. See [Reopening a shape that passes](#reopening-a-shape-that-passes) |
 
 #### What they receive
 
@@ -233,6 +237,8 @@ Called after each change to a shape.
 
 It's only called once the built-in rules pass, and only the result for the latest change counts. If it fails, throws or rejects, the shape can't be finished: call `recheckGeometry()` to retry. If the shape is finished while a check is running, draw waits for the result.
 
+While a check is running, Done stays as the last result of `onGeometryChange` or `onGeometryFinish` left it: disabled if that result failed, otherwise enabled. When `editFeature` opens a shape, Done is disabled until its `'edit-start'` check passes.
+
 ## `onGeometryFinish(event, context)`
 
 **Signature:** `onGeometryFinish(event, context) => result | Promise<result>`
@@ -244,7 +250,7 @@ Called when a shape is finished, to check the whole shape once. Without it, fini
 | `'create'` | A new shape or point was finished |
 | `'edit-finish'` | Done was pressed on an edit |
 
-Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called.
+Draw waits for the result. A new shape that fails, or passes with [`reopen`](#reopening-a-shape-that-passes), reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called. If an `onGeometryChange` check is still running when the shape is finished, it's cancelled and `onGeometryFinish` decides.
 
 This updates a panel on every change, and validates the shape once it's finished:
 
@@ -258,11 +264,46 @@ createDrawPlugin({
 })
 ```
 
-Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies, and finishing would wait for it.
+Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies: a slow reply is announced as "Checking shape", and finishing the shape cancels it.
+
+#### Adding properties to the finished shape
+
+A passing result can include `properties` to store with the shape, such as what the check found. Draw adds them before the shape is created or the edit finishes, so they're in [`draw:created`](#drawcreated) and [`draw:edited`](#drawedited). They follow the same rules as [`setProperties`](#setpropertiesfeatureid-properties).
+
+```js
+createDrawPlugin({
+  onGeometryFinish: async ({ feature }, { signal }) => {
+    try {
+      return await validateWithService(feature, { signal })
+    } catch {
+      // Let the user finish, but record that the shape wasn't checked
+      return { valid: true, properties: { drawRules: { checked: false, reason: 'error' } } }
+    }
+  }
+})
+```
+
+Keep them under one key of your own, such as `drawRules`, so they don't clash with other properties. `properties` is ignored on a failing result, and from `onGeometryPreview` and `onGeometryChange`.
+
+#### Reopening a shape that passes
+
+A passing result for a new shape can include `reopen: true`, to show the user something before the shape is created, such as suggestions, without blocking it. The shape reopens in edit mode with Done enabled, and [`draw:reopened`](#drawreopened) is sent with `status: 'valid'`.
+
+Pressing Done on the unchanged shape creates it from that same result, including its `properties`, without calling `onGeometryFinish` again. If the user changes the shape first, `onGeometryFinish` is called with phase `'edit-finish'`.
+
+```js
+createDrawPlugin({
+  onGeometryFinish: async ({ feature, phase }) => phase === 'create' && hasSuggestions(feature)
+    ? { valid: true, reopen: true, announcement: '1 suggestion for your shape. Check the issues panel' }
+    : { valid: true }
+})
+```
+
+`reopen` is ignored on a failing result, which reopens the shape anyway, on `'edit-finish'`, and from `onGeometryPreview` and `onGeometryChange`.
 
 ## Methods
 
-Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `deleteFeature`, `split`, `merge`, `setGeometry` and `recheckGeometry` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
+Methods are called on the plugin instance. `newPolygon`, `newLine`, `newPoint`, `editFeature`, `addFeature`, `setStyle`, `setProperties`, `deleteFeature`, `split`, `merge`, `setGeometry` and `recheckGeometry` all need `mapProvider.draw` to be ready — call them after [`draw:ready`](#drawready).
 
 ---
 
@@ -367,10 +408,12 @@ Add a `Point`, `LineString`, or `Polygon` feature directly to the map without a 
 | `feature.id` | **Type:** `string`<br />**Required**<br />Feature ID |
 | `feature.type` | **Type:** `string`<br />Defaults to `'Feature'` if omitted |
 | `feature.geometry` | **Type:** `GeoJSON.Geometry`<br />**Required**<br />`Point`, `LineString`, or `Polygon` geometry |
-| `feature.stroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour (`LineString`/`Polygon`) |
-| `feature.fill` | **Type:** `string \| Record<string, string>`<br />Fill colour (`Polygon`) |
-| `feature.strokeWidth` | **Type:** `number`<br />Stroke width in pixels (`LineString`/`Polygon`) |
+| `feature.stroke` | **Type:** `string \| Record<string, string>`<br />Stroke colour (`LineString`/`Polygon`). Replaces any stroke colours in `properties` |
+| `feature.fill` | **Type:** `string \| Record<string, string>`<br />Fill colour (`Polygon`). Replaces any fill colours in `properties` |
+| `feature.strokeWidth` | **Type:** `number`<br />Stroke width in pixels (`LineString`/`Polygon`). Replaces any stroke widths in `properties` |
 | `feature.properties` | **Type:** `Object`<br />Custom GeoJSON properties — a `Point`'s `symbol`-family properties go here (see `newPoint` above) |
+
+A feature saved from [`draw:created`](#drawcreated) or [`draw:edited`](#drawedited) keeps its style in `properties`, so it can be added back as it is.
 
 A feature with a missing/unsupported `geometry.type` or no `geometry.coordinates` is logged as a warning and ignored.
 
@@ -400,6 +443,8 @@ interactiveMap.on('draw:ready', () => {
 
 Update an existing feature's style — stroke/fill/strokeWidth or, for a `Point`, its `symbol`-family properties (see `newPoint` above). Only the keys you pass are changed; anything else the feature already has is left alone. Returns `false` if the feature doesn't exist.
 
+Setting `stroke`, `fill` or `strokeWidth` replaces all of its values, including colours set for each map style: `setStyle(id, { stroke: '#d4351c' })` shows the new colour in every map style. Colours for each style are stored as properties named after the style, such as `strokeDark` for a style with the ID `dark`, so avoid giving your own properties names like these.
+
 | Argument | Description |
 |----------|-------------|
 | `featureId` | **Type:** `string`<br />**Required**<br />ID of the feature to update |
@@ -407,6 +452,28 @@ Update an existing feature's style — stroke/fill/strokeWidth or, for a `Point`
 
 ```js
 drawPlugin.setStyle('monument1', { symbolBackgroundColor: { outdoor: '#1d70b8', dark: '#4c9ed9' } })
+```
+
+---
+
+### `setProperties(featureId, properties)`
+
+Add or change a feature's own properties, such as details from a form or an ID from your backend. They're kept on the feature, so later [`draw:edited`](#drawedited) events include them. Returns `false` if the feature doesn't exist.
+
+| Argument | Description |
+|----------|-------------|
+| `featureId` | **Type:** `string`<br />**Required**<br />ID of the feature to update |
+| `properties` | **Type:** `Object`<br />**Required**<br />Properties to add or change |
+
+- New values replace old ones with the same name. Objects are replaced, not merged.
+- `undefined` values are skipped. `null` is kept, to clear a property.
+- Style properties are ignored with a warning: use [`setStyle`](#setstylefeatureid-stylechanges). So are draw's internal properties.
+- If the feature is being edited, cancelling the edit keeps the properties.
+
+```js
+detailsForm.addEventListener('submit', () => {
+  drawPlugin.setProperties('field-1', { name: form.name.value, landUse: form.landUse.value })
+})
 ```
 
 ---
@@ -616,7 +683,7 @@ Emitted when `editFeature` opens an existing feature for editing.
 
 ### `draw:created`
 
-Emitted when a new shape finishes drawing and passes its checks. Also fires for a shape that finished invalid, was automatically reopened in edit mode, and was then fixed and finished — from the caller's perspective it's still a creation, not an edit.
+Emitted when a new shape finishes drawing and passes its checks. Also fires for a new shape that was reopened in edit mode ([`draw:reopened`](#drawreopened)) and then finished — from the caller's perspective it's still a creation, not an edit.
 
 **Payload:** the finished `GeoJSON.Feature`
 
@@ -632,15 +699,15 @@ Emitted when an existing feature finishes an edit session (via `editFeature`).
 
 ### `draw:reopened`
 
-Emitted when a new shape is finished, its check fails, and it reopens in edit mode. See [Validation](#validation).
+Emitted when a new shape is finished and reopens in edit mode: because its check failed, or because a passing `onGeometryFinish` result asked to reopen it (see [Reopening a shape that passes](#reopening-a-shape-that-passes)). See [Validation](#validation).
 
 **Payload:**
 
 | Property | Description |
 |----------|-------------|
 | `payload.feature` | **Type:** `GeoJSON.Feature`<br />The reopened shape |
-| `payload.status` | **Type:** `'invalid' \| 'error'`<br />`'invalid'` if the check failed, `'error'` if it threw or rejected |
-| `payload.reason` | **Type:** `string \| null`<br />Why the check failed, or `null` if the result gave no reason |
+| `payload.status` | **Type:** `'valid' \| 'invalid' \| 'error'`<br />`'valid'` if a passing result asked to reopen it, `'invalid'` if the check failed, `'error'` if it threw or rejected |
+| `payload.reason` | **Type:** `string \| null`<br />Why the check failed, or `null` if it passed or the result gave no reason |
 
 ---
 
@@ -731,7 +798,20 @@ Emitted after `setStyle` updates a feature's style.
 | Property | Description |
 |----------|-------------|
 | `payload.featureId` | **Type:** `string`<br />ID of the updated feature |
-| `payload.properties` | **Type:** `Object`<br />The style and symbol properties that were applied |
+| `payload.properties` | **Type:** `Object`<br />The style properties that changed. A removed colour is `null`, so you can merge this into your saved copy of the feature |
+
+---
+
+### `draw:propertieschange`
+
+Emitted after `setProperties` updates a feature's properties.
+
+**Payload:**
+
+| Property | Description |
+|----------|-------------|
+| `payload.featureId` | **Type:** `string`<br />ID of the updated feature |
+| `payload.properties` | **Type:** `Object`<br />The properties that were changed |
 
 ---
 

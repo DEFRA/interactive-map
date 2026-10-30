@@ -17,6 +17,11 @@ const setMapStyle = (state, payload) => ({
   mapStyle: payload
 })
 
+const setMapStyles = (state, payload) => ({
+  ...state,
+  mapStyles: payload
+})
+
 const setMapSize = (state, payload) => {
   return {
     ...state,
@@ -67,6 +72,7 @@ export const actionsMap = {
   MAP_MOVE_END: mergePayload,
   MAP_FIRST_IDLE: mergePayload,
   SET_MAP_STYLE: setMapStyle,
+  SET_MAP_STYLES: setMapStyles,
   SET_MAP_SIZE: setMapSize,
   UPDATE_CROSS_HAIR: updateCrossHair,
   UPSERT_LOCATION_MARKER: upsertMarker,

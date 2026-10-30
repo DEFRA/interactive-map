@@ -743,11 +743,38 @@ describe('simple delegations', () => {
       }))
     })
 
+    test('removes a key patched to undefined', () => {
+      const { adapter, draw } = setup()
+      draw.get.mockReturnValue({ id: 'a', type: 'Feature', geometry: { type: 'Polygon', coordinates: [[]] }, properties: { stroke: 'red', strokeDark: 'tan', sortKey: 7 } })
+      draw.add.mockReturnValue(['a'])
+
+      adapter.setStyle('a', { stroke: 'blue', strokeDark: undefined })
+
+      expect(draw.add).toHaveBeenCalledWith(expect.objectContaining({ properties: { stroke: 'blue', sortKey: 7 } }))
+    })
+
     test('does nothing for an id with no existing feature', () => {
       const { adapter, draw } = setup()
       draw.get.mockReturnValue(undefined)
       adapter.setStyle('missing', { stroke: 'blue' })
       expect(draw.add).not.toHaveBeenCalled()
+    })
+  })
+
+  describe('setProperties()', () => {
+    test('writes each property in place, without re-adding the feature', () => {
+      const { adapter, draw } = setup()
+      adapter.setProperties('a', { name: 'North field', ref: null })
+      expect(draw.setFeatureProperty).toHaveBeenCalledWith('a', 'name', 'North field')
+      expect(draw.setFeatureProperty).toHaveBeenCalledWith('a', 'ref', null)
+      expect(draw.add).not.toHaveBeenCalled()
+    })
+
+    test('does nothing for an id with no existing feature', () => {
+      const { adapter, draw } = setup()
+      draw.get.mockReturnValue(undefined)
+      adapter.setProperties('missing', { name: 'x' })
+      expect(draw.setFeatureProperty).not.toHaveBeenCalled()
     })
   })
 

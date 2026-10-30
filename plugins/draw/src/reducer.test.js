@@ -93,6 +93,17 @@ describe('SET_VALIDATION_STATUS', () => {
   })
 })
 
+describe('SET_CAN_FINISH', () => {
+  test('stores whether the shape can be finished', () => {
+    expect(actions.SET_CAN_FINISH(initialState, true).canFinish).toBe(true)
+    expect(actions.SET_CAN_FINISH({ ...initialState, canFinish: true }, false).canFinish).toBe(false)
+  })
+
+  test('a new mode can\u2019t be finished until its first check', () => {
+    expect(actions.SET_MODE({ ...initialState, canFinish: true }, 'draw_polygon').canFinish).toBe(false)
+  })
+})
+
 describe('SET_HOLDING', () => {
   test('marks a finished shape as waiting on its check', () => {
     expect(actions.SET_HOLDING(initialState, true).holding).toBe(true)
