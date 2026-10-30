@@ -174,18 +174,15 @@
   left: var(--primary-gap);
   top: var(--left-offset-top);
   bottom: var(--left-offset-bottom);
-  gap: var(--divider-gap);
-
-  & > *:empty {
-    display: none;
-  }
+  gap: var(--left-slot-gap, var(--divider-gap));
 }
 
 .im-o-app__left-top {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   align-items: flex-start;
-  min-height: 0;
+  max-height: var(--left-top-slot-max-height, none);
   position: relative;
   gap: var(--divider-gap);
 }
@@ -193,9 +190,9 @@
 .im-o-app__left-bottom {
   display: flex;
   flex-direction: column;
+  flex-shrink: 0;
   align-items: flex-start;
   justify-content: flex-end;
-  min-height: 0;
   margin-top: auto;
   position: relative;
   gap: var(--divider-gap);
@@ -228,14 +225,15 @@
   right: var(--primary-gap);
   top: var(--right-offset-top);
   bottom: var(--right-offset-bottom);
-  gap: var(--divider-gap);
+  gap: var(--right-slot-gap, var(--divider-gap));
 }
 
 .im-o-app__right-top {
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  flex-shrink: 0;
   align-items: flex-end;
+  max-height: var(--right-top-slot-max-height, none);
   position: relative;
   gap: var(--divider-gap);
 }
@@ -243,11 +241,25 @@
 .im-o-app__right-bottom {
   display: flex;
   flex-direction: column;
-  flex: 0 0 auto;
+  flex-shrink: 0;
   margin-top: auto;
   align-items: flex-end;
   position: relative;
   gap: var(--divider-gap);
+}
+
+// Only a slot with an open panel of its own shrinks, so the panel is capped to the space left in its
+// column and the buttons in the other slot keep their size. A panel opened beside a button sits
+// inside the button and doesn't take up space in the slot, so it doesn't count. Closed HTML panels
+// are hidden with display: none rather than the hidden attribute
+.im-o-app__left-top,
+.im-o-app__left-bottom,
+.im-o-app__right-top,
+.im-o-app__right-bottom {
+  &:has(> .im-c-panel:not([hidden]):not([style*="display: none"])) {
+    flex-shrink: 1;
+    min-height: 0;
+  }
 }
 
 // ---------------------------------------------------
@@ -334,11 +346,19 @@
 // Drawer:
 // ---------------------------------------------------
 
+// Capped in useLayoutMeasurements so it never covers the side columns or runs off main
 .im-o-app__drawer {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  max-height: var(--drawer-max-height, none);
   z-index: 1;
 }
 
 .im-o-app__drawer .im-c-panel {
+  min-height: 0;
+  max-height: 100%;
+
   @include tools.border-focus-corner-override(
     $corners: 'top'
   );
@@ -468,6 +488,11 @@
 
 }
 
+// Leaves a gap above and below, so a long banner scrolls instead of running off the map
+.im-o-app .im-o-app__modal .im-c-panel--banner {
+  max-height: calc(100% - (var(--primary-gap) * 2));
+}
+
 // Mobile and tablet
 .im-o-app--mobile, .im-o-app--tablet {
   .im-o-app__modal .im-c-panel--banner {
@@ -497,15 +522,15 @@
 
 // Actions inset when width is greater
 .im-o-app--tablet, .im-o-app--desktop {
+  // As wide as the bar, so its size changes when the bar's does and the layout is measured again
   .im-o-app__actions {
     position: absolute;
-    width: 100%;
     left: 0;
+    right: 0;
     bottom: calc(var(--primary-gap) * 2);
-
-    .im-c-panel {
-      max-width: var(--action-bar-max-width);
-    }
+    width: fit-content;
+    max-width: var(--action-bar-max-width);
+    margin-inline: auto;
 
     // Opacity-only so it fades in instead of visually sliding up.
     @media (prefers-reduced-motion: no-preference) {
