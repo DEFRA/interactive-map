@@ -27,6 +27,6 @@ export const recheckGeometry = ({ mapProvider }, detail) => {
   }
 
   const context = { phase: 'recheck', mode, ...(detail !== undefined && { detail }) }
-  checks.run({ feature, context, onGeometryChange: draw._commitValidator })
+  checks.run({ feature, context, consumerCheck: draw._commitValidator })
   return true
 }

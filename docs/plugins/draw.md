@@ -246,7 +246,7 @@ Called when a shape is finished, to check the whole shape once. Without it, fini
 | `'create'` | A new shape or point was finished |
 | `'edit-finish'` | Done was pressed on an edit |
 
-Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called.
+Draw waits for the result. A new shape that fails reopens in edit mode ([`draw:reopened`](#drawreopened)), where Undo starts empty and Cancel discards it. An edit that fails stays open. If the latest `onGeometryChange` result failed, the shape can't be finished, so `onGeometryFinish` isn't called. If an `onGeometryChange` check is still running when the shape is finished, it's cancelled and `onGeometryFinish` decides.
 
 This updates a panel on every change, and validates the shape once it's finished:
 
@@ -260,7 +260,7 @@ createDrawPlugin({
 })
 ```
 
-Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies, and finishing would wait for it.
+Don't `await` the panel update. `onGeometryChange` would then be pending until the panel replies: a slow reply is announced as "Checking shape", and finishing the shape cancels it.
 
 #### Adding properties to the finished shape
 

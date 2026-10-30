@@ -23,7 +23,8 @@ export const canFinishCheck = ({ status, lastResultStatus }) =>
 
 /**
  * Runs the commit-level check for each committed change: the built-in COMMIT_RULES first,
- * synchronously, then the consumer's `onGeometryChange`, which may return a Promise.
+ * synchronously, then the consumer's callback, which may return a Promise: `onGeometryChange`,
+ * or `onGeometryFinish` when a shape is finished.
  *
  * Every run gets a new revision and aborts the previous run's signal. A result only
  * settles if its revision is still the latest, so a slow reply for an older shape can
@@ -92,17 +93,17 @@ export const createCommitChecks = () => {
      * @param {object} params
      * @param {object} params.feature - the committed GeoJSON feature
      * @param {object} params.context - { phase, mode, vertexIndex }
-     * @param {Function} [params.onGeometryChange] - consumer callback
+     * @param {Function} [params.consumerCheck] - the consumer's onGeometryChange or onGeometryFinish
      * @param {Array<Function>} [params.rules] - built-in rules, defaults to COMMIT_RULES
      */
-    run ({ feature, context, onGeometryChange, rules = COMMIT_RULES }) {
+    run ({ feature, context, consumerCheck, rules = COMMIT_RULES }) {
       abortPending()
       revision++
       const rev = revision
       const base = { feature, context }
 
       const builtIn = validateGeometry(feature, context, { rules })
-      if (!builtIn.valid || typeof onGeometryChange !== 'function') {
+      if (!builtIn.valid || typeof consumerCheck !== 'function') {
         settle(rev, { ...base, status: statusFor(builtIn), result: builtIn })
         return
       }
@@ -111,13 +112,13 @@ export const createCommitChecks = () => {
       const onError = (error) => {
         // A superseded check rejecting (e.g. on its aborted signal) isn't a failure
         if (rev !== revision) { return }
-        logger.warn('[draw] onGeometryChange failed', error)
+        logger.warn(`[draw] geometry check failed (${context?.phase})`, error)
         settle(rev, { ...base, status: 'error', result: { valid: false, reason: null, source: 'callback' }, error }, { fromCallback: true })
       }
 
       let output
       try {
-        output = onGeometryChange({ feature, ...context }, { signal: abortController.signal, revision: rev })
+        output = consumerCheck({ feature, ...context }, { signal: abortController.signal, revision: rev })
       } catch (error) {
         onError(error)
         return

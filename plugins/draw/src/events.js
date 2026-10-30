@@ -205,7 +205,7 @@ function createFinishHandlers ({ appState, appConfig, mapState, draw, dispatch, 
     const { status, feature: checkedFeature } = checks.state
     const isReusable = (status === 'valid' || status === 'pending') && isSameGeometry(checkedFeature, feature) && !needsFinishCheck(draw, checks.state)
     if (!isReusable) {
-      checks.run({ feature, context: { phase: 'create', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
+      checks.run({ feature, context: { phase: 'create', mode: draw.getMode() }, consumerCheck: finishValidatorFor(draw) })
     }
     return checks.state
   }
@@ -274,7 +274,7 @@ function createEditFinishHandlers ({ draw, dispatch }) {
       draw.done()
       return
     }
-    checks.run({ feature: state.feature, context: { phase: 'edit-finish', mode: draw.getMode() }, onGeometryChange: finishValidatorFor(draw) })
+    checks.run({ feature: state.feature, context: { phase: 'edit-finish', mode: draw.getMode() }, consumerCheck: finishValidatorFor(draw) })
     const next = checks.state
     if (next.status === 'pending') {
       waitFor(next.revision)
@@ -357,7 +357,7 @@ function createHandlers ({ appState, appConfig, mapState, pluginState, mapProvid
       checks.run({
         feature: event.feature,
         context: { phase: event.phase, vertexIndex: event.vertexIndex, mode },
-        onGeometryChange: draw._commitValidator
+        consumerCheck: draw._commitValidator
       })
     },
     // A vertex placement was rejected (placement rule or user callback veto). Surface it
