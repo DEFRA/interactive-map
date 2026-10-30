@@ -17,6 +17,21 @@ const computePanelState = (bpConfig, triggeringElement, focus, focusOnOpen) => {
   return { isAside, isDialog, isModal, isDismissible, shouldFocus, buttonContainerEl }
 }
 
+// Keyboard users get the browser's own scroll to the focused panel. Others are only scrolled when
+// the top of the panel is off screen, and only as far as needed, so a click never moves a panel
+// they can already see, but never opens one they can't
+const focusOpenedPanel = (panel, interfaceType) => {
+  if (interfaceType === 'keyboard') {
+    panel.focus()
+    return
+  }
+  panel.focus({ preventScroll: true })
+  const { top } = panel.getBoundingClientRect()
+  if (top < 0 || top >= window.innerHeight) {
+    panel.scrollIntoView({ block: 'nearest' })
+  }
+}
+
 const buildPanelClassNames = (slot, showLabel) => [
   'im-c-panel',
   `im-c-panel--${slot}`,
@@ -134,7 +149,7 @@ export const Panel = ({ panelId, panelConfig, props, focusOnOpen, WrappedChild, 
     prevIsOpenRef.current = isOpen
 
     if (shouldFocus && (justOpened || isOpen)) {
-      panelRef.current?.focus()
+      focusOpenedPanel(panelRef.current, interfaceType)
     }
   }, [isOpen])
 
