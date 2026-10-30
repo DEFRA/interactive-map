@@ -13,11 +13,9 @@ Trigger the map to show on button press, allowing users to access the map when n
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
 
       new InteractiveMap('my-map', {
         behaviour: 'buttonFirst',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -35,13 +33,11 @@ Trigger the map to show on button press, allowing users to access the map when n
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
 
       <script>
       document.addEventListener('DOMContentLoaded', function () {
         new defra.InteractiveMap('my-map', {
           behaviour: 'buttonFirst',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: {
             url: 'https://your-tile-url/style.json',
             logo: '/path/to/logo.svg',

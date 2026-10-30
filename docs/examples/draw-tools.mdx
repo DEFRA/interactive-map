@@ -17,7 +17,6 @@ This example configures snapping (`snapLayers`) against the base map style's woo
     language: 'js',
     code: `
       import InteractiveMap from '@defra/interactive-map'
-      import maplibreProvider from '@defra/interactive-map/providers/maplibre'
       import createInteractPlugin from '@defra/interactive-map/plugins/interact'
       import createDrawPlugin from '@defra/interactive-map/plugins/draw'
 
@@ -40,7 +39,6 @@ This example configures snapping (`snapLayers`) against the base map style's woo
 
       const interactiveMap = new InteractiveMap('my-map', {
         behaviour: 'inline',
-        mapProvider: maplibreProvider(),
         mapStyle: {
           url: 'https://your-tile-url/style.json',
           logo: '/path/to/logo.svg',
@@ -149,7 +147,6 @@ This example configures snapping (`snapLayers`) against the base map style's woo
     language: 'html',
     code: `
       <script defer src="/your-assets-path/interactive-map/index.js"></script>
-      <script defer src="/your-assets-path/maplibre-provider/index.js"></script>
       <script defer src="/your-assets-path/interact-plugin/index.js"></script>
       <script defer src="/your-assets-path/draw-plugin/index.js"></script>
 
@@ -174,7 +171,6 @@ This example configures snapping (`snapLayers`) against the base map style's woo
 
         const interactiveMap = new defra.InteractiveMap('my-map', {
           behaviour: 'inline',
-          mapProvider: defra.maplibreProvider(),
           mapStyle: {
             url: 'https://your-tile-url/style.json',
             logo: '/path/to/logo.svg',

@@ -69,7 +69,6 @@ const datasetsPlugin = defra.datasetsPlugin({
 const mapKeyPlugin = defra.mapKeyPlugin()
 
 const interactiveMap = new defra.InteractiveMap('map', {
-  mapProvider: defra.maplibreProvider(),
   plugins: [datasetsPlugin, mapKeyPlugin]
 })
 ```

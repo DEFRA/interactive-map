@@ -4,10 +4,10 @@ The draw plugin lets users draw and edit points, lines and polygons on the map. 
 
 Hooks let you add your own checks at each stage: as vertices are placed, as the shape changes, and when it's finished. Use them to apply your own rules, help users fix or review their shapes, and attach your own data.
 
-It works the same with the MapLibre and OpenLayers map providers. The plugin picks the right one from the `mapProvider` you pass to `InteractiveMap`, so there's nothing to configure.
+It works the same with `@defra/interactive-map` (MapLibre) and `@defra/interactive-map-openlayers`.
 
-> [!IMPORTANT]
-> **Using a bundler (ESM)?** This plugin includes adapters for more than one map provider, so your bundler needs to ignore the map engines you haven't installed. See [Bundler configuration](../getting-started.md#bundler-configuration-esm).
+> [!NOTE]
+> `@defra/interactive-map-esri` has a separate draw plugin, imported the same way, with limited features. It only draws and edits polygons, and doesn't support the options, validation or most of the methods below.
 
 ## ESM usage
 
@@ -30,7 +30,7 @@ interactiveMap.on('map:ready', () => {
 
 ## UMD usage
 
-Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins/draw/umd/`. The plugin uses dynamic imports to load MapLibre or OpenLayers support on demand, so all files in the directory must be served from the same location. Then add the script tag:
+Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins/draw/umd/`. The plugin loads the rest of its files when it's used, so all files in the directory must be served from the same location. Then add the script tag:
 
 ```html
 <script defer src="/your-assets-path/plugins/draw/umd/index.js"></script>
@@ -40,7 +40,6 @@ Copy the entire `plugins/draw/dist/umd/` directory to `/your-assets-path/plugins
 const drawPlugin = defra.drawPlugin()
 
 const interactiveMap = new defra.InteractiveMap('map', {
-  mapProvider: defra.maplibreProvider(),
   plugins: [drawPlugin]
 })
 ```
