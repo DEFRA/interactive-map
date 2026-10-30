@@ -8,7 +8,7 @@ describe('manifest structure', () => {
     expect(manifest.reducer).toHaveProperty('actions')
     expect(manifest.InitComponent).toBeDefined()
     expect(Object.keys(manifest.api)).toEqual(expect.arrayContaining([
-      'newPolygon', 'newLine', 'newPoint', 'editFeature', 'addFeature', 'setStyle', 'deleteFeature', 'split', 'merge'
+      'newPolygon', 'newLine', 'newPoint', 'editFeature', 'addFeature', 'setStyle', 'setProperties', 'deleteFeature', 'split', 'merge'
     ]))
   })
 })
@@ -69,35 +69,29 @@ describe('drawDone', () => {
     expect(btn().hiddenWhen({ pluginState: { mode: 'edit_point' } })).toBe(false)
   })
 
-  test('enables in a draw/edit mode only when the geometry is valid', () => {
-    const valid = { validationStatus: 'valid', previewValid: true }
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', ...valid } })).toBe(true)
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_line', ...valid } })).toBe(true)
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', ...valid } })).toBe(true)
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_point', ...valid } })).toBe(true)
-    expect(btn().enableWhen({ pluginState: { mode: 'disabled', ...valid } })).toBe(false)
+  test('enables in a draw/edit mode only when the shape can be finished', () => {
+    const finishable = { canFinish: true, previewValid: true }
+    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', ...finishable } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'draw_line', ...finishable } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', ...finishable } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_point', ...finishable } })).toBe(true)
+    expect(btn().enableWhen({ pluginState: { mode: 'disabled', ...finishable } })).toBe(false)
   })
 
-  test('stays disabled while the geometry is invalid', () => {
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', validationStatus: 'invalid', previewValid: true } })).toBe(false)
-    expect(btn().enableWhen({ pluginState: { mode: 'draw_line', validationStatus: 'invalid', previewValid: true } })).toBe(false)
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'invalid', previewValid: true } })).toBe(false)
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_point', validationStatus: 'invalid', previewValid: true } })).toBe(false)
-  })
-
-  // A live edit-mode flip back to valid must not enable Done while the commit check
-  // still fails or is pending, and vice versa.
-  test('stays enabled while a check is pending, so pressing it can wait for the check', () => {
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'pending', previewValid: true } })).toBe(true)
+  test('stays disabled while the shape can\u2019t be finished', () => {
+    expect(btn().enableWhen({ pluginState: { mode: 'draw_polygon', canFinish: false, previewValid: true } })).toBe(false)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', canFinish: false, previewValid: true } })).toBe(false)
   })
 
   test('is disabled while waiting on a check after being pressed', () => {
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'pending', previewValid: true, holding: true } })).toBe(false)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', canFinish: true, previewValid: true, holding: true } })).toBe(false)
   })
 
+  // A live edit-mode flip back to valid must not enable Done while the commit check
+  // still fails, and vice versa.
   test('needs both the commit check and the live preview to pass', () => {
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'valid', previewValid: false } })).toBe(false)
-    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', validationStatus: 'invalid', previewValid: true } })).toBe(false)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', canFinish: true, previewValid: false } })).toBe(false)
+    expect(btn().enableWhen({ pluginState: { mode: 'edit_vertex', canFinish: false, previewValid: true } })).toBe(false)
   })
 
   test('is busy once it\u2019s waiting on a slow check', () => {
@@ -117,14 +111,14 @@ describe('drawDone', () => {
     const drawing = { mode: 'draw_polygon', previewValid: true }
 
     test('stays enabled while a check is pending, reading "Done", so the shape can be finished', () => {
-      const pluginState = { ...drawing, validationStatus: 'pending', checkSlow: true }
+      const pluginState = { ...drawing, validationStatus: 'pending', canFinish: true, checkSlow: true }
       expect(btn().enableWhen({ pluginState })).toBe(true)
       expect(btn().label({ pluginState })).toBe('Done')
       expect(btn().busyWhen({ pluginState })).toBe(false)
     })
 
     test('is disabled once the shape is held, reading "Checking…" once the check is slow', () => {
-      const held = { ...drawing, validationStatus: 'pending', holding: true }
+      const held = { ...drawing, validationStatus: 'pending', canFinish: true, holding: true }
       expect(btn().enableWhen({ pluginState: held })).toBe(false)
       expect(btn().label({ pluginState: { ...held, checkSlow: false } })).toBe('Done')
       expect(btn().label({ pluginState: { ...held, checkSlow: true } })).toBe('Checking…')
@@ -140,8 +134,8 @@ describe('drawDone', () => {
     })
 
     test('stays disabled while a check has failed', () => {
-      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'invalid' } })).toBe(false)
-      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'error' } })).toBe(false)
+      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'invalid', canFinish: false } })).toBe(false)
+      expect(btn().enableWhen({ pluginState: { ...drawing, validationStatus: 'error', canFinish: false } })).toBe(false)
     })
   })
 })

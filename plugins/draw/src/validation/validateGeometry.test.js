@@ -211,6 +211,24 @@ describe('normaliseResult', () => {
       .toEqual({ valid: true, reason: undefined, announcement: 'Area 2 hectares', recheckOnFinish: true })
     expect(normaliseResult({ valid: false, reason: 'too big' })).not.toHaveProperty('announcement')
   })
+
+  test('keeps properties on a passing result only', () => {
+    const properties = { drawRules: { checked: false } }
+    expect(normaliseResult({ valid: true, properties })).toEqual({ valid: true, reason: undefined, properties })
+    expect(normaliseResult({ properties })).toHaveProperty('properties', properties)
+    expect(normaliseResult({ valid: false, reason: 'overlap', properties })).not.toHaveProperty('properties')
+    expect(normaliseResult({ valid: true, properties: null })).not.toHaveProperty('properties')
+  })
+
+  test('keeps reopen on a passing result only', () => {
+    expect(normaliseResult({ valid: true, reopen: true })).toEqual({ valid: true, reason: undefined, reopen: true })
+    expect(normaliseResult({ valid: false, reason: 'overlap', reopen: true })).not.toHaveProperty('reopen')
+    expect(normaliseResult({ valid: true, reopen: false })).not.toHaveProperty('reopen')
+  })
+
+  test('passes properties of the wrong shape on, for mergeFeatureProperties to refuse with a warning', () => {
+    expect(normaliseResult({ valid: true, properties: ['a'] })).toHaveProperty('properties', ['a'])
+  })
 })
 
 describe('toPlacementBlocked', () => {

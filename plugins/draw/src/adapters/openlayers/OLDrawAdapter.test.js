@@ -194,6 +194,7 @@ describe('add() and point symbol resolution', () => {
 describe('setStyle()', () => {
   const fakeOLFeature = (geometryType, properties = {}) => ({
     setProperties: jest.fn(),
+    unset: jest.fn(),
     getGeometry: jest.fn(() => ({ getType: () => geometryType })),
     getProperties: jest.fn(() => properties)
   })
@@ -206,6 +207,17 @@ describe('setStyle()', () => {
     adapter.setStyle('a', { stroke: 'blue' })
 
     expect(manager.store.getOL).toHaveBeenCalledWith('a')
+    expect(olFeature.setProperties).toHaveBeenCalledWith({ stroke: 'blue' })
+  })
+
+  test('unsets a key patched to undefined', () => {
+    const { manager, adapter } = setup()
+    const olFeature = fakeOLFeature('Polygon')
+    manager.store.getOL.mockReturnValue(olFeature)
+
+    adapter.setStyle('a', { stroke: 'blue', strokeDark: undefined })
+
+    expect(olFeature.unset).toHaveBeenCalledWith('strokeDark')
     expect(olFeature.setProperties).toHaveBeenCalledWith({ stroke: 'blue' })
   })
 
@@ -233,6 +245,22 @@ describe('setStyle()', () => {
     manager.store.getOL.mockReturnValue(null)
     expect(() => adapter.setStyle('missing', { stroke: 'blue' })).not.toThrow()
     expect(manager.updatePointSymbol).not.toHaveBeenCalled()
+  })
+})
+
+describe('setProperties()', () => {
+  test('merges the properties into the OL feature', () => {
+    const { manager, adapter } = setup()
+    const olFeature = { setProperties: jest.fn() }
+    manager.store.getOL.mockReturnValue(olFeature)
+    adapter.setProperties('a', { name: 'North field', ref: null })
+    expect(olFeature.setProperties).toHaveBeenCalledWith({ name: 'North field', ref: null })
+  })
+
+  test('does nothing for an id with no existing feature', () => {
+    const { manager, adapter } = setup()
+    manager.store.getOL.mockReturnValue(null)
+    expect(() => adapter.setProperties('missing', { name: 'x' })).not.toThrow()
   })
 })
 

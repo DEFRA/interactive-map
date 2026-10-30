@@ -199,6 +199,18 @@ describe('split', () => {
       expect(result).toEqual({ valid: false, reason: expect.any(String) })
     })
 
+    test('a committed vertex that completes the split returns a passing verdict', () => {
+      const { context, dispatch, draw } = makeContext()
+      splitPolygon.mockReturnValue({ type: 'FeatureCollection' })
+      split(context, 'poly')
+
+      const result = draw._commitValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'change', mode: 'draw_line', vertexIndex: 1 })
+
+      expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'valid')
+      expect(dispatch).toHaveBeenCalledWith({ type: 'SET_ACTION', payload: { name: 'split', isValid: true } })
+      expect(result).toEqual({ valid: true })
+    })
+
     test('the commit validator ignores the live preview phase', () => {
       const { context, draw } = makeContext()
       split(context, 'poly')
@@ -209,7 +221,7 @@ describe('split', () => {
       expect(splitPolygon).not.toHaveBeenCalled()
     })
 
-    test('a line with fewer than two coordinates is treated as invalid without calling splitPolygon', () => {
+    test('a line with fewer than two coordinates is coloured invalid without calling splitPolygon', () => {
       const { context, draw } = makeContext()
       split(context, 'poly')
 
@@ -218,7 +230,18 @@ describe('split', () => {
 
       expect(splitPolygon).not.toHaveBeenCalled()
       expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
-      expect(result).toEqual({ valid: false, reason: expect.any(String) })
+      expect(result).toEqual({ valid: true })
+    })
+
+    test('the live preview of an incomplete split colours it invalid but never vetoes, so Add point stays enabled', () => {
+      const { context, draw } = makeContext()
+      splitPolygon.mockReturnValue(null)
+      split(context, 'poly')
+
+      const result = draw._previewValidator({ feature: lineFeature([[0, 0], [1, 1]]), phase: 'preview', mode: 'draw_line', numVertices: 1 })
+
+      expect(draw.setDrawingPreviewProperty).toHaveBeenCalledWith('splitter', 'invalid')
+      expect(result).toEqual({ valid: true })
     })
   })
 })

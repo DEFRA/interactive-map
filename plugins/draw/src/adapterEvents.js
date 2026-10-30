@@ -88,6 +88,8 @@ export const CHANGE_PHASE = 'change'
  * @property {boolean} [recheckOnFinish] - deprecated, use onGeometryFinish.
  *   `onGeometryChange` only: don't reuse this result when the shape is finished, check
  *   it again with phase 'create' or 'edit-finish'
+ * @property {object} [properties] - `onGeometryFinish` only, on a passing result: merged
+ *   into the finished shape's properties (utils/mergeFeatureProperties.js)
  */
 
 /**

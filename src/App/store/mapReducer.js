@@ -22,6 +22,8 @@ export const initialState = (config) => {
     isMapReady: false,
     mapProvider: null,
     mapStyle: initialMapStyle,
+    // Every map style the user can switch to — set by a plugin that handles map styles
+    mapStyles: initialMapStyle ? [initialMapStyle] : [],
     mapSize,
     center,
     zoom,
