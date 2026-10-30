@@ -22,6 +22,7 @@ export default {
     testPathIgnorePatterns: ['<rootDir>/src/test-utils.js'],
     coveragePathIgnorePatterns: [
       '/__mocks__/',
+      '<rootDir>/test/',
       '/__data__/',
       '/node_modules/',
       '<rootDir>/public',
