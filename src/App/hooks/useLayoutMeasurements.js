@@ -65,25 +65,18 @@ const renderedBoxes = (element) => Array.from(element?.children ?? []).flatMap(c
   return child.classList.contains('im-c-control-wrapper') ? renderedBoxes(child) : []
 })
 
-// How far the actions bar's top is above the bottom of main, when anything in the sub-slot lines
-// up with the bar, or comes within margin of it. Otherwise 0. A bottom sub-slot also has to reach
-// down to the bar. It moves up with its column, so this checks where its items would be if the
-// column weren't lifted (lift), so lifting it doesn't undo itself the next time it's measured.
-// A top sub-slot is only capped, which does nothing if it ends above the bar anyway.
-const actionsBarOverlap = (mainRect, barRect, slotRef, margin, lift = null) => {
+// How far the actions bar's top is above the bottom of main, when anything in the sub-slot would
+// overlap the bar, or come within margin of it: in line with it and reaching down to it. Otherwise 0.
+// Measured with the side columns as they'd be without the bar (see calculateLayout).
+const actionsBarOverlap = (mainRect, barRect, slotRef, margin) => {
   if (!barRect) {
     return 0
   }
   const isInLine = (box) => barRect.left - margin < box.right && barRect.right + margin > box.left
-  const reachesBar = (box) => lift === null || box.bottom + lift > barRect.top - margin
+  const reachesBar = (box) => box.bottom > barRect.top - margin
   const isOverlapping = renderedBoxes(slotRef?.current).some(box => isInLine(box) && reachesBar(box))
   return isOverlapping ? mainRect.bottom - barRect.top : 0
 }
-
-// How far a column has been lifted above where the bottom row alone would put it.
-const columnLift = (mainRect, rowOffsetBottom, columnRef) => columnRef?.current
-  ? Math.max(0, mainRect.bottom - rowOffsetBottom - columnRef.current.getBoundingClientRect().bottom)
-  : 0
 
 // On tablet and desktop the actions bar floats over the middle of the map. Only what would
 // overlap it moves: a bottom sub-slot lifts the whole column above the bar, and a top sub-slot
@@ -255,41 +248,52 @@ export function calculateLayout (layoutRefs, breakpoint) {
   const { rise: attributionsLift } = applyAttributionsLayout({ appContainer, bottom, attributions, dividerGap, primaryGap })
 
   const actions = actionsRef?.current
-  const mainRect = main.getBoundingClientRect()
-  const barRect = actionsBarRect(actions)
-  const clearBar = (rowOffsetBottom, offsetTop, topSlotRef, bottomSlotRef, columnRef) => clearActionsBar({
-    rowOffsetBottom,
-    offsetTop,
-    mainHeight: main.offsetHeight,
-    topOverlap: actionsBarOverlap(mainRect, barRect, topSlotRef, dividerGap),
-    bottomOverlap: actionsBarOverlap(mainRect, barRect, bottomSlotRef, dividerGap, columnLift(mainRect, rowOffsetBottom, columnRef)),
-    gap: dividerGap
-  })
 
-  // === Left container offsets ===
+  // Where the side columns go without the actions bar
   const leftOffsetTop = sideOffsetTop(topColHeight(topLeftCol))
   const leftRowOffsetBottom = main.offsetHeight - bottom.offsetTop + dividerGap
-  const leftBar = clearBar(leftRowOffsetBottom, leftOffsetTop, leftTopRef, leftBottomRef, leftRef)
-  const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap - (leftBar.offsetBottom - leftRowOffsetBottom)
-  appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
-  appContainer.style.setProperty('--left-offset-bottom', `${leftBar.offsetBottom}px`)
-  appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
-  appContainer.style.setProperty('--left-top-slot-max-height', leftBar.topSlotMaxHeight)
-  appContainer.style.setProperty('--left-slot-gap', `${subSlotGap(leftTopRef, leftBottomRef, dividerGap)}px`)
-
-  // === Right container offsets === (mirrors the left formula)
   const bottomRightHeight = buttonHeight(bottomRightRef)
   const bottomContainerPad = main.offsetHeight - bottom.offsetTop - bottom.offsetHeight
   const rightOffsetTop = sideOffsetTop(topColHeight(topRightCol))
   const rightRowOffsetBottom = rightOffsetBottom(bottomContainerPad, bottomRightHeight, attributions.offsetHeight, attributionsLift, dividerGap)
-  const rightBar = clearBar(rightRowOffsetBottom, rightOffsetTop, rightTopRef, rightBottomRef, rightRef)
+
+  // Put the side columns there, without the bar's lift or cap, before measuring what would overlap
+  // it. Otherwise moving something clear of the bar would change whether it needs to move, and the
+  // next measurement would undo it. The browser doesn't draw this in-between layout
+  appContainer.style.setProperty('--left-offset-top', `${leftOffsetTop}px`)
+  appContainer.style.setProperty('--left-offset-bottom', `${leftRowOffsetBottom}px`)
+  appContainer.style.setProperty('--left-top-slot-max-height', 'none')
+  appContainer.style.setProperty('--left-slot-gap', `${subSlotGap(leftTopRef, leftBottomRef, dividerGap)}px`)
+  appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
+  appContainer.style.setProperty('--right-offset-bottom', `${rightRowOffsetBottom}px`)
+  appContainer.style.setProperty('--right-top-slot-max-height', 'none')
+  appContainer.style.setProperty('--right-slot-gap', `${subSlotGap(rightTopRef, rightBottomRef, dividerGap)}px`)
+
+  const mainRect = main.getBoundingClientRect()
+  const barRect = actionsBarRect(actions)
+  const clearBar = (rowOffsetBottom, offsetTop, topSlotRef, bottomSlotRef) => clearActionsBar({
+    rowOffsetBottom,
+    offsetTop,
+    mainHeight: main.offsetHeight,
+    topOverlap: actionsBarOverlap(mainRect, barRect, topSlotRef, dividerGap),
+    bottomOverlap: actionsBarOverlap(mainRect, barRect, bottomSlotRef, dividerGap),
+    gap: dividerGap
+  })
+
+  // === Left container offsets ===
+  const leftBar = clearBar(leftRowOffsetBottom, leftOffsetTop, leftTopRef, leftBottomRef)
+  const leftColumnHeight = bottom.offsetTop - leftOffsetTop - dividerGap - (leftBar.offsetBottom - leftRowOffsetBottom)
+  appContainer.style.setProperty('--left-offset-bottom', `${leftBar.offsetBottom}px`)
+  appContainer.style.setProperty('--left-top-max-height', `${leftColumnHeight}px`)
+  appContainer.style.setProperty('--left-top-slot-max-height', leftBar.topSlotMaxHeight)
+
+  // === Right container offsets === (mirrors the left formula)
+  const rightBar = clearBar(rightRowOffsetBottom, rightOffsetTop, rightTopRef, rightBottomRef)
   const rightEffectiveBottom = bottom.offsetTop + bottom.offsetHeight - bottomRightHeight - attributionsLift
   const rightColumnHeight = rightEffectiveBottom - rightOffsetTop - dividerGap - (rightBar.offsetBottom - rightRowOffsetBottom)
-  appContainer.style.setProperty('--right-offset-top', `${rightOffsetTop}px`)
   appContainer.style.setProperty('--right-offset-bottom', `${rightBar.offsetBottom}px`)
   appContainer.style.setProperty('--right-top-max-height', `${rightColumnHeight}px`)
   appContainer.style.setProperty('--right-top-slot-max-height', rightBar.topSlotMaxHeight)
-  appContainer.style.setProperty('--right-slot-gap', `${subSlotGap(rightTopRef, rightBottomRef, dividerGap)}px`)
 
   // === Drawer max height ===
   if (drawerRef?.current) {

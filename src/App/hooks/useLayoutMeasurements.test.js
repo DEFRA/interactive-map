@@ -130,7 +130,9 @@ describe('useLayoutMeasurements', () => {
     bar.className = 'im-c-actions'
   }
 
-  const slotItem = (slotRef, rect) => appendChild(slotRef.current, { getClientRects: () => [{}], rect })
+  // Without the bar the left column ends 108 above main's bottom (500), at 392. Items reach down
+  // to there unless a test says otherwise
+  const slotItem = (slotRef, rect) => appendChild(slotRef.current, { getClientRects: () => [{}], rect: { bottom: 392, ...rect } })
 
   const bar = { offsetHeight: 60, rect: { top: 380, left: 300, right: 500 } }
 
@@ -152,17 +154,34 @@ describe('useLayoutMeasurements', () => {
     expect(spy).toHaveBeenCalledWith('--left-top-slot-max-height', topSlotMaxHeight)
   })
 
-  // Without the bar the left column ends 108 above main's bottom (500), at 392
-  test.each([
-    ['raises the column when a bottom sub-slot item reaches down to the bar', 392, 392, '128px'],
-    ['leaves the column when a bottom sub-slot item ends above the bar', 392, 300, '108px'], // 300 < bar top 380 - 8
-    ['keeps the column raised once it has been lifted clear of the bar', 372, 372, '128px'] // lifted 20, so the item would end at 392
-  ])('%s', (_name, columnBottom, itemBottom, offsetBottom) => {
-    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } }, left: { rect: { bottom: columnBottom } } } })
+  test('leaves the column when a bottom sub-slot item in line with the bar ends above it', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
     actionsBar(layoutRefs, bar)
-    slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320, bottom: itemBottom })
+    slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320, bottom: 300 }) // 300 < bar top 380 - 8
     renderHook(() => useLayoutMeasurements())
-    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-bottom', offsetBottom)
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-offset-bottom', '108px')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalledWith('--left-offset-bottom', '128px')
+  })
+
+  test('doesn\'t cap a top sub-slot whose wide item ends above the bar and whose long item is beside it', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    slotItem(layoutRefs.leftTopRef, { left: 8, right: 320, bottom: 300 })
+    slotItem(layoutRefs.leftTopRef, { left: 8, right: 250, bottom: 392 })
+    renderHook(() => useLayoutMeasurements())
+    expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--left-top-slot-max-height', 'none')
+    expect(layoutRefs.appContainerRef.current.style.setProperty).not.toHaveBeenCalledWith('--left-top-slot-max-height', '312px')
+  })
+
+  test('measures the side columns without the bar\'s lift or cap, then sets them', () => {
+    const { layoutRefs } = setup({ refs: { main: { rect: { bottom: 500 } } } })
+    actionsBar(layoutRefs, bar)
+    slotItem(layoutRefs.leftTopRef, { left: 8, right: 320 })
+    slotItem(layoutRefs.leftBottomRef, { left: 8, right: 320 })
+    renderHook(() => useLayoutMeasurements())
+    const calls = (name) => layoutRefs.appContainerRef.current.style.setProperty.mock.calls.filter(([prop]) => prop === name).map(([, value]) => value)
+    expect(calls('--left-offset-bottom')).toEqual(['108px', '128px'])
+    expect(calls('--left-top-slot-max-height')).toEqual(['none', '312px'])
   })
 
   test('looks through control wrappers for what a sub-slot renders', () => {
@@ -170,7 +189,7 @@ describe('useLayoutMeasurements', () => {
     actionsBar(layoutRefs, bar)
     const wrapper = appendChild(layoutRefs.rightBottomRef.current)
     wrapper.className = 'im-c-control-wrapper'
-    appendChild(wrapper, { getClientRects: () => [{}], rect: { left: 400, right: 760 } })
+    appendChild(wrapper, { getClientRects: () => [{}], rect: { left: 400, right: 760, bottom: 392 } })
     renderHook(() => useLayoutMeasurements())
     expect(layoutRefs.appContainerRef.current.style.setProperty).toHaveBeenCalledWith('--right-offset-bottom', '128px')
   })
